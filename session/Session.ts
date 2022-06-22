@@ -59,21 +59,21 @@ export class Session extends EventEmitter {
     override on(event: "messageCreate", func: Events["messageCreate"]): this;
     override on(event: "raw", func: Events["raw"]): this;
     override on(event: keyof Events, func: Events[keyof Events]): this {
-        return super.on(event, func);
+        return super.on(Session.#toSnakeCase(event), func);
     }
 
     override off(event: "ready", func: Events["ready"]): this;
     override off(event: "messageCreate", func: Events["messageCreate"]): this;
     override off(event: "raw", func: Events["raw"]): this;
     override off(event: keyof Events, func: Events[keyof Events]): this {
-        return super.off(event, func);
+        return super.off(Session.#toSnakeCase(event), func);
     }
 
     override once(event: "ready", func: Events["ready"]): this;
     override once(event: "messageCreate", func: Events["messageCreate"]): this;
     override once(event: "raw", func: Events["raw"]): this;
     override once(event: keyof Events, func: Events[keyof Events]): this {
-        return super.once(event, func);
+        return super.once(Session.#toSnakeCase(event), func);
     }
 
     async start() {
