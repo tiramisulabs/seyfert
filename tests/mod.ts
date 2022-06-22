@@ -11,7 +11,7 @@ const session = new Discord.Session({
 });
 
 session.on("ready", (payload) => console.log(payload));
-session.on("message", (payload) => console.log(payload));
+session.on("messageCreate", (payload) => console.log(payload));
 // session.on("raw", (data, shardId) => console.log(shardId, data));
 
 console.log("hello");

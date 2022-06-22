@@ -40,43 +40,13 @@ export class Session extends EventEmitter {
     options: SessionOptions;
 
     // TODO: improve this with CreateShardManager etc
-    rest?: ReturnType<typeof createRestManager>;
-    gateway?: ReturnType<typeof createGatewayManager>;
+    rest: ReturnType<typeof createRestManager>;
+    gateway: ReturnType<typeof createGatewayManager>;
 
     constructor(options: SessionOptions) {
         super();
         this.options = options;
-        // TODO: set botId in Session.botId or something
-    }
 
-    /** TODO: move this */
-    static #toSnakeCase(str: string) {
-        // probably not a fast implementation
-        return str.replace(/[A-Z]/g, (char) => "_" + char.toLowerCase());
-    }
-
-    override on(event: "ready", func: Events["ready"]): this;
-    override on(event: "messageCreate", func: Events["messageCreate"]): this;
-    override on(event: "raw", func: Events["raw"]): this;
-    override on(event: keyof Events, func: Events[keyof Events]): this {
-        return super.on(Session.#toSnakeCase(event), func);
-    }
-
-    override off(event: "ready", func: Events["ready"]): this;
-    override off(event: "messageCreate", func: Events["messageCreate"]): this;
-    override off(event: "raw", func: Events["raw"]): this;
-    override off(event: keyof Events, func: Events[keyof Events]): this {
-        return super.off(Session.#toSnakeCase(event), func);
-    }
-
-    override once(event: "ready", func: Events["ready"]): this;
-    override once(event: "messageCreate", func: Events["messageCreate"]): this;
-    override once(event: "raw", func: Events["raw"]): this;
-    override once(event: keyof Events, func: Events[keyof Events]): this {
-        return super.once(Session.#toSnakeCase(event), func);
-    }
-
-    async start() {
         const defHandler: DiscordRawEventHandler = (shard, data) => {
             this.emit("raw", data, shard.id);
 
@@ -102,8 +72,38 @@ export class Session extends EventEmitter {
             },
             handleDiscordPayload: this.options.rawHandler ?? defHandler,
         });
+        // TODO: set botId in Session.botId or something
+    }
 
-        const getGatewayBot = () => this.rest!.runMethod<DiscordGetGatewayBot>(this.rest!, "GET", Routes.GATEWAY_BOT());
+    /** TODO: move this */
+    static #toSnakeCase(str: string) {
+        // probably not a fast implementation
+        return str.replace(/[A-Z]/g, (char) => "_" + char.toLowerCase());
+    }
+
+    override on(event: "ready", func: Events["ready"]): this;
+    override on(event: "messageCreate", func: Events["messageCreate"]): this;
+    override on(event: "raw", func: Events["raw"]): this;
+    override on(event: keyof Events, func: Events[keyof Events]): this {
+        return super.on(Session.#toSnakeCase(event).toUpperCase(), func);
+    }
+
+    override off(event: "ready", func: Events["ready"]): this;
+    override off(event: "messageCreate", func: Events["messageCreate"]): this;
+    override off(event: "raw", func: Events["raw"]): this;
+    override off(event: keyof Events, func: Events[keyof Events]): this {
+        return super.off(Session.#toSnakeCase(event).toUpperCase(), func);
+    }
+
+    override once(event: "ready", func: Events["ready"]): this;
+    override once(event: "messageCreate", func: Events["messageCreate"]): this;
+    override once(event: "raw", func: Events["raw"]): this;
+    override once(event: keyof Events, func: Events[keyof Events]): this {
+        return super.once(Session.#toSnakeCase(event).toUpperCase(), func);
+    }
+
+    async start() {
+        const getGatewayBot = () => this.rest.runMethod<DiscordGetGatewayBot>(this.rest, "GET", Routes.GATEWAY_BOT());
 
         // check if is empty
         if (!Object.keys(this.options.gateway?.data ?? {}).length) {
