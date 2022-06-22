@@ -52,7 +52,7 @@ This WS service is meant for ADVANCED DEVELOPERS ONLY!
 
 ```ts
 createGatewayManager({
-  // TODO: (docs) Fill this out
+    // TODO: (docs) Fill this out
 });
 ```
 

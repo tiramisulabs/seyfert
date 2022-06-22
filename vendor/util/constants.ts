@@ -16,8 +16,8 @@ export const IMAGE_BASE_URL = "https://cdn.discordapp.com";
 
 // This can be modified by big brain bots and use a proxy
 export const baseEndpoints = {
-  BASE_URL: `${BASE_URL}/v${API_VERSION}`,
-  CDN_URL: IMAGE_BASE_URL,
+    BASE_URL: `${BASE_URL}/v${API_VERSION}`,
+    CDN_URL: IMAGE_BASE_URL,
 };
 
 export const SLASH_COMMANDS_NAME_REGEX = /^[-_\p{L}\p{N}\p{sc=Deva}\p{sc=Thai}]{1,32}$/u;
