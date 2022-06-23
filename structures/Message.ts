@@ -110,8 +110,8 @@ export class Message implements Model {
         return this;
     }
 
-    /** Responds directly in the channel the message was sent */
-    async respond({ content, allowedMentions }: CreateMessage): Promise<Message> {
+    /** Replies directly in the channel the message was sent */
+    async reply({ content, allowedMentions }: CreateMessage): Promise<Message> {
         const message = await this.session.rest.runMethod(
             this.session.rest,
             "POST",
