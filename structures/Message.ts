@@ -3,6 +3,7 @@ import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/mod.ts";
 import type { AllowedMentionsTypes, DiscordMessage } from "../vendor/external.ts";
 import { User } from "./User.ts";
+import { Member } from "./Member.ts";
 import { Attachment } from "./Attachment.ts";
 import { MessageFlags, Routes } from "../util/mod.ts";
 
@@ -52,6 +53,12 @@ export class Message implements Model {
         this.content = data.content!;
 
         this.attachments = data.attachments.map((attachment) => new Attachment(session, attachment));
+
+        // user is always null on MessageCreate and its replaced with author
+        this.member = data.member ? new Member(session, {
+            ...data.member,
+            user: data.author,
+        }) : undefined;
     }
 
     readonly session: Session;
@@ -66,6 +73,7 @@ export class Message implements Model {
     content: string;
 
     attachments: Attachment[];
+    member?: Member;
 
     get url() {
         return `https://discord.com/channels/${this.guildId ?? "@me"}/${this.channelId}/${this.id}`;

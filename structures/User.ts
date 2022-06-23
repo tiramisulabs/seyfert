@@ -2,18 +2,9 @@ import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/mod.ts";
 import type { DiscordUser } from "../vendor/external.ts";
+import type { ImageFormat, ImageSize } from "../util/shared/images.ts";
 import { iconBigintToHash, iconHashToBigInt } from "../util/hash.ts";
 import { Routes } from "../util/mod.ts";
-
-/**
- * @link https://discord.com/developers/docs/reference#image-formatting
- */
-export type ImageFormat = "jpg" | "jpeg" | "png" | "webp" | "gif" | "json";
-
-/**
- * @link https://discord.com/developers/docs/reference#image-formatting
- */
-export type ImageSize = 16 | 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096;
 
 /**
  * Represents a user
