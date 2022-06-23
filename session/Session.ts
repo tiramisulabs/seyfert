@@ -1,9 +1,7 @@
 import type { DiscordGetGatewayBot, GatewayBot, GatewayIntents } from "../vendor/external.ts";
-
-import { EventEmitter, Routes, Snowflake } from "../util/mod.ts";
-
 import type { DiscordRawEventHandler, Events } from "./Events.ts";
 
+import { EventEmitter, Routes, Snowflake } from "../util/mod.ts";
 import { createGatewayManager, createRestManager } from "../vendor/external.ts";
 
 import * as Actions from "../handlers/HandlerManager.ts";
