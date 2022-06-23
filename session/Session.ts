@@ -1,8 +1,4 @@
-import type {
-    DiscordGetGatewayBot,
-    GatewayBot,
-    GatewayIntents,
-} from "../vendor/external.ts";
+import type { DiscordGetGatewayBot, GatewayBot, GatewayIntents } from "../vendor/external.ts";
 
 import { EventEmitter, Routes, Snowflake } from "../util/mod.ts";
 

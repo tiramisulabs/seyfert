@@ -1,26 +1,29 @@
 import type { Snowflake } from "./Snowflake.ts";
 
+// cdn endpoints
+export * from "./Cdn.ts";
+
 export function GATEWAY_BOT() {
     return "/gateway/bot";
 }
 
 export interface GetMessagesOptions {
-  limit?: number;
+    limit?: number;
 }
 
 export interface GetMessagesOptions {
-  around?: Snowflake;
-  limit?: number;
+    around?: Snowflake;
+    limit?: number;
 }
 
 export interface GetMessagesOptions {
-  before?: Snowflake;
-  limit?: number;
+    before?: Snowflake;
+    limit?: number;
 }
 
 export interface GetMessagesOptions {
-  after?: Snowflake;
-  limit?: number;
+    after?: Snowflake;
+    limit?: number;
 }
 
 /** used to send messages */
