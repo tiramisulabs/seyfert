@@ -1,12 +1,7 @@
 import type {
-    DiscordGatewayPayload,
     DiscordGetGatewayBot,
-    DiscordMessage,
-    DiscordReady,
     GatewayBot,
-    GatewayDispatchEventNames,
     GatewayIntents,
-    Shard,
 } from "../vendor/external.ts";
 
 import { EventEmitter, Routes, Snowflake } from "../util/mod.ts";
@@ -14,6 +9,8 @@ import { EventEmitter, Routes, Snowflake } from "../util/mod.ts";
 import type { DiscordRawEventHandler, Events } from "./Events.ts";
 
 import { createGatewayManager, createRestManager } from "../vendor/external.ts";
+
+import * as Actions from "../handlers/HandlerManager.ts";
 
 export interface RestOptions {
     secretKey?: string;
@@ -48,11 +45,14 @@ export class Session extends EventEmitter {
         this.options = options;
 
         const defHandler: DiscordRawEventHandler = (shard, data) => {
-            this.emit("raw", data, shard.id);
+            Actions.raw(this, shard.id, data);
 
-            if (!data.t) return;
+            if (!data.t) {
+                return;
+            }
 
-            this.emit(data.t as GatewayDispatchEventNames, data, shard.id);
+            // deno-lint-ignore no-explicit-any
+            Actions[data.t as keyof typeof Actions]?.(this, shard.id, data.d as any);
         };
 
         this.rest = createRestManager({
@@ -75,31 +75,25 @@ export class Session extends EventEmitter {
         // TODO: set botId in Session.botId or something
     }
 
-    /** TODO: move this */
-    static #toSnakeCase(str: string) {
-        // probably not a fast implementation
-        return str.replace(/[A-Z]/g, (char) => "_" + char.toLowerCase());
-    }
-
     override on(event: "ready", func: Events["ready"]): this;
     override on(event: "messageCreate", func: Events["messageCreate"]): this;
     override on(event: "raw", func: Events["raw"]): this;
     override on(event: keyof Events, func: Events[keyof Events]): this {
-        return super.on(Session.#toSnakeCase(event).toUpperCase(), func);
+        return super.on(event, func);
     }
 
     override off(event: "ready", func: Events["ready"]): this;
     override off(event: "messageCreate", func: Events["messageCreate"]): this;
     override off(event: "raw", func: Events["raw"]): this;
     override off(event: keyof Events, func: Events[keyof Events]): this {
-        return super.off(Session.#toSnakeCase(event).toUpperCase(), func);
+        return super.off(event, func);
     }
 
     override once(event: "ready", func: Events["ready"]): this;
     override once(event: "messageCreate", func: Events["messageCreate"]): this;
     override once(event: "raw", func: Events["raw"]): this;
     override once(event: keyof Events, func: Events[keyof Events]): this {
-        return super.once(Session.#toSnakeCase(event).toUpperCase(), func);
+        return super.once(event, func);
     }
 
     async start() {
