@@ -4,7 +4,7 @@
  */
 
 export function iconHashToBigInt(hash: string) {
-    return BigInt("0x" + hash.startsWith("a_") ? `a${hash.substring(2)}` : `b${hash}`);
+    return BigInt("0x" + (hash.startsWith("a_") ? `a${hash.substring(2)}` : `b${hash}`));
 }
 
 export function iconBigintToHash(icon: bigint) {
