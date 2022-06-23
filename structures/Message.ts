@@ -3,6 +3,7 @@ import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/mod.ts";
 import type { AllowedMentionsTypes, DiscordMessage } from "../vendor/external.ts";
 import { User } from "./User.ts";
+import { Attachment } from "./Attachment.ts";
 import { MessageFlags, Routes } from "../util/mod.ts";
 
 /**
@@ -49,6 +50,8 @@ export class Message implements Model {
         this.pinned = !!data.pinned;
         this.tts = !!data.tts;
         this.content = data.content!;
+
+        this.attachments = data.attachments.map((attachment) => new Attachment(session, attachment));
     }
 
     readonly session: Session;
@@ -61,6 +64,8 @@ export class Message implements Model {
     pinned: boolean;
     tts: boolean;
     content: string;
+
+    attachments: Attachment[];
 
     get url() {
         return `https://discord.com/channels/${this.guildId ?? "@me"}/${this.channelId}/${this.id}`;

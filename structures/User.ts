@@ -61,4 +61,8 @@ export class User implements Model {
 
         return `${url}.${options.format ?? (url.includes("/a_") ? "gif" : "jpg")}?size=${options.size}`;
     }
+
+    toString() {
+        return `<@${this.id}>`;
+    }
 }
