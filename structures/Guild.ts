@@ -5,14 +5,16 @@ import type { DiscordGuild, DiscordMember, MakeRequired } from "../vendor/extern
 import { DefaultMessageNotificationLevels, ExplicitContentFilterLevels, VerificationLevels } from "../vendor/external.ts";
 import { iconHashToBigInt, iconBigintToHash as _iconBigintToHash } from "../util/hash.ts";
 import { Member } from "./Member.ts";
+import { BaseGuild } from "./BaseGuild.ts";
 
-export class Guild implements Model {
+/**
+ * Represents a guild
+ * @link https://discord.com/developers/docs/resources/guild#guild-object
+ * */
+export class Guild extends BaseGuild implements Model {
     constructor(session: Session, data: DiscordGuild) {
-        this.session = session;
-        this.id = data.id;
+        super(session, data);
 
-        this.name = data.name;
-        this.iconHash = data.icon ? iconHashToBigInt(data.icon) : undefined;
         this.splashHash = data.splash ? iconHashToBigInt(data.splash) : undefined;
         this.discoverySplashHash = data.discovery_splash ? iconHashToBigInt(data.discovery_splash) : undefined;
         this.ownerId = data.owner_id;
@@ -24,11 +26,6 @@ export class Guild implements Model {
         this.members = data.members?.map((member) => new Member(session, member as MakeRequired<DiscordMember, "user">)) ?? [];
     }
 
-    readonly session: Session;
-    readonly id: Snowflake;
-
-    name: string;
-    iconHash?: bigint;
     splashHash?: bigint;
     discoverySplashHash?: bigint;
     ownerId: Snowflake;
