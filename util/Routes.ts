@@ -26,6 +26,10 @@ export interface GetMessagesOptions {
     limit?: number;
 }
 
+export function CHANNEL(channelId: Snowflake) {
+    return `/channels/${channelId}`;
+}
+
 /** used to send messages */
 export function CHANNEL_MESSAGES(channelId: Snowflake, options?: GetMessagesOptions) {
     let url = `/channels/${channelId}/messages?`;
