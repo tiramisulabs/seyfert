@@ -3,8 +3,8 @@ import { Guild } from "./Guild.ts";
 import { DiscordChannel, Session, Snowflake } from "../mod.ts";
 
 export class ThreadChannel extends GuildChannel {
-  constructor(session: Session, data: DiscordChannel, guild: Guild) {
-    super(session, data, guild);
+  constructor(session: Session, data: DiscordChannel, guildId: Guild["id"]) {
+    super(session, data, guildId);
     this.archived = !!data.thread_metadata?.archived;
     this.archiveTimestamp = data.thread_metadata?.archive_timestamp;
     this.autoArchiveDuration = data.thread_metadata?.auto_archive_duration;

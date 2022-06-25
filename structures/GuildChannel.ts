@@ -4,9 +4,9 @@ import { DiscordChannel, Routes, Session, Snowflake } from "../mod.ts";
 
 
 export class GuildChannel extends Channel {
-  constructor(session: Session, data: DiscordChannel, guild: Guild) {
+  constructor(session: Session, data: DiscordChannel, guildId: Guild["id"]) {
     super(session, data);
-    this.guildId = guild.id;
+    this.guildId = guildId;
     this.position = data.position;
     data.topic ? this.topic = data.topic : null;
     data.parent_id ? this.parentId = data.parent_id : undefined;
