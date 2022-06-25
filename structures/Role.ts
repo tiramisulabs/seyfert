@@ -1,8 +1,10 @@
 import type { Model } from "./Base.ts";
 import type { Session } from "../session/Session.ts";
 import type { DiscordRole } from "../vendor/external.ts";
-import { Snowflake, Routes } from "../mod.ts";
+import { Snowflake } from "../mod.ts";
 import { iconHashToBigInt } from "../util/hash.ts";
+import { Permissions } from "./Permissions.ts";
+import { Guild } from "./Guild.ts";
 
 export class Role implements Model {
     constructor(session: Session, guildId: Snowflake, data: DiscordRole) {
@@ -16,6 +18,7 @@ export class Role implements Model {
         this.unicodeEmoji = data.unicode_emoji;
         this.mentionable = data.mentionable;
         this.managed = data.managed;
+        this.permissions = new Permissions(BigInt(data.permissions));
     }
 
     session: Session;
@@ -28,6 +31,7 @@ export class Role implements Model {
     unicodeEmoji?: string;
     mentionable: boolean;
     managed: boolean;
+    permissions: Permissions;
 
     get createdTimestamp() {
         return Snowflake.snowflakeToTimestamp(this.id);
@@ -41,8 +45,9 @@ export class Role implements Model {
         return `#${this.color.toString(16).padStart(6, "0")}`;
     }
 
-    async delete() {
-        await this.session.rest.runMethod<undefined>(this.session.rest, "DELETE", Routes.GUILD_ROLE(this.guildId, this.id));
+    async delete(): Promise<void> {
+        // cool jS trick
+        await Guild.prototype.deleteRole.call({ id: this.guildId }, this.id);
     }
 
     toString() {
