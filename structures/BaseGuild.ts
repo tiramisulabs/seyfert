@@ -6,7 +6,7 @@ import { iconHashToBigInt } from "../util/hash.ts";
 
 /**
  * Class for {@link Guild} and {@link AnonymousGuild}
- * */
+ */
 export abstract class BaseGuild implements Model {
     constructor(session: Session, data: DiscordGuild) {
         this.session = session;
@@ -37,4 +37,3 @@ export abstract class BaseGuild implements Model {
         return this.name;
     }
 }
-

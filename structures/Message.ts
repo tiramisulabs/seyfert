@@ -55,10 +55,12 @@ export class Message implements Model {
         this.attachments = data.attachments.map((attachment) => new Attachment(session, attachment));
 
         // user is always null on MessageCreate and its replaced with author
-        this.member = data.member ? new Member(session, {
-            ...data.member,
-            user: data.author,
-        }) : undefined;
+        this.member = data.member
+            ? new Member(session, {
+                ...data.member,
+                user: data.author,
+            })
+            : undefined;
     }
 
     readonly session: Session;

@@ -752,6 +752,8 @@ export interface DiscordChannel {
     permissions?: string;
     /** When a thread is created this will be true on that channel payload for the thread. */
     newly_created?: boolean;
+    /** The recipients of the DM*/
+    recipents?: DiscordUser[];
 }
 
 /** https://discord.com/developers/docs/topics/gateway#presence-update */

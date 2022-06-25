@@ -2,8 +2,12 @@ import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
 import type { DiscordGuild, DiscordRole } from "../vendor/external.ts";
-import { DefaultMessageNotificationLevels, ExplicitContentFilterLevels, VerificationLevels } from "../vendor/external.ts";
-import { iconHashToBigInt, iconBigintToHash } from "../util/hash.ts";
+import {
+    DefaultMessageNotificationLevels,
+    ExplicitContentFilterLevels,
+    VerificationLevels,
+} from "../vendor/external.ts";
+import { iconBigintToHash, iconHashToBigInt } from "../util/hash.ts";
 import { Member } from "./Member.ts";
 import { BaseGuild } from "./BaseGuild.ts";
 import { Role } from "./Role.ts";
@@ -21,7 +25,7 @@ export interface CreateRole {
 /**
  * Represents a guild
  * @link https://discord.com/developers/docs/resources/guild#guild-object
- * */
+ */
 export class Guild extends BaseGuild implements Model {
     constructor(session: Session, data: DiscordGuild) {
         super(session, data);
@@ -55,8 +59,7 @@ export class Guild extends BaseGuild implements Model {
         if (options.iconHash) {
             if (typeof options.iconHash === "string") {
                 icon = options.iconHash;
-            }
-            else {
+            } else {
                 icon = iconBigintToHash(options.iconHash);
             }
         }
@@ -72,10 +75,10 @@ export class Guild extends BaseGuild implements Model {
                 unicode_emoji: options.unicodeEmoji,
                 hoist: options.hoist,
                 mentionable: options.mentionable,
-            }
+            },
         );
 
-        return new Role(this.session, this, role);
+        return new Role(this.session, this.id, role);
     }
 
     async deleteRole(roleId: Snowflake): Promise<void> {

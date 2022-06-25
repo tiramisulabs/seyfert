@@ -1,7 +1,7 @@
 import type { Model } from "./Base.ts";
 import type { Session } from "../session/Session.ts";
 import type { DiscordRole } from "../vendor/external.ts";
-import { Snowflake } from "../util/Snowflake.ts";
+import { Snowflake } from "../mod.ts";
 import { iconHashToBigInt } from "../util/hash.ts";
 import { Permissions } from "./Permissions.ts";
 import { Guild } from "./Guild.ts";
@@ -42,7 +42,7 @@ export class Role implements Model {
     }
 
     get hexColor() {
-        return `#${this.color.toString(16).padStart(6, '0')}`;
+        return `#${this.color.toString(16).padStart(6, "0")}`;
     }
 
     async delete(): Promise<void> {

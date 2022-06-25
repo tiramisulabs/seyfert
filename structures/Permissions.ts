@@ -1,7 +1,7 @@
 import { BitwisePermissionFlags } from "../vendor/external.ts";
 
 export type PermissionString = keyof typeof BitwisePermissionFlags;
-export type PermissionResolvable=
+export type PermissionResolvable =
     | bigint
     | PermissionString
     | PermissionString[]
@@ -32,7 +32,9 @@ export class Permissions {
             case "string":
                 return BigInt(Permissions.Flags[bit]);
             case "object":
-                return Permissions.resolve(bit.map((p) => BigInt(Permissions.Flags[p])).reduce((acc, cur) => acc | cur, 0n));
+                return Permissions.resolve(
+                    bit.map((p) => BigInt(Permissions.Flags[p])).reduce((acc, cur) => acc | cur, 0n),
+                );
             default:
                 throw new TypeError(`Cannot resolve permission: ${bit}`);
         }

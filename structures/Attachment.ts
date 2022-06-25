@@ -6,7 +6,7 @@ import type { DiscordAttachment } from "../vendor/external.ts";
 /**
  * Represents an attachment
  * @link https://discord.com/developers/docs/resources/channel#attachment-object
- * */
+ */
 export class Attachment implements Model {
     constructor(session: Session, data: DiscordAttachment) {
         this.session = session;
@@ -19,7 +19,7 @@ export class Attachment implements Model {
         this.size = data.size;
         this.height = data.height ? data.height : undefined;
         this.width = data.width ? data.width : undefined;
-        this.ephemeral = !!data.ephemeral
+        this.ephemeral = !!data.ephemeral;
     }
 
     readonly session: Session;
