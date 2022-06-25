@@ -42,14 +42,9 @@ export class Role implements Model {
         return `#${this.color.toString(16).padStart(6, "0")}`;
     }
 
-    /*
-     * delete() {
-     *     return.this.guild.deleteRole(this.id);
-     * }
-     * edit() {
-     *     return this.guild.editRole(this.id);
-     * }
-     * */
+    async delete() {
+        await this.guild.deleteRole(this.id);
+    }
 
     toString() {
         switch (this.id) {
