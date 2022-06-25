@@ -1,4 +1,4 @@
-import { Snowflake, Session, Emoji, DiscordEmoji, User } from "../mod.ts";
+import { DiscordEmoji, Emoji, Session, Snowflake, User } from "../mod.ts";
 
 export class GuildEmoji extends Emoji {
     constructor(session: Session, data: DiscordEmoji, guildId: Snowflake) {

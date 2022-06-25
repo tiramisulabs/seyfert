@@ -1,6 +1,6 @@
-import { Session, DiscordEmoji, Snowflake } from "../mod.ts";
+import { DiscordEmoji, Session, Snowflake } from "../mod.ts";
 
-export class Emoji  {
+export class Emoji {
     constructor(session: Session, data: DiscordEmoji) {
         this.id = data.id;
         this.name = data.name;
