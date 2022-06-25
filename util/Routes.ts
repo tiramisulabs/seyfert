@@ -81,3 +81,7 @@ export function GUILD_ROLE(guildId: Snowflake, roleId: Snowflake) {
 export function GUILD_ROLES(guildId: Snowflake) {
     return `/guilds/${guildId}/roles`;
 }
+
+export function USER_DM() {
+    return `/users/@me/channels`;
+}
