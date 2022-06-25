@@ -1,6 +1,4 @@
-import { Guild } from "./Guild.ts";
-import { TextChannel } from "./TextChannel.ts";
-import { DiscordChannel, Session } from "../mod.ts";
+import { DiscordChannel, Guild, Session, TextChannel } from "../mod.ts";
 
 export class NewsChannel extends TextChannel {
     constructor(session: Session, data: DiscordChannel, guildId: Guild["id"]) {

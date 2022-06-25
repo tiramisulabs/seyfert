@@ -10,7 +10,7 @@ import { GetMessagesOptions } from "../util/Routes.ts";
  *  https://discord.com/developers/docs/resources/channel#create-channel-invite-json-params
  */
 
-export interface DiscordInvite {
+export interface DiscordInviteOptions {
     max_age?: number;
     max_uses?: number;
     unique?: boolean;
@@ -54,7 +54,7 @@ export class TextChannel extends GuildChannel {
         return messages[0] ? messages.map((x: DiscordMessage) => new Message(this.session, x)) : [];
     }
     // TODO return Invite Class
-    createInvite(options?: DiscordInvite) {
+    createInvite(options?: DiscordInviteOptions) {
         return this.session.rest.runMethod<DiscordInviteCreate>(
             this.session.rest,
             "POST",
