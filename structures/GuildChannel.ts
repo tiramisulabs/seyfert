@@ -1,21 +1,21 @@
 import { Channel } from "./Channel.ts";
-import { DiscordChannel, Routes, Session } from "../mod.ts";
+import { Guild } from "./Guild.ts";
+import { DiscordChannel, Routes, Session, Snowflake } from "../mod.ts";
+
 
 export class GuildChannel extends Channel {
-  constructor(session: Session, data: DiscordChannel) {
+  constructor(session: Session, data: DiscordChannel, guild: Guild) {
     super(session, data);
-    this.guild_id = data.guild_id;
+    this.guildId = guild.id;
+    this.position = data.position;
+    data.topic ? this.topic = data.topic : null;
+    data.parent_id ? this.parentId = data.parent_id : undefined;
   }
 
-  guild_id?: string;
-
-  get topic() {
-    return this.data.topic;
-  }
-
-  get guildId() {
-    return this.guild_id;
-  }
+  guildId: Snowflake;
+  topic?: string;
+  position?: number;
+  parentId?: Snowflake;
 
   delete(reason?: string) {
     return this.session.rest.runMethod<DiscordChannel>(

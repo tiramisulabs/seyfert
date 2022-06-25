@@ -30,6 +30,26 @@ export function CHANNEL(channelId: Snowflake) {
     return `/channels/${channelId}`;
 }
 
+export function CHANNEL_INVITES(channelId: Snowflake) {
+    return `/channels/${channelId}/invites`;
+}
+
+export function CHANNEL_TYPING(channelId: Snowflake) {
+    return `/channels/${channelId}/typing`;
+}
+
+export function CHANNEL_CREATE_THREAD(channelId: Snowflake) {
+    return `/channels/${channelId}/threads`;
+}
+
+export function MESSAGE_CREATE_THREAD(channelId: Snowflake, messageId: Snowflake) {
+    return `/channels/${channelId}/messages/${messageId}/threads`;
+}
+
+export function CHANNEL_PINS(channelId: Snowflake) {
+    return `/channels/${channelId}/pins`;
+}
+
 /** used to send messages */
 export function CHANNEL_MESSAGES(channelId: Snowflake, options?: GetMessagesOptions) {
     let url = `/channels/${channelId}/messages?`;
