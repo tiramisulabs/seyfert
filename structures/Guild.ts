@@ -39,7 +39,7 @@ export class Guild extends BaseGuild implements Model {
         this.defaultMessageNotificationLevel = data.default_message_notifications;
         this.explicitContentFilterLevel = data.explicit_content_filter;
         this.members = data.members?.map((member) => new Member(session, { ...member, user: member.user! })) ?? [];
-        this.roles = data.roles.map((role) => new Role(session, this.id, role));
+        this.roles = data.roles.map((role) => new Role(session, data.id, role));
     }
 
     splashHash?: bigint;
