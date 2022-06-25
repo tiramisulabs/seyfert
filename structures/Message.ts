@@ -103,11 +103,11 @@ export class Message implements Model {
     async suppressEmbeds(suppress: true): Promise<Message>;
     async suppressEmbeds(suppress: false): Promise<Message | undefined>;
     async suppressEmbeds(suppress = true) {
-        if (this.flags === MessageFlags.SUPPRESS_EMBEDS && suppress === false) {
+        if (this.flags === MessageFlags.SupressEmbeds && suppress === false) {
             return;
         }
 
-        const message = await this.edit({ flags: MessageFlags.SUPPRESS_EMBEDS });
+        const message = await this.edit({ flags: MessageFlags.SupressEmbeds });
 
         return message;
     }
