@@ -73,3 +73,11 @@ export function GUILD_BANS(guildId: Snowflake, options?: GetBans) {
 
     return url;
 }
+
+export function GUILD_ROLE(guildId: Snowflake, roleId: Snowflake) {
+    return `/guilds/${guildId}/roles/${roleId}`;
+}
+
+export function GUILD_ROLES(guildId: Snowflake) {
+    return `/guilds/${guildId}/roles`;
+}
