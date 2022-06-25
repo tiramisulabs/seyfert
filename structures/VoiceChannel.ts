@@ -3,8 +3,8 @@ import { Guild } from "./Guild.ts";
 import { DiscordChannel, Session, Snowflake, VideoQualityModes } from "../mod.ts";
 
 export class VoiceChannel extends GuildChannel {
-    constructor(session: Session, data: DiscordChannel, guild: Guild) {
-        super(session, data, guild);
+    constructor(session: Session, data: DiscordChannel, guildId: Guild["id"]) {
+        super(session, data, guildId);
         this.bitRate = data.bitrate;
         this.userLimit = data.user_limit ?? 0;
         data.rtc_region ? this.rtcRegion = data.rtc_region : undefined;

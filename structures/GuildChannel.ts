@@ -2,7 +2,7 @@ import { Channel } from "./Channel.ts";
 import { Guild } from "./Guild.ts";
 import { DiscordChannel, Routes, Session, Snowflake } from "../mod.ts";
 
-export class GuildChannel extends Channel {
+export abstract class GuildChannel extends Channel {
     constructor(session: Session, data: DiscordChannel, guildId: Guild["id"]) {
         super(session, data);
         this.guildId = guildId;

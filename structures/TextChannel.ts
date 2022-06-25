@@ -7,7 +7,7 @@ import { GetMessagesOptions } from "../util/Routes.ts";
 
 /**
  * Represents the options object to create an invitation
- *  https://discord.com/developers/docs/resources/channel#create-channel-invite-json-params
+ *  @link https://discord.com/developers/docs/resources/channel#create-channel-invite-json-params
  */
 
 export interface DiscordInviteOptions {
@@ -20,7 +20,7 @@ export interface DiscordInviteOptions {
 
 /**
  * Represent the options object to create a Thread Channel
- * https://discord.com/developers/docs/resources/channel#start-thread-without-message
+ * @link https://discord.com/developers/docs/resources/channel#start-thread-without-message
  */
 
 export interface ThreadCreateOptions {

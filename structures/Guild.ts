@@ -39,7 +39,7 @@ export class Guild extends BaseGuild implements Model {
         this.defaultMessageNotificationLevel = data.default_message_notifications;
         this.explicitContentFilterLevel = data.explicit_content_filter;
         this.members = data.members?.map((member) => new Member(session, { ...member, user: member.user! })) ?? [];
-        this.roles = data.roles.map((role) => new Role(session, this, role));
+        this.roles = data.roles.map((role) => new Role(session, this.id, role));
     }
 
     splashHash?: bigint;
@@ -78,7 +78,7 @@ export class Guild extends BaseGuild implements Model {
             },
         );
 
-        return new Role(this.session, this, role);
+        return new Role(this.session, this.id, role);
     }
 
     async deleteRole(roleId: Snowflake): Promise<void> {

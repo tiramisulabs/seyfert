@@ -1,15 +1,14 @@
 import type { Model } from "./Base.ts";
 import type { Session } from "../session/Session.ts";
 import type { DiscordRole } from "../vendor/external.ts";
-import { Snowflake } from "../util/Snowflake.ts";
+import { Snowflake, Routes } from "../mod.ts";
 import { iconHashToBigInt } from "../util/hash.ts";
-import { Guild } from "./Guild.ts";
 
 export class Role implements Model {
-    constructor(session: Session, guild: Guild, data: DiscordRole) {
+    constructor(session: Session, guildId: Snowflake, data: DiscordRole) {
         this.session = session;
         this.id = data.id;
-        this.guild = guild;
+        this.guildId = guildId;
         this.hoist = data.hoist;
         this.iconHash = data.icon ? iconHashToBigInt(data.icon) : undefined;
         this.color = data.color;
@@ -21,7 +20,7 @@ export class Role implements Model {
 
     session: Session;
     id: Snowflake;
-    guild: Guild;
+    guildId: Snowflake;
     hoist: boolean;
     iconHash?: bigint;
     color: number;
@@ -43,12 +42,12 @@ export class Role implements Model {
     }
 
     async delete() {
-        await this.guild.deleteRole(this.id);
+        await this.session.rest.runMethod<undefined>(this.session.rest, "DELETE", Routes.GUILD_ROLE(this.guildId, this.id));
     }
 
     toString() {
         switch (this.id) {
-            case this.guild.id:
+            case this.guildId:
                 return "@everyone";
             default:
                 return `<@&${this.id}>`;

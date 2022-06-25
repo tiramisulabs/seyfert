@@ -15,3 +15,4 @@ export * from "./structures/TextChannel.ts";
 export * from "./structures/VoiceChannel.ts";
 export * from "./structures/ThreadChannel.ts";
 export * from "./structures/NewsChannel.ts";
+export * from "./structures/Emoji.ts";

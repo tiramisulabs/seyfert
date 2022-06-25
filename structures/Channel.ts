@@ -8,8 +8,8 @@ export abstract class Channel implements Model {
         this.name = data.name;
         this.type = data.type;
     }
-    id: Snowflake;
-    session: Session;
+    readonly id: Snowflake;
+    readonly session: Session;
     name?: string;
     type: ChannelTypes;
 
