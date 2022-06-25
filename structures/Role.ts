@@ -47,7 +47,7 @@ export class Role implements Model {
 
     async delete(): Promise<void> {
         // cool jS trick
-        await Guild.prototype.deleteRole.call({ id: this.guildId }, this.id);
+        await Guild.prototype.deleteRole.call({ id: this.guildId, session: this.session }, this.id);
     }
 
     toString() {
