@@ -80,9 +80,9 @@ export function GUILD_BAN(guildId: Snowflake, userId: Snowflake) {
 }
 
 export interface GetBans {
-  limit?: number;
-  before?: Snowflake;
-  after?: Snowflake;
+    limit?: number;
+    before?: Snowflake;
+    after?: Snowflake;
 }
 
 /** used to unban members */

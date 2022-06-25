@@ -1,6 +1,6 @@
 import { Channel } from "./Channel.ts";
 //import { User } from "./User.ts";
-import { Session, DiscordChannel, Snowflake, Routes } from "../mod.ts"; 
+import { DiscordChannel, Routes, Session, Snowflake } from "../mod.ts";
 
 export class DMChannel extends Channel {
     constructor(session: Session, data: DiscordChannel) {
@@ -15,8 +15,8 @@ export class DMChannel extends Channel {
         const channel = await this.session.rest.runMethod<DiscordChannel>(
             this.session.rest,
             "DELETE",
-            Routes.CHANNEL(this.id)
-        )
+            Routes.CHANNEL(this.id),
+        );
         return new DMChannel(this.session, channel);
     }
 }

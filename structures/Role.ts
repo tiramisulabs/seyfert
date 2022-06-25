@@ -39,7 +39,7 @@ export class Role implements Model {
     }
 
     get hexColor() {
-        return `#${this.color.toString(16).padStart(6, '0')}`;
+        return `#${this.color.toString(16).padStart(6, "0")}`;
     }
 
     /*
