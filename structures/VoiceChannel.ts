@@ -1,9 +1,10 @@
+import type { Snowflake } from "../util/Snowflake.ts";
+import type { Session } from "../session/Session.ts";
+import type { DiscordChannel, VideoQualityModes } from "../vendor/external.ts";
 import { GuildChannel } from "./GuildChannel.ts";
-import { Guild } from "./Guild.ts";
-import { DiscordChannel, Session, Snowflake, VideoQualityModes } from "../mod.ts";
 
 export class VoiceChannel extends GuildChannel {
-    constructor(session: Session, data: DiscordChannel, guildId: Guild["id"]) {
+    constructor(session: Session, guildId: Snowflake, data: DiscordChannel) {
         super(session, data, guildId);
         this.bitRate = data.bitrate;
         this.userLimit = data.user_limit ?? 0;
@@ -16,5 +17,7 @@ export class VoiceChannel extends GuildChannel {
     rtcRegion?: Snowflake;
 
     videoQuality?: VideoQualityModes;
-    nsfw?: boolean;
+    nsfw: boolean;
 }
+
+export default VoiceChannel;

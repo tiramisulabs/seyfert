@@ -1,6 +1,7 @@
+import type { Snowflake } from "../util/Snowflake.ts";
+import type { Session } from "../session/Session.ts";
+import type { DiscordChannel } from "../vendor/external.ts";
 import { Channel } from "./Channel.ts";
-//import { User } from "./User.ts";
-import { DiscordChannel, Routes, Session, Snowflake } from "../mod.ts";
 
 export class DMChannel extends Channel {
     constructor(session: Session, data: DiscordChannel) {
@@ -17,6 +18,9 @@ export class DMChannel extends Channel {
             "DELETE",
             Routes.CHANNEL(this.id),
         );
+
         return new DMChannel(this.session, channel);
     }
 }
+
+export default DMChannel;

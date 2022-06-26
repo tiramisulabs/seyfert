@@ -1,5 +1,7 @@
 import type { Model } from "./Base.ts";
-import { ChannelTypes, DiscordChannel, Session, Snowflake } from "../mod.ts";
+import type { Snowflake } from "../util/Snowflake.ts";
+import type { Session } from "../session/Session.ts";
+import { ChannelTypes, DiscordChannel } from "../mod.ts";
 
 export abstract class Channel implements Model {
     constructor(session: Session, data: DiscordChannel) {
@@ -17,3 +19,5 @@ export abstract class Channel implements Model {
         return `<#${this.id}>`;
     }
 }
+
+export default Channel;

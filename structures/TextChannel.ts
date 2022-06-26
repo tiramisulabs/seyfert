@@ -1,15 +1,17 @@
+import type { Session } from "../session/Session.ts";
+import type { Snowflake } from "../util/Snowflake.ts";
+import type { GetMessagesOptions } from "../util/Routes.ts";
+import type { DiscordChannel, DiscordInviteCreate, DiscordMessage } from "../vendor/external.ts";
 import { GuildChannel } from "./GuildChannel.ts";
 import { Guild } from "./Guild.ts";
 import { ThreadChannel } from "./ThreadChannel.ts";
 import { Message } from "./Message.ts";
-import { DiscordChannel, DiscordInviteCreate, DiscordMessage, Routes, Session, Snowflake } from "../mod.ts";
-import { GetMessagesOptions } from "../util/Routes.ts";
+import { Routes } from "../util/mod.ts";
 
 /**
  * Represents the options object to create an invitation
  *  @link https://discord.com/developers/docs/resources/channel#create-channel-invite-json-params
  */
-
 export interface DiscordInviteOptions {
     max_age?: number;
     max_uses?: number;
@@ -22,7 +24,6 @@ export interface DiscordInviteOptions {
  * Represent the options object to create a Thread Channel
  * @link https://discord.com/developers/docs/resources/channel#start-thread-without-message
  */
-
 export interface ThreadCreateOptions {
     name: string;
     autoArchiveDuration: 60 | 1440 | 4320 | 10080;
@@ -83,11 +84,13 @@ export class TextChannel extends GuildChannel {
         return messages[0] ? messages.map((x) => new Message(this.session, x)) : [];
     }
 
-    sendTyping() {
-        this.session.rest.runMethod<undefined>(
+    async sendTyping() {
+        await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "POST",
             Routes.CHANNEL_TYPING(this.id),
         );
     }
 }
+
+export default TextChannel;

@@ -1,4 +1,8 @@
-import { DiscordEmoji, Emoji, Session, Snowflake, User } from "../mod.ts";
+import type { Snowflake } from "../util/Snowflake.ts";
+import type { Session } from "../session/Session.ts";
+import type { DiscordEmoji } from "../vendor/external.ts";
+import { Emoji } from "./Emoji.ts";
+import { User } from "./User.ts";
 
 export class GuildEmoji extends Emoji {
     constructor(session: Session, data: DiscordEmoji, guildId: Snowflake) {
@@ -13,3 +17,5 @@ export class GuildEmoji extends Emoji {
     user?: User;
     managed?: boolean;
 }
+
+export default GuildEmoji;

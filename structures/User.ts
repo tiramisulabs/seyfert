@@ -57,3 +57,5 @@ export class User implements Model {
         return `<@${this.id}>`;
     }
 }
+
+export default User;

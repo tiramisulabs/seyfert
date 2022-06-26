@@ -145,7 +145,9 @@ export class Message implements Model {
         return message;
     }
 
-    inGuild(): this is { guildId: string } & Message {
-        return Boolean(this.guildId);
+    inGuild(): this is { guildId: Snowflake } & Message {
+        return !!this.guildId;
     }
 }
+
+export default Message;

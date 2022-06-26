@@ -16,3 +16,5 @@ export class Emoji {
     available: boolean;
     requireColons: boolean;
 }
+
+export default Emoji;

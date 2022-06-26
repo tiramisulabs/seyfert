@@ -29,3 +29,5 @@ export abstract class AnonymousGuild extends BaseGuild implements Model {
 
     // TODO: bannerUrl and splashUrl
 }
+
+export default AnonymousGuild;

@@ -1,13 +1,13 @@
 import type { Model } from "./Base.ts";
-import type { Session } from "../session/Session.ts";
 import type { DiscordRole } from "../vendor/external.ts";
-import { Snowflake } from "../mod.ts";
+import { Snowflake } from "../util/Snowflake.ts";
+import { Session } from "../session/Session.ts";
 import { iconHashToBigInt } from "../util/hash.ts";
 import { Permissions } from "./Permissions.ts";
 import { Guild } from "./Guild.ts";
 
 export class Role implements Model {
-    constructor(session: Session, guildId: Snowflake, data: DiscordRole) {
+    constructor(session: Session, data: DiscordRole, guildId: Snowflake) {
         this.session = session;
         this.id = data.id;
         this.guildId = guildId;
@@ -59,3 +59,5 @@ export class Role implements Model {
         }
     }
 }
+
+export default Role;

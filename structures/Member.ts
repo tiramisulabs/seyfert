@@ -113,3 +113,5 @@ export class Member implements Model {
         return `<@!${this.user.id}>`;
     }
 }
+
+export default Member;

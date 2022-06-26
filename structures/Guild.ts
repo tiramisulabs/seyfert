@@ -1,4 +1,3 @@
-import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
 import type { DiscordGuild, DiscordRole } from "../vendor/external.ts";
@@ -26,7 +25,7 @@ export interface CreateRole {
  * Represents a guild
  * @link https://discord.com/developers/docs/resources/guild#guild-object
  */
-export class Guild extends BaseGuild implements Model {
+export class Guild extends BaseGuild {
     constructor(session: Session, data: DiscordGuild) {
         super(session, data);
 
@@ -39,7 +38,7 @@ export class Guild extends BaseGuild implements Model {
         this.defaultMessageNotificationLevel = data.default_message_notifications;
         this.explicitContentFilterLevel = data.explicit_content_filter;
         this.members = data.members?.map((member) => new Member(session, { ...member, user: member.user! })) ?? [];
-        this.roles = data.roles.map((role) => new Role(session, data.id, role));
+        this.roles = data.roles.map((role) => new Role(session, role, data.id));
     }
 
     splashHash?: bigint;
@@ -78,10 +77,12 @@ export class Guild extends BaseGuild implements Model {
             },
         );
 
-        return new Role(this.session, this.id, role);
+        return new Role(this.session, role, this.id);
     }
 
     async deleteRole(roleId: Snowflake): Promise<void> {
         await this.session.rest.runMethod<undefined>(this.session.rest, "DELETE", Routes.GUILD_ROLE(this.id, roleId));
     }
 }
+
+export default Guild;

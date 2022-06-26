@@ -34,3 +34,5 @@ export class Attachment implements Model {
     width?: number;
     ephemeral: boolean;
 }
+
+export default Attachment;

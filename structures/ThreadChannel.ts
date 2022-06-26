@@ -1,9 +1,10 @@
+import type { Snowflake } from "../util/Snowflake.ts";
+import type { Session } from "../session/Session.ts";
+import type { DiscordChannel } from "../vendor/external.ts";
 import { GuildChannel } from "./GuildChannel.ts";
-import { Guild } from "./Guild.ts";
-import { DiscordChannel, Session, Snowflake } from "../mod.ts";
 
 export class ThreadChannel extends GuildChannel {
-    constructor(session: Session, data: DiscordChannel, guildId: Guild["id"]) {
+    constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data, guildId);
         this.archived = !!data.thread_metadata?.archived;
         this.archiveTimestamp = data.thread_metadata?.archive_timestamp;
@@ -21,3 +22,5 @@ export class ThreadChannel extends GuildChannel {
     memberCount?: number;
     ownerId?: Snowflake;
 }
+
+export default ThreadChannel;

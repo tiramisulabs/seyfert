@@ -1,6 +1,9 @@
+import type { Snowflake } from "../util/Snowflake.ts";
+import type { Session } from "../session/Session.ts";
+import type { DiscordChannel } from "../vendor/external.ts";
 import { Channel } from "./Channel.ts";
 import { Guild } from "./Guild.ts";
-import { DiscordChannel, Routes, Session, Snowflake } from "../mod.ts";
+import { Routes } from "../util/mod.ts";
 
 export abstract class GuildChannel extends Channel {
     constructor(session: Session, data: DiscordChannel, guildId: Guild["id"]) {
@@ -27,3 +30,5 @@ export abstract class GuildChannel extends Channel {
         );
     }
 }
+
+export default GuildChannel;

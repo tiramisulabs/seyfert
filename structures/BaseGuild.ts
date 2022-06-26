@@ -37,3 +37,5 @@ export abstract class BaseGuild implements Model {
         return this.name;
     }
 }
+
+export default BaseGuild;
