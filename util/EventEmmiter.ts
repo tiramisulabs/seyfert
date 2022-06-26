@@ -1,3 +1,5 @@
+// This module is browser-compatible.
+
 // deno-lint-ignore-file ban-types
 
 /**
