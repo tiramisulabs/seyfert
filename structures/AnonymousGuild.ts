@@ -4,7 +4,8 @@ import type { DiscordGuild, GuildNsfwLevel, VerificationLevels } from "../vendor
 import { iconHashToBigInt } from "../util/hash.ts";
 import { BaseGuild } from "./BaseGuild.ts";
 
-export abstract class AnonymousGuild extends BaseGuild implements Model {
+export class AnonymousGuild extends BaseGuild implements Model {
+    constructor(session: Session, data: Partial<DiscordGuild>); // TODO: Improve this type (name and id are required)
     constructor(session: Session, data: DiscordGuild) {
         super(session, data);
 

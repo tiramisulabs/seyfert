@@ -1,11 +1,12 @@
 import type { Session } from "../session/Session.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { GetMessagesOptions } from "../util/Routes.ts";
-import type { DiscordChannel, DiscordInviteCreate, DiscordMessage } from "../vendor/external.ts";
+import type { DiscordChannel, DiscordInvite, DiscordMessage, TargetTypes } from "../vendor/external.ts";
 import { GuildChannel } from "./GuildChannel.ts";
 import { Guild } from "./Guild.ts";
 import { ThreadChannel } from "./ThreadChannel.ts";
 import { Message } from "./Message.ts";
+import { Invite } from "./Invite.ts";
 import { Routes } from "../util/mod.ts";
 
 /**
@@ -13,11 +14,14 @@ import { Routes } from "../util/mod.ts";
  *  @link https://discord.com/developers/docs/resources/channel#create-channel-invite-json-params
  */
 export interface DiscordInviteOptions {
-    max_age?: number;
-    max_uses?: number;
+    maxAge?: number;
+    maxUses?: number;
     unique?: boolean;
     temporary: boolean;
     reason?: string;
+    targetType?: TargetTypes;
+    targetUserId?: Snowflake;
+    targetApplicationId?: Snowflake;
 }
 
 /**
@@ -54,14 +58,26 @@ export class TextChannel extends GuildChannel {
         );
         return messages[0] ? messages.map((x: DiscordMessage) => new Message(this.session, x)) : [];
     }
-    // TODO return Invite Class
-    createInvite(options?: DiscordInviteOptions) {
-        return this.session.rest.runMethod<DiscordInviteCreate>(
+
+    async createInvite(options?: DiscordInviteOptions) {
+        const invite = await this.session.rest.runMethod<DiscordInvite>(
             this.session.rest,
             "POST",
             Routes.CHANNEL_INVITES(this.id),
-            options,
+            options
+                ? {
+                    max_age: options.maxAge,
+                    max_uses: options.maxUses,
+                    temporary: options.temporary,
+                    unique: options.unique,
+                    target_type: options.targetType,
+                    target_user_id: options.targetUserId,
+                    target_application_id: options.targetApplicationId,
+                }
+                : {},
         );
+
+        return new Invite(this.session, invite);
     }
 
     async createThread(options: ThreadCreateOptions): Promise<ThreadChannel> {
