@@ -2,11 +2,10 @@ import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
 import type { DiscordChannel } from "../vendor/external.ts";
 import { Channel } from "./Channel.ts";
-import { Guild } from "./Guild.ts";
 import { Routes } from "../util/mod.ts";
 
 export abstract class GuildChannel extends Channel {
-    constructor(session: Session, data: DiscordChannel, guildId: Guild["id"]) {
+    constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data);
         this.guildId = guildId;
         this.position = data.position;
@@ -19,8 +18,8 @@ export abstract class GuildChannel extends Channel {
     position?: number;
     parentId?: Snowflake;
 
-    delete(reason?: string) {
-        return this.session.rest.runMethod<DiscordChannel>(
+    async delete(reason?: string) {
+        await this.session.rest.runMethod<DiscordChannel>(
             this.session.rest,
             "DELETE",
             Routes.CHANNEL(this.id),
