@@ -61,7 +61,7 @@ export class Invite {
     expiresAt?: number;
     inviter?: User;
     targetUser?: User;
-    targeType?: TargetTypes;
+    targetType?: TargetTypes;
 }
 
 export default Invite;
