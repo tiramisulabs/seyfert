@@ -5,6 +5,7 @@ import type { ModifyGuildEmoji } from "./Guild.ts";
 import { Guild } from "./Guild.ts";
 import { Emoji } from "./Emoji.ts";
 import { User } from "./User.ts";
+import { Routes } from "../util/mod.ts";
 
 export class GuildEmoji extends Emoji {
     constructor(session: Session, data: DiscordEmoji, guildId: Snowflake) {
@@ -36,6 +37,10 @@ export class GuildEmoji extends Emoji {
         await Guild.prototype.deleteEmoji.call({ id: this.guildId, session: this.session }, this.id, { reason });
 
         return this;
+    }
+
+    get url() {
+        return Routes.EMOJI_URL(this.id, this.animated);
     }
 }
 
