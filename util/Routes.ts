@@ -117,3 +117,21 @@ export function GUILD_EMOJIS(guildId: Snowflake) {
 export function GUILD_EMOJI(guildId: Snowflake, emojiId: Snowflake) {
     return `/guilds/${guildId}/emojis/${emojiId}`;
 }
+
+export interface GetInvite {
+    withCounts?: boolean;
+    withExpiration?: boolean;
+    scheduledEventId?: Snowflake;
+}
+
+export function INVITE(inviteCode: string, options?: GetInvite) {
+    let url = `/invites/${inviteCode}?`;
+
+    if (options) {
+        if (options.withCounts) url += `with_counts=${options.withCounts}`;
+        if (options.withExpiration) url += `&with_expiration=${options.withExpiration}`;
+        if (options.scheduledEventId) url += `&guild_scheduled_event_id=${options.scheduledEventId}`;
+    }
+
+    return url;
+}

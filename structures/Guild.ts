@@ -1,6 +1,7 @@
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
-import type { DiscordEmoji, DiscordGuild, DiscordRole } from "../vendor/external.ts";
+import type { DiscordEmoji, DiscordGuild, DiscordInviteMetadata, DiscordRole } from "../vendor/external.ts";
+import type { GetInvite } from "../util/Routes.ts";
 import {
     DefaultMessageNotificationLevels,
     ExplicitContentFilterLevels,
@@ -11,8 +12,8 @@ import { urlToBase64 } from "../util/urlToBase64.ts";
 import { Member } from "./Member.ts";
 import { BaseGuild } from "./BaseGuild.ts";
 import { Role } from "./Role.ts";
-import { Emoji } from "./Emoji.ts";
 import { GuildEmoji } from "./GuildEmoji.ts";
+import { Invite } from "./Invite.ts";
 import { Routes } from "../util/mod.ts";
 
 export interface CreateRole {
@@ -69,7 +70,7 @@ export class Guild extends BaseGuild {
     roles: Role[];
     emojis: GuildEmoji[];
 
-    async createEmoji(options: CreateGuildEmoji) {
+    async createEmoji(options: CreateGuildEmoji): Promise<GuildEmoji> {
         if (options.image && !options.image.startsWith("data:image/")) {
             options.image = await urlToBase64(options.image);
         }
@@ -81,10 +82,10 @@ export class Guild extends BaseGuild {
             options,
         );
 
-        return new Emoji(this.session, emoji);
+        return new GuildEmoji(this.session, emoji, this.id);
     }
 
-    async deleteEmoji(id: Snowflake, { reason }: { reason?: string } = {}) {
+    async deleteEmoji(id: Snowflake, { reason }: { reason?: string } = {}): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "DELETE",
@@ -93,7 +94,7 @@ export class Guild extends BaseGuild {
         );
     }
 
-    async editEmoji(id: Snowflake, options: ModifyGuildEmoji) {
+    async editEmoji(id: Snowflake, options: ModifyGuildEmoji): Promise<GuildEmoji> {
         const emoji = await this.session.rest.runMethod<DiscordEmoji>(
             this.session.rest,
             "PATCH",
@@ -104,7 +105,7 @@ export class Guild extends BaseGuild {
         return new GuildEmoji(this.session, emoji, this.id);
     }
 
-    async createRole(options: CreateRole) {
+    async createRole(options: CreateRole): Promise<Role> {
         let icon: string | undefined;
 
         if (options.iconHash) {
@@ -134,6 +135,28 @@ export class Guild extends BaseGuild {
 
     async deleteRole(roleId: Snowflake): Promise<void> {
         await this.session.rest.runMethod<undefined>(this.session.rest, "DELETE", Routes.GUILD_ROLE(this.id, roleId));
+    }
+
+    // TODO: edit role
+
+
+    async deleteInvite(inviteCode: string): Promise<void> {
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "DELETE",
+            Routes.INVITE(inviteCode),
+            {}
+        );
+    }
+
+    async fetchInvite(inviteCode: string, options: GetInvite): Promise<Invite> {
+        const inviteMetadata = await this.session.rest.runMethod<DiscordInviteMetadata>(
+            this.session.rest,
+            "GET",
+            Routes.INVITE(inviteCode, options),
+        );
+
+        return new Invite(this.session, inviteMetadata);
     }
 }
 
