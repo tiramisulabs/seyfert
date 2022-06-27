@@ -1,15 +1,18 @@
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
-import type { DiscordGuild, DiscordRole } from "../vendor/external.ts";
+import type { DiscordEmoji, DiscordGuild, DiscordRole } from "../vendor/external.ts";
 import {
     DefaultMessageNotificationLevels,
     ExplicitContentFilterLevels,
     VerificationLevels,
 } from "../vendor/external.ts";
 import { iconBigintToHash, iconHashToBigInt } from "../util/hash.ts";
+import { urlToBase64 } from "../util/urlToBase64.ts";
 import { Member } from "./Member.ts";
 import { BaseGuild } from "./BaseGuild.ts";
 import { Role } from "./Role.ts";
+import { Emoji } from "./Emoji.ts";
+import { GuildEmoji } from "./GuildEmoji.ts";
 import { Routes } from "../util/mod.ts";
 
 export interface CreateRole {
@@ -19,6 +22,18 @@ export interface CreateRole {
     unicodeEmoji?: string;
     hoist?: boolean;
     mentionable?: boolean;
+}
+
+export interface CreateGuildEmoji {
+    name: string;
+    image: string;
+    roles?: Snowflake[];
+    reason?: string;
+}
+
+export interface ModifyGuildEmoji {
+    name?: string;
+    roles?: Snowflake[];
 }
 
 /**
@@ -39,6 +54,7 @@ export class Guild extends BaseGuild {
         this.explicitContentFilterLevel = data.explicit_content_filter;
         this.members = data.members?.map((member) => new Member(session, { ...member, user: member.user! })) ?? [];
         this.roles = data.roles.map((role) => new Role(session, role, data.id));
+        this.emojis = data.emojis.map((guildEmoji) => new GuildEmoji(session, guildEmoji, data.id));
     }
 
     splashHash?: bigint;
@@ -51,6 +67,42 @@ export class Guild extends BaseGuild {
     explicitContentFilterLevel: ExplicitContentFilterLevels;
     members: Member[];
     roles: Role[];
+    emojis: GuildEmoji[];
+
+    async createEmoji(options: CreateGuildEmoji) {
+        if (options.image && !options.image.startsWith("data:image/")) {
+            options.image = await urlToBase64(options.image);
+        }
+
+        const emoji = await this.session.rest.runMethod<DiscordEmoji>(
+            this.session.rest,
+            "POST",
+            Routes.GUILD_EMOJIS(this.id),
+            options,
+        );
+
+        return new Emoji(this.session, emoji);
+    }
+
+    async deleteEmoji(id: Snowflake, { reason }: { reason?: string } = {}) {
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "DELETE",
+            Routes.GUILD_EMOJI(this.id, id),
+            { reason },
+        );
+    }
+
+    async editEmoji(id: Snowflake, options: ModifyGuildEmoji) {
+        const emoji = await this.session.rest.runMethod<DiscordEmoji>(
+            this.session.rest,
+            "PATCH",
+            Routes.GUILD_EMOJI(this.id, id),
+            options,
+        );
+
+        return new GuildEmoji(this.session, emoji, this.id);
+    }
 
     async createRole(options: CreateRole) {
         let icon: string | undefined;

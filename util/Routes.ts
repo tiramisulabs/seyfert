@@ -109,3 +109,11 @@ export function GUILD_ROLES(guildId: Snowflake) {
 export function USER_DM() {
     return `/users/@me/channels`;
 }
+
+export function GUILD_EMOJIS(guildId: Snowflake) {
+    return `/guilds/${guildId}/emojis`;
+}
+
+export function GUILD_EMOJI(guildId: Snowflake, emojiId: Snowflake) {
+    return `/guilds/${guildId}/emojis/${emojiId}`;
+}
