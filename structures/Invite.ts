@@ -3,6 +3,7 @@ import type { DiscordInvite } from "../vendor/external.ts";
 import { TargetTypes } from "../vendor/external.ts";
 import InviteGuild from "./InviteGuild.ts";
 import User from "./User.ts";
+import Guild from "./Guild.ts";
 
 /**
  * @link https://discord.com/developers/docs/resources/invite#invite-object
@@ -62,6 +63,11 @@ export class Invite {
     inviter?: User;
     targetUser?: User;
     targetType?: TargetTypes;
+
+    async delete(): Promise<Invite> {
+        await Guild.prototype.deleteInvite.call(this.guild, this.code);
+        return this;
+    }
 }
 
 export default Invite;
