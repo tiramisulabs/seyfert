@@ -1,10 +1,10 @@
 import type { Model } from "./Base.ts";
 import type { DiscordRole } from "../vendor/external.ts";
+import type { Session } from "../session/Session.ts";
 import { Snowflake } from "../util/Snowflake.ts";
-import { Session } from "../session/Session.ts";
 import { iconHashToBigInt } from "../util/hash.ts";
-import { Permissions } from "./Permissions.ts";
-import { Guild } from "./Guild.ts";
+import Permissions from "./Permissions.ts";
+import Guild from "./Guild.ts";
 
 export class Role implements Model {
     constructor(session: Session, data: DiscordRole, guildId: Snowflake) {
@@ -21,9 +21,11 @@ export class Role implements Model {
         this.permissions = new Permissions(BigInt(data.permissions));
     }
 
-    session: Session;
-    id: Snowflake;
-    guildId: Snowflake;
+    readonly session: Session;
+    readonly id: Snowflake;
+
+    readonly guildId: Snowflake;
+
     hoist: boolean;
     iconHash?: bigint;
     color: number;

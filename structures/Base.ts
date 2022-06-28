@@ -1,5 +1,5 @@
-import type { Snowflake } from "../util/mod.ts";
-import type { Session } from "../session/mod.ts";
+import type { Snowflake } from "../util/Snowflake.ts";
+import type { Session } from "../session/Session.ts";
 
 /**
  * Represents a Discord data model

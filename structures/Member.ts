@@ -4,8 +4,8 @@ import type { Session } from "../session/Session.ts";
 import type { DiscordMember, MakeRequired } from "../vendor/external.ts";
 import type { ImageFormat, ImageSize } from "../util/shared/images.ts";
 import { iconBigintToHash, iconHashToBigInt } from "../util/hash.ts";
-import { Routes } from "../util/mod.ts";
-import { User } from "./User.ts";
+import User from "./User.ts";
+import * as Routes from "../util/Routes.ts";
 
 /**
  * @link https://discord.com/developers/docs/resources/guild#create-guild-ban

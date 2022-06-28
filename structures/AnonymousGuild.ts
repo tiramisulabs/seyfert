@@ -2,7 +2,7 @@ import type { Model } from "./Base.ts";
 import type { Session } from "../session/Session.ts";
 import type { DiscordGuild, GuildNsfwLevel, VerificationLevels } from "../vendor/external.ts";
 import { iconHashToBigInt } from "../util/hash.ts";
-import { BaseGuild } from "./BaseGuild.ts";
+import BaseGuild from "./BaseGuild.ts";
 
 export class AnonymousGuild extends BaseGuild implements Model {
     constructor(session: Session, data: Partial<DiscordGuild>); // TODO: Improve this type (name and id are required)

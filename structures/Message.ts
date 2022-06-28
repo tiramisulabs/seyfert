@@ -1,11 +1,12 @@
 import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
-import type { Session } from "../session/mod.ts";
+import type { Session } from "../session/Session.ts";
 import type { AllowedMentionsTypes, DiscordMessage } from "../vendor/external.ts";
-import { User } from "./User.ts";
-import { Member } from "./Member.ts";
-import { Attachment } from "./Attachment.ts";
-import { MessageFlags, Routes } from "../util/mod.ts";
+import { MessageFlags } from "../util/shared/flags.ts";
+import User from "./User.ts";
+import Member from "./Member.ts";
+import Attachment from "./Attachment.ts";
+import * as Routes from "../util/Routes.ts";
 
 /**
  * @link https://discord.com/developers/docs/resources/channel#allowed-mentions-object

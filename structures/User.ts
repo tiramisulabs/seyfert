@@ -1,10 +1,10 @@
 import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
-import type { Session } from "../session/mod.ts";
+import type { Session } from "../session/Session.ts";
 import type { DiscordUser } from "../vendor/external.ts";
 import type { ImageFormat, ImageSize } from "../util/shared/images.ts";
 import { iconBigintToHash, iconHashToBigInt } from "../util/hash.ts";
-import { Routes } from "../util/mod.ts";
+import * as Routes from "../util/Routes.ts";
 
 /**
  * Represents a user

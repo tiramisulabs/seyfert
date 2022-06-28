@@ -1,7 +1,7 @@
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
 import type { DiscordChannel } from "../vendor/external.ts";
-import { GuildChannel } from "./GuildChannel.ts";
+import GuildChannel from "./GuildChannel.ts";
 
 export class ThreadChannel extends GuildChannel {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {

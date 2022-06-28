@@ -12,7 +12,7 @@ session.on("ready", (_shardId, payload) => {
 });
 
 session.on("messageCreate", (message) => {
-    if (message.content.startsWith("!ping")) {
+    if (message.content.startsWith("&ping")) {
         message.reply({ content: "pong!" });
     }
 });

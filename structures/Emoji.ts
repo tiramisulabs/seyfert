@@ -1,6 +1,6 @@
 import type { Session } from "../session/Session.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
-import type { DiscordEmoji } from "../mod.ts";
+import type { DiscordEmoji } from "../vendor/external.ts";
 
 export class Emoji {
     constructor(session: Session, data: DiscordEmoji) {

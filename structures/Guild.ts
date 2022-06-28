@@ -9,12 +9,12 @@ import {
 } from "../vendor/external.ts";
 import { iconBigintToHash, iconHashToBigInt } from "../util/hash.ts";
 import { urlToBase64 } from "../util/urlToBase64.ts";
-import { Member } from "./Member.ts";
-import { BaseGuild } from "./BaseGuild.ts";
-import { Role } from "./Role.ts";
-import { GuildEmoji } from "./GuildEmoji.ts";
-import { Invite } from "./Invite.ts";
-import { Routes } from "../util/mod.ts";
+import Member from "./Member.ts";
+import BaseGuild from "./BaseGuild.ts";
+import Role from "./Role.ts";
+import GuildEmoji from "./GuildEmoji.ts";
+import Invite from "./Invite.ts";
+import * as Routes from "../util/Routes.ts";
 
 export interface CreateRole {
     name?: string;

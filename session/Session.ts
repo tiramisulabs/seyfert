@@ -1,10 +1,12 @@
 import type { DiscordGetGatewayBot, GatewayBot, GatewayIntents } from "../vendor/external.ts";
 import type { DiscordRawEventHandler, Events } from "./Events.ts";
 
-import { EventEmitter, Routes, Snowflake } from "../util/mod.ts";
+import { Snowflake } from "../util/Snowflake.ts";
+import { EventEmitter } from "../util/EventEmmiter.ts";
 import { createGatewayManager, createRestManager } from "../vendor/external.ts";
 
-import * as Actions from "../handlers/HandlerManager.ts";
+import * as Routes from "../util/Routes.ts";
+import * as Actions from "../handlers/Actions.ts";
 
 export interface RestOptions {
     secretKey?: string;

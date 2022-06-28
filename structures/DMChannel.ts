@@ -1,8 +1,8 @@
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
 import type { DiscordChannel } from "../vendor/external.ts";
-import { Channel } from "./Channel.ts";
-import { Routes } from "../util/mod.ts";
+import Channel from "./Channel.ts";
+import * as Routes from "../util/Routes.ts";
 
 export class DMChannel extends Channel {
     constructor(session: Session, data: DiscordChannel) {

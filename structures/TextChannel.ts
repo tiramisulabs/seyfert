@@ -2,12 +2,12 @@ import type { Session } from "../session/Session.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { GetMessagesOptions } from "../util/Routes.ts";
 import type { DiscordChannel, DiscordInvite, DiscordMessage, TargetTypes } from "../vendor/external.ts";
-import { GuildChannel } from "./GuildChannel.ts";
-import { Guild } from "./Guild.ts";
-import { ThreadChannel } from "./ThreadChannel.ts";
-import { Message } from "./Message.ts";
-import { Invite } from "./Invite.ts";
-import { Routes } from "../util/mod.ts";
+import GuildChannel from "./GuildChannel.ts";
+import Guild from "./Guild.ts";
+import ThreadChannel from "./ThreadChannel.ts";
+import Message from "./Message.ts";
+import Invite from "./Invite.ts";
+import * as Routes from "../util/Routes.ts";
 
 /**
  * Represents the options object to create an invitation
