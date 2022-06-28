@@ -31,22 +31,22 @@ export class AnonymousGuild extends BaseGuild implements Model {
     description?: string;
     premiumSubscriptionCount?: number;
 
-    splashUrl(options: { size?: ImageSize, format?: ImageFormat } = { size: 128 }) {
+    splashUrl(options: { size?: ImageSize; format?: ImageFormat } = { size: 128 }) {
         if (this.splashHash) {
             return formatImageUrl(
                 Routes.GUILD_SPLASH(this.id, iconBigintToHash(this.splashHash)),
                 options.size,
-                options.format
+                options.format,
             );
         }
     }
 
-    bannerUrl(options: { size?: ImageSize, format?: ImageFormat } = { size: 128 }) {
+    bannerUrl(options: { size?: ImageSize; format?: ImageFormat } = { size: 128 }) {
         if (this.bannerHash) {
             return formatImageUrl(
                 Routes.GUILD_BANNER(this.id, iconBigintToHash(this.bannerHash)),
                 options.size,
-                options.format
+                options.format,
             );
         }
     }

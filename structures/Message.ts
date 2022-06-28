@@ -160,12 +160,14 @@ export class Message implements Model {
                     users: options.allowedMentions?.users,
                     replied_user: options.allowedMentions?.repliedUser,
                 },
-                message_reference: options.messageReference ? {
-                    message_id: options.messageReference.messageId,
-                    channel_id: options.messageReference.channelId,
-                    guild_id: options.messageReference.guildId,
-                    fail_if_not_exists: options.messageReference.failIfNotExists ?? true,
-                } : undefined,
+                message_reference: options.messageReference
+                    ? {
+                        message_id: options.messageReference.messageId,
+                        channel_id: options.messageReference.channelId,
+                        guild_id: options.messageReference.guildId,
+                        fail_if_not_exists: options.messageReference.failIfNotExists ?? true,
+                    }
+                    : undefined,
             },
         );
 

@@ -140,13 +140,12 @@ export class Guild extends BaseGuild implements Model {
 
     // TODO: edit role
 
-
     async deleteInvite(inviteCode: string): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "DELETE",
             Routes.INVITE(inviteCode),
-            {}
+            {},
         );
     }
 
