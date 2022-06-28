@@ -42,7 +42,7 @@ export class User implements Model {
     }
 
     /** gets the user's avatar */
-    avatarUrl(options: { format?: ImageFormat; size?: ImageSize } = { size: 128 }) {
+    avatarURL(options: { format?: ImageFormat; size?: ImageSize } = { size: 128 }) {
         let url: string;
 
         if (!this.avatarHash) {
