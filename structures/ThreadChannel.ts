@@ -1,9 +1,10 @@
+import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
 import type { DiscordChannel } from "../vendor/external.ts";
 import GuildChannel from "./GuildChannel.ts";
 
-export class ThreadChannel extends GuildChannel {
+export class ThreadChannel extends GuildChannel implements Model {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data, guildId);
         this.archived = !!data.thread_metadata?.archived;

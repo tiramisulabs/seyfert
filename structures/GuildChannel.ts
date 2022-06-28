@@ -1,10 +1,11 @@
+import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
 import type { DiscordChannel } from "../vendor/external.ts";
 import Channel from "./Channel.ts";
 import * as Routes from "../util/Routes.ts";
 
-export abstract class GuildChannel extends Channel {
+export abstract class GuildChannel extends Channel implements Model {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data);
         this.guildId = guildId;

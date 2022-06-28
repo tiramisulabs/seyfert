@@ -13,6 +13,7 @@ export class Emoji {
     }
     readonly id?: Snowflake;
     readonly session: Session;
+
     name?: string;
     animated: boolean;
     available: boolean;

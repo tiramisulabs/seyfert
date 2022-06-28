@@ -15,3 +15,11 @@ export function USER_DEFAULT_AVATAR(
 ) {
     return `${Endpoints.CDN_URL}/embed/avatars/${altIcon}.png`;
 }
+
+export function GUILD_BANNER(guildId: Snowflake, icon: string) {
+    return `${Endpoints.CDN_URL}/banners/${guildId}/${icon}`;
+}
+
+export function GUILD_SPLASH(guildId: Snowflake, icon: string) {
+    return `${Endpoints.CDN_URL}/splashes/${guildId}/${icon}`;
+}

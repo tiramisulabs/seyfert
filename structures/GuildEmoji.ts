@@ -1,3 +1,4 @@
+import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
 import type { DiscordEmoji } from "../vendor/external.ts";
@@ -7,7 +8,7 @@ import Emoji from "./Emoji.ts";
 import User from "./User.ts";
 import * as Routes from "../util/Routes.ts";
 
-export class GuildEmoji extends Emoji {
+export class GuildEmoji extends Emoji implements Model {
     constructor(session: Session, data: DiscordEmoji, guildId: Snowflake) {
         super(session, data);
         this.guildId = guildId;
@@ -20,6 +21,7 @@ export class GuildEmoji extends Emoji {
     roles?: Snowflake[];
     user?: User;
     managed?: boolean;
+
     // id cannot be null in a GuildEmoji
     override id: Snowflake;
 

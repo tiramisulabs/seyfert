@@ -12,6 +12,7 @@ export abstract class Channel implements Model {
     }
     readonly id: Snowflake;
     readonly session: Session;
+
     name?: string;
     type: ChannelTypes;
 

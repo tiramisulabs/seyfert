@@ -1,7 +1,7 @@
 import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
-import type { AllowedMentionsTypes, DiscordMessage } from "../vendor/external.ts";
+import type { AllowedMentionsTypes, DiscordMessage, FileContent } from "../vendor/external.ts";
 import { MessageFlags } from "../util/shared/flags.ts";
 import User from "./User.ts";
 import Member from "./Member.ts";
@@ -18,21 +18,40 @@ export interface AllowedMentions {
     users?: Snowflake[];
 }
 
-/**
- * @link https://discord.com/developers/docs/resources/channel#edit-message-json-params
- */
-export interface EditMessage {
-    content?: string;
-    allowedMentions?: AllowedMentions;
-    flags?: MessageFlags;
+export interface CreateMessageReference {
+    messageId: Snowflake;
+    channelId?: Snowflake;
+    guildId?: Snowflake;
+    failIfNotExists?: boolean;
 }
 
 /**
  * @link https://discord.com/developers/docs/resources/channel#create-message-json-params
  */
 export interface CreateMessage {
-    content?: string;
+    content: string;
     allowedMentions?: AllowedMentions;
+    messageReference?: CreateMessageReference;
+}
+
+export interface CreateMessage {
+    allowedMentions?: AllowedMentions;
+    files: FileContent[];
+    messageReference?: CreateMessageReference;
+}
+
+export interface CreateMessage {
+    content: string;
+    allowedMentions?: AllowedMentions;
+    files: FileContent[];
+    messageReference?: CreateMessageReference;
+}
+
+/**
+ * @link https://discord.com/developers/docs/resources/channel#edit-message-json-params
+ */
+export interface EditMessage extends Partial<CreateMessage> {
+    flags?: MessageFlags;
 }
 
 /**
@@ -127,23 +146,30 @@ export class Message implements Model {
     }
 
     /** Replies directly in the channel the message was sent */
-    async reply({ content, allowedMentions }: CreateMessage): Promise<Message> {
-        const message = await this.session.rest.runMethod(
+    async reply(options: CreateMessage): Promise<Message> {
+        const message = await this.session.rest.runMethod<DiscordMessage>(
             this.session.rest,
             "POST",
             Routes.CHANNEL_MESSAGES(this.channelId),
             {
-                content,
+                content: options.content,
+                file: options.files,
                 allowed_mentions: {
-                    parse: allowedMentions?.parse,
-                    roles: allowedMentions?.roles,
-                    users: allowedMentions?.users,
-                    replied_user: allowedMentions?.repliedUser,
+                    parse: options.allowedMentions?.parse,
+                    roles: options.allowedMentions?.roles,
+                    users: options.allowedMentions?.users,
+                    replied_user: options.allowedMentions?.repliedUser,
                 },
+                message_reference: options.messageReference ? {
+                    message_id: options.messageReference.messageId,
+                    channel_id: options.messageReference.channelId,
+                    guild_id: options.messageReference.guildId,
+                    fail_if_not_exists: options.messageReference.failIfNotExists ?? true,
+                } : undefined,
             },
         );
 
-        return message;
+        return new Message(this.session, message);
     }
 
     inGuild(): this is { guildId: Snowflake } & Message {

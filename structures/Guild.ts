@@ -1,3 +1,4 @@
+import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
 import type { DiscordEmoji, DiscordGuild, DiscordInviteMetadata, DiscordRole } from "../vendor/external.ts";
@@ -41,7 +42,7 @@ export interface ModifyGuildEmoji {
  * Represents a guild
  * @link https://discord.com/developers/docs/resources/guild#guild-object
  */
-export class Guild extends BaseGuild {
+export class Guild extends BaseGuild implements Model {
     constructor(session: Session, data: DiscordGuild) {
         super(session, data);
 
