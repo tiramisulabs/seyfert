@@ -7,7 +7,7 @@ if (!Deno.args[0]) {
 const intents = GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages;
 const session = new Session({ token: Deno.args[0], intents });
 
-session.on("ready", (_shardId, payload) => {
+session.on("ready", (payload) => {
     console.log("Logged in as:", payload.user.username);
 });
 

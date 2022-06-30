@@ -1,5 +1,6 @@
 import type { DiscordGetGatewayBot, GatewayBot, GatewayIntents } from "../vendor/external.ts";
-import type { DiscordRawEventHandler, Events } from "./Events.ts";
+import type { Shard, DiscordGatewayPayload } from "../vendor/external.ts";
+import type { Events } from "../handlers/Actions.ts";
 
 import { Snowflake } from "../util/Snowflake.ts";
 import { EventEmitter } from "../util/EventEmmiter.ts";
@@ -7,6 +8,8 @@ import { createGatewayManager, createRestManager } from "../vendor/external.ts";
 
 import * as Routes from "../util/Routes.ts";
 import * as Actions from "../handlers/Actions.ts";
+
+export type DiscordRawEventHandler = (shard: Shard, data: DiscordGatewayPayload) => unknown;
 
 export interface RestOptions {
     secretKey?: string;
@@ -71,24 +74,18 @@ export class Session extends EventEmitter {
         // TODO: set botId in Session.botId or something
     }
 
-    override on(event: "ready", func: Events["ready"]): this;
-    override on(event: "messageCreate", func: Events["messageCreate"]): this;
-    override on(event: "raw", func: Events["raw"]): this;
-    override on(event: keyof Events, func: Events[keyof Events]): this {
+    override on<K extends keyof Events>(event: K, func: Events[K]): this;
+    override on<K extends string>(event: K, func: (...args: unknown[]) => unknown): this {
         return super.on(event, func);
     }
 
-    override off(event: "ready", func: Events["ready"]): this;
-    override off(event: "messageCreate", func: Events["messageCreate"]): this;
-    override off(event: "raw", func: Events["raw"]): this;
-    override off(event: keyof Events, func: Events[keyof Events]): this {
-        return super.off(event, func);
+    override off<K extends keyof Events>(event: K, func: Events[K]): this;
+    override off<K extends string>(event: K, func: (...args: unknown[]) => unknown): this {
+       return super.off(event, func);
     }
-
-    override once(event: "ready", func: Events["ready"]): this;
-    override once(event: "messageCreate", func: Events["messageCreate"]): this;
-    override once(event: "raw", func: Events["raw"]): this;
-    override once(event: keyof Events, func: Events[keyof Events]): this {
+    
+    override once<K extends keyof Events>(event: K, func: Events[K]): this;
+    override once<K extends string>(event: K, func: (...args: unknown[]) => unknown): this {
         return super.once(event, func);
     }
 
