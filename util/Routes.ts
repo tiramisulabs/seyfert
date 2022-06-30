@@ -135,3 +135,7 @@ export function INVITE(inviteCode: string, options?: GetInvite) {
 
     return url;
 }
+
+export function GUILD_INVITES(guildId: Snowflake) {
+    return `/guilds/${guildId}/invites`;
+}
