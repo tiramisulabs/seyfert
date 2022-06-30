@@ -29,21 +29,9 @@ export interface CreateMessageReference {
  * @link https://discord.com/developers/docs/resources/channel#create-message-json-params
  */
 export interface CreateMessage {
-    content: string;
+    content?: string;
     allowedMentions?: AllowedMentions;
-    messageReference?: CreateMessageReference;
-}
-
-export interface CreateMessage {
-    allowedMentions?: AllowedMentions;
-    files: FileContent[];
-    messageReference?: CreateMessageReference;
-}
-
-export interface CreateMessage {
-    content: string;
-    allowedMentions?: AllowedMentions;
-    files: FileContent[];
+    files?: FileContent[];
     messageReference?: CreateMessageReference;
 }
 

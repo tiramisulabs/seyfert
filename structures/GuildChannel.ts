@@ -1,8 +1,9 @@
 import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
-import type { DiscordChannel } from "../vendor/external.ts";
+import type { DiscordChannel, DiscordInviteMetadata } from "../vendor/external.ts";
 import Channel from "./Channel.ts";
+import Invite from "./Invite.ts";
 import * as Routes from "../util/Routes.ts";
 
 export abstract class GuildChannel extends Channel implements Model {
@@ -18,6 +19,16 @@ export abstract class GuildChannel extends Channel implements Model {
     topic?: string;
     position?: number;
     parentId?: Snowflake;
+
+    async fetchInvites(): Promise<Invite[]> {
+        const invites = await this.session.rest.runMethod<DiscordInviteMetadata[]>(
+            this.session.rest,
+            "GET",
+            Routes.CHANNEL_INVITES(this.id),
+        );
+
+        return invites.map((invite) => new Invite(this.session, invite));
+    }
 
     async delete(reason?: string) {
         await this.session.rest.runMethod<DiscordChannel>(

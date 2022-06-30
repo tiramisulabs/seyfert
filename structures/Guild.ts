@@ -26,6 +26,14 @@ export interface CreateRole {
     mentionable?: boolean;
 }
 
+export interface ModifyGuildRole {
+    name?: string;
+    color?: number;
+    hoist?: boolean;
+    mentionable?: boolean;
+    unicodeEmoji?: string;
+}
+
 export interface CreateGuildEmoji {
     name: string;
     image: string;
@@ -138,7 +146,21 @@ export class Guild extends BaseGuild implements Model {
         await this.session.rest.runMethod<undefined>(this.session.rest, "DELETE", Routes.GUILD_ROLE(this.id, roleId));
     }
 
-    // TODO: edit role
+    async editRole(roleId: Snowflake, options: ModifyGuildRole): Promise<Role> {
+        const role = await this.session.rest.runMethod<DiscordRole>(
+            this.session.rest,
+            "PATCH",
+            Routes.GUILD_ROLE(this.id, roleId),
+            {
+                name: options.name,
+                color: options.color,
+                hoist: options.hoist,
+                mentionable: options.mentionable,
+            },
+        );
+
+        return new Role(this.session, role, this.id);
+    }
 
     async deleteInvite(inviteCode: string): Promise<void> {
         await this.session.rest.runMethod<undefined>(
@@ -157,6 +179,16 @@ export class Guild extends BaseGuild implements Model {
         );
 
         return new Invite(this.session, inviteMetadata);
+    }
+
+    async fetchInvites(): Promise<Invite[]> {
+        const invites = await this.session.rest.runMethod<DiscordInviteMetadata[]>(
+            this.session.rest,
+            "GET",
+            Routes.GUILD_INVITES(this.id),
+        );
+
+        return invites.map((invite) => new Invite(this.session, invite));
     }
 }
 
