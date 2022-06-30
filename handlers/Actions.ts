@@ -24,7 +24,7 @@ export const MESSAGE_UPDATE: RawHandler<MessageUpdate> = (session, _shardId, new
 export type MessageDelete = [Snowflake];
 export const MESSAGE_DELETE: RawHandler<MessageDelete> = (session, _shardId, deleted_message_id) => {
     session.emit("messageDelete", deleted_message_id);
-}
+};
 
 export const raw: RawHandler<[unknown]> = (session, shardId, data) => {
     session.emit("raw", data, shardId);

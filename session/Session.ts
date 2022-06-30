@@ -1,5 +1,5 @@
 import type { DiscordGetGatewayBot, GatewayBot, GatewayIntents } from "../vendor/external.ts";
-import type { Shard, DiscordGatewayPayload } from "../vendor/external.ts";
+import type { DiscordGatewayPayload, Shard } from "../vendor/external.ts";
 import type { Events } from "../handlers/Actions.ts";
 
 import { Snowflake } from "../util/Snowflake.ts";
@@ -81,9 +81,9 @@ export class Session extends EventEmitter {
 
     override off<K extends keyof Events>(event: K, func: Events[K]): this;
     override off<K extends string>(event: K, func: (...args: unknown[]) => unknown): this {
-       return super.off(event, func);
+        return super.off(event, func);
     }
-    
+
     override once<K extends keyof Events>(event: K, func: Events[K]): this;
     override once<K extends string>(event: K, func: (...args: unknown[]) => unknown): this {
         return super.once(event, func);

@@ -27,11 +27,11 @@ export interface CreateRole {
 }
 
 export interface ModifyGuildRole {
-  name?: string;
-  color?: number;
-  hoist?: boolean;
-  mentionable?: boolean;
-  unicodeEmoji?: string;
+    name?: string;
+    color?: number;
+    hoist?: boolean;
+    mentionable?: boolean;
+    unicodeEmoji?: string;
 }
 
 export interface CreateGuildEmoji {
@@ -156,7 +156,7 @@ export class Guild extends BaseGuild implements Model {
                 color: options.color,
                 hoist: options.hoist,
                 mentionable: options.mentionable,
-            }
+            },
         );
 
         return new Role(this.session, role, this.id);
