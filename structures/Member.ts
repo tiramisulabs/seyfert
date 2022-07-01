@@ -1,7 +1,7 @@
 import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
-import type { DiscordMember, MakeRequired } from "../vendor/external.ts";
+import type { DiscordMemberWithUser } from "../vendor/external.ts";
 import type { ImageFormat, ImageSize } from "../util/shared/images.ts";
 import { iconBigintToHash, iconHashToBigInt } from "../util/hash.ts";
 import User from "./User.ts";
@@ -23,9 +23,10 @@ export interface CreateGuildBan {
  * @link https://discord.com/developers/docs/resources/guild#guild-member-object
  */
 export class Member implements Model {
-    constructor(session: Session, data: MakeRequired<DiscordMember, "user">) {
+    constructor(session: Session, data: DiscordMemberWithUser, guildId: Snowflake) {
         this.session = session;
         this.user = new User(session, data.user);
+        this.guildId = guildId;
         this.avatarHash = data.avatar ? iconHashToBigInt(data.avatar) : undefined;
         this.nickname = data.nick ? data.nick : undefined;
         this.joinedTimestamp = Number.parseInt(data.joined_at);
@@ -39,8 +40,8 @@ export class Member implements Model {
     }
 
     readonly session: Session;
-
     user: User;
+    guildId: Snowflake;
     avatarHash?: bigint;
     nickname?: string;
     joinedTimestamp: number;
@@ -66,11 +67,11 @@ export class Member implements Model {
     /**
      * Bans the member
      */
-    async ban(guildId: Snowflake, options: CreateGuildBan): Promise<Member> {
+    async ban(options: CreateGuildBan): Promise<Member> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "PUT",
-            Routes.GUILD_BAN(guildId, this.id),
+            Routes.GUILD_BAN(this.guildId, this.id),
             options
                 ? {
                     delete_message_days: options.deleteMessageDays,
@@ -85,11 +86,11 @@ export class Member implements Model {
     /**
      * Kicks the member
      */
-    async kick(guildId: Snowflake, { reason }: { reason?: string }): Promise<Member> {
+    async kick({ reason }: { reason?: string }): Promise<Member> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "DELETE",
-            Routes.GUILD_MEMBER(guildId, this.id),
+            Routes.GUILD_MEMBER(this.guildId, this.id),
             { reason },
         );
 

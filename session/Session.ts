@@ -89,6 +89,11 @@ export class Session extends EventEmitter {
         return super.once(event, func);
     }
 
+    override emit<K extends keyof Events>(event: K, ...params: Parameters<Events[K]>): boolean;
+    override emit<K extends string>(event: K, ...params: unknown[]): boolean {
+        return super.emit(event, ...params);
+    }
+
     async start() {
         const getGatewayBot = () => this.rest.runMethod<DiscordGetGatewayBot>(this.rest, "GET", Routes.GATEWAY_BOT());
 
