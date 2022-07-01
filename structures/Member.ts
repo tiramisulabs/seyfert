@@ -3,7 +3,7 @@ import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
 import type { DiscordMemberWithUser } from "../vendor/external.ts";
 import type { ImageFormat, ImageSize } from "../util/shared/images.ts";
-import type { CreateGuildBan } from "./Guild.ts";
+import type { CreateGuildBan, ModifyGuildMember } from "./Guild.ts";
 import { iconBigintToHash, iconHashToBigInt } from "../util/hash.ts";
 import User from "./User.ts";
 import Guild from "./Guild.ts";
@@ -66,6 +66,12 @@ export class Member implements Model {
         await Guild.prototype.kickMember.call({ id: this.guildId, session: this.session }, this.user.id, options);
 
         return this;
+    }
+
+    async edit(options: ModifyGuildMember): Promise<Member> {
+        const member = await Guild.prototype.editMember.call({ id: this.guildId, session: this.session }, this.user.id, options);
+
+        return member;
     }
 
     /** gets the user's avatar */

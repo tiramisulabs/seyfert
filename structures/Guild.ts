@@ -1,7 +1,7 @@
 import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
-import type { DiscordEmoji, DiscordGuild, DiscordInviteMetadata, DiscordRole } from "../vendor/external.ts";
+import type { DiscordEmoji, DiscordGuild, DiscordMemberWithUser, DiscordInviteMetadata, DiscordRole } from "../vendor/external.ts";
 import type { GetInvite } from "../util/Routes.ts";
 import {
     DefaultMessageNotificationLevels,
@@ -54,6 +54,18 @@ export interface CreateGuildBan {
     deleteMessageDays?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
     /** Reason for the ban */
     reason?: string;
+}
+
+/**
+ * @link https://discord.com/developers/docs/resources/guild#modify-guild-member
+ * */
+export interface ModifyGuildMember {
+    nick?: string;
+    roles?: Snowflake[];
+    mute?: boolean;
+    deaf?: boolean;
+    channelId?: Snowflake;
+    communicationDisabledUntil?: number;
 }
 
 /**
@@ -236,13 +248,31 @@ export class Guild extends BaseGuild implements Model {
     /**
      * Kicks the member
      */
-    async kickMember(memebrId: Snowflake, { reason }: { reason?: string }) {
+    async kickMember(memberId: Snowflake, { reason }: { reason?: string }) {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "DELETE",
-            Routes.GUILD_MEMBER(this.id, memebrId),
+            Routes.GUILD_MEMBER(this.id, memberId),
             { reason },
         );
+    }
+
+    async editMember(memberId: Snowflake, options: ModifyGuildMember) {
+        const member = await this.session.rest.runMethod<DiscordMemberWithUser>(
+            this.session.rest,
+            "PATCH",
+            Routes.GUILD_MEMBER(this.id, memberId)
+            {
+                nick: options.nick,
+                roles: options.roles,
+                mute: options.mute,
+                deaf: options.deaf,
+                channel_id: options.channelId,
+                communication_disabled_until: options.communicationDisabledUntil ? new Date(options.communicationDisabledUntil).toISOString() : undefined,
+            },
+        );
+
+        return new Member(this.session, member, this.id);
     }
 }
 
