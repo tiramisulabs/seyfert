@@ -90,6 +90,20 @@ export class Guild extends BaseGuild implements Model {
     roles: Role[];
     emojis: GuildEmoji[];
 
+    /**
+     * 'null' would reset the nickname 
+     * */
+    async editBotNickname(options: { nick: string | null; reason?: string }) {
+        const result = await this.session.rest.runMethod<{ nick?: string } | undefined>(
+            this.session.rest,
+            "PATCH",
+            Routes.USER_NICK(this.id),
+            options,
+        );
+
+        return result?.nick;
+    }
+
     async createEmoji(options: CreateGuildEmoji): Promise<GuildEmoji> {
         if (options.image && !options.image.startsWith("data:image/")) {
             options.image = await urlToBase64(options.image);

@@ -154,3 +154,7 @@ export function WEBHOOK(webhookId: Snowflake, token: string, options?: { wait?: 
 
     return url;
 }
+
+export function USER_NICK(guildId: Snowflake) {
+    return `/guilds/${guildId}/members/@me`;
+}
