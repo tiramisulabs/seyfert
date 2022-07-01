@@ -44,8 +44,7 @@ export interface Embed {
     provider?: {
         url?: string;
         name?: string;
-    }
-
+    };
 }
 
 export function embed(data: Embed): DiscordEmbed {

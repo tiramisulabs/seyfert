@@ -1,7 +1,13 @@
 import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
-import type { AllowedMentionsTypes, DiscordEmbed, DiscordMessage, DiscordUser, FileContent } from "../vendor/external.ts";
+import type {
+    AllowedMentionsTypes,
+    DiscordEmbed,
+    DiscordMessage,
+    DiscordUser,
+    FileContent,
+} from "../vendor/external.ts";
 import type { GetReactions } from "../util/Routes.ts";
 import { MessageFlags } from "../util/shared/flags.ts";
 import User from "./User.ts";
