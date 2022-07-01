@@ -264,6 +264,17 @@ export class Guild extends BaseGuild implements Model {
         );
     }
 
+    /*
+     * Unbans the member
+     * */
+    async unbanMember(memberId: Snowflake) {
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "DELETE",
+            Routes.GUILD_BAN(this.id, memberId),
+        );
+    }
+
     async editMember(memberId: Snowflake, options: ModifyGuildMember) {
         const member = await this.session.rest.runMethod<DiscordMemberWithUser>(
             this.session.rest,

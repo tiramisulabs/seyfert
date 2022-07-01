@@ -68,6 +68,10 @@ export class Member implements Model {
         return this;
     }
 
+    async unban() {
+        await Guild.prototype.unbanMember.call({ id: this.guildId, session: this.session }, this.user.id);
+    }
+
     async edit(options: ModifyGuildMember): Promise<Member> {
         const member = await Guild.prototype.editMember.call({ id: this.guildId, session: this.session }, this.user.id, options);
 
