@@ -4,7 +4,6 @@ import type { GetMessagesOptions, GetReactions } from "../util/Routes.ts";
 import type { DiscordChannel, DiscordInvite, DiscordMessage, TargetTypes } from "../vendor/external.ts";
 import type { ReactionResolvable } from "./Message.ts";
 import GuildChannel from "./GuildChannel.ts";
-import Guild from "./Guild.ts";
 import ThreadChannel from "./ThreadChannel.ts";
 import Message from "./Message.ts";
 import Invite from "./Invite.ts";
@@ -38,7 +37,7 @@ export interface ThreadCreateOptions {
 }
 
 export class TextChannel extends GuildChannel {
-    constructor(session: Session, data: DiscordChannel, guildId: Guild["id"]) {
+    constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data, guildId);
         data.last_message_id ? this.lastMessageId = data.last_message_id : undefined;
         data.last_pin_timestamp ? this.lastPinTimestamp = data.last_pin_timestamp : undefined;
