@@ -4,7 +4,7 @@ import type { Events } from "../handlers/Actions.ts";
 
 import { Snowflake } from "../util/Snowflake.ts";
 import { EventEmitter } from "../util/EventEmmiter.ts";
-import { createGatewayManager, createRestManager } from "../vendor/external.ts";
+import { createGatewayManager, createRestManager, getBotIdFromToken } from "../vendor/external.ts";
 
 import * as Routes from "../util/Routes.ts";
 import * as Actions from "../handlers/Actions.ts";
@@ -39,6 +39,18 @@ export class Session extends EventEmitter {
     rest: ReturnType<typeof createRestManager>;
     gateway: ReturnType<typeof createGatewayManager>;
 
+    unrepliedInteractions: Set<bigint> = new Set();
+
+    #botId: Snowflake;
+
+    set botId(id: Snowflake) {
+        this.#botId = id;
+    }
+
+    get botId() {
+        return this.#botId;
+    }
+
     constructor(options: SessionOptions) {
         super();
         this.options = options;
@@ -71,7 +83,8 @@ export class Session extends EventEmitter {
             },
             handleDiscordPayload: this.options.rawHandler ?? defHandler,
         });
-        // TODO: set botId in Session.botId or something
+
+        this.#botId = getBotIdFromToken(options.token).toString();
     }
 
     override on<K extends keyof Events>(event: K, func: Events[K]): this;

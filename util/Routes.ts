@@ -139,3 +139,18 @@ export function INVITE(inviteCode: string, options?: GetInvite) {
 export function GUILD_INVITES(guildId: Snowflake) {
     return `/guilds/${guildId}/invites`;
 }
+
+export function INTERACTION_ID_TOKEN(interactionId: Snowflake, token: string) {
+    return `/interactions/${interactionId}/${token}/callback`;
+}
+
+export function WEBHOOK(webhookId: Snowflake, token: string, options?: { wait?: boolean; threadId?: Snowflake }) {
+    let url = `/webhooks/${webhookId}/${token}?`;
+
+    if (options) {
+        if (options.wait !== undefined) url += `wait=${options.wait}`;
+        if (options.threadId) url += `threadId=${options.threadId}`;
+    }
+
+    return url;
+}

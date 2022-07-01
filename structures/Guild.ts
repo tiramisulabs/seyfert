@@ -62,7 +62,7 @@ export class Guild extends BaseGuild implements Model {
         this.vefificationLevel = data.verification_level;
         this.defaultMessageNotificationLevel = data.default_message_notifications;
         this.explicitContentFilterLevel = data.explicit_content_filter;
-        this.members = data.members?.map((member) => new Member(session, { ...member, user: member.user! })) ?? [];
+        this.members = data.members?.map((member) => new Member(session, { ...member, user: member.user! }, data.id)) ?? [];
         this.roles = data.roles.map((role) => new Role(session, role, data.id));
         this.emojis = data.emojis.map((guildEmoji) => new GuildEmoji(session, guildEmoji, data.id));
     }
