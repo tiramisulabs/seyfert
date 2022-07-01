@@ -2,7 +2,7 @@ export * from "./structures/AnonymousGuild.ts";
 export * from "./structures/Attachment.ts";
 export * from "./structures/Base.ts";
 export * from "./structures/BaseGuild.ts";
-export * from "./structures/Channel.ts";
+export * from "./structures/BaseChannel.ts";
 export * from "./structures/Component.ts";
 export * from "./structures/DMChannel.ts";
 export * from "./structures/Embed.ts";
