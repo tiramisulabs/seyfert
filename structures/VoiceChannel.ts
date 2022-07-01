@@ -7,12 +7,12 @@ import GuildChannel from "./GuildChannel.ts";
 
 /**
  * @link https://discord.com/developers/docs/topics/gateway#update-voice-state
- * */
+ */
 export interface UpdateVoiceState {
-  guildId: string;
-  channelId?: string;
-  selfMute: boolean;
-  selfDeaf: boolean;
+    guildId: string;
+    channelId?: string;
+    selfMute: boolean;
+    selfDeaf: boolean;
 }
 
 export class VoiceChannel extends GuildChannel {
@@ -36,7 +36,7 @@ export class VoiceChannel extends GuildChannel {
 
     /**
      * This function was gathered from Discordeno it may not work
-     * */
+     */
     async connect(options?: UpdateVoiceState) {
         const shardId = calculateShardId(this.session.gateway, BigInt(super.guildId));
         const shard = this.session.gateway.manager.shards.get(shardId);

@@ -87,6 +87,22 @@ export class Message implements Model {
         return `https://discord.com/channels/${this.guildId ?? "@me"}/${this.channelId}/${this.id}`;
     }
 
+    async pin() {
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "PUT",
+            Routes.CHANNEL_PIN(this.channelId, this.id),
+        );
+    }
+
+    async unpin() {
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "DELETE",
+            Routes.CHANNEL_PIN(this.channelId, this.id),
+        );
+    }
+
     /** Edits the current message */
     async edit({ content, allowedMentions, flags }: EditMessage): Promise<Message> {
         const message = await this.session.rest.runMethod(

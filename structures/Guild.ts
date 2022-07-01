@@ -1,7 +1,13 @@
 import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
-import type { DiscordEmoji, DiscordGuild, DiscordMemberWithUser, DiscordInviteMetadata, DiscordRole } from "../vendor/external.ts";
+import type {
+    DiscordEmoji,
+    DiscordGuild,
+    DiscordInviteMetadata,
+    DiscordMemberWithUser,
+    DiscordRole,
+} from "../vendor/external.ts";
 import type { GetInvite } from "../util/Routes.ts";
 import {
     DefaultMessageNotificationLevels,
@@ -56,7 +62,7 @@ export interface CreateGuildBan {
 
 /**
  * @link https://discord.com/developers/docs/resources/guild#modify-guild-member
- * */
+ */
 export interface ModifyGuildMember {
     nick?: string;
     roles?: Snowflake[];
@@ -68,11 +74,11 @@ export interface ModifyGuildMember {
 
 /**
  * @link https://discord.com/developers/docs/resources/guild#begin-guild-prune
- * */
+ */
 export interface BeginGuildPrune {
-  days?: number;
-  computePruneCount?: boolean;
-  includeRoles?: Snowflake[];
+    days?: number;
+    computePruneCount?: boolean;
+    includeRoles?: Snowflake[];
 }
 
 /**
@@ -110,8 +116,8 @@ export class Guild extends BaseGuild implements Model {
     emojis: GuildEmoji[];
 
     /**
-     * 'null' would reset the nickname 
-     * */
+     * 'null' would reset the nickname
+     */
     async editBotNickname(options: { nick: string | null; reason?: string }) {
         const result = await this.session.rest.runMethod<{ nick?: string } | undefined>(
             this.session.rest,
@@ -286,8 +292,10 @@ export class Guild extends BaseGuild implements Model {
                 mute: options.mute,
                 deaf: options.deaf,
                 channel_id: options.channelId,
-                communication_disabled_until: options.communicationDisabledUntil ? new Date(options.communicationDisabledUntil).toISOString() : undefined,
-            }
+                communication_disabled_until: options.communicationDisabledUntil
+                    ? new Date(options.communicationDisabledUntil).toISOString()
+                    : undefined,
+            },
         );
 
         return new Member(this.session, member, this.id);

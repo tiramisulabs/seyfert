@@ -46,10 +46,6 @@ export function MESSAGE_CREATE_THREAD(channelId: Snowflake, messageId: Snowflake
     return `/channels/${channelId}/messages/${messageId}/threads`;
 }
 
-export function CHANNEL_PINS(channelId: Snowflake) {
-    return `/channels/${channelId}/pins`;
-}
-
 /** used to send messages */
 export function CHANNEL_MESSAGES(channelId: Snowflake, options?: GetMessagesOptions) {
     let url = `/channels/${channelId}/messages?`;
@@ -159,7 +155,7 @@ export function USER_NICK(guildId: Snowflake) {
 
 /**
  * @link https://discord.com/developers/docs/resources/guild#get-guild-prune-count
- * */
+ */
 export interface GetGuildPruneCountQuery {
     days?: number;
     includeRoles?: Snowflake | Snowflake[];
@@ -172,4 +168,12 @@ export function GUILD_PRUNE(guildId: Snowflake, options?: GetGuildPruneCountQuer
     if (options?.includeRoles) url += `&include_roles=${options.includeRoles}`;
 
     return url;
+}
+
+export function CHANNEL_PIN(channelId: Snowflake, messageId: Snowflake) {
+    return `/channels/${channelId}/pins/${messageId}`;
+}
+
+export function CHANNEL_PINS(channelId: Snowflake) {
+    return `/channels/${channelId}/pins`;
 }

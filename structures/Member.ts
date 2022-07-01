@@ -73,7 +73,11 @@ export class Member implements Model {
     }
 
     async edit(options: ModifyGuildMember): Promise<Member> {
-        const member = await Guild.prototype.editMember.call({ id: this.guildId, session: this.session }, this.user.id, options);
+        const member = await Guild.prototype.editMember.call(
+            { id: this.guildId, session: this.session },
+            this.user.id,
+            options,
+        );
 
         return member;
     }

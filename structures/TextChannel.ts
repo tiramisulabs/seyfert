@@ -107,6 +107,14 @@ export class TextChannel extends GuildChannel {
             Routes.CHANNEL_TYPING(this.id),
         );
     }
+
+    async pinMessage(messageId: Snowflake) {
+        await Message.prototype.pin.call({ id: messageId, channelId: this.id, session: this.session });
+    }
+
+    async unpinMessage(messageId: Snowflake) {
+        await Message.prototype.unpin.call({ id: messageId, channelId: this.id, session: this.session });
+    }
 }
 
 export default TextChannel;
