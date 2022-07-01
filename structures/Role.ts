@@ -4,7 +4,7 @@ import type { Session } from "../session/Session.ts";
 import { Snowflake } from "../util/Snowflake.ts";
 import { iconHashToBigInt } from "../util/hash.ts";
 import Permissions from "./Permissions.ts";
-import Guild from "./Guild.ts";
+import Guild, { ModifyGuildRole } from "./Guild.ts";
 
 export class Role implements Model {
     constructor(session: Session, data: DiscordRole, guildId: Snowflake) {
@@ -50,6 +50,11 @@ export class Role implements Model {
     async delete(): Promise<void> {
         // cool jS trick
         await Guild.prototype.deleteRole.call({ id: this.guildId, session: this.session }, this.id);
+    }
+
+    async edit(options: ModifyGuildRole) {
+        const role = await Guild.prototype.editRole.call({ id: this.guildId, session: this.session }, this.id, options);
+        return role;
     }
 
     toString() {

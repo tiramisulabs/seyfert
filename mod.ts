@@ -23,7 +23,6 @@ export * from "./structures/WelcomeChannel.ts";
 export * from "./structures/WelcomeScreen.ts";
 
 export * from "./session/Session.ts";
-export * from "./session/Events.ts";
 
 export * from "./util/shared/flags.ts";
 export * from "./util/shared/images.ts";

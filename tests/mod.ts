@@ -7,12 +7,17 @@ if (!Deno.args[0]) {
 const intents = GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages;
 const session = new Session({ token: Deno.args[0], intents });
 
-session.on("ready", (_shardId, payload) => {
+session.on("ready", (payload) => {
     console.log("Logged in as:", payload.user.username);
 });
 
+const PREFIX = "&";
+
 session.on("messageCreate", (message) => {
-    if (message.content.startsWith("&ping")) {
+    const args = message.content.slice(PREFIX.length).trim().split(/\s+/gm);
+    const name = args.shift()?.toLowerCase();
+
+    if (name === "ping") {
         message.reply({ content: "pong!" });
     }
 });
