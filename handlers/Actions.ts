@@ -2,6 +2,7 @@ import type {
     DiscordGuildMemberAdd,
     DiscordGuildMemberRemove,
     DiscordGuildMemberUpdate,
+    DiscordInteraction,
     DiscordMessage,
     DiscordMessageDelete,
     DiscordReady,
@@ -11,6 +12,7 @@ import type { Session } from "../session/Session.ts";
 import Member from "../structures/Member.ts";
 import Message from "../structures/Message.ts";
 import User from "../structures/User.ts";
+import Interaction from "../structures/Interaction.ts";
 
 export type RawHandler<T> = (...args: [Session, number, T]) => void;
 export type Handler<T extends unknown[]> = (...args: T) => unknown;
@@ -43,6 +45,11 @@ export const GUILD_MEMBER_REMOVE: RawHandler<DiscordGuildMemberRemove> = (sessio
     session.emit("guildMemberRemove", new User(session, member.user), member.guild_id);
 };
 
+export const INTERACTION_CREATE: RawHandler<DiscordInteraction> = (session, _shardId, interaction) => {
+    session.unrepliedInteractions.add(BigInt(interaction.id));
+    session.emit("interactionCreate", new Interaction(session, interaction));
+};
+
 export const raw: RawHandler<unknown> = (session, shardId, data) => {
     session.emit("raw", data, shardId);
 };
@@ -60,5 +67,6 @@ export interface Events {
     "guildMemberAdd":    Handler<[Member]>;
     "guildMemberUpdate": Handler<[Member]>;
     "guildMemberRemove": Handler<[User, Snowflake]>;
+    "interactionCreate": Handler<[Interaction]>;
     "raw":               Handler<[unknown, number]>;
 }
