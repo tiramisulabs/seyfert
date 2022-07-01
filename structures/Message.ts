@@ -1,7 +1,8 @@
 import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
-import type { AllowedMentionsTypes, DiscordMessage, FileContent } from "../vendor/external.ts";
+import type { AllowedMentionsTypes, DiscordMessage, DiscordUser, FileContent } from "../vendor/external.ts";
+import type { GetReactions } from "../util/Routes.ts";
 import { MessageFlags } from "../util/shared/flags.ts";
 import User from "./User.ts";
 import Member from "./Member.ts";
@@ -41,6 +42,11 @@ export interface CreateMessage {
 export interface EditMessage extends Partial<CreateMessage> {
     flags?: MessageFlags;
 }
+
+export type ReactionResolvable = string | {
+    name: string;
+    id: Snowflake;
+};
 
 /**
  * Represents a message
@@ -174,6 +180,74 @@ export class Message implements Model {
         );
 
         return new Message(this.session, message);
+    }
+
+    /**
+     * alias for Message.addReaction
+     * */
+    get react() {
+        return this.addReaction;
+    }
+
+    async addReaction(reaction: ReactionResolvable) {
+        const r = typeof reaction === "string" ? reaction : `${reaction.name}:${reaction.id}`;
+
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "PUT",
+            Routes.CHANNEL_MESSAGE_REACTION_ME(this.channelId, this.id, r),
+            {},
+        );
+    }
+
+    async removeReaction(reaction: ReactionResolvable, options?: { userId: Snowflake }) {
+        const r = typeof reaction === "string" ? reaction : `${reaction.name}:${reaction.id}`;
+
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "DELETE",
+            options?.userId
+                ? Routes.CHANNEL_MESSAGE_REACTION_USER(
+                    this.channelId,
+                    this.id,
+                    r,
+                    options.userId,
+                )
+                : Routes.CHANNEL_MESSAGE_REACTION_ME(this.channelId, this.id, r)
+        );
+    }
+
+    /**
+     * Get users who reacted with this emoji
+     * */
+    async fetchReactions(reaction: ReactionResolvable, options?: GetReactions): Promise<User[]> {
+        const r = typeof reaction === "string" ? reaction : `${reaction.name}:${reaction.id}`;
+
+        const users = await this.session.rest.runMethod<DiscordUser[]>(
+            this.session.rest,
+            "GET",
+            Routes.CHANNEL_MESSAGE_REACTION(this.channelId, this.id, encodeURIComponent(r), options),
+        );
+
+        return users.map((user) => new User(this.session, user));
+    }
+
+    async removeReactionEmoji(reaction: ReactionResolvable) {
+        const r = typeof reaction === "string" ? reaction : `${reaction.name}:${reaction.id}`;
+
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "DELETE",
+            Routes.CHANNEL_MESSAGE_REACTION(this.channelId, this.id, r)
+        );
+    }
+
+    async nukeReactions() {
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "DELETE",
+            Routes.CHANNEL_MESSAGE_REACTIONS(this.channelId, this.id)
+        );
     }
 
     inGuild(): this is { guildId: Snowflake } & Message {

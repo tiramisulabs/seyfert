@@ -177,3 +177,33 @@ export function CHANNEL_PIN(channelId: Snowflake, messageId: Snowflake) {
 export function CHANNEL_PINS(channelId: Snowflake) {
     return `/channels/${channelId}/pins`;
 }
+
+
+export function CHANNEL_MESSAGE_REACTION_ME(channelId: Snowflake, messageId: Snowflake, emoji: string) {
+    return `/channels/${channelId}/messages/${messageId}/reactions/${encodeURIComponent(emoji)}/@me`;
+}
+
+export function CHANNEL_MESSAGE_REACTION_USER(channelId: Snowflake, messageId: Snowflake, emoji: string, userId: Snowflake) {
+    return `/channels/${channelId}/messages/${messageId}/reactions/${encodeURIComponent(emoji)}/${userId}`;
+}
+
+export function CHANNEL_MESSAGE_REACTIONS(channelId: Snowflake, messageId: Snowflake) {
+    return `/channels/${channelId}/messages/${messageId}/reactions`;
+}
+
+/**
+ * @link https://discord.com/developers/docs/resources/channel#get-reactions-query-string-params
+ * */
+export interface GetReactions {
+  after?: string;
+  limit?: number;
+}
+
+export function CHANNEL_MESSAGE_REACTION(channelId: Snowflake, messageId: Snowflake, emoji: string, options?: GetReactions) {
+    let url = `/channels/${channelId}/messages/${messageId}/reactions/${encodeURIComponent(emoji)}?`;
+
+    if (options?.after) url += `after=${options.after}`;
+    if (options?.limit) url += `&limit=${options.limit}`;
+
+    return url;
+}
