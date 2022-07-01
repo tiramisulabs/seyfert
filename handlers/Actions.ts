@@ -47,6 +47,10 @@ export const GUILD_MEMBER_REMOVE: RawHandler<DiscordGuildMemberRemove> = (sessio
 
 export const INTERACTION_CREATE: RawHandler<DiscordInteraction> = (session, _shardId, interaction) => {
     session.unrepliedInteractions.add(BigInt(interaction.id));
+
+    // could be improved
+    setTimeout(() => session.unrepliedInteractions.delete(BigInt(interaction.id)), 15 * 60 * 1000);
+
     session.emit("interactionCreate", new Interaction(session, interaction));
 };
 
