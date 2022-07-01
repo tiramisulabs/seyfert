@@ -8,6 +8,8 @@ import User from "./User.ts";
 import Member from "./Member.ts";
 import Attachment from "./Attachment.ts";
 import * as Routes from "../util/Routes.ts";
+import { ActionRow } from "./components/ActionRow.ts";
+import { AnyComponent } from "../util/Components.ts";
 
 /**
  * @link https://discord.com/developers/docs/resources/channel#allowed-mentions-object
@@ -67,7 +69,7 @@ export class Message implements Model {
         this.content = data.content!;
 
         this.attachments = data.attachments.map((attachment) => new Attachment(session, attachment));
-
+        this.components = data.components?.map((cs) => new ActionRow(cs));
         // user is always null on MessageCreate and its replaced with author
 
         if (data.guild_id && data.member) {
@@ -87,6 +89,7 @@ export class Message implements Model {
     content: string;
 
     attachments: Attachment[];
+    components?: ActionRow<AnyComponent>[];
     member?: Member;
 
     get url() {
@@ -184,7 +187,7 @@ export class Message implements Model {
 
     /**
      * alias for Message.addReaction
-     * */
+     */
     get react() {
         return this.addReaction;
     }
@@ -213,13 +216,13 @@ export class Message implements Model {
                     r,
                     options.userId,
                 )
-                : Routes.CHANNEL_MESSAGE_REACTION_ME(this.channelId, this.id, r)
+                : Routes.CHANNEL_MESSAGE_REACTION_ME(this.channelId, this.id, r),
         );
     }
 
     /**
      * Get users who reacted with this emoji
-     * */
+     */
     async fetchReactions(reaction: ReactionResolvable, options?: GetReactions): Promise<User[]> {
         const r = typeof reaction === "string" ? reaction : `${reaction.name}:${reaction.id}`;
 
@@ -238,7 +241,7 @@ export class Message implements Model {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "DELETE",
-            Routes.CHANNEL_MESSAGE_REACTION(this.channelId, this.id, r)
+            Routes.CHANNEL_MESSAGE_REACTION(this.channelId, this.id, r),
         );
     }
 
@@ -246,7 +249,7 @@ export class Message implements Model {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "DELETE",
-            Routes.CHANNEL_MESSAGE_REACTIONS(this.channelId, this.id)
+            Routes.CHANNEL_MESSAGE_REACTIONS(this.channelId, this.id),
         );
     }
 

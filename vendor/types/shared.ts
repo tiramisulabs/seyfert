@@ -101,6 +101,15 @@ export enum ButtonStyles {
     /** A button that navigates to a URL */
     Link,
 }
+/** https://discord.com/developers/docs/resources/emoji#emoji-object-custom-emoji-examples */
+export interface ComponentEmoji {
+    /** Emoji id */
+    id?: string;
+    /** Emoji name */
+    name?: string;
+    /** Whether this emoji is animated */
+    animated?: boolean;
+}
 
 /** https://discord.com/developers/docs/resources/channel#allowed-mentions-object-allowed-mention-types */
 export enum AllowedMentionsTypes {
@@ -1238,7 +1247,7 @@ export type CamelCase<S extends string> = S extends `${infer P1}_${infer P2}${in
     : Lowercase<S>;
 export type Camelize<T> = {
     [K in keyof T as CamelCase<string & K>]: T[K] extends Array<infer U> ? U extends {} ? Array<Camelize<U>>
-        : T[K]
+    : T[K]
         : T[K] extends {} ? Camelize<T[K]>
         : never;
 };
@@ -1293,8 +1302,8 @@ export type AnythingBut<T> = Exclude<
  * object identity type
  */
 export type Id<T> = T extends infer U ? {
-        [K in keyof U]: U[K];
-    }
+    [K in keyof U]: U[K];
+}
     : never;
 
 export type KeysWithUndefined<T> = {
@@ -1319,7 +1328,7 @@ type OptionalizeAux<T extends object> = Id<
 export type Optionalize<T> = T extends object
     ? T extends Array<unknown>
         ? number extends T["length"] ? T[number] extends object ? Array<OptionalizeAux<T[number]>>
-            : T
+        : T
         : Partial<T>
     : OptionalizeAux<T>
     : T;

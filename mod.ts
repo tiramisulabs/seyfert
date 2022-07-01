@@ -23,6 +23,11 @@ export * from "./structures/User.ts";
 export * from "./structures/VoiceChannel.ts";
 export * from "./structures/WelcomeChannel.ts";
 export * from "./structures/WelcomeScreen.ts";
+export * from "./structures/components/ActionRow.ts";
+export * from "./structures/components/Button.ts";
+export * from "./structures/components/TextInput.ts";
+export * from "./structures/components/SelectMenu.ts";
+export * from "./structures/components/SelectMenuOption.ts";
 
 export * from "./session/Session.ts";
 
@@ -34,5 +39,6 @@ export * from "./util/EventEmmiter.ts";
 export * from "./util/hash.ts";
 export * as Routes from "./util/Routes.ts";
 export * as Cdn from "./util/Cdn.ts";
+export * from "./util/Components.ts";
 
 export * from "./vendor/external.ts";

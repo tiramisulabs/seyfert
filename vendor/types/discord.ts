@@ -9,6 +9,7 @@ import {
     ButtonStyles,
     ChannelFlags,
     ChannelTypes,
+    ComponentEmoji,
     DefaultMessageNotificationLevels,
     EmbedTypes,
     ExplicitContentFilterLevels,
@@ -1171,6 +1172,8 @@ export interface DiscordSelectMenuComponent {
     max_values?: number;
     /** The choices! Maximum of 25 items. */
     options: DiscordSelectOption[];
+    /** Disabled the select. Default false */
+    disalbed: boolean;
 }
 
 export interface DiscordSelectOption {
@@ -1181,14 +1184,7 @@ export interface DiscordSelectOption {
     /** An additional description of the option. Maximum 50 characters. */
     description?: string;
     /** The id, name, and animated properties of an emoji. */
-    emoji?: {
-        /** Emoji id */
-        id?: string;
-        /** Emoji name */
-        name?: string;
-        /** Whether this emoji is animated */
-        animated?: boolean;
-    };
+    emoji?: ComponentEmoji;
     /** Will render this option as already-selected by default. */
     default?: boolean;
 }
@@ -1204,14 +1200,7 @@ export interface DiscordButtonComponent {
     /** For different styles/colors of the buttons */
     style: ButtonStyles;
     /** Emoji object that includes fields of name, id, and animated supporting unicode and custom emojis. */
-    emoji?: {
-        /** Emoji id */
-        id?: string;
-        /** Emoji name */
-        name?: string;
-        /** Whether this emoji is animated */
-        animated?: boolean;
-    };
+    emoji?: ComponentEmoji;
     /** optional url for link-style buttons that can navigate a user to the web. Only type 5 Link buttons can have a url */
     url?: string;
     /** Whether or not this button is disabled */
