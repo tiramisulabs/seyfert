@@ -250,6 +250,23 @@ export class Message implements Model {
         );
     }
 
+    async crosspost() {
+        const message = await this.session.rest.runMethod<DiscordMessage>(
+            this.session.rest,
+            "POST",
+            Routes.CHANNEL_MESSAGE_CROSSPOST(this.channelId, this.id),
+        );
+
+        return new Message(this.session, message);
+    }
+
+    /*
+     * alias of Message.crosspost
+     * */
+    get publish() {
+        return this.crosspost;
+    }
+
     inGuild(): this is { guildId: Snowflake } & Message {
         return !!this.guildId;
     }

@@ -207,3 +207,7 @@ export function CHANNEL_MESSAGE_REACTION(channelId: Snowflake, messageId: Snowfl
 
     return url;
 }
+
+export function CHANNEL_MESSAGE_CROSSPOST(channelId: Snowflake, messageId: Snowflake) {
+    return `/channels/${channelId}/messages/${messageId}/crosspost`;
+}
