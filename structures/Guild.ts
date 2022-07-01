@@ -81,6 +81,11 @@ export interface BeginGuildPrune {
     includeRoles?: Snowflake[];
 }
 
+export interface ModifyRolePositions {
+  id: Snowflake;
+  position?: number | null;
+}
+
 /**
  * Represents a guild
  * @link https://discord.com/developers/docs/resources/guild#guild-object
@@ -210,6 +215,40 @@ export class Guild extends BaseGuild implements Model {
         );
 
         return new Role(this.session, role, this.id);
+    }
+
+
+
+    async addRole(memberId: Snowflake, roleId: Snowflake, { reason }: { reason?: string } = {}) {
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "PUT",
+            Routes.GUILD_MEMBER_ROLE(this.id, memberId, roleId),
+            { reason },
+        );
+    }
+
+    async removeRole(memberId: Snowflake, roleId: Snowflake, { reason }: { reason?: string } = {}) {
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "DELETE",
+            Routes.GUILD_MEMBER_ROLE(this.id, memberId, roleId),
+            { reason },
+        );
+    }
+
+    /**
+     * Returns the roles moved
+     * */
+    async moveRoles(options: ModifyRolePositions[]) {
+        const roles = await this.session.rest.runMethod<DiscordRole[]>(
+            this.session.rest,
+            "PATCH",
+            Routes.GUILD_ROLES(this.id),
+            options,
+        );
+
+        return roles.map((role) => new Role(this.session, role, this.id));
     }
 
     async deleteInvite(inviteCode: string): Promise<void> {
