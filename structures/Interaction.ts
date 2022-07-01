@@ -2,11 +2,11 @@ import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
 import type {
-    DiscordMessage,
     DiscordInteraction,
-    InteractionTypes,
-    InteractionResponseTypes,
+    DiscordMessage,
     FileContent,
+    InteractionResponseTypes,
+    InteractionTypes,
 } from "../vendor/external.ts";
 import type { MessageFlags } from "../util/shared/flags.ts";
 import type { AllowedMentions } from "./Message.ts";
@@ -34,8 +34,8 @@ export interface InteractionApplicationCommandCallbackData {
 
 /** https://discord.com/developers/docs/interactions/slash-commands#applicationcommandoptionchoice */
 export interface ApplicationCommandOptionChoice {
-  name: string;
-  value: string | number;
+    name: string;
+    value: string | number;
 }
 
 export class Interaction implements Model {
@@ -43,7 +43,7 @@ export class Interaction implements Model {
         this.session = session;
         this.id = data.id;
         this.token = data.token;
-        this.type = data.type
+        this.type = data.type;
         this.guildId = data.guild_id;
         this.channelId = data.channel_id;
         this.applicationId = data.application_id;
@@ -52,8 +52,7 @@ export class Interaction implements Model {
 
         if (!data.guild_id) {
             this.user = new User(session, data.user!);
-        }
-        else {
+        } else {
             this.member = new Member(session, data.member!, data.guild_id);
         }
     }
@@ -104,11 +103,11 @@ export class Interaction implements Model {
                             file: data?.files,
                         },
                         headers: {
-                          // remove authorization header
-                          Authorization: "",
+                            // remove authorization header
+                            Authorization: "",
                         },
                     }),
-                }
+                },
             );
 
             return;
@@ -123,21 +122,21 @@ export class Interaction implements Model {
                     method: "POST",
                     body: {
                         ...toSend,
-                        file: data?.files
+                        file: data?.files,
                     },
                     headers: {
                         // remove authorization header
                         Authorization: "",
                     },
                 }),
-            }
+            },
         );
 
         return new Message(this.session, result);
     }
 
-    inGuild(): this is Interaction & { user: undefined, guildId: Snowflake, member: Member } {
-        return "guildId" in this;
+    inGuild(): this is Interaction & { user: undefined; guildId: Snowflake; member: Member } {
+        return !!this.guildId;
     }
 }
 

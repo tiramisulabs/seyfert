@@ -57,13 +57,13 @@ export class Member implements Model {
     }
 
     async ban(options: CreateGuildBan): Promise<Member> {
-        await Guild.prototype.banMember.call({ id: this.guildId }, this.user.id, options);
+        await Guild.prototype.banMember.call({ id: this.guildId, session: this.session }, this.user.id, options);
 
         return this;
     }
 
     async kick(options: { reason?: string }): Promise<Member> {
-        await Guild.prototype.kickMember.call({ id: this.guildId }, this.user.id, options);
+        await Guild.prototype.kickMember.call({ id: this.guildId, session: this.session }, this.user.id, options);
 
         return this;
     }

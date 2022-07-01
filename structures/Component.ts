@@ -6,7 +6,7 @@ export class Component {
     constructor(session: Session, data: DiscordComponent) {
         this.session = session;
         this.customId = data.custom_id;
-        this.type = data.type
+        this.type = data.type;
         this.components = data.components?.map((component) => new Component(session, component));
         this.disabled = !!data.disabled;
 
