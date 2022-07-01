@@ -3,19 +3,11 @@ import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
 import type { DiscordMemberWithUser } from "../vendor/external.ts";
 import type { ImageFormat, ImageSize } from "../util/shared/images.ts";
+import type { CreateGuildBan } from "./Guild.ts";
 import { iconBigintToHash, iconHashToBigInt } from "../util/hash.ts";
 import User from "./User.ts";
+import Guild from "./Guild.ts";
 import * as Routes from "../util/Routes.ts";
-
-/**
- * @link https://discord.com/developers/docs/resources/guild#create-guild-ban
- */
-export interface CreateGuildBan {
-    /** Number of days to delete messages for (0-7) */
-    deleteMessageDays?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
-    /** Reason for the ban */
-    reason?: string;
-}
 
 /**
  * Represents a guild member
@@ -64,35 +56,14 @@ export class Member implements Model {
         return new Date(this.joinedTimestamp);
     }
 
-    /**
-     * Bans the member
-     */
     async ban(options: CreateGuildBan): Promise<Member> {
-        await this.session.rest.runMethod<undefined>(
-            this.session.rest,
-            "PUT",
-            Routes.GUILD_BAN(this.guildId, this.id),
-            options
-                ? {
-                    delete_message_days: options.deleteMessageDays,
-                    reason: options.reason,
-                }
-                : {},
-        );
+        await Guild.prototype.banMember.call({ id: this.guildId }, this.user.id, options);
 
         return this;
     }
 
-    /**
-     * Kicks the member
-     */
-    async kick({ reason }: { reason?: string }): Promise<Member> {
-        await this.session.rest.runMethod<undefined>(
-            this.session.rest,
-            "DELETE",
-            Routes.GUILD_MEMBER(this.guildId, this.id),
-            { reason },
-        );
+    async kick(options: { reason?: string }): Promise<Member> {
+        await Guild.prototype.kickMember.call({ id: this.guildId }, this.user.id, options);
 
         return this;
     }
@@ -104,7 +75,7 @@ export class Member implements Model {
         if (!this.avatarHash) {
             url = Routes.USER_DEFAULT_AVATAR(Number(this.user.discriminator) % 5);
         } else {
-            url = Routes.USER_AVATAR(this.id, iconBigintToHash(this.avatarHash));
+            url = Routes.USER_AVATAR(this.user.id, iconBigintToHash(this.avatarHash));
         }
 
         return `${url}.${options.format ?? (url.includes("/a_") ? "gif" : "jpg")}?size=${options.size}`;

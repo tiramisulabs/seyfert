@@ -47,6 +47,16 @@ export interface ModifyGuildEmoji {
 }
 
 /**
+ * @link https://discord.com/developers/docs/resources/guild#create-guild-ban
+ */
+export interface CreateGuildBan {
+    /** Number of days to delete messages for (0-7) */
+    deleteMessageDays?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+    /** Reason for the ban */
+    reason?: string;
+}
+
+/**
  * Represents a guild
  * @link https://discord.com/developers/docs/resources/guild#guild-object
  */
@@ -189,6 +199,36 @@ export class Guild extends BaseGuild implements Model {
         );
 
         return invites.map((invite) => new Invite(this.session, invite));
+    }
+
+
+    /**
+     * Bans the member
+     */
+    async banMember(memberId: Snowflake, options: CreateGuildBan) {
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "PUT",
+            Routes.GUILD_BAN(this.id, memberId),
+            options
+                ? {
+                    delete_message_days: options.deleteMessageDays,
+                    reason: options.reason,
+                }
+                : {},
+        );
+    }
+
+    /**
+     * Kicks the member
+     */
+    async kickMember(memebrId: Snowflake, { reason }: { reason?: string }) {
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "DELETE",
+            Routes.GUILD_MEMBER(this.id, memebrId),
+            { reason },
+        );
     }
 }
 
