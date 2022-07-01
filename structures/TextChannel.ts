@@ -117,15 +117,25 @@ export class TextChannel extends GuildChannel {
     }
 
     async addReaction(messageId: Snowflake, reaction: ReactionResolvable) {
-        await Message.prototype.addReaction.call({ channelId: this.id, id: messageId, session: this.session }, reaction);
+        await Message.prototype.addReaction.call(
+            { channelId: this.id, id: messageId, session: this.session },
+            reaction,
+        );
     }
 
     async removeReaction(messageId: Snowflake, reaction: ReactionResolvable, options?: { userId: Snowflake }) {
-        await Message.prototype.removeReaction.call({ channelId: this.id, id: messageId, session: this.session }, reaction, options);
+        await Message.prototype.removeReaction.call(
+            { channelId: this.id, id: messageId, session: this.session },
+            reaction,
+            options,
+        );
     }
 
     async removeReactionEmoji(messageId: Snowflake, reaction: ReactionResolvable) {
-        await Message.prototype.removeReactionEmoji.call({ channelId: this.id, id: messageId, session: this.session }, reaction);
+        await Message.prototype.removeReactionEmoji.call(
+            { channelId: this.id, id: messageId, session: this.session },
+            reaction,
+        );
     }
 
     async nukeReactions(messageId: Snowflake) {
@@ -133,7 +143,11 @@ export class TextChannel extends GuildChannel {
     }
 
     async fetchReactions(messageId: Snowflake, reaction: ReactionResolvable, options?: GetReactions) {
-        const users = await Message.prototype.fetchReactions.call({ channelId: this.id, id: messageId, session: this.session }, reaction, options);
+        const users = await Message.prototype.fetchReactions.call(
+            { channelId: this.id, id: messageId, session: this.session },
+            reaction,
+            options,
+        );
 
         return users;
     }

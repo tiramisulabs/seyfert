@@ -184,7 +184,7 @@ export class Message implements Model {
 
     /**
      * alias for Message.addReaction
-     * */
+     */
     get react() {
         return this.addReaction;
     }
@@ -213,13 +213,13 @@ export class Message implements Model {
                     r,
                     options.userId,
                 )
-                : Routes.CHANNEL_MESSAGE_REACTION_ME(this.channelId, this.id, r)
+                : Routes.CHANNEL_MESSAGE_REACTION_ME(this.channelId, this.id, r),
         );
     }
 
     /**
      * Get users who reacted with this emoji
-     * */
+     */
     async fetchReactions(reaction: ReactionResolvable, options?: GetReactions): Promise<User[]> {
         const r = typeof reaction === "string" ? reaction : `${reaction.name}:${reaction.id}`;
 
@@ -238,7 +238,7 @@ export class Message implements Model {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "DELETE",
-            Routes.CHANNEL_MESSAGE_REACTION(this.channelId, this.id, r)
+            Routes.CHANNEL_MESSAGE_REACTION(this.channelId, this.id, r),
         );
     }
 
@@ -246,7 +246,7 @@ export class Message implements Model {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "DELETE",
-            Routes.CHANNEL_MESSAGE_REACTIONS(this.channelId, this.id)
+            Routes.CHANNEL_MESSAGE_REACTIONS(this.channelId, this.id),
         );
     }
 
