@@ -18,6 +18,8 @@ export type RawHandler<T> = (...args: [Session, number, T]) => void;
 export type Handler<T extends unknown[]> = (...args: T) => unknown;
 
 export const READY: RawHandler<DiscordReady> = (session, shardId, payload) => {
+    session.applicationId = payload.application.id;
+    session.botId = payload.user.id;
     session.emit("ready", { ...payload, user: new User(session, payload.user) }, shardId);
 };
 

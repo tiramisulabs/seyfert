@@ -116,7 +116,7 @@ export class Interaction implements Model {
         const result = await this.session.rest.sendRequest<DiscordMessage>(
             this.session.rest,
             {
-                url: Routes.WEBHOOK(this.session.botId, this.token),
+                url: Routes.WEBHOOK(this.session.applicationId ?? this.session.botId, this.token),
                 method: "POST",
                 payload: this.session.rest.createRequestBody(this.session.rest, {
                     method: "POST",
