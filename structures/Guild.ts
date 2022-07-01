@@ -50,9 +50,7 @@ export interface ModifyGuildEmoji {
  * @link https://discord.com/developers/docs/resources/guild#create-guild-ban
  */
 export interface CreateGuildBan {
-    /** Number of days to delete messages for (0-7) */
     deleteMessageDays?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
-    /** Reason for the ban */
     reason?: string;
 }
 
@@ -66,6 +64,15 @@ export interface ModifyGuildMember {
     deaf?: boolean;
     channelId?: Snowflake;
     communicationDisabledUntil?: number;
+}
+
+/**
+ * @link https://discord.com/developers/docs/resources/guild#begin-guild-prune
+ * */
+export interface BeginGuildPrune {
+  days?: number;
+  computePruneCount?: boolean;
+  includeRoles?: Snowflake[];
 }
 
 /**
@@ -261,7 +268,7 @@ export class Guild extends BaseGuild implements Model {
         const member = await this.session.rest.runMethod<DiscordMemberWithUser>(
             this.session.rest,
             "PATCH",
-            Routes.GUILD_MEMBER(this.id, memberId)
+            Routes.GUILD_MEMBER(this.id, memberId),
             {
                 nick: options.nick,
                 roles: options.roles,
@@ -269,10 +276,35 @@ export class Guild extends BaseGuild implements Model {
                 deaf: options.deaf,
                 channel_id: options.channelId,
                 communication_disabled_until: options.communicationDisabledUntil ? new Date(options.communicationDisabledUntil).toISOString() : undefined,
-            },
+            }
         );
 
         return new Member(this.session, member, this.id);
+    }
+
+    async pruneMembers(options: BeginGuildPrune): Promise<number> {
+        const result = await this.session.rest.runMethod<{ pruned: number }>(
+            this.session.rest,
+            "POST",
+            Routes.GUILD_PRUNE(this.id),
+            {
+                days: options.days,
+                compute_prune_count: options.computePruneCount,
+                include_roles: options.includeRoles,
+            },
+        );
+
+        return result.pruned;
+    }
+
+    async getPruneCount(): Promise<number> {
+        const result = await this.session.rest.runMethod<{ pruned: number }>(
+            this.session.rest,
+            "GET",
+            Routes.GUILD_PRUNE(this.id),
+        );
+
+        return result.pruned;
     }
 }
 

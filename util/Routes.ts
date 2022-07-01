@@ -147,14 +147,29 @@ export function INTERACTION_ID_TOKEN(interactionId: Snowflake, token: string) {
 export function WEBHOOK(webhookId: Snowflake, token: string, options?: { wait?: boolean; threadId?: Snowflake }) {
     let url = `/webhooks/${webhookId}/${token}?`;
 
-    if (options) {
-        if (options.wait !== undefined) url += `wait=${options.wait}`;
-        if (options.threadId) url += `threadId=${options.threadId}`;
-    }
+    if (options?.wait !== undefined) url += `wait=${options.wait}`;
+    if (options?.threadId) url += `threadId=${options.threadId}`;
 
     return url;
 }
 
 export function USER_NICK(guildId: Snowflake) {
     return `/guilds/${guildId}/members/@me`;
+}
+
+/**
+ * @link https://discord.com/developers/docs/resources/guild#get-guild-prune-count
+ * */
+export interface GetGuildPruneCountQuery {
+    days?: number;
+    includeRoles?: Snowflake | Snowflake[];
+}
+
+export function GUILD_PRUNE(guildId: Snowflake, options?: GetGuildPruneCountQuery) {
+    let url = `/guilds/${guildId}/prune?`;
+
+    if (options?.days) url += `days=${options.days}`;
+    if (options?.includeRoles) url += `&include_roles=${options.includeRoles}`;
+
+    return url;
 }
