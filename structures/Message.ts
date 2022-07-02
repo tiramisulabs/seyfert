@@ -15,6 +15,7 @@ import User from "./User.ts";
 import Member from "./Member.ts";
 import Attachment from "./Attachment.ts";
 import ComponentFactory from "./components/ComponentFactory.ts";
+import { iconHashToBigInt } from "../util/hash.ts";
 import * as Routes from "../util/Routes.ts";
 
 /**
@@ -57,6 +58,13 @@ export type ReactionResolvable = string | {
     id: Snowflake;
 };
 
+export interface WebhookAuthor {
+    id: string;
+    username: string;
+    discriminator: string;
+    avatar?: bigint;
+}
+
 /**
  * Represents a message
  * @link https://discord.com/developers/docs/resources/channel#message-object
@@ -77,9 +85,19 @@ export class Message implements Model {
 
         this.attachments = data.attachments.map((attachment) => new Attachment(session, attachment));
 
+        // webhook handling
+        if (data.author && data.author.discriminator === "0000") {
+            this.webhook = {
+                id: data.author.id,
+                username: data.author.username,
+                discriminator: data.author.discriminator,
+                avatar: data.author.avatar ? iconHashToBigInt(data.author.avatar) : undefined,
+            };
+        }
+
         // user is always null on MessageCreate and its replaced with author
 
-        if (data.guild_id && data.member) {
+        if (data.guild_id && data.member && data.author && !this.isWebhookMessage()) {
             this.member = new Member(session, { ...data.member, user: data.author }, data.guild_id);
         }
 
@@ -100,6 +118,8 @@ export class Message implements Model {
     attachments: Attachment[];
     member?: Member;
     components?: Component[];
+
+    webhook?: WebhookAuthor;
 
     get url() {
         return `https://discord.com/channels/${this.guildId ?? "@me"}/${this.channelId}/${this.id}`;
@@ -283,6 +303,11 @@ export class Message implements Model {
 
     inGuild(): this is { guildId: Snowflake } & Message {
         return !!this.guildId;
+    }
+
+    /** isWebhookMessage if the messages comes from a Webhook */
+    isWebhookMessage(): this is User & { author: Partial<User>; webhook: WebhookAuthor; member: undefined } {
+        return !!this.webhook;
     }
 }
 
