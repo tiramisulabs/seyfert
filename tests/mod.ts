@@ -1,19 +1,26 @@
+import "https://deno.land/std@0.146.0/dotenv/load.ts";
 import { GatewayIntents, Session } from "./deps.ts";
 
-if (!Deno.args[0]) {
+const token = Deno.env.get("TOKEN") ?? Deno.args[0];
+
+if (!token) {
     throw new Error("Please provide a token");
 }
 
 const intents = GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages;
-const session = new Session({ token: Deno.args[0], intents });
+const session = new Session({ token, intents });
 
 session.on("ready", (payload) => {
     console.log("Logged in as:", payload.user.username);
 });
 
-const PREFIX = "&";
+const PREFIX = ">";
 
 session.on("messageCreate", (message) => {
+    if (message.author.bot) {
+        return;
+    }
+
     const args = message.content.slice(PREFIX.length).trim().split(/\s+/gm);
     const name = args.shift()?.toLowerCase();
 
