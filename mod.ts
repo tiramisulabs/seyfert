@@ -3,7 +3,6 @@ export * from "./structures/Attachment.ts";
 export * from "./structures/Base.ts";
 export * from "./structures/BaseGuild.ts";
 export * from "./structures/BaseChannel.ts";
-export * from "./structures/Component.ts";
 export * from "./structures/DMChannel.ts";
 export * from "./structures/Embed.ts";
 export * from "./structures/Emoji.ts";
@@ -24,6 +23,13 @@ export * from "./structures/User.ts";
 export * from "./structures/VoiceChannel.ts";
 export * from "./structures/WelcomeChannel.ts";
 export * from "./structures/WelcomeScreen.ts";
+
+export * from "./structures/components/ActionRowComponent.ts";
+export * from "./structures/components/ButtonComponent.ts";
+export * from "./structures/components/Component.ts";
+export * from "./structures/components/LinkButtonComponent.ts";
+export * from "./structures/components/SelectMenuComponent.ts";
+export * from "./structures/components/TextInputComponent.ts";
 
 export * from "./session/Session.ts";
 
