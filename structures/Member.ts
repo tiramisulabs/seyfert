@@ -5,6 +5,7 @@ import type { DiscordMemberWithUser } from "../vendor/external.ts";
 import type { ImageFormat, ImageSize } from "../util/shared/images.ts";
 import type { CreateGuildBan, ModifyGuildMember } from "./guilds/Guild.ts";
 import { iconBigintToHash, iconHashToBigInt } from "../util/hash.ts";
+import { formatImageURL } from "../util/shared/images.ts";
 import User from "./User.ts";
 import Guild from "./guilds/Guild.ts";
 import * as Routes from "../util/Routes.ts";
@@ -96,7 +97,7 @@ export class Member implements Model {
     }
 
     /** gets the user's avatar */
-    avatarUrl(options: { format?: ImageFormat; size?: ImageSize } = { size: 128 }) {
+    avatarURL(options: { format?: ImageFormat; size?: ImageSize } = { size: 128 }) {
         let url: string;
 
         if (!this.avatarHash) {
@@ -105,7 +106,7 @@ export class Member implements Model {
             url = Routes.USER_AVATAR(this.user.id, iconBigintToHash(this.avatarHash));
         }
 
-        return `${url}.${options.format ?? (url.includes("/a_") ? "gif" : "jpg")}?size=${options.size}`;
+        return formatImageURL(url, options.size, options.format)
     }
 
     toString() {
