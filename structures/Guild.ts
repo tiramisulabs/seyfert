@@ -1,7 +1,13 @@
 import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
-import type { DiscordEmoji, DiscordGuild, DiscordInviteMetadata, DiscordRole } from "../vendor/external.ts";
+import type {
+    DiscordEmoji,
+    DiscordGuild,
+    DiscordInviteMetadata,
+    DiscordMemberWithUser,
+    DiscordRole,
+} from "../vendor/external.ts";
 import type { GetInvite } from "../util/Routes.ts";
 import {
     DefaultMessageNotificationLevels,
@@ -47,6 +53,40 @@ export interface ModifyGuildEmoji {
 }
 
 /**
+ * @link https://discord.com/developers/docs/resources/guild#create-guild-ban
+ */
+export interface CreateGuildBan {
+    deleteMessageDays?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+    reason?: string;
+}
+
+/**
+ * @link https://discord.com/developers/docs/resources/guild#modify-guild-member
+ */
+export interface ModifyGuildMember {
+    nick?: string;
+    roles?: Snowflake[];
+    mute?: boolean;
+    deaf?: boolean;
+    channelId?: Snowflake;
+    communicationDisabledUntil?: number;
+}
+
+/**
+ * @link https://discord.com/developers/docs/resources/guild#begin-guild-prune
+ */
+export interface BeginGuildPrune {
+    days?: number;
+    computePruneCount?: boolean;
+    includeRoles?: Snowflake[];
+}
+
+export interface ModifyRolePositions {
+  id: Snowflake;
+  position?: number | null;
+}
+
+/**
  * Represents a guild
  * @link https://discord.com/developers/docs/resources/guild#guild-object
  */
@@ -62,7 +102,8 @@ export class Guild extends BaseGuild implements Model {
         this.vefificationLevel = data.verification_level;
         this.defaultMessageNotificationLevel = data.default_message_notifications;
         this.explicitContentFilterLevel = data.explicit_content_filter;
-        this.members = data.members?.map((member) => new Member(session, { ...member, user: member.user! })) ?? [];
+        this.members = data.members?.map((member) => new Member(session, { ...member, user: member.user! }, data.id)) ??
+            [];
         this.roles = data.roles.map((role) => new Role(session, role, data.id));
         this.emojis = data.emojis.map((guildEmoji) => new GuildEmoji(session, guildEmoji, data.id));
     }
@@ -78,6 +119,20 @@ export class Guild extends BaseGuild implements Model {
     members: Member[];
     roles: Role[];
     emojis: GuildEmoji[];
+
+    /**
+     * 'null' would reset the nickname
+     */
+    async editBotNickname(options: { nick: string | null; reason?: string }) {
+        const result = await this.session.rest.runMethod<{ nick?: string } | undefined>(
+            this.session.rest,
+            "PATCH",
+            Routes.USER_NICK(this.id),
+            options,
+        );
+
+        return result?.nick;
+    }
 
     async createEmoji(options: CreateGuildEmoji): Promise<GuildEmoji> {
         if (options.image && !options.image.startsWith("data:image/")) {
@@ -162,6 +217,40 @@ export class Guild extends BaseGuild implements Model {
         return new Role(this.session, role, this.id);
     }
 
+
+
+    async addRole(memberId: Snowflake, roleId: Snowflake, { reason }: { reason?: string } = {}) {
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "PUT",
+            Routes.GUILD_MEMBER_ROLE(this.id, memberId, roleId),
+            { reason },
+        );
+    }
+
+    async removeRole(memberId: Snowflake, roleId: Snowflake, { reason }: { reason?: string } = {}) {
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "DELETE",
+            Routes.GUILD_MEMBER_ROLE(this.id, memberId, roleId),
+            { reason },
+        );
+    }
+
+    /**
+     * Returns the roles moved
+     * */
+    async moveRoles(options: ModifyRolePositions[]) {
+        const roles = await this.session.rest.runMethod<DiscordRole[]>(
+            this.session.rest,
+            "PATCH",
+            Routes.GUILD_ROLES(this.id),
+            options,
+        );
+
+        return roles.map((role) => new Role(this.session, role, this.id));
+    }
+
     async deleteInvite(inviteCode: string): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
@@ -189,6 +278,91 @@ export class Guild extends BaseGuild implements Model {
         );
 
         return invites.map((invite) => new Invite(this.session, invite));
+    }
+
+    /**
+     * Bans the member
+     */
+    async banMember(memberId: Snowflake, options: CreateGuildBan) {
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "PUT",
+            Routes.GUILD_BAN(this.id, memberId),
+            options
+                ? {
+                    delete_message_days: options.deleteMessageDays,
+                    reason: options.reason,
+                }
+                : {},
+        );
+    }
+
+    /**
+     * Kicks the member
+     */
+    async kickMember(memberId: Snowflake, { reason }: { reason?: string }) {
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "DELETE",
+            Routes.GUILD_MEMBER(this.id, memberId),
+            { reason },
+        );
+    }
+
+    /*
+     * Unbans the member
+     * */
+    async unbanMember(memberId: Snowflake) {
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "DELETE",
+            Routes.GUILD_BAN(this.id, memberId),
+        );
+    }
+
+    async editMember(memberId: Snowflake, options: ModifyGuildMember) {
+        const member = await this.session.rest.runMethod<DiscordMemberWithUser>(
+            this.session.rest,
+            "PATCH",
+            Routes.GUILD_MEMBER(this.id, memberId),
+            {
+                nick: options.nick,
+                roles: options.roles,
+                mute: options.mute,
+                deaf: options.deaf,
+                channel_id: options.channelId,
+                communication_disabled_until: options.communicationDisabledUntil
+                    ? new Date(options.communicationDisabledUntil).toISOString()
+                    : undefined,
+            },
+        );
+
+        return new Member(this.session, member, this.id);
+    }
+
+    async pruneMembers(options: BeginGuildPrune): Promise<number> {
+        const result = await this.session.rest.runMethod<{ pruned: number }>(
+            this.session.rest,
+            "POST",
+            Routes.GUILD_PRUNE(this.id),
+            {
+                days: options.days,
+                compute_prune_count: options.computePruneCount,
+                include_roles: options.includeRoles,
+            },
+        );
+
+        return result.pruned;
+    }
+
+    async getPruneCount(): Promise<number> {
+        const result = await this.session.rest.runMethod<{ pruned: number }>(
+            this.session.rest,
+            "GET",
+            Routes.GUILD_PRUNE(this.id),
+        );
+
+        return result.pruned;
     }
 }
 

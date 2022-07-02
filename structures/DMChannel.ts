@@ -1,16 +1,23 @@
+import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
 import type { DiscordChannel } from "../vendor/external.ts";
-import Channel from "./Channel.ts";
+import BaseChannel from "./BaseChannel.ts";
+import User from "./User.ts";
 import * as Routes from "../util/Routes.ts";
 
-export class DMChannel extends Channel {
+export class DMChannel extends BaseChannel implements Model {
     constructor(session: Session, data: DiscordChannel) {
         super(session, data);
-        data.last_message_id ? this.lastMessageId = data.last_message_id : undefined;
-        // Waiting for implementation of botId in session
-        //this.user = new User(this.session, data.recipents!.find((r) => r.id !== this.session.botId));
+
+        this.user = new User(this.session, data.recipents!.find((r) => r.id !== this.session.botId)!);
+
+        if (data.last_message_id) {
+            this.lastMessageId = data.last_message_id;
+        }
     }
+
+    user: User;
     lastMessageId?: Snowflake;
 
     async close() {

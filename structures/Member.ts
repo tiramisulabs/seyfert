@@ -1,21 +1,13 @@
 import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
-import type { DiscordMember, MakeRequired } from "../vendor/external.ts";
+import type { DiscordMemberWithUser } from "../vendor/external.ts";
 import type { ImageFormat, ImageSize } from "../util/shared/images.ts";
+import type { CreateGuildBan, ModifyGuildMember } from "./Guild.ts";
 import { iconBigintToHash, iconHashToBigInt } from "../util/hash.ts";
 import User from "./User.ts";
+import Guild from "./Guild.ts";
 import * as Routes from "../util/Routes.ts";
-
-/**
- * @link https://discord.com/developers/docs/resources/guild#create-guild-ban
- */
-export interface CreateGuildBan {
-    /** Number of days to delete messages for (0-7) */
-    deleteMessageDays?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
-    /** Reason for the ban */
-    reason?: string;
-}
 
 /**
  * Represents a guild member
@@ -23,9 +15,10 @@ export interface CreateGuildBan {
  * @link https://discord.com/developers/docs/resources/guild#guild-member-object
  */
 export class Member implements Model {
-    constructor(session: Session, data: MakeRequired<DiscordMember, "user">) {
+    constructor(session: Session, data: DiscordMemberWithUser, guildId: Snowflake) {
         this.session = session;
         this.user = new User(session, data.user);
+        this.guildId = guildId;
         this.avatarHash = data.avatar ? iconHashToBigInt(data.avatar) : undefined;
         this.nickname = data.nick ? data.nick : undefined;
         this.joinedTimestamp = Number.parseInt(data.joined_at);
@@ -39,8 +32,8 @@ export class Member implements Model {
     }
 
     readonly session: Session;
-
     user: User;
+    guildId: Snowflake;
     avatarHash?: bigint;
     nickname?: string;
     joinedTimestamp: number;
@@ -63,37 +56,38 @@ export class Member implements Model {
         return new Date(this.joinedTimestamp);
     }
 
-    /**
-     * Bans the member
-     */
-    async ban(guildId: Snowflake, options: CreateGuildBan): Promise<Member> {
-        await this.session.rest.runMethod<undefined>(
-            this.session.rest,
-            "PUT",
-            Routes.GUILD_BAN(guildId, this.id),
-            options
-                ? {
-                    delete_message_days: options.deleteMessageDays,
-                    reason: options.reason,
-                }
-                : {},
-        );
+    async ban(options: CreateGuildBan): Promise<Member> {
+        await Guild.prototype.banMember.call({ id: this.guildId, session: this.session }, this.user.id, options);
 
         return this;
     }
 
-    /**
-     * Kicks the member
-     */
-    async kick(guildId: Snowflake, { reason }: { reason?: string }): Promise<Member> {
-        await this.session.rest.runMethod<undefined>(
-            this.session.rest,
-            "DELETE",
-            Routes.GUILD_MEMBER(guildId, this.id),
-            { reason },
-        );
+    async kick(options: { reason?: string }): Promise<Member> {
+        await Guild.prototype.kickMember.call({ id: this.guildId, session: this.session }, this.user.id, options);
 
         return this;
+    }
+
+    async unban() {
+        await Guild.prototype.unbanMember.call({ id: this.guildId, session: this.session }, this.user.id);
+    }
+
+    async edit(options: ModifyGuildMember): Promise<Member> {
+        const member = await Guild.prototype.editMember.call(
+            { id: this.guildId, session: this.session },
+            this.user.id,
+            options,
+        );
+
+        return member;
+    }
+
+    async addRole(roleId: Snowflake, options: { reason?: string } = {}) {
+        await Guild.prototype.addRole.call({ id: this.guildId, session: this.session }, this.user.id, roleId, options);
+    }
+
+    async removeRole(roleId: Snowflake, options: { reason?: string } = {}) {
+        await Guild.prototype.removeRole.call({ id: this.guildId, session: this.session }, this.user.id, roleId, options);
     }
 
     /** gets the user's avatar */
@@ -103,7 +97,7 @@ export class Member implements Model {
         if (!this.avatarHash) {
             url = Routes.USER_DEFAULT_AVATAR(Number(this.user.discriminator) % 5);
         } else {
-            url = Routes.USER_AVATAR(this.id, iconBigintToHash(this.avatarHash));
+            url = Routes.USER_AVATAR(this.user.id, iconBigintToHash(this.avatarHash));
         }
 
         return `${url}.${options.format ?? (url.includes("/a_") ? "gif" : "jpg")}?size=${options.size}`;

@@ -1,9 +1,9 @@
 import type { Session } from "../session/Session.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
-import type { GetMessagesOptions } from "../util/Routes.ts";
+import type { GetMessagesOptions, GetReactions } from "../util/Routes.ts";
 import type { DiscordChannel, DiscordInvite, DiscordMessage, TargetTypes } from "../vendor/external.ts";
+import type { CreateMessage, EditMessage, ReactionResolvable } from "./Message.ts";
 import GuildChannel from "./GuildChannel.ts";
-import Guild from "./Guild.ts";
 import ThreadChannel from "./ThreadChannel.ts";
 import Message from "./Message.ts";
 import Invite from "./Invite.ts";
@@ -37,7 +37,7 @@ export interface ThreadCreateOptions {
 }
 
 export class TextChannel extends GuildChannel {
-    constructor(session: Session, data: DiscordChannel, guildId: Guild["id"]) {
+    constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data, guildId);
         data.last_message_id ? this.lastMessageId = data.last_message_id : undefined;
         data.last_pin_timestamp ? this.lastPinTimestamp = data.last_pin_timestamp : undefined;
@@ -106,6 +106,58 @@ export class TextChannel extends GuildChannel {
             "POST",
             Routes.CHANNEL_TYPING(this.id),
         );
+    }
+
+    async pinMessage(messageId: Snowflake) {
+        await Message.prototype.pin.call({ id: messageId, channelId: this.id, session: this.session });
+    }
+
+    async unpinMessage(messageId: Snowflake) {
+        await Message.prototype.unpin.call({ id: messageId, channelId: this.id, session: this.session });
+    }
+
+    async addReaction(messageId: Snowflake, reaction: ReactionResolvable) {
+        await Message.prototype.addReaction.call(
+            { channelId: this.id, id: messageId, session: this.session },
+            reaction,
+        );
+    }
+
+    async removeReaction(messageId: Snowflake, reaction: ReactionResolvable, options?: { userId: Snowflake }) {
+        await Message.prototype.removeReaction.call(
+            { channelId: this.id, id: messageId, session: this.session },
+            reaction,
+            options,
+        );
+    }
+
+    async removeReactionEmoji(messageId: Snowflake, reaction: ReactionResolvable) {
+        await Message.prototype.removeReactionEmoji.call(
+            { channelId: this.id, id: messageId, session: this.session },
+            reaction,
+        );
+    }
+
+    async nukeReactions(messageId: Snowflake) {
+        await Message.prototype.nukeReactions.call({ channelId: this.id, id: messageId });
+    }
+
+    async fetchReactions(messageId: Snowflake, reaction: ReactionResolvable, options?: GetReactions) {
+        const users = await Message.prototype.fetchReactions.call(
+            { channelId: this.id, id: messageId, session: this.session },
+            reaction,
+            options,
+        );
+
+        return users;
+    }
+
+    sendMessage(options: CreateMessage) {
+        return Message.prototype.reply.call({ channelId: this.id, session: this.session }, options);
+    }
+
+    editMessage(messageId: Snowflake, options: EditMessage) {
+        return Message.prototype.edit.call({ channelId: this.id, id: messageId, session: this.session }, options);
     }
 }
 

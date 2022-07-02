@@ -1,7 +1,14 @@
 import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
-import type { AllowedMentionsTypes, DiscordMessage, FileContent } from "../vendor/external.ts";
+import type {
+    AllowedMentionsTypes,
+    DiscordEmbed,
+    DiscordMessage,
+    DiscordUser,
+    FileContent,
+} from "../vendor/external.ts";
+import type { GetReactions } from "../util/Routes.ts";
 import { MessageFlags } from "../util/shared/flags.ts";
 import User from "./User.ts";
 import Member from "./Member.ts";
@@ -33,6 +40,7 @@ export interface CreateMessage {
     allowedMentions?: AllowedMentions;
     files?: FileContent[];
     messageReference?: CreateMessageReference;
+    embeds?: DiscordEmbed[];
 }
 
 /**
@@ -41,6 +49,11 @@ export interface CreateMessage {
 export interface EditMessage extends Partial<CreateMessage> {
     flags?: MessageFlags;
 }
+
+export type ReactionResolvable = string | {
+    name: string;
+    id: Snowflake;
+};
 
 /**
  * Represents a message
@@ -63,12 +76,10 @@ export class Message implements Model {
         this.attachments = data.attachments.map((attachment) => new Attachment(session, attachment));
 
         // user is always null on MessageCreate and its replaced with author
-        this.member = data.member
-            ? new Member(session, {
-                ...data.member,
-                user: data.author,
-            })
-            : undefined;
+
+        if (data.guild_id && data.member) {
+            this.member = new Member(session, { ...data.member, user: data.author }, data.guild_id);
+        }
     }
 
     readonly session: Session;
@@ -89,21 +100,38 @@ export class Message implements Model {
         return `https://discord.com/channels/${this.guildId ?? "@me"}/${this.channelId}/${this.id}`;
     }
 
+    async pin() {
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "PUT",
+            Routes.CHANNEL_PIN(this.channelId, this.id),
+        );
+    }
+
+    async unpin() {
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "DELETE",
+            Routes.CHANNEL_PIN(this.channelId, this.id),
+        );
+    }
+
     /** Edits the current message */
-    async edit({ content, allowedMentions, flags }: EditMessage): Promise<Message> {
+    async edit(options: EditMessage): Promise<Message> {
         const message = await this.session.rest.runMethod(
             this.session.rest,
             "POST",
             Routes.CHANNEL_MESSAGE(this.id, this.channelId),
             {
-                content,
+                content: options.content,
                 allowed_mentions: {
-                    parse: allowedMentions?.parse,
-                    roles: allowedMentions?.roles,
-                    users: allowedMentions?.users,
-                    replied_user: allowedMentions?.repliedUser,
+                    parse: options.allowedMentions?.parse,
+                    roles: options.allowedMentions?.roles,
+                    users: options.allowedMentions?.users,
+                    replied_user: options.allowedMentions?.repliedUser,
                 },
-                flags,
+                flags: options.flags,
+                embeds: options.embeds,
             },
         );
 
@@ -156,10 +184,96 @@ export class Message implements Model {
                         fail_if_not_exists: options.messageReference.failIfNotExists ?? true,
                     }
                     : undefined,
+                embeds: options.embeds,
             },
         );
 
         return new Message(this.session, message);
+    }
+
+    /**
+     * alias for Message.addReaction
+     */
+    get react() {
+        return this.addReaction;
+    }
+
+    async addReaction(reaction: ReactionResolvable) {
+        const r = typeof reaction === "string" ? reaction : `${reaction.name}:${reaction.id}`;
+
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "PUT",
+            Routes.CHANNEL_MESSAGE_REACTION_ME(this.channelId, this.id, r),
+            {},
+        );
+    }
+
+    async removeReaction(reaction: ReactionResolvable, options?: { userId: Snowflake }) {
+        const r = typeof reaction === "string" ? reaction : `${reaction.name}:${reaction.id}`;
+
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "DELETE",
+            options?.userId
+                ? Routes.CHANNEL_MESSAGE_REACTION_USER(
+                    this.channelId,
+                    this.id,
+                    r,
+                    options.userId,
+                )
+                : Routes.CHANNEL_MESSAGE_REACTION_ME(this.channelId, this.id, r),
+        );
+    }
+
+    /**
+     * Get users who reacted with this emoji
+     */
+    async fetchReactions(reaction: ReactionResolvable, options?: GetReactions): Promise<User[]> {
+        const r = typeof reaction === "string" ? reaction : `${reaction.name}:${reaction.id}`;
+
+        const users = await this.session.rest.runMethod<DiscordUser[]>(
+            this.session.rest,
+            "GET",
+            Routes.CHANNEL_MESSAGE_REACTION(this.channelId, this.id, encodeURIComponent(r), options),
+        );
+
+        return users.map((user) => new User(this.session, user));
+    }
+
+    async removeReactionEmoji(reaction: ReactionResolvable) {
+        const r = typeof reaction === "string" ? reaction : `${reaction.name}:${reaction.id}`;
+
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "DELETE",
+            Routes.CHANNEL_MESSAGE_REACTION(this.channelId, this.id, r),
+        );
+    }
+
+    async nukeReactions() {
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "DELETE",
+            Routes.CHANNEL_MESSAGE_REACTIONS(this.channelId, this.id),
+        );
+    }
+
+    async crosspost() {
+        const message = await this.session.rest.runMethod<DiscordMessage>(
+            this.session.rest,
+            "POST",
+            Routes.CHANNEL_MESSAGE_CROSSPOST(this.channelId, this.id),
+        );
+
+        return new Message(this.session, message);
+    }
+
+    /*
+     * alias of Message.crosspost
+     * */
+    get publish() {
+        return this.crosspost;
     }
 
     inGuild(): this is { guildId: Snowflake } & Message {
