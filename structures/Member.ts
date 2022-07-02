@@ -82,6 +82,14 @@ export class Member implements Model {
         return member;
     }
 
+    async addRole(roleId: Snowflake, options: { reason?: string } = {}) {
+        await Guild.prototype.addRole.call({ id: this.guildId, session: this.session }, this.user.id, roleId, options);
+    }
+
+    async removeRole(roleId: Snowflake, options: { reason?: string } = {}) {
+        await Guild.prototype.removeRole.call({ id: this.guildId, session: this.session }, this.user.id, roleId, options);
+    }
+
     /** gets the user's avatar */
     avatarUrl(options: { format?: ImageFormat; size?: ImageSize } = { size: 128 }) {
         let url: string;

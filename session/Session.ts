@@ -42,6 +42,15 @@ export class Session extends EventEmitter {
     unrepliedInteractions: Set<bigint> = new Set();
 
     #botId: Snowflake;
+    #applicationId?: Snowflake;
+
+    set applicationId(id: Snowflake) {
+        this.#applicationId = id;
+    }
+
+    get applicationId() {
+        return this.#applicationId!; 
+    }
 
     set botId(id: Snowflake) {
         this.#botId = id;

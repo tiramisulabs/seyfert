@@ -220,3 +220,7 @@ export function CHANNEL_MESSAGE_REACTION(
 export function CHANNEL_MESSAGE_CROSSPOST(channelId: Snowflake, messageId: Snowflake) {
     return `/channels/${channelId}/messages/${messageId}/crosspost`;
 }
+
+export function GUILD_MEMBER_ROLE(guildId: Snowflake, memberId: Snowflake, roleId: Snowflake) {
+    return `/guilds/${guildId}/members/${memberId}/roles/${roleId}`;
+}

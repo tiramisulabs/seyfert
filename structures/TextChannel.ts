@@ -2,7 +2,7 @@ import type { Session } from "../session/Session.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { GetMessagesOptions, GetReactions } from "../util/Routes.ts";
 import type { DiscordChannel, DiscordInvite, DiscordMessage, TargetTypes } from "../vendor/external.ts";
-import type { ReactionResolvable } from "./Message.ts";
+import type { CreateMessage, EditMessage, ReactionResolvable } from "./Message.ts";
 import GuildChannel from "./GuildChannel.ts";
 import ThreadChannel from "./ThreadChannel.ts";
 import Message from "./Message.ts";
@@ -150,6 +150,14 @@ export class TextChannel extends GuildChannel {
         );
 
         return users;
+    }
+
+    sendMessage(options: CreateMessage) {
+        return Message.prototype.reply.call({ channelId: this.id, session: this.session }, options);
+    }
+
+    editMessage(messageId: Snowflake, options: EditMessage) {
+        return Message.prototype.edit.call({ channelId: this.id, id: messageId, session: this.session }, options);
     }
 }
 

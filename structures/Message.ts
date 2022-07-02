@@ -1,7 +1,13 @@
 import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
-import type { AllowedMentionsTypes, DiscordMessage, DiscordUser, FileContent } from "../vendor/external.ts";
+import type {
+    AllowedMentionsTypes,
+    DiscordEmbed,
+    DiscordMessage,
+    DiscordUser,
+    FileContent,
+} from "../vendor/external.ts";
 import type { GetReactions } from "../util/Routes.ts";
 import { MessageFlags } from "../util/shared/flags.ts";
 import User from "./User.ts";
@@ -36,6 +42,7 @@ export interface CreateMessage {
     allowedMentions?: AllowedMentions;
     files?: FileContent[];
     messageReference?: CreateMessageReference;
+    embeds?: DiscordEmbed[];
 }
 
 /**
@@ -113,20 +120,21 @@ export class Message implements Model {
     }
 
     /** Edits the current message */
-    async edit({ content, allowedMentions, flags }: EditMessage): Promise<Message> {
+    async edit(options: EditMessage): Promise<Message> {
         const message = await this.session.rest.runMethod(
             this.session.rest,
             "POST",
             Routes.CHANNEL_MESSAGE(this.id, this.channelId),
             {
-                content,
+                content: options.content,
                 allowed_mentions: {
-                    parse: allowedMentions?.parse,
-                    roles: allowedMentions?.roles,
-                    users: allowedMentions?.users,
-                    replied_user: allowedMentions?.repliedUser,
+                    parse: options.allowedMentions?.parse,
+                    roles: options.allowedMentions?.roles,
+                    users: options.allowedMentions?.users,
+                    replied_user: options.allowedMentions?.repliedUser,
                 },
-                flags,
+                flags: options.flags,
+                embeds: options.embeds,
             },
         );
 
@@ -179,6 +187,7 @@ export class Message implements Model {
                         fail_if_not_exists: options.messageReference.failIfNotExists ?? true,
                     }
                     : undefined,
+                embeds: options.embeds,
             },
         );
 

@@ -18,6 +18,8 @@ export type RawHandler<T> = (...args: [Session, number, T]) => void;
 export type Handler<T extends unknown[]> = (...args: T) => unknown;
 
 export const READY: RawHandler<DiscordReady> = (session, shardId, payload) => {
+    session.applicationId = payload.application.id;
+    session.botId = payload.user.id;
     session.emit("ready", { ...payload, user: new User(session, payload.user) }, shardId);
 };
 
@@ -47,6 +49,10 @@ export const GUILD_MEMBER_REMOVE: RawHandler<DiscordGuildMemberRemove> = (sessio
 
 export const INTERACTION_CREATE: RawHandler<DiscordInteraction> = (session, _shardId, interaction) => {
     session.unrepliedInteractions.add(BigInt(interaction.id));
+
+    // could be improved
+    setTimeout(() => session.unrepliedInteractions.delete(BigInt(interaction.id)), 15 * 60 * 1000);
+
     session.emit("interactionCreate", new Interaction(session, interaction));
 };
 

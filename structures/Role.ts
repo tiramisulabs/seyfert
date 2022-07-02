@@ -56,6 +56,14 @@ export class Role implements Model {
         return role;
     }
 
+    async add(memberId: Snowflake, options: { reason?: string } = {}) {
+        await Guild.prototype.addRole.call({ id: this.guildId, session: this.session }, memberId, this.id, options);
+    }
+
+    async remove(memberId: Snowflake, options: { reason?: string } = {}) {
+        await Guild.prototype.removeRole.call({ id: this.guildId, session: this.session }, memberId, this.id, options);
+    }
+
     toString() {
         switch (this.id) {
             case this.guildId:
