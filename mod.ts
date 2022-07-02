@@ -33,6 +33,8 @@ export * from "./structures/guilds/BaseGuild.ts";
 export * from "./structures/guilds/Guild.ts";
 export * from "./structures/guilds/InviteGuild.ts";
 
+export * from "./structures/builders/EmbedBuilder.ts";
+
 export * from "./structures/interactions/Interaction.ts";
 
 export * from "./session/Session.ts";

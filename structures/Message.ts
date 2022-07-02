@@ -14,7 +14,7 @@ import { MessageFlags } from "../util/shared/flags.ts";
 import User from "./User.ts";
 import Member from "./Member.ts";
 import Attachment from "./Attachment.ts";
-import BaseComponent from "./components/Component.ts";
+import ComponentFactory from "./components/ComponentFactory.ts";
 import * as Routes from "../util/Routes.ts";
 
 /**
@@ -83,7 +83,7 @@ export class Message implements Model {
             this.member = new Member(session, { ...data.member, user: data.author }, data.guild_id);
         }
 
-        this.components = data.components?.map((component) => BaseComponent.from(session, component));
+        this.components = data.components?.map((component) => ComponentFactory.from(session, component));
     }
 
     readonly session: Session;
