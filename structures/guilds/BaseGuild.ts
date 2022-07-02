@@ -2,7 +2,7 @@ import type { Model } from "../Base.ts";
 import type { Session } from "../../session/Session.ts";
 import type { DiscordGuild } from "../../vendor/external.ts";
 import type { ImageFormat, ImageSize } from "../../util/shared/images.ts";
-import { formatImageUrl } from "../../util/shared/images.ts";
+import { formatImageURL } from "../../util/shared/images.ts";
 import { iconBigintToHash, iconHashToBigInt } from "../../util/hash.ts";
 import { GuildFeatures } from "../../vendor/external.ts";
 import { Snowflake } from "../../util/Snowflake.ts";
@@ -45,10 +45,10 @@ export abstract class BaseGuild implements Model {
         return this.features.includes(GuildFeatures.Verified);
     }
 
-    iconUrl(options: { size?: ImageSize; format?: ImageFormat } = { size: 128 }) {
+    iconURL(options: { size?: ImageSize; format?: ImageFormat } = { size: 128 }) {
         if (this.iconHash) {
-            return formatImageUrl(
-                Routes.GUILD_BANNER(this.id, iconBigintToHash(this.iconHash)),
+            return formatImageURL(
+                Routes.GUILD_ICON(this.id, iconBigintToHash(this.iconHash)),
                 options.size,
                 options.format,
             );

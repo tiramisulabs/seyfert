@@ -4,7 +4,7 @@ import type { Session } from "../session/Session.ts";
 import type { DiscordUser } from "../vendor/external.ts";
 import type { ImageFormat, ImageSize } from "../util/shared/images.ts";
 import { iconBigintToHash, iconHashToBigInt } from "../util/hash.ts";
-import { formatImageUrl } from "../util/shared/images.ts";
+import { formatImageURL } from "../util/shared/images.ts";
 import * as Routes from "../util/Routes.ts";
 
 /**
@@ -42,7 +42,7 @@ export class User implements Model {
     }
 
     /** gets the user's avatar */
-    avatarUrl(options: { format?: ImageFormat; size?: ImageSize } = { size: 128 }) {
+    avatarURL(options: { format?: ImageFormat; size?: ImageSize } = { size: 128 }) {
         let url: string;
 
         if (!this.avatarHash) {
@@ -51,7 +51,7 @@ export class User implements Model {
             url = Routes.USER_AVATAR(this.id, iconBigintToHash(this.avatarHash));
         }
 
-        return formatImageUrl(url, options.size, options.format);
+        return formatImageURL(url, options.size, options.format);
     }
 
     toString() {
