@@ -23,3 +23,7 @@ export function GUILD_BANNER(guildId: Snowflake, icon: string) {
 export function GUILD_SPLASH(guildId: Snowflake, icon: string) {
     return `${Endpoints.CDN_URL}/splashes/${guildId}/${icon}`;
 }
+
+export function GUILD_ICON(guildId: Snowflake, icon: string) {
+    return `${Endpoints.CDN_URL}/icons/${guildId}/${icon}`;
+}
