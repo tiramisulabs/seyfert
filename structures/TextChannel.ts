@@ -78,7 +78,7 @@ export class TextChannel {
 
     /**
      * Mixin
-     * */
+     */
     static applyTo(klass: Function) {
         klass.prototype.fetchPins = TextChannel.prototype.fetchPins;
         klass.prototype.createInvite = TextChannel.prototype.createInvite;
@@ -196,7 +196,6 @@ export class TextChannel {
         return Message.prototype.edit.call({ channelId: this.id, id: messageId, session: this.session }, options);
     }
 
-
     async createWebhook(options: CreateWebhook) {
         const webhook = await this.session.rest.runMethod<DiscordWebhook>(
             this.session.rest,
@@ -206,7 +205,7 @@ export class TextChannel {
                 name: options.name,
                 avatar: options.avatar ? urlToBase64(options.avatar) : undefined,
                 reason: options.reason,
-            }
+            },
         );
 
         return new Webhook(this.session, webhook);

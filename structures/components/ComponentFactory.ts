@@ -1,7 +1,7 @@
 import type { Session } from "../../session/Session.ts";
 import type { DiscordComponent } from "../../vendor/external.ts";
 import type { Component } from "./Component.ts";
-import { MessageComponentTypes, ButtonStyles } from "../../vendor/external.ts";
+import { ButtonStyles, MessageComponentTypes } from "../../vendor/external.ts";
 import ActionRow from "./ActionRowComponent.ts";
 import Button from "./ButtonComponent.ts";
 import LinkButton from "./ButtonComponent.ts";
@@ -12,7 +12,7 @@ export class ComponentFactory {
     /**
      * Component factory
      * @internal
-     * */
+     */
     static from(session: Session, component: DiscordComponent): Component {
         switch (component.type) {
             case MessageComponentTypes.ActionRow:

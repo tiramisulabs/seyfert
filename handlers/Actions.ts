@@ -104,7 +104,9 @@ export const THREAD_LIST_SYNC: RawHandler<DiscordThreadListSync> = (session, _sh
         channelIds: payload.channel_ids ?? [],
         threads: payload.threads.map((channel) => new ThreadChannel(session, channel, payload.guild_id)),
         // @ts-ignore: TODO: thread member structure
-        members: payload.members.map((member) => new Member(session, member as DiscordMemberWithUser, payload.guild_id)),
+        members: payload.members.map((member) =>
+            new Member(session, member as DiscordMemberWithUser, payload.guild_id)
+        ),
     });
 };
 

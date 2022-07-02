@@ -40,7 +40,6 @@ export interface ApplicationCommandOptionChoice {
 
 // TODO: abstract Interaction, CommandInteraction, ComponentInteraction, PingInteraction, etc
 
-
 export class Interaction implements Model {
     constructor(session: Session, data: DiscordInteraction) {
         this.session = session;

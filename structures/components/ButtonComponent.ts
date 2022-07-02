@@ -1,5 +1,5 @@
 import type { Session } from "../../session/Session.ts";
-import type { DiscordComponent, ButtonStyles } from "../../vendor/external.ts";
+import type { ButtonStyles, DiscordComponent } from "../../vendor/external.ts";
 import type { ButtonComponent } from "./Component.ts";
 import { MessageComponentTypes } from "../../vendor/external.ts";
 import BaseComponent from "./Component.ts";

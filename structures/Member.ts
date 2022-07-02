@@ -87,7 +87,12 @@ export class Member implements Model {
     }
 
     async removeRole(roleId: Snowflake, options: { reason?: string } = {}) {
-        await Guild.prototype.removeRole.call({ id: this.guildId, session: this.session }, this.user.id, roleId, options);
+        await Guild.prototype.removeRole.call(
+            { id: this.guildId, session: this.session },
+            this.user.id,
+            roleId,
+            options,
+        );
     }
 
     /** gets the user's avatar */

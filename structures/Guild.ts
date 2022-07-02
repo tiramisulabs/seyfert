@@ -82,8 +82,8 @@ export interface BeginGuildPrune {
 }
 
 export interface ModifyRolePositions {
-  id: Snowflake;
-  position?: number | null;
+    id: Snowflake;
+    position?: number | null;
 }
 
 /**
@@ -217,8 +217,6 @@ export class Guild extends BaseGuild implements Model {
         return new Role(this.session, role, this.id);
     }
 
-
-
     async addRole(memberId: Snowflake, roleId: Snowflake, { reason }: { reason?: string } = {}) {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
@@ -239,7 +237,7 @@ export class Guild extends BaseGuild implements Model {
 
     /**
      * Returns the roles moved
-     * */
+     */
     async moveRoles(options: ModifyRolePositions[]) {
         const roles = await this.session.rest.runMethod<DiscordRole[]>(
             this.session.rest,

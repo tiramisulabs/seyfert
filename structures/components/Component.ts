@@ -23,7 +23,6 @@ export class BaseComponent {
     isTextInput(): this is TextInputComponent {
         return this.type === MessageComponentTypes.InputText;
     }
-
 }
 
 /** Action Row Component */

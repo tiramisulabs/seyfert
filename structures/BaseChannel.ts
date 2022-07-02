@@ -48,6 +48,4 @@ export abstract class BaseChannel implements Model {
     }
 }
 
-
-
 export default BaseChannel;

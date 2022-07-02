@@ -13,7 +13,7 @@ export class SelectMenu extends BaseComponent implements SelectMenuComponent {
         this.type = data.type as MessageComponentTypes.SelectMenu;
         this.customId = data.custom_id!;
         this.options = data.options!.map((option) => {
-            return <SelectMenuOption>{
+            return <SelectMenuOption> {
                 label: option.label,
                 description: option.description,
                 emoji: option.emoji || new Emoji(session, option.emoji!),

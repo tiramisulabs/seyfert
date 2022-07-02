@@ -1,7 +1,7 @@
 import type { Session } from "../../session/Session.ts";
 import type { DiscordComponent } from "../../vendor/external.ts";
 import type { ActionRowComponent, Component } from "./Component.ts";
-import { MessageComponentTypes, ButtonStyles } from "../../vendor/external.ts";
+import { ButtonStyles, MessageComponentTypes } from "../../vendor/external.ts";
 import BaseComponent from "./Component.ts";
 import Button from "./ButtonComponent.ts";
 import LinkButton from "./LinkButtonComponent.ts";
@@ -22,7 +22,7 @@ export class ActionRow extends BaseComponent implements ActionRowComponent {
                     }
                     return new Button(session, component);
                 case MessageComponentTypes.SelectMenu:
-                    return new SelectMenu(session, component); 
+                    return new SelectMenu(session, component);
                 case MessageComponentTypes.InputText:
                     return new InputText(session, component);
                 case MessageComponentTypes.ActionRow:
