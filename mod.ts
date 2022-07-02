@@ -1,3 +1,5 @@
+export * from "./session/Session.ts";
+
 export * from "./structures/AnonymousGuild.ts";
 export * from "./structures/Attachment.ts";
 export * from "./structures/Base.ts";
@@ -24,11 +26,15 @@ export * from "./structures/WelcomeChannel.ts";
 export * from "./structures/WelcomeScreen.ts";
 export * from "./structures/components/ActionRow.ts";
 export * from "./structures/components/Button.ts";
-export * from "./structures/components/TextInput.ts";
+export * from "./structures/components/InputText.ts";
 export * from "./structures/components/SelectMenu.ts";
 export * from "./structures/components/SelectMenuOption.ts";
 
-export * from "./session/Session.ts";
+export * from "./structures/builders/MessageActionRow.ts";
+export * from "./structures/builders/MessageButton.ts";
+export * from "./structures/builders/MessageSelectMenu.ts";
+export * from "./structures/builders/SelectMenuOptionBuilder.ts";
+export * from "./structures/builders/InputTextComponentBuilder.ts";
 
 export * from "./util/shared/flags.ts";
 export * from "./util/shared/images.ts";

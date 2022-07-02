@@ -5,7 +5,7 @@ import { ComponentEmoji, DiscordSelectOption } from "../../vendor/external.ts";
  * @link https://discord.com/developers/docs/interactions/message-components#select-menu-object-select-option-structure
  */
 export class SelectMenuOption {
-    constructor(data?: DiscordSelectOption) {
+    constructor(data: DiscordSelectOption) {
         this.label = data!.label;
         this.value = data!.value;
         this.description = data?.description;

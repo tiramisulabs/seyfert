@@ -1173,7 +1173,7 @@ export interface DiscordSelectMenuComponent {
     /** The choices! Maximum of 25 items. */
     options: DiscordSelectOption[];
     /** Disabled the select. Default false */
-    disalbed: boolean;
+    disabled: boolean;
 }
 
 export interface DiscordSelectOption {

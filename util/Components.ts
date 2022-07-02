@@ -4,14 +4,16 @@ import {
     type DiscordSelectMenuComponent,
     MessageComponentTypes,
 } from "../vendor/external.ts";
-import { BuildComponent } from "../structures/components/BuildComponent.ts";
-import { ButtonComponent, SelectMenuComponent, TextInputComponent } from "../mod.ts";
+import { BaseComponent } from "../structures/components/BaseComponent.ts";
+import { ComponentBuilder } from "../structures/builders/ComponentBuilder.ts";
+import { ButtonBuilder, ButtonComponent, InputTextComponent, SelectMenuBuilder, SelectMenuComponent } from "../mod.ts";
 
 export type AnyDiscordComponent = DiscordButtonComponent | DiscordInputTextComponent | DiscordSelectMenuComponent;
-export type AnyComponent = ButtonComponent | TextInputComponent | SelectMenuComponent;
+export type AnyComponent = ButtonComponent | InputTextComponent | SelectMenuComponent;
+export type AnyComponentBuilder = ButtonBuilder | SelectMenuBuilder;
 
 export function createComponent(data: AnyDiscordComponent) {
-    if (data instanceof BuildComponent) {
+    if (data instanceof BaseComponent) {
         return data;
     }
 
@@ -19,10 +21,16 @@ export function createComponent(data: AnyDiscordComponent) {
         case MessageComponentTypes.Button:
             return new ButtonComponent(data);
         case MessageComponentTypes.InputText:
-            return new TextInputComponent(data);
+            return new InputTextComponent(data);
         case MessageComponentTypes.SelectMenu:
             return new SelectMenuComponent(data);
         default:
             throw new Error(`Unknown component type: ${data["type"]}`);
+    }
+}
+
+export function createBuilderComponent(data: AnyComponentBuilder | AnyDiscordComponent) {
+    if (data instanceof ComponentBuilder) {
+        return data;
     }
 }
