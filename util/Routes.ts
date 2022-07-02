@@ -224,3 +224,7 @@ export function CHANNEL_MESSAGE_CROSSPOST(channelId: Snowflake, messageId: Snowf
 export function GUILD_MEMBER_ROLE(guildId: Snowflake, memberId: Snowflake, roleId: Snowflake) {
     return `/guilds/${guildId}/members/${memberId}/roles/${roleId}`;
 }
+
+export function CHANNEL_WEBHOOKS(channelId: Snowflake) {
+    return `/channels/${channelId}/webhooks`;
+}

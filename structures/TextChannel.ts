@@ -4,8 +4,7 @@ import type { GetMessagesOptions, GetReactions } from "../util/Routes.ts";
 import type { DiscordChannel, DiscordInvite, DiscordMessage, TargetTypes } from "../vendor/external.ts";
 import type { CreateMessage, EditMessage, ReactionResolvable } from "./Message.ts";
 import { ChannelTypes } from "../vendor/external.ts";
-import GuildChannel from "./GuildChannel.ts";
-import ThreadChannel from "./ThreadChannel.ts";
+import BaseChannel from "./BaseChannel.ts";
 import Message from "./Message.ts";
 import Invite from "./Invite.ts";
 import * as Routes from "../util/Routes.ts";
@@ -25,18 +24,6 @@ export interface DiscordInviteOptions {
     targetApplicationId?: Snowflake;
 }
 
-/**
- * Represent the options object to create a Thread Channel
- * @link https://discord.com/developers/docs/resources/channel#start-thread-without-message
- */
-export interface ThreadCreateOptions {
-    name: string;
-    autoArchiveDuration: 60 | 1440 | 4320 | 10080;
-    type: 10 | 11 | 12;
-    invitable?: boolean;
-    reason?: string;
-}
-
 export const textBasedChannels = [
     ChannelTypes.DM,
     ChannelTypes.GroupDm,
@@ -54,14 +41,20 @@ export type TextBasedChannels =
     | ChannelTypes.GuildNews
     | ChannelTypes.GuildText;
 
-export class TextChannel extends GuildChannel {
-    constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
-        super(session, data, guildId);
-        data.last_message_id ? this.lastMessageId = data.last_message_id : undefined;
-        data.last_pin_timestamp ? this.lastPinTimestamp = data.last_pin_timestamp : undefined;
-        this.type = data.type as TextBasedChannels;
+export class TextChannel extends BaseChannel {
+    constructor(session: Session, data: DiscordChannel) {
+        super(session, data);
+        this.type = data.type as number;
         this.rateLimitPerUser = data.rate_limit_per_user ?? 0;
         this.nsfw = !!data.nsfw ?? false;
+
+        if (data.last_message_id) {
+            this.lastMessageId = data.last_message_id;
+        }
+
+        if (data.last_pin_timestamp) {
+            this.lastPinTimestamp = data.last_pin_timestamp;
+        }
     }
 
     override type: TextBasedChannels;
@@ -98,16 +91,6 @@ export class TextChannel extends GuildChannel {
         );
 
         return new Invite(this.session, invite);
-    }
-
-    async createThread(options: ThreadCreateOptions): Promise<ThreadChannel> {
-        const thread = await this.session.rest.runMethod<DiscordChannel>(
-            this.session.rest,
-            "POST",
-            Routes.CHANNEL_CREATE_THREAD(this.id),
-            options,
-        );
-        return new ThreadChannel(this.session, thread, this.guildId);
     }
 
     async fetchMessages(options?: GetMessagesOptions): Promise<Message[] | []> {

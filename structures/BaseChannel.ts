@@ -62,7 +62,7 @@ export abstract class BaseChannel implements Model {
                 return new VoiceChannel(session, channel, channel.guild_id!);
             default:
                 if (textBasedChannels.includes(channel.type)) {
-                    return new TextChannel(session, channel, channel.guild_id!);
+                    return new TextChannel(session, channel);
                 }
                 throw new Error("Channel was not implemented");
         }
