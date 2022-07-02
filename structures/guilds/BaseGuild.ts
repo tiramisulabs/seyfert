@@ -48,7 +48,7 @@ export abstract class BaseGuild implements Model {
     iconURL(options: { size?: ImageSize; format?: ImageFormat } = { size: 128 }) {
         if (this.iconHash) {
             return formatImageURL(
-                Routes.GUILD_BANNER(this.id, iconBigintToHash(this.iconHash)),
+                Routes.GUILD_ICON(this.id, iconBigintToHash(this.iconHash)),
                 options.size,
                 options.format,
             );
