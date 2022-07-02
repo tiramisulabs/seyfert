@@ -6,7 +6,14 @@ import {
 } from "../vendor/external.ts";
 import { BaseComponent } from "../structures/components/BaseComponent.ts";
 import { ComponentBuilder } from "../structures/builders/ComponentBuilder.ts";
-import { ButtonBuilder, ButtonComponent, InputTextComponent, SelectMenuBuilder, SelectMenuComponent, InputTextBuilder } from "../mod.ts";
+import {
+    ButtonBuilder,
+    ButtonComponent,
+    InputTextBuilder,
+    InputTextComponent,
+    SelectMenuBuilder,
+    SelectMenuComponent,
+} from "../mod.ts";
 
 export type AnyDiscordComponent = DiscordButtonComponent | DiscordInputTextComponent | DiscordSelectMenuComponent;
 export type AnyComponent = ButtonComponent | InputTextComponent | SelectMenuComponent;
