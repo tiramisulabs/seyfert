@@ -3,6 +3,7 @@ import type { Snowflake } from "../util/Snowflake.ts";
 import type { GetMessagesOptions, GetReactions } from "../util/Routes.ts";
 import type { DiscordChannel, DiscordInvite, DiscordMessage, TargetTypes } from "../vendor/external.ts";
 import type { CreateMessage, EditMessage, ReactionResolvable } from "./Message.ts";
+import { ChannelTypes } from "../vendor/external.ts";
 import GuildChannel from "./GuildChannel.ts";
 import ThreadChannel from "./ThreadChannel.ts";
 import Message from "./Message.ts";
@@ -36,15 +37,34 @@ export interface ThreadCreateOptions {
     reason?: string;
 }
 
+export const textBasedChannels = [
+    ChannelTypes.DM,
+    ChannelTypes.GroupDm,
+    ChannelTypes.GuildPrivateThread,
+    ChannelTypes.GuildPublicThread,
+    ChannelTypes.GuildNews,
+    ChannelTypes.GuildText,
+];
+
+export type TextBasedChannels =
+    | ChannelTypes.DM
+    | ChannelTypes.GroupDm
+    | ChannelTypes.GuildPrivateThread
+    | ChannelTypes.GuildPublicThread
+    | ChannelTypes.GuildNews
+    | ChannelTypes.GuildText;
+
 export class TextChannel extends GuildChannel {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data, guildId);
         data.last_message_id ? this.lastMessageId = data.last_message_id : undefined;
         data.last_pin_timestamp ? this.lastPinTimestamp = data.last_pin_timestamp : undefined;
+        this.type = data.type as TextBasedChannels;
         this.rateLimitPerUser = data.rate_limit_per_user ?? 0;
         this.nsfw = !!data.nsfw ?? false;
     }
 
+    override type: TextBasedChannels;
     lastMessageId?: Snowflake;
     lastPinTimestamp?: string;
     rateLimitPerUser: number;

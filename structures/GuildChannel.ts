@@ -6,7 +6,7 @@ import BaseChannel from "./BaseChannel.ts";
 import Invite from "./Invite.ts";
 import * as Routes from "../util/Routes.ts";
 
-export abstract class GuildChannel extends BaseChannel implements Model {
+export class GuildChannel extends BaseChannel implements Model {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data);
         this.guildId = guildId;
