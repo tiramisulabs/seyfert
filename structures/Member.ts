@@ -101,7 +101,7 @@ export class Member implements Model {
         let url: string;
 
         if (this.user.bot) {
-            return this.user.avatarURL()
+            return this.user.avatarURL();
         }
 
         if (!this.avatarHash) {
@@ -110,7 +110,7 @@ export class Member implements Model {
             url = Routes.USER_AVATAR(this.user.id, iconBigintToHash(this.avatarHash));
         }
 
-        return formatImageURL(url, options.size, options.format)
+        return formatImageURL(url, options.size, options.format);
     }
 
     toString() {
