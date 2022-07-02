@@ -1,9 +1,9 @@
 import type { Session } from "../session/Session.ts";
 import type { DiscordInvite } from "../vendor/external.ts";
 import { TargetTypes } from "../vendor/external.ts";
-import InviteGuild from "./InviteGuild.ts";
+import InviteGuild from "./guilds/InviteGuild.ts";
 import User from "./User.ts";
-import Guild from "./Guild.ts";
+import Guild from "./guilds/Guild.ts";
 
 /**
  * @link https://discord.com/developers/docs/resources/invite#invite-object

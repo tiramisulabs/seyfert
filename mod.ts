@@ -1,28 +1,25 @@
-export * from "./structures/AnonymousGuild.ts";
 export * from "./structures/Attachment.ts";
 export * from "./structures/Base.ts";
-export * from "./structures/BaseGuild.ts";
-export * from "./structures/BaseChannel.ts";
-export * from "./structures/DMChannel.ts";
 export * from "./structures/Embed.ts";
 export * from "./structures/Emoji.ts";
-export * from "./structures/Guild.ts";
-export * from "./structures/GuildChannel.ts";
 export * from "./structures/GuildEmoji.ts";
-export * from "./structures/Interaction.ts";
 export * from "./structures/Invite.ts";
-export * from "./structures/InviteGuild.ts";
 export * from "./structures/Member.ts";
 export * from "./structures/Message.ts";
-export * from "./structures/NewsChannel.ts";
 export * from "./structures/Permissions.ts";
 export * from "./structures/Role.ts";
-export * from "./structures/TextChannel.ts";
-export * from "./structures/ThreadChannel.ts";
 export * from "./structures/User.ts";
-export * from "./structures/VoiceChannel.ts";
 export * from "./structures/WelcomeChannel.ts";
 export * from "./structures/WelcomeScreen.ts";
+
+export * from "./structures/channels/BaseChannel.ts";
+export * from "./structures/channels/ChannelFactory.ts";
+export * from "./structures/channels/DMChannel.ts";
+export * from "./structures/channels/GuildChannel.ts";
+export * from "./structures/channels/NewsChannel.ts";
+export * from "./structures/channels/TextChannel.ts";
+export * from "./structures/channels/ThreadChannel.ts";
+export * from "./structures/channels/VoiceChannel.ts";
 
 export * from "./structures/components/ActionRowComponent.ts";
 export * from "./structures/components/ButtonComponent.ts";
@@ -30,6 +27,13 @@ export * from "./structures/components/Component.ts";
 export * from "./structures/components/LinkButtonComponent.ts";
 export * from "./structures/components/SelectMenuComponent.ts";
 export * from "./structures/components/TextInputComponent.ts";
+
+export * from "./structures/guilds/AnonymousGuild.ts";
+export * from "./structures/guilds/BaseGuild.ts";
+export * from "./structures/guilds/Guild.ts";
+export * from "./structures/guilds/InviteGuild.ts";
+
+export * from "./structures/interactions/Interaction.ts";
 
 export * from "./session/Session.ts";
 

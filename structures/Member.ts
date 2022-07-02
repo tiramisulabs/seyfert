@@ -3,10 +3,10 @@ import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
 import type { DiscordMemberWithUser } from "../vendor/external.ts";
 import type { ImageFormat, ImageSize } from "../util/shared/images.ts";
-import type { CreateGuildBan, ModifyGuildMember } from "./Guild.ts";
+import type { CreateGuildBan, ModifyGuildMember } from "./guilds/Guild.ts";
 import { iconBigintToHash, iconHashToBigInt } from "../util/hash.ts";
 import User from "./User.ts";
-import Guild from "./Guild.ts";
+import Guild from "./guilds/Guild.ts";
 import * as Routes from "../util/Routes.ts";
 
 /**

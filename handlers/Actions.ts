@@ -15,14 +15,14 @@ import type {
 } from "../vendor/external.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
-import type { Channel } from "../structures/BaseChannel.ts";
-import ChannelFactory from "../structures/ChannelFactory.ts";
-import GuildChannel from "../structures/GuildChannel.ts";
-import ThreadChannel from "../structures/ThreadChannel.ts";
+import type { Channel } from "../structures/channels/ChannelFactory.ts";
+import ChannelFactory from "../structures/channels/ChannelFactory.ts";
+import GuildChannel from "../structures/channels/GuildChannel.ts";
+import ThreadChannel from "../structures/channels/ThreadChannel.ts";
 import Member from "../structures/Member.ts";
 import Message from "../structures/Message.ts";
 import User from "../structures/User.ts";
-import Interaction from "../structures/Interaction.ts";
+import Interaction from "../structures/interactions/Interaction.ts";
 
 export type RawHandler<T> = (...args: [Session, number, T]) => void;
 export type Handler<T extends unknown[]> = (...args: T) => unknown;
@@ -103,8 +103,8 @@ export const THREAD_LIST_SYNC: RawHandler<DiscordThreadListSync> = (session, _sh
         guildId: payload.guild_id,
         channelIds: payload.channel_ids ?? [],
         threads: payload.threads.map((channel) => new ThreadChannel(session, channel, payload.guild_id)),
-        // @ts-ignore: TODO: thread member structure
         members: payload.members.map((member) =>
+            // @ts-ignore: TODO: thread member structure
             new Member(session, member as DiscordMemberWithUser, payload.guild_id)
         ),
     });
