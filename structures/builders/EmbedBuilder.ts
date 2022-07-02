@@ -1,21 +1,17 @@
-import type {
-    DiscordEmbedField,
-    DiscordEmbed,
-    DiscordEmbedProvider
-} from '../../vendor/external.ts';
+import type { DiscordEmbed, DiscordEmbedField, DiscordEmbedProvider } from "../../vendor/external.ts";
 
 export interface EmbedFooter {
     text: string;
     iconUrl?: string;
-    proxyIconUrl?: string
+    proxyIconUrl?: string;
 }
 
 export interface EmbedAuthor {
-    name: string
+    name: string;
     text?: string;
     url?: string;
     iconUrl?: string;
-    proxyIconUrl?: string
+    proxyIconUrl?: string;
 }
 
 export interface EmbedVideo {
@@ -26,10 +22,10 @@ export interface EmbedVideo {
 }
 
 export class EmbedBuilder {
-    #data: DiscordEmbed
+    #data: DiscordEmbed;
     constructor(data: DiscordEmbed = {}) {
         this.#data = data;
-        if (!this.#data.fields) this.#data.fields = []
+        if (!this.#data.fields) this.#data.fields = [];
     }
 
     setAuthor(author: EmbedAuthor) {
@@ -37,7 +33,7 @@ export class EmbedBuilder {
             name: author.name,
             icon_url: author.iconUrl,
             proxy_icon_url: author.proxyIconUrl,
-            url: author.url
+            url: author.url,
         };
         return this;
     }
@@ -102,7 +98,7 @@ export class EmbedBuilder {
             height: video.height,
             proxy_url: video.proxyUrl,
             url: video.url,
-            width: video.width
+            width: video.width,
         };
         return this;
     }
