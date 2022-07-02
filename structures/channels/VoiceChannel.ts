@@ -1,8 +1,8 @@
-import type { Snowflake } from "../util/Snowflake.ts";
-import type { Session } from "../session/Session.ts";
-import type { DiscordChannel, VideoQualityModes } from "../vendor/external.ts";
-import { GatewayOpcodes } from "../vendor/external.ts";
-import { calculateShardId } from "../vendor/gateway/calculateShardId.ts";
+import type { Snowflake } from "../../util/Snowflake.ts";
+import type { Session } from "../../session/Session.ts";
+import type { DiscordChannel, VideoQualityModes } from "../../vendor/external.ts";
+import { GatewayOpcodes } from "../../vendor/external.ts";
+import { calculateShardId } from "../../vendor/gateway/calculateShardId.ts";
 import GuildChannel from "./GuildChannel.ts";
 
 /**

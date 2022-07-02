@@ -5,6 +5,7 @@ import type { DiscordWelcomeScreenChannel } from "../vendor/external.ts";
 import Emoji from "./Emoji.ts";
 
 /**
+ * Not a channel
  * @link https://discord.com/developers/docs/resources/guild#welcome-screen-object-welcome-screen-channel-structure
  */
 export class WelcomeChannel implements Model {

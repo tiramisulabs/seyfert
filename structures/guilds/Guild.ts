@@ -1,27 +1,27 @@
-import type { Model } from "./Base.ts";
-import type { Snowflake } from "../util/Snowflake.ts";
-import type { Session } from "../session/Session.ts";
+import type { Model } from "../Base.ts";
+import type { Snowflake } from "../../util/Snowflake.ts";
+import type { Session } from "../../session/Session.ts";
 import type {
     DiscordEmoji,
     DiscordGuild,
     DiscordInviteMetadata,
     DiscordMemberWithUser,
     DiscordRole,
-} from "../vendor/external.ts";
-import type { GetInvite } from "../util/Routes.ts";
+} from "../../vendor/external.ts";
+import type { GetInvite } from "../../util/Routes.ts";
 import {
     DefaultMessageNotificationLevels,
     ExplicitContentFilterLevels,
     VerificationLevels,
-} from "../vendor/external.ts";
-import { iconBigintToHash, iconHashToBigInt } from "../util/hash.ts";
-import { urlToBase64 } from "../util/urlToBase64.ts";
-import Member from "./Member.ts";
+} from "../../vendor/external.ts";
+import { iconBigintToHash, iconHashToBigInt } from "../../util/hash.ts";
+import { urlToBase64 } from "../../util/urlToBase64.ts";
+import Member from "../Member.ts";
 import BaseGuild from "./BaseGuild.ts";
-import Role from "./Role.ts";
-import GuildEmoji from "./GuildEmoji.ts";
-import Invite from "./Invite.ts";
-import * as Routes from "../util/Routes.ts";
+import Role from "../Role.ts";
+import GuildEmoji from "../GuildEmoji.ts";
+import Invite from "../Invite.ts";
+import * as Routes from "../../util/Routes.ts";
 
 export interface CreateRole {
     name?: string;
@@ -82,8 +82,8 @@ export interface BeginGuildPrune {
 }
 
 export interface ModifyRolePositions {
-  id: Snowflake;
-  position?: number | null;
+    id: Snowflake;
+    position?: number | null;
 }
 
 /**
@@ -217,8 +217,6 @@ export class Guild extends BaseGuild implements Model {
         return new Role(this.session, role, this.id);
     }
 
-
-
     async addRole(memberId: Snowflake, roleId: Snowflake, { reason }: { reason?: string } = {}) {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
@@ -239,7 +237,7 @@ export class Guild extends BaseGuild implements Model {
 
     /**
      * Returns the roles moved
-     * */
+     */
     async moveRoles(options: ModifyRolePositions[]) {
         const roles = await this.session.rest.runMethod<DiscordRole[]>(
             this.session.rest,

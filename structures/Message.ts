@@ -8,11 +8,13 @@ import type {
     DiscordUser,
     FileContent,
 } from "../vendor/external.ts";
+import type { Component } from "./components/Component.ts";
 import type { GetReactions } from "../util/Routes.ts";
 import { MessageFlags } from "../util/shared/flags.ts";
 import User from "./User.ts";
 import Member from "./Member.ts";
 import Attachment from "./Attachment.ts";
+import BaseComponent from "./components/Component.ts";
 import * as Routes from "../util/Routes.ts";
 
 /**
@@ -80,6 +82,8 @@ export class Message implements Model {
         if (data.guild_id && data.member) {
             this.member = new Member(session, { ...data.member, user: data.author }, data.guild_id);
         }
+
+        this.components = data.components?.map((component) => BaseComponent.from(session, component));
     }
 
     readonly session: Session;
@@ -95,6 +99,7 @@ export class Message implements Model {
 
     attachments: Attachment[];
     member?: Member;
+    components?: Component[];
 
     get url() {
         return `https://discord.com/channels/${this.guildId ?? "@me"}/${this.channelId}/${this.id}`;

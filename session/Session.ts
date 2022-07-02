@@ -49,7 +49,7 @@ export class Session extends EventEmitter {
     }
 
     get applicationId() {
-        return this.#applicationId!; 
+        return this.#applicationId!;
     }
 
     set botId(id: Snowflake) {

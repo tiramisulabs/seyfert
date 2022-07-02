@@ -3,10 +3,10 @@ import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
 import type { DiscordMemberWithUser } from "../vendor/external.ts";
 import type { ImageFormat, ImageSize } from "../util/shared/images.ts";
-import type { CreateGuildBan, ModifyGuildMember } from "./Guild.ts";
+import type { CreateGuildBan, ModifyGuildMember } from "./guilds/Guild.ts";
 import { iconBigintToHash, iconHashToBigInt } from "../util/hash.ts";
 import User from "./User.ts";
-import Guild from "./Guild.ts";
+import Guild from "./guilds/Guild.ts";
 import * as Routes from "../util/Routes.ts";
 
 /**
@@ -87,7 +87,12 @@ export class Member implements Model {
     }
 
     async removeRole(roleId: Snowflake, options: { reason?: string } = {}) {
-        await Guild.prototype.removeRole.call({ id: this.guildId, session: this.session }, this.user.id, roleId, options);
+        await Guild.prototype.removeRole.call(
+            { id: this.guildId, session: this.session },
+            this.user.id,
+            roleId,
+            options,
+        );
     }
 
     /** gets the user's avatar */

@@ -1,11 +1,11 @@
-import type { Model } from "./Base.ts";
-import type { Session } from "../session/Session.ts";
-import type { DiscordGuild, GuildNsfwLevel, VerificationLevels } from "../vendor/external.ts";
-import type { ImageFormat, ImageSize } from "../util/shared/images.ts";
-import { iconBigintToHash, iconHashToBigInt } from "../util/hash.ts";
-import { formatImageUrl } from "../util/shared/images.ts";
+import type { Model } from "../Base.ts";
+import type { Session } from "../../session/Session.ts";
+import type { DiscordGuild, GuildNsfwLevel, VerificationLevels } from "../../vendor/external.ts";
+import type { ImageFormat, ImageSize } from "../../util/shared/images.ts";
+import { iconBigintToHash, iconHashToBigInt } from "../../util/hash.ts";
+import { formatImageUrl } from "../../util/shared/images.ts";
 import BaseGuild from "./BaseGuild.ts";
-import * as Routes from "../util/Routes.ts";
+import * as Routes from "../../util/Routes.ts";
 
 export class AnonymousGuild extends BaseGuild implements Model {
     constructor(session: Session, data: Partial<DiscordGuild>); // TODO: Improve this type (name and id are required)

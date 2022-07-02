@@ -4,7 +4,7 @@ import type { Session } from "../session/Session.ts";
 import { Snowflake } from "../util/Snowflake.ts";
 import { iconHashToBigInt } from "../util/hash.ts";
 import Permissions from "./Permissions.ts";
-import Guild, { ModifyGuildRole } from "./Guild.ts";
+import Guild, { ModifyGuildRole } from "./guilds/Guild.ts";
 
 export class Role implements Model {
     constructor(session: Session, data: DiscordRole, guildId: Snowflake) {

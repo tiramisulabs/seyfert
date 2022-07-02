@@ -1,19 +1,19 @@
-import type { Model } from "./Base.ts";
-import type { Snowflake } from "../util/Snowflake.ts";
-import type { Session } from "../session/Session.ts";
+import type { Model } from "../Base.ts";
+import type { Snowflake } from "../../util/Snowflake.ts";
+import type { Session } from "../../session/Session.ts";
 import type {
     DiscordInteraction,
     DiscordMessage,
     FileContent,
     InteractionResponseTypes,
     InteractionTypes,
-} from "../vendor/external.ts";
-import type { MessageFlags } from "../util/shared/flags.ts";
-import type { AllowedMentions } from "./Message.ts";
-import User from "./User.ts";
-import Message from "./Message.ts";
-import Member from "./Member.ts";
-import * as Routes from "../util/Routes.ts";
+} from "../../vendor/external.ts";
+import type { MessageFlags } from "../../util/shared/flags.ts";
+import type { AllowedMentions } from "../Message.ts";
+import User from "../User.ts";
+import Message from "../Message.ts";
+import Member from "../Member.ts";
+import * as Routes from "../../util/Routes.ts";
 
 export interface InteractionResponse {
     type: InteractionResponseTypes;
@@ -37,6 +37,8 @@ export interface ApplicationCommandOptionChoice {
     name: string;
     value: string | number;
 }
+
+// TODO: abstract Interaction, CommandInteraction, ComponentInteraction, PingInteraction, etc
 
 export class Interaction implements Model {
     constructor(session: Session, data: DiscordInteraction) {

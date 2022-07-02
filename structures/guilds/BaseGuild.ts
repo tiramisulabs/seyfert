@@ -1,8 +1,8 @@
-import type { Model } from "./Base.ts";
-import type { Session } from "../session/Session.ts";
-import type { DiscordGuild, GuildFeatures } from "../vendor/external.ts";
-import { Snowflake } from "../util/Snowflake.ts";
-import { iconHashToBigInt } from "../util/hash.ts";
+import type { Model } from "../Base.ts";
+import type { Session } from "../../session/Session.ts";
+import type { DiscordGuild, GuildFeatures } from "../../vendor/external.ts";
+import { Snowflake } from "../../util/Snowflake.ts";
+import { iconHashToBigInt } from "../../util/hash.ts";
 
 /**
  * Class for {@link Guild} and {@link AnonymousGuild}
