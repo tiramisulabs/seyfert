@@ -1,11 +1,13 @@
 import type { Model } from "./Base.ts";
 import type { Session } from "../session/Session.ts";
+import type { Snowflake } from "../util/Snowflake.ts";
 import type { ChannelTypes, DiscordChannel } from "../vendor/external.ts";
 import TextChannel from "./TextChannel.ts";
+import BaseChannel from "./BaseChannel.ts";
 import User from "./User.ts";
 import * as Routes from "../util/Routes.ts";
 
-export class DMChannel extends TextChannel implements Model {
+export class DMChannel extends BaseChannel implements Model {
     constructor(session: Session, data: DiscordChannel) {
         super(session, data);
 
@@ -18,6 +20,7 @@ export class DMChannel extends TextChannel implements Model {
 
     override type: ChannelTypes.DM | ChannelTypes.GroupDm;
     user: User;
+    lastMessageId?: Snowflake;
 
     async close() {
         const channel = await this.session.rest.runMethod<DiscordChannel>(
@@ -29,5 +32,9 @@ export class DMChannel extends TextChannel implements Model {
         return new DMChannel(this.session, channel);
     }
 }
+
+TextChannel.applyTo(DMChannel);
+
+export interface DMChannel extends TextChannel, BaseChannel {}
 
 export default DMChannel;

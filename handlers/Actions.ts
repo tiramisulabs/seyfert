@@ -16,7 +16,7 @@ import type {
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
 import type { Channel } from "../structures/BaseChannel.ts";
-import BaseChannel from "../structures/BaseChannel.ts";
+import ChannelFactory from "../structures/ChannelFactory.ts";
 import GuildChannel from "../structures/GuildChannel.ts";
 import ThreadChannel from "../structures/ThreadChannel.ts";
 import Member from "../structures/Member.ts";
@@ -67,11 +67,11 @@ export const INTERACTION_CREATE: RawHandler<DiscordInteraction> = (session, _sha
 };
 
 export const CHANNEL_CREATE: RawHandler<DiscordChannel> = (session, _shardId, channel) => {
-    session.emit("channelCreate", BaseChannel.from(session, channel));
+    session.emit("channelCreate", ChannelFactory.from(session, channel));
 };
 
 export const CHANNEL_UPDATE: RawHandler<DiscordChannel> = (session, _shardId, channel) => {
-    session.emit("channelUpdate", BaseChannel.from(session, channel));
+    session.emit("channelUpdate", ChannelFactory.from(session, channel));
 };
 
 export const CHANNEL_DELETE: RawHandler<DiscordChannel> = (session, _shardId, channel) => {

@@ -1,20 +1,10 @@
 import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
-import type { ChannelTypes, DiscordChannel, DiscordWebhook, DiscordInviteMetadata } from "../vendor/external.ts";
-import { urlToBase64 } from "../util/urlToBase64.ts";
+import type { ChannelTypes, DiscordChannel, DiscordInviteMetadata } from "../vendor/external.ts";
 import BaseChannel from "./BaseChannel.ts";
 import Invite from "./Invite.ts";
-import Webhook from "./Webhook.ts";
-import ThreadChannel from "./ThreadChannel.ts";
 import * as Routes from "../util/Routes.ts";
-
-export interface CreateWebhook {
-    name: string;
-    avatar?: string;
-    reason?: string;
-}
-
 
 /**
  * Represent the options object to create a Thread Channel
@@ -31,7 +21,7 @@ export interface ThreadCreateOptions {
 export class GuildChannel extends BaseChannel implements Model {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data);
-        this.type = data.type as number
+        this.type = data.type as number;
         this.guildId = guildId;
         this.position = data.position;
         data.topic ? this.topic = data.topic : null;
@@ -54,6 +44,17 @@ export class GuildChannel extends BaseChannel implements Model {
         return invites.map((invite) => new Invite(this.session, invite));
     }
 
+    /*
+    async createThread(options: ThreadCreateOptions): Promise<ThreadChannel> {
+        const thread = await this.session.rest.runMethod<DiscordChannel>(
+            this.session.rest,
+            "POST",
+            Routes.CHANNEL_CREATE_THREAD(this.id),
+            options,
+        );
+        return new ThreadChannel(this.session, thread, this.guildId);
+    }*/
+
     async delete(reason?: string) {
         await this.session.rest.runMethod<DiscordChannel>(
             this.session.rest,
@@ -63,31 +64,6 @@ export class GuildChannel extends BaseChannel implements Model {
                 reason,
             },
         );
-    }
-
-    async createThread(options: ThreadCreateOptions): Promise<ThreadChannel> {
-        const thread = await this.session.rest.runMethod<DiscordChannel>(
-            this.session.rest,
-            "POST",
-            Routes.CHANNEL_CREATE_THREAD(this.id),
-            options,
-        );
-        return new ThreadChannel(this.session, thread, this.guildId);
-    }
-
-    async createWebhook(options: CreateWebhook) {
-        const webhook = await this.session.rest.runMethod<DiscordWebhook>(
-            this.session.rest,
-            "POST",
-            Routes.CHANNEL_WEBHOOKS(this.id),
-            {
-                name: options.name,
-                avatar: options.avatar ? urlToBase64(options.avatar) : undefined,
-                reason: options.reason,
-            }
-        );
-
-        return new Webhook(this.session, webhook);
     }
 }
 

@@ -3,6 +3,7 @@ import type { Session } from "../session/Session.ts";
 import type { ChannelTypes, DiscordChannel } from "../vendor/external.ts";
 import GuildChannel from "./GuildChannel.ts";
 import Message from "./Message.ts";
+import TextChannel from "./TextChannel.ts";
 
 export class NewsChannel extends GuildChannel {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
@@ -22,5 +23,9 @@ export class NewsChannel extends GuildChannel {
         return this.crosspostMessage;
     }
 }
+
+TextChannel.applyTo(NewsChannel);
+
+export interface NewsChannel extends TextChannel, GuildChannel {}
 
 export default NewsChannel;

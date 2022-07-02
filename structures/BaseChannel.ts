@@ -2,19 +2,13 @@ import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
 import type { DiscordChannel } from "../vendor/external.ts";
+import type TextChannel from "./TextChannel.ts";
+import type VoiceChannel from "./VoiceChannel.ts";
+import type DMChannel from "./DMChannel.ts";
+import type NewsChannel from "./NewsChannel.ts";
+import type ThreadChannel from "./ThreadChannel.ts";
 import { ChannelTypes } from "../vendor/external.ts";
-import TextChannel, { textBasedChannels } from "./TextChannel.ts";
-import VoiceChannel from "./VoiceChannel.ts";
-import DMChannel from "./DMChannel.ts";
-import NewsChannel from "./NewsChannel.ts";
-import ThreadChannel from "./ThreadChannel.ts";
-
-export type Channel =
-    | TextChannel
-    | VoiceChannel
-    | DMChannel
-    | NewsChannel
-    | ThreadChannel;
+import { textBasedChannels } from "./TextChannel.ts";
 
 export abstract class BaseChannel implements Model {
     constructor(session: Session, data: DiscordChannel) {
@@ -49,28 +43,11 @@ export abstract class BaseChannel implements Model {
         return this.type === ChannelTypes.GuildPublicThread || this.type === ChannelTypes.GuildPrivateThread;
     }
 
-    static from(session: Session, channel: DiscordChannel): Channel {
-        switch (channel.type) {
-            case ChannelTypes.GuildPublicThread:
-            case ChannelTypes.GuildPrivateThread:
-                return new ThreadChannel(session, channel, channel.guild_id!);
-            case ChannelTypes.GuildNews:
-                return new NewsChannel(session, channel, channel.guild_id!);
-            case ChannelTypes.DM:
-                return new DMChannel(session, channel);
-            case ChannelTypes.GuildVoice:
-                return new VoiceChannel(session, channel, channel.guild_id!);
-            default:
-                if (textBasedChannels.includes(channel.type)) {
-                    return new TextChannel(session, channel);
-                }
-                throw new Error("Channel was not implemented");
-        }
-    }
-
     toString(): string {
         return `<#${this.id}>`;
     }
 }
+
+
 
 export default BaseChannel;

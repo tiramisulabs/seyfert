@@ -1,12 +1,14 @@
+// deno-lint-ignore-file ban-types
 import type { Session } from "../session/Session.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { GetMessagesOptions, GetReactions } from "../util/Routes.ts";
-import type { DiscordChannel, DiscordInvite, DiscordMessage, TargetTypes } from "../vendor/external.ts";
+import type { DiscordChannel, DiscordInvite, DiscordMessage, DiscordWebhook, TargetTypes } from "../vendor/external.ts";
 import type { CreateMessage, EditMessage, ReactionResolvable } from "./Message.ts";
 import { ChannelTypes } from "../vendor/external.ts";
-import BaseChannel from "./BaseChannel.ts";
+import { urlToBase64 } from "../util/urlToBase64.ts";
 import Message from "./Message.ts";
 import Invite from "./Invite.ts";
+import Webhook from "./Webhook.ts";
 import * as Routes from "../util/Routes.ts";
 
 /**
@@ -22,6 +24,12 @@ export interface DiscordInviteOptions {
     targetType?: TargetTypes;
     targetUserId?: Snowflake;
     targetApplicationId?: Snowflake;
+}
+
+export interface CreateWebhook {
+    name: string;
+    avatar?: string;
+    reason?: string;
 }
 
 export const textBasedChannels = [
@@ -41,9 +49,11 @@ export type TextBasedChannels =
     | ChannelTypes.GuildNews
     | ChannelTypes.GuildText;
 
-export class TextChannel extends BaseChannel {
+export class TextChannel {
     constructor(session: Session, data: DiscordChannel) {
-        super(session, data);
+        this.session = session;
+        this.id = data.id;
+        this.name = data.name;
         this.type = data.type as number;
         this.rateLimitPerUser = data.rate_limit_per_user ?? 0;
         this.nsfw = !!data.nsfw ?? false;
@@ -57,11 +67,34 @@ export class TextChannel extends BaseChannel {
         }
     }
 
-    override type: TextBasedChannels;
+    readonly session: Session;
+    readonly id: Snowflake;
+    name?: string;
+    type: TextBasedChannels;
     lastMessageId?: Snowflake;
     lastPinTimestamp?: string;
     rateLimitPerUser: number;
     nsfw: boolean;
+
+    /**
+     * Mixin
+     * */
+    static applyTo(klass: Function) {
+        klass.prototype.fetchPins = TextChannel.prototype.fetchPins;
+        klass.prototype.createInvite = TextChannel.prototype.createInvite;
+        klass.prototype.fetchMessages = TextChannel.prototype.fetchMessages;
+        klass.prototype.sendTyping = TextChannel.prototype.sendTyping;
+        klass.prototype.pinMessage = TextChannel.prototype.pinMessage;
+        klass.prototype.unpinMessage = TextChannel.prototype.unpinMessage;
+        klass.prototype.addReaction = TextChannel.prototype.addReaction;
+        klass.prototype.removeReaction = TextChannel.prototype.removeReaction;
+        klass.prototype.removeReactionEmoji = TextChannel.prototype.removeReactionEmoji;
+        klass.prototype.nukeReactions = TextChannel.prototype.nukeReactions;
+        klass.prototype.fetchReactions = TextChannel.prototype.fetchReactions;
+        klass.prototype.sendMessage = TextChannel.prototype.sendMessage;
+        klass.prototype.editMessage = TextChannel.prototype.editMessage;
+        klass.prototype.createWebhook = TextChannel.prototype.createWebhook;
+    }
 
     async fetchPins(): Promise<Message[] | []> {
         const messages = await this.session.rest.runMethod<DiscordMessage[]>(
@@ -161,6 +194,22 @@ export class TextChannel extends BaseChannel {
 
     editMessage(messageId: Snowflake, options: EditMessage) {
         return Message.prototype.edit.call({ channelId: this.id, id: messageId, session: this.session }, options);
+    }
+
+
+    async createWebhook(options: CreateWebhook) {
+        const webhook = await this.session.rest.runMethod<DiscordWebhook>(
+            this.session.rest,
+            "POST",
+            Routes.CHANNEL_WEBHOOKS(this.id),
+            {
+                name: options.name,
+                avatar: options.avatar ? urlToBase64(options.avatar) : undefined,
+                reason: options.reason,
+            }
+        );
+
+        return new Webhook(this.session, webhook);
     }
 }
 
