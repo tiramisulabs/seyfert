@@ -100,6 +100,10 @@ export class Member implements Model {
     avatarURL(options: { format?: ImageFormat; size?: ImageSize } = { size: 128 }) {
         let url: string;
 
+        if (this.user.bot) {
+            return this.user.avatarURL()
+        }
+
         if (!this.avatarHash) {
             url = Routes.USER_DEFAULT_AVATAR(Number(this.user.discriminator) % 5);
         } else {
