@@ -10,15 +10,27 @@ import Invite from "../Invite.ts";
 import * as Routes from "../../util/Routes.ts";
 
 /**
- * Represent the options object to create a Thread Channel
+ * Represent the options object to create a thread channel
  * @link https://discord.com/developers/docs/resources/channel#start-thread-without-message
  */
 export interface ThreadCreateOptions {
     name: string;
-    autoArchiveDuration: 60 | 1440 | 4320 | 10080;
+    autoArchiveDuration?: 60 | 1440 | 4320 | 10080;
     type: 10 | 11 | 12;
     invitable?: boolean;
+    rateLimitPerUser?: number;
     reason?: string;
+}
+
+/**
+ * Represents the option object to create a thread channel from a message
+ * @link https://discord.com/developers/docs/resources/channel#start-thread-from-message
+ * */
+export interface ThreadCreateOptions {
+    name: string;
+    autoArchiveDuration?: 60 | 1440 | 4320 | 10080;
+    rateLimitPerUser?: number;
+    messageId: Snowflake;
 }
 
 export class GuildChannel extends BaseChannel implements Model {
@@ -84,11 +96,16 @@ export class GuildChannel extends BaseChannel implements Model {
         const thread = await this.session.rest.runMethod<DiscordChannel>(
             this.session.rest,
             "POST",
-            Routes.CHANNEL_CREATE_THREAD(this.id),
-            options,
+            "messageId" in options
+                ? Routes.THREAD_START_PUBLIC(this.id, options.messageId)
+                : Routes.THREAD_START_PRIVATE(this.id),
+            {
+                name: options.name,
+                auto_archive_duration: options.autoArchiveDuration,
+            },
         );
 
-        return new ThreadChannel(this.session, thread, this.guildId);
+        return new ThreadChannel(this.session, thread, thread.guild_id ?? this.guildId);
     }
 }
 
