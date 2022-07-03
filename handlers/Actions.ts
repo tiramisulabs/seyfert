@@ -1,6 +1,7 @@
 import type {
     DiscordChannel,
     DiscordChannelPinsUpdate,
+    DiscordGuild,
     DiscordGuildMemberAdd,
     DiscordGuildMemberRemove,
     DiscordGuildMemberUpdate,
@@ -27,6 +28,7 @@ import ThreadMember from "../structures/ThreadMember.ts";
 import Member from "../structures/Member.ts";
 import Message from "../structures/Message.ts";
 import User from "../structures/User.ts";
+import Guild from  "../structures/guilds/Guild.ts";
 import Interaction from "../structures/interactions/Interaction.ts";
 
 export type RawHandler<T> = (...args: [Session, number, T]) => void;
@@ -48,6 +50,14 @@ export const MESSAGE_UPDATE: RawHandler<DiscordMessage> = (session, _shardId, ne
 
 export const MESSAGE_DELETE: RawHandler<DiscordMessageDelete> = (session, _shardId, { id, channel_id, guild_id }) => {
     session.emit("messageDelete", { id, channelId: channel_id, guildId: guild_id });
+};
+
+export const GUILD_CREATE: RawHandler<DiscordGuild> = (session, _shardId, guild) => {
+    session.emit("guildCreate", new Guild(session, guild));
+};
+
+export const GUILD_DELETE: RawHandler<DiscordGuild> = (session, _shardId, guild) => {
+    session.emit("guildDelete", { id: guild.id, unavailable: true });
 };
 
 export const GUILD_MEMBER_ADD: RawHandler<DiscordGuildMemberAdd> = (session, _shardId, member) => {
@@ -159,6 +169,8 @@ export interface Events {
     "messageReactionRemove":      Handler<[MessageReaction]>;  
     "messageReactionRemoveAll":   Handler<[MessageReaction]>;
     "messageReactionRemoveEmoji": Handler<[MessageReaction]>;
+    "guildCreate":                Handler<[Guild]>;
+    "guildDelete":                Handler<[{ id: Snowflake, unavailable: boolean }]>;
     "guildMemberAdd":             Handler<[Member]>;
     "guildMemberUpdate":          Handler<[Member]>;
     "guildMemberRemove":          Handler<[User, Snowflake]>;
