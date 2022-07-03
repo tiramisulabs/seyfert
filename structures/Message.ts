@@ -112,7 +112,18 @@ export class Message implements Model {
             };
         }
 
+        // webhook handling
+        if (data.author && data.author.discriminator === "0000") {
+            this.webhook = {
+                id: data.author.id,
+                username: data.author.username,
+                discriminator: data.author.discriminator,
+                avatar: data.author.avatar ? iconHashToBigInt(data.author.avatar) : undefined,
+            };
+        }
+
         // user is always null on MessageCreate and its replaced with author
+
         if (data.guild_id && data.member && !this.isWebhookMessage()) {
             this.member = new Member(session, { ...data.member, user: data.author }, data.guild_id);
         }
@@ -177,6 +188,7 @@ export class Message implements Model {
     get edited() {
         return this.editedTimestamp;
     }
+
 
     get url() {
         return `https://discord.com/channels/${this.guildId ?? "@me"}/${this.channelId}/${this.id}`;
