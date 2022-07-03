@@ -120,6 +120,10 @@ export interface GetInvite {
     scheduledEventId?: Snowflake;
 }
 
+export function GUILDS() {
+    return `/guilds`;
+}
+
 export function INVITE(inviteCode: string, options?: GetInvite) {
     let url = `/invites/${inviteCode}?`;
 

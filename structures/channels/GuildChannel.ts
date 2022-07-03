@@ -80,8 +80,6 @@ export class GuildChannel extends BaseChannel implements Model {
         };
     }
 
-    /*
-     * TODO: should be in TextChannel
     async createThread(options: ThreadCreateOptions): Promise<ThreadChannel> {
         const thread = await this.session.rest.runMethod<DiscordChannel>(
             this.session.rest,
@@ -89,18 +87,8 @@ export class GuildChannel extends BaseChannel implements Model {
             Routes.CHANNEL_CREATE_THREAD(this.id),
             options,
         );
-        return new ThreadChannel(this.session, thread, this.guildId);
-    }*/
 
-    async delete(reason?: string) {
-        await this.session.rest.runMethod<DiscordChannel>(
-            this.session.rest,
-            "DELETE",
-            Routes.CHANNEL(this.id),
-            {
-                reason,
-            },
-        );
+        return new ThreadChannel(this.session, thread, this.guildId);
     }
 }
 

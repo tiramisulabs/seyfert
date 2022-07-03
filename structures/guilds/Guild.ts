@@ -2,13 +2,18 @@ import type { Model } from "../Base.ts";
 import type { Snowflake } from "../../util/Snowflake.ts";
 import type { Session } from "../../session/Session.ts";
 import type {
+    ChannelTypes,
     DiscordEmoji,
     DiscordGuild,
     DiscordInviteMetadata,
     DiscordMemberWithUser,
     DiscordRole,
     DiscordListActiveThreads,
-    DiscordListArchivedThreads,
+    GuildFeatures,
+    SystemChannelFlags,
+    MakeRequired,
+    VideoQualityModes,
+    DiscordOverwrite,
 } from "../../vendor/external.ts";
 import type { GetInvite } from "../../util/Routes.ts";
 import {
@@ -17,7 +22,7 @@ import {
     VerificationLevels,
 } from "../../vendor/external.ts";
 import { iconBigintToHash, iconHashToBigInt } from "../../util/hash.ts";
-import { urlToBase64 } from "../../util/urlToBase64.ts";
+import { encode as _encode, urlToBase64 } from "../../util/urlToBase64.ts";
 import Member from "../Member.ts";
 import BaseGuild from "./BaseGuild.ts";
 import Role from "../Role.ts";
@@ -88,6 +93,103 @@ export interface BeginGuildPrune {
 export interface ModifyRolePositions {
     id: Snowflake;
     position?: number | null;
+}
+
+export interface GuildCreateOptionsRole {
+    id: Snowflake;
+    name?: string;
+    color?: number;
+    hoist?: boolean;
+    position?: number;
+    permissions?: bigint;
+    mentionable?: boolean;
+    iconURL?: string;
+    unicodeEmoji?: string | null;
+}
+
+export interface GuildCreateOptionsRole {
+    id: Snowflake;
+    name?: string;
+    color?: number;
+    hoist?: boolean;
+    position?: number;
+    permissions?: bigint;
+    mentionable?: boolean;
+    iconHash?: bigint;
+    unicodeEmoji?: string | null;
+}
+
+export interface GuildCreateOptionsChannel {
+    id?: Snowflake;
+    parentId?: Snowflake;
+    type?: ChannelTypes.GuildText | ChannelTypes.GuildVoice | ChannelTypes.GuildCategory;
+    name: string;
+    topic?: string | null;
+    nsfw?: boolean;
+    bitrate?: number;
+    userLimit?: number;
+    region?: string | null;
+    videoQualityMode?: VideoQualityModes;
+    permissionOverwrites?: MakeRequired<Partial<DiscordOverwrite>, "id">[];
+    rateLimitPerUser?: number;
+}
+
+/**
+ * @link https://discord.com/developers/docs/resources/guild#create-guild
+ * */
+export interface GuildCreateOptions {
+    name: string;
+    afkChannelId?: Snowflake;
+    afkTimeout?: number;
+    channels?: GuildCreateOptionsChannel[];
+    defaultMessageNotifications?: DefaultMessageNotificationLevels;
+    explicitContentFilter?: ExplicitContentFilterLevels;
+    iconURL?: string;
+    roles?: GuildCreateOptionsRole[];
+    systemChannelFlags?: SystemChannelFlags;
+    systemChannelId?: Snowflake;
+    verificationLevel?: VerificationLevels;
+}
+
+export interface GuildCreateOptions {
+    name: string;
+    afkChannelId?: Snowflake;
+    afkTimeout?: number;
+    channels?: GuildCreateOptionsChannel[];
+    defaultMessageNotifications?: DefaultMessageNotificationLevels;
+    explicitContentFilter?: ExplicitContentFilterLevels;
+    iconHash?: bigint;
+    roles?: GuildCreateOptionsRole[];
+    systemChannelFlags?: SystemChannelFlags;
+    systemChannelId?: Snowflake;
+    verificationLevel?: VerificationLevels;
+}
+
+/**
+ * @link https://discord.com/developers/docs/resources/guild#modify-guild-json-params
+ * */
+export interface GuildEditOptions extends Omit<GuildCreateOptions, "roles" | "channels"> {
+    ownerId?: Snowflake;
+    splashURL?: string;
+    bannerURL?: string;
+    discoverySplashURL?: string;
+    features?: GuildFeatures[];
+    rulesChannelId?: Snowflake;
+    description?: string;
+    premiumProgressBarEnabled?: boolean;
+}
+
+export interface GuildEditOptions extends Omit<GuildCreateOptions, "roles" | "channels"> {
+    ownerId?: Snowflake;
+    splashHash?: bigint;
+    bannerHash?: bigint;
+    discoverySplashHash?: bigint;
+    features?: GuildFeatures[];
+    rulesChannelId?: Snowflake;
+    publicUpdatesChannelId?: Snowflake;
+    preferredLocale?: string | null;
+    description?: string;
+    premiumProgressBarEnabled?: boolean;
 }
 
 /**
@@ -382,6 +484,104 @@ export class Guild extends BaseGuild implements Model {
                 members.map((threadMember) => [threadMember.id, new ThreadMember(this.session, threadMember)]),
             ) as Record<Snowflake, ThreadMember>,
         };
+    }
+
+    /***
+     * Makes the bot leave the guild
+     * */
+    async leave() {
+    }
+
+    /***
+     * Deletes a guild
+     * */
+    async delete() {
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "DELETE",
+            Routes.GUILDS(),
+        );
+    }
+
+    /**
+     * Creates a guild and returns its data, the bot joins the guild
+     * This was modified from discord.js to make it compatible
+     * precondition: Bot should be in less than 10 servers
+     * */
+    static async create(session: Session, options: GuildCreateOptions) {
+        const guild = await session.rest.runMethod<DiscordGuild>(session.rest, "POST", Routes.GUILDS(), {
+            name: options.name,
+            afk_channel_id: options.afkChannelId,
+            afk_timeout: options.afkTimeout,
+            default_message_notifications: options.defaultMessageNotifications,
+            explicit_content_filter: options.explicitContentFilter,
+            system_channel_flags: options.systemChannelFlags,
+            verification_level: options.verificationLevel,
+            icon: "iconURL" in options
+                ? options.iconURL || urlToBase64(options.iconURL!)
+                : options.iconHash || iconBigintToHash(options.iconHash!),
+            channels: options.channels?.map((channel) => ({
+                name: channel.name,
+                nsfw: channel.nsfw,
+                id: channel.id,
+                bitrate: channel.bitrate,
+                parent_id: channel.parentId,
+                permission_overwrites: channel.permissionOverwrites,
+                region: channel.region,
+                user_limit: channel.userLimit,
+                video_quality_mode: channel.videoQualityMode,
+                rate_limit_per_user: channel.rateLimitPerUser,
+            })),
+            roles: options.roles?.map((role) => ({
+                name: role.name,
+                id: role.id,
+                color: role.color,
+                mentionable: role.mentionable,
+                hoist: role.hoist,
+                position: role.position,
+                unicode_emoji: role.unicodeEmoji,
+                icon: options.iconURL || urlToBase64(options.iconURL!), 
+            })),
+        });
+
+        return new Guild(session, guild);
+    }
+
+    /**
+     * Edits a guild and returns its data
+     * */
+    async edit(session: Session, options: GuildEditOptions) {
+        const guild = await session.rest.runMethod<DiscordGuild>(session.rest, "PATCH", Routes.GUILDS(), {
+            name: options.name,
+            afk_channel_id: options.afkChannelId,
+            afk_timeout: options.afkTimeout,
+            default_message_notifications: options.defaultMessageNotifications,
+            explicit_content_filter: options.explicitContentFilter,
+            system_channel_flags: options.systemChannelFlags,
+            verification_level: options.verificationLevel,
+            icon: "iconURL" in options
+                ? options.iconURL || urlToBase64(options.iconURL!)
+                : options.iconHash || iconBigintToHash(options.iconHash!),
+            // extra props
+            splash: "splashURL" in options
+                ? options.splashURL || urlToBase64(options.splashURL!)
+                : options.splashHash || iconBigintToHash(options.iconHash!),
+            banner: "bannerURL" in options
+                ? options.bannerURL || urlToBase64(options.bannerURL!)
+                : options.bannerHash || iconBigintToHash(options.bannerHash!),
+            discovery_splash: "discoverySplashURL" in options
+                ? options.discoverySplashURL || urlToBase64(options.discoverySplashURL!)
+                : options.discoverySplashHash || iconBigintToHash(options.discoverySplashHash!),
+            owner_id: options.ownerId,
+            rules_channel_id: options.rulesChannelId,
+            public_updates_channel_id: options.publicUpdatesChannelId,
+            preferred_locale: options.preferredLocale,
+            features: options.features,
+            description: options.description,
+            premiumProgressBarEnabled: options.premiumProgressBarEnabled,
+        });
+
+        return new Guild(session, guild);
     }
 }
 
