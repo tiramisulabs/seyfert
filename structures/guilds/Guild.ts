@@ -7,6 +7,8 @@ import type {
     DiscordInviteMetadata,
     DiscordMemberWithUser,
     DiscordRole,
+    DiscordListActiveThreads,
+    DiscordListArchivedThreads,
 } from "../../vendor/external.ts";
 import type { GetInvite } from "../../util/Routes.ts";
 import {
@@ -21,6 +23,8 @@ import BaseGuild from "./BaseGuild.ts";
 import Role from "../Role.ts";
 import GuildEmoji from "../GuildEmoji.ts";
 import Invite from "../Invite.ts";
+import ThreadMember from "../ThreadMember.ts";
+import ThreadChannel from "../channels/ThreadChannel.ts";
 import * as Routes from "../../util/Routes.ts";
 
 export interface CreateRole {
@@ -361,6 +365,23 @@ export class Guild extends BaseGuild implements Model {
         );
 
         return result.pruned;
+    }
+
+    async getActiveThreads() {
+        const { threads, members } = await this.session.rest.runMethod<DiscordListActiveThreads>(
+            this.session.rest,
+            "GET",
+            Routes.THREAD_ACTIVE(this.id)
+        );
+
+        return { 
+            threads: Object.fromEntries(
+                threads.map((thread) => [thread.id, new ThreadChannel(this.session, thread, this.id)]),
+            ) as Record<Snowflake, ThreadChannel>,
+            members: Object.fromEntries(
+                members.map((threadMember) => [threadMember.id, new ThreadMember(this.session, threadMember)]),
+            ) as Record<Snowflake, ThreadMember>,
+        };
     }
 }
 

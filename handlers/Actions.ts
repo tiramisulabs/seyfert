@@ -8,6 +8,10 @@ import type {
     DiscordMemberWithUser,
     DiscordMessage,
     DiscordMessageDelete,
+    DiscordMessageReactionAdd,
+    DiscordMessageReactionRemove,
+    DiscordMessageReactionRemoveAll,
+    DiscordMessageReactionRemoveEmoji,
     DiscordReady,
     // DiscordThreadMemberUpdate,
     // DiscordThreadMembersUpdate,
@@ -19,6 +23,7 @@ import type { Channel } from "../structures/channels/ChannelFactory.ts";
 import ChannelFactory from "../structures/channels/ChannelFactory.ts";
 import GuildChannel from "../structures/channels/GuildChannel.ts";
 import ThreadChannel from "../structures/channels/ThreadChannel.ts";
+import ThreadMember from "../structures/ThreadMember.ts";
 import Member from "../structures/Member.ts";
 import Message from "../structures/Message.ts";
 import User from "../structures/User.ts";
@@ -103,10 +108,7 @@ export const THREAD_LIST_SYNC: RawHandler<DiscordThreadListSync> = (session, _sh
         guildId: payload.guild_id,
         channelIds: payload.channel_ids ?? [],
         threads: payload.threads.map((channel) => new ThreadChannel(session, channel, payload.guild_id)),
-        members: payload.members.map((member) =>
-            // @ts-ignore: TODO: thread member structure
-            new Member(session, member as DiscordMemberWithUser, payload.guild_id)
-        ),
+        members: payload.members.map((member) => new ThreadMember(session, member)),
     });
 };
 
@@ -118,6 +120,24 @@ export const CHANNEL_PINS_UPDATE: RawHandler<DiscordChannelPinsUpdate> = (sessio
     });
 };
 
+/*
+export const MESSAGE_REACTION_ADD: RawHandler<DiscordMessageReactionAdd> = (session, _shardId, reaction) => {
+    session.emit("messageReactionAdd", null);
+};
+
+export const MESSAGE_REACTION_REMOVE: RawHandler<DiscordMessageReactionRemove> = (session, _shardId, reaction) => {
+    session.emit("messageReactionRemove", null);
+};
+
+export const MESSAGE_REACTION_REMOVE_ALL: RawHandler<DiscordMessageReactionRemoveAll> = (session, _shardId, reaction) => {
+    session.emit("messageReactionRemoveAll", null);
+};
+
+export const MESSAGE_REACTION_REMOVE_EMOJI: RawHandler<DiscordMessageReactionRemoveEmoji> = (session, _shardId, reaction) => {
+    session.emit("messageReactionRemoveEmoji", null);
+};
+*/
+
 export const raw: RawHandler<unknown> = (session, shardId, data) => {
     session.emit("raw", data, shardId);
 };
@@ -126,23 +146,30 @@ export interface Ready extends Omit<DiscordReady, "user"> {
     user: User;
 }
 
+// TODO: add partial reactions or something
+type MessageReaction = any;
+
 // deno-fmt-ignore-file
 export interface Events {
-    "ready":             Handler<[Ready, number]>;
-    "messageCreate":     Handler<[Message]>;
-    "messageUpdate":     Handler<[Message]>;
-    "messageDelete":     Handler<[{ id: Snowflake, channelId: Snowflake, guildId?: Snowflake }]>;
-    "guildMemberAdd":    Handler<[Member]>;
-    "guildMemberUpdate": Handler<[Member]>;
-    "guildMemberRemove": Handler<[User, Snowflake]>;
-    "channelCreate":     Handler<[Channel]>;
-    "channelUpdate":     Handler<[Channel]>;
-    "channelDelete":     Handler<[GuildChannel]>;
-    "channelPinsUpdate": Handler<[{ guildId?: Snowflake, channelId: Snowflake, lastPinTimestamp?: number }]>
-    "threadCreate":      Handler<[ThreadChannel]>;
-    "threadUpdate":      Handler<[ThreadChannel]>;
-    "threadDelete":      Handler<[ThreadChannel]>;
-    "threadListSync":    Handler<[{ guildId: Snowflake, channelIds: Snowflake[], threads: ThreadChannel[], members: Member[] }]>
-    "interactionCreate": Handler<[Interaction]>;
-    "raw":               Handler<[unknown, number]>;
+    "ready":                      Handler<[Ready, number]>;
+    "messageCreate":              Handler<[Message]>;
+    "messageUpdate":              Handler<[Message]>;
+    "messageDelete":              Handler<[{ id: Snowflake, channelId: Snowflake, guildId?: Snowflake }]>;
+    "messageReactionAdd":         Handler<[MessageReaction]>;
+    "messageReactionRemove":      Handler<[MessageReaction]>;  
+    "messageReactionRemoveAll":   Handler<[MessageReaction]>;
+    "messageReactionRemoveEmoji": Handler<[MessageReaction]>;
+    "guildMemberAdd":             Handler<[Member]>;
+    "guildMemberUpdate":          Handler<[Member]>;
+    "guildMemberRemove":          Handler<[User, Snowflake]>;
+    "channelCreate":              Handler<[Channel]>;
+    "channelUpdate":              Handler<[Channel]>;
+    "channelDelete":              Handler<[GuildChannel]>;
+    "channelPinsUpdate":          Handler<[{ guildId?: Snowflake, channelId: Snowflake, lastPinTimestamp?: number }]>
+    "threadCreate":               Handler<[ThreadChannel]>;
+    "threadUpdate":               Handler<[ThreadChannel]>;
+    "threadDelete":               Handler<[ThreadChannel]>;
+    "threadListSync":             Handler<[{ guildId: Snowflake, channelIds: Snowflake[], threads: ThreadChannel[], members: ThreadMember[] }]>
+    "interactionCreate":          Handler<[Interaction]>;
+    "raw":                        Handler<[unknown, number]>;
 }

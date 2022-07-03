@@ -228,3 +228,74 @@ export function GUILD_MEMBER_ROLE(guildId: Snowflake, memberId: Snowflake, roleI
 export function CHANNEL_WEBHOOKS(channelId: Snowflake) {
     return `/channels/${channelId}/webhooks`;
 }
+
+
+export function THREAD_START_PUBLIC(channelId: Snowflake, messageId: Snowflake) {
+    return `/channels/${channelId}/messages/${messageId}/threads`;
+}
+
+export function THREAD_START_PRIVATE(channelId: Snowflake) {
+    return `/channels/${channelId}/threads`;
+}
+
+export function THREAD_ACTIVE(guildId: Snowflake) {
+    return `/guilds/${guildId}/threads/active`;
+}
+
+export interface ListArchivedThreads {
+    before?: number;
+    limit?: number;
+}
+
+export function THREAD_ME(channelId: Snowflake) {
+    return `/channels/${channelId}/thread-members/@me`;
+}
+
+export function THREAD_MEMBERS(channelId: Snowflake) {
+    return `/channels/${channelId}/thread-members`;
+}
+
+export function THREAD_USER(channelId: Snowflake, userId: Snowflake) {
+    return `/channels/${channelId}/thread-members/${userId}`;
+}
+
+export function THREAD_ARCHIVED(channelId: Snowflake) {
+    return `/channels/${channelId}/threads/archived`;
+}
+
+export function THREAD_ARCHIVED_PUBLIC(channelId: Snowflake, options?: ListArchivedThreads) {
+    let url = `/channels/${channelId}/threads/archived/public?`;
+
+    if (options) {
+      if (options.before) url += `before=${new Date(options.before).toISOString()}`;
+      if (options.limit) url += `&limit=${options.limit}`;
+    }
+
+    return url;
+}
+
+export function THREAD_ARCHIVED_PRIVATE(channelId: Snowflake, options?: ListArchivedThreads) {
+    let url = `/channels/${channelId}/threads/archived/private?`;
+
+    if (options) {
+        if (options.before) url += `before=${new Date(options.before).toISOString()}`;
+        if (options.limit) url += `&limit=${options.limit}`;
+    }
+
+    return url;
+}
+
+export function THREAD_ARCHIVED_PRIVATE_JOINED(channelId: Snowflake, options?: ListArchivedThreads) {
+    let url = `/channels/${channelId}/users/@me/threads/archived/private?`;
+
+    if (options) {
+      if (options.before) url += `before=${new Date(options.before).toISOString()}`;
+      if (options.limit) url += `&limit=${options.limit}`;
+    }
+
+    return url;
+}
+
+export function FORUM_START(channelId: Snowflake) {
+    return `/channels/${channelId}/threads?has_message=true`;
+}

@@ -1,8 +1,11 @@
 import type { Model } from "../Base.ts";
 import type { Snowflake } from "../../util/Snowflake.ts";
 import type { Session } from "../../session/Session.ts";
-import type { ChannelTypes, DiscordChannel, DiscordInviteMetadata } from "../../vendor/external.ts";
+import type { ChannelTypes, DiscordChannel, DiscordInviteMetadata, DiscordListArchivedThreads } from "../../vendor/external.ts";
+import type { ListArchivedThreads } from "../../util/Routes.ts";
 import BaseChannel from "./BaseChannel.ts";
+import ThreadChannel from "./ThreadChannel.ts";
+import ThreadMember from "../ThreadMember.ts";
 import Invite from "../Invite.ts";
 import * as Routes from "../../util/Routes.ts";
 
@@ -44,7 +47,41 @@ export class GuildChannel extends BaseChannel implements Model {
         return invites.map((invite) => new Invite(this.session, invite));
     }
 
+
+    async getArchivedThreads(options: ListArchivedThreads & { type: "public" | "private" | "privateJoinedThreads" }) {
+        let func: (channelId: Snowflake, options: ListArchivedThreads) => string;
+
+        switch (options.type) {
+            case "public":
+                func = Routes.THREAD_ARCHIVED_PUBLIC;
+                break;
+            case "private":
+                func = Routes.THREAD_START_PRIVATE;
+                break;
+            case "privateJoinedThreads":
+                func = Routes.THREAD_ARCHIVED_PRIVATE_JOINED;
+                break;
+        }
+
+        const { threads, members, has_more } = await this.session.rest.runMethod<DiscordListArchivedThreads>(
+            this.session.rest,
+            "GET",
+            func(this.id, options)
+        );
+
+        return { 
+            threads: Object.fromEntries(
+                threads.map((thread) => [thread.id, new ThreadChannel(this.session, thread, this.id)]),
+            ) as Record<Snowflake, ThreadChannel>,
+            members: Object.fromEntries(
+                members.map((threadMember) => [threadMember.id, new ThreadMember(this.session, threadMember)]),
+            ) as Record<Snowflake, ThreadMember>,
+            hasMore: has_more,
+        };
+    }
+
     /*
+     * TODO: should be in TextChannel
     async createThread(options: ThreadCreateOptions): Promise<ThreadChannel> {
         const thread = await this.session.rest.runMethod<DiscordChannel>(
             this.session.rest,
