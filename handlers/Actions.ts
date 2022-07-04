@@ -7,6 +7,8 @@ import type {
     DiscordGuildMemberUpdate,
     DiscordUser,
     DiscordGuildBanAddRemove,
+    DiscordEmoji,
+    DiscordGuildEmojisUpdate,
     DiscordInteraction,
     DiscordMemberWithUser,
     DiscordMessage,
@@ -80,6 +82,10 @@ export const GUILD_BAN_ADD: RawHandler<DiscordGuildBanAddRemove> = (session, _sh
 
 export const GUILD_BAN_REMOVE: RawHandler<DiscordGuildBanAddRemove> = (session, _shardId, data) => {
     session.emit("guildBanRemove", { guildId: data.guild_id, user: data.user });
+};
+
+export const GUILD_EMOJIS_UPDATE: RawHandler<DiscordGuildEmojisUpdate> = (session, _shardId, data) => {
+    session.emit("guildEmojisUpdate",  { guildId: data.guild_id, emojis: data.emojis})
 };
 
 export const INTERACTION_CREATE: RawHandler<DiscordInteraction> = (session, _shardId, interaction) => {
@@ -186,6 +192,7 @@ export interface Events {
     "guildMemberRemove":          Handler<[User, Snowflake]>;
     "guildBanAdd":                Handler<[{ guildId: Snowflake, user: DiscordUser}]>;
     "guildBanRemove":             Handler<[{ guildId: Snowflake, user: DiscordUser }]>
+    "guildEmojisUpdate":          Handler<[{ guildId: Snowflake, emojis: DiscordEmoji[] }]>
     "channelCreate":              Handler<[Channel]>;
     "channelUpdate":              Handler<[Channel]>;
     "channelDelete":              Handler<[GuildChannel]>;
