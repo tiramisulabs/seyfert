@@ -7,7 +7,7 @@ if (!token) {
     throw new Error("Please provide a token");
 }
 
-const intents = GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages;
+const intents = GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages | GatewayIntents.GuildMembers | GatewayIntents.GuildBans
 const session = new Session({ token, intents });
 
 session.on("ready", (payload) => {
