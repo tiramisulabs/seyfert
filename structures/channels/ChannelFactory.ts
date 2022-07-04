@@ -7,13 +7,15 @@ import VoiceChannel from "./VoiceChannel.ts";
 import DMChannel from "./DMChannel.ts";
 import NewsChannel from "./NewsChannel.ts";
 import ThreadChannel from "./ThreadChannel.ts";
+import StageChannel from "./StageChannel.ts";
 
 export type Channel =
     | TextChannel
     | VoiceChannel
     | DMChannel
     | NewsChannel
-    | ThreadChannel;
+    | ThreadChannel
+    | StageChannel;
 
 export class ChannelFactory {
     static from(session: Session, channel: DiscordChannel): Channel {
@@ -27,6 +29,8 @@ export class ChannelFactory {
                 return new DMChannel(session, channel);
             case ChannelTypes.GuildVoice:
                 return new VoiceChannel(session, channel, channel.guild_id!);
+            case ChannelTypes.GuildStageVoice:
+                return new StageChannel(session, channel, channel.guild_id!);
             default:
                 if (textBasedChannels.includes(channel.type)) {
                     return new TextChannel(session, channel);
