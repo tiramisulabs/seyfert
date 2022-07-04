@@ -21,6 +21,7 @@ import type {
     // DiscordThreadMemberUpdate,
     // DiscordThreadMembersUpdate,
     DiscordThreadListSync,
+    DiscordWebhookUpdate
 } from "../vendor/external.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
@@ -146,6 +147,10 @@ export const CHANNEL_PINS_UPDATE: RawHandler<DiscordChannelPinsUpdate> = (sessio
     });
 };
 
+export const WEBHOOKS_UPDATE: RawHandler<DiscordWebhookUpdate> = (session, _shardId, webhook) => {
+    session.emit("webhooksUpdate", { guildId: webhook.guild_id, channelId: webhook.channel_id })
+};
+
 /*
 export const MESSAGE_REACTION_ADD: RawHandler<DiscordMessageReactionAdd> = (session, _shardId, reaction) => {
     session.emit("messageReactionAdd", null);
@@ -203,4 +208,5 @@ export interface Events {
     "threadListSync":             Handler<[{ guildId: Snowflake, channelIds: Snowflake[], threads: ThreadChannel[], members: ThreadMember[] }]>
     "interactionCreate":          Handler<[Interaction]>;
     "raw":                        Handler<[unknown, number]>;
+    "webhooksUpdate":             Handler<[{ guildId: Snowflake, channelId: Snowflake }]>;
 }
