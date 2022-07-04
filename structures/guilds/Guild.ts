@@ -128,7 +128,7 @@ export interface GuildCreateOptionsChannel {
     nsfw?: boolean;
     bitrate?: number;
     userLimit?: number;
-    region?: string | null;
+    rtcRegion?: string | null;
     videoQualityMode?: VideoQualityModes;
     permissionOverwrites?: MakeRequired<Partial<DiscordOverwrite>, "id">[];
     rateLimitPerUser?: number;
@@ -527,7 +527,7 @@ export class Guild extends BaseGuild implements Model {
                 bitrate: channel.bitrate,
                 parent_id: channel.parentId,
                 permission_overwrites: channel.permissionOverwrites,
-                region: channel.region,
+                rtc_region: channel.rtcRegion,
                 user_limit: channel.userLimit,
                 video_quality_mode: channel.videoQualityMode,
                 rate_limit_per_user: channel.rateLimitPerUser,

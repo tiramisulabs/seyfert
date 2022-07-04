@@ -44,6 +44,7 @@ export const textBasedChannels = [
     ChannelTypes.GuildPrivateThread,
     ChannelTypes.GuildPublicThread,
     ChannelTypes.GuildNews,
+    ChannelTypes.GuildVoice,
     ChannelTypes.GuildText,
 ];
 
@@ -53,6 +54,7 @@ export type TextBasedChannels =
     | ChannelTypes.GuildPrivateThread
     | ChannelTypes.GuildPublicThread
     | ChannelTypes.GuildNews
+    | ChannelTypes.GuildVoice
     | ChannelTypes.GuildText;
 
 export class TextChannel {
@@ -85,21 +87,28 @@ export class TextChannel {
     /**
      * Mixin
      */
-    static applyTo(klass: Function) {
-        klass.prototype.fetchPins = TextChannel.prototype.fetchPins;
-        klass.prototype.createInvite = TextChannel.prototype.createInvite;
-        klass.prototype.fetchMessages = TextChannel.prototype.fetchMessages;
-        klass.prototype.sendTyping = TextChannel.prototype.sendTyping;
-        klass.prototype.pinMessage = TextChannel.prototype.pinMessage;
-        klass.prototype.unpinMessage = TextChannel.prototype.unpinMessage;
-        klass.prototype.addReaction = TextChannel.prototype.addReaction;
-        klass.prototype.removeReaction = TextChannel.prototype.removeReaction;
-        klass.prototype.removeReactionEmoji = TextChannel.prototype.removeReactionEmoji;
-        klass.prototype.nukeReactions = TextChannel.prototype.nukeReactions;
-        klass.prototype.fetchReactions = TextChannel.prototype.fetchReactions;
-        klass.prototype.sendMessage = TextChannel.prototype.sendMessage;
-        klass.prototype.editMessage = TextChannel.prototype.editMessage;
-        klass.prototype.createWebhook = TextChannel.prototype.createWebhook;
+    static applyTo(klass: Function, ignore: Array<keyof TextChannel> = []) {
+       const methods: Array<keyof TextChannel> = [
+           "fetchPins",
+           "createInvite",
+           "fetchMessages",
+           "sendTyping",
+           "pinMessage",
+           "unpinMessage",
+           "addReaction",
+           "removeReaction",
+           "nukeReactions",
+           "fetchPins",
+           "sendMessage",
+           "editMessage",
+           "createWebhook",
+       ];
+
+       for (const method of methods) {
+           if (ignore.includes(method)) continue;
+
+           klass.prototype[method] = TextChannel.prototype[method];
+       }
     }
 
     async fetchPins(): Promise<Message[] | []> {

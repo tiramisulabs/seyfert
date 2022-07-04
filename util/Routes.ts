@@ -303,3 +303,11 @@ export function THREAD_ARCHIVED_PRIVATE_JOINED(channelId: Snowflake, options?: L
 export function FORUM_START(channelId: Snowflake) {
     return `/channels/${channelId}/threads?has_message=true`;
 }
+
+export function STAGE_INSTANCES() {
+    return `/stage-instances`;
+}
+
+export function STAGE_INSTANCE(channelId: Snowflake) {
+    return `/stage-instances/${channelId}`;
+}

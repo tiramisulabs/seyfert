@@ -13,12 +13,14 @@ export * from "./structures/WelcomeChannel.ts";
 export * from "./structures/WelcomeScreen.ts";
 
 export * from "./structures/channels/BaseChannel.ts";
+export * from "./structures/channels/BaseVoiceChannel.ts";
 export * from "./structures/channels/ChannelFactory.ts";
 export * from "./structures/channels/DMChannel.ts";
 export * from "./structures/channels/GuildChannel.ts";
 export * from "./structures/channels/NewsChannel.ts";
 export * from "./structures/channels/TextChannel.ts";
 export * from "./structures/channels/ThreadChannel.ts";
+export * from "./structures/channels/StageChannel.ts";
 export * from "./structures/channels/VoiceChannel.ts";
 
 export * from "./structures/components/ActionRowComponent.ts";
