@@ -1,17 +1,16 @@
 import type {
     DiscordChannel,
     DiscordChannelPinsUpdate,
+    DiscordEmoji,
     DiscordGuild,
+    DiscordGuildBanAddRemove,
+    DiscordGuildEmojisUpdate,
     DiscordGuildMemberAdd,
     DiscordGuildMemberRemove,
     DiscordGuildMemberUpdate,
-    DiscordGuildBanAddRemove,
-    DiscordGuildEmojisUpdate,
     DiscordGuildRoleCreate,
-    DiscordGuildRoleUpdate,
     DiscordGuildRoleDelete,
-    DiscordUser,
-    DiscordEmoji,
+    DiscordGuildRoleUpdate,
     DiscordInteraction,
     DiscordMemberWithUser,
     DiscordMessage,
@@ -25,7 +24,8 @@ import type {
     // DiscordThreadMemberUpdate,
     // DiscordThreadMembersUpdate,
     DiscordThreadListSync,
-    DiscordWebhookUpdate
+    DiscordUser,
+    DiscordWebhookUpdate,
 } from "../vendor/external.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
@@ -37,7 +37,7 @@ import ThreadMember from "../structures/ThreadMember.ts";
 import Member from "../structures/Member.ts";
 import Message from "../structures/Message.ts";
 import User from "../structures/User.ts";
-import Guild from  "../structures/guilds/Guild.ts";
+import Guild from "../structures/guilds/Guild.ts";
 import Interaction from "../structures/interactions/Interaction.ts";
 
 export type RawHandler<T> = (...args: [Session, number, T]) => void;
@@ -90,20 +90,20 @@ export const GUILD_BAN_REMOVE: RawHandler<DiscordGuildBanAddRemove> = (session, 
 };
 
 export const GUILD_EMOJIS_UPDATE: RawHandler<DiscordGuildEmojisUpdate> = (session, _shardId, data) => {
-    session.emit("guildEmojisUpdate",  { guildId: data.guild_id, emojis: data.emojis})
+    session.emit("guildEmojisUpdate", { guildId: data.guild_id, emojis: data.emojis });
 };
 
 export const GUILD_ROLE_CREATE: RawHandler<DiscordGuildRoleCreate> = (session, _shardId, data) => {
     session.emit("guildRoleCreate", { guildId: data.guild_id, role: data.role });
-}
+};
 
 export const GUILD_ROLE_UPDATE: RawHandler<DiscordGuildRoleUpdate> = (session, _shardId, data) => {
     session.emit("guildRoleUpdate", { guildId: data.guild_id, role: data.role });
-}
+};
 
 export const GUILD_ROLE_DELETE: RawHandler<DiscordGuildRoleDelete> = (session, _shardId, data) => {
     session.emit("guildRoleDelete", { guildId: data.guild_id, roleId: data.role_id });
-}
+};
 
 export const INTERACTION_CREATE: RawHandler<DiscordInteraction> = (session, _shardId, interaction) => {
     session.unrepliedInteractions.add(BigInt(interaction.id));
@@ -164,7 +164,7 @@ export const CHANNEL_PINS_UPDATE: RawHandler<DiscordChannelPinsUpdate> = (sessio
 };
 
 export const WEBHOOKS_UPDATE: RawHandler<DiscordWebhookUpdate> = (session, _shardId, webhook) => {
-    session.emit("webhooksUpdate", { guildId: webhook.guild_id, channelId: webhook.channel_id })
+    session.emit("webhooksUpdate", { guildId: webhook.guild_id, channelId: webhook.channel_id });
 };
 
 /*

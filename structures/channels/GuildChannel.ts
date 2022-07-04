@@ -1,7 +1,12 @@
 import type { Model } from "../Base.ts";
 import type { Snowflake } from "../../util/Snowflake.ts";
 import type { Session } from "../../session/Session.ts";
-import type { ChannelTypes, DiscordChannel, DiscordInviteMetadata, DiscordListArchivedThreads } from "../../vendor/external.ts";
+import type {
+    ChannelTypes,
+    DiscordChannel,
+    DiscordInviteMetadata,
+    DiscordListArchivedThreads,
+} from "../../vendor/external.ts";
 import type { ListArchivedThreads } from "../../util/Routes.ts";
 import BaseChannel from "./BaseChannel.ts";
 import ThreadChannel from "./ThreadChannel.ts";
@@ -25,7 +30,7 @@ export interface ThreadCreateOptions {
 /**
  * Represents the option object to create a thread channel from a message
  * @link https://discord.com/developers/docs/resources/channel#start-thread-from-message
- * */
+ */
 export interface ThreadCreateOptions {
     name: string;
     autoArchiveDuration?: 60 | 1440 | 4320 | 10080;
@@ -59,7 +64,6 @@ export class GuildChannel extends BaseChannel implements Model {
         return invites.map((invite) => new Invite(this.session, invite));
     }
 
-
     async getArchivedThreads(options: ListArchivedThreads & { type: "public" | "private" | "privateJoinedThreads" }) {
         let func: (channelId: Snowflake, options: ListArchivedThreads) => string;
 
@@ -78,10 +82,10 @@ export class GuildChannel extends BaseChannel implements Model {
         const { threads, members, has_more } = await this.session.rest.runMethod<DiscordListArchivedThreads>(
             this.session.rest,
             "GET",
-            func(this.id, options)
+            func(this.id, options),
         );
 
-        return { 
+        return {
             threads: Object.fromEntries(
                 threads.map((thread) => [thread.id, new ThreadChannel(this.session, thread, this.id)]),
             ) as Record<Snowflake, ThreadChannel>,
