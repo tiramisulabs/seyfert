@@ -5,10 +5,13 @@ import type {
     DiscordGuildMemberAdd,
     DiscordGuildMemberRemove,
     DiscordGuildMemberUpdate,
-    DiscordUser,
     DiscordGuildBanAddRemove,
-    DiscordEmoji,
     DiscordGuildEmojisUpdate,
+    DiscordGuildRoleCreate,
+    DiscordGuildRoleUpdate,
+    DiscordGuildRoleDelete,
+    DiscordUser,
+    DiscordEmoji,
     DiscordInteraction,
     DiscordMemberWithUser,
     DiscordMessage,
@@ -18,6 +21,7 @@ import type {
     DiscordMessageReactionRemoveAll,
     DiscordMessageReactionRemoveEmoji,
     DiscordReady,
+    DiscordRole,
     // DiscordThreadMemberUpdate,
     // DiscordThreadMembersUpdate,
     DiscordThreadListSync,
@@ -88,6 +92,18 @@ export const GUILD_BAN_REMOVE: RawHandler<DiscordGuildBanAddRemove> = (session, 
 export const GUILD_EMOJIS_UPDATE: RawHandler<DiscordGuildEmojisUpdate> = (session, _shardId, data) => {
     session.emit("guildEmojisUpdate",  { guildId: data.guild_id, emojis: data.emojis})
 };
+
+export const GUILD_ROLE_CREATE: RawHandler<DiscordGuildRoleCreate> = (session, _shardId, data) => {
+    session.emit("guildRoleCreate", { guildId: data.guild_id, role: data.role });
+}
+
+export const GUILD_ROLE_UPDATE: RawHandler<DiscordGuildRoleUpdate> = (session, _shardId, data) => {
+    session.emit("guildRoleUpdate", { guildId: data.guild_id, role: data.role });
+}
+
+export const GUILD_ROLE_DELETE: RawHandler<DiscordGuildRoleDelete> = (session, _shardId, data) => {
+    session.emit("guildRoleDelete", { guildId: data.guild_id, roleId: data.role_id });
+}
 
 export const INTERACTION_CREATE: RawHandler<DiscordInteraction> = (session, _shardId, interaction) => {
     session.unrepliedInteractions.add(BigInt(interaction.id));
@@ -198,6 +214,9 @@ export interface Events {
     "guildBanAdd":                Handler<[{ guildId: Snowflake, user: DiscordUser}]>;
     "guildBanRemove":             Handler<[{ guildId: Snowflake, user: DiscordUser }]>
     "guildEmojisUpdate":          Handler<[{ guildId: Snowflake, emojis: DiscordEmoji[] }]>
+    "guildRoleCreate":            Handler<[{ guildId: Snowflake, role: DiscordRole }]>;
+    "guildRoleUpdate":            Handler<[{ guildId: Snowflake, role: DiscordRole }]>;
+    "guildRoleDelete":            Handler<[{ guildId: Snowflake, roleId: Snowflake }]>;
     "channelCreate":              Handler<[Channel]>;
     "channelUpdate":              Handler<[Channel]>;
     "channelDelete":              Handler<[GuildChannel]>;
