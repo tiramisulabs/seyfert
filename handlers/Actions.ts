@@ -5,6 +5,8 @@ import type {
     DiscordGuildMemberAdd,
     DiscordGuildMemberRemove,
     DiscordGuildMemberUpdate,
+    DiscordUser,
+    DiscordGuildBanAddRemove,
     DiscordInteraction,
     DiscordMemberWithUser,
     DiscordMessage,
@@ -70,6 +72,14 @@ export const GUILD_MEMBER_UPDATE: RawHandler<DiscordGuildMemberUpdate> = (sessio
 
 export const GUILD_MEMBER_REMOVE: RawHandler<DiscordGuildMemberRemove> = (session, _shardId, member) => {
     session.emit("guildMemberRemove", new User(session, member.user), member.guild_id);
+};
+
+export const GUILD_BAN_ADD: RawHandler<DiscordGuildBanAddRemove> = (session, _shardId, data) => {
+    session.emit("guildBanAdd", { guildId: data.guild_id, user: data.user });
+};
+
+export const GUILD_BAN_REMOVE: RawHandler<DiscordGuildBanAddRemove> = (session, _shardId, data) => {
+    session.emit("guildBanRemove", { guildId: data.guild_id, user: data.user });
 };
 
 export const INTERACTION_CREATE: RawHandler<DiscordInteraction> = (session, _shardId, interaction) => {
@@ -174,6 +184,8 @@ export interface Events {
     "guildMemberAdd":             Handler<[Member]>;
     "guildMemberUpdate":          Handler<[Member]>;
     "guildMemberRemove":          Handler<[User, Snowflake]>;
+    "guildBanAdd":                Handler<[{ guildId: Snowflake, user: DiscordUser}]>;
+    "guildBanRemove":             Handler<[{ guildId: Snowflake, user: DiscordUser }]>
     "channelCreate":              Handler<[Channel]>;
     "channelUpdate":              Handler<[Channel]>;
     "channelDelete":              Handler<[GuildChannel]>;
