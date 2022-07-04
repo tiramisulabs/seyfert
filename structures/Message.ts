@@ -83,7 +83,10 @@ export class Message implements Model {
         this.guildId = data.guild_id;
         this.applicationId = data.application_id;
 
-        this.author = new User(session, data.author);
+        if (!data.webhook_id) {
+            this.author = new User(session, data.author);
+        }
+
         this.flags = data.flags;
         this.pinned = !!data.pinned;
         this.tts = !!data.tts;
@@ -103,19 +106,9 @@ export class Message implements Model {
         }
 
         // webhook handling
-        if (data.author.discriminator === "0000") {
+        if (data.webhook_id && data.author.discriminator === "0000") {
             this.webhook = {
-                id: data.author.id,
-                username: data.author.username,
-                discriminator: data.author.discriminator,
-                avatar: data.author.avatar ? iconHashToBigInt(data.author.avatar) : undefined,
-            };
-        }
-
-        // webhook handling
-        if (data.author && data.author.discriminator === "0000") {
-            this.webhook = {
-                id: data.author.id,
+                id: data.webhook_id!,
                 username: data.author.username,
                 discriminator: data.author.discriminator,
                 avatar: data.author.avatar ? iconHashToBigInt(data.author.avatar) : undefined,
@@ -123,7 +116,6 @@ export class Message implements Model {
         }
 
         // user is always null on MessageCreate and its replaced with author
-
         if (data.guild_id && data.member && !this.isWebhookMessage()) {
             this.member = new Member(session, { ...data.member, user: data.author }, data.guild_id);
         }
@@ -145,7 +137,7 @@ export class Message implements Model {
     channelId: Snowflake;
     guildId?: Snowflake;
     applicationId?: Snowflake;
-    author: User;
+    author!: User;
     flags?: MessageFlags;
     pinned: boolean;
     tts: boolean;
