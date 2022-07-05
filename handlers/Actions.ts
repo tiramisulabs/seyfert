@@ -25,7 +25,8 @@ import type {
     // DiscordThreadMemberUpdate,
     // DiscordThreadMembersUpdate,
     DiscordThreadListSync,
-    DiscordWebhookUpdate
+    DiscordWebhookUpdate,
+    DiscordIntegration
 } from "../vendor/external.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
@@ -39,6 +40,7 @@ import Message from "../structures/Message.ts";
 import User from "../structures/User.ts";
 import Guild from  "../structures/guilds/Guild.ts";
 import Interaction from "../structures/interactions/Interaction.ts";
+import { Integration } from "../structures/Integration.ts"
 
 export type RawHandler<T> = (...args: [Session, number, T]) => void;
 export type Handler<T extends unknown[]> = (...args: T) => unknown;
@@ -167,6 +169,10 @@ export const WEBHOOKS_UPDATE: RawHandler<DiscordWebhookUpdate> = (session, _shar
     session.emit("webhooksUpdate", { guildId: webhook.guild_id, channelId: webhook.channel_id })
 };
 
+export const INTEGRATION_CREATE: RawHandler<DiscordIntegration> = (session, _shardId, payload) => {
+    session.emit("integrationCreate", new Integration(session, payload));
+};
+
 /*
 export const MESSAGE_REACTION_ADD: RawHandler<DiscordMessageReactionAdd> = (session, _shardId, reaction) => {
     session.emit("messageReactionAdd", null);
@@ -226,6 +232,7 @@ export interface Events {
     "threadDelete":               Handler<[ThreadChannel]>;
     "threadListSync":             Handler<[{ guildId: Snowflake, channelIds: Snowflake[], threads: ThreadChannel[], members: ThreadMember[] }]>
     "interactionCreate":          Handler<[Interaction]>;
+    "integrationCreate":          Handler<[DiscordIntegration]>;
     "raw":                        Handler<[unknown, number]>;
     "webhooksUpdate":             Handler<[{ guildId: Snowflake, channelId: Snowflake }]>;
 }
