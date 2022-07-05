@@ -18,6 +18,7 @@ export class User implements Model {
 
         this.username = data.username;
         this.discriminator = data.discriminator;
+        this.avatar = data.avatar ? data.avatar : undefined;
         this.avatarHash = data.avatar ? iconHashToBigInt(data.avatar) : undefined;
         this.accentColor = data.accent_color;
         this.bot = !!data.bot;
@@ -30,6 +31,7 @@ export class User implements Model {
 
     username: string;
     discriminator: string;
+    avatar?: string;
     avatarHash?: bigint;
     accentColor?: number;
     bot: boolean;
