@@ -30,6 +30,7 @@ import type {
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
 import type { Channel } from "../structures/channels/ChannelFactory.ts";
+import type { Interaction } from "../structures/interactions/InteractionFactory.ts";
 import ChannelFactory from "../structures/channels/ChannelFactory.ts";
 import GuildChannel from "../structures/channels/GuildChannel.ts";
 import ThreadChannel from "../structures/channels/ThreadChannel.ts";
@@ -38,7 +39,7 @@ import Member from "../structures/Member.ts";
 import Message from "../structures/Message.ts";
 import User from "../structures/User.ts";
 import Guild from  "../structures/guilds/Guild.ts";
-import InteractionFactory from "../structures/interactions/interactions/InteractionFactory.ts";
+import InteractionFactory from "../structures/interactions/InteractionFactory.ts";
 
 export type RawHandler<T> = (...args: [Session, number, T]) => void;
 export type Handler<T extends unknown[]> = (...args: T) => unknown;

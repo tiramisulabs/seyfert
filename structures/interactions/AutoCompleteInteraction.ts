@@ -3,7 +3,7 @@ import type { Model } from "../Base.ts";
 import type { Snowflake } from "../../util/Snowflake.ts";
 import type { Session } from "../../session/Session.ts";
 import type { ApplicationCommandTypes, DiscordInteraction, InteractionTypes } from "../../vendor/external.ts";
-import type { ApplicationCommandOptionChoice } from "./BaseInteraction.ts";
+import type { ApplicationCommandOptionChoice } from "./CommandInteraction.ts";
 import { InteractionResponseTypes } from "../../vendor/external.ts";
 import BaseInteraction from "./BaseInteraction.ts";
 import * as Routes from "../../util/Routes.ts";

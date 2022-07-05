@@ -30,3 +30,5 @@ export class InteractionFactory {
         }
     }
 }
+
+export default InteractionFactory;
