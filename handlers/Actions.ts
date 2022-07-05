@@ -171,11 +171,11 @@ export const WEBHOOKS_UPDATE: RawHandler<DiscordWebhookUpdate> = (session, _shar
     session.emit("webhooksUpdate", { guildId: webhook.guild_id, channelId: webhook.channel_id });
 };
 
-export const INTEGRATION_CREATE: RawHandler<DiscordIntegration> = (session, _shardId, payload) => {
+export const INTEGRATION_CREATE: RawHandler<DiscordIntegration & { guildId?: Snowflake }> = (session, _shardId, payload) => {
     session.emit("integrationCreate", new Integration(session, payload));
 };
 
-export const INTEGRATION_UPDATE: RawHandler<DiscordIntegration> = (session, _shardId, payload) => {
+export const INTEGRATION_UPDATE: RawHandler<DiscordIntegration & { guildId?: Snowflake }> = (session, _shardId, payload) => {
     session.emit("integrationCreate", new Integration(session, payload));
 };
 
@@ -242,8 +242,8 @@ export interface Events {
     "threadDelete":               Handler<[ThreadChannel]>;
     "threadListSync":             Handler<[{ guildId: Snowflake, channelIds: Snowflake[], threads: ThreadChannel[], members: ThreadMember[] }]>
     "interactionCreate":          Handler<[Interaction]>;
-    "integrationCreate":          Handler<[DiscordIntegration]>;
-    "integrationUpdate":          Handler<[DiscordIntegration]>;
+    "integrationCreate":          Handler<[Integration]>;
+    "integrationUpdate":          Handler<[Integration]>;
     "integrationDelete":          Handler<[{ id: Snowflake, guildId?: Snowflake, applicationId?: Snowflake }]>;
     "raw":                        Handler<[unknown, number]>;
     "webhooksUpdate":             Handler<[{ guildId: Snowflake, channelId: Snowflake }]>;
