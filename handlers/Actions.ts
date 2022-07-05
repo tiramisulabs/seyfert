@@ -38,7 +38,7 @@ import Member from "../structures/Member.ts";
 import Message from "../structures/Message.ts";
 import User from "../structures/User.ts";
 import Guild from  "../structures/guilds/Guild.ts";
-import Interaction from "../structures/interactions/Interaction.ts";
+import InteractionFactory from "../structures/interactions/interactions/InteractionFactory.ts";
 
 export type RawHandler<T> = (...args: [Session, number, T]) => void;
 export type Handler<T extends unknown[]> = (...args: T) => unknown;
@@ -106,12 +106,7 @@ export const GUILD_ROLE_DELETE: RawHandler<DiscordGuildRoleDelete> = (session, _
 }
 
 export const INTERACTION_CREATE: RawHandler<DiscordInteraction> = (session, _shardId, interaction) => {
-    session.unrepliedInteractions.add(BigInt(interaction.id));
-
-    // could be improved
-    setTimeout(() => session.unrepliedInteractions.delete(BigInt(interaction.id)), 15 * 60 * 1000);
-
-    session.emit("interactionCreate", new Interaction(session, interaction));
+    session.emit("interactionCreate", InteractionFactory.from(session, interaction));
 };
 
 export const CHANNEL_CREATE: RawHandler<DiscordChannel> = (session, _shardId, channel) => {
