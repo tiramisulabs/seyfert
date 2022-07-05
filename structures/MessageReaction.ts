@@ -5,7 +5,7 @@ import Emoji from "./Emoji.ts";
 /**
  * Represents a reaction
  * @link https://discord.com/developers/docs/resources/channel#reaction-object
- * */
+ */
 export class MessageReaction {
     constructor(session: Session, data: DiscordReaction) {
         this.session = session;

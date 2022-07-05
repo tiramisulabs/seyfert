@@ -88,27 +88,27 @@ export class TextChannel {
      * Mixin
      */
     static applyTo(klass: Function, ignore: Array<keyof TextChannel> = []) {
-       const methods: Array<keyof TextChannel> = [
-           "fetchPins",
-           "createInvite",
-           "fetchMessages",
-           "sendTyping",
-           "pinMessage",
-           "unpinMessage",
-           "addReaction",
-           "removeReaction",
-           "nukeReactions",
-           "fetchPins",
-           "sendMessage",
-           "editMessage",
-           "createWebhook",
-       ];
+        const methods: Array<keyof TextChannel> = [
+            "fetchPins",
+            "createInvite",
+            "fetchMessages",
+            "sendTyping",
+            "pinMessage",
+            "unpinMessage",
+            "addReaction",
+            "removeReaction",
+            "nukeReactions",
+            "fetchPins",
+            "sendMessage",
+            "editMessage",
+            "createWebhook",
+        ];
 
-       for (const method of methods) {
-           if (ignore.includes(method)) continue;
+        for (const method of methods) {
+            if (ignore.includes(method)) continue;
 
-           klass.prototype[method] = TextChannel.prototype[method];
-       }
+            klass.prototype[method] = TextChannel.prototype[method];
+        }
     }
 
     async fetchPins(): Promise<Message[] | []> {

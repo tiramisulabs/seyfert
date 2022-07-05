@@ -39,15 +39,15 @@ export class StageInstance implements Model {
     discoverableDisabled: boolean;
     guildScheduledEventId: Snowflake;
 
-    async edit(options: { topic?: string, privacyLevel?: PrivacyLevels }) {
+    async edit(options: { topic?: string; privacyLevel?: PrivacyLevels }) {
         const stageInstance = await this.session.rest.runMethod<DiscordStageInstance>(
             this.session.rest,
             "PATCH",
             Routes.STAGE_INSTANCE(this.id),
             {
                 topic: options.topic,
-                privacy_level: options.privacyLevel
-            }
+                privacy_level: options.privacyLevel,
+            },
         );
 
         return new StageInstance(this.session, stageInstance);

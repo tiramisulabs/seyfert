@@ -36,6 +36,11 @@ export * from "./structures/guilds/Guild.ts";
 export * from "./structures/guilds/InviteGuild.ts";
 
 export * from "./structures/builders/EmbedBuilder.ts";
+export * from "./structures/builders/InputTextComponentBuilder.ts";
+export * from "./structures/builders/MessageActionRow.ts";
+export * from "./structures/builders/MessageButton.ts";
+export * from "./structures/builders/MessageSelectMenu.ts";
+export * from "./structures/builders/SelectMenuOptionBuilder.ts";
 
 export * from "./structures/interactions/Interaction.ts";
 

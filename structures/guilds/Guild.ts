@@ -6,14 +6,14 @@ import type {
     DiscordEmoji,
     DiscordGuild,
     DiscordInviteMetadata,
-    DiscordMemberWithUser,
-    DiscordRole,
     DiscordListActiveThreads,
-    GuildFeatures,
-    SystemChannelFlags,
-    MakeRequired,
-    VideoQualityModes,
+    DiscordMemberWithUser,
     DiscordOverwrite,
+    DiscordRole,
+    GuildFeatures,
+    MakeRequired,
+    SystemChannelFlags,
+    VideoQualityModes,
 } from "../../vendor/external.ts";
 import type { GetInvite } from "../../util/Routes.ts";
 import {
@@ -136,7 +136,7 @@ export interface GuildCreateOptionsChannel {
 
 /**
  * @link https://discord.com/developers/docs/resources/guild#create-guild
- * */
+ */
 export interface GuildCreateOptions {
     name: string;
     afkChannelId?: Snowflake;
@@ -167,7 +167,7 @@ export interface GuildCreateOptions {
 
 /**
  * @link https://discord.com/developers/docs/resources/guild#modify-guild-json-params
- * */
+ */
 export interface GuildEditOptions extends Omit<GuildCreateOptions, "roles" | "channels"> {
     ownerId?: Snowflake;
     splashURL?: string;
@@ -473,10 +473,10 @@ export class Guild extends BaseGuild implements Model {
         const { threads, members } = await this.session.rest.runMethod<DiscordListActiveThreads>(
             this.session.rest,
             "GET",
-            Routes.THREAD_ACTIVE(this.id)
+            Routes.THREAD_ACTIVE(this.id),
         );
 
-        return { 
+        return {
             threads: Object.fromEntries(
                 threads.map((thread) => [thread.id, new ThreadChannel(this.session, thread, this.id)]),
             ) as Record<Snowflake, ThreadChannel>,
@@ -488,13 +488,13 @@ export class Guild extends BaseGuild implements Model {
 
     /***
      * Makes the bot leave the guild
-     * */
+     */
     async leave() {
     }
 
     /***
      * Deletes a guild
-     * */
+     */
     async delete() {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
@@ -507,7 +507,7 @@ export class Guild extends BaseGuild implements Model {
      * Creates a guild and returns its data, the bot joins the guild
      * This was modified from discord.js to make it compatible
      * precondition: Bot should be in less than 10 servers
-     * */
+     */
     static async create(session: Session, options: GuildCreateOptions) {
         const guild = await session.rest.runMethod<DiscordGuild>(session.rest, "POST", Routes.GUILDS(), {
             name: options.name,
@@ -540,7 +540,7 @@ export class Guild extends BaseGuild implements Model {
                 hoist: role.hoist,
                 position: role.position,
                 unicode_emoji: role.unicodeEmoji,
-                icon: options.iconURL || urlToBase64(options.iconURL!), 
+                icon: options.iconURL || urlToBase64(options.iconURL!),
             })),
         });
 
@@ -549,7 +549,7 @@ export class Guild extends BaseGuild implements Model {
 
     /**
      * Edits a guild and returns its data
-     * */
+     */
     async edit(session: Session, options: GuildEditOptions) {
         const guild = await session.rest.runMethod<DiscordGuild>(session.rest, "PATCH", Routes.GUILDS(), {
             name: options.name,

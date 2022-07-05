@@ -1,7 +1,7 @@
 {
     "fmt": {
         "files": {
-            "exclude": "vendor"
+            "exclude": ["vendor"]
         },
         "options": {
             "indentWidth": 4,

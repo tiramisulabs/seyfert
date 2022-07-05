@@ -233,7 +233,6 @@ export function CHANNEL_WEBHOOKS(channelId: Snowflake) {
     return `/channels/${channelId}/webhooks`;
 }
 
-
 export function THREAD_START_PUBLIC(channelId: Snowflake, messageId: Snowflake) {
     return `/channels/${channelId}/messages/${messageId}/threads`;
 }
@@ -271,8 +270,8 @@ export function THREAD_ARCHIVED_PUBLIC(channelId: Snowflake, options?: ListArchi
     let url = `/channels/${channelId}/threads/archived/public?`;
 
     if (options) {
-      if (options.before) url += `before=${new Date(options.before).toISOString()}`;
-      if (options.limit) url += `&limit=${options.limit}`;
+        if (options.before) url += `before=${new Date(options.before).toISOString()}`;
+        if (options.limit) url += `&limit=${options.limit}`;
     }
 
     return url;
@@ -293,8 +292,8 @@ export function THREAD_ARCHIVED_PRIVATE_JOINED(channelId: Snowflake, options?: L
     let url = `/channels/${channelId}/users/@me/threads/archived/private?`;
 
     if (options) {
-      if (options.before) url += `before=${new Date(options.before).toISOString()}`;
-      if (options.limit) url += `&limit=${options.limit}`;
+        if (options.before) url += `before=${new Date(options.before).toISOString()}`;
+        if (options.limit) url += `&limit=${options.limit}`;
     }
 
     return url;

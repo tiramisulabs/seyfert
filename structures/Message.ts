@@ -6,8 +6,8 @@ import type {
     DiscordMessage,
     DiscordUser,
     FileContent,
-    MessageTypes,
     MessageActivityTypes,
+    MessageTypes,
 } from "../vendor/external.ts";
 import type { Component } from "./components/Component.ts";
 import type { GetReactions } from "../util/Routes.ts";
@@ -180,7 +180,6 @@ export class Message implements Model {
     get edited() {
         return this.editedTimestamp;
     }
-
 
     get url() {
         return `https://discord.com/channels/${this.guildId ?? "@me"}/${this.channelId}/${this.id}`;
