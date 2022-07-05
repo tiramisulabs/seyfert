@@ -26,7 +26,8 @@ import type {
     // DiscordThreadMembersUpdate,
     DiscordThreadListSync,
     DiscordWebhookUpdate,
-    DiscordIntegration
+    DiscordIntegration,
+    DiscordIntegrationDelete
 } from "../vendor/external.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
@@ -173,6 +174,14 @@ export const INTEGRATION_CREATE: RawHandler<DiscordIntegration> = (session, _sha
     session.emit("integrationCreate", new Integration(session, payload));
 };
 
+export const INTEGRATION_UPDATE: RawHandler<DiscordIntegration> = (session, _shardId, payload) => {
+    session.emit("integrationCreate", new Integration(session, payload));
+};
+
+export const INTEGRATION_DELETE: RawHandler<DiscordIntegrationDelete> = (session, _shardId, payload) => {
+    session.emit("integrationDelete", { id: payload.id, guildId: payload.guild_id, applicationId: payload.application_id });
+};
+
 /*
 export const MESSAGE_REACTION_ADD: RawHandler<DiscordMessageReactionAdd> = (session, _shardId, reaction) => {
     session.emit("messageReactionAdd", null);
@@ -233,6 +242,8 @@ export interface Events {
     "threadListSync":             Handler<[{ guildId: Snowflake, channelIds: Snowflake[], threads: ThreadChannel[], members: ThreadMember[] }]>
     "interactionCreate":          Handler<[Interaction]>;
     "integrationCreate":          Handler<[DiscordIntegration]>;
+    "integrationUpdate":          Handler<[DiscordIntegration]>;
+    "integrationDelete":          Handler<[{ id: Snowflake, guildId?: Snowflake, applicationId?: Snowflake }]>;
     "raw":                        Handler<[unknown, number]>;
     "webhooksUpdate":             Handler<[{ guildId: Snowflake, channelId: Snowflake }]>;
 }
