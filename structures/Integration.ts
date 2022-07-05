@@ -10,7 +10,7 @@ import type {
 } from "../vendor/external.ts";
 
 export class Integration implements Model {
-    constructor(session: Session, data: DiscordIntegration & { guild_id?: string }) {
+    constructor(session: Session, data: DiscordIntegration & { guild_id?: Snowflake }) {
         this.id = data.id;
         this.session = session;
 
@@ -35,7 +35,7 @@ export class Integration implements Model {
 
     id: Snowflake;
     session: Session;
-    guildId?: string;
+    guildId?: Snowflake;
 
     name: string
     type: "twitch" | "youtube" | "discord";
