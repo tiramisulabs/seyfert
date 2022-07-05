@@ -50,6 +50,6 @@ export class Integration implements Model {
     revoked?: boolean;
 
     user?: DiscordUser;
-    account?: DiscordIntegrationAccount;
+    account: DiscordIntegrationAccount;
     application?: DiscordIntegrationApplication;
 }
