@@ -76,3 +76,5 @@ export class Integration implements Model {
     account: IntegrationAccount;
     application?: IntegrationApplication;
 }
+
+export default Integration;

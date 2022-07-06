@@ -42,7 +42,14 @@ export * from "./structures/builders/MessageButton.ts";
 export * from "./structures/builders/MessageSelectMenu.ts";
 export * from "./structures/builders/SelectMenuOptionBuilder.ts";
 
-export * from "./structures/interactions/Interaction.ts";
+export * from "./structures/interactions/AutoCompleteInteraction.ts";
+export * from "./structures/interactions/BaseInteraction.ts";
+export * from "./structures/interactions/CommandInteraction.ts";
+export * from "./structures/interactions/CommandInteractionOptionResolver.ts";
+export * from "./structures/interactions/ComponentInteraction.ts";
+export * from "./structures/interactions/InteractionFactory.ts";
+export * from "./structures/interactions/ModalSubmitInteraction.ts";
+export * from "./structures/interactions/PingInteraction.ts";
 
 export * from "./session/Session.ts";
 

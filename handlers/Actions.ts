@@ -33,6 +33,7 @@ import type {
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
 import type { Channel } from "../structures/channels/ChannelFactory.ts";
+import type { Interaction } from "../structures/interactions/InteractionFactory.ts";
 import ChannelFactory from "../structures/channels/ChannelFactory.ts";
 import GuildChannel from "../structures/channels/GuildChannel.ts";
 import ThreadChannel from "../structures/channels/ThreadChannel.ts";
@@ -40,9 +41,9 @@ import ThreadMember from "../structures/ThreadMember.ts";
 import Member from "../structures/Member.ts";
 import Message from "../structures/Message.ts";
 import User from "../structures/User.ts";
-import Guild from "../structures/guilds/Guild.ts";
-import Interaction from "../structures/interactions/Interaction.ts";
-import { Integration } from "../structures/Integration.ts"
+import Integration from "../structures/Integration.ts"
+import Guild from  "../structures/guilds/Guild.ts";
+import InteractionFactory from "../structures/interactions/InteractionFactory.ts";
 
 export type RawHandler<T> = (...args: [Session, number, T]) => void;
 export type Handler<T extends unknown[]> = (...args: T) => unknown;
@@ -110,12 +111,7 @@ export const GUILD_ROLE_DELETE: RawHandler<DiscordGuildRoleDelete> = (session, _
 };
 
 export const INTERACTION_CREATE: RawHandler<DiscordInteraction> = (session, _shardId, interaction) => {
-    session.unrepliedInteractions.add(BigInt(interaction.id));
-
-    // could be improved
-    setTimeout(() => session.unrepliedInteractions.delete(BigInt(interaction.id)), 15 * 60 * 1000);
-
-    session.emit("interactionCreate", new Interaction(session, interaction));
+    session.emit("interactionCreate", InteractionFactory.from(session, interaction));
 };
 
 export const CHANNEL_CREATE: RawHandler<DiscordChannel> = (session, _shardId, channel) => {

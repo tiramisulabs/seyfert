@@ -48,6 +48,7 @@ export interface CreateMessage {
     allowedMentions?: AllowedMentions;
     files?: FileContent[];
     messageReference?: CreateMessageReference;
+    tts?: boolean;
 }
 
 /**
@@ -270,6 +271,7 @@ export class Message implements Model {
                     }
                     : undefined,
                 embeds: options.embeds,
+                tts: options.tts,
             },
         );
 

@@ -1,8 +1,5 @@
 {
     "fmt": {
-        "files": {
-            "exclude": ["vendor"]
-        },
         "options": {
             "indentWidth": 4,
             "lineWidth": 120

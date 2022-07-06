@@ -39,8 +39,6 @@ export class Session extends EventEmitter {
     rest: ReturnType<typeof createRestManager>;
     gateway: ReturnType<typeof createGatewayManager>;
 
-    unrepliedInteractions: Set<bigint> = new Set();
-
     #botId: Snowflake;
     #applicationId?: Snowflake;
 

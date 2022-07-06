@@ -7,6 +7,7 @@ import type VoiceChannel from "./VoiceChannel.ts";
 import type DMChannel from "./DMChannel.ts";
 import type NewsChannel from "./NewsChannel.ts";
 import type ThreadChannel from "./ThreadChannel.ts";
+import type StageChannel from "./StageChannel.ts";
 import { ChannelTypes } from "../../vendor/external.ts";
 import { textBasedChannels } from "./TextChannel.ts";
 
@@ -41,6 +42,10 @@ export abstract class BaseChannel implements Model {
 
     isThread(): this is ThreadChannel {
         return this.type === ChannelTypes.GuildPublicThread || this.type === ChannelTypes.GuildPrivateThread;
+    }
+
+    isStage(): this is StageChannel {
+        return this.type === ChannelTypes.GuildStageVoice;
     }
 
     toString(): string {
