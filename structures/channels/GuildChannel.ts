@@ -9,7 +9,6 @@ import type {
 } from "../../vendor/external.ts";
 import type { ListArchivedThreads } from "../../util/Routes.ts";
 import BaseChannel from "./BaseChannel.ts";
-import ThreadChannel from "./ThreadChannel.ts";
 import ThreadMember from "../ThreadMember.ts";
 import Invite from "../Invite.ts";
 import * as Routes from "../../util/Routes.ts";
@@ -64,6 +63,7 @@ export class GuildChannel extends BaseChannel implements Model {
         return invites.map((invite) => new Invite(this.session, invite));
     }
 
+    /*
     async getArchivedThreads(options: ListArchivedThreads & { type: "public" | "private" | "privateJoinedThreads" }) {
         let func: (channelId: Snowflake, options: ListArchivedThreads) => string;
 
@@ -110,7 +110,8 @@ export class GuildChannel extends BaseChannel implements Model {
         );
 
         return new ThreadChannel(this.session, thread, thread.guild_id ?? this.guildId);
-    }
+    }*/
 }
+
 
 export default GuildChannel;

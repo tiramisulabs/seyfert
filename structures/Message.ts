@@ -19,7 +19,7 @@ import Member from "./Member.ts";
 import Attachment from "./Attachment.ts";
 import ComponentFactory from "./components/ComponentFactory.ts";
 import MessageReaction from "./MessageReaction.ts";
-import ThreadChannel from "./channels/ThreadChannel.ts";
+// import ThreadChannel from "./channels/ThreadChannel.ts";
 import * as Routes from "../util/Routes.ts";
 
 /**
@@ -103,7 +103,7 @@ export class Message implements Model {
         this.embeds = data.embeds;
 
         if (data.thread && data.guild_id) {
-            this.thread = new ThreadChannel(session, data.thread, data.guild_id);
+            // this.thread = new ThreadChannel(session, data.thread, data.guild_id);
         }
 
         // webhook handling
