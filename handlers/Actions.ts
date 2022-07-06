@@ -64,6 +64,7 @@ export const MESSAGE_UPDATE: RawHandler<DiscordMessage> = (session, _shardId, ne
         const message = {
             // TODO: improve this
             // ...new_message,
+            session,
             id: new_message.id,
             guildId: new_message.guild_id,
             channelId: new_message.channel_id,
@@ -197,7 +198,6 @@ export const INTEGRATION_DELETE: RawHandler<DiscordIntegrationDelete> = (session
     session.emit("integrationDelete", { id: payload.id, guildId: payload.guild_id, applicationId: payload.application_id });
 };
 
-/*
 export const MESSAGE_REACTION_ADD: RawHandler<DiscordMessageReactionAdd> = (session, _shardId, reaction) => {
     session.emit("messageReactionAdd", null);
 };
@@ -213,7 +213,6 @@ export const MESSAGE_REACTION_REMOVE_ALL: RawHandler<DiscordMessageReactionRemov
 export const MESSAGE_REACTION_REMOVE_EMOJI: RawHandler<DiscordMessageReactionRemoveEmoji> = (session, _shardId, reaction) => {
     session.emit("messageReactionRemoveEmoji", null);
 };
-*/
 
 export const raw: RawHandler<unknown> = (session, shardId, data) => {
     session.emit("raw", data, shardId);
