@@ -153,7 +153,7 @@ export class Message implements Model {
     attachments: Attachment[];
     embeds: DiscordEmbed[];
     member?: Member;
-    thread?: ThreadChannel;
+    // thread?: ThreadChannel;
     components: Component[];
 
     webhook?: WebhookAuthor;

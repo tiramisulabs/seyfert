@@ -65,7 +65,7 @@ export class Session extends EventEmitter {
         const defHandler: DiscordRawEventHandler = (shard, data) => {
             Actions.raw(this, shard.id, data);
 
-            if (!data.t) {
+            if (!data.t || !data.d) {
                 return;
             }
 
