@@ -144,11 +144,26 @@ export function INTERACTION_ID_TOKEN(interactionId: Snowflake, token: string) {
     return `/interactions/${interactionId}/${token}/callback`;
 }
 
-export function WEBHOOK(webhookId: Snowflake, token: string, options?: { wait?: boolean; threadId?: Snowflake }) {
-    let url = `/webhooks/${webhookId}/${token}?`;
+export function WEBHOOK_MESSAGE(webhookId: Snowflake, token: string, messageId: Snowflake) {
+    return `/webhooks/${webhookId}/${token}/messages/${messageId}`;
+}
 
-    if (options?.wait !== undefined) url += `wait=${options.wait}`;
-    if (options?.threadId) url += `threadId=${options.threadId}`;
+export function WEBHOOK_TOKEN(webhookId: Snowflake, token?: string) {
+    if (!token) return `/webhooks/${webhookId}`;
+    return `/webhooks/${webhookId}/${token}`;
+}
+
+export interface WebhookOptions {
+    wait?: boolean;
+    threadId?: Snowflake;
+}
+
+export function WEBHOOK(webhookId: Snowflake, token: string, options?: WebhookOptions) {
+    let url = `/webhooks/${webhookId}/${token}`;
+
+    if (options?.wait) url += `?wait=${options.wait}`;
+    if (options?.threadId) url += `?threadId=${options.threadId}`;
+    if (options?.wait && options.threadId) url += `?wait=${options.wait}&threadId=${options.threadId}`;
 
     return url;
 }

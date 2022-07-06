@@ -3,6 +3,7 @@ import type { Snowflake } from "../../util/Snowflake.ts";
 import type { Session } from "../../session/Session.ts";
 import type { ApplicationCommandTypes, DiscordMemberWithUser, DiscordInteraction, InteractionTypes } from "../../vendor/external.ts";
 import type { CreateMessage } from "../Message.ts";
+import type { MessageFlags } from "../../util/shared/flags.ts";
 import { InteractionResponseTypes } from "../../vendor/external.ts";
 import BaseInteraction from "./BaseInteraction.ts";
 import CommandInteractionOptionResolver from "./CommandInteractionOptionResolver.ts";
@@ -11,6 +12,8 @@ import User from "../User.ts";
 import Member from "../Member.ts";
 import Message from "../Message.ts";
 import Role from "../Role.ts";
+import Webhook from "../Webhook.ts";
+import * as Routes from "../../util/Routes.ts";
 
 /**
  * @link https://discord.com/developers/docs/interactions/slash-commands#interaction-response
@@ -23,12 +26,11 @@ export interface InteractionResponse {
 /**
  * @link https://discord.com/developers/docs/interactions/slash-commands#interaction-response-interactionapplicationcommandcallbackdata
  * */
-export interface InteractionApplicationCommandCallbackData extends Omit<CreateMessage, "messageReference"> {
+export interface InteractionApplicationCommandCallbackData extends Pick<CreateMessage, "allowedMentions" | "content" | "embeds" | "files"> {
     customId?: string;
     title?: string;
-    // TODO: use builder
     // components?: MessageComponents;
-    flags?: number;
+    flags?: MessageFlags;
     choices?: ApplicationCommandOptionChoice[];
 }
 
@@ -103,6 +105,46 @@ export class CommandInteraction extends BaseInteraction implements Model {
     };
     options: CommandInteractionOptionResolver;
     responded = false;
+
+    async sendFollowUp(options: InteractionApplicationCommandCallbackData): Promise<Message> {
+        const message = await Webhook.prototype.execute.call({
+            id: this.applicationId!,
+            token: this.token,
+            session: this.session,
+        }, options);
+
+        return message!;
+    }
+
+    async respond({ type, data: options }: InteractionResponse): Promise<Message | undefined> {
+        const data = {
+            content: options?.content,
+            custom_id: options?.customId,
+            file: options?.files,
+            allowed_mentions: options?.allowedMentions,
+            flags: options?.flags,
+            chocies: options?.choices,
+            embeds: options?.embeds,
+            title: options?.title,
+        };
+
+        if (!this.respond) {
+            await this.session.rest.sendRequest<undefined>(this.session.rest, {
+                url: Routes.INTERACTION_ID_TOKEN(this.id, this.token),
+                method: "POST",
+                payload: this.session.rest.createRequestBody(this.session.rest, {
+                    method: "POST",
+                    body: { type, data, file: options?.files },
+                    headers: { "Authorization": "" },
+                }),
+            });
+
+            this.responded = true;
+            return;
+        }
+
+        return this.sendFollowUp(data);
+    }
 }
 
 export default CommandInteraction;
