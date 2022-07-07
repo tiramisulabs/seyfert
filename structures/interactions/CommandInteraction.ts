@@ -1,7 +1,12 @@
 import type { Model } from "../Base.ts";
 import type { Snowflake } from "../../util/Snowflake.ts";
 import type { Session } from "../../session/Session.ts";
-import type { ApplicationCommandTypes, DiscordMemberWithUser, DiscordInteraction, InteractionTypes } from "../../vendor/external.ts";
+import type {
+    ApplicationCommandTypes,
+    DiscordInteraction,
+    DiscordMemberWithUser,
+    InteractionTypes,
+} from "../../vendor/external.ts";
 import type { CreateMessage } from "../Message.ts";
 import type { MessageFlags } from "../../util/shared/flags.ts";
 import { InteractionResponseTypes } from "../../vendor/external.ts";
@@ -17,7 +22,7 @@ import * as Routes from "../../util/Routes.ts";
 
 /**
  * @link https://discord.com/developers/docs/interactions/slash-commands#interaction-response
- * */
+ */
 export interface InteractionResponse {
     type: InteractionResponseTypes;
     data?: InteractionApplicationCommandCallbackData;
@@ -25,8 +30,9 @@ export interface InteractionResponse {
 
 /**
  * @link https://discord.com/developers/docs/interactions/slash-commands#interaction-response-interactionapplicationcommandcallbackdata
- * */
-export interface InteractionApplicationCommandCallbackData extends Pick<CreateMessage, "allowedMentions" | "content" | "embeds" | "files"> {
+ */
+export interface InteractionApplicationCommandCallbackData
+    extends Pick<CreateMessage, "allowedMentions" | "content" | "embeds" | "files"> {
     customId?: string;
     title?: string;
     // components?: MessageComponents;
@@ -36,10 +42,10 @@ export interface InteractionApplicationCommandCallbackData extends Pick<CreateMe
 
 /**
  * @link https://discord.com/developers/docs/interactions/slash-commands#applicationcommandoptionchoice
- * */
+ */
 export interface ApplicationCommandOptionChoice {
-  name: string;
-  value: string | number;
+    name: string;
+    value: string | number;
 }
 
 export class CommandInteraction extends BaseInteraction implements Model {

@@ -1,11 +1,8 @@
 import type { Model } from "./Base.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
-import type {
-    DiscordIntegration,
-    IntegrationExpireBehaviors
-} from "../vendor/external.ts";
-import User from "./User.ts"
+import type { DiscordIntegration, IntegrationExpireBehaviors } from "../vendor/external.ts";
+import User from "./User.ts";
 
 export interface IntegrationAccount {
     id: Snowflake;
@@ -42,8 +39,8 @@ export class Integration implements Model {
         this.user = data.user ? new User(session, data.user) : undefined;
         this.account = {
             id: data.account.id,
-            name: data.account.name
-        }
+            name: data.account.name,
+        };
 
         if (data.application) {
             this.application = {
@@ -51,7 +48,7 @@ export class Integration implements Model {
                 name: data.application.name,
                 icon: data.application.icon ? data.application.icon : undefined,
                 description: data.application.description,
-                bot: data.application.bot ? new User(session, data.application.bot) : undefined
+                bot: data.application.bot ? new User(session, data.application.bot) : undefined,
             };
         }
     }
@@ -60,7 +57,7 @@ export class Integration implements Model {
     session: Session;
     guildId?: Snowflake;
 
-    name: string
+    name: string;
     type: "twitch" | "youtube" | "discord";
     enabled?: boolean;
     syncing?: boolean;

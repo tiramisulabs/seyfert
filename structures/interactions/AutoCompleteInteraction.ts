@@ -1,4 +1,3 @@
-
 import type { Model } from "../Base.ts";
 import type { Snowflake } from "../../util/Snowflake.ts";
 import type { Session } from "../../session/Session.ts";
@@ -32,7 +31,7 @@ export class AutoCompleteInteraction extends BaseInteraction implements Model {
             {
                 data: { choices },
                 type: InteractionResponseTypes.ApplicationCommandAutocompleteResult,
-            }
+            },
         );
     }
 }

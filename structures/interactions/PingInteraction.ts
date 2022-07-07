@@ -1,4 +1,3 @@
-
 import type { Model } from "../Base.ts";
 import type { Snowflake } from "../../util/Snowflake.ts";
 import type { Session } from "../../session/Session.ts";
@@ -30,7 +29,7 @@ export class PingInteraction extends BaseInteraction implements Model {
             Routes.INTERACTION_ID_TOKEN(this.id, this.token),
             {
                 type: InteractionResponseTypes.Pong,
-            }
+            },
         );
     }
 }
