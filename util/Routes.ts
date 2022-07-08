@@ -120,6 +120,10 @@ export interface GetInvite {
     scheduledEventId?: Snowflake;
 }
 
+export function GUILDS() {
+    return `/guilds`;
+}
+
 export function INVITE(inviteCode: string, options?: GetInvite) {
     let url = `/invites/${inviteCode}?`;
 
@@ -140,11 +144,26 @@ export function INTERACTION_ID_TOKEN(interactionId: Snowflake, token: string) {
     return `/interactions/${interactionId}/${token}/callback`;
 }
 
-export function WEBHOOK(webhookId: Snowflake, token: string, options?: { wait?: boolean; threadId?: Snowflake }) {
-    let url = `/webhooks/${webhookId}/${token}?`;
+export function WEBHOOK_MESSAGE(webhookId: Snowflake, token: string, messageId: Snowflake) {
+    return `/webhooks/${webhookId}/${token}/messages/${messageId}`;
+}
 
-    if (options?.wait !== undefined) url += `wait=${options.wait}`;
-    if (options?.threadId) url += `threadId=${options.threadId}`;
+export function WEBHOOK_TOKEN(webhookId: Snowflake, token?: string) {
+    if (!token) return `/webhooks/${webhookId}`;
+    return `/webhooks/${webhookId}/${token}`;
+}
+
+export interface WebhookOptions {
+    wait?: boolean;
+    threadId?: Snowflake;
+}
+
+export function WEBHOOK(webhookId: Snowflake, token: string, options?: WebhookOptions) {
+    let url = `/webhooks/${webhookId}/${token}`;
+
+    if (options?.wait) url += `?wait=${options.wait}`;
+    if (options?.threadId) url += `?threadId=${options.threadId}`;
+    if (options?.wait && options.threadId) url += `?wait=${options.wait}&threadId=${options.threadId}`;
 
     return url;
 }
@@ -227,4 +246,82 @@ export function GUILD_MEMBER_ROLE(guildId: Snowflake, memberId: Snowflake, roleI
 
 export function CHANNEL_WEBHOOKS(channelId: Snowflake) {
     return `/channels/${channelId}/webhooks`;
+}
+
+export function THREAD_START_PUBLIC(channelId: Snowflake, messageId: Snowflake) {
+    return `/channels/${channelId}/messages/${messageId}/threads`;
+}
+
+export function THREAD_START_PRIVATE(channelId: Snowflake) {
+    return `/channels/${channelId}/threads`;
+}
+
+export function THREAD_ACTIVE(guildId: Snowflake) {
+    return `/guilds/${guildId}/threads/active`;
+}
+
+export interface ListArchivedThreads {
+    before?: number;
+    limit?: number;
+}
+
+export function THREAD_ME(channelId: Snowflake) {
+    return `/channels/${channelId}/thread-members/@me`;
+}
+
+export function THREAD_MEMBERS(channelId: Snowflake) {
+    return `/channels/${channelId}/thread-members`;
+}
+
+export function THREAD_USER(channelId: Snowflake, userId: Snowflake) {
+    return `/channels/${channelId}/thread-members/${userId}`;
+}
+
+export function THREAD_ARCHIVED(channelId: Snowflake) {
+    return `/channels/${channelId}/threads/archived`;
+}
+
+export function THREAD_ARCHIVED_PUBLIC(channelId: Snowflake, options?: ListArchivedThreads) {
+    let url = `/channels/${channelId}/threads/archived/public?`;
+
+    if (options) {
+        if (options.before) url += `before=${new Date(options.before).toISOString()}`;
+        if (options.limit) url += `&limit=${options.limit}`;
+    }
+
+    return url;
+}
+
+export function THREAD_ARCHIVED_PRIVATE(channelId: Snowflake, options?: ListArchivedThreads) {
+    let url = `/channels/${channelId}/threads/archived/private?`;
+
+    if (options) {
+        if (options.before) url += `before=${new Date(options.before).toISOString()}`;
+        if (options.limit) url += `&limit=${options.limit}`;
+    }
+
+    return url;
+}
+
+export function THREAD_ARCHIVED_PRIVATE_JOINED(channelId: Snowflake, options?: ListArchivedThreads) {
+    let url = `/channels/${channelId}/users/@me/threads/archived/private?`;
+
+    if (options) {
+        if (options.before) url += `before=${new Date(options.before).toISOString()}`;
+        if (options.limit) url += `&limit=${options.limit}`;
+    }
+
+    return url;
+}
+
+export function FORUM_START(channelId: Snowflake) {
+    return `/channels/${channelId}/threads?has_message=true`;
+}
+
+export function STAGE_INSTANCES() {
+    return `/stage-instances`;
+}
+
+export function STAGE_INSTANCE(channelId: Snowflake) {
+    return `/stage-instances/${channelId}`;
 }

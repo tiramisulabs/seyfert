@@ -13,12 +13,14 @@ export * from "./structures/WelcomeChannel.ts";
 export * from "./structures/WelcomeScreen.ts";
 
 export * from "./structures/channels/BaseChannel.ts";
+export * from "./structures/channels/BaseVoiceChannel.ts";
 export * from "./structures/channels/ChannelFactory.ts";
 export * from "./structures/channels/DMChannel.ts";
 export * from "./structures/channels/GuildChannel.ts";
 export * from "./structures/channels/NewsChannel.ts";
 export * from "./structures/channels/TextChannel.ts";
 export * from "./structures/channels/ThreadChannel.ts";
+export * from "./structures/channels/StageChannel.ts";
 export * from "./structures/channels/VoiceChannel.ts";
 
 export * from "./structures/components/ActionRowComponent.ts";
@@ -33,7 +35,21 @@ export * from "./structures/guilds/BaseGuild.ts";
 export * from "./structures/guilds/Guild.ts";
 export * from "./structures/guilds/InviteGuild.ts";
 
-export * from "./structures/interactions/Interaction.ts";
+export * from "./structures/builders/EmbedBuilder.ts";
+export * from "./structures/builders/InputTextComponentBuilder.ts";
+export * from "./structures/builders/MessageActionRow.ts";
+export * from "./structures/builders/MessageButton.ts";
+export * from "./structures/builders/MessageSelectMenu.ts";
+export * from "./structures/builders/SelectMenuOptionBuilder.ts";
+
+export * from "./structures/interactions/AutoCompleteInteraction.ts";
+export * from "./structures/interactions/BaseInteraction.ts";
+export * from "./structures/interactions/CommandInteraction.ts";
+export * from "./structures/interactions/CommandInteractionOptionResolver.ts";
+export * from "./structures/interactions/ComponentInteraction.ts";
+export * from "./structures/interactions/InteractionFactory.ts";
+export * from "./structures/interactions/ModalSubmitInteraction.ts";
+export * from "./structures/interactions/PingInteraction.ts";
 
 export * from "./session/Session.ts";
 

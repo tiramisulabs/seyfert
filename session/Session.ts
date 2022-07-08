@@ -39,8 +39,6 @@ export class Session extends EventEmitter {
     rest: ReturnType<typeof createRestManager>;
     gateway: ReturnType<typeof createGatewayManager>;
 
-    unrepliedInteractions: Set<bigint> = new Set();
-
     #botId: Snowflake;
     #applicationId?: Snowflake;
 
@@ -67,7 +65,7 @@ export class Session extends EventEmitter {
         const defHandler: DiscordRawEventHandler = (shard, data) => {
             Actions.raw(this, shard.id, data);
 
-            if (!data.t) {
+            if (!data.t || !data.d) {
                 return;
             }
 

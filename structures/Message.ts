@@ -1,5 +1,4 @@
 import type { Model } from "./Base.ts";
-import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
 import type {
     AllowedMentionsTypes,
@@ -7,14 +6,20 @@ import type {
     DiscordMessage,
     DiscordUser,
     FileContent,
+    MessageActivityTypes,
+    MessageTypes,
 } from "../vendor/external.ts";
 import type { Component } from "./components/Component.ts";
 import type { GetReactions } from "../util/Routes.ts";
 import { MessageFlags } from "../util/shared/flags.ts";
+import { iconHashToBigInt } from "../util/hash.ts";
+import { Snowflake } from "../util/Snowflake.ts";
 import User from "./User.ts";
 import Member from "./Member.ts";
 import Attachment from "./Attachment.ts";
-import BaseComponent from "./components/Component.ts";
+import ComponentFactory from "./components/ComponentFactory.ts";
+import MessageReaction from "./MessageReaction.ts";
+// import ThreadChannel from "./channels/ThreadChannel.ts";
 import * as Routes from "../util/Routes.ts";
 
 /**
@@ -38,11 +43,12 @@ export interface CreateMessageReference {
  * @link https://discord.com/developers/docs/resources/channel#create-message-json-params
  */
 export interface CreateMessage {
+    embeds?: DiscordEmbed[];
     content?: string;
     allowedMentions?: AllowedMentions;
     files?: FileContent[];
     messageReference?: CreateMessageReference;
-    embeds?: DiscordEmbed[];
+    tts?: boolean;
 }
 
 /**
@@ -57,6 +63,13 @@ export type ReactionResolvable = string | {
     id: Snowflake;
 };
 
+export interface WebhookAuthor {
+    id: string;
+    username: string;
+    discriminator: string;
+    avatar?: bigint;
+}
+
 /**
  * Represents a message
  * @link https://discord.com/developers/docs/resources/channel#message-object
@@ -66,40 +79,108 @@ export class Message implements Model {
         this.session = session;
         this.id = data.id;
 
+        this.type = data.type;
         this.channelId = data.channel_id;
         this.guildId = data.guild_id;
+        this.applicationId = data.application_id;
 
-        this.author = new User(session, data.author);
+        if (!data.webhook_id) {
+            this.author = new User(session, data.author);
+        }
+
         this.flags = data.flags;
         this.pinned = !!data.pinned;
         this.tts = !!data.tts;
         this.content = data.content!;
+        this.nonce = data.nonce;
+        this.mentionEveryone = data.mention_everyone;
 
+        this.timestamp = Date.parse(data.timestamp);
+        this.editedTimestamp = data.edited_timestamp ? Date.parse(data.edited_timestamp) : undefined;
+
+        this.reactions = data.reactions?.map((react) => new MessageReaction(session, react)) ?? [];
         this.attachments = data.attachments.map((attachment) => new Attachment(session, attachment));
+        this.embeds = data.embeds;
+
+        if (data.thread && data.guild_id) {
+            // this.thread = new ThreadChannel(session, data.thread, data.guild_id);
+        }
+
+        // webhook handling
+        if (data.webhook_id && data.author.discriminator === "0000") {
+            this.webhook = {
+                id: data.webhook_id!,
+                username: data.author.username,
+                discriminator: data.author.discriminator,
+                avatar: data.author.avatar ? iconHashToBigInt(data.author.avatar) : undefined,
+            };
+        }
 
         // user is always null on MessageCreate and its replaced with author
-
-        if (data.guild_id && data.member) {
+        if (data.guild_id && data.member && !this.isWebhookMessage()) {
             this.member = new Member(session, { ...data.member, user: data.author }, data.guild_id);
         }
 
-        this.components = data.components?.map((component) => BaseComponent.from(session, component));
+        this.components = data.components?.map((component) => ComponentFactory.from(session, component)) ?? [];
+
+        if (data.activity) {
+            this.activity = {
+                partyId: data.activity.party_id,
+                type: data.activity.type,
+            };
+        }
     }
 
     readonly session: Session;
     readonly id: Snowflake;
 
+    type: MessageTypes;
     channelId: Snowflake;
     guildId?: Snowflake;
-    author: User;
+    applicationId?: Snowflake;
+    author!: User;
     flags?: MessageFlags;
     pinned: boolean;
     tts: boolean;
     content: string;
+    nonce?: string | number;
+    mentionEveryone: boolean;
 
+    timestamp: number;
+    editedTimestamp?: number;
+
+    reactions: MessageReaction[];
     attachments: Attachment[];
+    embeds: DiscordEmbed[];
     member?: Member;
-    components?: Component[];
+    // thread?: ThreadChannel;
+    components: Component[];
+
+    webhook?: WebhookAuthor;
+    activity?: {
+        partyId?: Snowflake;
+        type: MessageActivityTypes;
+    };
+
+    get createdTimestamp() {
+        return Snowflake.snowflakeToTimestamp(this.id);
+    }
+
+    get createdAt() {
+        return new Date(this.createdTimestamp);
+    }
+
+    get sentAt() {
+        return new Date(this.timestamp);
+    }
+
+    get editedAt() {
+        return this.editedTimestamp ? new Date(this.editedTimestamp) : undefined;
+    }
+
+    get edited() {
+        return this.editedTimestamp;
+    }
 
     get url() {
         return `https://discord.com/channels/${this.guildId ?? "@me"}/${this.channelId}/${this.id}`;
@@ -190,6 +271,7 @@ export class Message implements Model {
                     }
                     : undefined,
                 embeds: options.embeds,
+                tts: options.tts,
             },
         );
 
@@ -281,8 +363,14 @@ export class Message implements Model {
         return this.crosspost;
     }
 
-    inGuild(): this is { guildId: Snowflake } & Message {
+    /** wheter the message comes from a guild **/
+    inGuild(): this is Message & { guildId: Snowflake } {
         return !!this.guildId;
+    }
+
+    /** wheter the messages comes from a Webhook */
+    isWebhookMessage(): this is Message & { author: Partial<User>; webhook: WebhookAuthor; member: undefined } {
+        return !!this.webhook;
     }
 }
 

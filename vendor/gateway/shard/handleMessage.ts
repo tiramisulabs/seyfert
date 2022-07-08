@@ -7,17 +7,14 @@ import { GATEWAY_RATE_LIMIT_RESET_INTERVAL, Shard, ShardState } from "./types.ts
 
 const decoder = new TextDecoder();
 
-export async function handleMessage(shard: Shard, message: MessageEvent<any>): Promise<void> {
-    message = message.data;
+export async function handleMessage(shard: Shard, message_: MessageEvent<any>): Promise<void> {
+    let message = message_.data;
 
     // If message compression is enabled,
     // Discord might send zlib compressed payloads.
     if (shard.gatewayConfig.compress && message instanceof Blob) {
-        message = decompressWith(
-            new Uint8Array(await message.arrayBuffer()),
-            0,
-            (slice: Uint8Array) => decoder.decode(slice),
-        );
+        message = decoder.decode(decompressWith(new Uint8Array(await message.arrayBuffer())));
+        console.log(message);
     }
 
     // Safeguard incase decompression failed to make a string.
