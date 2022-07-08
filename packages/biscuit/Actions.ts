@@ -26,7 +26,9 @@ import type {
     // DiscordThreadMembersUpdate,
     DiscordThreadListSync,
     DiscordUser,
+    DiscordMemberWithUser,
     DiscordWebhookUpdate,
+    DiscordTypingStart,
 } from "../discordeno/mod.ts";
 
 import type { Snowflake } from "./Snowflake.ts";
@@ -127,6 +129,16 @@ export const GUILD_ROLE_UPDATE: RawHandler<DiscordGuildRoleUpdate> = (session, _
 export const GUILD_ROLE_DELETE: RawHandler<DiscordGuildRoleDelete> = (session, _shardId, data) => {
     session.emit("guildRoleDelete", { guildId: data.guild_id, roleId: data.role_id });
 };
+
+export const TYPING_START: RawHandler<DiscordTypingStart> = (session, _shardId, payload) => {
+    session.emit("typingStart", {
+        channelId: payload.channel_id,
+        guildId: payload.guild_id ? payload.guild_id : undefined,
+        userId: payload.user_id,
+        timestamp: payload.timestamp,
+        member: payload.guild_id ? new Member(session, payload.member as DiscordMemberWithUser, payload.guild_id) : undefined
+    })
+}
 
 export const INTERACTION_CREATE: RawHandler<DiscordInteraction> = (session, _shardId, interaction) => {
     session.emit("interactionCreate", InteractionFactory.from(session, interaction));
@@ -269,6 +281,7 @@ export interface Events {
     "guildRoleCreate":            Handler<[{ guildId: Snowflake, role: DiscordRole }]>;
     "guildRoleUpdate":            Handler<[{ guildId: Snowflake, role: DiscordRole }]>;
     "guildRoleDelete":            Handler<[{ guildId: Snowflake, roleId: Snowflake }]>;
+    "typingStart":                Handler<[{channelId: Snowflake, guildId?: Snowflake, userId: Snowflake, timestamp: number, member?: Member}]>
     "channelCreate":              Handler<[Channel]>;
     "channelUpdate":              Handler<[Channel]>;
     "channelDelete":              Handler<[GuildChannel]>;
