@@ -1,7 +1,7 @@
 /** Types */
-import type { Model } from "../Base.ts";
-import type { Snowflake } from "../../util/Snowflake.ts";
-import type { Session } from "../../session/Session.ts";
+import type { Model } from "./Base.ts";
+import type { Snowflake } from "../util/Snowflake.ts";
+import type { Session } from "../session/Session.ts";
 
 /** External from vendor */
 import { 
@@ -15,19 +15,19 @@ import {
     TargetTypes,
     DiscordInviteMetadata,
 DiscordThreadMember
-} from "../../vendor/external.ts";
+} from "../vendor/external.ts";
 
 /** Functions and others */
-import { calculateShardId } from "../../vendor/gateway/calculateShardId.ts";
-import { urlToBase64 } from "../../util/urlToBase64.ts";
+import { calculateShardId } from "../vendor/gateway/calculateShardId.ts";
+import { urlToBase64 } from "../util/urlToBase64.ts";
 
 /** Classes and routes */
-import * as Routes from "../../util/Routes.ts";
-import Message, { CreateMessage, EditMessage, ReactionResolvable } from "../Message.ts";
-import Invite from "../Invite.ts";
-import Webhook from "../Webhook.ts";
-import User from "../User.ts";
-import ThreadMember from "../ThreadMember.ts";
+import * as Routes from "../util/Routes.ts";
+import Message, { CreateMessage, EditMessage, ReactionResolvable } from "./Message.ts";
+import Invite from "./Invite.ts";
+import Webhook from "./Webhook.ts";
+import User from "./User.ts";
+import ThreadMember from "./ThreadMember.ts";
 
 export abstract class BaseChannel implements Model {
     constructor(session: Session, data: DiscordChannel) {
