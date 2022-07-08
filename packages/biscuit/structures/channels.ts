@@ -5,18 +5,18 @@ import type { Session } from "../Session.ts";
 import type { PermissionsOverwrites } from "../Util.ts";
 
 /** External from vendor */
-import { 
-    DiscordChannel, 
-    VideoQualityModes, 
-    ChannelTypes, 
-    GatewayOpcodes, 
-    DiscordInvite, 
-    DiscordMessage, 
-    DiscordWebhook, 
-    TargetTypes,
+import {
+    ChannelTypes,
+    DiscordChannel,
+    DiscordInvite,
     DiscordInviteMetadata,
+    DiscordListArchivedThreads,
+    DiscordMessage,
     DiscordThreadMember,
-    DiscordListArchivedThreads
+    DiscordWebhook,
+    GatewayOpcodes,
+    TargetTypes,
+    VideoQualityModes,
 } from "../../discordeno/mod.ts";
 
 /** Functions and others */
@@ -78,7 +78,7 @@ export abstract class BaseChannel implements Model {
  * Represents the options object to create an invitation
  *  @link https://discord.com/developers/docs/resources/channel#create-channel-invite-json-params
  */
- export interface DiscordInviteOptions {
+export interface DiscordInviteOptions {
     maxAge?: number;
     maxUses?: number;
     unique?: boolean;
@@ -143,7 +143,7 @@ export class TextChannel {
 
     /**
      * Mixin
-    */
+     */
     // deno-lint-ignore ban-types
     static applyTo(klass: Function, ignore: Array<keyof TextChannel> = []) {
         const methods: Array<keyof TextChannel> = [
@@ -290,7 +290,7 @@ export class TextChannel {
  * Represent the options object to create a thread channel
  * @link https://discord.com/developers/docs/resources/channel#start-thread-without-message
  */
- export interface ThreadCreateOptions {
+export interface ThreadCreateOptions {
     name: string;
     autoArchiveDuration?: 60 | 1440 | 4320 | 10080;
     type: 10 | 11 | 12;
@@ -401,7 +401,9 @@ export class GuildChannel extends BaseChannel implements Model {
         return ChannelFactory.from(this.session, channel);
     }
 
-    async getArchivedThreads(options: Routes.ListArchivedThreads & { type: "public" | "private" | "privateJoinedThreads" }) {
+    async getArchivedThreads(
+        options: Routes.ListArchivedThreads & { type: "public" | "private" | "privateJoinedThreads" },
+    ) {
         let func: (channelId: Snowflake, options: Routes.ListArchivedThreads) => string;
 
         switch (options.type) {
@@ -454,7 +456,7 @@ export class GuildChannel extends BaseChannel implements Model {
 /**
  * @link https://discord.com/developers/docs/topics/gateway#update-voice-state
  */
- export interface UpdateVoiceState {
+export interface UpdateVoiceState {
     guildId: string;
     channelId?: string;
     selfMute: boolean;

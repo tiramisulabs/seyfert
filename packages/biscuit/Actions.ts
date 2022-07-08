@@ -14,6 +14,7 @@ import type {
     DiscordIntegration,
     DiscordIntegrationDelete,
     DiscordInteraction,
+    DiscordMemberWithUser,
     DiscordMessage,
     DiscordMessageDelete,
     DiscordMessageReactionAdd,
@@ -25,6 +26,7 @@ import type {
     // DiscordThreadMemberUpdate,
     // DiscordThreadMembersUpdate,
     DiscordThreadListSync,
+    DiscordTypingStart,
     DiscordUser,
     DiscordWebhookUpdate,
 } from "../discordeno/mod.ts";
@@ -34,11 +36,7 @@ import type { Session } from "./Session.ts";
 import type { Channel } from "./structures/channels.ts";
 import type { Interaction } from "./structures/interactions/InteractionFactory.ts";
 
-import {
-    ChannelFactory,
-    GuildChannel,
-    ThreadChannel,
-} from "./structures/channels.ts";
+import { ChannelFactory, GuildChannel, ThreadChannel } from "./structures/channels.ts";
 
 import ThreadMember from "./structures/ThreadMember.ts";
 import Member from "./structures/Member.ts";
@@ -132,6 +130,18 @@ export const GUILD_ROLE_DELETE: RawHandler<DiscordGuildRoleDelete> = (session, _
     session.emit("guildRoleDelete", { guildId: data.guild_id, roleId: data.role_id });
 };
 
+export const TYPING_START: RawHandler<DiscordTypingStart> = (session, _shardId, payload) => {
+    session.emit("typingStart", {
+        channelId: payload.channel_id,
+        guildId: payload.guild_id ? payload.guild_id : undefined,
+        userId: payload.user_id,
+        timestamp: payload.timestamp,
+        member: payload.guild_id
+            ? new Member(session, payload.member as DiscordMemberWithUser, payload.guild_id)
+            : undefined,
+    });
+};
+
 export const INTERACTION_CREATE: RawHandler<DiscordInteraction> = (session, _shardId, interaction) => {
     session.emit("interactionCreate", InteractionFactory.from(session, interaction));
 };
@@ -183,6 +193,10 @@ export const CHANNEL_PINS_UPDATE: RawHandler<DiscordChannelPinsUpdate> = (sessio
         channelId: payload.channel_id,
         lastPinTimestamp: payload.last_pin_timestamp ? Date.parse(payload.last_pin_timestamp) : undefined,
     });
+};
+
+export const USER_UPDATE: RawHandler<DiscordUser> = (session, _shardId, payload) => {
+    session.emit("userUpdate", new User(session, payload));
 };
 
 export const WEBHOOKS_UPDATE: RawHandler<DiscordWebhookUpdate> = (session, _shardId, webhook) => {
@@ -269,6 +283,7 @@ export interface Events {
     "guildRoleCreate":            Handler<[{ guildId: Snowflake, role: DiscordRole }]>;
     "guildRoleUpdate":            Handler<[{ guildId: Snowflake, role: DiscordRole }]>;
     "guildRoleDelete":            Handler<[{ guildId: Snowflake, roleId: Snowflake }]>;
+    "typingStart":                Handler<[{channelId: Snowflake, guildId?: Snowflake, userId: Snowflake, timestamp: number, member?: Member}]>
     "channelCreate":              Handler<[Channel]>;
     "channelUpdate":              Handler<[Channel]>;
     "channelDelete":              Handler<[GuildChannel]>;
@@ -283,4 +298,5 @@ export interface Events {
     "integrationDelete":          Handler<[{ id: Snowflake, guildId?: Snowflake, applicationId?: Snowflake }]>;
     "raw":                        Handler<[unknown, number]>;
     "webhooksUpdate":             Handler<[{ guildId: Snowflake, channelId: Snowflake }]>;
+    "userUpdate":                 Handler<[User]>;
 }
