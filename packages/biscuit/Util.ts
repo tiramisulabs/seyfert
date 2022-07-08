@@ -33,17 +33,16 @@ export type ComponentBuilder =
 
 /***
  * Utility type
- * */
+ */
 export type ComponentEmoji = {
     id: Snowflake;
     name: string;
     animated?: boolean;
 };
 
-
 /**
  * Utility type
- * */
+ */
 export interface PermissionsOverwrites {
     id: Snowflake;
     type: 0 | 1;
@@ -63,7 +62,7 @@ export type ImageSize = 16 | 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096;
 
 /**
  * Utility functions
- * */
+ */
 export class Util {
     static formatImageURL(url: string, size: ImageSize = 128, format?: ImageFormat) {
         return `${url}.${format || (url.includes("/a_") ? "gif" : "jpg")}?size=${size}`;

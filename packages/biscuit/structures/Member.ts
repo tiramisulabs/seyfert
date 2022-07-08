@@ -1,7 +1,7 @@
 import type { Model } from "./Base.ts";
 import type { Snowflake } from "../Snowflake.ts";
 import type { Session } from "../Session.ts";
-import type { DiscordMemberWithUser } from "../../discordeno/mod.ts"
+import type { DiscordMemberWithUser } from "../../discordeno/mod.ts";
 import type { ImageFormat, ImageSize } from "../Util.ts";
 import type { CreateGuildBan, ModifyGuildMember } from "./guilds/Guild.ts";
 import Util from "../Util.ts";

@@ -14,6 +14,7 @@ import type {
     DiscordIntegration,
     DiscordIntegrationDelete,
     DiscordInteraction,
+    DiscordMemberWithUser,
     DiscordMessage,
     DiscordMessageDelete,
     DiscordMessageReactionAdd,
@@ -25,10 +26,9 @@ import type {
     // DiscordThreadMemberUpdate,
     // DiscordThreadMembersUpdate,
     DiscordThreadListSync,
-    DiscordUser,
-    DiscordMemberWithUser,
-    DiscordWebhookUpdate,
     DiscordTypingStart,
+    DiscordUser,
+    DiscordWebhookUpdate,
 } from "../discordeno/mod.ts";
 
 import type { Snowflake } from "./Snowflake.ts";
@@ -136,9 +136,11 @@ export const TYPING_START: RawHandler<DiscordTypingStart> = (session, _shardId, 
         guildId: payload.guild_id ? payload.guild_id : undefined,
         userId: payload.user_id,
         timestamp: payload.timestamp,
-        member: payload.guild_id ? new Member(session, payload.member as DiscordMemberWithUser, payload.guild_id) : undefined
-    })
-}
+        member: payload.guild_id
+            ? new Member(session, payload.member as DiscordMemberWithUser, payload.guild_id)
+            : undefined,
+    });
+};
 
 export const INTERACTION_CREATE: RawHandler<DiscordInteraction> = (session, _shardId, interaction) => {
     session.emit("interactionCreate", InteractionFactory.from(session, interaction));

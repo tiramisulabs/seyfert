@@ -1,5 +1,5 @@
 import type { Session } from "../../Session.ts";
-import type { DiscordComponent } from "../../../discordeno/mod.ts"
+import type { DiscordComponent } from "../../../discordeno/mod.ts";
 import type { Component } from "./Component.ts";
 import { ButtonStyles, MessageComponentTypes } from "../../../discordeno/mod.ts";
 import ActionRow from "./ActionRowComponent.ts";
