@@ -14,7 +14,8 @@ import {
     DiscordWebhook, 
     TargetTypes,
     DiscordInviteMetadata,
-DiscordThreadMember
+DiscordThreadMember,
+DiscordListArchivedThreads
 } from "../vendor/external.ts";
 
 /** Functions and others */
@@ -334,9 +335,8 @@ export class GuildChannel extends BaseChannel implements Model {
         return invites.map((invite) => new Invite(this.session, invite));
     }
 
-    /*
-    async getArchivedThreads(options: ListArchivedThreads & { type: "public" | "private" | "privateJoinedThreads" }) {
-        let func: (channelId: Snowflake, options: ListArchivedThreads) => string;
+    async getArchivedThreads(options: Routes.ListArchivedThreads & { type: "public" | "private" | "privateJoinedThreads" }) {
+        let func: (channelId: Snowflake, options: Routes.ListArchivedThreads) => string;
 
         switch (options.type) {
             case "public":
@@ -381,7 +381,7 @@ export class GuildChannel extends BaseChannel implements Model {
         );
 
         return new ThreadChannel(this.session, thread, thread.guild_id ?? this.guildId);
-    }*/
+    }
 }
 
 /** BaseVoiceChannel */
