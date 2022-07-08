@@ -34,11 +34,7 @@ import type { Session } from "./Session.ts";
 import type { Channel } from "./structures/channels.ts";
 import type { Interaction } from "./structures/interactions/InteractionFactory.ts";
 
-import {
-    ChannelFactory,
-    GuildChannel,
-    ThreadChannel,
-} from "./structures/channels.ts";
+import { ChannelFactory, GuildChannel, ThreadChannel } from "./structures/channels.ts";
 
 import ThreadMember from "./structures/ThreadMember.ts";
 import Member from "./structures/Member.ts";
@@ -185,6 +181,10 @@ export const CHANNEL_PINS_UPDATE: RawHandler<DiscordChannelPinsUpdate> = (sessio
     });
 };
 
+export const USER_UPDATE: RawHandler<DiscordUser> = (session, _shardId, payload) => {
+    session.emit("userUpdate", new User(session, payload));
+};
+
 export const WEBHOOKS_UPDATE: RawHandler<DiscordWebhookUpdate> = (session, _shardId, webhook) => {
     session.emit("webhooksUpdate", { guildId: webhook.guild_id, channelId: webhook.channel_id });
 };
@@ -283,4 +283,5 @@ export interface Events {
     "integrationDelete":          Handler<[{ id: Snowflake, guildId?: Snowflake, applicationId?: Snowflake }]>;
     "raw":                        Handler<[unknown, number]>;
     "webhooksUpdate":             Handler<[{ guildId: Snowflake, channelId: Snowflake }]>;
+    "userUpdate":                 Handler<[User]>;
 }
