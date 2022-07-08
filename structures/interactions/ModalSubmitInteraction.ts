@@ -1,8 +1,12 @@
-
 import type { Model } from "../Base.ts";
 import type { Snowflake } from "../../util/Snowflake.ts";
 import type { Session } from "../../session/Session.ts";
-import type { DiscordInteraction, InteractionTypes, MessageComponentTypes, DiscordMessageComponents } from "../../vendor/external.ts";
+import type {
+    DiscordInteraction,
+    DiscordMessageComponents,
+    InteractionTypes,
+    MessageComponentTypes,
+} from "../../vendor/external.ts";
 import BaseInteraction from "./BaseInteraction.ts";
 import Message from "../Message.ts";
 

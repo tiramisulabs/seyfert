@@ -1,5 +1,5 @@
-import type { DiscordInteractionDataOption, DiscordInteractionDataResolved } from '../../vendor/external.ts';
-import { ApplicationCommandOptionTypes } from "../../vendor/external.ts"; 
+import type { DiscordInteractionDataOption, DiscordInteractionDataResolved } from "../../vendor/external.ts";
+import { ApplicationCommandOptionTypes } from "../../vendor/external.ts";
 
 export function transformOasisInteractionDataOption(o: DiscordInteractionDataOption): CommandInteractionOption {
     const output: CommandInteractionOption = { ...o, Otherwise: o.value as string | boolean | number | undefined };
@@ -37,7 +37,7 @@ export function transformOasisInteractionDataOption(o: DiscordInteractionDataOpt
     return output;
 }
 
-export interface CommandInteractionOption extends Omit<DiscordInteractionDataOption, 'value'> {
+export interface CommandInteractionOption extends Omit<DiscordInteractionDataOption, "value"> {
     Attachment?: string;
     Boolean?: boolean;
     User?: bigint;
@@ -97,7 +97,7 @@ export class CommandInteractionOptionResolver {
         }
 
         if (required === true && properties.every((prop) => typeof option[prop] === "undefined")) {
-            throw new TypeError(`Properties ${properties.join(', ')} are missing in option ${name}`);
+            throw new TypeError(`Properties ${properties.join(", ")} are missing in option ${name}`);
         }
 
         return option;
@@ -107,12 +107,12 @@ export class CommandInteractionOptionResolver {
     get(name: string | number, required: boolean): CommandInteractionOption | undefined;
     get(name: string | number, required?: boolean) {
         const option = this.hoistedOptions.find((o) =>
-            typeof name === 'number' ? o.name === name.toString() : o.name === name
+            typeof name === "number" ? o.name === name.toString() : o.name === name
         );
 
         if (!option) {
             if (required && name in this.hoistedOptions.map((o) => o.name)) {
-                throw new TypeError('Option marked as required was undefined');
+                throw new TypeError("Option marked as required was undefined");
             }
 
             return;
@@ -125,7 +125,7 @@ export class CommandInteractionOptionResolver {
     getString(name: string | number, required: true): string;
     getString(name: string | number, required?: boolean): string | undefined;
     getString(name: string | number, required = false) {
-        const option = this.getTypedOption(name, ApplicationCommandOptionTypes.String, ['Otherwise'], required);
+        const option = this.getTypedOption(name, ApplicationCommandOptionTypes.String, ["Otherwise"], required);
 
         return option?.Otherwise ?? undefined;
     }
@@ -134,7 +134,7 @@ export class CommandInteractionOptionResolver {
     getNumber(name: string | number, required: true): number;
     getNumber(name: string | number, required?: boolean): number | undefined;
     getNumber(name: string | number, required = false) {
-        const option = this.getTypedOption(name, ApplicationCommandOptionTypes.Number, ['Otherwise'], required);
+        const option = this.getTypedOption(name, ApplicationCommandOptionTypes.Number, ["Otherwise"], required);
 
         return option?.Otherwise ?? undefined;
     }
@@ -143,7 +143,7 @@ export class CommandInteractionOptionResolver {
     getInteger(name: string | number, required: true): number;
     getInteger(name: string | number, required?: boolean): number | undefined;
     getInteger(name: string | number, required = false) {
-        const option = this.getTypedOption(name, ApplicationCommandOptionTypes.Integer, ['Otherwise'], required);
+        const option = this.getTypedOption(name, ApplicationCommandOptionTypes.Integer, ["Otherwise"], required);
 
         return option?.Otherwise ?? undefined;
     }
@@ -152,7 +152,7 @@ export class CommandInteractionOptionResolver {
     getBoolean(name: string | number, required: true): boolean;
     getBoolean(name: string | number, required?: boolean): boolean | undefined;
     getBoolean(name: string | number, required = false) {
-        const option = this.getTypedOption(name, ApplicationCommandOptionTypes.Boolean, ['Otherwise'], required);
+        const option = this.getTypedOption(name, ApplicationCommandOptionTypes.Boolean, ["Otherwise"], required);
 
         return option?.Otherwise ?? undefined;
     }
@@ -161,7 +161,7 @@ export class CommandInteractionOptionResolver {
     getUser(name: string | number, required: true): bigint;
     getUser(name: string | number, required?: boolean): bigint | undefined;
     getUser(name: string | number, required = false) {
-        const option = this.getTypedOption(name, ApplicationCommandOptionTypes.User, ['Otherwise'], required);
+        const option = this.getTypedOption(name, ApplicationCommandOptionTypes.User, ["Otherwise"], required);
 
         return option?.Otherwise ?? undefined;
     }
@@ -170,7 +170,7 @@ export class CommandInteractionOptionResolver {
     getChannel(name: string | number, required: true): bigint;
     getChannel(name: string | number, required?: boolean): bigint | undefined;
     getChannel(name: string | number, required = false) {
-        const option = this.getTypedOption(name, ApplicationCommandOptionTypes.Channel, ['Otherwise'], required);
+        const option = this.getTypedOption(name, ApplicationCommandOptionTypes.Channel, ["Otherwise"], required);
 
         return option?.Otherwise ?? undefined;
     }
@@ -179,7 +179,7 @@ export class CommandInteractionOptionResolver {
     getMentionable(name: string | number, required: true): string;
     getMentionable(name: string | number, required?: boolean): string | undefined;
     getMentionable(name: string | number, required = false) {
-        const option = this.getTypedOption(name, ApplicationCommandOptionTypes.Mentionable, ['Otherwise'], required);
+        const option = this.getTypedOption(name, ApplicationCommandOptionTypes.Mentionable, ["Otherwise"], required);
 
         return option?.Otherwise ?? undefined;
     }
@@ -188,7 +188,7 @@ export class CommandInteractionOptionResolver {
     getRole(name: string | number, required: true): bigint;
     getRole(name: string | number, required?: boolean): bigint | undefined;
     getRole(name: string | number, required = false) {
-        const option = this.getTypedOption(name, ApplicationCommandOptionTypes.Role, ['Otherwise'], required);
+        const option = this.getTypedOption(name, ApplicationCommandOptionTypes.Role, ["Otherwise"], required);
 
         return option?.Otherwise ?? undefined;
     }
@@ -197,7 +197,7 @@ export class CommandInteractionOptionResolver {
     getAttachment(name: string | number, required: true): string;
     getAttachment(name: string | number, required?: boolean): string | undefined;
     getAttachment(name: string | number, required = false) {
-        const option = this.getTypedOption(name, ApplicationCommandOptionTypes.Attachment, ['Otherwise'], required);
+        const option = this.getTypedOption(name, ApplicationCommandOptionTypes.Attachment, ["Otherwise"], required);
 
         return option?.Otherwise ?? undefined;
     }
@@ -207,7 +207,7 @@ export class CommandInteractionOptionResolver {
         const focusedOption = this.hoistedOptions.find((option) => option.focused);
 
         if (!focusedOption) {
-            throw new TypeError('No option found');
+            throw new TypeError("No option found");
         }
 
         return full ? focusedOption : focusedOption.Otherwise;
@@ -215,7 +215,7 @@ export class CommandInteractionOptionResolver {
 
     getSubCommand(required = true) {
         if (required && !this.#subcommand) {
-            throw new TypeError('Option marked as required was undefined');
+            throw new TypeError("Option marked as required was undefined");
         }
 
         return [this.#subcommand, this.hoistedOptions];
@@ -223,7 +223,7 @@ export class CommandInteractionOptionResolver {
 
     getSubCommandGroup(required = false) {
         if (required && !this.#group) {
-            throw new TypeError('Option marked as required was undefined');
+            throw new TypeError("Option marked as required was undefined");
         }
 
         return [this.#group, this.hoistedOptions];

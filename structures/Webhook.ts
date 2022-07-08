@@ -47,7 +47,7 @@ export class Webhook implements Model {
     guildId?: Snowflake;
     user?: User;
 
-    async execute(options?: WebhookOptions & CreateMessage & { avatarUrl?: string, username?: string }) {
+    async execute(options?: WebhookOptions & CreateMessage & { avatarUrl?: string; username?: string }) {
         if (!this.token) {
             return;
         }

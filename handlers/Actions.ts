@@ -11,6 +11,8 @@ import type {
     DiscordGuildRoleCreate,
     DiscordGuildRoleDelete,
     DiscordGuildRoleUpdate,
+    DiscordIntegration,
+    DiscordIntegrationDelete,
     DiscordInteraction,
     DiscordMemberWithUser,
     DiscordMessage,
@@ -26,9 +28,6 @@ import type {
     DiscordThreadListSync,
     DiscordUser,
     DiscordWebhookUpdate,
-    DiscordIntegration,
-    DiscordIntegrationDelete
-
 } from "../vendor/external.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type { Session } from "../session/Session.ts";
@@ -41,8 +40,8 @@ import ThreadMember from "../structures/ThreadMember.ts";
 import Member from "../structures/Member.ts";
 import Message from "../structures/Message.ts";
 import User from "../structures/User.ts";
-import Integration from "../structures/Integration.ts"
-import Guild from  "../structures/guilds/Guild.ts";
+import Integration from "../structures/Integration.ts";
+import Guild from "../structures/guilds/Guild.ts";
 import InteractionFactory from "../structures/interactions/InteractionFactory.ts";
 
 export type RawHandler<T> = (...args: [Session, number, T]) => void;
@@ -186,16 +185,28 @@ export const WEBHOOKS_UPDATE: RawHandler<DiscordWebhookUpdate> = (session, _shar
     session.emit("webhooksUpdate", { guildId: webhook.guild_id, channelId: webhook.channel_id });
 };
 
-export const INTEGRATION_CREATE: RawHandler<DiscordIntegration & { guildId?: Snowflake }> = (session, _shardId, payload) => {
+export const INTEGRATION_CREATE: RawHandler<DiscordIntegration & { guildId?: Snowflake }> = (
+    session,
+    _shardId,
+    payload,
+) => {
     session.emit("integrationCreate", new Integration(session, payload));
 };
 
-export const INTEGRATION_UPDATE: RawHandler<DiscordIntegration & { guildId?: Snowflake }> = (session, _shardId, payload) => {
+export const INTEGRATION_UPDATE: RawHandler<DiscordIntegration & { guildId?: Snowflake }> = (
+    session,
+    _shardId,
+    payload,
+) => {
     session.emit("integrationCreate", new Integration(session, payload));
 };
 
 export const INTEGRATION_DELETE: RawHandler<DiscordIntegrationDelete> = (session, _shardId, payload) => {
-    session.emit("integrationDelete", { id: payload.id, guildId: payload.guild_id, applicationId: payload.application_id });
+    session.emit("integrationDelete", {
+        id: payload.id,
+        guildId: payload.guild_id,
+        applicationId: payload.application_id,
+    });
 };
 
 export const MESSAGE_REACTION_ADD: RawHandler<DiscordMessageReactionAdd> = (session, _shardId, reaction) => {
@@ -206,11 +217,19 @@ export const MESSAGE_REACTION_REMOVE: RawHandler<DiscordMessageReactionRemove> =
     session.emit("messageReactionRemove", null);
 };
 
-export const MESSAGE_REACTION_REMOVE_ALL: RawHandler<DiscordMessageReactionRemoveAll> = (session, _shardId, reaction) => {
+export const MESSAGE_REACTION_REMOVE_ALL: RawHandler<DiscordMessageReactionRemoveAll> = (
+    session,
+    _shardId,
+    reaction,
+) => {
     session.emit("messageReactionRemoveAll", null);
 };
 
-export const MESSAGE_REACTION_REMOVE_EMOJI: RawHandler<DiscordMessageReactionRemoveEmoji> = (session, _shardId, reaction) => {
+export const MESSAGE_REACTION_REMOVE_EMOJI: RawHandler<DiscordMessageReactionRemoveEmoji> = (
+    session,
+    _shardId,
+    reaction,
+) => {
     session.emit("messageReactionRemoveEmoji", null);
 };
 

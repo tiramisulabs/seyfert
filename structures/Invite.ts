@@ -2,12 +2,12 @@ import type { Session } from "../session/Session.ts";
 import type { Snowflake } from "../util/Snowflake.ts";
 import type {
     DiscordChannel,
-    DiscordMemberWithUser,
     DiscordInvite,
+    DiscordMemberWithUser,
     DiscordScheduledEventEntityMetadata,
+    ScheduledEventEntityType,
     ScheduledEventPrivacyLevel,
     ScheduledEventStatus,
-    ScheduledEventEntityType
 } from "../vendor/external.ts";
 import { TargetTypes } from "../vendor/external.ts";
 import InviteGuild from "./guilds/InviteGuild.ts";
@@ -67,7 +67,7 @@ export class Invite {
 
         if (data.channel) {
             const guildId = (data.guild && data.guild?.id) ? data.guild.id : "";
-            this.channel = new GuildChannel(session, (data.channel as DiscordChannel), guildId);
+            this.channel = new GuildChannel(session, data.channel as DiscordChannel, guildId);
         }
 
         this.code = data.code;
@@ -83,17 +83,25 @@ export class Invite {
                 channelId: data.guild_scheduled_event.channel_id ? data.guild_scheduled_event.channel_id : undefined,
                 creatorId: data.guild_scheduled_event.creator_id ? data.guild_scheduled_event.creator_id : undefined,
                 name: data.guild_scheduled_event.name,
-                description: data.guild_scheduled_event.description ? data.guild_scheduled_event.description : undefined,
+                description: data.guild_scheduled_event.description
+                    ? data.guild_scheduled_event.description
+                    : undefined,
                 scheduledStartTime: data.guild_scheduled_event.scheduled_start_time,
-                scheduledEndTime: data.guild_scheduled_event.scheduled_end_time ? data.guild_scheduled_event.scheduled_end_time : undefined,
+                scheduledEndTime: data.guild_scheduled_event.scheduled_end_time
+                    ? data.guild_scheduled_event.scheduled_end_time
+                    : undefined,
                 privacyLevel: data.guild_scheduled_event.privacy_level,
                 status: data.guild_scheduled_event.status,
                 entityType: data.guild_scheduled_event.entity_type,
                 entityId: data.guild ? data.guild.id : undefined,
-                entityMetadata: data.guild_scheduled_event.entity_metadata ? data.guild_scheduled_event.entity_metadata : undefined,
-                creator: data.guild_scheduled_event.creator ? new User(session, data.guild_scheduled_event.creator) : undefined,
+                entityMetadata: data.guild_scheduled_event.entity_metadata
+                    ? data.guild_scheduled_event.entity_metadata
+                    : undefined,
+                creator: data.guild_scheduled_event.creator
+                    ? new User(session, data.guild_scheduled_event.creator)
+                    : undefined,
                 userCount: data.guild_scheduled_event.user_count ? data.guild_scheduled_event.user_count : undefined,
-                image: data.guild_scheduled_event.image ? data.guild_scheduled_event.image : undefined
+                image: data.guild_scheduled_event.image ? data.guild_scheduled_event.image : undefined,
             };
         }
 
@@ -108,10 +116,12 @@ export class Invite {
         if (data.stage_instance) {
             const guildId = (data.guild && data.guild?.id) ? data.guild.id : "";
             this.stageInstance = {
-                members: data.stage_instance.members.map(m => new Member(session, (m as DiscordMemberWithUser), guildId)),
+                members: data.stage_instance.members.map((m) =>
+                    new Member(session, m as DiscordMemberWithUser, guildId)
+                ),
                 participantCount: data.stage_instance.participant_count,
                 speakerCount: data.stage_instance.speaker_count,
-                topic: data.stage_instance.topic
+                topic: data.stage_instance.topic,
             };
         }
 
