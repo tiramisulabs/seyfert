@@ -42,7 +42,7 @@ export class AnonymousGuild extends BaseGuild implements Model {
 
     bannerURL(options: { size?: ImageSize; format?: ImageFormat } = { size: 128 }) {
         if (this.bannerHash) {
-            return formatImageURL(
+            return Util.formatImageURL(
                 Routes.GUILD_BANNER(this.id, Util.iconBigintToHash(this.bannerHash)),
                 options.size,
                 options.format,
