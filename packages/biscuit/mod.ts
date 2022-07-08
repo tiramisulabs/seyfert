@@ -1,4 +1,7 @@
 // structures
+import { Session } from "./Session.ts";
+export default Session;
+
 export * from "./structures/Attachment.ts";
 export * from "./structures/Base.ts";
 export * from "./structures/Embed.ts";
