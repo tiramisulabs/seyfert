@@ -29,6 +29,7 @@ import Invite from "./Invite.ts";
 import Webhook from "./Webhook.ts";
 import User from "./User.ts";
 import ThreadMember from "./ThreadMember.ts";
+import { PermissionsOverwrites } from "../util/permissions.ts";
 
 export abstract class BaseChannel implements Model {
     constructor(session: Session, data: DiscordChannel) {
@@ -299,6 +300,40 @@ export class TextChannel {
 }
 
 /**
+ * Representations of the objects to edit a guild channel
+ * @link https://discord.com/developers/docs/resources/channel#modify-channel-json-params-guild-channel
+ */
+export interface EditGuildChannelOptions {
+    name?: string;
+    position?: number;
+    permissionOverwrites?: PermissionsOverwrites[];
+}
+
+export interface EditNewsChannelOptions extends EditGuildChannelOptions {
+    type?: ChannelTypes.GuildNews | ChannelTypes.GuildText;
+    topic?: string | null;
+    nfsw?: boolean | null;
+    parentId?: Snowflake | null;
+    defaultAutoArchiveDuration?: number | null;
+}
+
+export interface EditGuildTextChannelOptions extends EditNewsChannelOptions {
+    rateLimitPerUser?: number | null;
+}
+
+export interface EditStageChannelOptions extends EditGuildChannelOptions {
+    bitrate?: number | null;
+    rtcRegion?: Snowflake | null;
+}
+
+export interface EditVoiceChannelOptions extends EditStageChannelOptions {
+    nsfw?: boolean | null;
+    userLimit?: number | null;
+    parentId?: Snowflake | null;
+    videoQualityMode?: VideoQualityModes | null;
+}
+
+/**
  * Represents the option object to create a thread channel from a message
  * @link https://discord.com/developers/docs/resources/channel#start-thread-from-message
  */
@@ -333,6 +368,37 @@ export class GuildChannel extends BaseChannel implements Model {
         );
 
         return invites.map((invite) => new Invite(this.session, invite));
+    }
+
+    async edit(options: EditNewsChannelOptions): Promise<NewsChannel>;
+    async edit(options: EditStageChannelOptions): Promise<StageChannel>;
+    async edit(options: EditVoiceChannelOptions): Promise<VoiceChannel>;
+    async edit(
+        options: EditGuildTextChannelOptions | EditNewsChannelOptions | EditVoiceChannelOptions,
+    ): Promise<Channel> {
+        const channel = await this.session.rest.runMethod<DiscordChannel>(
+            this.session.rest,
+            "PATCH",
+            Routes.CHANNEL(this.id),
+            {
+                name: options.name,
+                type: "type" in options ? options.type : undefined,
+                position: options.position,
+                topic: "topic" in options ? options.topic : undefined,
+                nsfw: "nfsw" in options ? options.nfsw : undefined,
+                rate_limit_per_user: "rateLimitPerUser" in options ? options.rateLimitPerUser : undefined,
+                bitrate: "bitrate" in options ? options.bitrate : undefined,
+                user_limit: "userLimit" in options ? options.userLimit : undefined,
+                permissions_overwrites: options.permissionOverwrites,
+                parent_id: "parentId" in options ? options.parentId : undefined,
+                rtc_region: "rtcRegion" in options ? options.rtcRegion : undefined,
+                video_quality_mode: "videoQualityMode" in options ? options.videoQualityMode : undefined,
+                default_auto_archive_duration: "defaultAutoArchiveDuration" in options
+                    ? options.defaultAutoArchiveDuration
+                    : undefined,
+            },
+        );
+        return ChannelFactory.from(this.session, channel);
     }
 
     async getArchivedThreads(options: Routes.ListArchivedThreads & { type: "public" | "private" | "privateJoinedThreads" }) {
