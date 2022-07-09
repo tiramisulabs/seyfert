@@ -53,8 +53,8 @@ export class Integration implements Model {
         }
     }
 
+    readonly session: Session;
     id: Snowflake;
-    session: Session;
     guildId?: Snowflake;
 
     name: string;
