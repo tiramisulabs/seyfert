@@ -31,7 +31,8 @@ import type {
     DiscordTypingStart,
     DiscordUser,
     DiscordWebhookUpdate,
-    DiscordInviteCreate
+    DiscordInviteCreate,
+    DiscordInviteDelete
 } from "../discordeno/mod.ts";
 
 import type { Snowflake } from "./Snowflake.ts";
@@ -281,6 +282,10 @@ export const INVITE_CREATE: RawHandler<DiscordInviteCreate> = (session, _shardId
     session.emit("inviteCreate", NewInviteCreate(session, invite));
 }
 
+export const INVITE_DELETE: RawHandler<DiscordInviteDelete> = (session, _shardId, data) => {
+    session.emit("inviteDelete", { channelId: data.channel_id, guildId: data.guild_id, code: data.code });
+}
+
 export const raw: RawHandler<unknown> = (session, shardId, data) => {
     session.emit("raw", data, shardId);
 };
@@ -327,6 +332,7 @@ export interface Events {
     "integrationUpdate":          Handler<[Integration]>;
     "integrationDelete":          Handler<[{ id: Snowflake, guildId?: Snowflake, applicationId?: Snowflake }]>;
     "inviteCreate":               Handler<[InviteCreate]>;
+    "inviteDelete":               Handler<[{ channelId: string, guildId?: string, code: string }]>;
     "autoModerationRuleCreate":   Handler<[AutoModerationRule]>;
     "autoModerationRuleUpdate":   Handler<[AutoModerationRule]>;
     "autoModerationRuleDelete":   Handler<[AutoModerationRule]>;
