@@ -25,6 +25,7 @@ import type {
     DiscordMessageReactionRemove,
     DiscordMessageReactionRemoveAll,
     DiscordMessageReactionRemoveEmoji,
+    DiscordPresenceUpdate,
     DiscordReady,
     DiscordRole,
     DiscordScheduledEvent,
@@ -47,6 +48,7 @@ import { AutoModerationExecution } from "./structures/AutoModerationExecution.ts
 import { type Channel, ChannelFactory, GuildChannel, ThreadChannel } from "./structures/channels.ts";
 import { type DiscordStageInstance, StageInstance } from "./structures/StageInstance.ts";
 import { ScheduledEvent } from "./structures/GuildScheduledEvent.ts";
+import { Presence } from "./structures/Presence.ts";
 
 import ThreadMember from "./structures/ThreadMember.ts";
 import Member from "./structures/Member.ts";
@@ -208,6 +210,10 @@ export const CHANNEL_PINS_UPDATE: RawHandler<DiscordChannelPinsUpdate> = (sessio
 
 export const USER_UPDATE: RawHandler<DiscordUser> = (session, _shardId, payload) => {
     session.emit("userUpdate", new User(session, payload));
+};
+
+export const PRESENCE_UPDATE: RawHandler<DiscordPresenceUpdate> = (session, _shardId, payload) => {
+    session.emit("presenceUpdate", new Presence(session, payload));
 };
 
 export const WEBHOOKS_UPDATE: RawHandler<DiscordWebhookUpdate> = (session, _shardId, webhook) => {
@@ -400,4 +406,5 @@ export interface Events {
     "raw":                        Handler<[unknown, number]>;
     "webhooksUpdate":             Handler<[{ guildId: Snowflake, channelId: Snowflake }]>;
     "userUpdate":                 Handler<[User]>;
+    "presenceUpdate":             Handler<[Presence]>;
 }
