@@ -124,6 +124,13 @@ export function GUILDS() {
     return `/guilds`;
 }
 
+export function AUTO_MODERATION_RULES(guildId: Snowflake, ruleId?: Snowflake) {
+    if (ruleId) {
+        return `/guilds/${guildId}/auto-moderation/rules/${ruleId}`;
+    }
+    return `/guilds/${guildId}/auto-moderation/rules`;
+}
+
 export function INVITE(inviteCode: string, options?: GetInvite) {
     let url = `/invites/${inviteCode}?`;
 
