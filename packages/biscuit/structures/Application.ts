@@ -53,7 +53,6 @@ export function NewTeam(session: Session, data: DiscordTeam): Team {
     }
 }
 
-
 export class Application implements Model {
 
     constructor(session: Session, data: DiscordApplication) {
@@ -79,8 +78,7 @@ export class Application implements Model {
         this.customInstallURL = data.custom_install_url;
     }
 
-    session: Session;
-
+    readonly session: Session;
     id: Snowflake;
     name: string;
     icon?: string;
