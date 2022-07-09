@@ -1,4 +1,6 @@
 import type {
+    DiscordAutoModerationActionExecution,
+    DiscordAutoModerationRule,
     DiscordChannel,
     DiscordChannelPinsUpdate,
     DiscordEmoji,
@@ -29,14 +31,17 @@ import type {
     DiscordTypingStart,
     DiscordUser,
     DiscordWebhookUpdate,
+    DiscordInviteCreate,
+    DiscordInviteDelete
 } from "../discordeno/mod.ts";
 
 import type { Snowflake } from "./Snowflake.ts";
 import type { Session } from "./Session.ts";
-import type { Channel } from "./structures/channels.ts";
 import type { Interaction } from "./structures/interactions/InteractionFactory.ts";
 
-import { ChannelFactory, GuildChannel, ThreadChannel } from "./structures/channels.ts";
+import { AutoModerationRule } from "./structures/AutoModerationRule.ts";
+import { AutoModerationExecution } from "./structures/AutoModerationExecution.ts";
+import { type Channel, ChannelFactory, GuildChannel, ThreadChannel } from "./structures/channels.ts";
 
 import ThreadMember from "./structures/ThreadMember.ts";
 import Member from "./structures/Member.ts";
@@ -45,6 +50,7 @@ import User from "./structures/User.ts";
 import Integration from "./structures/Integration.ts";
 import Guild from "./structures/guilds/Guild.ts";
 import InteractionFactory from "./structures/interactions/InteractionFactory.ts";
+import { NewInviteCreate, InviteCreate } from "./structures/Invite.ts";
 
 export type RawHandler<T> = (...args: [Session, number, T]) => void;
 export type Handler<T extends unknown[]> = (...args: T) => unknown;
@@ -227,6 +233,26 @@ export const INTEGRATION_DELETE: RawHandler<DiscordIntegrationDelete> = (session
     });
 };
 
+export const AUTO_MODERATION_RULE_CREATE: RawHandler<DiscordAutoModerationRule> = (session, _shardId, payload) => {
+    session.emit("autoModerationRuleCreate", new AutoModerationRule(session, payload));
+};
+
+export const AUTO_MODERATION_RULE_UPDATE: RawHandler<DiscordAutoModerationRule> = (session, _shardId, payload) => {
+    session.emit("autoModerationRuleUpdate", new AutoModerationRule(session, payload));
+};
+
+export const AUTO_MODERATION_RULE_DELETE: RawHandler<DiscordAutoModerationRule> = (session, _shardId, payload) => {
+    session.emit("autoModerationRuleDelete", new AutoModerationRule(session, payload));
+};
+
+export const AUTO_MODERATION_ACTION_EXECUTE: RawHandler<DiscordAutoModerationActionExecution> = (
+    session,
+    _shardId,
+    payload,
+) => {
+    session.emit("autoModerationActionExecution", new AutoModerationExecution(session, payload));
+};
+
 export const MESSAGE_REACTION_ADD: RawHandler<DiscordMessageReactionAdd> = (session, _shardId, reaction) => {
     session.emit("messageReactionAdd", null);
 };
@@ -250,6 +276,14 @@ export const MESSAGE_REACTION_REMOVE_EMOJI: RawHandler<DiscordMessageReactionRem
 ) => {
     session.emit("messageReactionRemoveEmoji", null);
 };
+
+export const INVITE_CREATE: RawHandler<DiscordInviteCreate> = (session, _shardId, invite) => {
+    session.emit("inviteCreate", NewInviteCreate(session, invite));
+}
+
+export const INVITE_DELETE: RawHandler<DiscordInviteDelete> = (session, _shardId, data) => {
+    session.emit("inviteDelete", { channelId: data.channel_id, guildId: data.guild_id, code: data.code });
+}
 
 export const raw: RawHandler<unknown> = (session, shardId, data) => {
     session.emit("raw", data, shardId);
@@ -296,6 +330,12 @@ export interface Events {
     "integrationCreate":          Handler<[Integration]>;
     "integrationUpdate":          Handler<[Integration]>;
     "integrationDelete":          Handler<[{ id: Snowflake, guildId?: Snowflake, applicationId?: Snowflake }]>;
+    "inviteCreate":               Handler<[InviteCreate]>;
+    "inviteDelete":               Handler<[{ channelId: string, guildId?: string, code: string }]>;
+    "autoModerationRuleCreate":   Handler<[AutoModerationRule]>;
+    "autoModerationRuleUpdate":   Handler<[AutoModerationRule]>;
+    "autoModerationRuleDelete":   Handler<[AutoModerationRule]>;
+    "autoModerationActionExecution":Handler<[AutoModerationExecution]>
     "raw":                        Handler<[unknown, number]>;
     "webhooksUpdate":             Handler<[{ guildId: Snowflake, channelId: Snowflake }]>;
     "userUpdate":                 Handler<[User]>;

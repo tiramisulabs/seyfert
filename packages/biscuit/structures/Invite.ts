@@ -8,6 +8,8 @@ import type {
     ScheduledEventEntityType,
     ScheduledEventPrivacyLevel,
     ScheduledEventStatus,
+    DiscordApplication,
+    DiscordInviteCreate
 } from "../../discordeno/mod.ts";
 import { TargetTypes } from "../../discordeno/mod.ts";
 import { GuildChannel } from "./channels.ts";
@@ -15,6 +17,7 @@ import { Member } from "./Member.ts";
 import InviteGuild from "./guilds/InviteGuild.ts";
 import User from "./User.ts";
 import Guild from "./guilds/Guild.ts";
+import Application from "./Application.ts";
 
 export interface InviteStageInstance {
     /** The members speaking in the Stage */
@@ -46,6 +49,38 @@ export interface InviteScheduledEvent {
     image?: string;
 }
 
+export interface InviteCreate {
+    channelId: string;
+    code: string;
+    createdAt: string;
+    guildId?: string;
+    inviter?: User;
+    maxAge: number;
+    maxUses: number;
+    targetType: TargetTypes;
+    targetUser?: User;
+    targetApplication?: Partial<Application>;
+    temporary: boolean;
+    uses: number;
+}
+
+export function NewInviteCreate(session: Session, invite: DiscordInviteCreate): InviteCreate {
+    return {
+        channelId: invite.channel_id,
+        code: invite.code,
+        createdAt: invite.created_at,
+        guildId: invite.guild_id,
+        inviter: invite.inviter ? new User(session, invite.inviter) : undefined,
+        maxAge: invite.max_age,
+        maxUses: invite.max_uses,
+        targetType: invite.target_type,
+        targetUser: invite.target_user ? new User(session, invite.target_user) : undefined,
+        targetApplication: invite.target_application ? new Application(session, invite.target_application as DiscordApplication) : undefined,
+        temporary: invite.temporary,
+        uses: invite.uses
+    }
+}
+
 /**
  * @link https://discord.com/developers/docs/resources/invite#invite-object
  */
@@ -53,27 +88,19 @@ export class Invite {
     constructor(session: Session, data: DiscordInvite) {
         this.session = session;
 
-        if (data.guild) {
-            this.guild = new InviteGuild(session, data.guild);
-        }
-
-        if (data.approximate_member_count) {
-            this.approximateMemberCount = data.approximate_member_count;
-        }
-
-        if (data.approximate_presence_count) {
-            this.approximatePresenceCount = data.approximate_presence_count;
-        }
-
+        this.guild = data.guild ? new InviteGuild(session, data.guild) : undefined;
+        this.approximateMemberCount = data.approximate_member_count ? data.approximate_member_count : undefined;
+        this.approximatePresenceCount = data.approximate_presence_count ? data.approximate_presence_count : undefined;
+        this.code = data.code;
+        this.expiresAt = data.expires_at ? Number.parseInt(data.expires_at) : undefined;
+        this.inviter = data.inviter ? new User(session, data.inviter) : undefined;
+        this.targetUser = data.target_user ? new User(session, data.target_user) : undefined;
+        this.targetApplication = data.target_application ? new Application(session, data.target_application as DiscordApplication) : undefined;
+        this.targetType = data.target_type;
+        
         if (data.channel) {
             const guildId = (data.guild && data.guild?.id) ? data.guild.id : "";
             this.channel = new GuildChannel(session, data.channel as DiscordChannel, guildId);
-        }
-
-        this.code = data.code;
-
-        if (data.expires_at) {
-            this.expiresAt = Number.parseInt(data.expires_at);
         }
 
         if (data.guild_scheduled_event) {
@@ -105,14 +132,6 @@ export class Invite {
             };
         }
 
-        if (data.inviter) {
-            this.inviter = new User(session, data.inviter);
-        }
-
-        if (data.target_user) {
-            this.targetUser = new User(session, data.target_user);
-        }
-
         if (data.stage_instance) {
             const guildId = (data.guild && data.guild?.id) ? data.guild.id : "";
             this.stageInstance = {
@@ -123,13 +142,6 @@ export class Invite {
                 speakerCount: data.stage_instance.speaker_count,
                 topic: data.stage_instance.topic,
             };
-        }
-
-        // TODO: create Application structure
-        // this.targetApplication = data.target_application
-
-        if (data.target_type) {
-            this.targetType = data.target_type;
         }
     }
 
@@ -145,8 +157,7 @@ export class Invite {
     channel?: Partial<GuildChannel>;
     stageInstance?: InviteStageInstance;
     guildScheduledEvent?: InviteScheduledEvent;
-    // TODO: create Application structure
-    // targetApplication?: Partial<Application>
+    targetApplication?: Partial<Application>
 
     async delete(): Promise<Invite> {
         await Guild.prototype.deleteInvite.call(this.guild, this.code);
