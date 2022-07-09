@@ -52,7 +52,9 @@ export function NewTeam(session: Session, data: DiscordTeam): Team {
         name: data.name,
     }
 }
-
+/**
+ * @link https://discord.com/developers/docs/resources/application#application-object
+ */
 export class Application implements Model {
 
     constructor(session: Session, data: DiscordApplication) {
