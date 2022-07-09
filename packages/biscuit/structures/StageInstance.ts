@@ -4,7 +4,7 @@ import type { Snowflake } from "../Snowflake.ts";
 import type { DiscordStageInstance as DiscordAutoClosingStageInstance } from "../../discordeno/mod.ts";
 import * as Routes from "../Routes.ts";
 
-interface DiscordStageInstance extends DiscordAutoClosingStageInstance {
+export interface DiscordStageInstance extends DiscordAutoClosingStageInstance {
     privacy_level: PrivacyLevels;
     discoverable_disabled: boolean;
     guild_scheduled_event_id: Snowflake;

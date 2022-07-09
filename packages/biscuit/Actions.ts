@@ -32,7 +32,8 @@ import type {
     DiscordUser,
     DiscordWebhookUpdate,
     DiscordInviteCreate,
-    DiscordInviteDelete
+    DiscordInviteDelete,
+    DiscordScheduledEvent
 } from "../discordeno/mod.ts";
 
 import type { Snowflake } from "./Snowflake.ts";
@@ -42,6 +43,8 @@ import type { Interaction } from "./structures/interactions/InteractionFactory.t
 import { AutoModerationRule } from "./structures/AutoModerationRule.ts";
 import { AutoModerationExecution } from "./structures/AutoModerationExecution.ts";
 import { type Channel, ChannelFactory, GuildChannel, ThreadChannel } from "./structures/channels.ts";
+import { StageInstance, type DiscordStageInstance } from "./structures/StageInstance.ts";
+import { ScheduledEvent } from "./structures/GuildScheduledEvent.ts";
 
 import ThreadMember from "./structures/ThreadMember.ts";
 import Member from "./structures/Member.ts";
@@ -285,6 +288,30 @@ export const INVITE_DELETE: RawHandler<DiscordInviteDelete> = (session, _shardId
     session.emit("inviteDelete", { channelId: data.channel_id, guildId: data.guild_id, code: data.code });
 }
 
+export const STAGE_INSTANCE_CREATE: RawHandler<DiscordStageInstance> =  (session, _shardId, payload) => {
+    session.emit("stageInstanceCreate", new StageInstance(session, payload));
+};
+
+export const STAGE_INSTANCE_UPDATE: RawHandler<DiscordStageInstance> =  (session, _shardId, payload) => {
+    session.emit("stageInstanceUpdate", new StageInstance(session, payload));
+};
+
+export const STAGE_INSTANCE_DELETE: RawHandler<DiscordStageInstance> =  (session, _shardId, payload) => {
+    session.emit("stageInstanceDelete", new StageInstance(session, payload));
+};
+
+export const GUILD_SCHEDULED_EVENT_CREATE: RawHandler<DiscordScheduledEvent> = (session, _shardId, payload) => {
+    session.emit("guildScheduledEventCreate", new ScheduledEvent(session, payload))
+}
+
+export const GUILD_SCHEDULED_EVENT_UPDATE: RawHandler<DiscordScheduledEvent> = (session, _shardId, payload) => {
+    session.emit("guildScheduledEventUpdate", new ScheduledEvent(session, payload))
+}
+
+export const GUILD_SCHEDULED_EVENT_DELETE: RawHandler<DiscordScheduledEvent> = (session, _shardId, payload) => {
+    session.emit("guildScheduledEventDelete", new ScheduledEvent(session, payload))
+}
+
 export const raw: RawHandler<unknown> = (session, shardId, data) => {
     session.emit("raw", data, shardId);
 };
@@ -336,6 +363,12 @@ export interface Events {
     "autoModerationRuleUpdate":   Handler<[AutoModerationRule]>;
     "autoModerationRuleDelete":   Handler<[AutoModerationRule]>;
     "autoModerationActionExecution":Handler<[AutoModerationExecution]>
+    "stageInstanceCreate":        Handler<[StageInstance]>;
+    "stageInstanceUpdate":        Handler<[StageInstance]>;
+    "stageInstanceDelete":        Handler<[StageInstance]>;
+    "guildScheduledEventCreate":  Handler<[ScheduledEvent]>;
+    "guildScheduledEventUpdate":  Handler<[ScheduledEvent]>;
+    "guildScheduledEventDelete":  Handler<[ScheduledEvent]>;
     "raw":                        Handler<[unknown, number]>;
     "webhooksUpdate":             Handler<[{ guildId: Snowflake, channelId: Snowflake }]>;
     "userUpdate":                 Handler<[User]>;
