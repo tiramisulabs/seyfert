@@ -1,15 +1,15 @@
 import type { Session } from "../Session.ts";
 import type { Snowflake } from "../Snowflake.ts";
 import type {
+    DiscordApplication,
     DiscordChannel,
     DiscordInvite,
+    DiscordInviteCreate,
     DiscordMemberWithUser,
     DiscordScheduledEventEntityMetadata,
     ScheduledEventEntityType,
     ScheduledEventPrivacyLevel,
     ScheduledEventStatus,
-    DiscordApplication,
-    DiscordInviteCreate
 } from "../../discordeno/mod.ts";
 import { TargetTypes } from "../../discordeno/mod.ts";
 import { GuildChannel } from "./channels.ts";
@@ -75,10 +75,12 @@ export function NewInviteCreate(session: Session, invite: DiscordInviteCreate): 
         maxUses: invite.max_uses,
         targetType: invite.target_type,
         targetUser: invite.target_user ? new User(session, invite.target_user) : undefined,
-        targetApplication: invite.target_application ? new Application(session, invite.target_application as DiscordApplication) : undefined,
+        targetApplication: invite.target_application
+            ? new Application(session, invite.target_application as DiscordApplication)
+            : undefined,
         temporary: invite.temporary,
-        uses: invite.uses
-    }
+        uses: invite.uses,
+    };
 }
 
 /**
@@ -95,9 +97,11 @@ export class Invite {
         this.expiresAt = data.expires_at ? Number.parseInt(data.expires_at) : undefined;
         this.inviter = data.inviter ? new User(session, data.inviter) : undefined;
         this.targetUser = data.target_user ? new User(session, data.target_user) : undefined;
-        this.targetApplication = data.target_application ? new Application(session, data.target_application as DiscordApplication) : undefined;
+        this.targetApplication = data.target_application
+            ? new Application(session, data.target_application as DiscordApplication)
+            : undefined;
         this.targetType = data.target_type;
-        
+
         if (data.channel) {
             const guildId = (data.guild && data.guild?.id) ? data.guild.id : "";
             this.channel = new GuildChannel(session, data.channel as DiscordChannel, guildId);
@@ -157,7 +161,7 @@ export class Invite {
     channel?: Partial<GuildChannel>;
     stageInstance?: InviteStageInstance;
     guildScheduledEvent?: InviteScheduledEvent;
-    targetApplication?: Partial<Application>
+    targetApplication?: Partial<Application>;
 
     async delete(): Promise<Invite> {
         await Guild.prototype.deleteInvite.call(this.guild, this.code);
