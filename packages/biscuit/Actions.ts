@@ -31,6 +31,7 @@ import type {
     DiscordTypingStart,
     DiscordUser,
     DiscordWebhookUpdate,
+    DiscordInviteCreate
 } from "../discordeno/mod.ts";
 
 import type { Snowflake } from "./Snowflake.ts";
@@ -49,6 +50,7 @@ import User from "./structures/User.ts";
 import Integration from "./structures/Integration.ts";
 import Guild from "./structures/guilds/Guild.ts";
 import InteractionFactory from "./structures/interactions/InteractionFactory.ts";
+import { NewInviteCreate, InviteCreate } from "./structures/Invite.ts";
 
 export type RawHandler<T> = (...args: [Session, number, T]) => void;
 export type Handler<T extends unknown[]> = (...args: T) => unknown;
@@ -275,6 +277,10 @@ export const MESSAGE_REACTION_REMOVE_EMOJI: RawHandler<DiscordMessageReactionRem
     session.emit("messageReactionRemoveEmoji", null);
 };
 
+export const INVITE_CREATE: RawHandler<DiscordInviteCreate> = (session, _shardId, invite) => {
+    session.emit("inviteCreate", NewInviteCreate(session, invite));
+}
+
 export const raw: RawHandler<unknown> = (session, shardId, data) => {
     session.emit("raw", data, shardId);
 };
@@ -320,6 +326,7 @@ export interface Events {
     "integrationCreate":          Handler<[Integration]>;
     "integrationUpdate":          Handler<[Integration]>;
     "integrationDelete":          Handler<[{ id: Snowflake, guildId?: Snowflake, applicationId?: Snowflake }]>;
+    "inviteCreate":               Handler<[InviteCreate]>;
     "autoModerationRuleCreate":   Handler<[AutoModerationRule]>;
     "autoModerationRuleUpdate":   Handler<[AutoModerationRule]>;
     "autoModerationRuleDelete":   Handler<[AutoModerationRule]>;

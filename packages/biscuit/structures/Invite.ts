@@ -8,7 +8,8 @@ import type {
     ScheduledEventEntityType,
     ScheduledEventPrivacyLevel,
     ScheduledEventStatus,
-    DiscordApplication
+    DiscordApplication,
+    DiscordInviteCreate
 } from "../../discordeno/mod.ts";
 import { TargetTypes } from "../../discordeno/mod.ts";
 import { GuildChannel } from "./channels.ts";
@@ -46,6 +47,38 @@ export interface InviteScheduledEvent {
     creator?: User;
     userCount?: number;
     image?: string;
+}
+
+export interface InviteCreate {
+    channelId: string;
+    code: string;
+    createdAt: string;
+    guildId?: string;
+    inviter?: User;
+    maxAge: number;
+    maxUses: number;
+    targetType: TargetTypes;
+    targetUser?: User;
+    targetApplication?: Partial<Application>;
+    temporary: boolean;
+    uses: number;
+}
+
+export function NewInviteCreate(session: Session, invite: DiscordInviteCreate): InviteCreate {
+    return {
+        channelId: invite.channel_id,
+        code: invite.code,
+        createdAt: invite.created_at,
+        guildId: invite.guild_id,
+        inviter: invite.inviter ? new User(session, invite.inviter) : undefined,
+        maxAge: invite.max_age,
+        maxUses: invite.max_uses,
+        targetType: invite.target_type,
+        targetUser: invite.target_user ? new User(session, invite.target_user) : undefined,
+        targetApplication: invite.target_application ? new Application(session, invite.target_application as DiscordApplication) : undefined,
+        temporary: invite.temporary,
+        uses: invite.uses
+    }
 }
 
 /**
