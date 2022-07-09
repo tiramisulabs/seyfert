@@ -1,4 +1,6 @@
 import type {
+    DiscordAutoModerationActionExecution,
+    DiscordAutoModerationRule,
     DiscordChannel,
     DiscordChannelPinsUpdate,
     DiscordEmoji,
@@ -33,10 +35,11 @@ import type {
 
 import type { Snowflake } from "./Snowflake.ts";
 import type { Session } from "./Session.ts";
-import type { Channel } from "./structures/channels.ts";
 import type { Interaction } from "./structures/interactions/InteractionFactory.ts";
 
-import { ChannelFactory, GuildChannel, ThreadChannel } from "./structures/channels.ts";
+import { AutoModerationRule } from "./structures/AutoModerationRule.ts";
+import { AutoModerationExecution } from "./structures/AutoModerationExecution.ts";
+import { type Channel, ChannelFactory, GuildChannel, ThreadChannel } from "./structures/channels.ts";
 
 import ThreadMember from "./structures/ThreadMember.ts";
 import Member from "./structures/Member.ts";
@@ -227,6 +230,26 @@ export const INTEGRATION_DELETE: RawHandler<DiscordIntegrationDelete> = (session
     });
 };
 
+export const AUTO_MODERATION_RULE_CREATE: RawHandler<DiscordAutoModerationRule> = (session, _shardId, payload) => {
+    session.emit("autoModerationRuleCreate", new AutoModerationRule(session, payload));
+};
+
+export const AUTO_MODERATION_RULE_UPDATE: RawHandler<DiscordAutoModerationRule> = (session, _shardId, payload) => {
+    session.emit("autoModerationRuleUpdate", new AutoModerationRule(session, payload));
+};
+
+export const AUTO_MODERATION_RULE_DELETE: RawHandler<DiscordAutoModerationRule> = (session, _shardId, payload) => {
+    session.emit("autoModerationRuleDelete", new AutoModerationRule(session, payload));
+};
+
+export const AUTO_MODERATION_ACTION_EXECUTE: RawHandler<DiscordAutoModerationActionExecution> = (
+    session,
+    _shardId,
+    payload,
+) => {
+    session.emit("autoModerationActionExecution", new AutoModerationExecution(session, payload));
+};
+
 export const MESSAGE_REACTION_ADD: RawHandler<DiscordMessageReactionAdd> = (session, _shardId, reaction) => {
     session.emit("messageReactionAdd", null);
 };
@@ -296,6 +319,10 @@ export interface Events {
     "integrationCreate":          Handler<[Integration]>;
     "integrationUpdate":          Handler<[Integration]>;
     "integrationDelete":          Handler<[{ id: Snowflake, guildId?: Snowflake, applicationId?: Snowflake }]>;
+    "autoModerationRuleCreate":   Handler<[AutoModerationRule]>;
+    "autoModerationRuleUpdate":   Handler<[AutoModerationRule]>;
+    "autoModerationRuleDelete":   Handler<[AutoModerationRule]>;
+    "autoModerationActionExecution":Handler<[AutoModerationExecution]>
     "raw":                        Handler<[unknown, number]>;
     "webhooksUpdate":             Handler<[{ guildId: Snowflake, channelId: Snowflake }]>;
     "userUpdate":                 Handler<[User]>;
