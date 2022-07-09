@@ -1,16 +1,16 @@
 import { Model } from "./Base.ts";
 import type { Snowflake } from "../Snowflake.ts";
 import type { Session } from "../Session.ts";
-import { 
-    DiscordApplication, 
-    TeamMembershipStates, 
+import {
+    DiscordApplication,
     DiscordInstallParams,
+    DiscordTeam,
     DiscordUser,
-    DiscordTeam
+    TeamMembershipStates,
 } from "../../discordeno/mod.ts";
 import User from "./User.ts";
 
-type SummaryDeprecated = ""
+type SummaryDeprecated = "";
 
 export interface Team {
     /** a hash of the image of the team's icon */
@@ -32,7 +32,7 @@ export interface TeamMember {
 
     teamId: string;
 
-    user: Partial<User> & Pick<User, "avatarHash" | "discriminator" | "id" | "username">
+    user: Partial<User> & Pick<User, "avatarHash" | "discriminator" | "id" | "username">;
 }
 
 // NewTeam create a new Team object for discord applications
@@ -40,23 +40,22 @@ export function NewTeam(session: Session, data: DiscordTeam): Team {
     return {
         icon: data.icon ? data.icon : undefined,
         id: data.id,
-        members: data.members.map(member => {
+        members: data.members.map((member) => {
             return {
                 membershipState: member.membership_state,
                 permissions: member.permissions,
                 teamId: member.team_id,
-                user: new User(session, member.user)
-            }
+                user: new User(session, member.user),
+            };
         }),
         ownerUserId: data.owner_user_id,
         name: data.name,
-    }
+    };
 }
 /**
  * @link https://discord.com/developers/docs/resources/application#application-object
  */
 export class Application implements Model {
-
     constructor(session: Session, data: DiscordApplication) {
         this.id = data.id;
         this.session = session;
