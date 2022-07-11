@@ -1,6 +1,27 @@
 import type { Session } from "../Session.ts";
-import type { DiscordReaction } from "../../discordeno/mod.ts";
+import type { DiscordMemberWithUser, DiscordMessageReactionAdd, DiscordReaction } from "../../discordeno/mod.ts";
 import Emoji from "./Emoji.ts";
+import Member from "./Member.ts";
+
+export interface MessageReactionAdd {
+    userId: string;
+    channelId: string;
+    messageId: string;
+    guildId?: string;
+    member?: Member;
+    emoji: Partial<Emoji>
+}
+
+export function NewMessageReactionAdd(session: Session, data: DiscordMessageReactionAdd): MessageReactionAdd {
+    return {
+        userId: data.user_id,
+        channelId: data.channel_id,
+        messageId: data.message_id,
+        guildId: data.guild_id,
+        member: data.member ? new Member(session, (data.member as DiscordMemberWithUser), (data.guild_id || "")) : undefined,
+        emoji: new Emoji(session, data.emoji),
+    }
+}
 
 /**
  * Represents a reaction

@@ -58,6 +58,7 @@ import Integration from "./structures/Integration.ts";
 import Guild from "./structures/guilds/Guild.ts";
 import InteractionFactory from "./structures/interactions/InteractionFactory.ts";
 import { InviteCreate, NewInviteCreate } from "./structures/Invite.ts";
+import { MessageReactionAdd, NewMessageReactionAdd } from "./structures/MessageReaction.ts";
 
 export type RawHandler<T> = (...args: [Session, number, T]) => void;
 export type Handler<T extends unknown[]> = (...args: T) => unknown;
@@ -265,7 +266,7 @@ export const AUTO_MODERATION_ACTION_EXECUTE: RawHandler<DiscordAutoModerationAct
 };
 
 export const MESSAGE_REACTION_ADD: RawHandler<DiscordMessageReactionAdd> = (session, _shardId, reaction) => {
-    session.emit("messageReactionAdd", null);
+    session.emit("messageReactionAdd", NewMessageReactionAdd(session, reaction));
 };
 
 export const MESSAGE_REACTION_REMOVE: RawHandler<DiscordMessageReactionRemove> = (session, _shardId, reaction) => {
@@ -361,7 +362,7 @@ export interface Events {
     "messageCreate":              Handler<[Message]>;
     "messageUpdate":              Handler<[Partial<Message>]>;
     "messageDelete":              Handler<[{ id: Snowflake, channelId: Snowflake, guildId?: Snowflake }]>;
-    "messageReactionAdd":         Handler<[MessageReaction]>;
+    "messageReactionAdd":         Handler<[MessageReactionAdd]>;
     "messageReactionRemove":      Handler<[MessageReaction]>;  
     "messageReactionRemoveAll":   Handler<[MessageReaction]>;
     "messageReactionRemoveEmoji": Handler<[MessageReaction]>;
