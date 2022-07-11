@@ -270,7 +270,7 @@ export const MESSAGE_REACTION_ADD: RawHandler<DiscordMessageReactionAdd> = (sess
 };
 
 export const MESSAGE_REACTION_REMOVE: RawHandler<DiscordMessageReactionRemove> = (session, _shardId, reaction) => {
-    session.emit("messageReactionRemove", null);
+    session.emit("messageReactionRemove", NewMessageReactionAdd(session, reaction));
 };
 
 export const MESSAGE_REACTION_REMOVE_ALL: RawHandler<DiscordMessageReactionRemoveAll> = (
@@ -363,7 +363,7 @@ export interface Events {
     "messageUpdate":              Handler<[Partial<Message>]>;
     "messageDelete":              Handler<[{ id: Snowflake, channelId: Snowflake, guildId?: Snowflake }]>;
     "messageReactionAdd":         Handler<[MessageReactionAdd]>;
-    "messageReactionRemove":      Handler<[MessageReaction]>;  
+    "messageReactionRemove":      Handler<[MessageReactionAdd]>;  
     "messageReactionRemoveAll":   Handler<[MessageReaction]>;
     "messageReactionRemoveEmoji": Handler<[MessageReaction]>;
     "guildCreate":                Handler<[Guild]>;
