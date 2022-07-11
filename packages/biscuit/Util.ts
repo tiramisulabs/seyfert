@@ -3,6 +3,13 @@ import type { Permissions } from "./structures/Permissions.ts";
 import type { Snowflake } from "./Snowflake.ts";
 
 /*
+ * Represents a session's cache
+ * */
+export interface SymCache {
+    readonly cache: symbol;
+}
+
+/*
  * @link https://discord.com/developers/docs/resources/channel#message-object-message-flags
  */
 export enum MessageFlags {
