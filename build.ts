@@ -4,6 +4,7 @@ await Deno.remove('npm', { recursive: true }).catch((_) => {});
 
 await build({
     shims: {
+        undici: true,
         deno: true,
         timers: true,
         custom: [
@@ -29,10 +30,10 @@ await build({
         license: 'Apache License 2.0',
         repository: {
             type: 'git',
-            url: 'git+https://github.com/yuzudev/oasis.git',
+            url: 'git+https://github.com/deno-biscuit/biscuit.git',
         },
         bugs: {
-            url: 'https://github.com/yuzudev/oasis/issues',
+            url: 'https://github.com/deno-biscuit/biscuit/issues',
         },
         typesVersions: {
             '*': {
