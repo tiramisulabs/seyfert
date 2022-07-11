@@ -1,3 +1,9 @@
+# editors
 .vim/
+.vscode/
+
+# build
+npm/
+
+# etc
 .env
-.vscode

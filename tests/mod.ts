@@ -7,8 +7,7 @@ if (!token) {
     throw new Error("Please provide a token");
 }
 
-const intents = GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages |
-    GatewayIntents.GuildMembers | GatewayIntents.GuildBans;
+const intents = GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages;
 const session = new Session({ token, intents });
 
 session.on("ready", (payload) => {
@@ -18,7 +17,7 @@ session.on("ready", (payload) => {
 const PREFIX = ">";
 
 session.on("messageCreate", (message) => {
-    if (message.author.bot) {
+    if (message.author.bot || message.content.startsWith(PREFIX)) {
         return;
     }
 
