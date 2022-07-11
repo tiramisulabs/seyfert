@@ -130,8 +130,6 @@ export class TextChannel {
         if (data.last_pin_timestamp) {
             this.lastPinTimestamp = data.last_pin_timestamp;
         }
-
-        this.messages = new Map();
     }
 
     readonly session: Session;
@@ -142,9 +140,6 @@ export class TextChannel {
     lastPinTimestamp?: string;
     rateLimitPerUser: number;
     nsfw: boolean;
-
-    /** Meant to be used with cache */
-    messages: Map<Snowflake, Message>;
 
     /**
      * Mixin
@@ -538,9 +533,9 @@ export class DMChannel extends BaseChannel implements Model {
     }
 }
 
-TextChannel.applyTo(DMChannel);
-
 export interface DMChannel extends Omit<TextChannel, "type">, Omit<BaseChannel, "type"> {}
+
+TextChannel.applyTo(DMChannel);
 
 /** VoiceChannel */
 export class VoiceChannel extends BaseVoiceChannel {
@@ -661,12 +656,26 @@ export class ThreadChannel extends GuildChannel implements Model {
     }
 }
 
+export interface ThreadChannel extends Omit<GuildChannel, "type">, Omit<TextChannel, "type"> {}
+
 TextChannel.applyTo(ThreadChannel);
 
-export interface ThreadChannel extends Omit<GuildChannel, "type">, Omit<TextChannel, "type"> {}
+export class GuildTextChannel extends GuildChannel {
+    constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
+        super(session, data, guildId);
+        this.type = data.type as ChannelTypes.GuildText;
+    }
+
+    override type: ChannelTypes.GuildText;
+}
+
+export interface GuildTextChannel extends GuildChannel, TextChannel {}
+
+TextChannel.applyTo(GuildTextChannel);
 
 /** ChannelFactory */
 export type Channel =
+    | GuildTextChannel
     | TextChannel
     | VoiceChannel
     | DMChannel
@@ -674,12 +683,23 @@ export type Channel =
     | ThreadChannel
     | StageChannel;
 
+export type ChannelWithMessages =
+    | GuildTextChannel
+    | VoiceChannel
+    | DMChannel
+    | NewsChannel
+    | ThreadChannel;
+
+export type ChannelWithMessagesInGuild = Exclude<ChannelWithMessages, DMChannel>;
+
 export class ChannelFactory {
     static from(session: Session, channel: DiscordChannel): Channel {
         switch (channel.type) {
             case ChannelTypes.GuildPublicThread:
             case ChannelTypes.GuildPrivateThread:
                 return new ThreadChannel(session, channel, channel.guild_id!);
+            case ChannelTypes.GuildText:
+                return new GuildTextChannel(session, channel, channel.guild_id!);
             case ChannelTypes.GuildNews:
                 return new NewsChannel(session, channel, channel.guild_id!);
             case ChannelTypes.DM:

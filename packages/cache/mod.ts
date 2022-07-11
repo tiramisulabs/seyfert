@@ -1,4 +1,5 @@
 import type {
+    ChannelTypes,
     SymCache,
     Session,
     Snowflake,
@@ -6,19 +7,62 @@ import type {
     DiscordEmoji,
     DiscordUser,
     DiscordChannel,
+    DiscordMemberWithUser,
 } from "./deps.ts";
 
 import {
+    ChannelFactory,
     Guild,
     User,
     DMChannel,
     GuildEmoji,
+    GuildTextChannel,
+    Member,
+    Message,
+    VoiceChannel,
+    ThreadChannel,
+    NewsChannel,
 } from "./deps.ts";
 
 export const cache_sym = Symbol("@cache");
 
+export interface CachedMessage extends Omit<Message, "author"> {
+    authorId: Snowflake;
+    author?: User;
+}
+
+export interface CachedMember extends Omit<Member, "user"> {
+    userId: Snowflake;
+    user?: User;
+}
+
+export interface CachedGuild extends Omit<Guild, "members" | "channels"> {
+    channels: Map<Snowflake, CachedGuildChannel>;
+    members: Map<Snowflake, CachedMember>;
+}
+
+export interface CachedGuildChannel extends Omit<GuildTextChannel, "type"> {
+    type: ChannelTypes;
+    messages: Map<Snowflake, CachedMessage>;
+}
+
+export interface CachedGuildChannel extends Omit<VoiceChannel, "type"> {
+    type: ChannelTypes;
+    messages: Map<Snowflake, CachedMessage>;
+}
+
+export interface CachedGuildChannel extends Omit<NewsChannel, "type"> {
+    type: ChannelTypes;
+    messages: Map<Snowflake, CachedMessage>;
+}
+
+export interface CachedGuildChannel extends Omit<ThreadChannel, "type"> {
+    type: ChannelTypes
+    messages: Map<Snowflake, CachedMessage>;
+}
+
 export interface SessionCache extends SymCache {
-    guilds: StructCache<Guild>;
+    guilds: StructCache<CachedGuild>;
     users: StructCache<User>;
     dms: StructCache<DMChannel>;
     emojis: StructCache<GuildEmoji>;
@@ -27,7 +71,7 @@ export interface SessionCache extends SymCache {
 
 export default function (session: Session): SessionCache {
     return {
-        guilds: new StructCache<Guild>(session),
+        guilds: new StructCache<CachedGuild>(session),
         users: new StructCache<User>(session),
         dms: new StructCache<DMChannel>(session),
         emojis: new StructCache<GuildEmoji>(session),
@@ -59,6 +103,27 @@ export function DMChannelBootstrapper(cache: SessionCache, channel: DiscordChann
 }
 
 export function guildBootstrapper(guild: DiscordGuild, cache: SessionCache) {
-    // TODO: optimizee this garbage
-    cache.guilds.set(guild.id, new Guild(cache.session, guild));
+    const members = new Map(guild.members?.map((data) => {
+        const obj: CachedMember = Object.assign(new Member(cache.session, data as DiscordMemberWithUser, guild.id), {
+            userId: data.user!.id,
+            get user(): User | undefined {
+                return cache.users.get(this.userId);
+            }
+        });
+
+        return [data.user!.id, obj as CachedMember];
+    }));
+
+    const channels = new Map(guild.channels?.map((data) => {
+        const obj = Object.assign(ChannelFactory.from(cache.session, data), {
+            messages: new Map(),
+        });
+
+        return [data.id, obj as CachedGuildChannel];
+    }));
+
+    cache.guilds.set(guild.id, Object.assign(
+        new Guild(cache.session, guild),
+        { members, channels },
+    ));
 }

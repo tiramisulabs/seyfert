@@ -365,7 +365,7 @@ export class Message implements Model {
         const message = await this.session.rest.runMethod<DiscordMessage>(
             this.session.rest,
             "GET",
-            Routes.CHANNEL_MESSAGE(this.channelId, this.message),
+            Routes.CHANNEL_MESSAGE(this.channelId, this.id),
         );
 
         if (!message?.id) return;
