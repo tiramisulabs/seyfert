@@ -130,6 +130,8 @@ export class TextChannel {
         if (data.last_pin_timestamp) {
             this.lastPinTimestamp = data.last_pin_timestamp;
         }
+
+        this.messages = new Map();
     }
 
     readonly session: Session;
@@ -140,6 +142,9 @@ export class TextChannel {
     lastPinTimestamp?: string;
     rateLimitPerUser: number;
     nsfw: boolean;
+
+    /** Meant to be used with cache */
+    messages: Map<Snowflake, Message>;
 
     /**
      * Mixin

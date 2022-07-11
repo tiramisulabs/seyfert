@@ -1,4 +1,7 @@
 // structures
+import { Session } from "./Session.ts";
+export default Session;
+
 export * from "./structures/Attachment.ts";
 export * from "./structures/Base.ts";
 export * from "./structures/Embed.ts";
@@ -47,6 +50,9 @@ export * from "./structures/interactions/ComponentInteraction.ts";
 export * from "./structures/interactions/InteractionFactory.ts";
 export * from "./structures/interactions/ModalSubmitInteraction.ts";
 export * from "./structures/interactions/PingInteraction.ts";
+
+// etc
+export * from "./Snowflake.ts";
 
 // session
 export * from "./Session.ts";
