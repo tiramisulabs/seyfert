@@ -1,4 +1,7 @@
 // structures
+import { Session } from "./Session.ts";
+export default Session;
+
 export * from "./structures/Attachment.ts";
 export * from "./structures/Base.ts";
 export * from "./structures/Embed.ts";
@@ -7,6 +10,7 @@ export * from "./structures/GuildEmoji.ts";
 export * from "./structures/Invite.ts";
 export * from "./structures/Member.ts";
 export * from "./structures/Message.ts";
+export * from "./structures/MessageReaction.ts";
 export * from "./structures/Permissions.ts";
 export * from "./structures/Role.ts";
 export * from "./structures/User.ts";
@@ -47,6 +51,9 @@ export * from "./structures/interactions/ComponentInteraction.ts";
 export * from "./structures/interactions/InteractionFactory.ts";
 export * from "./structures/interactions/ModalSubmitInteraction.ts";
 export * from "./structures/interactions/PingInteraction.ts";
+
+// etc
+export * from "./Snowflake.ts";
 
 // session
 export * from "./Session.ts";

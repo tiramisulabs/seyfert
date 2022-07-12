@@ -22,7 +22,7 @@ import {
     VerificationLevels,
 } from "../../../discordeno/mod.ts";
 import { encode as _encode, urlToBase64 } from "../../util/urlToBase64.ts";
-import { ThreadChannel } from "../channels.ts";
+import { GuildChannel, ThreadChannel } from "../channels.ts";
 import Util from "../../Util.ts";
 import Member from "../Member.ts";
 import BaseGuild from "./BaseGuild.ts";
@@ -208,10 +208,22 @@ export class Guild extends BaseGuild implements Model {
         this.vefificationLevel = data.verification_level;
         this.defaultMessageNotificationLevel = data.default_message_notifications;
         this.explicitContentFilterLevel = data.explicit_content_filter;
-        this.members = data.members?.map((member) => new Member(session, { ...member, user: member.user! }, data.id)) ??
-            [];
-        this.roles = data.roles.map((role) => new Role(session, role, data.id));
-        this.emojis = data.emojis.map((guildEmoji) => new GuildEmoji(session, guildEmoji, data.id));
+
+        this.members = new Map(
+            data.members?.map((member) => [data.id, new Member(session, { ...member, user: member.user! }, data.id)])
+        );
+
+        this.roles = new Map(
+            data.roles.map((role) => [data.id, new Role(session, role, data.id)])
+        );
+
+        this.emojis = new Map(
+            data.emojis.map((guildEmoji) => [guildEmoji.id!, new GuildEmoji(session, guildEmoji, data.id)])
+        );
+
+        this.channels = new Map(
+            data.channels?.map((guildChannel) => [guildChannel.id, new GuildChannel(session, guildChannel, data.id)])
+        );
     }
 
     splashHash?: bigint;
@@ -222,9 +234,10 @@ export class Guild extends BaseGuild implements Model {
     vefificationLevel: VerificationLevels;
     defaultMessageNotificationLevel: DefaultMessageNotificationLevels;
     explicitContentFilterLevel: ExplicitContentFilterLevels;
-    members: Member[];
-    roles: Role[];
-    emojis: GuildEmoji[];
+    members: Map<Snowflake, Member>;
+    roles: Map<Snowflake, Role>;
+    emojis: Map<Snowflake, GuildEmoji>;
+    channels: Map<Snowflake, GuildChannel>;
 
     /**
      * 'null' would reset the nickname

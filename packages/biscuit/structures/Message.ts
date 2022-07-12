@@ -361,6 +361,18 @@ export class Message implements Model {
         return new Message(this.session, message);
     }
 
+    async fetch() {
+        const message = await this.session.rest.runMethod<DiscordMessage>(
+            this.session.rest,
+            "GET",
+            Routes.CHANNEL_MESSAGE(this.channelId, this.id),
+        );
+
+        if (!message?.id) return;
+
+        return new Message(this.session, message);
+    }
+
     /*
      * alias of Message.crosspost
      * */

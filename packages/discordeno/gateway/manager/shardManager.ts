@@ -60,6 +60,7 @@ export function createShardManager(options: CreateShardManager) {
          */
         identify: async function (shardId: number) {
             let shard = this.shards.get(shardId);
+
             if (!shard) {
                 shard = createShard({
                     ...this.createShardOptions,
