@@ -10,6 +10,7 @@ export * from "./structures/GuildEmoji.ts";
 export * from "./structures/Invite.ts";
 export * from "./structures/Member.ts";
 export * from "./structures/Message.ts";
+export * from "./structures/MessageReaction.ts";
 export * from "./structures/Permissions.ts";
 export * from "./structures/Role.ts";
 export * from "./structures/User.ts";
