@@ -346,7 +346,7 @@ export const GUILD_SCHEDULED_EVENT_USER_REMOVE: RawHandler<DiscordScheduledEvent
 };
 
 export const raw: RawHandler<unknown> = (session, shardId, data) => {
-    session.emit("raw", data, shardId);
+    session.emit("raw", data as { t: string, d: unknown }, shardId);
 };
 
 export interface Ready extends Omit<DiscordReady, "user"> {
@@ -404,7 +404,7 @@ export interface Events {
     "guildScheduledEventDelete":  Handler<[ScheduledEvent]>;
     "guildScheduledEventUserAdd": Handler<[{scheduledEventId: Snowflake, userId: Snowflake, guildId: Snowflake}]>
     "guildScheduledEventUserRemove": Handler<[{scheduledEventId: Snowflake, userId: Snowflake, guildId: Snowflake}]>
-    "raw":                        Handler<[unknown, number]>;
+    "raw":                        Handler<[{ t: string, d: unknown }, number]>;
     "webhooksUpdate":             Handler<[{ guildId: Snowflake, channelId: Snowflake }]>;
     "userUpdate":                 Handler<[User]>;
     "presenceUpdate":             Handler<[Presence]>;

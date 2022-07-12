@@ -1,5 +1,6 @@
 import type {
     ChannelTypes,
+    DiscordMessage,
     DiscordChannel,
     DiscordEmoji,
     DiscordGuild,
@@ -37,47 +38,82 @@ export interface CachedMember extends Omit<Member, "user"> {
 }
 
 export interface CachedGuild extends Omit<Guild, "members" | "channels"> {
-    channels: Map<Snowflake, CachedGuildChannel>;
-    members: Map<Snowflake, CachedMember>;
+    channels: StructCache<CachedGuildChannel>;
+    members: StructCache<CachedMember>;
 }
 
 export interface CachedGuildChannel extends Omit<GuildTextChannel, "type"> {
     type: ChannelTypes;
-    messages: Map<Snowflake, CachedMessage>;
+    messages: StructCache<CachedMessage>;
 }
 
 export interface CachedGuildChannel extends Omit<VoiceChannel, "type"> {
     type: ChannelTypes;
-    messages: Map<Snowflake, CachedMessage>;
+    messages: StructCache<CachedMessage>;
 }
 
 export interface CachedGuildChannel extends Omit<NewsChannel, "type"> {
     type: ChannelTypes;
-    messages: Map<Snowflake, CachedMessage>;
+    messages: StructCache<CachedMessage>;
 }
 
 export interface CachedGuildChannel extends Omit<ThreadChannel, "type"> {
     type: ChannelTypes;
-    messages: Map<Snowflake, CachedMessage>;
+    messages: StructCache<CachedMessage>;
+}
+
+export interface CachedDMChannel extends DMChannel {
+    messages: StructCache<CachedMessage>;
 }
 
 export interface SessionCache extends SymCache {
     guilds: StructCache<CachedGuild>;
     users: StructCache<User>;
-    dms: StructCache<DMChannel>;
+    dms: StructCache<CachedDMChannel>;
     emojis: StructCache<GuildEmoji>;
     session: Session;
 }
 
 export default function (session: Session): SessionCache {
-    return {
+    const cache = {
         guilds: new StructCache<CachedGuild>(session),
         users: new StructCache<User>(session),
-        dms: new StructCache<DMChannel>(session),
+        dms: new StructCache<CachedDMChannel>(session),
         emojis: new StructCache<GuildEmoji>(session),
         cache: cache_sym,
         session,
     };
+
+    session.on("raw", (data) => {
+        // deno-lint-ignore no-explicit-any
+        const raw = data.d as any;
+
+        switch (data.t) {
+            case "MESSAGE_CREATE":
+                messageBootstrapper(cache, raw, false);
+            break;
+            case "MESSAGE_UPDATE":
+                messageBootstrapper(cache, raw, !raw.edited_timestamp);
+            break;
+            case "CHANNEL_CREATE":
+                // DMChannelBootstrapper(cache, raw);
+            break;
+            case "GUILD_MEMBER_ADD":
+                memberBootstrapper(cache, raw, raw.guild_id);
+            break;
+            case "GUILD_CREATE":
+                guildBootstrapper(cache, raw);
+            break;
+            case "GUILD_DELETE":
+                cache.guilds.delete(raw.id);
+            break;
+            case "MESSAGE_DELETE":
+                // pass
+            break;
+        }
+    });
+
+    return cache;
 }
 
 export class StructCache<V> extends Map<Snowflake, V> {
@@ -85,6 +121,7 @@ export class StructCache<V> extends Map<Snowflake, V> {
         super(entries);
         this.session = session;
     }
+
     readonly session: Session;
 
     get(key: Snowflake): V | undefined {
@@ -230,6 +267,36 @@ export class StructCache<V> extends Map<Snowflake, V> {
     get empty(): boolean {
         return this.size === 0;
     }
+
+    updateFields(key: Snowflake, obj: Partial<V>) {
+        const value = this.get(key);
+
+        if (!value) {
+            return;
+        }
+
+        for (const prop in obj) {
+            if (obj[prop]) {
+                value[prop] = obj[prop]!;
+            }
+        }
+
+        return this.set(key, value);
+    }
+
+    getOr(key: Snowflake, or: V): V | undefined {
+        return this.get(key) ?? or;
+    }
+
+    retrieve<T>(key: Snowflake, fn: (value: V) => T) {
+        const value = this.get(key);
+
+        if (!value) {
+            return;
+        }
+
+        return fn(value);
+    }
 }
 
 export function userBootstrapper(cache: SessionCache, user: DiscordUser) {
@@ -242,11 +309,64 @@ export function emojiBootstrapper(cache: SessionCache, emoji: DiscordEmoji, guil
 }
 
 export function DMChannelBootstrapper(cache: SessionCache, channel: DiscordChannel) {
-    cache.dms.set(channel.id, new DMChannel(cache.session, channel));
+    cache.dms.set(channel.id, Object.assign(
+        new DMChannel(cache.session, channel),
+        { messages: new StructCache<CachedMessage>(cache.session) }
+    ));
 }
 
-export function guildBootstrapper(guild: DiscordGuild, cache: SessionCache) {
-    const members = new Map(guild.members?.map((data) => {
+export function memberBootstrapper(cache: SessionCache, member: DiscordMemberWithUser, guildId: Snowflake) {
+    cache.guilds.retrieve(guildId, (guild) => {
+        guild.members.set(member.user.id, Object.assign(
+            new Member(cache.session, member, guildId),
+            {
+                userId: member.user.id,
+                get user(): User | undefined {
+                    return cache.users.get(this.userId);
+                }
+            }
+        ));
+    });
+}
+
+export function messageBootstrapper(cache: SessionCache, message: DiscordMessage, partial: boolean) {
+    if (message.member) {
+        const member: DiscordMemberWithUser = Object.assign(message.member, { user: message.author });
+
+        memberBootstrapper(cache, member, message.guild_id!);
+    }
+
+    if (cache.dms.has(message.channel_id)) {
+        // is dm
+        cache.dms.retrieve(message.channel_id, (dm) => {
+            dm.messages[partial ? "updateFields" : "set"](message.id, Object.assign(
+                new Message(cache.session, message),
+                {
+                    authorId: message.author.id,
+                    get author(): User | undefined {
+                        return cache.users.get(this.authorId);
+                    },
+                }
+            ));
+        });
+    } else {
+        // is not dm
+        cache.guilds.retrieve(message.guild_id!, (guild) => guild.channels.retrieve(message.channel_id, (dm) => {
+            dm.messages[partial ? "updateFields" : "set"](message.id, Object.assign(
+                new Message(cache.session, message),
+                {
+                    authorId: message.author.id,
+                    get author(): User | undefined {
+                        return cache.users.get(this.authorId);
+                    },
+                }
+            ));
+        }));
+    }
+}
+
+export function guildBootstrapper(cache: SessionCache, guild: DiscordGuild) {
+    const members = new StructCache(cache.session, guild.members?.map((data) => {
         const obj: CachedMember = Object.assign(new Member(cache.session, data as DiscordMemberWithUser, guild.id), {
             userId: data.user!.id,
             get user(): User | undefined {
@@ -257,7 +377,7 @@ export function guildBootstrapper(guild: DiscordGuild, cache: SessionCache) {
         return [data.user!.id, obj as CachedMember];
     }));
 
-    const channels = new Map(guild.channels?.map((data) => {
+    const channels = new StructCache(cache.session, guild.channels?.map((data) => {
         const obj = Object.assign(ChannelFactory.from(cache.session, data), {
             messages: new Map(),
         });
