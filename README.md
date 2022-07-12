@@ -66,4 +66,3 @@ since bun is unestable I highly recommend running biscuit on node!
 
 #### node
 * all DNT shims work properly
-* a Node version is will to be available soon
