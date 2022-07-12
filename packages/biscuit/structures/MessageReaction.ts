@@ -12,6 +12,15 @@ export interface MessageReactionAdd {
     emoji: Partial<Emoji>
 }
 
+export interface MessageReactionRemove extends Omit<MessageReactionAdd, "member"> {}
+
+export interface MessageReactionRemoveAll extends Pick<MessageReactionAdd, "channelId" | "messageId" | "guildId"> {}
+
+export type MessageReactionRemoveEmoji = Pick<
+    MessageReactionAdd,
+    "channelId" | "guildId" | "messageId" | "emoji"
+>;
+
 export function NewMessageReactionAdd(session: Session, data: DiscordMessageReactionAdd): MessageReactionAdd {
     return {
         userId: data.user_id,

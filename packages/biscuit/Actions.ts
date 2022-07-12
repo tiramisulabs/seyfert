@@ -58,7 +58,7 @@ import Integration from "./structures/Integration.ts";
 import Guild from "./structures/guilds/Guild.ts";
 import InteractionFactory from "./structures/interactions/InteractionFactory.ts";
 import { InviteCreate, NewInviteCreate } from "./structures/Invite.ts";
-import { MessageReactionAdd, NewMessageReactionAdd } from "./structures/MessageReaction.ts";
+import { MessageReactionAdd, MessageReactionRemove, MessageReactionRemoveAll, MessageReactionRemoveEmoji, NewMessageReactionAdd } from "./structures/MessageReaction.ts";
 
 export type RawHandler<T> = (...args: [Session, number, T]) => void;
 export type Handler<T extends unknown[]> = (...args: T) => unknown;
@@ -278,7 +278,7 @@ export const MESSAGE_REACTION_REMOVE_ALL: RawHandler<DiscordMessageReactionRemov
     _shardId,
     reaction,
 ) => {
-    session.emit("messageReactionRemoveAll", null);
+    session.emit("messageReactionRemoveAll", NewMessageReactionAdd(session, reaction as DiscordMessageReactionAdd));
 };
 
 export const MESSAGE_REACTION_REMOVE_EMOJI: RawHandler<DiscordMessageReactionRemoveEmoji> = (
@@ -286,7 +286,7 @@ export const MESSAGE_REACTION_REMOVE_EMOJI: RawHandler<DiscordMessageReactionRem
     _shardId,
     reaction,
 ) => {
-    session.emit("messageReactionRemoveEmoji", null);
+    session.emit("messageReactionRemoveEmoji", NewMessageReactionAdd(session, reaction as DiscordMessageReactionAdd));
 };
 
 export const INVITE_CREATE: RawHandler<DiscordInviteCreate> = (session, _shardId, invite) => {
@@ -363,9 +363,9 @@ export interface Events {
     "messageUpdate":              Handler<[Partial<Message>]>;
     "messageDelete":              Handler<[{ id: Snowflake, channelId: Snowflake, guildId?: Snowflake }]>;
     "messageReactionAdd":         Handler<[MessageReactionAdd]>;
-    "messageReactionRemove":      Handler<[MessageReactionAdd]>;  
-    "messageReactionRemoveAll":   Handler<[MessageReaction]>;
-    "messageReactionRemoveEmoji": Handler<[MessageReaction]>;
+    "messageReactionRemove":      Handler<[MessageReactionRemove]>;  
+    "messageReactionRemoveAll":   Handler<[MessageReactionRemoveAll]>;
+    "messageReactionRemoveEmoji": Handler<[MessageReactionRemoveEmoji]>;
     "guildCreate":                Handler<[Guild]>;
     "guildDelete":                Handler<[{ id: Snowflake, unavailable: boolean }]>;
     "guildMemberAdd":             Handler<[Member]>;
