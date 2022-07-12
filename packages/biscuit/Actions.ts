@@ -368,7 +368,7 @@ export const GUILD_SCHEDULED_EVENT_USER_REMOVE: RawHandler<DiscordScheduledEvent
 };
 
 export const raw: RawHandler<unknown> = (session, shardId, data) => {
-    session.emit("raw", data as { t: string, d: unknown }, shardId);
+    session.emit("raw", data as { t: string; d: unknown }, shardId);
 };
 
 export interface Ready extends Omit<DiscordReady, "user"> {
