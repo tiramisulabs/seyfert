@@ -59,7 +59,7 @@ export function createShard(
             compress: options.gatewayConfig.compress ?? false,
             intents: options.gatewayConfig.intents ?? 0,
             properties: {
-                os: options.gatewayConfig?.properties?.os ?? Deno.build.os,
+                os: options.gatewayConfig?.properties?.os ?? "linux",
                 browser: options.gatewayConfig?.properties?.browser ?? "Discordeno",
                 device: options.gatewayConfig?.properties?.device ?? "Discordeno",
             },

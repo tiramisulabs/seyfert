@@ -24,6 +24,7 @@ export async function runMethod<T = any>(
     );
 
     const errorStack = new Error("Location:");
+
     // @ts-ignore Breaks deno deploy. Luca said add ts-ignore until it's fixed
     Error.captureStackTrace?.(errorStack);
 

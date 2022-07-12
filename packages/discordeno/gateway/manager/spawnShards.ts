@@ -18,14 +18,14 @@ export function spawnShards(gateway: GatewayManager) {
     gateway.prepareBuckets();
 
     // SPREAD THIS OUT TO DIFFERENT WORKERS TO BEGIN STARTING UP
-    gateway.buckets.forEach(async (bucket, bucketId) => {
+    gateway.buckets.forEach((bucket, bucketId) => {
         // gateway.debug("GW DEBUG", `2. Running forEach loop in spawnShards function.`);
 
         for (const worker of bucket.workers) {
             // gateway.debug("GW DEBUG", `3. Running for of loop in spawnShards function.`);
 
             for (const shardId of worker.queue) {
-                await gateway.tellWorkerToIdentify(worker.id, shardId, bucketId);
+                gateway.tellWorkerToIdentify(worker.id, shardId, bucketId).catch(console.error);
             }
         }
     });

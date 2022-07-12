@@ -17,18 +17,22 @@ export interface RestSendRequestOptions {
 }
 
 export async function sendRequest<T>(rest: RestManager, options: RestSendRequestOptions): Promise<T> {
-    try {
+   try {
         // CUSTOM HANDLER FOR USER TO LOG OR WHATEVER WHENEVER A FETCH IS MADE
         rest.debug(`[REST - fetching] URL: ${options.url} | ${JSON.stringify(options)}`);
 
+        const newURL = options.url.startsWith(BASE_URL) ? options.url : `${BASE_URL}/v${rest.version}/${options.url}`;
+
+        rest.debug(`[REST - url data] URL: ${newURL}`);
+
         const response = await fetch(
-            options.url.startsWith(BASE_URL) ? options.url : `${BASE_URL}/v${rest.version}/${options.url}`,
-            {
+            new Request(newURL, {
                 method: options.method,
                 headers: options.payload?.headers,
                 body: options.payload?.body,
-            },
+            }),
         );
+
         rest.debug(`[REST - fetched] URL: ${options.url} | ${JSON.stringify(options)}`);
 
         const bucketIdFromHeaders = rest.processRequestHeaders(
