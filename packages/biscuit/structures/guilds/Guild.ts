@@ -210,19 +210,19 @@ export class Guild extends BaseGuild implements Model {
         this.explicitContentFilterLevel = data.explicit_content_filter;
 
         this.members = new Map(
-            data.members?.map((member) => [data.id, new Member(session, { ...member, user: member.user! }, data.id)])
+            data.members?.map((member) => [data.id, new Member(session, { ...member, user: member.user! }, data.id)]),
         );
 
         this.roles = new Map(
-            data.roles.map((role) => [data.id, new Role(session, role, data.id)])
+            data.roles.map((role) => [data.id, new Role(session, role, data.id)]),
         );
 
         this.emojis = new Map(
-            data.emojis.map((guildEmoji) => [guildEmoji.id!, new GuildEmoji(session, guildEmoji, data.id)])
+            data.emojis.map((guildEmoji) => [guildEmoji.id!, new GuildEmoji(session, guildEmoji, data.id)]),
         );
 
         this.channels = new Map(
-            data.channels?.map((guildChannel) => [guildChannel.id, new GuildChannel(session, guildChannel, data.id)])
+            data.channels?.map((guildChannel) => [guildChannel.id, new GuildChannel(session, guildChannel, data.id)]),
         );
     }
 

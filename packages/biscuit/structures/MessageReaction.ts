@@ -9,7 +9,7 @@ export interface MessageReactionAdd {
     messageId: string;
     guildId?: string;
     member?: Member;
-    emoji: Partial<Emoji>
+    emoji: Partial<Emoji>;
 }
 
 export interface MessageReactionRemove extends Omit<MessageReactionAdd, "member"> {}
@@ -27,9 +27,11 @@ export function NewMessageReactionAdd(session: Session, data: DiscordMessageReac
         channelId: data.channel_id,
         messageId: data.message_id,
         guildId: data.guild_id,
-        member: data.member ? new Member(session, (data.member as DiscordMemberWithUser), (data.guild_id || "")) : undefined,
+        member: data.member
+            ? new Member(session, data.member as DiscordMemberWithUser, data.guild_id || "")
+            : undefined,
         emoji: new Emoji(session, data.emoji),
-    }
+    };
 }
 
 /**

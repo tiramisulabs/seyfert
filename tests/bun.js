@@ -1,6 +1,6 @@
 import { GatewayIntents, Session } from "./deps.ts";
 
-const token   = process.env.TOKEN;
+const token = process.env.TOKEN;
 const intents = GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages;
 const session = new Session({ token, intents });
 
