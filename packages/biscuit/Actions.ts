@@ -31,9 +31,9 @@ import type {
     DiscordScheduledEvent,
     DiscordScheduledEventUserAdd,
     DiscordScheduledEventUserRemove,
-    // DiscordThreadMemberUpdate,
-    // DiscordThreadMembersUpdate,
     DiscordThreadListSync,
+    DiscordThreadMembersUpdate,
+    DiscordThreadMemberUpdate,
     DiscordTypingStart,
     DiscordUser,
     DiscordWebhookUpdate,
@@ -192,6 +192,28 @@ export const THREAD_DELETE: RawHandler<DiscordChannel> = (session, _shardId, cha
     session.emit("threadDelete", new ThreadChannel(session, channel, channel.guild_id));
 };
 
+export const THREAD_MEMBER_UPDATE: RawHandler<DiscordThreadMemberUpdate> = (session, _shardId, payload) => {
+    session.emit("threadMemberUpdate", {
+        guildId: payload.guild_id,
+        id: payload.id,
+        userId: payload.user_id,
+        joinedAt: payload.joined_at,
+        flags: payload.flags,
+    });
+};
+
+export const THREAD_MEMBERS_UPDATE: RawHandler<DiscordThreadMembersUpdate> = (session, _shardId, payload) => {
+    session.emit("threadMembersUpdate", {
+        memberCount: payload.member_count,
+        addedMembers: payload.added_members
+            ? payload.added_members.map((tm) => new ThreadMember(session, tm))
+            : undefined,
+        removedMemberIds: payload.removed_member_ids ? payload.removed_member_ids : undefined,
+        guildId: payload.guild_id,
+        id: payload.id,
+    });
+};
+
 export const THREAD_LIST_SYNC: RawHandler<DiscordThreadListSync> = (session, _shardId, payload) => {
     session.emit("threadListSync", {
         guildId: payload.guild_id,
@@ -346,7 +368,7 @@ export const GUILD_SCHEDULED_EVENT_USER_REMOVE: RawHandler<DiscordScheduledEvent
 };
 
 export const raw: RawHandler<unknown> = (session, shardId, data) => {
-    session.emit("raw", data as { t: string, d: unknown }, shardId);
+    session.emit("raw", data as { t: string; d: unknown }, shardId);
 };
 
 export interface Ready extends Omit<DiscordReady, "user"> {
@@ -386,6 +408,8 @@ export interface Events {
     "threadUpdate":               Handler<[ThreadChannel]>;
     "threadDelete":               Handler<[ThreadChannel]>;
     "threadListSync":             Handler<[{ guildId: Snowflake, channelIds: Snowflake[], threads: ThreadChannel[], members: ThreadMember[] }]>
+    "threadMemberUpdate":         Handler<[{id: Snowflake, userId: Snowflake, guildId: Snowflake, joinedAt: string, flags: number }]>
+    "threadMembersUpdate":        Handler<[{id: Snowflake, memberCount: number, addedMembers?: ThreadMember[], guildId: Snowflake, removedMemberIds?: Snowflake[]}]>
     "interactionCreate":          Handler<[Interaction]>;
     "integrationCreate":          Handler<[Integration]>;
     "integrationUpdate":          Handler<[Integration]>;

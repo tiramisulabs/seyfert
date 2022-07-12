@@ -23,11 +23,11 @@ export async function connect(shard: Shard): Promise<void> {
     socket.onclose = (event) => shard.handleClose(event);
 
     socket.onmessage = (message) => {
-        // START WSL GATEWAY PATCH  
+        // START WSL GATEWAY PATCH
         gotHello = true;
-        // END WSL GATEWAY PATCH    
+        // END WSL GATEWAY PATCH
         shard.handleMessage(message);
-    }
+    };
 
     return new Promise((resolve) => {
         socket.onopen = () => {

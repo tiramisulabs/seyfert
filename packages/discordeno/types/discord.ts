@@ -2268,6 +2268,8 @@ export interface DiscordThreadMembersUpdate {
 export interface DiscordThreadMemberUpdate {
     /** The id of the thread */
     id: string;
+    /** The id of the user */
+    user_id: string;
     /** The id of the guild */
     guild_id: string;
     /** The timestamp when the bot joined this thread. */

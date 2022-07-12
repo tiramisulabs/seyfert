@@ -1,13 +1,13 @@
 import type {
-    DiscordMessage,
     DiscordChannel,
     DiscordEmoji,
     DiscordGuild,
     DiscordMemberWithUser,
+    DiscordMessage,
     DiscordMessageReactionAdd,
     DiscordMessageReactionRemove,
-    DiscordMessageReactionRemoveEmoji,
     DiscordMessageReactionRemoveAll,
+    DiscordMessageReactionRemoveEmoji,
     DiscordUser,
     Session,
     Snowflake,
@@ -15,22 +15,22 @@ import type {
 } from "./deps.ts";
 
 import {
-    ChannelTypes,
     ChannelFactory,
+    ChannelTypes,
     DMChannel,
     Emoji,
     Guild,
+    GuildChannel,
     GuildEmoji,
     GuildTextChannel,
-    GuildChannel,
     Member,
     Message,
     MessageReaction,
     NewsChannel,
+    textBasedChannels,
     ThreadChannel,
     User,
     VoiceChannel,
-    textBasedChannels,
 } from "./deps.ts";
 
 export const cache_sym = Symbol("@cache");
@@ -99,32 +99,32 @@ export default function (session: Session): SessionCache {
         switch (data.t) {
             case "MESSAGE_CREATE":
                 messageBootstrapper(cache, raw, false);
-            break;
+                break;
             case "MESSAGE_UPDATE":
                 messageBootstrapper(cache, raw, !raw.edited_timestamp);
-            break;
+                break;
             case "CHANNEL_UPDATE":
             case "CHANNEL_CREATE":
                 channelBootstrapper(cache, raw);
-            break;
+                break;
             case "GUILD_MEMBER_ADD":
                 memberBootstrapper(cache, raw, raw.guild_id);
-            break;
+                break;
             case "GUILD_CREATE":
                 guildBootstrapper(cache, raw);
-            break;
+                break;
             case "GUILD_DELETE":
                 cache.guilds.delete(raw.id);
-            break;
+                break;
             case "MESSAGE_REACTION_ADD":
                 reactionBootstrapper(cache, raw, false);
-            break;
+                break;
             case "MESSAGE_REACTION_REMOVE":
                 reactionBootstrapper(cache, raw, false);
-            break;
+                break;
             case "MESSAGE_REACTION_REMOVE_ALL":
                 reactionBootstrapperDeletions(cache, raw);
-            break;
+                break;
         }
     });
 
@@ -323,8 +323,7 @@ export function reactionBootstrapperDeletions(cache: SessionCache, payload: Disc
                 });
             });
         });
-    }
-    else {
+    } else {
         cache.dms.retrieve(payload.channel_id, (channel) => {
             channel.messages.retrieve(payload.message_id, (message) => {
                 message.reactions = [];
@@ -414,29 +413,34 @@ export function channelBootstrapper(cache: SessionCache, channel: DiscordChannel
     cache.guilds.retrieve(channel.guild_id, (guild) => {
         if (textBasedChannels.includes(channel.type)) {
             // deno-lint-ignore no-explicit-any
-            guild.channels.set(channel.id, <any>Object.assign(
-                ChannelFactory.fromGuildChannel(cache.session, channel),
-                { messages: new StructCache<CachedMessage>(cache.session) }
-            ));
-        }
-        else {
+            guild.channels.set(
+                channel.id,
+                <any> Object.assign(
+                    ChannelFactory.fromGuildChannel(cache.session, channel),
+                    { messages: new StructCache<CachedMessage>(cache.session) },
+                ),
+            );
+        } else {
             // deno-lint-ignore no-explicit-any
-            guild.channels.set(channel.id, <any>ChannelFactory.fromGuildChannel(cache.session, channel));
+            guild.channels.set(channel.id, <any> ChannelFactory.fromGuildChannel(cache.session, channel));
         }
     });
 }
 
 export function memberBootstrapper(cache: SessionCache, member: DiscordMemberWithUser, guildId: Snowflake) {
     cache.guilds.retrieve(guildId, (guild) => {
-        guild.members.set(member.user.id, Object.assign(
-            new Member(cache.session, member, guildId),
-            {
-                userId: member.user.id,
-                get user(): User | undefined {
-                    return cache.users.get(this.userId);
-                }
-            }
-        ));
+        guild.members.set(
+            member.user.id,
+            Object.assign(
+                new Member(cache.session, member, guildId),
+                {
+                    userId: member.user.id,
+                    get user(): User | undefined {
+                        return cache.users.get(this.userId);
+                    },
+                },
+            ),
+        );
     });
 }
 
@@ -450,51 +454,67 @@ export function messageBootstrapper(cache: SessionCache, message: DiscordMessage
     if (cache.dms.has(message.channel_id)) {
         // is dm
         cache.dms.retrieve(message.channel_id, (dm) => {
-            dm.messages[partial ? "updateFields" : "set"](message.id, Object.assign(
-                new Message(cache.session, message),
-                {
-                    authorId: message.author.id,
-                    get author(): User | undefined {
-                        return cache.users.get(this.authorId);
+            dm.messages[partial ? "updateFields" : "set"](
+                message.id,
+                Object.assign(
+                    new Message(cache.session, message),
+                    {
+                        authorId: message.author.id,
+                        get author(): User | undefined {
+                            return cache.users.get(this.authorId);
+                        },
                     },
-                }
-            ));
+                ),
+            );
         });
     } else {
         // is not dm
-        cache.guilds.retrieve(message.guild_id!, (guild) => guild.channels.retrieve(message.channel_id, (dm) => {
-            dm.messages[partial ? "updateFields" : "set"](message.id, Object.assign(
-                new Message(cache.session, message),
-                {
-                    authorId: message.author.id,
-                    get author(): User | undefined {
-                        return cache.users.get(this.authorId);
-                    },
-                }
-            ));
-        }));
+        cache.guilds.retrieve(message.guild_id!, (guild) =>
+            guild.channels.retrieve(message.channel_id, (dm) => {
+                dm.messages[partial ? "updateFields" : "set"](
+                    message.id,
+                    Object.assign(
+                        new Message(cache.session, message),
+                        {
+                            authorId: message.author.id,
+                            get author(): User | undefined {
+                                return cache.users.get(this.authorId);
+                            },
+                        },
+                    ),
+                );
+            }));
     }
 }
 
 export function guildBootstrapper(cache: SessionCache, guild: DiscordGuild) {
-    const members = new StructCache(cache.session, guild.members?.map((data) => {
-        const obj: CachedMember = Object.assign(new Member(cache.session, data as DiscordMemberWithUser, guild.id), {
-            userId: data.user!.id,
-            get user(): User | undefined {
-                return cache.users.get(this.userId);
-            },
-        });
+    const members = new StructCache(
+        cache.session,
+        guild.members?.map((data) => {
+            const obj: CachedMember = Object.assign(
+                new Member(cache.session, data as DiscordMemberWithUser, guild.id),
+                {
+                    userId: data.user!.id,
+                    get user(): User | undefined {
+                        return cache.users.get(this.userId);
+                    },
+                },
+            );
 
-        return [data.user!.id, obj as CachedMember];
-    }));
+            return [data.user!.id, obj as CachedMember];
+        }),
+    );
 
-    const channels = new StructCache(cache.session, guild.channels?.map((data) => {
-        const obj = Object.assign(ChannelFactory.from(cache.session, data), {
-            messages: new Map(),
-        });
+    const channels = new StructCache(
+        cache.session,
+        guild.channels?.map((data) => {
+            const obj = Object.assign(ChannelFactory.from(cache.session, data), {
+                messages: new Map(),
+            });
 
-        return [data.id, obj as CachedGuildChannel];
-    }));
+            return [data.id, obj as CachedGuildChannel];
+        }),
+    );
 
     cache.guilds.set(
         guild.id,
