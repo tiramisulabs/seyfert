@@ -5,6 +5,10 @@ import type {
     DiscordEmoji,
     DiscordGuild,
     DiscordMemberWithUser,
+    DiscordMessageReactionAdd,
+    DiscordMessageReactionRemove,
+    DiscordMessageReactionRemoveEmoji,
+    DiscordMessageReactionRemoveAll,
     DiscordUser,
     Session,
     Snowflake,
@@ -14,11 +18,13 @@ import type {
 import {
     ChannelFactory,
     DMChannel,
+    Emoji,
     Guild,
     GuildEmoji,
     GuildTextChannel,
     Member,
     Message,
+    MessageReaction,
     NewsChannel,
     ThreadChannel,
     User,
@@ -70,7 +76,7 @@ export interface SessionCache extends SymCache {
     guilds: StructCache<CachedGuild>;
     users: StructCache<User>;
     dms: StructCache<CachedDMChannel>;
-    emojis: StructCache<GuildEmoji>;
+    emojis: StructCache<Emoji>;
     session: Session;
 }
 
@@ -79,7 +85,7 @@ export default function (session: Session): SessionCache {
         guilds: new StructCache<CachedGuild>(session),
         users: new StructCache<User>(session),
         dms: new StructCache<CachedDMChannel>(session),
-        emojis: new StructCache<GuildEmoji>(session),
+        emojis: new StructCache<Emoji>(session),
         cache: cache_sym,
         session,
     };
@@ -109,6 +115,15 @@ export default function (session: Session): SessionCache {
             break;
             case "MESSAGE_DELETE":
                 // pass
+            break;
+            case "MESSAGE_REACTION_ADD":
+                reactionBootstrapper(cache, raw, false);
+            break;
+            case "MESSAGE_REACTION_REMOVE":
+                reactionBootstrapper(cache, raw, false);
+            break;
+            case "MESSAGE_REACTION_REMOVE_ALL":
+                reactionBootstrapperDeletions(cache, raw);
             break;
         }
     });
@@ -296,6 +311,91 @@ export class StructCache<V> extends Map<Snowflake, V> {
         }
 
         return fn(value);
+    }
+}
+
+export function reactionBootstrapperDeletions(cache: SessionCache, payload: DiscordMessageReactionRemoveAll) {
+    if (payload.guild_id) {
+        cache.guilds.retrieve(payload.guild_id, (guild) => {
+            guild.channels.retrieve(payload.channel_id, (channel) => {
+                channel.messages.retrieve(payload.message_id, (message) => {
+                    message.reactions = [];
+                });
+            });
+        });
+    }
+    else {
+        cache.dms.retrieve(payload.channel_id, (channel) => {
+            channel.messages.retrieve(payload.message_id, (message) => {
+                message.reactions = [];
+            });
+        });
+    }
+}
+
+export function reactionBootstrapper(
+    cache: SessionCache,
+    reaction: DiscordMessageReactionAdd | DiscordMessageReactionRemove,
+    remove: boolean,
+) {
+    cache.emojis.set(reaction.emoji.id ?? reaction.emoji.name!, new Emoji(cache.session, reaction.emoji));
+
+    function onAdd(message: CachedMessage) {
+        const reactions = message.reactions.map((r) => r.emoji.name);
+
+        const upsertData = {
+            count: 1,
+            emoji: reaction.emoji,
+            me: reaction.user_id === cache.session.botId,
+        };
+
+        if (reactions.length === 0) {
+            message.reactions = [];
+        } else if (!reactions.includes(reaction.emoji.name)) {
+            message.reactions.push(new MessageReaction(cache.session, upsertData));
+        } else {
+            const current = message.reactions?.[reactions.indexOf(reaction.emoji.name)];
+
+            if (current && message.reactions?.[message.reactions.indexOf(current)]) {
+                // add 1 to reaction count
+                ++message.reactions[message.reactions.indexOf(current)].count;
+            }
+        }
+    }
+
+    function onRemove(message: CachedMessage) {
+        const reactions = message.reactions.map((r) => r.emoji.name);
+
+        if (reactions.indexOf(reaction.emoji.name) !== undefined) {
+            const current = message.reactions[reactions.indexOf(reaction.emoji.name)];
+
+            if (current) {
+                if (current.count > 0) {
+                    current.count--;
+                }
+                if (current.count === 0) {
+                    message.reactions.splice(reactions?.indexOf(reaction.emoji.name), 1);
+                }
+            }
+        }
+    }
+
+    if (reaction.guild_id) {
+        cache.guilds.retrieve(reaction.guild_id, (guild) => {
+            guild.channels.retrieve(reaction.channel_id, (channel) => {
+                channel.messages.retrieve(reaction.message_id, (message) => {
+                    if (remove) onRemove(message);
+                    else onAdd(message);
+                });
+            });
+        });
+    } else {
+        cache.dms.retrieve(reaction.channel_id, (channel) => {
+            channel.messages.retrieve(reaction.message_id, (message) => {
+                if (remove) onRemove(message);
+                else onAdd(message);
+            });
+        });
     }
 }
 
