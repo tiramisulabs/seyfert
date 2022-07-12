@@ -17,7 +17,7 @@ export interface RestSendRequestOptions {
 }
 
 export async function sendRequest<T>(rest: RestManager, options: RestSendRequestOptions): Promise<T> {
-   try {
+    try {
         // CUSTOM HANDLER FOR USER TO LOG OR WHATEVER WHENEVER A FETCH IS MADE
         rest.debug(`[REST - fetching] URL: ${options.url} | ${JSON.stringify(options)}`);
 
