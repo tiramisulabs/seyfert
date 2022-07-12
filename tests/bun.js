@@ -1,6 +1,6 @@
 import { GatewayIntents, Session } from "./deps.ts";
 
-const token   = "lol";
+const token   = process.env.TOKEN;
 const intents = GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages;
 const session = new Session({ token, intents });
 
@@ -13,7 +13,12 @@ session.on("ready", (payload) => {
     console.log("Logged in as:", payload.user.username);
 });
 
-session.on("messageCreate", (message) => {
+session.on("messageCreate", async (message) => {
+    if (message.content.startsWith("whatever")) {
+        const whatever = await message.fetch().then(console.log);
+        console.log(whatever);
+    }
+
     if (message.content.startsWith("ping")) {
         message.reply({ content: "pong!" }).catch((err) => console.error(err));
     }
