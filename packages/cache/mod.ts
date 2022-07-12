@@ -1,5 +1,4 @@
 import type {
-    ChannelTypes,
     DiscordMessage,
     DiscordChannel,
     DiscordEmoji,
@@ -16,12 +15,14 @@ import type {
 } from "./deps.ts";
 
 import {
+    ChannelTypes,
     ChannelFactory,
     DMChannel,
     Emoji,
     Guild,
     GuildEmoji,
     GuildTextChannel,
+    GuildChannel,
     Member,
     Message,
     MessageReaction,
@@ -29,6 +30,7 @@ import {
     ThreadChannel,
     User,
     VoiceChannel,
+    textBasedChannels,
 } from "./deps.ts";
 
 export const cache_sym = Symbol("@cache");
@@ -101,8 +103,9 @@ export default function (session: Session): SessionCache {
             case "MESSAGE_UPDATE":
                 messageBootstrapper(cache, raw, !raw.edited_timestamp);
             break;
+            case "CHANNEL_UPDATE":
             case "CHANNEL_CREATE":
-                // DMChannelBootstrapper(cache, raw);
+                channelBootstrapper(cache, raw);
             break;
             case "GUILD_MEMBER_ADD":
                 memberBootstrapper(cache, raw, raw.guild_id);
@@ -112,9 +115,6 @@ export default function (session: Session): SessionCache {
             break;
             case "GUILD_DELETE":
                 cache.guilds.delete(raw.id);
-            break;
-            case "MESSAGE_DELETE":
-                // pass
             break;
             case "MESSAGE_REACTION_ADD":
                 reactionBootstrapper(cache, raw, false);
@@ -408,11 +408,22 @@ export function emojiBootstrapper(cache: SessionCache, emoji: DiscordEmoji, guil
     cache.emojis.set(emoji.id, new GuildEmoji(cache.session, emoji, guildId));
 }
 
-export function DMChannelBootstrapper(cache: SessionCache, channel: DiscordChannel) {
-    cache.dms.set(channel.id, Object.assign(
-        new DMChannel(cache.session, channel),
-        { messages: new StructCache<CachedMessage>(cache.session) }
-    ));
+export function channelBootstrapper(cache: SessionCache, channel: DiscordChannel) {
+    if (!channel.guild_id) return;
+
+    cache.guilds.retrieve(channel.guild_id, (guild) => {
+        if (textBasedChannels.includes(channel.type)) {
+            // deno-lint-ignore no-explicit-any
+            guild.channels.set(channel.id, <any>Object.assign(
+                ChannelFactory.fromGuildChannel(cache.session, channel),
+                { messages: new StructCache<CachedMessage>(cache.session) }
+            ));
+        }
+        else {
+            // deno-lint-ignore no-explicit-any
+            guild.channels.set(channel.id, <any>ChannelFactory.fromGuildChannel(cache.session, channel));
+        }
+    });
 }
 
 export function memberBootstrapper(cache: SessionCache, member: DiscordMemberWithUser, guildId: Snowflake) {
