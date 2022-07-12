@@ -2,11 +2,11 @@
 ## A brand new bleeding edge non bloated Discord library
 
 
-### Install
-```sh
+### Install (node18)
+```sh-session
 npm install @oasisjs/biscuit
 ```
-> or via [cdn](dummy link)
+> or via [cdn](https://nest.land/package/oasis)
 
 The biscuit Discord library is built ontop of Discordeno and webspec APIs, we aim to provide portability.
 
@@ -55,3 +55,15 @@ session.start();
 * Install Deno extension [here](https://marketplace.visualstudio.com/items?itemName=denoland.vscode-deno)
 * Run `deno check` to make sure the library works
 * Avoid sharing state between classes
+
+### Compatibility
+
+#### bun
+since bun is unestable I highly recommend running biscuit on node!
+* We got the library running on EndeavourOS but it spams the ready event multiple times
+* We got the library running on Arch/Artix Linux but breaks when sending fetch requests
+* We got the library running on WSL
+
+#### node
+* all DNT shims work properly
+* a Node version is will to be available soon

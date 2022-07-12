@@ -4,9 +4,6 @@ await Deno.remove('npm', { recursive: true }).catch((_) => {});
 
 await build({
     shims: {
-        undici: true,
-        deno: true,
-        timers: true,
         custom: [
             {
                 package: {
