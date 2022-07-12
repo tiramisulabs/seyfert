@@ -9,6 +9,7 @@ npm install @oasisjs/biscuit
 > or via [cdn](https://nest.land/package/oasis)
 
 The biscuit Discord library is built ontop of Discordeno and webspec APIs, we aim to provide portability.
+Join our [Discord](https://discord.gg/zmuvzzEFz2)
 
 ### Most importantly, biscuit is:
 * A modular [Discordeno](https://github.com/discordeno/discordeno) fork
