@@ -332,3 +332,18 @@ export function STAGE_INSTANCES() {
 export function STAGE_INSTANCE(channelId: Snowflake) {
     return `/stage-instances/${channelId}`;
 }
+
+export function APPLICATION_COMMANDS(appId: Snowflake, commandId?: Snowflake) {
+    if (commandId) return `/applications/${appId}/commands/${commandId}`;
+    return `/applications/${appId}/commands`;
+}
+
+export function GUILD_APPLICATION_COMMANDS(appId: Snowflake, guildId: Snowflake, commandId?: Snowflake) {
+    if (commandId) return `/applications/${appId}/guilds/${guildId}/commands/${commandId}`;
+    return `/applications/${appId}/guilds/${guildId}/commands`;
+}
+
+export function GUILD_APPLICATION_COMMANDS_PERMISSIONS(appId: Snowflake, guildId: Snowflake, commandId?: Snowflake) {
+    if (commandId) return `/applications/${appId}/guilds/${guildId}/commands/${commandId}/permissions`;
+    return `/applications/${appId}/guilds/${guildId}/commands/permissions`;
+}
