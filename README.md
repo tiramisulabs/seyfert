@@ -2,11 +2,13 @@
 ## A brand new bleeding edge non bloated Discord library
 
 
-### Install (node18)
+### Install (for [node18](https://nodejs.org/en/download/))
 ```sh-session
 npm install @oasisjs/biscuit
+pnpm add @oasisjs/biscuit
+yarn add @oasisjs/biscuit
 ```
-> or via [cdn](https://nest.land/package/oasis)
+> or via [cdn](https://nest.land/package/biscuit)
 
 The biscuit Discord library is built ontop of Discordeno and webspec APIs, we aim to provide portability.
 Join our [Discord](https://discord.gg/zmuvzzEFz2)
