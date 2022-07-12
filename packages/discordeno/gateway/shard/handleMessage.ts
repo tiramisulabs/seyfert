@@ -14,7 +14,6 @@ export async function handleMessage(shard: Shard, message_: MessageEvent<any>): 
     // Discord might send zlib compressed payloads.
     if (shard.gatewayConfig.compress && message instanceof Blob) {
         message = decoder.decode(decompressWith(new Uint8Array(await message.arrayBuffer())));
-        console.log(message);
     }
 
     // Safeguard incase decompression failed to make a string.
