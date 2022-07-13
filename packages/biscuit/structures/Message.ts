@@ -161,7 +161,6 @@ export class Message implements Model {
     timestamp: number;
     editedTimestamp?: number;
 
-    /** @deprecated */
     stickers?: StickerItem[];
     reactions: MessageReaction[];
     attachments: Attachment[];
