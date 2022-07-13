@@ -1,6 +1,7 @@
 # biscuit
 
 ## A brand new bleeding edge non bloated Discord library
+<img align="middle" src="https://raw.githubusercontent.com/oasisjs/biscuit/main/assets/biscuit.svg" alt="biscuit" />
 
 ETA: **biscuit will be on the npm registry the next week!**
 
