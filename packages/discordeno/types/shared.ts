@@ -1237,7 +1237,7 @@ export type CamelCase<S extends string> = S extends `${infer P1}_${infer P2}${in
     : Lowercase<S>;
 export type Camelize<T> = {
     [K in keyof T as CamelCase<string & K>]: T[K] extends Array<infer U> ? U extends {} ? Array<Camelize<U>>
-    : T[K]
+        : T[K]
         : T[K] extends {} ? Camelize<T[K]>
         : never;
 };

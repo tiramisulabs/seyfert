@@ -1,6 +1,7 @@
 # biscuit
 
 ## A brand new bleeding edge non bloated Discord library
+
 <img align="middle" src="https://raw.githubusercontent.com/oasisjs/biscuit/main/assets/biscuit.svg" alt="biscuit" />
 
 ETA: **biscuit will be on the npm registry the next week!**
@@ -79,7 +80,8 @@ session.start();
 - We got the library running on WSL (Ubuntu) without any trouble
 
 ### Known issues:
-* some properties may be not implemented yet
-* some structures are not implemented (see https://github.com/oasisjs/biscuit/issues)
-* cache (wip)
-* no optimal way to create embeds, should be fixed in builders tho
+
+- some properties may be not implemented yet
+- some structures are not implemented (see https://github.com/oasisjs/biscuit/issues)
+- cache (wip)
+- no optimal way to create embeds, should be fixed in builders tho

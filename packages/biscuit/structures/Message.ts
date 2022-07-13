@@ -137,9 +137,9 @@ export class Message implements Model {
                 return {
                     id: si.id,
                     name: si.name,
-                    formatType: si.format_type
-                }
-            })
+                    formatType: si.format_type,
+                };
+            });
         }
     }
 
