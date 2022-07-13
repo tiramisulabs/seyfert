@@ -103,7 +103,6 @@ export class Message implements Model {
         this.reactions = data.reactions?.map((react) => new MessageReaction(session, react)) ?? [];
         this.attachments = data.attachments.map((attachment) => new Attachment(session, attachment));
         this.embeds = data.embeds;
-        this.stickers = data.stickers?.map((sticker) => new Sticker(session, sticker)) ?? [];
 
         if (data.thread && data.guild_id) {
             this.thread = new ThreadChannel(session, data.thread, data.guild_id);
@@ -162,6 +161,7 @@ export class Message implements Model {
     timestamp: number;
     editedTimestamp?: number;
 
+    /** @deprecated */
     stickers?: StickerItem[];
     reactions: MessageReaction[];
     attachments: Attachment[];
@@ -169,9 +169,6 @@ export class Message implements Model {
     member?: Member;
     thread?: ThreadChannel;
     components: Component[];
-
-    /** @deprecated */
-    stickers: Sticker[];
 
     webhook?: WebhookAuthor;
     activity?: {

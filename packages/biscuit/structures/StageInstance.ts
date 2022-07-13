@@ -4,7 +4,7 @@ import type { Snowflake } from "../Snowflake.ts";
 import type { DiscordStageInstance as DiscordAutoClosingStageInstance } from "../../discordeno/mod.ts";
 import * as Routes from "../Routes.ts";
 
-interface DiscordStageInstance extends DiscordAutoClosingStageInstance {
+export interface DiscordStageInstanceB extends DiscordAutoClosingStageInstance {
     privacy_level: PrivacyLevels;
     discoverable_disabled: boolean;
     guild_scheduled_event_id: Snowflake;
@@ -16,7 +16,7 @@ export enum PrivacyLevels {
 }
 
 export class StageInstance implements Model {
-    constructor(session: Session, data: DiscordStageInstance) {
+    constructor(session: Session, data: DiscordStageInstanceB) {
         this.session = session;
         this.id = data.id;
         this.channelId = data.channel_id;
@@ -40,7 +40,7 @@ export class StageInstance implements Model {
     guildScheduledEventId: Snowflake;
 
     async edit(options: { topic?: string; privacyLevel?: PrivacyLevels }) {
-        const stageInstance = await this.session.rest.runMethod<DiscordStageInstance>(
+        const stageInstance = await this.session.rest.runMethod<DiscordStageInstanceB>(
             this.session.rest,
             "PATCH",
             Routes.STAGE_INSTANCE(this.id),

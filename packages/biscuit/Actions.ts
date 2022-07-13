@@ -46,7 +46,7 @@ import type { Interaction } from "./structures/interactions/InteractionFactory.t
 import { AutoModerationRule } from "./structures/AutoModerationRule.ts";
 import { AutoModerationExecution } from "./structures/AutoModerationExecution.ts";
 import { type Channel, ChannelFactory, GuildChannel, ThreadChannel } from "./structures/channels.ts";
-import { type DiscordStageInstance, StageInstance } from "./structures/StageInstance.ts";
+import { type DiscordStageInstanceB, StageInstance } from "./structures/StageInstance.ts";
 import { ScheduledEvent } from "./structures/GuildScheduledEvent.ts";
 import { Presence } from "./structures/Presence.ts";
 
@@ -55,7 +55,7 @@ import Member from "./structures/Member.ts";
 import Message from "./structures/Message.ts";
 import User from "./structures/User.ts";
 import Integration from "./structures/Integration.ts";
-import Guild from "./structures/guilds/Guild.ts";
+import { Guild } from "./structures/guilds.ts";
 import InteractionFactory from "./structures/interactions/InteractionFactory.ts";
 import { InviteCreate, NewInviteCreate } from "./structures/Invite.ts";
 import {
@@ -325,15 +325,15 @@ export const INVITE_DELETE: RawHandler<DiscordInviteDelete> = (session, _shardId
     session.emit("inviteDelete", { channelId: data.channel_id, guildId: data.guild_id, code: data.code });
 };
 
-export const STAGE_INSTANCE_CREATE: RawHandler<DiscordStageInstance> = (session, _shardId, payload) => {
+export const STAGE_INSTANCE_CREATE: RawHandler<DiscordStageInstanceB> = (session, _shardId, payload) => {
     session.emit("stageInstanceCreate", new StageInstance(session, payload));
 };
 
-export const STAGE_INSTANCE_UPDATE: RawHandler<DiscordStageInstance> = (session, _shardId, payload) => {
+export const STAGE_INSTANCE_UPDATE: RawHandler<DiscordStageInstanceB> = (session, _shardId, payload) => {
     session.emit("stageInstanceUpdate", new StageInstance(session, payload));
 };
 
-export const STAGE_INSTANCE_DELETE: RawHandler<DiscordStageInstance> = (session, _shardId, payload) => {
+export const STAGE_INSTANCE_DELETE: RawHandler<DiscordStageInstanceB> = (session, _shardId, payload) => {
     session.emit("stageInstanceDelete", new StageInstance(session, payload));
 };
 
