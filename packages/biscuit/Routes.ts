@@ -376,3 +376,16 @@ export function GUILD_APPLICATION_COMMANDS_LOCALIZATIONS(
 
     return url;
 }
+
+export function STICKER(id: Snowflake) {
+    return `stickers/${id}`;
+}
+
+export function STICKER_PACKS() {
+    return `stickers-packs`;
+}
+
+export function GUILD_STICKERS(guildId: Snowflake, stickerId?: Snowflake) {
+    if (stickerId) return `/guilds/${guildId}/stickers/${stickerId}`;
+    return `/guilds/${guildId}/stickers`;
+}
