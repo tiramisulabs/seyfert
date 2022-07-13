@@ -23,14 +23,14 @@ await build({
         author: "Yuzuru",
         name: "@oasisjs/biscuit",
         version: Deno.args[0],
-        description: "the Biscuit library",
+        description: " brand new bleeding edge non bloated Discord library",
         license: "Apache License 2.0",
         repository: {
             type: "git",
-            url: "git+https://github.com/deno-biscuit/biscuit.git",
+            url: "git+https://github.com/oasisjs/biscuit.git",
         },
         bugs: {
-            url: "https://github.com/deno-biscuit/biscuit/issues",
+            url: "https://github.com/oasisjs/biscuit/issues",
         },
         typesVersions: {
             "*": {
