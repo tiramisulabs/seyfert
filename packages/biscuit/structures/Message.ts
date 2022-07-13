@@ -8,6 +8,7 @@ import type {
     FileContent,
     MessageActivityTypes,
     MessageTypes,
+    DiscordMessageComponents
 } from "../../discordeno/mod.ts";
 import type { Component } from "./components/Component.ts";
 import type { GetReactions } from "../Routes.ts";
@@ -20,7 +21,6 @@ import Member from "./Member.ts";
 import Attachment from "./Attachment.ts";
 import ComponentFactory from "./components/ComponentFactory.ts";
 import MessageReaction from "./MessageReaction.ts";
-import Sticker from "./Sticker.ts";
 import * as Routes from "../Routes.ts";
 import { StickerItem } from "./Sticker.ts";
 
@@ -51,6 +51,7 @@ export interface CreateMessage {
     files?: FileContent[];
     messageReference?: CreateMessageReference;
     tts?: boolean;
+    components?: DiscordMessageComponents;
 }
 
 /**
@@ -290,6 +291,7 @@ export class Message implements Model {
                     : undefined,
                 embeds: options.embeds,
                 tts: options.tts,
+                components: options.components,
             },
         );
 

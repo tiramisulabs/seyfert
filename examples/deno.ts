@@ -22,11 +22,11 @@ session.on("ready", (payload) => {
 const PREFIX = ">";
 
 session.on("messageCreate", (message) => {
-    if (message.author.bot || message.content.startsWith(PREFIX)) {
+    if (message.author?.bot || !message.content.startsWith(PREFIX)) {
         return;
     }
 
-    const args = message.content.slice(PREFIX.length).trim().split(/\s+/gm);
+    const args = message.content.substring(PREFIX.length).trim().split(/\s+/gm);
     const name = args.shift()?.toLowerCase();
 
     if (name === "ping") {

@@ -39,6 +39,6 @@ export class ButtonBuilder {
     }
 
     toJSON(): DiscordButtonComponent {
-        return { ...this.#data };
+        return { ...this.#data, type: this.type };
     }
 }
