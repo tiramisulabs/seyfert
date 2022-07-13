@@ -14,9 +14,8 @@ import type {
 import { TargetTypes } from "../../discordeno/mod.ts";
 import { GuildChannel } from "./channels.ts";
 import { Member } from "./Member.ts";
-import InviteGuild from "./guilds/InviteGuild.ts";
+import { InviteGuild, Guild } from "./guilds.ts";
 import User from "./User.ts";
-import Guild from "./guilds/Guild.ts";
 import Application from "./Application.ts";
 
 export interface InviteStageInstance {

@@ -4,7 +4,7 @@ import type { Session } from "../Session.ts";
 import { Snowflake } from "../Snowflake.ts";
 import Permissions from "./Permissions.ts";
 import Util from "../Util.ts";
-import Guild, { type ModifyGuildRole } from "./guilds/Guild.ts";
+import { Guild, ModifyGuildRole } from "./guilds.ts";
 
 export class Role implements Model {
     constructor(session: Session, data: DiscordRole, guildId: Snowflake) {
