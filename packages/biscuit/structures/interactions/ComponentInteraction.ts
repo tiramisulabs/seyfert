@@ -2,7 +2,9 @@ import type { Model } from "../Base.ts";
 import type { Snowflake } from "../../Snowflake.ts";
 import type { Session } from "../../Session.ts";
 import type { DiscordInteraction, InteractionTypes } from "../../../discordeno/mod.ts";
+import type { InteractionResponse, InteractionApplicationCommandCallbackData } from "./CommandInteraction.ts";
 import { MessageComponentTypes } from "../../../discordeno/mod.ts";
+import CommandInteraction from "./CommandInteraction.ts";
 import BaseInteraction from "./BaseInteraction.ts";
 import Message from "../Message.ts";
 
@@ -39,6 +41,14 @@ export class ComponentInteraction extends BaseInteraction implements Model {
 
     isSelectMenu() {
         return this.componentType === MessageComponentTypes.SelectMenu;
+    }
+
+    sendFollowUp(options: InteractionApplicationCommandCallbackData) {
+        return CommandInteraction.prototype.sendFollowUp.call(this, options);
+    }
+
+    respond(options: InteractionResponse): Promise<Message | undefined> {
+        return CommandInteraction.prototype.respond.call(this, options);
     }
 }
 

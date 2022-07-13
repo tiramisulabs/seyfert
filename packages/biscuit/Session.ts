@@ -1,15 +1,83 @@
-import type { DiscordGetGatewayBot, GatewayBot, GatewayIntents } from "../discordeno/mod.ts";
+import type {
+    ApplicationCommandPermissionTypes,
+    AtLeastOne,
+    Localization,
+    DiscordApplicationCommand,
+    DiscordApplicationCommandOption,
+    DiscordGuildApplicationCommandPermissions,
+    DiscordGetGatewayBot,
+    GatewayBot,
+    GatewayIntents,
+} from "../discordeno/mod.ts";
+
 import type { DiscordGatewayPayload, Shard } from "../discordeno/mod.ts";
 import type { Events } from "./Actions.ts";
+import type { PermissionResolvable } from "./structures/Permissions.ts";
 
+import { Permissions } from "./structures/Permissions.ts";
 import { Snowflake } from "./Snowflake.ts";
 import { EventEmitter } from "./util/EventEmmiter.ts";
-import { createGatewayManager, createRestManager, getBotIdFromToken } from "../discordeno/mod.ts";
+import { ApplicationCommandTypes, createGatewayManager, createRestManager, getBotIdFromToken } from "../discordeno/mod.ts";
 
 import * as Routes from "./Routes.ts";
 import * as Actions from "./Actions.ts";
 
 export type DiscordRawEventHandler = (shard: Shard, data: DiscordGatewayPayload) => unknown;
+
+// INTERACTIONS
+
+/**
+ * @link https://discord.com/developers/docs/interactions/application-commands#endpoints-json-params
+ * */
+export interface CreateApplicationCommand {
+  name: string;
+  nameLocalizations?: Localization;
+  description: string;
+  descriptionLocalizations?: Localization;
+  type?: ApplicationCommandTypes;
+  options?: DiscordApplicationCommandOption[];
+  defaultMemberPermissions?: PermissionResolvable;
+  dmPermission?: boolean;
+}
+
+/**
+ * @link https://discord.com/developers/docs/interactions/application-commands#endpoints-json-params
+ * */
+export interface CreateContextApplicationCommand extends Omit<CreateApplicationCommand, "options"> {
+  type: ApplicationCommandTypes.Message | ApplicationCommandTypes.User;
+}
+
+/**
+ * @link https://discord.com/developers/docs/interactions/application-commands#endpoints-query-string-params
+ * */
+export interface GetApplicationCommand {
+    guildId?: Snowflake;
+    withLocalizations?: boolean;
+}
+
+export interface UpsertApplicationCommands extends CreateApplicationCommand {
+    id?: Snowflake;
+}
+
+/**
+ * @link https://discord.com/developers/docs/interactions/application-commands#edit-application-command-permissions
+ * */
+export interface ApplicationCommandPermissions {
+    id: Snowflake;
+    type: ApplicationCommandPermissionTypes;
+    permission: boolean;
+}
+
+/**
+ * @link https://discord.com/developers/docs/interactions/application-commands#edit-application-command-permissions
+ * */
+export interface ApplicationCommandPermissions {
+  id: Snowflake;
+  type: ApplicationCommandPermissionTypes;
+  permission: boolean;
+}
+
+// END INTERACTIONS
 
 export interface RestOptions {
     secretKey?: string;
@@ -31,11 +99,11 @@ export interface SessionOptions {
 
 /**
  * Receives a Token, connects
+ * Most of the command implementations were adapted from Discordeno (https://github.com/discordeno/discordeno)
  */
 export class Session extends EventEmitter {
     options: SessionOptions;
 
-    // TODO: improve this with CreateShardManager etc
     rest: ReturnType<typeof createRestManager>;
     gateway: ReturnType<typeof createGatewayManager>;
 
@@ -112,6 +180,142 @@ export class Session extends EventEmitter {
     override emit<K extends keyof Events>(event: K, ...params: Parameters<Events[K]>): boolean;
     override emit<K extends string>(event: K, ...params: unknown[]): boolean {
         return super.emit(event, ...params);
+    }
+
+    createApplicationCommand(options: CreateApplicationCommand | CreateContextApplicationCommand, guildId: Snowflake) {
+        return this.rest.runMethod<DiscordApplicationCommand>(
+            this.rest,
+            "POST",
+            guildId
+                ? Routes.GUILD_APPLICATION_COMMANDS(this.applicationId, guildId)
+                : Routes.APPLICATION_COMMANDS(this.applicationId),
+            this.isContextApplicationCommand(options) ? {
+                name: options.name,
+                name_localizations: options.nameLocalizations,
+                type: options.type,
+            } : {
+                name: options.name,
+                name_localizations: options.nameLocalizations,
+                description: options.description,
+                description_localizations: options.descriptionLocalizations,
+                type: options.type,
+                options: options.options,
+                default_member_permissions: options.defaultMemberPermissions
+                    ? new Permissions(options.defaultMemberPermissions).bitfield.toString()
+                    : undefined,
+                dm_permission: options.dmPermission,
+            },
+        );
+    }
+
+    deleteApplicationCommand(id: Snowflake, guildId?: Snowflake) {
+        return this.rest.runMethod<undefined>(
+            this.rest,
+            "DELETE",
+            guildId
+                ? Routes.GUILD_APPLICATION_COMMANDS(this.applicationId, guildId, id)
+                : Routes.APPLICATION_COMMANDS(this.applicationId, id),
+        );
+    }
+
+    updateApplicationCommandPermissions(
+        guildId: Snowflake,
+        id: Snowflake,
+        bearerToken: string,
+        options: ApplicationCommandPermissions[],
+    ) {
+        return this.rest.runMethod<DiscordGuildApplicationCommandPermissions>(
+            this.rest,
+            "PUT",
+            Routes.GUILD_APPLICATION_COMMANDS_PERMISSIONS(this.applicationId, guildId, id),
+            {
+                permissions: options,
+            },
+            {
+                headers: { authorization: `Bearer ${bearerToken}` }
+            }
+        );
+    }
+
+    fetchApplicationCommand(id: Snowflake, options?: GetApplicationCommand) {
+        return this.rest.runMethod<DiscordApplicationCommand>(
+            this.rest,
+            "GET",
+            options?.guildId
+                ? Routes.GUILD_APPLICATION_COMMANDS_LOCALIZATIONS(
+                    this.applicationId,
+                    options.guildId,
+                    id,
+                    options?.withLocalizations,
+                )
+                : Routes.APPLICATION_COMMANDS(this.applicationId, id),
+        );
+    }
+
+    fetchApplicationCommandPermissions(guildId: Snowflake) {
+        return this.rest.runMethod<DiscordGuildApplicationCommandPermissions[]>(
+            this.rest,
+            "GET",
+            Routes.GUILD_APPLICATION_COMMANDS_PERMISSIONS(this.applicationId, guildId),
+        );
+    }
+
+    fetchApplicationCommandPermission(guildId: Snowflake, id: Snowflake) {
+        return this.rest.runMethod<DiscordGuildApplicationCommandPermissions>(
+            this.rest,
+            "GET",
+            Routes.GUILD_APPLICATION_COMMANDS_PERMISSIONS(this.applicationId, guildId, id),
+        );
+    }
+
+    upsertApplicationCommand(
+        id: Snowflake,
+        options: AtLeastOne<CreateApplicationCommand> | AtLeastOne<CreateContextApplicationCommand>,
+        guildId?: Snowflake,
+    ) {
+        return this.rest.runMethod<DiscordApplicationCommand>(
+            this.rest,
+            "PATCH",
+            guildId
+                ? Routes.GUILD_APPLICATION_COMMANDS(this.applicationId, guildId)
+                : Routes.APPLICATION_COMMANDS(this.applicationId, id),
+            this.isContextApplicationCommand(options) ? {
+                    name: options.name,
+                    type: options.type,
+                } : {
+                    name: options.name,
+                    description: options.description,
+                    type: options.type,
+                    options: options.options,
+                },
+        );
+    }
+
+    upsertApplicationCommands(options: Array<UpsertApplicationCommands | CreateContextApplicationCommand>, guildId?: Snowflake) {
+        return this.rest.runMethod<DiscordApplicationCommand[]>(
+            this.rest,
+            "PUT",
+            guildId
+                ? Routes.GUILD_APPLICATION_COMMANDS(this.applicationId, guildId)
+                : Routes.APPLICATION_COMMANDS(this.applicationId),
+            options.map((o) => this.isContextApplicationCommand(o) ? {
+                    name: o.name,
+                    type: o.type,
+                } : {
+                    name: o.name,
+                    description: o.description,
+                    type: o.type,
+                    options: o.options,
+                }
+            ),
+        );
+    }
+
+    fetchCommands() {}
+
+    // deno-fmt-ignore
+    isContextApplicationCommand(cmd: AtLeastOne<CreateContextApplicationCommand> | AtLeastOne<CreateApplicationCommand>): cmd is AtLeastOne<CreateContextApplicationCommand> {
+        return cmd.type === ApplicationCommandTypes.Message || cmd.type === ApplicationCommandTypes.User;
     }
 
     async start() {

@@ -134,7 +134,7 @@ export class CommandInteraction extends BaseInteraction implements Model {
             title: options?.title,
         };
 
-        if (!this.respond) {
+        if (!this.responded) {
             await this.session.rest.sendRequest<undefined>(this.session.rest, {
                 url: Routes.INTERACTION_ID_TOKEN(this.id, this.token),
                 method: "POST",

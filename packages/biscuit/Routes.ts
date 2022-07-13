@@ -347,3 +347,24 @@ export function GUILD_APPLICATION_COMMANDS_PERMISSIONS(appId: Snowflake, guildId
     if (commandId) return `/applications/${appId}/guilds/${guildId}/commands/${commandId}/permissions`;
     return `/applications/${appId}/guilds/${guildId}/commands/permissions`;
 }
+
+
+export function APPLICATION_COMMANDS_LOCALIZATIONS(appId: Snowflake, commandId: Snowflake, withLocalizations?: boolean) {
+    let url = `/applications/${appId}/commands/${commandId}?`;
+
+    if (withLocalizations !== undefined) {
+        url += `withLocalizations=${withLocalizations}`;
+    }
+
+    return url;
+}
+
+export function GUILD_APPLICATION_COMMANDS_LOCALIZATIONS(appId: Snowflake, guildId: Snowflake, commandId: Snowflake, withLocalizations?: boolean) {
+    let url = `/applications/${appId}/guilds/${guildId}/commands/${commandId}?`;
+
+    if (withLocalizations !== undefined) {
+        url += `with_localizations=${withLocalizations}`;
+    }
+
+    return url;
+}
