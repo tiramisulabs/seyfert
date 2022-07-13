@@ -20,6 +20,7 @@ export * from "./structures/Permissions.ts";
 export * from "./structures/Presence.ts";
 export * from "./structures/Role.ts";
 export * from "./structures/StageInstance.ts";
+export * from "./structures/Sticker.ts";
 export * from "./structures/ThreadMember.ts";
 export * from "./structures/User.ts";
 export * from "./structures/Webhook.ts";

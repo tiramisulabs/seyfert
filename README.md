@@ -78,7 +78,7 @@ session.start();
 - We got the library running on WSL (Ubuntu) without any trouble
 
 ### Known issues:
-* some properties may be not implemented yet (eg: Message.stickers)
+* some properties may be not implemented yet
 * some structures are not implemented (see https://github.com/oasisjs/biscuit/issues)
 * cache (wip)
 * no optimal way to create embeds, should be fixed in builders tho

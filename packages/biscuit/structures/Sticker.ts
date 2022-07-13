@@ -1,5 +1,5 @@
 import type { DiscordSticker, DiscordStickerPack, StickerFormatTypes, StickerTypes } from "../../discordeno/mod.ts";
-import { Model } from "./Base.ts";
+import type { Model } from "./Base.ts";
 import type { Snowflake } from "../Snowflake.ts";
 import type { Session } from "../Session.ts";
 import { User } from "./User.ts";
@@ -66,3 +66,5 @@ export class Sticker implements Model {
         };
     }
 }
+
+export default Sticker;
