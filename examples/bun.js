@@ -1,3 +1,4 @@
+// TODO: remove and include the library appropriately
 import { GatewayIntents, Session } from "./deps.ts";
 
 const token = process.env.TOKEN;
