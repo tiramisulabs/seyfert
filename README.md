@@ -2,6 +2,8 @@
 
 ## A brand new bleeding edge non bloated Discord library
 
+ETA: **biscuit will be on the npm registry the next week!**
+
 ### Install (for [node18](https://nodejs.org/en/download/))
 
 ```sh-session
@@ -67,16 +69,9 @@ session.start();
 - Run `deno check` to make sure the library works
 - Avoid sharing state between classes
 
-### Compatibility
-
-#### bun
-
-since bun is unestable I highly recommend running biscuit on node!
-
+### Compatibility (bun)
+**⚠️ DISCLAIMER:** since bun is unestable I highly recommend running biscuit on node!
 - We got the library running on EndeavourOS but it spams the ready event multiple times
 - We got the library running on Arch/Artix Linux but breaks when sending fetch requests
-- We got the library running on WSL
+- We got the library running on WSL (Ubuntu) without any trouble
 
-#### node
-
-- all DNT shims work properly
