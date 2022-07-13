@@ -21,6 +21,7 @@ import Attachment from "./Attachment.ts";
 import ComponentFactory from "./components/ComponentFactory.ts";
 import MessageReaction from "./MessageReaction.ts";
 import * as Routes from "../Routes.ts";
+import { StickerItem } from "./Sticker.ts";
 
 /**
  * @link https://discord.com/developers/docs/resources/channel#allowed-mentions-object
@@ -129,6 +130,16 @@ export class Message implements Model {
                 type: data.activity.type,
             };
         }
+
+        if (data.sticker_items) {
+            this.stickers = data.sticker_items.map((si) => {
+                return {
+                    id: si.id,
+                    name: si.name,
+                    formatType: si.format_type
+                }
+            })
+        }
     }
 
     readonly session: Session;
@@ -149,6 +160,7 @@ export class Message implements Model {
     timestamp: number;
     editedTimestamp?: number;
 
+    stickers?: StickerItem[];
     reactions: MessageReaction[];
     attachments: Attachment[];
     embeds: DiscordEmbed[];
