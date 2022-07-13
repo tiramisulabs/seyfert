@@ -1,6 +1,5 @@
 import { DiscordGatewayPayload } from "../../types/discord.ts";
 import { PickPartial } from "../../types/shared.ts";
-import { Collection } from "../../util/collection.ts";
 import { CreateShard, createShard } from "../shard/createShard.ts";
 import { Shard, ShardGatewayConfig } from "../shard/types.ts";
 
@@ -33,7 +32,7 @@ export function createShardManager(options: CreateShardManager) {
         /** Gateway configuration which is used when creating a Shard. */
         gatewayConfig: options.gatewayConfig,
         /** Managed Shards. */
-        shards: new Collection(
+        shards: new Map(
             options.shardIds.map((shardId) => {
                 const shard = createShard({
                     ...options.createShardOptions,
