@@ -25,7 +25,7 @@ The biscuit Discord library is built ontop of Discordeno and webspec APIs, we ai
 - A framework to build Discord bots
 - A bleeding edge API to contact Discord
 
-Biscuit is primarly inspired by Discord.js and Discordeno but it does not include a cache layer by default, we believe
+Biscuit is primarily inspired by Discord.js and Discordeno but it does not include a cache layer by default, we believe
 that you should not make software that does things it is not supposed to do.
 
 ### Why biscuit?:
@@ -73,7 +73,7 @@ session.start();
 
 ### Compatibility (bun)
 
-**⚠️ DISCLAIMER:** since bun is unestable I highly recommend running biscuit on node!
+**⚠️ DISCLAIMER:** since bun is unstable I highly recommend running biscuit on node!
 
 - We got the library running on EndeavourOS but it spams the ready event multiple times
 - We got the library running on Arch/Artix Linux but breaks when sending fetch requests
