@@ -36,7 +36,7 @@ that you should not make software that does things it is not supposed to do.
 ### Example bot (TS/JS)
 
 ```js
-import { GatewayIntents, Session } from "biscuit";
+import { GatewayIntents, Session } from "@oasisjs/biscuit";
 
 const token = "your token goes here";
 
@@ -76,3 +76,9 @@ session.start();
 - We got the library running on EndeavourOS but it spams the ready event multiple times
 - We got the library running on Arch/Artix Linux but breaks when sending fetch requests
 - We got the library running on WSL (Ubuntu) without any trouble
+
+### Known issues:
+* some properties may be not implemented yet (eg: Message.stickers)
+* some structures are not implemented (see https://github.com/oasisjs/biscuit/issues)
+* cache (wip)
+* no optimal way to create embeds, should be fixed in builders tho

@@ -2,18 +2,27 @@
 import { Session } from "./Session.ts";
 export default Session;
 
+export * from "./structures/Application.ts";
 export * from "./structures/Attachment.ts";
+export * from "./structures/AutoModerationExecution.ts";
+export * from "./structures/AutoModerationRule.ts";
 export * from "./structures/Base.ts";
 export * from "./structures/Embed.ts";
 export * from "./structures/Emoji.ts";
 export * from "./structures/GuildEmoji.ts";
+export * from "./structures/GuildScheduledEvent.ts";
+export * from "./structures/Integration.ts";
 export * from "./structures/Invite.ts";
 export * from "./structures/Member.ts";
 export * from "./structures/Message.ts";
 export * from "./structures/MessageReaction.ts";
 export * from "./structures/Permissions.ts";
+export * from "./structures/Presence.ts";
 export * from "./structures/Role.ts";
+export * from "./structures/StageInstance.ts";
+export * from "./structures/ThreadMember.ts";
 export * from "./structures/User.ts";
+export * from "./structures/Webhook.ts";
 export * from "./structures/WelcomeChannel.ts";
 export * from "./structures/WelcomeScreen.ts";
 
