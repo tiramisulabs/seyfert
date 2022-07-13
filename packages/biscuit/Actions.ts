@@ -375,9 +375,6 @@ export interface Ready extends Omit<DiscordReady, "user"> {
     user: User;
 }
 
-// TODO: add partial reactions or something
-type MessageReaction = any;
-
 // deno-fmt-ignore-file
 export interface Events {
     "ready":                      Handler<[Ready, number]>;
