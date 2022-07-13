@@ -7,3 +7,8 @@ npm/
 
 # etc
 .env
+
+# Examples
+node_modules/
+package-lock.json
+package.json
