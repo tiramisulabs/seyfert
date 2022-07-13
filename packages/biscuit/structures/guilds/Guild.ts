@@ -499,13 +499,13 @@ export class Guild extends BaseGuild implements Model {
         };
     }
 
-    /***
+    /** *
      * Makes the bot leave the guild
      */
     async leave() {
     }
 
-    /***
+    /** *
      * Deletes a guild
      */
     async delete() {
@@ -579,9 +579,8 @@ export class Guild extends BaseGuild implements Model {
             splash: "splashURL" in options
                 ? options.splashURL || urlToBase64(options.splashURL!)
                 : options.splashHash || Util.iconBigintToHash(options.iconHash!),
-            banner: "bannerURL" in options
-                ? options.bannerURL || urlToBase64(options.bannerURL!)
-                : options.bannerHash || Util.iconBigintToHash(options.bannerHash!),
+            banner: "bannerURL" in options ? options.bannerURL || urlToBase64(options.bannerURL!)
+            : options.bannerHash || Util.iconBigintToHash(options.bannerHash!),
             discovery_splash: "discoverySplashURL" in options
                 ? options.discoverySplashURL || urlToBase64(options.discoverySplashURL!)
                 : options.discoverySplashHash || Util.iconBigintToHash(options.discoverySplashHash!),

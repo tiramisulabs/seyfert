@@ -348,8 +348,11 @@ export function GUILD_APPLICATION_COMMANDS_PERMISSIONS(appId: Snowflake, guildId
     return `/applications/${appId}/guilds/${guildId}/commands/permissions`;
 }
 
-
-export function APPLICATION_COMMANDS_LOCALIZATIONS(appId: Snowflake, commandId: Snowflake, withLocalizations?: boolean) {
+export function APPLICATION_COMMANDS_LOCALIZATIONS(
+    appId: Snowflake,
+    commandId: Snowflake,
+    withLocalizations?: boolean,
+) {
     let url = `/applications/${appId}/commands/${commandId}?`;
 
     if (withLocalizations !== undefined) {
@@ -359,7 +362,12 @@ export function APPLICATION_COMMANDS_LOCALIZATIONS(appId: Snowflake, commandId: 
     return url;
 }
 
-export function GUILD_APPLICATION_COMMANDS_LOCALIZATIONS(appId: Snowflake, guildId: Snowflake, commandId: Snowflake, withLocalizations?: boolean) {
+export function GUILD_APPLICATION_COMMANDS_LOCALIZATIONS(
+    appId: Snowflake,
+    guildId: Snowflake,
+    commandId: Snowflake,
+    withLocalizations?: boolean,
+) {
     let url = `/applications/${appId}/guilds/${guildId}/commands/${commandId}?`;
 
     if (withLocalizations !== undefined) {

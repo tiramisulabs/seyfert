@@ -2,7 +2,7 @@ import type { Model } from "../Base.ts";
 import type { Snowflake } from "../../Snowflake.ts";
 import type { Session } from "../../Session.ts";
 import type { DiscordInteraction, InteractionTypes } from "../../../discordeno/mod.ts";
-import type { InteractionResponse, InteractionApplicationCommandCallbackData } from "./CommandInteraction.ts";
+import type { InteractionApplicationCommandCallbackData, InteractionResponse } from "./CommandInteraction.ts";
 import { MessageComponentTypes } from "../../../discordeno/mod.ts";
 import CommandInteraction from "./CommandInteraction.ts";
 import BaseInteraction from "./BaseInteraction.ts";

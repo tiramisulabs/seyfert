@@ -1,13 +1,13 @@
 import type {
     ApplicationCommandPermissionTypes,
     AtLeastOne,
-    Localization,
     DiscordApplicationCommand,
     DiscordApplicationCommandOption,
-    DiscordGuildApplicationCommandPermissions,
     DiscordGetGatewayBot,
+    DiscordGuildApplicationCommandPermissions,
     GatewayBot,
     GatewayIntents,
+    Localization,
 } from "../discordeno/mod.ts";
 
 import type { DiscordGatewayPayload, Shard } from "../discordeno/mod.ts";
@@ -17,7 +17,12 @@ import type { PermissionResolvable } from "./structures/Permissions.ts";
 import { Permissions } from "./structures/Permissions.ts";
 import { Snowflake } from "./Snowflake.ts";
 import { EventEmitter } from "./util/EventEmmiter.ts";
-import { ApplicationCommandTypes, createGatewayManager, createRestManager, getBotIdFromToken } from "../discordeno/mod.ts";
+import {
+    ApplicationCommandTypes,
+    createGatewayManager,
+    createRestManager,
+    getBotIdFromToken,
+} from "../discordeno/mod.ts";
 
 import * as Routes from "./Routes.ts";
 import * as Actions from "./Actions.ts";
@@ -28,28 +33,28 @@ export type DiscordRawEventHandler = (shard: Shard, data: DiscordGatewayPayload)
 
 /**
  * @link https://discord.com/developers/docs/interactions/application-commands#endpoints-json-params
- * */
+ */
 export interface CreateApplicationCommand {
-  name: string;
-  nameLocalizations?: Localization;
-  description: string;
-  descriptionLocalizations?: Localization;
-  type?: ApplicationCommandTypes;
-  options?: DiscordApplicationCommandOption[];
-  defaultMemberPermissions?: PermissionResolvable;
-  dmPermission?: boolean;
+    name: string;
+    nameLocalizations?: Localization;
+    description: string;
+    descriptionLocalizations?: Localization;
+    type?: ApplicationCommandTypes;
+    options?: DiscordApplicationCommandOption[];
+    defaultMemberPermissions?: PermissionResolvable;
+    dmPermission?: boolean;
 }
 
 /**
  * @link https://discord.com/developers/docs/interactions/application-commands#endpoints-json-params
- * */
+ */
 export interface CreateContextApplicationCommand extends Omit<CreateApplicationCommand, "options"> {
-  type: ApplicationCommandTypes.Message | ApplicationCommandTypes.User;
+    type: ApplicationCommandTypes.Message | ApplicationCommandTypes.User;
 }
 
 /**
  * @link https://discord.com/developers/docs/interactions/application-commands#endpoints-query-string-params
- * */
+ */
 export interface GetApplicationCommand {
     guildId?: Snowflake;
     withLocalizations?: boolean;
@@ -61,7 +66,7 @@ export interface UpsertApplicationCommands extends CreateApplicationCommand {
 
 /**
  * @link https://discord.com/developers/docs/interactions/application-commands#edit-application-command-permissions
- * */
+ */
 export interface ApplicationCommandPermissions {
     id: Snowflake;
     type: ApplicationCommandPermissionTypes;
@@ -70,11 +75,11 @@ export interface ApplicationCommandPermissions {
 
 /**
  * @link https://discord.com/developers/docs/interactions/application-commands#edit-application-command-permissions
- * */
+ */
 export interface ApplicationCommandPermissions {
-  id: Snowflake;
-  type: ApplicationCommandPermissionTypes;
-  permission: boolean;
+    id: Snowflake;
+    type: ApplicationCommandPermissionTypes;
+    permission: boolean;
 }
 
 // END INTERACTIONS
@@ -189,22 +194,24 @@ export class Session extends EventEmitter {
             guildId
                 ? Routes.GUILD_APPLICATION_COMMANDS(this.applicationId, guildId)
                 : Routes.APPLICATION_COMMANDS(this.applicationId),
-            this.isContextApplicationCommand(options) ? {
-                name: options.name,
-                name_localizations: options.nameLocalizations,
-                type: options.type,
-            } : {
-                name: options.name,
-                name_localizations: options.nameLocalizations,
-                description: options.description,
-                description_localizations: options.descriptionLocalizations,
-                type: options.type,
-                options: options.options,
-                default_member_permissions: options.defaultMemberPermissions
-                    ? new Permissions(options.defaultMemberPermissions).bitfield.toString()
-                    : undefined,
-                dm_permission: options.dmPermission,
-            },
+            this.isContextApplicationCommand(options)
+                ? {
+                    name: options.name,
+                    name_localizations: options.nameLocalizations,
+                    type: options.type,
+                }
+                : {
+                    name: options.name,
+                    name_localizations: options.nameLocalizations,
+                    description: options.description,
+                    description_localizations: options.descriptionLocalizations,
+                    type: options.type,
+                    options: options.options,
+                    default_member_permissions: options.defaultMemberPermissions
+                        ? new Permissions(options.defaultMemberPermissions).bitfield.toString()
+                        : undefined,
+                    dm_permission: options.dmPermission,
+                },
         );
     }
 
@@ -232,8 +239,8 @@ export class Session extends EventEmitter {
                 permissions: options,
             },
             {
-                headers: { authorization: `Bearer ${bearerToken}` }
-            }
+                headers: { authorization: `Bearer ${bearerToken}` },
+            },
         );
     }
 
@@ -279,10 +286,12 @@ export class Session extends EventEmitter {
             guildId
                 ? Routes.GUILD_APPLICATION_COMMANDS(this.applicationId, guildId)
                 : Routes.APPLICATION_COMMANDS(this.applicationId, id),
-            this.isContextApplicationCommand(options) ? {
+            this.isContextApplicationCommand(options)
+                ? {
                     name: options.name,
                     type: options.type,
-                } : {
+                }
+                : {
                     name: options.name,
                     description: options.description,
                     type: options.type,
@@ -291,22 +300,28 @@ export class Session extends EventEmitter {
         );
     }
 
-    upsertApplicationCommands(options: Array<UpsertApplicationCommands | CreateContextApplicationCommand>, guildId?: Snowflake) {
+    upsertApplicationCommands(
+        options: Array<UpsertApplicationCommands | CreateContextApplicationCommand>,
+        guildId?: Snowflake,
+    ) {
         return this.rest.runMethod<DiscordApplicationCommand[]>(
             this.rest,
             "PUT",
             guildId
                 ? Routes.GUILD_APPLICATION_COMMANDS(this.applicationId, guildId)
                 : Routes.APPLICATION_COMMANDS(this.applicationId),
-            options.map((o) => this.isContextApplicationCommand(o) ? {
-                    name: o.name,
-                    type: o.type,
-                } : {
-                    name: o.name,
-                    description: o.description,
-                    type: o.type,
-                    options: o.options,
-                }
+            options.map((o) =>
+                this.isContextApplicationCommand(o)
+                    ? {
+                        name: o.name,
+                        type: o.type,
+                    }
+                    : {
+                        name: o.name,
+                        description: o.description,
+                        type: o.type,
+                        options: o.options,
+                    }
             ),
         );
     }

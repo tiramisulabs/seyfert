@@ -58,7 +58,13 @@ import Integration from "./structures/Integration.ts";
 import Guild from "./structures/guilds/Guild.ts";
 import InteractionFactory from "./structures/interactions/InteractionFactory.ts";
 import { InviteCreate, NewInviteCreate } from "./structures/Invite.ts";
-import { MessageReactionAdd, MessageReactionRemove, MessageReactionRemoveAll, MessageReactionRemoveEmoji, NewMessageReactionAdd } from "./structures/MessageReaction.ts";
+import {
+    MessageReactionAdd,
+    MessageReactionRemove,
+    MessageReactionRemoveAll,
+    MessageReactionRemoveEmoji,
+    NewMessageReactionAdd,
+} from "./structures/MessageReaction.ts";
 
 export type RawHandler<T> = (...args: [Session, number, T]) => void;
 export type Handler<T extends unknown[]> = (...args: T) => unknown;

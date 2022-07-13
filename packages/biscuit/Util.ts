@@ -38,7 +38,7 @@ export type ComponentBuilder =
     | SelectMenuBuilder
     | ButtonBuilder;
 
-/***
+/** *
  * Utility type
  */
 export type ComponentEmoji = {
