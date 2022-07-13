@@ -2,9 +2,9 @@ import type { Model } from "./Base.ts";
 import type { DiscordRole } from "../../discordeno/mod.ts";
 import type { Session } from "../Session.ts";
 import { Snowflake } from "../Snowflake.ts";
+import { Guild, type ModifyGuildRole } from "./guilds.ts";
 import Permissions from "./Permissions.ts";
 import Util from "../Util.ts";
-import Guild, { type ModifyGuildRole } from "./guilds/Guild.ts";
 
 export class Role implements Model {
     constructor(session: Session, data: DiscordRole, guildId: Snowflake) {

@@ -39,10 +39,7 @@ export * from "./structures/components/SelectMenuComponent.ts";
 export * from "./structures/components/TextInputComponent.ts";
 
 // guilds
-export * from "./structures/guilds/AnonymousGuild.ts";
-export * from "./structures/guilds/BaseGuild.ts";
-export * from "./structures/guilds/Guild.ts";
-export * from "./structures/guilds/InviteGuild.ts";
+export * from "./structures/guilds.ts";
 
 // builders
 export * from "./structures/builders/EmbedBuilder.ts";
