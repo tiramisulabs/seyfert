@@ -43,7 +43,7 @@ export class InputTextBuilder {
         this.#data.required = required;
         return this;
     }
-    toJSON() {
-        return { ...this.#data };
+    toJSON(): DiscordInputTextComponent {
+        return { ...this.#data, type: this.type };
     }
 }

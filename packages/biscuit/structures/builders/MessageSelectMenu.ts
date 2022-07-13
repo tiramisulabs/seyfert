@@ -47,7 +47,7 @@ export class SelectMenuBuilder {
         );
     }
 
-    toJSON() {
-        return { ...this.#data, options: this.options.map((option) => option.toJSON()) };
+    toJSON(): DiscordSelectMenuComponent {
+        return { ...this.#data, type: this.type, options: this.options.map((option) => option.toJSON()) };
     }
 }
