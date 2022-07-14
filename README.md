@@ -1,11 +1,9 @@
 # biscuit
 
 ## A brand new bleeding edge non bloated Discord library
+[![nest.land](https://nest.land/badge.svg)](https://nest.land/package/biscuit)
 
-<center>
 <img align="middle" src="https://raw.githubusercontent.com/oasisjs/biscuit/main/assets/biscuit.svg" alt="biscuit" />
-</center>
-[![nest.land](https://nest.land/badge-large.svg)](https://nest.land/package/biscuit)
 
 ### Install (for [node18](https://nodejs.org/en/download/))
 
@@ -14,8 +12,6 @@ npm install @oasisjs/biscuit
 pnpm add @oasisjs/biscuit
 yarn add @oasisjs/biscuit
 ```
-
-> or via [cdn](https://nest.land/package/biscuit)
 
 The biscuit Discord library is built ontop of Discordeno and webspec APIs, we aim to provide portability. Join our
 [Discord](https://discord.gg/zmuvzzEFz2)
