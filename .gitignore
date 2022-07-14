@@ -13,3 +13,6 @@ node_modules/
 package-lock.json
 package.json
 bun.lockb
+
+# Docs
+docs.json
