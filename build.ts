@@ -1,8 +1,11 @@
-import { build } from "https://deno.land/x/dnt@0.23.0/mod.ts";
+import { build } from "https://deno.land/x/dnt@0.26.0/mod.ts";
 
 await Deno.remove("npm", { recursive: true }).catch((_) => {});
 
 await build({
+    compilerOptions: {
+        lib: ["webworker", "es2020"]
+    },
     shims: {
         custom: [
             {
