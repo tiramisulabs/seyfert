@@ -1,11 +1,11 @@
 /**
  * Deno example
-*/
+ */
 
 import "https://deno.land/std@0.146.0/dotenv/load.ts";
 
-// Session for create a new bot and intents
-import { GatewayIntents, Session } from "https://x.nest.land/biscuit@0.1.0/mod.ts";
+// Session to create a new bot (and intents)
+import { GatewayIntents, Session } from "https://x.nest.land/biscuit/mod.ts";
  
 const token = Deno.env.get("TOKEN") ?? Deno.args[0];
  
@@ -35,5 +35,5 @@ session.on("messageCreate", (message) => {
     }
 });
  
-await session.start();
+session.start();
  

@@ -3,11 +3,10 @@ import {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyles,
-    ComponentInteraction,
     GatewayIntents,
     InteractionResponseTypes,
     Session,
-} from 'https://x.nest.land/biscuit@0.1.0/mod.ts';
+} from 'https://x.nest.land/biscuit/mod.ts';
 
 const token = Deno.env.get("TOKEN") ?? Deno.args[0];
 
@@ -36,22 +35,22 @@ session.on("messageCreate", (message) => {
     console.log(args, name);
 
     if (name === 'ping') {
-        message.reply({ components: [row] })
-            .then(() => {})
-            .catch((e) => console.error(e));
+        message.reply({ components: [row] });
     }
 });
 
 // Follow interaction event
 session.on('interactionCreate', (interaction) => {
-    if (!interaction.isComponent()) return;
-    const component = interaction as ComponentInteraction;
-    if (component.customId == "ping") {
-        component.respond({
+    if (!interaction.isComponent()) {
+        return;
+    }
+
+    if (interaction.customId === "ping") {
+        interaction.respond({
             type: InteractionResponseTypes.ChannelMessageWithSource,
             data: { content: "pong!" },
         });
     }
 });
 
-await session.start();
+session.start();

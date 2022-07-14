@@ -3,7 +3,8 @@
  * this example should work on most systems, but if it doesn't just clone the library and import everything from mod.ts
 */
 
-import { GatewayIntents, Session } from "@oasisjs/biscuit";
+const { GatewayIntents, Session } = require("@oasisjs/biscuit");
+
 // if it didn't worked use:
 // const { GatewayIntents, Session } = require("@oasisjs/biscuit");
  
@@ -16,11 +17,13 @@ session.on("ready", (payload) => {
 });
  
 session.on("messageCreate", async (message) => {
+    // GET
     if (message.content.startsWith("whatever")) {
-        const whatever = await message.fetch().then(console.log);
+        const whatever = await message.fetch();
         console.log(whatever);
     }
  
+    // POST
     if (message.content.startsWith("ping")) {
         message.reply({ content: "pong!" }).catch((err) => console.error(err));
     }
