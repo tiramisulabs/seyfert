@@ -1,13 +1,13 @@
 /**
  * Biscuit node example
-*/
+ */
 
 // process for get the token
 /** @type {NodeJS.Process} process */
-import process from 'node:process';
+import process from "node:process";
 
 // Session for create a new bot and intents
-import { Session, GatewayIntents } from '@oasisjs/biscuit';
+import { GatewayIntents, Session } from "@oasisjs/biscuit";
 
 // Discord bot token
 /** @type {string} token */
@@ -26,7 +26,7 @@ const PREFIX = ">";
 session.on("ready", (data) => {
     console.log("Ready! Let's start chatting!");
     console.log("Connected as: " + data.user.username);
-})
+});
 
 session.on("messageCreate", (message) => {
     if (message.author?.bot || !message.content.startsWith(PREFIX)) {

@@ -7,7 +7,6 @@
 [![downloads](https://img.shields.io/npm/dw/@oasisjs/biscuit?color=green&logo=npm&style=flat)](https://www.npmjs.com/package/@oasisjs/biscuit)
 [![deno.land](https://img.shields.io/badge/deno-%5E1.23.3-informational?color=blue&logo=deno&style=flat)](https://deno.land/x/biscuit)
 
-
 <img align="right" src="https://raw.githubusercontent.com/oasisjs/biscuit/main/assets/biscuit.svg" alt="biscuit"/>
 
 ### Install (for [node18](https://nodejs.org/en/download/))

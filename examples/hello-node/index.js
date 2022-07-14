@@ -1,6 +1,6 @@
 /**
  * Biscuit node example
-*/
+ */
 
 // process for get the token
 /** @type {NodeJS.Process} process */
@@ -26,7 +26,7 @@ const PREFIX = ">";
 session.on("ready", (data) => {
     console.log("Ready! Let's start chatting!");
     console.log("Connected as: " + data.user.username);
-})
+});
 
 session.on("messageCreate", (message) => {
     if (message.author?.bot || !message.content.startsWith(PREFIX)) {

@@ -1,5 +1,5 @@
 import { ApplicationCommandOptionTypes, type ChannelTypes, type Localization } from "../../../../discordeno/mod.ts";
-import { ApplicationCommandOptionChoice } from "../../interactions/CommandInteraction.ts"
+import { ApplicationCommandOptionChoice } from "../../interactions/CommandInteraction.ts";
 
 export class ChoiceBuilder {
     public name?: string;
