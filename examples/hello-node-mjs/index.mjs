@@ -2,10 +2,14 @@
  * Biscuit node example
 */
 
+// process for get the token
 /** @type {NodeJS.Process} process */
 import process from 'node:process';
+
+// Session for create a new bot and intents
 import { Session, GatewayIntents } from '@oasisjs/biscuit';
 
+// Discord bot token
 /** @type {string} token */
 const token = process.env.TOKEN || "YOUR_TOKEN_HERE";
 
@@ -15,6 +19,8 @@ if (token === "") {
 
 const intents = GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages;
 const session = new Session({ token, intents });
+
+// Command prefix
 const PREFIX = ">";
 
 session.on("ready", (data) => {
@@ -35,8 +41,4 @@ session.on("messageCreate", (message) => {
     }
 });
 
-try {
-    session.start();
-} catch(err){
-    throw err;
-}
+session.start();
