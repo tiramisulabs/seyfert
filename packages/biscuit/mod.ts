@@ -43,11 +43,13 @@ export * from "./structures/guilds.ts";
 
 // builders
 export * from "./structures/builders/EmbedBuilder.ts";
-export * from "./structures/builders/InputTextComponentBuilder.ts";
-export * from "./structures/builders/MessageActionRow.ts";
-export * from "./structures/builders/MessageButton.ts";
-export * from "./structures/builders/MessageSelectMenu.ts";
-export * from "./structures/builders/SelectMenuOptionBuilder.ts";
+export * from "./structures/builders/components/InputTextComponentBuilder.ts";
+export * from "./structures/builders/components/MessageActionRow.ts";
+export * from "./structures/builders/components/MessageButton.ts";
+export * from "./structures/builders/components/MessageSelectMenu.ts";
+export * from "./structures/builders/components/SelectMenuOptionBuilder.ts";
+export * from "./structures/builders/slash/ApplicationCommand.ts";
+export * from "./structures/builders/slash/ApplicationCommandOption.ts";
 
 // interactions
 export * from "./structures/interactions/AutoCompleteInteraction.ts";

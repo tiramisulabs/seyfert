@@ -1,4 +1,4 @@
-import type { DiscordInputTextComponent, MessageComponentTypes, TextStyles } from "../../../discordeno/mod.ts";
+import type { DiscordInputTextComponent, MessageComponentTypes, TextStyles } from "../../../../discordeno/mod.ts";
 
 export class InputTextBuilder {
     constructor() {
