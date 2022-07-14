@@ -1,5 +1,5 @@
-import type { DiscordActionRow, MessageComponentTypes } from "../../../discordeno/mod.ts";
-import type { ComponentBuilder } from "../../Util.ts";
+import type { DiscordActionRow, MessageComponentTypes } from "../../../../discordeno/mod.ts";
+import type { ComponentBuilder } from "../../../Util.ts";
 
 export class ActionRowBuilder<T extends ComponentBuilder> {
     constructor() {

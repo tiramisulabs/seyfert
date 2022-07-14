@@ -38,7 +38,7 @@ export interface InteractionApplicationCommandCallbackData
     // components?: MessageComponents;
     flags?: MessageFlags;
     choices?: ApplicationCommandOptionChoice[];
-}
+} 
 
 /**
  * @link https://discord.com/developers/docs/interactions/slash-commands#applicationcommandoptionchoice
