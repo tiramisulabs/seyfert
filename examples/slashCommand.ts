@@ -15,7 +15,7 @@ const command: CreateApplicationCommand = {
     description: "Replies with pong!",
 };
 
-const guildId = '';
+const guildId = "";
 
 session.on("ready", async (payload) => {
     console.log("Logged in as:", payload.user.username);
@@ -40,4 +40,4 @@ session.on("interactionCreate", (interaction) => {
     }
 });
 
-await session.start()
+await session.start();
