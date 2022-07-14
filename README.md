@@ -2,7 +2,10 @@
 
 ## A brand new bleeding edge non bloated Discord library
 
+<center>
 <img align="middle" src="https://raw.githubusercontent.com/oasisjs/biscuit/main/assets/biscuit.svg" alt="biscuit" />
+</center>
+[![nest.land](https://nest.land/badge-large.svg)](https://nest.land/package/biscuit)
 
 ### Install (for [node18](https://nodejs.org/en/download/))
 
