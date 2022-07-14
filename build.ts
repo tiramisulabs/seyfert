@@ -4,7 +4,7 @@ await Deno.remove("npm", { recursive: true }).catch((_) => {});
 
 await build({
     compilerOptions: {
-        lib: ["webworker", "es2020"]
+        lib: ["webworker", "es2020"],
     },
     shims: {
         custom: [

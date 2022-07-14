@@ -4,8 +4,6 @@
 
 <img align="middle" src="https://raw.githubusercontent.com/oasisjs/biscuit/main/assets/biscuit.svg" alt="biscuit" />
 
-ETA: **biscuit will be on the npm registry the next week!**
-
 ### Install (for [node18](https://nodejs.org/en/download/))
 
 ```sh-session
@@ -79,9 +77,12 @@ session.start();
 - We got the library running on Arch/Artix Linux but breaks when sending fetch requests
 - We got the library running on WSL (Ubuntu) without any trouble
 
+> if you really want to use the library with bun remember to clone the repo instead of installing it via the registry
+
 ### Known issues:
 
 - some properties may be not implemented yet
 - some structures are not implemented (see https://github.com/oasisjs/biscuit/issues)
 - cache (wip)
 - no optimal way to create embeds, should be fixed in builders tho
+- no optimal way to deliver a webspec bun version to the registry (#50)
