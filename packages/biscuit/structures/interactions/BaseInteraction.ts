@@ -3,6 +3,9 @@ import type { Session } from "../../Session.ts";
 import type { DiscordInteraction } from "../../../discordeno/mod.ts";
 import type CommandInteraction from "./CommandInteraction.ts";
 import type PingInteraction from "./PingInteraction.ts";
+import type ComponentInteraction from "./ComponentInteraction.ts";
+import type ModalSubmitInteraction from "./ModalSubmitInteraction.ts";
+import type AutoCompleteInteraction from "./AutoCompleteInteraction.ts";
 import { InteractionTypes } from "../../../discordeno/mod.ts";
 import { Snowflake } from "../../Snowflake.ts";
 import User from "../User.ts";
@@ -60,11 +63,11 @@ export abstract class BaseInteraction implements Model {
         return this.type === InteractionTypes.ApplicationCommand;
     }
 
-    isAutoComplete() {
+    isAutoComplete(): this is AutoCompleteInteraction {
         return this.type === InteractionTypes.ApplicationCommandAutocomplete;
     }
 
-    isComponent() {
+    isComponent(): this is ComponentInteraction {
         return this.type === InteractionTypes.MessageComponent;
     }
 
@@ -72,11 +75,11 @@ export abstract class BaseInteraction implements Model {
         return this.type === InteractionTypes.Ping;
     }
 
-    isModalSubmit() {
+    isModalSubmit(): this is ModalSubmitInteraction {
         return this.type === InteractionTypes.ModalSubmit;
     }
 
-    inGuild() {
+    inGuild(): this is this & { guildId: Snowflake } {
         return !!this.guildId;
     }
 }
