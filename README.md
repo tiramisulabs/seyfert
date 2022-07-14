@@ -36,6 +36,7 @@ that you should not make software that does things it is not supposed to do.
 - Crossplatform
 - Consistent
 - Performant
+- Small bundles
 
 ### Example bot (TS/JS)
 
