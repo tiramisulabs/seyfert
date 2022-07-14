@@ -1,4 +1,4 @@
-import type { MessageComponentTypes } from "../../../discordeno/mod.ts";
+import type { DiscordActionRow, MessageComponentTypes } from "../../../discordeno/mod.ts";
 import type { ComponentBuilder } from "../../Util.ts";
 
 export class ActionRowBuilder<T extends ComponentBuilder> {
@@ -23,7 +23,10 @@ export class ActionRowBuilder<T extends ComponentBuilder> {
         return this;
     }
 
-    toJSON() {
-        return { type: this.type, components: this.components.map((c) => c.toJSON()) };
+    toJSON(): DiscordActionRow {
+        return {
+            type: this.type,
+            components: this.components.map((c) => c.toJSON()) as DiscordActionRow["components"],
+        };
     }
 }
