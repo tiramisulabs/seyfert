@@ -8,7 +8,11 @@
 [![deno.land](https://img.shields.io/badge/deno-%5E1.6.0-informational?color=blue&logo=deno&style=flat)](https://deno.land/x/biscuit)
 
 
-<img style="text-align: center" align="middle" src="https://raw.githubusercontent.com/oasisjs/biscuit/main/assets/biscuit.svg" alt="biscuit" />
+<img
+    style="text-align: center; margin: auto"
+    src="https://raw.githubusercontent.com/oasisjs/biscuit/main/assets/biscuit.svg"
+    alt="biscuit">
+</img>
 
 ### Install (for [node18](https://nodejs.org/en/download/))
 
