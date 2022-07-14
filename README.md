@@ -2,7 +2,13 @@
 
 ## A brand new bleeding edge non bloated Discord library
 
-<img align="middle" src="https://raw.githubusercontent.com/oasisjs/biscuit/main/assets/biscuit.svg" alt="biscuit" />
+[![nest.land](https://nest.land/badge.svg)](https://nest.land/package/biscuit)
+[![npm](https://img.shields.io/npm/v/@oasisjs/biscuit?color=red&label=package&logo=npm&style=flat)](https://www.npmjs.com/package/@oasisjs/biscuit)
+[![downloads](https://img.shields.io/npm/dw/@oasisjs/biscuit?color=green&logo=npm&style=flat)](https://www.npmjs.com/package/@oasisjs/biscuit)
+[![deno.land](https://img.shields.io/badge/deno-%5E1.6.0-informational?color=blue&logo=deno&style=flat)](https://deno.land/x/biscuit)
+
+
+<img src="https://raw.githubusercontent.com/oasisjs/biscuit/main/assets/biscuit.svg" alt="biscuit"/>
 
 ### Install (for [node18](https://nodejs.org/en/download/))
 
@@ -11,8 +17,6 @@ npm install @oasisjs/biscuit
 pnpm add @oasisjs/biscuit
 yarn add @oasisjs/biscuit
 ```
-
-> or via [cdn](https://nest.land/package/biscuit)
 
 The biscuit Discord library is built ontop of Discordeno and webspec APIs, we aim to provide portability. Join our
 [Discord](https://discord.gg/zmuvzzEFz2)
@@ -32,6 +36,7 @@ that you should not make software that does things it is not supposed to do.
 - Crossplatform
 - Consistent
 - Performant
+- Small bundles
 
 ### Example bot (TS/JS)
 
