@@ -3,6 +3,10 @@ import type { Snowflake } from "./Snowflake.ts";
 // cdn endpoints
 export * from "./Cdn.ts";
 
+export function USER(userId: Snowflake) {
+    return `/users/${userId}`;
+}
+
 export function GATEWAY_BOT() {
     return "/gateway/bot";
 }

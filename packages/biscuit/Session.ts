@@ -1,4 +1,5 @@
 import type {
+    StatusTypes,
     ApplicationCommandPermissionTypes,
     AtLeastOne,
     DiscordApplicationCommand,
@@ -8,11 +9,13 @@ import type {
     GatewayBot,
     GatewayIntents,
     Localization,
+    DiscordUser,
 } from "../discordeno/mod.ts";
 
 import type { DiscordGatewayPayload, Shard } from "../discordeno/mod.ts";
 import type { Events } from "./Actions.ts";
 import type { PermissionResolvable } from "./structures/Permissions.ts";
+import type { Activities } from "./structures/Presence.ts";
 
 import { Permissions } from "./structures/Permissions.ts";
 import { Snowflake } from "./Snowflake.ts";
@@ -22,7 +25,11 @@ import {
     createGatewayManager,
     createRestManager,
     getBotIdFromToken,
+    GatewayOpcodes,
+    StatusTypes
 } from "../discordeno/mod.ts";
+
+import User from "./structures/User.ts";
 
 import * as Routes from "./Routes.ts";
 import * as Actions from "./Actions.ts";
@@ -100,6 +107,14 @@ export interface SessionOptions {
     intents?: GatewayIntents;
     rest?: RestOptions;
     gateway?: GatewayOptions;
+}
+
+/**
+ * @link https://discord.com/developers/docs/topics/gateway#update-status
+ * */
+export interface StatusUpdate {
+  activities: Activities[];
+  status: StatusTypes;
 }
 
 /**
@@ -187,7 +202,68 @@ export class Session extends EventEmitter {
         return super.emit(event, ...params);
     }
 
-    createApplicationCommand(options: CreateApplicationCommand | CreateContextApplicationCommand, guildId: Snowflake) {
+    /**
+     * Edit bot's status
+     * tip: execute this on the ready event if possible
+     * @example
+     * for (const { id } of session.gateway.manager.shards) {
+     *    session.editStatus(id, data);
+     * }
+     * */
+    editStatus(shardId: number, status: StatusUpdate): void {
+        const shard = this.gateway.manager.shards.get(shardId);
+
+        if (!shard) {
+            throw new Error(`Unknown shard ${shardId}`);
+        }
+
+        shard.send({
+            op: GatewayOpcodes.PresenceUpdate,
+            d: {
+                status: status.status,
+                since: null,
+                afk: false,
+                activities: status.activities.map((activity) => {
+                    return {
+                        name: activity.name,
+                        type: activity.type,
+                        url: activity.url,
+                        created_at: activity.createdAt,
+                        timestamps: activity.timestamps,
+                        application_id: this.applicationId,
+                        details: activity.details,
+                        state: activity.state,
+                        emoji: activity.emoji || {
+                            name: activity.emoji!.name,
+                            id: activity.emoji!.id,
+                            animated: activity.emoji!.animated
+                        },
+                        party: activity.party,
+                        assets: activity.assets ? {
+                            large_image: activity.assets.largeImage,
+                            large_text: activity.assets.largeText,
+                            small_image: activity.assets.smallImage,
+                            small_text: activity.assets.smallText,
+                        } : undefined,
+                        secrets: activity.secrets,
+                        instance: activity.instance,
+                        flags: activity.flags,
+                        buttons: activity.buttons,
+                    };
+                }),
+            },
+        });
+    }
+
+    async fetchUser(id: Snowflake): Promise<User | undefined> {
+        const user = await this.rest.runMethod<DiscordUser>(this.rest, "GET", Routes.USER(id));
+
+        if (!user.id) return;
+
+        return new User(this, user);
+    }
+
+    createApplicationCommand(options: CreateApplicationCommand | CreateContextApplicationCommand, guildId?: Snowflake) {
         return this.rest.runMethod<DiscordApplicationCommand>(
             this.rest,
             "POST",
@@ -326,7 +402,15 @@ export class Session extends EventEmitter {
         );
     }
 
-    fetchCommands() {}
+    fetchCommands(guildId?: Snowflake) {
+        return this.rest.runMethod<DiscordApplicationCommand[]>(
+            this.rest,
+            "GET",
+            guildId
+                ? Routes.GUILD_APPLICATION_COMMANDS(this.applicationId, guildId)
+                : Routes.APPLICATION_COMMANDS(this.applicationId),
+        );
+    }
 
     // deno-fmt-ignore
     isContextApplicationCommand(cmd: AtLeastOne<CreateContextApplicationCommand> | AtLeastOne<CreateApplicationCommand>): cmd is AtLeastOne<CreateContextApplicationCommand> {

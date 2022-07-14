@@ -1,8 +1,11 @@
 /**
  * Bun example
+ * this example should work on most systems, but if it doesn't just clone the library and import everything from mod.ts
  */
 
 import { GatewayIntents, Session } from "@oasisjs/biscuit";
+// if it didn't worked use:
+// const { GatewayIntents, Session } = require("@oasisjs/biscuit");
 
 const token = process.env.TOKEN;
 const intents = GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages;
