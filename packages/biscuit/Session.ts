@@ -1,15 +1,15 @@
 import type {
-    StatusTypes,
     ApplicationCommandPermissionTypes,
     AtLeastOne,
     DiscordApplicationCommand,
     DiscordApplicationCommandOption,
     DiscordGetGatewayBot,
     DiscordGuildApplicationCommandPermissions,
+    DiscordUser,
     GatewayBot,
     GatewayIntents,
     Localization,
-    DiscordUser,
+    StatusTypes,
 } from "../discordeno/mod.ts";
 
 import type { DiscordGatewayPayload, Shard } from "../discordeno/mod.ts";
@@ -24,9 +24,9 @@ import {
     ApplicationCommandTypes,
     createGatewayManager,
     createRestManager,
-    getBotIdFromToken,
     GatewayOpcodes,
-    StatusTypes
+    getBotIdFromToken,
+    StatusTypes,
 } from "../discordeno/mod.ts";
 
 import User from "./structures/User.ts";
@@ -111,10 +111,10 @@ export interface SessionOptions {
 
 /**
  * @link https://discord.com/developers/docs/topics/gateway#update-status
- * */
+ */
 export interface StatusUpdate {
-  activities: Activities[];
-  status: StatusTypes;
+    activities: Activities[];
+    status: StatusTypes;
 }
 
 /**
@@ -209,7 +209,7 @@ export class Session extends EventEmitter {
      * for (const { id } of session.gateway.manager.shards) {
      *    session.editStatus(id, data);
      * }
-     * */
+     */
     editStatus(shardId: number, status: StatusUpdate): void {
         const shard = this.gateway.manager.shards.get(shardId);
 
@@ -236,15 +236,17 @@ export class Session extends EventEmitter {
                         emoji: activity.emoji || {
                             name: activity.emoji!.name,
                             id: activity.emoji!.id,
-                            animated: activity.emoji!.animated
+                            animated: activity.emoji!.animated,
                         },
                         party: activity.party,
-                        assets: activity.assets ? {
-                            large_image: activity.assets.largeImage,
-                            large_text: activity.assets.largeText,
-                            small_image: activity.assets.smallImage,
-                            small_text: activity.assets.smallText,
-                        } : undefined,
+                        assets: activity.assets
+                            ? {
+                                large_image: activity.assets.largeImage,
+                                large_text: activity.assets.largeText,
+                                small_image: activity.assets.smallImage,
+                                small_text: activity.assets.smallText,
+                            }
+                            : undefined,
                         secrets: activity.secrets,
                         instance: activity.instance,
                         flags: activity.flags,
