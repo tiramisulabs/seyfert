@@ -37,8 +37,8 @@ session.on("messageCreate", (message) => {
 
     if (name === "ping") {
         message.reply({ components: [row] })
-        .then(() => {})
-        .catch(e => console.error(e))
+            .then(() => {})
+            .catch((e) => console.error(e));
     }
 });
 

@@ -4,11 +4,11 @@ import type {
     AllowedMentionsTypes,
     DiscordEmbed,
     DiscordMessage,
+    DiscordMessageComponents,
     DiscordUser,
     FileContent,
     MessageActivityTypes,
     MessageTypes,
-    DiscordMessageComponents
 } from "../../discordeno/mod.ts";
 import type { Component } from "./components/Component.ts";
 import type { GetReactions } from "../Routes.ts";
