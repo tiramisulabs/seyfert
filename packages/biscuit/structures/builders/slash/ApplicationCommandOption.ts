@@ -1,5 +1,6 @@
 import { ApplicationCommandOptionTypes, type ChannelTypes, type Localization } from "../../../../discordeno/mod.ts";
-import { mix } from "../mixer/mod.ts";
+import { mix } from "../mixer/mod.ts"
+import { ApplicationCommandOptionChoice } from "../../interactions/CommandInteraction.ts"
 
 export class ChoiceBuilder {
     public name?: string;
@@ -288,14 +289,6 @@ export class OptionBuilderNested {
 
 export interface OptionBuilderNested extends OptionBuilder, OptionBased {
     // pass
-}
-
-/** https://discord.com/developers/docs/interactions/slash-commands#applicationcommandoptionchoice */
-export interface ApplicationCommandOptionChoice {
-    /** 1-100 character choice name */
-    name: string;
-    /** Value of the choice, up to 100 characters if string */
-    value: string | number;
 }
 
 export interface ApplicationCommandOption {

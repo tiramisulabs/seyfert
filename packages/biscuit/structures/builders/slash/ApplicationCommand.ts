@@ -1,7 +1,8 @@
 import { ApplicationCommandTypes } from '../../../../discordeno/mod.ts';
-import { OptionBased, ApplicationCommandOption } from './ApplicationCommandOption.ts';
+import { OptionBased } from './ApplicationCommandOption.ts';
 import type { Localization, PermissionStrings } from '../../../../discordeno/mod.ts';
 import { mix } from "../mixer/mod.ts";
+import { CreateApplicationCommand } from "../../../Session.ts"
 
 export abstract class ApplicationCommandBuilder implements CreateApplicationCommand {
     protected constructor(
@@ -104,29 +105,3 @@ export class ChatInputApplicationCommandBuilder {
 export interface ChatInputApplicationCommandBuilder extends ApplicationCommandBuilder, OptionBased {
     // pass
 }
-
-/** https://discord.com/developers/docs/interactions/application-commands#endpoints-json-params */
-export interface CreateApplicationCommand {
-    /**
-     * Name of command, 1-32 characters.
-     * `ApplicationCommandTypes.ChatInput` command names must match the following regex `^[-_\p{L}\p{N}\p{sc=Deva}\p{sc=Thai}]{1,32}$` with the unicode flag set.
-     * If there is a lowercase variant of any letters used, you must use those.
-     * Characters with no lowercase variants and/or uncased letters are still allowed.
-     * ApplicationCommandTypes.User` and `ApplicationCommandTypes.Message` commands may be mixed case and can include spaces.
-     */
-    name: string;
-    /** Localization object for the `name` field. Values follow the same restrictions as `name` */
-    nameLocalizations?: Localization;
-    /** 1-100 character description */
-    description: string;
-    /** Localization object for the `description` field. Values follow the same restrictions as `description` */
-    descriptionLocalizations?: Localization;
-    /** Type of command, defaults `ApplicationCommandTypes.ChatInput` if not set  */
-    type?: ApplicationCommandTypes;
-    /** Parameters for the command */
-    options?: ApplicationCommandOption[];
-    /** Set of permissions represented as a bit set */
-    defaultMemberPermissions?: PermissionStrings[];
-    /** Indicates whether the command is available in DMs with the app, only for globally-scoped commands. By default, commands are visible. */
-    dmPermission?: boolean;
-  }
