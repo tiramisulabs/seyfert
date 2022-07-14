@@ -41,12 +41,20 @@ export interface Activities {
     buttons?: DiscordActivityButton;
 }
 
+export enum StatusTypes {
+    online = 0,
+    dnd = 1,
+    idle = 2,
+    invisible = 3,
+    offline = 4,
+}
+
 export class Presence {
     constructor(session: Session, data: DiscordPresenceUpdate) {
         this.session = session;
         this.user = new User(this.session, data.user);
         this.guildId = data.guild_id;
-        this.status = data.status;
+        this.status = StatusTypes[data.status];
         this.activities = data.activities.map<Activities>((activity) =>
             Object.create({
                 name: activity.name,
@@ -78,7 +86,7 @@ export class Presence {
     session: Session;
     user: User;
     guildId: Snowflake;
-    status: string;
+    status: StatusTypes;
     activities: Activities[];
     clientStatus: DiscordClientStatus;
 }

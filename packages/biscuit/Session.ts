@@ -9,13 +9,12 @@ import type {
     GatewayBot,
     GatewayIntents,
     Localization,
-    StatusTypes,
 } from "../discordeno/mod.ts";
 
 import type { DiscordGatewayPayload, Shard } from "../discordeno/mod.ts";
 import type { Events } from "./Actions.ts";
 import type { PermissionResolvable } from "./structures/Permissions.ts";
-import type { Activities } from "./structures/Presence.ts";
+import type { Activities, StatusTypes } from "./structures/Presence.ts";
 
 import { Permissions } from "./structures/Permissions.ts";
 import { Snowflake } from "./Snowflake.ts";
@@ -26,7 +25,6 @@ import {
     createRestManager,
     GatewayOpcodes,
     getBotIdFromToken,
-    StatusTypes,
 } from "../discordeno/mod.ts";
 
 import User from "./structures/User.ts";
