@@ -1,5 +1,4 @@
 import { ApplicationCommandOptionTypes, type ChannelTypes, type Localization } from "../../../../discordeno/mod.ts";
-import { mix } from "../mixer/mod.ts"
 import { ApplicationCommandOptionChoice } from "../../interactions/CommandInteraction.ts"
 
 export class ChoiceBuilder {
@@ -255,22 +254,45 @@ export class OptionBased {
     public addMentionableOption(fn: (option: OptionBuilder) => OptionBuilder) {
         return this.addOption(fn, ApplicationCommandOptionTypes.Mentionable);
     }
+
+    // deno-lint-ignore ban-types
+    public static applyTo(klass: Function, ignore: Array<keyof OptionBased> = []) {
+        const methods: Array<keyof OptionBased> = [
+            "addOption",
+            "addNestedOption",
+            "addStringOption",
+            "addIntegerOption",
+            "addNumberOption",
+            "addBooleanOption",
+            "addSubCommand",
+            "addSubCommandGroup",
+            "addUserOption",
+            "addChannelOption",
+            "addRoleOption",
+            "addMentionableOption",
+        ];
+
+        for (const method of methods) {
+            if (ignore.includes(method)) continue;
+
+            klass.prototype[method] = OptionBased.prototype[method];
+        }
+    }
 }
 
-@mix(OptionBuilder, OptionBased)
-export class OptionBuilderNested {
+export class OptionBuilderNested extends OptionBuilder {
     public constructor(
         public type?: ApplicationCommandOptionTypes.SubCommand | ApplicationCommandOptionTypes.SubCommandGroup,
         public name?: string,
         public description?: string,
     ) {
+        super();
         this.type = type;
         this.name = name;
         this.description = description;
     }
 
-    // TODO: this will get overwritten by the mixer
-    public toJSON(): ApplicationCommandOption {
+    public override toJSON(): ApplicationCommandOption {
         if (!this.type) throw new TypeError("Property 'type' is required");
         if (!this.name) throw new TypeError("Property 'name' is required");
         if (!this.description) {
@@ -286,6 +308,8 @@ export class OptionBuilderNested {
         };
     }
 }
+
+OptionBased.applyTo(OptionBuilderNested);
 
 export interface OptionBuilderNested extends OptionBuilder, OptionBased {
     // pass

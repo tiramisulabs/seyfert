@@ -1,7 +1,6 @@
+import type { Localization, PermissionStrings } from '../../../../discordeno/mod.ts';
 import { ApplicationCommandTypes } from '../../../../discordeno/mod.ts';
 import { OptionBased } from './ApplicationCommandOption.ts';
-import type { Localization, PermissionStrings } from '../../../../discordeno/mod.ts';
-import { mix } from "../mixer/mod.ts";
 import { CreateApplicationCommand } from "../../../Session.ts"
 
 export abstract class ApplicationCommandBuilder implements CreateApplicationCommand {
@@ -79,8 +78,7 @@ export class MessageApplicationCommandBuilder {
     }
 }
 
-@mix(ApplicationCommandBuilder, OptionBased)
-export class ChatInputApplicationCommandBuilder {
+export class ChatInputApplicationCommandBuilder extends ApplicationCommandBuilder {
     public type: ApplicationCommandTypes.ChatInput = ApplicationCommandTypes.ChatInput;
 
     public toJSON(): CreateApplicationCommand {
@@ -102,6 +100,9 @@ export class ChatInputApplicationCommandBuilder {
         };
     }
 }
+
+OptionBased.applyTo(ChatInputApplicationCommandBuilder);
+
 export interface ChatInputApplicationCommandBuilder extends ApplicationCommandBuilder, OptionBased {
     // pass
 }
