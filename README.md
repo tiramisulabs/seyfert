@@ -9,7 +9,7 @@
 
 
 <img
-    style="text-align: center; margin: auto"
+    style="display: block; margin-left: auto; margin-right: auto; width: 30%"
     src="https://raw.githubusercontent.com/oasisjs/biscuit/main/assets/biscuit.svg"
     alt="biscuit">
 </img>
