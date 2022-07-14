@@ -1,27 +1,27 @@
 {
-  "$schema": "https://x.nest.land/eggs@0.3.10/src/schema.json",
-  "name": "biscuit",
-  "entry": "./mod.ts",
-  "description": "A brand new bleeding edge non bloated Discord library",
-  "homepage": "https://github.com/oasisjs/biscuit",
-  "version": "0.1.0",
-  "releaseType": "minor",
-  "unstable": false,
-  "unlisted": false,
-  "files": [
-    "./packages/**/*",
-    "./mod.ts",
-    "LICENSE",
-    "README.md"
-  ],
-  "ignore": [
-    "npm",
-    "build.ts",
-    "scripts.ts",
-    ".git"
-  ],
-  "checkFormat": true,
-  "checkTests": false,
-  "checkInstallation": false,
-  "check": true
+    "$schema": "https://x.nest.land/eggs@0.3.10/src/schema.json",
+    "name": "biscuit",
+    "entry": "./mod.ts",
+    "description": "A brand new bleeding edge non bloated Discord library",
+    "homepage": "https://github.com/oasisjs/biscuit",
+    "version": "0.1.0",
+    "releaseType": "minor",
+    "unstable": false,
+    "unlisted": false,
+    "files": [
+        "./packages/**/*",
+        "./mod.ts",
+        "LICENSE",
+        "README.md"
+    ],
+    "ignore": [
+        "npm",
+        "build.ts",
+        "scripts.ts",
+        ".git"
+    ],
+    "checkFormat": true,
+    "checkTests": false,
+    "checkInstallation": false,
+    "check": true
 }

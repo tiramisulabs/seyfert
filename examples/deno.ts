@@ -1,6 +1,6 @@
 /**
  * Deno example
-*/
+ */
 
 import "https://deno.land/std@0.146.0/dotenv/load.ts";
 import { GatewayIntents, Session } from "https://x.nest.land/biscuit@0.1.0/mod.ts";

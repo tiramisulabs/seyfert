@@ -1,5 +1,8 @@
-// TODO: remove and include the library appropriately
-import { GatewayIntents, Session } from "./deps.ts";
+/**
+ * Bun example
+ */
+
+import { GatewayIntents, Session } from "@oasisjs/biscuit";
 
 const token = process.env.TOKEN;
 const intents = GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages;
