@@ -6,7 +6,7 @@ import {
     GatewayIntents,
     InteractionResponseTypes,
     Session,
-} from "https://x.nest.land/biscuit/mod.ts";
+} from "https://deno.land/x/biscuit/mod.ts";
 
 const token = Deno.env.get("TOKEN") ?? Deno.args[0];
 
@@ -32,7 +32,6 @@ session.on("messageCreate", (message) => {
 
     const args = message.content.substring(PREFIX.length).trim().split(/\s+/gm);
     const name = args.shift()?.toLowerCase();
-    console.log(args, name);
 
     if (name === "ping") {
         message.reply({ components: [row] });

@@ -3,10 +3,10 @@
  * this example should work on most systems, but if it doesn't just clone the library and import everything from mod.ts
  */
 
-const { GatewayIntents, Session } = require("@oasisjs/biscuit");
+const { GatewayIntents, Session } = require("../mod.ts");
 
 // if it didn't worked use:
-// const { GatewayIntents, Session } = require("@oasisjs/biscuit");
+// import { GatewayIntents, Session } from "@oasisjs/biscuit";
 
 const token = process.env.TOKEN;
 const intents = GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages;

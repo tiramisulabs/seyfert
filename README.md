@@ -40,12 +40,10 @@ that you should not make software that does things it is not supposed to do.
 ### Example bot (TS/JS)
 
 ```js
-import { GatewayIntents, Session } from "@oasisjs/biscuit";
-
-const token = "your token goes here";
+import Biscuit, { GatewayIntents } from "@oasisjs/biscuit";
 
 const intents = GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages;
-const session = new Session({ token, intents });
+const session = new Biscuit({ token: "your token", intents });
 
 session.on("ready", ({ user }) => {
     console.log("Logged in as:", user.username);

@@ -67,7 +67,7 @@ import {
 } from "./structures/MessageReaction.ts";
 
 export type RawHandler<T> = (...args: [Session, number, T]) => void;
-export type Handler<T extends unknown[]> = (...args: T) => unknown;
+export type Handler<T extends [obj?: unknown, ddy?: unknown]> = (...args: T) => unknown;
 
 export const READY: RawHandler<DiscordReady> = (session, shardId, payload) => {
     session.applicationId = payload.application.id;
@@ -435,4 +435,5 @@ export interface Events {
     "webhooksUpdate":             Handler<[{ guildId: Snowflake, channelId: Snowflake }]>;
     "userUpdate":                 Handler<[User]>;
     "presenceUpdate":             Handler<[Presence]>;
+    "debug":                      Handler<[string]>;
 }
