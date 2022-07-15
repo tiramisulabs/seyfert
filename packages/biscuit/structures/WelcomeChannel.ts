@@ -25,7 +25,7 @@ export class WelcomeChannel implements Model {
     emoji: Emoji;
 
     /** alias for WelcomeScreenChannel.channelId */
-    get id() {
+    get id(): Snowflake {
         return this.channelId;
     }
 }

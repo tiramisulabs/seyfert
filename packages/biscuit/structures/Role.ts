@@ -35,15 +35,15 @@ export class Role implements Model {
     managed: boolean;
     permissions: Permissions;
 
-    get createdTimestamp() {
+    get createdTimestamp(): number {
         return Snowflake.snowflakeToTimestamp(this.id);
     }
 
-    get createdAt() {
+    get createdAt(): Date {
         return new Date(this.createdTimestamp);
     }
 
-    get hexColor() {
+    get hexColor(): string {
         return `#${this.color.toString(16).padStart(6, "0")}`;
     }
 
@@ -51,20 +51,20 @@ export class Role implements Model {
         await Guild.prototype.deleteRole.call({ id: this.guildId, session: this.session }, this.id);
     }
 
-    async edit(options: ModifyGuildRole) {
+    async edit(options: ModifyGuildRole): Promise<Role> {
         const role = await Guild.prototype.editRole.call({ id: this.guildId, session: this.session }, this.id, options);
         return role;
     }
 
-    async add(memberId: Snowflake, options: { reason?: string } = {}) {
+    async add(memberId: Snowflake, options: { reason?: string } = {}): Promise<void> {
         await Guild.prototype.addRole.call({ id: this.guildId, session: this.session }, memberId, this.id, options);
     }
 
-    async remove(memberId: Snowflake, options: { reason?: string } = {}) {
+    async remove(memberId: Snowflake, options: { reason?: string } = {}): Promise<void> {
         await Guild.prototype.removeRole.call({ id: this.guildId, session: this.session }, memberId, this.id, options);
     }
 
-    toString() {
+    toString(): string {
         switch (this.id) {
             case this.guildId:
                 return "@everyone";

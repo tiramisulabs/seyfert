@@ -18,7 +18,7 @@ export class EventEmitter {
         return this.#addListener(event, func);
     }
 
-    #removeListener(event: string, func: Function) {
+    #removeListener(event: string, func: Function): EventEmitter {
         if (this.listeners.has(event)) {
             const listener = this.listeners.get(event);
 
@@ -34,11 +34,11 @@ export class EventEmitter {
         return this;
     }
 
-    off(event: string, func: Function) {
+    off(event: string, func: Function): EventEmitter {
         return this.#removeListener(event, func);
     }
 
-    once(event: string, func: Function) {
+    once(event: string, func: Function): EventEmitter {
         // it is important for this to be an arrow function
         const closure = () => {
             func();
@@ -52,7 +52,7 @@ export class EventEmitter {
         return this;
     }
 
-    emit(event: string, ...args: unknown[]) {
+    emit(event: string, ...args: unknown[]): boolean {
         const listener = this.listeners.get(event);
 
         if (!listener) {
@@ -64,7 +64,7 @@ export class EventEmitter {
         return true;
     }
 
-    listenerCount(eventName: string) {
+    listenerCount(eventName: string): number {
         return this.listeners.get(eventName)?.length ?? 0;
     }
 

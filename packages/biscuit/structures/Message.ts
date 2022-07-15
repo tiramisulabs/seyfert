@@ -176,36 +176,36 @@ export class Message implements Model {
         type: MessageActivityTypes;
     };
 
-    get createdTimestamp() {
+    get createdTimestamp(): number {
         return Snowflake.snowflakeToTimestamp(this.id);
     }
 
-    get createdAt() {
+    get createdAt(): Date {
         return new Date(this.createdTimestamp);
     }
 
-    get sentAt() {
+    get sentAt(): Date {
         return new Date(this.timestamp);
     }
 
-    get editedAt() {
+    get editedAt(): Date | undefined {
         return this.editedTimestamp ? new Date(this.editedTimestamp) : undefined;
     }
 
-    get edited() {
+    get edited(): number | undefined {
         return this.editedTimestamp;
     }
 
-    get url() {
+    get url(): string {
         return `https://discord.com/channels/${this.guildId ?? "@me"}/${this.channelId}/${this.id}`;
     }
 
     /** Compatibility with Discordeno */
-    get isBot() {
+    get isBot(): boolean {
         return this.author.bot;
     }
 
-    async pin() {
+    async pin(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "PUT",
@@ -213,7 +213,7 @@ export class Message implements Model {
         );
     }
 
-    async unpin() {
+    async unpin(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "DELETE",
@@ -305,7 +305,7 @@ export class Message implements Model {
         return this.addReaction;
     }
 
-    async addReaction(reaction: ReactionResolvable) {
+    async addReaction(reaction: ReactionResolvable): Promise<void> {
         const r = typeof reaction === "string" ? reaction : `${reaction.name}:${reaction.id}`;
 
         await this.session.rest.runMethod<undefined>(
@@ -316,7 +316,7 @@ export class Message implements Model {
         );
     }
 
-    async removeReaction(reaction: ReactionResolvable, options?: { userId: Snowflake }) {
+    async removeReaction(reaction: ReactionResolvable, options?: { userId: Snowflake }): Promise<void> {
         const r = typeof reaction === "string" ? reaction : `${reaction.name}:${reaction.id}`;
 
         await this.session.rest.runMethod<undefined>(
@@ -348,7 +348,7 @@ export class Message implements Model {
         return users.map((user) => new User(this.session, user));
     }
 
-    async removeReactionEmoji(reaction: ReactionResolvable) {
+    async removeReactionEmoji(reaction: ReactionResolvable): Promise<void> {
         const r = typeof reaction === "string" ? reaction : `${reaction.name}:${reaction.id}`;
 
         await this.session.rest.runMethod<undefined>(
@@ -358,7 +358,7 @@ export class Message implements Model {
         );
     }
 
-    async nukeReactions() {
+    async nukeReactions(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "DELETE",
@@ -366,7 +366,7 @@ export class Message implements Model {
         );
     }
 
-    async crosspost() {
+    async crosspost(): Promise<Message> {
         const message = await this.session.rest.runMethod<DiscordMessage>(
             this.session.rest,
             "POST",
@@ -376,7 +376,7 @@ export class Message implements Model {
         return new Message(this.session, message);
     }
 
-    async fetch() {
+    async fetch(): Promise<(Message | undefined)> {
         const message = await this.session.rest.runMethod<DiscordMessage>(
             this.session.rest,
             "GET",

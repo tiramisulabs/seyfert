@@ -80,7 +80,7 @@ export class Util {
     }
 
     static iconBigintToHash(icon: bigint) {
-        const hash = icon.toString(16);
+        const hash: string = icon.toString(16);
 
         return hash.startsWith("a") ? `a_${hash.substring(1)}` : hash.substring(1);
     }

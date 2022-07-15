@@ -51,11 +51,11 @@ export abstract class BaseInteraction implements Model {
 
     readonly version: 1;
 
-    get createdTimestamp() {
+    get createdTimestamp(): number {
         return Snowflake.snowflakeToTimestamp(this.id);
     }
 
-    get createdAt() {
+    get createdAt(): Date {
         return new Date(this.createdTimestamp);
     }
 

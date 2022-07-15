@@ -6,6 +6,7 @@ import type {
     DiscordInteraction,
     DiscordMemberWithUser,
     InteractionTypes,
+    DiscordMessageComponents,
 } from "../../../discordeno/mod.ts";
 import type { CreateMessage } from "../Message.ts";
 import type { MessageFlags } from "../../Util.ts";
@@ -35,7 +36,7 @@ export interface InteractionApplicationCommandCallbackData
     extends Pick<CreateMessage, "allowedMentions" | "content" | "embeds" | "files"> {
     customId?: string;
     title?: string;
-    // components?: MessageComponents;
+    components?: DiscordMessageComponents;
     flags?: MessageFlags;
     choices?: ApplicationCommandOptionChoice[];
 }

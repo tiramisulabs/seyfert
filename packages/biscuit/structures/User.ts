@@ -36,12 +36,12 @@ export class User implements Model {
     banner?: string;
 
     /** gets the user's username#discriminator */
-    get tag() {
+    get tag(): string {
         return `${this.username}#${this.discriminator}}`;
     }
 
     /** gets the user's avatar */
-    avatarURL(options: { format?: ImageFormat; size?: ImageSize } = { size: 128 }) {
+    avatarURL(options: { format?: ImageFormat; size?: ImageSize } = { size: 128 }): string {
         let url: string;
 
         if (!this.avatarHash) {
@@ -53,7 +53,7 @@ export class User implements Model {
         return Util.formatImageURL(url, options.size, options.format);
     }
 
-    toString() {
+    toString(): string {
         return `<@${this.id}>`;
     }
 }
