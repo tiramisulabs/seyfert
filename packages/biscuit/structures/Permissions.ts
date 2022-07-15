@@ -15,7 +15,7 @@ export class Permissions {
         this.bitfield = Permissions.resolve(bitfield);
     }
 
-    has(bit: PermissionResolvable) {
+    has(bit: PermissionResolvable): boolean {
         if (this.bitfield & BigInt(Permissions.Flags.ADMINISTRATOR)) {
             return true;
         }

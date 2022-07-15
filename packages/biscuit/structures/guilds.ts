@@ -23,7 +23,7 @@ import { Snowflake } from "../Snowflake.ts";
 import Util from "../Util.ts";
 import * as Routes from "../Routes.ts";
 import WelcomeScreen from "./WelcomeScreen.ts";
-import { GuildChannel, ThreadChannel } from "./channels.ts";
+import { GuildChannel, ThreadChannel, ReturnThreadsArchive } from "./channels.ts";
 import ThreadMember from "./ThreadMember.ts";
 import Member from "./Member.ts";
 import Role from "./Role.ts";
@@ -53,23 +53,23 @@ export abstract class BaseGuild implements Model {
     iconHash?: bigint;
     features: GuildFeatures[];
 
-    get createdTimestamp() {
+    get createdTimestamp(): number {
         return Snowflake.snowflakeToTimestamp(this.id);
     }
 
-    get createdAt() {
+    get createdAt(): Date {
         return new Date(this.createdTimestamp);
     }
 
-    get partnered() {
+    get partnered(): boolean {
         return this.features.includes(GuildFeatures.Partnered);
     }
 
-    get verified() {
+    get verified(): boolean {
         return this.features.includes(GuildFeatures.Verified);
     }
 
-    iconURL(options: { size?: ImageSize; format?: ImageFormat } = { size: 128 }) {
+    iconURL(options: { size?: ImageSize; format?: ImageFormat } = { size: 128 }): string | void {
         if (this.iconHash) {
             return Util.formatImageURL(
                 Routes.GUILD_ICON(this.id, Util.iconBigintToHash(this.iconHash)),
@@ -79,7 +79,7 @@ export abstract class BaseGuild implements Model {
         }
     }
 
-    toString() {
+    toString(): string {
         return this.name;
     }
 }
@@ -109,7 +109,7 @@ export class AnonymousGuild extends BaseGuild implements Model {
     description?: string;
     premiumSubscriptionCount?: number;
 
-    splashURL(options: { size?: ImageSize; format?: ImageFormat } = { size: 128 }) {
+    splashURL(options: { size?: ImageSize; format?: ImageFormat } = { size: 128 }): string | void {
         if (this.splashHash) {
             return Util.formatImageURL(
                 Routes.GUILD_SPLASH(this.id, Util.iconBigintToHash(this.splashHash)),
@@ -119,7 +119,7 @@ export class AnonymousGuild extends BaseGuild implements Model {
         }
     }
 
-    bannerURL(options: { size?: ImageSize; format?: ImageFormat } = { size: 128 }) {
+    bannerURL(options: { size?: ImageSize; format?: ImageFormat } = { size: 128 }): string | void {
         if (this.bannerHash) {
             return Util.formatImageURL(
                 Routes.GUILD_BANNER(this.id, Util.iconBigintToHash(this.bannerHash)),
@@ -354,7 +354,7 @@ export class Guild extends BaseGuild implements Model {
     /**
      * 'null' would reset the nickname
      */
-    async editBotNickname(options: { nick: string | null; reason?: string }) {
+    async editBotNickname(options: { nick: string | null; reason?: string }): Promise<(string | undefined)> {
         const result = await this.session.rest.runMethod<{ nick?: string } | undefined>(
             this.session.rest,
             "PATCH",
@@ -448,7 +448,7 @@ export class Guild extends BaseGuild implements Model {
         return new Role(this.session, role, this.id);
     }
 
-    async addRole(memberId: Snowflake, roleId: Snowflake, { reason }: { reason?: string } = {}) {
+    async addRole(memberId: Snowflake, roleId: Snowflake, { reason }: { reason?: string } = {}): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "PUT",
@@ -457,7 +457,7 @@ export class Guild extends BaseGuild implements Model {
         );
     }
 
-    async removeRole(memberId: Snowflake, roleId: Snowflake, { reason }: { reason?: string } = {}) {
+    async removeRole(memberId: Snowflake, roleId: Snowflake, { reason }: { reason?: string } = {}): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "DELETE",
@@ -469,7 +469,7 @@ export class Guild extends BaseGuild implements Model {
     /**
      * Returns the roles moved
      */
-    async moveRoles(options: ModifyRolePositions[]) {
+    async moveRoles(options: ModifyRolePositions[]): Promise<Role[]> {
         const roles = await this.session.rest.runMethod<DiscordRole[]>(
             this.session.rest,
             "PATCH",
@@ -512,7 +512,7 @@ export class Guild extends BaseGuild implements Model {
     /**
      * Bans the member
      */
-    async banMember(memberId: Snowflake, options: CreateGuildBan) {
+    async banMember(memberId: Snowflake, options: CreateGuildBan): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "PUT",
@@ -529,7 +529,7 @@ export class Guild extends BaseGuild implements Model {
     /**
      * Kicks the member
      */
-    async kickMember(memberId: Snowflake, { reason }: { reason?: string }) {
+    async kickMember(memberId: Snowflake, { reason }: { reason?: string }): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "DELETE",
@@ -541,7 +541,7 @@ export class Guild extends BaseGuild implements Model {
     /*
      * Unbans the member
      * */
-    async unbanMember(memberId: Snowflake) {
+    async unbanMember(memberId: Snowflake): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "DELETE",
@@ -549,7 +549,7 @@ export class Guild extends BaseGuild implements Model {
         );
     }
 
-    async editMember(memberId: Snowflake, options: ModifyGuildMember) {
+    async editMember(memberId: Snowflake, options: ModifyGuildMember): Promise<Member> {
         const member = await this.session.rest.runMethod<DiscordMemberWithUser>(
             this.session.rest,
             "PATCH",
@@ -594,7 +594,7 @@ export class Guild extends BaseGuild implements Model {
         return result.pruned;
     }
 
-    async getActiveThreads() {
+    async getActiveThreads(): Promise<Omit<ReturnThreadsArchive, 'hasMore'>> {
         const { threads, members } = await this.session.rest.runMethod<DiscordListActiveThreads>(
             this.session.rest,
             "GET",
@@ -604,23 +604,17 @@ export class Guild extends BaseGuild implements Model {
         return {
             threads: Object.fromEntries(
                 threads.map((thread) => [thread.id, new ThreadChannel(this.session, thread, this.id)]),
-            ) as Record<Snowflake, ThreadChannel>,
+            ),
             members: Object.fromEntries(
                 members.map((threadMember) => [threadMember.id, new ThreadMember(this.session, threadMember)]),
-            ) as Record<Snowflake, ThreadMember>,
+            ),
         };
-    }
-
-    /** *
-     * Makes the bot leave the guild
-     */
-    async leave() {
     }
 
     /** *
      * Deletes a guild
      */
-    async delete() {
+    async delete(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "DELETE",
@@ -633,7 +627,7 @@ export class Guild extends BaseGuild implements Model {
      * This was modified from discord.js to make it compatible
      * precondition: Bot should be in less than 10 servers
      */
-    static async create(session: Session, options: GuildCreateOptions) {
+    static async create(session: Session, options: GuildCreateOptions): Promise<Guild> {
         const guild = await session.rest.runMethod<DiscordGuild>(session.rest, "POST", Routes.GUILDS(), {
             name: options.name,
             afk_channel_id: options.afkChannelId,
@@ -675,7 +669,7 @@ export class Guild extends BaseGuild implements Model {
     /**
      * Edits a guild and returns its data
      */
-    async edit(session: Session, options: GuildEditOptions) {
+    async edit(session: Session, options: GuildEditOptions): Promise<Guild> {
         const guild = await session.rest.runMethod<DiscordGuild>(session.rest, "PATCH", Routes.GUILDS(), {
             name: options.name,
             afk_channel_id: options.afkChannelId,
