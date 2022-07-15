@@ -27,19 +27,20 @@ export class ComponentInteraction extends BaseInteraction implements Model {
     message: Message;
     responded = false;
 
-    isButton(): this is "ComponentButton" {
+    //TODO: create interface/class for components types
+    isButton() {
         return this.componentType === MessageComponentTypes.Button;
     }
 
-    isActionRow(): this is "ActionRow" {
+    isActionRow() {
         return this.componentType === MessageComponentTypes.ActionRow;
     }
 
-    isTextInput(): this is "TextInput" {
+    isTextInput() {
         return this.componentType === MessageComponentTypes.InputText;
     }
 
-    isSelectMenu(): this is "SelectMenu" {
+    isSelectMenu() {
         return this.componentType === MessageComponentTypes.SelectMenu;
     }
 
