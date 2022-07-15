@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-empty-interface
 import type { Session } from "../Session.ts";
 import type { DiscordMemberWithUser, DiscordMessageReactionAdd, DiscordReaction } from "../../discordeno/mod.ts";
 import Emoji from "./Emoji.ts";

@@ -21,11 +21,11 @@ export class ThreadMember implements Model {
     flags: number;
     timestamp: number;
 
-    get threadId() {
+    get threadId(): Snowflake {
         return this.id;
     }
 
-    async quitThread(memberId: Snowflake = this.session.botId) {
+    async quitThread(memberId: Snowflake = this.session.botId): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "DELETE",
@@ -33,7 +33,7 @@ export class ThreadMember implements Model {
         );
     }
 
-    async fetchMember(memberId: Snowflake = this.session.botId) {
+    async fetchMember(memberId: Snowflake = this.session.botId): Promise<ThreadMember> {
         const member = await this.session.rest.runMethod<DiscordThreadMember>(
             this.session.rest,
             "GET",

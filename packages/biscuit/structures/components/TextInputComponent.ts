@@ -1,11 +1,11 @@
 import type { Session } from "../../Session.ts";
-import type { DiscordComponent } from "../../../discordeno/mod.ts";
+import type { DiscordInputTextComponent } from "../../../discordeno/mod.ts";
 import type { TextInputComponent } from "./Component.ts";
 import { MessageComponentTypes, TextStyles } from "../../../discordeno/mod.ts";
 import BaseComponent from "./Component.ts";
 
 export class TextInput extends BaseComponent implements TextInputComponent {
-    constructor(session: Session, data: DiscordComponent) {
+    constructor(session: Session, data: DiscordInputTextComponent) {
         super(data.type);
 
         this.session = session;
@@ -17,11 +17,10 @@ export class TextInput extends BaseComponent implements TextInputComponent {
         this.placeholder = data.placeholder;
         this.value = data.value;
 
-        // @ts-ignore: vendor bug
+        
         this.minLength = data.min_length;
-
-        // @ts-ignore: vendor bug
         this.maxLength = data.max_length;
+        
     }
 
     readonly session: Session;

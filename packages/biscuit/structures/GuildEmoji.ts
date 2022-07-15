@@ -41,7 +41,7 @@ export class GuildEmoji extends Emoji implements Model {
         return this;
     }
 
-    get url() {
+    get url(): string {
         return Routes.EMOJI_URL(this.id, this.animated);
     }
 }

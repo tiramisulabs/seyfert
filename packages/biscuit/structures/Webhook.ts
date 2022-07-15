@@ -47,7 +47,7 @@ export class Webhook implements Model {
     guildId?: Snowflake;
     user?: User;
 
-    async execute(options?: WebhookOptions & CreateMessage & { avatarUrl?: string; username?: string }) {
+    async execute(options?: WebhookOptions & CreateMessage & { avatarUrl?: string; username?: string }): Promise<(Message | undefined)> {
         if (!this.token) {
             return;
         }
@@ -57,12 +57,11 @@ export class Webhook implements Model {
             embeds: options?.embeds,
             tts: options?.tts,
             allowed_mentions: options?.allowedMentions,
-            // @ts-ignore: TODO: component builder or something
             components: options?.components,
             file: options?.files,
         };
 
-        const message = await this.session.rest.sendRequest<DiscordMessage>(this.session.rest, {
+        const message = this.session.rest.sendRequest<DiscordMessage>(this.session.rest, {
             url: Routes.WEBHOOK(this.id, this.token!, {
                 wait: options?.wait,
                 threadId: options?.threadId,
@@ -76,10 +75,10 @@ export class Webhook implements Model {
             }),
         });
 
-        return (options?.wait ?? true) ? new Message(this.session, message) : undefined;
+        return (options?.wait ?? true) ? new Message(this.session, await(message)) : undefined;
     }
 
-    async fetch() {
+    async fetch(): Promise<Webhook> {
         const message = await this.session.rest.runMethod<DiscordWebhook>(
             this.session.rest,
             "GET",
@@ -89,7 +88,7 @@ export class Webhook implements Model {
         return new Webhook(this.session, message);
     }
 
-    async fetchMessage(messageId: Snowflake) {
+    async fetchMessage(messageId: Snowflake): Promise<Message | void> {
         if (!this.token) {
             return;
         }

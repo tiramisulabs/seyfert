@@ -5,12 +5,12 @@ export class ChoiceBuilder {
     public name?: string;
     public value?: string;
 
-    public setName(name: string) {
+    public setName(name: string): ChoiceBuilder {
         this.name = name;
         return this;
     }
 
-    public setValue(value: string) {
+    public setValue(value: string): ChoiceBuilder {
         this.value = value;
         return this;
     }
@@ -36,19 +36,19 @@ export class OptionBuilder {
         this.description = description;
     }
 
-    public setType(type: ApplicationCommandOptionTypes) {
+    public setType(type: ApplicationCommandOptionTypes): OptionBuilder {
         return (this.type = type), this;
     }
 
-    public setName(name: string) {
+    public setName(name: string): OptionBuilder {
         return (this.name = name), this;
     }
 
-    public setDescription(description: string) {
+    public setDescription(description: string): OptionBuilder {
         return (this.description = description), this;
     }
 
-    public setRequired(required: boolean) {
+    public setRequired(required: boolean): OptionBuilder {
         return (this.required = required), this;
     }
 
@@ -86,15 +86,15 @@ export class OptionBuilderLimitedValues extends OptionBuilder {
         this.description = description;
     }
 
-    public setMinValue(n: number) {
+    public setMinValue(n: number): OptionBuilderLimitedValues {
         return (this.minValue = n), this;
     }
 
-    public setMaxValue(n: number) {
+    public setMaxValue(n: number): OptionBuilderLimitedValues {
         return (this.maxValue = n), this;
     }
 
-    public addChoice(fn: (choice: ChoiceBuilder) => ChoiceBuilder) {
+    public addChoice(fn: (choice: ChoiceBuilder) => ChoiceBuilder): OptionBuilderLimitedValues {
         const choice = fn(new ChoiceBuilder());
         this.choices ??= [];
         this.choices.push(choice);
@@ -125,7 +125,7 @@ export class OptionBuilderString extends OptionBuilder {
         this;
     }
 
-    public addChoice(fn: (choice: ChoiceBuilder) => ChoiceBuilder) {
+    public addChoice(fn: (choice: ChoiceBuilder) => ChoiceBuilder): OptionBuilderString {
         const choice = fn(new ChoiceBuilder());
         this.choices ??= [];
         this.choices.push(choice);
@@ -154,7 +154,7 @@ export class OptionBuilderChannel extends OptionBuilder {
         this;
     }
 
-    public addChannelTypes(...channels: ChannelTypes[]) {
+    public addChannelTypes(...channels: ChannelTypes[]): OptionBuilderChannel {
         this.channelTypes ??= [];
         this.channelTypes.push(...channels);
         return this;
@@ -183,75 +183,75 @@ export class OptionBased {
         )
         & OptionBuilderLike[];
 
-    public addOption(fn: (option: OptionBuilder) => OptionBuilder, type?: ApplicationCommandOptionTypes) {
+    public addOption(fn: (option: OptionBuilder) => OptionBuilder, type?: ApplicationCommandOptionTypes): OptionBased {
         const option = fn(new OptionBuilder(type));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addNestedOption(fn: (option: OptionBuilder) => OptionBuilder) {
+    public addNestedOption(fn: (option: OptionBuilder) => OptionBuilder): OptionBased {
         const option = fn(new OptionBuilder(ApplicationCommandOptionTypes.SubCommand));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addStringOption(fn: (option: OptionBuilderString) => OptionBuilderString) {
+    public addStringOption(fn: (option: OptionBuilderString) => OptionBuilderString): OptionBased {
         const option = fn(new OptionBuilderString(ApplicationCommandOptionTypes.String));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addIntegerOption(fn: (option: OptionBuilderLimitedValues) => OptionBuilderLimitedValues) {
+    public addIntegerOption(fn: (option: OptionBuilderLimitedValues) => OptionBuilderLimitedValues): OptionBased {
         const option = fn(new OptionBuilderLimitedValues(ApplicationCommandOptionTypes.Integer));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addNumberOption(fn: (option: OptionBuilderLimitedValues) => OptionBuilderLimitedValues) {
+    public addNumberOption(fn: (option: OptionBuilderLimitedValues) => OptionBuilderLimitedValues): OptionBased {
         const option = fn(new OptionBuilderLimitedValues(ApplicationCommandOptionTypes.Number));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addBooleanOption(fn: (option: OptionBuilder) => OptionBuilder) {
+    public addBooleanOption(fn: (option: OptionBuilder) => OptionBuilder): OptionBased {
         return this.addOption(fn, ApplicationCommandOptionTypes.Boolean);
     }
 
-    public addSubCommand(fn: (option: OptionBuilderNested) => OptionBuilderNested) {
+    public addSubCommand(fn: (option: OptionBuilderNested) => OptionBuilderNested): OptionBased {
         const option = fn(new OptionBuilderNested(ApplicationCommandOptionTypes.SubCommand));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addSubCommandGroup(fn: (option: OptionBuilderNested) => OptionBuilderNested) {
+    public addSubCommandGroup(fn: (option: OptionBuilderNested) => OptionBuilderNested): OptionBased {
         const option = fn(new OptionBuilderNested(ApplicationCommandOptionTypes.SubCommandGroup));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addUserOption(fn: (option: OptionBuilder) => OptionBuilder) {
+    public addUserOption(fn: (option: OptionBuilder) => OptionBuilder): OptionBased {
         return this.addOption(fn, ApplicationCommandOptionTypes.User);
     }
 
-    public addChannelOption(fn: (option: OptionBuilderChannel) => OptionBuilderChannel) {
+    public addChannelOption(fn: (option: OptionBuilderChannel) => OptionBuilderChannel): OptionBased {
         const option = fn(new OptionBuilderChannel(ApplicationCommandOptionTypes.Channel));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addRoleOption(fn: (option: OptionBuilder) => OptionBuilder) {
+    public addRoleOption(fn: (option: OptionBuilder) => OptionBuilder): OptionBased {
         return this.addOption(fn, ApplicationCommandOptionTypes.Role);
     }
 
-    public addMentionableOption(fn: (option: OptionBuilder) => OptionBuilder) {
+    public addMentionableOption(fn: (option: OptionBuilder) => OptionBuilder): OptionBased {
         return this.addOption(fn, ApplicationCommandOptionTypes.Mentionable);
     }
 

@@ -39,7 +39,7 @@ export class StageInstance implements Model {
     discoverableDisabled: boolean;
     guildScheduledEventId: Snowflake;
 
-    async edit(options: { topic?: string; privacyLevel?: PrivacyLevels }) {
+    async edit(options: { topic?: string; privacyLevel?: PrivacyLevels }): Promise<StageInstance> {
         const stageInstance = await this.session.rest.runMethod<DiscordStageInstanceB>(
             this.session.rest,
             "PATCH",
@@ -53,7 +53,7 @@ export class StageInstance implements Model {
         return new StageInstance(this.session, stageInstance);
     }
 
-    async delete() {
+    async delete(): Promise<void> {
         await this.session.rest.runMethod<undefined>(this.session.rest, "DELETE", Routes.STAGE_INSTANCE(this.id));
     }
 }

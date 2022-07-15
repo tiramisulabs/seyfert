@@ -48,11 +48,11 @@ export class Member implements Model {
         return this.user.id;
     }
 
-    get nicknameOrUsername() {
+    get nicknameOrUsername(): string {
         return this.nickname ?? this.user.username;
     }
 
-    get joinedAt() {
+    get joinedAt(): Date {
         return new Date(this.joinedTimestamp);
     }
 
@@ -68,7 +68,7 @@ export class Member implements Model {
         return this;
     }
 
-    async unban() {
+    async unban(): Promise<void> {
         await Guild.prototype.unbanMember.call({ id: this.guildId, session: this.session }, this.user.id);
     }
 
@@ -82,11 +82,11 @@ export class Member implements Model {
         return member;
     }
 
-    async addRole(roleId: Snowflake, options: { reason?: string } = {}) {
+    async addRole(roleId: Snowflake, options: { reason?: string } = {}): Promise<void> {
         await Guild.prototype.addRole.call({ id: this.guildId, session: this.session }, this.user.id, roleId, options);
     }
 
-    async removeRole(roleId: Snowflake, options: { reason?: string } = {}) {
+    async removeRole(roleId: Snowflake, options: { reason?: string } = {}): Promise<void> {
         await Guild.prototype.removeRole.call(
             { id: this.guildId, session: this.session },
             this.user.id,
@@ -96,7 +96,7 @@ export class Member implements Model {
     }
 
     /** gets the user's avatar */
-    avatarURL(options: { format?: ImageFormat; size?: ImageSize } = { size: 128 }) {
+    avatarURL(options: { format?: ImageFormat; size?: ImageSize } = { size: 128 }): string {
         let url: string;
 
         if (this.user.bot) {
@@ -112,7 +112,7 @@ export class Member implements Model {
         return Util.formatImageURL(url, options.size, options.format);
     }
 
-    toString() {
+    toString(): string {
         return `<@!${this.user.id}>`;
     }
 }
