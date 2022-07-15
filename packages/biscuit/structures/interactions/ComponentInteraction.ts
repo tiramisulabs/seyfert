@@ -2,9 +2,7 @@ import type { Model } from "../Base.ts";
 import type { Snowflake } from "../../Snowflake.ts";
 import type { Session } from "../../Session.ts";
 import type { DiscordInteraction, InteractionTypes } from "../../../discordeno/mod.ts";
-import type { InteractionApplicationCommandCallbackData, InteractionResponse } from "./CommandInteraction.ts";
-import { MessageComponentTypes } from "../../../discordeno/mod.ts";
-import CommandInteraction from "./CommandInteraction.ts";
+import { MessageComponentTypes, InteractionResponseTypes } from "../../../discordeno/mod.ts";
 import BaseInteraction from "./BaseInteraction.ts";
 import Message from "../Message.ts";
 
@@ -25,7 +23,6 @@ export class ComponentInteraction extends BaseInteraction implements Model {
     targetId?: Snowflake;
     values?: string[];
     message: Message;
-    responded = false;
 
     //TODO: create interface/class for components types
     isButton(): boolean {
@@ -44,12 +41,8 @@ export class ComponentInteraction extends BaseInteraction implements Model {
         return this.componentType === MessageComponentTypes.SelectMenu;
     }
 
-    sendFollowUp(options: InteractionApplicationCommandCallbackData): Promise<Message> {
-        return CommandInteraction.prototype.sendFollowUp.call(this, options);
-    }
-
-    respond(options: InteractionResponse): Promise<Message | undefined> {
-        return CommandInteraction.prototype.respond.call(this, options);
+    async deferUpdate() {
+        await this.respond({ type: InteractionResponseTypes.DeferredUpdateMessage });
     }
 }
 

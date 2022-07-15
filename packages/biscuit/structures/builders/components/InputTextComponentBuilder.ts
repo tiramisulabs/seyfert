@@ -8,38 +8,38 @@ export class InputTextBuilder {
     #data: DiscordInputTextComponent;
     type: MessageComponentTypes.InputText;
 
-    setStyle(style: TextStyles): InputTextBuilder {
+    setStyle(style: TextStyles): this {
         this.#data.style = style;
         return this;
     }
 
-    setLabel(label: string): InputTextBuilder {
+    setLabel(label: string): this {
         this.#data.label = label;
         return this;
     }
 
-    setPlaceholder(placeholder: string): InputTextBuilder {
+    setPlaceholder(placeholder: string): this {
         this.#data.placeholder = placeholder;
         return this;
     }
 
-    setLength(max?: number, min?: number): InputTextBuilder {
+    setLength(max?: number, min?: number): this {
         this.#data.max_length = max;
         this.#data.min_length = min;
         return this;
     }
 
-    setCustomId(id: string): InputTextBuilder {
+    setCustomId(id: string): this {
         this.#data.custom_id = id;
         return this;
     }
 
-    setValue(value: string): InputTextBuilder {
+    setValue(value: string): this {
         this.#data.value = value;
         return this;
     }
 
-    setRequired(required = true): InputTextBuilder {
+    setRequired(required = true): this {
         this.#data.required = required;
         return this;
     }

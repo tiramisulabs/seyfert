@@ -11,28 +11,28 @@ export class SelectMenuBuilder {
     type: MessageComponentTypes.SelectMenu;
     options: SelectMenuOptionBuilder[];
 
-    setPlaceholder(placeholder: string): SelectMenuBuilder {
+    setPlaceholder(placeholder: string): this {
         this.#data.placeholder = placeholder;
         return this;
     }
 
-    setValues(max?: number, min?: number): SelectMenuBuilder {
+    setValues(max?: number, min?: number): this {
         this.#data.max_values = max;
         this.#data.min_values = min;
         return this;
     }
 
-    setDisabled(disabled = true): SelectMenuBuilder {
+    setDisabled(disabled = true): this {
         this.#data.disabled = disabled;
         return this;
     }
 
-    setCustomId(id: string): SelectMenuBuilder {
+    setCustomId(id: string): this {
         this.#data.custom_id = id;
         return this;
     }
 
-    setOptions(...options: SelectMenuOptionBuilder[]): SelectMenuBuilder {
+    setOptions(...options: SelectMenuOptionBuilder[]): this {
         this.options.splice(
             0,
             this.options.length,
@@ -41,7 +41,7 @@ export class SelectMenuBuilder {
         return this;
     }
 
-    addOptions(...options: SelectMenuOptionBuilder[]): SelectMenuBuilder {
+    addOptions(...options: SelectMenuOptionBuilder[]): this {
         this.options.push(
             ...options,
         );

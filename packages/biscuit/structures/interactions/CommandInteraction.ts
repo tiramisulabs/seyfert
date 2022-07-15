@@ -6,11 +6,7 @@ import type {
     DiscordInteraction,
     DiscordMemberWithUser,
     InteractionTypes,
-    DiscordMessageComponents,
 } from "../../../discordeno/mod.ts";
-import type { CreateMessage } from "../Message.ts";
-import type { MessageFlags } from "../../Util.ts";
-import { InteractionResponseTypes } from "../../../discordeno/mod.ts";
 import BaseInteraction from "./BaseInteraction.ts";
 import CommandInteractionOptionResolver from "./CommandInteractionOptionResolver.ts";
 import Attachment from "../Attachment.ts";
@@ -18,36 +14,6 @@ import User from "../User.ts";
 import Member from "../Member.ts";
 import Message from "../Message.ts";
 import Role from "../Role.ts";
-import Webhook from "../Webhook.ts";
-import * as Routes from "../../Routes.ts";
-
-/**
- * @link https://discord.com/developers/docs/interactions/slash-commands#interaction-response
- */
-export interface InteractionResponse {
-    type: InteractionResponseTypes;
-    data?: InteractionApplicationCommandCallbackData;
-}
-
-/**
- * @link https://discord.com/developers/docs/interactions/slash-commands#interaction-response-interactionapplicationcommandcallbackdata
- */
-export interface InteractionApplicationCommandCallbackData
-    extends Pick<CreateMessage, "allowedMentions" | "content" | "embeds" | "files"> {
-    customId?: string;
-    title?: string;
-    components?: DiscordMessageComponents;
-    flags?: MessageFlags;
-    choices?: ApplicationCommandOptionChoice[];
-}
-
-/**
- * @link https://discord.com/developers/docs/interactions/slash-commands#applicationcommandoptionchoice
- */
-export interface ApplicationCommandOptionChoice {
-    name: string;
-    value: string | number;
-}
 
 export class CommandInteraction extends BaseInteraction implements Model {
     constructor(session: Session, data: DiscordInteraction) {
@@ -111,47 +77,6 @@ export class CommandInteraction extends BaseInteraction implements Model {
         messages: Map<Snowflake, Message>;
     };
     options: CommandInteractionOptionResolver;
-    responded = false;
-
-    async sendFollowUp(options: InteractionApplicationCommandCallbackData): Promise<Message> {
-        const message = await Webhook.prototype.execute.call({
-            id: this.applicationId!,
-            token: this.token,
-            session: this.session,
-        }, options);
-
-        return message!;
-    }
-
-    async respond({ type, data: options }: InteractionResponse): Promise<Message | undefined> {
-        const data = {
-            content: options?.content,
-            custom_id: options?.customId,
-            file: options?.files,
-            allowed_mentions: options?.allowedMentions,
-            flags: options?.flags,
-            chocies: options?.choices,
-            embeds: options?.embeds,
-            title: options?.title,
-        };
-
-        if (!this.responded) {
-            await this.session.rest.sendRequest<undefined>(this.session.rest, {
-                url: Routes.INTERACTION_ID_TOKEN(this.id, this.token),
-                method: "POST",
-                payload: this.session.rest.createRequestBody(this.session.rest, {
-                    method: "POST",
-                    body: { type, data, file: options?.files },
-                    headers: { "Authorization": "" },
-                }),
-            });
-
-            this.responded = true;
-            return;
-        }
-
-        return this.sendFollowUp(data);
-    }
 }
 
 export default CommandInteraction;

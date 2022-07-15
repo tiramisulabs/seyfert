@@ -1,5 +1,5 @@
 import type { Session } from "../../Session.ts";
-import type { DiscordComponent } from "../../../discordeno/mod.ts";
+import type { DiscordComponent, DiscordInputTextComponent } from "../../../discordeno/mod.ts";
 import type { Component } from "./Component.ts";
 import { ButtonStyles, MessageComponentTypes } from "../../../discordeno/mod.ts";
 import ActionRow from "./ActionRowComponent.ts";
@@ -18,14 +18,12 @@ export class ComponentFactory {
             case MessageComponentTypes.ActionRow:
                 return new ActionRow(session, component);
             case MessageComponentTypes.Button:
-                if (component.style === ButtonStyles.Link) {
-                    return new LinkButton(session, component);
-                }
+                if (component.style === ButtonStyles.Link) return new LinkButton(session, component);
                 return new Button(session, component);
             case MessageComponentTypes.SelectMenu:
                 return new SelectMenu(session, component);
             case MessageComponentTypes.InputText:
-                return new TextInput(session, component);
+                return new TextInput(session, component as DiscordInputTextComponent);
         }
     }
 }

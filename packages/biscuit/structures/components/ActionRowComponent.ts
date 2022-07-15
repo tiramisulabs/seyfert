@@ -1,5 +1,5 @@
 import type { Session } from "../../Session.ts";
-import type { DiscordComponent } from "../../../discordeno/mod.ts";
+import type { DiscordComponent, DiscordInputTextComponent } from "../../../discordeno/mod.ts";
 import type { ActionRowComponent, Component } from "./Component.ts";
 import { ButtonStyles, MessageComponentTypes } from "../../../discordeno/mod.ts";
 import BaseComponent from "./Component.ts";
@@ -24,7 +24,7 @@ export class ActionRow extends BaseComponent implements ActionRowComponent {
                 case MessageComponentTypes.SelectMenu:
                     return new SelectMenu(session, component);
                 case MessageComponentTypes.InputText:
-                    return new InputText(session, component);
+                    return new InputText(session, component as DiscordInputTextComponent);
                 case MessageComponentTypes.ActionRow:
                     throw new Error("Cannot have an action row inside an action row");
             }
