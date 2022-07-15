@@ -6,7 +6,7 @@
 const { GatewayIntents, Session } = require("../mod.ts");
 
 // if it didn't worked use:
-// const { GatewayIntents, Session } = require("@oasisjs/biscuit");
+// import { GatewayIntents, Session } from "@oasisjs/biscuit";
 
 const token = process.env.TOKEN;
 const intents = GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages;

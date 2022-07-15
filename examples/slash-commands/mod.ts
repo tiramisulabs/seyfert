@@ -4,7 +4,7 @@ import {
     GatewayIntents,
     InteractionResponseTypes,
     Session,
-} from "https://x.nest.land/biscuit/mod.ts";
+} from "https://deno.land/x/biscuit/mod.ts";
 
 const token = Deno.env.get("TOKEN") ?? Deno.args[0];
 

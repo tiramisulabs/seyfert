@@ -5,7 +5,7 @@
 import "https://deno.land/std@0.146.0/dotenv/load.ts";
 
 // Session to create a new bot (and intents)
-import { GatewayIntents, Session } from "https://x.nest.land/biscuit/mod.ts";
+import { GatewayIntents, Session } from "https://deno.land/x/biscuit/mod.ts";
 
 const token = Deno.env.get("TOKEN") ?? Deno.args[0];
 
