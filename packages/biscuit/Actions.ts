@@ -435,4 +435,5 @@ export interface Events {
     "webhooksUpdate":             Handler<[{ guildId: Snowflake, channelId: Snowflake }]>;
     "userUpdate":                 Handler<[User]>;
     "presenceUpdate":             Handler<[Presence]>;
+    "debug":                      Handler<[string]>;
 }
