@@ -20,14 +20,12 @@ const command: CreateApplicationCommand = {
     description: "Replies with pong!",
 };
 
-const guildId = "";
-
 session.on("ready", async (payload) => {
     console.log("Logged in as:", payload.user.username);
     console.log("Creating the application commands...");
     // create command
     try {
-        await session.createApplicationCommand(command, guildId);
+        await session.createApplicationCommand(command);
         console.log("Done!");
     } catch (err) {
         console.error(err);
@@ -36,7 +34,10 @@ session.on("ready", async (payload) => {
 
 // Follow interaction event
 session.on("interactionCreate", (interaction) => {
-    if (!interaction.isCommand()) return;
+    if (!interaction.isCommand()) {
+        return;
+    }
+
     if (interaction.commandName === "ping") {
         interaction.respond({
             type: InteractionResponseTypes.ChannelMessageWithSource,
