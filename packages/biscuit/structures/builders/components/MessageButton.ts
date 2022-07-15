@@ -1,10 +1,10 @@
-import type { ButtonStyles, DiscordButtonComponent, MessageComponentTypes } from "../../../../discordeno/mod.ts";
+import { type ButtonStyles, type DiscordButtonComponent, MessageComponentTypes } from "../../../../discordeno/mod.ts";
 import type { ComponentEmoji } from "../../../Util.ts";
 
 export class ButtonBuilder {
     constructor() {
         this.#data = {} as DiscordButtonComponent;
-        this.type = 2;
+        this.type = MessageComponentTypes.Button;
     }
     #data: DiscordButtonComponent;
     type: MessageComponentTypes.Button;
@@ -13,27 +13,27 @@ export class ButtonBuilder {
         return this;
     }
 
-    setLabel(label: string) {
+    setLabel(label: string): ButtonBuilder {
         this.#data.label = label;
         return this;
     }
 
-    setCustomId(id: string) {
+    setCustomId(id: string): ButtonBuilder {
         this.#data.custom_id = id;
         return this;
     }
 
-    setEmoji(emoji: ComponentEmoji) {
+    setEmoji(emoji: ComponentEmoji): ButtonBuilder {
         this.#data.emoji = emoji;
         return this;
     }
 
-    setDisabled(disabled = true) {
+    setDisabled(disabled = true): ButtonBuilder {
         this.#data.disabled = disabled;
         return this;
     }
 
-    setURL(url: string) {
+    setURL(url: string): ButtonBuilder {
         this.#data.url = url;
         return this;
     }

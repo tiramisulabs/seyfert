@@ -25,31 +25,31 @@ export abstract class ApplicationCommandBuilder implements CreateApplicationComm
         this.dmPermission = dmPermission;
     }
 
-    public setType(type: ApplicationCommandTypes) {
+    public setType(type: ApplicationCommandTypes): ApplicationCommandBuilder {
         return (this.type = type), this;
     }
 
-    public setName(name: string) {
+    public setName(name: string): ApplicationCommandBuilder {
         return (this.name = name), this;
     }
 
-    public setDescription(description: string) {
+    public setDescription(description: string): ApplicationCommandBuilder {
         return (this.description = description), this;
     }
 
-    public setDefaultMemberPermission(perm: PermissionStrings[]) {
+    public setDefaultMemberPermission(perm: PermissionStrings[]): ApplicationCommandBuilder {
         return (this.defaultMemberPermissions = perm), this;
     }
 
-    public setNameLocalizations(l: Localization) {
+    public setNameLocalizations(l: Localization): ApplicationCommandBuilder {
         return (this.nameLocalizations = l), this;
     }
 
-    public setDescriptionLocalizations(l: Localization) {
+    public setDescriptionLocalizations(l: Localization): ApplicationCommandBuilder {
         return (this.descriptionLocalizations = l), this;
     }
 
-    public setDmPermission(perm: boolean) {
+    public setDmPermission(perm: boolean): ApplicationCommandBuilder {
         return (this.dmPermission = perm), this;
     }
 }
@@ -64,7 +64,7 @@ export class MessageApplicationCommandBuilder {
         this.name = name;
     }
 
-    public setName(name: string) {
+    public setName(name: string): MessageApplicationCommandBuilder {
         return (this.name = name), this;
     }
 

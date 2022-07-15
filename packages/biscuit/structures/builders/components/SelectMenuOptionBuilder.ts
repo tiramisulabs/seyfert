@@ -7,32 +7,32 @@ export class SelectMenuOptionBuilder {
     }
     #data: DiscordSelectOption;
 
-    setLabel(label: string) {
+    setLabel(label: string): SelectMenuOptionBuilder {
         this.#data.label = label;
         return this;
     }
 
-    setValue(value: string) {
+    setValue(value: string): SelectMenuOptionBuilder  {
         this.#data.value = value;
         return this;
     }
 
-    setDescription(description: string) {
+    setDescription(description: string): SelectMenuOptionBuilder  {
         this.#data.description = description;
         return this;
     }
 
-    setDefault(Default = true) {
+    setDefault(Default = true): SelectMenuOptionBuilder  {
         this.#data.default = Default;
         return this;
     }
 
-    setEmoji(emoji: ComponentEmoji) {
+    setEmoji(emoji: ComponentEmoji): SelectMenuOptionBuilder  {
         this.#data.emoji = emoji;
         return this;
     }
 
-    toJSON() {
+    toJSON(): DiscordSelectOption {
         return { ...this.#data };
     }
 }

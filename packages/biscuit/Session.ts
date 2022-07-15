@@ -256,14 +256,14 @@ export class Session extends EventEmitter {
     }
 
     async fetchUser(id: Snowflake): Promise<User | undefined> {
-        const user = await this.rest.runMethod<DiscordUser>(this.rest, "GET", Routes.USER(id));
+        const user: DiscordUser = await this.rest.runMethod<DiscordUser>(this.rest, "GET", Routes.USER(id));
 
         if (!user.id) return;
 
         return new User(this, user);
     }
 
-    createApplicationCommand(options: CreateApplicationCommand | CreateContextApplicationCommand, guildId?: Snowflake) {
+    createApplicationCommand(options: CreateApplicationCommand | CreateContextApplicationCommand, guildId?: Snowflake): Promise<DiscordApplicationCommand> {
         return this.rest.runMethod<DiscordApplicationCommand>(
             this.rest,
             "POST",
@@ -291,7 +291,7 @@ export class Session extends EventEmitter {
         );
     }
 
-    deleteApplicationCommand(id: Snowflake, guildId?: Snowflake) {
+    deleteApplicationCommand(id: Snowflake, guildId?: Snowflake): Promise<undefined> {
         return this.rest.runMethod<undefined>(
             this.rest,
             "DELETE",
@@ -306,7 +306,7 @@ export class Session extends EventEmitter {
         id: Snowflake,
         bearerToken: string,
         options: ApplicationCommandPermissions[],
-    ) {
+    ): Promise<DiscordGuildApplicationCommandPermissions> {
         return this.rest.runMethod<DiscordGuildApplicationCommandPermissions>(
             this.rest,
             "PUT",
@@ -320,7 +320,7 @@ export class Session extends EventEmitter {
         );
     }
 
-    fetchApplicationCommand(id: Snowflake, options?: GetApplicationCommand) {
+    fetchApplicationCommand(id: Snowflake, options?: GetApplicationCommand): Promise<DiscordApplicationCommand> {
         return this.rest.runMethod<DiscordApplicationCommand>(
             this.rest,
             "GET",
@@ -335,7 +335,7 @@ export class Session extends EventEmitter {
         );
     }
 
-    fetchApplicationCommandPermissions(guildId: Snowflake) {
+    fetchApplicationCommandPermissions(guildId: Snowflake): Promise<DiscordGuildApplicationCommandPermissions[]> {
         return this.rest.runMethod<DiscordGuildApplicationCommandPermissions[]>(
             this.rest,
             "GET",
@@ -343,7 +343,7 @@ export class Session extends EventEmitter {
         );
     }
 
-    fetchApplicationCommandPermission(guildId: Snowflake, id: Snowflake) {
+    fetchApplicationCommandPermission(guildId: Snowflake, id: Snowflake): Promise<DiscordGuildApplicationCommandPermissions> {
         return this.rest.runMethod<DiscordGuildApplicationCommandPermissions>(
             this.rest,
             "GET",
@@ -355,7 +355,7 @@ export class Session extends EventEmitter {
         id: Snowflake,
         options: AtLeastOne<CreateApplicationCommand> | AtLeastOne<CreateContextApplicationCommand>,
         guildId?: Snowflake,
-    ) {
+    ): Promise<DiscordApplicationCommand> {
         return this.rest.runMethod<DiscordApplicationCommand>(
             this.rest,
             "PATCH",
@@ -379,7 +379,7 @@ export class Session extends EventEmitter {
     upsertApplicationCommands(
         options: Array<UpsertApplicationCommands | CreateContextApplicationCommand>,
         guildId?: Snowflake,
-    ) {
+    ): Promise<DiscordApplicationCommand[]> {
         return this.rest.runMethod<DiscordApplicationCommand[]>(
             this.rest,
             "PUT",
@@ -402,7 +402,7 @@ export class Session extends EventEmitter {
         );
     }
 
-    fetchCommands(guildId?: Snowflake) {
+    fetchCommands(guildId?: Snowflake): Promise<DiscordApplicationCommand[]> {
         return this.rest.runMethod<DiscordApplicationCommand[]>(
             this.rest,
             "GET",
@@ -417,7 +417,7 @@ export class Session extends EventEmitter {
         return cmd.type === ApplicationCommandTypes.Message || cmd.type === ApplicationCommandTypes.User;
     }
 
-    async start() {
+    async start(): Promise<void> {
         const getGatewayBot = () => this.rest.runMethod<DiscordGetGatewayBot>(this.rest, "GET", Routes.GATEWAY_BOT());
 
         // check if is empty

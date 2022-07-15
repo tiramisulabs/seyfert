@@ -145,7 +145,7 @@ export class TextChannel {
      * Mixin
      */
     // deno-lint-ignore ban-types
-    static applyTo(klass: Function, ignore: Array<keyof TextChannel> = []) {
+    static applyTo(klass: Function, ignore: Array<keyof TextChannel> = []): void {
         const methods: Array<keyof TextChannel> = [
             "fetchPins",
             "createInvite",
@@ -178,7 +178,7 @@ export class TextChannel {
         return messages[0] ? messages.map((x: DiscordMessage) => new Message(this.session, x)) : [];
     }
 
-    async createInvite(options?: DiscordInviteOptions) {
+    async createInvite(options?: DiscordInviteOptions): Promise<Invite> {
         const invite = await this.session.rest.runMethod<DiscordInvite>(
             this.session.rest,
             "POST",
@@ -209,7 +209,7 @@ export class TextChannel {
         return messages[0] ? messages.map((x) => new Message(this.session, x)) : [];
     }
 
-    async sendTyping() {
+    async sendTyping(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "POST",
@@ -217,22 +217,26 @@ export class TextChannel {
         );
     }
 
-    async pinMessage(messageId: Snowflake) {
+    async pinMessage(messageId: Snowflake): Promise<void> {
         await Message.prototype.pin.call({ id: messageId, channelId: this.id, session: this.session });
     }
 
-    async unpinMessage(messageId: Snowflake) {
+    async unpinMessage(messageId: Snowflake): Promise<void> {
         await Message.prototype.unpin.call({ id: messageId, channelId: this.id, session: this.session });
     }
 
-    async addReaction(messageId: Snowflake, reaction: ReactionResolvable) {
+    async addReaction(messageId: Snowflake, reaction: ReactionResolvable): Promise<void> {
         await Message.prototype.addReaction.call(
             { channelId: this.id, id: messageId, session: this.session },
             reaction,
         );
     }
 
-    async removeReaction(messageId: Snowflake, reaction: ReactionResolvable, options?: { userId: Snowflake }) {
+    async removeReaction(
+        messageId: Snowflake,
+        reaction: ReactionResolvable,
+        options?: { userId: Snowflake },
+    ): Promise<void> {
         await Message.prototype.removeReaction.call(
             { channelId: this.id, id: messageId, session: this.session },
             reaction,
@@ -240,18 +244,22 @@ export class TextChannel {
         );
     }
 
-    async removeReactionEmoji(messageId: Snowflake, reaction: ReactionResolvable) {
+    async removeReactionEmoji(messageId: Snowflake, reaction: ReactionResolvable): Promise<void> {
         await Message.prototype.removeReactionEmoji.call(
             { channelId: this.id, id: messageId, session: this.session },
             reaction,
         );
     }
 
-    async nukeReactions(messageId: Snowflake) {
+    async nukeReactions(messageId: Snowflake): Promise<void> {
         await Message.prototype.nukeReactions.call({ channelId: this.id, id: messageId });
     }
 
-    async fetchReactions(messageId: Snowflake, reaction: ReactionResolvable, options?: Routes.GetReactions) {
+    async fetchReactions(
+        messageId: Snowflake,
+        reaction: ReactionResolvable,
+        options?: Routes.GetReactions,
+    ): Promise<User[]> {
         const users = await Message.prototype.fetchReactions.call(
             { channelId: this.id, id: messageId, session: this.session },
             reaction,
@@ -261,15 +269,15 @@ export class TextChannel {
         return users;
     }
 
-    sendMessage(options: CreateMessage) {
+    sendMessage(options: CreateMessage): Promise<Message> {
         return Message.prototype.reply.call({ channelId: this.id, session: this.session }, options);
     }
 
-    editMessage(messageId: Snowflake, options: EditMessage) {
+    editMessage(messageId: Snowflake, options: EditMessage): Promise<Message> {
         return Message.prototype.edit.call({ channelId: this.id, id: messageId, session: this.session }, options);
     }
 
-    async createWebhook(options: CreateWebhook) {
+    async createWebhook(options: CreateWebhook): Promise<Webhook> {
         const webhook = await this.session.rest.runMethod<DiscordWebhook>(
             this.session.rest,
             "POST",
@@ -343,6 +351,14 @@ export interface ThreadCreateOptions {
     rateLimitPerUser?: number;
     messageId: Snowflake;
 }
+/**
+ * @link https://discord.com/developers/docs/resources/channel#list-public-archived-threads-response-body
+ */
+export interface ReturnThreadsArchive {
+    threads: Record<Snowflake, ThreadChannel>;
+    members: Record<Snowflake, ThreadMember>;
+    hasMore: boolean;
+}
 
 export class GuildChannel extends BaseChannel implements Model {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
@@ -403,7 +419,7 @@ export class GuildChannel extends BaseChannel implements Model {
 
     async getArchivedThreads(
         options: Routes.ListArchivedThreads & { type: "public" | "private" | "privateJoinedThreads" },
-    ) {
+    ): Promise<ReturnThreadsArchive> {
         let func: (channelId: Snowflake, options: Routes.ListArchivedThreads) => string;
 
         switch (options.type) {
@@ -487,7 +503,7 @@ export abstract class BaseVoiceChannel extends GuildChannel {
     /**
      * This function was gathered from Discordeno it may not work
      */
-    async connect(options?: UpdateVoiceState) {
+    async connect(options?: UpdateVoiceState): Promise<void> {
         const shardId = calculateShardId(this.session.gateway, BigInt(super.guildId));
         const shard = this.session.gateway.manager.shards.get(shardId);
 
@@ -522,7 +538,7 @@ export class DMChannel extends BaseChannel implements Model {
     user: User;
     lastMessageId?: Snowflake;
 
-    async close() {
+    async close(): Promise<DMChannel> {
         const channel = await this.session.rest.runMethod<DiscordChannel>(
             this.session.rest,
             "DELETE",
@@ -613,7 +629,7 @@ export class ThreadChannel extends GuildChannel implements Model {
     member?: ThreadMember;
     ownerId?: Snowflake;
 
-    async joinThread() {
+    async joinThread(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "PUT",
@@ -621,7 +637,7 @@ export class ThreadChannel extends GuildChannel implements Model {
         );
     }
 
-    async addToThread(guildMemberId: Snowflake) {
+    async addToThread(guildMemberId: Snowflake): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "PUT",
@@ -629,7 +645,7 @@ export class ThreadChannel extends GuildChannel implements Model {
         );
     }
 
-    async leaveToThread(guildMemberId: Snowflake) {
+    async leaveToThread(guildMemberId: Snowflake): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "DELETE",
@@ -637,11 +653,11 @@ export class ThreadChannel extends GuildChannel implements Model {
         );
     }
 
-    removeMember(memberId: Snowflake = this.session.botId) {
+    removeMember(memberId: Snowflake = this.session.botId): Promise<void> {
         return ThreadMember.prototype.quitThread.call({ id: this.id, session: this.session }, memberId);
     }
 
-    fetchMember(memberId: Snowflake = this.session.botId) {
+    fetchMember(memberId: Snowflake = this.session.botId): Promise<ThreadMember> {
         return ThreadMember.prototype.fetchMember.call({ id: this.id, session: this.session }, memberId);
     }
 

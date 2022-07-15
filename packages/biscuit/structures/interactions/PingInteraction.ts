@@ -22,7 +22,7 @@ export class PingInteraction extends BaseInteraction implements Model {
     commandType: ApplicationCommandTypes;
     commandGuildId?: Snowflake;
 
-    async pong() {
+    async pong(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "POST",

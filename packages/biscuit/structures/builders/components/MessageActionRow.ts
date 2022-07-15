@@ -9,12 +9,12 @@ export class ActionRowBuilder<T extends ComponentBuilder> {
     components: T[];
     type: MessageComponentTypes.ActionRow;
 
-    addComponents(...components: T[]) {
+    addComponents(...components: T[]): ActionRowBuilder<T> {
         this.components.push(...components);
         return this;
     }
 
-    setComponents(...components: T[]) {
+    setComponents(...components: T[]): ActionRowBuilder<T> {
         this.components.splice(
             0,
             this.components.length,

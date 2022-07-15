@@ -23,7 +23,7 @@ export class AutoCompleteInteraction extends BaseInteraction implements Model {
     commandType: ApplicationCommandTypes;
     commandGuildId?: Snowflake;
 
-    async respond(choices: ApplicationCommandOptionChoice[]) {
+    async respond(choices: ApplicationCommandOptionChoice[]): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "POST",

@@ -7,7 +7,6 @@ import type {
     DiscordMessageReactionAdd,
     DiscordMessageReactionRemove,
     DiscordMessageReactionRemoveAll,
-    DiscordMessageReactionRemoveEmoji,
     DiscordUser,
     Session,
     Snowflake,
@@ -20,7 +19,6 @@ import {
     DMChannel,
     Emoji,
     Guild,
-    GuildChannel,
     GuildEmoji,
     GuildTextChannel,
     Member,
@@ -314,7 +312,7 @@ export class StructCache<V> extends Map<Snowflake, V> {
     }
 }
 
-export function reactionBootstrapperDeletions(cache: SessionCache, payload: DiscordMessageReactionRemoveAll) {
+export function reactionBootstrapperDeletions(cache: SessionCache, payload: DiscordMessageReactionRemoveAll): void {
     if (payload.guild_id) {
         cache.guilds.retrieve(payload.guild_id, (guild) => {
             guild.channels.retrieve(payload.channel_id, (channel) => {
@@ -336,10 +334,10 @@ export function reactionBootstrapper(
     cache: SessionCache,
     reaction: DiscordMessageReactionAdd | DiscordMessageReactionRemove,
     remove: boolean,
-) {
+): void {
     cache.emojis.set(reaction.emoji.id ?? reaction.emoji.name!, new Emoji(cache.session, reaction.emoji));
 
-    function onAdd(message: CachedMessage) {
+    function onAdd(message: CachedMessage): void {
         const reactions = message.reactions.map((r) => r.emoji.name);
 
         const upsertData = {
@@ -353,7 +351,7 @@ export function reactionBootstrapper(
         } else if (!reactions.includes(reaction.emoji.name)) {
             message.reactions.push(new MessageReaction(cache.session, upsertData));
         } else {
-            const current = message.reactions?.[reactions.indexOf(reaction.emoji.name)];
+            const current: MessageReaction = message.reactions?.[reactions.indexOf(reaction.emoji.name)];
 
             if (current && message.reactions?.[message.reactions.indexOf(current)]) {
                 // add 1 to reaction count
@@ -362,11 +360,11 @@ export function reactionBootstrapper(
         }
     }
 
-    function onRemove(message: CachedMessage) {
-        const reactions = message.reactions.map((r) => r.emoji.name);
+    function onRemove(message: CachedMessage): void {
+        const reactions: (string | undefined)[] = message.reactions.map((r) => r.emoji.name);
 
         if (reactions.indexOf(reaction.emoji.name) !== undefined) {
-            const current = message.reactions[reactions.indexOf(reaction.emoji.name)];
+            const current: MessageReaction = message.reactions[reactions.indexOf(reaction.emoji.name)];
 
             if (current) {
                 if (current.count > 0) {
@@ -398,23 +396,23 @@ export function reactionBootstrapper(
     }
 }
 
-export function userBootstrapper(cache: SessionCache, user: DiscordUser) {
+export function userBootstrapper(cache: SessionCache, user: DiscordUser): void {
     cache.users.set(user.id, new User(cache.session, user));
 }
 
-export function emojiBootstrapper(cache: SessionCache, emoji: DiscordEmoji, guildId: Snowflake) {
+export function emojiBootstrapper(cache: SessionCache, emoji: DiscordEmoji, guildId: Snowflake): void {
     if (!emoji.id) return;
     cache.emojis.set(emoji.id, new GuildEmoji(cache.session, emoji, guildId));
 }
 
-export function channelBootstrapper(cache: SessionCache, channel: DiscordChannel) {
+export function channelBootstrapper(cache: SessionCache, channel: DiscordChannel): void {
     if (!channel.guild_id) return;
 
     cache.guilds.retrieve(channel.guild_id, (guild) => {
         if (textBasedChannels.includes(channel.type)) {
-            // deno-lint-ignore no-explicit-any
             guild.channels.set(
                 channel.id,
+                // deno-lint-ignore no-explicit-any
                 <any> Object.assign(
                     ChannelFactory.fromGuildChannel(cache.session, channel),
                     { messages: new StructCache<CachedMessage>(cache.session) },
@@ -427,7 +425,7 @@ export function channelBootstrapper(cache: SessionCache, channel: DiscordChannel
     });
 }
 
-export function memberBootstrapper(cache: SessionCache, member: DiscordMemberWithUser, guildId: Snowflake) {
+export function memberBootstrapper(cache: SessionCache, member: DiscordMemberWithUser, guildId: Snowflake): void {
     cache.guilds.retrieve(guildId, (guild) => {
         guild.members.set(
             member.user.id,
@@ -444,7 +442,7 @@ export function memberBootstrapper(cache: SessionCache, member: DiscordMemberWit
     });
 }
 
-export function messageBootstrapper(cache: SessionCache, message: DiscordMessage, partial: boolean) {
+export function messageBootstrapper(cache: SessionCache, message: DiscordMessage, partial: boolean): void {
     if (message.member) {
         const member: DiscordMemberWithUser = Object.assign(message.member, { user: message.author });
 
@@ -487,8 +485,8 @@ export function messageBootstrapper(cache: SessionCache, message: DiscordMessage
     }
 }
 
-export function guildBootstrapper(cache: SessionCache, guild: DiscordGuild) {
-    const members = new StructCache(
+export function guildBootstrapper(cache: SessionCache, guild: DiscordGuild): void {
+    const members: StructCache<CachedMember> = new StructCache(
         cache.session,
         guild.members?.map((data) => {
             const obj: CachedMember = Object.assign(
@@ -505,7 +503,7 @@ export function guildBootstrapper(cache: SessionCache, guild: DiscordGuild) {
         }),
     );
 
-    const channels = new StructCache(
+    const channels: StructCache<CachedGuildChannel> = new StructCache(
         cache.session,
         guild.channels?.map((data) => {
             const obj = Object.assign(ChannelFactory.from(cache.session, data), {
