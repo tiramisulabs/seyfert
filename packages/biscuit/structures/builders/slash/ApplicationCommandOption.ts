@@ -1,5 +1,5 @@
 import { ApplicationCommandOptionTypes, type ChannelTypes, type Localization } from "../../../../discordeno/mod.ts";
-import { ApplicationCommandOptionChoice } from "../../interactions/CommandInteraction.ts";
+import { ApplicationCommandOptionChoice } from "../../interactions/BaseInteraction.ts";
 
 export class ChoiceBuilder {
     public name?: string;
@@ -10,7 +10,7 @@ export class ChoiceBuilder {
         return this;
     }
 
-    public setValue(value: string): ChoiceBuilder {
+    public setValue(value: string): this {
         this.value = value;
         return this;
     }
@@ -36,19 +36,19 @@ export class OptionBuilder {
         this.description = description;
     }
 
-    public setType(type: ApplicationCommandOptionTypes): OptionBuilder {
+    public setType(type: ApplicationCommandOptionTypes): this {
         return (this.type = type), this;
     }
 
-    public setName(name: string): OptionBuilder {
+    public setName(name: string): this {
         return (this.name = name), this;
     }
 
-    public setDescription(description: string): OptionBuilder {
+    public setDescription(description: string): this {
         return (this.description = description), this;
     }
 
-    public setRequired(required: boolean): OptionBuilder {
+    public setRequired(required: boolean): this {
         return (this.required = required), this;
     }
 
@@ -86,15 +86,15 @@ export class OptionBuilderLimitedValues extends OptionBuilder {
         this.description = description;
     }
 
-    public setMinValue(n: number): OptionBuilderLimitedValues {
+    public setMinValue(n: number): this {
         return (this.minValue = n), this;
     }
 
-    public setMaxValue(n: number): OptionBuilderLimitedValues {
+    public setMaxValue(n: number): this {
         return (this.maxValue = n), this;
     }
 
-    public addChoice(fn: (choice: ChoiceBuilder) => ChoiceBuilder): OptionBuilderLimitedValues {
+    public addChoice(fn: (choice: ChoiceBuilder) => ChoiceBuilder): this {
         const choice = fn(new ChoiceBuilder());
         this.choices ??= [];
         this.choices.push(choice);
@@ -125,7 +125,7 @@ export class OptionBuilderString extends OptionBuilder {
         this;
     }
 
-    public addChoice(fn: (choice: ChoiceBuilder) => ChoiceBuilder): OptionBuilderString {
+    public addChoice(fn: (choice: ChoiceBuilder) => ChoiceBuilder): this {
         const choice = fn(new ChoiceBuilder());
         this.choices ??= [];
         this.choices.push(choice);
@@ -154,7 +154,7 @@ export class OptionBuilderChannel extends OptionBuilder {
         this;
     }
 
-    public addChannelTypes(...channels: ChannelTypes[]): OptionBuilderChannel {
+    public addChannelTypes(...channels: ChannelTypes[]): this {
         this.channelTypes ??= [];
         this.channelTypes.push(...channels);
         return this;
@@ -183,80 +183,80 @@ export class OptionBased {
         )
         & OptionBuilderLike[];
 
-    public addOption(fn: (option: OptionBuilder) => OptionBuilder, type?: ApplicationCommandOptionTypes): OptionBased {
+    public addOption(fn: (option: OptionBuilder) => OptionBuilder, type?: ApplicationCommandOptionTypes): this {
         const option = fn(new OptionBuilder(type));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addNestedOption(fn: (option: OptionBuilder) => OptionBuilder): OptionBased {
+    public addNestedOption(fn: (option: OptionBuilder) => OptionBuilder): this {
         const option = fn(new OptionBuilder(ApplicationCommandOptionTypes.SubCommand));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addStringOption(fn: (option: OptionBuilderString) => OptionBuilderString): OptionBased {
+    public addStringOption(fn: (option: OptionBuilderString) => OptionBuilderString): this {
         const option = fn(new OptionBuilderString(ApplicationCommandOptionTypes.String));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addIntegerOption(fn: (option: OptionBuilderLimitedValues) => OptionBuilderLimitedValues): OptionBased {
+    public addIntegerOption(fn: (option: OptionBuilderLimitedValues) => OptionBuilderLimitedValues): this {
         const option = fn(new OptionBuilderLimitedValues(ApplicationCommandOptionTypes.Integer));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addNumberOption(fn: (option: OptionBuilderLimitedValues) => OptionBuilderLimitedValues): OptionBased {
+    public addNumberOption(fn: (option: OptionBuilderLimitedValues) => OptionBuilderLimitedValues): this {
         const option = fn(new OptionBuilderLimitedValues(ApplicationCommandOptionTypes.Number));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addBooleanOption(fn: (option: OptionBuilder) => OptionBuilder): OptionBased {
+    public addBooleanOption(fn: (option: OptionBuilder) => OptionBuilder): this {
         return this.addOption(fn, ApplicationCommandOptionTypes.Boolean);
     }
 
-    public addSubCommand(fn: (option: OptionBuilderNested) => OptionBuilderNested): OptionBased {
+    public addSubCommand(fn: (option: OptionBuilderNested) => OptionBuilderNested): this {
         const option = fn(new OptionBuilderNested(ApplicationCommandOptionTypes.SubCommand));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addSubCommandGroup(fn: (option: OptionBuilderNested) => OptionBuilderNested): OptionBased {
+    public addSubCommandGroup(fn: (option: OptionBuilderNested) => OptionBuilderNested): this {
         const option = fn(new OptionBuilderNested(ApplicationCommandOptionTypes.SubCommandGroup));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addUserOption(fn: (option: OptionBuilder) => OptionBuilder): OptionBased {
+    public addUserOption(fn: (option: OptionBuilder) => OptionBuilder): this {
         return this.addOption(fn, ApplicationCommandOptionTypes.User);
     }
 
-    public addChannelOption(fn: (option: OptionBuilderChannel) => OptionBuilderChannel): OptionBased {
+    public addChannelOption(fn: (option: OptionBuilderChannel) => OptionBuilderChannel): this {
         const option = fn(new OptionBuilderChannel(ApplicationCommandOptionTypes.Channel));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addRoleOption(fn: (option: OptionBuilder) => OptionBuilder): OptionBased {
+    public addRoleOption(fn: (option: OptionBuilder) => OptionBuilder): this {
         return this.addOption(fn, ApplicationCommandOptionTypes.Role);
     }
 
-    public addMentionableOption(fn: (option: OptionBuilder) => OptionBuilder): OptionBased {
+    public addMentionableOption(fn: (option: OptionBuilder) => OptionBuilder): this {
         return this.addOption(fn, ApplicationCommandOptionTypes.Mentionable);
     }
 
     // deno-lint-ignore ban-types
-    public static applyTo(klass: Function, ignore: Array<keyof OptionBased> = []) {
+    public static applyTo(klass: Function, ignore: Array<keyof OptionBased> = []): void {
         const methods: Array<keyof OptionBased> = [
             "addOption",
             "addNestedOption",

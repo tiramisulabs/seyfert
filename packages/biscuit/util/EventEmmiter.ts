@@ -14,11 +14,11 @@ export class EventEmitter {
         return this;
     }
 
-    on(event: string, func: Function) {
+    on(event: string, func: Function): this {
         return this.#addListener(event, func);
     }
 
-    #removeListener(event: string, func: Function): EventEmitter {
+    #removeListener(event: string, func: Function): this {
         if (this.listeners.has(event)) {
             const listener = this.listeners.get(event);
 
@@ -34,11 +34,11 @@ export class EventEmitter {
         return this;
     }
 
-    off(event: string, func: Function): EventEmitter {
+    off(event: string, func: Function): this {
         return this.#removeListener(event, func);
     }
 
-    once(event: string, func: Function): EventEmitter {
+    once(event: string, func: Function): this {
         // it is important for this to be an arrow function
         const closure = () => {
             func();

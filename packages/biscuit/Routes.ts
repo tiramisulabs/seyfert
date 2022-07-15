@@ -155,8 +155,29 @@ export function INTERACTION_ID_TOKEN(interactionId: Snowflake, token: string): s
     return `/interactions/${interactionId}/${token}/callback`;
 }
 
-export function WEBHOOK_MESSAGE(webhookId: Snowflake, token: string, messageId: Snowflake): string  {
-    return `/webhooks/${webhookId}/${token}/messages/${messageId}`;
+export function WEBHOOK_MESSAGE_ORIGINAL(webhookId: Snowflake, token: string, options?: { threadId?: bigint }): string {
+    let url = `/webhooks/${webhookId}/${token}/messages/@original?`;
+
+    if (options) {
+        if (options.threadId) url += `threadId=${options.threadId}`;
+    }
+
+    return url;
+}
+
+export function WEBHOOK_MESSAGE(
+    webhookId: Snowflake,
+    token: string,
+    messageId: Snowflake,
+    options?: { threadId?: Snowflake }
+): string {
+    let url = `/webhooks/${webhookId}/${token}/messages/${messageId}?`;
+
+    if (options) {
+        if (options.threadId) url += `threadId=${options.threadId}`;
+    }
+
+    return url;
 }
 
 export function WEBHOOK_TOKEN(webhookId: Snowflake, token?: string): string  {

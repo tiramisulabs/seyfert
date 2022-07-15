@@ -8,32 +8,33 @@ export class ButtonBuilder {
     }
     #data: DiscordButtonComponent;
     type: MessageComponentTypes.Button;
-    setStyle(style: ButtonStyles) {
+
+    setStyle(style: ButtonStyles): this {
         this.#data.style = style;
         return this;
     }
 
-    setLabel(label: string): ButtonBuilder {
+    setLabel(label: string): this {
         this.#data.label = label;
         return this;
     }
 
-    setCustomId(id: string): ButtonBuilder {
+    setCustomId(id: string): this {
         this.#data.custom_id = id;
         return this;
     }
 
-    setEmoji(emoji: ComponentEmoji): ButtonBuilder {
+    setEmoji(emoji: ComponentEmoji): this {
         this.#data.emoji = emoji;
         return this;
     }
 
-    setDisabled(disabled = true): ButtonBuilder {
+    setDisabled(disabled = true): this {
         this.#data.disabled = disabled;
         return this;
     }
 
-    setURL(url: string): ButtonBuilder {
+    setURL(url: string): this {
         this.#data.url = url;
         return this;
     }
