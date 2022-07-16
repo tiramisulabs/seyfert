@@ -4,7 +4,7 @@ import { OptionBased } from "./ApplicationCommandOption.ts";
 import { CreateApplicationCommand } from "../../../Session.ts";
 
 export abstract class ApplicationCommandBuilder implements CreateApplicationCommand {
-    protected constructor(
+    constructor(
         // required
         public type: ApplicationCommandTypes = ApplicationCommandTypes.ChatInput,
         public name = "",
