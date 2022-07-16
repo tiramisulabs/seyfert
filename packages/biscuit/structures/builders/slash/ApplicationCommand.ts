@@ -5,16 +5,13 @@ import { CreateApplicationCommand } from "../../../Session.ts";
 
 export abstract class ApplicationCommandBuilder implements CreateApplicationCommand {
     constructor(
-        // required
-        public type: ApplicationCommandTypes = ApplicationCommandTypes.ChatInput,
-        public name = "",
-        public description = "",
-        // non-required
-        public defaultMemberPermissions?: PermissionStrings[],
-        // etc
-        public nameLocalizations?: Localization,
-        public descriptionLocalizations?: Localization,
-        public dmPermission = true,
+        type: ApplicationCommandTypes = ApplicationCommandTypes.ChatInput,
+        name = "",
+        description = "",
+        defaultMemberPermissions?: PermissionStrings[],
+        nameLocalizations?: Localization,
+        descriptionLocalizations?: Localization,
+        dmPermission = true,
     ) {
         this.type = type;
         this.name = name;
@@ -24,51 +21,59 @@ export abstract class ApplicationCommandBuilder implements CreateApplicationComm
         this.descriptionLocalizations = descriptionLocalizations;
         this.dmPermission = dmPermission;
     }
+    type: ApplicationCommandTypes;
+    name: string;
+    description: string;
+    defaultMemberPermissions?: PermissionStrings[];
+    nameLocalizations?: Localization;
+    descriptionLocalizations?: Localization;
+    dmPermission: boolean;
 
-    public setType(type: ApplicationCommandTypes): this {
+    setType(type: ApplicationCommandTypes): this {
         return (this.type = type), this;
     }
 
-    public setName(name: string): this {
+    setName(name: string): this {
         return (this.name = name), this;
     }
 
-    public setDescription(description: string): this {
+    setDescription(description: string): this {
         return (this.description = description), this;
     }
 
-    public setDefaultMemberPermission(perm: PermissionStrings[]): this {
+    setDefaultMemberPermission(perm: PermissionStrings[]): this {
         return (this.defaultMemberPermissions = perm), this;
     }
 
-    public setNameLocalizations(l: Localization): this {
+    setNameLocalizations(l: Localization): this {
         return (this.nameLocalizations = l), this;
     }
 
-    public setDescriptionLocalizations(l: Localization): this {
+    setDescriptionLocalizations(l: Localization): this {
         return (this.descriptionLocalizations = l), this;
     }
 
-    public setDmPermission(perm: boolean): this {
+    setDmPermission(perm: boolean): this {
         return (this.dmPermission = perm), this;
     }
 }
 
 export class MessageApplicationCommandBuilder {
-    public constructor(
-        // required
-        public type?: ApplicationCommandTypes,
-        public name?: string,
+    type: ApplicationCommandTypes;
+    name?: string;
+    constructor(
+        type?: ApplicationCommandTypes,
+        name?: string,
     ) {
-        this.type = ApplicationCommandTypes.Message;
+        this.type = type ?? ApplicationCommandTypes.Message;
         this.name = name;
     }
 
-    public setName(name: string): this {
+    setName(name: string): this {
         return (this.name = name), this;
     }
 
-    public toJSON(): { name: string; type: ApplicationCommandTypes.Message } {
+    toJSON(): { name: string; type: ApplicationCommandTypes.Message } {
         if (!this.name) throw new TypeError("Propety 'name' is required");
 
         return {
@@ -79,9 +84,9 @@ export class MessageApplicationCommandBuilder {
 }
 
 export class ChatInputApplicationCommandBuilder extends ApplicationCommandBuilder {
-    public type: ApplicationCommandTypes.ChatInput = ApplicationCommandTypes.ChatInput;
+    type: ApplicationCommandTypes.ChatInput = ApplicationCommandTypes.ChatInput;
 
-    public toJSON(): CreateApplicationCommand {
+    toJSON(): CreateApplicationCommand {
         if (!this.type) throw new TypeError("Propety 'type' is required");
         if (!this.name) throw new TypeError("Propety 'name' is required");
         if (!this.description) {
