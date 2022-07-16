@@ -2,20 +2,20 @@ import { ApplicationCommandOptionTypes, type ChannelTypes, type Localization } f
 import { ApplicationCommandOptionChoice } from "../../interactions/BaseInteraction.ts";
 
 export class ChoiceBuilder {
-    public name?: string;
-    public value?: string;
+    name?: string;
+    value?: string;
 
-    public setName(name: string): ChoiceBuilder {
+    setName(name: string): ChoiceBuilder {
         this.name = name;
         return this;
     }
 
-    public setValue(value: string): this {
+    setValue(value: string): this {
         this.value = value;
         return this;
     }
 
-    public toJSON(): ApplicationCommandOptionChoice {
+    toJSON(): ApplicationCommandOptionChoice {
         if (!this.name) throw new TypeError("Property 'name' is required");
         if (!this.value) throw new TypeError("Property 'value' is required");
 
@@ -27,32 +27,35 @@ export class ChoiceBuilder {
 }
 
 export class OptionBuilder {
-    public required?: boolean;
-    public autocomplete?: boolean;
+    required?: boolean;
+    autocomplete?: boolean;
+    type?: ApplicationCommandOptionTypes;
+    name?: string;
+    description?: string;
 
-    public constructor(public type?: ApplicationCommandOptionTypes, public name?: string, public description?: string) {
+    constructor(type?: ApplicationCommandOptionTypes, name?: string, description?: string) {
         this.type = type;
         this.name = name;
         this.description = description;
     }
 
-    public setType(type: ApplicationCommandOptionTypes): this {
+    setType(type: ApplicationCommandOptionTypes): this {
         return (this.type = type), this;
     }
 
-    public setName(name: string): this {
+    setName(name: string): this {
         return (this.name = name), this;
     }
 
-    public setDescription(description: string): this {
+    setDescription(description: string): this {
         return (this.description = description), this;
     }
 
-    public setRequired(required: boolean): this {
+    setRequired(required: boolean): this {
         return (this.required = required), this;
     }
 
-    public toJSON(): ApplicationCommandOption {
+    toJSON(): ApplicationCommandOption {
         if (!this.type) throw new TypeError("Property 'type' is required");
         if (!this.name) throw new TypeError("Property 'name' is required");
         if (!this.description) {
@@ -71,14 +74,14 @@ export class OptionBuilder {
 }
 
 export class OptionBuilderLimitedValues extends OptionBuilder {
-    public choices?: ChoiceBuilder[];
-    public minValue?: number;
-    public maxValue?: number;
+    choices?: ChoiceBuilder[];
+    minValue?: number;
+    maxValue?: number;
 
-    public constructor(
-        public type?: ApplicationCommandOptionTypes.Integer | ApplicationCommandOptionTypes.Number,
-        public name?: string,
-        public description?: string,
+    constructor(
+        type?: ApplicationCommandOptionTypes.Integer | ApplicationCommandOptionTypes.Number,
+        name?: string,
+        description?: string,
     ) {
         super();
         this.type = type;
@@ -86,22 +89,22 @@ export class OptionBuilderLimitedValues extends OptionBuilder {
         this.description = description;
     }
 
-    public setMinValue(n: number): this {
+    setMinValue(n: number): this {
         return (this.minValue = n), this;
     }
 
-    public setMaxValue(n: number): this {
+    setMaxValue(n: number): this {
         return (this.maxValue = n), this;
     }
 
-    public addChoice(fn: (choice: ChoiceBuilder) => ChoiceBuilder): this {
+    addChoice(fn: (choice: ChoiceBuilder) => ChoiceBuilder): this {
         const choice = fn(new ChoiceBuilder());
         this.choices ??= [];
         this.choices.push(choice);
         return this;
     }
 
-    public override toJSON(): ApplicationCommandOption {
+    override toJSON(): ApplicationCommandOption {
         return {
             ...super.toJSON(),
             choices: this.choices?.map((c) => c.toJSON()) ?? [],
@@ -112,11 +115,11 @@ export class OptionBuilderLimitedValues extends OptionBuilder {
 }
 
 export class OptionBuilderString extends OptionBuilder {
-    public choices?: ChoiceBuilder[];
-    public constructor(
-        public type?: ApplicationCommandOptionTypes.String,
-        public name?: string,
-        public description?: string,
+    choices?: ChoiceBuilder[];
+    constructor(
+        type?: ApplicationCommandOptionTypes.String,
+        name?: string,
+        description?: string,
     ) {
         super();
         this.type = type;
@@ -125,14 +128,14 @@ export class OptionBuilderString extends OptionBuilder {
         this;
     }
 
-    public addChoice(fn: (choice: ChoiceBuilder) => ChoiceBuilder): this {
+    addChoice(fn: (choice: ChoiceBuilder) => ChoiceBuilder): this {
         const choice = fn(new ChoiceBuilder());
         this.choices ??= [];
         this.choices.push(choice);
         return this;
     }
 
-    public override toJSON(): ApplicationCommandOption {
+    override toJSON(): ApplicationCommandOption {
         return {
             ...super.toJSON(),
             choices: this.choices?.map((c) => c.toJSON()) ?? [],
@@ -141,11 +144,11 @@ export class OptionBuilderString extends OptionBuilder {
 }
 
 export class OptionBuilderChannel extends OptionBuilder {
-    public channelTypes?: ChannelTypes[];
-    public constructor(
-        public type?: ApplicationCommandOptionTypes.Channel,
-        public name?: string,
-        public description?: string,
+    channelTypes?: ChannelTypes[];
+    constructor(
+        type?: ApplicationCommandOptionTypes.Channel,
+        name?: string,
+        description?: string,
     ) {
         super();
         this.type = type;
@@ -154,13 +157,13 @@ export class OptionBuilderChannel extends OptionBuilder {
         this;
     }
 
-    public addChannelTypes(...channels: ChannelTypes[]): this {
+    addChannelTypes(...channels: ChannelTypes[]): this {
         this.channelTypes ??= [];
         this.channelTypes.push(...channels);
         return this;
     }
 
-    public override toJSON(): ApplicationCommandOption {
+    override toJSON(): ApplicationCommandOption {
         return {
             ...super.toJSON(),
             channelTypes: this.channelTypes ?? [],
@@ -173,7 +176,7 @@ export interface OptionBuilderLike {
 }
 
 export class OptionBased {
-    public options?:
+    options?:
         & (
             | OptionBuilder[]
             | OptionBuilderString[]
@@ -183,80 +186,80 @@ export class OptionBased {
         )
         & OptionBuilderLike[];
 
-    public addOption(fn: (option: OptionBuilder) => OptionBuilder, type?: ApplicationCommandOptionTypes): this {
+    addOption(fn: (option: OptionBuilder) => OptionBuilder, type?: ApplicationCommandOptionTypes): this {
         const option = fn(new OptionBuilder(type));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addNestedOption(fn: (option: OptionBuilder) => OptionBuilder): this {
+    addNestedOption(fn: (option: OptionBuilder) => OptionBuilder): this {
         const option = fn(new OptionBuilder(ApplicationCommandOptionTypes.SubCommand));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addStringOption(fn: (option: OptionBuilderString) => OptionBuilderString): this {
+    addStringOption(fn: (option: OptionBuilderString) => OptionBuilderString): this {
         const option = fn(new OptionBuilderString(ApplicationCommandOptionTypes.String));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addIntegerOption(fn: (option: OptionBuilderLimitedValues) => OptionBuilderLimitedValues): this {
+    addIntegerOption(fn: (option: OptionBuilderLimitedValues) => OptionBuilderLimitedValues): this {
         const option = fn(new OptionBuilderLimitedValues(ApplicationCommandOptionTypes.Integer));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addNumberOption(fn: (option: OptionBuilderLimitedValues) => OptionBuilderLimitedValues): this {
+    addNumberOption(fn: (option: OptionBuilderLimitedValues) => OptionBuilderLimitedValues): this {
         const option = fn(new OptionBuilderLimitedValues(ApplicationCommandOptionTypes.Number));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addBooleanOption(fn: (option: OptionBuilder) => OptionBuilder): this {
+    addBooleanOption(fn: (option: OptionBuilder) => OptionBuilder): this {
         return this.addOption(fn, ApplicationCommandOptionTypes.Boolean);
     }
 
-    public addSubCommand(fn: (option: OptionBuilderNested) => OptionBuilderNested): this {
+    addSubCommand(fn: (option: OptionBuilderNested) => OptionBuilderNested): this {
         const option = fn(new OptionBuilderNested(ApplicationCommandOptionTypes.SubCommand));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addSubCommandGroup(fn: (option: OptionBuilderNested) => OptionBuilderNested): this {
+    addSubCommandGroup(fn: (option: OptionBuilderNested) => OptionBuilderNested): this {
         const option = fn(new OptionBuilderNested(ApplicationCommandOptionTypes.SubCommandGroup));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addUserOption(fn: (option: OptionBuilder) => OptionBuilder): this {
+    addUserOption(fn: (option: OptionBuilder) => OptionBuilder): this {
         return this.addOption(fn, ApplicationCommandOptionTypes.User);
     }
 
-    public addChannelOption(fn: (option: OptionBuilderChannel) => OptionBuilderChannel): this {
+    addChannelOption(fn: (option: OptionBuilderChannel) => OptionBuilderChannel): this {
         const option = fn(new OptionBuilderChannel(ApplicationCommandOptionTypes.Channel));
         this.options ??= [];
         this.options.push(option);
         return this;
     }
 
-    public addRoleOption(fn: (option: OptionBuilder) => OptionBuilder): this {
+    addRoleOption(fn: (option: OptionBuilder) => OptionBuilder): this {
         return this.addOption(fn, ApplicationCommandOptionTypes.Role);
     }
 
-    public addMentionableOption(fn: (option: OptionBuilder) => OptionBuilder): this {
+    addMentionableOption(fn: (option: OptionBuilder) => OptionBuilder): this {
         return this.addOption(fn, ApplicationCommandOptionTypes.Mentionable);
     }
 
     // deno-lint-ignore ban-types
-    public static applyTo(klass: Function, ignore: Array<keyof OptionBased> = []): void {
+    static applyTo(klass: Function, ignore: Array<keyof OptionBased> = []): void {
         const methods: Array<keyof OptionBased> = [
             "addOption",
             "addNestedOption",
@@ -281,10 +284,10 @@ export class OptionBased {
 }
 
 export class OptionBuilderNested extends OptionBuilder {
-    public constructor(
-        public type?: ApplicationCommandOptionTypes.SubCommand | ApplicationCommandOptionTypes.SubCommandGroup,
-        public name?: string,
-        public description?: string,
+    constructor(
+        type?: ApplicationCommandOptionTypes.SubCommand | ApplicationCommandOptionTypes.SubCommandGroup,
+        name?: string,
+        description?: string,
     ) {
         super();
         this.type = type;
@@ -292,7 +295,7 @@ export class OptionBuilderNested extends OptionBuilder {
         this.description = description;
     }
 
-    public override toJSON(): ApplicationCommandOption {
+    override toJSON(): ApplicationCommandOption {
         if (!this.type) throw new TypeError("Property 'type' is required");
         if (!this.name) throw new TypeError("Property 'name' is required");
         if (!this.description) {
