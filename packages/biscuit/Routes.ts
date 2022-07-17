@@ -3,7 +3,8 @@ import type { Snowflake } from "./Snowflake.ts";
 // cdn endpoints
 export * from "./Cdn.ts";
 
-export function USER(userId: Snowflake): string {
+export function USER(userId?: Snowflake): string {
+    if (!userId) return "/users/@me";
     return `/users/${userId}`;
 }
 
