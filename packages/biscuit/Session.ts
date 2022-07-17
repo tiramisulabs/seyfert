@@ -28,6 +28,7 @@ import {
 } from "../discordeno/mod.ts";
 
 import User from "./structures/User.ts";
+import { urlToBase64 } from "./util/urlToBase64.ts";
 
 import * as Routes from "./Routes.ts";
 import * as Actions from "./Actions.ts";
@@ -198,6 +199,15 @@ export class Session extends EventEmitter {
     override emit<K extends keyof Events>(event: K, ...params: Parameters<Events[K]>): boolean;
     override emit<K extends string>(event: K, ...params: unknown[]): boolean {
         return super.emit(event, ...params);
+    }
+
+    async editProfile(nick?: string, avatarURL?: string | null ): Promise<User> {
+        const avatar = avatarURL ? await urlToBase64(avatarURL) : avatarURL;
+        const user = await this.rest.runMethod<DiscordUser>(this.rest, 'PATCH', Routes.USER(), {
+            username: nick,
+            avatar: avatar
+        });
+        return new User(this, user);
     }
 
     /**
