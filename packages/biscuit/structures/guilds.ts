@@ -46,29 +46,54 @@ export abstract class BaseGuild implements Model {
         this.features = data.features;
     }
 
+    /** The session that instantiated the guild. */
     readonly session: Session;
+    /** Guild id. */
     readonly id: Snowflake;
-
+    /** Guild name. */
     name: string;
+    /** 
+     * Icon hash. Discord uses ids and hashes to render images in the client.
+     * @link https://discord.com/developers/docs/reference#image-formatting
+     * */
     iconHash?: bigint;
+    /** 
+     * Enabled guild features (animated banner, news, auto moderation, etc).
+     * @see {@link GuildFeatures}
+     * @link https://discord.com/developers/docs/resources/guild#guild-object-guild-features
+     * */
     features: GuildFeatures[];
 
+    /** createdTimestamp gets the current guild timestamp. */
     get createdTimestamp(): number {
         return Snowflake.snowflakeToTimestamp(this.id);
     }
 
+    /** createdAt gets the creation Date object of the guild. */
     get createdAt(): Date {
         return new Date(this.createdTimestamp);
     }
 
+    /** 
+     * If the guild features includes partnered.
+     * @link https://discord.com/developers/docs/resources/guild#guild-object-guild-features
+     * */
     get partnered(): boolean {
         return this.features.includes(GuildFeatures.Partnered);
     }
 
+    /** 
+     * If the guild is verified.
+     * @link https://discord.com/developers/docs/resources/guild#guild-object-guild-features
+     * */
     get verified(): boolean {
         return this.features.includes(GuildFeatures.Verified);
     }
 
+    /** 
+     * iconURL gets the current guild icon.
+     * @link https://discord.com/developers/docs/reference#image-formatting
+     * */
     iconURL(options: { size?: ImageSize; format?: ImageFormat } = { size: 128 }): string | void {
         if (this.iconHash) {
             return Util.formatImageURL(
@@ -79,12 +104,18 @@ export abstract class BaseGuild implements Model {
         }
     }
 
+    /** toString gets the guild name */
     toString(): string {
         return this.name;
     }
 }
 
 /** AnonymousGuild */
+/**
+ * Class for anonymous guilds.
+ * @see {@link BaseGuild}
+ * @link https://discord.com/developers/docs/resources/guild#guild-resource
+ */
 export class AnonymousGuild extends BaseGuild implements Model {
     constructor(session: Session, data: Partial<DiscordGuild>); // TODO: Improve this type (name and id are required)
     constructor(session: Session, data: DiscordGuild) {
@@ -100,15 +131,41 @@ export class AnonymousGuild extends BaseGuild implements Model {
         this.premiumSubscriptionCount = data.premium_subscription_count;
     }
 
+    /**
+     * The guild's splash hash.
+     * @link https://discord.com/developers/docs/reference#image-formatting
+     */
     splashHash?: bigint;
+    /** 
+     * The guild's banner hash.
+     * @link https://discord.com/developers/docs/reference#image-formatting
+     */
     bannerHash?: bigint;
-
+    /**
+     * The guild's verification level.
+     * @see {@link VerificationLevels}
+     * @link https://discord.com/developers/docs/resources/guild#guild-object-verification-level
+     */
     verificationLevel: VerificationLevels;
+    /** The guild's vanity url code. */
     vanityUrlCode?: string;
+    /** 
+     * The guild's nsfw level.
+     * @see {@link GuildNsfwLevel}
+     * @link https://discord.com/developers/docs/resources/guild#guild-object-guild-nsfw-level
+     */
     nsfwLevel: GuildNsfwLevel;
+    /** The guild's description. */
     description?: string;
+    /** The number of boosts this guild currently has. */
     premiumSubscriptionCount?: number;
 
+    /**
+     * splashURL gets the current guild splash as a string.
+     * @link https://discord.com/developers/docs/reference#image-formatting
+     * @param options - Image options for the splash url.
+     * @returns Splash url or void.
+     */
     splashURL(options: { size?: ImageSize; format?: ImageFormat } = { size: 128 }): string | void {
         if (this.splashHash) {
             return Util.formatImageURL(
@@ -119,6 +176,12 @@ export class AnonymousGuild extends BaseGuild implements Model {
         }
     }
 
+    /**
+     * bannerURL gets the current guild banner as a string.
+     * @link https://discord.com/developers/docs/reference#image-formatting
+     * @param options - Image options for the banner url.
+     * @returns Banner url or void
+     */
     bannerURL(options: { size?: ImageSize; format?: ImageFormat } = { size: 128 }): string | void {
         if (this.bannerHash) {
             return Util.formatImageURL(
@@ -305,7 +368,8 @@ export interface GuildEditOptions extends Partial<GuildCreateOptions> {
 }
 
 /**
- * Represents a guild
+ * Represents a guild.
+ * @see {@link BaseGuild}.
  * @link https://discord.com/developers/docs/resources/guild#guild-object
  */
 export class Guild extends BaseGuild implements Model {
@@ -339,18 +403,69 @@ export class Guild extends BaseGuild implements Model {
         );
     }
 
+    /**
+     * The guild's splash hash.
+     * @link https://discord.com/developers/docs/reference#image-formatting
+     */
     splashHash?: bigint;
+    /**
+     * Only present for guilds with the "DISCOVERABLE" feature
+     * @link https://discord.com/developers/docs/reference#image-formatting
+     */
     discoverySplashHash?: bigint;
+    /** ID of the guild owner. */
     ownerId: Snowflake;
+    /** True if the server widget is enabled */
     widgetEnabled: boolean;
+    /** The channel id that the widget will generate an invite to, or undefined if set to no invite. */
     widgetChannelId?: Snowflake;
+    /**
+     * Verification level required for the guild.
+     * @see {@link VerificationLevels}
+     * @link https://discord.com/developers/docs/resources/guild#guild-object-verification-level
+     */
     vefificationLevel: VerificationLevels;
+    /**
+     * The default message notification level.
+     * @see {@link DefaultMessageNotificationLevels}
+     * @link https://discord.com/developers/docs/resources/guild#guild-object-default-message-notification-level
+     */
     defaultMessageNotificationLevel: DefaultMessageNotificationLevels;
+    /**
+     * The explicit content filter level.
+     * @see {@link ExplicitContentFilterLevels}
+     * @link https://discord.com/developers/docs/resources/guild#guild-object-explicit-content-filter-level
+     */
     explicitContentFilterLevel: ExplicitContentFilterLevels;
+    /** 
+     * Premium tier (Server Boost level).
+     * @see {@link PremiumTiers}
+     * @link https://discord.com/developers/docs/resources/guild#guild-object-premium-tier
+     */
     premiumTier: PremiumTiers;
+    /**
+     * A map with the guild's members.
+     * @see {@link Member}
+     * @link https://discord.com/developers/docs/resources/guild#guild-member-object
+     */
     members: Map<Snowflake, Member>;
+    /**
+     * A map with the guild's roles.
+     * @see {@link Role}
+     * @link https://discord.com/developers/docs/topics/permissions#role-object
+     */
     roles: Map<Snowflake, Role>;
+    /** 
+     * A map with the guild's emojis.
+     * @see {@link GuildEmoji}
+     * @link https://discord.com/developers/docs/resources/emoji#emoji-object-emoji-structure
+     */
     emojis: Map<Snowflake, GuildEmoji>;
+    /** 
+     * A map with the guild's channels.
+     * @see {@link GuildChannel}
+     * @link https://discord.com/developers/docs/resources/channel#channel-object
+     */
     channels: Map<Snowflake, GuildChannel>;
 
     /**
@@ -386,7 +501,8 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * 'null' would reset the nickname
+     * editBotNickname edits the bot's nickname in the guild.
+     * 'null' would reset the nickname.
      */
     async editBotNickname(options: { nick: string | null; reason?: string }): Promise<(string | undefined)> {
         const result = await this.session.rest.runMethod<{ nick?: string } | undefined>(
@@ -399,6 +515,13 @@ export class Guild extends BaseGuild implements Model {
         return result?.nick;
     }
 
+    /**
+     * createEmoji creates an emoji in the guild.
+     * @see {@link CreateGuildEmoji}
+     * @see {@link GuildEmoji}
+     * @param options The options to create a emoji.
+     * @returns A promise that resolves to the guild's new emoji.
+     */
     async createEmoji(options: CreateGuildEmoji): Promise<GuildEmoji> {
         if (options.image && !options.image.startsWith('data:image/')) {
             options.image = await urlToBase64(options.image);
@@ -414,6 +537,11 @@ export class Guild extends BaseGuild implements Model {
         return new GuildEmoji(this.session, emoji, this.id);
     }
 
+    /**
+     * deleteEmoji deletes an emoji from the guild.
+     * @param id - The id of the emoji to delete.
+     * @param reason - The reason for deleting the emoji.
+     */
     async deleteEmoji(id: Snowflake, { reason }: { reason?: string } = {}): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
