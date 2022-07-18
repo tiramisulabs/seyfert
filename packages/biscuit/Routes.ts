@@ -425,3 +425,26 @@ export function GUILD_STICKERS(guildId: Snowflake, stickerId?: Snowflake): strin
     if (stickerId) return `/guilds/${guildId}/stickers/${stickerId}`;
     return `/guilds/${guildId}/stickers`;
 }
+
+/** 
+ * Return the widget for the guild.
+ * @link https://discord.com/developers/docs/resources/guild#get-guild-widget-settings 
+ */
+export interface GetWidget {
+    get: 'json' | 'image' | 'settings';
+}
+
+/** 
+ * /guilds/{guildId}/widget 
+ * @link https://discord.com/developers/docs/resources/guild#get-guild-widget-settings
+ */
+export function GUILD_WIDGET(guildId: Snowflake, options: GetWidget = {get: 'settings'}): string {
+    let url = `/guilds/${guildId}/widget`;
+    if (options.get === 'json') {
+        url += '.json';
+    } else if (options.get === 'image') {
+        url += '.png';
+    }
+
+    return url
+}
