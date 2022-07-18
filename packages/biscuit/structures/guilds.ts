@@ -280,7 +280,7 @@ export interface GuildCreateOptions {
 /**
  * @link https://discord.com/developers/docs/resources/guild#modify-guild-json-params
  */
-export interface GuildEditOptions extends Omit<GuildCreateOptions, "roles" | "channels"> {
+export interface GuildEditOptions extends Partial<GuildCreateOptions> {
     ownerId?: Snowflake;
     splashURL?: string;
     bannerURL?: string;
@@ -291,7 +291,7 @@ export interface GuildEditOptions extends Omit<GuildCreateOptions, "roles" | "ch
     premiumProgressBarEnabled?: boolean;
 }
 
-export interface GuildEditOptions extends Omit<GuildCreateOptions, "roles" | "channels"> {
+export interface GuildEditOptions extends Partial<GuildCreateOptions> {
     ownerId?: Snowflake;
     splashHash?: bigint;
     bannerHash?: bigint;
@@ -652,7 +652,18 @@ export class Guild extends BaseGuild implements Model {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "DELETE",
-            Routes.GUILDS(),
+            Routes.GUILDS(this.id),
+        );
+    }
+
+    /**
+     * Leaves the guild
+     */
+    async leave(): Promise<void> {
+        await this.session.rest.runMethod<undefined>(
+            this.session.rest,
+            "DELETE",
+            Routes.USER_GUILDS(this.id)
         );
     }
 
@@ -701,10 +712,31 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
+     * ESets a new guild splash.
+     */
+    setSplash(splashURL: string ): Promise<Guild> {
+        return this.edit({ splashURL });
+    }
+
+    /**
+     * Sets a new guild banner.
+     */
+    setBanner(bannerURL: string): Promise<Guild> {
+        return this.edit({ bannerURL });
+    }
+
+    /** 
+     * Sets a new guild discovery splash image.
+    */
+    setDiscoverySplash(discoverySplashURL: string): Promise<Guild> {
+        return this.edit({ discoverySplashURL });
+    }
+
+    /**
      * Edits a guild and returns its data
      */
-    async edit(session: Session, options: GuildEditOptions): Promise<Guild> {
-        const guild = await session.rest.runMethod<DiscordGuild>(session.rest, "PATCH", Routes.GUILDS(), {
+    async edit(options: GuildEditOptions): Promise<Guild> {
+        const guild = await this.session.rest.runMethod<DiscordGuild>(this.session.rest, "PATCH", Routes.GUILDS(), {
             name: options.name,
             afk_channel_id: options.afkChannelId,
             afk_timeout: options.afkTimeout,
@@ -734,7 +766,7 @@ export class Guild extends BaseGuild implements Model {
             premiumProgressBarEnabled: options.premiumProgressBarEnabled,
         });
 
-        return new Guild(session, guild);
+        return new Guild(this.session, guild);
     }
 }
 
