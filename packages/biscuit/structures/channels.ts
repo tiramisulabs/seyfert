@@ -208,6 +208,7 @@ export class TextChannel {
         }
     }
 
+
     /**
      * fetchPins makes an asynchronous request and gets the current channel pins.
      * @returns A promise that resolves with an array of Message objects.
