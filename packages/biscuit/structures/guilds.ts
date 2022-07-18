@@ -733,7 +733,6 @@ export class Guild extends BaseGuild implements Model {
      * @see {@link CreateGuildBan}
      * @param memberId - The id of the member to ban.
      * @param options - Options to ban the member.
-     * @link https://discord.com/developers/docs/resources/guild#create-guild-ban
      */
     async banMember(memberId: Snowflake, options: CreateGuildBan): Promise<void> {
         await this.session.rest.runMethod<undefined>(
@@ -782,7 +781,6 @@ export class Guild extends BaseGuild implements Model {
      * @param memberId - The id of the member to get.
      * @param options - Options to edit the member.
      * @returns Promise resolving to the edited member.
-     * @link https://discord.com/developers/docs/resources/guild#modify-guild-member
      */
     async editMember(memberId: Snowflake, options: ModifyGuildMember): Promise<Member> {
         const member = await this.session.rest.runMethod<DiscordMemberWithUser>(
@@ -809,7 +807,6 @@ export class Guild extends BaseGuild implements Model {
      * @see {@link BeginGuildPrune}
      * @param options - Options to prune the members.
      * @returns A promise that resolves to the number of members pruned.
-     * @link https://discord.com/developers/docs/resources/guild#begin-guild-prune
      */
     async pruneMembers(options: BeginGuildPrune): Promise<number> {
         const result = await this.session.rest.runMethod<{ pruned: number }>(
@@ -844,7 +841,6 @@ export class Guild extends BaseGuild implements Model {
      * getActiveThreads gets the active threads in the guild.
      * @see {@link ReturnThreadsArchive}
      * @returns Promise resolving a ReturnThreadsArchive without hasMore property.
-     * @link https://discord.com/developers/docs/topics/threads#active-archived-threads
      */
     async getActiveThreads(): Promise<Omit<ReturnThreadsArchive, 'hasMore'>> {
         const { threads, members } = await this.session.rest.runMethod<DiscordListActiveThreads>(
@@ -938,7 +934,6 @@ export class Guild extends BaseGuild implements Model {
     /**
      * setSplash sets a new splash for the guild. Same as Guild.edit({..., splash: 'splashURL'})
      * @see {@link Guild}
-     * @returns A promise that resolves to the new splash and get the guild.
      */
     setSplash(splashURL: string): Promise<Guild> {
         return this.edit({ splashURL });
@@ -947,7 +942,6 @@ export class Guild extends BaseGuild implements Model {
     /**
      * setBanner sets a new banner for the guild. Same as Guild.edit({..., banner: 'bannerURL'})
      * @see {@link Guild}
-     * @link https://discord.com/developers/docs/reference#image-formatting
      */
     setBanner(bannerURL: string): Promise<Guild> {
         return this.edit({ bannerURL });
@@ -956,7 +950,6 @@ export class Guild extends BaseGuild implements Model {
     /**
      * Sets a new guild discovery splash image. Same as Guild.edit({..., discoverySplashURL: 'discoverySplashURL'})
      * @see {@link Guild}
-     * @link https://discord.com/developers/docs/reference#image-formatting
      */
     setDiscoverySplash(discoverySplashURL: string): Promise<Guild> {
         return this.edit({ discoverySplashURL });
@@ -968,7 +961,6 @@ export class Guild extends BaseGuild implements Model {
      * @see {@link GuildEditOptions}
      * @param options - Options to edit the guild.
      * @returns A promise that resolves to the edited guild.
-     * @link https://discord.com/developers/docs/resources/guild#modify-guild-json-params
      */
     async edit(options: GuildEditOptions): Promise<Guild> {
         const guild = await this.session.rest.runMethod<DiscordGuild>(this.session.rest, 'PATCH', Routes.GUILDS(), {
