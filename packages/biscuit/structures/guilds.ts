@@ -682,6 +682,10 @@ export class Guild extends BaseGuild implements Model {
         return roles.map((role) => new Role(this.session, role, this.id));
     }
 
+    /**
+     * deleteInvite deletes an invite from the guild.
+     * @param inviteCode - The invite code to get the invite for.
+     */
     async deleteInvite(inviteCode: string): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
@@ -691,6 +695,14 @@ export class Guild extends BaseGuild implements Model {
         );
     }
 
+    /**
+     * fetchInvite gets an invite from the guild.
+     * @see {@link Routes.GetInvite}
+     * @see {@link Invite}
+     * @param inviteCode - The invite code to get the invite for.
+     * @param options - Options to get the invite.
+     * @returns Promise resolving to the invite.
+     */
     async fetchInvite(inviteCode: string, options: Routes.GetInvite): Promise<Invite> {
         const inviteMetadata = await this.session.rest.runMethod<DiscordInviteMetadata>(
             this.session.rest,
@@ -701,6 +713,11 @@ export class Guild extends BaseGuild implements Model {
         return new Invite(this.session, inviteMetadata);
     }
 
+    /**
+     * fetchInvites gets all invites from the guild.
+     * @see {@link Invite}
+     * @returns A promise that resolves to the guild's invites.
+     */
     async fetchInvites(): Promise<Invite[]> {
         const invites = await this.session.rest.runMethod<DiscordInviteMetadata[]>(
             this.session.rest,
@@ -712,7 +729,11 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * Bans the member
+     * banMember bans a member from the guild.
+     * @see {@link CreateGuildBan}
+     * @param memberId - The id of the member to ban.
+     * @param options - Options to ban the member.
+     * @link https://discord.com/developers/docs/resources/guild#create-guild-ban
      */
     async banMember(memberId: Snowflake, options: CreateGuildBan): Promise<void> {
         await this.session.rest.runMethod<undefined>(
@@ -729,7 +750,9 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * Kicks the member
+     * kickMember kicks a member from the guild.
+     * @param memberId - The id of the member to kick.
+     * @param reason - The reason for kicking the member.
      */
     async kickMember(memberId: Snowflake, { reason }: { reason?: string }): Promise<void> {
         await this.session.rest.runMethod<undefined>(
@@ -740,9 +763,10 @@ export class Guild extends BaseGuild implements Model {
         );
     }
 
-    /*
-     * Unbans the member
-     * */
+    /**
+     * unbanMember unbans a member from the guild.
+     * @param memberId - The id of the member to get.
+     */
     async unbanMember(memberId: Snowflake): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
@@ -751,6 +775,15 @@ export class Guild extends BaseGuild implements Model {
         );
     }
 
+    /**
+     * editMember edits a member in the guild.
+     * @see {@link ModifyGuildMember}
+     * @see {@link Member}
+     * @param memberId - The id of the member to get.
+     * @param options - Options to edit the member.
+     * @returns Promise resolving to the edited member.
+     * @link https://discord.com/developers/docs/resources/guild#modify-guild-member
+     */
     async editMember(memberId: Snowflake, options: ModifyGuildMember): Promise<Member> {
         const member = await this.session.rest.runMethod<DiscordMemberWithUser>(
             this.session.rest,
@@ -771,6 +804,13 @@ export class Guild extends BaseGuild implements Model {
         return new Member(this.session, member, this.id);
     }
 
+    /**
+     * pruneMembers prunes members from the guild.
+     * @see {@link BeginGuildPrune}
+     * @param options - Options to prune the members.
+     * @returns A promise that resolves to the number of members pruned.
+     * @link https://discord.com/developers/docs/resources/guild#begin-guild-prune
+     */
     async pruneMembers(options: BeginGuildPrune): Promise<number> {
         const result = await this.session.rest.runMethod<{ pruned: number }>(
             this.session.rest,
@@ -786,6 +826,10 @@ export class Guild extends BaseGuild implements Model {
         return result.pruned;
     }
 
+    /**
+     * getPruneCount gets the number of members that would be pruned.
+     * @returns A promise that resolves to the number of members that would be pruned.
+     */
     async getPruneCount(): Promise<number> {
         const result = await this.session.rest.runMethod<{ pruned: number }>(
             this.session.rest,
@@ -796,6 +840,12 @@ export class Guild extends BaseGuild implements Model {
         return result.pruned;
     }
 
+    /**
+     * getActiveThreads gets the active threads in the guild.
+     * @see {@link ReturnThreadsArchive}
+     * @returns Promise resolving a ReturnThreadsArchive without hasMore property.
+     * @link https://discord.com/developers/docs/topics/threads#active-archived-threads
+     */
     async getActiveThreads(): Promise<Omit<ReturnThreadsArchive, 'hasMore'>> {
         const { threads, members } = await this.session.rest.runMethod<DiscordListActiveThreads>(
             this.session.rest,
@@ -814,7 +864,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /** *
-     * Deletes a guild
+     * Deletes the guild.
      */
     async delete(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
@@ -825,7 +875,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * Leaves the guild
+     * Leaves the guild.
      */
     async leave(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
@@ -839,6 +889,12 @@ export class Guild extends BaseGuild implements Model {
      * Creates a guild and returns its data, the bot joins the guild
      * This was modified from discord.js to make it compatible
      * precondition: Bot should be in less than 10 servers
+     * @see {@link Session}
+     * @see {@link GuildCreateOptions}
+     * @see {@link Guild}
+     * @param session - The session the guild should be created in.
+     * @param options - Options to create the guild.
+     * @returns A promise that resolves to the created guild.
      */
     static async create(session: Session, options: GuildCreateOptions): Promise<Guild> {
         const guild = await session.rest.runMethod<DiscordGuild>(session.rest, 'POST', Routes.GUILDS(), {
@@ -880,28 +936,39 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * ESets a new guild splash.
+     * setSplash sets a new splash for the guild. Same as Guild.edit({..., splash: 'splashURL'})
+     * @see {@link Guild}
+     * @returns A promise that resolves to the new splash and get the guild.
      */
     setSplash(splashURL: string): Promise<Guild> {
         return this.edit({ splashURL });
     }
 
     /**
-     * Sets a new guild banner.
+     * setBanner sets a new banner for the guild. Same as Guild.edit({..., banner: 'bannerURL'})
+     * @see {@link Guild}
+     * @link https://discord.com/developers/docs/reference#image-formatting
      */
     setBanner(bannerURL: string): Promise<Guild> {
         return this.edit({ bannerURL });
     }
 
     /**
-     * Sets a new guild discovery splash image.
+     * Sets a new guild discovery splash image. Same as Guild.edit({..., discoverySplashURL: 'discoverySplashURL'})
+     * @see {@link Guild}
+     * @link https://discord.com/developers/docs/reference#image-formatting
      */
     setDiscoverySplash(discoverySplashURL: string): Promise<Guild> {
         return this.edit({ discoverySplashURL });
     }
 
     /**
-     * Edits a guild and returns its data
+     * Edits a guild and returns its data.
+     * @see {@link Guild}
+     * @see {@link GuildEditOptions}
+     * @param options - Options to edit the guild.
+     * @returns A promise that resolves to the edited guild.
+     * @link https://discord.com/developers/docs/resources/guild#modify-guild-json-params
      */
     async edit(options: GuildEditOptions): Promise<Guild> {
         const guild = await this.session.rest.runMethod<DiscordGuild>(this.session.rest, 'PATCH', Routes.GUILDS(), {
