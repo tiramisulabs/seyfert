@@ -133,11 +133,11 @@ export abstract class BaseInteraction implements Model {
                 embeds: options.embeds,
                 file: options.files,
                 components: options.components,
-                allowed_mentions: options.allowedMentions || {
-                    parse: options.allowedMentions!.parse,
-                    replied_user: options.allowedMentions!.repliedUser,
-                    users: options.allowedMentions!.users,
-                    roles: options.allowedMentions!.roles,
+                allowed_mentions: options.allowedMentions && {
+                    parse: options.allowedMentions.parse,
+                    replied_user: options.allowedMentions.repliedUser,
+                    users: options.allowedMentions.users,
+                    roles: options.allowedMentions.roles,
                 },
                 attachments: options.attachments?.map((attachment) => {
                     return {
