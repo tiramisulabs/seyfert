@@ -25,7 +25,7 @@ import { urlToBase64 } from "../util/urlToBase64.ts";
 
 /** Classes and routes */
 import * as Routes from "../Routes.ts";
-import Message, { CreateMessage, EditMessage, ReactionResolvable } from "./Message.ts";
+import Message, { CreateMessage, EditMessage, EmojiResolvable } from "./Message.ts";
 import Invite from "./Invite.ts";
 import Webhook from "./Webhook.ts";
 import User from "./User.ts";
@@ -225,7 +225,7 @@ export class TextChannel {
         await Message.prototype.unpin.call({ id: messageId, channelId: this.id, session: this.session });
     }
 
-    async addReaction(messageId: Snowflake, reaction: ReactionResolvable): Promise<void> {
+    async addReaction(messageId: Snowflake, reaction: EmojiResolvable): Promise<void> {
         await Message.prototype.addReaction.call(
             { channelId: this.id, id: messageId, session: this.session },
             reaction,
@@ -234,7 +234,7 @@ export class TextChannel {
 
     async removeReaction(
         messageId: Snowflake,
-        reaction: ReactionResolvable,
+        reaction: EmojiResolvable,
         options?: { userId: Snowflake },
     ): Promise<void> {
         await Message.prototype.removeReaction.call(
@@ -244,7 +244,7 @@ export class TextChannel {
         );
     }
 
-    async removeReactionEmoji(messageId: Snowflake, reaction: ReactionResolvable): Promise<void> {
+    async removeReactionEmoji(messageId: Snowflake, reaction: EmojiResolvable): Promise<void> {
         await Message.prototype.removeReactionEmoji.call(
             { channelId: this.id, id: messageId, session: this.session },
             reaction,
@@ -257,7 +257,7 @@ export class TextChannel {
 
     async fetchReactions(
         messageId: Snowflake,
-        reaction: ReactionResolvable,
+        reaction: EmojiResolvable,
         options?: Routes.GetReactions,
     ): Promise<User[]> {
         const users = await Message.prototype.fetchReactions.call(
