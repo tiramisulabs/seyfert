@@ -1,16 +1,16 @@
-import { Model } from "./Base.ts";
-import type { Snowflake } from "../Snowflake.ts";
-import type { Session } from "../Session.ts";
+import { Model } from './Base.ts';
+import type { Snowflake } from '../Snowflake.ts';
+import type { Session } from '../Session.ts';
 import {
     DiscordApplication,
     DiscordInstallParams,
     DiscordTeam,
     DiscordUser,
     TeamMembershipStates,
-} from "../../discordeno/mod.ts";
-import User from "./User.ts";
+} from '../../discordeno/mod.ts';
+import User from './User.ts';
 
-type SummaryDeprecated = "";
+type SummaryDeprecated = '';
 
 export interface Team {
     /** a hash of the image of the team's icon */
@@ -28,11 +28,11 @@ export interface Team {
 export interface TeamMember {
     /** the user's membership state on the team */
     membershipState: TeamMembershipStates;
-    permissions: "*"[];
+    permissions: '*'[];
 
     teamId: string;
 
-    user: Partial<User> & Pick<User, "avatarHash" | "discriminator" | "id" | "username">;
+    user: Partial<User> & Pick<User, 'avatarHash' | 'discriminator' | 'id' | 'username'>;
 }
 
 // NewTeam create a new Team object for discord applications
@@ -69,7 +69,7 @@ export class Application implements Model {
         this.termsOfServiceURL = data.terms_of_service_url;
         this.privacyPolicyURL = data.privacy_policy_url;
         this.owner = data.owner ? new User(session, data.owner as DiscordUser) : undefined;
-        this.summary = "";
+        this.summary = '';
         this.verifyKey = data.verify_key;
         this.team = data.team ? NewTeam(session, data.team) : undefined;
         this.guildId = data.guild_id;

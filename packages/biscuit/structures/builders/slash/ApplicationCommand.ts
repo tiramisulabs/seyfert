@@ -1,13 +1,13 @@
-import type { Localization, PermissionStrings } from "../../../../discordeno/mod.ts";
-import { ApplicationCommandTypes } from "../../../../discordeno/mod.ts";
-import { OptionBased } from "./ApplicationCommandOption.ts";
-import { CreateApplicationCommand } from "../../../Session.ts";
+import type { Localization, PermissionStrings } from '../../../../discordeno/mod.ts';
+import { ApplicationCommandTypes } from '../../../../discordeno/mod.ts';
+import { OptionBased } from './ApplicationCommandOption.ts';
+import { CreateApplicationCommand } from '../../../Session.ts';
 
 export abstract class ApplicationCommandBuilder implements CreateApplicationCommand {
     constructor(
         type: ApplicationCommandTypes = ApplicationCommandTypes.ChatInput,
-        name: string = "",
-        description: string = "",
+        name: string = '',
+        description: string = '',
         defaultMemberPermissions?: PermissionStrings[],
         nameLocalizations?: Localization,
         descriptionLocalizations?: Localization,
@@ -74,7 +74,7 @@ export class MessageApplicationCommandBuilder {
     }
 
     toJSON(): { name: string; type: ApplicationCommandTypes.Message } {
-        if (!this.name) throw new TypeError("Propety 'name' is required");
+        if (!this.name) throw new TypeError('Propety \'name\' is required');
 
         return {
             type: ApplicationCommandTypes.Message,
@@ -87,10 +87,10 @@ export class ChatInputApplicationCommandBuilder extends ApplicationCommandBuilde
     type: ApplicationCommandTypes.ChatInput = ApplicationCommandTypes.ChatInput;
 
     toJSON(): CreateApplicationCommand {
-        if (!this.type) throw new TypeError("Propety 'type' is required");
-        if (!this.name) throw new TypeError("Propety 'name' is required");
+        if (!this.type) throw new TypeError('Propety \'type\' is required');
+        if (!this.name) throw new TypeError('Propety \'name\' is required');
         if (!this.description) {
-            throw new TypeError("Propety 'description' is required");
+            throw new TypeError('Propety \'description\' is required');
         }
 
         return {

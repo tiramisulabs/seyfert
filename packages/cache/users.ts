@@ -1,6 +1,6 @@
-import type { DiscordUser } from "./deps.ts";
-import type { SessionCache } from "./mod.ts";
-import { User } from "./deps.ts";
+import type { DiscordUser } from './deps.ts';
+import type { SessionCache } from './mod.ts';
+import { User } from './deps.ts';
 
 export type CachedUser = User;
 

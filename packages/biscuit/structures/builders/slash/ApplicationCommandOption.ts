@@ -1,5 +1,5 @@
-import { ApplicationCommandOptionTypes, type ChannelTypes, type Localization } from "../../../../discordeno/mod.ts";
-import { ApplicationCommandOptionChoice } from "../../interactions/BaseInteraction.ts";
+import { ApplicationCommandOptionTypes, type ChannelTypes, type Localization } from '../../../../discordeno/mod.ts';
+import { ApplicationCommandOptionChoice } from '../../interactions/BaseInteraction.ts';
 
 export class ChoiceBuilder {
     name?: string;
@@ -16,8 +16,8 @@ export class ChoiceBuilder {
     }
 
     toJSON(): ApplicationCommandOptionChoice {
-        if (!this.name) throw new TypeError("Property 'name' is required");
-        if (!this.value) throw new TypeError("Property 'value' is required");
+        if (!this.name) throw new TypeError('Property \'name\' is required');
+        if (!this.value) throw new TypeError('Property \'value\' is required');
 
         return {
             name: this.name,
@@ -56,10 +56,10 @@ export class OptionBuilder {
     }
 
     toJSON(): ApplicationCommandOption {
-        if (!this.type) throw new TypeError("Property 'type' is required");
-        if (!this.name) throw new TypeError("Property 'name' is required");
+        if (!this.type) throw new TypeError('Property \'type\' is required');
+        if (!this.name) throw new TypeError('Property \'name\' is required');
         if (!this.description) {
-            throw new TypeError("Property 'description' is required");
+            throw new TypeError('Property \'description\' is required');
         }
 
         const applicationCommandOption: ApplicationCommandOption = {
@@ -261,18 +261,18 @@ export class OptionBased {
     // deno-lint-ignore ban-types
     static applyTo(klass: Function, ignore: Array<keyof OptionBased> = []): void {
         const methods: Array<keyof OptionBased> = [
-            "addOption",
-            "addNestedOption",
-            "addStringOption",
-            "addIntegerOption",
-            "addNumberOption",
-            "addBooleanOption",
-            "addSubCommand",
-            "addSubCommandGroup",
-            "addUserOption",
-            "addChannelOption",
-            "addRoleOption",
-            "addMentionableOption",
+            'addOption',
+            'addNestedOption',
+            'addStringOption',
+            'addIntegerOption',
+            'addNumberOption',
+            'addBooleanOption',
+            'addSubCommand',
+            'addSubCommandGroup',
+            'addUserOption',
+            'addChannelOption',
+            'addRoleOption',
+            'addMentionableOption',
         ];
 
         for (const method of methods) {
@@ -296,10 +296,10 @@ export class OptionBuilderNested extends OptionBuilder {
     }
 
     override toJSON(): ApplicationCommandOption {
-        if (!this.type) throw new TypeError("Property 'type' is required");
-        if (!this.name) throw new TypeError("Property 'name' is required");
+        if (!this.type) throw new TypeError('Property \'type\' is required');
+        if (!this.name) throw new TypeError('Property \'name\' is required');
         if (!this.description) {
-            throw new TypeError("Property 'description' is required");
+            throw new TypeError('Property \'description\' is required');
         }
 
         return {

@@ -1,9 +1,9 @@
-import type { DiscordSticker, DiscordStickerPack, StickerFormatTypes, StickerTypes } from "../../discordeno/mod.ts";
-import type { Model } from "./Base.ts";
-import type { Snowflake } from "../Snowflake.ts";
-import type { Session } from "../Session.ts";
-import { User } from "./User.ts";
-import * as Routes from "../Routes.ts";
+import type { DiscordSticker, DiscordStickerPack, StickerFormatTypes, StickerTypes } from '../../discordeno/mod.ts';
+import type { Model } from './Base.ts';
+import type { Snowflake } from '../Snowflake.ts';
+import type { Session } from '../Session.ts';
+import { User } from './User.ts';
+import * as Routes from '../Routes.ts';
 
 export interface StickerItem {
     id: Snowflake;
@@ -28,7 +28,7 @@ export class Sticker implements Model {
         this.packId = data.pack_id;
         this.name = data.name;
         this.description = data.description;
-        this.tags = data.tags.split(",");
+        this.tags = data.tags.split(',');
         this.type = data.type;
         this.formatType = data.format_type;
         this.available = !!data.available;
@@ -52,7 +52,7 @@ export class Sticker implements Model {
     async fetchPremiumPack(): Promise<StickerPack> {
         const data = await this.session.rest.runMethod<DiscordStickerPack>(
             this.session.rest,
-            "GET",
+            'GET',
             Routes.STICKER_PACKS(),
         );
         return {

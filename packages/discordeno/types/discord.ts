@@ -41,7 +41,7 @@ import {
     VideoQualityModes,
     VisibilityTypes,
     WebhookTypes,
-} from "./shared.ts";
+} from './shared.ts';
 
 /** https://discord.com/developers/docs/resources/user#user-object */
 export interface DiscordUser {
@@ -108,7 +108,7 @@ export interface DiscordIntegration {
     /** Integration name */
     name: string;
     /** Integration type (twitch, youtube or discord) */
-    type: "twitch" | "youtube" | "discord";
+    type: 'twitch' | 'youtube' | 'discord';
     /** Is this integration enabled */
     enabled?: boolean;
     /** Is this integration syncing */
@@ -287,12 +287,12 @@ export interface DiscordTeamMember {
     /** The user's membership state on the team */
     membership_state: TeamMembershipStates;
     /** Will always be `["*"]` */
-    permissions: "*"[];
+    permissions: '*'[];
 
     /** The id of the parent team of which they are a member */
     team_id: string;
     /** The avatar, discriminator, id, and username of the user */
-    user: Partial<DiscordUser> & Pick<DiscordUser, "avatar" | "discriminator" | "id" | "username">;
+    user: Partial<DiscordUser> & Pick<DiscordUser, 'avatar' | 'discriminator' | 'id' | 'username'>;
 }
 
 /** https://discord.com/developers/docs/topics/gateway#webhooks-update-webhook-update-event-fields */
@@ -586,7 +586,7 @@ export interface DiscordGuild {
     /** When this guild was joined at */
     joined_at?: string;
     /** States of members currently in voice channels; lacks the guild_id key */
-    voice_states?: Omit<DiscordVoiceState, "guildId">[];
+    voice_states?: Omit<DiscordVoiceState, 'guildId'>[];
     /** Users in the guild */
     members?: DiscordMember[];
     /** Channels in the guild */
@@ -759,7 +759,7 @@ export interface DiscordChannel {
 /** https://discord.com/developers/docs/topics/gateway#presence-update */
 export interface DiscordPresenceUpdate {
     /** Either "idle", "dnd", "online", or "offline" */
-    status: "idle" | "dnd" | "online" | "offline";
+    status: 'idle' | 'dnd' | 'online' | 'offline';
     /** The user presence is being updated for */
     user: DiscordUser;
     /** id of the guild */
@@ -774,7 +774,7 @@ export interface DiscordStatusUpdate {
     /** User's current activities */
     activities: DiscordActivity[];
     /** Either "idle", "dnd", "online", or "offline" */
-    status: "idle" | "dnd" | "online" | "offline";
+    status: 'idle' | 'dnd' | 'online' | 'offline';
 }
 
 /** https://discord.com/developers/docs/resources/guild#welcome-screen-object-welcome-screen-structure */
@@ -1030,7 +1030,7 @@ export interface DiscordMessage {
     /** if the message is an Interaction or application-owned webhook, this is the id of the application */
     application_id?: string;
     /** Data showing the source of a crossposted channel follow add, pin or reply message */
-    message_reference?: Omit<DiscordMessageReference, "failIfNotExists">;
+    message_reference?: Omit<DiscordMessageReference, 'failIfNotExists'>;
     /** Message flags combined as a bitfield */
     flags?: number;
     /**
@@ -1046,7 +1046,7 @@ export interface DiscordMessage {
     /** Sent if the message is a response to an Interaction */
     interaction?: DiscordMessageInteraction;
     /** The thread that was started from this message, includes thread member object */
-    thread?: Omit<DiscordChannel, "member"> & { member: DiscordThreadMember };
+    thread?: Omit<DiscordChannel, 'member'> & { member: DiscordThreadMember };
     /** The components related to this message */
     components?: DiscordMessageComponents;
     /** Sent if the message contains stickers */
@@ -1327,11 +1327,11 @@ export interface DiscordInteractionData {
         /** The Ids and User objects */
         users?: Record<string, DiscordUser>;
         /** The Ids and partial Member objects */
-        members?: Record<string, Omit<DiscordInteractionMember, "user" | "deaf" | "mute">>;
+        members?: Record<string, Omit<DiscordInteractionMember, 'user' | 'deaf' | 'mute'>>;
         /** The Ids and Role objects */
         roles?: Record<string, DiscordRole>;
         /** The Ids and partial Channel objects */
-        channels?: Record<string, Pick<DiscordChannel, "id" | "name" | "type" | "permissions">>;
+        channels?: Record<string, Pick<DiscordChannel, 'id' | 'name' | 'type' | 'permissions'>>;
         /** The ids and attachment objects */
         attachments: Record<string, DiscordAttachment>;
     };
@@ -1362,11 +1362,11 @@ export interface DiscordInteractionDataResolved {
     /** The Ids and User objects */
     users?: Record<string, DiscordUser>;
     /** The Ids and partial Member objects */
-    members?: Record<string, Omit<DiscordInteractionMember, "user" | "deaf" | "mute">>;
+    members?: Record<string, Omit<DiscordInteractionMember, 'user' | 'deaf' | 'mute'>>;
     /** The Ids and Role objects */
     roles?: Record<string, DiscordRole>;
     /** The Ids and partial Channel objects */
-    channels?: Record<string, Pick<DiscordChannel, "id" | "name" | "type" | "permissions">>;
+    channels?: Record<string, Pick<DiscordChannel, 'id' | 'name' | 'type' | 'permissions'>>;
     /** The Ids and attachments objects */
     attachments?: Record<string, DiscordAttachment>;
 }
@@ -1541,93 +1541,93 @@ export type DiscordAuditLogChange =
         new_value: string;
         old_value: string;
         key:
-            | "name"
-            | "description"
-            | "discovery_splash_hash"
-            | "banner_hash"
-            | "preferred_locale"
-            | "rules_channel_id"
-            | "public_updates_channel_id"
-            | "icon_hash"
-            | "image_hash"
-            | "splash_hash"
-            | "owner_id"
-            | "region"
-            | "afk_channel_id"
-            | "vanity_url_code"
-            | "widget_channel_id"
-            | "system_channel_id"
-            | "topic"
-            | "application_id"
-            | "permissions"
-            | "allow"
-            | "deny"
-            | "code"
-            | "channel_id"
-            | "inviter_id"
-            | "nick"
-            | "avatar_hash"
-            | "id"
-            | "location"
-            | "command_id";
+            | 'name'
+            | 'description'
+            | 'discovery_splash_hash'
+            | 'banner_hash'
+            | 'preferred_locale'
+            | 'rules_channel_id'
+            | 'public_updates_channel_id'
+            | 'icon_hash'
+            | 'image_hash'
+            | 'splash_hash'
+            | 'owner_id'
+            | 'region'
+            | 'afk_channel_id'
+            | 'vanity_url_code'
+            | 'widget_channel_id'
+            | 'system_channel_id'
+            | 'topic'
+            | 'application_id'
+            | 'permissions'
+            | 'allow'
+            | 'deny'
+            | 'code'
+            | 'channel_id'
+            | 'inviter_id'
+            | 'nick'
+            | 'avatar_hash'
+            | 'id'
+            | 'location'
+            | 'command_id';
     }
     | {
         new_value: number;
         old_value: number;
         key:
-            | "afk_timeout"
-            | "mfa_level"
-            | "verification_level"
-            | "explicit_content_filter"
-            | "default_message_notifications"
-            | "prune_delete_days"
-            | "position"
-            | "bitrate"
-            | "rate_limit_per_user"
-            | "color"
-            | "max_uses"
-            | "uses"
-            | "max_age"
-            | "expire_behavior"
-            | "expire_grace_period"
-            | "user_limit"
-            | "privacy_level"
-            | "auto_archive_duration"
-            | "default_auto_archive_duration"
-            | "entity_type"
-            | "status"
-            | "communication_disabled_until";
+            | 'afk_timeout'
+            | 'mfa_level'
+            | 'verification_level'
+            | 'explicit_content_filter'
+            | 'default_message_notifications'
+            | 'prune_delete_days'
+            | 'position'
+            | 'bitrate'
+            | 'rate_limit_per_user'
+            | 'color'
+            | 'max_uses'
+            | 'uses'
+            | 'max_age'
+            | 'expire_behavior'
+            | 'expire_grace_period'
+            | 'user_limit'
+            | 'privacy_level'
+            | 'auto_archive_duration'
+            | 'default_auto_archive_duration'
+            | 'entity_type'
+            | 'status'
+            | 'communication_disabled_until';
     }
     | {
         new_value: Partial<DiscordRole>[];
         old_value?: Partial<DiscordRole>[];
-        key: "$add" | "$remove";
+        key: '$add' | '$remove';
     }
     | {
         new_value: boolean;
         old_value: boolean;
         key:
-            | "widget_enabled"
-            | "nsfw"
-            | "hoist"
-            | "mentionable"
-            | "temporary"
-            | "deaf"
-            | "mute"
-            | "enable_emoticons"
-            | "archived"
-            | "locked"
-            | "invitable";
+            | 'widget_enabled'
+            | 'nsfw'
+            | 'hoist'
+            | 'mentionable'
+            | 'temporary'
+            | 'deaf'
+            | 'mute'
+            | 'enable_emoticons'
+            | 'archived'
+            | 'locked'
+            | 'invitable';
     }
     | {
         new_value: DiscordOverwrite[];
         old_value: DiscordOverwrite[];
-        key: "permission_overwrites";
+        key: 'permission_overwrites';
     }
     | {
         new_value: string | number;
         old_value: string | number;
-        key: "type";
+        key: 'type';
     };
 
 /** https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-optional-audit-entry-info */
@@ -2088,7 +2088,7 @@ export interface DiscordGuildBanAddRemove {
 }
 
 /** https://discord.com/developers/docs/topics/gateway#message-reaction-remove */
-export interface DiscordMessageReactionRemove extends Omit<DiscordMessageReactionAdd, "member"> {}
+export interface DiscordMessageReactionRemove extends Omit<DiscordMessageReactionAdd, 'member'> {}
 
 /** https://discord.com/developers/docs/topics/gateway#message-reaction-add */
 export interface DiscordMessageReactionAdd {
@@ -2163,11 +2163,11 @@ export interface DiscordReady {
     /** The shard information associated with this session, if sent when identifying */
     shard?: [number, number];
     /** Contains id and flags */
-    application: Partial<DiscordApplication> & Pick<DiscordApplication, "id" | "flags">;
+    application: Partial<DiscordApplication> & Pick<DiscordApplication, 'id' | 'flags'>;
 }
 
 /** https://discord.com/developers/docs/resources/guild#unavailable-guild-object */
-export interface DiscordUnavailableGuild extends Pick<DiscordGuild, "id" | "unavailable"> {}
+export interface DiscordUnavailableGuild extends Pick<DiscordGuild, 'id' | 'unavailable'> {}
 
 /** https://discord.com/developers/docs/topics/gateway#message-delete-bulk */
 export interface DiscordMessageDeleteBulk {
@@ -2204,28 +2204,28 @@ export interface DiscordTemplate {
         & Omit<
             PickPartial<
                 DiscordGuild,
-                | "name"
-                | "description"
-                | "verification_level"
-                | "default_message_notifications"
-                | "explicit_content_filter"
-                | "preferred_locale"
-                | "afk_timeout"
-                | "channels"
-                | "afk_channel_id"
-                | "system_channel_id"
-                | "system_channel_flags"
+                | 'name'
+                | 'description'
+                | 'verification_level'
+                | 'default_message_notifications'
+                | 'explicit_content_filter'
+                | 'preferred_locale'
+                | 'afk_timeout'
+                | 'channels'
+                | 'afk_channel_id'
+                | 'system_channel_id'
+                | 'system_channel_flags'
             >,
-            "roles"
+            'roles'
         >
         & {
             roles: (
                 & Omit<
                     PickPartial<
                         DiscordRole,
-                        "name" | "color" | "hoist" | "mentionable" | "permissions" | "icon" | "unicode_emoji"
+                        'name' | 'color' | 'hoist' | 'mentionable' | 'permissions' | 'icon' | 'unicode_emoji'
                     >,
-                    "id"
+                    'id'
                 >
                 & { id: number }
             )[];
@@ -2337,7 +2337,7 @@ export interface DiscordGuildMemberUpdate {
 
 /** https://discord.com/developers/docs/topics/gateway#message-reaction-remove-all */
 export interface DiscordMessageReactionRemoveAll
-    extends Pick<DiscordMessageReactionAdd, "channel_id" | "message_id" | "guild_id"> {}
+    extends Pick<DiscordMessageReactionAdd, 'channel_id' | 'message_id' | 'guild_id'> {}
 
 // TODO: add docs link
 export interface DiscordValidateDiscoverySearchTerm {
@@ -2365,7 +2365,7 @@ export interface DiscordScheduledEventUserAdd {
 /** https://discord.com/developers/docs/topics/gateway#message-reaction-remove-emoji */
 export type DiscordMessageReactionRemoveEmoji = Pick<
     DiscordMessageReactionAdd,
-    "channel_id" | "guild_id" | "message_id" | "emoji"
+    'channel_id' | 'guild_id' | 'message_id' | 'emoji'
 >;
 
 /** https://discord.com/developers/docs/topics/gateway#guild-member-remove */

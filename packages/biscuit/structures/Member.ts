@@ -1,13 +1,13 @@
-import type { Model } from "./Base.ts";
-import type { Snowflake } from "../Snowflake.ts";
-import type { Session } from "../Session.ts";
-import type { DiscordMemberWithUser } from "../../discordeno/mod.ts";
-import type { ImageFormat, ImageSize } from "../Util.ts";
-import type { CreateGuildBan, ModifyGuildMember } from "./guilds.ts";
-import { Guild } from "./guilds.ts";
-import Util from "../Util.ts";
-import User from "./User.ts";
-import * as Routes from "../Routes.ts";
+import type { Model } from './Base.ts';
+import type { Snowflake } from '../Snowflake.ts';
+import type { Session } from '../Session.ts';
+import type { DiscordMemberWithUser } from '../../discordeno/mod.ts';
+import type { ImageFormat, ImageSize } from '../Util.ts';
+import type { CreateGuildBan, ModifyGuildMember } from './guilds.ts';
+import { Guild } from './guilds.ts';
+import Util from '../Util.ts';
+import User from './User.ts';
+import * as Routes from '../Routes.ts';
 
 /**
  * @link https://discord.com/developers/docs/resources/guild#guild-member-object

@@ -1,10 +1,10 @@
-import type { Model } from "../Base.ts";
-import type { Snowflake } from "../../Snowflake.ts";
-import type { Session } from "../../Session.ts";
-import type { ApplicationCommandTypes, DiscordInteraction, InteractionTypes } from "../../../discordeno/mod.ts";
-import { InteractionResponseTypes } from "../../../discordeno/mod.ts";
-import BaseInteraction from "./BaseInteraction.ts";
-import * as Routes from "../../Routes.ts";
+import type { Model } from '../Base.ts';
+import type { Snowflake } from '../../Snowflake.ts';
+import type { Session } from '../../Session.ts';
+import type { ApplicationCommandTypes, DiscordInteraction, InteractionTypes } from '../../../discordeno/mod.ts';
+import { InteractionResponseTypes } from '../../../discordeno/mod.ts';
+import BaseInteraction from './BaseInteraction.ts';
+import * as Routes from '../../Routes.ts';
 
 export class PingInteraction extends BaseInteraction implements Model {
     constructor(session: Session, data: DiscordInteraction) {
@@ -25,7 +25,7 @@ export class PingInteraction extends BaseInteraction implements Model {
     async pong(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "POST",
+            'POST',
             Routes.INTERACTION_ID_TOKEN(this.id, this.token),
             {
                 type: InteractionResponseTypes.Pong,

@@ -1,6 +1,6 @@
-import type { Session } from "../Session.ts";
-import type { Snowflake } from "../Snowflake.ts";
-import type { DiscordEmoji } from "../../discordeno/mod.ts";
+import type { Session } from '../Session.ts';
+import type { Snowflake } from '../Snowflake.ts';
+import type { DiscordEmoji } from '../../discordeno/mod.ts';
 
 export class Emoji {
     constructor(session: Session, data: DiscordEmoji) {

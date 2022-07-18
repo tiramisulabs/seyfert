@@ -1,12 +1,12 @@
-import type { Model } from "./Base.ts";
-import type { Snowflake } from "../Snowflake.ts";
-import type { Session } from "../Session.ts";
-import type { DiscordEmoji } from "../../discordeno/mod.ts";
-import type { ModifyGuildEmoji } from "./guilds.ts";
-import Guild from "./guilds.ts";
-import Emoji from "./Emoji.ts";
-import User from "./User.ts";
-import * as Routes from "../Routes.ts";
+import type { Model } from './Base.ts';
+import type { Snowflake } from '../Snowflake.ts';
+import type { Session } from '../Session.ts';
+import type { DiscordEmoji } from '../../discordeno/mod.ts';
+import type { ModifyGuildEmoji } from './guilds.ts';
+import Guild from './guilds.ts';
+import Emoji from './Emoji.ts';
+import User from './User.ts';
+import * as Routes from '../Routes.ts';
 
 export class GuildEmoji extends Emoji implements Model {
     constructor(session: Session, data: DiscordEmoji, guildId: Snowflake) {

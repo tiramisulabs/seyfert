@@ -1,12 +1,12 @@
-import type { Snowflake } from "./Snowflake.ts";
-import { baseEndpoints as Endpoints } from "../discordeno/mod.ts";
+import type { Snowflake } from './Snowflake.ts';
+import { baseEndpoints as Endpoints } from '../discordeno/mod.ts';
 
 export function USER_AVATAR(userId: Snowflake, icon: string): string {
     return `${Endpoints.CDN_URL}/avatars/${userId}/${icon}`;
 }
 
 export function EMOJI_URL(id: Snowflake, animated = false): string {
-    return `https://cdn.discordapp.com/emojis/${id}.${animated ? "gif" : "png"}`;
+    return `https://cdn.discordapp.com/emojis/${id}.${animated ? 'gif' : 'png'}`;
 }
 
 export function USER_DEFAULT_AVATAR(

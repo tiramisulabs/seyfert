@@ -1,8 +1,8 @@
-import type { Session } from "../../Session.ts";
-import type { DiscordInputTextComponent } from "../../../discordeno/mod.ts";
-import type { TextInputComponent } from "./Component.ts";
-import { MessageComponentTypes, TextStyles } from "../../../discordeno/mod.ts";
-import BaseComponent from "./Component.ts";
+import type { Session } from '../../Session.ts';
+import type { DiscordInputTextComponent } from '../../../discordeno/mod.ts';
+import type { TextInputComponent } from './Component.ts';
+import { MessageComponentTypes, TextStyles } from '../../../discordeno/mod.ts';
+import BaseComponent from './Component.ts';
 
 export class TextInput extends BaseComponent implements TextInputComponent {
     constructor(session: Session, data: DiscordInputTextComponent) {

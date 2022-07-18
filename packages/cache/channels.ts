@@ -1,18 +1,18 @@
-import type { ChannelInGuild, ChannelTypes, ChannelWithMessagesInGuild, DiscordChannel, Snowflake } from "./deps.ts";
-import type { CachedMessage } from "./messages.ts";
-import type { CachedGuild } from "./guilds.ts";
-import type { SessionCache } from "./mod.ts";
-import { Collection } from "./Collection.ts";
-import { ChannelFactory, DMChannel, textBasedChannels } from "./deps.ts";
+import type { ChannelInGuild, ChannelTypes, ChannelWithMessagesInGuild, DiscordChannel, Snowflake } from './deps.ts';
+import type { CachedMessage } from './messages.ts';
+import type { CachedGuild } from './guilds.ts';
+import type { SessionCache } from './mod.ts';
+import { Collection } from './Collection.ts';
+import { ChannelFactory, DMChannel, textBasedChannels } from './deps.ts';
 
-export interface CachedGuildChannel extends Omit<ChannelWithMessagesInGuild, "type"> {
+export interface CachedGuildChannel extends Omit<ChannelWithMessagesInGuild, 'type'> {
     type: ChannelTypes;
     messages: Collection<CachedMessage>;
     guild: CachedGuild;
     guildId: Snowflake;
 }
 
-export interface CachedGuildChannel extends Omit<ChannelInGuild, "type"> {
+export interface CachedGuildChannel extends Omit<ChannelInGuild, 'type'> {
     type: ChannelTypes;
     guild: CachedGuild;
     guildId: Snowflake;

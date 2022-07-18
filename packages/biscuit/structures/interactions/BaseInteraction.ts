@@ -1,22 +1,22 @@
-import type { Model } from "../Base.ts";
-import type { Session } from "../../Session.ts";
-import type { DiscordInteraction, DiscordMessage, DiscordMessageComponents } from "../../../discordeno/mod.ts";
-import type CommandInteraction from "./CommandInteraction.ts";
-import type PingInteraction from "./PingInteraction.ts";
-import type ComponentInteraction from "./ComponentInteraction.ts";
-import type ModalSubmitInteraction from "./ModalSubmitInteraction.ts";
-import type AutoCompleteInteraction from "./AutoCompleteInteraction.ts";
-import type { CreateMessage } from "../Message.ts";
-import type { MessageFlags } from "../../Util.ts";
-import type { EditWebhookMessage } from "../Webhook.ts";
-import { InteractionResponseTypes, InteractionTypes } from "../../../discordeno/mod.ts";
-import { Snowflake } from "../../Snowflake.ts";
-import User from "../User.ts";
-import Member from "../Member.ts";
-import Message from "../Message.ts";
-import Permsisions from "../Permissions.ts";
-import Webhook from "../Webhook.ts";
-import * as Routes from "../../Routes.ts";
+import type { Model } from '../Base.ts';
+import type { Session } from '../../Session.ts';
+import type { DiscordInteraction, DiscordMessage, DiscordMessageComponents } from '../../../discordeno/mod.ts';
+import type CommandInteraction from './CommandInteraction.ts';
+import type PingInteraction from './PingInteraction.ts';
+import type ComponentInteraction from './ComponentInteraction.ts';
+import type ModalSubmitInteraction from './ModalSubmitInteraction.ts';
+import type AutoCompleteInteraction from './AutoCompleteInteraction.ts';
+import type { CreateMessage } from '../Message.ts';
+import type { MessageFlags } from '../../Util.ts';
+import type { EditWebhookMessage } from '../Webhook.ts';
+import { InteractionResponseTypes, InteractionTypes } from '../../../discordeno/mod.ts';
+import { Snowflake } from '../../Snowflake.ts';
+import User from '../User.ts';
+import Member from '../Member.ts';
+import Message from '../Message.ts';
+import Permsisions from '../Permissions.ts';
+import Webhook from '../Webhook.ts';
+import * as Routes from '../../Routes.ts';
 
 /**
  * @link https://discord.com/developers/docs/interactions/slash-commands#interaction-response
@@ -30,7 +30,7 @@ export interface InteractionResponse {
  * @link https://discord.com/developers/docs/interactions/slash-commands#interaction-response-interactionapplicationcommandcallbackdata
  */
 export interface InteractionApplicationCommandCallbackData
-    extends Pick<CreateMessage, "allowedMentions" | "content" | "embeds" | "files"> {
+    extends Pick<CreateMessage, 'allowedMentions' | 'content' | 'embeds' | 'files'> {
     customId?: string;
     title?: string;
     components?: DiscordMessageComponents;
@@ -124,7 +124,7 @@ export abstract class BaseInteraction implements Model {
     async editReply(options: EditWebhookMessage & { messageId?: Snowflake }): Promise<Message | undefined> {
         const message = await this.session.rest.runMethod<DiscordMessage | undefined>(
             this.session.rest,
-            "PATCH",
+            'PATCH',
             options.messageId
                 ? Routes.WEBHOOK_MESSAGE(this.id, this.token, options.messageId)
                 : Routes.WEBHOOK_MESSAGE_ORIGINAL(this.id, this.token),
@@ -217,8 +217,8 @@ export abstract class BaseInteraction implements Model {
     async respond(
         resp: InteractionResponse | { with: InteractionApplicationCommandCallbackData },
     ): Promise<Message | undefined> {
-        const options = "with" in resp ? resp.with : resp.data;
-        const type = "type" in resp ? resp.type : InteractionResponseTypes.ChannelMessageWithSource;
+        const options = 'with' in resp ? resp.with : resp.data;
+        const type = 'type' in resp ? resp.type : InteractionResponseTypes.ChannelMessageWithSource;
 
         const data = {
             content: options?.content,
@@ -235,11 +235,11 @@ export abstract class BaseInteraction implements Model {
         if (!this.responded) {
             await this.session.rest.sendRequest<undefined>(this.session.rest, {
                 url: Routes.INTERACTION_ID_TOKEN(this.id, this.token),
-                method: "POST",
+                method: 'POST',
                 payload: this.session.rest.createRequestBody(this.session.rest, {
-                    method: "POST",
+                    method: 'POST',
                     body: { type, data, file: options?.files },
-                    headers: { "Authorization": "" },
+                    headers: { 'Authorization': '' },
                 }),
             });
 

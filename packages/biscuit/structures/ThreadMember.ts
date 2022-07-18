@@ -1,8 +1,8 @@
-import type { Model } from "./Base.ts";
-import type { Session } from "../Session.ts";
-import type { Snowflake } from "../Snowflake.ts";
-import type { DiscordThreadMember } from "../../discordeno/mod.ts";
-import * as Routes from "../Routes.ts";
+import type { Model } from './Base.ts';
+import type { Session } from '../Session.ts';
+import type { Snowflake } from '../Snowflake.ts';
+import type { DiscordThreadMember } from '../../discordeno/mod.ts';
+import * as Routes from '../Routes.ts';
 
 /**
  * A member that comes from a thread
@@ -28,7 +28,7 @@ export class ThreadMember implements Model {
     async quitThread(memberId: Snowflake = this.session.botId): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "DELETE",
+            'DELETE',
             Routes.THREAD_USER(this.id, memberId),
         );
     }
@@ -36,7 +36,7 @@ export class ThreadMember implements Model {
     async fetchMember(memberId: Snowflake = this.session.botId): Promise<ThreadMember> {
         const member = await this.session.rest.runMethod<DiscordThreadMember>(
             this.session.rest,
-            "GET",
+            'GET',
             Routes.THREAD_USER(this.id, memberId),
         );
 

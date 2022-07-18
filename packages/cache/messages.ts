@@ -6,13 +6,13 @@ import type {
     DiscordMessageReactionRemove,
     DiscordMessageReactionRemoveAll,
     Snowflake,
-} from "./deps.ts";
-import type { CachedUser } from "./users.ts";
-import type { SessionCache } from "./mod.ts";
-import { Emoji, GuildEmoji, Message, MessageReaction } from "./deps.ts";
-import { memberBootstrapper } from "./members.ts";
+} from './deps.ts';
+import type { CachedUser } from './users.ts';
+import type { SessionCache } from './mod.ts';
+import { Emoji, GuildEmoji, Message, MessageReaction } from './deps.ts';
+import { memberBootstrapper } from './members.ts';
 
-export interface CachedMessage extends Omit<Message, "author"> {
+export interface CachedMessage extends Omit<Message, 'author'> {
     authorId: Snowflake;
     author?: CachedUser;
 }
@@ -27,7 +27,7 @@ export function messageBootstrapper(cache: SessionCache, message: DiscordMessage
     if (cache.dms.has(message.channel_id)) {
         // is dm
         cache.dms.retrieve(message.channel_id, (dm) => {
-            dm.messages[partial ? "updateFields" : "set"](
+            dm.messages[partial ? 'updateFields' : 'set'](
                 message.id,
                 Object.assign(
                     new Message(cache.session, message),
@@ -44,7 +44,7 @@ export function messageBootstrapper(cache: SessionCache, message: DiscordMessage
         // is not dm
         cache.guilds.retrieve(message.guild_id!, (guild) =>
             guild.channels.retrieve(message.channel_id, (dm) => {
-                dm.messages[partial ? "updateFields" : "set"](
+                dm.messages[partial ? 'updateFields' : 'set'](
                     message.id,
                     Object.assign(
                         new Message(cache.session, message),

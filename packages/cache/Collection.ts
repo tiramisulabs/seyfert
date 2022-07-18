@@ -1,4 +1,4 @@
-import type { Session, Snowflake } from "./deps.ts";
+import type { Session, Snowflake } from './deps.ts';
 
 export class Collection<V> extends Map<Snowflake, V> {
     constructor(session: Session, entries?: Iterable<readonly [Snowflake, V]>) {
@@ -28,7 +28,7 @@ export class Collection<V> extends Map<Snowflake, V> {
     random(amount: number): V[];
     random(amount?: number): V | V[] | undefined {
         const arr = [...this.values()];
-        if (typeof amount === "undefined") return arr[Math.floor(Math.random() * arr.length)];
+        if (typeof amount === 'undefined') return arr[Math.floor(Math.random() * arr.length)];
         if (!arr.length) return [];
         if (amount && amount > arr.length) amount = arr.length;
         return Array.from(

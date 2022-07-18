@@ -1,15 +1,15 @@
-import type { Snowflake } from "./Snowflake.ts";
+import type { Snowflake } from './Snowflake.ts';
 
 // cdn endpoints
-export * from "./Cdn.ts";
+export * from './Cdn.ts';
 
 export function USER(userId?: Snowflake): string {
-    if (!userId) return "/users/@me";
+    if (!userId) return '/users/@me';
     return `/users/${userId}`;
 }
 
 export function GATEWAY_BOT(): string {
-    return "/gateway/bot";
+    return '/gateway/bot';
 }
 
 export interface GetMessagesOptions {

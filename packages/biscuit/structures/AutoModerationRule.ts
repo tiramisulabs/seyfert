@@ -4,10 +4,10 @@ import {
     AutoModerationTriggerTypes,
     DiscordAutoModerationRule,
     DiscordAutoModerationRuleTriggerMetadataPresets,
-} from "../../discordeno/mod.ts";
-import { Model } from "./Base.ts";
-import type { Session } from "../Session.ts";
-import type { Snowflake } from "../Snowflake.ts";
+} from '../../discordeno/mod.ts';
+import { Model } from './Base.ts';
+import type { Session } from '../Session.ts';
+import type { Snowflake } from '../Snowflake.ts';
 
 export interface AutoModerationRuleTriggerMetadata {
     keywordFilter?: string[];

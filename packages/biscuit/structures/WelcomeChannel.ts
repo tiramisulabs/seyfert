@@ -1,8 +1,8 @@
-import type { Model } from "./Base.ts";
-import type { Snowflake } from "../Snowflake.ts";
-import type { Session } from "../Session.ts";
-import type { DiscordWelcomeScreenChannel } from "../../discordeno/mod.ts";
-import Emoji from "./Emoji.ts";
+import type { Model } from './Base.ts';
+import type { Snowflake } from '../Snowflake.ts';
+import type { Session } from '../Session.ts';
+import type { DiscordWelcomeScreenChannel } from '../../discordeno/mod.ts';
+import Emoji from './Emoji.ts';
 
 /**
  * Not a channel
