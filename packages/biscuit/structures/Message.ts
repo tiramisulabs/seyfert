@@ -199,7 +199,7 @@ export class Message implements Model {
         }
     }
 
-    /** Reference to the client that instantiated this object */
+    /** Reference to the client that instantiated this Message */
     readonly session: Session;
 
     /** id of the message */

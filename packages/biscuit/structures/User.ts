@@ -29,6 +29,7 @@ export class User implements Model {
         this.flags = data.flags;
     }
 
+    /** the session that instantiated this User */
     readonly session: Session;
 
     /** the user's id */
