@@ -74,9 +74,8 @@ export function NewInviteCreate(session: Session, invite: DiscordInviteCreate): 
         maxUses: invite.max_uses,
         targetType: invite.target_type,
         targetUser: invite.target_user ? new User(session, invite.target_user) : undefined,
-        targetApplication: invite.target_application
-            ? new Application(session, invite.target_application as DiscordApplication)
-            : undefined,
+        targetApplication: invite.target_application &&
+            new Application(session, invite.target_application as DiscordApplication),
         temporary: invite.temporary,
         uses: invite.uses,
     };

@@ -241,20 +241,19 @@ export class Session extends EventEmitter {
                         application_id: this.applicationId,
                         details: activity.details,
                         state: activity.state,
-                        emoji: activity.emoji || {
-                            name: activity.emoji!.name,
-                            id: activity.emoji!.id,
-                            animated: activity.emoji!.animated,
+                        emoji: activity.emoji && {
+                            name: activity.emoji.name,
+                            id: activity.emoji.id,
+                            animated: activity.emoji.animated,
                         },
                         party: activity.party,
-                        assets: activity.assets
-                            ? {
+                        assets: activity.assets &&
+                            {
                                 large_image: activity.assets.largeImage,
                                 large_text: activity.assets.largeText,
                                 small_image: activity.assets.smallImage,
                                 small_text: activity.assets.smallText,
-                            }
-                            : undefined,
+                            },
                         secrets: activity.secrets,
                         instance: activity.instance,
                         flags: activity.flags,
