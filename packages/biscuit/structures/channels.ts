@@ -146,11 +146,6 @@ export type TextBasedChannels =
  * Represents a text channel.
  */
 export class TextChannel {
-    /**
-     * 
-     * @param session {Session} - The session that instantiated the channel
-     * @param data {DiscordChannel} - Required information to create the channel
-     */
     constructor(session: Session, data: DiscordChannel) {
         this.session = session;
         this.id = data.id;
@@ -215,7 +210,7 @@ export class TextChannel {
 
     /** 
      * fetchPins makes an asynchronous request and gets the current channel pins.
-     * @returns {Promise<Message[] | []>} - A promise that resolves with an array of Message objects.
+     * @returns A promise that resolves with an array of Message objects.
      */
     async fetchPins(): Promise<Message[] | []> {
         const messages = await this.session.rest.runMethod<DiscordMessage[]>(
@@ -228,8 +223,8 @@ export class TextChannel {
 
     /** 
      * createInvite makes an asynchronous request to create a new invitation.
-     * @param {DiscordInviteOptions} options - The options to create the invitation
-     * @returns {Promise<Invite>} - The created invite
+     * @param options - The options to create the invitation
+     * @returns The created invite
      */
     async createInvite(options?: DiscordInviteOptions): Promise<Invite> {
         const invite = await this.session.rest.runMethod<DiscordInvite>(
@@ -254,8 +249,8 @@ export class TextChannel {
 
     /** 
      * fetchMessages makes an asynchronous request and gets the channel messages
-     * @param {Routes.GetMessagesOptions} options - The options to get the messages
-     * @returns {Promise<Message[] | []>} - The messages 
+     * @param options - The options to get the messages
+     * @returns The messages 
      */
     async fetchMessages(options?: Routes.GetMessagesOptions): Promise<Message[] | []> {
         if (options?.limit! > 100) throw Error('Values must be between 0-100');
@@ -279,8 +274,8 @@ export class TextChannel {
     /** 
      * pinMessage pins a channel message.
      * Same as Message.pin().
-     * @param {Snowflake} messageId - The id of the message to pin
-     * @returns {Promise<void>} The promise that resolves when the request is complete
+     * @param messageId - The id of the message to pin
+     * @returns The promise that resolves when the request is complete
      */
     async pinMessage(messageId: Snowflake): Promise<void> {
         await Message.prototype.pin.call({ id: messageId, channelId: this.id, session: this.session });
@@ -289,8 +284,8 @@ export class TextChannel {
     /** 
      * unpinMessage unpin a channel message.
      * Same as Message.unpin()
-     * @param {Snowflake} messageId - The id of the message to unpin
-     * @returns {Promise<void>} The promise of the request
+     * @param messageId - The id of the message to unpin
+     * @returns The promise of the request
      */
     async unpinMessage(messageId: Snowflake): Promise<void> {
         await Message.prototype.unpin.call({ id: messageId, channelId: this.id, session: this.session });
@@ -299,9 +294,9 @@ export class TextChannel {
     /** 
      * addReaction adds a reaction to the message.
      * Same as Message.addReaction().
-     * @param {Snowflake} messageId - The message to add the reaction to
-     * @param {EmojiResolvable} reaction - The reaction to add
-     * @returns {Promise<void>} The promise of the request
+     * @param messageId - The message to add the reaction to
+     * @param reaction - The reaction to add
+     * @returns The promise of the request
      */
     async addReaction(messageId: Snowflake, reaction: EmojiResolvable): Promise<void> {
         await Message.prototype.addReaction.call(
@@ -313,9 +308,9 @@ export class TextChannel {
     /** 
      * removeReaction removes a reaction from the message.
      * Same as Message.removeReaction().
-     * @param {Snowflake} messageId - The id of the message to remove the reaction from
-     * @param {EmojiResolvable} reaction - The reaction to remove
-     * @param {userId: Snowflake} options - The user to remove the reaction from
+     * @param messageId - The id of the message to remove the reaction from
+     * @param reaction - The reaction to remove
+     * @param options - The user to remove the reaction from
      */
     async removeReaction(
         messageId: Snowflake,
@@ -332,9 +327,9 @@ export class TextChannel {
     /** 
      * removeReactionEmoji removes an emoji reaction from the messageId provided.
      * Same as Message.removeReactionEmoji().
-     * @param {Snowflake} messageId - The message id to remove the reaction from.
-     * @param {EmojiResolvable} emoji - The emoji to remove.
-     * @param {Snowflake} userId - The user id to remove the reaction from.
+     * @param messageId - The message id to remove the reaction from.
+     * @param emoji - The emoji to remove.
+     * @param userId - The user id to remove the reaction from.
      */
     async removeReactionEmoji(messageId: Snowflake, reaction: EmojiResolvable): Promise<void> {
         await Message.prototype.removeReactionEmoji.call(
@@ -346,7 +341,7 @@ export class TextChannel {
     /** nukeReactions nukes every reaction on the message.
      * Same as Message.nukeReactions().
      * @param messageId The message id to nuke reactions from.
-     * @returns {Promise<void>} A promise that resolves when the reactions are nuked.
+     * @returns A promise that resolves when the reactions are nuked.
      */
     async nukeReactions(messageId: Snowflake): Promise<void> {
         await Message.prototype.nukeReactions.call({ channelId: this.id, id: messageId });
@@ -355,10 +350,10 @@ export class TextChannel {
     /** 
      * fetchReactions gets the users who reacted with this emoji on the message.
      * Same as Message.fetchReactions().
-     * @param {Snowflake} messageId - The message id to get the reactions from.
-     * @param {EmojiResolvable} reaction - The emoji to get the reactions from.
-     * @param {Routes.GetReactionsOptions} options - The options to get the reactions with.
-     * @returns {Promise<User[]>} - The users who reacted with this emoji on the message.
+     * @param messageId - The message id to get the reactions from.
+     * @param reaction - The emoji to get the reactions from.
+     * @param options - The options to get the reactions with.
+     * @returns The users who reacted with this emoji on the message.
      */
     async fetchReactions(
         messageId: Snowflake,
@@ -377,8 +372,8 @@ export class TextChannel {
     /**
      * sendMessage sends a message to the channel.
      * Same as Message.reply().
-     * @param {CreateMessage} options - Options for a new message.
-     * @returns {Promise<Message>} The sent message.
+     * @param options - Options for a new message.
+     * @returns The sent message.
      */
     sendMessage(options: CreateMessage): Promise<Message> {
         return Message.prototype.reply.call({ channelId: this.id, session: this.session }, options);
@@ -387,9 +382,9 @@ export class TextChannel {
     /**
      * editMessage edits a message.
      * Same as Message.edit().
-     * @param {Snowflake} messageId - Message ID.
-     * @param {CreateMessage} options - Options for edit a message.
-     * @returns {Promise<Message>} The edited message.
+     * @param messageId - Message ID.
+     * @param options - Options for edit a message.
+     * @returns The edited message.
      */
     editMessage(messageId: Snowflake, options: EditMessage): Promise<Message> {
         return Message.prototype.edit.call({ channelId: this.id, id: messageId, session: this.session }, options);
@@ -397,8 +392,8 @@ export class TextChannel {
 
     /**
      * createWebhook creates a webhook.
-     * @param {CreateWebhook} options - Options for a new webhook.
-     * @returns {Promise<Webhook>} The created webhook.
+     * @param options - Options for a new webhook.
+     * @returns The created webhook.
      */
     async createWebhook(options: CreateWebhook): Promise<Webhook> {
         const webhook = await this.session.rest.runMethod<DiscordWebhook>(
