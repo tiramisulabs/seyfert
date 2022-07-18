@@ -26,7 +26,7 @@ export interface Activities {
         start?: number;
         end?: number;
     };
-    applicationId: Snowflake;
+    applicationId?: Snowflake;
     details?: string;
     state?: string;
     emoji?: ComponentEmoji;
