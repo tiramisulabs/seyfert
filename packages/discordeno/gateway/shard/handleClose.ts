@@ -1,5 +1,5 @@
-import { GatewayCloseEventCodes } from "../../types/shared.ts";
-import { Shard, ShardSocketCloseCodes, ShardState } from "./types.ts";
+import { GatewayCloseEventCodes } from '../../types/shared.ts';
+import { Shard, ShardSocketCloseCodes, ShardState } from './types.ts';
 
 export async function handleClose(shard: Shard, close: CloseEvent): Promise<void> {
     //   gateway.debug("GW CLOSED", { shardId, payload: event });
@@ -47,7 +47,7 @@ export async function handleClose(shard: Shard, close: CloseEvent): Promise<void
             shard.state = ShardState.Offline;
             shard.events.disconnected?.(shard);
 
-            throw new Error(close.reason || "Discord gave no reason! GG! You broke Discord!");
+            throw new Error(close.reason || 'Discord gave no reason! GG! You broke Discord!');
         }
         // Gateway connection closes on which a resume is allowed.
         case GatewayCloseEventCodes.UnknownError:

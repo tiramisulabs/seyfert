@@ -1,9 +1,9 @@
-import type { Session } from "../../Session.ts";
-import type { ButtonStyles, DiscordComponent } from "../../../discordeno/mod.ts";
-import type { LinkButtonComponent } from "./Component.ts";
-import { MessageComponentTypes } from "../../../discordeno/mod.ts";
-import BaseComponent from "./Component.ts";
-import Emoji from "../Emoji.ts";
+import type { Session } from '../../Session.ts';
+import type { ButtonStyles, DiscordComponent } from '../../../discordeno/mod.ts';
+import type { LinkButtonComponent } from './Component.ts';
+import { MessageComponentTypes } from '../../../discordeno/mod.ts';
+import BaseComponent from './Component.ts';
+import Emoji from '../Emoji.ts';
 
 export class LinkButton extends BaseComponent implements LinkButtonComponent {
     constructor(session: Session, data: DiscordComponent) {

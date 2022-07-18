@@ -1,5 +1,5 @@
-import { createLeakyBucket } from "../../util/bucket.ts";
-import { GatewayManager } from "./gatewayManager.ts";
+import { createLeakyBucket } from '../../util/bucket.ts';
+import { GatewayManager } from './gatewayManager.ts';
 
 export function prepareBuckets(gateway: GatewayManager) {
     for (let i = 0; i < gateway.gatewayBot.sessionStartLimit.maxConcurrency; ++i) {

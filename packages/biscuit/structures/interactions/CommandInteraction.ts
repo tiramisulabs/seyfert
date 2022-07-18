@@ -1,19 +1,19 @@
-import type { Model } from "../Base.ts";
-import type { Snowflake } from "../../Snowflake.ts";
-import type { Session } from "../../Session.ts";
+import type { Model } from '../Base.ts';
+import type { Snowflake } from '../../Snowflake.ts';
+import type { Session } from '../../Session.ts';
 import type {
     ApplicationCommandTypes,
     DiscordInteraction,
     DiscordMemberWithUser,
     InteractionTypes,
-} from "../../../discordeno/mod.ts";
-import BaseInteraction from "./BaseInteraction.ts";
-import CommandInteractionOptionResolver from "./CommandInteractionOptionResolver.ts";
-import Attachment from "../Attachment.ts";
-import User from "../User.ts";
-import Member from "../Member.ts";
-import Message from "../Message.ts";
-import Role from "../Role.ts";
+} from '../../../discordeno/mod.ts';
+import BaseInteraction from './BaseInteraction.ts';
+import CommandInteractionOptionResolver from './CommandInteractionOptionResolver.ts';
+import Attachment from '../Attachment.ts';
+import User from '../User.ts';
+import Member from '../Member.ts';
+import Message from '../Message.ts';
+import Role from '../Role.ts';
 
 export class CommandInteraction extends BaseInteraction implements Model {
     constructor(session: Session, data: DiscordInteraction) {

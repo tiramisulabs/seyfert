@@ -1,5 +1,5 @@
-import type { Session } from "../Session.ts";
-import type { Snowflake } from "../Snowflake.ts";
+import type { Session } from '../Session.ts';
+import type { Snowflake } from '../Snowflake.ts';
 import type {
     DiscordApplication,
     DiscordChannel,
@@ -10,13 +10,13 @@ import type {
     ScheduledEventEntityType,
     ScheduledEventPrivacyLevel,
     ScheduledEventStatus,
-} from "../../discordeno/mod.ts";
-import { TargetTypes } from "../../discordeno/mod.ts";
-import { GuildChannel } from "./channels.ts";
-import { Member } from "./Member.ts";
-import { Guild, InviteGuild } from "./guilds.ts";
-import User from "./User.ts";
-import Application from "./Application.ts";
+} from '../../discordeno/mod.ts';
+import { TargetTypes } from '../../discordeno/mod.ts';
+import { GuildChannel } from './channels.ts';
+import { Member } from './Member.ts';
+import { Guild, InviteGuild } from './guilds.ts';
+import User from './User.ts';
+import Application from './Application.ts';
 
 export interface InviteStageInstance {
     /** The members speaking in the Stage */
@@ -101,7 +101,7 @@ export class Invite {
         this.targetType = data.target_type;
 
         if (data.channel) {
-            const guildId = (data.guild && data.guild?.id) ? data.guild.id : "";
+            const guildId = (data.guild && data.guild?.id) ? data.guild.id : '';
             this.channel = new GuildChannel(session, data.channel as DiscordChannel, guildId);
         }
 
@@ -135,7 +135,7 @@ export class Invite {
         }
 
         if (data.stage_instance) {
-            const guildId = (data.guild && data.guild?.id) ? data.guild.id : "";
+            const guildId = (data.guild && data.guild?.id) ? data.guild.id : '';
             this.stageInstance = {
                 members: data.stage_instance.members.map((m) =>
                     new Member(session, m as DiscordMemberWithUser, guildId)

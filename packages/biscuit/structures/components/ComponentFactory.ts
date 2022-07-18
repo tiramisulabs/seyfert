@@ -1,12 +1,12 @@
-import type { Session } from "../../Session.ts";
-import type { DiscordComponent, DiscordInputTextComponent } from "../../../discordeno/mod.ts";
-import type { Component } from "./Component.ts";
-import { ButtonStyles, MessageComponentTypes } from "../../../discordeno/mod.ts";
-import ActionRow from "./ActionRowComponent.ts";
-import Button from "./ButtonComponent.ts";
-import LinkButton from "./ButtonComponent.ts";
-import SelectMenu from "./SelectMenuComponent.ts";
-import TextInput from "./TextInputComponent.ts";
+import type { Session } from '../../Session.ts';
+import type { DiscordComponent, DiscordInputTextComponent } from '../../../discordeno/mod.ts';
+import type { Component } from './Component.ts';
+import { ButtonStyles, MessageComponentTypes } from '../../../discordeno/mod.ts';
+import ActionRow from './ActionRowComponent.ts';
+import Button from './ButtonComponent.ts';
+import LinkButton from './ButtonComponent.ts';
+import SelectMenu from './SelectMenuComponent.ts';
+import TextInput from './TextInputComponent.ts';
 
 export class ComponentFactory {
     /**

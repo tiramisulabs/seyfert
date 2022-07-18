@@ -1,8 +1,8 @@
-import type { Model } from "./Base.ts";
-import type { Session } from "../Session.ts";
-import type { Snowflake } from "../Snowflake.ts";
-import type { DiscordStageInstance as DiscordAutoClosingStageInstance } from "../../discordeno/mod.ts";
-import * as Routes from "../Routes.ts";
+import type { Model } from './Base.ts';
+import type { Session } from '../Session.ts';
+import type { Snowflake } from '../Snowflake.ts';
+import type { DiscordStageInstance as DiscordAutoClosingStageInstance } from '../../discordeno/mod.ts';
+import * as Routes from '../Routes.ts';
 
 export interface DiscordStageInstanceB extends DiscordAutoClosingStageInstance {
     privacy_level: PrivacyLevels;
@@ -42,7 +42,7 @@ export class StageInstance implements Model {
     async edit(options: { topic?: string; privacyLevel?: PrivacyLevels }): Promise<StageInstance> {
         const stageInstance = await this.session.rest.runMethod<DiscordStageInstanceB>(
             this.session.rest,
-            "PATCH",
+            'PATCH',
             Routes.STAGE_INSTANCE(this.id),
             {
                 topic: options.topic,
@@ -54,7 +54,7 @@ export class StageInstance implements Model {
     }
 
     async delete(): Promise<void> {
-        await this.session.rest.runMethod<undefined>(this.session.rest, "DELETE", Routes.STAGE_INSTANCE(this.id));
+        await this.session.rest.runMethod<undefined>(this.session.rest, 'DELETE', Routes.STAGE_INSTANCE(this.id));
     }
 }
 

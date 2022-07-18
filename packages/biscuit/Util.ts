@@ -1,6 +1,6 @@
-import type { ButtonBuilder, InputTextBuilder, SelectMenuBuilder } from "./mod.ts";
-import type { Permissions } from "./structures/Permissions.ts";
-import type { Snowflake } from "./Snowflake.ts";
+import type { ButtonBuilder, InputTextBuilder, SelectMenuBuilder } from './mod.ts';
+import type { Permissions } from './structures/Permissions.ts';
+import type { Snowflake } from './Snowflake.ts';
 
 /*
  * Represents a session's cache
@@ -60,7 +60,7 @@ export interface PermissionsOverwrites {
 /**
  * @link https://discord.com/developers/docs/reference#image-formatting
  */
-export type ImageFormat = "jpg" | "jpeg" | "png" | "webp" | "gif" | "json";
+export type ImageFormat = 'jpg' | 'jpeg' | 'png' | 'webp' | 'gif' | 'json';
 
 /**
  * @link https://discord.com/developers/docs/reference#image-formatting
@@ -72,17 +72,17 @@ export type ImageSize = 16 | 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096;
  */
 export class Util {
     static formatImageURL(url: string, size: ImageSize = 128, format?: ImageFormat) {
-        return `${url}.${format || (url.includes("/a_") ? "gif" : "jpg")}?size=${size}`;
+        return `${url}.${format || (url.includes('/a_') ? 'gif' : 'jpg')}?size=${size}`;
     }
 
     static iconHashToBigInt(hash: string) {
-        return BigInt("0x" + (hash.startsWith("a_") ? `a${hash.substring(2)}` : `b${hash}`));
+        return BigInt('0x' + (hash.startsWith('a_') ? `a${hash.substring(2)}` : `b${hash}`));
     }
 
     static iconBigintToHash(icon: bigint) {
         const hash: string = icon.toString(16);
 
-        return hash.startsWith("a") ? `a_${hash.substring(1)}` : hash.substring(1);
+        return hash.startsWith('a') ? `a_${hash.substring(1)}` : hash.substring(1);
     }
 }
 

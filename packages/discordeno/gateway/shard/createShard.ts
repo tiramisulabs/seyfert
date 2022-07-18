@@ -1,5 +1,5 @@
-import { identify } from "./identify.ts";
-import { handleMessage } from "./handleMessage.ts";
+import { identify } from './identify.ts';
+import { handleMessage } from './handleMessage.ts';
 import {
     DEFAULT_HEARTBEAT_INTERVAL,
     GATEWAY_RATE_LIMIT_RESET_INTERVAL,
@@ -11,21 +11,21 @@ import {
     ShardSocketCloseCodes,
     ShardSocketRequest,
     ShardState,
-} from "./types.ts";
-import { startHeartbeating } from "./startHeartbeating.ts";
-import { stopHeartbeating } from "./stopHeartbeating.ts";
-import { resume } from "./resume.ts";
-import { createLeakyBucket, LeakyBucket } from "../../util/bucket.ts";
-import { calculateSafeRequests } from "./calculateSafeRequests.ts";
-import { send } from "./send.ts";
-import { handleClose } from "./handleClose.ts";
-import { connect } from "./connect.ts";
-import { close } from "./close.ts";
-import { shutdown } from "./shutdown.ts";
-import { isOpen } from "./isOpen.ts";
-import { DiscordGatewayPayload, DiscordStatusUpdate } from "../../types/discord.ts";
-import { GatewayIntents, PickPartial } from "../../types/shared.ts";
-import { API_VERSION } from "../../util/constants.ts";
+} from './types.ts';
+import { startHeartbeating } from './startHeartbeating.ts';
+import { stopHeartbeating } from './stopHeartbeating.ts';
+import { resume } from './resume.ts';
+import { createLeakyBucket, LeakyBucket } from '../../util/bucket.ts';
+import { calculateSafeRequests } from './calculateSafeRequests.ts';
+import { send } from './send.ts';
+import { handleClose } from './handleClose.ts';
+import { connect } from './connect.ts';
+import { close } from './close.ts';
+import { shutdown } from './shutdown.ts';
+import { isOpen } from './isOpen.ts';
+import { DiscordGatewayPayload, DiscordStatusUpdate } from '../../types/discord.ts';
+import { GatewayIntents, PickPartial } from '../../types/shared.ts';
+import { API_VERSION } from '../../util/constants.ts';
 
 // TODO: debug
 // TODO: function overwrite
@@ -59,12 +59,12 @@ export function createShard(
             compress: options.gatewayConfig.compress ?? false,
             intents: options.gatewayConfig.intents ?? 0,
             properties: {
-                os: options.gatewayConfig?.properties?.os ?? "linux",
-                browser: options.gatewayConfig?.properties?.browser ?? "Discordeno",
-                device: options.gatewayConfig?.properties?.device ?? "Discordeno",
+                os: options.gatewayConfig?.properties?.os ?? 'linux',
+                browser: options.gatewayConfig?.properties?.browser ?? 'Discordeno',
+                device: options.gatewayConfig?.properties?.device ?? 'Discordeno',
             },
             token: options.gatewayConfig.token,
-            url: options.gatewayConfig.url ?? "wss://gateway.discord.gg",
+            url: options.gatewayConfig.url ?? 'wss://gateway.discord.gg',
             version: options.gatewayConfig.version ?? API_VERSION,
         } as ShardGatewayConfig,
         /** This contains all the heartbeat information */
@@ -201,7 +201,7 @@ export function createShard(
          * This is used to resolve internal waiting states.
          * Mapped by SelectedEvents => ResolveFunction
          */
-        resolves: new Map<"READY" | "RESUMED" | "INVALID_SESSION", (payload: DiscordGatewayPayload) => void>(),
+        resolves: new Map<'READY' | 'RESUMED' | 'INVALID_SESSION', (payload: DiscordGatewayPayload) => void>(),
 
         /** @private Internal shard function.
          * Only use this function if you know what you are doing.
@@ -228,7 +228,7 @@ export interface CreateShard {
     id: number;
 
     /** Gateway configuration for the shard. */
-    gatewayConfig: PickPartial<ShardGatewayConfig, "token">;
+    gatewayConfig: PickPartial<ShardGatewayConfig, 'token'>;
 
     /** The total amount of shards which are used to communicate with Discord. */
     totalShards: number;
@@ -329,5 +329,5 @@ export interface CreateShard {
     /** This is used to resolve internal waiting states.
      * Mapped by SelectedEvents => ResolveFunction
      */
-    resolves?: Shard["resolves"];
+    resolves?: Shard['resolves'];
 }

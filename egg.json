@@ -4,7 +4,7 @@
     "entry": "./mod.ts",
     "description": "A brand new bleeding edge non bloated Discord library",
     "homepage": "https://github.com/oasisjs/biscuit",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "releaseType": "patch",
     "unstable": false,
     "unlisted": false,

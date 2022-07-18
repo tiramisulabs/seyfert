@@ -1,6 +1,6 @@
-import type { Model } from "./Base.ts";
-import type { Session } from "../Session.ts";
-import type { Snowflake } from "../Snowflake.ts";
+import type { Model } from './Base.ts';
+import type { Session } from '../Session.ts';
+import type { Snowflake } from '../Snowflake.ts';
 import type {
     DiscordEmbed,
     DiscordMessage,
@@ -8,14 +8,14 @@ import type {
     DiscordWebhook,
     FileContent,
     WebhookTypes,
-} from "../../discordeno/mod.ts";
-import type { WebhookOptions } from "../Routes.ts";
-import type { Attachment } from "./Attachment.ts";
-import type { AllowedMentions, CreateMessage } from "./Message.ts";
-import Util from "../Util.ts";
-import User from "./User.ts";
-import Message from "./Message.ts";
-import * as Routes from "../Routes.ts";
+} from '../../discordeno/mod.ts';
+import type { WebhookOptions } from '../Routes.ts';
+import type { Attachment } from './Attachment.ts';
+import type { AllowedMentions, CreateMessage } from './Message.ts';
+import Util from '../Util.ts';
+import User from './User.ts';
+import Message from './Message.ts';
+import * as Routes from '../Routes.ts';
 
 /**
  * @link https://discord.com/developers/docs/resources/webhook#edit-webhook-message-jsonform-params
@@ -88,9 +88,9 @@ export class Webhook implements Model {
                 wait: options?.wait,
                 threadId: options?.threadId,
             }),
-            method: "POST",
+            method: 'POST',
             payload: this.session.rest.createRequestBody(this.session.rest, {
-                method: "POST",
+                method: 'POST',
                 body: {
                     ...data,
                 },
@@ -103,7 +103,7 @@ export class Webhook implements Model {
     async fetch(): Promise<Webhook> {
         const message = await this.session.rest.runMethod<DiscordWebhook>(
             this.session.rest,
-            "GET",
+            'GET',
             Routes.WEBHOOK_TOKEN(this.id, this.token),
         );
 
@@ -117,7 +117,7 @@ export class Webhook implements Model {
 
         const message = await this.session.rest.runMethod<DiscordMessage>(
             this.session.rest,
-            "GET",
+            'GET',
             Routes.WEBHOOK_MESSAGE(this.id, this.token, messageId, options),
         );
 
@@ -126,12 +126,12 @@ export class Webhook implements Model {
 
     async deleteMessage(messageId: Snowflake, options?: { threadId?: Snowflake }): Promise<void> {
         if (!this.token) {
-            throw new Error("No token found");
+            throw new Error('No token found');
         }
 
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "DELETE",
+            'DELETE',
             Routes.WEBHOOK_MESSAGE(this.id, this.token, messageId, options),
         );
     }
@@ -141,12 +141,12 @@ export class Webhook implements Model {
         options?: EditWebhookMessage & { threadId?: Snowflake },
     ): Promise<Message> {
         if (!this.token) {
-            throw new Error("No token found");
+            throw new Error('No token found');
         }
 
         const message = await this.session.rest.runMethod<DiscordMessage>(
             this.session.rest,
-            "PATCH",
+            'PATCH',
             messageId
                 ? Routes.WEBHOOK_MESSAGE(this.id, this.token, messageId)
                 : Routes.WEBHOOK_MESSAGE_ORIGINAL(this.id, this.token),

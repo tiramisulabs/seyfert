@@ -42,18 +42,18 @@ that you should not make software that does things it is not supposed to do.
 ### Example bot (TS/JS)
 
 ```js
-import Biscuit, { GatewayIntents } from "@oasisjs/biscuit";
+import Biscuit, { GatewayIntents } from '@oasisjs/biscuit';
 
 const intents = GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages;
-const session = new Biscuit({ token: "your token", intents });
+const session = new Biscuit({ token: 'your token', intents });
 
-session.on("ready", ({ user }) => {
-    console.log("Logged in as:", user.username);
+session.on('ready', ({ user }) => {
+    console.log('Logged in as:', user.username);
 });
 
-session.on("messageCreate", (message) => {
-    if (message.content.startsWith("!ping")) {
-        message.reply({ content: "pong!" });
+session.on('messageCreate', (message) => {
+    if (message.content.startsWith('!ping')) {
+        message.reply({ content: 'pong!' });
     }
 });
 

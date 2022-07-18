@@ -1,10 +1,10 @@
-import type { Model } from "./Base.ts";
-import type { DiscordRole } from "../../discordeno/mod.ts";
-import type { Session } from "../Session.ts";
-import { Snowflake } from "../Snowflake.ts";
-import { Guild, type ModifyGuildRole } from "./guilds.ts";
-import Permissions from "./Permissions.ts";
-import Util from "../Util.ts";
+import type { Model } from './Base.ts';
+import type { DiscordRole } from '../../discordeno/mod.ts';
+import type { Session } from '../Session.ts';
+import { Snowflake } from '../Snowflake.ts';
+import { Guild, type ModifyGuildRole } from './guilds.ts';
+import Permissions from './Permissions.ts';
+import Util from '../Util.ts';
 
 export class Role implements Model {
     constructor(session: Session, data: DiscordRole, guildId: Snowflake) {
@@ -44,7 +44,7 @@ export class Role implements Model {
     }
 
     get hexColor(): string {
-        return `#${this.color.toString(16).padStart(6, "0")}`;
+        return `#${this.color.toString(16).padStart(6, '0')}`;
     }
 
     async delete(): Promise<void> {
@@ -67,7 +67,7 @@ export class Role implements Model {
     toString(): string {
         switch (this.id) {
             case this.guildId:
-                return "@everyone";
+                return '@everyone';
             default:
                 return `<@&${this.id}>`;
         }

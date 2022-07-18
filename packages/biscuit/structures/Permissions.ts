@@ -1,4 +1,4 @@
-import { BitwisePermissionFlags } from "../../discordeno/mod.ts";
+import { BitwisePermissionFlags } from '../../discordeno/mod.ts';
 
 export type PermissionString = keyof typeof BitwisePermissionFlags;
 export type PermissionResolvable =
@@ -25,13 +25,13 @@ export class Permissions {
 
     static resolve(bit: PermissionResolvable): bigint {
         switch (typeof bit) {
-            case "bigint":
+            case 'bigint':
                 return bit;
-            case "number":
+            case 'number':
                 return BigInt(bit);
-            case "string":
+            case 'string':
                 return BigInt(Permissions.Flags[bit]);
-            case "object":
+            case 'object':
                 return Permissions.resolve(
                     bit.map((p) => BigInt(Permissions.Flags[p])).reduce((acc, cur) => acc | cur, 0n),
                 );

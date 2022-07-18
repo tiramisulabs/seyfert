@@ -1,19 +1,19 @@
-import { checkRateLimits } from "./checkRateLimits.ts";
-import { cleanupQueues } from "./cleanupQueues.ts";
-import { createRequestBody } from "./createRequestBody.ts";
-import { processGlobalQueue } from "./processGlobalQueue.ts";
-import { processQueue } from "./processQueue.ts";
-import { processRateLimitedPaths } from "./processRateLimitedPaths.ts";
-import { processRequest } from "./processRequest.ts";
-import { processRequestHeaders } from "./processRequestHeaders.ts";
-import { convertRestError } from "./convertRestError.ts";
-import { RestPayload, RestRateLimitedPath, RestRequest } from "./rest.ts";
-import { runMethod } from "./runMethod.ts";
-import { simplifyUrl } from "./simplifyUrl.ts";
-import { baseEndpoints } from "../util/constants.ts";
-import { API_VERSION } from "../util/constants.ts";
-import { removeTokenPrefix } from "../util/token.ts";
-import { sendRequest } from "./sendRequest.ts";
+import { checkRateLimits } from './checkRateLimits.ts';
+import { cleanupQueues } from './cleanupQueues.ts';
+import { createRequestBody } from './createRequestBody.ts';
+import { processGlobalQueue } from './processGlobalQueue.ts';
+import { processQueue } from './processQueue.ts';
+import { processRateLimitedPaths } from './processRateLimitedPaths.ts';
+import { processRequest } from './processRequest.ts';
+import { processRequestHeaders } from './processRequestHeaders.ts';
+import { convertRestError } from './convertRestError.ts';
+import { RestPayload, RestRateLimitedPath, RestRequest } from './rest.ts';
+import { runMethod } from './runMethod.ts';
+import { simplifyUrl } from './simplifyUrl.ts';
+import { baseEndpoints } from '../util/constants.ts';
+import { API_VERSION } from '../util/constants.ts';
+import { removeTokenPrefix } from '../util/token.ts';
+import { sendRequest } from './sendRequest.ts';
 
 export function createRestManager(options: CreateRestManagerOptions) {
     const version = options.version || API_VERSION;
@@ -39,8 +39,8 @@ export function createRestManager(options: CreateRestManagerOptions) {
         version,
         token: removeTokenPrefix(options.token),
         maxRetryCount: options.maxRetryCount || 10,
-        secretKey: options.secretKey || "discordeno_best_lib_ever",
-        customUrl: options.customUrl || "",
+        secretKey: options.secretKey || 'discordeno_best_lib_ever',
+        customUrl: options.customUrl || '',
         pathQueues: new Map<
             string,
             {

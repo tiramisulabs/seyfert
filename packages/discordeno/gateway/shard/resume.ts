@@ -1,5 +1,5 @@
-import { GatewayOpcodes } from "../../types/shared.ts";
-import { Shard, ShardSocketCloseCodes, ShardState } from "./types.ts";
+import { GatewayOpcodes } from '../../types/shared.ts';
+import { Shard, ShardSocketCloseCodes, ShardState } from './types.ts';
 
 export async function resume(shard: Shard): Promise<void> {
     //   gateway.debug("GW RESUMING", { shardId });
@@ -8,7 +8,7 @@ export async function resume(shard: Shard): Promise<void> {
     if (shard.isOpen()) {
         shard.close(
             ShardSocketCloseCodes.ResumeClosingOldConnection,
-            "Reconnecting the shard, closing old connection.",
+            'Reconnecting the shard, closing old connection.',
         );
     }
 
@@ -39,12 +39,12 @@ export async function resume(shard: Shard): Promise<void> {
     }, true);
 
     return new Promise((resolve) => {
-        shard.resolves.set("RESUMED", () => resolve());
+        shard.resolves.set('RESUMED', () => resolve());
         // If it is attempted to resume with an invalid session id,
         // Discord sends an invalid session payload
         // Not erroring here since it is easy that this happens, also it would be not catchable
-        shard.resolves.set("INVALID_SESSION", () => {
-            shard.resolves.delete("RESUMED");
+        shard.resolves.set('INVALID_SESSION', () => {
+            shard.resolves.delete('RESUMED');
             resolve();
         });
     });

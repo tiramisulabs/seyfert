@@ -1,4 +1,4 @@
-import { GatewayManager } from "./gatewayManager.ts";
+import { GatewayManager } from './gatewayManager.ts';
 
 /** Handler used to determine max number of shards to use based upon the max concurrency. */
 export function calculateTotalShards(gateway: GatewayManager): number {

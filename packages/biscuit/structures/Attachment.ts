@@ -1,7 +1,7 @@
-import type { Model } from "./Base.ts";
-import type { Snowflake } from "../Snowflake.ts";
-import type { Session } from "../Session.ts";
-import type { DiscordAttachment } from "../../discordeno/mod.ts";
+import type { Model } from './Base.ts';
+import type { Snowflake } from '../Snowflake.ts';
+import type { Session } from '../Session.ts';
+import type { DiscordAttachment } from '../../discordeno/mod.ts';
 
 /**
  * Represents an attachment

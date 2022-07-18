@@ -4,11 +4,11 @@ import type {
     DiscordActivitySecrets,
     DiscordClientStatus,
     DiscordPresenceUpdate,
-} from "../../discordeno/mod.ts";
-import type { Session } from "../Session.ts";
-import { User } from "./User.ts";
-import { Snowflake } from "../Snowflake.ts";
-import type { ComponentEmoji } from "../Util.ts";
+} from '../../discordeno/mod.ts';
+import type { Session } from '../Session.ts';
+import { User } from './User.ts';
+import { Snowflake } from '../Snowflake.ts';
+import type { ComponentEmoji } from '../Util.ts';
 
 export interface ActivityAssets {
     largeImage?: string;

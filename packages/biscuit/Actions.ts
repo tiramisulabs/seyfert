@@ -37,34 +37,34 @@ import type {
     DiscordTypingStart,
     DiscordUser,
     DiscordWebhookUpdate,
-} from "../discordeno/mod.ts";
+} from '../discordeno/mod.ts';
 
-import type { Snowflake } from "./Snowflake.ts";
-import type { Session } from "./Session.ts";
-import type { Interaction } from "./structures/interactions/InteractionFactory.ts";
+import type { Snowflake } from './Snowflake.ts';
+import type { Session } from './Session.ts';
+import type { Interaction } from './structures/interactions/InteractionFactory.ts';
 
-import { AutoModerationRule } from "./structures/AutoModerationRule.ts";
-import { AutoModerationExecution } from "./structures/AutoModerationExecution.ts";
-import { type Channel, ChannelFactory, GuildChannel, ThreadChannel } from "./structures/channels.ts";
-import { type DiscordStageInstanceB, StageInstance } from "./structures/StageInstance.ts";
-import { ScheduledEvent } from "./structures/GuildScheduledEvent.ts";
-import { Presence } from "./structures/Presence.ts";
+import { AutoModerationRule } from './structures/AutoModerationRule.ts';
+import { AutoModerationExecution } from './structures/AutoModerationExecution.ts';
+import { type Channel, ChannelFactory, GuildChannel, ThreadChannel } from './structures/channels.ts';
+import { type DiscordStageInstanceB, StageInstance } from './structures/StageInstance.ts';
+import { ScheduledEvent } from './structures/GuildScheduledEvent.ts';
+import { Presence } from './structures/Presence.ts';
 
-import ThreadMember from "./structures/ThreadMember.ts";
-import Member from "./structures/Member.ts";
-import Message from "./structures/Message.ts";
-import User from "./structures/User.ts";
-import Integration from "./structures/Integration.ts";
-import { Guild } from "./structures/guilds.ts";
-import InteractionFactory from "./structures/interactions/InteractionFactory.ts";
-import { InviteCreate, NewInviteCreate } from "./structures/Invite.ts";
+import ThreadMember from './structures/ThreadMember.ts';
+import Member from './structures/Member.ts';
+import Message from './structures/Message.ts';
+import User from './structures/User.ts';
+import Integration from './structures/Integration.ts';
+import { Guild } from './structures/guilds.ts';
+import InteractionFactory from './structures/interactions/InteractionFactory.ts';
+import { InviteCreate, NewInviteCreate } from './structures/Invite.ts';
 import {
     MessageReactionAdd,
     MessageReactionRemove,
     MessageReactionRemoveAll,
     MessageReactionRemoveEmoji,
     NewMessageReactionAdd,
-} from "./structures/MessageReaction.ts";
+} from './structures/MessageReaction.ts';
 
 export type RawHandler<T> = (...args: [Session, number, T]) => void;
 export type Handler<T extends [obj?: unknown, ddy?: unknown]> = (...args: T) => unknown;
@@ -72,11 +72,11 @@ export type Handler<T extends [obj?: unknown, ddy?: unknown]> = (...args: T) => 
 export const READY: RawHandler<DiscordReady> = (session, shardId, payload) => {
     session.applicationId = payload.application.id;
     session.botId = payload.user.id;
-    session.emit("ready", { ...payload, user: new User(session, payload.user) }, shardId);
+    session.emit('ready', { ...payload, user: new User(session, payload.user) }, shardId);
 };
 
 export const MESSAGE_CREATE: RawHandler<DiscordMessage> = (session, _shardId, message) => {
-    session.emit("messageCreate", new Message(session, message));
+    session.emit('messageCreate', new Message(session, message));
 };
 
 export const MESSAGE_UPDATE: RawHandler<DiscordMessage> = (session, _shardId, new_message) => {
@@ -95,63 +95,63 @@ export const MESSAGE_UPDATE: RawHandler<DiscordMessage> = (session, _shardId, ne
         // we aknowledge people that their callback could be partial but giving them all functions of Message
         Object.setPrototypeOf(message, Message.prototype);
 
-        session.emit("messageUpdate", message);
+        session.emit('messageUpdate', message);
         return;
     }
 
-    session.emit("messageUpdate", new Message(session, new_message));
+    session.emit('messageUpdate', new Message(session, new_message));
 };
 
 export const MESSAGE_DELETE: RawHandler<DiscordMessageDelete> = (session, _shardId, { id, channel_id, guild_id }) => {
-    session.emit("messageDelete", { id, channelId: channel_id, guildId: guild_id });
+    session.emit('messageDelete', { id, channelId: channel_id, guildId: guild_id });
 };
 
 export const GUILD_CREATE: RawHandler<DiscordGuild> = (session, _shardId, guild) => {
-    session.emit("guildCreate", new Guild(session, guild));
+    session.emit('guildCreate', new Guild(session, guild));
 };
 
 export const GUILD_DELETE: RawHandler<DiscordGuild> = (session, _shardId, guild) => {
-    session.emit("guildDelete", { id: guild.id, unavailable: true });
+    session.emit('guildDelete', { id: guild.id, unavailable: true });
 };
 
 export const GUILD_MEMBER_ADD: RawHandler<DiscordGuildMemberAdd> = (session, _shardId, member) => {
-    session.emit("guildMemberAdd", new Member(session, member, member.guild_id));
+    session.emit('guildMemberAdd', new Member(session, member, member.guild_id));
 };
 
 export const GUILD_MEMBER_UPDATE: RawHandler<DiscordGuildMemberUpdate> = (session, _shardId, member) => {
-    session.emit("guildMemberUpdate", new Member(session, member, member.guild_id));
+    session.emit('guildMemberUpdate', new Member(session, member, member.guild_id));
 };
 
 export const GUILD_MEMBER_REMOVE: RawHandler<DiscordGuildMemberRemove> = (session, _shardId, member) => {
-    session.emit("guildMemberRemove", new User(session, member.user), member.guild_id);
+    session.emit('guildMemberRemove', new User(session, member.user), member.guild_id);
 };
 
 export const GUILD_BAN_ADD: RawHandler<DiscordGuildBanAddRemove> = (session, _shardId, data) => {
-    session.emit("guildBanAdd", { guildId: data.guild_id, user: data.user });
+    session.emit('guildBanAdd', { guildId: data.guild_id, user: data.user });
 };
 
 export const GUILD_BAN_REMOVE: RawHandler<DiscordGuildBanAddRemove> = (session, _shardId, data) => {
-    session.emit("guildBanRemove", { guildId: data.guild_id, user: data.user });
+    session.emit('guildBanRemove', { guildId: data.guild_id, user: data.user });
 };
 
 export const GUILD_EMOJIS_UPDATE: RawHandler<DiscordGuildEmojisUpdate> = (session, _shardId, data) => {
-    session.emit("guildEmojisUpdate", { guildId: data.guild_id, emojis: data.emojis });
+    session.emit('guildEmojisUpdate', { guildId: data.guild_id, emojis: data.emojis });
 };
 
 export const GUILD_ROLE_CREATE: RawHandler<DiscordGuildRoleCreate> = (session, _shardId, data) => {
-    session.emit("guildRoleCreate", { guildId: data.guild_id, role: data.role });
+    session.emit('guildRoleCreate', { guildId: data.guild_id, role: data.role });
 };
 
 export const GUILD_ROLE_UPDATE: RawHandler<DiscordGuildRoleUpdate> = (session, _shardId, data) => {
-    session.emit("guildRoleUpdate", { guildId: data.guild_id, role: data.role });
+    session.emit('guildRoleUpdate', { guildId: data.guild_id, role: data.role });
 };
 
 export const GUILD_ROLE_DELETE: RawHandler<DiscordGuildRoleDelete> = (session, _shardId, data) => {
-    session.emit("guildRoleDelete", { guildId: data.guild_id, roleId: data.role_id });
+    session.emit('guildRoleDelete', { guildId: data.guild_id, roleId: data.role_id });
 };
 
 export const TYPING_START: RawHandler<DiscordTypingStart> = (session, _shardId, payload) => {
-    session.emit("typingStart", {
+    session.emit('typingStart', {
         channelId: payload.channel_id,
         guildId: payload.guild_id ? payload.guild_id : undefined,
         userId: payload.user_id,
@@ -163,43 +163,43 @@ export const TYPING_START: RawHandler<DiscordTypingStart> = (session, _shardId, 
 };
 
 export const INTERACTION_CREATE: RawHandler<DiscordInteraction> = (session, _shardId, interaction) => {
-    session.emit("interactionCreate", InteractionFactory.from(session, interaction));
+    session.emit('interactionCreate', InteractionFactory.from(session, interaction));
 };
 
 export const CHANNEL_CREATE: RawHandler<DiscordChannel> = (session, _shardId, channel) => {
-    session.emit("channelCreate", ChannelFactory.from(session, channel));
+    session.emit('channelCreate', ChannelFactory.from(session, channel));
 };
 
 export const CHANNEL_UPDATE: RawHandler<DiscordChannel> = (session, _shardId, channel) => {
-    session.emit("channelUpdate", ChannelFactory.from(session, channel));
+    session.emit('channelUpdate', ChannelFactory.from(session, channel));
 };
 
 export const CHANNEL_DELETE: RawHandler<DiscordChannel> = (session, _shardId, channel) => {
     if (!channel.guild_id) return;
 
-    session.emit("channelDelete", new GuildChannel(session, channel, channel.guild_id));
+    session.emit('channelDelete', new GuildChannel(session, channel, channel.guild_id));
 };
 
 export const THREAD_CREATE: RawHandler<DiscordChannel> = (session, _shardId, channel) => {
     if (!channel.guild_id) return;
 
-    session.emit("threadCreate", new ThreadChannel(session, channel, channel.guild_id));
+    session.emit('threadCreate', new ThreadChannel(session, channel, channel.guild_id));
 };
 
 export const THREAD_UPDATE: RawHandler<DiscordChannel> = (session, _shardId, channel) => {
     if (!channel.guild_id) return;
 
-    session.emit("threadUpdate", new ThreadChannel(session, channel, channel.guild_id));
+    session.emit('threadUpdate', new ThreadChannel(session, channel, channel.guild_id));
 };
 
 export const THREAD_DELETE: RawHandler<DiscordChannel> = (session, _shardId, channel) => {
     if (!channel.guild_id) return;
 
-    session.emit("threadDelete", new ThreadChannel(session, channel, channel.guild_id));
+    session.emit('threadDelete', new ThreadChannel(session, channel, channel.guild_id));
 };
 
 export const THREAD_MEMBER_UPDATE: RawHandler<DiscordThreadMemberUpdate> = (session, _shardId, payload) => {
-    session.emit("threadMemberUpdate", {
+    session.emit('threadMemberUpdate', {
         guildId: payload.guild_id,
         id: payload.id,
         userId: payload.user_id,
@@ -209,7 +209,7 @@ export const THREAD_MEMBER_UPDATE: RawHandler<DiscordThreadMemberUpdate> = (sess
 };
 
 export const THREAD_MEMBERS_UPDATE: RawHandler<DiscordThreadMembersUpdate> = (session, _shardId, payload) => {
-    session.emit("threadMembersUpdate", {
+    session.emit('threadMembersUpdate', {
         memberCount: payload.member_count,
         addedMembers: payload.added_members
             ? payload.added_members.map((tm) => new ThreadMember(session, tm))
@@ -221,7 +221,7 @@ export const THREAD_MEMBERS_UPDATE: RawHandler<DiscordThreadMembersUpdate> = (se
 };
 
 export const THREAD_LIST_SYNC: RawHandler<DiscordThreadListSync> = (session, _shardId, payload) => {
-    session.emit("threadListSync", {
+    session.emit('threadListSync', {
         guildId: payload.guild_id,
         channelIds: payload.channel_ids ?? [],
         threads: payload.threads.map((channel) => new ThreadChannel(session, channel, payload.guild_id)),
@@ -230,7 +230,7 @@ export const THREAD_LIST_SYNC: RawHandler<DiscordThreadListSync> = (session, _sh
 };
 
 export const CHANNEL_PINS_UPDATE: RawHandler<DiscordChannelPinsUpdate> = (session, _shardId, payload) => {
-    session.emit("channelPinsUpdate", {
+    session.emit('channelPinsUpdate', {
         guildId: payload.guild_id,
         channelId: payload.channel_id,
         lastPinTimestamp: payload.last_pin_timestamp ? Date.parse(payload.last_pin_timestamp) : undefined,
@@ -238,15 +238,15 @@ export const CHANNEL_PINS_UPDATE: RawHandler<DiscordChannelPinsUpdate> = (sessio
 };
 
 export const USER_UPDATE: RawHandler<DiscordUser> = (session, _shardId, payload) => {
-    session.emit("userUpdate", new User(session, payload));
+    session.emit('userUpdate', new User(session, payload));
 };
 
 export const PRESENCE_UPDATE: RawHandler<DiscordPresenceUpdate> = (session, _shardId, payload) => {
-    session.emit("presenceUpdate", new Presence(session, payload));
+    session.emit('presenceUpdate', new Presence(session, payload));
 };
 
 export const WEBHOOKS_UPDATE: RawHandler<DiscordWebhookUpdate> = (session, _shardId, webhook) => {
-    session.emit("webhooksUpdate", { guildId: webhook.guild_id, channelId: webhook.channel_id });
+    session.emit('webhooksUpdate', { guildId: webhook.guild_id, channelId: webhook.channel_id });
 };
 
 export const INTEGRATION_CREATE: RawHandler<DiscordIntegration & { guildId?: Snowflake }> = (
@@ -254,7 +254,7 @@ export const INTEGRATION_CREATE: RawHandler<DiscordIntegration & { guildId?: Sno
     _shardId,
     payload,
 ) => {
-    session.emit("integrationCreate", new Integration(session, payload));
+    session.emit('integrationCreate', new Integration(session, payload));
 };
 
 export const INTEGRATION_UPDATE: RawHandler<DiscordIntegration & { guildId?: Snowflake }> = (
@@ -262,11 +262,11 @@ export const INTEGRATION_UPDATE: RawHandler<DiscordIntegration & { guildId?: Sno
     _shardId,
     payload,
 ) => {
-    session.emit("integrationCreate", new Integration(session, payload));
+    session.emit('integrationCreate', new Integration(session, payload));
 };
 
 export const INTEGRATION_DELETE: RawHandler<DiscordIntegrationDelete> = (session, _shardId, payload) => {
-    session.emit("integrationDelete", {
+    session.emit('integrationDelete', {
         id: payload.id,
         guildId: payload.guild_id,
         applicationId: payload.application_id,
@@ -274,15 +274,15 @@ export const INTEGRATION_DELETE: RawHandler<DiscordIntegrationDelete> = (session
 };
 
 export const AUTO_MODERATION_RULE_CREATE: RawHandler<DiscordAutoModerationRule> = (session, _shardId, payload) => {
-    session.emit("autoModerationRuleCreate", new AutoModerationRule(session, payload));
+    session.emit('autoModerationRuleCreate', new AutoModerationRule(session, payload));
 };
 
 export const AUTO_MODERATION_RULE_UPDATE: RawHandler<DiscordAutoModerationRule> = (session, _shardId, payload) => {
-    session.emit("autoModerationRuleUpdate", new AutoModerationRule(session, payload));
+    session.emit('autoModerationRuleUpdate', new AutoModerationRule(session, payload));
 };
 
 export const AUTO_MODERATION_RULE_DELETE: RawHandler<DiscordAutoModerationRule> = (session, _shardId, payload) => {
-    session.emit("autoModerationRuleDelete", new AutoModerationRule(session, payload));
+    session.emit('autoModerationRuleDelete', new AutoModerationRule(session, payload));
 };
 
 export const AUTO_MODERATION_ACTION_EXECUTE: RawHandler<DiscordAutoModerationActionExecution> = (
@@ -290,15 +290,15 @@ export const AUTO_MODERATION_ACTION_EXECUTE: RawHandler<DiscordAutoModerationAct
     _shardId,
     payload,
 ) => {
-    session.emit("autoModerationActionExecution", new AutoModerationExecution(session, payload));
+    session.emit('autoModerationActionExecution', new AutoModerationExecution(session, payload));
 };
 
 export const MESSAGE_REACTION_ADD: RawHandler<DiscordMessageReactionAdd> = (session, _shardId, reaction) => {
-    session.emit("messageReactionAdd", NewMessageReactionAdd(session, reaction));
+    session.emit('messageReactionAdd', NewMessageReactionAdd(session, reaction));
 };
 
 export const MESSAGE_REACTION_REMOVE: RawHandler<DiscordMessageReactionRemove> = (session, _shardId, reaction) => {
-    session.emit("messageReactionRemove", NewMessageReactionAdd(session, reaction));
+    session.emit('messageReactionRemove', NewMessageReactionAdd(session, reaction));
 };
 
 export const MESSAGE_REACTION_REMOVE_ALL: RawHandler<DiscordMessageReactionRemoveAll> = (
@@ -306,7 +306,7 @@ export const MESSAGE_REACTION_REMOVE_ALL: RawHandler<DiscordMessageReactionRemov
     _shardId,
     reaction,
 ) => {
-    session.emit("messageReactionRemoveAll", NewMessageReactionAdd(session, reaction as DiscordMessageReactionAdd));
+    session.emit('messageReactionRemoveAll', NewMessageReactionAdd(session, reaction as DiscordMessageReactionAdd));
 };
 
 export const MESSAGE_REACTION_REMOVE_EMOJI: RawHandler<DiscordMessageReactionRemoveEmoji> = (
@@ -314,39 +314,39 @@ export const MESSAGE_REACTION_REMOVE_EMOJI: RawHandler<DiscordMessageReactionRem
     _shardId,
     reaction,
 ) => {
-    session.emit("messageReactionRemoveEmoji", NewMessageReactionAdd(session, reaction as DiscordMessageReactionAdd));
+    session.emit('messageReactionRemoveEmoji', NewMessageReactionAdd(session, reaction as DiscordMessageReactionAdd));
 };
 
 export const INVITE_CREATE: RawHandler<DiscordInviteCreate> = (session, _shardId, invite) => {
-    session.emit("inviteCreate", NewInviteCreate(session, invite));
+    session.emit('inviteCreate', NewInviteCreate(session, invite));
 };
 
 export const INVITE_DELETE: RawHandler<DiscordInviteDelete> = (session, _shardId, data) => {
-    session.emit("inviteDelete", { channelId: data.channel_id, guildId: data.guild_id, code: data.code });
+    session.emit('inviteDelete', { channelId: data.channel_id, guildId: data.guild_id, code: data.code });
 };
 
 export const STAGE_INSTANCE_CREATE: RawHandler<DiscordStageInstanceB> = (session, _shardId, payload) => {
-    session.emit("stageInstanceCreate", new StageInstance(session, payload));
+    session.emit('stageInstanceCreate', new StageInstance(session, payload));
 };
 
 export const STAGE_INSTANCE_UPDATE: RawHandler<DiscordStageInstanceB> = (session, _shardId, payload) => {
-    session.emit("stageInstanceUpdate", new StageInstance(session, payload));
+    session.emit('stageInstanceUpdate', new StageInstance(session, payload));
 };
 
 export const STAGE_INSTANCE_DELETE: RawHandler<DiscordStageInstanceB> = (session, _shardId, payload) => {
-    session.emit("stageInstanceDelete", new StageInstance(session, payload));
+    session.emit('stageInstanceDelete', new StageInstance(session, payload));
 };
 
 export const GUILD_SCHEDULED_EVENT_CREATE: RawHandler<DiscordScheduledEvent> = (session, _shardId, payload) => {
-    session.emit("guildScheduledEventCreate", new ScheduledEvent(session, payload));
+    session.emit('guildScheduledEventCreate', new ScheduledEvent(session, payload));
 };
 
 export const GUILD_SCHEDULED_EVENT_UPDATE: RawHandler<DiscordScheduledEvent> = (session, _shardId, payload) => {
-    session.emit("guildScheduledEventUpdate", new ScheduledEvent(session, payload));
+    session.emit('guildScheduledEventUpdate', new ScheduledEvent(session, payload));
 };
 
 export const GUILD_SCHEDULED_EVENT_DELETE: RawHandler<DiscordScheduledEvent> = (session, _shardId, payload) => {
-    session.emit("guildScheduledEventDelete", new ScheduledEvent(session, payload));
+    session.emit('guildScheduledEventDelete', new ScheduledEvent(session, payload));
 };
 
 export const GUILD_SCHEDULED_EVENT_USER_ADD: RawHandler<DiscordScheduledEventUserAdd> = (
@@ -354,7 +354,7 @@ export const GUILD_SCHEDULED_EVENT_USER_ADD: RawHandler<DiscordScheduledEventUse
     _shardId,
     payload,
 ) => {
-    session.emit("guildScheduledEventUserAdd", {
+    session.emit('guildScheduledEventUserAdd', {
         scheduledEventId: payload.guild_scheduled_event_id,
         userId: payload.user_id,
         guildId: payload.guild_id,
@@ -366,7 +366,7 @@ export const GUILD_SCHEDULED_EVENT_USER_REMOVE: RawHandler<DiscordScheduledEvent
     _shardId,
     payload,
 ) => {
-    session.emit("guildScheduledEventUserRemove", {
+    session.emit('guildScheduledEventUserRemove', {
         scheduledEventId: payload.guild_scheduled_event_id,
         userId: payload.user_id,
         guildId: payload.guild_id,
@@ -374,10 +374,10 @@ export const GUILD_SCHEDULED_EVENT_USER_REMOVE: RawHandler<DiscordScheduledEvent
 };
 
 export const raw: RawHandler<unknown> = (session, shardId, data) => {
-    session.emit("raw", data as { t: string; d: unknown }, shardId);
+    session.emit('raw', data as { t: string; d: unknown }, shardId);
 };
 
-export interface Ready extends Omit<DiscordReady, "user"> {
+export interface Ready extends Omit<DiscordReady, 'user'> {
     user: User;
 }
 

@@ -1,16 +1,16 @@
-import { RestManager } from "./restManager.ts";
-import { FileContent } from "../types/shared.ts";
-import { USER_AGENT } from "../util/constants.ts";
-import { RequestMethod, RestPayload, RestRequest } from "./rest.ts";
+import { RestManager } from './restManager.ts';
+import { FileContent } from '../types/shared.ts';
+import { USER_AGENT } from '../util/constants.ts';
+import { RequestMethod, RestPayload, RestRequest } from './rest.ts';
 
 /** Creates the request body and headers that are necessary to send a request. Will handle different types of methods and everything necessary for discord. */
 // export function createRequestBody(rest: RestManager, queuedRequest: { request: RestRequest; payload: RestPayload }) {
 export function createRequestBody(rest: RestManager, options: CreateRequestBodyOptions) {
     const headers: Record<string, string> = {
-        "user-agent": USER_AGENT,
+        'user-agent': USER_AGENT,
     };
 
-    if (!options.unauthorized) headers["authorization"] = `Bot ${rest.token}`;
+    if (!options.unauthorized) headers['authorization'] = `Bot ${rest.token}`;
 
     // SOMETIMES SPECIAL HEADERS (E.G. CUSTOM AUTHORIZATION) NEED TO BE USED
     if (options.headers) {
@@ -20,13 +20,13 @@ export function createRequestBody(rest: RestManager, options: CreateRequestBodyO
     }
 
     // GET METHODS SHOULD NOT HAVE A BODY
-    if (options.method === "GET") {
+    if (options.method === 'GET') {
         options.body = undefined;
     }
 
     // IF A REASON IS PROVIDED ENCODE IT IN HEADERS
     if (options.body?.reason) {
-        headers["X-Audit-Log-Reason"] = encodeURIComponent(options.body.reason as string);
+        headers['X-Audit-Log-Reason'] = encodeURIComponent(options.body.reason as string);
         options.body.reason = undefined;
     }
 
@@ -46,10 +46,10 @@ export function createRequestBody(rest: RestManager, options: CreateRequestBodyO
             );
         }
 
-        form.append("payload_json", JSON.stringify({ ...options.body, file: undefined }));
+        form.append('payload_json', JSON.stringify({ ...options.body, file: undefined }));
         options.body.file = form;
-    } else if (options.body && !["GET", "DELETE"].includes(options.method)) {
-        headers["Content-Type"] = "application/json";
+    } else if (options.body && !['GET', 'DELETE'].includes(options.method)) {
+        headers['Content-Type'] = 'application/json';
     }
 
     return {

@@ -1,5 +1,5 @@
-import type { Model } from "./Base.ts";
-import type { Session } from "../Session.ts";
+import type { Model } from './Base.ts';
+import type { Session } from '../Session.ts';
 import type {
     ChannelTypes,
     DefaultMessageNotificationLevels,
@@ -16,20 +16,20 @@ import type {
     SystemChannelFlags,
     VerificationLevels,
     VideoQualityModes,
-} from "../../discordeno/mod.ts";
-import type { ImageFormat, ImageSize } from "../Util.ts";
-import { GuildFeatures, PremiumTiers } from "../../discordeno/mod.ts";
-import { Snowflake } from "../Snowflake.ts";
-import Util from "../Util.ts";
-import * as Routes from "../Routes.ts";
-import WelcomeScreen from "./WelcomeScreen.ts";
-import { GuildChannel, ReturnThreadsArchive, ThreadChannel } from "./channels.ts";
-import ThreadMember from "./ThreadMember.ts";
-import Member from "./Member.ts";
-import Role from "./Role.ts";
-import GuildEmoji from "./GuildEmoji.ts";
-import { urlToBase64 } from "../util/urlToBase64.ts";
-import Invite from "./Invite.ts";
+} from '../../discordeno/mod.ts';
+import type { ImageFormat, ImageSize } from '../Util.ts';
+import { GuildFeatures, PremiumTiers } from '../../discordeno/mod.ts';
+import { Snowflake } from '../Snowflake.ts';
+import Util from '../Util.ts';
+import * as Routes from '../Routes.ts';
+import WelcomeScreen from './WelcomeScreen.ts';
+import { GuildChannel, ReturnThreadsArchive, ThreadChannel } from './channels.ts';
+import ThreadMember from './ThreadMember.ts';
+import Member from './Member.ts';
+import Role from './Role.ts';
+import GuildEmoji from './GuildEmoji.ts';
+import { urlToBase64 } from '../util/urlToBase64.ts';
+import Invite from './Invite.ts';
 
 /** BaseGuild */
 /**
@@ -242,7 +242,7 @@ export interface GuildCreateOptionsChannel {
     userLimit?: number;
     rtcRegion?: string | null;
     videoQualityMode?: VideoQualityModes;
-    permissionOverwrites?: MakeRequired<Partial<DiscordOverwrite>, "id">[];
+    permissionOverwrites?: MakeRequired<Partial<DiscordOverwrite>, 'id'>[];
     rateLimitPerUser?: number;
 }
 
@@ -391,7 +391,7 @@ export class Guild extends BaseGuild implements Model {
     async editBotNickname(options: { nick: string | null; reason?: string }): Promise<(string | undefined)> {
         const result = await this.session.rest.runMethod<{ nick?: string } | undefined>(
             this.session.rest,
-            "PATCH",
+            'PATCH',
             Routes.USER_NICK(this.id),
             options,
         );
@@ -400,13 +400,13 @@ export class Guild extends BaseGuild implements Model {
     }
 
     async createEmoji(options: CreateGuildEmoji): Promise<GuildEmoji> {
-        if (options.image && !options.image.startsWith("data:image/")) {
+        if (options.image && !options.image.startsWith('data:image/')) {
             options.image = await urlToBase64(options.image);
         }
 
         const emoji = await this.session.rest.runMethod<DiscordEmoji>(
             this.session.rest,
-            "POST",
+            'POST',
             Routes.GUILD_EMOJIS(this.id),
             options,
         );
@@ -417,7 +417,7 @@ export class Guild extends BaseGuild implements Model {
     async deleteEmoji(id: Snowflake, { reason }: { reason?: string } = {}): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "DELETE",
+            'DELETE',
             Routes.GUILD_EMOJI(this.id, id),
             { reason },
         );
@@ -426,7 +426,7 @@ export class Guild extends BaseGuild implements Model {
     async editEmoji(id: Snowflake, options: ModifyGuildEmoji): Promise<GuildEmoji> {
         const emoji = await this.session.rest.runMethod<DiscordEmoji>(
             this.session.rest,
-            "PATCH",
+            'PATCH',
             Routes.GUILD_EMOJI(this.id, id),
             options,
         );
@@ -438,7 +438,7 @@ export class Guild extends BaseGuild implements Model {
         let icon: string | undefined;
 
         if (options.iconHash) {
-            if (typeof options.iconHash === "string") {
+            if (typeof options.iconHash === 'string') {
                 icon = options.iconHash;
             } else {
                 icon = Util.iconBigintToHash(options.iconHash);
@@ -447,7 +447,7 @@ export class Guild extends BaseGuild implements Model {
 
         const role = await this.session.rest.runMethod<DiscordRole>(
             this.session.rest,
-            "PUT",
+            'PUT',
             Routes.GUILD_ROLES(this.id),
             {
                 name: options.name,
@@ -463,13 +463,13 @@ export class Guild extends BaseGuild implements Model {
     }
 
     async deleteRole(roleId: Snowflake): Promise<void> {
-        await this.session.rest.runMethod<undefined>(this.session.rest, "DELETE", Routes.GUILD_ROLE(this.id, roleId));
+        await this.session.rest.runMethod<undefined>(this.session.rest, 'DELETE', Routes.GUILD_ROLE(this.id, roleId));
     }
 
     async editRole(roleId: Snowflake, options: ModifyGuildRole): Promise<Role> {
         const role = await this.session.rest.runMethod<DiscordRole>(
             this.session.rest,
-            "PATCH",
+            'PATCH',
             Routes.GUILD_ROLE(this.id, roleId),
             {
                 name: options.name,
@@ -485,7 +485,7 @@ export class Guild extends BaseGuild implements Model {
     async addRole(memberId: Snowflake, roleId: Snowflake, { reason }: { reason?: string } = {}): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "PUT",
+            'PUT',
             Routes.GUILD_MEMBER_ROLE(this.id, memberId, roleId),
             { reason },
         );
@@ -494,7 +494,7 @@ export class Guild extends BaseGuild implements Model {
     async removeRole(memberId: Snowflake, roleId: Snowflake, { reason }: { reason?: string } = {}): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "DELETE",
+            'DELETE',
             Routes.GUILD_MEMBER_ROLE(this.id, memberId, roleId),
             { reason },
         );
@@ -506,7 +506,7 @@ export class Guild extends BaseGuild implements Model {
     async moveRoles(options: ModifyRolePositions[]): Promise<Role[]> {
         const roles = await this.session.rest.runMethod<DiscordRole[]>(
             this.session.rest,
-            "PATCH",
+            'PATCH',
             Routes.GUILD_ROLES(this.id),
             options,
         );
@@ -517,7 +517,7 @@ export class Guild extends BaseGuild implements Model {
     async deleteInvite(inviteCode: string): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "DELETE",
+            'DELETE',
             Routes.INVITE(inviteCode),
             {},
         );
@@ -526,7 +526,7 @@ export class Guild extends BaseGuild implements Model {
     async fetchInvite(inviteCode: string, options: Routes.GetInvite): Promise<Invite> {
         const inviteMetadata = await this.session.rest.runMethod<DiscordInviteMetadata>(
             this.session.rest,
-            "GET",
+            'GET',
             Routes.INVITE(inviteCode, options),
         );
 
@@ -536,7 +536,7 @@ export class Guild extends BaseGuild implements Model {
     async fetchInvites(): Promise<Invite[]> {
         const invites = await this.session.rest.runMethod<DiscordInviteMetadata[]>(
             this.session.rest,
-            "GET",
+            'GET',
             Routes.GUILD_INVITES(this.id),
         );
 
@@ -549,7 +549,7 @@ export class Guild extends BaseGuild implements Model {
     async banMember(memberId: Snowflake, options: CreateGuildBan): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "PUT",
+            'PUT',
             Routes.GUILD_BAN(this.id, memberId),
             options
                 ? {
@@ -566,7 +566,7 @@ export class Guild extends BaseGuild implements Model {
     async kickMember(memberId: Snowflake, { reason }: { reason?: string }): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "DELETE",
+            'DELETE',
             Routes.GUILD_MEMBER(this.id, memberId),
             { reason },
         );
@@ -578,7 +578,7 @@ export class Guild extends BaseGuild implements Model {
     async unbanMember(memberId: Snowflake): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "DELETE",
+            'DELETE',
             Routes.GUILD_BAN(this.id, memberId),
         );
     }
@@ -586,7 +586,7 @@ export class Guild extends BaseGuild implements Model {
     async editMember(memberId: Snowflake, options: ModifyGuildMember): Promise<Member> {
         const member = await this.session.rest.runMethod<DiscordMemberWithUser>(
             this.session.rest,
-            "PATCH",
+            'PATCH',
             Routes.GUILD_MEMBER(this.id, memberId),
             {
                 nick: options.nick,
@@ -606,7 +606,7 @@ export class Guild extends BaseGuild implements Model {
     async pruneMembers(options: BeginGuildPrune): Promise<number> {
         const result = await this.session.rest.runMethod<{ pruned: number }>(
             this.session.rest,
-            "POST",
+            'POST',
             Routes.GUILD_PRUNE(this.id),
             {
                 days: options.days,
@@ -621,17 +621,17 @@ export class Guild extends BaseGuild implements Model {
     async getPruneCount(): Promise<number> {
         const result = await this.session.rest.runMethod<{ pruned: number }>(
             this.session.rest,
-            "GET",
+            'GET',
             Routes.GUILD_PRUNE(this.id),
         );
 
         return result.pruned;
     }
 
-    async getActiveThreads(): Promise<Omit<ReturnThreadsArchive, "hasMore">> {
+    async getActiveThreads(): Promise<Omit<ReturnThreadsArchive, 'hasMore'>> {
         const { threads, members } = await this.session.rest.runMethod<DiscordListActiveThreads>(
             this.session.rest,
-            "GET",
+            'GET',
             Routes.THREAD_ACTIVE(this.id),
         );
 
@@ -651,7 +651,7 @@ export class Guild extends BaseGuild implements Model {
     async delete(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "DELETE",
+            'DELETE',
             Routes.GUILDS(this.id),
         );
     }
@@ -662,7 +662,7 @@ export class Guild extends BaseGuild implements Model {
     async leave(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "DELETE",
+            'DELETE',
             Routes.USER_GUILDS(this.id),
         );
     }
@@ -673,7 +673,7 @@ export class Guild extends BaseGuild implements Model {
      * precondition: Bot should be in less than 10 servers
      */
     static async create(session: Session, options: GuildCreateOptions): Promise<Guild> {
-        const guild = await session.rest.runMethod<DiscordGuild>(session.rest, "POST", Routes.GUILDS(), {
+        const guild = await session.rest.runMethod<DiscordGuild>(session.rest, 'POST', Routes.GUILDS(), {
             name: options.name,
             afk_channel_id: options.afkChannelId,
             afk_timeout: options.afkTimeout,
@@ -681,7 +681,7 @@ export class Guild extends BaseGuild implements Model {
             explicit_content_filter: options.explicitContentFilter,
             system_channel_flags: options.systemChannelFlags,
             verification_level: options.verificationLevel,
-            icon: "iconURL" in options
+            icon: 'iconURL' in options
                 ? options.iconURL && urlToBase64(options.iconURL)
                 : options.iconHash && Util.iconBigintToHash(options.iconHash),
             channels: options.channels?.map((channel) => ({
@@ -736,7 +736,7 @@ export class Guild extends BaseGuild implements Model {
      * Edits a guild and returns its data
      */
     async edit(options: GuildEditOptions): Promise<Guild> {
-        const guild = await this.session.rest.runMethod<DiscordGuild>(this.session.rest, "PATCH", Routes.GUILDS(), {
+        const guild = await this.session.rest.runMethod<DiscordGuild>(this.session.rest, 'PATCH', Routes.GUILDS(), {
             name: options.name,
             afk_channel_id: options.afkChannelId,
             afk_timeout: options.afkTimeout,
@@ -744,17 +744,17 @@ export class Guild extends BaseGuild implements Model {
             explicit_content_filter: options.explicitContentFilter,
             system_channel_flags: options.systemChannelFlags,
             verification_level: options.verificationLevel,
-            icon: "iconURL" in options
+            icon: 'iconURL' in options
                 ? options.iconURL && urlToBase64(options.iconURL)
                 : options.iconHash && Util.iconBigintToHash(options.iconHash),
             // extra props
-            splash: "splashURL" in options
+            splash: 'splashURL' in options
                 ? options.splashURL && urlToBase64(options.splashURL)
                 : options.iconHash && Util.iconBigintToHash(options.iconHash),
-            banner: "bannerURL" in options
+            banner: 'bannerURL' in options
                 ? options.bannerURL && urlToBase64(options.bannerURL)
                 : options.bannerHash && Util.iconBigintToHash(options.bannerHash),
-            discovery_splash: "discoverySplashURL" in options
+            discovery_splash: 'discoverySplashURL' in options
                 ? options.discoverySplashURL && urlToBase64(options.discoverySplashURL)
                 : options.discoverySplashHash && Util.iconBigintToHash(options.discoverySplashHash),
             owner_id: options.ownerId,

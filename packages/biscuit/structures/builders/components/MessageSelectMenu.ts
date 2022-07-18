@@ -1,5 +1,5 @@
-import { type DiscordSelectMenuComponent, MessageComponentTypes } from "../../../../discordeno/mod.ts";
-import type { SelectMenuOptionBuilder } from "./SelectMenuOptionBuilder.ts";
+import { type DiscordSelectMenuComponent, MessageComponentTypes } from '../../../../discordeno/mod.ts';
+import type { SelectMenuOptionBuilder } from './SelectMenuOptionBuilder.ts';
 
 export class SelectMenuBuilder {
     constructor() {
