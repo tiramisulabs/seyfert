@@ -1,4 +1,4 @@
-import { HTTPResponseCodes } from '../types/shared.ts';
+import { HTTPResponseCodes } from '../../api-types/shared.ts';
 import { BASE_URL } from '../util/constants.ts';
 import { RequestMethod } from './rest.ts';
 import { RestManager } from './restManager.ts';
