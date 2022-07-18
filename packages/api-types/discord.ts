@@ -17,7 +17,8 @@ import {
     GuildNsfwLevel,
     IntegrationExpireBehaviors,
     InteractionTypes,
-    Locales,
+    // No used
+    // Locales,
     Localization,
     MessageActivityTypes,
     MessageComponentTypes,
@@ -2088,6 +2089,7 @@ export interface DiscordGuildBanAddRemove {
 }
 
 /** https://discord.com/developers/docs/topics/gateway#message-reaction-remove */
+// deno-lint-ignore no-empty-interface
 export interface DiscordMessageReactionRemove extends Omit<DiscordMessageReactionAdd, 'member'> {}
 
 /** https://discord.com/developers/docs/topics/gateway#message-reaction-add */
@@ -2167,6 +2169,7 @@ export interface DiscordReady {
 }
 
 /** https://discord.com/developers/docs/resources/guild#unavailable-guild-object */
+// deno-lint-ignore no-empty-interface
 export interface DiscordUnavailableGuild extends Pick<DiscordGuild, 'id' | 'unavailable'> {}
 
 /** https://discord.com/developers/docs/topics/gateway#message-delete-bulk */
@@ -2336,6 +2339,7 @@ export interface DiscordGuildMemberUpdate {
 }
 
 /** https://discord.com/developers/docs/topics/gateway#message-reaction-remove-all */
+// deno-lint-ignore no-empty-interface
 export interface DiscordMessageReactionRemoveAll
     extends Pick<DiscordMessageReactionAdd, 'channel_id' | 'message_id' | 'guild_id'> {}
 
