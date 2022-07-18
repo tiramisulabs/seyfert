@@ -31,6 +31,9 @@ import Webhook from './Webhook.ts';
 import User from './User.ts';
 import ThreadMember from './ThreadMember.ts';
 
+/**
+ * Abstract class that represents the base for creating a new channel.
+*/
 export abstract class BaseChannel implements Model {
     constructor(session: Session, data: DiscordChannel) {
         this.id = data.id;
@@ -38,32 +41,45 @@ export abstract class BaseChannel implements Model {
         this.name = data.name;
         this.type = data.type;
     }
+
+    /** id's refers to the identification of the channel */
     readonly id: Snowflake;
+
+    /** The session that instantiated the channel */
     readonly session: Session;
 
+    /** Channel name defined by the entity */
     name?: string;
+
+    /** Refers to the possible channel type implemented (Guild, DM, Voice, News, etc...) */
     type: ChannelTypes;
 
+    /** If the channel is a TextChannel */
     isText(): this is TextChannel {
         return textBasedChannels.includes(this.type);
     }
 
+    /** If the channel is a VoiceChannel */
     isVoice(): this is VoiceChannel {
         return this.type === ChannelTypes.GuildVoice;
     }
 
+    /** If the channel is a DMChannel */
     isDM(): this is DMChannel {
         return this.type === ChannelTypes.DM;
     }
 
+    /** If the channel is a NewChannel */
     isNews(): this is NewsChannel {
         return this.type === ChannelTypes.GuildNews;
     }
 
+    /** If the channel is a ThreadChannel */
     isThread(): this is ThreadChannel {
         return this.type === ChannelTypes.GuildPublicThread || this.type === ChannelTypes.GuildPrivateThread;
     }
 
+    /** If the channel is a StageChannel */
     isStage(): this is StageChannel {
         return this.type === ChannelTypes.GuildStageVoice;
     }
@@ -75,27 +91,38 @@ export abstract class BaseChannel implements Model {
 
 /** TextChannel */
 /**
+ * @link https://discord.com/developers/docs/resources/channel#create-channel-invite-json-params
  * Represents the options object to create an invitation
- *  @link https://discord.com/developers/docs/resources/channel#create-channel-invite-json-params
- */
+*/
 export interface DiscordInviteOptions {
+    /** duration of invite in seconds before expiry, or 0 for never. between 0 and 604800 (7 days) */
     maxAge?: number;
+    /** max number of uses or 0 for unlimited. between 0 and 100 */
     maxUses?: number;
+    /** if the invitation is unique. If it's true, don't try to reuse a similar invite (useful for creating many unique one time use invites) */
     unique?: boolean;
+    /** whether this invite only grants temporary membership */
     temporary: boolean;
     reason?: string;
+    /** the type of target for this voice channel invite */
     targetType?: TargetTypes;
+    /** the id of the user whose stream to display for this invite, required if targetType is 1, the user must be streaming in the channel */
     targetUserId?: Snowflake;
+    /** the id of the embedded application to open for this invite, required if targetType is 2, the application must have the EMBEDDED flag */
     targetApplicationId?: Snowflake;
 }
 
+/** Webhook create object */
 export interface CreateWebhook {
+    /** name of the webhook (1-80 characters) */
     name: string;
+    /** image for the default webhook avatar */
     avatar?: string;
     reason?: string;
 }
 
-export const textBasedChannels = [
+/** Available text-channel-types list */
+export const textBasedChannels:ChannelTypes[] = [
     ChannelTypes.DM,
     ChannelTypes.GroupDm,
     ChannelTypes.GuildPrivateThread,
@@ -105,6 +132,7 @@ export const textBasedChannels = [
     ChannelTypes.GuildText,
 ];
 
+/** Available text-channel-types */
 export type TextBasedChannels =
     | ChannelTypes.DM
     | ChannelTypes.GroupDm
@@ -114,6 +142,9 @@ export type TextBasedChannels =
     | ChannelTypes.GuildVoice
     | ChannelTypes.GuildText;
 
+/**
+ * Represents a text channel.
+ */
 export class TextChannel {
     constructor(session: Session, data: DiscordChannel) {
         this.session = session;
@@ -132,13 +163,21 @@ export class TextChannel {
         }
     }
 
+    /** The session that instantiated the channel */
     readonly session: Session;
+    /** id's refers to the identification of the channel */
     readonly id: Snowflake;
+    /** Current channel name */
     name?: string;
+    /** The type of the channel */
     type: TextBasedChannels;
+    /** The id of the last message sent in this channel (or thread for GUILD_FORUM channels) (may not point to an existing or valid message or thread) */
     lastMessageId?: Snowflake;
+    /** When the last pinned message was pinned. This may be undefined in events such as GUILD_CREATE when a message is not pinned. */
     lastPinTimestamp?: string;
+    /** Amount of seconds a user has to wait before sending another message (0-21600); bots, as well as users with the permission manage_messages or manage_channel, are unaffected */
     rateLimitPerUser: number;
+    /** If the channel is NSFW (Not-Safe-For-Work content) */
     nsfw: boolean;
 
     /**
@@ -169,6 +208,10 @@ export class TextChannel {
         }
     }
 
+    /** 
+     * fetchPins makes an asynchronous request and gets the current channel pins.
+     * @returns A promise that resolves with an array of Message objects.
+     */
     async fetchPins(): Promise<Message[] | []> {
         const messages = await this.session.rest.runMethod<DiscordMessage[]>(
             this.session.rest,
@@ -178,6 +221,11 @@ export class TextChannel {
         return messages[0] ? messages.map((x: DiscordMessage) => new Message(this.session, x)) : [];
     }
 
+    /** 
+     * createInvite makes an asynchronous request to create a new invitation.
+     * @param options - The options to create the invitation
+     * @returns The created invite
+     */
     async createInvite(options?: DiscordInviteOptions): Promise<Invite> {
         const invite = await this.session.rest.runMethod<DiscordInvite>(
             this.session.rest,
@@ -199,6 +247,11 @@ export class TextChannel {
         return new Invite(this.session, invite);
     }
 
+    /** 
+     * fetchMessages makes an asynchronous request and gets the channel messages
+     * @param options - The options to get the messages
+     * @returns The messages 
+     */
     async fetchMessages(options?: Routes.GetMessagesOptions): Promise<Message[] | []> {
         if (options?.limit! > 100) throw Error('Values must be between 0-100');
         const messages = await this.session.rest.runMethod<DiscordMessage[]>(
@@ -209,6 +262,7 @@ export class TextChannel {
         return messages[0] ? messages.map((x) => new Message(this.session, x)) : [];
     }
 
+    /** sendTyping sends a typing POST request */
     async sendTyping(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
@@ -217,14 +271,33 @@ export class TextChannel {
         );
     }
 
+    /** 
+     * pinMessage pins a channel message.
+     * Same as Message.pin().
+     * @param messageId - The id of the message to pin
+     * @returns The promise that resolves when the request is complete
+     */
     async pinMessage(messageId: Snowflake): Promise<void> {
         await Message.prototype.pin.call({ id: messageId, channelId: this.id, session: this.session });
     }
 
+    /** 
+     * unpinMessage unpin a channel message.
+     * Same as Message.unpin()
+     * @param messageId - The id of the message to unpin
+     * @returns The promise of the request
+     */
     async unpinMessage(messageId: Snowflake): Promise<void> {
         await Message.prototype.unpin.call({ id: messageId, channelId: this.id, session: this.session });
     }
 
+    /** 
+     * addReaction adds a reaction to the message.
+     * Same as Message.addReaction().
+     * @param messageId - The message to add the reaction to
+     * @param reaction - The reaction to add
+     * @returns The promise of the request
+     */
     async addReaction(messageId: Snowflake, reaction: EmojiResolvable): Promise<void> {
         await Message.prototype.addReaction.call(
             { channelId: this.id, id: messageId, session: this.session },
@@ -232,6 +305,13 @@ export class TextChannel {
         );
     }
 
+    /** 
+     * removeReaction removes a reaction from the message.
+     * Same as Message.removeReaction().
+     * @param messageId - The id of the message to remove the reaction from
+     * @param reaction - The reaction to remove
+     * @param options - The user to remove the reaction from
+     */
     async removeReaction(
         messageId: Snowflake,
         reaction: EmojiResolvable,
@@ -244,6 +324,13 @@ export class TextChannel {
         );
     }
 
+    /** 
+     * removeReactionEmoji removes an emoji reaction from the messageId provided.
+     * Same as Message.removeReactionEmoji().
+     * @param messageId - The message id to remove the reaction from.
+     * @param emoji - The emoji to remove.
+     * @param userId - The user id to remove the reaction from.
+     */
     async removeReactionEmoji(messageId: Snowflake, reaction: EmojiResolvable): Promise<void> {
         await Message.prototype.removeReactionEmoji.call(
             { channelId: this.id, id: messageId, session: this.session },
@@ -251,10 +338,23 @@ export class TextChannel {
         );
     }
 
+    /** nukeReactions nukes every reaction on the message.
+     * Same as Message.nukeReactions().
+     * @param messageId The message id to nuke reactions from.
+     * @returns A promise that resolves when the reactions are nuked.
+     */
     async nukeReactions(messageId: Snowflake): Promise<void> {
         await Message.prototype.nukeReactions.call({ channelId: this.id, id: messageId });
     }
 
+    /** 
+     * fetchReactions gets the users who reacted with this emoji on the message.
+     * Same as Message.fetchReactions().
+     * @param messageId - The message id to get the reactions from.
+     * @param reaction - The emoji to get the reactions from.
+     * @param options - The options to get the reactions with.
+     * @returns The users who reacted with this emoji on the message.
+     */
     async fetchReactions(
         messageId: Snowflake,
         reaction: EmojiResolvable,
@@ -269,14 +369,32 @@ export class TextChannel {
         return users;
     }
 
+    /**
+     * sendMessage sends a message to the channel.
+     * Same as Message.reply().
+     * @param options - Options for a new message.
+     * @returns The sent message.
+     */
     sendMessage(options: CreateMessage): Promise<Message> {
         return Message.prototype.reply.call({ channelId: this.id, session: this.session }, options);
     }
 
+    /**
+     * editMessage edits a message.
+     * Same as Message.edit().
+     * @param messageId - Message ID.
+     * @param options - Options for edit a message.
+     * @returns The edited message.
+     */
     editMessage(messageId: Snowflake, options: EditMessage): Promise<Message> {
         return Message.prototype.edit.call({ channelId: this.id, id: messageId, session: this.session }, options);
     }
 
+    /**
+     * createWebhook creates a webhook.
+     * @param options - Options for a new webhook.
+     * @returns The created webhook.
+     */
     async createWebhook(options: CreateWebhook): Promise<Webhook> {
         const webhook = await this.session.rest.runMethod<DiscordWebhook>(
             this.session.rest,
