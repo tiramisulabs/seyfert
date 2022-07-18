@@ -1,4 +1,4 @@
-import { GatewayCloseEventCodes } from '../../types/shared.ts';
+import { GatewayCloseEventCodes } from '../../../api-types/shared.ts';
 import { Shard, ShardSocketCloseCodes, ShardState } from './types.ts';
 
 export async function handleClose(shard: Shard, close: CloseEvent): Promise<void> {

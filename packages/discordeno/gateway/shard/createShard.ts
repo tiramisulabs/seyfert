@@ -23,8 +23,8 @@ import { connect } from './connect.ts';
 import { close } from './close.ts';
 import { shutdown } from './shutdown.ts';
 import { isOpen } from './isOpen.ts';
-import { DiscordGatewayPayload, DiscordStatusUpdate } from '../../types/discord.ts';
-import { GatewayIntents, PickPartial } from '../../types/shared.ts';
+import { DiscordGatewayPayload, DiscordStatusUpdate } from '../../../api-types/discord.ts';
+import { GatewayIntents, PickPartial } from '../../../api-types/shared.ts';
 import { API_VERSION } from '../../util/constants.ts';
 
 // TODO: debug

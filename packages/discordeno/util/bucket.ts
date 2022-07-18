@@ -1,4 +1,4 @@
-import { PickPartial } from '../types/shared.ts';
+import { PickPartial } from '../../api-types/shared.ts';
 import { delay } from './delay.ts';
 
 /** A Leaky Bucket.

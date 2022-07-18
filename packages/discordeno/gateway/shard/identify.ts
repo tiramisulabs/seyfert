@@ -1,4 +1,4 @@
-import { GatewayOpcodes } from '../../types/shared.ts';
+import { GatewayOpcodes } from '../../../api-types/shared.ts';
 import { Shard, ShardSocketCloseCodes, ShardState } from './types.ts';
 
 export async function identify(shard: Shard): Promise<void> {

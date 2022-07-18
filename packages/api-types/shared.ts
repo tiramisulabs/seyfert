@@ -1236,9 +1236,11 @@ export type CamelCase<S extends string> = S extends `${infer P1}_${infer P2}${in
     ? `${Lowercase<P1>}${Uppercase<P2>}${CamelCase<P3>}`
     : Lowercase<S>;
 export type Camelize<T> = {
+    // deno-lint-ignore ban-types
     [K in keyof T as CamelCase<string & K>]: T[K] extends Array<infer U> ? U extends {} ? Array<Camelize<U>>
-        : T[K]
-        : T[K] extends {} ? Camelize<T[K]>
+    : T[K]
+        : // deno-lint-ignore ban-types
+        T[K] extends {} ? Camelize<T[K]>
         : never;
 };
 
@@ -1248,4 +1250,5 @@ export type PickPartial<T, K extends keyof T> =
     }
     & { [P in K]: T[P] };
 
+// deno-lint-ignore no-explicit-any
 export type OmitFirstFnArg<F> = F extends (x: any, ...args: infer P) => infer R ? (...args: P) => R : never;

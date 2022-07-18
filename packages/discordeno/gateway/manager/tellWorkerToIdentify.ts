@@ -1,4 +1,4 @@
-import { GatewayIntents } from '../../types/shared.ts';
+import { GatewayIntents } from '../../../api-types/shared.ts';
 import { createShard } from '../shard/createShard.ts';
 import { GatewayManager } from './gatewayManager.ts';
 

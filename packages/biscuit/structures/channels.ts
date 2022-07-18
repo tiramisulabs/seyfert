@@ -33,7 +33,7 @@ import ThreadMember from './ThreadMember.ts';
 
 /**
  * Abstract class that represents the base for creating a new channel.
-*/
+ */
 export abstract class BaseChannel implements Model {
     constructor(session: Session, data: DiscordChannel) {
         this.id = data.id;
@@ -93,7 +93,7 @@ export abstract class BaseChannel implements Model {
 /**
  * @link https://discord.com/developers/docs/resources/channel#create-channel-invite-json-params
  * Represents the options object to create an invitation
-*/
+ */
 export interface DiscordInviteOptions {
     /** duration of invite in seconds before expiry, or 0 for never. between 0 and 604800 (7 days) */
     maxAge?: number;
@@ -122,7 +122,7 @@ export interface CreateWebhook {
 }
 
 /** Available text-channel-types list */
-export const textBasedChannels:ChannelTypes[] = [
+export const textBasedChannels: ChannelTypes[] = [
     ChannelTypes.DM,
     ChannelTypes.GroupDm,
     ChannelTypes.GuildPrivateThread,
@@ -208,7 +208,8 @@ export class TextChannel {
         }
     }
 
-    /** 
+
+    /**
      * fetchPins makes an asynchronous request and gets the current channel pins.
      * @returns A promise that resolves with an array of Message objects.
      */
@@ -221,7 +222,7 @@ export class TextChannel {
         return messages[0] ? messages.map((x: DiscordMessage) => new Message(this.session, x)) : [];
     }
 
-    /** 
+    /**
      * createInvite makes an asynchronous request to create a new invitation.
      * @param options - The options to create the invitation
      * @returns The created invite
@@ -247,10 +248,10 @@ export class TextChannel {
         return new Invite(this.session, invite);
     }
 
-    /** 
+    /**
      * fetchMessages makes an asynchronous request and gets the channel messages
      * @param options - The options to get the messages
-     * @returns The messages 
+     * @returns The messages
      */
     async fetchMessages(options?: Routes.GetMessagesOptions): Promise<Message[] | []> {
         if (options?.limit! > 100) throw Error('Values must be between 0-100');
@@ -271,7 +272,7 @@ export class TextChannel {
         );
     }
 
-    /** 
+    /**
      * pinMessage pins a channel message.
      * Same as Message.pin().
      * @param messageId - The id of the message to pin
@@ -281,7 +282,7 @@ export class TextChannel {
         await Message.prototype.pin.call({ id: messageId, channelId: this.id, session: this.session });
     }
 
-    /** 
+    /**
      * unpinMessage unpin a channel message.
      * Same as Message.unpin()
      * @param messageId - The id of the message to unpin
@@ -291,7 +292,7 @@ export class TextChannel {
         await Message.prototype.unpin.call({ id: messageId, channelId: this.id, session: this.session });
     }
 
-    /** 
+    /**
      * addReaction adds a reaction to the message.
      * Same as Message.addReaction().
      * @param messageId - The message to add the reaction to
@@ -305,7 +306,7 @@ export class TextChannel {
         );
     }
 
-    /** 
+    /**
      * removeReaction removes a reaction from the message.
      * Same as Message.removeReaction().
      * @param messageId - The id of the message to remove the reaction from
@@ -324,7 +325,7 @@ export class TextChannel {
         );
     }
 
-    /** 
+    /**
      * removeReactionEmoji removes an emoji reaction from the messageId provided.
      * Same as Message.removeReactionEmoji().
      * @param messageId - The message id to remove the reaction from.
@@ -347,7 +348,7 @@ export class TextChannel {
         await Message.prototype.nukeReactions.call({ channelId: this.id, id: messageId });
     }
 
-    /** 
+    /**
      * fetchReactions gets the users who reacted with this emoji on the message.
      * Same as Message.fetchReactions().
      * @param messageId - The message id to get the reactions from.

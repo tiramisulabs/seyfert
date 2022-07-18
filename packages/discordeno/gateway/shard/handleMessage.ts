@@ -1,5 +1,5 @@
-import { DiscordGatewayPayload, DiscordHello, DiscordReady } from '../../types/discord.ts';
-import { GatewayOpcodes } from '../../types/shared.ts';
+import { DiscordGatewayPayload, DiscordHello, DiscordReady } from '../../../api-types/discord.ts';
+import { GatewayOpcodes } from '../../../api-types/shared.ts';
 import { createLeakyBucket } from '../../util/bucket.ts';
 import { delay } from '../../util/delay.ts';
 import { decompressWith } from './deps.ts';
