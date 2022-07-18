@@ -10,9 +10,8 @@ import User from "./User.ts";
 import * as Routes from "../Routes.ts";
 
 /**
- * Represents a guild member
- * TODO: add a `guild` property somehow
  * @link https://discord.com/developers/docs/resources/guild#guild-member-object
+ * Represents a guild member
  */
 export class Member implements Model {
     constructor(session: Session, data: DiscordMemberWithUser, guildId: Snowflake) {
@@ -21,6 +20,7 @@ export class Member implements Model {
         this.guildId = guildId;
         this.avatarHash = data.avatar ? Util.iconHashToBigInt(data.avatar) : undefined;
         this.nickname = data.nick ? data.nick : undefined;
+        this.premiumSince = data.premium_since ? Number.parseInt(data.premium_since) : undefined;
         this.joinedTimestamp = Number.parseInt(data.joined_at);
         this.roles = data.roles;
         this.deaf = !!data.deaf;
@@ -31,16 +31,40 @@ export class Member implements Model {
             : undefined;
     }
 
+    /** the session that instantiated this member */
     readonly session: Session;
+
+    /** the user this guild member represents */
     user: User;
+
+    /** the choosen guild id */
     guildId: Snowflake;
+
+    /** the member's guild avatar hash optimized as a bigint */
     avatarHash?: bigint;
+
+    /** this user's guild nickname */
     nickname?: string;
+
+    /** when the user started boosting the guild */
+    premiumSince?: number;
+
+    /** when the user joined the guild */
     joinedTimestamp: number;
+
+    /** array of role object ids */
     roles: Snowflake[];
+
+    /** whether the user is deafened in voice channels */
     deaf: boolean;
+
+    /** whether the user is muted in voice channels */
     mute: boolean;
+
+    /** whether the user has not yet passed the guild's Membership Screening requirements */
     pending: boolean;
+
+    /** when the user's timeout will expire and the user will be able to communicate in the guild again, null or a time in the past if the user is not timed out */
     communicationDisabledUntilTimestamp?: number;
 
     /** shorthand to User.id */
@@ -48,30 +72,36 @@ export class Member implements Model {
         return this.user.id;
     }
 
+    /** gets the nickname or the username */
     get nicknameOrUsername(): string {
         return this.nickname ?? this.user.username;
     }
 
+    /** gets the joinedAt timestamp as a Date */
     get joinedAt(): Date {
         return new Date(this.joinedTimestamp);
     }
 
+    /** bans a member from this guild and delete previous messages sent by the member */
     async ban(options: CreateGuildBan): Promise<Member> {
         await Guild.prototype.banMember.call({ id: this.guildId, session: this.session }, this.user.id, options);
 
         return this;
     }
 
+    /** kicks a member from this guild */
     async kick(options: { reason?: string }): Promise<Member> {
         await Guild.prototype.kickMember.call({ id: this.guildId, session: this.session }, this.user.id, options);
 
         return this;
     }
 
+    /** unbans a member from this guild */
     async unban(): Promise<void> {
         await Guild.prototype.unbanMember.call({ id: this.guildId, session: this.session }, this.user.id);
     }
 
+    /** edits member's nickname, roles, etc */
     async edit(options: ModifyGuildMember): Promise<Member> {
         const member = await Guild.prototype.editMember.call(
             { id: this.guildId, session: this.session },
@@ -82,10 +112,12 @@ export class Member implements Model {
         return member;
     }
 
+    /** adds a role to this member */
     async addRole(roleId: Snowflake, options: { reason?: string } = {}): Promise<void> {
         await Guild.prototype.addRole.call({ id: this.guildId, session: this.session }, this.user.id, roleId, options);
     }
 
+    /** removes a role from this member */
     async removeRole(roleId: Snowflake, options: { reason?: string } = {}): Promise<void> {
         await Guild.prototype.removeRole.call(
             { id: this.guildId, session: this.session },
@@ -95,7 +127,7 @@ export class Member implements Model {
         );
     }
 
-    /** gets the user's avatar */
+    /** gets the members's guild avatar, not to be confused with Member.user.avatarURL() */
     avatarURL(options: { format?: ImageFormat; size?: ImageSize } = { size: 128 }): string {
         let url: string;
 

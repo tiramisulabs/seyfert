@@ -1,4 +1,3 @@
-
 import type { Session, Snowflake } from "./deps.ts";
 
 export class Collection<V> extends Map<Snowflake, V> {

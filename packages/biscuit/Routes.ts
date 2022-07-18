@@ -8,7 +8,7 @@ export function USER(userId?: Snowflake): string {
     return `/users/${userId}`;
 }
 
-export function GATEWAY_BOT(): string  {
+export function GATEWAY_BOT(): string {
     return "/gateway/bot";
 }
 
@@ -31,28 +31,28 @@ export interface GetMessagesOptions {
     limit?: number;
 }
 
-export function CHANNEL(channelId: Snowflake): string  {
+export function CHANNEL(channelId: Snowflake): string {
     return `/channels/${channelId}`;
 }
 
-export function CHANNEL_INVITES(channelId: Snowflake): string  {
+export function CHANNEL_INVITES(channelId: Snowflake): string {
     return `/channels/${channelId}/invites`;
 }
 
-export function CHANNEL_TYPING(channelId: Snowflake): string  {
+export function CHANNEL_TYPING(channelId: Snowflake): string {
     return `/channels/${channelId}/typing`;
 }
 
-export function CHANNEL_CREATE_THREAD(channelId: Snowflake): string  {
+export function CHANNEL_CREATE_THREAD(channelId: Snowflake): string {
     return `/channels/${channelId}/threads`;
 }
 
-export function MESSAGE_CREATE_THREAD(channelId: Snowflake, messageId: Snowflake): string  {
+export function MESSAGE_CREATE_THREAD(channelId: Snowflake, messageId: Snowflake): string {
     return `/channels/${channelId}/messages/${messageId}/threads`;
 }
 
 /** used to send messages */
-export function CHANNEL_MESSAGES(channelId: Snowflake, options?: GetMessagesOptions): string  {
+export function CHANNEL_MESSAGES(channelId: Snowflake, options?: GetMessagesOptions): string {
     let url = `/channels/${channelId}/messages?`;
 
     if (options) {
@@ -66,17 +66,17 @@ export function CHANNEL_MESSAGES(channelId: Snowflake, options?: GetMessagesOpti
 }
 
 /** used to edit messages */
-export function CHANNEL_MESSAGE(channelId: Snowflake, messageId: Snowflake): string  {
+export function CHANNEL_MESSAGE(channelId: Snowflake, messageId: Snowflake): string {
     return `/channels/${channelId}/messages/${messageId}`;
 }
 
 /** used to kick members */
-export function GUILD_MEMBER(guildId: Snowflake, userId: Snowflake): string  {
+export function GUILD_MEMBER(guildId: Snowflake, userId: Snowflake): string {
     return `/guilds/${guildId}/members/${userId}`;
 }
 
 /** used to ban members */
-export function GUILD_BAN(guildId: Snowflake, userId: Snowflake): string  {
+export function GUILD_BAN(guildId: Snowflake, userId: Snowflake): string {
     return `/guilds/${guildId}/bans/${userId}`;
 }
 
@@ -87,7 +87,7 @@ export interface GetBans {
 }
 
 /** used to unban members */
-export function GUILD_BANS(guildId: Snowflake, options?: GetBans): string  {
+export function GUILD_BANS(guildId: Snowflake, options?: GetBans): string {
     let url = `/guilds/${guildId}/bans?`;
 
     if (options) {
@@ -99,11 +99,11 @@ export function GUILD_BANS(guildId: Snowflake, options?: GetBans): string  {
     return url;
 }
 
-export function GUILD_ROLE(guildId: Snowflake, roleId: Snowflake): string  {
+export function GUILD_ROLE(guildId: Snowflake, roleId: Snowflake): string {
     return `/guilds/${guildId}/roles/${roleId}`;
 }
 
-export function GUILD_ROLES(guildId: Snowflake): string  {
+export function GUILD_ROLES(guildId: Snowflake): string {
     return `/guilds/${guildId}/roles`;
 }
 
@@ -116,11 +116,11 @@ export function USER_DM() {
     return `/users/@me/channels`;
 }
 
-export function GUILD_EMOJIS(guildId: Snowflake): string  {
+export function GUILD_EMOJIS(guildId: Snowflake): string {
     return `/guilds/${guildId}/emojis`;
 }
 
-export function GUILD_EMOJI(guildId: Snowflake, emojiId: Snowflake): string  {
+export function GUILD_EMOJI(guildId: Snowflake, emojiId: Snowflake): string {
     return `/guilds/${guildId}/emojis/${emojiId}`;
 }
 
@@ -135,14 +135,14 @@ export function GUILDS(guildId?: Snowflake): string  {
     return `/guilds`;
 }
 
-export function AUTO_MODERATION_RULES(guildId: Snowflake, ruleId?: Snowflake): string  {
+export function AUTO_MODERATION_RULES(guildId: Snowflake, ruleId?: Snowflake): string {
     if (ruleId) {
         return `/guilds/${guildId}/auto-moderation/rules/${ruleId}`;
     }
     return `/guilds/${guildId}/auto-moderation/rules`;
 }
 
-export function INVITE(inviteCode: string, options?: GetInvite): string  {
+export function INVITE(inviteCode: string, options?: GetInvite): string {
     let url = `/invites/${inviteCode}?`;
 
     if (options) {
@@ -154,11 +154,11 @@ export function INVITE(inviteCode: string, options?: GetInvite): string  {
     return url;
 }
 
-export function GUILD_INVITES(guildId: Snowflake): string  {
+export function GUILD_INVITES(guildId: Snowflake): string {
     return `/guilds/${guildId}/invites`;
 }
 
-export function INTERACTION_ID_TOKEN(interactionId: Snowflake, token: string): string  {
+export function INTERACTION_ID_TOKEN(interactionId: Snowflake, token: string): string {
     return `/interactions/${interactionId}/${token}/callback`;
 }
 
@@ -176,7 +176,7 @@ export function WEBHOOK_MESSAGE(
     webhookId: Snowflake,
     token: string,
     messageId: Snowflake,
-    options?: { threadId?: Snowflake }
+    options?: { threadId?: Snowflake },
 ): string {
     let url = `/webhooks/${webhookId}/${token}/messages/${messageId}?`;
 
@@ -187,7 +187,7 @@ export function WEBHOOK_MESSAGE(
     return url;
 }
 
-export function WEBHOOK_TOKEN(webhookId: Snowflake, token?: string): string  {
+export function WEBHOOK_TOKEN(webhookId: Snowflake, token?: string): string {
     if (!token) return `/webhooks/${webhookId}`;
     return `/webhooks/${webhookId}/${token}`;
 }
@@ -197,7 +197,7 @@ export interface WebhookOptions {
     threadId?: Snowflake;
 }
 
-export function WEBHOOK(webhookId: Snowflake, token: string, options?: WebhookOptions): string  {
+export function WEBHOOK(webhookId: Snowflake, token: string, options?: WebhookOptions): string {
     let url = `/webhooks/${webhookId}/${token}`;
 
     if (options?.wait) url += `?wait=${options.wait}`;
@@ -207,7 +207,7 @@ export function WEBHOOK(webhookId: Snowflake, token: string, options?: WebhookOp
     return url;
 }
 
-export function USER_NICK(guildId: Snowflake): string  {
+export function USER_NICK(guildId: Snowflake): string {
     return `/guilds/${guildId}/members/@me`;
 }
 
@@ -219,7 +219,7 @@ export interface GetGuildPruneCountQuery {
     includeRoles?: Snowflake | Snowflake[];
 }
 
-export function GUILD_PRUNE(guildId: Snowflake, options?: GetGuildPruneCountQuery): string  {
+export function GUILD_PRUNE(guildId: Snowflake, options?: GetGuildPruneCountQuery): string {
     let url = `/guilds/${guildId}/prune?`;
 
     if (options?.days) url += `days=${options.days}`;
@@ -228,15 +228,15 @@ export function GUILD_PRUNE(guildId: Snowflake, options?: GetGuildPruneCountQuer
     return url;
 }
 
-export function CHANNEL_PIN(channelId: Snowflake, messageId: Snowflake): string  {
+export function CHANNEL_PIN(channelId: Snowflake, messageId: Snowflake): string {
     return `/channels/${channelId}/pins/${messageId}`;
 }
 
-export function CHANNEL_PINS(channelId: Snowflake): string  {
+export function CHANNEL_PINS(channelId: Snowflake): string {
     return `/channels/${channelId}/pins`;
 }
 
-export function CHANNEL_MESSAGE_REACTION_ME(channelId: Snowflake, messageId: Snowflake, emoji: string): string  {
+export function CHANNEL_MESSAGE_REACTION_ME(channelId: Snowflake, messageId: Snowflake, emoji: string): string {
     return `/channels/${channelId}/messages/${messageId}/reactions/${encodeURIComponent(emoji)}/@me`;
 }
 
@@ -266,7 +266,7 @@ export function CHANNEL_MESSAGE_REACTION(
     messageId: Snowflake,
     emoji: string,
     options?: GetReactions,
-): string  {
+): string {
     let url = `/channels/${channelId}/messages/${messageId}/reactions/${encodeURIComponent(emoji)}?`;
 
     if (options?.after) url += `after=${options.after}`;
@@ -275,27 +275,27 @@ export function CHANNEL_MESSAGE_REACTION(
     return url;
 }
 
-export function CHANNEL_MESSAGE_CROSSPOST(channelId: Snowflake, messageId: Snowflake): string  {
+export function CHANNEL_MESSAGE_CROSSPOST(channelId: Snowflake, messageId: Snowflake): string {
     return `/channels/${channelId}/messages/${messageId}/crosspost`;
 }
 
-export function GUILD_MEMBER_ROLE(guildId: Snowflake, memberId: Snowflake, roleId: Snowflake): string  {
+export function GUILD_MEMBER_ROLE(guildId: Snowflake, memberId: Snowflake, roleId: Snowflake): string {
     return `/guilds/${guildId}/members/${memberId}/roles/${roleId}`;
 }
 
-export function CHANNEL_WEBHOOKS(channelId: Snowflake): string  {
+export function CHANNEL_WEBHOOKS(channelId: Snowflake): string {
     return `/channels/${channelId}/webhooks`;
 }
 
-export function THREAD_START_PUBLIC(channelId: Snowflake, messageId: Snowflake): string  {
+export function THREAD_START_PUBLIC(channelId: Snowflake, messageId: Snowflake): string {
     return `/channels/${channelId}/messages/${messageId}/threads`;
 }
 
-export function THREAD_START_PRIVATE(channelId: Snowflake): string  {
+export function THREAD_START_PRIVATE(channelId: Snowflake): string {
     return `/channels/${channelId}/threads`;
 }
 
-export function THREAD_ACTIVE(guildId: Snowflake): string  {
+export function THREAD_ACTIVE(guildId: Snowflake): string {
     return `/guilds/${guildId}/threads/active`;
 }
 
@@ -304,23 +304,23 @@ export interface ListArchivedThreads {
     limit?: number;
 }
 
-export function THREAD_ME(channelId: Snowflake): string  {
+export function THREAD_ME(channelId: Snowflake): string {
     return `/channels/${channelId}/thread-members/@me`;
 }
 
-export function THREAD_MEMBERS(channelId: Snowflake): string  {
+export function THREAD_MEMBERS(channelId: Snowflake): string {
     return `/channels/${channelId}/thread-members`;
 }
 
-export function THREAD_USER(channelId: Snowflake, userId: Snowflake): string  {
+export function THREAD_USER(channelId: Snowflake, userId: Snowflake): string {
     return `/channels/${channelId}/thread-members/${userId}`;
 }
 
-export function THREAD_ARCHIVED(channelId: Snowflake): string  {
+export function THREAD_ARCHIVED(channelId: Snowflake): string {
     return `/channels/${channelId}/threads/archived`;
 }
 
-export function THREAD_ARCHIVED_PUBLIC(channelId: Snowflake, options?: ListArchivedThreads): string  {
+export function THREAD_ARCHIVED_PUBLIC(channelId: Snowflake, options?: ListArchivedThreads): string {
     let url = `/channels/${channelId}/threads/archived/public?`;
 
     if (options) {
@@ -331,7 +331,7 @@ export function THREAD_ARCHIVED_PUBLIC(channelId: Snowflake, options?: ListArchi
     return url;
 }
 
-export function THREAD_ARCHIVED_PRIVATE(channelId: Snowflake, options?: ListArchivedThreads): string  {
+export function THREAD_ARCHIVED_PRIVATE(channelId: Snowflake, options?: ListArchivedThreads): string {
     let url = `/channels/${channelId}/threads/archived/private?`;
 
     if (options) {
@@ -342,7 +342,7 @@ export function THREAD_ARCHIVED_PRIVATE(channelId: Snowflake, options?: ListArch
     return url;
 }
 
-export function THREAD_ARCHIVED_PRIVATE_JOINED(channelId: Snowflake, options?: ListArchivedThreads): string  {
+export function THREAD_ARCHIVED_PRIVATE_JOINED(channelId: Snowflake, options?: ListArchivedThreads): string {
     let url = `/channels/${channelId}/users/@me/threads/archived/private?`;
 
     if (options) {
@@ -353,29 +353,33 @@ export function THREAD_ARCHIVED_PRIVATE_JOINED(channelId: Snowflake, options?: L
     return url;
 }
 
-export function FORUM_START(channelId: Snowflake): string  {
+export function FORUM_START(channelId: Snowflake): string {
     return `/channels/${channelId}/threads?has_message=true`;
 }
 
-export function STAGE_INSTANCES(): string  {
+export function STAGE_INSTANCES(): string {
     return `/stage-instances`;
 }
 
-export function STAGE_INSTANCE(channelId: Snowflake): string  {
+export function STAGE_INSTANCE(channelId: Snowflake): string {
     return `/stage-instances/${channelId}`;
 }
 
-export function APPLICATION_COMMANDS(appId: Snowflake, commandId?: Snowflake): string  {
+export function APPLICATION_COMMANDS(appId: Snowflake, commandId?: Snowflake): string {
     if (commandId) return `/applications/${appId}/commands/${commandId}`;
     return `/applications/${appId}/commands`;
 }
 
-export function GUILD_APPLICATION_COMMANDS(appId: Snowflake, guildId: Snowflake, commandId?: Snowflake): string  {
+export function GUILD_APPLICATION_COMMANDS(appId: Snowflake, guildId: Snowflake, commandId?: Snowflake): string {
     if (commandId) return `/applications/${appId}/guilds/${guildId}/commands/${commandId}`;
     return `/applications/${appId}/guilds/${guildId}/commands`;
 }
 
-export function GUILD_APPLICATION_COMMANDS_PERMISSIONS(appId: Snowflake, guildId: Snowflake, commandId?: Snowflake): string  {
+export function GUILD_APPLICATION_COMMANDS_PERMISSIONS(
+    appId: Snowflake,
+    guildId: Snowflake,
+    commandId?: Snowflake,
+): string {
     if (commandId) return `/applications/${appId}/guilds/${guildId}/commands/${commandId}/permissions`;
     return `/applications/${appId}/guilds/${guildId}/commands/permissions`;
 }
@@ -384,7 +388,7 @@ export function APPLICATION_COMMANDS_LOCALIZATIONS(
     appId: Snowflake,
     commandId: Snowflake,
     withLocalizations?: boolean,
-): string  {
+): string {
     let url = `/applications/${appId}/commands/${commandId}?`;
 
     if (withLocalizations !== undefined) {
@@ -399,7 +403,7 @@ export function GUILD_APPLICATION_COMMANDS_LOCALIZATIONS(
     guildId: Snowflake,
     commandId: Snowflake,
     withLocalizations?: boolean,
-): string  {
+): string {
     let url = `/applications/${appId}/guilds/${guildId}/commands/${commandId}?`;
 
     if (withLocalizations !== undefined) {
@@ -409,15 +413,15 @@ export function GUILD_APPLICATION_COMMANDS_LOCALIZATIONS(
     return url;
 }
 
-export function STICKER(id: Snowflake): string  {
+export function STICKER(id: Snowflake): string {
     return `stickers/${id}`;
 }
 
-export function STICKER_PACKS(): string  {
+export function STICKER_PACKS(): string {
     return `stickers-packs`;
 }
 
-export function GUILD_STICKERS(guildId: Snowflake, stickerId?: Snowflake): string  {
+export function GUILD_STICKERS(guildId: Snowflake, stickerId?: Snowflake): string {
     if (stickerId) return `/guilds/${guildId}/stickers/${stickerId}`;
     return `/guilds/${guildId}/stickers`;
 }

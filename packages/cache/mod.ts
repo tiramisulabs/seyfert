@@ -7,11 +7,7 @@ import { memberBootstrapper } from "./members.ts";
 import { userBootstrapper } from "./users.ts";
 import { channelBootstrapper } from "./channels.ts";
 import { guildBootstrapper } from "./guilds.ts";
-import {
-    messageBootstrapper,
-    reactionBootstrapper,
-    reactionBootstrapperDeletions
-} from "./messages.ts";
+import { messageBootstrapper, reactionBootstrapper, reactionBootstrapperDeletions } from "./messages.ts";
 
 export const cache_sym = Symbol("@cache");
 

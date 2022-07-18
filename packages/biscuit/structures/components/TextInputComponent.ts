@@ -17,10 +17,8 @@ export class TextInput extends BaseComponent implements TextInputComponent {
         this.placeholder = data.placeholder;
         this.value = data.value;
 
-        
         this.minLength = data.min_length;
         this.maxLength = data.max_length;
-        
     }
 
     readonly session: Session;

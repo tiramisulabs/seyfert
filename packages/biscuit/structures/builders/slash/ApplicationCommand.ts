@@ -6,12 +6,12 @@ import { CreateApplicationCommand } from "../../../Session.ts";
 export abstract class ApplicationCommandBuilder implements CreateApplicationCommand {
     constructor(
         type: ApplicationCommandTypes = ApplicationCommandTypes.ChatInput,
-        name = "",
-        description = "",
+        name: string = "",
+        description: string = "",
         defaultMemberPermissions?: PermissionStrings[],
         nameLocalizations?: Localization,
         descriptionLocalizations?: Localization,
-        dmPermission = true,
+        dmPermission: boolean = true,
     ) {
         this.type = type;
         this.name = name;

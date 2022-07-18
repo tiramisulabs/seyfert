@@ -1,10 +1,4 @@
-import type {
-    ChannelInGuild,
-    ChannelWithMessagesInGuild,
-    ChannelTypes,
-    DiscordChannel,
-    Snowflake,
-} from "./deps.ts";
+import type { ChannelInGuild, ChannelTypes, ChannelWithMessagesInGuild, DiscordChannel, Snowflake } from "./deps.ts";
 import type { CachedMessage } from "./messages.ts";
 import type { CachedGuild } from "./guilds.ts";
 import type { SessionCache } from "./mod.ts";
@@ -30,9 +24,12 @@ export interface CachedDMChannel extends DMChannel {
 
 export function channelBootstrapper(cache: SessionCache, channel: DiscordChannel) {
     if (!channel.guild_id) {
-        cache.dms.set(channel.id, Object.assign(new DMChannel(cache.session, channel), {
-            messages: new Collection<CachedMessage>(cache.session),
-        }))
+        cache.dms.set(
+            channel.id,
+            Object.assign(new DMChannel(cache.session, channel), {
+                messages: new Collection<CachedMessage>(cache.session),
+            }),
+        );
         return;
     }
 
@@ -47,24 +44,23 @@ export function channelBootstrapper(cache: SessionCache, channel: DiscordChannel
                         guildId: channel.guild_id!,
                         get guild(): CachedGuild {
                             return cache.guilds.get(this.guildId)!;
-                        }
+                        },
                     },
                 ),
             );
         } else {
             guild.channels.set(
                 channel.id,
-                <CachedGuildChannel>Object.assign(
+                <CachedGuildChannel> Object.assign(
                     ChannelFactory.fromGuildChannel(cache.session, channel),
                     {
                         guildId: channel.guild_id!,
                         get guild(): CachedGuild {
                             return cache.guilds.get(this.guildId)!;
-                        }
-                    }
+                        },
+                    },
                 ),
             );
         }
     });
 }
-

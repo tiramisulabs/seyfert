@@ -1,7 +1,4 @@
-import type {
-    DiscordGuild,
-    DiscordMemberWithUser,
-} from "./deps.ts";
+import type { DiscordGuild, DiscordMemberWithUser } from "./deps.ts";
 import type { SessionCache } from "./mod.ts";
 import type { CachedMember } from "./members.ts";
 import type { CachedUser } from "./users.ts";

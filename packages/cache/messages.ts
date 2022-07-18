@@ -1,11 +1,11 @@
 import type {
     DiscordEmoji,
-    DiscordMessage,
     DiscordMemberWithUser,
+    DiscordMessage,
     DiscordMessageReactionAdd,
     DiscordMessageReactionRemove,
     DiscordMessageReactionRemoveAll,
-    Snowflake
+    Snowflake,
 } from "./deps.ts";
 import type { CachedUser } from "./users.ts";
 import type { SessionCache } from "./mod.ts";
