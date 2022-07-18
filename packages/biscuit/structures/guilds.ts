@@ -551,6 +551,14 @@ export class Guild extends BaseGuild implements Model {
         );
     }
 
+    /**
+     * editEmoji edits an emoji in the guild.
+     * @see {@link ModifyGuildEmoji}
+     * @see {@link GuildEmoji}
+     * @param id - The id of the emoji to edit.
+     * @param options - Options to modify the emoji.
+     * @returns A promise that resolves to the edited emoji.
+     */
     async editEmoji(id: Snowflake, options: ModifyGuildEmoji): Promise<GuildEmoji> {
         const emoji = await this.session.rest.runMethod<DiscordEmoji>(
             this.session.rest,
@@ -562,6 +570,12 @@ export class Guild extends BaseGuild implements Model {
         return new GuildEmoji(this.session, emoji, this.id);
     }
 
+    /**
+     * createRole creates a role in the guild.
+     * @see {@link CreateRole}
+     * @see {@link Role}
+     * @param options - Options to create a new role.
+     */
     async createRole(options: CreateRole): Promise<Role> {
         let icon: string | undefined;
 
@@ -590,10 +604,21 @@ export class Guild extends BaseGuild implements Model {
         return new Role(this.session, role, this.id);
     }
 
+    /** 
+     * deleteRole deletes a role from the guild.
+     * @param roleId - The id of the role to delete.
+     * */
     async deleteRole(roleId: Snowflake): Promise<void> {
         await this.session.rest.runMethod<undefined>(this.session.rest, 'DELETE', Routes.GUILD_ROLE(this.id, roleId));
     }
 
+    /**
+     * editRole edits a role in the guild.
+     * @see {@link ModifyGuildRole}
+     * @see {@link Role}
+     * @param roleId - The id of the role to edit.
+     * @param options - Options to modify the role.
+     */
     async editRole(roleId: Snowflake, options: ModifyGuildRole): Promise<Role> {
         const role = await this.session.rest.runMethod<DiscordRole>(
             this.session.rest,
@@ -610,6 +635,12 @@ export class Guild extends BaseGuild implements Model {
         return new Role(this.session, role, this.id);
     }
 
+    /**
+     * addRole adds a role to a user in the guild.
+     * @param memberId - The id of the member to add a role to.
+     * @param roleId - The id of the role to add.
+     * @param reason - The reason for adding the role to the member. 
+     */
     async addRole(memberId: Snowflake, roleId: Snowflake, { reason }: { reason?: string } = {}): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
@@ -619,6 +650,12 @@ export class Guild extends BaseGuild implements Model {
         );
     }
 
+    /**
+     * removeRole removes a role from a user in the guild.
+     * @param memberId - The id of the member to remove a role from.
+     * @param roleId - The id of the role to remove.
+     * @param reason - The reason for removing the role from the member.
+     */
     async removeRole(memberId: Snowflake, roleId: Snowflake, { reason }: { reason?: string } = {}): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
@@ -629,7 +666,10 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * Returns the roles moved
+     * Returns the roles moved.
+     * @see {@link ModifyRolePositions}
+     * @see {@link Role}
+     * @param options - Options to modify the roles.
      */
     async moveRoles(options: ModifyRolePositions[]): Promise<Role[]> {
         const roles = await this.session.rest.runMethod<DiscordRole[]>(
