@@ -663,7 +663,7 @@ export class Guild extends BaseGuild implements Model {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             "DELETE",
-            Routes.USER_GUILDS(this.id)
+            Routes.USER_GUILDS(this.id),
         );
     }
 
@@ -714,7 +714,7 @@ export class Guild extends BaseGuild implements Model {
     /**
      * ESets a new guild splash.
      */
-    setSplash(splashURL: string ): Promise<Guild> {
+    setSplash(splashURL: string): Promise<Guild> {
         return this.edit({ splashURL });
     }
 
@@ -725,9 +725,9 @@ export class Guild extends BaseGuild implements Model {
         return this.edit({ bannerURL });
     }
 
-    /** 
+    /**
      * Sets a new guild discovery splash image.
-    */
+     */
     setDiscoverySplash(discoverySplashURL: string): Promise<Guild> {
         return this.edit({ discoverySplashURL });
     }

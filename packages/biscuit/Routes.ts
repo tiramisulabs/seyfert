@@ -130,7 +130,7 @@ export interface GetInvite {
     scheduledEventId?: Snowflake;
 }
 
-export function GUILDS(guildId?: Snowflake): string  {
+export function GUILDS(guildId?: Snowflake): string {
     if (guildId) return `/guilds/${guildId}`;
     return `/guilds`;
 }
