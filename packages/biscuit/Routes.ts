@@ -107,6 +107,11 @@ export function GUILD_ROLES(guildId: Snowflake): string {
     return `/guilds/${guildId}/roles`;
 }
 
+export function USER_GUILDS(guildId?: Snowflake): string {
+    if (guildId) return `/users/@me/guilds/${guildId}`;
+    return `/users/@me/guilds/`;
+}
+
 export function USER_DM() {
     return `/users/@me/channels`;
 }
@@ -125,7 +130,8 @@ export interface GetInvite {
     scheduledEventId?: Snowflake;
 }
 
-export function GUILDS(): string {
+export function GUILDS(guildId?: Snowflake): string  {
+    if (guildId) return `/guilds/${guildId}`;
     return `/guilds`;
 }
 
