@@ -1,8 +1,8 @@
-import type { Model } from "./Base.ts";
-import type { Snowflake } from "../Snowflake.ts";
-import type { Session } from "../Session.ts";
-import type { DiscordIntegration, IntegrationExpireBehaviors } from "../../discordeno/mod.ts";
-import User from "./User.ts";
+import type { Model } from './Base.ts';
+import type { Snowflake } from '../Snowflake.ts';
+import type { Session } from '../Session.ts';
+import type { DiscordIntegration, IntegrationExpireBehaviors } from '../../discordeno/mod.ts';
+import User from './User.ts';
 
 export interface IntegrationAccount {
     id: Snowflake;
@@ -58,7 +58,7 @@ export class Integration implements Model {
     guildId?: Snowflake;
 
     name: string;
-    type: "twitch" | "youtube" | "discord";
+    type: 'twitch' | 'youtube' | 'discord';
     enabled?: boolean;
     syncing?: boolean;
     roleId?: string;

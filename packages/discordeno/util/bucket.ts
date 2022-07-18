@@ -1,5 +1,5 @@
-import { PickPartial } from "../types/shared.ts";
-import { delay } from "./delay.ts";
+import { PickPartial } from '../types/shared.ts';
+import { delay } from './delay.ts';
 
 /** A Leaky Bucket.
  * Useful for rate limiting purposes.
@@ -67,9 +67,9 @@ export function createLeakyBucket(
         & Omit<
             PickPartial<
                 LeakyBucket,
-                "max" | "refillInterval" | "refillAmount"
+                'max' | 'refillInterval' | 'refillAmount'
             >,
-            "tokens"
+            'tokens'
         >
         & {
             /** Current tokens in the bucket.

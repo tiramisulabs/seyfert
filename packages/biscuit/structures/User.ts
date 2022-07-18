@@ -1,10 +1,10 @@
-import type { Model } from "./Base.ts";
-import type { Snowflake } from "../Snowflake.ts";
-import type { Session } from "../Session.ts";
-import type { DiscordUser, PremiumTypes, UserFlags } from "../../discordeno/mod.ts";
-import type { ImageFormat, ImageSize } from "../Util.ts";
-import Util from "../Util.ts";
-import * as Routes from "../Routes.ts";
+import type { Model } from './Base.ts';
+import type { Snowflake } from '../Snowflake.ts';
+import type { Session } from '../Session.ts';
+import type { DiscordUser, PremiumTypes, UserFlags } from '../../discordeno/mod.ts';
+import type { ImageFormat, ImageSize } from '../Util.ts';
+import Util from '../Util.ts';
+import * as Routes from '../Routes.ts';
 
 /**
  * @link https://discord.com/developers/docs/resources/user#user-object

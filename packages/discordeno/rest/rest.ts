@@ -28,4 +28,4 @@ export interface RestRateLimitedPath {
     bucketId?: string;
 }
 
-export type RequestMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+export type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';

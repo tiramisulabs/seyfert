@@ -1,4 +1,4 @@
-import { Shard, ShardState } from "./types.ts";
+import { Shard, ShardState } from './types.ts';
 
 // TODO: Remove code marked WSL GATEWAY PATCH once a bug in bun is fixed:
 //   `https://github.com/Jarred-Sumner/bun/issues/521`

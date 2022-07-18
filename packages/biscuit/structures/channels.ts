@@ -1,8 +1,8 @@
 /** Types */
-import type { Model } from "./Base.ts";
-import type { Snowflake } from "../Snowflake.ts";
-import type { Session } from "../Session.ts";
-import type { PermissionsOverwrites } from "../Util.ts";
+import type { Model } from './Base.ts';
+import type { Snowflake } from '../Snowflake.ts';
+import type { Session } from '../Session.ts';
+import type { PermissionsOverwrites } from '../Util.ts';
 
 /** External from vendor */
 import {
@@ -17,19 +17,19 @@ import {
     GatewayOpcodes,
     TargetTypes,
     VideoQualityModes,
-} from "../../discordeno/mod.ts";
+} from '../../discordeno/mod.ts';
 
 /** Functions and others */
-import { calculateShardId } from "../../discordeno/gateway/calculateShardId.ts";
-import { urlToBase64 } from "../util/urlToBase64.ts";
+import { calculateShardId } from '../../discordeno/gateway/calculateShardId.ts';
+import { urlToBase64 } from '../util/urlToBase64.ts';
 
 /** Classes and routes */
-import * as Routes from "../Routes.ts";
-import Message, { CreateMessage, EditMessage, EmojiResolvable } from "./Message.ts";
-import Invite from "./Invite.ts";
-import Webhook from "./Webhook.ts";
-import User from "./User.ts";
-import ThreadMember from "./ThreadMember.ts";
+import * as Routes from '../Routes.ts';
+import Message, { CreateMessage, EditMessage, EmojiResolvable } from './Message.ts';
+import Invite from './Invite.ts';
+import Webhook from './Webhook.ts';
+import User from './User.ts';
+import ThreadMember from './ThreadMember.ts';
 
 /**
  * Abstract class that represents the base for creating a new channel.
@@ -191,19 +191,19 @@ export class TextChannel {
     // deno-lint-ignore ban-types
     static applyTo(klass: Function, ignore: Array<keyof TextChannel> = []): void {
         const methods: Array<keyof TextChannel> = [
-            "fetchPins",
-            "createInvite",
-            "fetchMessages",
-            "sendTyping",
-            "pinMessage",
-            "unpinMessage",
-            "addReaction",
-            "removeReaction",
-            "nukeReactions",
-            "fetchPins",
-            "sendMessage",
-            "editMessage",
-            "createWebhook",
+            'fetchPins',
+            'createInvite',
+            'fetchMessages',
+            'sendTyping',
+            'pinMessage',
+            'unpinMessage',
+            'addReaction',
+            'removeReaction',
+            'nukeReactions',
+            'fetchPins',
+            'sendMessage',
+            'editMessage',
+            'createWebhook',
         ];
 
         for (const method of methods) {
@@ -220,7 +220,7 @@ export class TextChannel {
     async fetchPins(): Promise<Message[] | []> {
         const messages = await this.session.rest.runMethod<DiscordMessage[]>(
             this.session.rest,
-            "GET",
+            'GET',
             Routes.CHANNEL_PINS(this.id),
         );
         return messages[0] ? messages.map((x: DiscordMessage) => new Message(this.session, x)) : [];
@@ -234,7 +234,7 @@ export class TextChannel {
     async createInvite(options?: DiscordInviteOptions): Promise<Invite> {
         const invite = await this.session.rest.runMethod<DiscordInvite>(
             this.session.rest,
-            "POST",
+            'POST',
             Routes.CHANNEL_INVITES(this.id),
             options
                 ? {
@@ -258,10 +258,10 @@ export class TextChannel {
      * @returns {Promise<Message[] | []>} - The messages 
      */
     async fetchMessages(options?: Routes.GetMessagesOptions): Promise<Message[] | []> {
-        if (options?.limit! > 100) throw Error("Values must be between 0-100");
+        if (options?.limit! > 100) throw Error('Values must be between 0-100');
         const messages = await this.session.rest.runMethod<DiscordMessage[]>(
             this.session.rest,
-            "GET",
+            'GET',
             Routes.CHANNEL_MESSAGES(this.id, options),
         );
         return messages[0] ? messages.map((x) => new Message(this.session, x)) : [];
@@ -271,7 +271,7 @@ export class TextChannel {
     async sendTyping(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "POST",
+            'POST',
             Routes.CHANNEL_TYPING(this.id),
         );
     }
@@ -403,7 +403,7 @@ export class TextChannel {
     async createWebhook(options: CreateWebhook): Promise<Webhook> {
         const webhook = await this.session.rest.runMethod<DiscordWebhook>(
             this.session.rest,
-            "POST",
+            'POST',
             Routes.CHANNEL_WEBHOOKS(this.id),
             {
                 name: options.name,
@@ -502,7 +502,7 @@ export class GuildChannel extends BaseChannel implements Model {
     async fetchInvites(): Promise<Invite[]> {
         const invites = await this.session.rest.runMethod<DiscordInviteMetadata[]>(
             this.session.rest,
-            "GET",
+            'GET',
             Routes.CHANNEL_INVITES(this.id),
         );
 
@@ -517,22 +517,22 @@ export class GuildChannel extends BaseChannel implements Model {
     ): Promise<Channel> {
         const channel = await this.session.rest.runMethod<DiscordChannel>(
             this.session.rest,
-            "PATCH",
+            'PATCH',
             Routes.CHANNEL(this.id),
             {
                 name: options.name,
-                type: "type" in options ? options.type : undefined,
+                type: 'type' in options ? options.type : undefined,
                 position: options.position,
-                topic: "topic" in options ? options.topic : undefined,
-                nsfw: "nfsw" in options ? options.nfsw : undefined,
-                rate_limit_per_user: "rateLimitPerUser" in options ? options.rateLimitPerUser : undefined,
-                bitrate: "bitrate" in options ? options.bitrate : undefined,
-                user_limit: "userLimit" in options ? options.userLimit : undefined,
+                topic: 'topic' in options ? options.topic : undefined,
+                nsfw: 'nfsw' in options ? options.nfsw : undefined,
+                rate_limit_per_user: 'rateLimitPerUser' in options ? options.rateLimitPerUser : undefined,
+                bitrate: 'bitrate' in options ? options.bitrate : undefined,
+                user_limit: 'userLimit' in options ? options.userLimit : undefined,
                 permissions_overwrites: options.permissionOverwrites,
-                parent_id: "parentId" in options ? options.parentId : undefined,
-                rtc_region: "rtcRegion" in options ? options.rtcRegion : undefined,
-                video_quality_mode: "videoQualityMode" in options ? options.videoQualityMode : undefined,
-                default_auto_archive_duration: "defaultAutoArchiveDuration" in options
+                parent_id: 'parentId' in options ? options.parentId : undefined,
+                rtc_region: 'rtcRegion' in options ? options.rtcRegion : undefined,
+                video_quality_mode: 'videoQualityMode' in options ? options.videoQualityMode : undefined,
+                default_auto_archive_duration: 'defaultAutoArchiveDuration' in options
                     ? options.defaultAutoArchiveDuration
                     : undefined,
             },
@@ -541,25 +541,25 @@ export class GuildChannel extends BaseChannel implements Model {
     }
 
     async getArchivedThreads(
-        options: Routes.ListArchivedThreads & { type: "public" | "private" | "privateJoinedThreads" },
+        options: Routes.ListArchivedThreads & { type: 'public' | 'private' | 'privateJoinedThreads' },
     ): Promise<ReturnThreadsArchive> {
         let func: (channelId: Snowflake, options: Routes.ListArchivedThreads) => string;
 
         switch (options.type) {
-            case "public":
+            case 'public':
                 func = Routes.THREAD_ARCHIVED_PUBLIC;
                 break;
-            case "private":
+            case 'private':
                 func = Routes.THREAD_START_PRIVATE;
                 break;
-            case "privateJoinedThreads":
+            case 'privateJoinedThreads':
                 func = Routes.THREAD_ARCHIVED_PRIVATE_JOINED;
                 break;
         }
 
         const { threads, members, has_more } = await this.session.rest.runMethod<DiscordListArchivedThreads>(
             this.session.rest,
-            "GET",
+            'GET',
             func(this.id, options),
         );
 
@@ -577,8 +577,8 @@ export class GuildChannel extends BaseChannel implements Model {
     async createThread(options: ThreadCreateOptions): Promise<ThreadChannel> {
         const thread = await this.session.rest.runMethod<DiscordChannel>(
             this.session.rest,
-            "POST",
-            "messageId" in options
+            'POST',
+            'messageId' in options
                 ? Routes.THREAD_START_PUBLIC(this.id, options.messageId)
                 : Routes.THREAD_START_PRIVATE(this.id),
             {
@@ -664,7 +664,7 @@ export class DMChannel extends BaseChannel implements Model {
     async close(): Promise<DMChannel> {
         const channel = await this.session.rest.runMethod<DiscordChannel>(
             this.session.rest,
-            "DELETE",
+            'DELETE',
             Routes.CHANNEL(this.id),
         );
 
@@ -672,7 +672,7 @@ export class DMChannel extends BaseChannel implements Model {
     }
 }
 
-export interface DMChannel extends Omit<TextChannel, "type">, Omit<BaseChannel, "type"> {}
+export interface DMChannel extends Omit<TextChannel, 'type'>, Omit<BaseChannel, 'type'> {}
 
 TextChannel.applyTo(DMChannel);
 
@@ -755,7 +755,7 @@ export class ThreadChannel extends GuildChannel implements Model {
     async joinThread(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "PUT",
+            'PUT',
             Routes.THREAD_ME(this.id),
         );
     }
@@ -763,7 +763,7 @@ export class ThreadChannel extends GuildChannel implements Model {
     async addToThread(guildMemberId: Snowflake): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "PUT",
+            'PUT',
             Routes.THREAD_USER(this.id, guildMemberId),
         );
     }
@@ -771,7 +771,7 @@ export class ThreadChannel extends GuildChannel implements Model {
     async leaveToThread(guildMemberId: Snowflake): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "DELETE",
+            'DELETE',
             Routes.THREAD_USER(this.id, guildMemberId),
         );
     }
@@ -787,7 +787,7 @@ export class ThreadChannel extends GuildChannel implements Model {
     async fetchMembers(): Promise<ThreadMember[]> {
         const members = await this.session.rest.runMethod<DiscordThreadMember[]>(
             this.session.rest,
-            "GET",
+            'GET',
             Routes.THREAD_MEMBERS(this.id),
         );
 
@@ -795,7 +795,7 @@ export class ThreadChannel extends GuildChannel implements Model {
     }
 }
 
-export interface ThreadChannel extends Omit<GuildChannel, "type">, Omit<TextChannel, "type"> {}
+export interface ThreadChannel extends Omit<GuildChannel, 'type'>, Omit<TextChannel, 'type'> {}
 
 TextChannel.applyTo(ThreadChannel);
 
@@ -853,7 +853,7 @@ export class ChannelFactory {
             case ChannelTypes.GuildStageVoice:
                 return new StageChannel(session, channel, channel.guild_id!);
             default:
-                throw new Error("Channel was not implemented");
+                throw new Error('Channel was not implemented');
         }
     }
 
@@ -876,7 +876,7 @@ export class ChannelFactory {
                 if (textBasedChannels.includes(channel.type)) {
                     return new TextChannel(session, channel);
                 }
-                throw new Error("Channel was not implemented");
+                throw new Error('Channel was not implemented');
         }
     }
 }

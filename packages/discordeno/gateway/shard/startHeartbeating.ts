@@ -1,5 +1,5 @@
-import { GatewayOpcodes } from "../../types/shared.ts";
-import { Shard, ShardSocketCloseCodes, ShardState } from "./types.ts";
+import { GatewayOpcodes } from '../../types/shared.ts';
+import { Shard, ShardSocketCloseCodes, ShardState } from './types.ts';
 
 export function startHeartbeating(shard: Shard, interval: number) {
     //   gateway.debug("GW HEARTBEATING_STARTED", { shardId, interval });
@@ -40,7 +40,7 @@ export function startHeartbeating(shard: Shard, interval: number) {
             if (!shard.heart.acknowledged) {
                 shard.close(
                     ShardSocketCloseCodes.ZombiedConnection,
-                    "Zombied connection, did not receive an heartbeat ACK in time.",
+                    'Zombied connection, did not receive an heartbeat ACK in time.',
                 );
 
                 return await shard.identify();

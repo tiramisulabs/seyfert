@@ -9,29 +9,29 @@ import type {
     GatewayBot,
     GatewayIntents,
     Localization,
-} from "../discordeno/mod.ts";
+} from '../discordeno/mod.ts';
 
-import type { DiscordGatewayPayload, Shard } from "../discordeno/mod.ts";
-import type { Events } from "./Actions.ts";
-import type { PermissionResolvable } from "./structures/Permissions.ts";
-import type { Activities, StatusTypes } from "./structures/Presence.ts";
+import type { DiscordGatewayPayload, Shard } from '../discordeno/mod.ts';
+import type { Events } from './Actions.ts';
+import type { PermissionResolvable } from './structures/Permissions.ts';
+import type { Activities, StatusTypes } from './structures/Presence.ts';
 
-import { Permissions } from "./structures/Permissions.ts";
-import { Snowflake } from "./Snowflake.ts";
-import { EventEmitter } from "./util/EventEmmiter.ts";
+import { Permissions } from './structures/Permissions.ts';
+import { Snowflake } from './Snowflake.ts';
+import { EventEmitter } from './util/EventEmmiter.ts';
 import {
     ApplicationCommandTypes,
     createGatewayManager,
     createRestManager,
     GatewayOpcodes,
     getBotIdFromToken,
-} from "../discordeno/mod.ts";
+} from '../discordeno/mod.ts';
 
-import User from "./structures/User.ts";
-import { urlToBase64 } from "./util/urlToBase64.ts";
+import User from './structures/User.ts';
+import { urlToBase64 } from './util/urlToBase64.ts';
 
-import * as Routes from "./Routes.ts";
-import * as Actions from "./Actions.ts";
+import * as Routes from './Routes.ts';
+import * as Actions from './Actions.ts';
 
 export type DiscordRawEventHandler = (shard: Shard, data: DiscordGatewayPayload) => unknown;
 
@@ -54,7 +54,7 @@ export interface CreateApplicationCommand {
 /**
  * @link https://discord.com/developers/docs/interactions/application-commands#endpoints-json-params
  */
-export interface CreateContextApplicationCommand extends Omit<CreateApplicationCommand, "options"> {
+export interface CreateContextApplicationCommand extends Omit<CreateApplicationCommand, 'options'> {
     type: ApplicationCommandTypes.Message | ApplicationCommandTypes.User;
 }
 
@@ -164,7 +164,7 @@ export class Session extends EventEmitter {
             token: this.options.token,
             debug: (text) => {
                 // TODO: set this using the event emitter
-                super.rawListeners("debug")?.forEach((fn) => fn(text));
+                super.rawListeners('debug')?.forEach((fn) => fn(text));
             },
             secretKey: this.options.rest?.secretKey ?? undefined,
         });
@@ -203,7 +203,7 @@ export class Session extends EventEmitter {
 
     async editProfile(nick?: string, avatarURL?: string | null): Promise<User> {
         const avatar = avatarURL ? await urlToBase64(avatarURL) : avatarURL;
-        const user = await this.rest.runMethod<DiscordUser>(this.rest, "PATCH", Routes.USER(), {
+        const user = await this.rest.runMethod<DiscordUser>(this.rest, 'PATCH', Routes.USER(), {
             username: nick,
             avatar: avatar,
         });
@@ -241,20 +241,19 @@ export class Session extends EventEmitter {
                         application_id: this.applicationId,
                         details: activity.details,
                         state: activity.state,
-                        emoji: activity.emoji || {
-                            name: activity.emoji!.name,
-                            id: activity.emoji!.id,
-                            animated: activity.emoji!.animated,
+                        emoji: activity.emoji && {
+                            name: activity.emoji.name,
+                            id: activity.emoji.id,
+                            animated: activity.emoji.animated,
                         },
                         party: activity.party,
-                        assets: activity.assets
-                            ? {
+                        assets: activity.assets &&
+                            {
                                 large_image: activity.assets.largeImage,
                                 large_text: activity.assets.largeText,
                                 small_image: activity.assets.smallImage,
                                 small_text: activity.assets.smallText,
-                            }
-                            : undefined,
+                            },
                         secrets: activity.secrets,
                         instance: activity.instance,
                         flags: activity.flags,
@@ -266,7 +265,7 @@ export class Session extends EventEmitter {
     }
 
     async fetchUser(id: Snowflake): Promise<User | undefined> {
-        const user: DiscordUser = await this.rest.runMethod<DiscordUser>(this.rest, "GET", Routes.USER(id));
+        const user: DiscordUser = await this.rest.runMethod<DiscordUser>(this.rest, 'GET', Routes.USER(id));
 
         if (!user.id) return;
 
@@ -279,7 +278,7 @@ export class Session extends EventEmitter {
     ): Promise<DiscordApplicationCommand> {
         return this.rest.runMethod<DiscordApplicationCommand>(
             this.rest,
-            "POST",
+            'POST',
             guildId
                 ? Routes.GUILD_APPLICATION_COMMANDS(this.applicationId, guildId)
                 : Routes.APPLICATION_COMMANDS(this.applicationId),
@@ -307,7 +306,7 @@ export class Session extends EventEmitter {
     deleteApplicationCommand(id: Snowflake, guildId?: Snowflake): Promise<undefined> {
         return this.rest.runMethod<undefined>(
             this.rest,
-            "DELETE",
+            'DELETE',
             guildId
                 ? Routes.GUILD_APPLICATION_COMMANDS(this.applicationId, guildId, id)
                 : Routes.APPLICATION_COMMANDS(this.applicationId, id),
@@ -322,7 +321,7 @@ export class Session extends EventEmitter {
     ): Promise<DiscordGuildApplicationCommandPermissions> {
         return this.rest.runMethod<DiscordGuildApplicationCommandPermissions>(
             this.rest,
-            "PUT",
+            'PUT',
             Routes.GUILD_APPLICATION_COMMANDS_PERMISSIONS(this.applicationId, guildId, id),
             {
                 permissions: options,
@@ -336,7 +335,7 @@ export class Session extends EventEmitter {
     fetchApplicationCommand(id: Snowflake, options?: GetApplicationCommand): Promise<DiscordApplicationCommand> {
         return this.rest.runMethod<DiscordApplicationCommand>(
             this.rest,
-            "GET",
+            'GET',
             options?.guildId
                 ? Routes.GUILD_APPLICATION_COMMANDS_LOCALIZATIONS(
                     this.applicationId,
@@ -351,7 +350,7 @@ export class Session extends EventEmitter {
     fetchApplicationCommandPermissions(guildId: Snowflake): Promise<DiscordGuildApplicationCommandPermissions[]> {
         return this.rest.runMethod<DiscordGuildApplicationCommandPermissions[]>(
             this.rest,
-            "GET",
+            'GET',
             Routes.GUILD_APPLICATION_COMMANDS_PERMISSIONS(this.applicationId, guildId),
         );
     }
@@ -362,7 +361,7 @@ export class Session extends EventEmitter {
     ): Promise<DiscordGuildApplicationCommandPermissions> {
         return this.rest.runMethod<DiscordGuildApplicationCommandPermissions>(
             this.rest,
-            "GET",
+            'GET',
             Routes.GUILD_APPLICATION_COMMANDS_PERMISSIONS(this.applicationId, guildId, id),
         );
     }
@@ -374,7 +373,7 @@ export class Session extends EventEmitter {
     ): Promise<DiscordApplicationCommand> {
         return this.rest.runMethod<DiscordApplicationCommand>(
             this.rest,
-            "PATCH",
+            'PATCH',
             guildId
                 ? Routes.GUILD_APPLICATION_COMMANDS(this.applicationId, guildId)
                 : Routes.APPLICATION_COMMANDS(this.applicationId, id),
@@ -398,7 +397,7 @@ export class Session extends EventEmitter {
     ): Promise<DiscordApplicationCommand[]> {
         return this.rest.runMethod<DiscordApplicationCommand[]>(
             this.rest,
-            "PUT",
+            'PUT',
             guildId
                 ? Routes.GUILD_APPLICATION_COMMANDS(this.applicationId, guildId)
                 : Routes.APPLICATION_COMMANDS(this.applicationId),
@@ -421,7 +420,7 @@ export class Session extends EventEmitter {
     fetchCommands(guildId?: Snowflake): Promise<DiscordApplicationCommand[]> {
         return this.rest.runMethod<DiscordApplicationCommand[]>(
             this.rest,
-            "GET",
+            'GET',
             guildId
                 ? Routes.GUILD_APPLICATION_COMMANDS(this.applicationId, guildId)
                 : Routes.APPLICATION_COMMANDS(this.applicationId),
@@ -434,7 +433,7 @@ export class Session extends EventEmitter {
     }
 
     async start(): Promise<void> {
-        const getGatewayBot = () => this.rest.runMethod<DiscordGetGatewayBot>(this.rest, "GET", Routes.GATEWAY_BOT());
+        const getGatewayBot = () => this.rest.runMethod<DiscordGetGatewayBot>(this.rest, 'GET', Routes.GATEWAY_BOT());
 
         // check if is empty
         if (!Object.keys(this.options.gateway?.data ?? {}).length) {

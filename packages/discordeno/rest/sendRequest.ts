@@ -1,7 +1,7 @@
-import { HTTPResponseCodes } from "../types/shared.ts";
-import { BASE_URL } from "../util/constants.ts";
-import { RequestMethod } from "./rest.ts";
-import { RestManager } from "./restManager.ts";
+import { HTTPResponseCodes } from '../types/shared.ts';
+import { BASE_URL } from '../util/constants.ts';
+import { RequestMethod } from './rest.ts';
+import { RestManager } from './restManager.ts';
 
 export interface RestSendRequestOptions {
     url: string;
@@ -50,31 +50,31 @@ export async function sendRequest<T>(rest: RestManager, options: RestSendRequest
                 `[REST - httpError] Payload: ${JSON.stringify(options)} | Response: ${JSON.stringify(response)}`,
             );
 
-            let error = "REQUEST_UNKNOWN_ERROR";
+            let error = 'REQUEST_UNKNOWN_ERROR';
             switch (response.status) {
                 case HTTPResponseCodes.BadRequest:
-                    error = "The options was improperly formatted, or the server couldn't understand it.";
+                    error = 'The options was improperly formatted, or the server couldn\'t understand it.';
                     break;
                 case HTTPResponseCodes.Unauthorized:
-                    error = "The Authorization header was missing or invalid.";
+                    error = 'The Authorization header was missing or invalid.';
                     break;
                 case HTTPResponseCodes.Forbidden:
-                    error = "The Authorization token you passed did not have permission to the resource.";
+                    error = 'The Authorization token you passed did not have permission to the resource.';
                     break;
                 case HTTPResponseCodes.NotFound:
-                    error = "The resource at the location specified doesn't exist.";
+                    error = 'The resource at the location specified doesn\'t exist.';
                     break;
                 case HTTPResponseCodes.MethodNotAllowed:
-                    error = "The HTTP method used is not valid for the location specified.";
+                    error = 'The HTTP method used is not valid for the location specified.';
                     break;
                 case HTTPResponseCodes.GatewayUnavailable:
-                    error = "There was not a gateway available to process your options. Wait a bit and retry.";
+                    error = 'There was not a gateway available to process your options. Wait a bit and retry.';
                     break;
             }
 
             if (
                 rest.invalidRequestErrorStatuses.includes(response.status) &&
-                !(response.status === 429 && response.headers.get("X-RateLimit-Scope"))
+                !(response.status === 429 && response.headers.get('X-RateLimit-Scope'))
             ) {
                 // INCREMENT CURRENT INVALID REQUESTS
                 ++rest.invalidRequests;
@@ -112,7 +112,7 @@ export async function sendRequest<T>(rest: RestManager, options: RestSendRequest
                     options.reject?.({
                         ok: false,
                         status: response.status,
-                        error: "The options was rate limited and it maxed out the retries limit.",
+                        error: 'The options was rate limited and it maxed out the retries limit.',
                     });
 
                     // @ts-ignore Code should never reach here
@@ -149,10 +149,10 @@ export async function sendRequest<T>(rest: RestManager, options: RestSendRequest
         options.reject?.({
             ok: false,
             status: 599,
-            error: "Internal Proxy Error",
+            error: 'Internal Proxy Error',
         });
 
-        throw new Error("Something went wrong in sendRequest", {
+        throw new Error('Something went wrong in sendRequest', {
             cause: error,
         });
     }

@@ -1,5 +1,5 @@
-import { type ButtonStyles, type DiscordButtonComponent, MessageComponentTypes } from "../../../../discordeno/mod.ts";
-import type { ComponentEmoji } from "../../../Util.ts";
+import { type ButtonStyles, type DiscordButtonComponent, MessageComponentTypes } from '../../../../discordeno/mod.ts';
+import type { ComponentEmoji } from '../../../Util.ts';
 
 export class ButtonBuilder {
     constructor() {

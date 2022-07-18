@@ -1,10 +1,10 @@
-import { DiscordGatewayPayload } from "../../types/discord.ts";
-import { GatewayBot, PickPartial } from "../../types/shared.ts";
-import { LeakyBucket } from "../../util/bucket.ts";
-import { CreateShard, createShard } from "../shard/createShard.ts";
-import { Shard, ShardGatewayConfig } from "../shard/types.ts";
-import { calculateTotalShards } from "./calculateTotalShards.ts";
-import { calculateWorkerId } from "./calculateWorkerId.ts";
+import { DiscordGatewayPayload } from '../../types/discord.ts';
+import { GatewayBot, PickPartial } from '../../types/shared.ts';
+import { LeakyBucket } from '../../util/bucket.ts';
+import { CreateShard, createShard } from '../shard/createShard.ts';
+import { Shard, ShardGatewayConfig } from '../shard/types.ts';
+import { calculateTotalShards } from './calculateTotalShards.ts';
+import { calculateWorkerId } from './calculateWorkerId.ts';
 // import {
 // markNewGuildShardId,
 // resharder,
@@ -12,11 +12,11 @@ import { calculateWorkerId } from "./calculateWorkerId.ts";
 // resharderIsPending,
 // reshardingEditGuildShardIds,
 // } from "./resharder.ts";
-import { spawnShards } from "./spawnShards.ts";
-import { prepareBuckets } from "./prepareBuckets.ts";
-import { tellWorkerToIdentify } from "./tellWorkerToIdentify.ts";
-import { createShardManager, ShardManager } from "./shardManager.ts";
-import { stop } from "./stop.ts";
+import { spawnShards } from './spawnShards.ts';
+import { prepareBuckets } from './prepareBuckets.ts';
+import { tellWorkerToIdentify } from './tellWorkerToIdentify.ts';
+import { createShardManager, ShardManager } from './shardManager.ts';
+import { stop } from './stop.ts';
 
 export type GatewayManager = ReturnType<typeof createGatewayManager>;
 
@@ -27,7 +27,7 @@ export type GatewayManager = ReturnType<typeof createGatewayManager>;
  * bots.
  */
 export function createGatewayManager(
-    options: PickPartial<CreateGatewayManager, "handleDiscordPayload" | "gatewayBot" | "gatewayConfig">,
+    options: PickPartial<CreateGatewayManager, 'handleDiscordPayload' | 'gatewayBot' | 'gatewayConfig'>,
 ) {
     const prepareBucketsOverwritten = options.prepareBuckets ?? prepareBuckets;
     const spawnShardsOverwritten = options.spawnShards ?? spawnShards;
@@ -222,10 +222,10 @@ export interface CreateGatewayManager {
     /** Important data which is used by the manager to connect shards to the gateway. */
     gatewayBot: GatewayBot;
 
-    gatewayConfig: PickPartial<ShardGatewayConfig, "token">;
+    gatewayConfig: PickPartial<ShardGatewayConfig, 'token'>;
 
     /** Options which are used to create a new shard. */
-    createShardOptions?: Omit<CreateShard, "id" | "totalShards" | "requestIdentify" | "gatewayConfig">;
+    createShardOptions?: Omit<CreateShard, 'id' | 'totalShards' | 'requestIdentify' | 'gatewayConfig'>;
 
     /** Stored as bucketId: { workers: [workerId, [ShardIds]], createNextShard: boolean } */
     buckets: Map<
@@ -276,19 +276,19 @@ export interface CreateGatewayManager {
 }
 
 export type GatewayDebugEvents =
-    | "GW ERROR"
-    | "GW CLOSED"
-    | "GW CLOSED_RECONNECT"
-    | "GW RAW"
-    | "GW RECONNECT"
-    | "GW INVALID_SESSION"
-    | "GW RESUMED"
-    | "GW RESUMING"
-    | "GW IDENTIFYING"
-    | "GW RAW_SEND"
-    | "GW MAX REQUESTS"
-    | "GW DEBUG"
-    | "GW HEARTBEATING"
-    | "GW HEARTBEATING_STARTED"
-    | "GW HEARTBEATING_DETAILS"
-    | "GW HEARTBEATING_CLOSED";
+    | 'GW ERROR'
+    | 'GW CLOSED'
+    | 'GW CLOSED_RECONNECT'
+    | 'GW RAW'
+    | 'GW RECONNECT'
+    | 'GW INVALID_SESSION'
+    | 'GW RESUMED'
+    | 'GW RESUMING'
+    | 'GW IDENTIFYING'
+    | 'GW RAW_SEND'
+    | 'GW MAX REQUESTS'
+    | 'GW DEBUG'
+    | 'GW HEARTBEATING'
+    | 'GW HEARTBEATING_STARTED'
+    | 'GW HEARTBEATING_DETAILS'
+    | 'GW HEARTBEATING_CLOSED';

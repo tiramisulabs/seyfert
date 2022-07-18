@@ -1,15 +1,15 @@
-import type { Snowflake } from "./Snowflake.ts";
+import type { Snowflake } from './Snowflake.ts';
 
 // cdn endpoints
-export * from "./Cdn.ts";
+export * from './Cdn.ts';
 
 export function USER(userId?: Snowflake): string {
-    if (!userId) return "/users/@me";
+    if (!userId) return '/users/@me';
     return `/users/${userId}`;
 }
 
 export function GATEWAY_BOT(): string {
-    return "/gateway/bot";
+    return '/gateway/bot';
 }
 
 export interface GetMessagesOptions {
@@ -130,7 +130,7 @@ export interface GetInvite {
     scheduledEventId?: Snowflake;
 }
 
-export function GUILDS(guildId?: Snowflake): string  {
+export function GUILDS(guildId?: Snowflake): string {
     if (guildId) return `/guilds/${guildId}`;
     return `/guilds`;
 }
@@ -424,4 +424,27 @@ export function STICKER_PACKS(): string {
 export function GUILD_STICKERS(guildId: Snowflake, stickerId?: Snowflake): string {
     if (stickerId) return `/guilds/${guildId}/stickers/${stickerId}`;
     return `/guilds/${guildId}/stickers`;
+}
+
+/** 
+ * Return the widget for the guild.
+ * @link https://discord.com/developers/docs/resources/guild#get-guild-widget-settings 
+ */
+export interface GetWidget {
+    get: 'json' | 'image' | 'settings';
+}
+
+/** 
+ * /guilds/{guildId}/widget 
+ * @link https://discord.com/developers/docs/resources/guild#get-guild-widget-settings
+ */
+export function GUILD_WIDGET(guildId: Snowflake, options: GetWidget = {get: 'settings'}): string {
+    let url = `/guilds/${guildId}/widget`;
+    if (options.get === 'json') {
+        url += '.json';
+    } else if (options.get === 'image') {
+        url += '.png';
+    }
+
+    return url
 }

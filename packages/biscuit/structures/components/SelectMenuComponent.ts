@@ -1,9 +1,9 @@
-import type { Session } from "../../Session.ts";
-import type { DiscordComponent } from "../../../discordeno/mod.ts";
-import type { SelectMenuComponent, SelectMenuOption } from "./Component.ts";
-import { MessageComponentTypes } from "../../../discordeno/mod.ts";
-import BaseComponent from "./Component.ts";
-import Emoji from "../Emoji.ts";
+import type { Session } from '../../Session.ts';
+import type { DiscordComponent } from '../../../discordeno/mod.ts';
+import type { SelectMenuComponent, SelectMenuOption } from './Component.ts';
+import { MessageComponentTypes } from '../../../discordeno/mod.ts';
+import BaseComponent from './Component.ts';
+import Emoji from '../Emoji.ts';
 
 export class SelectMenu extends BaseComponent implements SelectMenuComponent {
     constructor(session: Session, data: DiscordComponent) {

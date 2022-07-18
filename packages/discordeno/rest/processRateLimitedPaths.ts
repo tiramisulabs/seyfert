@@ -1,4 +1,4 @@
-import { RestManager } from "./restManager.ts";
+import { RestManager } from './restManager.ts';
 
 /** This will create a infinite loop running in 1 seconds using tail recursion to keep rate limits clean. When a rate limit resets, this will remove it so the queue can proceed. */
 export function processRateLimitedPaths(rest: RestManager) {
@@ -12,7 +12,7 @@ export function processRateLimitedPaths(rest: RestManager) {
         // RATE LIMIT IS OVER, DELETE THE RATE LIMITER
         rest.rateLimitedPaths.delete(key);
         // IF IT WAS GLOBAL ALSO MARK THE GLOBAL VALUE AS FALSE
-        if (key === "global") rest.globallyRateLimited = false;
+        if (key === 'global') rest.globallyRateLimited = false;
     }
 
     // ALL PATHS ARE CLEARED CAN CANCEL OUT!

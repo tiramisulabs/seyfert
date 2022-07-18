@@ -1,9 +1,9 @@
-import { DiscordGatewayPayload, DiscordHello, DiscordReady } from "../../types/discord.ts";
-import { GatewayOpcodes } from "../../types/shared.ts";
-import { createLeakyBucket } from "../../util/bucket.ts";
-import { delay } from "../../util/delay.ts";
-import { decompressWith } from "./deps.ts";
-import { GATEWAY_RATE_LIMIT_RESET_INTERVAL, Shard, ShardState } from "./types.ts";
+import { DiscordGatewayPayload, DiscordHello, DiscordReady } from '../../types/discord.ts';
+import { GatewayOpcodes } from '../../types/shared.ts';
+import { createLeakyBucket } from '../../util/bucket.ts';
+import { delay } from '../../util/delay.ts';
+import { decompressWith } from './deps.ts';
+import { GATEWAY_RATE_LIMIT_RESET_INTERVAL, Shard, ShardState } from './types.ts';
 
 const decoder = new TextDecoder();
 
@@ -17,7 +17,7 @@ export async function handleMessage(shard: Shard, message_: MessageEvent<any>): 
     }
 
     // Safeguard incase decompression failed to make a string.
-    if (typeof message !== "string") return;
+    if (typeof message !== 'string') return;
 
     const messageData = JSON.parse(message) as DiscordGatewayPayload;
     //   gateway.debug("GW RAW", { shardId, payload: messageData });
@@ -96,8 +96,8 @@ export async function handleMessage(shard: Shard, message_: MessageEvent<any>): 
             // Reference: https://discord.com/developers/docs/topics/gateway#resuming
             await delay(Math.floor((Math.random() * 4 + 1) * 1000));
 
-            shard.resolves.get("INVALID_SESSION")?.(messageData);
-            shard.resolves.delete("INVALID_SESSION");
+            shard.resolves.get('INVALID_SESSION')?.(messageData);
+            shard.resolves.delete('INVALID_SESSION');
 
             // When resumable is false we need to re-identify
             if (!resumable) {
@@ -113,7 +113,7 @@ export async function handleMessage(shard: Shard, message_: MessageEvent<any>): 
         }
     }
 
-    if (messageData.t === "RESUMED") {
+    if (messageData.t === 'RESUMED') {
         // gateway.debug("GW RESUMED", { shardId });
 
         shard.state = ShardState.Connected;
@@ -122,10 +122,10 @@ export async function handleMessage(shard: Shard, message_: MessageEvent<any>): 
         // Continue the requests which have been queued since the shard went offline.
         shard.offlineSendQueue.map((resolve) => resolve());
 
-        shard.resolves.get("RESUMED")?.(messageData);
-        shard.resolves.delete("RESUMED");
+        shard.resolves.get('RESUMED')?.(messageData);
+        shard.resolves.delete('RESUMED');
     } // Important for future resumes.
-    else if (messageData.t === "READY") {
+    else if (messageData.t === 'READY') {
         const payload = messageData.d as DiscordReady;
 
         shard.sessionId = payload.session_id;
@@ -135,8 +135,8 @@ export async function handleMessage(shard: Shard, message_: MessageEvent<any>): 
         // Important when this is a re-identify
         shard.offlineSendQueue.map((resolve) => resolve());
 
-        shard.resolves.get("READY")?.(messageData);
-        shard.resolves.delete("READY");
+        shard.resolves.get('READY')?.(messageData);
+        shard.resolves.delete('READY');
     }
 
     // Update the sequence number if it is present

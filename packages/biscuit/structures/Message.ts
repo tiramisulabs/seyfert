@@ -1,5 +1,5 @@
-import type { Model } from "./Base.ts";
-import type { Session } from "../Session.ts";
+import type { Model } from './Base.ts';
+import type { Session } from '../Session.ts';
 import type {
     AllowedMentionsTypes,
     DiscordEmbed,
@@ -9,24 +9,24 @@ import type {
     FileContent,
     MessageActivityTypes,
     MessageTypes,
-} from "../../discordeno/mod.ts";
-import type { Channel } from "./channels.ts";
-import type { Component } from "./components/Component.ts";
-import type { GetReactions } from "../Routes.ts";
-import type { MessageInteraction } from "./interactions/InteractionFactory.ts";
-import { MessageFlags } from "../Util.ts";
-import { Snowflake } from "../Snowflake.ts";
-import { ChannelFactory, ThreadChannel } from "./channels.ts";
-import Util from "../Util.ts";
-import User from "./User.ts";
-import Member from "./Member.ts";
-import Attachment from "./Attachment.ts";
-import ComponentFactory from "./components/ComponentFactory.ts";
-import MessageReaction from "./MessageReaction.ts";
-import Application, { NewTeam } from "./Application.ts";
-import InteractionFactory from "./interactions/InteractionFactory.ts";
-import * as Routes from "../Routes.ts";
-import { StickerItem } from "./Sticker.ts";
+} from '../../discordeno/mod.ts';
+import type { Channel } from './channels.ts';
+import type { Component } from './components/Component.ts';
+import type { GetReactions } from '../Routes.ts';
+import type { MessageInteraction } from './interactions/InteractionFactory.ts';
+import { MessageFlags } from '../Util.ts';
+import { Snowflake } from '../Snowflake.ts';
+import { ChannelFactory, ThreadChannel } from './channels.ts';
+import Util from '../Util.ts';
+import User from './User.ts';
+import Member from './Member.ts';
+import Attachment from './Attachment.ts';
+import ComponentFactory from './components/ComponentFactory.ts';
+import MessageReaction from './MessageReaction.ts';
+import Application, { NewTeam } from './Application.ts';
+import InteractionFactory from './interactions/InteractionFactory.ts';
+import * as Routes from '../Routes.ts';
+import { StickerItem } from './Sticker.ts';
 
 /**
  * @link https://discord.com/developers/docs/resources/channel#allowed-mentions-object
@@ -137,7 +137,7 @@ export class Message implements Model {
         }
 
         // webhook handling
-        if (data.webhook_id && data.author.discriminator === "0000") {
+        if (data.webhook_id && data.author.discriminator === '0000') {
             this.webhook = {
                 id: data.webhook_id!,
                 username: data.author.username,
@@ -322,7 +322,7 @@ export class Message implements Model {
 
     /** gets the url of the message that points to the message */
     get url(): string {
-        return `https://discord.com/channels/${this.guildId ?? "@me"}/${this.channelId}/${this.id}`;
+        return `https://discord.com/channels/${this.guildId ?? '@me'}/${this.channelId}/${this.id}`;
     }
 
     /**
@@ -339,7 +339,7 @@ export class Message implements Model {
     async pin(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "PUT",
+            'PUT',
             Routes.CHANNEL_PIN(this.channelId, this.id),
         );
     }
@@ -350,7 +350,7 @@ export class Message implements Model {
     async unpin(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "DELETE",
+            'DELETE',
             Routes.CHANNEL_PIN(this.channelId, this.id),
         );
     }
@@ -359,7 +359,7 @@ export class Message implements Model {
     async edit(options: EditMessage): Promise<Message> {
         const message = await this.session.rest.runMethod(
             this.session.rest,
-            "POST",
+            'POST',
             Routes.CHANNEL_MESSAGE(this.id, this.channelId),
             {
                 content: options.content,
@@ -394,7 +394,7 @@ export class Message implements Model {
     async delete({ reason }: { reason: string }): Promise<Message> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "DELETE",
+            'DELETE',
             Routes.CHANNEL_MESSAGE(this.channelId, this.id),
             { reason },
         );
@@ -406,7 +406,7 @@ export class Message implements Model {
     async reply(options: CreateMessage): Promise<Message> {
         const message = await this.session.rest.runMethod<DiscordMessage>(
             this.session.rest,
-            "POST",
+            'POST',
             Routes.CHANNEL_MESSAGES(this.channelId),
             {
                 content: options.content,
@@ -441,11 +441,11 @@ export class Message implements Model {
 
     /** adds a Reaction */
     async addReaction(reaction: EmojiResolvable): Promise<void> {
-        const r = typeof reaction === "string" ? reaction : `${reaction.name}:${reaction.id}`;
+        const r = typeof reaction === 'string' ? reaction : `${reaction.name}:${reaction.id}`;
 
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "PUT",
+            'PUT',
             Routes.CHANNEL_MESSAGE_REACTION_ME(this.channelId, this.id, r),
             {},
         );
@@ -453,11 +453,11 @@ export class Message implements Model {
 
     /** removes a reaction from someone */
     async removeReaction(reaction: EmojiResolvable, options?: { userId: Snowflake }): Promise<void> {
-        const r = typeof reaction === "string" ? reaction : `${reaction.name}:${reaction.id}`;
+        const r = typeof reaction === 'string' ? reaction : `${reaction.name}:${reaction.id}`;
 
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "DELETE",
+            'DELETE',
             options?.userId
                 ? Routes.CHANNEL_MESSAGE_REACTION_USER(
                     this.channelId,
@@ -474,11 +474,11 @@ export class Message implements Model {
      * not recommended since the cache handles reactions already
      */
     async fetchReactions(reaction: EmojiResolvable, options?: GetReactions): Promise<User[]> {
-        const r = typeof reaction === "string" ? reaction : `${reaction.name}:${reaction.id}`;
+        const r = typeof reaction === 'string' ? reaction : `${reaction.name}:${reaction.id}`;
 
         const users = await this.session.rest.runMethod<DiscordUser[]>(
             this.session.rest,
-            "GET",
+            'GET',
             Routes.CHANNEL_MESSAGE_REACTION(this.channelId, this.id, encodeURIComponent(r), options),
         );
 
@@ -489,11 +489,11 @@ export class Message implements Model {
      * same as Message.removeReaction but removes using a unicode emoji
      */
     async removeReactionEmoji(reaction: EmojiResolvable): Promise<void> {
-        const r = typeof reaction === "string" ? reaction : `${reaction.name}:${reaction.id}`;
+        const r = typeof reaction === 'string' ? reaction : `${reaction.name}:${reaction.id}`;
 
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "DELETE",
+            'DELETE',
             Routes.CHANNEL_MESSAGE_REACTION(this.channelId, this.id, r),
         );
     }
@@ -502,7 +502,7 @@ export class Message implements Model {
     async nukeReactions(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
-            "DELETE",
+            'DELETE',
             Routes.CHANNEL_MESSAGE_REACTIONS(this.channelId, this.id),
         );
     }
@@ -511,7 +511,7 @@ export class Message implements Model {
     async crosspost(): Promise<Message> {
         const message = await this.session.rest.runMethod<DiscordMessage>(
             this.session.rest,
-            "POST",
+            'POST',
             Routes.CHANNEL_MESSAGE_CROSSPOST(this.channelId, this.id),
         );
 
@@ -522,7 +522,7 @@ export class Message implements Model {
     async fetch(): Promise<(Message | undefined)> {
         const message = await this.session.rest.runMethod<DiscordMessage>(
             this.session.rest,
-            "GET",
+            'GET',
             Routes.CHANNEL_MESSAGE(this.channelId, this.id),
         );
 

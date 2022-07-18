@@ -1,12 +1,12 @@
-import { GatewayOpcodes } from "../../types/shared.ts";
-import { Shard, ShardSocketCloseCodes, ShardState } from "./types.ts";
+import { GatewayOpcodes } from '../../types/shared.ts';
+import { Shard, ShardSocketCloseCodes, ShardState } from './types.ts';
 
 export async function identify(shard: Shard): Promise<void> {
     // A new identify has been requested even though there is already a connection open.
     // Therefore we need to close the old connection and heartbeating before creating a new one.
     if (shard.state === ShardState.Connected) {
         // console.log("CLOSING EXISTING SHARD: #" + shard.id);
-        shard.close(ShardSocketCloseCodes.ReIdentifying, "Re-identifying closure of old connection.");
+        shard.close(ShardSocketCloseCodes.ReIdentifying, 'Re-identifying closure of old connection.');
     }
 
     shard.state = ShardState.Identifying;
@@ -35,15 +35,15 @@ export async function identify(shard: Shard): Promise<void> {
     }, true);
 
     return new Promise((resolve) => {
-        shard.resolves.set("READY", () => {
+        shard.resolves.set('READY', () => {
             shard.events.identified?.(shard);
             resolve();
         });
         // When identifying too fast,
         // Discord sends an invalid session payload.
         // This can safely be ignored though and the shard starts a new identify action.
-        shard.resolves.set("INVALID_SESSION", () => {
-            shard.resolves.delete("READY");
+        shard.resolves.set('INVALID_SESSION', () => {
+            shard.resolves.delete('READY');
             resolve();
         });
     });

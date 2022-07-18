@@ -1,5 +1,5 @@
-import { GatewayBot } from "../../types/shared.ts";
-import { createGatewayManager, GatewayManager } from "./gatewayManager.ts";
+import { GatewayBot } from '../../types/shared.ts';
+import { createGatewayManager, GatewayManager } from './gatewayManager.ts';
 
 export type Resharder = ReturnType<typeof activateResharder>;
 
@@ -118,7 +118,7 @@ export interface ActivateResharderOptions {
 /** Handler that by default will check to see if resharding should occur. Can be overridden if you have multiple servers and you want to communicate through redis pubsub or whatever you prefer. */
 export function activate(resharder: Resharder): void {
     if (resharder.intervalId !== undefined) {
-        throw new Error("[RESHARDER] Cannot activate the resharder more than one time.");
+        throw new Error('[RESHARDER] Cannot activate the resharder more than one time.');
     }
 
     resharder.intervalId = setInterval(async () => {
@@ -173,7 +173,7 @@ export async function reshard(resharder: Resharder, gatewayBot: GatewayBot) {
             gateway.handleDiscordPayload = oldHandler;
             oldGateway.handleDiscordPayload = function (og, data, shardId) {
                 // ALLOW EXCEPTION FOR CHUNKING TO PREVENT REQUESTS FREEZING
-                if (data.t !== "GUILD_MEMBERS_CHUNK") return;
+                if (data.t !== 'GUILD_MEMBERS_CHUNK') return;
                 oldHandler(og, data, shardId);
             };
 
@@ -181,7 +181,7 @@ export async function reshard(resharder: Resharder, gatewayBot: GatewayBot) {
             clearInterval(timer);
             await gateway.resharding.editGuildShardIds();
             await gateway.resharding.closeOldShards(oldGateway);
-            gateway.debug("GW DEBUG", "[Resharding] Complete.");
+            gateway.debug('GW DEBUG', '[Resharding] Complete.');
             resolve(gateway);
         }, 30000);
     }) as Promise<GatewayManager>;
@@ -291,7 +291,7 @@ export async function resharderCloseOldShards(oldGateway: GatewayManager) {
             return oldGateway.closeWS(
                 shard.ws,
                 3066,
-                "Shard has been resharded. Closing shard since it has no queue.",
+                'Shard has been resharded. Closing shard since it has no queue.',
             );
         }
 
@@ -300,7 +300,7 @@ export async function resharderCloseOldShards(oldGateway: GatewayManager) {
             oldGateway.closeWS(
                 shard.ws,
                 3066,
-                "Shard has been resharded. Delayed closing shard since it had a queue.",
+                'Shard has been resharded. Delayed closing shard since it had a queue.',
             );
         }, 300000);
     });

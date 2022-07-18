@@ -1,6 +1,6 @@
-import { RestManager } from "./restManager.ts";
-import { API_VERSION, BASE_URL, baseEndpoints } from "../util/constants.ts";
-import { RequestMethod, RestRequestRejection, RestRequestResponse } from "./rest.ts";
+import { RestManager } from './restManager.ts';
+import { API_VERSION, BASE_URL, baseEndpoints } from '../util/constants.ts';
+import { RequestMethod, RestRequestRejection, RestRequestResponse } from './rest.ts';
 
 export async function runMethod<T = any>(
     rest: RestManager,
@@ -23,18 +23,18 @@ export async function runMethod<T = any>(
         }`,
     );
 
-    const errorStack = new Error("Location:");
+    const errorStack = new Error('Location:');
 
     // @ts-ignore Breaks deno deploy. Luca said add ts-ignore until it's fixed
     Error.captureStackTrace?.(errorStack);
 
     // For proxies we don't need to do any of the legwork so we just forward the request
-    if (!baseEndpoints.BASE_URL.startsWith(BASE_URL) && route[0] === "/") {
+    if (!baseEndpoints.BASE_URL.startsWith(BASE_URL) && route[0] === '/') {
         const result = await fetch(`${baseEndpoints.BASE_URL}${route}`, {
             body: body ? JSON.stringify(body) : undefined,
             headers: {
                 Authorization: rest.secretKey,
-                "Content-Type": "application/json",
+                'Content-Type': 'application/json',
             },
             method,
         }).catch((error) => {
@@ -59,14 +59,14 @@ export async function runMethod<T = any>(
         rest.processRequest(
             rest,
             {
-                url: route[0] === "/" ? `${BASE_URL}/v${API_VERSION}${route}` : route,
+                url: route[0] === '/' ? `${BASE_URL}/v${API_VERSION}${route}` : route,
                 method,
                 reject: (data: RestRequestRejection) => {
                     const restError = rest.convertRestError(errorStack, data);
                     reject(restError);
                 },
                 respond: (data: RestRequestResponse) =>
-                    resolve(data.status !== 204 ? JSON.parse(data.body ?? "{}") : (undefined as unknown as T)),
+                    resolve(data.status !== 204 ? JSON.parse(data.body ?? '{}') : (undefined as unknown as T)),
             },
             {
                 bucketId: options?.bucketId,

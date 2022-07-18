@@ -1,6 +1,6 @@
-import type { Session } from "../Session.ts";
-import type { DiscordWelcomeScreen } from "../../discordeno/mod.ts";
-import WelcomeChannel from "./WelcomeChannel.ts";
+import type { Session } from '../Session.ts';
+import type { DiscordWelcomeScreen } from '../../discordeno/mod.ts';
+import WelcomeChannel from './WelcomeChannel.ts';
 
 /**
  * @link https://discord.com/developers/docs/resources/guild#welcome-screen-object

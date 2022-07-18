@@ -1,6 +1,6 @@
-import { DiscordGatewayPayload } from "../../types/discord.ts";
-import { GatewayOpcodes } from "../../types/shared.ts";
-import { createShard } from "./createShard.ts";
+import { DiscordGatewayPayload } from '../../types/discord.ts';
+import { GatewayOpcodes } from '../../types/shared.ts';
+import { createShard } from './createShard.ts';
 
 // TODO: think whether we also need an identifiedShard function
 

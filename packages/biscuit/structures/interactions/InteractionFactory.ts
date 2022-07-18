@@ -1,14 +1,14 @@
-import type { Session } from "../../Session.ts";
-import type { Snowflake } from "../../Snowflake.ts";
-import type { DiscordInteraction, DiscordMessageInteraction } from "../../../discordeno/mod.ts";
-import { InteractionTypes } from "../../../discordeno/mod.ts";
-import User from "../User.ts";
-import Member from "../Member.ts";
-import CommandInteraction from "./CommandInteraction.ts";
-import ComponentInteraction from "./ComponentInteraction.ts";
-import PingInteraction from "./PingInteraction.ts";
-import AutoCompleteInteraction from "./AutoCompleteInteraction.ts";
-import ModalSubmitInteraction from "./ModalSubmitInteraction.ts";
+import type { Session } from '../../Session.ts';
+import type { Snowflake } from '../../Snowflake.ts';
+import type { DiscordInteraction, DiscordMessageInteraction } from '../../../discordeno/mod.ts';
+import { InteractionTypes } from '../../../discordeno/mod.ts';
+import User from '../User.ts';
+import Member from '../Member.ts';
+import CommandInteraction from './CommandInteraction.ts';
+import ComponentInteraction from './ComponentInteraction.ts';
+import PingInteraction from './PingInteraction.ts';
+import AutoCompleteInteraction from './AutoCompleteInteraction.ts';
+import ModalSubmitInteraction from './ModalSubmitInteraction.ts';
 
 /**
  * @link https://discord.com/developers/docs/interactions/receiving-and-responding#message-interaction-object-message-interaction-structure

@@ -1,12 +1,12 @@
-import type { Session } from "../../Session.ts";
-import type { DiscordComponent, DiscordInputTextComponent } from "../../../discordeno/mod.ts";
-import type { ActionRowComponent, Component } from "./Component.ts";
-import { ButtonStyles, MessageComponentTypes } from "../../../discordeno/mod.ts";
-import BaseComponent from "./Component.ts";
-import Button from "./ButtonComponent.ts";
-import LinkButton from "./LinkButtonComponent.ts";
-import SelectMenu from "./SelectMenuComponent.ts";
-import InputText from "./TextInputComponent.ts";
+import type { Session } from '../../Session.ts';
+import type { DiscordComponent, DiscordInputTextComponent } from '../../../discordeno/mod.ts';
+import type { ActionRowComponent, Component } from './Component.ts';
+import { ButtonStyles, MessageComponentTypes } from '../../../discordeno/mod.ts';
+import BaseComponent from './Component.ts';
+import Button from './ButtonComponent.ts';
+import LinkButton from './LinkButtonComponent.ts';
+import SelectMenu from './SelectMenuComponent.ts';
+import InputText from './TextInputComponent.ts';
 
 export class ActionRow extends BaseComponent implements ActionRowComponent {
     constructor(session: Session, data: DiscordComponent) {
@@ -26,7 +26,7 @@ export class ActionRow extends BaseComponent implements ActionRowComponent {
                 case MessageComponentTypes.InputText:
                     return new InputText(session, component as DiscordInputTextComponent);
                 case MessageComponentTypes.ActionRow:
-                    throw new Error("Cannot have an action row inside an action row");
+                    throw new Error('Cannot have an action row inside an action row');
             }
         });
     }
