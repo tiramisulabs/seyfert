@@ -17,6 +17,8 @@ pnpm add @oasisjs/biscuit
 yarn add @oasisjs/biscuit
 ```
 
+get a quick bot: `deno run --allow-net https://crux.land/2CENgN [token]`
+
 The biscuit Discord library is built ontop of Discordeno and webspec APIs, we aim to provide portability. Join our
 [Discord](https://discord.gg/zmuvzzEFz2)
 
