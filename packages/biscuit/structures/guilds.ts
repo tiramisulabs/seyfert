@@ -23,7 +23,7 @@ import { Snowflake } from "../Snowflake.ts";
 import Util from "../Util.ts";
 import * as Routes from "../Routes.ts";
 import WelcomeScreen from "./WelcomeScreen.ts";
-import { GuildChannel, ThreadChannel, ReturnThreadsArchive } from "./channels.ts";
+import { GuildChannel, ReturnThreadsArchive, ThreadChannel } from "./channels.ts";
 import ThreadMember from "./ThreadMember.ts";
 import Member from "./Member.ts";
 import Role from "./Role.ts";
@@ -320,7 +320,7 @@ export class Guild extends BaseGuild implements Model {
         this.vefificationLevel = data.verification_level;
         this.defaultMessageNotificationLevel = data.default_message_notifications;
         this.explicitContentFilterLevel = data.explicit_content_filter;
-        this.premiumTier = data.premium_tier
+        this.premiumTier = data.premium_tier;
 
         this.members = new Map(
             data.members?.map((member) => [data.id, new Member(session, { ...member, user: member.user! }, data.id)]),
@@ -628,7 +628,7 @@ export class Guild extends BaseGuild implements Model {
         return result.pruned;
     }
 
-    async getActiveThreads(): Promise<Omit<ReturnThreadsArchive, 'hasMore'>> {
+    async getActiveThreads(): Promise<Omit<ReturnThreadsArchive, "hasMore">> {
         const { threads, members } = await this.session.rest.runMethod<DiscordListActiveThreads>(
             this.session.rest,
             "GET",

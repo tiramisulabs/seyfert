@@ -1,10 +1,17 @@
 import type { Model } from "./Base.ts";
 import type { Session } from "../Session.ts";
 import type { Snowflake } from "../Snowflake.ts";
-import type { DiscordMessageComponents, DiscordEmbed, DiscordMessage, DiscordWebhook, FileContent, WebhookTypes } from "../../discordeno/mod.ts";
+import type {
+    DiscordEmbed,
+    DiscordMessage,
+    DiscordMessageComponents,
+    DiscordWebhook,
+    FileContent,
+    WebhookTypes,
+} from "../../discordeno/mod.ts";
 import type { WebhookOptions } from "../Routes.ts";
 import type { Attachment } from "./Attachment.ts";
-import type { CreateMessage, AllowedMentions } from "./Message.ts";
+import type { AllowedMentions, CreateMessage } from "./Message.ts";
 import Util from "../Util.ts";
 import User from "./User.ts";
 import Message from "./Message.ts";
@@ -12,7 +19,7 @@ import * as Routes from "../Routes.ts";
 
 /**
  * @link https://discord.com/developers/docs/resources/webhook#edit-webhook-message-jsonform-params
- * */
+ */
 export interface EditWebhookMessage {
     content?: string;
     embeds?: DiscordEmbed[];
@@ -60,7 +67,9 @@ export class Webhook implements Model {
     guildId?: Snowflake;
     user?: User;
 
-    async execute(options?: WebhookOptions & CreateMessage & { avatarUrl?: string; username?: string }): Promise<(Message | undefined)> {
+    async execute(
+        options?: WebhookOptions & CreateMessage & { avatarUrl?: string; username?: string },
+    ): Promise<(Message | undefined)> {
         if (!this.token) {
             return;
         }
@@ -88,7 +97,7 @@ export class Webhook implements Model {
             }),
         });
 
-        return (options?.wait ?? true) ? new Message(this.session, await(message)) : undefined;
+        return (options?.wait ?? true) ? new Message(this.session, await (message)) : undefined;
     }
 
     async fetch(): Promise<Webhook> {
@@ -127,7 +136,10 @@ export class Webhook implements Model {
         );
     }
 
-    async editMessage(messageId?: Snowflake, options?: EditWebhookMessage & { threadId?: Snowflake }): Promise<Message> {
+    async editMessage(
+        messageId?: Snowflake,
+        options?: EditWebhookMessage & { threadId?: Snowflake },
+    ): Promise<Message> {
         if (!this.token) {
             throw new Error("No token found");
         }
@@ -162,7 +174,7 @@ export class Webhook implements Model {
                         ephemeral: attachment.ephemeral,
                     };
                 }),
-            }
+            },
         );
 
         return new Message(this.session, message);

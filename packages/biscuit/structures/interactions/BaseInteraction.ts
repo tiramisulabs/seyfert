@@ -1,10 +1,6 @@
 import type { Model } from "../Base.ts";
 import type { Session } from "../../Session.ts";
-import type {
-    DiscordInteraction,
-    DiscordMessage,
-    DiscordMessageComponents,
-} from "../../../discordeno/mod.ts";
+import type { DiscordInteraction, DiscordMessage, DiscordMessageComponents } from "../../../discordeno/mod.ts";
 import type CommandInteraction from "./CommandInteraction.ts";
 import type PingInteraction from "./PingInteraction.ts";
 import type ComponentInteraction from "./ComponentInteraction.ts";
@@ -13,7 +9,7 @@ import type AutoCompleteInteraction from "./AutoCompleteInteraction.ts";
 import type { CreateMessage } from "../Message.ts";
 import type { MessageFlags } from "../../Util.ts";
 import type { EditWebhookMessage } from "../Webhook.ts";
-import { InteractionTypes, InteractionResponseTypes } from "../../../discordeno/mod.ts";
+import { InteractionResponseTypes, InteractionTypes } from "../../../discordeno/mod.ts";
 import { Snowflake } from "../../Snowflake.ts";
 import User from "../User.ts";
 import Member from "../Member.ts";
@@ -21,7 +17,6 @@ import Message from "../Message.ts";
 import Permsisions from "../Permissions.ts";
 import Webhook from "../Webhook.ts";
 import * as Routes from "../../Routes.ts";
-
 
 /**
  * @link https://discord.com/developers/docs/interactions/slash-commands#interaction-response
@@ -157,7 +152,7 @@ export abstract class BaseInteraction implements Model {
                     };
                 }),
                 message_id: options.messageId,
-            }
+            },
         );
 
         if (!message || !options.messageId) {
@@ -184,7 +179,7 @@ export abstract class BaseInteraction implements Model {
                 token: this.token,
             },
             messageId,
-            options
+            options,
         );
 
         return message;
@@ -194,10 +189,10 @@ export abstract class BaseInteraction implements Model {
         await Webhook.prototype.deleteMessage.call(
             {
                 id: this.session.applicationId,
-                token: this.token
+                token: this.token,
             },
             messageId,
-            options
+            options,
         );
     }
 
@@ -208,7 +203,7 @@ export abstract class BaseInteraction implements Model {
                 token: this.token,
             },
             messageId,
-            options
+            options,
         );
 
         return message;
@@ -219,7 +214,9 @@ export abstract class BaseInteraction implements Model {
     // deno-fmt-ignore
     async respond(resp: InteractionResponse): Promise<Message | undefined>;
     async respond(resp: { with: InteractionApplicationCommandCallbackData }): Promise<Message | undefined>;
-    async respond(resp: InteractionResponse | { with: InteractionApplicationCommandCallbackData }): Promise<Message | undefined> {
+    async respond(
+        resp: InteractionResponse | { with: InteractionApplicationCommandCallbackData },
+    ): Promise<Message | undefined> {
         const options = "with" in resp ? resp.with : resp.data;
         const type = "type" in resp ? resp.type : InteractionResponseTypes.ChannelMessageWithSource;
 

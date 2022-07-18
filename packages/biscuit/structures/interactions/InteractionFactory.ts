@@ -12,14 +12,14 @@ import ModalSubmitInteraction from "./ModalSubmitInteraction.ts";
 
 /**
  * @link https://discord.com/developers/docs/interactions/receiving-and-responding#message-interaction-object-message-interaction-structure
- * */
+ */
 export interface MessageInteraction {
     /** id of the interaction */
-    id:	Snowflake;
+    id: Snowflake;
     /** type of interaction */
-    type: InteractionTypes
+    type: InteractionTypes;
     /** name of the application command, including subcommands and subcommand groups */
-    name: string
+    name: string;
     /** user who invoked the interaction */
     user: User;
     /** member who invoked the interaction in the guild */
@@ -49,7 +49,11 @@ export class InteractionFactory {
         }
     }
 
-    static fromMessage(session: Session, interaction: DiscordMessageInteraction, _guildId?: Snowflake): MessageInteraction {
+    static fromMessage(
+        session: Session,
+        interaction: DiscordMessageInteraction,
+        _guildId?: Snowflake,
+    ): MessageInteraction {
         const obj = {
             id: interaction.id,
             type: interaction.type,

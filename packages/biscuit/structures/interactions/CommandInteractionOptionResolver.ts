@@ -86,7 +86,7 @@ export class CommandInteractionOptionResolver {
         properties: Array<keyof CommandInteractionOption>,
         required: boolean,
     ): CommandInteractionOption | void {
-        const option: (CommandInteractionOption | undefined) = this.get(name, required);
+        const option: CommandInteractionOption | undefined = this.get(name, required);
 
         if (!option) {
             return;
@@ -106,7 +106,7 @@ export class CommandInteractionOptionResolver {
     get(name: string | number, required: true): CommandInteractionOption;
     get(name: string | number, required: boolean): CommandInteractionOption | undefined;
     get(name: string | number, required?: boolean) {
-        const option: (CommandInteractionOption | undefined) = this.hoistedOptions.find((o) =>
+        const option: CommandInteractionOption | undefined = this.hoistedOptions.find((o) =>
             typeof name === "number" ? o.name === name.toString() : o.name === name
         );
 
@@ -125,7 +125,12 @@ export class CommandInteractionOptionResolver {
     getString(name: string | number, required: true): string;
     getString(name: string | number, required?: boolean): string | undefined;
     getString(name: string | number, required = false) {
-        const option: (CommandInteractionOption | void) = this.getTypedOption(name, ApplicationCommandOptionTypes.String, ["Otherwise"], required);
+        const option: CommandInteractionOption | void = this.getTypedOption(
+            name,
+            ApplicationCommandOptionTypes.String,
+            ["Otherwise"],
+            required,
+        );
 
         return option?.Otherwise ?? undefined;
     }
@@ -134,7 +139,12 @@ export class CommandInteractionOptionResolver {
     getNumber(name: string | number, required: true): number;
     getNumber(name: string | number, required?: boolean): number | undefined;
     getNumber(name: string | number, required = false) {
-        const option: (CommandInteractionOption | void) = this.getTypedOption(name, ApplicationCommandOptionTypes.Number, ["Otherwise"], required);
+        const option: CommandInteractionOption | void = this.getTypedOption(
+            name,
+            ApplicationCommandOptionTypes.Number,
+            ["Otherwise"],
+            required,
+        );
 
         return option?.Otherwise ?? undefined;
     }
@@ -143,7 +153,12 @@ export class CommandInteractionOptionResolver {
     getInteger(name: string | number, required: true): number;
     getInteger(name: string | number, required?: boolean): number | undefined;
     getInteger(name: string | number, required = false) {
-        const option: (CommandInteractionOption | void) = this.getTypedOption(name, ApplicationCommandOptionTypes.Integer, ["Otherwise"], required);
+        const option: CommandInteractionOption | void = this.getTypedOption(
+            name,
+            ApplicationCommandOptionTypes.Integer,
+            ["Otherwise"],
+            required,
+        );
 
         return option?.Otherwise ?? undefined;
     }
@@ -152,7 +167,12 @@ export class CommandInteractionOptionResolver {
     getBoolean(name: string | number, required: true): boolean;
     getBoolean(name: string | number, required?: boolean): boolean | undefined;
     getBoolean(name: string | number, required = false) {
-        const option: (CommandInteractionOption | void) = this.getTypedOption(name, ApplicationCommandOptionTypes.Boolean, ["Otherwise"], required);
+        const option: CommandInteractionOption | void = this.getTypedOption(
+            name,
+            ApplicationCommandOptionTypes.Boolean,
+            ["Otherwise"],
+            required,
+        );
 
         return option?.Otherwise ?? undefined;
     }
@@ -161,7 +181,9 @@ export class CommandInteractionOptionResolver {
     getUser(name: string | number, required: true): bigint;
     getUser(name: string | number, required?: boolean): bigint | undefined;
     getUser(name: string | number, required = false) {
-        const option: (CommandInteractionOption | void) = this.getTypedOption(name, ApplicationCommandOptionTypes.User, ["Otherwise"], required);
+        const option: CommandInteractionOption | void = this.getTypedOption(name, ApplicationCommandOptionTypes.User, [
+            "Otherwise",
+        ], required);
 
         return option?.Otherwise ?? undefined;
     }
@@ -170,7 +192,12 @@ export class CommandInteractionOptionResolver {
     getChannel(name: string | number, required: true): bigint;
     getChannel(name: string | number, required?: boolean): bigint | undefined;
     getChannel(name: string | number, required = false) {
-        const option: (CommandInteractionOption | void) = this.getTypedOption(name, ApplicationCommandOptionTypes.Channel, ["Otherwise"], required);
+        const option: CommandInteractionOption | void = this.getTypedOption(
+            name,
+            ApplicationCommandOptionTypes.Channel,
+            ["Otherwise"],
+            required,
+        );
 
         return option?.Otherwise ?? undefined;
     }
@@ -179,7 +206,12 @@ export class CommandInteractionOptionResolver {
     getMentionable(name: string | number, required: true): string;
     getMentionable(name: string | number, required?: boolean): string | undefined;
     getMentionable(name: string | number, required = false) {
-        const option: (CommandInteractionOption | void) = this.getTypedOption(name, ApplicationCommandOptionTypes.Mentionable, ["Otherwise"], required);
+        const option: CommandInteractionOption | void = this.getTypedOption(
+            name,
+            ApplicationCommandOptionTypes.Mentionable,
+            ["Otherwise"],
+            required,
+        );
 
         return option?.Otherwise ?? undefined;
     }
@@ -188,7 +220,9 @@ export class CommandInteractionOptionResolver {
     getRole(name: string | number, required: true): bigint;
     getRole(name: string | number, required?: boolean): bigint | undefined;
     getRole(name: string | number, required = false) {
-        const option: (CommandInteractionOption | void) = this.getTypedOption(name, ApplicationCommandOptionTypes.Role, ["Otherwise"], required);
+        const option: CommandInteractionOption | void = this.getTypedOption(name, ApplicationCommandOptionTypes.Role, [
+            "Otherwise",
+        ], required);
 
         return option?.Otherwise ?? undefined;
     }
@@ -197,14 +231,19 @@ export class CommandInteractionOptionResolver {
     getAttachment(name: string | number, required: true): string;
     getAttachment(name: string | number, required?: boolean): string | undefined;
     getAttachment(name: string | number, required = false) {
-        const option: (CommandInteractionOption | void) = this.getTypedOption(name, ApplicationCommandOptionTypes.Attachment, ["Otherwise"], required);
+        const option: CommandInteractionOption | void = this.getTypedOption(
+            name,
+            ApplicationCommandOptionTypes.Attachment,
+            ["Otherwise"],
+            required,
+        );
 
         return option?.Otherwise ?? undefined;
     }
 
     /** searches for the focused option */
     getFocused(full = false): string | number | bigint | boolean | undefined | CommandInteractionOption {
-        const focusedOption: (CommandInteractionOption | void) = this.hoistedOptions.find((option) => option.focused);
+        const focusedOption: CommandInteractionOption | void = this.hoistedOptions.find((option) => option.focused);
 
         if (!focusedOption) {
             throw new TypeError("No option found");

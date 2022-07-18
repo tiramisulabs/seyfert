@@ -12,22 +12,22 @@ export class SelectMenuOptionBuilder {
         return this;
     }
 
-    setValue(value: string): SelectMenuOptionBuilder  {
+    setValue(value: string): SelectMenuOptionBuilder {
         this.#data.value = value;
         return this;
     }
 
-    setDescription(description: string): SelectMenuOptionBuilder  {
+    setDescription(description: string): SelectMenuOptionBuilder {
         this.#data.description = description;
         return this;
     }
 
-    setDefault(Default = true): SelectMenuOptionBuilder  {
+    setDefault(Default = true): SelectMenuOptionBuilder {
         this.#data.default = Default;
         return this;
     }
 
-    setEmoji(emoji: ComponentEmoji): SelectMenuOptionBuilder  {
+    setEmoji(emoji: ComponentEmoji): SelectMenuOptionBuilder {
         this.#data.emoji = emoji;
         return this;
     }

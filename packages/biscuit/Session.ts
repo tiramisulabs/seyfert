@@ -201,11 +201,11 @@ export class Session extends EventEmitter {
         return super.emit(event, ...params);
     }
 
-    async editProfile(nick?: string, avatarURL?: string | null ): Promise<User> {
+    async editProfile(nick?: string, avatarURL?: string | null): Promise<User> {
         const avatar = avatarURL ? await urlToBase64(avatarURL) : avatarURL;
-        const user = await this.rest.runMethod<DiscordUser>(this.rest, 'PATCH', Routes.USER(), {
+        const user = await this.rest.runMethod<DiscordUser>(this.rest, "PATCH", Routes.USER(), {
             username: nick,
-            avatar: avatar
+            avatar: avatar,
         });
         return new User(this, user);
     }
@@ -273,7 +273,10 @@ export class Session extends EventEmitter {
         return new User(this, user);
     }
 
-    createApplicationCommand(options: CreateApplicationCommand | CreateContextApplicationCommand, guildId?: Snowflake): Promise<DiscordApplicationCommand> {
+    createApplicationCommand(
+        options: CreateApplicationCommand | CreateContextApplicationCommand,
+        guildId?: Snowflake,
+    ): Promise<DiscordApplicationCommand> {
         return this.rest.runMethod<DiscordApplicationCommand>(
             this.rest,
             "POST",
@@ -353,7 +356,10 @@ export class Session extends EventEmitter {
         );
     }
 
-    fetchApplicationCommandPermission(guildId: Snowflake, id: Snowflake): Promise<DiscordGuildApplicationCommandPermissions> {
+    fetchApplicationCommandPermission(
+        guildId: Snowflake,
+        id: Snowflake,
+    ): Promise<DiscordGuildApplicationCommandPermissions> {
         return this.rest.runMethod<DiscordGuildApplicationCommandPermissions>(
             this.rest,
             "GET",

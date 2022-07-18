@@ -41,7 +41,7 @@ export interface AllowedMentions {
 /**
  * @link https://github.com/denoland/deno_doc/blob/main/lib/types.d.ts
  * channelId is optional when creating a reply, but will always be present when receiving an event/response that includes this data model.
- * */
+ */
 export interface CreateMessageReference {
     messageId: Snowflake;
     channelId?: Snowflake;
@@ -82,7 +82,7 @@ export type EmojiResolvable = string | {
 
 /**
  * A partial {@link User} to represent the author of a message sent by a webhook
- * */
+ */
 export interface WebhookAuthor {
     id: string;
     username: string;
@@ -108,7 +108,7 @@ export class Message implements Model {
             users: data.mentions?.map((user) => new User(session, user)) ?? [],
             roleIds: data.mention_roles ?? [],
             channels: data.mention_channels?.map((channel) => ChannelFactory.from(session, channel)) ?? [],
-        }
+        };
 
         if (!data.webhook_id) {
             this.author = new User(session, data.author);
@@ -335,7 +335,7 @@ export class Message implements Model {
 
     /**
      * Pins this message
-     * */
+     */
     async pin(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
@@ -346,7 +346,7 @@ export class Message implements Model {
 
     /**
      * Unpins this message
-     * */
+     */
     async unpin(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
@@ -487,7 +487,7 @@ export class Message implements Model {
 
     /**
      * same as Message.removeReaction but removes using a unicode emoji
-     * */
+     */
     async removeReactionEmoji(reaction: EmojiResolvable): Promise<void> {
         const r = typeof reaction === "string" ? reaction : `${reaction.name}:${reaction.id}`;
 
