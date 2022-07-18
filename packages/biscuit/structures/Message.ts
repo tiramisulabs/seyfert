@@ -391,7 +391,7 @@ export class Message implements Model {
     }
 
     /** deletes this message */
-    async delete({ reason }: { reason: string }): Promise<Message> {
+    async delete(reason?: string): Promise<Message> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             'DELETE',
