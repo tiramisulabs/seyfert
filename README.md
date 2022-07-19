@@ -60,7 +60,7 @@ session.on('messageCreate', (message) => {
 session.start();
 ```
 
-### Mininal style guide
+### Minimal style guide
 
 - 4 spaces, no tabs
 - Semi-colons are mandatory
