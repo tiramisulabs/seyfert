@@ -16,7 +16,6 @@ import {
     DiscordThreadMember,
     DiscordWebhook,
     GatewayOpcodes,
-    OverwriteTypes,
     TargetTypes,
     VideoQualityModes,
 } from '../../discordeno/mod.ts';
