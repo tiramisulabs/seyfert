@@ -23,7 +23,7 @@ import { Snowflake } from '../Snowflake.ts';
 import Util from '../Util.ts';
 import * as Routes from '../Routes.ts';
 import WelcomeScreen from './WelcomeScreen.ts';
-import { GuildChannel, ReturnThreadsArchive, ThreadChannel } from './channels.ts';
+import { GuildChannel, ReturnThreadsArchived, ThreadChannel } from './channels.ts';
 import ThreadMember from './ThreadMember.ts';
 import Member from './Member.ts';
 import Role from './Role.ts';
@@ -52,16 +52,16 @@ export abstract class BaseGuild implements Model {
     readonly id: Snowflake;
     /** Guild name. */
     name: string;
-    /** 
+    /**
      * Icon hash. Discord uses ids and hashes to render images in the client.
      * @link https://discord.com/developers/docs/reference#image-formatting
-     * */
+     */
     iconHash?: bigint;
-    /** 
+    /**
      * Enabled guild features (animated banner, news, auto moderation, etc).
      * @see {@link GuildFeatures}
      * @link https://discord.com/developers/docs/resources/guild#guild-object-guild-features
-     * */
+     */
     features: GuildFeatures[];
 
     /** createdTimestamp gets the current guild timestamp. */
@@ -74,26 +74,26 @@ export abstract class BaseGuild implements Model {
         return new Date(this.createdTimestamp);
     }
 
-    /** 
+    /**
      * If the guild features includes partnered.
      * @link https://discord.com/developers/docs/resources/guild#guild-object-guild-features
-     * */
+     */
     get partnered(): boolean {
         return this.features.includes(GuildFeatures.Partnered);
     }
 
-    /** 
+    /**
      * If the guild is verified.
      * @link https://discord.com/developers/docs/resources/guild#guild-object-guild-features
-     * */
+     */
     get verified(): boolean {
         return this.features.includes(GuildFeatures.Verified);
     }
 
-    /** 
+    /**
      * iconURL gets the current guild icon.
      * @link https://discord.com/developers/docs/reference#image-formatting
-     * */
+     */
     iconURL(options: { size?: ImageSize; format?: ImageFormat } = { size: 128 }): string | void {
         if (this.iconHash) {
             return Util.formatImageURL(
@@ -136,7 +136,7 @@ export class AnonymousGuild extends BaseGuild implements Model {
      * @link https://discord.com/developers/docs/reference#image-formatting
      */
     splashHash?: bigint;
-    /** 
+    /**
      * The guild's banner hash.
      * @link https://discord.com/developers/docs/reference#image-formatting
      */
@@ -149,7 +149,7 @@ export class AnonymousGuild extends BaseGuild implements Model {
     verificationLevel: VerificationLevels;
     /** The guild's vanity url code. */
     vanityUrlCode?: string;
-    /** 
+    /**
      * The guild's nsfw level.
      * @see {@link GuildNsfwLevel}
      * @link https://discord.com/developers/docs/resources/guild#guild-object-guild-nsfw-level
@@ -437,7 +437,7 @@ export class Guild extends BaseGuild implements Model {
      * @link https://discord.com/developers/docs/resources/guild#guild-object-explicit-content-filter-level
      */
     explicitContentFilterLevel: ExplicitContentFilterLevels;
-    /** 
+    /**
      * Premium tier (Server Boost level).
      * @see {@link PremiumTiers}
      * @link https://discord.com/developers/docs/resources/guild#guild-object-premium-tier
@@ -455,13 +455,13 @@ export class Guild extends BaseGuild implements Model {
      * @link https://discord.com/developers/docs/topics/permissions#role-object
      */
     roles: Map<Snowflake, Role>;
-    /** 
+    /**
      * A map with the guild's emojis.
      * @see {@link GuildEmoji}
      * @link https://discord.com/developers/docs/resources/emoji#emoji-object-emoji-structure
      */
     emojis: Map<Snowflake, GuildEmoji>;
-    /** 
+    /**
      * A map with the guild's channels.
      * @see {@link GuildChannel}
      * @link https://discord.com/developers/docs/resources/channel#channel-object
@@ -604,10 +604,10 @@ export class Guild extends BaseGuild implements Model {
         return new Role(this.session, role, this.id);
     }
 
-    /** 
+    /**
      * deleteRole deletes a role from the guild.
      * @param roleId - The id of the role to delete.
-     * */
+     */
     async deleteRole(roleId: Snowflake): Promise<void> {
         await this.session.rest.runMethod<undefined>(this.session.rest, 'DELETE', Routes.GUILD_ROLE(this.id, roleId));
     }
@@ -639,7 +639,7 @@ export class Guild extends BaseGuild implements Model {
      * addRole adds a role to a user in the guild.
      * @param memberId - The id of the member to add a role to.
      * @param roleId - The id of the role to add.
-     * @param reason - The reason for adding the role to the member. 
+     * @param reason - The reason for adding the role to the member.
      */
     async addRole(memberId: Snowflake, roleId: Snowflake, { reason }: { reason?: string } = {}): Promise<void> {
         await this.session.rest.runMethod<undefined>(
@@ -839,10 +839,10 @@ export class Guild extends BaseGuild implements Model {
 
     /**
      * getActiveThreads gets the active threads in the guild.
-     * @see {@link ReturnThreadsArchive}
-     * @returns Promise resolving a ReturnThreadsArchive without hasMore property.
+     * @see {@link ReturnThreadsArchived}
+     * @returns Promise resolving a ReturnThreadsArchived without hasMore property.
      */
-    async getActiveThreads(): Promise<Omit<ReturnThreadsArchive, 'hasMore'>> {
+    async getActiveThreads(): Promise<Omit<ReturnThreadsArchived, 'hasMore'>> {
         const { threads, members } = await this.session.rest.runMethod<DiscordListActiveThreads>(
             this.session.rest,
             'GET',
@@ -978,8 +978,9 @@ export class Guild extends BaseGuild implements Model {
             splash: 'splashURL' in options
                 ? options.splashURL && urlToBase64(options.splashURL)
                 : options.iconHash && Util.iconBigintToHash(options.iconHash),
-            banner: 'bannerURL' in options ? options.bannerURL && urlToBase64(options.bannerURL)
-            : options.bannerHash && Util.iconBigintToHash(options.bannerHash),
+            banner: 'bannerURL' in options
+                ? options.bannerURL && urlToBase64(options.bannerURL)
+                : options.bannerHash && Util.iconBigintToHash(options.bannerHash),
             discovery_splash: 'discoverySplashURL' in options
                 ? options.discoverySplashURL && urlToBase64(options.discoverySplashURL)
                 : options.discoverySplashHash && Util.iconBigintToHash(options.discoverySplashHash),

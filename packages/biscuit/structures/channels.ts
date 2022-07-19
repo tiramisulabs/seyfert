@@ -54,32 +54,32 @@ export abstract class BaseChannel implements Model {
     /** Refers to the possible channel type implemented (Guild, DM, Voice, News, etc...) */
     type: ChannelTypes;
 
-    /** If the channel is a TextChannel */
+    /** If the channel is a {@link TextChannel} */
     isText(): this is TextChannel {
         return textBasedChannels.includes(this.type);
     }
 
-    /** If the channel is a VoiceChannel */
+    /** If the channel is a {@link VoiceChannel} */
     isVoice(): this is VoiceChannel {
         return this.type === ChannelTypes.GuildVoice;
     }
 
-    /** If the channel is a DMChannel */
+    /** If the channel is a {@link DMChannel} */
     isDM(): this is DMChannel {
         return this.type === ChannelTypes.DM;
     }
 
-    /** If the channel is a NewChannel */
+    /** If the channel is a {@link NewChannel} */
     isNews(): this is NewsChannel {
         return this.type === ChannelTypes.GuildNews;
     }
 
-    /** If the channel is a ThreadChannel */
+    /** If the channel is a {@link ThreadChannel} */
     isThread(): this is ThreadChannel {
         return this.type === ChannelTypes.GuildPublicThread || this.type === ChannelTypes.GuildPrivateThread;
     }
 
-    /** If the channel is a StageChannel */
+    /** If the channel is a {@link StageChannel} */
     isStage(): this is StageChannel {
         return this.type === ChannelTypes.GuildStageVoice;
     }
@@ -89,7 +89,7 @@ export abstract class BaseChannel implements Model {
     }
 }
 
-/** TextChannel */
+// TextChannel
 /**
  * @link https://discord.com/developers/docs/resources/channel#create-channel-invite-json-params
  * Represents the options object to create an invitation
@@ -112,12 +112,16 @@ export interface DiscordInviteOptions {
     targetApplicationId?: Snowflake;
 }
 
-/** Webhook create object */
+/**
+ * Webhook create object
+ * @link https://discord.com/developers/docs/resources/webhook#create-webhook
+ */
 export interface CreateWebhook {
     /** name of the webhook (1-80 characters) */
     name: string;
     /** image for the default webhook avatar */
     avatar?: string;
+    /** reason for the change */
     reason?: string;
 }
 
@@ -208,9 +212,8 @@ export class TextChannel {
         }
     }
 
-
     /**
-     * fetchPins makes an asynchronous request and gets the current channel pins.
+     * makes an asynchronous request and gets the current channel pins.
      * @returns A promise that resolves with an array of Message objects.
      */
     async fetchPins(): Promise<Message[] | []> {
@@ -223,7 +226,7 @@ export class TextChannel {
     }
 
     /**
-     * createInvite makes an asynchronous request to create a new invitation.
+     * makes an asynchronous request to create a new invitation.
      * @param options - The options to create the invitation
      * @returns The created invite
      */
@@ -249,7 +252,7 @@ export class TextChannel {
     }
 
     /**
-     * fetchMessages makes an asynchronous request and gets the channel messages
+     * makes an asynchronous request and gets the channel messages
      * @param options - The options to get the messages
      * @returns The messages
      */
@@ -263,7 +266,7 @@ export class TextChannel {
         return messages[0] ? messages.map((x) => new Message(this.session, x)) : [];
     }
 
-    /** sendTyping sends a typing POST request */
+    /** sends a typing POST request */
     async sendTyping(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
@@ -273,8 +276,8 @@ export class TextChannel {
     }
 
     /**
-     * pinMessage pins a channel message.
-     * Same as Message.pin().
+     * pins a channel message.
+     * same as {@link  Message#pin}.
      * @param messageId - The id of the message to pin
      * @returns The promise that resolves when the request is complete
      */
@@ -283,8 +286,8 @@ export class TextChannel {
     }
 
     /**
-     * unpinMessage unpin a channel message.
-     * Same as Message.unpin()
+     * unpin a channel message.
+     * Same as {@link Message#unpin}
      * @param messageId - The id of the message to unpin
      * @returns The promise of the request
      */
@@ -293,8 +296,8 @@ export class TextChannel {
     }
 
     /**
-     * addReaction adds a reaction to the message.
-     * Same as Message.addReaction().
+     * adds a reaction to the message.
+     * Same as {@link Message#addReaction}.
      * @param messageId - The message to add the reaction to
      * @param reaction - The reaction to add
      * @returns The promise of the request
@@ -307,8 +310,8 @@ export class TextChannel {
     }
 
     /**
-     * removeReaction removes a reaction from the message.
-     * Same as Message.removeReaction().
+     * removes a reaction from the message.
+     * Same as {@link Message#removeReaction}.
      * @param messageId - The id of the message to remove the reaction from
      * @param reaction - The reaction to remove
      * @param options - The user to remove the reaction from
@@ -326,8 +329,8 @@ export class TextChannel {
     }
 
     /**
-     * removeReactionEmoji removes an emoji reaction from the messageId provided.
-     * Same as Message.removeReactionEmoji().
+     * removes an emoji reaction from the messageId provided.
+     * Same as {@link Message#removeReactionEmoji}).
      * @param messageId - The message id to remove the reaction from.
      * @param emoji - The emoji to remove.
      * @param userId - The user id to remove the reaction from.
@@ -339,7 +342,8 @@ export class TextChannel {
         );
     }
 
-    /** nukeReactions nukes every reaction on the message.
+    /**
+     * nukes every reaction on the message.
      * Same as Message.nukeReactions().
      * @param messageId The message id to nuke reactions from.
      * @returns A promise that resolves when the reactions are nuked.
@@ -349,8 +353,8 @@ export class TextChannel {
     }
 
     /**
-     * fetchReactions gets the users who reacted with this emoji on the message.
-     * Same as Message.fetchReactions().
+     * gets the users who reacted with this emoji on the message.
+     * Same as {@link Message#fetchReactions}.
      * @param messageId - The message id to get the reactions from.
      * @param reaction - The emoji to get the reactions from.
      * @param options - The options to get the reactions with.
@@ -371,8 +375,7 @@ export class TextChannel {
     }
 
     /**
-     * sendMessage sends a message to the channel.
-     * Same as Message.reply().
+     * Send an inline reply to this message
      * @param options - Options for a new message.
      * @returns The sent message.
      */
@@ -381,8 +384,8 @@ export class TextChannel {
     }
 
     /**
-     * editMessage edits a message.
-     * Same as Message.edit().
+     * edits a message.
+     * Same as {@link Message#edit}.
      * @param messageId - Message ID.
      * @param options - Options for edit a message.
      * @returns The edited message.
@@ -392,7 +395,7 @@ export class TextChannel {
     }
 
     /**
-     * createWebhook creates a webhook.
+     * creates a webhook.
      * @param options - Options for a new webhook.
      * @returns The created webhook.
      */
@@ -412,7 +415,7 @@ export class TextChannel {
     }
 }
 
-/** GuildChannel */
+// Guild Channel
 /**
  * Represent the options object to create a thread channel
  * @link https://discord.com/developers/docs/resources/channel#start-thread-without-message
@@ -436,6 +439,9 @@ export interface EditGuildChannelOptions {
     permissionOverwrites?: PermissionsOverwrites[];
 }
 
+/**
+ * Options for edit {@link NewsChannel}
+ */
 export interface EditNewsChannelOptions extends EditGuildChannelOptions {
     type?: ChannelTypes.GuildNews | ChannelTypes.GuildText;
     topic?: string | null;
@@ -444,15 +450,24 @@ export interface EditNewsChannelOptions extends EditGuildChannelOptions {
     defaultAutoArchiveDuration?: number | null;
 }
 
+/**
+ * Options for edit {@link GuildChannel}
+ */
 export interface EditGuildTextChannelOptions extends EditNewsChannelOptions {
     rateLimitPerUser?: number | null;
 }
 
+/**
+ * Options for edit {@link StageChannel}
+ */
 export interface EditStageChannelOptions extends EditGuildChannelOptions {
     bitrate?: number | null;
     rtcRegion?: Snowflake | null;
 }
 
+/**
+ * Options for edit {@link VoiceChannel}
+ */
 export interface EditVoiceChannelOptions extends EditStageChannelOptions {
     nsfw?: boolean | null;
     userLimit?: number | null;
@@ -471,9 +486,10 @@ export interface ThreadCreateOptions {
     messageId: Snowflake;
 }
 /**
+ * Returns archived threads in the channel
  * @link https://discord.com/developers/docs/resources/channel#list-public-archived-threads-response-body
  */
-export interface ReturnThreadsArchive {
+export interface ReturnThreadsArchived {
     threads: Record<Snowflake, ThreadChannel>;
     members: Record<Snowflake, ThreadMember>;
     hasMore: boolean;
@@ -488,13 +504,21 @@ export class GuildChannel extends BaseChannel implements Model {
         data.topic ? this.topic = data.topic : null;
         data.parent_id ? this.parentId = data.parent_id : undefined;
     }
-
+    /** The type of channel */
     override type: Exclude<ChannelTypes, ChannelTypes.DM | ChannelTypes.GroupDm>;
+    /** The id of the guild */
     guildId: Snowflake;
+    /** The channel topic (0-1024 characters) */
     topic?: string;
+    /** Sorting position of the channel */
     position?: number;
+    /** id of the parent category for a channel */
     parentId?: Snowflake;
 
+    /**
+     * Get Channel Invites
+     * @returns Resolves with {@link Invite} array
+     */
     async fetchInvites(): Promise<Invite[]> {
         const invites = await this.session.rest.runMethod<DiscordInviteMetadata[]>(
             this.session.rest,
@@ -508,6 +532,15 @@ export class GuildChannel extends BaseChannel implements Model {
     async edit(options: EditNewsChannelOptions): Promise<NewsChannel>;
     async edit(options: EditStageChannelOptions): Promise<StageChannel>;
     async edit(options: EditVoiceChannelOptions): Promise<VoiceChannel>;
+    /**
+     * Edtis this channel.
+     * @param options The new data for the channel
+     * @returns Resolves with the channel
+     * @example
+     * channel.edit({ name: 'aweasome channel'})
+     * .then(console.log)
+     * .catch(console.error);
+     */
     async edit(
         options: EditGuildTextChannelOptions | EditNewsChannelOptions | EditVoiceChannelOptions,
     ): Promise<Channel> {
@@ -536,9 +569,14 @@ export class GuildChannel extends BaseChannel implements Model {
         return ChannelFactory.from(this.session, channel);
     }
 
+    /**
+     * Get archived threads
+     * @param options
+     * @returns Resolves with {@link ReturnThreadsArchived}
+     */
     async getArchivedThreads(
         options: Routes.ListArchivedThreads & { type: 'public' | 'private' | 'privateJoinedThreads' },
-    ): Promise<ReturnThreadsArchive> {
+    ): Promise<ReturnThreadsArchived> {
         let func: (channelId: Snowflake, options: Routes.ListArchivedThreads) => string;
 
         switch (options.type) {
@@ -570,6 +608,11 @@ export class GuildChannel extends BaseChannel implements Model {
         };
     }
 
+    /**
+     * Creates a new thread in the channel.
+     * @param options Options to create a new thread
+     * @returns Resolves with the thread channel.
+     */
     async createThread(options: ThreadCreateOptions): Promise<ThreadChannel> {
         const thread = await this.session.rest.runMethod<DiscordChannel>(
             this.session.rest,
@@ -587,8 +630,9 @@ export class GuildChannel extends BaseChannel implements Model {
     }
 }
 
-/** BaseVoiceChannel */
+// BaseVoiceChannel
 /**
+ * When a client wants to join, move, or disconnect from a voice channel.
  * @link https://discord.com/developers/docs/topics/gateway#update-voice-state
  */
 export interface UpdateVoiceState {
@@ -611,12 +655,17 @@ export abstract class BaseVoiceChannel extends GuildChannel {
             this.rtcRegion = data.rtc_region;
         }
     }
+    /** the type of channel of channel */
     override type: ChannelTypes.GuildVoice | ChannelTypes.GuildStageVoice;
+    /** the bitrate (in bits) of the voice channel */
     bitRate?: number;
+    /** the user limit of the voice channel */
     userLimit: number;
+    /** {@link DiscordVoiceRegion} id for the voice channe;*/
     rtcRegion?: Snowflake;
-
+    /** the camera video quality mode of the voice channel, 1 when not present */
     videoQuality?: VideoQualityModes;
+    /** whether the channel is nsfw */
     nsfw: boolean;
 
     /**
@@ -642,7 +691,7 @@ export abstract class BaseVoiceChannel extends GuildChannel {
     }
 }
 
-/** DMChannel */
+// DMChannel
 export class DMChannel extends BaseChannel implements Model {
     constructor(session: Session, data: DiscordChannel) {
         super(session, data);
@@ -652,11 +701,17 @@ export class DMChannel extends BaseChannel implements Model {
             this.lastMessageId = data.last_message_id;
         }
     }
-
+    /** the type of the channel */
     override type: ChannelTypes.DM | ChannelTypes.GroupDm;
+    /** the user DM */
     user: User;
+    /** the id of the last message sent in this channel */
     lastMessageId?: Snowflake;
 
+    /**
+     * Close this DMChannel
+     * @returns Resolves with DMChannel
+     */
     async close(): Promise<DMChannel> {
         const channel = await this.session.rest.runMethod<DiscordChannel>(
             this.session.rest,
@@ -672,12 +727,13 @@ export interface DMChannel extends Omit<TextChannel, 'type'>, Omit<BaseChannel, 
 
 TextChannel.applyTo(DMChannel);
 
-/** VoiceChannel */
+// VoiceChannel
 export class VoiceChannel extends BaseVoiceChannel {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data, guildId);
         this.type = data.type as number;
     }
+    /** type of channel */
     override type: ChannelTypes.GuildVoice;
 }
 
@@ -685,21 +741,30 @@ export interface VoiceChannel extends TextChannel, BaseVoiceChannel {}
 
 TextChannel.applyTo(VoiceChannel);
 
-/** NewsChannel */
+// News Channel
 export class NewsChannel extends GuildChannel {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data, guildId);
         this.type = data.type as ChannelTypes.GuildNews;
         this.defaultAutoArchiveDuration = data.default_auto_archive_duration;
     }
-
+    /** type of channel  */
     override type: ChannelTypes.GuildNews;
+    /** default duration that the clients (not the API) will use for newly created threads, in minutes. */
     defaultAutoArchiveDuration?: number;
 
+    /**
+     * publishes/crossposts a message to all followers.
+     * same as {@link Message#crosspost}
+     * @param messageId the message to publish
+     * @returns Resolves with Message
+     */
     crosspostMessage(messageId: Snowflake): Promise<Message> {
         return Message.prototype.crosspost.call({ id: messageId, channelId: this.id, session: this.session });
     }
-
+    /**
+     * Getter for crosspost
+     */
     get publishMessage() {
         return this.crosspostMessage;
     }
@@ -709,18 +774,20 @@ TextChannel.applyTo(NewsChannel);
 
 export interface NewsChannel extends TextChannel, GuildChannel {}
 
-/** StageChannel */
+// Stage Channel
 export class StageChannel extends BaseVoiceChannel {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data, guildId);
         this.type = data.type as number;
         this.topic = data.topic ? data.topic : undefined;
     }
+    /** the type of channelthe type of channel */
     override type: ChannelTypes.GuildStageVoice;
+    /** the channel topic (0-1024 characters) */
     topic?: string;
 }
 
-/** ThreadChannel */
+// ThreadChannel
 export class ThreadChannel extends GuildChannel implements Model {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data, guildId);
@@ -737,17 +804,28 @@ export class ThreadChannel extends GuildChannel implements Model {
             this.member = new ThreadMember(session, data.member);
         }
     }
-
+    /** the type of channelthe type of channel */
     override type: ChannelTypes.GuildNewsThread | ChannelTypes.GuildPrivateThread | ChannelTypes.GuildPublicThread;
+    /** Whether the thread is archived */
     archived?: boolean;
+    /** Timestamp when the thread's archive status was last changed*/
     archiveTimestamp?: string;
+    /** Duration in minutes to automatically archive the thread */
     autoArchiveDuration?: number;
+    /** When a thread is locked */
     locked?: boolean;
+    /** An approximate count of messages in a thread, stops counting at 50  */
     messageCount?: number;
+    /** An approximate count of users in a thread, stops counting at 50 */
     memberCount?: number;
+    /** Thread member object for the current user */
     member?: ThreadMember;
+    /** Id of the creator of the thread */
     ownerId?: Snowflake;
 
+    /**
+     * makes the client user join the thread.
+     */
     async joinThread(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
@@ -756,6 +834,10 @@ export class ThreadChannel extends GuildChannel implements Model {
         );
     }
 
+    /**
+     * add a member to thread
+     * @param guildMemberId the member to add
+     */
     async addToThread(guildMemberId: Snowflake): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
@@ -764,22 +846,37 @@ export class ThreadChannel extends GuildChannel implements Model {
         );
     }
 
-    async leaveToThread(guildMemberId: Snowflake): Promise<void> {
+    /** makes the client user leave the thread. */
+    async leave(): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             'DELETE',
-            Routes.THREAD_USER(this.id, guildMemberId),
+            Routes.THREAD_USER(this.id, this.session.botId),
         );
     }
 
+    /**
+     * remove a user from the thread.
+     * same as {@link ThreadMember#quitThread}
+     * @param memberId the member to remove
+     */
     removeMember(memberId: Snowflake = this.session.botId): Promise<void> {
         return ThreadMember.prototype.quitThread.call({ id: this.id, session: this.session }, memberId);
     }
 
+    /**
+     * fetches thread member
+     * same as {@link ThreadMember#fetchMember}
+     * @param memberId the member
+     */
     fetchMember(memberId: Snowflake = this.session.botId): Promise<ThreadMember> {
         return ThreadMember.prototype.fetchMember.call({ id: this.id, session: this.session }, memberId);
     }
 
+    /**
+     * fetches thread members from Discord
+     * @returns Resolves with a list of ThreadMember
+     */
     async fetchMembers(): Promise<ThreadMember[]> {
         const members = await this.session.rest.runMethod<DiscordThreadMember[]>(
             this.session.rest,
@@ -795,12 +892,13 @@ export interface ThreadChannel extends Omit<GuildChannel, 'type'>, Omit<TextChan
 
 TextChannel.applyTo(ThreadChannel);
 
+/** Represents Guild Text, is a Mixin */
 export class GuildTextChannel extends GuildChannel {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data, guildId);
         this.type = data.type as ChannelTypes.GuildText;
     }
-
+    /** The type of the channel */
     override type: ChannelTypes.GuildText;
 }
 
@@ -834,6 +932,9 @@ export type ChannelWithMessages =
 
 export type ChannelWithMessagesInGuild = Exclude<ChannelWithMessages, DMChannel>;
 
+/**
+ * Resolves type of channel structure
+ */
 export class ChannelFactory {
     static fromGuildChannel(session: Session, channel: DiscordChannel): ChannelInGuild {
         switch (channel.type) {
