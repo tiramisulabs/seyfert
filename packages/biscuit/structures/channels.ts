@@ -12,9 +12,11 @@ import {
     DiscordInviteMetadata,
     DiscordListArchivedThreads,
     DiscordMessage,
+    DiscordOverwrite,
     DiscordThreadMember,
     DiscordWebhook,
     GatewayOpcodes,
+    OverwriteTypes,
     TargetTypes,
     VideoQualityModes,
 } from '../../discordeno/mod.ts';
@@ -87,6 +89,27 @@ export abstract class BaseChannel implements Model {
     toString(): string {
         return `<#${this.id}>`;
     }
+}
+
+/** CategoryChannel */
+export class CategoryChannel extends BaseChannel {
+    constructor(session: Session, data: DiscordChannel) {
+        super(session, data);
+        this.id = data.id;
+        this.name = data.name ? data.name : '';
+        this.permissionOverwrites = data.permission_overwrites ? data.permission_overwrites : undefined;
+        this.nsfw = data.nsfw ? data.nsfw : false;
+        this.guildId = data.guild_id ? data.guild_id : undefined;
+        this.type = ChannelTypes.GuildCategory;
+        this.position = data.position ? data.position : 0;
+    }
+
+    id: Snowflake;
+    name: string;
+    permissionOverwrites?: DiscordOverwrite[];
+    nsfw: boolean;
+    guildId?: Snowflake;
+    position: number;
 }
 
 /** TextChannel */
@@ -816,7 +839,8 @@ export type Channel =
     | DMChannel
     | NewsChannel
     | ThreadChannel
-    | StageChannel;
+    | StageChannel
+    | CategoryChannel;
 
 export type ChannelInGuild =
     | GuildTextChannel
@@ -868,6 +892,8 @@ export class ChannelFactory {
                 return new VoiceChannel(session, channel, channel.guild_id!);
             case ChannelTypes.GuildStageVoice:
                 return new StageChannel(session, channel, channel.guild_id!);
+            case ChannelTypes.GuildCategory:
+                return new CategoryChannel(session, channel);
             default:
                 if (textBasedChannels.includes(channel.type)) {
                     return new TextChannel(session, channel);
