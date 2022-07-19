@@ -92,13 +92,9 @@ export abstract class BaseChannel implements Model {
     }
 }
 
-<<<<<<< HEAD
-/** CategoryChannel */
-=======
 /** 
  * Represents a category channel.
  */
->>>>>>> 50213749703d33ee39bdc1044e03fa18cd3a7052
 export class CategoryChannel extends BaseChannel {
     constructor(session: Session, data: DiscordChannel) {
         super(session, data);
