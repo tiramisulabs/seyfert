@@ -32,7 +32,7 @@ export function guildBootstrapper(cache: SessionCache, guild: DiscordGuild) {
     const channels = new Collection(
         cache.session,
         guild.channels?.map((data) => {
-            const obj = Object.assign(ChannelFactory.from(cache.session, data), {
+            const obj = data && Object.assign(ChannelFactory.from(cache.session, data), {
                 messages: new Map(),
             });
 
