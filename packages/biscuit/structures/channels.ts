@@ -111,8 +111,8 @@ export class CategoryChannel extends BaseChannel {
                 this.permissionOverwrites.push({
                     id: v.id,
                     type: v.type,
-                    allow: new Permissions(v.allow as PermissionResolvable),
-                    deny: new Permissions(v.deny as PermissionResolvable),
+                    allow: new Permissions(parseInt(v.allow as string) as PermissionResolvable),
+                    deny: new Permissions(parseInt(v.deny as string) as PermissionResolvable),
                 } as PermissionsOverwrites);
             })
         }
