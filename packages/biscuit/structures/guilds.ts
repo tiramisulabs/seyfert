@@ -10,6 +10,7 @@ import type {
     DiscordMemberWithUser,
     DiscordOverwrite,
     DiscordRole,
+    DiscordVoiceRegion,
     ExplicitContentFilterLevels,
     GuildNsfwLevel,
     MakeRequired,
@@ -993,6 +994,19 @@ export class Guild extends BaseGuild implements Model {
         });
 
         return new Guild(this.session, guild);
+    }
+
+    /**
+     * fetchVoiceRegions gets the voice regions available for the guild.
+     * @see {@link DiscordVoiceRegion}
+     * @returns Promise that resolves to an array of voice regions.
+     */
+    async fetchVoiceRegions(): Promise<DiscordVoiceRegion[]> {
+        return await this.session.rest.runMethod<DiscordVoiceRegion[]>(
+            this.session.rest,
+            'GET',
+            Routes.GUILD_VOICE_REGIONS(this.id),
+        )
     }
 }
 

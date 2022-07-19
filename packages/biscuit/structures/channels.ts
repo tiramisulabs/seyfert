@@ -30,6 +30,7 @@ import Invite from './Invite.ts';
 import Webhook from './Webhook.ts';
 import User from './User.ts';
 import ThreadMember from './ThreadMember.ts';
+import Permissions, { PermissionResolvable } from "./Permissions.ts";
 
 /**
  * Abstract class that represents the base for creating a new channel.
@@ -87,6 +88,43 @@ export abstract class BaseChannel implements Model {
     toString(): string {
         return `<#${this.id}>`;
     }
+}
+
+/** 
+ * Represents a category channel.
+ */
+export class CategoryChannel extends BaseChannel {
+    constructor(session: Session, data: DiscordChannel) {
+        super(session, data);
+        this.id = data.id;
+        this.name = data.name ? data.name : '';
+        this.nsfw = data.nsfw ? data.nsfw : false;
+        this.guildId = data.guild_id ? data.guild_id : undefined;
+        this.type = ChannelTypes.GuildCategory;
+        this.position = data.position ? data.position : undefined;
+        this.parentId = data.parent_id ? data.parent_id : undefined;
+
+        this.permissionOverwrites = [] as PermissionsOverwrites[];
+        // TODO: improve this and test
+        if (data.permission_overwrites && data.permission_overwrites.length > 0) {
+            data.permission_overwrites.forEach(v => {
+                this.permissionOverwrites.push({
+                    id: v.id,
+                    type: v.type,
+                    allow: new Permissions(parseInt(v.allow as string) as PermissionResolvable),
+                    deny: new Permissions(parseInt(v.deny as string) as PermissionResolvable),
+                } as PermissionsOverwrites);
+            })
+        }
+    }
+
+    id: Snowflake;
+    parentId?: string;
+    name: string;
+    permissionOverwrites: PermissionsOverwrites[];
+    nsfw: boolean;
+    guildId?: Snowflake;
+    position?: number;
 }
 
 /** TextChannel */
@@ -816,7 +854,8 @@ export type Channel =
     | DMChannel
     | NewsChannel
     | ThreadChannel
-    | StageChannel;
+    | StageChannel
+    | CategoryChannel;
 
 export type ChannelInGuild =
     | GuildTextChannel
@@ -868,6 +907,8 @@ export class ChannelFactory {
                 return new VoiceChannel(session, channel, channel.guild_id!);
             case ChannelTypes.GuildStageVoice:
                 return new StageChannel(session, channel, channel.guild_id!);
+            case ChannelTypes.GuildCategory:
+                return new CategoryChannel(session, channel);
             default:
                 if (textBasedChannels.includes(channel.type)) {
                     return new TextChannel(session, channel);
