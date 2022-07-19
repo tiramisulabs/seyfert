@@ -81,7 +81,7 @@ export abstract class BaseGuild implements Model {
     get partnered(): boolean {
         return this.features.includes(GuildFeatures.Partnered);
     }
-
+    
     /**
      * If the guild is verified.
      * @link https://discord.com/developers/docs/resources/guild#guild-object-guild-features
