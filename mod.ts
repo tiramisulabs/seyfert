@@ -7,4 +7,3 @@ export * from './packages/discordeno/mod.ts';
 export * from './packages/cache/mod.ts';
 export * from './packages/api-types/discord.ts';
 export * from './packages/api-types/shared.ts';
-export { default as enableCache } from './packages/cache/mod.ts';

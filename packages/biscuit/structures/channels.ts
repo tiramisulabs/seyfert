@@ -32,6 +32,7 @@ import Invite from './Invite.ts';
 import Webhook from './Webhook.ts';
 import User from './User.ts';
 import ThreadMember from './ThreadMember.ts';
+import Permissions, { PermissionResolvable } from "./Permissions.ts";
 
 /**
  * Abstract class that represents the base for creating a new channel.
@@ -91,25 +92,45 @@ export abstract class BaseChannel implements Model {
     }
 }
 
+<<<<<<< HEAD
 /** CategoryChannel */
+=======
+/** 
+ * Represents a category channel.
+ */
+>>>>>>> 50213749703d33ee39bdc1044e03fa18cd3a7052
 export class CategoryChannel extends BaseChannel {
     constructor(session: Session, data: DiscordChannel) {
         super(session, data);
         this.id = data.id;
         this.name = data.name ? data.name : '';
-        this.permissionOverwrites = data.permission_overwrites ? data.permission_overwrites : undefined;
         this.nsfw = data.nsfw ? data.nsfw : false;
         this.guildId = data.guild_id ? data.guild_id : undefined;
         this.type = ChannelTypes.GuildCategory;
-        this.position = data.position ? data.position : 0;
+        this.position = data.position ? data.position : undefined;
+        this.parentId = data.parent_id ? data.parent_id : undefined;
+
+        this.permissionOverwrites = [] as PermissionsOverwrites[];
+        // TODO: improve this and test
+        if (data.permission_overwrites && data.permission_overwrites.length > 0) {
+            data.permission_overwrites.forEach(v => {
+                this.permissionOverwrites.push({
+                    id: v.id,
+                    type: v.type,
+                    allow: new Permissions(parseInt(v.allow as string) as PermissionResolvable),
+                    deny: new Permissions(parseInt(v.deny as string) as PermissionResolvable),
+                } as PermissionsOverwrites);
+            })
+        }
     }
 
     id: Snowflake;
+    parentId?: string;
     name: string;
-    permissionOverwrites?: DiscordOverwrite[];
+    permissionOverwrites: PermissionsOverwrites[];
     nsfw: boolean;
     guildId?: Snowflake;
-    position: number;
+    position?: number;
 }
 
 /** TextChannel */
