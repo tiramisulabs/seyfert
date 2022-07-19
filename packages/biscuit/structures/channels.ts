@@ -12,11 +12,9 @@ import {
     DiscordInviteMetadata,
     DiscordListArchivedThreads,
     DiscordMessage,
-    DiscordOverwrite,
     DiscordThreadMember,
     DiscordWebhook,
     GatewayOpcodes,
-    OverwriteTypes,
     TargetTypes,
     VideoQualityModes,
 } from '../../discordeno/mod.ts';
