@@ -448,3 +448,8 @@ export function GUILD_WIDGET(guildId: Snowflake, options: GetWidget = { get: 'se
 
     return url;
 }
+
+/** @link https://discord.com/developers/docs/resources/guild#get-guild-voice-regions */
+export function GUILD_VOICE_REGIONS(guildId: string): string {
+    return `/guilds/${guildId}/regions`;
+}
