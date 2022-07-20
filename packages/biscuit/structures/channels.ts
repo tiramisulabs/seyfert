@@ -12,6 +12,7 @@ import {
     DiscordInviteMetadata,
     DiscordListArchivedThreads,
     DiscordMessage,
+    DiscordOverwrite,
     DiscordThreadMember,
     DiscordWebhook,
     GatewayOpcodes,
@@ -30,7 +31,7 @@ import Invite from './Invite.ts';
 import Webhook from './Webhook.ts';
 import User from './User.ts';
 import ThreadMember from './ThreadMember.ts';
-import Permissions, { PermissionResolvable } from './Permissions.ts';
+import Permissions from './Permissions.ts';
 
 /**
  * Abstract class that represents the base for creating a new channel.
@@ -104,18 +105,9 @@ export class CategoryChannel extends BaseChannel {
         this.position = data.position ? data.position : undefined;
         this.parentId = data.parent_id ? data.parent_id : undefined;
 
-        this.permissionOverwrites = [] as PermissionsOverwrites[];
-        // TODO: improve this and test
-        if (data.permission_overwrites && data.permission_overwrites.length > 0) {
-            data.permission_overwrites.forEach((v) => {
-                this.permissionOverwrites.push({
-                    id: v.id,
-                    type: v.type,
-                    allow: new Permissions(parseInt(v.allow as string) as PermissionResolvable),
-                    deny: new Permissions(parseInt(v.deny as string) as PermissionResolvable),
-                } as PermissionsOverwrites);
-            });
-        }
+        this.permissionOverwrites = data.permission_overwrites
+            ? ChannelFactory.permissionOverwrites(data.permission_overwrites)
+            : [];
     }
 
     id: Snowflake;
@@ -524,6 +516,9 @@ export class GuildChannel extends BaseChannel implements Model {
         this.position = data.position;
         data.topic ? this.topic = data.topic : null;
         data.parent_id ? this.parentId = data.parent_id : undefined;
+        this.permissionOverwrites = data.permission_overwrites
+            ? ChannelFactory.permissionOverwrites(data.permission_overwrites)
+            : [];
     }
 
     override type: Exclude<ChannelTypes, ChannelTypes.DM | ChannelTypes.GroupDm>;
@@ -531,6 +526,7 @@ export class GuildChannel extends BaseChannel implements Model {
     topic?: string;
     position?: number;
     parentId?: Snowflake;
+    permissionOverwrites: PermissionsOverwrites[];
 
     async fetchInvites(): Promise<Invite[]> {
         const invites = await this.session.rest.runMethod<DiscordInviteMetadata[]>(
@@ -920,5 +916,16 @@ export class ChannelFactory {
                 }
                 throw new Error('Channel was not implemented');
         }
+    }
+
+    static permissionOverwrites(overwrites: DiscordOverwrite[]): PermissionsOverwrites[] {
+        return overwrites.map((v) => {
+            return {
+                id: v.id,
+                type: v.type,
+                allow: new Permissions(parseInt(v.allow!)),
+                deny: new Permissions(parseInt(v.deny!)),
+            };
+        });
     }
 }
