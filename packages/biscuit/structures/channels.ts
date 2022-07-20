@@ -30,7 +30,7 @@ import Invite from './Invite.ts';
 import Webhook from './Webhook.ts';
 import User from './User.ts';
 import ThreadMember from './ThreadMember.ts';
-import Permissions, { PermissionResolvable } from "./Permissions.ts";
+import Permissions, { PermissionResolvable } from './Permissions.ts';
 
 /**
  * Abstract class that represents the base for creating a new channel.
@@ -90,7 +90,7 @@ export abstract class BaseChannel implements Model {
     }
 }
 
-/** 
+/**
  * Represents a category channel.
  */
 export class CategoryChannel extends BaseChannel {
@@ -107,14 +107,14 @@ export class CategoryChannel extends BaseChannel {
         this.permissionOverwrites = [] as PermissionsOverwrites[];
         // TODO: improve this and test
         if (data.permission_overwrites && data.permission_overwrites.length > 0) {
-            data.permission_overwrites.forEach(v => {
+            data.permission_overwrites.forEach((v) => {
                 this.permissionOverwrites.push({
                     id: v.id,
                     type: v.type,
                     allow: new Permissions(parseInt(v.allow as string) as PermissionResolvable),
                     deny: new Permissions(parseInt(v.deny as string) as PermissionResolvable),
                 } as PermissionsOverwrites);
-            })
+            });
         }
     }
 
@@ -245,7 +245,6 @@ export class TextChannel {
             klass.prototype[method] = TextChannel.prototype[method];
         }
     }
-
 
     /**
      * fetchPins makes an asynchronous request and gets the current channel pins.
@@ -872,6 +871,12 @@ export type ChannelWithMessages =
     | ThreadChannel;
 
 export type ChannelWithMessagesInGuild = Exclude<ChannelWithMessages, DMChannel>;
+
+export type PartialChannel = {
+    id: string;
+    name: string;
+    position: number;
+};
 
 export class ChannelFactory {
     static fromGuildChannel(session: Session, channel: DiscordChannel): ChannelInGuild {
