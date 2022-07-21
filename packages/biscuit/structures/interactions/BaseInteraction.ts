@@ -18,6 +18,9 @@ import Permsisions from '../Permissions.ts';
 import Webhook from '../Webhook.ts';
 import * as Routes from '../../Routes.ts';
 
+export type InteractionResponseWith = { with: InteractionApplicationCommandCallbackData };
+export type InteractionResponseWithData = InteractionResponse | InteractionResponseWith;
+
 /**
  * @link https://discord.com/developers/docs/interactions/slash-commands#interaction-response
  */
@@ -185,25 +188,25 @@ export abstract class BaseInteraction implements Model {
         return message;
     }
 
-    async deleteFollowUp(messageId: Snowflake, options?: { threadId?: Snowflake }): Promise<void> {
+    async deleteFollowUp(messageId: Snowflake, threadId?: Snowflake): Promise<void> {
         await Webhook.prototype.deleteMessage.call(
             {
                 id: this.session.applicationId,
                 token: this.token,
             },
             messageId,
-            options,
+            threadId,
         );
     }
 
-    async fetchFollowUp(messageId: Snowflake, options?: { threadId?: Snowflake }): Promise<Message | undefined> {
+    async fetchFollowUp(messageId: Snowflake, threadId?: Snowflake): Promise<Message | undefined> {
         const message = await Webhook.prototype.fetchMessage.call(
             {
                 id: this.session.applicationId,
                 token: this.token,
             },
             messageId,
-            options,
+            threadId,
         );
 
         return message;
@@ -213,9 +216,9 @@ export abstract class BaseInteraction implements Model {
 
     // deno-fmt-ignore
     async respond(resp: InteractionResponse): Promise<Message | undefined>;
-    async respond(resp: { with: InteractionApplicationCommandCallbackData }): Promise<Message | undefined>;
+    async respond(resp: InteractionResponseWith ): Promise<Message | undefined>;
     async respond(
-        resp: InteractionResponse | { with: InteractionApplicationCommandCallbackData },
+        resp: InteractionResponseWithData,
     ): Promise<Message | undefined> {
         const options = 'with' in resp ? resp.with : resp.data;
         const type = 'type' in resp ? resp.type : InteractionResponseTypes.ChannelMessageWithSource;

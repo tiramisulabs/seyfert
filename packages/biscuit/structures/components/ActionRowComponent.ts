@@ -1,6 +1,6 @@
 import type { Session } from '../../Session.ts';
 import type { DiscordComponent, DiscordInputTextComponent } from '../../../discordeno/mod.ts';
-import type { ActionRowComponent, Component } from './Component.ts';
+import type { ActionRowComponent, ComponentsWithoutRow } from './Component.ts';
 import { ButtonStyles, MessageComponentTypes } from '../../../discordeno/mod.ts';
 import BaseComponent from './Component.ts';
 import Button from './ButtonComponent.ts';
@@ -33,7 +33,7 @@ export class ActionRow extends BaseComponent implements ActionRowComponent {
 
     readonly session: Session;
     override type: MessageComponentTypes.ActionRow;
-    components: Array<Exclude<Component, ActionRowComponent>>;
+    components: ComponentsWithoutRow[];
 }
 
 export default ActionRow;

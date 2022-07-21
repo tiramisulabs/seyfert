@@ -40,9 +40,13 @@ export type Component =
     | TextInputComponent;
 
 /** Button Component */
+export type ClassicButton = Exclude<ButtonStyles, ButtonStyles.Link>
+
+export type ComponentsWithoutRow = Exclude<Component, ActionRowComponent>;
+
 export interface ButtonComponent {
     type: MessageComponentTypes.Button;
-    style: ButtonStyles.Primary | ButtonStyles.Secondary | ButtonStyles.Success | ButtonStyles.Danger;
+    style: ClassicButton;
     label?: string;
     emoji?: Emoji;
     customId?: string;

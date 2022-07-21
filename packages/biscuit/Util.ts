@@ -71,15 +71,15 @@ export type ImageSize = 16 | 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096;
  * Utility functions
  */
 export class Util {
-    static formatImageURL(url: string, size: ImageSize = 128, format?: ImageFormat) {
+    static formatImageURL(url: string, size: ImageSize = 128, format?: ImageFormat): string {
         return `${url}.${format || (url.includes('/a_') ? 'gif' : 'jpg')}?size=${size}`;
     }
 
-    static iconHashToBigInt(hash: string) {
+    static iconHashToBigInt(hash: string): bigint {
         return BigInt('0x' + (hash.startsWith('a_') ? `a${hash.substring(2)}` : `b${hash}`));
     }
 
-    static iconBigintToHash(icon: bigint) {
+    static iconBigintToHash(icon: bigint): string {
         const hash: string = icon.toString(16);
 
         return hash.startsWith('a') ? `a_${hash.substring(1)}` : hash.substring(1);

@@ -28,6 +28,18 @@ import InteractionFactory from './interactions/InteractionFactory.ts';
 import * as Routes from '../Routes.ts';
 import { StickerItem } from './Sticker.ts';
 
+export type GuildMessage = Message & { guildId: Snowflake };
+export type WebhookMessage = Message & { 
+    author: Partial<User>; 
+    webhook: WebhookAuthor; 
+    member: undefined 
+};
+
+export interface MessageActivity {
+    partyId?: Snowflake;
+    type: MessageActivityTypes;
+}
+
 /**
  * @link https://discord.com/developers/docs/resources/channel#allowed-mentions-object
  */
@@ -290,10 +302,7 @@ export class Message implements Model {
     application?: Partial<Application>;
 
     /** sent with Rich Presence-related chat embeds */
-    activity?: {
-        partyId?: Snowflake;
-        type: MessageActivityTypes;
-    };
+    activity?: MessageActivity;
 
     /** gets the timestamp of this message, this does not requires the timestamp field */
     get createdTimestamp(): number {
@@ -537,12 +546,12 @@ export class Message implements Model {
     }
 
     /** wheter the message comes from a guild **/
-    inGuild(): this is Message & { guildId: Snowflake } {
+    inGuild(): this is GuildMessage {
         return !!this.guildId;
     }
 
     /** wheter the messages comes from a Webhook */
-    isWebhookMessage(): this is Message & { author: Partial<User>; webhook: WebhookAuthor; member: undefined } {
+    isWebhookMessage(): this is WebhookMessage {
         return !!this.webhook;
     }
 }

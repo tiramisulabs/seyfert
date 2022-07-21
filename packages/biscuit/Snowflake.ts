@@ -6,7 +6,7 @@ export const DiscordEpoch = 14200704e5;
 
 /** utilities for Snowflakes */
 export const Snowflake = {
-    snowflakeToTimestamp(id: Snowflake) {
+    snowflakeToTimestamp(id: Snowflake): number {
         return (Number(id) >> 22) + DiscordEpoch;
     },
 };

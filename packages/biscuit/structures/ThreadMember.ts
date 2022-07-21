@@ -25,19 +25,19 @@ export class ThreadMember implements Model {
         return this.id;
     }
 
-    async quitThread(memberId: Snowflake = this.session.botId): Promise<void> {
+    async quitThread(memberId?: Snowflake): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             'DELETE',
-            Routes.THREAD_USER(this.id, memberId),
+            Routes.THREAD_USER(this.id, memberId ?? this.session.botId),
         );
     }
 
-    async fetchMember(memberId: Snowflake = this.session.botId): Promise<ThreadMember> {
+    async fetchMember(memberId?: Snowflake): Promise<ThreadMember> {
         const member = await this.session.rest.runMethod<DiscordThreadMember>(
             this.session.rest,
             'GET',
-            Routes.THREAD_USER(this.id, memberId),
+            Routes.THREAD_USER(this.id, memberId ?? this.session.botId),
         );
 
         return new ThreadMember(this.session, member);

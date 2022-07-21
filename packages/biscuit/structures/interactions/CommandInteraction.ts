@@ -15,6 +15,14 @@ import Member from '../Member.ts';
 import Message from '../Message.ts';
 import Role from '../Role.ts';
 
+export interface CommandInteractionDataResolved {
+    users: Map<Snowflake, User>;
+    members: Map<Snowflake, Member>;
+    roles: Map<Snowflake, Role>;
+    attachments: Map<Snowflake, Attachment>;
+    messages: Map<Snowflake, Message>;
+}
+
 export class CommandInteraction extends BaseInteraction implements Model {
     constructor(session: Session, data: DiscordInteraction) {
         super(session, data);
@@ -69,13 +77,7 @@ export class CommandInteraction extends BaseInteraction implements Model {
     commandName: string;
     commandType: ApplicationCommandTypes;
     commandGuildId?: Snowflake;
-    resolved: {
-        users: Map<Snowflake, User>;
-        members: Map<Snowflake, Member>;
-        roles: Map<Snowflake, Role>;
-        attachments: Map<Snowflake, Attachment>;
-        messages: Map<Snowflake, Message>;
-    };
+    resolved: CommandInteractionDataResolved;
     options: CommandInteractionOptionResolver;
 }
 
