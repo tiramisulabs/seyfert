@@ -450,6 +450,24 @@ export function GUILD_WIDGET(guildId: Snowflake, options: GetWidget = { get: 'se
 }
 
 /** @link https://discord.com/developers/docs/resources/guild#get-guild-voice-regions */
-export function GUILD_VOICE_REGIONS(guildId: string): string {
+export function GUILD_VOICE_REGIONS(guildId: Snowflake): string {
     return `/guilds/${guildId}/regions`;
+}
+
+/**
+ * @link https://discord.com/developers/docs/resources/guild#get-guild-vanity-url
+ * @param guildId The guild
+ * @returns Get vanity URL 
+ */
+export function GUILD_VANITY(guildId: Snowflake): string {
+    return `/guilds/${guildId}/vanity-url`;
+}
+
+/**
+ * @link https://discord.com/developers/docs/resources/guild#get-guild-preview
+ * @param guildId The guild
+ * @returns Get guild preview url
+ */
+export function GUILD_PREVIEW(guildId: Snowflake): string {
+    return `/guilds/${guildId}/preview`;
 }

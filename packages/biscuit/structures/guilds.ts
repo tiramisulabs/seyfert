@@ -3,8 +3,12 @@ import type { Session } from '../Session.ts';
 import type {
     ChannelTypes,
     DefaultMessageNotificationLevels,
+    DiscordBan,
     DiscordEmoji,
     DiscordGuild,
+    DiscordGuildWidget,
+    DiscordGuildWidgetSettings,
+    DiscordInvite,
     DiscordInviteMetadata,
     DiscordListActiveThreads,
     DiscordMemberWithUser,
@@ -17,6 +21,7 @@ import type {
     SystemChannelFlags,
     VerificationLevels,
     VideoQualityModes,
+    DiscordGuildPreview
 } from '../../discordeno/mod.ts';
 import type { ImageFormat, ImageSize } from '../Util.ts';
 import { GuildFeatures, PremiumTiers } from '../../discordeno/mod.ts';
@@ -31,6 +36,9 @@ import Role from './Role.ts';
 import GuildEmoji from './GuildEmoji.ts';
 import { urlToBase64 } from '../util/urlToBase64.ts';
 import Invite from './Invite.ts';
+import User from './User.ts';
+import { Widget } from './Widget.ts';
+import Sticker from './Sticker.ts';
 
 /** BaseGuild */
 /**
@@ -53,16 +61,16 @@ export abstract class BaseGuild implements Model {
     readonly id: Snowflake;
     /** Guild name. */
     name: string;
-    /** 
+    /**
      * Icon hash. Discord uses ids and hashes to render images in the client.
      * @link https://discord.com/developers/docs/reference#image-formatting
-     * */
+     */
     iconHash?: bigint;
-    /** 
+    /**
      * Enabled guild features (animated banner, news, auto moderation, etc).
      * @see {@link GuildFeatures}
      * @link https://discord.com/developers/docs/resources/guild#guild-object-guild-features
-     * */
+     */
     features: GuildFeatures[];
 
     /** createdTimestamp gets the current guild timestamp. */
@@ -75,26 +83,26 @@ export abstract class BaseGuild implements Model {
         return new Date(this.createdTimestamp);
     }
 
-    /** 
+    /**
      * If the guild features includes partnered.
      * @link https://discord.com/developers/docs/resources/guild#guild-object-guild-features
-     * */
+     */
     get partnered(): boolean {
         return this.features.includes(GuildFeatures.Partnered);
     }
 
-    /** 
+    /**
      * If the guild is verified.
      * @link https://discord.com/developers/docs/resources/guild#guild-object-guild-features
-     * */
+     */
     get verified(): boolean {
         return this.features.includes(GuildFeatures.Verified);
     }
 
-    /** 
+    /**
      * iconURL gets the current guild icon.
      * @link https://discord.com/developers/docs/reference#image-formatting
-     * */
+     */
     iconURL(options: { size?: ImageSize; format?: ImageFormat } = { size: 128 }): string | void {
         if (this.iconHash) {
             return Util.formatImageURL(
@@ -137,7 +145,7 @@ export class AnonymousGuild extends BaseGuild implements Model {
      * @link https://discord.com/developers/docs/reference#image-formatting
      */
     splashHash?: bigint;
-    /** 
+    /**
      * The guild's banner hash.
      * @link https://discord.com/developers/docs/reference#image-formatting
      */
@@ -150,7 +158,7 @@ export class AnonymousGuild extends BaseGuild implements Model {
     verificationLevel: VerificationLevels;
     /** The guild's vanity url code. */
     vanityUrlCode?: string;
-    /** 
+    /**
      * The guild's nsfw level.
      * @see {@link GuildNsfwLevel}
      * @link https://discord.com/developers/docs/resources/guild#guild-object-guild-nsfw-level
@@ -207,6 +215,47 @@ export class InviteGuild extends AnonymousGuild implements Model {
     welcomeScreen?: WelcomeScreen;
 }
 
+/**
+ * Represent Discord Guild Preview Object
+ * @link https://discord.com/developers/docs/resources/guild#guild-preview-object
+ */
+export class GuildPreview implements Model {
+    constructor(session: Session, data: DiscordGuildPreview) {
+        this.session = session;
+        this.id = data.id;
+        this.name = data.name;
+        this.description = data.description ?? undefined;
+        this.iconHash = data.icon ? Util.iconHashToBigInt(data.icon) : undefined;
+        this.splashHash = data.splash ? Util.iconHashToBigInt(data.splash) : undefined;
+        this.discoverySplashHash = data.discovery_splash ? Util.iconHashToBigInt(data.discovery_splash) : undefined;
+        this.emojis = data.emojis.map(x => new GuildEmoji(this.session, x, this.id));
+        this.features = data.features;
+        this.approximateMemberCount = data.approximate_member_count;
+        this.approximatePresenceCount = data.approximate_presence_count;
+        this.stickers = data.stickers.map(x => new Sticker(this.session, x));
+    }
+    session: Session;
+    /** guild id */
+    id: Snowflake;
+    /** guild name (2-100 characters) */
+    name: string;
+    iconHash?: bigint;
+    splashHash?: bigint;
+    discoverySplashHash?: bigint;
+    /** custom guild emojis */
+    emojis: GuildEmoji[];
+    /** enabled guild features */
+    features: GuildFeatures[];
+    /** approximate number of members in this guild */
+    approximateMemberCount: number;
+    /** approximate number of online members in this guild */
+    approximatePresenceCount: number;
+    /** the description for the guild */
+    description?: string;
+    /** custom guild stickers */
+    stickers: Sticker[];
+} 
+
 /** Guild */
 export interface CreateRole {
     name?: string;
@@ -243,6 +292,27 @@ export interface ModifyGuildEmoji {
 export interface CreateGuildBan {
     deleteMessageDays?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
     reason?: string;
+}
+
+/**
+ * @link https://discord.com/developers/docs/resources/guild#ban-object
+ */
+export interface GuildBan {
+    reason?: string;
+    user: User;
+}
+
+/**
+ * @link https://discord.com/developers/docs/resources/guild#guild-widget-settings-object-guild-widget-settings-structure
+ */
+export interface GuildWidgetSettings {
+    enabled: boolean;
+    channelId?: Snowflake;
+}
+
+export interface PartialVanityURL {
+    code: string;
+    uses: number;
 }
 
 /**
@@ -386,7 +456,6 @@ export class Guild extends BaseGuild implements Model {
         this.defaultMessageNotificationLevel = data.default_message_notifications;
         this.explicitContentFilterLevel = data.explicit_content_filter;
         this.premiumTier = data.premium_tier;
-
         this.members = new Map(
             data.members?.map((member) => [data.id, new Member(session, { ...member, user: member.user! }, data.id)]),
         );
@@ -438,7 +507,7 @@ export class Guild extends BaseGuild implements Model {
      * @link https://discord.com/developers/docs/resources/guild#guild-object-explicit-content-filter-level
      */
     explicitContentFilterLevel: ExplicitContentFilterLevels;
-    /** 
+    /**
      * Premium tier (Server Boost level).
      * @see {@link PremiumTiers}
      * @link https://discord.com/developers/docs/resources/guild#guild-object-premium-tier
@@ -456,13 +525,13 @@ export class Guild extends BaseGuild implements Model {
      * @link https://discord.com/developers/docs/topics/permissions#role-object
      */
     roles: Map<Snowflake, Role>;
-    /** 
+    /**
      * A map with the guild's emojis.
      * @see {@link GuildEmoji}
      * @link https://discord.com/developers/docs/resources/emoji#emoji-object-emoji-structure
      */
     emojis: Map<Snowflake, GuildEmoji>;
-    /** 
+    /**
      * A map with the guild's channels.
      * @see {@link GuildChannel}
      * @link https://discord.com/developers/docs/resources/channel#channel-object
@@ -502,7 +571,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * editBotNickname edits the bot's nickname in the guild.
+     * edits the bot's nickname in the guild.
      * 'null' would reset the nickname.
      */
     async editBotNickname(options: { nick: string | null; reason?: string }): Promise<(string | undefined)> {
@@ -517,7 +586,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * createEmoji creates an emoji in the guild.
+     * creates an emoji in the guild.
      * @see {@link CreateGuildEmoji}
      * @see {@link GuildEmoji}
      * @param options The options to create a emoji.
@@ -539,7 +608,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * deleteEmoji deletes an emoji from the guild.
+     * deletes an emoji from the guild.
      * @param id - The id of the emoji to delete.
      * @param reason - The reason for deleting the emoji.
      */
@@ -553,7 +622,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * editEmoji edits an emoji in the guild.
+     * edits an emoji in the guild.
      * @see {@link ModifyGuildEmoji}
      * @see {@link GuildEmoji}
      * @param id - The id of the emoji to edit.
@@ -572,7 +641,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * createRole creates a role in the guild.
+     * creates a role in the guild.
      * @see {@link CreateRole}
      * @see {@link Role}
      * @param options - Options to create a new role.
@@ -605,16 +674,16 @@ export class Guild extends BaseGuild implements Model {
         return new Role(this.session, role, this.id);
     }
 
-    /** 
-     * deleteRole deletes a role from the guild.
+    /**
+     * deletes a role from the guild.
      * @param roleId - The id of the role to delete.
-     * */
+     */
     async deleteRole(roleId: Snowflake): Promise<void> {
         await this.session.rest.runMethod<undefined>(this.session.rest, 'DELETE', Routes.GUILD_ROLE(this.id, roleId));
     }
 
     /**
-     * editRole edits a role in the guild.
+     * edits a role in the guild.
      * @see {@link ModifyGuildRole}
      * @see {@link Role}
      * @param roleId - The id of the role to edit.
@@ -637,10 +706,10 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * addRole adds a role to a user in the guild.
+     * adds a role to a user in the guild.
      * @param memberId - The id of the member to add a role to.
      * @param roleId - The id of the role to add.
-     * @param reason - The reason for adding the role to the member. 
+     * @param reason - The reason for adding the role to the member.
      */
     async addRole(memberId: Snowflake, roleId: Snowflake, { reason }: { reason?: string } = {}): Promise<void> {
         await this.session.rest.runMethod<undefined>(
@@ -652,7 +721,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * removeRole removes a role from a user in the guild.
+     * removes a role from a user in the guild.
      * @param memberId - The id of the member to remove a role from.
      * @param roleId - The id of the role to remove.
      * @param reason - The reason for removing the role from the member.
@@ -667,7 +736,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * Returns the roles moved.
+     * the roles moved.
      * @see {@link ModifyRolePositions}
      * @see {@link Role}
      * @param options - Options to modify the roles.
@@ -684,7 +753,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * deleteInvite deletes an invite from the guild.
+     * deletes an invite from the guild.
      * @param inviteCode - The invite code to get the invite for.
      */
     async deleteInvite(inviteCode: string): Promise<void> {
@@ -697,7 +766,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * fetchInvite gets an invite from the guild.
+     * gets an invite from the guild.
      * @see {@link Routes.GetInvite}
      * @see {@link Invite}
      * @param inviteCode - The invite code to get the invite for.
@@ -715,7 +784,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * fetchInvites gets all invites from the guild.
+     * gets all invites from the guild.
      * @see {@link Invite}
      * @returns A promise that resolves to the guild's invites.
      */
@@ -730,7 +799,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * banMember bans a member from the guild.
+     * bans a member from the guild.
      * @see {@link CreateGuildBan}
      * @param memberId - The id of the member to ban.
      * @param options - Options to ban the member.
@@ -750,7 +819,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * kickMember kicks a member from the guild.
+     * kicks a member from the guild.
      * @param memberId - The id of the member to kick.
      * @param reason - The reason for kicking the member.
      */
@@ -764,7 +833,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * unbanMember unbans a member from the guild.
+     * unbans a member from the guild.
      * @param memberId - The id of the member to get.
      */
     async unbanMember(memberId: Snowflake): Promise<void> {
@@ -776,7 +845,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * editMember edits a member in the guild.
+     * edits a member in the guild.
      * @see {@link ModifyGuildMember}
      * @see {@link Member}
      * @param memberId - The id of the member to get.
@@ -804,7 +873,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * pruneMembers prunes members from the guild.
+     * prunes members from the guild.
      * @see {@link BeginGuildPrune}
      * @param options - Options to prune the members.
      * @returns A promise that resolves to the number of members pruned.
@@ -825,7 +894,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * getPruneCount gets the number of members that would be pruned.
+     * gets the number of members that would be pruned.
      * @returns A promise that resolves to the number of members that would be pruned.
      */
     async getPruneCount(): Promise<number> {
@@ -839,7 +908,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * getActiveThreads gets the active threads in the guild.
+     * gets the active threads in the guild.
      * @see {@link ReturnThreadsArchive}
      * @returns Promise resolving a ReturnThreadsArchive without hasMore property.
      */
@@ -933,7 +1002,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * setSplash sets a new splash for the guild. Same as Guild.edit({..., splash: 'splashURL'})
+     * sets a new splash for the guild. Same as Guild.edit({..., splash: 'splashURL'})
      * @see {@link Guild}
      */
     setSplash(splashURL: string): Promise<Guild> {
@@ -941,7 +1010,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * setBanner sets a new banner for the guild. Same as Guild.edit({..., banner: 'bannerURL'})
+     * sets a new banner for the guild. Same as Guild.edit({..., banner: 'bannerURL'})
      * @see {@link Guild}
      */
     setBanner(bannerURL: string): Promise<Guild> {
@@ -979,8 +1048,9 @@ export class Guild extends BaseGuild implements Model {
             splash: 'splashURL' in options
                 ? options.splashURL && urlToBase64(options.splashURL)
                 : options.iconHash && Util.iconBigintToHash(options.iconHash),
-            banner: 'bannerURL' in options ? options.bannerURL && urlToBase64(options.bannerURL)
-            : options.bannerHash && Util.iconBigintToHash(options.bannerHash),
+            banner: 'bannerURL' in options
+                ? options.bannerURL && urlToBase64(options.bannerURL)
+                : options.bannerHash && Util.iconBigintToHash(options.bannerHash),
             discovery_splash: 'discoverySplashURL' in options
                 ? options.discoverySplashURL && urlToBase64(options.discoverySplashURL)
                 : options.discoverySplashHash && Util.iconBigintToHash(options.discoverySplashHash),
@@ -997,7 +1067,7 @@ export class Guild extends BaseGuild implements Model {
     }
 
     /**
-     * fetchVoiceRegions gets the voice regions available for the guild.
+     * gets the voice regions available for the guild.
      * @see {@link DiscordVoiceRegion}
      * @returns Promise that resolves to an array of voice regions.
      */
@@ -1006,8 +1076,91 @@ export class Guild extends BaseGuild implements Model {
             this.session.rest,
             'GET',
             Routes.GUILD_VOICE_REGIONS(this.id),
-        )
+        );
     }
+
+    /**
+     * Fetches user ban in the guild
+     * @param userId The user id
+     * @returns Resolves Discord Ban
+     */
+    async fetchBan(userId: Snowflake): Promise<GuildBan> {
+        const ban = await this.session.rest.runMethod<DiscordBan>(
+            this.session.rest,
+            'GET',
+            Routes.GUILD_BAN(this.id, userId),
+        );
+        return { reason: ban.reason ?? undefined, user: new User(this.session, ban.user) };
+    }
+
+    /**
+     * Fetches bans in the guild
+     * @param options
+     * @returns Resolve with list of bans
+     */
+    async fetchBans(options?: Routes.GetBans): Promise<GuildBan[]> {
+        const bans = await this.session.rest.runMethod<DiscordBan[]>(
+            this.session.rest,
+            'GET',
+            Routes.GUILD_BANS(this.id, options),
+        );
+        return bans.map((x) => {
+            return { reason: x.reason ?? undefined, user: new User(this.session, x.user) };
+        });
+    }
+
+    /**
+     * Fetches settings for {@link Widget} in the guild
+     * @returns Resolves with the settings
+     */
+    async fetchWidgetSettings(): Promise<GuildWidgetSettings> {
+        const widget = await this.session.rest.runMethod<DiscordGuildWidgetSettings>(
+            this.session.rest,
+            'GET',
+            Routes.GUILD_WIDGET(this.id),
+        );
+        return {
+            enabled: !!widget.enabled,
+            channelId: widget.channel_id ?? undefined,
+        };
+    }
+
+    /**
+     * Fetches widget in the guild
+     * @returns Resolves with the Widget
+     */
+    async fetchWidget(): Promise<Widget> {
+        const widget = await this.session.rest.runMethod<DiscordGuildWidget>(
+            this.session.rest,
+            'GET',
+            Routes.GUILD_WIDGET(this.id, { get: 'json' }),
+        );
+        return new Widget(this.session, widget);
+    }
+
+    /**
+     * Fetches vanity url invite
+     * @see {@link Invite}
+     * @returns Resolves a Invite
+     */
+    async fetchVanityURL(): Promise<Partial<Invite>> {
+        const vanity = await this.session.rest.runMethod<DiscordInvite>(
+            this.session.rest,
+            'GET',
+            Routes.GUILD_VANITY(this.id),
+        );
+        return new Invite(this.session, vanity);
+    }
+
+    /**
+     * Fetches preview of the guild
+     * @returns Resolves a Guild Preview object
+     */
+    async fetchGuildPreview(): Promise<GuildPreview> {
+        const preview = await this.session.rest.runMethod<DiscordGuildPreview>(this.session.rest, 'GET', Routes.GUILD_PREVIEW(this.id));
+        return new GuildPreview(this.session, preview);
+    }
+    
 }
 
 export default Guild;

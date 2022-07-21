@@ -868,6 +868,12 @@ export type ChannelWithMessages =
 
 export type ChannelWithMessagesInGuild = Exclude<ChannelWithMessages, DMChannel>;
 
+export type PartialChannel = {
+    id: string;
+    name: string;
+    position: number;
+};
+
 export class ChannelFactory {
     static fromGuildChannel(session: Session, channel: DiscordChannel): ChannelInGuild {
         switch (channel.type) {

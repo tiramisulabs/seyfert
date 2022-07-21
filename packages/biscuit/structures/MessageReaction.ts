@@ -1,9 +1,12 @@
-// deno-lint-ignore-file no-empty-interface
 import type { Session } from '../Session.ts';
 import type { DiscordMemberWithUser, DiscordMessageReactionAdd, DiscordReaction } from '../../discordeno/mod.ts';
 import Emoji from './Emoji.ts';
 import Member from './Member.ts';
 
+/** 
+ * Represents when a new reaction was added to a message. 
+ * @link https://discord.com/developers/docs/topics/gateway#message-reaction-add
+ * */
 export interface MessageReactionAdd {
     userId: string;
     channelId: string;
@@ -13,15 +16,39 @@ export interface MessageReactionAdd {
     emoji: Partial<Emoji>;
 }
 
-export interface MessageReactionRemove extends Omit<MessageReactionAdd, 'member'> {}
+/** 
+ * Represents when a reaction was removed from a message.
+ * Equal to MessageReactionAdd but without 'member' property.
+ * @see {@link MessageReactionAdd}
+ * @link https://discord.com/developers/docs/topics/gateway#message-reaction-remove-message-reaction-remove-event-fields
+ */
+export type MessageReactionRemove = Omit<MessageReactionAdd, 'member'>;
 
-export interface MessageReactionRemoveAll extends Pick<MessageReactionAdd, 'channelId' | 'messageId' | 'guildId'> {}
+/**
+ * Represents when all reactions were removed from a message.
+ * Equals to MessageReactionAdd but with 'channelId', 'messageId' and 'guildId' properties guaranteed.
+ * @see {@link MessageReactionAdd}
+ * @link https://discord.com/developers/docs/topics/gateway#message-reaction-remove-all
+ */
+export type MessageReactionRemoveAll = Pick<MessageReactionAdd, 'channelId' | 'messageId' | 'guildId'>
 
+/**
+ * Represents when a reaction-emoji was removed from a message.
+ * Equals to MessageReactionAdd but with 'channelId', 'messageId', 'emoji' and 'guildId' properties guaranteed.
+ * @see {@link MessageReactionRemove}
+ * @see {@link Emoji}
+ * @link https://discord.com/developers/docs/topics/gateway#message-reaction-remove-emoji
+ */
 export type MessageReactionRemoveEmoji = Pick<
     MessageReactionAdd,
     'channelId' | 'guildId' | 'messageId' | 'emoji'
 >;
 
+/**
+ * Creates a new MessageReactionAdd object.
+ * @param session - Current application session.
+ * @param data - Discord message reaction to parse.
+ */
 export function NewMessageReactionAdd(session: Session, data: DiscordMessageReactionAdd): MessageReactionAdd {
     return {
         userId: data.user_id,
