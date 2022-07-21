@@ -37,6 +37,14 @@ export type DiscordRawEventHandler = (shard: Shard, data: DiscordGatewayPayload)
 
 // INTERACTIONS
 
+export type CreateApplicationCommands = CreateApplicationCommand | CreateContextApplicationCommand;
+export type UpsertDataApplicationCommands =
+    | AtLeastOne<CreateApplicationCommand>
+    | AtLeastOne<CreateContextApplicationCommand>;
+export type LastCreateApplicationCommands =
+    | AtLeastOne<CreateContextApplicationCommand>
+    | AtLeastOne<CreateApplicationCommand>;
+
 /**
  * @link https://discord.com/developers/docs/interactions/application-commands#endpoints-json-params
  */
@@ -133,7 +141,7 @@ export class Session extends EventEmitter {
         this.#applicationId = id;
     }
 
-    get applicationId() {
+    get applicationId(): Snowflake {
         return this.#applicationId!;
     }
 
@@ -141,7 +149,7 @@ export class Session extends EventEmitter {
         this.#botId = id;
     }
 
-    get botId() {
+    get botId(): Snowflake {
         return this.#botId;
     }
 
@@ -273,7 +281,7 @@ export class Session extends EventEmitter {
     }
 
     createApplicationCommand(
-        options: CreateApplicationCommand | CreateContextApplicationCommand,
+        options: CreateApplicationCommands,
         guildId?: Snowflake,
     ): Promise<DiscordApplicationCommand> {
         return this.rest.runMethod<DiscordApplicationCommand>(
@@ -368,7 +376,7 @@ export class Session extends EventEmitter {
 
     upsertApplicationCommand(
         id: Snowflake,
-        options: AtLeastOne<CreateApplicationCommand> | AtLeastOne<CreateContextApplicationCommand>,
+        options: UpsertDataApplicationCommands,
         guildId?: Snowflake,
     ): Promise<DiscordApplicationCommand> {
         return this.rest.runMethod<DiscordApplicationCommand>(
@@ -392,7 +400,7 @@ export class Session extends EventEmitter {
     }
 
     upsertApplicationCommands(
-        options: Array<UpsertApplicationCommands | CreateContextApplicationCommand>,
+        options: UpsertDataApplicationCommands[],
         guildId?: Snowflake,
     ): Promise<DiscordApplicationCommand[]> {
         return this.rest.runMethod<DiscordApplicationCommand[]>(
@@ -428,7 +436,7 @@ export class Session extends EventEmitter {
     }
 
     // deno-fmt-ignore
-    isContextApplicationCommand(cmd: AtLeastOne<CreateContextApplicationCommand> | AtLeastOne<CreateApplicationCommand>): cmd is AtLeastOne<CreateContextApplicationCommand> {
+    isContextApplicationCommand(cmd: LastCreateApplicationCommands): cmd is AtLeastOne<CreateContextApplicationCommand> {
         return cmd.type === ApplicationCommandTypes.Message || cmd.type === ApplicationCommandTypes.User;
     }
 

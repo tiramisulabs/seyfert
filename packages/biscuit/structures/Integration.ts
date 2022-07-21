@@ -4,6 +4,8 @@ import type { Session } from '../Session.ts';
 import type { DiscordIntegration, IntegrationExpireBehaviors } from '../../discordeno/mod.ts';
 import User from './User.ts';
 
+export type IntegrationTypes = 'twitch' | 'youtube' | 'discord';
+
 export interface IntegrationAccount {
     id: Snowflake;
     name: string;
@@ -58,7 +60,7 @@ export class Integration implements Model {
     guildId?: Snowflake;
 
     name: string;
-    type: 'twitch' | 'youtube' | 'discord';
+    type: IntegrationTypes;
     enabled?: boolean;
     syncing?: boolean;
     roleId?: string;

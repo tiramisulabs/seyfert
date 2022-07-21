@@ -457,7 +457,7 @@ export function GUILD_VOICE_REGIONS(guildId: Snowflake): string {
 /**
  * @link https://discord.com/developers/docs/resources/guild#get-guild-vanity-url
  * @param guildId The guild
- * @returns Get vanity URL 
+ * @returns Get vanity URL
  */
 export function GUILD_VANITY(guildId: Snowflake): string {
     return `/guilds/${guildId}/vanity-url`;

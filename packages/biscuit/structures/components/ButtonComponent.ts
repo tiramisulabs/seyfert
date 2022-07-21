@@ -1,6 +1,6 @@
 import type { Session } from '../../Session.ts';
-import type { ButtonStyles, DiscordComponent } from '../../../discordeno/mod.ts';
-import type { ButtonComponent } from './Component.ts';
+import type { DiscordComponent } from '../../../discordeno/mod.ts';
+import type { ButtonComponent, ClassicButton } from './Component.ts';
 import { MessageComponentTypes } from '../../../discordeno/mod.ts';
 import BaseComponent from './Component.ts';
 import Emoji from '../Emoji.ts';
@@ -13,7 +13,7 @@ export class Button extends BaseComponent implements ButtonComponent {
         this.type = data.type as MessageComponentTypes.Button;
         this.customId = data.custom_id;
         this.label = data.label;
-        this.style = data.style as number;
+        this.style = data.style as ClassicButton;
         this.disabled = data.disabled;
 
         if (data.emoji) {
@@ -25,7 +25,7 @@ export class Button extends BaseComponent implements ButtonComponent {
     override type: MessageComponentTypes.Button;
     customId?: string;
     label?: string;
-    style: ButtonStyles.Primary | ButtonStyles.Secondary | ButtonStyles.Success | ButtonStyles.Danger;
+    style: ClassicButton;
     disabled?: boolean;
     emoji?: Emoji;
 }

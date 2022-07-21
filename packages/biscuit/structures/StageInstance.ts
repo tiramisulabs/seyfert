@@ -15,6 +15,11 @@ export enum PrivacyLevels {
     GuildOnly = 2,
 }
 
+export type stageEditOptions = {
+    topic?: string;
+    privacy?: PrivacyLevels;
+};
+
 export class StageInstance implements Model {
     constructor(session: Session, data: DiscordStageInstanceB) {
         this.session = session;
@@ -39,14 +44,14 @@ export class StageInstance implements Model {
     discoverableDisabled: boolean;
     guildScheduledEventId: Snowflake;
 
-    async edit(options: { topic?: string; privacyLevel?: PrivacyLevels }): Promise<StageInstance> {
+    async edit(options: stageEditOptions): Promise<StageInstance> {
         const stageInstance = await this.session.rest.runMethod<DiscordStageInstanceB>(
             this.session.rest,
             'PATCH',
             Routes.STAGE_INSTANCE(this.id),
             {
                 topic: options.topic,
-                privacy_level: options.privacyLevel,
+                privacy_level: options.privacy,
             },
         );
 

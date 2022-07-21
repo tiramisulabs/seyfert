@@ -75,4 +75,3 @@ export function enableCache(session: Session): SessionCache {
 
     return cache;
 }
-

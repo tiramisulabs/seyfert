@@ -58,6 +58,8 @@ export abstract class ApplicationCommandBuilder implements CreateApplicationComm
     }
 }
 
+export type MessageApplicationCommandBuilderJSON = { name: string; type: ApplicationCommandTypes.Message };
+
 export class MessageApplicationCommandBuilder {
     type: ApplicationCommandTypes;
     name?: string;
@@ -73,7 +75,7 @@ export class MessageApplicationCommandBuilder {
         return (this.name = name), this;
     }
 
-    toJSON(): { name: string; type: ApplicationCommandTypes.Message } {
+    toJSON(): MessageApplicationCommandBuilderJSON {
         if (!this.name) throw new TypeError('Propety \'name\' is required');
 
         return {

@@ -6,6 +6,7 @@ import type {
     DiscordBan,
     DiscordEmoji,
     DiscordGuild,
+    DiscordGuildPreview,
     DiscordGuildWidget,
     DiscordGuildWidgetSettings,
     DiscordInvite,
@@ -21,7 +22,6 @@ import type {
     SystemChannelFlags,
     VerificationLevels,
     VideoQualityModes,
-    DiscordGuildPreview
 } from '../../discordeno/mod.ts';
 import type { ImageFormat, ImageSize } from '../Util.ts';
 import { GuildFeatures, PremiumTiers } from '../../discordeno/mod.ts';
@@ -228,11 +228,11 @@ export class GuildPreview implements Model {
         this.iconHash = data.icon ? Util.iconHashToBigInt(data.icon) : undefined;
         this.splashHash = data.splash ? Util.iconHashToBigInt(data.splash) : undefined;
         this.discoverySplashHash = data.discovery_splash ? Util.iconHashToBigInt(data.discovery_splash) : undefined;
-        this.emojis = data.emojis.map(x => new GuildEmoji(this.session, x, this.id));
+        this.emojis = data.emojis.map((x) => new GuildEmoji(this.session, x, this.id));
         this.features = data.features;
         this.approximateMemberCount = data.approximate_member_count;
         this.approximatePresenceCount = data.approximate_presence_count;
-        this.stickers = data.stickers.map(x => new Sticker(this.session, x));
+        this.stickers = data.stickers.map((x) => new Sticker(this.session, x));
     }
     session: Session;
     /** guild id */
@@ -254,9 +254,16 @@ export class GuildPreview implements Model {
     description?: string;
     /** custom guild stickers */
     stickers: Sticker[];
-} 
+}
 
-/** Guild */
+// Guild
+/** Maximun custom guild emojis per level */
+export type maximunEmojis = 50 | 100 | 150 | 250;
+/** Maximun custom guild stickers per level */
+export type maximunStickers = 5 | 15 | 30 | 60;
+
+export type editBotNickOptions = { nick: string | null; reason?: string };
+
 export interface CreateRole {
     name?: string;
     color?: number;
@@ -541,7 +548,7 @@ export class Guild extends BaseGuild implements Model {
     /**
      * Returns the maximum number of emoji slots
      */
-    get maxEmojis(): 50 | 100 | 150 | 250 {
+    get maxEmojis(): maximunEmojis {
         switch (this.premiumTier) {
             case 1:
                 return 100;
@@ -557,7 +564,7 @@ export class Guild extends BaseGuild implements Model {
     /**
      * Returns the maximum number of custom sticker slots
      */
-    get maxStickers(): 5 | 15 | 30 | 60 {
+    get maxStickers(): maximunStickers {
         switch (this.premiumTier) {
             case 1:
                 return 15;
@@ -574,7 +581,7 @@ export class Guild extends BaseGuild implements Model {
      * edits the bot's nickname in the guild.
      * 'null' would reset the nickname.
      */
-    async editBotNickname(options: { nick: string | null; reason?: string }): Promise<(string | undefined)> {
+    async editBotNickname(options: editBotNickOptions): Promise<(string | undefined)> {
         const result = await this.session.rest.runMethod<{ nick?: string } | undefined>(
             this.session.rest,
             'PATCH',
@@ -612,7 +619,7 @@ export class Guild extends BaseGuild implements Model {
      * @param id - The id of the emoji to delete.
      * @param reason - The reason for deleting the emoji.
      */
-    async deleteEmoji(id: Snowflake, { reason }: { reason?: string } = {}): Promise<void> {
+    async deleteEmoji(id: Snowflake, reason?: string): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             'DELETE',
@@ -711,7 +718,7 @@ export class Guild extends BaseGuild implements Model {
      * @param roleId - The id of the role to add.
      * @param reason - The reason for adding the role to the member.
      */
-    async addRole(memberId: Snowflake, roleId: Snowflake, { reason }: { reason?: string } = {}): Promise<void> {
+    async addRole(memberId: Snowflake, roleId: Snowflake, reason?: string): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             'PUT',
@@ -726,7 +733,7 @@ export class Guild extends BaseGuild implements Model {
      * @param roleId - The id of the role to remove.
      * @param reason - The reason for removing the role from the member.
      */
-    async removeRole(memberId: Snowflake, roleId: Snowflake, { reason }: { reason?: string } = {}): Promise<void> {
+    async removeRole(memberId: Snowflake, roleId: Snowflake, reason?: string): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             'DELETE',
@@ -823,7 +830,7 @@ export class Guild extends BaseGuild implements Model {
      * @param memberId - The id of the member to kick.
      * @param reason - The reason for kicking the member.
      */
-    async kickMember(memberId: Snowflake, { reason }: { reason?: string }): Promise<void> {
+    async kickMember(memberId: Snowflake, reason?: string): Promise<void> {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             'DELETE',
@@ -1157,10 +1164,13 @@ export class Guild extends BaseGuild implements Model {
      * @returns Resolves a Guild Preview object
      */
     async fetchGuildPreview(): Promise<GuildPreview> {
-        const preview = await this.session.rest.runMethod<DiscordGuildPreview>(this.session.rest, 'GET', Routes.GUILD_PREVIEW(this.id));
+        const preview = await this.session.rest.runMethod<DiscordGuildPreview>(
+            this.session.rest,
+            'GET',
+            Routes.GUILD_PREVIEW(this.id),
+        );
         return new GuildPreview(this.session, preview);
     }
-    
 }
 
 export default Guild;

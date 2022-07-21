@@ -6,6 +6,11 @@ import type { ImageFormat, ImageSize } from '../Util.ts';
 import Util from '../Util.ts';
 import * as Routes from '../Routes.ts';
 
+export type avatarOptions = {
+    format?: ImageFormat;
+    size?: ImageSize;
+};
+
 /**
  * @link https://discord.com/developers/docs/resources/user#user-object
  * Represents a user
@@ -88,7 +93,7 @@ export class User implements Model {
     }
 
     /** gets the user's avatar */
-    avatarURL(options: { format?: ImageFormat; size?: ImageSize } = { size: 128 }): string {
+    avatarURL(options: avatarOptions): string {
         let url: string;
 
         if (!this.avatarHash) {
@@ -97,7 +102,7 @@ export class User implements Model {
             url = Routes.USER_AVATAR(this.id, Util.iconBigintToHash(this.avatarHash));
         }
 
-        return Util.formatImageURL(url, options.size, options.format);
+        return Util.formatImageURL(url, options.size ?? 128, options.format);
     }
 
     toString(): string {

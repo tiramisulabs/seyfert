@@ -3,10 +3,10 @@ import type { DiscordMemberWithUser, DiscordMessageReactionAdd, DiscordReaction 
 import Emoji from './Emoji.ts';
 import Member from './Member.ts';
 
-/** 
- * Represents when a new reaction was added to a message. 
+/**
+ * Represents when a new reaction was added to a message.
  * @link https://discord.com/developers/docs/topics/gateway#message-reaction-add
- * */
+ */
 export interface MessageReactionAdd {
     userId: string;
     channelId: string;
@@ -16,7 +16,7 @@ export interface MessageReactionAdd {
     emoji: Partial<Emoji>;
 }
 
-/** 
+/**
  * Represents when a reaction was removed from a message.
  * Equal to MessageReactionAdd but without 'member' property.
  * @see {@link MessageReactionAdd}
@@ -30,7 +30,7 @@ export type MessageReactionRemove = Omit<MessageReactionAdd, 'member'>;
  * @see {@link MessageReactionAdd}
  * @link https://discord.com/developers/docs/topics/gateway#message-reaction-remove-all
  */
-export type MessageReactionRemoveAll = Pick<MessageReactionAdd, 'channelId' | 'messageId' | 'guildId'>
+export type MessageReactionRemoveAll = Pick<MessageReactionAdd, 'channelId' | 'messageId' | 'guildId'>;
 
 /**
  * Represents when a reaction-emoji was removed from a message.

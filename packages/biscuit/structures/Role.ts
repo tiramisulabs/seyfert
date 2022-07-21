@@ -56,12 +56,12 @@ export class Role implements Model {
         return role;
     }
 
-    async add(memberId: Snowflake, options: { reason?: string } = {}): Promise<void> {
-        await Guild.prototype.addRole.call({ id: this.guildId, session: this.session }, memberId, this.id, options);
+    async add(memberId: Snowflake, reason?: string): Promise<void> {
+        await Guild.prototype.addRole.call({ id: this.guildId, session: this.session }, memberId, this.id, reason);
     }
 
-    async remove(memberId: Snowflake, options: { reason?: string } = {}): Promise<void> {
-        await Guild.prototype.removeRole.call({ id: this.guildId, session: this.session }, memberId, this.id, options);
+    async remove(memberId: Snowflake, reason?: string): Promise<void> {
+        await Guild.prototype.removeRole.call({ id: this.guildId, session: this.session }, memberId, this.id, reason);
     }
 
     toString(): string {

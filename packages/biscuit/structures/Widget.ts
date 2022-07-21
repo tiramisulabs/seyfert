@@ -1,7 +1,7 @@
-import { DiscordGuildWidget } from "../../api-types/discord.ts";
-import { Session } from "../Session.ts";
-import { Snowflake } from "../Snowflake.ts";
-import { Model } from "./Base.ts";
+import { DiscordGuildWidget } from '../../api-types/discord.ts';
+import { Session } from '../Session.ts';
+import { Snowflake } from '../Snowflake.ts';
+import { Model } from './Base.ts';
 import { PartialChannel } from './channels.ts';
 
 export interface WidgetMember {
@@ -19,17 +19,16 @@ export class Widget implements Model {
         this.name = data.name;
         this.instantInvite = data.instant_invite;
         this.channels = data.channels;
-        this.members = data.members.map(x => {
+        this.members = data.members.map((x) => {
             return {
                 id: x.id,
                 username: x.username,
                 avatar: x.avatar,
                 status: x.status,
-                avatarURL: x.avatar_url
-            }
+                avatarURL: x.avatar_url,
+            };
         });
         this.presenceCount = data.presence_count;
-
     }
     session: Session;
     id: Snowflake;

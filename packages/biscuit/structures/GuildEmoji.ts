@@ -35,8 +35,8 @@ export class GuildEmoji extends Emoji implements Model {
         return emoji;
     }
 
-    async delete({ reason }: { reason?: string } = {}): Promise<GuildEmoji> {
-        await Guild.prototype.deleteEmoji.call({ id: this.guildId, session: this.session }, this.id, { reason });
+    async delete(reason?: string): Promise<GuildEmoji> {
+        await Guild.prototype.deleteEmoji.call({ id: this.guildId, session: this.session }, this.id, reason);
 
         return this;
     }

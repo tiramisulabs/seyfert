@@ -17,6 +17,10 @@ import User from './User.ts';
 import Message from './Message.ts';
 import * as Routes from '../Routes.ts';
 
+export type executeWebhookOptions = WebhookOptions & CreateMessage & { avatarUrl?: string; username?: string };
+
+export type editMessageWithThread = EditWebhookMessage & { threadId?: Snowflake };
+
 /**
  * @link https://discord.com/developers/docs/resources/webhook#edit-webhook-message-jsonform-params
  */
@@ -68,7 +72,7 @@ export class Webhook implements Model {
     user?: User;
 
     async execute(
-        options?: WebhookOptions & CreateMessage & { avatarUrl?: string; username?: string },
+        options?: executeWebhookOptions,
     ): Promise<(Message | undefined)> {
         if (!this.token) {
             return;
@@ -110,7 +114,7 @@ export class Webhook implements Model {
         return new Webhook(this.session, message);
     }
 
-    async fetchMessage(messageId: Snowflake, options?: { threadId?: Snowflake }): Promise<Message | undefined> {
+    async fetchMessage(messageId: Snowflake, threadId?: Snowflake): Promise<Message | undefined> {
         if (!this.token) {
             return;
         }
@@ -118,13 +122,13 @@ export class Webhook implements Model {
         const message = await this.session.rest.runMethod<DiscordMessage>(
             this.session.rest,
             'GET',
-            Routes.WEBHOOK_MESSAGE(this.id, this.token, messageId, options),
+            Routes.WEBHOOK_MESSAGE(this.id, this.token, messageId, { threadId }),
         );
 
         return new Message(this.session, message);
     }
 
-    async deleteMessage(messageId: Snowflake, options?: { threadId?: Snowflake }): Promise<void> {
+    async deleteMessage(messageId: Snowflake, threadId?: Snowflake): Promise<void> {
         if (!this.token) {
             throw new Error('No token found');
         }
@@ -132,13 +136,13 @@ export class Webhook implements Model {
         await this.session.rest.runMethod<undefined>(
             this.session.rest,
             'DELETE',
-            Routes.WEBHOOK_MESSAGE(this.id, this.token, messageId, options),
+            Routes.WEBHOOK_MESSAGE(this.id, this.token, messageId, { threadId }),
         );
     }
 
     async editMessage(
         messageId?: Snowflake,
-        options?: EditWebhookMessage & { threadId?: Snowflake },
+        options?: editMessageWithThread,
     ): Promise<Message> {
         if (!this.token) {
             throw new Error('No token found');
