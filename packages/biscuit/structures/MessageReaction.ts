@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-empty-interface
 import type { Session } from '../Session.ts';
 import type { DiscordMemberWithUser, DiscordMessageReactionAdd, DiscordReaction } from '../../discordeno/mod.ts';
 import Emoji from './Emoji.ts';
@@ -13,10 +12,8 @@ export interface MessageReactionAdd {
     emoji: Partial<Emoji>;
 }
 
-export interface MessageReactionRemove extends Omit<MessageReactionAdd, 'member'> {}
-
-export interface MessageReactionRemoveAll extends Pick<MessageReactionAdd, 'channelId' | 'messageId' | 'guildId'> {}
-
+export type MessageReactionRemove = Omit<MessageReactionAdd, 'member'>;
+export type MessageReactionRemoveAll = Pick<MessageReactionAdd, 'channelId' | 'messageId' | 'guildId'>
 export type MessageReactionRemoveEmoji = Pick<
     MessageReactionAdd,
     'channelId' | 'guildId' | 'messageId' | 'emoji'
