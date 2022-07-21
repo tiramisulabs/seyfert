@@ -38,8 +38,12 @@ export type DiscordRawEventHandler = (shard: Shard, data: DiscordGatewayPayload)
 // INTERACTIONS
 
 export type CreateApplicationCommands = CreateApplicationCommand | CreateContextApplicationCommand;
-export type UpsertDataApplicationCommands = AtLeastOne<CreateApplicationCommand> | AtLeastOne<CreateContextApplicationCommand>;
-export type LastCreateApplicationCommands = AtLeastOne<CreateContextApplicationCommand> | AtLeastOne<CreateApplicationCommand>
+export type UpsertDataApplicationCommands =
+    | AtLeastOne<CreateApplicationCommand>
+    | AtLeastOne<CreateContextApplicationCommand>;
+export type LastCreateApplicationCommands =
+    | AtLeastOne<CreateContextApplicationCommand>
+    | AtLeastOne<CreateApplicationCommand>;
 
 /**
  * @link https://discord.com/developers/docs/interactions/application-commands#endpoints-json-params

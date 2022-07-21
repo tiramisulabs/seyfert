@@ -7,7 +7,7 @@ import * as Routes from '../Routes.ts';
 /**
  * A member that comes from a thread
  * @link https://discord.com/developers/docs/resources/channel#thread-member-object
- * * */
+ * **/
 export class ThreadMember implements Model {
     constructor(session: Session, data: DiscordThreadMember) {
         this.session = session;

@@ -2,11 +2,10 @@ import type { Model } from './Base.ts';
 import type { Snowflake } from '../Snowflake.ts';
 import type { Session } from '../Session.ts';
 import type { DiscordMemberWithUser } from '../../discordeno/mod.ts';
-import type { ImageFormat, ImageSize } from '../Util.ts';
 import type { CreateGuildBan, ModifyGuildMember } from './guilds.ts';
 import { Guild } from './guilds.ts';
 import Util from '../Util.ts';
-import User from './User.ts';
+import { avatarOptions, User } from './User.ts';
 import * as Routes from '../Routes.ts';
 
 /**
@@ -91,7 +90,11 @@ export class Member implements Model {
 
     /** kicks a member from this guild */
     async kick(options: { reason?: string }): Promise<Member> {
-        await Guild.prototype.kickMember.call({ id: this.guildId, session: this.session }, this.user.id, options);
+        await Guild.prototype.kickMember.call(
+            { id: this.guildId, session: this.session },
+            this.user.id,
+            options.reason,
+        );
 
         return this;
     }
@@ -113,8 +116,8 @@ export class Member implements Model {
     }
 
     /** adds a role to this member */
-    async addRole(roleId: Snowflake, options: { reason?: string } = {}): Promise<void> {
-        await Guild.prototype.addRole.call({ id: this.guildId, session: this.session }, this.user.id, roleId, options);
+    async addRole(roleId: Snowflake, reason?: string): Promise<void> {
+        await Guild.prototype.addRole.call({ id: this.guildId, session: this.session }, this.user.id, roleId, reason);
     }
 
     /** removes a role from this member */
@@ -123,16 +126,16 @@ export class Member implements Model {
             { id: this.guildId, session: this.session },
             this.user.id,
             roleId,
-            options,
+            options.reason,
         );
     }
 
     /** gets the members's guild avatar, not to be confused with Member.user.avatarURL() */
-    avatarURL(options: { format?: ImageFormat; size?: ImageSize } = { size: 128 }): string {
+    avatarURL(options: avatarOptions): string {
         let url: string;
 
         if (this.user.bot) {
-            return this.user.avatarURL();
+            return this.user.avatarURL(options);
         }
 
         if (!this.avatarHash) {
@@ -141,7 +144,7 @@ export class Member implements Model {
             url = Routes.USER_AVATAR(this.user.id, Util.iconBigintToHash(this.avatarHash));
         }
 
-        return Util.formatImageURL(url, options.size, options.format);
+        return Util.formatImageURL(url, options.size ?? 128, options.format);
     }
 
     toString(): string {

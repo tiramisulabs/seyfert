@@ -17,8 +17,8 @@ export enum PrivacyLevels {
 
 export type stageEditOptions = {
     topic?: string;
-    privacy?: PrivacyLevels
-}
+    privacy?: PrivacyLevels;
+};
 
 export class StageInstance implements Model {
     constructor(session: Session, data: DiscordStageInstanceB) {

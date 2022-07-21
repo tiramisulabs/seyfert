@@ -1238,7 +1238,7 @@ export type CamelCase<S extends string> = S extends `${infer P1}_${infer P2}${in
 export type Camelize<T> = {
     // deno-lint-ignore ban-types
     [K in keyof T as CamelCase<string & K>]: T[K] extends Array<infer U> ? U extends {} ? Array<Camelize<U>>
-    : T[K]
+        : T[K]
         : // deno-lint-ignore ban-types
         T[K] extends {} ? Camelize<T[K]>
         : never;

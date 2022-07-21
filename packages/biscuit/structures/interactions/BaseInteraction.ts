@@ -216,7 +216,7 @@ export abstract class BaseInteraction implements Model {
 
     // deno-fmt-ignore
     async respond(resp: InteractionResponse): Promise<Message | undefined>;
-    async respond(resp: InteractionResponseWith ): Promise<Message | undefined>;
+    async respond(resp: InteractionResponseWith): Promise<Message | undefined>;
     async respond(
         resp: InteractionResponseWithData,
     ): Promise<Message | undefined> {

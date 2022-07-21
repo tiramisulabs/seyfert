@@ -114,7 +114,7 @@ export class Webhook implements Model {
         return new Webhook(this.session, message);
     }
 
-    async fetchMessage(messageId: Snowflake, threadId?: Snowflake ): Promise<Message | undefined> {
+    async fetchMessage(messageId: Snowflake, threadId?: Snowflake): Promise<Message | undefined> {
         if (!this.token) {
             return;
         }
@@ -128,7 +128,7 @@ export class Webhook implements Model {
         return new Message(this.session, message);
     }
 
-    async deleteMessage(messageId: Snowflake, threadId?: Snowflake ): Promise<void> {
+    async deleteMessage(messageId: Snowflake, threadId?: Snowflake): Promise<void> {
         if (!this.token) {
             throw new Error('No token found');
         }

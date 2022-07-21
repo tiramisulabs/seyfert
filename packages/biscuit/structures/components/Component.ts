@@ -40,7 +40,7 @@ export type Component =
     | TextInputComponent;
 
 /** Button Component */
-export type ClassicButton = Exclude<ButtonStyles, ButtonStyles.Link>
+export type ClassicButton = Exclude<ButtonStyles, ButtonStyles.Link>;
 
 export type ComponentsWithoutRow = Exclude<Component, ActionRowComponent>;
 

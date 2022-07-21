@@ -29,10 +29,10 @@ import * as Routes from '../Routes.ts';
 import { StickerItem } from './Sticker.ts';
 
 export type GuildMessage = Message & { guildId: Snowflake };
-export type WebhookMessage = Message & { 
-    author: Partial<User>; 
-    webhook: WebhookAuthor; 
-    member: undefined 
+export type WebhookMessage = Message & {
+    author: Partial<User>;
+    webhook: WebhookAuthor;
+    member: undefined;
 };
 
 export interface MessageActivity {

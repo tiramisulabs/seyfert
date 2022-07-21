@@ -10,7 +10,7 @@ import type {
 import BaseInteraction from './BaseInteraction.ts';
 import Message from '../Message.ts';
 
-export type ModalInMessage =  ModalSubmitInteraction & { message: Message };
+export type ModalInMessage = ModalSubmitInteraction & { message: Message };
 
 export class ModalSubmitInteraction extends BaseInteraction implements Model {
     constructor(session: Session, data: DiscordInteraction) {

@@ -1171,7 +1171,6 @@ export class Guild extends BaseGuild implements Model {
         );
         return new GuildPreview(this.session, preview);
     }
-    
 }
 
 export default Guild;
