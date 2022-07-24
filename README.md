@@ -9,7 +9,7 @@
 
 <img align="right" src="https://raw.githubusercontent.com/oasisjs/biscuit/main/assets/biscuit.svg" alt="biscuit"/>
 
-### Install (for [node18](https://nodejs.org/en/download/))
+### Install (for [node18](https://nodejs.org/en/download/)):
 
 ```sh-session
 npm install @oasisjs/biscuit
@@ -21,6 +21,9 @@ get a quick bot: `deno run --allow-net https://crux.land/2CENgN [token]`
 
 The biscuit Discord library is built ontop of Discordeno and webspec APIs, we aim to provide portability. Join our
 [Discord](https://discord.gg/zmuvzzEFz2)
+
+### Docs:
+- https://oasisjs.github.io/biscuit-web/
 
 ### Most importantly, biscuit is:
 
@@ -39,7 +42,7 @@ that you should not make software that does things it is not supposed to do.
 - Performant
 - Small bundles
 
-### Example bot (TS/JS)
+### Example bot (TS/JS):
 
 ```ts
 import Biscuit, { GatewayIntents } from '@oasisjs/biscuit';
@@ -81,20 +84,20 @@ session.on('messageCreate', async (message) => {
 
 ```
 
-### Minimal style guide
+### Minimal style guide:
 
 - 4 spaces, no tabs
 - Semi-colons are mandatory
 - Run `deno fmt`
 - Avoid circular dependencies
 
-### Contrib guide
+### Contrib guide:
 
 - Install Deno extension [here](https://marketplace.visualstudio.com/items?itemName=denoland.vscode-deno)
 - Run `deno check` to make sure the library works
 - Avoid sharing state between classes
 
-### Compatibility (bun)
+### Compatibility (bun):
 
 **⚠️ DISCLAIMER:** since bun is unstable I highly recommend running biscuit on node!
 
