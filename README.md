@@ -41,23 +41,44 @@ that you should not make software that does things it is not supposed to do.
 
 ### Example bot (TS/JS)
 
-```js
+```ts
 import Biscuit, { GatewayIntents } from '@oasisjs/biscuit';
 
-const intents = GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages;
-const session = new Biscuit({ token: 'your token', intents });
+const intents =
+  GatewayIntents.MessageContent |
+  GatewayIntents.Guilds |
+  GatewayIntents.GuildMessages;
+
+const session = new Biscuit({
+  token: 'your token, yes',
+  intents,
+});
+
+const PREFIX = 'your prefix';
 
 session.on('ready', ({ user }) => {
-    console.log('Logged in as:', user.username);
+  console.log('Logged in as:', user.username);
 });
 
-session.on('messageCreate', (message) => {
-    if (message.content.startsWith('!ping')) {
-        message.reply({ content: 'pong!' });
-    }
+session.on('messageCreate', async (message) => {
+  if (message.author?.bot || !message.content.startsWith(PREFIX)) {
+    return;
+  }
+
+  const args = message.content.substring(PREFIX.length).trim().split(/\s+/gm);
+  const command = args.shift()?.toLowerCase();
+
+  if (command === 'ping') {
+    await message.reply({
+      content: `pong!`,
+    });
+  }
 });
 
-session.start();
+(async () => {
+  await session.start();
+})();
+
 ```
 
 ### Minimal style guide
