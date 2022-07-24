@@ -22,6 +22,9 @@ get a quick bot: `deno run --allow-net https://crux.land/2CENgN [token]`
 The biscuit Discord library is built ontop of Discordeno and webspec APIs, we aim to provide portability. Join our
 [Discord](https://discord.gg/zmuvzzEFz2)
 
+### Docs
+> https://oasisjs.github.io/biscuit-web/
+
 ### Most importantly, biscuit is:
 
 - A modular [Discordeno](https://github.com/discordeno/discordeno) fork
