@@ -209,11 +209,10 @@ export class Session extends EventEmitter {
         return super.emit(event, ...params);
     }
 
-    async editProfile(nick?: string, avatarURL?: string | null): Promise<User> {
-        const avatar = avatarURL ? await urlToBase64(avatarURL) : avatarURL;
+    async editProfile(nick?: string, avatar?: string): Promise<User> {
         const user = await this.rest.runMethod<DiscordUser>(this.rest, 'PATCH', Routes.USER(), {
-            username: nick,
-            avatar: avatar,
+            username: nick ?? null,
+            avatar: avatar ?? null,
         });
         return new User(this, user);
     }

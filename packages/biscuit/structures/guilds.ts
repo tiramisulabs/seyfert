@@ -356,19 +356,7 @@ export interface GuildCreateOptionsRole {
     position?: number;
     permissions?: bigint;
     mentionable?: boolean;
-    iconURL?: string;
-    unicodeEmoji?: string | null;
-}
-
-export interface GuildCreateOptionsRole {
-    id: Snowflake;
-    name?: string;
-    color?: number;
-    hoist?: boolean;
-    position?: number;
-    permissions?: bigint;
-    mentionable?: boolean;
-    iconHash?: bigint;
+    icon?: string;
     unicodeEmoji?: string | null;
 }
 
@@ -397,21 +385,7 @@ export interface GuildCreateOptions {
     channels?: GuildCreateOptionsChannel[];
     defaultMessageNotifications?: DefaultMessageNotificationLevels;
     explicitContentFilter?: ExplicitContentFilterLevels;
-    iconURL?: string;
-    roles?: GuildCreateOptionsRole[];
-    systemChannelFlags?: SystemChannelFlags;
-    systemChannelId?: Snowflake;
-    verificationLevel?: VerificationLevels;
-}
-
-export interface GuildCreateOptions {
-    name: string;
-    afkChannelId?: Snowflake;
-    afkTimeout?: number;
-    channels?: GuildCreateOptionsChannel[];
-    defaultMessageNotifications?: DefaultMessageNotificationLevels;
-    explicitContentFilter?: ExplicitContentFilterLevels;
-    iconHash?: bigint;
+    icon?: string;
     roles?: GuildCreateOptionsRole[];
     systemChannelFlags?: SystemChannelFlags;
     systemChannelId?: Snowflake;
@@ -423,26 +397,15 @@ export interface GuildCreateOptions {
  */
 export interface GuildEditOptions extends Partial<GuildCreateOptions> {
     ownerId?: Snowflake;
-    splashURL?: string;
-    bannerURL?: string;
-    discoverySplashURL?: string;
+    splash?: string;
+    banner?: string;
+    discoverySplash?: string;
     features?: GuildFeatures[];
     rulesChannelId?: Snowflake;
     description?: string;
     premiumProgressBarEnabled?: boolean;
-}
-
-export interface GuildEditOptions extends Partial<GuildCreateOptions> {
-    ownerId?: Snowflake;
-    splashHash?: bigint;
-    bannerHash?: bigint;
-    discoverySplashHash?: bigint;
-    features?: GuildFeatures[];
-    rulesChannelId?: Snowflake;
     publicUpdatesChannelId?: Snowflake;
-    preferredLocale?: string | null;
-    description?: string;
-    premiumProgressBarEnabled?: boolean;
+    preferredLocale?: string;
 }
 
 /**
@@ -978,9 +941,7 @@ export class Guild extends BaseGuild implements Model {
             explicit_content_filter: options.explicitContentFilter,
             system_channel_flags: options.systemChannelFlags,
             verification_level: options.verificationLevel,
-            icon: 'iconURL' in options
-                ? options.iconURL && urlToBase64(options.iconURL)
-                : options.iconHash && Util.iconBigintToHash(options.iconHash),
+            icon: options.icon,
             channels: options.channels?.map((channel) => ({
                 name: channel.name,
                 nsfw: channel.nsfw,
@@ -1001,7 +962,7 @@ export class Guild extends BaseGuild implements Model {
                 hoist: role.hoist,
                 position: role.position,
                 unicode_emoji: role.unicodeEmoji,
-                icon: options.iconURL && urlToBase64(options.iconURL),
+                icon: options.icon,
             })),
         });
 
@@ -1012,24 +973,24 @@ export class Guild extends BaseGuild implements Model {
      * sets a new splash for the guild. Same as Guild.edit({..., splash: 'splashURL'})
      * @see {@link Guild}
      */
-    setSplash(splashURL: string): Promise<Guild> {
-        return this.edit({ splashURL });
+    setSplash(splash: string): Promise<Guild> {
+        return this.edit({ splash });
     }
 
     /**
      * sets a new banner for the guild. Same as Guild.edit({..., banner: 'bannerURL'})
      * @see {@link Guild}
      */
-    setBanner(bannerURL: string): Promise<Guild> {
-        return this.edit({ bannerURL });
+    setBanner(banner: string): Promise<Guild> {
+        return this.edit({ banner });
     }
 
     /**
      * Sets a new guild discovery splash image. Same as Guild.edit({..., discoverySplashURL: 'discoverySplashURL'})
      * @see {@link Guild}
      */
-    setDiscoverySplash(discoverySplashURL: string): Promise<Guild> {
-        return this.edit({ discoverySplashURL });
+    setDiscoverySplash(discoverySplash: string): Promise<Guild> {
+        return this.edit({ discoverySplash });
     }
 
     /**
@@ -1052,19 +1013,11 @@ export class Guild extends BaseGuild implements Model {
                 explicit_content_filter: options.explicitContentFilter,
                 system_channel_flags: options.systemChannelFlags,
                 verification_level: options.verificationLevel,
-                icon: 'iconURL' in options
-                    ? options.iconURL && urlToBase64(options.iconURL)
-                    : options.iconHash && Util.iconBigintToHash(options.iconHash),
+                icon: options.icon,
                 // extra props
-                splash: 'splashURL' in options
-                    ? options.splashURL && urlToBase64(options.splashURL)
-                    : options.iconHash && Util.iconBigintToHash(options.iconHash),
-                banner: 'bannerURL' in options
-                    ? options.bannerURL && urlToBase64(options.bannerURL)
-                    : options.bannerHash && Util.iconBigintToHash(options.bannerHash),
-                discovery_splash: 'discoverySplashURL' in options
-                    ? options.discoverySplashURL && urlToBase64(options.discoverySplashURL)
-                    : options.discoverySplashHash && Util.iconBigintToHash(options.discoverySplashHash),
+                splash: options.splash,
+                banner: options.banner,
+                discovery_splash: options.discoverySplash,
                 owner_id: options.ownerId,
                 rules_channel_id: options.rulesChannelId,
                 public_updates_channel_id: options.publicUpdatesChannelId,
