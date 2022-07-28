@@ -1040,7 +1040,7 @@ export class Guild extends BaseGuild implements Model {
      * @returns A promise that resolves to the edited guild.
      */
     async edit(options: GuildEditOptions): Promise<Guild> {
-        const guild = await this.session.rest.runMethod<DiscordGuild>(this.session.rest, 'PATCH', Routes.GUILDS(), {
+        const guild = await this.session.rest.runMethod<DiscordGuild>(this.session.rest, 'PATCH', Routes.GUILDS(this.id), {
             name: options.name,
             afk_channel_id: options.afkChannelId,
             afk_timeout: options.afkTimeout,
