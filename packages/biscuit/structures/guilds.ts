@@ -1040,35 +1040,40 @@ export class Guild extends BaseGuild implements Model {
      * @returns A promise that resolves to the edited guild.
      */
     async edit(options: GuildEditOptions): Promise<Guild> {
-        const guild = await this.session.rest.runMethod<DiscordGuild>(this.session.rest, 'PATCH', Routes.GUILDS(this.id), {
-            name: options.name,
-            afk_channel_id: options.afkChannelId,
-            afk_timeout: options.afkTimeout,
-            default_message_notifications: options.defaultMessageNotifications,
-            explicit_content_filter: options.explicitContentFilter,
-            system_channel_flags: options.systemChannelFlags,
-            verification_level: options.verificationLevel,
-            icon: 'iconURL' in options
-                ? options.iconURL && urlToBase64(options.iconURL)
-                : options.iconHash && Util.iconBigintToHash(options.iconHash),
-            // extra props
-            splash: 'splashURL' in options
-                ? options.splashURL && urlToBase64(options.splashURL)
-                : options.iconHash && Util.iconBigintToHash(options.iconHash),
-            banner: 'bannerURL' in options
-                ? options.bannerURL && urlToBase64(options.bannerURL)
-                : options.bannerHash && Util.iconBigintToHash(options.bannerHash),
-            discovery_splash: 'discoverySplashURL' in options
-                ? options.discoverySplashURL && urlToBase64(options.discoverySplashURL)
-                : options.discoverySplashHash && Util.iconBigintToHash(options.discoverySplashHash),
-            owner_id: options.ownerId,
-            rules_channel_id: options.rulesChannelId,
-            public_updates_channel_id: options.publicUpdatesChannelId,
-            preferred_locale: options.preferredLocale,
-            features: options.features,
-            description: options.description,
-            premiumProgressBarEnabled: options.premiumProgressBarEnabled,
-        });
+        const guild = await this.session.rest.runMethod<DiscordGuild>(
+            this.session.rest,
+            'PATCH',
+            Routes.GUILDS(this.id),
+            {
+                name: options.name,
+                afk_channel_id: options.afkChannelId,
+                afk_timeout: options.afkTimeout,
+                default_message_notifications: options.defaultMessageNotifications,
+                explicit_content_filter: options.explicitContentFilter,
+                system_channel_flags: options.systemChannelFlags,
+                verification_level: options.verificationLevel,
+                icon: 'iconURL' in options
+                    ? options.iconURL && urlToBase64(options.iconURL)
+                    : options.iconHash && Util.iconBigintToHash(options.iconHash),
+                // extra props
+                splash: 'splashURL' in options
+                    ? options.splashURL && urlToBase64(options.splashURL)
+                    : options.iconHash && Util.iconBigintToHash(options.iconHash),
+                banner: 'bannerURL' in options
+                    ? options.bannerURL && urlToBase64(options.bannerURL)
+                    : options.bannerHash && Util.iconBigintToHash(options.bannerHash),
+                discovery_splash: 'discoverySplashURL' in options
+                    ? options.discoverySplashURL && urlToBase64(options.discoverySplashURL)
+                    : options.discoverySplashHash && Util.iconBigintToHash(options.discoverySplashHash),
+                owner_id: options.ownerId,
+                rules_channel_id: options.rulesChannelId,
+                public_updates_channel_id: options.publicUpdatesChannelId,
+                preferred_locale: options.preferredLocale,
+                features: options.features,
+                description: options.description,
+                premiumProgressBarEnabled: options.premiumProgressBarEnabled,
+            },
+        );
 
         return new Guild(this.session, guild);
     }
