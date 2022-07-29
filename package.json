@@ -1,5 +1,5 @@
 {
-	"name": "biscuit",
+	"name": "biscuitland",
 	"workspaces": [
 		"packages/*"
 	],
