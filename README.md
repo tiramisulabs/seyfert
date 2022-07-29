@@ -15,8 +15,8 @@ for further reading join our [Discord](https://discord.gg/zmuvzzEFz2)
 
 ### Most importantly, biscuit is:
 
-- A wrapper to interface the Discord api
-- A bleeding edge API to contact Discord
+- A wrapper to interface the Discord API
+- A bleeding edge library
 
 Biscuit is primarily inspired by Discord.js and Discordeno but it does not include a cache layer by default, we believe
 that you should not make software that does things it is not supposed to do.
