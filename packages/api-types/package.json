@@ -1,0 +1,18 @@
+{
+	"name": "@biscuitland/api-types",
+	"version": "1.0.0",
+	"main": "./dist/index.js",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist/**"
+	],
+	"scripts": {
+		"build": "tsup",
+		"clean": "rm -rf dist && rm -rf .turbo",
+		"dev": "tsup --watch"
+	},
+	"devDependencies": {
+		"tsup": "^6.1.3"
+	}
+}

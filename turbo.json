@@ -1,0 +1,30 @@
+{
+	"$schema": "https://turborepo.org/schema.json",
+	"baseBranch": "origin/main",
+	"pipeline": {
+		"@biscuitland/api-types#build": {
+			"dependsOn": []
+		},
+		"@biscuitland/cache#build": {
+			"dependsOn": ["@biscuitland/api-types#build"]
+		},
+		"@biscuitland/rest#build": {
+			"dependsOn": ["@biscuitland/api-types#build"]
+		},
+		"@biscuitland/ws#build": {
+			"dependsOn": ["@biscuitland/api-types#build"]
+		},
+		"@biscuitland/core#build": {
+			"dependsOn": ["@biscuitland/api-types#build", "@biscuitland/rest#build", "@biscuitland/ws#build"]
+		},
+		"clean": {
+			"cache": false
+		},
+		"lint": {
+			"outputs": []
+		},
+		"dev": {
+			"cache": false
+		}
+	}
+}

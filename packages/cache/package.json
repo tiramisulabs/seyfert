@@ -1,0 +1,22 @@
+{
+	"name": "@biscuitland/cache",
+	"version": "1.0.0",
+	"main": "./dist/index.js",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist/**"
+	],
+	"scripts": {
+		"build": "tsup",
+		"clean": "rm -rf dist && rm -rf .turbo",
+		"dev": "tsup --watch"
+	},
+	"dependencies": {
+		"@biscuitland/api-types": "^1.0.0",
+		"ioredis": "^5.2.2"
+	},
+	"devDependencies": {
+		"tsup": "^6.1.3"
+	}
+}

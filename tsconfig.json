@@ -1,0 +1,9 @@
+{
+	"extends": "./tsconfig.build.json",
+	"compilerOptions": {
+		"baseUrl": ".",
+		"paths": {
+			"@biscuitland/*": ["packages/*/src"]
+		}
+	}
+}
