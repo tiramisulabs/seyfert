@@ -50,3 +50,6 @@ yarn-error.log*
 # tests
 __tests__
 __test__
+
+# changeset
+.changeset

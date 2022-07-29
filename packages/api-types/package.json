@@ -14,5 +14,44 @@
 	},
 	"devDependencies": {
 		"tsup": "^6.1.3"
+	},
+	"license": "Apache-2.0",
+	"author": "Yuzuru <yuzuru@programmer.net>",
+	"contributors": [
+		{
+			"name": "Yuzuru",
+			"url": "https://github.com/yuzudev",
+			"author": true
+		},
+		{
+			"name": "miia",
+			"url": "https://github.com/dragurimu"
+		},
+		{
+			"name": "n128",
+			"url": "https://github.com/nicolito128"
+		},
+		{
+			"name": "socram03",
+			"url": "https://github.com/socram03"
+		}
+	],
+	"homepage": "https://biscuitjs.com",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/oasisjs/bicuit.git"
+	},
+	"bugs": {
+		"url": "https://github.com/oasisjs/biscuit"
+	},
+	"keywords": [
+		"api",
+		"discord",
+		"bots",
+		"typescript",
+		"botdev"
+	],
+	"publishConfig": {
+		"access": "public"
 	}
 }
