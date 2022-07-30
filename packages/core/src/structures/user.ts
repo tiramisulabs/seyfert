@@ -90,7 +90,7 @@ export class User implements Model {
 
 	/** gets the user's username#discriminator */
 	get tag(): string {
-		return `${this.username}#${this.discriminator}}`;
+		return `${this.username}#${this.discriminator}`;
 	}
 
 	/** fetches this user */
