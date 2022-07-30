@@ -1,21 +1,7 @@
-import type { Localization, PermissionStrings, DiscordApplicationCommandOption } from '@biscuitland/api-types';
-import type { PermissionResolvable } from '../../structures/special/permissions';
+import type { Localization, PermissionStrings } from '@biscuitland/api-types';
+import type { CreateApplicationCommand } from '../../biscuit';
 import { ApplicationCommandTypes } from '@biscuitland/api-types';
 import { OptionBased } from './ApplicationCommandOption';
-
-/**
- * @link https://discord.com/developers/docs/interactions/application-commands#endpoints-json-params
- */
-export interface CreateApplicationCommand {
-    name: string;
-    nameLocalizations?: Localization;
-    description: string;
-    descriptionLocalizations?: Localization;
-    type?: ApplicationCommandTypes;
-    options?: DiscordApplicationCommandOption[];
-    defaultMemberPermissions?: PermissionResolvable;
-    dmPermission?: boolean;
-}
 
 export abstract class ApplicationCommandBuilder implements CreateApplicationCommand {
     constructor(
