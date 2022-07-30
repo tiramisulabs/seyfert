@@ -102,6 +102,12 @@ export abstract class BaseChannel implements Model {
         return this.type === ChannelTypes.GuildStageVoice;
     }
 
+    async fetch(): Promise<Channel> {
+        const channel = await this.session.rest.get<DiscordChannel>(CHANNEL(this.id));
+
+        return ChannelFactory.from(this.session, channel);
+    }
+
     toString(): string {
         return `<#${this.id}>`;
     }
