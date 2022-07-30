@@ -73,6 +73,20 @@ export function GUILD_MEMBER(guildId: Snowflake, userId: Snowflake): string {
     return `/guilds/${guildId}/members/${userId}`;
 }
 
+export interface ListGuildMembers {
+  limit?: number;
+  after?: string;
+}
+
+export function GUILD_MEMBERS(guildId: Snowflake, options?: ListGuildMembers) {
+    let url = `/guilds/${guildId}/members?`;
+
+    if (options?.limit) url += `limit=${options.limit}`;
+    if (options?.after) url += `&after=${options.after}`;
+
+    return url;
+}
+
 /** used to ban members */
 export function GUILD_BAN(guildId: Snowflake, userId: Snowflake): string {
     return `/guilds/${guildId}/bans/${userId}`;
