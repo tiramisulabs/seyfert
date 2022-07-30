@@ -16,6 +16,7 @@ import {
 	DiscordOverwrite,
 	DiscordRole,
 	DiscordVoiceRegion,
+	DiscordChannel,
 	ExplicitContentFilterLevels,
 	GuildNsfwLevel,
 	MakeRequired,
@@ -52,8 +53,9 @@ import {
 	GUILD_VANITY,
 	GUILD_WIDGET,
 	USER_GUILDS,
+	CHANNEL,
 } from '@biscuitland/api-types';
-import { GuildChannel, ReturnThreadsArchive, ThreadChannel } from './channels';
+import { ChannelFactory, GuildChannel, ReturnThreadsArchive, ThreadChannel, Channel } from './channels';
 import { Member, ThreadMember } from './members';
 import { Role } from './role';
 import { GuildEmoji } from './emojis';
@@ -1209,5 +1211,11 @@ export class Guild extends BaseGuild implements Model {
 		);
 
 		return new GuildPreview(this.session, preview);
+	}
+
+	async fetchChannel(channelID: string): Promise<Channel> {
+		const channel = await this.session.rest.get<DiscordChannel>(CHANNEL(channelID));
+
+		return ChannelFactory.from(this.session, channel);
 	}
 }
