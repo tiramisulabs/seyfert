@@ -669,11 +669,11 @@ export interface Ready extends Omit<DiscordReady, 'user'> {
 }
 
 /**
- * Alias of `keyof Events`. List of all events that can be emitted by the session.
+ * Alias of `keyof (Events) & string`. List of all events that can be emitted by the session.
  * Ex: ready, messageCreate, guildCreate, etc.
  * @see {@link Events}
 */
-export type EventsKey = keyof Events;
+export type EventsKey = keyof (Events) & string
 
 export interface Events {
 	ready: Handler<[Ready, number]>;
