@@ -29,18 +29,29 @@ that you should not make software that does things it is not supposed to do.
 ### Example bot (TS/JS)
 
 ```js
-import { Session, GatewayIntents } from '@biscuitland/core';
+import { Session, ChatInputApplicationCommandBuilder } from '@biscuitland/core';
+import { GatewayIntents } from '@biscuitland/api-types';
 
-const intents = GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages;
+const intents = GatewayIntents.Guilds;
 const session = new Session({ token: 'your token', intents });
 
-session.events.on('ready', ({ user }) => {
+const commands = [ 
+    new ChatInputApplicationCommandBuilder()
+        .setName('ping')
+        .setDescription('Replys with pong!')
+        .toJSON(),
+];
+
+session.events.on('ready', async ({ user }) => {
     console.log('Logged in as:', user.username);
+    await session.upsertApplicationCommands(commands);
 });
 
-session.events.on('messageCreate', (message) => {
-    if (message.content.startsWith('!ping')) {
-        message.reply({ content: 'pong!' });
+session.events.on('interactionCreate', (interaction) => {
+    if (interaction.isCommand()) {
+        interaction.respond({
+            with: { content: 'pong!'}
+        });
     }
 });
 

@@ -8,7 +8,7 @@ export * from './biscuit';
 export * from './structures';
 
 // EVENTS
-export * from './adapters/events';
+export * as Events from './adapters/events';
 export * from './adapters/event-adapter';
 export * from './adapters/default-event-adapter';
 
