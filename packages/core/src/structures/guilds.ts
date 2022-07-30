@@ -56,6 +56,7 @@ import {
 	GUILD_WIDGET,
 	USER_GUILDS,
 	CHANNEL,
+	GUILD_CHANNELS,
 } from '@biscuitland/api-types';
 import { ChannelFactory, GuildChannel, ReturnThreadsArchive, ThreadChannel, Channel } from './channels';
 import { Member, ThreadMember } from './members';
@@ -1220,7 +1221,13 @@ export class Guild extends BaseGuild implements Model {
 
 		return ChannelFactory.from(this.session, channel);
 	}
-	
+
+	async fetchChannels(): Promise<Channel[]> {
+		const channels = await this.session.rest.get<DiscordChannel[]>(GUILD_CHANNELS(this.id));
+
+		return channels.map(channel => ChannelFactory.from(this.session, channel));
+	}
+
     /** fetches a member */
     async fetchMember(memberId: Snowflake): Promise<Member> {
         const member = await this.session.rest.get<DiscordMemberWithUser>(
