@@ -1073,6 +1073,15 @@ export class Guild extends BaseGuild implements Model {
 	}
 
 	/**
+	 * Sets a new guild icon image. Same as Guild.edit({..., icon: 'url'})
+	 * @param icon - The new icon for the guild.
+	 * @see {@link Guild}
+	 */
+	setIcon(icon: string): Promise<Guild> {
+		return this.edit({ icon });
+	}
+
+	/**
 	 * Edits a guild and returns its data.
 	 * @see {@link Guild}
 	 * @see {@link GuildEditOptions}
