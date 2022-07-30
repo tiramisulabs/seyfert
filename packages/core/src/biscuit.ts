@@ -1,8 +1,34 @@
 import type {
+    AtLeastOne,
+    ApplicationCommandPermissionTypes,
+    DiscordApplicationCommand,
 	DiscordGatewayPayload,
+    DiscordGuildApplicationCommandPermissions,
+    DiscordUser,
+    DiscordApplicationCommandOption,
 	GatewayIntents,
+    Localization,
 	Snowflake,
 } from '@biscuitland/api-types';
+
+import { ApplicationCommandTypes, GatewayOpcodes } from '@biscuitland/api-types';
+
+// routes
+
+import {
+    APPLICATION_COMMANDS,
+    GUILD_APPLICATION_COMMANDS,
+    GUILD_APPLICATION_COMMANDS_PERMISSIONS,
+    GUILD_APPLICATION_COMMANDS_LOCALIZATIONS,
+    USER
+} from '@biscuitland/api-types';
+
+import type { PermissionResolvable } from './structures/special/permissions';
+import type { Activities, StatusTypes } from './structures/presence';
+
+// structs
+
+import { User } from './structures/user';
 
 // DiscordGetGatewayBot;
 
@@ -17,6 +43,81 @@ import { DefaultEventAdapter } from './adapters/default-event-adapter';
 
 import { Util } from './utils/util';
 import { Shard } from '@biscuitland/ws';
+
+// PRESENCE
+
+/**
+ * @link https://discord.com/developers/docs/topics/gateway#update-status
+ */
+export interface StatusUpdate {
+    activities: Activities[];
+    status: StatusTypes;
+}
+
+// END PRESENCE
+
+// INTERACTIONS
+
+export type CreateApplicationCommands = CreateApplicationCommand | CreateContextApplicationCommand;
+export type UpsertDataApplicationCommands =
+    | AtLeastOne<CreateApplicationCommand>
+    | AtLeastOne<CreateContextApplicationCommand>;
+export type LastCreateApplicationCommands =
+    | AtLeastOne<CreateContextApplicationCommand>
+    | AtLeastOne<CreateApplicationCommand>;
+
+/**
+ * @link https://discord.com/developers/docs/interactions/application-commands#endpoints-json-params
+ */
+export interface CreateApplicationCommand {
+    name: string;
+    nameLocalizations?: Localization;
+    description: string;
+    descriptionLocalizations?: Localization;
+    type?: ApplicationCommandTypes;
+    options?: DiscordApplicationCommandOption[];
+    defaultMemberPermissions?: PermissionResolvable;
+    dmPermission?: boolean;
+}
+
+/**
+ * @link https://discord.com/developers/docs/interactions/application-commands#endpoints-json-params
+ */
+export interface CreateContextApplicationCommand extends Omit<CreateApplicationCommand, 'options'> {
+    type: ApplicationCommandTypes.Message | ApplicationCommandTypes.User;
+}
+
+/**
+ * @link https://discord.com/developers/docs/interactions/application-commands#endpoints-query-string-params
+ */
+export interface GetApplicationCommand {
+    guildId?: Snowflake;
+    withLocalizations?: boolean;
+}
+
+export interface UpsertApplicationCommands extends CreateApplicationCommand {
+    id?: Snowflake;
+}
+
+/**
+ * @link https://discord.com/developers/docs/interactions/application-commands#edit-application-command-permissions
+ */
+export interface ApplicationCommandPermissions {
+    id: Snowflake;
+    type: ApplicationCommandPermissionTypes;
+    permission: boolean;
+}
+
+/**
+ * @link https://discord.com/developers/docs/interactions/application-commands#edit-application-command-permissions
+ */
+export interface ApplicationCommandPermissions {
+    id: Snowflake;
+    type: ApplicationCommandPermissionTypes;
+    permission: boolean;
+}
+
+// END INTERACTIONS
 
 export type DiscordRawEventHandler = (
 	shard: Shard,
@@ -48,27 +149,28 @@ export interface BiscuitOptions {
 		options: any;
 	};
 }
+
 import * as Actions from './adapters/events';
 
 export class Session {
-	#applicationId?: Snowflake;
-	#botId?: Snowflake;
+	private _applicationId?: Snowflake;
+	private _botId?: Snowflake;
 	token: string;
 
 	set botId(snowflake: Snowflake) {
-		this.#botId = snowflake;
+		this._botId = snowflake;
 	}
 
 	get botId(): Snowflake {
-		return this.#botId ?? Util.getBotIdFromToken(this.token);
+		return this._botId ?? Util.getBotIdFromToken(this.token);
 	}
 
 	set applicationId(snowflake: Snowflake) {
-		this.#applicationId = snowflake;
+		this._applicationId = snowflake;
 	}
 
 	get applicationId(): Snowflake {
-		return this.#applicationId ?? this.botId;
+		return this._applicationId ?? this.botId;
 	}
 
 	static readonly DEFAULTS = {
@@ -209,4 +311,184 @@ export class Session {
 
 		this.ws.shards();
 	}
+
+    // USEFUL METHODS
+
+    async editProfile(nick?: string, avatar?: string): Promise<User> {
+        const user = await this.rest.patch<DiscordUser>(USER(), {
+            username: nick ?? null,
+            avatar: avatar ?? null,
+        });
+
+        return new User(this, user);
+    }
+
+    // END USEFUL METHODS
+
+    // PRESENCE
+
+
+    /**
+     * Edit bot's status
+     * tip: execute this on the ready event if possible
+     * @example
+     * for (const { id } of session.gateway.manager.shards) {
+     *    session.editStatus(id, data);
+     * }
+     */
+    editStatus(shardId: number, status: StatusUpdate, prio = true): void {
+        const shard = this.ws.agent.shards.get(shardId);
+
+        if (!shard) {
+            throw new Error(`Unknown shard ${shardId}`);
+        }
+
+        shard.send({
+            op: GatewayOpcodes.PresenceUpdate,
+            d: {
+                status: status.status,
+                since: null,
+                afk: false,
+                activities: status.activities.map((activity) => {
+                    return {
+                        name: activity.name,
+                        type: activity.type,
+                        url: activity.url,
+                        created_at: activity.createdAt,
+                        timestamps: activity.timestamps,
+                        application_id: this.applicationId,
+                        details: activity.details,
+                        state: activity.state,
+                        emoji: activity.emoji && {
+                            name: activity.emoji.name,
+                            id: activity.emoji.id,
+                            animated: activity.emoji.animated,
+                        },
+                        party: activity.party,
+                        assets: activity.assets &&
+                            {
+                                large_image: activity.assets.largeImage,
+                                large_text: activity.assets.largeText,
+                                small_image: activity.assets.smallImage,
+                                small_text: activity.assets.smallText,
+                            },
+                        secrets: activity.secrets,
+                        instance: activity.instance,
+                        flags: activity.flags,
+                        buttons: activity.buttons,
+                    };
+                }),
+            },
+        }, prio);
+    }
+
+    // END PRESENCE
+
+    // INTERACTIONS
+
+    updateApplicationCommandPermissions(
+        guildId: Snowflake,
+        id: Snowflake,
+        bearerToken: string,
+        options: ApplicationCommandPermissions[],
+    ): Promise<DiscordGuildApplicationCommandPermissions> {
+        return this.rest.post<DiscordGuildApplicationCommandPermissions>(
+            GUILD_APPLICATION_COMMANDS_PERMISSIONS(this.applicationId, guildId, id),
+            {
+                permissions: options,
+            },
+            {
+                headers: { 'Authorization': `Bearer ${bearerToken}` },
+            },
+        );
+    }
+
+    fetchApplicationCommand(id: Snowflake, options?: GetApplicationCommand): Promise<DiscordApplicationCommand> {
+        return this.rest.get<DiscordApplicationCommand>(
+            options?.guildId
+                ? GUILD_APPLICATION_COMMANDS_LOCALIZATIONS(
+                    this.applicationId,
+                    options.guildId,
+                    id,
+                    options?.withLocalizations,
+                )
+                : APPLICATION_COMMANDS(this.applicationId, id),
+        );
+    }
+
+    fetchApplicationCommandPermissions(guildId: Snowflake): Promise<DiscordGuildApplicationCommandPermissions[]> {
+        return this.rest.get<DiscordGuildApplicationCommandPermissions[]>(
+            GUILD_APPLICATION_COMMANDS_PERMISSIONS(this.applicationId, guildId),
+        );
+    }
+
+    fetchApplicationCommandPermission(
+        guildId: Snowflake,
+        id: Snowflake,
+    ): Promise<DiscordGuildApplicationCommandPermissions> {
+        return this.rest.get<DiscordGuildApplicationCommandPermissions>(
+            GUILD_APPLICATION_COMMANDS_PERMISSIONS(this.applicationId, guildId, id),
+        );
+    }
+
+    upsertApplicationCommand(
+        id: Snowflake,
+        options: UpsertDataApplicationCommands,
+        guildId?: Snowflake,
+    ): Promise<DiscordApplicationCommand> {
+        return this.rest.patch<DiscordApplicationCommand>(
+            guildId
+                ? GUILD_APPLICATION_COMMANDS(this.applicationId, guildId)
+                : APPLICATION_COMMANDS(this.applicationId, id),
+            this.isContextApplicationCommand(options)
+                ? {
+                    name: options.name,
+                    type: options.type,
+                }
+                : {
+                    name: options.name,
+                    description: options.description,
+                    type: options.type,
+                    options: options.options,
+                },
+        );
+    }
+
+    upsertApplicationCommands(
+        options: UpsertDataApplicationCommands[],
+        guildId?: Snowflake,
+    ): Promise<DiscordApplicationCommand[]> {
+        return this.rest.put<DiscordApplicationCommand[]>(
+            guildId
+                ? GUILD_APPLICATION_COMMANDS(this.applicationId, guildId)
+                : APPLICATION_COMMANDS(this.applicationId),
+            options.map((o) =>
+                this.isContextApplicationCommand(o)
+                    ? {
+                        name: o.name,
+                        type: o.type,
+                    }
+                    : {
+                        name: o.name,
+                        description: o.description,
+                        type: o.type,
+                        options: o.options,
+                    }
+            ),
+        );
+    }
+
+    fetchCommands(guildId?: Snowflake): Promise<DiscordApplicationCommand[]> {
+        return this.rest.get<DiscordApplicationCommand[]>(
+            guildId
+                ? GUILD_APPLICATION_COMMANDS(this.applicationId, guildId)
+                : APPLICATION_COMMANDS(this.applicationId),
+        );
+    }
+
+    isContextApplicationCommand(cmd: LastCreateApplicationCommands): cmd is AtLeastOne<CreateContextApplicationCommand> {
+        return cmd.type === ApplicationCommandTypes.Message || cmd.type === ApplicationCommandTypes.User;
+    }
+
+    // END INTERACTIONS
 }
