@@ -51,7 +51,7 @@ import { Shard } from '@biscuitland/ws';
  */
 export interface StatusUpdate {
     activities: Activities[];
-    status: StatusTypes;
+    status: keyof typeof StatusTypes;
 }
 
 // END PRESENCE
