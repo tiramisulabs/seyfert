@@ -12,6 +12,16 @@
 		"clean": "rm -rf dist && rm -rf .turbo",
 		"dev": "tsup --watch"
 	},
+	"exports": {
+		"./package.json": "./package.json",
+		".": {
+			"import": {
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.mjs"
+			},
+			"require": "./dist/index.js"
+		}
+	},
 	"dependencies": {
 		"@biscuitland/api-types": "^1.0.0",
 		"@biscuitland/rest": "^1.0.0",

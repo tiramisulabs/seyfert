@@ -13,6 +13,9 @@
 		"npm": ">=7.0.0",
 		"node": ">=14.0.0"
 	},
+	"dependencies": {
+		"@changesets/cli": "^2.24.1"
+	},
 	"devDependencies": {
 		"@types/node": "^18.0.6",
 		"@typescript-eslint/eslint-plugin": "^5.30.7",
@@ -59,8 +62,5 @@
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/oasisjs/bicuit.git"
-	},
-	"dependencies": {
-		"@changesets/cli": "^2.24.1"
 	}
 }
