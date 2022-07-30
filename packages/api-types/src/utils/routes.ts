@@ -483,3 +483,12 @@ export function GUILD_VANITY(guildId: Snowflake): string {
 export function GUILD_PREVIEW(guildId: Snowflake): string {
     return `/guilds/${guildId}/preview`;
 }
+
+/**
+ * @link https://discord.com/developers/docs/resources/guild#get-guild-channels
+ * @param guildId The guild id.
+ * @returns Get guild channels url.
+ */
+export function GUILD_CHANNELS(guildId: Snowflake): string {
+    return `/guilds/${guildId}/channels`;
+}
