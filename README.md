@@ -29,7 +29,8 @@ that you should not make software that does things it is not supposed to do.
 ### Example bot (TS/JS)
 
 ```js
-import { Session, GatewayIntents } from '@biscuitland/core';
+import { Session } from '@biscuitland/core';
+import { GatewayIntents } from '@biscuitland/api-types';
 
 const intents = GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages;
 const session = new Session({ token: 'your token', intents });
