@@ -25,6 +25,7 @@ import {
 	VideoQualityModes,
 	GetBans,
 	GetInvite,
+    ListGuildMembers,
 } from '@biscuitland/api-types';
 import type { ImageFormat, ImageSize } from '../utils/util';
 import { GuildFeatures, PremiumTiers } from '@biscuitland/api-types';
@@ -45,6 +46,7 @@ import {
 	GUILD_PRUNE,
 	GUILD_INVITES,
 	GUILD_MEMBER,
+    GUILD_MEMBERS,
 	GUILD_MEMBER_ROLE,
 	GUILD_ROLE,
 	GUILD_ROLES,
@@ -1218,4 +1220,22 @@ export class Guild extends BaseGuild implements Model {
 
 		return ChannelFactory.from(this.session, channel);
 	}
+	
+    /** fetches a member */
+    async fetchMember(memberId: Snowflake): Promise<Member> {
+        const member = await this.session.rest.get<DiscordMemberWithUser>(
+            GUILD_MEMBER(this.id, memberId)
+        );
+
+        return new Member(this.session, member, this.id);
+    }
+
+    /** fetches multiple members */
+    async fetchMembers(options?: ListGuildMembers): Promise<Member[]> {
+        const members = await this.session.rest.get<DiscordMemberWithUser[]>(
+            GUILD_MEMBERS(this.id, options)
+        );
+
+        return members.map((member) => new Member(this.session, member, this.id));
+    }
 }

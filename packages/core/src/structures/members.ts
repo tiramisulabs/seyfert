@@ -164,6 +164,12 @@ export class Member implements Model {
 		);
 	}
 
+    async fetch(): Promise<Member> {
+        const member = await Guild.prototype.fetchMember.call({ session: this.session, id: this.guildId }, this.id);
+
+        return member;
+    }
+
 	/** gets the members's guild avatar, not to be confused with Member.user.avatarURL() */
 	avatarURL(options: AvatarOptions): string {
 		let url: string;
