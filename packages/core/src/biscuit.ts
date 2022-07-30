@@ -2,7 +2,7 @@ import type {
     AtLeastOne,
     ApplicationCommandPermissionTypes,
     DiscordApplicationCommand,
-	DiscordGatewayPayload,
+	// DiscordGatewayPayload,
     DiscordGuildApplicationCommandPermissions,
     DiscordUser,
     DiscordApplicationCommandOption,
@@ -210,8 +210,8 @@ export class Session {
 		// makeWs
 
 		const defHandler: DiscordRawEventHandler = (shard, event) => {
-			let message = event.data;
-			let data = JSON.parse(message) as DiscordGatewayPayload;
+            let data = event as any;
+			// let data = JSON.parse(message) as DiscordGatewayPayload;
 
 			Actions.raw(this, shard.id, data);
 
