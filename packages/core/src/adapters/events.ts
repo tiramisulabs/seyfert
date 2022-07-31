@@ -688,7 +688,7 @@ export interface Ready extends Omit<DiscordReady, 'user'> {
  * Ex: ready, messageCreate, guildCreate, etc.
  * @see {@link Events}
 */
-export type EventsKey = keyof (Events) & string
+export type AllEvents = keyof Events;
 
 export interface Events {
 	ready: Handler<[Ready, number]>;
