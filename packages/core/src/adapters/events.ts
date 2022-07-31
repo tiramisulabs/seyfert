@@ -38,6 +38,8 @@ import type {
 	DiscordTypingStart,
 	DiscordUser,
 	DiscordWebhookUpdate,
+    DiscordVoiceState,
+    DiscordVoiceServerUpdate,
 } from '@biscuitland/api-types';
 
 import type { Session } from '../biscuit';
@@ -660,6 +662,19 @@ export const GUILD_SCHEDULED_EVENT_USER_REMOVE: RawHandler<
 	});
 };
 
+export const VOICE_STATE_UPDATE: RawHandler<DiscordVoiceState> = (session, _shardId, payload) => {
+    if (!payload.guild_id) return;
+    session.events.emit('voiceStateUpdate', payload);
+};
+
+export const VOICE_SERVER_UPDATE: RawHandler<DiscordVoiceServerUpdate> = (session, _shardId, payload) => {
+    session.events.emit('voiceServerUpdate', {
+        token: payload.token,
+        guildId: payload.guild_id,
+        endpoint: payload.endpoint ? payload.endpoint : undefined
+    });
+};
+
 export const raw: RawHandler<unknown> = (session, shardId, data) => {
 	session.events.emit('raw', data as { t: string; d: unknown }, shardId);
 };
@@ -788,4 +803,8 @@ export interface Events {
 	userUpdate: Handler<[User]>;
 	presenceUpdate: Handler<[Presence]>;
 	debug: Handler<[string]>;
+    voiceStateUpdate: Handler<[DiscordVoiceState]>;
+    voiceServerUpdate: Handler<
+        [{ token: string, guildId: Snowflake, endpoint?: string }]
+    >;
 }
