@@ -2122,7 +2122,6 @@ export interface DiscordGuildBanAddRemove {
 }
 
 /** https://discord.com/developers/docs/topics/gateway#message-reaction-remove */
-// deno-lint-ignore no-empty-interface
 export interface DiscordMessageReactionRemove
 	extends Omit<DiscordMessageReactionAdd, 'member'> {}
 
@@ -2204,7 +2203,6 @@ export interface DiscordReady {
 }
 
 /** https://discord.com/developers/docs/resources/guild#unavailable-guild-object */
-// deno-lint-ignore no-empty-interface
 export interface DiscordUnavailableGuild
 	extends Pick<DiscordGuild, 'id' | 'unavailable'> {}
 
@@ -2376,7 +2374,6 @@ export interface DiscordGuildMemberUpdate {
 }
 
 /** https://discord.com/developers/docs/topics/gateway#message-reaction-remove-all */
-// deno-lint-ignore no-empty-interface
 export interface DiscordMessageReactionRemoveAll
 	extends Pick<
 		DiscordMessageReactionAdd,

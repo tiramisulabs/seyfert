@@ -64,7 +64,7 @@ export interface AllowedMentions {
 }
 
 /**
- * @link https://github.com/denoland/deno_doc/blob/main/lib/types.d.ts
+ * @link https://discord.com/developers/docs/resources/channel#message-reference-object-message-reference-structure
  * channelId is optional when creating a reply, but will always be present when receiving an event/response that includes this data model.
  */
 export interface CreateMessageReference {
@@ -384,7 +384,7 @@ export class Message implements Model {
 	}
 
 	/**
-	 * Compatibility with Discordeno
+	 * Whether the author is bot.
 	 * same as Message.author.bot
 	 */
 	get isBot(): boolean {

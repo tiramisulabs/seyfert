@@ -7,7 +7,6 @@ export async function urlToBase64(url: string): Promise<string> {
 }
 
 // Copyright 2018-2021 the Deno authors. All rights reserved. MIT license.
-// deno-fmt-ignore
 const base64abc: string[] = [
     "A", "B", "C",
     "D", "E", "F",

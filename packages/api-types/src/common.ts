@@ -1263,7 +1263,6 @@ export type PickPartial<T, K extends keyof T> = {
 	[P in keyof T]?: T[P] | undefined;
 } & { [P in K]: T[P] };
 
-// deno-lint-ignore no-explicit-any
 export type OmitFirstFnArg<F> = F extends (x: any, ...args: infer P) => infer R
 	? (...args: P) => R
 	: never;
