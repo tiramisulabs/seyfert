@@ -73,6 +73,20 @@ export function GUILD_MEMBER(guildId: Snowflake, userId: Snowflake): string {
     return `/guilds/${guildId}/members/${userId}`;
 }
 
+export interface ListGuildMembers {
+  limit?: number;
+  after?: string;
+}
+
+export function GUILD_MEMBERS(guildId: Snowflake, options?: ListGuildMembers) {
+    let url = `/guilds/${guildId}/members?`;
+
+    if (options?.limit) url += `limit=${options.limit}`;
+    if (options?.after) url += `&after=${options.after}`;
+
+    return url;
+}
+
 /** used to ban members */
 export function GUILD_BAN(guildId: Snowflake, userId: Snowflake): string {
     return `/guilds/${guildId}/bans/${userId}`;
@@ -468,4 +482,13 @@ export function GUILD_VANITY(guildId: Snowflake): string {
  */
 export function GUILD_PREVIEW(guildId: Snowflake): string {
     return `/guilds/${guildId}/preview`;
+}
+
+/**
+ * @link https://discord.com/developers/docs/resources/guild#get-guild-channels
+ * @param guildId The guild id.
+ * @returns Get guild channels url.
+ */
+export function GUILD_CHANNELS(guildId: Snowflake): string {
+    return `/guilds/${guildId}/channels`;
 }

@@ -16,6 +16,7 @@ import {
 	DiscordOverwrite,
 	DiscordRole,
 	DiscordVoiceRegion,
+	DiscordChannel,
 	ExplicitContentFilterLevels,
 	GuildNsfwLevel,
 	MakeRequired,
@@ -24,6 +25,7 @@ import {
 	VideoQualityModes,
 	GetBans,
 	GetInvite,
+    ListGuildMembers,
 } from '@biscuitland/api-types';
 import type { ImageFormat, ImageSize } from '../utils/util';
 import { GuildFeatures, PremiumTiers } from '@biscuitland/api-types';
@@ -44,6 +46,7 @@ import {
 	GUILD_PRUNE,
 	GUILD_INVITES,
 	GUILD_MEMBER,
+    GUILD_MEMBERS,
 	GUILD_MEMBER_ROLE,
 	GUILD_ROLE,
 	GUILD_ROLES,
@@ -52,8 +55,10 @@ import {
 	GUILD_VANITY,
 	GUILD_WIDGET,
 	USER_GUILDS,
+	CHANNEL,
+	GUILD_CHANNELS,
 } from '@biscuitland/api-types';
-import { GuildChannel, ReturnThreadsArchive, ThreadChannel } from './channels';
+import { ChannelFactory, GuildChannel, ReturnThreadsArchive, ThreadChannel, Channel } from './channels';
 import { Member, ThreadMember } from './members';
 import { Role } from './role';
 import { GuildEmoji } from './emojis';
@@ -1210,4 +1215,34 @@ export class Guild extends BaseGuild implements Model {
 
 		return new GuildPreview(this.session, preview);
 	}
+
+	async fetchChannel(channelID: string): Promise<Channel> {
+		const channel = await this.session.rest.get<DiscordChannel>(CHANNEL(channelID));
+
+		return ChannelFactory.from(this.session, channel);
+	}
+
+	async fetchChannels(): Promise<Channel[]> {
+		const channels = await this.session.rest.get<DiscordChannel[]>(GUILD_CHANNELS(this.id));
+
+		return channels.map(channel => ChannelFactory.from(this.session, channel));
+	}
+
+    /** fetches a member */
+    async fetchMember(memberId: Snowflake): Promise<Member> {
+        const member = await this.session.rest.get<DiscordMemberWithUser>(
+            GUILD_MEMBER(this.id, memberId)
+        );
+
+        return new Member(this.session, member, this.id);
+    }
+
+    /** fetches multiple members */
+    async fetchMembers(options?: ListGuildMembers): Promise<Member[]> {
+        const members = await this.session.rest.get<DiscordMemberWithUser[]>(
+            GUILD_MEMBERS(this.id, options)
+        );
+
+        return members.map((member) => new Member(this.session, member, this.id));
+    }
 }

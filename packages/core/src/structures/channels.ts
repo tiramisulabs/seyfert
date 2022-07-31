@@ -102,6 +102,12 @@ export abstract class BaseChannel implements Model {
         return this.type === ChannelTypes.GuildStageVoice;
     }
 
+    async fetch(): Promise<Channel> {
+        const channel = await this.session.rest.get<DiscordChannel>(CHANNEL(this.id));
+
+        return ChannelFactory.from(this.session, channel);
+    }
+
     toString(): string {
         return `<#${this.id}>`;
     }
@@ -114,6 +120,7 @@ export class CategoryChannel extends BaseChannel {
     constructor(session: Session, data: DiscordChannel) {
         super(session, data);
         this.id = data.id;
+        this.session = session;
         this.name = data.name ? data.name : '';
         this.nsfw = data.nsfw ? data.nsfw : false;
         this.guildId = data.guild_id ? data.guild_id : undefined;
@@ -126,7 +133,8 @@ export class CategoryChannel extends BaseChannel {
             : [];
     }
 
-    id: Snowflake;
+    readonly id: Snowflake;
+    readonly session: Session;
     parentId?: string;
     name: string;
     permissionOverwrites: PermissionsOverwrites[];
