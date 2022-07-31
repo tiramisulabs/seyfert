@@ -71,13 +71,13 @@ export type LastCreateApplicationCommands =
  */
 export interface CreateApplicationCommand {
     name: string;
-    nameLocalizations?: Localization;
+    name_localizations?: Localization;
     description: string;
-    descriptionLocalizations?: Localization;
+    description_localizations?: Localization;
     type?: ApplicationCommandTypes;
     options?: DiscordApplicationCommandOption[];
-    defaultMemberPermissions?: PermissionResolvable;
-    dmPermission?: boolean;
+    default_member_permissions?: PermissionResolvable;
+    dm_permission?: boolean;
 }
 
 /**
