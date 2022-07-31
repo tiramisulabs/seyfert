@@ -57,7 +57,13 @@ session.events.on('interactionCreate', (interaction) => {
 session.start();
 ```
 
-### Known issues:
+## Links
+* [Website](https://biscuitjs.com/)
+* [Documentation](https://docs.biscuitjs.com/)
+* [Discord](https://discord.gg/evqgTQYqn7)
+* [core](https://www.npmjs.com/package/@biscuitland/core) | [api-types](https://www.npmjs.com/package/@biscuitland/api-types) | [cache](https://www.npmjs.com/package/@biscuitland/cache) | [rest](https://www.npmjs.com/package/@biscuitland/rest) | [ws](https://www.npmjs.com/package/@biscuitland/ws)
+
+## Known issues:
 - node18 is required to run the library, however --experimental-fetch flag should work on node16+
 - redis cache (wip)
 - no optimal way to deliver a webspec bun version to the registry (#50)
