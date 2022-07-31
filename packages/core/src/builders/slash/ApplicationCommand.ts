@@ -3,7 +3,7 @@ import type { CreateApplicationCommand } from '../../biscuit';
 import { ApplicationCommandTypes } from '@biscuitland/api-types';
 import { OptionBased } from './ApplicationCommandOption';
 
-export abstract class ApplicationCommandBuilder implements CreateApplicationCommand {
+export abstract class ApplicationCommandBuilder {
     constructor(
         type: ApplicationCommandTypes = ApplicationCommandTypes.ChatInput,
         name: string = '',
@@ -100,10 +100,10 @@ export class ChatInputApplicationCommandBuilder extends ApplicationCommandBuilde
             name: this.name,
             description: this.description,
             options: this.options?.map((o) => o.toJSON()) ?? [],
-            defaultMemberPermissions: this.defaultMemberPermissions,
-            nameLocalizations: this.nameLocalizations,
-            descriptionLocalizations: this.descriptionLocalizations,
-            dmPermission: this.dmPermission,
+            default_member_permissions: this.defaultMemberPermissions,
+            name_localizations: this.nameLocalizations,
+            description_localizations: this.descriptionLocalizations,
+            dm_permission: this.dmPermission,
         };
     }
 }

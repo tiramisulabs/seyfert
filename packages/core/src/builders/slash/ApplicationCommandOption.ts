@@ -108,8 +108,8 @@ export class OptionBuilderLimitedValues extends OptionBuilder {
         return {
             ...super.toJSON(),
             choices: this.choices?.map((c) => c.toJSON()) ?? [],
-            minValue: this.minValue,
-            maxValue: this.maxValue,
+            min_value: this.minValue,
+            max_value: this.maxValue,
         };
     }
 }
@@ -166,7 +166,7 @@ export class OptionBuilderChannel extends OptionBuilder {
     override toJSON(): ApplicationCommandOption {
         return {
             ...super.toJSON(),
-            channelTypes: this.channelTypes ?? [],
+            channel_types: this.channelTypes ?? [],
         };
     }
 }
@@ -323,11 +323,11 @@ export interface ApplicationCommandOption {
     /** 1-32 character name matching lowercase `^[\w-]{1,32}$` */
     name: string;
     /** Localization object for the `name` field. Values follow the same restrictions as `name` */
-    nameLocalizations?: Localization;
+    name_localizations?: Localization;
     /** 1-100 character description */
     description: string;
     /** Localization object for the `description` field. Values follow the same restrictions as `description` */
-    descriptionLocalizations?: Localization;
+    description_localizations?: Localization;
     /** If the parameter is required or optional--default `false` */
     required?: boolean;
     /** Choices for `string` and `int` types for the user to pick from */
@@ -337,9 +337,9 @@ export interface ApplicationCommandOption {
     /** if autocomplete interactions are enabled for this `String`, `Integer`, or `Number` type option */
     autocomplete?: boolean;
     /** If the option is a channel type, the channels shown will be restricted to these types */
-    channelTypes?: ChannelTypes[];
+    channel_types?: ChannelTypes[];
     /** Minimum number desired. */
-    minValue?: number;
+    min_value?: number;
     /** Maximum number desired. */
-    maxValue?: number;
+    max_value?: number;
 }
