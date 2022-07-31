@@ -161,7 +161,7 @@ export class SelectMenu extends BaseComponent implements SelectMenuComponent {
 			return <SelectMenuOption>{
 				label: option.label,
 				description: option.description,
-				emoji: option.emoji || new Emoji(session, option.emoji!),
+				emoji: option.emoji ? new Emoji(session, option.emoji) : undefined,
 				value: option.value,
 			};
 		});

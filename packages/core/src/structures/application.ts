@@ -67,7 +67,7 @@ export class Application implements Model {
 		this.session = session;
 
 		this.name = data.name;
-		this.icon = data.icon || undefined;
+		this.icon = data.icon ?? undefined;
 		this.description = data.description;
 		this.rpcOrigins = data.rpc_origins;
 		this.botPublic = data.bot_public;

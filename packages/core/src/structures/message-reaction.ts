@@ -70,7 +70,7 @@ export function NewMessageReactionAdd(
 			? new Member(
 					session,
 					data.member as DiscordMemberWithUser,
-					data.guild_id || ''
+					data.guild_id ?? ''
 			  )
 			: undefined,
 		emoji: new Emoji(session, data.emoji),

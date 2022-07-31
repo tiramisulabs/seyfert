@@ -74,7 +74,7 @@ export type ImageSize = 16 | 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096;
  */
 export abstract class Util {
     static formatImageURL(url: string, size: ImageSize = 128, format?: ImageFormat): string {
-        return `${url}.${format || (url.includes('/a_') ? 'gif' : 'jpg')}?size=${size}`;
+        return `${url}.${format ?? (url.includes('/a_') ? 'gif' : 'jpg')}?size=${size}`;
     }
 
     static iconHashToBigInt(hash: string): bigint {
