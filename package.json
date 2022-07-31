@@ -61,6 +61,6 @@
 	"homepage": "https://biscuitjs.com",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/oasisjs/bicuit.git"
+		"url": "git+https://github.com/oasisjs/biscuit.git"
 	}
 }
