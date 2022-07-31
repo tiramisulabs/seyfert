@@ -244,7 +244,6 @@ export class TextChannel {
     /**
      * Mixin
      */
-    // deno-lint-ignore ban-types
     static applyTo(klass: Function, ignore: (keyof TextChannel)[] = []): void {
         const methods: (keyof TextChannel)[] = [
             'fetchPins',

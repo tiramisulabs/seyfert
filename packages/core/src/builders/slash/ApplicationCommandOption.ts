@@ -258,7 +258,6 @@ export class OptionBased {
         return this.addOption(fn, ApplicationCommandOptionTypes.Mentionable);
     }
 
-    // deno-lint-ignore ban-types
     static applyTo(klass: Function, ignore: Array<keyof OptionBased> = []): void {
         const methods: Array<keyof OptionBased> = [
             'addOption',
