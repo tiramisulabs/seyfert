@@ -4,7 +4,7 @@
 
 <img align="right" src="https://raw.githubusercontent.com/oasisjs/biscuit/main/assets/icon.svg" alt="biscuit"/>
 
-### Install (for [node18](https://nodejs.org/en/download/))
+## Install (for [node18](https://nodejs.org/en/download/))
 
 ```sh-session
 npm install @biscuitland/core
@@ -13,7 +13,7 @@ yarn add @biscuitland/core
 
 for further reading join our [Discord](https://discord.gg/zmuvzzEFz2)
 
-### Most importantly, biscuit is:
+## Most importantly, biscuit is:
 
 - A wrapper to interface the Discord API
 - A bleeding edge library
@@ -21,27 +21,36 @@ for further reading join our [Discord](https://discord.gg/zmuvzzEFz2)
 Biscuit is primarily inspired by Discord.js and Discordeno but it does not include a cache layer by default, we believe
 that you should not make software that does things it is not supposed to do.
 
-### Why biscuit?:
+## Why biscuit?:
 
 - [Minimal](https://en.wikipedia.org/wiki/Unix_philosophy), non feature-rich!
 - Scalable
 
-### Example bot (TS/JS)
+## Example bot (TS/JS)
 
 ```js
-import { Session } from '@biscuitland/core';
+import { ChatInputApplicationCommandBuilder, Session } from '@biscuitland/core';
 import { GatewayIntents } from '@biscuitland/api-types';
 
-const intents = GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages;
-const session = new Session({ token: 'your token', intents });
+const session = new Session({ token: 'your token', intents: GatewayIntents.Guilds });
 
-session.events.on('ready', ({ user }) => {
+const commands = [
+    new ChatInputApplicationCommandBuilder()
+        .setName('ping')
+        .setDescription('Replys with pong!')
+        .toJSON(),
+]
+
+session.events.on('ready', async ({ user }) => {
     console.log('Logged in as:', user.username);
+    await session.upsertApplicationCommands(commands, 'GUILD_ID');
 });
 
-session.events.on('messageCreate', (message) => {
-    if (message.content.startsWith('!ping')) {
-        message.reply({ content: 'pong!' });
+session.events.on('interactionCreate', (interaction) => {
+    if (interaction.isCommand()) {
+        if (interaction.commandName === 'ping') {
+            interaction.respond({ with: { content: 'pong!' } });
+        }
     }
 });
 
