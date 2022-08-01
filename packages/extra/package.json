@@ -1,5 +1,5 @@
 {
-	"name": "@biscuitland/rest",
+	"name": "@biscuitland/extra",
 	"version": "1.1.0",
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",
@@ -22,8 +22,8 @@
 			"require": "./dist/index.js"
 		}
 	},
-	"dependencies": {
-		"@biscuitland/api-types": "^1.1.0"
+	"peerDependencies": {
+		"@biscuitland/core": "^1.1.0"
 	},
 	"devDependencies": {
 		"tsup": "^6.1.3"
