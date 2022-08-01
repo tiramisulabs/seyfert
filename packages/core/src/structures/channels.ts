@@ -9,7 +9,7 @@ import type { PermissionsOverwrites } from '../utils/util';
 import { urlToBase64 } from '../utils/url-to-base-64';
 
 /** Classes and routes */
-import type {
+import {
 	DiscordChannel,
 	DiscordInvite,
 	DiscordInviteMetadata,
@@ -22,7 +22,8 @@ import type {
 	VideoQualityModes,
 	GetReactions,
 	GetMessagesOptions,
-	ListArchivedThreads } from '@biscuitland/api-types';
+	ListArchivedThreads, 
+    USER_DM} from '@biscuitland/api-types';
 import {
 	CHANNEL,
 	CHANNEL_PINS,
@@ -102,8 +103,8 @@ export abstract class BaseChannel implements Model {
         return this.type === ChannelTypes.GuildStageVoice;
     }
 
-    async fetch(): Promise<Channel> {
-        const channel = await this.session.rest.get<DiscordChannel>(CHANNEL(this.id));
+    async fetch(channelId?: Snowflake): Promise<Channel> {
+        const channel = await this.session.rest.get<DiscordChannel>(CHANNEL(channelId ?? this.id));
 
         return ChannelFactory.from(this.session, channel);
     }
