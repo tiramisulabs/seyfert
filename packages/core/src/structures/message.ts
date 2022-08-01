@@ -95,6 +95,7 @@ export interface CreateMessage {
  */
 export interface EditMessage extends Partial<CreateMessage> {
 	flags?: MessageFlags;
+	attachments?: Attachment[];
 }
 
 /**
@@ -413,7 +414,7 @@ export class Message implements Model {
 
 	/** Edits the current message */
 	async edit(options: EditMessage): Promise<Message> {
-		const message = await this.session.rest.post<DiscordMessage>(
+		const message = await this.session.rest.patch<DiscordMessage>(
 			CHANNEL_MESSAGE(this.id, this.channelId),
 			{
 				content: options.content,
@@ -425,6 +426,9 @@ export class Message implements Model {
 				},
 				flags: options.flags,
 				embeds: options.embeds,
+				components: options.components,
+				files: options.files,
+				attachments: options.attachments
 			}
 		);
 
@@ -446,9 +450,9 @@ export class Message implements Model {
 
 	/** deletes this message */
 	async delete(reason?: string): Promise<Message> {
-		await this.session.rest.delete<undefined>(
+		await this.session.rest.delete<void>(
 			CHANNEL_MESSAGE(this.channelId, this.id),
-			{ reason }
+			{ headers: { 'X-Audit-Log-Reason': reason } }
 		);
 
 		return this;
