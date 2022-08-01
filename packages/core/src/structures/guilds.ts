@@ -58,7 +58,7 @@ import {
 	CHANNEL,
 	GUILD_CHANNELS,
 } from '@biscuitland/api-types';
-import { ChannelFactory, GuildChannel, ReturnThreadsArchive, ThreadChannel, Channel } from './channels';
+import { ChannelFactory, GuildChannel, ReturnThreadsArchive, ThreadChannel, ChannelInGuild } from './channels';
 import { Member, ThreadMember } from './members';
 import { Role } from './role';
 import { GuildEmoji } from './emojis';
@@ -1216,16 +1216,16 @@ export class Guild extends BaseGuild implements Model {
 		return new GuildPreview(this.session, preview);
 	}
 
-	async fetchChannel(channelID: string): Promise<Channel> {
-		const channel = await this.session.rest.get<DiscordChannel>(CHANNEL(channelID));
+	async fetchChannel(channelId: string): Promise<ChannelInGuild> {
+		const channel = await this.session.rest.get<DiscordChannel>(CHANNEL(channelId));
 
-		return ChannelFactory.from(this.session, channel);
+		return ChannelFactory.fromGuildChannel(this.session, channel);
 	}
 
-	async fetchChannels(): Promise<Channel[]> {
+	async fetchChannels(): Promise<ChannelInGuild[]> {
 		const channels = await this.session.rest.get<DiscordChannel[]>(GUILD_CHANNELS(this.id));
 
-		return channels.map(channel => ChannelFactory.from(this.session, channel));
+		return channels.map(channel => ChannelFactory.fromGuildChannel(this.session, channel));
 	}
 
     /** fetches a member */
