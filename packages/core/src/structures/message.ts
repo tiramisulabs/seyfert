@@ -415,7 +415,7 @@ export class Message implements Model {
 	/** Edits the current message */
 	async edit(options: EditMessage): Promise<Message> {
 		const message = await this.session.rest.patch<DiscordMessage>(
-			CHANNEL_MESSAGE(this.id, this.channelId),
+			CHANNEL_MESSAGE(this.channelId, this.id),
 			{
 				content: options.content,
 				allowed_mentions: {
