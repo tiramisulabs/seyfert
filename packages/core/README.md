@@ -24,8 +24,8 @@ const session = new Session({ token: 'your token', intents: GatewayIntents.Guild
 const commands = [
     new ChatInputApplicationCommandBuilder()
         .setName('ping')
-        .setDescription('Replys with pong!')
-        .toJSON(),
+        .setDescription('Replies with pong!')
+        .toJSON()
 ]
 
 session.events.on('ready', async ({ user }) => {
