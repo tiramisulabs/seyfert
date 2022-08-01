@@ -1,4 +1,4 @@
-import { Session, Events } from '@biscuitland/core';
+import type { Session, Events } from '@biscuitland/core';
 import { EventEmitter } from 'node:events';
 
 interface CollectorOptions<E extends keyof Events> {
