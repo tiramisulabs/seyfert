@@ -5,6 +5,7 @@ import type { DiscordUser, PremiumTypes, UserFlags } from '@biscuitland/api-type
 import type { ImageFormat, ImageSize } from '../utils/util';
 import { USER, USER_AVATAR, USER_DEFAULT_AVATAR } from '@biscuitland/api-types';
 import { Util } from '../utils/util';
+import { DMChannel } from './channels';
 
 export type AvatarOptions = {
 	format?: ImageFormat;
@@ -111,6 +112,10 @@ export class User implements Model {
 		}
 
 		return Util.formatImageURL(url, options.size ?? 128, options.format);
+	}
+
+	openDM(): Promise<DMChannel> {
+		return DMChannel.prototype.open.call({ session: this.session }, this.id);
 	}
 
 	toString(): string {

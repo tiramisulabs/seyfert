@@ -685,6 +685,12 @@ export class DMChannel extends BaseChannel implements Model {
 
         return new DMChannel(this.session, channel);
     }
+
+    async open(userId: Snowflake): Promise<DMChannel> {
+        const channel = await this.session.rest.post<DiscordChannel>(USER_DM(), { recipient_id: userId});
+
+        return new DMChannel(this.session, channel);
+    }
 }
 
 export interface DMChannel extends Omit<TextChannel, 'type'>, Omit<BaseChannel, 'type'> {}
