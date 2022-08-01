@@ -66,6 +66,6 @@ export class Collector<E extends keyof Events> extends EventEmitter {
     once(event: 'collect', listener: (...args: Parameters<Events[E]>) => unknown): this;
     once(event: 'end', listener: (reason: string | null | undefined, collected: Set<Parameters<Events[E]>[0]>) => void): this;
     once(event: string, listener: unknown): this {
-        return super.on(event, listener as (() => unknown));
+        return super.once(event, listener as (() => unknown));
     }
 }
