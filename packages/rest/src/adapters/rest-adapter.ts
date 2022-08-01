@@ -115,7 +115,7 @@ export interface RestAdapter {
 
 	delete<T>(
 		router: string,
-		data: unknown,
+		data?: unknown,
 		options?: {
 			retryCount?: number;
 			bucketId?: string;

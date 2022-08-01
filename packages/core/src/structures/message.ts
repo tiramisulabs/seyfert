@@ -449,10 +449,9 @@ export class Message implements Model {
 	}
 
 	/** deletes this message */
-	async delete(reason?: string): Promise<Message> {
+	async delete(): Promise<Message> {
 		await this.session.rest.delete<void>(
-			CHANNEL_MESSAGE(this.channelId, this.id),
-			{ headers: { 'X-Audit-Log-Reason': reason } }
+			CHANNEL_MESSAGE(this.channelId, this.id)
 		);
 
 		return this;

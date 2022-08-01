@@ -266,7 +266,6 @@ export class DefaultRestAdapter implements RestAdapter {
 		}
 	): Promise<T> {
 		const url = route[0] === '/' ? `${this.url}${route}` : route;
-
 		return new Promise((resolve, reject) => {
 			this.processRequest(
 				{
@@ -279,7 +278,7 @@ export class DefaultRestAdapter implements RestAdapter {
 						);
 						reject(restError);
 					},
-					resolve: (data: any) => resolve(JSON.parse(data.body)),
+					resolve: (data: any) => resolve(data.body ? JSON.parse(data.body) : {}),
 				},
 				{
 					bucketId: options?.bucketId,
@@ -304,7 +303,6 @@ export class DefaultRestAdapter implements RestAdapter {
 					body: options.payload?.body,
 				})
 			);
-
 			const bucketIdFromHeaders = this.processRequestHeaders(
 				options.url,
 				response.headers
@@ -312,6 +310,15 @@ export class DefaultRestAdapter implements RestAdapter {
 
 			if (bucketIdFromHeaders) {
 				options.bucketId = bucketIdFromHeaders;
+			}
+
+			if (response.status === 204) {
+				options.resolve?.({
+					ok: true,
+					status: 204,
+				});
+
+				return;
 			}
 
 			if (response.status < 200 || response.status >= 400) {
@@ -399,15 +406,6 @@ export class DefaultRestAdapter implements RestAdapter {
 						return;
 					}
 				}
-			}
-
-			if (response.status === 204) {
-				options.resolve?.({
-					ok: true,
-					status: 204,
-				});
-
-				return;
 			}
 
 			const json = JSON.stringify(await response.json());
