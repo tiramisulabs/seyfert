@@ -31,5 +31,5 @@ We deliver this package through [unpkg](https://unpkg.com/) and it does contain 
 ## Links
 * [Website](https://biscuitjs.com/)
 * [Documentation](https://docs.biscuitjs.com/)
-* [Discord](https://discord.gg/evqgTQYqn7)
+* [Discord](https://discord.gg/zqtPgyaFpV) 
 * [api-types](https://www.npmjs.com/package/@biscuitland/api-types)

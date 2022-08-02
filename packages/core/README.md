@@ -58,5 +58,5 @@ B:\project> node --experimental-fetch index.js
 ## Links
 * [Website](https://biscuitjs.com/)
 * [Documentation](https://docs.biscuitjs.com/)
-* [Discord](https://discord.gg/evqgTQYqn7)
+* [Discord](https://discord.gg/zqtPgyaFpV) 
 * [core](https://www.npmjs.com/package/@biscuitland/core)

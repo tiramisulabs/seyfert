@@ -65,5 +65,5 @@ This package can be delivered through [unpkg](https://unpkg.com/) however is not
 ## Links
 * [Website](https://biscuitjs.com/)
 * [Documentation](https://docs.biscuitjs.com/)
-* [Discord](https://discord.gg/evqgTQYqn7)
+* [Discord](https://discord.gg/zqtPgyaFpV) 
 * [rest](https://www.npmjs.com/package/@biscuitland/rest)

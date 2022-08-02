@@ -21,5 +21,5 @@ for further reading join our [Discord](https://discord.gg/zmuvzzEFz2)
 ## Links
 * [Website](https://biscuitjs.com/)
 * [Documentation](https://docs.biscuitjs.com/)
-* [Discord](https://discord.gg/evqgTQYqn7)
+* [Discord](https://discord.gg/zqtPgyaFpV) 
 * [helpers](https://www.npmjs.com/package/@biscuitland/helpers)

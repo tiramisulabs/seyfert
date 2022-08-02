@@ -7,5 +7,5 @@ Structures to create a custom cache completely decoupled from the rest of the li
 ## Links
 * [Website](https://biscuitjs.com/)
 * [Documentation](https://docs.biscuitjs.com/)
-* [Discord](https://discord.gg/evqgTQYqn7)
+* [Discord](https://discord.gg/zqtPgyaFpV) 
 * [cache](https://www.npmjs.com/package/@biscuitland/cache)

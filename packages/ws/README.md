@@ -71,5 +71,5 @@ wsManager.shards();
 ## Links
 * [Website](https://biscuitjs.com/)
 * [Documentation](https://docs.biscuitjs.com/)
-* [Discord](https://discord.gg/evqgTQYqn7)
+* [Discord](https://discord.gg/zqtPgyaFpV) 
 * [ws](https://www.npmjs.com/package/@biscuitland/ws)
