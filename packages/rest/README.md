@@ -1,6 +1,6 @@
-# biscuit
-
-## A brand new bleeding edge non bloated Discord library
+# @biscuitland/rest
+[<img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white">](https://github.com/oasisjs/biscuit)
+[<img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white">](https://discord.gg/XNw2RZFzaP)
 
 <img align="right" src="https://raw.githubusercontent.com/oasisjs/biscuit/main/assets/icon.svg" alt="biscuit"/>
 
@@ -10,8 +10,6 @@
 npm install @biscuitland/rest
 yarn add @biscuitland/rest
 ```
-
-for further reading join our [Discord](https://discord.gg/zqtPgyaFpV)
 
 ## Most importantly, biscuit's rest is:
 A standalone rest library that is yet easy to use and easy to host on a serverless infrastructure, it is meant to be used with biscuit's libraries.
@@ -65,5 +63,5 @@ This package can be delivered through [unpkg](https://unpkg.com/) however is not
 ## Links
 * [Website](https://biscuitjs.com/)
 * [Documentation](https://docs.biscuitjs.com/)
-* [Discord](https://discord.gg/zqtPgyaFpV) 
-* [rest](https://www.npmjs.com/package/@biscuitland/rest)
+* [Discord](https://discord.gg/XNw2RZFzaP) 
+* [core](https://www.npmjs.com/package/@biscuitland/core) | [api-types](https://www.npmjs.com/package/@biscuitland/api-types) | [cache](https://www.npmjs.com/package/@biscuitland/cache) | [ws](https://www.npmjs.com/package/@biscuitland/ws) | [helpers](https://www.npmjs.com/package/@biscuitland/helpers)
