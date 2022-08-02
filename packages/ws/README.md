@@ -67,3 +67,9 @@ wsManager.agent.options.totalShards = wsManager.options.gatewayBot.shards;
 // start a quick bot
 wsManager.shards();
 ```
+
+## Links
+* [Website](https://biscuitjs.com/)
+* [Documentation](https://docs.biscuitjs.com/)
+* [Discord](https://discord.gg/evqgTQYqn7)
+* [ws](https://www.npmjs.com/package/@biscuitland/ws)

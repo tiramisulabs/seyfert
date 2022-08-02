@@ -27,3 +27,9 @@ import type { DiscordUser } from "https://unpkg.com/@biscuitland/api-types@1.1.0
 ```
 
 We deliver this package through [unpkg](https://unpkg.com/) and it does contain constants and routes too
+
+## Links
+* [Website](https://biscuitjs.com/)
+* [Documentation](https://docs.biscuitjs.com/)
+* [Discord](https://discord.gg/evqgTQYqn7)
+* [api-types](https://www.npmjs.com/package/@biscuitland/api-types)

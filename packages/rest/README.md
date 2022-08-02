@@ -61,3 +61,9 @@ app.listen({ port: "port..." });
 ```
 
 This package can be delivered through [unpkg](https://unpkg.com/) however is not tested yet
+
+## Links
+* [Website](https://biscuitjs.com/)
+* [Documentation](https://docs.biscuitjs.com/)
+* [Discord](https://discord.gg/evqgTQYqn7)
+* [rest](https://www.npmjs.com/package/@biscuitland/rest)

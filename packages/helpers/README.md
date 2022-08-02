@@ -18,3 +18,8 @@ for further reading join our [Discord](https://discord.gg/zmuvzzEFz2)
 - Builders
 - Other helper functions such as setPresence
 
+## Links
+* [Website](https://biscuitjs.com/)
+* [Documentation](https://docs.biscuitjs.com/)
+* [Discord](https://discord.gg/evqgTQYqn7)
+* [helpers](https://www.npmjs.com/package/@biscuitland/helpers)
