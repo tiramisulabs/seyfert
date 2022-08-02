@@ -8,20 +8,20 @@
 ## Install (for [node18](https://nodejs.org/en/download/))
 
 ```sh-session
-npm install @biscuitland/rest
-yarn add @biscuitland/rest
+npm install @biscuitland/ws
+yarn add @biscuitland/ws
 ```
 
-for further reading join our [Discord](https://discord.gg/zmuvzzEFz2)
+for further reading join our [Discord](https://discord.gg/zqtPgyaFpV)
 
 ## Most importantly, biscuit's ws is:
 A standalone gateway to interface Discord, it is meant to be used with a rest manager to send fetch requests to Discord
 
 ## Example (GW proxy)
 ```ts
-import { DefaultWsAdapter } from "@biscuitland/ws"
-import { DefaultRestAdapter } from "@biscuitland/rest"
-import { GATEWAY_BOT, GatewayIntents } from "@biscuitland/api-types"
+import { DefaultWsAdapter } from "@biscuitland/ws";
+import { DefaultRestAdapter } from "@biscuitland/rest";
+import { GATEWAY_BOT, GatewayIntents } from "@biscuitland/api-types";
 
 const intents = GatewayIntents.Guilds | GatewayIntents.GuildMessages | GatewayIntents.MessageContent;
 
@@ -59,10 +59,10 @@ const wsManager = new DefaultWsAdapter({
     },
 });
 
-wsManager.options.gatewayBot = config
-wsManager.options.lastShardId = wsManager.options.gatewayBot.shards - 1
-wsManager.options.totalShards = wsManager.options.gatewayBot.shards
-wsManager.agent.options.totalShards = wsManager.options.gatewayBot.shards
+wsManager.options.gatewayBot = config;
+wsManager.options.lastShardId = wsManager.options.gatewayBot.shards - 1;
+wsManager.options.totalShards = wsManager.options.gatewayBot.shards;
+wsManager.agent.options.totalShards = wsManager.options.gatewayBot.shards;
 
 // start a quick bot
 wsManager.shards();
