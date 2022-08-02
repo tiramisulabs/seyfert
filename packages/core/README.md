@@ -52,7 +52,7 @@ B:\project> node index.js
 
 For node 16.+:
 ```
-B:\project> node --experimenta-fetch index.js
+B:\project> node --experimental-fetch index.js
 ```
 
 ## Links

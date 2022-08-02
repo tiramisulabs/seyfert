@@ -1,5 +1,5 @@
 {
-	"name": "@biscuitland/extra",
+	"name": "@biscuitland/helpers",
 	"version": "1.1.0",
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",

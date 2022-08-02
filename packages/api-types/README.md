@@ -22,7 +22,7 @@ for further reading join our [Discord](https://discord.gg/zmuvzzEFz2)
 import type { DiscordUser } from '@biscuitland/api-types';
 ```
 ## Example for [Deno](https://deno.land/)
-```
+```ts
 import type { DiscordUser } from "https://unpkg.com/@biscuitland/api-types@1.1.0/dist/index.d.ts";
 ```
 
