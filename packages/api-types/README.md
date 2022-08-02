@@ -15,7 +15,7 @@ yarn add @biscuitland/api-types
 for further reading join our [Discord](https://discord.gg/zmuvzzEFz2)
 
 ## Most importantly, api-types is:
-1:1 type definitions package for the [Discord](https://discord.com/developers/docs/intro) API
+1:1 type definitions package for the [Discord](https://discord.com/developers/docs/intro) API:
 
 ## Example
 ```ts

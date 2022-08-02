@@ -14,7 +14,7 @@ yarn add @biscuitland/rest
 for further reading join our [Discord](https://discord.gg/zmuvzzEFz2)
 
 ## Most importantly, biscuit's rest is:
-An standalone rest library that is yet easy to use and easy to host on a serverless infraestructure, it is meant to be used with biscuit's libraries
+A standalone rest library that is yet easy to use and easy to host on a serverless infrastructure, it is meant to be used with biscuit's libraries.
 
 ## Example
 ```ts
