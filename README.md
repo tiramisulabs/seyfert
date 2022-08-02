@@ -60,7 +60,7 @@ session.start();
 ## Links
 * [Website](https://biscuitjs.com/)
 * [Documentation](https://docs.biscuitjs.com/)
-* [Discord](https://discord.gg/zqtPgyaFpV)
+* [Discord](https://discord.gg/XNw2RZFzaP)
 * [core](https://www.npmjs.com/package/@biscuitland/core) | [api-types](https://www.npmjs.com/package/@biscuitland/api-types) | [cache](https://www.npmjs.com/package/@biscuitland/cache) | [rest](https://www.npmjs.com/package/@biscuitland/rest) | [ws](https://www.npmjs.com/package/@biscuitland/ws) | [helpers](https://www.npmjs.com/package/@biscuitland/helpers)
 
 ## Known issues:
