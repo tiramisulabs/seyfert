@@ -16,13 +16,13 @@ for further reading join our [Discord](https://discord.gg/zmuvzzEFz2)
 ## Most importantly, biscuit's rest is:
 A standalone rest library that is yet easy to use and easy to host on a serverless infrastructure, it is meant to be used with biscuit's libraries.
 
-## Example
+## Example (Standalone rest)
 ```ts
 import { DefaultRestAdapter } from "@biscuitland/rest";
 import Fastify from "fastify";
 
 const manager = new DefaultRestAdapter({
-    url: `http://localhost:port...`,
+    url: "http://localhost:port...",
     token: "your token goes here",
     version: 10,
 });
