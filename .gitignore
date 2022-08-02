@@ -2,6 +2,9 @@
 
 package-lock.json
 
+# Eater asked for this dunno why
+bot/
+
 # Enviorment
 .env
 
