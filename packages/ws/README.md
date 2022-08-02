@@ -26,7 +26,7 @@ import { GATEWAY_BOT, GatewayIntents } from "@biscuitland/api-types";
 const intents = GatewayIntents.Guilds | GatewayIntents.GuildMessages | GatewayIntents.MessageContent;
 
 const restManager = new DefaultRestAdapter({
-    url: "http://localhost:port..."
+    url: "http://localhost:port...",
     token: "your token goes here",
     version: 10,
 });
