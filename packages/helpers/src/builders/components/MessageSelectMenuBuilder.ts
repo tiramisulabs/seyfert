@@ -1,5 +1,5 @@
 import type { DiscordSelectOption, DiscordSelectMenuComponent, } from '@biscuitland/api-types';
-import type { ComponentEmoji } from '../../utils/util';
+import type { ComponentEmoji } from '../../../../core/src/utils/util';
 import { MessageComponentTypes } from '@biscuitland/api-types'; 
 
 export class SelectMenuOptionBuilder {

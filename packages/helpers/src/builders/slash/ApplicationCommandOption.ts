@@ -1,6 +1,5 @@
-import type { ChannelTypes, Localization, Locales } from '@biscuitland/api-types';
-import { ApplicationCommandOptionTypes } from '@biscuitland/api-types';
-import { ApplicationCommandOptionChoice } from '../../structures/interactions';
+import { ChannelTypes, Localization, Locales, ApplicationCommandOptionTypes } from '@biscuitland/api-types';
+import { ApplicationCommandOptionChoice } from '@biscuitland/core';
 
 
 export type Localizations = typeof Locales[keyof typeof Locales] & string;

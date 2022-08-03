@@ -1,6 +1,4 @@
-import type { ButtonBuilder } from '../builders/components/MessageButtonBuilder';
-import type { InputTextBuilder } from '../builders/components/InputTextBuilder';
-import type { SelectMenuBuilder } from '../builders/components/MessageSelectMenuBuilder';
+import type { SelectMenuBuilder, InputTextBuilder, ButtonBuilder } from '@biscuitland/helpers';
 import type { Permissions } from '../structures/special/permissions';
 import type { Snowflake } from '../snowflakes';
 

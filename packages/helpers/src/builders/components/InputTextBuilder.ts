@@ -1,9 +1,9 @@
-import type { DiscordInputTextComponent, MessageComponentTypes, TextStyles } from '@biscuitland/api-types';
+import { DiscordInputTextComponent, MessageComponentTypes, TextStyles } from '@biscuitland/api-types';
 
 export class InputTextBuilder {
     constructor() {
         this.#data = {} as DiscordInputTextComponent;
-        this.type = 4;
+        this.type = MessageComponentTypes.InputText;
     }
     #data: DiscordInputTextComponent;
     type: MessageComponentTypes.InputText;

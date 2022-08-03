@@ -17,7 +17,7 @@
 		"@biscuitland/core#build": {
 			"dependsOn": ["@biscuitland/api-types#build", "@biscuitland/rest#build", "@biscuitland/ws#build"]
 		},
-		"@biscuitland/extra#build": {
+		"@biscuitland/helpers#build": {
 			"dependsOn": ["@biscuitland/core#build"]
 		},
 		"clean": {
