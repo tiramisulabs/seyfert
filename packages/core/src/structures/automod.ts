@@ -1,18 +1,20 @@
-import type { Model } from './base';
-import type { Session } from '../biscuit';
-import type { Snowflake } from '../snowflakes';
-import type {
+import { Model } from './base';
+import { Session } from '../biscuit';
+import { Snowflake } from '../snowflakes';
+import {
 	AutoModerationActionType,
 	AutoModerationEventTypes,
 	AutoModerationTriggerTypes,
 	DiscordAutoModerationRule,
 	DiscordAutoModerationRuleTriggerMetadataPresets,
 	DiscordAutoModerationActionExecution,
+	AUTO_MODERATION_RULES
 } from '@biscuitland/api-types';
 
 export interface AutoModerationRuleTriggerMetadata {
 	keywordFilter?: string[];
 	presets?: DiscordAutoModerationRuleTriggerMetadataPresets[];
+	allowList?: string[];
 }
 
 export interface ActionMetadata {
@@ -23,6 +25,18 @@ export interface ActionMetadata {
 export interface AutoModerationAction {
 	type: AutoModerationActionType;
 	metadata: ActionMetadata;
+}
+
+/**@link https://discord.com/developers/docs/resources/auto-moderation#create-auto-moderation-rule-json-params */
+export interface CreateAutoModerationRule {
+	name: string;
+	eventType: 1;
+	triggerType: AutoModerationTriggerTypes;
+	triggerMetadata?: AutoModerationRuleTriggerMetadata;
+	actions: AutoModerationAction[];
+	enabled?: boolean;
+	exemptRoles?: Snowflake[];
+	exemptChannels?: Snowflake[];
 }
 
 export class AutoModerationRule implements Model {
@@ -37,14 +51,15 @@ export class AutoModerationRule implements Model {
 		this.triggerMetadata = {
 			keywordFilter: data.trigger_metadata.keyword_filter,
 			presets: data.trigger_metadata.presets,
+			allowList: data.trigger_metadata.allow_list
 		};
 		this.actions = data.actions.map(action =>
 			Object.create({
 				type: action.type,
 				metadata: {
 					channelId: action.metadata.channel_id,
-					durationSeconds: action.metadata.duration_seconds,
-				},
+					durationSeconds: action.metadata.duration_seconds
+				}
 			})
 		);
 		this.enabled = !!data.enabled;
@@ -64,19 +79,102 @@ export class AutoModerationRule implements Model {
 	enabled: boolean;
 	exemptRoles: Snowflake[];
 	exemptChannels: Snowflake[];
+
+	async getRules(
+		ruleId?: Snowflake
+	): Promise<AutoModerationRule | AutoModerationRule[]> {
+		const request = await this.session.rest.get<
+			DiscordAutoModerationRule | DiscordAutoModerationRule[]
+		>(AUTO_MODERATION_RULES(this.guildId, ruleId));
+		if (Array.isArray(request))
+			return request.map(
+				amr => new AutoModerationRule(this.session, amr)
+			);
+		return new AutoModerationRule(this.session, request);
+	}
+
+	async createRule(options: CreateAutoModerationRule) {
+		const request = await this.session.rest.post<DiscordAutoModerationRule>(
+			AUTO_MODERATION_RULES(this.guildId),
+			{
+				name: options.name,
+				event_type: options.eventType,
+				trigger_type: options.triggerType,
+				trigger_metadata: options.triggerMetadata,
+				actions: options.actions
+					? options.actions.map(x =>
+							Object.assign(
+								{},
+								{
+									type: x.type,
+									metadata: {
+										channel_id: x.metadata.channelId,
+										duration_seconds:
+											x.metadata.durationSeconds
+									}
+								}
+							)
+					  )
+					: undefined,
+				enabled: !!options.enabled,
+				exempt_roles: options.exemptRoles,
+				exempt_channels: options.exemptChannels
+			}
+		);
+		return new AutoModerationRule(this.session, request);
+	}
+
+	async editRule(
+		ruleId = this.id,
+		options: Partial<CreateAutoModerationRule>
+	) {
+		const request = await this.session.rest.patch<
+			DiscordAutoModerationRule
+		>(AUTO_MODERATION_RULES(this.guildId, ruleId), {
+			name: options.name,
+			event_type: options.eventType,
+			trigger_type: options.triggerType,
+			trigger_metadata: options.triggerMetadata,
+			actions: options.actions
+				? options.actions.map(x =>
+						Object.assign(
+							{},
+							{
+								type: x.type,
+								metadata: {
+									channel_id: x.metadata.channelId,
+									duration_seconds: x.metadata.durationSeconds
+								}
+							}
+						)
+				  )
+				: undefined,
+			enabled: !!options.enabled,
+			exempt_roles: options.exemptRoles,
+			exempt_channels: options.exemptChannels
+		});
+		return new AutoModerationRule(this.session, request);
+	}
+
+	async deleteRule(ruleId = this.id): Promise<void> {
+		await this.session.rest.delete(
+			AUTO_MODERATION_RULES(this.guildId, ruleId)
+		);
+		return;
+	}
 }
 
 export class AutoModerationExecution {
 	constructor(session: Session, data: DiscordAutoModerationActionExecution) {
 		this.session = session;
 		this.guildId = data.guild_id;
-		this.action = Object.create({
+		this.action = {
 			type: data.action.type,
 			metadata: {
-				channelId: data.action.metadata.channel_id,
-				durationSeconds: data.action.metadata.duration_seconds,
-			},
-		});
+				channelId: data.action.metadata.channel_id as string,
+				durationSeconds: data.action.metadata.duration_seconds as number
+			}
+		};
 		this.ruleId = data.rule_id;
 		this.ruleTriggerType = data.rule_trigger_type;
 		this.userId = data.user_id;
