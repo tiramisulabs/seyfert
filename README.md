@@ -29,17 +29,17 @@ that you should not make software that does things it is not supposed to do.
 ## Example bot (TS/JS)
 
 ```js
-import { ChatInputApplicationCommandBuilder, Session } from '@biscuitland/core';
+import { Session } from '@biscuitland/core';
 import { GatewayIntents } from '@biscuitland/api-types';
 
 const session = new Session({ token: 'your token', intents: GatewayIntents.Guilds });
 
 const commands = [
-    new ChatInputApplicationCommandBuilder()
-        .setName('ping')
-        .setDescription('Replies with pong!')
-        .toJSON()
-]
+    {
+        name: 'ping',
+        description: 'Replies with pong!'
+    }
+];
 
 session.events.on('ready', async ({ user }) => {
     console.log('Logged in as:', user.username);
