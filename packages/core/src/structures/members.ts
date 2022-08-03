@@ -141,6 +141,11 @@ export class Member implements Model {
 		return member;
 	}
 
+    /** calls {@link Member#edit} which calls {@link Guild#editMember} under the hood */
+    async timeout(time: number | null) {
+        await this.edit({ communicationDisabledUntil: time });
+    }
+
 	/** adds a role to this member */
 	async addRole(roleId: Snowflake, reason?: string): Promise<void> {
 		await Guild.prototype.addRole.call(

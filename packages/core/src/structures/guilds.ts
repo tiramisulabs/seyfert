@@ -401,7 +401,7 @@ export interface ModifyGuildMember {
 	mute?: boolean;
 	deaf?: boolean;
 	channelId?: Snowflake;
-	communicationDisabledUntil?: number;
+	communicationDisabledUntil?: number | null;
 }
 
 /**
