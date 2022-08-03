@@ -348,8 +348,8 @@ export interface CommandInteractionDataResolved {
 	users: Map<Snowflake, User>;
 	members: Map<Snowflake, Member>;
 	roles: Map<Snowflake, Role>;
-	attachments: Map<Snowflake, Attachment>;
 	messages: Map<Snowflake, Message>;
+    attachments: Map<Snowflake, Attachment>;
 }
 
 export class CommandInteraction extends BaseInteraction implements Model {
