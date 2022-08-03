@@ -68,6 +68,7 @@ import { User } from './user';
 import { Widget } from './widget';
 import { Sticker } from './sticker';
 import { WelcomeScreen } from './welcome';
+import { AutoModerationRule } from './automod';
 
 /** BaseGuild */
 /**
@@ -1117,6 +1118,16 @@ export class Guild extends BaseGuild implements Model {
 		});
 
 		return new Guild(this.session, guild);
+	}
+
+	/**
+	 * gets the auto moderation rules for the guild.
+	 * @see {@link AutoModerationRule#getRules} sames
+	 * @param ruleId The optional rule id
+	 * @returns 
+	 */
+	fetchAutoModerationRules(ruleId?: Snowflake): Promise<AutoModerationRule | AutoModerationRule[]> {
+		return AutoModerationRule.prototype.getRules.call({session: this.session, guildId: this.id}, ruleId);
 	}
 
 	/**
