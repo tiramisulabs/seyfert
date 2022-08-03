@@ -1,63 +1,9 @@
 import type {
 	DiscordInteractionDataOption,
 	DiscordInteractionDataResolved,
+    Snowflake,
 } from '@biscuitland/api-types';
 import { ApplicationCommandOptionTypes } from '@biscuitland/api-types';
-
-export function transformOasisInteractionDataOption(
-	o: DiscordInteractionDataOption
-): CommandInteractionOption {
-	const output: CommandInteractionOption = {
-		...o,
-		Otherwise: o.value as string | boolean | number | undefined,
-	};
-
-	switch (o.type) {
-		case ApplicationCommandOptionTypes.String:
-			output.String = o.value as string;
-			break;
-		case ApplicationCommandOptionTypes.Number:
-			output.Number = o.value as number;
-			break;
-		case ApplicationCommandOptionTypes.Integer:
-			output.Integer = o.value as number;
-			break;
-		case ApplicationCommandOptionTypes.Boolean:
-			output.Boolean = o.value as boolean;
-			break;
-		case ApplicationCommandOptionTypes.Role:
-			output.Role = BigInt(o.value as string);
-			break;
-		case ApplicationCommandOptionTypes.User:
-			output.User = BigInt(o.value as string);
-			break;
-		case ApplicationCommandOptionTypes.Channel:
-			output.Channel = BigInt(o.value as string);
-			break;
-
-		case ApplicationCommandOptionTypes.Mentionable:
-		case ApplicationCommandOptionTypes.SubCommand:
-		case ApplicationCommandOptionTypes.SubCommandGroup:
-		default:
-			output.Otherwise = o.value as string | boolean | number | undefined;
-	}
-
-	return output;
-}
-
-export interface CommandInteractionOption
-	extends Omit<DiscordInteractionDataOption, 'value'> {
-	Attachment?: string;
-	Boolean?: boolean;
-	User?: bigint;
-	Role?: bigint;
-	Number?: number;
-	Integer?: number;
-	Channel?: bigint;
-	String?: string;
-	Mentionable?: string;
-	Otherwise: string | number | boolean | bigint | undefined;
-}
 
 /**
  * Utility class to get the resolved options for a command
@@ -68,15 +14,14 @@ export class CommandInteractionOptionResolver {
 	#subcommand?: string;
 	#group?: string;
 
-	hoistedOptions: CommandInteractionOption[];
+	hoistedOptions: DiscordInteractionDataOption[];
 	resolved?: DiscordInteractionDataResolved;
 
 	constructor(
 		options?: DiscordInteractionDataOption[],
 		resolved?: DiscordInteractionDataResolved
 	) {
-		this.hoistedOptions =
-			options?.map(transformOasisInteractionDataOption) ?? [];
+		this.hoistedOptions = options ?? [];
 
 		// warning: black magic do not edit and thank djs authors
 
@@ -85,9 +30,7 @@ export class CommandInteractionOptionResolver {
 			ApplicationCommandOptionTypes.SubCommandGroup
 		) {
 			this.#group = this.hoistedOptions[0].name;
-			this.hoistedOptions = (this.hoistedOptions[0].options ?? []).map(
-				transformOasisInteractionDataOption
-			);
+			this.hoistedOptions = this.hoistedOptions[0].options ?? [];
 		}
 
 		if (
@@ -95,9 +38,7 @@ export class CommandInteractionOptionResolver {
 			ApplicationCommandOptionTypes.SubCommand
 		) {
 			this.#subcommand = this.hoistedOptions[0].name;
-			this.hoistedOptions = (this.hoistedOptions[0].options ?? []).map(
-				transformOasisInteractionDataOption
-			);
+			this.hoistedOptions = this.hoistedOptions[0].options ?? [];
 		}
 
 		this.resolved = resolved;
@@ -106,10 +47,10 @@ export class CommandInteractionOptionResolver {
 	private getTypedOption(
 		name: string | number,
 		type: ApplicationCommandOptionTypes,
-		properties: (keyof CommandInteractionOption)[],
+		properties: (keyof DiscordInteractionDataOption)[],
 		required: boolean
-	): CommandInteractionOption | void {
-		const option: CommandInteractionOption | undefined = this.get(
+	): DiscordInteractionDataOption | void {
+		const option: DiscordInteractionDataOption | undefined = this.get(
 			name,
 			required
 		);
@@ -136,14 +77,14 @@ export class CommandInteractionOptionResolver {
 		return option;
 	}
 
-	get(name: string | number, required: true): CommandInteractionOption;
+	get(name: string | number, required: true): DiscordInteractionDataOption;
 	get(
 		name: string | number,
 		required: boolean
-	): CommandInteractionOption | undefined;
+	): DiscordInteractionDataOption | undefined;
 
 	get(name: string | number, required?: boolean) {
-		const option: CommandInteractionOption | undefined =
+		const option: DiscordInteractionDataOption | undefined =
 			this.hoistedOptions.find(o =>
 				typeof name === 'number'
 					? o.name === name.toString()
@@ -165,84 +106,84 @@ export class CommandInteractionOptionResolver {
 	getString(name: string | number, required: true): string;
 	getString(name: string | number, required?: boolean): string | undefined;
 	getString(name: string | number, required = false) {
-		const option: CommandInteractionOption | void = this.getTypedOption(
+		const option: DiscordInteractionDataOption | void = this.getTypedOption(
 			name,
 			ApplicationCommandOptionTypes.String,
-			['Otherwise'],
+			['value'],
 			required
 		);
 
-		return option?.Otherwise ?? undefined;
+		return option?.value ?? undefined;
 	}
 
 	/** searches for a number option */
 	getNumber(name: string | number, required: true): number;
 	getNumber(name: string | number, required?: boolean): number | undefined;
 	getNumber(name: string | number, required = false) {
-		const option: CommandInteractionOption | void = this.getTypedOption(
+		const option: DiscordInteractionDataOption | void = this.getTypedOption(
 			name,
 			ApplicationCommandOptionTypes.Number,
-			['Otherwise'],
+			['value'],
 			required
 		);
 
-		return option?.Otherwise ?? undefined;
+		return option?.value ?? undefined;
 	}
 
 	/** searhces for an integer option */
 	getInteger(name: string | number, required: true): number;
 	getInteger(name: string | number, required?: boolean): number | undefined;
 	getInteger(name: string | number, required = false) {
-		const option: CommandInteractionOption | void = this.getTypedOption(
+		const option: DiscordInteractionDataOption | void = this.getTypedOption(
 			name,
 			ApplicationCommandOptionTypes.Integer,
-			['Otherwise'],
+			['value'],
 			required
 		);
 
-		return option?.Otherwise ?? undefined;
+		return option?.value ?? undefined;
 	}
 
 	/** searches for a boolean option */
 	getBoolean(name: string | number, required: true): boolean;
 	getBoolean(name: string | number, required?: boolean): boolean | undefined;
 	getBoolean(name: string | number, required = false) {
-		const option: CommandInteractionOption | void = this.getTypedOption(
+		const option: DiscordInteractionDataOption | void = this.getTypedOption(
 			name,
 			ApplicationCommandOptionTypes.Boolean,
-			['Otherwise'],
+			['value'],
 			required
 		);
 
-		return option?.Otherwise ?? undefined;
+		return option?.value ?? undefined;
 	}
 
 	/** searches for a user option */
-	getUser(name: string | number, required: true): bigint;
-	getUser(name: string | number, required?: boolean): bigint | undefined;
+	getUser(name: string | number, required: true): Snowflake;
+	getUser(name: string | number, required?: boolean): Snowflake | undefined;
 	getUser(name: string | number, required = false) {
-		const option: CommandInteractionOption | void = this.getTypedOption(
+		const option: DiscordInteractionDataOption | void = this.getTypedOption(
 			name,
 			ApplicationCommandOptionTypes.User,
-			['Otherwise'],
+			['value'],
 			required
 		);
 
-		return option?.Otherwise ?? undefined;
+		return option?.value ?? undefined;
 	}
 
 	/** searches for a channel option */
-	getChannel(name: string | number, required: true): bigint;
-	getChannel(name: string | number, required?: boolean): bigint | undefined;
+	getChannel(name: string | number, required: true): Snowflake;
+	getChannel(name: string | number, required?: boolean): Snowflake | undefined;
 	getChannel(name: string | number, required = false) {
-		const option: CommandInteractionOption | void = this.getTypedOption(
+		const option: DiscordInteractionDataOption | void = this.getTypedOption(
 			name,
 			ApplicationCommandOptionTypes.Channel,
-			['Otherwise'],
+			['value'],
 			required
 		);
 
-		return option?.Otherwise ?? undefined;
+		return option?.value ?? undefined;
 	}
 
 	/** searches for a mentionable-based option */
@@ -253,71 +194,61 @@ export class CommandInteractionOptionResolver {
 	): string | undefined;
 
 	getMentionable(name: string | number, required = false) {
-		const option: CommandInteractionOption | void = this.getTypedOption(
+		const option: DiscordInteractionDataOption | void = this.getTypedOption(
 			name,
 			ApplicationCommandOptionTypes.Mentionable,
-			['Otherwise'],
+			['value'],
 			required
 		);
 
-		return option?.Otherwise ?? undefined;
+		return option?.value ?? undefined;
 	}
 
 	/** searches for a mentionable-based option */
-	getRole(name: string | number, required: true): bigint;
-	getRole(name: string | number, required?: boolean): bigint | undefined;
+	getRole(name: string | number, required: true): Snowflake;
+	getRole(name: string | number, required?: boolean): Snowflake | undefined;
 	getRole(name: string | number, required = false) {
-		const option: CommandInteractionOption | void = this.getTypedOption(
+		const option: DiscordInteractionDataOption | void = this.getTypedOption(
 			name,
 			ApplicationCommandOptionTypes.Role,
-			['Otherwise'],
+			['value'],
 			required
 		);
 
-		return option?.Otherwise ?? undefined;
+		return option?.value ?? undefined;
 	}
 
 	/** searches for an attachment option */
-	getAttachment(name: string | number, required: true): string;
-	getAttachment(
-		name: string | number,
-		required?: boolean
-	): string | undefined;
-
+	getAttachment(name: string | number, required: true): Snowflake;
+	getAttachment(name: string | number, required?: boolean): Snowflake | undefined;
 	getAttachment(name: string | number, required = false) {
-		const option: CommandInteractionOption | void = this.getTypedOption(
+		const option: DiscordInteractionDataOption | void = this.getTypedOption(
 			name,
 			ApplicationCommandOptionTypes.Attachment,
-			['Otherwise'],
+			['value'],
 			required
 		);
 
-		return option?.Otherwise ?? undefined;
+		return option?.value ?? undefined;
 	}
 
 	/** searches for the focused option */
-	getFocused(
-		full = false
-	):
-		| string
-		| number
-		| bigint
-		| boolean
-		| undefined
-		| CommandInteractionOption {
-		const focusedOption: CommandInteractionOption | void =
+    getFocused(full: true): DiscordInteractionDataOption;
+    getFocused(full: false): DiscordInteractionDataOption["value"];
+	getFocused(full: boolean = false) {
+		const focusedOption: DiscordInteractionDataOption | void =
 			this.hoistedOptions.find(option => option.focused);
 
 		if (!focusedOption) {
 			throw new TypeError('No option found');
 		}
 
-		return full ? focusedOption : focusedOption.Otherwise;
+		return full ? focusedOption : focusedOption.value;
 	}
 
 	getSubCommand(
 		required = true
-	): (string | CommandInteractionOption[] | undefined)[] {
+	): [string | undefined, DiscordInteractionDataOption[]] {
 		if (required && !this.#subcommand) {
 			throw new TypeError('Option marked as required was undefined');
 		}
@@ -327,7 +258,7 @@ export class CommandInteractionOptionResolver {
 
 	getSubCommandGroup(
 		required = false
-	): (string | CommandInteractionOption[] | undefined)[] {
+	): [string | undefined, DiscordInteractionDataOption[]] {
 		if (required && !this.#group) {
 			throw new TypeError('Option marked as required was undefined');
 		}
