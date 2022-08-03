@@ -1309,10 +1309,12 @@ export interface DiscordInteraction {
 	message?: DiscordMessage;
 	/** the command data payload */
 	data?: DiscordInteractionData;
-	/** The selected language of the invoking user */
-	locale?: string;
 	/** The guild's preferred locale, if invoked in a guild */
 	guild_locale?: string;
+    /** Bitwise set of permissions the app or bot has within the channel the interaction was sent from */
+    app_permissions?: string;
+    /** Selected language of the invoking user */
+    locale?: string;
 }
 
 /** https://discord.com/developers/docs/resources/guild#guild-member-object */

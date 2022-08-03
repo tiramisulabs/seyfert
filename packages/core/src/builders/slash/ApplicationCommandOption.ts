@@ -1,5 +1,9 @@
-import { ApplicationCommandOptionTypes, ChannelTypes, Localization } from '@biscuitland/api-types';
+import type { ChannelTypes, Localization, Locales } from '@biscuitland/api-types';
+import { ApplicationCommandOptionTypes } from '@biscuitland/api-types';
 import { ApplicationCommandOptionChoice } from '../../structures/interactions';
+
+
+export type Localizations = typeof Locales[keyof typeof Locales] & string;
 
 export class ChoiceBuilder {
     name?: string;
@@ -31,7 +35,9 @@ export class OptionBuilder {
     autocomplete?: boolean;
     type?: ApplicationCommandOptionTypes;
     name?: string;
+    nameLocalization?: Record<Localizations, string>;
     description?: string;
+    descriptionLocalization?: Record<Localizations, string>;
 
     constructor(type?: ApplicationCommandOptionTypes, name?: string, description?: string) {
         this.type = type;
@@ -43,12 +49,18 @@ export class OptionBuilder {
         return (this.type = type), this;
     }
 
-    setName(name: string): this {
-        return (this.name = name), this;
+    setName(name: string, localization?: Record<Localizations, string>): this {
+        this.name = name;
+        this.nameLocalization = localization;
+
+        return this;
     }
 
-    setDescription(description: string): this {
-        return (this.description = description), this;
+    setDescription(description: string, localization?: Record<Localizations, string>): this {
+        this.description = description;
+        this.descriptionLocalization = localization;
+
+        return this;
     }
 
     setRequired(required: boolean): this {
@@ -65,7 +77,9 @@ export class OptionBuilder {
         const applicationCommandOption: ApplicationCommandOption = {
             type: this.type,
             name: this.name,
+            name_localizations: this.nameLocalization,
             description: this.description,
+            description_localizations: this.descriptionLocalization,
             required: this.required ? true : false,
         };
 

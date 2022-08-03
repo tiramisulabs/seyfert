@@ -79,9 +79,9 @@ export abstract class BaseInteraction implements Model {
 		this.channelId = data.channel_id;
 		this.applicationId = data.application_id;
 		this.version = data.version;
+        this.locale = data.locale;
 
-		// @ts-expect-error: vendor error
-		const perms = data.app_permissions as string;
+		const perms = data.app_permissions;
 
 		if (perms) {
 			this.appPermissions = new Permissions(BigInt(perms));
@@ -105,6 +105,11 @@ export abstract class BaseInteraction implements Model {
 	user?: User;
 	member?: Member;
 	appPermissions?: Permissions;
+
+    /**
+     * @virtual
+     */
+    locale?: string;
 
 	readonly version: 1;
 
@@ -323,6 +328,7 @@ export class AutoCompleteInteraction extends BaseInteraction implements Model {
 		this.commandName = data.data!.name;
 		this.commandType = data.data!.type;
 		this.commandGuildId = data.data!.guild_id;
+        this.locale = super.locale!;
 	}
 
 	override type: InteractionTypes.ApplicationCommandAutocomplete;
@@ -330,6 +336,7 @@ export class AutoCompleteInteraction extends BaseInteraction implements Model {
 	commandName: string;
 	commandType: ApplicationCommandTypes;
 	commandGuildId?: Snowflake;
+    override locale: string;
 
 	async respondWithChoices(
 		choices: ApplicationCommandOptionChoice[]
@@ -415,6 +422,8 @@ export class CommandInteraction extends BaseInteraction implements Model {
 				this.resolved.messages.set(id, new Message(session, m));
 			}
 		}
+
+        this.locale = super.locale!;
 	}
 
 	override type: InteractionTypes.ApplicationCommand;
@@ -424,6 +433,7 @@ export class CommandInteraction extends BaseInteraction implements Model {
 	commandGuildId?: Snowflake;
 	resolved: CommandInteractionDataResolved;
 	options: CommandInteractionOptionResolver;
+    override locale: string;
 }
 
 export type ModalInMessage = ModalSubmitInteraction & {
@@ -446,6 +456,8 @@ export class ModalSubmitInteraction extends BaseInteraction implements Model {
 		if (data.message) {
 			this.message = new Message(session, data.message);
 		}
+
+        this.locale = super.locale!;
 	}
 
 	override type: InteractionTypes.MessageComponent;
@@ -455,6 +467,7 @@ export class ModalSubmitInteraction extends BaseInteraction implements Model {
 	values?: string[];
 	message?: Message;
 	components;
+    override locale: string;
 
 	static transformComponent(component: DiscordMessageComponents[number]) {
 		return {
@@ -482,6 +495,7 @@ export class PingInteraction extends BaseInteraction implements Model {
 		this.commandName = data.data!.name;
 		this.commandType = data.data!.type;
 		this.commandGuildId = data.data!.guild_id;
+        this.locale = super.locale as undefined;
 	}
 
 	override type: InteractionTypes.Ping;
@@ -489,6 +503,7 @@ export class PingInteraction extends BaseInteraction implements Model {
 	commandName: string;
 	commandType: ApplicationCommandTypes;
 	commandGuildId?: Snowflake;
+    override locale: undefined;
 
 	async pong(): Promise<void> {
 		await this.session.rest.post<undefined>(
@@ -509,6 +524,7 @@ export class ComponentInteraction extends BaseInteraction implements Model {
 		this.targetId = data.data!.target_id;
 		this.values = data.data!.values;
 		this.message = new Message(session, data.message!);
+        this.locale = super.locale!;
 	}
 
 	override type: InteractionTypes.MessageComponent;
@@ -517,6 +533,7 @@ export class ComponentInteraction extends BaseInteraction implements Model {
 	targetId?: Snowflake;
 	values?: string[];
 	message: Message;
+    override locale: string;
 
 	isButton(): boolean {
 		return this.componentType === MessageComponentTypes.Button;
