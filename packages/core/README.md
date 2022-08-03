@@ -26,7 +26,7 @@ const commands = [
         .setName('ping')
         .setDescription('Replies with pong!')
         .toJSON()
-]
+];
 
 session.events.on('ready', async ({ user }) => {
     console.log('Logged in as:', user.username);
