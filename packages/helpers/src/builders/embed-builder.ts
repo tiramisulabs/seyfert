@@ -1,4 +1,4 @@
-import type { DiscordEmbed, DiscordEmbedField, DiscordEmbedProvider } from '@biscuitland/api-types';
+import { DiscordEmbed, DiscordEmbedField, DiscordEmbedProvider } from '@biscuitland/api-types';
 
 export interface EmbedFooter {
     text: string;

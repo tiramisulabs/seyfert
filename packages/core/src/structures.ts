@@ -34,9 +34,9 @@ export * from './structures/components';
 export * from './structures/guilds';
 
 // BUILDERS
-export * from './builders/components/InputTextBuilder';
-export * from './builders/components/MessageActionRowBuilder';
-export * from './builders/components/MessageButtonBuilder';
-export * from './builders/components/MessageSelectMenuBuilder';
-export * from './builders/slash/ApplicationCommand';
-export * from './builders/slash/ApplicationCommandOption';
+export * from '../../helpers/src/builders/components/InputTextBuilder';
+export * from '../../helpers/src/builders/components/MessageActionRowBuilder';
+export * from '../../helpers/src/builders/components/MessageButtonBuilder';
+export * from '../../helpers/src/builders/components/MessageSelectMenuBuilder';
+export * from '../../helpers/src/builders/slash/ApplicationCommand';
+export * from '../../helpers/src/builders/slash/ApplicationCommandOption';
