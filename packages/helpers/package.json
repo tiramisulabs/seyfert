@@ -1,6 +1,6 @@
 {
 	"name": "@biscuitland/helpers",
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",
 	"types": "./dist/index.d.ts",
@@ -22,8 +22,9 @@
 			"require": "./dist/index.js"
 		}
 	},
-	"peerDependencies": {
-		"@biscuitland/core": "^1.1.0"
+	"dependencies": {
+		"@biscuitland/api-types": "^1.2.0",
+		"@biscuitland/core": "^1.2.0"
 	},
 	"devDependencies": {
 		"tsup": "^6.1.3"

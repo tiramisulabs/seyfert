@@ -18,7 +18,7 @@
 			"dependsOn": ["@biscuitland/api-types#build", "@biscuitland/rest#build", "@biscuitland/ws#build"]
 		},
 		"@biscuitland/helpers#build": {
-			"dependsOn": ["@biscuitland/core#build"]
+			"dependsOn": ["@biscuitland/api-types#build", "@biscuitland/core#build"]
 		},
 		"clean": {
 			"cache": false

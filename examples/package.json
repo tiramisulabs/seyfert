@@ -1,6 +1,0 @@
-{
-  "name": "examples",
-  "dependencies": {
-    "dotenv": "^16.0.1"
-  }
-}
