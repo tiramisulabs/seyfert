@@ -527,6 +527,12 @@ export interface ReturnThreadsArchive {
     hasMore: boolean;
 }
 
+/**
+ * Represents a GuildChannel.
+ * @extends BaseChannel
+ * @see {@link BaseChannel}
+ * @link https://discord.com/developers/docs/resources/channel#channel-object
+ */
 export class GuildChannel extends BaseChannel implements Model {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data);
@@ -540,19 +546,32 @@ export class GuildChannel extends BaseChannel implements Model {
             : [];
     }
 
+    /** Channel type. */
     override type: Exclude<ChannelTypes, ChannelTypes.DM | ChannelTypes.GroupDm>;
+    /** Guild id. */
     guildId: Snowflake;
+    /** Channel topic */
     topic?: string;
+    /** Sorting position of the channel */
     position?: number;
+    /** Id of the parent category for a channel (each parent category can contain up to 50 channels). */
     parentId?: Snowflake;
+    /** Explicit permission overwrites for members and roles */
     permissionOverwrites: PermissionsOverwrites[];
 
+    /**
+     * Gets the channel invites for the channel.
+     */
     async fetchInvites(): Promise<Invite[]> {
         const invites = await this.session.rest.get<DiscordInviteMetadata[]>(CHANNEL_INVITES(this.id));
 
         return invites.map(invite => new Invite(this.session, invite));
     }
 
+    /**
+     * Edits the channel.
+     * @param options - Options for edit the channel.
+     */
     async edit(options: EditNewsChannelOptions): Promise<NewsChannel>;
     async edit(options: EditStageChannelOptions): Promise<StageChannel>;
     async edit(options: EditVoiceChannelOptions): Promise<VoiceChannel>;
@@ -582,6 +601,10 @@ export class GuildChannel extends BaseChannel implements Model {
         return ChannelFactory.from(this.session, channel);
     }
 
+    /**
+     * Gets the channel archived threads.
+     * @param options - Options for select the archved threads.
+     */
     async getArchivedThreads(
         options: ListArchivedThreads & { type: 'public' | 'private' | 'privateJoinedThreads' },
     ): Promise<ReturnThreadsArchive> {
@@ -614,6 +637,10 @@ export class GuildChannel extends BaseChannel implements Model {
         };
     }
 
+    /**
+     * Creates a new thread in the channel.
+     * @param options - Options for create a thread channel.
+     */
     async createThread(options: ThreadCreateOptions): Promise<ThreadChannel> {
         const thread = await this.session.rest.post<DiscordChannel>(
             'messageId' in options
@@ -628,6 +655,10 @@ export class GuildChannel extends BaseChannel implements Model {
         return new ThreadChannel(this.session, thread, thread.guild_id ?? this.guildId);
     }
 
+    /**
+     * Sets the channel's permissions overwrites. Same as GuildChannel.edit({ permissionOverwrites: ... }).
+     * @param overwrites - The overwrites to add to the channel.
+     */
     async setPermissions(overwrites: PermissionsOverwrites[]): Promise<Channel> {
         return this.edit({ permissionOverwrites: overwrites } as EditGuildChannelOptions)
     }
