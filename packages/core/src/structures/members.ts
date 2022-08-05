@@ -195,6 +195,14 @@ export class Member implements Model {
 		return Util.formatImageURL(url, options.size ?? 128, options.format);
 	}
 
+	/**
+	 * Sets a new nickname for this member. Same as Member.edit({ nick: ... })
+	 * @param nick - The new nickname for the member.
+	 */
+	async setNickname(nick: string): Promise<Member> {
+		return this.edit({ nick });
+	}
+
 	toString(): string {
 		return `<@!${this.user.id}>`;
 	}

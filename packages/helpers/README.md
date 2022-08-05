@@ -1,4 +1,7 @@
 # @biscuitland/helpers
+## Most importantly, helpers is:
+Collectors, builders and other helper functions such as setPresence.
+
 [<img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white">](https://github.com/oasisjs/biscuit)
 [<img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white">](https://discord.gg/XNw2RZFzaP)
 
@@ -10,11 +13,6 @@
 npm install @biscuitland/helpers
 yarn add @biscuitland/helpers
 ```
-
-## Most importantly, helpers is:
-- Collectors
-- Builders
-- Other helper functions such as setPresence
 
 ## Links
 * [Website](https://biscuitjs.com/)
