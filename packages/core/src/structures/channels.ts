@@ -109,6 +109,15 @@ export abstract class BaseChannel implements Model {
         return ChannelFactory.from(this.session, channel);
     }
 
+    /**
+     * Deletes a channel.
+     * @param channelId The channel id to delete.
+     * @link https://discord.com/developers/docs/topics/gateway#channel-delete
+     */
+    async delete(channelId?: Snowflake): Promise<Channel> {
+        return await this.session.rest.delete<Channel>(CHANNEL(channelId ?? this.id));
+    }
+
     toString(): string {
         return `<#${this.id}>`;
     }
