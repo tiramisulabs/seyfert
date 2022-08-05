@@ -1,4 +1,6 @@
 # @biscuitland/api-types
+## Most importantly, api-types is:
+1:1 type definitions package for the [Discord](https://discord.com/developers/docs/intro) API.
 
 [<img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white">](https://github.com/oasisjs/biscuit)
 [<img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white">](https://discord.gg/XNw2RZFzaP)
@@ -11,10 +13,6 @@
 npm install @biscuitland/api-types
 yarn add @biscuitland/api-types
 ```
-
-## Most importantly, api-types is:
-
-1:1 type definitions package for the [Discord](https://discord.com/developers/docs/intro) API:
 
 ## Example
 

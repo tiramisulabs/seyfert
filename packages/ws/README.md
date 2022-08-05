@@ -1,4 +1,7 @@
 # @biscuitland/ws
+## Most importantly, biscuit's ws is:
+A standalone gateway to interface Discord, it is meant to be used with a rest manager to send fetch requests to Discord
+
 [<img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white">](https://github.com/oasisjs/biscuit)
 [<img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white">](https://discord.gg/XNw2RZFzaP)
 
@@ -10,9 +13,6 @@
 npm install @biscuitland/ws
 yarn add @biscuitland/ws
 ```
-
-## Most importantly, biscuit's ws is:
-A standalone gateway to interface Discord, it is meant to be used with a rest manager to send fetch requests to Discord
 
 ## Example (GW proxy)
 ```ts
