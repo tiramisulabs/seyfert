@@ -115,7 +115,9 @@ export abstract class BaseChannel implements Model {
      * @link https://discord.com/developers/docs/topics/gateway#channel-delete
      */
     async delete(channelId?: Snowflake): Promise<Channel> {
-        return await this.session.rest.delete<Channel>(CHANNEL(channelId ?? this.id));
+        const deleted = await this.session.rest.delete<DiscordChannel>(CHANNEL(channelId ?? this.id));
+
+        return ChannelFactory.from(this.session, deleted);
     }
 
     toString(): string {
