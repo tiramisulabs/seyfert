@@ -627,6 +627,10 @@ export class GuildChannel extends BaseChannel implements Model {
 
         return new ThreadChannel(this.session, thread, thread.guild_id ?? this.guildId);
     }
+
+    async setPermissions(overwrites: PermissionsOverwrites[]): Promise<Channel> {
+        return this.edit({ permissionOverwrites: overwrites } as EditGuildChannelOptions)
+    }
 }
 
 /** BaseVoiceChannel */
