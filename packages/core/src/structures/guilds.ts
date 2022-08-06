@@ -1260,8 +1260,20 @@ export class Guild extends BaseGuild implements Model {
 				targetId: x.target_id,
 				changes: x.changes?.map(j => ({
 					key: j.key,
-					oldValue: j.old_value,
-					newValue: j.new_value,
+					oldValue: j.old_value
+						? j.key === 'permission_overwrites'
+							? (j.old_value as DiscordOverwrite[])
+							: ['$add', '$remove'].includes(j.key)
+								? (j.old_value as DiscordRole[]).map(j => new Role(this.session, j, this.id))
+								: j.old_value as string | number | boolean
+						: null,
+					newValue: j.new_value
+						? j.key === 'permission_overwrites'
+							? (j.new_value as DiscordOverwrite[])
+							: ['$add', '$remove'].includes(j.key)
+								? (j.new_value as DiscordRole[]).map(j => new Role(this.session, j, this.id))
+								: j.new_value as string | number | boolean
+						: null,
 				})),
 				userId: x.user_id,
 				id: x.id,
