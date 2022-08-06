@@ -73,6 +73,7 @@ import { Sticker } from './sticker';
 import { WelcomeScreen } from './welcome';
 import { AutoModerationRule } from './automod';
 import { Webhook } from './webhook';
+import { Application } from './application';
 
 /** BaseGuild */
 /**
@@ -1325,13 +1326,7 @@ export class Guild extends BaseGuild implements Model {
 				revoked: x.revoked,
 				user: x.user ? new User(this.session, x.user) : null,
 				account: x.account,
-				application: x.application ? {
-					id: x.application.id,
-					name: x.application.name,
-					icon: x.application.icon,
-					description: x.application.description,
-					bot: x.application.bot ? new User(this.session, x.application.bot) : null
-				} : null,
+				application: x.application ? new Application(x.application) : null,
 			})),
 			threads: auditLog.threads.map(x => ChannelFactory.fromGuildChannel(this.session, x)),
 			users: auditLog.users.map(x => new User(this.session, x)),
