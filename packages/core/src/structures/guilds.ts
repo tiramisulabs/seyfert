@@ -1291,29 +1291,7 @@ export class Guild extends BaseGuild implements Model {
 				} : null,
 				reason: x.reason,
 			})),
-			autoModerationRules: auditLog.auto_moderation_rules?.map(x => ({
-				id: x.id,
-				guildId: x.guild_id,
-				name: x.name,
-				creatorId: x.creator_id,
-				eventType: x.event_type,
-				triggerType: x.trigger_type,
-				triggerMetadata: {
-					keywordFilter: x.trigger_metadata.keyword_filter,
-					presets: x.trigger_metadata.presets,
-					allowList: x.trigger_metadata.allow_list,
-				},
-				actions: x.actions.map(j => ({
-					type: j.type,
-					metadata: {
-						channelId: j.metadata.channel_id,
-						durationSeconds: j.metadata.duration_seconds
-					}
-				})),
-				enabled: x.enabled,
-				exemptRoles: x.exempt_channels,
-				exemptChannels: x.exempt_channels,
-			})),
+			autoModerationRules: auditLog.auto_moderation_rules?.map(x => new AutoModerationRule(this.session, x)),
 			guildScheduledEvents: auditLog.guild_scheduled_events?.map(x => ({
 				id: x.id,
 				guildId: x.guild_id,
