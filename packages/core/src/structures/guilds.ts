@@ -73,7 +73,7 @@ import { Sticker } from './sticker';
 import { WelcomeScreen } from './welcome';
 import { AutoModerationRule } from './automod';
 import { Webhook } from './webhook';
-import { Application } from './application';
+import { ScheduledEvent } from './scheduled-events';
 
 /** BaseGuild */
 /**
@@ -1293,24 +1293,7 @@ export class Guild extends BaseGuild implements Model {
 				reason: x.reason,
 			})),
 			autoModerationRules: auditLog.auto_moderation_rules?.map(x => new AutoModerationRule(this.session, x)),
-			guildScheduledEvents: auditLog.guild_scheduled_events?.map(x => ({
-				id: x.id,
-				guildId: x.guild_id,
-				channelId: x.channel_id,
-				creatorId: x.creator_id,
-				name: x.name,
-				description: x.description,
-				scheduledStartTime: x.scheduled_start_time,
-				scheduledEndTime: x.scheduled_end_time,
-				privacyLevel: x.privacy_level,
-				status: x.status,
-				entityType: x.entity_type,
-				entityId: x.entity_id,
-				entityMetadata: x.entity_metadata,
-				creator: x.creator ? new User(this.session, x.creator) : null,
-				userCount: x.user_count,
-				image: x.image,
-			})),
+			guildScheduledEvents: auditLog.guild_scheduled_events?.map(x => new ScheduledEvent(this.session, x)),
 			integrations: auditLog.integrations.map(x => ({
 				id: x.id,
 				name: x.name,
@@ -1326,7 +1309,13 @@ export class Guild extends BaseGuild implements Model {
 				revoked: x.revoked,
 				user: x.user ? new User(this.session, x.user) : null,
 				account: x.account,
-				application: x.application ? new Application(x.application) : null,
+				application: x.application ? {
+					id: x.application.id,
+					name: x.application.name,
+					icon: x.application.icon,
+					description: x.application.description,
+					bot: x.application.bot ? new User(this.session, x.application.bot) : null
+				} : null,
 			})),
 			threads: auditLog.threads.map(x => ChannelFactory.fromGuildChannel(this.session, x)),
 			users: auditLog.users.map(x => new User(this.session, x)),
