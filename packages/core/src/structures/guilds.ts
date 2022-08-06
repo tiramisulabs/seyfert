@@ -516,7 +516,7 @@ export class Guild extends BaseGuild implements Model {
 		this.widgetChannelId = data.widget_channel_id
 			? data.widget_channel_id
 			: undefined;
-		this.vefificationLevel = data.verification_level;
+		this.verificationLevel = data.verification_level;
 		this.defaultMessageNotificationLevel =
 			data.default_message_notifications;
 		this.explicitContentFilterLevel = data.explicit_content_filter;
@@ -572,7 +572,7 @@ export class Guild extends BaseGuild implements Model {
 	 * @see {@link VerificationLevels}
 	 * @link https://discord.com/developers/docs/resources/guild#guild-object-verification-level
 	 */
-	vefificationLevel: VerificationLevels;
+	verificationLevel: VerificationLevels;
 
 	/**
 	 * The default message notification level.
