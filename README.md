@@ -11,7 +11,7 @@ npm install @biscuitland/core
 yarn add @biscuitland/core
 ```
 
-for further reading join our [Discord](https://discord.gg/zqtPgyaFpV)
+for further reading join our [Discord](https://discord.com/invite/XNw2RZFzaP)
 
 ## Most importantly, biscuit is:
 
