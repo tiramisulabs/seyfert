@@ -32,11 +32,3 @@ export * from './structures/components';
 
 // GUILDS
 export * from './structures/guilds';
-
-// BUILDERS
-export * from '../../helpers/src/builders/components/InputTextBuilder';
-export * from '../../helpers/src/builders/components/MessageActionRowBuilder';
-export * from '../../helpers/src/builders/components/MessageButtonBuilder';
-export * from '../../helpers/src/builders/components/MessageSelectMenuBuilder';
-export * from '../../helpers/src/builders/slash/ApplicationCommand';
-export * from '../../helpers/src/builders/slash/ApplicationCommandOption';
