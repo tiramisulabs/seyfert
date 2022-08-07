@@ -715,15 +715,34 @@ export abstract class BaseVoiceChannel extends GuildChannel {
 export class DMChannel extends BaseChannel implements Model {
     constructor(session: Session, data: DiscordChannel) {
         super(session, data);
-        this.user = new User(this.session, data.recipents!.find(r => r.id !== this.session.botId)!);
-        this.type = data.type as ChannelTypes.DM | ChannelTypes.GroupDm;
+        
+        if (data.owner_id && data.recipents) {
+            this.user = new User(session, data.recipents.find(user => user.id === data.owner_id)!);
+        } else {
+            this.user = new User(session, data.recipents!.find(user => user.id === this.session.botId)!);
+        }
+
+        if (data.recipents && data.recipents.length > 1) {
+            this.group = data.recipents.map(r => new User(this.session, r));
+        }
+
+        if (this.group) {
+            this.type = ChannelTypes.GroupDm;
+        } else {
+            this.type = ChannelTypes.DM;
+        }
+
         if (data.last_message_id) {
             this.lastMessageId = data.last_message_id;
         }
     }
 
     override type: ChannelTypes.DM | ChannelTypes.GroupDm;
+    /** Onwer of the dm channel. */
     user: User;
+    /** If the channel is a DM Group it's has multiple users. */
+    group?: User[];
+    /** Last message id. */
     lastMessageId?: Snowflake;
 
     async close(): Promise<DMChannel> {
