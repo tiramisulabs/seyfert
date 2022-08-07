@@ -726,11 +726,7 @@ export class DMChannel extends BaseChannel implements Model {
             this.group = data.recipents.map(r => new User(this.session, r));
         }
 
-        if (this.group) {
-            this.type = ChannelTypes.GroupDm;
-        } else {
-            this.type = ChannelTypes.DM;
-        }
+        this.type = ChannelTypes.GroupDm | ChannelTypes.GroupDm;
 
         if (data.last_message_id) {
             this.lastMessageId = data.last_message_id;
