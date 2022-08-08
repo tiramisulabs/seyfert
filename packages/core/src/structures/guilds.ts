@@ -25,7 +25,12 @@ import {
 	VideoQualityModes,
 	GetBans,
 	GetInvite,
-    ListGuildMembers,
+	ListGuildMembers,
+	GetAuditLogs,
+	GUILD_AUDIT_LOGS,
+	DiscordAuditLog,
+	AuditLogEvents,
+	DiscordAuditLogChange,
 } from '@biscuitland/api-types';
 import type { ImageFormat, ImageSize } from '../utils/util';
 import { GuildFeatures, PremiumTiers } from '@biscuitland/api-types';
@@ -46,7 +51,7 @@ import {
 	GUILD_PRUNE,
 	GUILD_INVITES,
 	GUILD_MEMBER,
-    GUILD_MEMBERS,
+	GUILD_MEMBERS,
 	GUILD_MEMBER_ROLE,
 	GUILD_ROLE,
 	GUILD_ROLES,
@@ -69,6 +74,9 @@ import { Widget } from './widget';
 import { Sticker } from './sticker';
 import { WelcomeScreen } from './welcome';
 import { AutoModerationRule } from './automod';
+import { Webhook } from './webhook';
+import { ScheduledEvent } from './scheduled-events';
+import Integration from './integration';
 
 /** BaseGuild */
 /**
@@ -286,11 +294,11 @@ export class GuildPreview implements Model {
 			? Util.iconHashToBigInt(data.icon)
 			: undefined;
 
-        this.splashHash = data.splash
+		this.splashHash = data.splash
 			? Util.iconHashToBigInt(data.splash)
 			: undefined;
 
-        this.discoverySplashHash = data.discovery_splash
+		this.discoverySplashHash = data.discovery_splash
 			? Util.iconHashToBigInt(data.discovery_splash)
 			: undefined;
 
@@ -298,7 +306,7 @@ export class GuildPreview implements Model {
 			x => new GuildEmoji(this.session, x, this.id)
 		);
 
-        this.features = data.features;
+		this.features = data.features;
 		this.approximateMemberCount = data.approximate_member_count;
 		this.approximatePresenceCount = data.approximate_presence_count;
 		this.stickers = data.stickers.map(x => new Sticker(this.session, x));
@@ -435,9 +443,9 @@ export interface GuildCreateOptionsChannel {
 	id?: Snowflake;
 	parentId?: Snowflake;
 	type?:
-		| ChannelTypes.GuildText
-		| ChannelTypes.GuildVoice
-		| ChannelTypes.GuildCategory;
+	| ChannelTypes.GuildText
+	| ChannelTypes.GuildVoice
+	| ChannelTypes.GuildCategory;
 	name: string;
 	topic?: string | null;
 	nsfw?: boolean;
@@ -482,6 +490,38 @@ export interface GuildEditOptions extends Partial<GuildCreateOptions> {
 	premiumProgressBarEnabled?: boolean;
 }
 
+export interface AuditLogResult {
+	auditLogEntries: {
+		targetId: string | null;
+		changes: {
+			key: DiscordAuditLogChange['key'];
+			oldValue: DiscordOverwrite[] | Role[] | string | number | boolean | null;
+			newValue: DiscordOverwrite[] | Role[] | string | number | boolean | null;
+		}[] | undefined;
+		userId: string | null;
+		id: string;
+		actionType: AuditLogEvents;
+		options: {
+			deleteMemberDays: string;
+			membersRemoved: string;
+			channelId: string;
+			messageId: string;
+			count: string;
+			id: string;
+			type: string;
+			roleName: string;
+			applicationId: string;
+		} | null;
+		reason: string | undefined;
+	}[];
+	autoModerationRules: AutoModerationRule[] | undefined;
+	guildScheduledEvents: ScheduledEvent[] | undefined;
+	integrations: Integration[];
+	threads: ThreadChannel[];
+	users: User[];
+	webhooks: Webhook[];
+}
+
 /**
  * Represents a guild.
  * @see {@link BaseGuild}.
@@ -502,7 +542,7 @@ export class Guild extends BaseGuild implements Model {
 		this.widgetChannelId = data.widget_channel_id
 			? data.widget_channel_id
 			: undefined;
-		this.vefificationLevel = data.verification_level;
+		this.verificationLevel = data.verification_level;
 		this.defaultMessageNotificationLevel =
 			data.default_message_notifications;
 		this.explicitContentFilterLevel = data.explicit_content_filter;
@@ -558,7 +598,7 @@ export class Guild extends BaseGuild implements Model {
 	 * @see {@link VerificationLevels}
 	 * @link https://discord.com/developers/docs/resources/guild#guild-object-verification-level
 	 */
-	vefificationLevel: VerificationLevels;
+	verificationLevel: VerificationLevels;
 
 	/**
 	 * The default message notification level.
@@ -872,9 +912,9 @@ export class Guild extends BaseGuild implements Model {
 			GUILD_BAN(this.id, memberId),
 			options
 				? {
-						delete_message_days: options.deleteMessageDays,
-						reason: options.reason,
-				  }
+					delete_message_days: options.deleteMessageDays,
+					reason: options.reason,
+				}
 				: {}
 		);
 	}
@@ -1124,10 +1164,10 @@ export class Guild extends BaseGuild implements Model {
 	 * gets the auto moderation rules for the guild.
 	 * @see {@link AutoModerationRule#getRules} sames
 	 * @param ruleId The optional rule id
-	 * @returns 
+	 * @returns
 	 */
 	fetchAutoModerationRules(ruleId?: Snowflake): Promise<AutoModerationRule | AutoModerationRule[]> {
-		return AutoModerationRule.prototype.getRules.call({session: this.session, guildId: this.id}, ruleId);
+		return AutoModerationRule.prototype.getRules.call({ session: this.session, guildId: this.id }, ruleId);
 	}
 
 	/**
@@ -1239,21 +1279,75 @@ export class Guild extends BaseGuild implements Model {
 		return channels.map(channel => ChannelFactory.fromGuildChannel(this.session, channel));
 	}
 
-    /** fetches a member */
-    async fetchMember(memberId: Snowflake): Promise<Member> {
-        const member = await this.session.rest.get<DiscordMemberWithUser>(
-            GUILD_MEMBER(this.id, memberId)
-        );
+	async fetchAuditLogs(options?: GetAuditLogs): Promise<AuditLogResult> {
+		const auditLog = await this.session.rest.get<DiscordAuditLog>(GUILD_AUDIT_LOGS(this.id, options));
+		return {
+			auditLogEntries: auditLog.audit_log_entries.map(x => ({
+				targetId: x.target_id,
+				changes: x.changes?.map(j => ({
+					key: j.key,
+					oldValue: j.old_value
+						? j.key === 'permission_overwrites'
+							? (j.old_value as DiscordOverwrite[])
+							: ['$add', '$remove'].includes(j.key)
+								? (j.old_value as DiscordRole[]).map(j => new Role(this.session, { ...j, permissions: j.permissions || '0' }, this.id))
+								: j.old_value as string | number | boolean
+						: null,
+					newValue: j.new_value
+						? j.key === 'permission_overwrites'
+							? (j.new_value as DiscordOverwrite[])
+							: ['$add', '$remove'].includes(j.key)
+								? (j.new_value as DiscordRole[]).map(j => new Role(this.session, { ...j, permissions: j.permissions || '0' }, this.id))
+								: j.new_value as string | number | boolean
+						: null,
+				})),
+				userId: x.user_id,
+				id: x.id,
+				actionType: x.action_type,
+				options: x.options ? {
+					deleteMemberDays: x.options.delete_member_days,
+					membersRemoved: x.options.members_removed,
+					channelId: x.options.channel_id,
+					messageId: x.options.message_id,
+					count: x.options.count,
+					id: x.options.id,
+					type: x.options.type,
+					roleName: x.options.role_name,
+					applicationId: x.options.application_id
+				} : null,
+				reason: x.reason,
+			})),
+			autoModerationRules: auditLog.auto_moderation_rules?.map(x => new AutoModerationRule(this.session, x)),
+			guildScheduledEvents: auditLog.guild_scheduled_events?.map(x => new ScheduledEvent(this.session, x)),
+			integrations: auditLog.integrations.map(x => new Integration(this.session, {
+				guild_id: this.id,
+				...x,
+			})),
+			threads: auditLog.threads.map(x => ChannelFactory.fromGuildChannel(this.session, x) as ThreadChannel),
+			users: auditLog.users.map(x => new User(this.session, x)),
+			webhooks: auditLog.webhooks.map(x => new Webhook(this.session, x)),
+		}
+	}
 
-        return new Member(this.session, member, this.id);
-    }
+	async fetchOwner(): Promise<Member> {
+		return this.fetchMember(this.ownerId);
+	}
 
-    /** fetches multiple members */
-    async fetchMembers(options?: ListGuildMembers): Promise<Member[]> {
-        const members = await this.session.rest.get<DiscordMemberWithUser[]>(
-            GUILD_MEMBERS(this.id, options)
-        );
+	/** fetches a member */
+	async fetchMember(memberId: Snowflake): Promise<Member> {
+		const member = await this.session.rest.get<DiscordMemberWithUser>(
+			GUILD_MEMBER(this.id, memberId)
+		);
 
-        return members.map((member) => new Member(this.session, member, this.id));
-    }
+		return new Member(this.session, member, this.id);
+	}
+
+	/** fetches multiple members */
+	async fetchMembers(options?: ListGuildMembers): Promise<Member[]> {
+		const members = await this.session.rest.get<DiscordMemberWithUser[]>(
+			GUILD_MEMBERS(this.id, options)
+		);
+
+		return members.map((member) => new Member(this.session, member, this.id));
+	}
 }
