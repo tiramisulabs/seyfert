@@ -517,7 +517,7 @@ export interface AuditLogResult {
 	autoModerationRules: AutoModerationRule[] | undefined;
 	guildScheduledEvents: ScheduledEvent[] | undefined;
 	integrations: Integration[];
-	threads: ChannelInGuild[];
+	threads: ThreadChannel[];
 	users: User[];
 	webhooks: Webhook[];
 }
@@ -1323,7 +1323,7 @@ export class Guild extends BaseGuild implements Model {
 				guild_id: this.id,
 				...x,
 			})),
-			threads: auditLog.threads.map(x => ChannelFactory.fromGuildChannel(this.session, x)),
+			threads: auditLog.threads.map(x => ChannelFactory.fromGuildChannel(this.session, x) as ThreadChannel),
 			users: auditLog.users.map(x => new User(this.session, x)),
 			webhooks: auditLog.webhooks.map(x => new Webhook(this.session, x)),
 		}
