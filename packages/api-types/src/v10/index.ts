@@ -295,7 +295,7 @@ export interface DiscordTeamMember {
 	team_id: string;
 	/** The avatar, discriminator, id, and username of the user */
 	user: Partial<DiscordUser> &
-		Pick<DiscordUser, 'avatar' | 'discriminator' | 'id' | 'username'>;
+	Pick<DiscordUser, 'avatar' | 'discriminator' | 'id' | 'username'>;
 }
 
 /** https://discord.com/developers/docs/topics/gateway#webhooks-update-webhook-update-event-fields */
@@ -1149,30 +1149,30 @@ export interface DiscordActionRow {
 	type: 1;
 	/** The components in this row */
 	components:
-		| [
-				| DiscordSelectMenuComponent
-				| DiscordButtonComponent
-				| DiscordInputTextComponent
-		  ]
-		| [DiscordButtonComponent, DiscordButtonComponent]
-		| [
-				DiscordButtonComponent,
-				DiscordButtonComponent,
-				DiscordButtonComponent
-		  ]
-		| [
-				DiscordButtonComponent,
-				DiscordButtonComponent,
-				DiscordButtonComponent,
-				DiscordButtonComponent
-		  ]
-		| [
-				DiscordButtonComponent,
-				DiscordButtonComponent,
-				DiscordButtonComponent,
-				DiscordButtonComponent,
-				DiscordButtonComponent
-		  ];
+	| [
+		| DiscordSelectMenuComponent
+		| DiscordButtonComponent
+		| DiscordInputTextComponent
+	]
+	| [DiscordButtonComponent, DiscordButtonComponent]
+	| [
+		DiscordButtonComponent,
+		DiscordButtonComponent,
+		DiscordButtonComponent
+	]
+	| [
+		DiscordButtonComponent,
+		DiscordButtonComponent,
+		DiscordButtonComponent,
+		DiscordButtonComponent
+	]
+	| [
+		DiscordButtonComponent,
+		DiscordButtonComponent,
+		DiscordButtonComponent,
+		DiscordButtonComponent,
+		DiscordButtonComponent
+	];
 }
 
 export interface DiscordSelectMenuComponent {
@@ -1311,10 +1311,10 @@ export interface DiscordInteraction {
 	data?: DiscordInteractionData;
 	/** The guild's preferred locale, if invoked in a guild */
 	guild_locale?: string;
-    /** Bitwise set of permissions the app or bot has within the channel the interaction was sent from */
-    app_permissions?: string;
-    /** Selected language of the invoking user */
-    locale?: string;
+	/** Bitwise set of permissions the app or bot has within the channel the interaction was sent from */
+	app_permissions?: string;
+	/** Selected language of the invoking user */
+	locale?: string;
 }
 
 /** https://discord.com/developers/docs/resources/guild#guild-member-object */
@@ -1374,12 +1374,12 @@ export type DiscordInteractionDataOption = {
 	type: ApplicationCommandOptionTypes;
 	/** Value of the option resulting from user input */
 	value?:
-		| string
-		| boolean
-		| number
-		| DiscordMember
-		| DiscordChannel
-		| DiscordRole;
+	| string
+	| boolean
+	| number
+	| DiscordMember
+	| DiscordChannel
+	| DiscordRole;
 	/** Present if this option is a group or subcommand */
 	options?: DiscordInteractionDataOption[];
 	/** `true` if this option is the currently focused option for autocomplete */
@@ -1439,7 +1439,12 @@ export interface DiscordAuditLog {
 	/** List of audit log entries, sorted from most to least recent */
 	audit_log_entries: DiscordAuditLogEntry[];
 	/** List of partial integration objects */
-	integrations: Partial<DiscordIntegration>[];
+	integrations: ({
+		type: 'youtube' | 'twitch' | 'discord';
+		id: string;
+		name: string;
+		account: DiscordIntegrationAccount;
+	} & Partial<DiscordIntegration>)[];
 	/**
 	 * List of threads found in the audit log.
 	 * Threads referenced in `THREAD_CREATE` and `THREAD_UPDATE` events are included in the threads map since archived threads might not be kept in memory by clients.
@@ -1576,97 +1581,97 @@ export interface DiscordAuditLogEntry {
 /** https://discord.com/developers/docs/resources/audit-log#audit-log-change-object-audit-log-change-structure */
 export type DiscordAuditLogChange =
 	| {
-			new_value: string;
-			old_value: string;
-			key:
-				| 'name'
-				| 'description'
-				| 'discovery_splash_hash'
-				| 'banner_hash'
-				| 'preferred_locale'
-				| 'rules_channel_id'
-				| 'public_updates_channel_id'
-				| 'icon_hash'
-				| 'image_hash'
-				| 'splash_hash'
-				| 'owner_id'
-				| 'region'
-				| 'afk_channel_id'
-				| 'vanity_url_code'
-				| 'widget_channel_id'
-				| 'system_channel_id'
-				| 'topic'
-				| 'application_id'
-				| 'permissions'
-				| 'allow'
-				| 'deny'
-				| 'code'
-				| 'channel_id'
-				| 'inviter_id'
-				| 'nick'
-				| 'avatar_hash'
-				| 'id'
-				| 'location'
-				| 'command_id';
-	  }
+		new_value: string;
+		old_value: string;
+		key:
+		| 'name'
+		| 'description'
+		| 'discovery_splash_hash'
+		| 'banner_hash'
+		| 'preferred_locale'
+		| 'rules_channel_id'
+		| 'public_updates_channel_id'
+		| 'icon_hash'
+		| 'image_hash'
+		| 'splash_hash'
+		| 'owner_id'
+		| 'region'
+		| 'afk_channel_id'
+		| 'vanity_url_code'
+		| 'widget_channel_id'
+		| 'system_channel_id'
+		| 'topic'
+		| 'application_id'
+		| 'permissions'
+		| 'allow'
+		| 'deny'
+		| 'code'
+		| 'channel_id'
+		| 'inviter_id'
+		| 'nick'
+		| 'avatar_hash'
+		| 'id'
+		| 'location'
+		| 'command_id';
+	}
 	| {
-			new_value: number;
-			old_value: number;
-			key:
-				| 'afk_timeout'
-				| 'mfa_level'
-				| 'verification_level'
-				| 'explicit_content_filter'
-				| 'default_message_notifications'
-				| 'prune_delete_days'
-				| 'position'
-				| 'bitrate'
-				| 'rate_limit_per_user'
-				| 'color'
-				| 'max_uses'
-				| 'uses'
-				| 'max_age'
-				| 'expire_behavior'
-				| 'expire_grace_period'
-				| 'user_limit'
-				| 'privacy_level'
-				| 'auto_archive_duration'
-				| 'default_auto_archive_duration'
-				| 'entity_type'
-				| 'status'
-				| 'communication_disabled_until';
-	  }
+		new_value: number;
+		old_value: number;
+		key:
+		| 'afk_timeout'
+		| 'mfa_level'
+		| 'verification_level'
+		| 'explicit_content_filter'
+		| 'default_message_notifications'
+		| 'prune_delete_days'
+		| 'position'
+		| 'bitrate'
+		| 'rate_limit_per_user'
+		| 'color'
+		| 'max_uses'
+		| 'uses'
+		| 'max_age'
+		| 'expire_behavior'
+		| 'expire_grace_period'
+		| 'user_limit'
+		| 'privacy_level'
+		| 'auto_archive_duration'
+		| 'default_auto_archive_duration'
+		| 'entity_type'
+		| 'status'
+		| 'communication_disabled_until';
+	}
 	| {
-			new_value: Partial<DiscordRole>[];
-			old_value?: Partial<DiscordRole>[];
-			key: '$add' | '$remove';
-	  }
+		new_value: Partial<DiscordRole>[];
+		old_value?: Partial<DiscordRole>[];
+		key: '$add' | '$remove';
+	}
 	| {
-			new_value: boolean;
-			old_value: boolean;
-			key:
-				| 'widget_enabled'
-				| 'nsfw'
-				| 'hoist'
-				| 'mentionable'
-				| 'temporary'
-				| 'deaf'
-				| 'mute'
-				| 'enable_emoticons'
-				| 'archived'
-				| 'locked'
-				| 'invitable';
-	  }
+		new_value: boolean;
+		old_value: boolean;
+		key:
+		| 'widget_enabled'
+		| 'nsfw'
+		| 'hoist'
+		| 'mentionable'
+		| 'temporary'
+		| 'deaf'
+		| 'mute'
+		| 'enable_emoticons'
+		| 'archived'
+		| 'locked'
+		| 'invitable';
+	}
 	| {
-			new_value: DiscordOverwrite[];
-			old_value: DiscordOverwrite[];
-			key: 'permission_overwrites';
-	  }
+		new_value: DiscordOverwrite[];
+		old_value: DiscordOverwrite[];
+		key: 'permission_overwrites';
+	}
 	| {
-			new_value: string | number;
-			old_value: string | number;
-			key: 'type';
-	  };
+		new_value: string | number;
+		old_value: string | number;
+		key: 'type';
+	};
 
 /** https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-optional-audit-entry-info */
 export interface DiscordOptionalAuditEntryInfo {
@@ -2127,7 +2132,7 @@ export interface DiscordGuildBanAddRemove {
 
 /** https://discord.com/developers/docs/topics/gateway#message-reaction-remove */
 export interface DiscordMessageReactionRemove
-	extends Omit<DiscordMessageReactionAdd, 'member'> {}
+	extends Omit<DiscordMessageReactionAdd, 'member'> { }
 
 /** https://discord.com/developers/docs/topics/gateway#message-reaction-add */
 export interface DiscordMessageReactionAdd {
@@ -2203,12 +2208,12 @@ export interface DiscordReady {
 	shard?: [number, number];
 	/** Contains id and flags */
 	application: Partial<DiscordApplication> &
-		Pick<DiscordApplication, 'id' | 'flags'>;
+	Pick<DiscordApplication, 'id' | 'flags'>;
 }
 
 /** https://discord.com/developers/docs/resources/guild#unavailable-guild-object */
 export interface DiscordUnavailableGuild
-	extends Pick<DiscordGuild, 'id' | 'unavailable'> {}
+	extends Pick<DiscordGuild, 'id' | 'unavailable'> { }
 
 /** https://discord.com/developers/docs/topics/gateway#message-delete-bulk */
 export interface DiscordMessageDeleteBulk {
@@ -2380,9 +2385,9 @@ export interface DiscordGuildMemberUpdate {
 /** https://discord.com/developers/docs/topics/gateway#message-reaction-remove-all */
 export interface DiscordMessageReactionRemoveAll
 	extends Pick<
-		DiscordMessageReactionAdd,
-		'channel_id' | 'message_id' | 'guild_id'
-	> {}
+	DiscordMessageReactionAdd,
+	'channel_id' | 'message_id' | 'guild_id'
+	> { }
 
 // TODO: add docs link
 export interface DiscordValidateDiscoverySearchTerm {

@@ -29,6 +29,8 @@ import {
 	GetAuditLogs,
 	GUILD_AUDIT_LOGS,
 	DiscordAuditLog,
+	AuditLogEvents,
+	DiscordAuditLogChange,
 } from '@biscuitland/api-types';
 import type { ImageFormat, ImageSize } from '../utils/util';
 import { GuildFeatures, PremiumTiers } from '@biscuitland/api-types';
@@ -74,6 +76,7 @@ import { WelcomeScreen } from './welcome';
 import { AutoModerationRule } from './automod';
 import { Webhook } from './webhook';
 import { ScheduledEvent } from './scheduled-events';
+import Integration from './integration';
 
 /** BaseGuild */
 /**
@@ -488,13 +491,35 @@ export interface GuildEditOptions extends Partial<GuildCreateOptions> {
 }
 
 export interface AuditLogResult {
-	auditLogEntries: DiscordAuditLog['audit_log_entries'];
-	autoModerationRules: DiscordAuditLog['auto_moderation_rules'];
-	guildScheduledEvents: DiscordAuditLog['guild_scheduled_events'];
-	integrations: DiscordAuditLog['integrations'];
-	threads: DiscordAuditLog['threads'];
-	users: DiscordAuditLog['users'];
-	webhooks: DiscordAuditLog['webhooks'];
+	auditLogEntries: {
+		targetId: string | null;
+		changes: {
+			key: DiscordAuditLogChange['key'];
+			oldValue: DiscordOverwrite[] | Role[] | string | number | boolean | null;
+			newValue: DiscordOverwrite[] | Role[] | string | number | boolean | null;
+		}[] | undefined;
+		userId: string | null;
+		id: string;
+		actionType: AuditLogEvents;
+		options: {
+			deleteMemberDays: string;
+			membersRemoved: string;
+			channelId: string;
+			messageId: string;
+			count: string;
+			id: string;
+			type: string;
+			roleName: string;
+			applicationId: string;
+		} | null;
+		reason: string | undefined;
+	}[];
+	autoModerationRules: AutoModerationRule[] | undefined;
+	guildScheduledEvents: ScheduledEvent[] | undefined;
+	integrations: Integration[];
+	threads: ChannelInGuild[];
+	users: User[];
+	webhooks: Webhook[];
 }
 
 /**
@@ -1254,7 +1279,7 @@ export class Guild extends BaseGuild implements Model {
 		return channels.map(channel => ChannelFactory.fromGuildChannel(this.session, channel));
 	}
 
-	async fetchAuditLogs(options?: GetAuditLogs) {
+	async fetchAuditLogs(options?: GetAuditLogs): Promise<AuditLogResult> {
 		const auditLog = await this.session.rest.get<DiscordAuditLog>(GUILD_AUDIT_LOGS(this.id, options));
 		return {
 			auditLogEntries: auditLog.audit_log_entries.map(x => ({
@@ -1265,14 +1290,14 @@ export class Guild extends BaseGuild implements Model {
 						? j.key === 'permission_overwrites'
 							? (j.old_value as DiscordOverwrite[])
 							: ['$add', '$remove'].includes(j.key)
-								? (j.old_value as DiscordRole[]).map(j => new Role(this.session, j, this.id))
+								? (j.old_value as DiscordRole[]).map(j => new Role(this.session, { ...j, permissions: j.permissions || '0' }, this.id))
 								: j.old_value as string | number | boolean
 						: null,
 					newValue: j.new_value
 						? j.key === 'permission_overwrites'
 							? (j.new_value as DiscordOverwrite[])
 							: ['$add', '$remove'].includes(j.key)
-								? (j.new_value as DiscordRole[]).map(j => new Role(this.session, j, this.id))
+								? (j.new_value as DiscordRole[]).map(j => new Role(this.session, { ...j, permissions: j.permissions || '0' }, this.id))
 								: j.new_value as string | number | boolean
 						: null,
 				})),
@@ -1294,28 +1319,9 @@ export class Guild extends BaseGuild implements Model {
 			})),
 			autoModerationRules: auditLog.auto_moderation_rules?.map(x => new AutoModerationRule(this.session, x)),
 			guildScheduledEvents: auditLog.guild_scheduled_events?.map(x => new ScheduledEvent(this.session, x)),
-			integrations: auditLog.integrations.map(x => ({
-				id: x.id,
-				name: x.name,
-				type: x.type,
-				enabled: x.enabled,
-				syncing: x.syncing,
-				roleId: x.role_id,
-				enableEmoticons: x.enable_emoticons,
-				expireBehavior: x.expire_behavior,
-				expireGracePeriod: x.expire_grace_period,
-				syncedAt: x.synced_at,
-				subscriberCount: x.subscriber_count,
-				revoked: x.revoked,
-				user: x.user ? new User(this.session, x.user) : undefined,
-				account: x.account,
-				application: x.application ? {
-					id: x.application.id,
-					name: x.application.name,
-					icon: x.application.icon,
-					description: x.application.description,
-					bot: x.application.bot ? new User(this.session, x.application.bot) : undefined
-				} : undefined,
+			integrations: auditLog.integrations.map(x => new Integration(this.session, {
+				guild_id: this.id,
+				...x,
 			})),
 			threads: auditLog.threads.map(x => ChannelFactory.fromGuildChannel(this.session, x)),
 			users: auditLog.users.map(x => new User(this.session, x)),
