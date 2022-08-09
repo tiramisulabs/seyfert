@@ -70,7 +70,7 @@ export class GuildEmoji extends Emoji implements Model {
 	}
 
 	setName(name: string): Promise<GuildEmoji> {
-		return this.edit({ name: name });
+		return this.edit({ name });
 	}
 
 	get url(): string {
