@@ -128,7 +128,8 @@ export function USER_DM() {
 	return `/users/@me/channels`;
 }
 
-export function GUILD_EMOJIS(guildId: Snowflake): string {
+export function GUILD_EMOJIS(guildId: Snowflake, emojiId?: Snowflake): string {
+	if (emojiId) return `/guilds/${guildId}/emojis/${emojiId}`;
 	return `/guilds/${guildId}/emojis`;
 }
 
