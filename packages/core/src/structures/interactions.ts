@@ -24,7 +24,7 @@ import { Member } from './members';
 import { Message } from './message';
 import { Permissions } from './special/permissions';
 import { Webhook } from './webhook';
-import { CommandInteractionOptionResolver } from './special/command-interaction-option-resolver';
+import { InteractionOptions } from './special/interaction-options';
 import {
 	INTERACTION_ID_TOKEN,
     WEBHOOK_MESSAGE,
@@ -329,7 +329,7 @@ export class AutoCompleteInteraction extends BaseInteraction implements Model {
 		this.commandType = data.data!.type;
 		this.commandGuildId = data.data!.guild_id;
         this.locale = super.locale!;
-		this.options = new CommandInteractionOptionResolver(
+		this.options = new InteractionOptions(
 			data.data!.options ?? []
 		);
 	}
@@ -340,7 +340,7 @@ export class AutoCompleteInteraction extends BaseInteraction implements Model {
 	commandType: ApplicationCommandTypes;
 	commandGuildId?: Snowflake;
     override locale: string;
-    options: CommandInteractionOptionResolver;
+    options: InteractionOptions;
 
 	async respondWithChoices(
 		choices: ApplicationCommandOptionChoice[]
@@ -371,7 +371,7 @@ export class CommandInteraction extends BaseInteraction implements Model {
 		this.commandName = data.data!.name;
 		this.commandType = data.data!.type;
 		this.commandGuildId = data.data!.guild_id;
-		this.options = new CommandInteractionOptionResolver(
+		this.options = new InteractionOptions(
 			data.data!.options ?? []
 		);
 
@@ -436,7 +436,7 @@ export class CommandInteraction extends BaseInteraction implements Model {
 	commandType: ApplicationCommandTypes;
 	commandGuildId?: Snowflake;
 	resolved: CommandInteractionDataResolved;
-	options: CommandInteractionOptionResolver;
+	options: InteractionOptions;
     override locale: string;
 }
 
