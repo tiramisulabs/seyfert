@@ -329,6 +329,9 @@ export class AutoCompleteInteraction extends BaseInteraction implements Model {
 		this.commandType = data.data!.type;
 		this.commandGuildId = data.data!.guild_id;
         this.locale = super.locale!;
+		this.options = new CommandInteractionOptionResolver(
+			data.data!.options ?? []
+		);
 	}
 
 	override type: InteractionTypes.ApplicationCommandAutocomplete;
@@ -337,6 +340,7 @@ export class AutoCompleteInteraction extends BaseInteraction implements Model {
 	commandType: ApplicationCommandTypes;
 	commandGuildId?: Snowflake;
     override locale: string;
+    options: CommandInteractionOptionResolver;
 
 	async respondWithChoices(
 		choices: ApplicationCommandOptionChoice[]
