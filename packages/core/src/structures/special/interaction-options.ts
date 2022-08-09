@@ -7,12 +7,11 @@ import { ApplicationCommandOptionTypes } from '@biscuitland/api-types';
 
 /**
  * Utility class to get the resolved options for a command
- * It is really typesafe
  * @example const option = ctx.options.getStringOption("name");
  */
-export class CommandInteractionOptionResolver {
-	#subcommand?: string;
-	#group?: string;
+export class InteractionOptions {
+	private _subcommand?: string;
+	private _group?: string;
 
 	hoistedOptions: DiscordInteractionDataOption[];
 	resolved?: DiscordInteractionDataResolved;
@@ -29,7 +28,7 @@ export class CommandInteractionOptionResolver {
 			this.hoistedOptions[0]?.type ===
 			ApplicationCommandOptionTypes.SubCommandGroup
 		) {
-			this.#group = this.hoistedOptions[0].name;
+			this._group = this.hoistedOptions[0].name;
 			this.hoistedOptions = this.hoistedOptions[0].options ?? [];
 		}
 
@@ -37,7 +36,7 @@ export class CommandInteractionOptionResolver {
 			this.hoistedOptions[0]?.type ===
 			ApplicationCommandOptionTypes.SubCommand
 		) {
-			this.#subcommand = this.hoistedOptions[0].name;
+			this._subcommand = this.hoistedOptions[0].name;
 			this.hoistedOptions = this.hoistedOptions[0].options ?? [];
 		}
 
@@ -249,20 +248,20 @@ export class CommandInteractionOptionResolver {
 	getSubCommand(
 		required = true
 	): [string | undefined, DiscordInteractionDataOption[]] {
-		if (required && !this.#subcommand) {
+		if (required && !this._subcommand) {
 			throw new TypeError('Option marked as required was undefined');
 		}
 
-		return [this.#subcommand, this.hoistedOptions];
+		return [this._subcommand, this.hoistedOptions];
 	}
 
 	getSubCommandGroup(
 		required = false
 	): [string | undefined, DiscordInteractionDataOption[]] {
-		if (required && !this.#group) {
+		if (required && !this._group) {
 			throw new TypeError('Option marked as required was undefined');
 		}
 
-		return [this.#group, this.hoistedOptions];
+		return [this._group, this.hoistedOptions];
 	}
 }

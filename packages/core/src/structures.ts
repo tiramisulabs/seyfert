@@ -11,7 +11,7 @@ export * from './structures/invite';
 export * from './structures/members';
 export * from './structures/message';
 export * from './structures/message-reaction';
-export * from './structures/special/command-interaction-option-resolver';
+export * from './structures/special/interaction-options';
 export * from './structures/special/permissions';
 export * from './structures/presence';
 export * from './structures/role';
