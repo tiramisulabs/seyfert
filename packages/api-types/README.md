@@ -1,5 +1,7 @@
 # @biscuitland/api-types
+
 ## Most importantly, api-types is:
+
 1:1 type definitions package for the [Discord](https://discord.com/developers/docs/intro) API.
 
 [<img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white">](https://github.com/oasisjs/biscuit)
@@ -23,7 +25,7 @@ import type { DiscordUser } from '@biscuitland/api-types';
 ## Example for [Deno](https://deno.land/)
 
 ```ts
-import type { DiscordUser } from "https://unpkg.com/@biscuitland/api-types@1.2.0/dist/index.d.ts";
+import type { DiscordUser } from "https://unpkg.com/@biscuitland/api-types@1.3.1/dist/index.d.ts";
 ```
 
 We deliver this package through [unpkg](https://unpkg.com/) and it does contain constants and routes too

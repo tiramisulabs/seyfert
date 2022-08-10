@@ -3,29 +3,48 @@ export interface CacheAdapter {
 	 * @inheritDoc
 	 */
 
-	get<T = unknown>(name: string): Promise<T | unknown>;
+	get(id: string): any | Promise<any>;
+	get(id: string, guild?: string): string | Promise<string>;
 
 	/**
 	 * @inheritDoc
 	 */
 
-	set(name: string, data: unknown): Promise<void>;
+	set(id: string, data: any, expire?: number): void | Promise<void>;
 
 	/**
 	 * @inheritDoc
 	 */
 
-	remove(name: string): Promise<void>;
+	count(to: string): number | Promise<number>;
 
 	/**
 	 * @inheritDoc
 	 */
 
-	clear(): Promise<void>;
+	remove(id: string): void | Promise<void>;
 
 	/**
 	 * @inheritDoc
 	 */
 
-	close?(): Promise<void>;
+	contains(to: string, id: string): boolean | Promise<boolean>;
+
+	/**
+	 * @inheritDoc
+	 */
+
+	getToRelationship(to: string): string[] | Promise<string[]>;
+
+	/**
+	 * @inheritDoc
+	 */
+
+	addToRelationship(to: string, id: string): void | Promise<void>;
+
+	/**
+	 * @inheritDoc
+	 */
+
+	removeToRelationship(to: string, id: string): void | Promise<void>;
 }

@@ -1,51 +1,119 @@
-import { CacheAdapter } from './cache-adapter';
+import type { CacheAdapter } from './cache-adapter';
+ 
+interface Options {
+	expire?: number;
+}
 
 export class MemoryCacheAdapter implements CacheAdapter {
+	private static readonly DEFAULTS = {
+	};
+
+	private readonly relationships = new Map<string, string[]>();
+	private readonly storage = new Map<string, { data: any; expire?: number }>();
+
+	readonly options: Options;
+
+	constructor(options?: Options) {
+		this.options = Object.assign(MemoryCacheAdapter.DEFAULTS, options);
+	}
+
 	/**
 	 * @inheritDoc
 	 */
 
-	private readonly data = new Map<string, any>();
+	get<T = any>(id: string): T | null {
+		const data = this.storage.get(id);
 
-	/**
-	 * @inheritDoc
-	 */
-
-	async get<T = unknown>(name: string): Promise<T | null> {
-		const data = this.data.get(name);
-
-		if (!data) {
-			return null;
+		if (data) {
+			if (data.expire && data.expire < Date.now()) {
+				this.storage.delete(id);
+			} else {
+				return JSON.parse(data.data);
+			}
 		}
 
-		return JSON.parse(data);
+		return null;
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 
-	async set(name: string, data: unknown): Promise<void> {
-		const stringData = JSON.stringify(data, (_, v) =>
-			typeof v === 'bigint' ? v.toString() : v
-		);
-
-		this.data.set(name, stringData);
+	set(id: string, data: any, expire = this.options.expire): void {
+		if (expire) {
+			this.storage.set(id, { data: JSON.stringify(data), expire: Date.now() + expire });
+		} else {
+			this.storage.set(id, { data: JSON.stringify(data) });
+		}
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 
-	async remove(name: string): Promise<void> {
-		this.data.delete(name);
+	count(to: string): number {
+		return this.getToRelationship(to).length;
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 
-	async clear(): Promise<void> {
-		this.data.clear();
+	remove(id: string): void {
+		this.storage.delete(id);
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+
+	contains(to: string, id: string): boolean {
+		return this.getToRelationship(to).includes(id);
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+
+	getToRelationship(to: string): string[] {
+		return this.relationships.get(to) || [];
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+
+	addToRelationship(to: string, id: string): void {
+		const data = this.getToRelationship(to);
+
+		if (data.includes(id)) {
+			return;
+		}
+
+		data.push(id);
+
+		const has = !!this.relationships.get(to);
+
+		if (!has) {
+			this.relationships.set(to, data);
+		}
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+
+	removeToRelationship(to: string, id: string): void {
+		const data = this.getToRelationship(to);
+
+		if (data) {
+			const idx = data.indexOf(id);
+
+			if (idx === -1) {
+				return;
+			}
+
+			data.splice(idx, 1);
+		}
 	}
 }

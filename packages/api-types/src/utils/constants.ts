@@ -5,7 +5,7 @@ export const BASE_URL = 'https://discord.com/api';
 export const API_VERSION = 10;
 
 /** https://github.com/oasisjs/biscuit/releases */
-export const BISCUIT_VERSION = '1.2.0';
+export const BISCUIT_VERSION = '1.3.1';
 
 /** https://discord.com/developers/docs/reference#user-agent */
 export const USER_AGENT = `DiscordBot (https://github.com/oasisjs/biscuit, v${BISCUIT_VERSION})`;

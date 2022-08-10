@@ -1,28 +1,29 @@
-import type { Redis, RedisOptions } from 'ioredis';
+import type { CacheAdapter } from './cache-adapter';
 
-import { CacheAdapter } from './cache-adapter';
+import Redis, { RedisOptions } from 'ioredis';
 import IORedis from 'ioredis';
 
-export interface BaseOptions {
-	prefix?: string;
+interface BaseOptions {
+	namespace: string;
+	expire?: number;
 }
 
-export interface BuildOptions extends BaseOptions, RedisOptions {}
+interface BuildOptions extends BaseOptions, RedisOptions { }
 
-export interface ClientOptions extends BaseOptions {
+interface ClientOptions extends BaseOptions {
 	client: Redis;
 }
-
-export type Options = BuildOptions | ClientOptions;
+ 
+type Options = BuildOptions | ClientOptions;
 
 export class RedisCacheAdapter implements CacheAdapter {
-	static readonly DEFAULTS = {
-		prefix: 'biscuitland',
+	private static readonly DEFAULTS = {
+		namespace: 'biscuitland'
 	};
 
 	private readonly client: Redis;
 
-	options: Options;
+	readonly options: Options;
 
 	constructor(options?: Options) {
 		this.options = Object.assign(RedisCacheAdapter.DEFAULTS, options);
@@ -35,17 +36,12 @@ export class RedisCacheAdapter implements CacheAdapter {
 		}
 	}
 
-	_getPrefix(name: string) {
-		return `${this.options.prefix}:${name}`;
-	}
-
 	/**
 	 * @inheritDoc
 	 */
 
-	async get<T = unknown>(name: string): Promise<T | null> {
-		const completKey = this._getPrefix(name);
-		const data = await this.client.get(completKey);
+	async get(id: string): Promise<any> {
+		const data = await this.client.get(this.composite(id));
 
 		if (!data) {
 			return null;
@@ -58,38 +54,67 @@ export class RedisCacheAdapter implements CacheAdapter {
 	 * @inheritDoc
 	 */
 
-	async set(name: string, data: unknown): Promise<void> {
-		const stringData = JSON.stringify(data, (_, v) =>
-			typeof v === 'bigint' ? v.toString() : v
-		);
-
-		const completeKey = this._getPrefix(name);
-
-		await this.client.set(completeKey, stringData);
+	async set(id: string, data: unknown, expire = this.options.expire): Promise<void> {
+		if (expire) {
+			await this.client.set(this.composite(id), JSON.stringify(data), 'EX', expire);
+		} else {
+			await this.client.set(this.composite(id), JSON.stringify(data));
+		}
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 
-	async remove(name: string): Promise<void> {
-		const completKey = this._getPrefix(name);
-		await this.client.del(completKey);
+	async count(_to: string): Promise<number> {
+		throw new Error('Method not implemented.');
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 
-	async clear(): Promise<void> {
-		this.client.disconnect();
+	async remove(id: string): Promise<void> {
+		await this.client.del(this.composite(id));
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 
-	async close(): Promise<void> {
-		this.client.disconnect();
+	async contains(_to: string, _id: string): Promise<boolean> {
+		throw new Error('Method not implemented.');
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+
+	async getToRelationship(_to: string): Promise<string[]> {
+		throw new Error('Method not implemented.');
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+
+	async addToRelationship(_to: string, _id: string): Promise<void> {
+		throw new Error('Method not implemented.');
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+
+	async removeToRelationship(_to: string, _id: string): Promise<void> {
+		throw new Error('Method not implemented.');
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+
+	composite(id: string): string {		
+		return `${this.options.namespace}:${id}`;
 	}
 }
