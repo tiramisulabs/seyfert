@@ -73,7 +73,7 @@ export class DefaultRestAdapter implements RestAdapter {
 	private url: string;
 
 	constructor(options: DefaultRestOptions) {
-		this.options = Object.assign(options, DefaultRestAdapter.DEFAULTS);
+		this.options = Object.assign(Object.create(DefaultRestAdapter.DEFAULTS), options);
 
 		if (this.options.url) {
 			this.url = `${options.url}/v${this.options.version}`;

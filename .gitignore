@@ -8,6 +8,9 @@ bot/
 # Enviorment
 .env
 
+# bun
+bun-test.js
+
 # NPM
 npm/
 

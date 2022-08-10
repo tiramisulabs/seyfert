@@ -50,7 +50,7 @@ export class DefaultWsAdapter implements WsAdapter {
 	agent: Agent;
 
 	constructor(options: DefaultWsOptions) {
-		this.options = Object.assign(options, DefaultWsAdapter.DEFAULTS);
+		this.options = Object.assign(Object.create(DefaultWsAdapter.DEFAULTS), options);
 
 		this.agent = new Agent({
 			totalShards: this.options.totalShards ?? 1,
