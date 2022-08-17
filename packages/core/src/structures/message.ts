@@ -15,7 +15,7 @@ import type {
 import type { Channel } from './channels';
 import type { Component } from './components';
 import type { MessageInteraction } from './interactions';
-import { MessageFlags, Util } from '../utils/util';
+import { MessageFlags } from '../utils/util';
 import { Snowflake } from '../snowflakes';
 import { ChannelFactory, ThreadChannel } from './channels';
 import { User } from './user';
@@ -115,7 +115,7 @@ export interface WebhookAuthor {
 	id: string;
 	username: string;
 	discriminator: string;
-	avatar?: bigint;
+	avatar?: string;
 }
 
 /**
@@ -187,9 +187,7 @@ export class Message implements Model {
 				id: data.webhook_id!,
 				username: data.author.username,
 				discriminator: data.author.discriminator,
-				avatar: data.author.avatar
-					? Util.iconHashToBigInt(data.author.avatar)
-					: undefined,
+				avatar: data.author.avatar ? data.author.avatar : undefined,
 			};
 		}
 
