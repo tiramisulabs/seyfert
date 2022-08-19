@@ -9,6 +9,7 @@ import type {
 	GatewayIntents,
     Localization,
 	Snowflake,
+    DiscordGetGatewayBot,
 } from '@biscuitland/api-types';
 
 import { ApplicationCommandTypes, GatewayOpcodes } from '@biscuitland/api-types';
@@ -293,7 +294,7 @@ export class Session {
 	 */
 
 	async start(): Promise<void> {
-		const nonParsed = await this.rest.get<any>('/gateway/bot');
+		const nonParsed = await this.rest.get<DiscordGetGatewayBot>('/gateway/bot');
 
 		this.ws.options.gatewayBot = {
 			url: nonParsed.url,
