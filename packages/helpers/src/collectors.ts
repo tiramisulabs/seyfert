@@ -1,7 +1,7 @@
 import type { Session, Events } from '@biscuitland/core';
 import { EventEmitter } from 'node:events';
 
-interface CollectorOptions<E extends keyof Events> {
+export interface CollectorOptions<E extends keyof Events> {
     event: E;
     filter?(...args: Parameters<Events[E]>): unknown;
     max?: number;
