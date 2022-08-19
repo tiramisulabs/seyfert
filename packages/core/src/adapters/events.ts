@@ -11,6 +11,7 @@ import type {
 	DiscordGuildMemberAdd,
 	DiscordGuildMemberRemove,
 	DiscordGuildMemberUpdate,
+    DiscordGuildMembersChunk,
 	DiscordGuildRoleCreate,
 	DiscordGuildRoleDelete,
 	DiscordGuildRoleUpdate,
@@ -675,12 +676,33 @@ export const VOICE_SERVER_UPDATE: RawHandler<DiscordVoiceServerUpdate> = (sessio
     });
 };
 
+export const GUILD_MEMBERS_CHUNK: RawHandler<DiscordGuildMembersChunk> = (session, _shardId, payload) => {
+    session.events.emit('guildMembersChunk', {
+        guildId: payload.guild_id,
+        members: new Map(payload.members.map(m => [m.user.id, new Member(session, m, payload.guild_id)])),
+        chunkIndex: payload.chunk_index,
+        chunkCount: payload.chunk_count,
+        notFound: payload.not_found,
+        presences: payload.presences?.map(p => new Presence(session, p)) ?? [],
+    });
+};
+
 export const raw: RawHandler<unknown> = (session, shardId, data) => {
 	session.events.emit('raw', data as { t: string; d: unknown }, shardId);
 };
 
 export interface Ready extends Omit<DiscordReady, 'user'> {
 	user: User;
+}
+
+export interface GuildMembersChunk {
+    guildId: Snowflake;
+    members: Map<Snowflake, Member>;
+    chunkIndex: number;
+    chunkCount: number;
+    notFound?: string[];
+    presences: Presence[];
+    nonce?: string;
 }
 
 /**
@@ -706,6 +728,7 @@ export interface Events {
 	guildMemberAdd: Handler<[Member]>;
 	guildMemberUpdate: Handler<[Member]>;
 	guildMemberRemove: Handler<[User, Snowflake]>;
+    guildMembersChunk: Handler<[GuildMembersChunk]>;
 	guildBanAdd: Handler<[{ guildId: Snowflake; user: DiscordUser }]>;
 	guildBanRemove: Handler<[{ guildId: Snowflake; user: DiscordUser }]>;
 	guildEmojisUpdate: Handler<
