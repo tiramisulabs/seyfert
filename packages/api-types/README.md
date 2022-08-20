@@ -25,7 +25,7 @@ import type { DiscordUser } from '@biscuitland/api-types';
 ## Example for [Deno](https://deno.land/)
 
 ```ts
-import type { DiscordUser } from "https://unpkg.com/@biscuitland/api-types@2.0.2/dist/index.d.ts";
+import type { DiscordUser } from "https://unpkg.com/@biscuitland/api-types@2.0.3/dist/index.d.ts";
 ```
 
 We deliver this package through [unpkg](https://unpkg.com/) and it does contain constants and routes too
