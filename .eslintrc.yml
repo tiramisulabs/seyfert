@@ -26,9 +26,6 @@ parserOptions:
 plugins:
     - '@typescript-eslint'
 
-global:
-    NodeJS: true
-
 rules:
     '@typescript-eslint/consistent-type-imports': 'error'
     '@typescript-eslint/no-duplicate-imports': 'error'
@@ -86,9 +83,9 @@ rules:
         - multiline:
               delimiter: 'semi'
               requireLast: true
-        - singleline:
-            delimiter: 'semi'
-            requireLast: false
+          singleline:
+              delimiter: 'semi'
+              requireLast: false
 
     '@typescript-eslint/space-before-function-paren':
         - 'error'
@@ -215,5 +212,5 @@ rules:
     'space-in-parens':
         - 'error'
         - 'never'
-}
-settings: {}
+
+# settings: {}
