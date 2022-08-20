@@ -1,4 +1,4 @@
-import { DiscordEmbed, DiscordEmbedField, DiscordEmbedProvider } from '@biscuitland/api-types';
+import type { Embed } from '@biscuitland/core';
 
 export interface EmbedFooter {
     text: string;
@@ -21,20 +21,26 @@ export interface EmbedVideo {
     width?: number;
 }
 
+export interface EmbedField {
+    name: string;
+    value: string;
+    inline?: boolean;
+}
+
+export interface EmbedProvider {
+    url?: string;
+    name?: string;
+}
+
 export class EmbedBuilder {
-    #data: DiscordEmbed;
-    constructor(data: DiscordEmbed = {}) {
+    #data: Embed;
+    constructor(data: Embed = {}) {
         this.#data = data;
         if (!this.#data.fields) this.#data.fields = [];
     }
 
     setAuthor(author: EmbedAuthor): EmbedBuilder {
-        this.#data.author = {
-            name: author.name,
-            icon_url: author.iconUrl,
-            proxy_icon_url: author.proxyIconUrl,
-            url: author.url,
-        };
+        this.#data.author = author;
         return this;
     }
 
@@ -48,17 +54,13 @@ export class EmbedBuilder {
         return this;
     }
 
-    addField(field: DiscordEmbedField): EmbedBuilder {
+    addField(field: EmbedField): EmbedBuilder {
         this.#data.fields!.push(field);
         return this;
     }
 
     setFooter(footer: EmbedFooter): EmbedBuilder {
-        this.#data.footer = {
-            text: footer.text,
-            icon_url: footer.iconUrl,
-            proxy_icon_url: footer.proxyIconUrl,
-        };
+        this.#data.footer = footer;
         return this;
     }
 
@@ -67,7 +69,7 @@ export class EmbedBuilder {
         return this;
     }
 
-    setProvider(provider: DiscordEmbedProvider): EmbedBuilder {
+    setProvider(provider: EmbedProvider): EmbedBuilder {
         this.#data.provider = provider;
         return this;
     }
@@ -94,16 +96,11 @@ export class EmbedBuilder {
     }
 
     setVideo(video: EmbedVideo): EmbedBuilder {
-        this.#data.video = {
-            height: video.height,
-            proxy_url: video.proxyUrl,
-            url: video.url,
-            width: video.width,
-        };
+        this.#data.video = video;
         return this;
     }
 
-    toJSON(): DiscordEmbed {
+    toJSON(): Embed {
         return this.#data;
     }
 }

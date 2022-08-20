@@ -15,7 +15,7 @@ import type { Channel } from './channels';
 import type { Component } from './components';
 import type { MessageInteraction } from './interactions';
 import type { StickerItem } from './sticker';
-import type { Embed } from './embed';
+import { Embed, NewEmbed } from './embed';
 import { MessageFlags } from '../utils/util';
 import { Snowflake } from '../snowflakes';
 import { ChannelFactory, ThreadChannel } from './channels';
@@ -424,7 +424,7 @@ export class Message implements Model {
 					replied_user: options.allowedMentions?.repliedUser,
 				},
 				flags: options.flags,
-				embeds: options.embeds,
+				embeds: options.embeds?.map(NewEmbed),
 				components: options.components,
 				files: options.files,
 				attachments: options.attachments
@@ -479,7 +479,7 @@ export class Message implements Model {
 								true,
 					  }
 					: undefined,
-				embeds: options.embeds,
+				embeds: options.embeds?.map(NewEmbed),
 				tts: options.tts,
 				components: options.components,
 			}

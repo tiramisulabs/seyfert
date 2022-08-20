@@ -13,4 +13,4 @@ export * from './builders/slash/ApplicationCommand';
 export * from './builders/slash/ApplicationCommandOption';
 
 // Embed
-export * from './builders/embed-builder';
+export * from './builders/embeds/embed-builder';
