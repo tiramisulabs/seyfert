@@ -29,7 +29,7 @@ export class Agent {
 						return this.options.handleMessage(shard, message);
 					},
 
-					handleIdentify: async function () {
+					async handleIdentify() {
 						return await handleIdentify(id);
 					},
 
@@ -46,6 +46,7 @@ export class Agent {
 	 */
 
 	async identify(id: number) {
+		// @ts-ignore
 		let shard = this.shards.get(id);
 
 		if (!shard) {
@@ -60,7 +61,7 @@ export class Agent {
 					return this.options.handleMessage(shard, message);
 				},
 
-				handleIdentify: async function () {
+				async handleIdentify() {
 					return await handleIdentify(id);
 				},
 
@@ -77,7 +78,9 @@ export class Agent {
 	 * @inheritDoc
 	 */
 
-	async scale() {}
+	async scale() {
+		//
+	}
 }
 
 export type AgentOptions = Pick<

@@ -202,9 +202,6 @@ export enum ShardState {
 
 export class Shard {
 	static readonly DEFAULTS = {
-		/** The total amount of shards which are used to communicate with Discord. */
-		totalShards: 1,
-
 		/** The maximum of requests which can be send to discord per rate limit tick. */
 		maxRequestsPerRateLimitTick: MAX_GATEWAY_REQUESTS_PER_INTERVAL,
 
@@ -218,6 +215,8 @@ export class Shard {
 	options: ShardOptions;
 
 	offlineSendQueue: any[];
+
+	totalShards: number;
 
 	sessionId!: string;
 
@@ -297,6 +296,8 @@ export class Shard {
 			interval: DEFAULT_HEARTBEAT_INTERVAL,
 		};
 
+		this.totalShards = this.options.totalShards,
+
 		this.state = ShardState.Offline;
 
 		this.id = options.id;
@@ -369,10 +370,10 @@ export class Shard {
 	}
 
 	/**
-	 * @inheritDoc	 
+	 * @inheritDoc
 	 */
 
-	async handleMessage (message: MessageEvent): Promise<void> {
+	async handleMessage(message: MessageEvent): Promise<void> {
 		let data = message.data;
 
 		if (this.options.gatewayConfig.compress && data instanceof Blob) {
@@ -380,14 +381,17 @@ export class Shard {
 			data = decoder.decode(inflateSync(new Uint8Array(await message.arrayBuffer())));
 		}
 
-		if (typeof data !== 'string') return;
+		if (typeof data !== 'string') {
+			return;
+		}
 
 		const messageData = JSON.parse(data) as DiscordGatewayPayload;
 
-
 		switch (messageData.op) {
 			case GatewayOpcodes.Heartbeat: {
-				if (!this.isOpen()) return;
+				if (!this.isOpen()) {
+					return;
+				}
 
 				this.heart.lastBeat = Date.now();
 
@@ -466,18 +470,17 @@ export class Shard {
 			this.state = ShardState.Connected;
 			this.events.resumed?.(this);
 
-			this.offlineSendQueue.map((resolve) => resolve());
+			this.offlineSendQueue.map(resolve => resolve());
 
 			this.resolves.get('RESUMED')?.(messageData);
 			this.resolves.delete('RESUMED');
-		}
-		else if (messageData.t === 'READY') {
+		} else if (messageData.t === 'READY') {
 			const payload = messageData.d as DiscordReady;
 
 			this.sessionId = payload.session_id;
 			this.state = ShardState.Connected;
 
-			this.offlineSendQueue.map((resolve) => resolve());
+			this.offlineSendQueue.map(resolve => resolve());
 
 			this.resolves.get('READY')?.(messageData);
 			this.resolves.delete('READY');
@@ -527,7 +530,7 @@ export class Shard {
 			await this.connect();
 		}
 
-    	await this.handleIdentify();
+		await this.handleIdentify();
 
 		this.send(
 			{
@@ -537,7 +540,7 @@ export class Shard {
 					compress: this.options.gatewayConfig.compress,
 					properties: this.options.gatewayConfig.properties,
 					intents: this.options.gatewayConfig.intents,
-					shard: [this.id, this.options.totalShards]
+					shard: [this.id, this.totalShards]
 				},
 			},
 			true
@@ -561,8 +564,6 @@ export class Shard {
 	 */
 
 	async connect(): Promise<void> {
-		let hi = false;
-
 		if (
 			![ShardState.Identifying, ShardState.Resuming].includes(this.state!)
 		) {
@@ -580,37 +581,18 @@ export class Shard {
 		socket.onclose = (event: any) => this.handleClose(event);
 
 		socket.onmessage = (message: any) => {
-			hi = true;
-
 			this.handleMessage(message);
 		};
 
 		return new Promise(resolve => {
 			socket.onopen = () => {
-				setTimeout(() => {
-					if (!hi) {
-						this.handleMessage({
-							data: JSON.stringify({
-								t: null,
-								s: null,
-								op: 10,
-								d: { heartbeat_interval: 41250 },
-							}),
-						} as any);
-					}
-				}, 250);
+			if (![ShardState.Identifying, ShardState.Resuming].includes(this.state)) {
+				this.state = ShardState.Unidentified;
+			}
 
-				if (
-					![ShardState.Identifying, ShardState.Resuming].includes(
-						this.state!
-					)
-				) {
-					this.state = ShardState.Unidentified;
-				}
+			this.events.connected?.(this);
 
-				this.events.connected?.(this);
-
-				resolve();
+			resolve();
 			};
 		});
 	}
@@ -758,7 +740,7 @@ export class Shard {
 	close(code: number, reason: string): void {
 		if (this.socket?.readyState !== WebSocket.OPEN) {
 			return;
-		};
+		}
 
 		return this.socket?.close(code, reason);
 	}

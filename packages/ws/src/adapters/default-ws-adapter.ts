@@ -15,10 +15,10 @@ import { Agent } from '../services/agent';
 
 export class DefaultWsAdapter implements WsAdapter {
 	static readonly DEFAULTS = {
-		spawnShardDelay: 5000,
+		spawnShardDelay: 5300,
 
-		shardsPerWorker: 5,
-		totalWorkers: 1,
+		shardsPerWorker: 25,
+		totalWorkers: 4,
 
 		gatewayBot: {
 			url: 'wss://gateway.discord.gg',
@@ -32,9 +32,9 @@ export class DefaultWsAdapter implements WsAdapter {
 			},
 		},
 
-		firstShardId: 0, // remove
+		firstShardId: 0,
 
-		lastShardId: 1, // remove
+		lastShardId: 1,
 	};
 
 	buckets = new Map<
@@ -52,8 +52,11 @@ export class DefaultWsAdapter implements WsAdapter {
 	constructor(options: DefaultWsOptions) {
 		this.options = Object.assign(Object.create(DefaultWsAdapter.DEFAULTS), options);
 
+		this.options.firstShardId = this.options.firstShardId ?? 0;
+		this.options.lastShardId = this.options.lastShardId ?? this.options.totalShards - 1 ?? 1;
+
 		this.agent = new Agent({
-			totalShards: this.options.totalShards ?? 1,
+			totalShards: this.options.totalShards ?? this.options.gatewayBot.shards ?? 1,
 			gatewayConfig: this.options.gatewayConfig,
 			createShardOptions: this.options.createShardOptions,
 
@@ -62,7 +65,8 @@ export class DefaultWsAdapter implements WsAdapter {
 			},
 
 			handleIdentify: (id: number) => {
-				return this.buckets.get(id)!.leak.acquire(1);
+				// console.log(id % this.options.gatewayBot.sessionStartLimit.maxConcurrency, id, this.options.gatewayBot.sessionStartLimit.maxConcurrency);
+				return this.buckets.get(id % this.options.gatewayBot.sessionStartLimit.maxConcurrency)!.leak.acquire(1);
 			},
 		});
 	}
@@ -98,9 +102,7 @@ export class DefaultWsAdapter implements WsAdapter {
 				);
 			}
 
-			const bucketId =
-				shardId %
-				this.options.gatewayBot.sessionStartLimit.maxConcurrency;
+			const bucketId = shardId % this.options.gatewayBot.sessionStartLimit.maxConcurrency;
 			const bucket = this.buckets.get(bucketId);
 
 			if (!bucket) {

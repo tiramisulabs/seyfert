@@ -1,5 +1,5 @@
 import type { Agent } from '../services/agent';
-import { GatewayBot } from '@biscuitland/api-types';
+import type { GatewayBot } from '@biscuitland/api-types';
 
 export interface WsAdapter {
 	options: Partial<Options | any>;
