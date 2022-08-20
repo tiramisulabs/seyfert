@@ -1,6 +1,6 @@
 # @biscuitland/ws
 
-## 2.0.3
+## 2.0.4
 
 ### Major Changes
 
@@ -9,4 +9,4 @@
 ### Patch Changes
 
 -   Updated dependencies
-    -   @biscuitland/api-types@2.0.3
+    -   @biscuitland/api-types@2.0.4

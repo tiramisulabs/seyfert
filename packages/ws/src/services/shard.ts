@@ -319,28 +319,7 @@ export class Shard {
 		const jitter = Math.ceil(this.heart.interval * (Math.random() || 0.5));
 
 		const it1: any = setTimeout(() => {
-			this.socket?.send(
-				JSON.stringify({
-					op: GatewayOpcodes.Heartbeat,
-					d: this.options.previousSequenceNumber,
-				})
-			);
-
-			this.heart.lastBeat = Date.now();
-			this.heart.acknowledged = false;
-
-			const it: any = setInterval(async () => {
-				if (!this.heart.acknowledged) {
-					this.close(
-						ShardSocketCloseCodes.ZombiedConnection,
-						'Zombied connection, did not receive an heartbeat ACK in time.'
-					);
-
-					return await this.identify();
-				}
-
-				this.heart.acknowledged = false;
-
+			if (this.state === ShardState.Connected) {
 				this.socket?.send(
 					JSON.stringify({
 						op: GatewayOpcodes.Heartbeat,
@@ -349,11 +328,36 @@ export class Shard {
 				);
 
 				this.heart.lastBeat = Date.now();
+				this.heart.acknowledged = false;
 
-				this.events.heartbeat?.(this);
-			}, this.heart.interval);
+				const it: any = setInterval(async () => {
+					if (!this.heart.acknowledged) {
+						this.close(
+							ShardSocketCloseCodes.ZombiedConnection,
+							'Zombied connection, did not receive an heartbeat ACK in time.'
+						);
 
-			this.heart.intervalId = it;
+						return await this.identify();
+					}
+
+					this.heart.acknowledged = false;
+
+					if (this.state === ShardState.Connected) {
+						this.socket?.send(
+							JSON.stringify({
+								op: GatewayOpcodes.Heartbeat,
+								d: this.options.previousSequenceNumber,
+							})
+						);
+
+						this.heart.lastBeat = Date.now();
+
+						this.events.heartbeat?.(this);
+					}
+				}, this.heart.interval);
+
+				this.heart.intervalId = it;
+			}
 		}, jitter);
 
 		this.heart.timeoutId = it1;
@@ -395,13 +399,15 @@ export class Shard {
 
 				this.heart.lastBeat = Date.now();
 
-				this.socket?.send(
-					JSON.stringify({
-						op: GatewayOpcodes.Heartbeat,
-						d: this.options.previousSequenceNumber,
-					}),
-				);
-				this.events.heartbeat?.(this);
+				if (this.state === ShardState.Connected) {
+					this.socket?.send(
+						JSON.stringify({
+							op: GatewayOpcodes.Heartbeat,
+							d: this.options.previousSequenceNumber,
+						}),
+					);
+					this.events.heartbeat?.(this);
+				}
 
 				break;
 			}

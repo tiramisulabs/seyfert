@@ -65,7 +65,6 @@ export class DefaultWsAdapter implements WsAdapter {
 			},
 
 			handleIdentify: (id: number) => {
-				// console.log(id % this.options.gatewayBot.sessionStartLimit.maxConcurrency, id, this.options.gatewayBot.sessionStartLimit.maxConcurrency);
 				return this.buckets.get(id % this.options.gatewayBot.sessionStartLimit.maxConcurrency)!.leak.acquire(1);
 			},
 		});
