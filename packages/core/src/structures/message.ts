@@ -3,7 +3,6 @@ import type { Model } from './base';
 import type { Session } from '../biscuit';
 import type {
 	AllowedMentionsTypes,
-	DiscordEmbed,
 	DiscordMessage,
 	DiscordMessageComponents,
 	DiscordUser,
@@ -15,6 +14,8 @@ import type {
 import type { Channel } from './channels';
 import type { Component } from './components';
 import type { MessageInteraction } from './interactions';
+import type { StickerItem } from './sticker';
+import type { Embed } from './embed';
 import { MessageFlags } from '../utils/util';
 import { Snowflake } from '../snowflakes';
 import { ChannelFactory, ThreadChannel } from './channels';
@@ -25,7 +26,7 @@ import { ComponentFactory } from './components';
 import { MessageReaction } from './message-reaction';
 import { Application, NewTeam } from './application';
 import { InteractionFactory } from './interactions';
-import type { StickerItem } from './sticker';
+import { NewEmbedR } from './embed';
 
 import {
 	CHANNEL_PIN,
@@ -79,7 +80,7 @@ export interface CreateMessageReference {
  * Posts a message to a guild text or DM channel. Returns a message object. Fires a Message Create Gateway event.
  */
 export interface CreateMessage {
-	embeds?: DiscordEmbed[];
+	embeds?: Embed[];
 	content?: string;
 	allowedMentions?: AllowedMentions;
 	files?: FileContent[];
@@ -163,7 +164,7 @@ export class Message implements Model {
 		this.attachments = data.attachments.map(
 			attachment => new Attachment(session, attachment)
 		);
-		this.embeds = data.embeds;
+		this.embeds = data.embeds.map(NewEmbedR);
 
 		if (data.interaction) {
 			this.interaction = InteractionFactory.fromMessage(
@@ -328,7 +329,7 @@ export class Message implements Model {
 	attachments: Attachment[];
 
 	/** any embedded content */
-	embeds: DiscordEmbed[];
+	embeds: Embed[];
 
 	/** member properties for this message's author */
 	member?: Member;

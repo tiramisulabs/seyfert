@@ -47,7 +47,7 @@ export interface Embed {
 	};
 }
 
-export function embed(data: Embed): DiscordEmbed {
+export function NewEmbed(data: Embed): DiscordEmbed {
 	return {
 		title: data.title,
 		timestamp: data.timestamp,
@@ -98,3 +98,57 @@ export function embed(data: Embed): DiscordEmbed {
 	};
 }
 
+export const embed = NewEmbed;
+
+export function NewEmbedR(data: DiscordEmbed): Embed {
+	return {
+		title: data.title,
+		timestamp: data.timestamp,
+		type: data.type,
+		url: data.url,
+		color: data.color,
+		description: data.description,
+		author: data.author && {
+			name: data.author.name,
+			url: data.author.url,
+			iconURL: data.author.icon_url,
+			proxyIconURL: data.author.proxy_icon_url,
+		},
+		footer: data.footer && {
+			text: data.footer.text,
+			iconURL: data.footer.icon_url,
+			proxyIconURL: data.footer.proxy_icon_url,
+		},
+		fields: data.fields?.map(f => {
+			return {
+				name: f.name,
+				value: f.value,
+				inline: f.inline,
+			};
+		}),
+		thumbnail: data.thumbnail && {
+			url: data.thumbnail.url,
+			proxyURL: data.thumbnail.proxy_url,
+			width: data.thumbnail.width,
+			height: data.thumbnail.height,
+		},
+		video: {
+			url: data.video?.url,
+			proxyURL: data.video?.proxy_url,
+			width: data.video?.width,
+			height: data.video?.height,
+		},
+		image: data.image && {
+			url: data.image.url,
+			proxyURL: data.image.proxy_url,
+			width: data.image.width,
+			height: data.image.height,
+		},
+		provider: {
+			url: data.provider?.url,
+			name: data.provider?.name,
+		},
+	};
+}
+
+export const embed_ = NewEmbedR;
