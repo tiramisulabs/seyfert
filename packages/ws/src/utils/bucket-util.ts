@@ -40,6 +40,14 @@ export interface LeakyBucket {
 	waiting: ((_?: unknown) => void)[];
 }
 
+export function delay(ms: number): Promise<void> {
+  return new Promise(result =>
+    setTimeout(() => {
+      result();
+    }, ms)
+  );
+}
+
 /** Update the tokens of that bucket.
  * @returns {number} The amount of current available tokens.
  */
@@ -100,9 +108,7 @@ async function acquire(
 		const refillsNeeded = Math.ceil(tokensNeeded / bucket.refillAmount);
 
 		const waitTime = bucket.refillInterval * refillsNeeded;
-		// await delay(waitTime);
-
-		await new Promise(() => setTimeout((): null => null, waitTime));
+		await delay(waitTime);
 
 		// Update the tokens again to ensure nothing has been missed.
 		updateTokens(bucket);

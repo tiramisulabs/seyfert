@@ -1,14 +1,14 @@
 # @biscuitland/core
 
-## 2.0.0
+## 2.0.1
 
 ### Major Changes
 
-- publish
+-   publish
 
 ### Patch Changes
 
-- Updated dependencies
-  - @biscuitland/api-types@2.0.0
-  - @biscuitland/rest@2.0.0
-  - @biscuitland/ws@2.0.0
+-   Updated dependencies
+    -   @biscuitland/api-types@2.0.1
+    -   @biscuitland/rest@2.0.1
+    -   @biscuitland/ws@2.0.1
