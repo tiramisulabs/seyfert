@@ -578,6 +578,8 @@ export class Shard {
 
 		this.socket = socket;
 
+		socket.onerror = (event: any) => console.log(event);
+
 		socket.onclose = (event: any) => this.handleClose(event);
 
 		socket.onmessage = (message: any) => {

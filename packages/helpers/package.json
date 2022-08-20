@@ -1,6 +1,6 @@
 {
 	"name": "@biscuitland/helpers",
-	"version": "2.0.1",
+	"version": "2.0.2",
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",
 	"types": "./dist/index.d.ts",
@@ -23,8 +23,8 @@
 		}
 	},
 	"dependencies": {
-		"@biscuitland/api-types": "^2.0.1",
-		"@biscuitland/core": "^2.0.1"
+		"@biscuitland/api-types": "^2.0.2",
+		"@biscuitland/core": "^2.0.2"
 	},
 	"devDependencies": {
 		"tsup": "^6.1.3"
