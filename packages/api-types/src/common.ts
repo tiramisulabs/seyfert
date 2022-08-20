@@ -613,9 +613,13 @@ export enum BitwisePermissionFlags {
 	MANAGE_ROLES = 0x0000000010000000,
 	/** Allows management and editing of webhooks */
 	MANAGE_WEBHOOKS = 0x0000000020000000,
-	/** Allows management and editing of emojis */
+	/** @deprecated use MANAGE_EMOJIS_AND_STICKERS instead */
 	MANAGE_EMOJIS = 0x0000000040000000,
+	/** Allows management and editing of emojis and stickers */
+	MANAGE_EMOJIS_AND_STICKERS = 0x0000000040000000,
 	/** Allows members to use application commands in text channels */
+	USE_APPLICATION_COMMANDS = 0x0000000080000000,
+	/** @deprecated use USE_APPLICATION_COMMANDS instead */
 	USE_SLASH_COMMANDS = 0x0000000080000000,
 	/** Allows for requesting to speak in stage channels. */
 	REQUEST_TO_SPEAK = 0x0000000100000000,
