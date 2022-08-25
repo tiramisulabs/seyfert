@@ -929,9 +929,9 @@ export class ChannelFactory {
                 return new VoiceChannel(session, channel, channel.guild_id!);
             case ChannelTypes.GuildStageVoice:
                 return new StageChannel(session, channel, channel.guild_id!);
-            default:
-                throw new Error('Channel was not implemented');
         }
+
+        return null as any;
     }
 
     static from(session: Session, channel: DiscordChannel): Channel {
@@ -955,7 +955,7 @@ export class ChannelFactory {
                 if (textBasedChannels.includes(channel.type)) {
                     return new TextChannel(session, channel);
                 }
-                throw new Error('Channel was not implemented');
+                return null as any;
         }
     }
 
