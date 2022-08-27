@@ -91,6 +91,13 @@ export abstract class BaseInteraction implements Model {
 			this.user = new User(session, data.user!);
 		} else {
 			this.member = new Member(session, data.member!, data.guild_id);
+
+            // dangerous black magic be careful!
+            Object.defineProperty(this, 'user', {
+                get() {
+                    return this.member.user;
+                }
+            });
 		}
 	}
 
@@ -102,7 +109,7 @@ export abstract class BaseInteraction implements Model {
 	guildId?: Snowflake;
 	channelId?: Snowflake;
 	applicationId?: Snowflake;
-	user?: User;
+	user!: User;
 	member?: Member;
 	appPermissions?: Permissions;
 
