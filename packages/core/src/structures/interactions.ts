@@ -163,8 +163,8 @@ export abstract class BaseInteraction implements Model {
 			DiscordMessage | undefined
 		>(
 			options.messageId
-				? WEBHOOK_MESSAGE(this.id, this.token, options.messageId)
-				: WEBHOOK_MESSAGE_ORIGINAL(this.id, this.token),
+				? WEBHOOK_MESSAGE(this.session.applicationId, this.token, options.messageId)
+				: WEBHOOK_MESSAGE_ORIGINAL(this.session.applicationId, this.token),
 			{
 				content: options.content,
 				embeds: options.embeds,
