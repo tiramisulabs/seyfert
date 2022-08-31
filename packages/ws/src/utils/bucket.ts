@@ -1,4 +1,4 @@
-/** unnecessary */
+/** Create from scratch */
 
 import type { PickPartial } from '@biscuitland/api-types';
 

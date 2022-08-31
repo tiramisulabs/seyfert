@@ -1,6 +1,6 @@
 # @biscuitland/cache
 
-## 2.0.4
+## 2.0.5
 
 ### Major Changes
 
@@ -9,4 +9,4 @@
 ### Patch Changes
 
 -   Updated dependencies
-    -   @biscuitland/api-types@2.0.4
+    -   @biscuitland/api-types@2.0.5

@@ -1,9 +1,2 @@
-export { WsAdapter } from './adapters/ws-adapter';
-
-export {
-	DefaultWsAdapter,
-	DefaultWsOptions,
-} from './adapters/default-ws-adapter';
-
-export { AgentOptions, Agent } from './services/agent';
+export { ShardManager } from './services/shard-manager';
 export { Shard } from './services/shard';

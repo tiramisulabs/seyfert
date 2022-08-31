@@ -1,6 +1,6 @@
 # @biscuitland/core
 
-## 2.0.4
+## 2.0.5
 
 ### Major Changes
 
@@ -9,6 +9,6 @@
 ### Patch Changes
 
 -   Updated dependencies
-    -   @biscuitland/api-types@2.0.4
-    -   @biscuitland/rest@2.0.4
-    -   @biscuitland/ws@2.0.4
+    -   @biscuitland/api-types@2.0.5
+    -   @biscuitland/rest@2.0.5
+    -   @biscuitland/ws@2.0.5

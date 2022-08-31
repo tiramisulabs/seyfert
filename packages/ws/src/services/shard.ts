@@ -1,789 +1,444 @@
-import type {
-	DiscordGatewayPayload,
-	DiscordHello,
-	DiscordReady,
-	PickPartial,
-} from '@biscuitland/api-types';
-import type { LeakyBucket } from '../utils/bucket-util';
+import type { DiscordGatewayPayload } from '@biscuitland/api-types';
+import type { ShardOptions, SO, ShardStatus } from '../types';
 
-import { createLeakyBucket } from '../utils/bucket-util';
+import type { LeakyBucket } from '../utils/bucket';
 
-import {
-	Constants,
-	GatewayOpcodes,
-	GatewayCloseEventCodes,
-} from '@biscuitland/api-types';
+import { GatewayOpcodes } from '@biscuitland/api-types';
+import { createLeakyBucket } from '../utils/bucket';
 
-import WebSocket from 'ws';
-import { inflateSync } from 'node:zlib';
+import { WebSocket } from 'ws';
+import { Options } from '../utils/options';
 
-export const DEFAULT_HEARTBEAT_INTERVAL = 45000;
-
-export const MAX_GATEWAY_REQUESTS_PER_INTERVAL = 120;
-export const GATEWAY_RATE_LIMIT_RESET_INTERVAL = 60_000;
-
-export type PickOptions = Pick<
-	ShardOptions,
-	Exclude<keyof ShardOptions, keyof typeof Shard.DEFAULTS>
-> &
-	Partial<ShardOptions>;
-
-const decoder = new TextDecoder();
-
-
-export interface ShardOptions {
-	/** Id of the shard which should be created. */
-	id: number;
-
-	/** Gateway configuration for the shard. */
-	gatewayConfig: PickPartial<ShardGatewayConfig, 'token'>;
-
-	/** The total amount of shards which are used to communicate with Discord. */
-	totalShards: number;
-
-	/** The maximum of requests which can be send to discord per rate limit tick. */
-	maxRequestsPerRateLimitTick: number;
-
-	/** The previous payload sequence number. */
-	previousSequenceNumber: number;
-
-	/** In which interval (in milliseconds) the gateway resets it's rate limit. */
-	rateLimitResetInterval: number;
-
-	/** Sends the discord payload to another guild. */
-	handleMessage(shard: Shard, message: MessageEvent<any>): unknown;
-
-	/** This function communicates with the management process. */
-	handleIdentify: (shardId: number) => Promise<void>;
-}
-
-export interface ShardGatewayConfig {
-	/** Whether incoming payloads are compressed using zlib. */
-	compress: boolean;
-
-	/** The calculated intent value of the events which the shard should receive. */
-	intents: number;
-
-	/** Identify properties to use */
-	properties: {
-		/** Operating system the shard runs on. */
-		os: 'darwin' | 'linux' | 'windows';
-
-		/** The "browser" where this shard is running on. */
-		browser: string;
-
-		/** The device on which the shard is running. */
-		device: string;
-	};
-
-	/** Bot token which is used to connect to Discord */
-	token: string;
-
-	/** The URL of the gateway which should be connected to. */
-	url: string;
-
-	/** The gateway version which should be used.*/
-	version: number;
-}
-
-export interface ShardSocketRequest {
-	/** The OP-Code for the payload to send. */
-	op: GatewayOpcodes;
-
-	/** Payload data. */
-	d: unknown;
-}
-
-export interface ShardEvents {
-	/** A heartbeat has been send. */
-	heartbeat?(shard: Shard): unknown;
-
-	/** A heartbeat ACK was received. */
-	heartbeatAck?(shard: Shard): unknown;
-
-	/** Shard has received a Hello payload. */
-	hello?(shard: Shard): unknown;
-
-	/** The Shards session has been invalidated. */
-
-	invalidSession?(shard: Shard, resumable: boolean): unknown;
-	/** The shard has started a resume action. */
-	resuming?(shard: Shard): unknown;
-
-	/** The shard has successfully resumed an old session. */
-	resumed?(shard: Shard): unknown;
-
-	/** Discord has requested the Shard to reconnect. */
-	requestedReconnect?(shard: Shard): unknown;
-	/** The shard started to connect to Discord's gateway. */
-	connecting?(shard: Shard): unknown;
-
-	/** The shard is connected with Discord's gateway. */
-	connected?(shard: Shard): unknown;
-
-	/** The shard has been disconnected from Discord's gateway. */
-	disconnected?(shard: Shard): unknown;
-
-	/** The shard has started to identify itself to Discord. */
-	identifying?(shard: Shard): unknown;
-
-	/** The shard has successfully been identified itself with Discord. */
-	identified?(shard: Shard): unknown;
-
-	/** The shard has received a message from Discord. */
-	message?(shard: Shard, payload: DiscordGatewayPayload): unknown;
-}
-
-export interface ShardHeart {
-	/** Whether or not the heartbeat was acknowledged by Discord in time. */
-	acknowledged: boolean;
-
-	/** Interval between heartbeats requested by Discord. */
-	interval: number;
-
-	/** Id of the interval, which is used for sending the heartbeats. */
-	intervalId?: number;
-
-	/** Unix (in milliseconds) timestamp when the last heartbeat ACK was received from Discord. */
-	lastAck?: number;
-
-	/** Unix timestamp (in milliseconds) when the last heartbeat was sent. */
-	lastBeat?: number;
-
-	/** Round trip time (in milliseconds) from Shard to Discord and back. */
-	rtt?: number;
-
-	/** Id of the timeout which is used for sending the first heartbeat to Discord since it's "special". */
-	timeoutId?: number;
-}
-
-export enum ShardSocketCloseCodes {
-	/** A regular Shard shutdown. */
-	Shutdown = 3000,
-
-	/** A resume has been requested and therefore the old connection needs to be closed. */
-	ResumeClosingOldConnection = 3024,
-
-	/** Did not receive a heartbeat ACK in time. */
-	ZombiedConnection = 3010,
-
-	/** Discordeno's gateway tests hae been finished, therefore the Shard can be turned off. */
-	TestingFinished = 3064,
-
-	/** Special close code reserved for Discordeno's zero-downtime resharding system. */
-	Resharded = 3065,
-
-	/** Shard is re-identifying therefore the old connection needs to be closed. */
-	ReIdentifying = 3066,
-}
-
-export enum ShardState {
-	/** Shard is fully connected to the gateway and receiving events from Discord. */
-	Connected = 0,
-
-	/** Shard started to connect to the gateway. */
-	Connecting = 1,
-
-	/** Shard got disconnected and reconnection actions have been started. */
-	Disconnected = 2,
-
-	/** The shard is connected to the gateway but only heartbeating. */
-	Unidentified = 3,
-
-	/** Shard is trying to identify with the gateway to create a new session. */
-	Identifying = 4,
-
-	/** Shard is trying to resume a session with the gateway. */
-	Resuming = 5,
-
-	/** Shard got shut down studied or due to a not (self) fixable error and may not attempt to reconnect on its own. */
-	Offline = 6,
-}
+const textDecoder = new TextDecoder();
 
 export class Shard {
 	static readonly DEFAULTS = {
-		/** The maximum of requests which can be send to discord per rate limit tick. */
-		maxRequestsPerRateLimitTick: MAX_GATEWAY_REQUESTS_PER_INTERVAL,
-
-		/** The previous payload sequence number. */
-		previousSequenceNumber: null,
-
-		/** In which interval (in milliseconds) the gateway resets it's rate limit. */
-		rateLimitResetInterval: GATEWAY_RATE_LIMIT_RESET_INTERVAL,
+		//
 	};
 
-	options: ShardOptions;
+	readonly options: SO;
 
-	offlineSendQueue: any[];
+	heartbeatInterval: any | null = null;
+	heartbeatAck = false;
 
-	totalShards: number;
+	heartbeatAt = -1;
+	interval = 45000;
 
-	sessionId!: string;
+	resumeURL: string | null = null;
+	sessionID: string | null = null;
 
-	resolves: Map<
-		'READY' | 'RESUMED' | 'INVALID_SESSION',
-		(payload: DiscordGatewayPayload) => void
-	>;
+	sequence = 0 ;
 
-	socket: WebSocket | undefined;
+	resolves: Map<string, (payload?: unknown) => void> = new Map();
+
+	status: ShardStatus = 'Disconnected';
 
 	bucket: LeakyBucket;
 
-	events: ShardEvents;
+	trace: any = null;
 
-	state: ShardState;
+	ws: WebSocket | null = null;
 
-	heart: ShardHeart;
-
-	id: number;
-
-	constructor(options: PickOptions) {
-		this.options = Object.assign(options, Shard.DEFAULTS);
-
-		if (!options.gatewayConfig) {
-			this.options.gatewayConfig = {
-				properties: {
-					os: 'linux',
-					device: 'Biscuit',
-					browser: 'Biscuit',
-				},
-
-				compress: false,
-				version: Constants.API_VERSION,
-				intents: 0,
-
-				token: this.options.gatewayConfig.token,
-
-				url: 'wss://gateway.discord.gg',
-			};
-		}
-
-		this.options.gatewayConfig = {
-			compress: this.options.gatewayConfig.compress ?? false,
-			intents: this.options.gatewayConfig.intents ?? 0,
-			properties: {
-				os: this.options.gatewayConfig?.properties?.os ?? 'linux',
-				device:
-					this.options.gatewayConfig?.properties?.device ?? 'Biscuit',
-				browser:
-					this.options.gatewayConfig?.properties?.browser ??
-					'Biscuit',
-			},
-			url: this.options.gatewayConfig.url ?? 'wss://gateway.discord.gg',
-
-			token: this.options.gatewayConfig.token,
-			version:
-				this.options.gatewayConfig.version ?? Constants.API_VERSION,
-		};
-
-		this.offlineSendQueue = [];
-
-		this.resolves = new Map<
-			'READY' | 'RESUMED' | 'INVALID_SESSION',
-			(payload: DiscordGatewayPayload) => void
-		>();
+	constructor(options: ShardOptions) {
+		this.options = Options({}, Shard.DEFAULTS, options);
 
 		this.bucket = createLeakyBucket({
-			max: MAX_GATEWAY_REQUESTS_PER_INTERVAL,
-			refillInterval: GATEWAY_RATE_LIMIT_RESET_INTERVAL,
-			refillAmount: MAX_GATEWAY_REQUESTS_PER_INTERVAL,
+			max: 120,
+			refillInterval: 60000,
+			refillAmount: 120,
+		});
+	}
+
+	resume() {
+		this.status = 'Resuming';
+
+		this.send({
+			op: GatewayOpcodes.Resume,
+			d: {
+				token: `Bot ${this.options.config.token}`,
+				session_id: this.sessionID,
+				seq: this.sequence,
+			}
+		});
+	}
+
+	destroy() {
+		this.ws = null;
+
+		this.bucket = createLeakyBucket({
+			max: 120,
+			refillInterval: 60000,
+			refillAmount: 120,
 		});
 
-		this.events = {} as ShardEvents;
+		this.sequence = 0;
+		this.resumeURL = null;
+		this.sessionID = null;
 
-		this.heart = {
-			acknowledged: false,
-			interval: DEFAULT_HEARTBEAT_INTERVAL,
-		};
-
-		this.totalShards = this.options.totalShards,
-
-		this.state = ShardState.Offline;
-
-		this.id = options.id;
+		this.heartbeatInterval = null;
 	}
 
-	/**
-	 * @inheritDoc
-	 */
-
-	async startHeartbeating(interval: number) {
-		this.heart.interval = interval;
-
-		if (
-			[ShardState.Disconnected, ShardState.Offline].includes(this.state)
-		) {
-			this.state = ShardState.Unidentified;
-		}
-
-		const jitter = Math.ceil(this.heart.interval * (Math.random() || 0.5));
-
-		const it1: any = setTimeout(() => {
-			if (this.state === ShardState.Connected) {
-				this.socket?.send(
-					JSON.stringify({
-						op: GatewayOpcodes.Heartbeat,
-						d: this.options.previousSequenceNumber,
-					})
-				);
-
-				this.heart.lastBeat = Date.now();
-				this.heart.acknowledged = false;
-
-				const it: any = setInterval(async () => {
-					if (!this.heart.acknowledged) {
-						this.close(
-							ShardSocketCloseCodes.ZombiedConnection,
-							'Zombied connection, did not receive an heartbeat ACK in time.'
-						);
-
-						return await this.identify();
-					}
-
-					this.heart.acknowledged = false;
-
-					if (this.state === ShardState.Connected) {
-						this.socket?.send(
-							JSON.stringify({
-								op: GatewayOpcodes.Heartbeat,
-								d: this.options.previousSequenceNumber,
-							})
-						);
-
-						this.heart.lastBeat = Date.now();
-
-						this.events.heartbeat?.(this);
-					}
-				}, this.heart.interval);
-
-				this.heart.intervalId = it;
-			}
-		}, jitter);
-
-		this.heart.timeoutId = it1;
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-
-	async stopHeartbeating() {
-		clearInterval(this.heart.intervalId);
-
-		clearTimeout(this.heart.timeoutId);
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-
-	async handleMessage(message: MessageEvent): Promise<void> {
-		let data = message.data;
-
-		if (this.options.gatewayConfig.compress && data instanceof Blob) {
-			// @ts-ignore
-			data = decoder.decode(inflateSync(new Uint8Array(await message.arrayBuffer())));
-		}
-
-		if (typeof data !== 'string') {
+    connect() {
+		if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
 			return;
 		}
 
-		const messageData = JSON.parse(data) as DiscordGatewayPayload;
+		this.status = 'Connecting';
 
-		switch (messageData.op) {
-			case GatewayOpcodes.Heartbeat: {
-				if (!this.isOpen()) {
-					return;
+		if (this.sessionID && this.resumeURL) {
+			this.ws = new WebSocket(this.resumeURL);
+		} else {
+			this.ws = new WebSocket('wss://gateway.discord.gg/?v=10&encoding=json');
+		}
+
+		this.ws.on('message', this.onMessage.bind(this));
+		this.ws.on('close', this.onClose.bind(this));
+		this.ws.on('error', this.onError.bind(this));
+		this.ws.on('open', this.onOpen.bind(this));
+
+		return new Promise(resolve => {
+			this.resolves.set('READY', () => {
+				setTimeout(() => resolve(true), this.options.shards.timeout);
+			});
+		});
+    }
+
+	identify() {
+		this.status = 'Identifying';
+
+		this.send({
+			op: GatewayOpcodes.Identify,
+			d: {
+				token: `Bot ${this.options.config.token}`,
+                compress: false,
+                properties: {
+                    os: 'linux',
+                    device: 'Biscuit',
+                    browser: 'Biscuit'
+                },
+                intents: this.options.config.intents,
+                shard: [this.options.id, this.options.gateway.shards],
+			}
+		});
+	}
+
+	heartbeat(requested = false) {
+		if (this.status === 'Resuming' || this.status === 'Identifying') {
+			return;
+		}
+
+		if (!requested) {
+			if (!this.heartbeatAt) {
+				// eslint-disable-next-line no-console
+				console.log(JSON.stringify({
+					heartbeatInterval: this.heartbeatInterval,
+					heartbeatAck: this.heartbeatAck,
+					timestamp: Date.now(),
+					status: this.status
+				}));
+
+				this.disconnect();
+				return;
+			}
+
+			this.heartbeatAck = false;
+		}
+
+		this.heartbeatAt = Date.now();
+
+		this.send({
+			op: GatewayOpcodes.Heartbeat,
+			d: this.sequence,
+		}, true);
+	}
+
+	disconnect(reconnect = false) {
+		if (!this.ws) {
+			return;
+		}
+
+		if (this.heartbeatInterval) {
+			clearInterval(this.heartbeatInterval);
+			this.heartbeatInterval = null;
+		}
+
+		if (this.ws.readyState !== WebSocket.CLOSED) {
+			this.ws.removeAllListeners();
+
+			if (this.sessionID && reconnect) {
+				if (this.ws.readyState !== WebSocket.OPEN) {
+					this.ws.close(4999, 'Reconnect');
+				} else {
+					this.ws.terminate();
 				}
+			} else {
+				this.ws.close(1000, 'Normal Close');
+			}
+		}
 
-				this.heart.lastBeat = Date.now();
+		this.ws = null;
 
-				if (this.state === ShardState.Connected) {
-					this.socket?.send(
-						JSON.stringify({
-							op: GatewayOpcodes.Heartbeat,
-							d: this.options.previousSequenceNumber,
-						}),
-					);
-					this.events.heartbeat?.(this);
+		this.status = 'Disconnected';
+
+		this.resolves = new Map();
+		this.heartbeatAck = true;
+
+		if (reconnect) {
+			if (this.sessionID) {
+				this.connect();
+			} else {
+				// this.connect();
+			}
+		} else {
+			this.destroy();
+		}
+	}
+
+	async send(payload: Partial<DiscordGatewayPayload>, priority = false) {
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			await this.bucket.acquire(1, priority);
+
+			this.ws.send(JSON.stringify(payload));
+		}
+	}
+
+	private async onMessage(data: any, isBinary: boolean) {
+        const payload = this.pack(data as Buffer | ArrayBuffer, isBinary);
+
+		if (payload.s != null) {
+			this.sequence = payload.s;
+		}
+
+		switch (payload.op) {
+			case GatewayOpcodes.Dispatch:
+
+				switch (payload.t) {
+					case 'READY':
+						this.debug([`[READY] shard id: ${this.options.id}`]);
+
+						this.status = 'Ready';
+
+						// @ts-ignore
+						this.resumeURL = `${payload.d.resume_gateway_url}/?v=10&encoding=json`;
+
+						// @ts-ignore
+						this.sessionID = payload.d.session_id;
+
+						// @ts-ignore
+						this.sequence = 0;
+
+						this.resolves.get('READY')?.(payload);
+						this.resolves.delete('READY');
+
+						break;
+
+					case 'RESUMED':
+						this.status = 'Ready';
+
+						this.resolves.get('RESUMED')?.(payload);
+						this.resolves.delete('RESUMED');
+
+						break;
 				}
 
 				break;
-			}
-			case GatewayOpcodes.Hello: {
-				const interval = (messageData.d as DiscordHello).heartbeat_interval;
 
-				this.startHeartbeating(interval);
+			case GatewayOpcodes.Heartbeat:
+				this.heartbeat(true);
 
-				if (this.state !== ShardState.Resuming) {
+				break;
 
+			case GatewayOpcodes.Reconnect:
+				this.disconnect(true);
+				break;
+
+			case GatewayOpcodes.InvalidSession:
+
+				if (payload.d) {
+					this.resume();
+				} else {
+					this.sessionID = null;
+					this.sequence = 0;
+
+					this.identify();
+				}
+
+				break;
+
+			case GatewayOpcodes.Hello:
+
+				// @ts-ignore
+				if (payload.d.heartbeat_interval > 0) {
+					if (this.heartbeatInterval) {
+						clearInterval(this.heartbeatInterval);
+					}
+
+					// @ts-ignore
+					this.heartbeatInterval = setInterval(() => this.heartbeat(), payload.d.heartbeat_interval);
+
+					// @ts-ignore
+					this.interval = payload.d.heartbeat_interval;
+				}
+
+				if (this.status !== 'Resuming') {
 					this.bucket = createLeakyBucket({
 						max: this.safe(),
-						refillInterval: GATEWAY_RATE_LIMIT_RESET_INTERVAL,
+						refillInterval: 60000,
 						refillAmount: this.safe(),
 						waiting: this.bucket.waiting,
 					});
 				}
 
-				this.events.hello?.(this);
-
-				break;
-			}
-			case GatewayOpcodes.HeartbeatACK: {
-				this.heart.acknowledged = true;
-				this.heart.lastAck = Date.now();
-
-				if (this.heart.lastBeat) {
-					this.heart.rtt = this.heart.lastAck - this.heart.lastBeat;
-				}
-
-				this.events.heartbeatAck?.(this);
-
-				break;
-			}
-			case GatewayOpcodes.Reconnect: {
-				this.events.requestedReconnect?.(this);
-
-				await this.resume();
-
-				break;
-			}
-			case GatewayOpcodes.InvalidSession: {
-				const resumable = messageData.d as boolean;
-
-				this.events.invalidSession?.(this, resumable);
-
-				await this.delay(Math.floor((Math.random() * 4 + 1) * 1000));
-
-				this.resolves.get('INVALID_SESSION')?.(messageData);
-				this.resolves.delete('INVALID_SESSION');
-
-				if (!resumable) {
-					await this.identify();
-
-					break;
-				}
-
-				await this.resume();
-
-				break;
-			}
-		}
-
-		if (messageData.t === 'RESUMED') {
-
-			this.state = ShardState.Connected;
-			this.events.resumed?.(this);
-
-			this.offlineSendQueue.map(resolve => resolve());
-
-			this.resolves.get('RESUMED')?.(messageData);
-			this.resolves.delete('RESUMED');
-		} else if (messageData.t === 'READY') {
-			const payload = messageData.d as DiscordReady;
-
-			this.sessionId = payload.session_id;
-			this.state = ShardState.Connected;
-
-			this.offlineSendQueue.map(resolve => resolve());
-
-			this.resolves.get('READY')?.(messageData);
-			this.resolves.delete('READY');
-		}
-
-		if (messageData.s !== null) {
-			this.options.previousSequenceNumber = messageData.s;
-		}
-
-		this.events.message?.(this, messageData);
-		this.options.handleMessage(this, messageData as any);
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-
-	async shutdown(): Promise<void> {
-		this.close(ShardSocketCloseCodes.Shutdown, 'Shard shutting down.');
-
-		this.state = ShardState.Offline;
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-	async handleIdentify(): Promise<void> {
-		return await this.options.handleIdentify(this.id);
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-
-	async identify(): Promise<void> {
-		if (this.state === ShardState.Connected) {
-			this.close(
-				ShardSocketCloseCodes.ReIdentifying,
-				'Re-identifying closure of old connection.'
-			);
-		}
-
-		this.state = ShardState.Identifying;
-		this.events.identifying?.(this);
-
-		if (!this.isOpen()) {
-			await this.connect();
-		}
-
-		await this.handleIdentify();
-
-		this.send(
-			{
-				op: GatewayOpcodes.Identify,
-				d: {
-					token: `Bot ${this.options.gatewayConfig.token}`,
-					compress: this.options.gatewayConfig.compress,
-					properties: this.options.gatewayConfig.properties,
-					intents: this.options.gatewayConfig.intents,
-					shard: [this.id, this.totalShards]
-				},
-			},
-			true
-		);
-
-		return new Promise(resolve => {
-			this.resolves.set('READY', () => {
-				this.events.identified?.(this);
-				resolve();
-			});
-
-			this.resolves.set('INVALID_SESSION', () => {
-				this.resolves.delete('READY');
-				resolve();
-			});
-		});
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-
-	async connect(): Promise<void> {
-		if (
-			![ShardState.Identifying, ShardState.Resuming].includes(this.state!)
-		) {
-			this.state = ShardState.Connecting;
-		}
-
-		this.events.connecting?.(this);
-
-		const socket = new WebSocket(
-			`${this.options.gatewayConfig.url}/?v=${this.options.gatewayConfig.version}&encoding=json`
-		);
-
-		this.socket = socket;
-
-		socket.onerror = (event: any) => console.log(event);
-
-		socket.onclose = (event: any) => this.handleClose(event);
-
-		socket.onmessage = (message: any) => {
-			this.handleMessage(message);
-		};
-
-		return new Promise(resolve => {
-			socket.onopen = () => {
-			if (![ShardState.Identifying, ShardState.Resuming].includes(this.state)) {
-				this.state = ShardState.Unidentified;
-			}
-
-			this.events.connected?.(this);
-
-			resolve();
-			};
-		});
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-
-	async resume(): Promise<void> {
-		if (this.isOpen()) {
-			this.close(
-				ShardSocketCloseCodes.ResumeClosingOldConnection,
-				'Reconnecting the shard, closing old connection.'
-			);
-		}
-
-		if (!this.sessionId) {
-			return await this.identify();
-		}
-
-		this.state = ShardState.Resuming;
-
-		await this.connect();
-
-		this.send(
-			{
-				op: GatewayOpcodes.Resume,
-				d: {
-					token: `Bot ${this.options.gatewayConfig.token}`,
-					session_id: this.sessionId,
-					seq: this.options.previousSequenceNumber ?? 0,
-				},
-			},
-			true
-		);
-
-		return new Promise(resolve => {
-			this.resolves.set('RESUMED', () => resolve());
-
-			this.resolves.set('INVALID_SESSION', () => {
-				this.resolves.delete('RESUMED');
-				resolve();
-			});
-		});
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-
-	async send(message: ShardSocketRequest, highPriority: boolean) {
-		await this.checkOffline(highPriority);
-
-		await this.bucket.acquire(1, highPriority);
-
-		await this.checkOffline(highPriority);
-
-		this.socket?.send(JSON.stringify(message));
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-
-	async handleClose(close: CloseEvent): Promise<void> {
-		this.stopHeartbeating();
-
-		switch (close.code) {
-			case ShardSocketCloseCodes.TestingFinished: {
-				this.state = ShardState.Offline;
-				this.events.disconnected?.(this);
-
-				return;
-			}
-
-			case ShardSocketCloseCodes.Shutdown:
-			case ShardSocketCloseCodes.ReIdentifying:
-			case ShardSocketCloseCodes.Resharded:
-			case ShardSocketCloseCodes.ResumeClosingOldConnection:
-			case ShardSocketCloseCodes.ZombiedConnection: {
-				this.state = ShardState.Disconnected;
-				this.events.disconnected?.(this);
-
-				return;
-			}
-
-			case GatewayCloseEventCodes.UnknownOpcode:
-			case GatewayCloseEventCodes.NotAuthenticated:
-			case GatewayCloseEventCodes.InvalidSeq:
-			case GatewayCloseEventCodes.RateLimited:
-			case GatewayCloseEventCodes.SessionTimedOut: {
-				this.state = ShardState.Identifying;
-				this.events.disconnected?.(this);
-
-				return await this.identify();
-			}
-
-			case GatewayCloseEventCodes.AuthenticationFailed:
-			case GatewayCloseEventCodes.InvalidShard:
-			case GatewayCloseEventCodes.ShardingRequired:
-			case GatewayCloseEventCodes.InvalidApiVersion:
-			case GatewayCloseEventCodes.InvalidIntents:
-			case GatewayCloseEventCodes.DisallowedIntents: {
-				this.state = ShardState.Offline;
-				this.events.disconnected?.(this);
-
-				throw new Error(
-					close.reason ||
-						'Discord gave no reason! GG! You broke Discord!'
-				);
-			}
-
-			case GatewayCloseEventCodes.UnknownError:
-			case GatewayCloseEventCodes.DecodeError:
-			case GatewayCloseEventCodes.AlreadyAuthenticated:
-			default: {
-				this.state = ShardState.Resuming;
-				this.events.disconnected?.(this);
-
-				return await this.resume();
-			}
-		}
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-
-	async checkOffline(highPriority: boolean): Promise<void> {
-		if (!this.isOpen()) {
-			await new Promise(resolve => {
-				if (highPriority) {
-					this.offlineSendQueue.unshift(resolve);
+				if (this.sessionID) {
+					this.resume();
 				} else {
-					this.offlineSendQueue.push(resolve);
+					this.identify();
+					this.heartbeat();
 				}
-			});
+
+				break;
+			case GatewayOpcodes.HeartbeatACK:
+				this.heartbeatAck = true;
+
+				break;
+
+		}
+
+		// @ts-ignore
+		if (payload?.d?._trace) {
+			// @ts-ignore
+			this.trace = JSON.parse(payload.d._trace);
+		}
+
+		this.options.handlePayloads(this, payload);
+	}
+
+	private async onClose(code: number) {
+		this.debug([`[onClose] shard id: ${this.options.id}`, code]);
+
+		switch (code) {
+			case 1001:
+				// Discord WebSocket requesting client reconnect
+				this.disconnect(true);
+				break;
+
+			case 1006:
+				// problems with connections
+				this.disconnect(true);
+				break;
+
+			case 4000:
+				// Unknown error
+				this.disconnect();
+				break;
+
+			case 4001:
+				// Unknown opcode
+				this.disconnect();
+				break;
+
+			case 4002:
+				// Decode error
+				this.disconnect();
+				break;
+
+			case 4003:
+				// Not authenticated
+				this.sessionID = null;
+				this.disconnect();
+				break;
+
+			case 4004:
+				// Authentication failed
+				this.sessionID = null;
+				this.disconnect();
+				break;
+
+			case 4005:
+				// Already authenticated
+				this.sessionID = null;
+				this.disconnect();
+				break;
+
+			case 4007:
+				// Invalid sequence
+				this.sequence = 0;
+				this.disconnect();
+				break;
+
+			case 4008:
+				// Rate limited
+				this.disconnect();
+				break;
+
+			case 4009:
+				// Session timed out
+				this.disconnect();
+				break;
+
+			case 4010:
+				// Invalid shard
+				this.sessionID = null;
+				this.disconnect();
+				break;
+
+			case 4011:
+				// Sharding required
+				this.sessionID = null;
+				this.disconnect();
+				break;
+
+			case 4012:
+				// Invalid API version
+				this.sessionID = null;
+				this.disconnect();
+				break;
+
+			case 4013:
+				// Invalid intent(s)
+				this.sessionID = null;
+				this.disconnect();
+				break;
+
+			case 4014:
+				// Disallowed intent(s)
+				this.sessionID = null;
+				this.disconnect();
+				break;
+
+			default:
+				this.disconnect();
+				break;
 		}
 	}
 
-	/**
-	 * @inheritDoc
-	 */
-
-	close(code: number, reason: string): void {
-		if (this.socket?.readyState !== WebSocket.OPEN) {
-			return;
-		}
-
-		return this.socket?.close(code, reason);
+	private async onError(error: Error) {
+		this.debug([`[onError] shard id: ${this.options.id}`, error]);
 	}
 
-	/**
-	 * @inheritDoc
-	 */
-
-	isOpen(): boolean {
-		return this.socket?.readyState === WebSocket.OPEN;
+	private async onOpen() {
+		this.status = 'Handshaking';
+		this.heartbeatAck = true;
 	}
 
-	/**
-	 * @inheritDoc
-	 */
+	/** temporal */
+	debug(_messages: unknown[]) {
+		// for (let index = 0; index < messages.length; index++) {
+		// 	const message = messages[index];
 
-	async delay(ms: number): Promise<void> {
-		return new Promise((res): any =>
-			setTimeout((): void => {
-				res();
-			}, ms)
-		);
+		// 	// eslint-disable-next-line no-console
+		// 	console.log(message);
+		// }
 	}
 
-	/**
-	 * @inheritDoc
-	 */
+	/** temporal */
+	pack(data: Buffer | ArrayBuffer, _isBinary: boolean): DiscordGatewayPayload {
+		return JSON.parse(textDecoder.decode(new Uint8Array(data))) as DiscordGatewayPayload;
+	}
 
-	safe(): number {
-		const requests =
-			this.options.maxRequestsPerRateLimitTick -
-			Math.ceil(
-				this.options.rateLimitResetInterval / this.heart.interval
-			) *
-				2;
+	/** temporal */
+	safe() {
+		const requests = 120 - Math.ceil(60000 / this.interval) * 2;
 
 		return requests < 0 ? 0 : requests;
 	}

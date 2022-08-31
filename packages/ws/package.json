@@ -1,6 +1,6 @@
 {
 	"name": "@biscuitland/ws",
-	"version": "2.0.4",
+	"version": "2.0.5",
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",
 	"types": "./dist/index.d.ts",
@@ -23,7 +23,8 @@
 		}
 	},
 	"dependencies": {
-		"@biscuitland/api-types": "^2.0.4",
+		"@biscuitland/api-types": "^2.0.5",
+		"@sapphire/async-queue": "^1.5.0",
 		"ws": "^8.8.1"
 	},
 	"devDependencies": {

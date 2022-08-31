@@ -10,19 +10,19 @@ import type {
     Localization,
 	Snowflake,
     DiscordGetGatewayBot,
+    DiscordGatewayPayload
 } from '@biscuitland/api-types';
 
-import { ApplicationCommandTypes, GatewayOpcodes } from '@biscuitland/api-types';
+import { ApplicationCommandTypes, GatewayOpcodes ,
 
-// routes
-
-import {
     APPLICATION_COMMANDS,
     GUILD_APPLICATION_COMMANDS,
     GUILD_APPLICATION_COMMANDS_PERMISSIONS,
     GUILD_APPLICATION_COMMANDS_LOCALIZATIONS,
     USER
 } from '@biscuitland/api-types';
+
+// routes
 
 import type { PermissionResolvable } from './structures/special/permissions';
 import type { Activities, StatusTypes } from './structures/presence';
@@ -36,14 +36,13 @@ import { User } from './structures/user';
 import type { RestAdapter } from '@biscuitland/rest';
 import { DefaultRestAdapter } from '@biscuitland/rest';
 
-import type { WsAdapter } from '@biscuitland/ws';
-import { DefaultWsAdapter } from '@biscuitland/ws';
+import type { Shard } from '@biscuitland/ws';
+import { ShardManager } from '@biscuitland/ws';
 
 import type { EventAdapter } from './adapters/event-adapter';
 import { DefaultEventAdapter } from './adapters/default-event-adapter';
 
 import { Util } from './utils/util';
-import { Shard } from '@biscuitland/ws';
 
 // PRESENCE
 
@@ -146,7 +145,7 @@ export interface BiscuitOptions {
 	};
 
 	ws: {
-		adapter?: { new (...args: any[]): WsAdapter };
+		adapter?: { new (...args: any[]): ShardManager };
 		options: any;
 	};
 }
@@ -180,9 +179,9 @@ export class Session {
 			options: null,
 		},
 		ws: {
-			adapter: DefaultWsAdapter,
+			adapter: ShardManager,
 			options: null,
-		},
+		}
 	};
 
 	options: BiscuitOptions;
@@ -190,7 +189,7 @@ export class Session {
 	readonly events: EventAdapter;
 
 	readonly rest: RestAdapter;
-	readonly ws: WsAdapter;
+	readonly ws: ShardManager;
 
 	private adapters = new Map<string, any>();
 
@@ -210,20 +209,17 @@ export class Session {
 
 		// makeWs
 
-		const defHandler: DiscordRawEventHandler = (shard, event) => {
-            let data = event as any;
-			// let data = JSON.parse(message) as DiscordGatewayPayload;
+		const defHandler = (shard: Shard, payload: DiscordGatewayPayload) => {
+			Actions.raw(this, shard.options.id, payload);
 
-			Actions.raw(this, shard.id, data);
-
-			if (!data.t || !data.d) {
+			if (!payload.t || !payload.d) {
 				return;
 			}
 
-			Actions[data.t as keyof typeof Actions]?.(
+			Actions[payload.t as keyof typeof Actions]?.(
 				this,
-				shard.id,
-				data.d as any
+				shard.options.id,
+				payload.d as any
 			);
 		};
 
@@ -231,21 +227,28 @@ export class Session {
 			this.options.ws.options = {
 				handleDiscordPayload: defHandler,
 
-				gatewayConfig: {
-					token: this.options.token,
-					intents: this.options.intents,
-				},
+                gateway: {
+                    url: '',
+                    shards: '',
 
-				intents: this.options.intents,
-				token: this.options.token,
+                    session_start_limit: {
+                        total: 1000,
+                        remaining: 1000,
+                        reset_after: 3600000,
+
+                        max_concurrency: 1
+                    }
+                },
+				config: {
+                    token: this.options.token,
+                    intents: this.options.intents,
+				},
 			};
 		}
 
 		// makeEvents
 
-		this.events = this.options.events?.adapter
-			? new this.options.events.adapter()
-			: new DefaultEventAdapter();
+		this.events = this.options.events?.adapter ? new this.options.events.adapter() : new DefaultEventAdapter();
 
 		this.ws = this.getWs();
 		this.token = options.token;
@@ -282,7 +285,7 @@ export class Session {
 	 * @inheritDoc
 	 */
 
-	private getWs(): WsAdapter {
+	private getWs(): ShardManager {
 		return this.getAdapter(
 			this.options.ws.adapter!,
 			this.options.ws.options
@@ -294,23 +297,10 @@ export class Session {
 	 */
 
 	async start(): Promise<void> {
-		const nonParsed = await this.rest.get<DiscordGetGatewayBot>('/gateway/bot');
+		const gateway = await this.rest.get<DiscordGetGatewayBot>('/gateway/bot');
+        this.ws.options.gateway = gateway;
 
-		this.ws.options.gatewayBot = {
-			url: nonParsed.url,
-			shards: nonParsed.shards,
-			sessionStartLimit: {
-				total: nonParsed.session_start_limit.total,
-				remaining: nonParsed.session_start_limit.remaining,
-				resetAfter: nonParsed.session_start_limit.reset_after,
-				maxConcurrency: nonParsed.session_start_limit.max_concurrency,
-			},
-		};
-
-		this.ws.options.lastShardId = this.ws.options.gatewayBot.shards - 1;
-		this.ws.agent.options.totalShards = this.ws.options.gatewayBot.shards;
-
-		this.ws.shards();
+		this.ws.spawns();
 	}
 
     // USEFUL METHODS
@@ -338,7 +328,7 @@ export class Session {
      * }
      */
     editStatus(shardId: number, status: StatusUpdate, prio = true): void {
-        const shard = this.ws.agent.shards.get(shardId);
+        const shard = this.ws.shards.get(shardId);
 
         if (!shard) {
             throw new Error(`Unknown shard ${shardId}`);
@@ -350,7 +340,7 @@ export class Session {
                 status: status.status,
                 since: null,
                 afk: false,
-                activities: status.activities.map((activity) => {
+                activities: status.activities.map(activity => {
                     return {
                         name: activity.name,
                         type: activity.type,
@@ -399,7 +389,7 @@ export class Session {
                 permissions: options,
             },
             {
-                headers: { 'Authorization': `Bearer ${bearerToken}` },
+                headers: { Authorization: `Bearer ${bearerToken}` },
             },
         );
     }
@@ -463,7 +453,7 @@ export class Session {
             guildId
                 ? GUILD_APPLICATION_COMMANDS(this.applicationId, guildId)
                 : APPLICATION_COMMANDS(this.applicationId),
-            options.map((o) =>
+            options.map(o =>
                 this.isContextApplicationCommand(o)
                     ? {
                         name: o.name,
