@@ -80,10 +80,6 @@ export abstract class BaseInteraction implements Model {
 		this.applicationId = data.application_id;
 		this.version = data.version;
 
-        Object.defineProperty(this, "locale", {
-            value: data.locale,
-        });
-
 		const perms = data.app_permissions;
 
 		if (perms) {
