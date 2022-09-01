@@ -220,6 +220,7 @@ export abstract class BaseInteraction implements Model {
 			{
 				id: this.session.applicationId,
 				token: this.token,
+                session: this.session,
 			},
 			messageId,
 			options
@@ -236,6 +237,7 @@ export abstract class BaseInteraction implements Model {
 			{
 				id: this.session.applicationId,
 				token: this.token,
+                session: this.session,
 			},
 			messageId,
 			threadId
@@ -250,6 +252,7 @@ export abstract class BaseInteraction implements Model {
 			{
 				id: this.session.applicationId,
 				token: this.token,
+                session: this.session,
 			},
 			messageId,
 			threadId
