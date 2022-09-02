@@ -13,8 +13,7 @@ export interface CollectorOptions<E extends keyof Events> {
 export class Collector<E extends keyof Events> extends EventEmitter {
     collected = new Set<Parameters<Events[E]>[0]>();
     ended = false;
-    // We have no idea why eslint does not respond to this.
-    // eslint-disable-next-line no-undef
+
     private timeout: NodeJS.Timeout;
 
     constructor(readonly session: Session, public options: CollectorOptions<E>) {
