@@ -1,10 +1,10 @@
-import { CacheAdapter } from '../adapters/cache-adapter';
-import { DiscordEmoji } from '@biscuitland/api-types';
+import type { CacheAdapter } from '../adapters/cache-adapter';
+import type { DiscordEmoji } from '@biscuitland/api-types';
 
 import { BaseResource } from './base-resource';
 
 export class GuildEmojiResource extends BaseResource {
-	namespace: 'emoji' = 'emoji';
+	namespace = 'emoji' as const;
 
 	adapter: CacheAdapter;
 

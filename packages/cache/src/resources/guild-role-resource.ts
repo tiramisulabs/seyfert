@@ -1,10 +1,10 @@
-import { CacheAdapter } from '../adapters/cache-adapter';
-import { DiscordRole } from '@biscuitland/api-types';
+import type { CacheAdapter } from '../adapters/cache-adapter';
+import type { DiscordRole } from '@biscuitland/api-types';
 
 import { BaseResource } from './base-resource';
 
 export class GuildRoleResource extends BaseResource {
-	namespace: 'role' = 'role';
+	namespace = 'role' as const;
 
 	adapter: CacheAdapter;
 

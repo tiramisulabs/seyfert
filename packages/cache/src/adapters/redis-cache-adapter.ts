@@ -1,6 +1,7 @@
 import type { CacheAdapter } from './cache-adapter';
 
-import Redis, { RedisOptions } from 'ioredis';
+import type { RedisOptions } from 'ioredis';
+import type Redis from 'ioredis';
 import IORedis from 'ioredis';
 
 interface BaseOptions {
@@ -13,7 +14,7 @@ interface BuildOptions extends BaseOptions, RedisOptions { }
 interface ClientOptions extends BaseOptions {
 	client: Redis;
 }
- 
+
 type Options = BuildOptions | ClientOptions;
 
 export class RedisCacheAdapter implements CacheAdapter {
@@ -114,7 +115,7 @@ export class RedisCacheAdapter implements CacheAdapter {
 	 * @inheritDoc
 	 */
 
-	composite(id: string): string {		
+	composite(id: string): string {
 		return `${this.options.namespace}:${id}`;
 	}
 }

@@ -1,10 +1,12 @@
-import { DiscordInputTextComponent, MessageComponentTypes, TextStyles } from '@biscuitland/api-types';
+import type { DiscordInputTextComponent, TextStyles } from '@biscuitland/api-types';
+import { MessageComponentTypes } from '@biscuitland/api-types';
 
 export class InputTextBuilder {
     constructor() {
         this.#data = {} as DiscordInputTextComponent;
         this.type = MessageComponentTypes.InputText;
     }
+
     #data: DiscordInputTextComponent;
     type: MessageComponentTypes.InputText;
 
@@ -43,6 +45,7 @@ export class InputTextBuilder {
         this.#data.required = required;
         return this;
     }
+
     toJSON(): DiscordInputTextComponent {
         return { ...this.#data, type: this.type };
     }

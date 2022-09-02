@@ -1,10 +1,10 @@
-import { CacheAdapter } from '../adapters/cache-adapter';
-import { DiscordVoiceState } from '@biscuitland/api-types';
+import type { CacheAdapter } from '../adapters/cache-adapter';
+import type { DiscordVoiceState } from '@biscuitland/api-types';
 
 import { BaseResource } from './base-resource';
 
 export class VoiceResource extends BaseResource {
-	namespace: 'voice' = 'voice';
+	namespace = 'voice' as const;
 
 	adapter: CacheAdapter;
 

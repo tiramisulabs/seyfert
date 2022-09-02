@@ -1,10 +1,10 @@
-import { CacheAdapter } from '../adapters/cache-adapter';
-import { DiscordChannel } from '@biscuitland/api-types';
+import type { CacheAdapter } from '../adapters/cache-adapter';
+import type { DiscordChannel } from '@biscuitland/api-types';
 
 import { BaseResource } from './base-resource';
 
 export class ChannelResource extends BaseResource {
-	namespace: 'channel' = 'channel';
+	namespace = 'channel' as const;
 
 	adapter: CacheAdapter;
 

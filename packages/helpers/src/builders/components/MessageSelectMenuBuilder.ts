@@ -1,11 +1,12 @@
 import type { DiscordSelectOption, DiscordSelectMenuComponent, } from '@biscuitland/api-types';
 import type { ComponentEmoji } from '../../../../core/src/utils/util';
-import { MessageComponentTypes } from '@biscuitland/api-types'; 
+import { MessageComponentTypes } from '@biscuitland/api-types';
 
 export class SelectMenuOptionBuilder {
     constructor() {
         this.#data = {} as DiscordSelectOption;
     }
+
     #data: DiscordSelectOption;
 
     setLabel(label: string): SelectMenuOptionBuilder {
@@ -44,6 +45,7 @@ export class SelectMenuBuilder {
         this.type = MessageComponentTypes.SelectMenu;
         this.options = [];
     }
+
     #data: DiscordSelectMenuComponent;
     type: MessageComponentTypes.SelectMenu;
     options: SelectMenuOptionBuilder[];
@@ -86,6 +88,6 @@ export class SelectMenuBuilder {
     }
 
     toJSON(): DiscordSelectMenuComponent {
-        return { ...this.#data, type: this.type, options: this.options.map((option) => option.toJSON()) };
+        return { ...this.#data, type: this.type, options: this.options.map(option => option.toJSON()) };
     }
 }
