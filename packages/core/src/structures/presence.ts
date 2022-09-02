@@ -1,4 +1,3 @@
-/* eslint-disable no-mixed-spaces-and-tabs */
 import type {
 	ActivityTypes,
 	DiscordActivityButton,
@@ -74,7 +73,7 @@ export class Presence {
 							largeText: activity.assets.large_text,
 							smallImage: activity.assets.small_image,
 							smallText: activity.assets.small_text,
-					  }
+					}
 					: null,
 				secrets: activity.secrets ? activity.secrets : undefined,
 				instance: !!activity.instance,

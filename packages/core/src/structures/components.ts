@@ -158,12 +158,12 @@ export class SelectMenu extends BaseComponent implements SelectMenuComponent {
 		this.type = data.type as MessageComponentTypes.SelectMenu;
 		this.customId = data.custom_id!;
 		this.options = data.options!.map(option => {
-			return <SelectMenuOption>{
+			return {
 				label: option.label,
 				description: option.description,
 				emoji: option.emoji ? new Emoji(session, option.emoji) : undefined,
 				value: option.value,
-			};
+			} as SelectMenuOption;
 		});
 		this.placeholder = data.placeholder;
 		this.minValues = data.min_values;

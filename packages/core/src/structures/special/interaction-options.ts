@@ -233,8 +233,8 @@ export class InteractionOptions {
 
 	/** searches for the focused option */
     getFocused(full: true): DiscordInteractionDataOption;
-    getFocused(full: false): DiscordInteractionDataOption["value"];
-	getFocused(full: boolean = false) {
+    getFocused(full: false): DiscordInteractionDataOption['value'];
+	getFocused(full = false) {
 		const focusedOption: DiscordInteractionDataOption | void =
 			this.hoistedOptions.find(option => option.focused);
 

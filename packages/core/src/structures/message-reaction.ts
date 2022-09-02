@@ -1,4 +1,3 @@
-/* eslint-disable no-mixed-spaces-and-tabs */
 import type { Session } from '../biscuit';
 import type {
 	DiscordMemberWithUser,
@@ -71,7 +70,7 @@ export function NewMessageReactionAdd(
 					session,
 					data.member as DiscordMemberWithUser,
 					data.guild_id ?? ''
-			  )
+			)
 			: undefined,
 		emoji: new Emoji(session, data.emoji),
 	};

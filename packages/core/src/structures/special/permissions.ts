@@ -26,7 +26,7 @@ export class Permissions implements BitField<bigint> {
 	bitfield: bigint;
 
     /** Wheter to grant all other permissions to the administrator */
-    __admin__: boolean = true;
+    __admin__ = true;
 
 	constructor(bitfield: PermissionResolvable) {
 		this.bitfield = Permissions.resolve(bitfield);
@@ -39,7 +39,7 @@ export class Permissions implements BitField<bigint> {
     }
 
     add(...bits: PermissionResolvable[]): this {
-        let reduced: bigint = 0n;
+        let reduced = 0n;
         for (const bit of bits) {
             reduced |= Permissions.resolve(bit);
         }
@@ -48,7 +48,7 @@ export class Permissions implements BitField<bigint> {
     }
 
     remove(...bits: PermissionResolvable[]): this {
-        let reduced: bigint = 0n;
+        let reduced = 0n;
         for (const bit of bits) {
             reduced |= Permissions.resolve(bit);
         }
@@ -121,7 +121,7 @@ export class Permissions implements BitField<bigint> {
     }
 
     toJSON(): { fields: string[] } {
-        const fields = Object.keys(Permissions.Flags).filter((bit) => typeof bit === 'number' && this.has(bit));
+        const fields = Object.keys(Permissions.Flags).filter(bit => typeof bit === 'number' && this.has(bit));
 
         return { fields };
     }

@@ -188,7 +188,7 @@ export class Member implements Model {
 		} else {
 			url = USER_AVATAR(
 				this.user.id,
-			    this.avatarHash
+				this.avatarHash
 			);
 		}
 

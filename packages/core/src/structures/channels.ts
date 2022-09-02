@@ -10,36 +10,37 @@ import { urlToBase64 } from '../utils/url-to-base-64';
 
 /** Classes and routes */
 import {
-	DiscordChannel,
-	DiscordInvite,
-	DiscordInviteMetadata,
-	DiscordListArchivedThreads,
-	DiscordMessage,
-	DiscordOverwrite,
-	DiscordThreadMember,
-	DiscordWebhook,
-	TargetTypes,
-	VideoQualityModes,
-	GetReactions,
-	GetMessagesOptions,
-	ListArchivedThreads, 
-    USER_DM} from '@biscuitland/api-types';
-import {
-	CHANNEL,
-	CHANNEL_PINS,
-	CHANNEL_INVITES,
-	CHANNEL_TYPING,
-	CHANNEL_MESSAGES,
-	CHANNEL_WEBHOOKS,
-	THREAD_USER,
-	THREAD_ME,
-	THREAD_MEMBERS,
-	THREAD_START_PRIVATE,
-	THREAD_ARCHIVED_PUBLIC,
-	THREAD_ARCHIVED_PRIVATE_JOINED,
-	THREAD_START_PUBLIC,
-	ChannelTypes,
-	GatewayOpcodes as _GatewayOpcodes
+    USER_DM,
+    CHANNEL,
+    CHANNEL_PINS,
+    CHANNEL_INVITES,
+    CHANNEL_TYPING,
+    CHANNEL_MESSAGES,
+    CHANNEL_WEBHOOKS,
+    THREAD_USER,
+    THREAD_ME,
+    THREAD_MEMBERS,
+    THREAD_START_PRIVATE,
+    THREAD_ARCHIVED_PUBLIC,
+    THREAD_ARCHIVED_PRIVATE_JOINED,
+    THREAD_START_PUBLIC,
+    ChannelTypes
+} from '@biscuitland/api-types';
+import type {
+    DiscordChannel,
+    DiscordInvite,
+    DiscordInviteMetadata,
+    DiscordListArchivedThreads,
+    DiscordMessage,
+    DiscordOverwrite,
+    DiscordThreadMember,
+    DiscordWebhook,
+    TargetTypes,
+    VideoQualityModes,
+    GetReactions,
+    GetMessagesOptions,
+    ListArchivedThreads,
+    GatewayOpcodes as _GatewayOpcodes
 } from '@biscuitland/api-types';
 
 import type { CreateMessage, EditMessage, EmojiResolvable } from './message';
@@ -256,6 +257,7 @@ export class TextChannel {
     /**
      * Mixin
      */
+    // eslint-disable-next-line @typescript-eslint/ban-types
     static applyTo(klass: Function, ignore: (keyof TextChannel)[] = []): void {
         const methods: (keyof TextChannel)[] = [
             'fetchPins',
@@ -322,6 +324,7 @@ export class TextChannel {
      * @returns The messages
      */
     async fetchMessages(options?: GetMessagesOptions): Promise<Message[] | []> {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
         if (options?.limit! > 100) { throw Error('Values must be between 0-100'); }
         const messages = await this.session.rest.get<DiscordMessage[]>(
             CHANNEL_MESSAGES(this.id, options),
@@ -633,7 +636,7 @@ export class GuildChannel extends BaseChannel implements Model {
                 break;
         }
 
-        const { threads, members, has_more } = await this.session.rest.get<DiscordListArchivedThreads>(
+        const { threads, members, has_more: hasMore } = await this.session.rest.get<DiscordListArchivedThreads>(
             func(this.id, options),
         );
 
@@ -644,7 +647,7 @@ export class GuildChannel extends BaseChannel implements Model {
             members: Object.fromEntries(
                 members.map(threadMember => [threadMember.id, new ThreadMember(this.session, threadMember)]),
             ) as Record<Snowflake, ThreadMember>,
-            hasMore: has_more,
+            hasMore,
         };
     }
 
@@ -671,7 +674,7 @@ export class GuildChannel extends BaseChannel implements Model {
      * @param overwrites - The overwrites to add to the channel.
      */
     async setPermissions(overwrites: PermissionsOverwrites[]): Promise<Channel> {
-        return this.edit({ permissionOverwrites: overwrites } as EditGuildChannelOptions)
+        return this.edit({ permissionOverwrites: overwrites } as EditGuildChannelOptions);
     }
 }
 
@@ -715,7 +718,7 @@ export abstract class BaseVoiceChannel extends GuildChannel {
 export class DMChannel extends BaseChannel implements Model {
     constructor(session: Session, data: DiscordChannel) {
         super(session, data);
-        
+
         if (data.owner_id && data.recipents) {
             this.user = new User(session, data.recipents.find(user => user.id === data.owner_id)!);
         } else {
@@ -748,13 +751,13 @@ export class DMChannel extends BaseChannel implements Model {
     }
 
     async open(userId: Snowflake): Promise<DMChannel> {
-        const channel = await this.session.rest.post<DiscordChannel>(USER_DM(), { recipient_id: userId});
+        const channel = await this.session.rest.post<DiscordChannel>(USER_DM(), { recipient_id: userId });
 
         return new DMChannel(this.session, channel);
     }
 }
 
-export interface DMChannel extends Omit<TextChannel, 'type'>, Omit<BaseChannel, 'type'> {}
+export interface DMChannel extends Omit<TextChannel, 'type'>, Omit<BaseChannel, 'type'> { }
 
 TextChannel.applyTo(DMChannel);
 
@@ -768,7 +771,7 @@ export class VoiceChannel extends BaseVoiceChannel {
     override type: ChannelTypes.GuildVoice;
 }
 
-export interface VoiceChannel extends TextChannel, BaseVoiceChannel {}
+export interface VoiceChannel extends TextChannel, BaseVoiceChannel { }
 
 TextChannel.applyTo(VoiceChannel);
 
@@ -794,7 +797,7 @@ export class NewsChannel extends GuildChannel {
 
 TextChannel.applyTo(NewsChannel);
 
-export interface NewsChannel extends TextChannel, GuildChannel {}
+export interface NewsChannel extends TextChannel, GuildChannel { }
 
 /** StageChannel */
 export class StageChannel extends BaseVoiceChannel {
@@ -865,7 +868,7 @@ export class ThreadChannel extends GuildChannel implements Model {
     }
 }
 
-export interface ThreadChannel extends Omit<GuildChannel, 'type'>, Omit<TextChannel, 'type'> {}
+export interface ThreadChannel extends Omit<GuildChannel, 'type'>, Omit<TextChannel, 'type'> { }
 
 TextChannel.applyTo(ThreadChannel);
 
@@ -878,7 +881,7 @@ export class GuildTextChannel extends GuildChannel {
     override type: ChannelTypes.GuildText;
 }
 
-export interface GuildTextChannel extends GuildChannel, TextChannel {}
+export interface GuildTextChannel extends GuildChannel, TextChannel { }
 
 TextChannel.applyTo(GuildTextChannel);
 
