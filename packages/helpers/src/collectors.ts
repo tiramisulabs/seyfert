@@ -1,6 +1,7 @@
 import type { Session, Events } from '@biscuitland/core';
 import { EventEmitter } from 'node:events';
 
+
 export interface CollectorOptions<E extends keyof Events> {
     event: E;
     filter?(...args: Parameters<Events[E]>): unknown;
@@ -12,16 +13,16 @@ export interface CollectorOptions<E extends keyof Events> {
 export class Collector<E extends keyof Events> extends EventEmitter {
     collected = new Set<Parameters<Events[E]>[0]>();
     ended = false;
+    // We have no idea why eslint does not respond to this.
+    // eslint-disable-next-line no-undef
     private timeout: NodeJS.Timeout;
 
     constructor(readonly session: Session, public options: CollectorOptions<E>) {
         super();
 
-        if (!('filter' in this.options))
-            this.options.filter = (() => true);
+        if (!('filter' in this.options)) { this.options.filter = (() => true); }
 
-        if (!('max' in this.options))
-            this.options.max = -1;
+        if (!('max' in this.options)) { this.options.max = -1; }
 
         this.session.events.setMaxListeners(this.session.events.getMaxListeners() + 1);
 
@@ -41,12 +42,11 @@ export class Collector<E extends keyof Events> extends EventEmitter {
             this.timeout = setTimeout(() => this.stop('time'), this.options.idle);
         }
 
-        if (this.collected.size >= this.options.max!)
-            this.stop('max');
+        if (this.collected.size >= this.options.max!) { this.stop('max'); }
     }
 
     stop(reason?: string) {
-        if (this.ended) return;
+        if (this.ended) { return; }
 
         clearTimeout(this.timeout);
 

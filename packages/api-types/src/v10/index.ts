@@ -1,4 +1,3 @@
-/* eslint-disable no-mixed-spaces-and-tabs */
 import type {
 	ActivityTypes,
 	AllowedMentionsTypes,
@@ -18,8 +17,6 @@ import type {
 	GuildNsfwLevel,
 	IntegrationExpireBehaviors,
 	InteractionTypes,
-	// No used
-	// Locales,
 	Localization,
 	MessageActivityTypes,
 	MessageComponentTypes,

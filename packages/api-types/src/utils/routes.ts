@@ -81,8 +81,8 @@ export interface ListGuildMembers {
 export function GUILD_MEMBERS(guildId: Snowflake, options?: ListGuildMembers) {
 	let url = `/guilds/${guildId}/members?`;
 
-	if (options?.limit) url += `limit=${options.limit}`;
-	if (options?.after) url += `&after=${options.after}`;
+	if (options?.limit) { url += `limit=${options.limit}`; }
+	if (options?.after) { url += `&after=${options.after}`; }
 
 	return url;
 }
@@ -129,13 +129,13 @@ export function USER_DM() {
 }
 
 export function GUILD_EMOJIS(guildId: Snowflake, emojiId?: Snowflake): string {
-	if (emojiId) return `/guilds/${guildId}/emojis/${emojiId}`;
+	if (emojiId) { return `/guilds/${guildId}/emojis/${emojiId}`; }
 	return `/guilds/${guildId}/emojis`;
 }
 
 export interface GetAuditLogs {
 	userId?: Snowflake;
-	actionType?: AuditLogEvents
+	actionType?: AuditLogEvents;
 	before?: Snowflake;
 	limit?: number;
 }
@@ -150,8 +150,8 @@ export function GUILD_AUDIT_LOGS(guildId: Snowflake, options?: GetAuditLogs) {
 			limit: options.limit
 		};
 		for (const [key, value] of Object.entries(obj)) {
-			if (!value) continue;
-			url += `&${key}=${value}`
+			if (!value) { continue; }
+			url += `&${key}=${value}`;
 		}
 	}
 	return url;

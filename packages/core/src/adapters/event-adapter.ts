@@ -1,4 +1,4 @@
-import type { EventEmitter } from 'stream';
+import type { EventEmitter } from 'node:events';
 import type { Events } from './events';
 
 export interface EventAdapter extends Omit<EventEmitter, 'emit' | 'on' | 'off' | 'once'> {

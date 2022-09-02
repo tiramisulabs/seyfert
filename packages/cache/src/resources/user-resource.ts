@@ -1,10 +1,10 @@
-import { CacheAdapter } from '../adapters/cache-adapter';
-import { DiscordUser } from '@biscuitland/api-types';
+import type { CacheAdapter } from '../adapters/cache-adapter';
+import type { DiscordUser } from '@biscuitland/api-types';
 
 import { BaseResource } from './base-resource';
 
 export class UserResource extends BaseResource {
-	namespace: 'user' = 'user';
+	namespace = 'user' as const;
 
 	adapter: CacheAdapter;
 

@@ -1,20 +1,21 @@
-import {
+import type {
 	Localization,
-	PermissionStrings,
+	PermissionStrings } from '@biscuitland/api-types';
+import {
 	ApplicationCommandTypes
 } from '@biscuitland/api-types';
-import { CreateApplicationCommand } from '@biscuitland/core';
+import type { CreateApplicationCommand } from '@biscuitland/core';
 import { OptionBased } from './ApplicationCommandOption';
 
 export abstract class ApplicationCommandBuilder {
 	constructor(
 		type: ApplicationCommandTypes = ApplicationCommandTypes.ChatInput,
-		name: string = '',
-		description: string = '',
+		name = '',
+		description = '',
 		defaultMemberPermissions?: PermissionStrings[],
 		nameLocalizations?: Localization,
 		descriptionLocalizations?: Localization,
-		dmPermission: boolean = true
+		dmPermission = true
 	) {
 		this.type = type;
 		this.name = name;
@@ -24,6 +25,7 @@ export abstract class ApplicationCommandBuilder {
 		this.descriptionLocalizations = descriptionLocalizations;
 		this.dmPermission = dmPermission;
 	}
+
 	type: ApplicationCommandTypes;
 	name: string;
 	description: string;
@@ -79,7 +81,7 @@ export class MessageApplicationCommandBuilder {
 	}
 
 	toJSON(): MessageApplicationCommandBuilderJSON {
-		if (!this.name) throw new TypeError("Propety 'name' is required");
+		if (!this.name) { throw new TypeError("Propety 'name' is required"); }
 
 		return {
 			type: ApplicationCommandTypes.Message,
@@ -92,8 +94,8 @@ export class ChatInputApplicationCommandBuilder extends ApplicationCommandBuilde
 	type: ApplicationCommandTypes.ChatInput = ApplicationCommandTypes.ChatInput;
 
 	toJSON(): CreateApplicationCommand {
-		if (!this.type) throw new TypeError("Propety 'type' is required");
-		if (!this.name) throw new TypeError("Propety 'name' is required");
+		if (!this.type) { throw new TypeError("Propety 'type' is required"); }
+		if (!this.name) { throw new TypeError("Propety 'name' is required"); }
 		if (!this.description) {
 			throw new TypeError("Propety 'description' is required");
 		}
