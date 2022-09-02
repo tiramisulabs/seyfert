@@ -1,5 +1,6 @@
-import { ChannelTypes, Localization, Locales, ApplicationCommandOptionTypes } from '@biscuitland/api-types';
-import { ApplicationCommandOptionChoice } from '@biscuitland/core';
+import type { ChannelTypes, Localization, Locales } from '@biscuitland/api-types';
+import { ApplicationCommandOptionTypes } from '@biscuitland/api-types';
+import type { ApplicationCommandOptionChoice } from '@biscuitland/core';
 
 
 export type Localizations = typeof Locales[keyof typeof Locales] & string;
@@ -19,8 +20,8 @@ export class ChoiceBuilder {
     }
 
     toJSON(): ApplicationCommandOptionChoice {
-        if (!this.name) throw new TypeError('Property \'name\' is required');
-        if (!this.value) throw new TypeError('Property \'value\' is required');
+        if (!this.name) { throw new TypeError('Property \'name\' is required'); }
+        if (!this.value) { throw new TypeError('Property \'value\' is required'); }
 
         return {
             name: this.name,
@@ -67,8 +68,8 @@ export class OptionBuilder {
     }
 
     toJSON(): ApplicationCommandOption {
-        if (!this.type) throw new TypeError('Property \'type\' is required');
-        if (!this.name) throw new TypeError('Property \'name\' is required');
+        if (!this.type) { throw new TypeError('Property \'type\' is required'); }
+        if (!this.name) { throw new TypeError('Property \'name\' is required'); }
         if (!this.description) {
             throw new TypeError('Property \'description\' is required');
         }
@@ -120,7 +121,7 @@ export class OptionBuilderLimitedValues extends OptionBuilder {
     override toJSON(): ApplicationCommandOption {
         return {
             ...super.toJSON(),
-            choices: this.choices?.map((c) => c.toJSON()) ?? [],
+            choices: this.choices?.map(c => c.toJSON()) ?? [],
             min_value: this.minValue,
             max_value: this.maxValue,
         };
@@ -151,7 +152,7 @@ export class OptionBuilderString extends OptionBuilder {
     override toJSON(): ApplicationCommandOption {
         return {
             ...super.toJSON(),
-            choices: this.choices?.map((c) => c.toJSON()) ?? [],
+            choices: this.choices?.map(c => c.toJSON()) ?? [],
         };
     }
 }
@@ -271,8 +272,9 @@ export class OptionBased {
         return this.addOption(fn, ApplicationCommandOptionTypes.Mentionable);
     }
 
-    static applyTo(klass: Function, ignore: Array<keyof OptionBased> = []): void {
-        const methods: Array<keyof OptionBased> = [
+    // eslint-disable-next-line @typescript-eslint/ban-types
+    static applyTo(klass: Function, ignore: (keyof OptionBased)[] = []): void {
+        const methods: (keyof OptionBased)[] = [
             'addOption',
             'addNestedOption',
             'addStringOption',
@@ -288,7 +290,7 @@ export class OptionBased {
         ];
 
         for (const method of methods) {
-            if (ignore.includes(method)) continue;
+            if (ignore.includes(method)) { continue; }
 
             klass.prototype[method] = OptionBased.prototype[method];
         }
@@ -308,8 +310,8 @@ export class OptionBuilderNested extends OptionBuilder {
     }
 
     override toJSON(): ApplicationCommandOption {
-        if (!this.type) throw new TypeError('Property \'type\' is required');
-        if (!this.name) throw new TypeError('Property \'name\' is required');
+        if (!this.type) { throw new TypeError('Property \'type\' is required'); }
+        if (!this.name) { throw new TypeError('Property \'name\' is required'); }
         if (!this.description) {
             throw new TypeError('Property \'description\' is required');
         }
@@ -318,7 +320,7 @@ export class OptionBuilderNested extends OptionBuilder {
             type: this.type,
             name: this.name,
             description: this.description,
-            options: this.options?.map((o) => o.toJSON()) ?? [],
+            options: this.options?.map(o => o.toJSON()) ?? [],
             required: this.required ? true : false,
         };
     }

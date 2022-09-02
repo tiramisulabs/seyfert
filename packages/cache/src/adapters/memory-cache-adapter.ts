@@ -1,5 +1,5 @@
 import type { CacheAdapter } from './cache-adapter';
- 
+
 interface Options {
 	expire?: number;
 }

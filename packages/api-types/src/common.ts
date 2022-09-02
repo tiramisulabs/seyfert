@@ -1,4 +1,3 @@
-/* eslint-disable no-mixed-spaces-and-tabs */
 /** https://discord.com/developers/docs/resources/user#user-object-premium-types */
 export enum PremiumTypes {
 	None,
@@ -1253,9 +1252,9 @@ export type Camelize<T> = {
 	// eslint-disable-next-line @typescript-eslint/array-type
 	[K in keyof T as CamelCase<string & K>]: T[K] extends Array<infer U>
 		? // eslint-disable-next-line @typescript-eslint/ban-types
-		  U extends {}
+		U extends {}
 			? // eslint-disable-next-line @typescript-eslint/array-type
-			  Array<Camelize<U>>
+			Array<Camelize<U>>
 			: T[K]
 		: // eslint-disable-next-line @typescript-eslint/ban-types
 		T[K] extends {}

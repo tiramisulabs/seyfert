@@ -4,6 +4,7 @@ package-lock.json
 
 # Eater asked for this dunno why
 bot/
+apps/
 
 # Enviorment
 .env

@@ -1,10 +1,10 @@
-import { CacheAdapter } from '../adapters/cache-adapter';
-import { DiscordSticker } from '@biscuitland/api-types';
+import type { CacheAdapter } from '../adapters/cache-adapter';
+import type { DiscordSticker } from '@biscuitland/api-types';
 
 import { BaseResource } from './base-resource';
 
 export class GuildStickerResource extends BaseResource {
-	namespace: 'sticker' = 'sticker';
+	namespace = 'sticker' as const;
 
 	adapter: CacheAdapter;
 

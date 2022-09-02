@@ -1,13 +1,9 @@
-import { CacheAdapter } from '../adapters/cache-adapter';
+import type { CacheAdapter } from '../adapters/cache-adapter';
 
 export class BaseResource {
 	namespace = 'base';
 
 	adapter!: CacheAdapter; // replace
-
-	constructor() {
-		//
-	}
 
 	/**
 	 * @inheritDoc

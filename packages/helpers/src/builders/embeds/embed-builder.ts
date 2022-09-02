@@ -36,7 +36,7 @@ export class EmbedBuilder {
     #data: Embed;
     constructor(data: Embed = {}) {
         this.#data = data;
-        if (!this.#data.fields) this.#data.fields = [];
+        if (!this.#data.fields) { this.#data.fields = []; }
     }
 
     setAuthor(author: EmbedAuthor): EmbedBuilder {
@@ -86,7 +86,7 @@ export class EmbedBuilder {
 
     setTitle(title: string, url?: string): EmbedBuilder {
         this.#data.title = title;
-        if (url) this.setUrl(url);
+        if (url) { this.setUrl(url); }
         return this;
     }
 

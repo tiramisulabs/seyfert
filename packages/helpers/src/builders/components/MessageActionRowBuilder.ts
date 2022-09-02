@@ -1,4 +1,5 @@
-import { DiscordActionRow, MessageComponentTypes } from '@biscuitland/api-types';
+import type { DiscordActionRow } from '@biscuitland/api-types';
+import { MessageComponentTypes } from '@biscuitland/api-types';
 import type { ComponentBuilder } from '../../../../core/src/utils/util';
 
 export class ActionRowBuilder<T extends ComponentBuilder> {
@@ -6,6 +7,7 @@ export class ActionRowBuilder<T extends ComponentBuilder> {
         this.components = [] as T[];
         this.type = MessageComponentTypes.ActionRow;
     }
+
     components: T[];
     type: MessageComponentTypes.ActionRow;
 
@@ -27,7 +29,7 @@ export class ActionRowBuilder<T extends ComponentBuilder> {
         return {
             type: this.type,
             // @ts-ignore: socram fix this
-            components: this.components.map((c) => c.toJSON()) as DiscordActionRow['components'],
+            components: this.components.map(c => c.toJSON()) as DiscordActionRow['components'],
         };
     }
 }

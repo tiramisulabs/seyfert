@@ -1,5 +1,5 @@
-import { CacheAdapter } from '../adapters/cache-adapter';
-import { DiscordGuild } from '@biscuitland/api-types';
+import type { CacheAdapter } from '../adapters/cache-adapter';
+import type { DiscordGuild } from '@biscuitland/api-types';
 
 import { ChannelResource } from './channel-resource';
 import { GuildEmojiResource } from './guild-emoji-resource';
@@ -11,7 +11,7 @@ import { VoiceResource } from './voice-resource';
 import { BaseResource } from './base-resource';
 
 export class GuildResource extends BaseResource {
-	namespace: 'guild' = 'guild';
+	namespace = 'guild' as const;
 
 	adapter: CacheAdapter;
 
@@ -55,7 +55,7 @@ export class GuildResource extends BaseResource {
 
 	async set(id: string, data: any, expire?: number): Promise<void> {
 		if (data.channels) {
-			const channels: Array<Promise<any> | undefined> = [];
+			const channels: (Promise<any> | undefined)[] = [];
 
 			for (const channel of data.channels) {
 				await this.channels.set(channel.id, channel);
@@ -65,7 +65,7 @@ export class GuildResource extends BaseResource {
 		}
 
 		if (data.members) {
-			const members: Array<Promise<any> | undefined> = [];
+			const members: (Promise<any> | undefined)[] = [];
 
 			for (const member of data.members) {
 				await this.members.set(member.user.id, id, member);
@@ -75,7 +75,7 @@ export class GuildResource extends BaseResource {
 		}
 
 		if (data.roles) {
-			const roles: Array<Promise<any> | undefined> = [];
+			const roles: (Promise<any> | undefined)[] = [];
 
 			for (const role of data.roles) {
 				await this.roles.set(role.id, id, role);
@@ -85,7 +85,7 @@ export class GuildResource extends BaseResource {
 		}
 
 		if (data.stickers) {
-			const stickers: Array<Promise<any> | undefined> = [];
+			const stickers: (Promise<any> | undefined)[] = [];
 
 			for (const sticker of data.stickers) {
 				await this.stickers.set(sticker.id, id, sticker);
@@ -95,7 +95,7 @@ export class GuildResource extends BaseResource {
 		}
 
 		if (data.emojis) {
-			const emojis: Array<Promise<any> | undefined> = [];
+			const emojis: (Promise<any> | undefined)[] = [];
 
 			for (const emoji of data.emojis) {
 				await this.emojis.set(emoji.id, id, emoji);
@@ -105,7 +105,7 @@ export class GuildResource extends BaseResource {
 		}
 
 		if (data.voice_states) {
-			const voices: Array<Promise<any>> = [];
+			const voices: Promise<any>[] = [];
 
 			for (const voice of data.voice_states) {
 				if (!voice.guild_id) {

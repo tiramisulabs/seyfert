@@ -1,3 +1,4 @@
+/* eslint-disable no-case-declarations */
 import { MemoryCacheAdapter } from './adapters/memory-cache-adapter';
 // import { RedisCacheAdapter } from './adapters/redis-cache-adapter';
 
@@ -69,7 +70,7 @@ export class Cache {
 			case 'READY':
 				await this.users.set(event.d.user.id, event.d.user);
 
-				const guilds: Array<Promise<any> | undefined> = [];
+				const guilds: (Promise<any> | undefined)[] = [];
 
 				for (const guild of event.d.guilds) {
 					guilds.push(this.guilds.set(guild.id, guild));
@@ -170,7 +171,7 @@ export class Cache {
 				break;
 
 			case 'GUILD_MEMBERS_CHUNK':
-				const members: Array<Promise<any> | undefined> = [];
+				const members: (Promise<any> | undefined)[] = [];
 
 				for (const member of event.d.members) {
 					members.push(
