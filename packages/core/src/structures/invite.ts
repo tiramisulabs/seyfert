@@ -1,4 +1,3 @@
-/* eslint-disable no-mixed-spaces-and-tabs */
 import type { Session } from '../biscuit';
 import type { Snowflake } from '../snowflakes';
 import type {
@@ -121,7 +120,7 @@ export class Invite {
 			? new Application(
 					session,
 					data.target_application as DiscordApplication
-			  )
+			)
 			: undefined;
 		this.targetType = data.target_type;
 

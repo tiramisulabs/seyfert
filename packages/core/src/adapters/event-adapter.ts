@@ -1,6 +1,7 @@
+import type { EventEmitter } from 'stream';
 import type { Events } from './events';
 
-export interface EventAdapter extends Omit<NodeJS.EventEmitter, "emit" | "on" | "off" | "once"> {
+export interface EventAdapter extends Omit<EventEmitter, 'emit' | 'on' | 'off' | 'once'> {
 	options?: any;
 
 	emit<K extends keyof Events>(

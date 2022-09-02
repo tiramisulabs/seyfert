@@ -1,9 +1,11 @@
 import type { Session } from '../biscuit';
 import type { Model } from './base';
 import type { Snowflake } from '../snowflakes';
-import { Guild, ModifyGuildEmoji} from './guilds';
+import type { ModifyGuildEmoji } from './guilds';
+import { Guild } from './guilds';
 import { User } from './user';
-import { EMOJI_URL, DiscordEmoji, GUILD_EMOJIS } from '@biscuitland/api-types';
+import type { DiscordEmoji } from '@biscuitland/api-types';
+import { EMOJI_URL, GUILD_EMOJIS } from '@biscuitland/api-types';
 
 export class Emoji implements Partial<Model> {
 	constructor(session: Session, data: DiscordEmoji) {
@@ -65,7 +67,7 @@ export class GuildEmoji extends Emoji implements Model {
 	async fetchAuthor(): Promise<User | null> {
 		const emoji = await this.session.rest.get<DiscordEmoji>(GUILD_EMOJIS(this.guildId, this.id));
 
-		if (emoji.user) return new User(this.session, emoji.user);
+		if (emoji.user) { return new User(this.session, emoji.user); }
 		return null;
 	}
 
@@ -78,6 +80,6 @@ export class GuildEmoji extends Emoji implements Model {
 	}
 
 	toString(): string {
-		return `<${this.animated ? 'a' : ''}:${this.name}:${this.id}>`
+		return `<${this.animated ? 'a' : ''}:${this.name}:${this.id}>`;
 	}
 }

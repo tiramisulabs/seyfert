@@ -7,6 +7,7 @@ import type {
 	DiscordMessageComponents,
 	DiscordMemberWithUser,
 	DiscordMessageInteraction,
+	Locales
 } from '@biscuitland/api-types';
 import type { CreateMessage } from './message';
 import type { MessageFlags } from '../utils/util';
@@ -15,7 +16,11 @@ import {
 	InteractionResponseTypes,
 	InteractionTypes,
 	MessageComponentTypes,
+	INTERACTION_ID_TOKEN,
+    WEBHOOK_MESSAGE,
+	WEBHOOK_MESSAGE_ORIGINAL
 } from '@biscuitland/api-types';
+
 import { Role } from './role';
 import { Attachment } from './attachment';
 import { Snowflake } from '../snowflakes';
@@ -25,11 +30,6 @@ import { Message } from './message';
 import { Permissions } from './special/permissions';
 import { Webhook } from './webhook';
 import { InteractionOptions } from './special/interaction-options';
-import {
-	INTERACTION_ID_TOKEN,
-    WEBHOOK_MESSAGE,
-	WEBHOOK_MESSAGE_ORIGINAL,
-} from '@biscuitland/api-types';
 
 export type InteractionResponseWith = {
 	with: InteractionApplicationCommandCallbackData;
@@ -80,6 +80,8 @@ export abstract class BaseInteraction implements Model {
 		this.applicationId = data.application_id;
 		this.version = data.version;
 
+        this.locale = data.locale as Locales;
+
 		const perms = data.app_permissions;
 
 		if (perms) {
@@ -113,7 +115,7 @@ export abstract class BaseInteraction implements Model {
 	appPermissions?: Permissions;
 
     // must be implemented
-    abstract locale?: string;
+    locale: Locales;
 
     // readonly property according to docs
 	readonly version: 1;
@@ -220,7 +222,6 @@ export abstract class BaseInteraction implements Model {
 			{
 				id: this.session.applicationId,
 				token: this.token,
-                session: this.session,
 			},
 			messageId,
 			options
@@ -237,7 +238,6 @@ export abstract class BaseInteraction implements Model {
 			{
 				id: this.session.applicationId,
 				token: this.token,
-                session: this.session,
 			},
 			messageId,
 			threadId
@@ -251,8 +251,8 @@ export abstract class BaseInteraction implements Model {
 		const message = await Webhook.prototype.fetchMessage.call(
 			{
 				id: this.session.applicationId,
+				session: this.session,
 				token: this.token,
-                session: this.session,
 			},
 			messageId,
 			threadId
@@ -339,7 +339,6 @@ export class AutoCompleteInteraction extends BaseInteraction implements Model {
 		this.options = new InteractionOptions(
 			data.data!.options ?? []
 		);
-        this.locale = data.locale;
 	}
 
 	override type: InteractionTypes.ApplicationCommandAutocomplete;
@@ -348,7 +347,6 @@ export class AutoCompleteInteraction extends BaseInteraction implements Model {
 	commandType: ApplicationCommandTypes;
 	commandGuildId?: Snowflake;
     options: InteractionOptions;
-    override locale?: string;
 
 	async respondWithChoices(
 		choices: ApplicationCommandOptionChoice[]
@@ -434,8 +432,6 @@ export class CommandInteraction extends BaseInteraction implements Model {
 				this.resolved.messages.set(id, new Message(session, m));
 			}
 		}
-
-        this.locale = data.locale;
 	}
 
 	override type: InteractionTypes.ApplicationCommand;
@@ -445,7 +441,6 @@ export class CommandInteraction extends BaseInteraction implements Model {
 	commandGuildId?: Snowflake;
 	resolved: CommandInteractionDataResolved;
 	options: InteractionOptions;
-    override locale?: string;
 }
 
 export type ModalInMessage = ModalSubmitInteraction & {
@@ -468,8 +463,6 @@ export class ModalSubmitInteraction extends BaseInteraction implements Model {
 		if (data.message) {
 			this.message = new Message(session, data.message);
 		}
-
-        this.locale = data.locale;
 	}
 
 	override type: InteractionTypes.MessageComponent;
@@ -479,7 +472,6 @@ export class ModalSubmitInteraction extends BaseInteraction implements Model {
 	values?: string[];
 	message?: Message;
 	components;
-    override locale?: string;
 
 	static transformComponent(component: DiscordMessageComponents[number]) {
 		return {
@@ -535,7 +527,6 @@ export class ComponentInteraction extends BaseInteraction implements Model {
 		this.targetId = data.data!.target_id;
 		this.values = data.data!.values;
 		this.message = new Message(session, data.message!);
-        this.locale = data.locale;
 	}
 
 	override type: InteractionTypes.MessageComponent;
@@ -544,7 +535,6 @@ export class ComponentInteraction extends BaseInteraction implements Model {
 	targetId?: Snowflake;
 	values?: string[];
 	message: Message;
-    override locale?: string;
 
 	isButton(): boolean {
 		return this.componentType === MessageComponentTypes.Button;

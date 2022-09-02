@@ -3,13 +3,6 @@ import type { Permissions } from '../structures/special/permissions';
 import type { Snowflake } from '../snowflakes';
 
 /*
- * Represents a session's cache
- * */
-export interface SymCache {
-    readonly cache: symbol;
-}
-
-/*
  * @link https://discord.com/developers/docs/resources/channel#message-object-message-flags
  */
 export enum MessageFlags {
@@ -88,10 +81,10 @@ export abstract class Util {
     /** Removes the Bot before the token. */
     static removeTokenPrefix(token?: string, type: 'GATEWAY' | 'REST' = 'REST'): string {
         // If no token is provided, throw an error
-        if (!token) throw new Error(`The ${type} was not given a token. Please provide a token and try again.`);
+        if (!token) { throw new Error(`The ${type} was not given a token. Please provide a token and try again.`); }
 
         // If the token does not have a prefix just return token
-        if (!token.startsWith('Bot ')) return token;
+        if (!token.startsWith('Bot ')) { return token; }
 
         // Remove the prefix and return only the token.
         return token.substring(token.indexOf(' ') + 1);

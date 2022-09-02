@@ -1,13 +1,14 @@
-import { Model } from './base';
-import { Session } from '../biscuit';
-import { Snowflake } from '../snowflakes';
-import {
+import type { Model } from './base';
+import type { Session } from '../biscuit';
+import type { Snowflake } from '../snowflakes';
+import type {
 	AutoModerationActionType,
 	AutoModerationEventTypes,
 	AutoModerationTriggerTypes,
 	DiscordAutoModerationRule,
 	DiscordAutoModerationRuleTriggerMetadataPresets,
-	DiscordAutoModerationActionExecution,
+	DiscordAutoModerationActionExecution } from '@biscuitland/api-types';
+import {
 	AUTO_MODERATION_RULES
 } from '@biscuitland/api-types';
 
@@ -27,7 +28,7 @@ export interface AutoModerationAction {
 	metadata: ActionMetadata;
 }
 
-/**@link https://discord.com/developers/docs/resources/auto-moderation#create-auto-moderation-rule-json-params */
+/** @link https://discord.com/developers/docs/resources/auto-moderation#create-auto-moderation-rule-json-params */
 export interface CreateAutoModerationRule {
 	name: string;
 	eventType: 1;
@@ -86,10 +87,11 @@ export class AutoModerationRule implements Model {
 		const request = await this.session.rest.get<
 			DiscordAutoModerationRule | DiscordAutoModerationRule[]
 		>(AUTO_MODERATION_RULES(this.guildId, ruleId));
-		if (Array.isArray(request))
-			return request.map(
+		if (Array.isArray(request)) {
+ return request.map(
 				amr => new AutoModerationRule(this.session, amr)
 			);
+}
 		return new AutoModerationRule(this.session, request);
 	}
 
@@ -114,7 +116,7 @@ export class AutoModerationRule implements Model {
 									}
 								}
 							)
-					  )
+					)
 					: undefined,
 				enabled: !!options.enabled,
 				exempt_roles: options.exemptRoles,
@@ -147,7 +149,7 @@ export class AutoModerationRule implements Model {
 								}
 							}
 						)
-				  )
+				)
 				: undefined,
 			enabled: !!options.enabled,
 			exempt_roles: options.exemptRoles,

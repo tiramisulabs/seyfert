@@ -1,4 +1,3 @@
-/* eslint-disable no-mixed-spaces-and-tabs */
 import type {
 	DiscordAutoModerationActionExecution,
 	DiscordAutoModerationRule,
@@ -277,7 +276,7 @@ export const TYPING_START: RawHandler<DiscordTypingStart> = (
 					session,
 					payload.member as DiscordMemberWithUser,
 					payload.guild_id
-			  )
+			)
 			: undefined,
 	});
 };
@@ -664,7 +663,7 @@ export const GUILD_SCHEDULED_EVENT_USER_REMOVE: RawHandler<
 };
 
 export const VOICE_STATE_UPDATE: RawHandler<DiscordVoiceState> = (session, _shardId, payload) => {
-    if (!payload.guild_id) return;
+    if (!payload.guild_id) { return; }
     session.events.emit('voiceStateUpdate', payload);
 };
 
@@ -828,6 +827,6 @@ export interface Events {
 	debug: Handler<[string]>;
     voiceStateUpdate: Handler<[DiscordVoiceState]>;
     voiceServerUpdate: Handler<
-        [{ token: string, guildId: Snowflake, endpoint?: string }]
+        [{ token: string; guildId: Snowflake; endpoint?: string }]
     >;
 }

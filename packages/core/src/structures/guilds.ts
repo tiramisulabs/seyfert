@@ -1,6 +1,7 @@
 import type { Model } from './base';
 import type { Session } from '../biscuit';
-import {
+import type {
+	PremiumTiers,
 	ChannelTypes,
 	DefaultMessageNotificationLevels,
 	DiscordBan,
@@ -27,18 +28,14 @@ import {
 	GetInvite,
 	ListGuildMembers,
 	GetAuditLogs,
-	GUILD_AUDIT_LOGS,
 	DiscordAuditLog,
 	AuditLogEvents,
-	DiscordAuditLogChange,
-} from '@biscuitland/api-types';
-import type { ImageFormat, ImageSize } from '../utils/util';
-import { GuildFeatures, PremiumTiers } from '@biscuitland/api-types';
-import { Snowflake } from '../snowflakes';
-import { Util } from '../utils/util';
+	DiscordAuditLogChange } from '@biscuitland/api-types';
 import {
+	GUILD_AUDIT_LOGS,
 	INVITE,
 	GUILD_BANNER,
+	GuildFeatures,
 	GUILD_ICON,
 	GUILD_SPLASH,
 	USER_NICK,
@@ -61,9 +58,12 @@ import {
 	GUILD_WIDGET,
 	USER_GUILDS,
 	CHANNEL,
-	GUILD_CHANNELS,
-} from '@biscuitland/api-types';
-import { ChannelFactory, GuildChannel, ReturnThreadsArchive, ThreadChannel, ChannelInGuild } from './channels';
+	GUILD_CHANNELS } from '@biscuitland/api-types';
+import type { ImageFormat, ImageSize } from '../utils/util';
+import { Snowflake } from '../snowflakes';
+import { Util } from '../utils/util';
+import type { ReturnThreadsArchive, ChannelInGuild } from './channels';
+import { ChannelFactory, GuildChannel, ThreadChannel } from './channels';
 import { Member, ThreadMember } from './members';
 import { Role } from './role';
 import { GuildEmoji } from './emojis';
@@ -311,6 +311,7 @@ export class GuildPreview implements Model {
 		this.approximatePresenceCount = data.approximate_presence_count;
 		this.stickers = data.stickers.map(x => new Sticker(this.session, x));
 	}
+
 	session: Session;
 	/** guild id */
 	id: Snowflake;
@@ -1326,7 +1327,7 @@ export class Guild extends BaseGuild implements Model {
 			threads: auditLog.threads.map(x => ChannelFactory.fromGuildChannel(this.session, x) as ThreadChannel),
 			users: auditLog.users.map(x => new User(this.session, x)),
 			webhooks: auditLog.webhooks.map(x => new Webhook(this.session, x)),
-		}
+		};
 	}
 
 	async fetchOwner(): Promise<Member> {
@@ -1348,6 +1349,6 @@ export class Guild extends BaseGuild implements Model {
 			GUILD_MEMBERS(this.id, options)
 		);
 
-		return members.map((member) => new Member(this.session, member, this.id));
+		return members.map(member => new Member(this.session, member, this.id));
 	}
 }
