@@ -37,7 +37,7 @@ import type { RestAdapter } from '@biscuitland/rest';
 import { DefaultRestAdapter } from '@biscuitland/rest';
 
 import type { Shard } from '@biscuitland/ws';
-import { ShardManager } from '@biscuitland/ws';
+import { ShardManager, Options as mergeOptions } from '@biscuitland/ws';
 
 import type { EventAdapter } from './adapters/event-adapter';
 import { DefaultEventAdapter } from './adapters/default-event-adapter';
@@ -174,6 +174,7 @@ export class Session {
 	}
 
 	static readonly DEFAULTS = {
+        intents: 0,
 		rest: {
 			adapter: DefaultRestAdapter,
 			options: null,
@@ -194,7 +195,7 @@ export class Session {
 	private adapters = new Map<string, any>();
 
 	constructor(options: PickOptions) {
-		this.options = Object.assign(options, Session.DEFAULTS);
+		this.options = mergeOptions(Session.DEFAULTS, options);
 
 		// makeRest
 
