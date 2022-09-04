@@ -458,32 +458,54 @@ export class Message implements Model {
 	}
 
 	/** Replies directly in the channel where the message was sent */
-	async reply(options: CreateMessage): Promise<Message> {
+	async reply(options: CreateMessage | string | Embed[]): Promise<Message> {
+
+        // Options is plain content
+        if (typeof options === 'string') {
+            const message = await this.session.rest.post<DiscordMessage>(
+                CHANNEL_MESSAGES(this.channelId),
+                { content: options }
+            );
+
+            return new Message(this.session, message);
+        }
+
+        // Opptions are multiple embeds
+        if (Array.isArray(options)) {
+            const message = await this.session.rest.post<DiscordMessage>(
+                CHANNEL_MESSAGES(this.channelId),
+                { embeds: options.map(NewEmbed) }
+            );
+
+            return new Message(this.session, message);
+        }
+
+        // Options is of type CreateMessage
 		const message = await this.session.rest.post<DiscordMessage>(
 			CHANNEL_MESSAGES(this.channelId),
-			{
-				content: options.content,
-				file: options.files,
-				allowed_mentions: {
-					parse: options.allowedMentions?.parse,
-					roles: options.allowedMentions?.roles,
-					users: options.allowedMentions?.users,
-					replied_user: options.allowedMentions?.repliedUser,
-				},
-				message_reference: options.messageReference
-					? {
-							message_id: options.messageReference.messageId,
-							channel_id: options.messageReference.channelId,
-							guild_id: options.messageReference.guildId,
-							fail_if_not_exists:
-								options.messageReference.failIfNotExists ??
-								true,
-					  }
-					: undefined,
-				embeds: options.embeds?.map(NewEmbed),
-				tts: options.tts,
-				components: options.components,
-			}
+            {
+                content: options.content,
+                file: options.files,
+                allowed_mentions: {
+                    parse: options.allowedMentions?.parse,
+                    roles: options.allowedMentions?.roles,
+                    users: options.allowedMentions?.users,
+                    replied_user: options.allowedMentions?.repliedUser,
+                },
+                message_reference: options.messageReference
+                    ? {
+                            message_id: options.messageReference.messageId,
+                            channel_id: options.messageReference.channelId,
+                            guild_id: options.messageReference.guildId,
+                            fail_if_not_exists:
+                                options.messageReference.failIfNotExists ??
+                                true,
+                      }
+                    : undefined,
+                embeds: options.embeds?.map(NewEmbed),
+                tts: options.tts,
+                components: options.components,
+            }
 		);
 
 		return new Message(this.session, message);
