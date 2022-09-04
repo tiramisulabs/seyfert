@@ -16,27 +16,28 @@ yarn add @biscuitland/core
 ### Example bot
 `project/index.js`:
 ```js
-import { ChatInputApplicationCommandBuilder, Session } from '@biscuitland/core';
+import { Session } from '@biscuitland/core';
 import { GatewayIntents } from '@biscuitland/api-types';
 
 const session = new Session({ token: 'your token', intents: GatewayIntents.Guilds });
 
 const commands = [
-    new ChatInputApplicationCommandBuilder()
-        .setName('ping')
-        .setDescription('Replies with pong!')
-        .toJSON()
+    {
+        name: 'ping',
+        description: 'Replies with pong!'
+    }
 ];
 
-session.events.on('ready', async ({ user }) => {
-    console.log('Logged in as:', user.username);
-    await session.upsertApplicationCommands(commands, 'GUILD_ID');
+session.events.on('ready', ({ user }) => {
+    console.log('Logged in as:', user.tag);
+    session.upsertApplicationCommands(commands, 'GUILD_ID');
 });
 
 session.events.on('interactionCreate', (interaction) => {
     if (interaction.isCommand()) {
+        // your commands go here
         if (interaction.commandName === 'ping') {
-            interaction.respond({ with: { content: 'pong!' } });
+            interaction.respondWith({ content: 'pong!' });
         }
     }
 });

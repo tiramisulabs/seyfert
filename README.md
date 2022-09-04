@@ -41,15 +41,16 @@ const commands = [
     }
 ];
 
-session.events.on('ready', async ({ user }) => {
-    console.log('Logged in as:', user.username);
-    await session.upsertApplicationCommands(commands, 'GUILD_ID');
+session.events.on('ready', ({ user }) => {
+    console.log('Logged in as:', user.tag);
+    session.upsertApplicationCommands(commands, 'GUILD_ID');
 });
 
 session.events.on('interactionCreate', (interaction) => {
     if (interaction.isCommand()) {
+        // your commands go here
         if (interaction.commandName === 'ping') {
-            interaction.respond({ with: { content: 'pong!' } });
+            interaction.respondWith({ content: 'pong!' });
         }
     }
 });
