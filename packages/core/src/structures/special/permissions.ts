@@ -112,6 +112,12 @@ export class Permissions implements BitField<bigint> {
 		}
 	}
 
+    static reduce(permissions: PermissionResolvable[]): Permissions {
+        const solved = permissions.map(Permissions.resolve);
+
+        return new Permissions(solved.reduce((y, x) => y | x, Permissions.None));
+    }
+
     *[Symbol.iterator]() {
         yield* this.array;
     }
