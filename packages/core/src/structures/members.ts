@@ -15,6 +15,7 @@ import {
 	USER_DEFAULT_AVATAR,
 	THREAD_USER,
 } from '@biscuitland/api-types';
+import { Permissions } from './special/permissions';
 
 /**
  * Represents a guild member
@@ -38,6 +39,7 @@ export class Member implements Model {
 			? Number.parseInt(data.premium_since)
 			: undefined;
 
+        this.channelPermissions = data.permissions ? new Permissions(BigInt(data.permissions)) : undefined;
         this.joinedTimestamp = Number.parseInt(data.joined_at);
 		this.roles = data.roles;
 		this.deaf = !!data.deaf;
@@ -66,6 +68,9 @@ export class Member implements Model {
 
 	/** when the user started boosting the guild */
 	premiumSince?: number;
+
+    /** total permissions of the member in the channel, including overwrites, returned when in the interaction object */
+    channelPermissions?: Permissions;
 
 	/** when the user joined the guild */
 	joinedTimestamp: number;
