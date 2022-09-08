@@ -113,7 +113,7 @@ export class Permissions implements BitField<bigint> {
             case 'object':
                 return Permissions.resolve(
                     bit
-                        .map(p => BigInt(Permissions.Flags[p]))
+                        .map(p => typeof p === 'string' ? BigInt(Permissions.Flags[p]) : BigInt(p))
                         .reduce((acc, cur) => acc | cur, Permissions.None)
                 );
             default:
