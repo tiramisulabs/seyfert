@@ -43,7 +43,7 @@ export class Permissions implements BitField<bigint> {
     get array(): PermissionString[] {
         // unsafe cast, do not edit
         const permissions = Object.keys(Permissions.Flags) as PermissionString[];
-        return permissions.filter(bit => typeof bit === 'number' && this.has(bit));
+        return permissions.filter(bit => this.has(bit));
     }
 
     add(...bits: PermissionResolvable[]): this {
