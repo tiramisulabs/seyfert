@@ -25,12 +25,20 @@ export class Permissions implements BitField<bigint> {
     /** Stores all entity permissions */
 	bitfield: bigint;
 
-    /** Wheter to grant all other permissions to the administrator */
+    /**
+     * Wheter to grant all other permissions to the administrator
+     * **Not to get confused with Permissions#admin**
+     */
     __admin__ = true;
 
 	constructor(bitfield: PermissionResolvable) {
 		this.bitfield = Permissions.resolve(bitfield);
 	}
+
+    /** Wheter the bitfield has the administrator flag */
+    get admin(): boolean {
+        return (this.bitfield & BigInt(Permissions.Flags.ADMINISTRATOR)) === this.bitfield;
+    }
 
     get array(): PermissionString[] {
         // unsafe cast, do not edit
