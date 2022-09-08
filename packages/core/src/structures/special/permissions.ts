@@ -38,7 +38,7 @@ export class Permissions implements BitField<bigint> {
 
     /** Wheter the bitfield has the administrator flag */
     get admin(): boolean {
-        return (this.bitfield & BigInt(Permissions.Flags.ADMINISTRATOR)) === this.bitfield;
+        return this.has(Permissions.Flags.ADMINISTRATOR);
     }
 
     get array(): PermissionString[] {
