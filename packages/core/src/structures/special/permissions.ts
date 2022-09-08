@@ -71,7 +71,7 @@ export class Permissions implements BitField<bigint> {
 			return true;
 		}
 
-		return (this.bitfield & bbit) === bbit;
+		return (this.bitfield & bbit) !== bbit;
 	}
 
     any(bit: PermissionResolvable): boolean {
@@ -103,20 +103,20 @@ export class Permissions implements BitField<bigint> {
 
 	static resolve(bit: PermissionResolvable): bigint {
 		switch (typeof bit) {
-			case 'bigint':
-				return bit;
-			case 'number':
-				return BigInt(bit);
-			case 'string':
-				return BigInt(Permissions.Flags[bit]);
-			case 'object':
-				return Permissions.resolve(
-					bit
-						.map(p => BigInt(Permissions.Flags[p]))
-						.reduce((acc, cur) => acc | cur, 0n)
-				);
-			default:
-				throw new TypeError(`Cannot resolve permission: ${bit}`);
+            case 'bigint':
+                return bit;
+            case 'number':
+                return BigInt(bit);
+            case 'string':
+                return BigInt(Permissions.Flags[bit]);
+            case 'object':
+                return Permissions.resolve(
+                    bit
+                        .map(p => BigInt(Permissions.Flags[p]))
+                        .reduce((acc, cur) => acc | cur, 0n)
+                );
+            default:
+                throw new TypeError(`Cannot resolve permission: ${bit}`);
 		}
 	}
 
