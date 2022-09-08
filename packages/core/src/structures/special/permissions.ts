@@ -13,7 +13,8 @@ export type PermissionResolvable =
 	| bigint
 	| PermissionString
 	| PermissionString[]
-	| BitwisePermissionFlags;
+	| BitwisePermissionFlags
+    | BitwisePermissionFlags[];
 
 export class Permissions implements BitField<bigint> {
     /** Stores a reference to BitwisePermissionFlags */
@@ -71,7 +72,7 @@ export class Permissions implements BitField<bigint> {
 			return true;
 		}
 
-		return (this.bitfield & bbit) !== bbit;
+		return (this.bitfield & bbit) === bbit;
 	}
 
     any(bit: PermissionResolvable): boolean {
@@ -81,7 +82,7 @@ export class Permissions implements BitField<bigint> {
             return true;
         }
 
-        return (this.bitfield & bbit) === 0n;
+        return (this.bitfield & bbit) !== Permissions.None;
     }
 
     equals(bit: PermissionResolvable): boolean {
@@ -113,12 +114,16 @@ export class Permissions implements BitField<bigint> {
                 return Permissions.resolve(
                     bit
                         .map(p => BigInt(Permissions.Flags[p]))
-                        .reduce((acc, cur) => acc | cur, 0n)
+                        .reduce((acc, cur) => acc | cur, Permissions.None)
                 );
             default:
                 throw new TypeError(`Cannot resolve permission: ${bit}`);
 		}
 	}
+
+    static sum(permissions: Array<bigint | number>) {
+        return permissions.reduce((y, x) => BigInt(y) | BigInt(x), Permissions.None);
+    }
 
     static reduce(permissions: PermissionResolvable[]): Permissions {
         const solved = permissions.map(Permissions.resolve);
