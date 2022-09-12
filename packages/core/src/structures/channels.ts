@@ -719,14 +719,14 @@ export class DMChannel extends BaseChannel implements Model {
     constructor(session: Session, data: DiscordChannel) {
         super(session, data);
 
-        if (data.owner_id && data.recipents) {
-            this.user = new User(session, data.recipents.find(user => user.id === data.owner_id)!);
+        if (data.owner_id && data.recipients) {
+            this.user = new User(session, data.recipients.find(user => user.id === data.owner_id)!);
         } else {
-            this.user = new User(session, data.recipents!.find(user => user.id === this.session.botId)!);
+            this.user = new User(session, data.recipients!.find(user => user.id === this.session.botId)!);
         }
 
-        if (data.recipents && data.recipents.length > 1) {
-            this.group = data.recipents.map(r => new User(this.session, r));
+        if (data.recipients && data.recipients.length > 1) {
+            this.group = data.recipients.map(r => new User(this.session, r));
         }
 
         this.type = data.type as ChannelTypes.GroupDm | ChannelTypes.GroupDm;
