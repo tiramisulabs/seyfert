@@ -7,7 +7,9 @@ export { GuildMemberResource } from './guild-member-resource';
 export { GuildResource } from './guild-resource';
 
 export { GuildRoleResource } from './guild-role-resource';
-export { GuildStickerResource } from './guild-sticker-resource';
 
+export { GuildStickerResource } from './guild-sticker-resource';
+export { GuildVoiceResource } from './guild-voice-resource';
+
+export { PresenceResource } from './presence-resource';
 export { UserResource } from './user-resource';
-export { VoiceResource } from './voice-resource';

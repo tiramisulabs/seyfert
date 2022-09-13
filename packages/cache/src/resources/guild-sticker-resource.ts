@@ -1,28 +1,52 @@
-import type { CacheAdapter } from '../adapters/cache-adapter';
+import type { CacheAdapter } from '../scheme/adapters/cache-adapter';
 import type { DiscordSticker } from '@biscuitland/api-types';
 
 import { BaseResource } from './base-resource';
+import { UserResource } from './user-resource';
 
-export class GuildStickerResource extends BaseResource {
-	namespace = 'sticker' as const;
+/**
+ * Resource represented by an sticker of discord
+ */
 
-	adapter: CacheAdapter;
+export class GuildStickerResource extends BaseResource<DiscordSticker> {
+	#namespace = 'sticker' as const;
 
-	constructor(adapter: CacheAdapter) {
-		super();
+	#adapter: CacheAdapter;
 
-		this.adapter = adapter;
+	#users: UserResource;
+
+	constructor(
+		adapter: CacheAdapter,
+		entity?: DiscordSticker | null,
+		parent?: string
+	) {
+		super('sticker', adapter);
+
+		this.#adapter = adapter;
+		this.#users = new UserResource(adapter);
+
+		if (entity) {
+			this.setEntity(entity);
+		}
+
+		if (parent) {
+			this.setParent(parent);
+		}
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 
-	async get(id: string, guild: string): Promise<DiscordSticker | null> {
-		const kv = await this.adapter.get(this.hashGuildId(id, guild));
+	async get(id: string, guild: string): Promise<GuildStickerResource | null> {
+		if (this.parent) {
+			return this;
+		}
+
+		const kv = await this.#adapter.get(this.hashGuildId(id, guild));
 
 		if (kv) {
-			return kv;
+			return new GuildStickerResource(this.#adapter, kv, guild);
 		}
 
 		return null;
@@ -34,26 +58,67 @@ export class GuildStickerResource extends BaseResource {
 
 	async set(
 		id: string,
-		guild: string,
-		data: any,
-		expire?: number
+		guild: string | undefined = this.parent,
+		data: any
 	): Promise<void> {
-		if (!data.id) {
-			data.id = id;
+		if (data.user) {
+			await this.#users.set(data.user.id, data.user);
 		}
 
-		if (!data.guild_id) {
-			data.guild_id = guild;
+		delete data.user;
+
+		if (this.parent) {
+			this.setEntity(data);
 		}
 
-		await this.adapter.set(this.hashGuildId(id, guild), data, expire);
+		await this.addToRelationship(id, guild);
+		await this.#adapter.set(this.hashGuildId(id, guild), data);
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 
-	async remove(id: string, guild: string): Promise<void> {
-		await this.adapter.remove(this.hashGuildId(id, guild));
+	async items(to: string): Promise<GuildStickerResource[]> {
+		if (!to && this.parent) {
+			to = this.parent;
+		}
+
+		const data = await this.#adapter.items(this.hashId(to));
+
+		if (data) {
+			return data.map(dt => {
+				const resource = new GuildStickerResource(this.#adapter, dt);
+				resource.setParent(to);
+
+				return resource;
+			});
+		}
+
+		return [];
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+
+	async remove(
+		id: string,
+		guild: string | undefined = this.parent
+	): Promise<void> {
+		await this.removeToRelationship(id, guild);
+		await this.#adapter.remove(this.hashGuildId(id, guild));
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+
+	protected hashGuildId(id: string, guild?: string): string {
+		if (!guild) {
+			return this.hashId(id);
+		}
+
+		return `${this.#namespace}.${guild}.${id}`;
 	}
 }

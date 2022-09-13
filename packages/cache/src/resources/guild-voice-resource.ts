@@ -1,29 +1,29 @@
-import type { CacheAdapter } from '../scheme/adapters/cache-adapter';
-import type { DiscordMember } from '@biscuitland/api-types';
-
-import { BaseResource } from './base-resource';
-import { UserResource } from './user-resource';
-
 /**
- * Resource represented by an member of discord
+ * refactor
  */
 
-export class GuildMemberResource extends BaseResource<DiscordMember> {
-	#namespace = 'member' as const;
+import type { CacheAdapter } from '../scheme/adapters/cache-adapter';
+import type { DiscordVoiceState } from '@biscuitland/api-types';
+
+import { BaseResource } from './base-resource';
+
+/**
+ * Resource represented by an voice state of discord
+ */
+
+export class GuildVoiceResource extends BaseResource<DiscordVoiceState> {
+	#namespace = 'voice' as const;
 
 	#adapter: CacheAdapter;
 
-	#users: UserResource;
-
 	constructor(
 		adapter: CacheAdapter,
-		entity?: DiscordMember | null,
+		entity?: DiscordVoiceState | null,
 		parent?: string
 	) {
-		super('member', adapter);
+		super('voice', adapter);
 
 		this.#adapter = adapter;
-		this.#users = new UserResource(adapter);
 
 		if (entity) {
 			this.setEntity(entity);
@@ -41,7 +41,7 @@ export class GuildMemberResource extends BaseResource<DiscordMember> {
 	async get(
 		id: string,
 		guild: string | undefined = this.parent
-	): Promise<GuildMemberResource | null> {
+	): Promise<GuildVoiceResource | null> {
 		if (this.parent) {
 			return this;
 		}
@@ -49,7 +49,7 @@ export class GuildMemberResource extends BaseResource<DiscordMember> {
 		const kv = await this.#adapter.get(this.hashGuildId(id, guild));
 
 		if (kv) {
-			return new GuildMemberResource(this.#adapter, kv, guild);
+			return new GuildVoiceResource(this.#adapter, kv, guild);
 		}
 
 		return null;
@@ -64,12 +64,11 @@ export class GuildMemberResource extends BaseResource<DiscordMember> {
 		guild: string | undefined = this.parent,
 		data: any
 	): Promise<void> {
-		if (data.user) {
-			await this.#users.set(data.user.id, data.user);
+		if (!data.guild_id) {
+			data.guild_id = guild;
 		}
 
-		delete data.user;
-		delete data.roles;
+		delete data.member;
 
 		if (this.parent) {
 			this.setEntity(data);
@@ -83,7 +82,7 @@ export class GuildMemberResource extends BaseResource<DiscordMember> {
 	 * @inheritDoc
 	 */
 
-	async items(to: string): Promise<GuildMemberResource[]> {
+	async items(to: string): Promise<GuildVoiceResource[]> {
 		if (!to && this.parent) {
 			to = this.parent;
 		}
@@ -92,7 +91,7 @@ export class GuildMemberResource extends BaseResource<DiscordMember> {
 
 		if (data) {
 			return data.map(dt => {
-				const resource = new GuildMemberResource(this.#adapter, dt);
+				const resource = new GuildVoiceResource(this.#adapter, dt);
 				resource.setParent(to);
 
 				return resource;

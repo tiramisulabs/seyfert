@@ -16,6 +16,8 @@ ignorePatterns:
     - 'coverage'
     - '**/*.js'
     - '**/*.d.ts'
+    - '__tests__'
+    - '__test__'
 
 parser: '@typescript-eslint/parser'
 

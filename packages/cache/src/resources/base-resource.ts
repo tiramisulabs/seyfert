@@ -1,63 +1,117 @@
-import type { CacheAdapter } from '../adapters/cache-adapter';
+/* eslint-disable @typescript-eslint/naming-convention */
+import type { CacheAdapter } from '../scheme/adapters/cache-adapter';
 
-export class BaseResource {
-	namespace = 'base';
+/**
+ * Base class for all resources
+ * All Methods from BaseResource are also available on every class extends
+ */
 
-	adapter!: CacheAdapter; // replace
+class Base<T> {
+	/**
+	 * Resource name
+	 */
+
+	#namespace = 'base';
 
 	/**
-	 * @inheritDoc
+	 * Adapter for storage processes and operations
+	 */
+
+	#adapter: CacheAdapter;
+
+	/**
+	 * Guild linked and assigned to the current entity (resource)
+	 */
+
+	parent?: string;
+
+	/**
+	 * Constructor
+	 */
+
+	constructor(namespace: string, adapter: CacheAdapter) {
+		this.#namespace = namespace;
+		this.#adapter = adapter;
+	}
+
+	/**
+	 * Entity linked
+	 */
+
+	setEntity(entity: T): void {
+		Object.assign(this, entity);
+	}
+
+	/**
+	 * Parent linked
+	 */
+
+	setParent(parent: string): void {
+		// rename
+		this.parent = parent;
+	}
+
+	/**
+	 * Count how many resources there are in the relationships
 	 */
 
 	async count(to: string): Promise<number> {
-		return await this.adapter.count(this.hashId(to));
+		return await this.#adapter.count(this.hashId(to));
 	}
 
 	/**
-	 * @inheritDoc
+	 * Check if the resource is in the relationships
 	 */
 
-	async contains(to: string, id: string): Promise<boolean> {
-		return await this.adapter.contains(this.hashId(to), id);
+	async contains(
+		id: string,
+		guild: string = this.parent as string
+	): Promise<boolean> {
+		return await this.#adapter.contains(this.hashId(guild), id);
 	}
 
 	/**
-	 * @inheritDoc
+	 * Gets the resource relationships
 	 */
 
-	async getToRelationship(to: string): Promise<string[]> {
-		return await this.adapter.getToRelationship(this.hashId(to));
+	async getToRelationship(
+		id: string = this.parent as string
+	): Promise<string[]> {
+		return await this.#adapter.getToRelationship(this.hashId(id));
 	}
 
 	/**
-	 * @inheritDoc
+	 * Adds the resource to relationships
 	 */
 
-	async addToRelationship(to: string, id: string): Promise<void> {
-		await this.adapter.addToRelationship(this.hashId(to), id);
+	async addToRelationship(
+		id: string,
+		guild: string = this.parent as string
+	): Promise<void> {
+		await this.#adapter.addToRelationship(this.hashId(guild), id);
 	}
 
 	/**
-	 * @inheritDoc // to-do replace
+	 * Removes the relationship resource
 	 */
 
-	async removeToRelationship(to: string, id: string): Promise<void> {
-		await this.adapter.removeToRelationship(this.hashId(to), id);
+	async removeToRelationship(
+		id: string,
+		guild: string = this.parent as string
+	): Promise<void> {
+		await this.#adapter.removeToRelationship(this.hashId(guild), id);
 	}
 
 	/**
-	 * @inheritDoc
+	 * Construct an id consisting of namespace.id
 	 */
 
-	hashId(id: string): string {
-		return `${this.namespace}.${id}`;
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-
-	hashGuildId(id: string, guild: string): string {
-		return `${this.namespace}.${guild}.${id}`;
+	protected hashId(id: string): string {
+		return `${this.#namespace}.${id}`;
 	}
 }
+
+export const BaseResource = Base as new <T>(
+	data: string,
+	adapter: CacheAdapter
+) => Base<T> & T;

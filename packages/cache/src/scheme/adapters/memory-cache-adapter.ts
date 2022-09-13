@@ -1,20 +1,24 @@
-import type { CacheAdapter } from './cache-adapter';
+/**
+ * refactor
+ */
 
-interface Options {
-	expire?: number;
-}
+import type { CacheAdapter } from './cache-adapter';
+import type { MemoryOptions, MO } from '../../types';
+
+import { Options } from '../../utils/options';
 
 export class MemoryCacheAdapter implements CacheAdapter {
-	private static readonly DEFAULTS = {
+	static readonly DEFAULTS = {
+		expire: 3600000,
 	};
 
-	private readonly relationships = new Map<string, string[]>();
-	private readonly storage = new Map<string, { data: any; expire?: number }>();
+	readonly relationships = new Map<string, string[]>();
+	readonly storage = new Map<string, { data: any; expire?: number }>();
 
-	readonly options: Options;
+	readonly options: MO;
 
-	constructor(options?: Options) {
-		this.options = Object.assign(MemoryCacheAdapter.DEFAULTS, options);
+	constructor(options?: MemoryOptions) {
+		this.options = Options({}, MemoryCacheAdapter.DEFAULTS, options);
 	}
 
 	/**
@@ -39,12 +43,38 @@ export class MemoryCacheAdapter implements CacheAdapter {
 	 * @inheritDoc
 	 */
 
-	set(id: string, data: any, expire = this.options.expire): void {
+	set(id: string, data: any): void {
+		const expire = this.options.expire;
+
 		if (expire) {
-			this.storage.set(id, { data: JSON.stringify(data), expire: Date.now() + expire });
+			this.storage.set(id, {
+				data: JSON.stringify(data),
+				expire: Date.now() + expire,
+			});
 		} else {
 			this.storage.set(id, { data: JSON.stringify(data) });
 		}
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+
+	items(to: string): any[] {
+		const array: unknown[] = [];
+		let data = this.getToRelationship(to);
+
+		data = data.map(id => `${to}.${id}`);
+
+		for (const key of data) {
+			const content = this.get(key);
+
+			if (content) {
+				array.push(content);
+			}
+		}
+
+		return array;
 	}
 
 	/**

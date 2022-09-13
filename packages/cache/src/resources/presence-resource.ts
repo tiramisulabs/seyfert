@@ -3,23 +3,27 @@
  */
 
 import type { CacheAdapter } from '../scheme/adapters/cache-adapter';
-import type { DiscordUser } from '@biscuitland/api-types';
+import type { DiscordPresenceUpdate } from '@biscuitland/api-types';
 
 import { BaseResource } from './base-resource';
+import { UserResource } from './user-resource';
 
 /**
- * Resource represented by an user of discord
+ * Resource represented by an presence of discord
  */
 
-export class UserResource extends BaseResource<DiscordUser> {
-	#namespace = 'user' as const;
+export class PresenceResource extends BaseResource<DiscordPresenceUpdate> {
+	#namespace = 'presence' as const;
 
 	#adapter: CacheAdapter;
 
-	constructor(adapter: CacheAdapter, entity?: DiscordUser | null) {
-		super('user', adapter);
+	#users: UserResource;
+
+	constructor(adapter: CacheAdapter, entity?: DiscordPresenceUpdate | null) {
+		super('presence', adapter);
 
 		this.#adapter = adapter;
+		this.#users = new UserResource(this.#adapter);
 
 		if (entity) {
 			this.setEntity(entity);
@@ -30,7 +34,7 @@ export class UserResource extends BaseResource<DiscordUser> {
 	 * @inheritDoc
 	 */
 
-	async get(id: string): Promise<UserResource | null> {
+	async get(id: string): Promise<PresenceResource | null> {
 		if (this.parent) {
 			return this;
 		}
@@ -38,7 +42,7 @@ export class UserResource extends BaseResource<DiscordUser> {
 		const kv = await this.#adapter.get(this.hashId(id));
 
 		if (kv) {
-			return new UserResource(this.#adapter, kv);
+			return new PresenceResource(this.#adapter, kv);
 		}
 
 		return null;
@@ -49,6 +53,15 @@ export class UserResource extends BaseResource<DiscordUser> {
 	 */
 
 	async set(id: string, data: any): Promise<void> {
+		if (data.user) {
+			await this.#users.set(data.user.id, data.user);
+		}
+
+		delete data.user;
+		delete data.roles;
+
+		delete data.guild_id;
+
 		if (this.parent) {
 			this.setEntity(data);
 		}
@@ -61,11 +74,11 @@ export class UserResource extends BaseResource<DiscordUser> {
 	 * @inheritDoc
 	 */
 
-	async items(): Promise<UserResource[]> {
+	async items(): Promise<PresenceResource[]> {
 		const data = await this.#adapter.items(this.#namespace);
 
 		if (data) {
-			return data.map(dt => new UserResource(this.#adapter, dt));
+			return data.map(dt => new PresenceResource(this.#adapter, dt));
 		}
 
 		return [];

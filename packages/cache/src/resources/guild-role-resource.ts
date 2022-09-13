@@ -1,28 +1,51 @@
-import type { CacheAdapter } from '../adapters/cache-adapter';
+import type { CacheAdapter } from '../scheme/adapters/cache-adapter';
 import type { DiscordRole } from '@biscuitland/api-types';
 
 import { BaseResource } from './base-resource';
 
-export class GuildRoleResource extends BaseResource {
-	namespace = 'role' as const;
+/**
+ * Resource represented by an role of discord
+ */
 
-	adapter: CacheAdapter;
+export class GuildRoleResource extends BaseResource<DiscordRole> {
+	#namespace = 'role' as const;
 
-	constructor(adapter: CacheAdapter) {
-		super();
+	#adapter: CacheAdapter;
 
-		this.adapter = adapter;
+	constructor(
+		adapter: CacheAdapter,
+		entity?: DiscordRole | null,
+		parent?: string
+	) {
+		super('role', adapter);
+
+		this.#adapter = adapter;
+
+		if (entity) {
+			this.setEntity(entity);
+		}
+
+		if (parent) {
+			this.setParent(parent);
+		}
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 
-	async get(id: string, guild: string): Promise<DiscordRole | null> {
-		const kv = await this.adapter.get(this.hashGuildId(id, guild));
+	async get(
+		id: string,
+		guild: string | undefined = this.parent
+	): Promise<GuildRoleResource | null> {
+		if (this.parent) {
+			return this;
+		}
+
+		const kv = await this.#adapter.get(this.hashGuildId(id, guild));
 
 		if (kv) {
-			return kv;
+			return new GuildRoleResource(this.#adapter, kv, guild);
 		}
 
 		return null;
@@ -34,9 +57,8 @@ export class GuildRoleResource extends BaseResource {
 
 	async set(
 		id: string,
-		guild: string,
-		data: any,
-		expire?: number
+		guild: string | undefined = this.parent,
+		data: any
 	): Promise<void> {
 		if (!data.id) {
 			data.id = id;
@@ -46,14 +68,66 @@ export class GuildRoleResource extends BaseResource {
 			data.guild_id = guild;
 		}
 
-		await this.adapter.set(this.hashGuildId(id, guild), data, expire);
+		if (this.parent) {
+			this.setEntity(data);
+		}
+
+		await this.addToRelationship(id, guild);
+		await this.#adapter.set(this.hashGuildId(id, guild), data);
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 
-	async remove(id: string, guild: string): Promise<void> {
-		await this.adapter.remove(this.hashGuildId(id, guild));
+	async count(): Promise<number> {
+		return await this.#adapter.count(this.#namespace);
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+
+	async items(to: string): Promise<GuildRoleResource[]> {
+		if (!to && this.parent) {
+			to = this.parent;
+		}
+
+		const data = await this.#adapter.items(this.hashId(to));
+
+		if (data) {
+			return data.map(dt => {
+				const resource = new GuildRoleResource(this.#adapter, dt);
+				resource.setParent(to);
+
+				return resource;
+			});
+		}
+
+		return [];
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+
+	async remove(
+		id: string,
+		guild: string | undefined = this.parent
+	): Promise<void> {
+		await this.removeToRelationship(id, guild);
+		await this.#adapter.remove(this.hashGuildId(id, guild));
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+
+	protected hashGuildId(id: string, guild?: string): string {
+		if (!guild) {
+			return this.hashId(id);
+		}
+
+		return `${this.#namespace}.${guild}.${id}`;
 	}
 }

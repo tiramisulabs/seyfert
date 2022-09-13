@@ -1,6 +1,8 @@
 /* eslint-disable no-case-declarations */
-import { MemoryCacheAdapter } from './adapters/memory-cache-adapter';
-// import { RedisCacheAdapter } from './adapters/redis-cache-adapter';
+import type { CacheOptions, CO } from './types';
+
+import type { CacheAdapter } from './scheme/adapters/cache-adapter';
+import { MemoryCacheAdapter } from './scheme/adapters/memory-cache-adapter';
 
 import {
 	ChannelResource,
@@ -9,26 +11,23 @@ import {
 	GuildResource,
 	GuildRoleResource,
 	GuildStickerResource,
+	GuildVoiceResource,
+	PresenceResource,
 	UserResource,
-	VoiceResource
 } from './resources';
 
-/**
- * add options and adaptor passable by options
- * @default MemoryCacheAdapter
- */
+import { Options } from './utils/options';
 
-/**
- * Add more adapters and options
- * Allow passing customizable resources and deleting resources
- */
-
-/**
- * Add presence system (disabled by default)
- * Add TTL option (default 7 days)
- * Add permissions resource (accessible as a subResource)
- */
 export class Cache {
+	static readonly DEFAULTS = {
+		adapter: new MemoryCacheAdapter(),
+	};
+
+	readonly options: CO;
+	#adapter: CacheAdapter;
+
+	// move to resources assigned
+
 	readonly channels: ChannelResource;
 
 	readonly emojis: GuildEmojiResource;
@@ -36,61 +35,64 @@ export class Cache {
 	readonly guilds: GuildResource;
 	readonly roles: GuildRoleResource;
 	readonly stickers: GuildStickerResource;
+	readonly voices: GuildVoiceResource;
 
+	readonly presences: PresenceResource;
 	readonly users: UserResource;
-	readonly voices: VoiceResource;
 
-	ready: boolean;
+	constructor(options: CacheOptions) {
+		this.options = Options({}, Cache.DEFAULTS, options);
+		this.#adapter = this.options.adapter;
 
-	constructor() {
-		this.ready = false;
+		this.channels = new ChannelResource(this.#adapter);
 
-		/** this change to memory */
-		const adapter = new MemoryCacheAdapter();
+		this.emojis = new GuildEmojiResource(this.#adapter);
+		this.members = new GuildMemberResource(this.#adapter);
 
-		this.channels = new ChannelResource(adapter);
+		this.guilds = new GuildResource(this.#adapter);
+		this.roles = new GuildRoleResource(this.#adapter);
 
-		this.emojis = new GuildEmojiResource(adapter);
-		this.members = new GuildMemberResource(adapter);
+		this.stickers = new GuildStickerResource(this.#adapter);
+		this.voices = new GuildVoiceResource(this.#adapter);
 
-		this.guilds = new GuildResource(adapter);
-		this.roles = new GuildRoleResource(adapter);
-		this.stickers = new GuildStickerResource(adapter);
-
-		this.users = new UserResource(adapter);
-		this.voices = new VoiceResource(adapter);
+		this.presences = new PresenceResource(this.#adapter);
+		this.users = new UserResource(this.#adapter);
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 
-	async start(event: { t: string; d: any }) {
+	async start(event: any) {
+		let resources: any[] = [];
+
+		let contents: any[] = [];
+
 		switch (event.t) {
 			case 'READY':
+				resources = [];
+
 				await this.users.set(event.d.user.id, event.d.user);
 
-				const guilds: (Promise<any> | undefined)[] = [];
-
 				for (const guild of event.d.guilds) {
-					guilds.push(this.guilds.set(guild.id, guild));
+					resources.push(this.guilds.set(guild.id, guild));
 				}
 
-				await Promise.all(guilds);
+				await Promise.all(resources);
 
-				this.ready = true;
 				break;
 
 			case 'USER_UPDATE':
 				await this.users.set(event.d.id, event.d);
 				break;
+			case 'PRESENCE_UPDATE':
+				await this.presences.set(event.d.user?.id, event.d);
 
-			case 'GUILD_CREATE':
-				await this.guilds.set(event.d.id, event.d);
 				break;
 
+			case 'GUILD_CREATE':
 			case 'GUILD_UPDATE':
-				this.guilds.set(event.d.id, event.d);
+				await this.guilds.set(event.d.id, event.d);
 				break;
 
 			case 'GUILD_DELETE':
@@ -102,10 +104,6 @@ export class Cache {
 				break;
 
 			case 'CHANNEL_CREATE':
-				// modify [Add elimination system]
-				await this.channels.set(event.d.id, event.d);
-				break;
-
 			case 'CHANNEL_UPDATE':
 				// modify [Add elimination system]
 				await this.channels.set(event.d.id, event.d);
@@ -116,14 +114,18 @@ export class Cache {
 				await this.channels.remove(event.d.id);
 				break;
 
-			case 'GUILD_ROLE_CREATE':
-				await this.roles.set(
-					event.d.role.id,
-					event.d.guild_id,
-					event.d.role
-				);
+			case 'MESSAGE_CREATE':
+				if (event.d.webhook_id) {
+					return;
+				}
+
+				if (event.d.author) {
+					await this.users.set(event.d.author.id, event.d.author);
+				}
+
 				break;
 
+			case 'GUILD_ROLE_CREATE':
 			case 'GUILD_ROLE_UPDATE':
 				await this.roles.set(
 					event.d.role.id,
@@ -137,27 +139,62 @@ export class Cache {
 				break;
 
 			case 'GUILD_EMOJIS_UPDATE':
-				// modify [Add elimination system]
-				for (const v of event.d.emojis) {
-					await this.emojis?.set(v.id, event.d.guild_id, v);
+				contents = [];
+				contents = await this.emojis.items(event.d.guild_id);
+
+				for (const emoji of event.d.emojis) {
+					const emote = contents.find(o => o?.id === emoji.id);
+
+					if (!emote || emote !== emoji) {
+						await this.emojis.set(
+							emoji.id,
+							event.d.guild_id,
+							emoji
+						);
+					}
 				}
+
+				for (const emoji of contents) {
+					const emote = event.d.emojis.find(
+						(o: any) => o.id === emoji?.id
+					);
+
+					if (!emote) {
+						await this.emojis.remove(emote.id, event.d.guild_id);
+					}
+				}
+
 				break;
 
 			case 'GUILD_STICKERS_UPDATE':
-				// modify [Add elimination system]
-				for (const v of event.d.stickers) {
-					await this.stickers?.set(v.id, event.d.guild_id, v);
+				contents = [];
+				contents = await this.stickers.items(event.d.guild_id);
+
+				for (const sticker of event.d.stickers) {
+					const stick = contents.find(o => o?.id === sticker.id);
+
+					if (!stick || stick !== sticker) {
+						await this.stickers.set(
+							sticker.id,
+							event.d.guild_id,
+							sticker
+						);
+					}
 				}
+
+				for (const sticker of contents) {
+					const stick = event.d.stickers.find(
+						(o: any) => o.id === sticker?.id
+					);
+
+					if (!stick) {
+						await this.stickers.remove(stick.id, event.d.guild_id);
+					}
+				}
+
 				break;
 
 			case 'GUILD_MEMBER_ADD':
-				await this.members.set(
-					event.d.user.id,
-					event.d.guild_id,
-					event.d
-				);
-				break;
-
 			case 'GUILD_MEMBER_UPDATE':
 				await this.members.set(
 					event.d.user.id,
@@ -171,10 +208,10 @@ export class Cache {
 				break;
 
 			case 'GUILD_MEMBERS_CHUNK':
-				const members: (Promise<any> | undefined)[] = [];
+				resources = [];
 
 				for (const member of event.d.members) {
-					members.push(
+					resources.push(
 						this.members.set(
 							member.user.id,
 							event.d.guild_id,
@@ -183,7 +220,7 @@ export class Cache {
 					);
 				}
 
-				await Promise.all(members);
+				await Promise.all(resources);
 
 				break;
 
@@ -192,16 +229,15 @@ export class Cache {
 					return;
 				}
 
-				if (event.d.user_id && event.d.member) {
-					await this.members.set(
-						event.d.user_id,
-						event.d.guild_id,
-						event.d.member
-					);
+				if (event.d.guild_id && event.d.member && event.d.user_id) {
+					await this.members.set(event.d.user_id, event.d.guild_id, {
+						guild_id: event.d.guild_id,
+						...event.d.member,
+					});
 				}
 
 				if (event.d.channel_id != null) {
-					await this.voices.set(
+					await this.members.set(
 						event.d.user_id,
 						event.d.guild_id,
 						event.d
