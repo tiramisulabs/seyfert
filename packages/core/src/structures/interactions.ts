@@ -221,6 +221,7 @@ export abstract class BaseInteraction implements Model {
 		const message = await Webhook.prototype.editMessage.call(
 			{
 				id: this.session.applicationId,
+                session: this.session,
 				token: this.token,
 			},
 			messageId,
@@ -237,6 +238,7 @@ export abstract class BaseInteraction implements Model {
 		await Webhook.prototype.deleteMessage.call(
 			{
 				id: this.session.applicationId,
+                session: this.session,
 				token: this.token,
 			},
 			messageId,
@@ -313,6 +315,7 @@ export abstract class BaseInteraction implements Model {
 		return m;
 	}
 
+    session: this.session,
 	async defer() {
 		await this.respond({
 			type: InteractionResponseTypes.DeferredChannelMessageWithSource,
