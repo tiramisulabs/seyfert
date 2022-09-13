@@ -315,7 +315,6 @@ export abstract class BaseInteraction implements Model {
 		return m;
 	}
 
-    session: this.session,
 	async defer() {
 		await this.respond({
 			type: InteractionResponseTypes.DeferredChannelMessageWithSource,
