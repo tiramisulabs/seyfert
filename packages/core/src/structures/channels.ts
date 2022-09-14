@@ -5,7 +5,6 @@ import type { Session } from '../biscuit';
 import type { PermissionsOverwrites } from '../utils/util';
 
 /** Functions and others */
-// import { calculateShardId } from '../utils/calculate-shard';
 import { urlToBase64 } from '../utils/url-to-base-64';
 
 /** Classes and routes */
@@ -115,8 +114,11 @@ export abstract class BaseChannel implements Model {
      * @param channelId The channel id to delete.
      * @link https://discord.com/developers/docs/topics/gateway#channel-delete
      */
-    async delete(channelId?: Snowflake): Promise<Channel> {
-        const deleted = await this.session.rest.delete<DiscordChannel>(CHANNEL(channelId ?? this.id));
+    async delete(channelId?: Snowflake, reason?: string): Promise<Channel> {
+        const deleted = await this.session.rest.delete<DiscordChannel>(
+            CHANNEL(channelId ?? this.id), {},
+            { headers: { 'X-Audit-Log-Reason': reason ?? '' } }
+        );
 
         return ChannelFactory.from(this.session, deleted);
     }
@@ -313,6 +315,7 @@ export class TextChannel {
                     target_application_id: options.targetApplicationId,
                 }
                 : {},
+            { headers: { 'X-Audit-Log-Reason': options?.reason ?? '' } }
         );
 
         return new Invite(this.session, invite);
@@ -465,9 +468,8 @@ export class TextChannel {
             CHANNEL_WEBHOOKS(this.id),
             {
                 name: options.name,
-                avatar: options.avatar ? urlToBase64(options.avatar) : undefined,
-                reason: options.reason,
-            },
+                avatar: options.avatar ? urlToBase64(options.avatar) : undefined
+            }, { headers: { 'X-Audit-Log-Reason': options.reason ?? '' } }
         );
 
         return new Webhook(this.session, webhook);
@@ -496,6 +498,7 @@ export interface EditGuildChannelOptions {
     name?: string;
     position?: number;
     permissionOverwrites?: PermissionsOverwrites[];
+    reason?: string;
 }
 
 export interface EditNewsChannelOptions extends EditGuildChannelOptions {
@@ -531,6 +534,7 @@ export interface ThreadCreateOptions {
     autoArchiveDuration?: 60 | 1440 | 4320 | 10080;
     rateLimitPerUser?: number;
     messageId: Snowflake;
+    reason?: string;
 }
 /**
  * @link https://discord.com/developers/docs/resources/channel#list-public-archived-threads-response-body
@@ -610,7 +614,7 @@ export class GuildChannel extends BaseChannel implements Model {
                 default_auto_archive_duration: 'defaultAutoArchiveDuration' in options
                     ? options.defaultAutoArchiveDuration
                     : undefined,
-            },
+            }, { headers: { 'X-Audit-Log-Reason': options.reason ?? '' } }
         );
         return ChannelFactory.from(this.session, channel);
     }
@@ -663,7 +667,7 @@ export class GuildChannel extends BaseChannel implements Model {
             {
                 name: options.name,
                 auto_archive_duration: options.autoArchiveDuration,
-            },
+            }, { headers: { 'X-Audit-Log-Reason': options.reason ?? '' } }
         );
 
         return new ThreadChannel(this.session, thread, thread.guild_id ?? this.guildId);

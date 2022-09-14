@@ -30,7 +30,8 @@ import type {
 	GetAuditLogs,
 	DiscordAuditLog,
 	AuditLogEvents,
-	DiscordAuditLogChange } from '@biscuitland/api-types';
+	DiscordAuditLogChange
+} from '@biscuitland/api-types';
 import {
 	GUILD_AUDIT_LOGS,
 	INVITE,
@@ -58,7 +59,8 @@ import {
 	GUILD_WIDGET,
 	USER_GUILDS,
 	CHANNEL,
-	GUILD_CHANNELS } from '@biscuitland/api-types';
+	GUILD_CHANNELS
+} from '@biscuitland/api-types';
 import type { ImageFormat, ImageSize } from '../utils/util';
 import { Snowflake } from '../snowflakes';
 import { Util } from '../utils/util';
@@ -704,14 +706,15 @@ export class Guild extends BaseGuild implements Model {
 	 * @param options The options to create a emoji.
 	 * @returns A promise that resolves to the guild's new emoji.
 	 */
-	async createEmoji(options: CreateGuildEmoji): Promise<GuildEmoji> {
+	async createEmoji(options: CreateGuildEmoji, reason?: string): Promise<GuildEmoji> {
 		if (options.image && !options.image.startsWith('data:image/')) {
 			options.image = await urlToBase64(options.image);
 		}
 
 		const emoji = await this.session.rest.post<DiscordEmoji>(
 			GUILD_EMOJIS(this.id),
-			options
+			options,
+			{ headers: { 'X-Audit-Log-Reason': reason ?? '' } }
 		);
 
 		return new GuildEmoji(this.session, emoji, this.id);
@@ -723,9 +726,9 @@ export class Guild extends BaseGuild implements Model {
 	 * @param reason - The reason for deleting the emoji.
 	 */
 	async deleteEmoji(id: Snowflake, reason?: string): Promise<void> {
-		await this.session.rest.delete<undefined>(GUILD_EMOJI(this.id, id), {
-			reason,
-		});
+		await this.session.rest.delete<undefined>(GUILD_EMOJI(this.id, id), {},
+			{ headers: { 'X-Audit-Log-Reason': reason ?? '' } }
+		);
 	}
 
 	/**
@@ -738,11 +741,13 @@ export class Guild extends BaseGuild implements Model {
 	 */
 	async editEmoji(
 		id: Snowflake,
-		options: ModifyGuildEmoji
+		options: ModifyGuildEmoji,
+		reason?: string
 	): Promise<GuildEmoji> {
 		const emoji = await this.session.rest.patch<DiscordEmoji>(
 			GUILD_EMOJI(this.id, id),
-			options
+			options,
+			{ headers: { 'X-Audit-Log-Reason': reason ?? '' } }
 		);
 
 		return new GuildEmoji(this.session, emoji, this.id);

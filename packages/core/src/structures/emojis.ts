@@ -44,11 +44,11 @@ export class GuildEmoji extends Emoji implements Model {
 	// id cannot be null in a GuildEmoji
 	override id: Snowflake;
 
-	async edit(options: ModifyGuildEmoji): Promise<GuildEmoji> {
+	async edit(options: ModifyGuildEmoji, reason?: string): Promise<GuildEmoji> {
 		const emoji = await Guild.prototype.editEmoji.call(
 			{ id: this.guildId, session: this.session },
 			this.id,
-			options
+			options, reason
 		);
 
 		return emoji;

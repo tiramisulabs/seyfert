@@ -7,7 +7,8 @@ import type {
 	AutoModerationTriggerTypes,
 	DiscordAutoModerationRule,
 	DiscordAutoModerationRuleTriggerMetadataPresets,
-	DiscordAutoModerationActionExecution } from '@biscuitland/api-types';
+	DiscordAutoModerationActionExecution
+} from '@biscuitland/api-types';
 import {
 	AUTO_MODERATION_RULES
 } from '@biscuitland/api-types';
@@ -19,8 +20,8 @@ export interface AutoModerationRuleTriggerMetadata {
 }
 
 export interface ActionMetadata {
-	channelId: Snowflake;
-	durationSeconds: number;
+	channelId?: Snowflake;
+	durationSeconds?: number;
 }
 
 export interface AutoModerationAction {
@@ -38,6 +39,7 @@ export interface CreateAutoModerationRule {
 	enabled?: boolean;
 	exemptRoles?: Snowflake[];
 	exemptChannels?: Snowflake[];
+	reason?: string;
 }
 
 export class AutoModerationRule implements Model {
@@ -54,15 +56,15 @@ export class AutoModerationRule implements Model {
 			presets: data.trigger_metadata.presets,
 			allowList: data.trigger_metadata.allow_list
 		};
-		this.actions = data.actions.map(action =>
-			Object.create({
+		this.actions = data.actions.map(action => {
+			return {
 				type: action.type,
 				metadata: {
 					channelId: action.metadata.channel_id,
 					durationSeconds: action.metadata.duration_seconds
 				}
-			})
-		);
+			};
+		});
 		this.enabled = !!data.enabled;
 		this.exemptRoles = data.exempt_roles;
 		this.exemptChannels = data.exempt_channels;
@@ -88,10 +90,10 @@ export class AutoModerationRule implements Model {
 			DiscordAutoModerationRule | DiscordAutoModerationRule[]
 		>(AUTO_MODERATION_RULES(this.guildId, ruleId));
 		if (Array.isArray(request)) {
- return request.map(
+			return request.map(
 				amr => new AutoModerationRule(this.session, amr)
 			);
-}
+		}
 		return new AutoModerationRule(this.session, request);
 	}
 
@@ -104,24 +106,21 @@ export class AutoModerationRule implements Model {
 				trigger_type: options.triggerType,
 				trigger_metadata: options.triggerMetadata,
 				actions: options.actions
-					? options.actions.map(x =>
-							Object.assign(
-								{},
-								{
-									type: x.type,
-									metadata: {
-										channel_id: x.metadata.channelId,
-										duration_seconds:
-											x.metadata.durationSeconds
-									}
-								}
-							)
-					)
+					? options.actions.map(x => {
+						return {
+							type: x.type,
+							metadata: {
+								channel_id: x.metadata.channelId,
+								duration_seconds:
+									x.metadata.durationSeconds
+							}
+						};
+					})
 					: undefined,
 				enabled: !!options.enabled,
 				exempt_roles: options.exemptRoles,
 				exempt_channels: options.exemptChannels
-			}
+			}, { headers: { 'X-Audit-Log-Reason': options.reason ?? '' } }
 		);
 		return new AutoModerationRule(this.session, request);
 	}
@@ -138,29 +137,29 @@ export class AutoModerationRule implements Model {
 			trigger_type: options.triggerType,
 			trigger_metadata: options.triggerMetadata,
 			actions: options.actions
-				? options.actions.map(x =>
-						Object.assign(
-							{},
-							{
-								type: x.type,
-								metadata: {
-									channel_id: x.metadata.channelId,
-									duration_seconds: x.metadata.durationSeconds
-								}
-							}
-						)
+				? options.actions.map(x => {
+					return {
+						type: x.type,
+						metadata: {
+							channel_id: x.metadata.channelId,
+							duration_seconds: x.metadata.durationSeconds
+						}
+					};
+				}
 				)
 				: undefined,
 			enabled: !!options.enabled,
 			exempt_roles: options.exemptRoles,
 			exempt_channels: options.exemptChannels
-		});
+		}, { headers: { 'X-Audit-Log-Reason': options.reason ?? '' } }
+		);
 		return new AutoModerationRule(this.session, request);
 	}
 
-	async deleteRule(ruleId = this.id): Promise<void> {
+	async deleteRule(ruleId = this.id, reason?: string): Promise<void> {
 		await this.session.rest.delete(
-			AUTO_MODERATION_RULES(this.guildId, ruleId)
+			AUTO_MODERATION_RULES(this.guildId, ruleId), {},
+			{ headers: { 'X-Audit-Log-Reason': reason ?? '' } }
 		);
 		return;
 	}
