@@ -676,6 +676,11 @@ export class GuildChannel extends BaseChannel implements Model {
     async setPermissions(overwrites: PermissionsOverwrites[]): Promise<Channel> {
         return this.edit({ permissionOverwrites: overwrites } as EditGuildChannelOptions);
     }
+
+    /** gets the url of the channel that points to the channel */
+    get url(): string {
+        return `https://discord.com/channels/${this.guildId}/${this.id}`;
+    }
 }
 
 /** BaseVoiceChannel */

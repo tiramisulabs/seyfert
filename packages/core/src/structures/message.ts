@@ -16,7 +16,7 @@ import type { Component } from './components';
 import type { MessageInteraction } from './interactions';
 import type { StickerItem } from './sticker';
 import type { Embed } from './embed';
-import { NewEmbed } from './embed';
+import { NewEmbed, NewEmbedR } from './embed';
 import { MessageFlags } from '../utils/util';
 import { Snowflake } from '../snowflakes';
 import { ChannelFactory, ThreadChannel } from './channels';
@@ -27,7 +27,6 @@ import { ComponentFactory } from './components';
 import { MessageReaction } from './message-reaction';
 import { Application, NewTeam } from './application';
 import { InteractionFactory } from './interactions';
-import { NewEmbedR } from './embed';
 
 import {
 	CHANNEL_PIN,
