@@ -1,6 +1,6 @@
 import type { ButtonStyles, DiscordButtonComponent } from '@biscuitland/api-types';
 import { MessageComponentTypes } from '@biscuitland/api-types';
-import type { ComponentEmoji } from '../../../../core/src/utils/util';
+import type { ComponentEmoji } from '@biscuitland/core';
 
 export class ButtonBuilder {
     constructor() {
