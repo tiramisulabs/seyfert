@@ -75,7 +75,7 @@ export abstract class BaseChannel implements Model {
     type: ChannelTypes;
 
     /** If the channel is a TextChannel */
-    isText(): this is TextChannel {
+    isText(): this is TextChannel.T {
         return textBasedChannels.includes(this.type);
     }
 
@@ -211,82 +211,73 @@ export type TextBasedChannels =
 
 /**
  * Represents a text channel.
+ * tbis trait can be implemented by using implements TextChannel.T
  */
-export class TextChannel {
-    constructor(session: Session, data: DiscordChannel) {
-        this.session = session;
-        this.id = data.id;
-        this.name = data.name;
-        this.type = data.type as number;
-        this.rateLimitPerUser = data.rate_limit_per_user ?? 0;
-        this.nsfw = !!data.nsfw ?? false;
+export namespace TextChannel {
+    export interface T {
+        /** The session that instantiated the channel */
+        readonly session: Session;
 
-        if (data.last_message_id) {
-            this.lastMessageId = data.last_message_id;
-        }
+        /** id's refers to the identification of the channel */
+        readonly id: Snowflake;
 
-        if (data.last_pin_timestamp) {
-            this.lastPinTimestamp = data.last_pin_timestamp;
-        }
-    }
+        /** Current channel name */
+        name?: string;
 
-    /** The session that instantiated the channel */
-    readonly session: Session;
+        /** The type of the channel */
+        type: TextBasedChannels;
 
-    /** id's refers to the identification of the channel */
-    readonly id: Snowflake;
+        /** The id of the last message sent in this channel (or thread for GUILD_FORUM channels) (may not point to an existing or valid message or thread) */
+        lastMessageId?: Snowflake;
 
-    /** Current channel name */
-    name?: string;
+        /** When the last pinned message was pinned. This may be undefined in events such as GUILD_CREATE when a message is not pinned. */
+        lastPinTimestamp?: string;
 
-    /** The type of the channel */
-    type: TextBasedChannels;
+        /** Amount of seconds a user has to wait before sending another message (0-21600); bots, as well as users with the permission manage_messages or manage_channel, are unaffected */
+        // TODO: move this
+        // rateLimitPerUser: number;
 
-    /** The id of the last message sent in this channel (or thread for GUILD_FORUM channels) (may not point to an existing or valid message or thread) */
-    lastMessageId?: Snowflake;
+        /** If the channel is NSFW (Not-Safe-For-Work content) */
+        // TODO: move this
+        // nsfw: boolean;
 
-    /** When the last pinned message was pinned. This may be undefined in events such as GUILD_CREATE when a message is not pinned. */
-    lastPinTimestamp?: string;
+        // methods to be implemented
 
-    /** Amount of seconds a user has to wait before sending another message (0-21600); bots, as well as users with the permission manage_messages or manage_channel, are unaffected */
-    rateLimitPerUser: number;
-
-    /** If the channel is NSFW (Not-Safe-For-Work content) */
-    nsfw: boolean;
-
-    /**
-     * Mixin
-     */
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    static applyTo(klass: Function, ignore: (keyof TextChannel)[] = []): void {
-        const methods: (keyof TextChannel)[] = [
-            'fetchPins',
-            'createInvite',
-            'fetchMessages',
-            'sendTyping',
-            'pinMessage',
-            'unpinMessage',
-            'addReaction',
-            'removeReaction',
-            'nukeReactions',
-            'fetchPins',
-            'sendMessage',
-            'editMessage',
-            'createWebhook',
-        ];
-
-        for (const method of methods) {
-            if (ignore.includes(method)) { continue; }
-
-            klass.prototype[method] = TextChannel.prototype[method];
-        }
+        fetchPins(): Promise<Message[]>;
+        createInvite(options?: DiscordInviteOptions): Promise<Invite>;
+        fetchMessages(options?: GetMessagesOptions): Promise<Message[]>;
+        sendTyping(): Promise<void>;
+        pinMessage(messageId: Snowflake): Promise<void>;
+        unpinMessage(messageId: Snowflake): Promise<void>;
+        addReaction(
+            messageId: Snowflake,
+            reaction: EmojiResolvable,
+        ): Promise<void>;
+        removeReaction(
+            messageId: Snowflake,
+            reaction: EmojiResolvable,
+            options: { userId: Snowflake },
+        ): Promise<void>;
+        removeReactionEmoji(
+            messageId: Snowflake,
+            reaction: EmojiResolvable,
+        ): Promise<void>;
+        nukeReactions(messageId: Snowflake): Promise<void>;
+        fetchReactions(
+            messageId: Snowflake,
+            reaction: EmojiResolvable,
+            options: GetReactions,
+        ): Promise<User[]>;
+        sendMessage(options: CreateMessage): Promise<Message>;
+        editMessage(messageId: Snowflake, options: EditMessage): Promise<Message>;
+        createWebhook(options: CreateWebhook): Promise<Webhook>;
     }
 
     /**
      * fetchPins makes an asynchronous request and gets the current channel pins.
      * @returns A promise that resolves with an array of Message objects.
      */
-    async fetchPins(): Promise<Message[] | []> {
+    export async function fetchPins(this: T): Promise<Message[]> {
         const messages = await this.session.rest.get<DiscordMessage[]>(
             CHANNEL_PINS(this.id),
         );
@@ -299,7 +290,7 @@ export class TextChannel {
      * @param options - The options to create the invitation
      * @returns The created invite
      */
-    async createInvite(options?: DiscordInviteOptions): Promise<Invite> {
+    export async function createInvite(this: T, options?: DiscordInviteOptions): Promise<Invite> {
         const invite = await this.session.rest.post<DiscordInvite>(
             CHANNEL_INVITES(this.id),
             options
@@ -323,7 +314,7 @@ export class TextChannel {
      * @param options - The options to get the messages
      * @returns The messages
      */
-    async fetchMessages(options?: GetMessagesOptions): Promise<Message[] | []> {
+    export async function fetchMessages(this: T, options?: GetMessagesOptions): Promise<Message[]> {
         // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
         if (options?.limit! > 100) { throw Error('Values must be between 0-100'); }
         const messages = await this.session.rest.get<DiscordMessage[]>(
@@ -334,7 +325,7 @@ export class TextChannel {
     }
 
     /** sendTyping sends a typing POST request */
-    async sendTyping(): Promise<void> {
+    export async function sendTyping(this: T): Promise<void> {
         await this.session.rest.post<undefined>(CHANNEL_TYPING(this.id), {});
     }
 
@@ -344,7 +335,7 @@ export class TextChannel {
      * @param messageId - The id of the message to pin
      * @returns The promise that resolves when the request is complete
      */
-    async pinMessage(messageId: Snowflake): Promise<void> {
+    export async function pinMessage(this: T, messageId: Snowflake): Promise<void> {
         await Message.prototype.pin.call({ id: messageId, channelId: this.id, session: this.session });
     }
 
@@ -354,7 +345,7 @@ export class TextChannel {
      * @param messageId - The id of the message to unpin
      * @returns The promise of the request
      */
-    async unpinMessage(messageId: Snowflake): Promise<void> {
+    export async function unpinMessage(this: T, messageId: Snowflake): Promise<void> {
         await Message.prototype.unpin.call({ id: messageId, channelId: this.id, session: this.session });
     }
 
@@ -365,7 +356,11 @@ export class TextChannel {
      * @param reaction - The reaction to add
      * @returns The promise of the request
      */
-    async addReaction(messageId: Snowflake, reaction: EmojiResolvable): Promise<void> {
+    export async function addReaction(
+        this: T,
+        messageId: Snowflake,
+        reaction: EmojiResolvable,
+    ): Promise<void> {
         await Message.prototype.addReaction.call(
             { channelId: this.id, id: messageId, session: this.session },
             reaction,
@@ -379,7 +374,8 @@ export class TextChannel {
      * @param reaction - The reaction to remove
      * @param options - The user to remove the reaction from
      */
-    async removeReaction(
+    export async function removeReaction(
+        this: T,
         messageId: Snowflake,
         reaction: EmojiResolvable,
         options?: { userId: Snowflake },
@@ -396,7 +392,11 @@ export class TextChannel {
      * Same as Message.removeReactionEmoji().
      * @param messageId - The message id to remove the reaction from.
      */
-    async removeReactionEmoji(messageId: Snowflake, reaction: EmojiResolvable): Promise<void> {
+    export async function removeReactionEmoji(
+        this: T,
+        messageId: Snowflake,
+        reaction: EmojiResolvable,
+    ): Promise<void> {
         await Message.prototype.removeReactionEmoji.call(
             { channelId: this.id, id: messageId, session: this.session },
             reaction,
@@ -408,7 +408,7 @@ export class TextChannel {
      * @param messageId The message id to nuke reactions from.
      * @returns A promise that resolves when the reactions are nuked.
      */
-    async nukeReactions(messageId: Snowflake): Promise<void> {
+    export async function nukeReactions(this: T, messageId: Snowflake): Promise<void> {
         await Message.prototype.nukeReactions.call({ channelId: this.id, id: messageId });
     }
 
@@ -420,7 +420,8 @@ export class TextChannel {
      * @param options - The options to get the reactions with.
      * @returns The users who reacted with this emoji on the message.
      */
-    async fetchReactions(
+    export async function fetchReactions(
+        this: T,
         messageId: Snowflake,
         reaction: EmojiResolvable,
         options?: GetReactions,
@@ -440,8 +441,13 @@ export class TextChannel {
      * @param options - Options for a new message.
      * @returns The sent message.
      */
-    sendMessage(options: CreateMessage): Promise<Message> {
-        return Message.prototype.reply.call({ channelId: this.id, session: this.session }, options);
+    export async function sendMessage(this: T, options: CreateMessage): Promise<Message> {
+        const message = await Message.prototype.reply.call({
+            channelId: this.id,
+            session: this.session,
+        }, options);
+
+        return message;
     }
 
     /**
@@ -451,8 +457,18 @@ export class TextChannel {
      * @param options - Options for edit a message.
      * @returns The edited message.
      */
-    editMessage(messageId: Snowflake, options: EditMessage): Promise<Message> {
-        return Message.prototype.edit.call({ channelId: this.id, id: messageId, session: this.session }, options);
+    export async function editMessage(
+        this: T,
+        messageId: Snowflake,
+        options: EditMessage,
+    ): Promise<Message> {
+        const message = await Message.prototype.edit.call({
+            channelId: this.id,
+            id: messageId,
+            session: this.session,
+        }, options);
+
+        return message;
     }
 
     /**
@@ -460,7 +476,7 @@ export class TextChannel {
      * @param options - Options for a new webhook.
      * @returns The created webhook.
      */
-    async createWebhook(options: CreateWebhook): Promise<Webhook> {
+    export async function createWebhook(this: T, options: CreateWebhook): Promise<Webhook> {
         const webhook = await this.session.rest.post<DiscordWebhook>(
             CHANNEL_WEBHOOKS(this.id),
             {
@@ -562,14 +578,19 @@ export class GuildChannel extends BaseChannel implements Model {
 
     /** Channel type. */
     override type: Exclude<ChannelTypes, ChannelTypes.DM | ChannelTypes.GroupDm>;
+
     /** Guild id. */
     guildId: Snowflake;
+
     /** Channel topic */
     topic?: string;
+
     /** Sorting position of the channel */
     position?: number;
+
     /** Id of the parent category for a channel (each parent category can contain up to 50 channels). */
     parentId?: Snowflake;
+
     /** Explicit permission overwrites for members and roles */
     permissionOverwrites: PermissionsOverwrites[];
 
@@ -689,7 +710,7 @@ export interface UpdateVoiceState {
     selfDeaf: boolean;
 }
 
-export abstract class BaseVoiceChannel extends GuildChannel {
+export abstract class BaseVoiceChannel extends GuildChannel implements Model {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data, guildId);
         this.bitRate = data.bitrate;
@@ -715,9 +736,20 @@ export abstract class BaseVoiceChannel extends GuildChannel {
 }
 
 /** DMChannel */
-export class DMChannel extends BaseChannel implements Model {
+export class DMChannel extends BaseChannel implements Model, TextChannel.T {
     constructor(session: Session, data: DiscordChannel) {
         super(session, data);
+
+        this.name = data.name;
+        this.type = data.type as number;
+
+        if (data.last_message_id) {
+            this.lastMessageId = data.last_message_id;
+        }
+
+        if (data.last_pin_timestamp) {
+            this.lastPinTimestamp = data.last_pin_timestamp;
+        }
 
         if (data.owner_id && data.recipients) {
             this.user = new User(session, data.recipients.find(user => user.id === data.owner_id)!);
@@ -739,10 +771,15 @@ export class DMChannel extends BaseChannel implements Model {
     override type: ChannelTypes.DM | ChannelTypes.GroupDm;
     /** Onwer of the dm channel. */
     user: User;
+
     /** If the channel is a DM Group it's has multiple users. */
     group?: User[];
+
     /** Last message id. */
     lastMessageId?: Snowflake;
+
+    /** When the last pinned message was pinned. This may be undefined in events such as GUILD_CREATE when a message is not pinned. */
+    lastPinTimestamp?: string;
 
     async close(): Promise<DMChannel> {
         const channel = await this.session.rest.delete<DiscordChannel>(CHANNEL(this.id), {});
@@ -757,12 +794,12 @@ export class DMChannel extends BaseChannel implements Model {
     }
 }
 
-export interface DMChannel extends Omit<TextChannel, 'type'>, Omit<BaseChannel, 'type'> { }
+Object.assign(DMChannel.prototype, TextChannel);
 
-TextChannel.applyTo(DMChannel);
+export interface DMChannel extends BaseChannel, TextChannel.T {}
 
 /** VoiceChannel */
-export class VoiceChannel extends BaseVoiceChannel {
+export class VoiceChannel extends BaseVoiceChannel implements Model, TextChannel.T {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data, guildId);
         this.type = data.type as number;
@@ -771,12 +808,12 @@ export class VoiceChannel extends BaseVoiceChannel {
     override type: ChannelTypes.GuildVoice;
 }
 
-export interface VoiceChannel extends TextChannel, BaseVoiceChannel { }
+Object.assign(VoiceChannel.prototype, TextChannel);
 
-TextChannel.applyTo(VoiceChannel);
+export interface VoiceChannel extends BaseVoiceChannel, TextChannel.T { }
 
 /** NewsChannel */
-export class NewsChannel extends GuildChannel {
+export class NewsChannel extends GuildChannel implements Model, TextChannel.T {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data, guildId);
         this.type = data.type as ChannelTypes.GuildNews;
@@ -795,9 +832,9 @@ export class NewsChannel extends GuildChannel {
     }
 }
 
-TextChannel.applyTo(NewsChannel);
+Object.assign(NewsChannel.prototype, TextChannel);
 
-export interface NewsChannel extends TextChannel, GuildChannel { }
+export interface NewsChannel extends GuildChannel, TextChannel.T { }
 
 /** StageChannel */
 export class StageChannel extends BaseVoiceChannel {
@@ -812,7 +849,7 @@ export class StageChannel extends BaseVoiceChannel {
 }
 
 /** ThreadChannel */
-export class ThreadChannel extends GuildChannel implements Model {
+export class ThreadChannel extends GuildChannel implements Model, TextChannel.T {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data, guildId);
         this.type = data.type as number;
@@ -868,9 +905,9 @@ export class ThreadChannel extends GuildChannel implements Model {
     }
 }
 
-export interface ThreadChannel extends Omit<GuildChannel, 'type'>, Omit<TextChannel, 'type'> { }
+Object.assign(ThreadChannel.prototype, TextChannel);
 
-TextChannel.applyTo(ThreadChannel);
+export interface ThreadChannel extends GuildChannel, TextChannel.T { }
 
 export class GuildTextChannel extends GuildChannel {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
@@ -881,14 +918,14 @@ export class GuildTextChannel extends GuildChannel {
     override type: ChannelTypes.GuildText;
 }
 
-export interface GuildTextChannel extends GuildChannel, TextChannel { }
+Object.assign(GuildTextChannel.prototype, TextChannel);
 
-TextChannel.applyTo(GuildTextChannel);
+export interface GuildTextChannel extends GuildChannel, TextChannel.T { }
 
 /** ChannelFactory */
 export type Channel =
     | GuildTextChannel
-    | TextChannel
+    | TextChannel.T
     | VoiceChannel
     | DMChannel
     | NewsChannel
@@ -956,7 +993,8 @@ export class ChannelFactory {
                 return new CategoryChannel(session, channel);
             default:
                 if (textBasedChannels.includes(channel.type)) {
-                    return new TextChannel(session, channel);
+                    // BLACK MAGIC DO NOT EDIT
+                    return Object.assign(Object.create(TextChannel), { session, channel }) as TextChannel.T;
                 }
                 return null as any;
         }
