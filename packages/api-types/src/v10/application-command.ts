@@ -1,4 +1,4 @@
-import type { ChannelTypes } from './channels';
+import type { ChannelTypes } from './channel';
 import type { Snowflake, Localizations, DiscordBase } from './common';
 
 /** @link https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-structure */
@@ -44,8 +44,8 @@ export interface ApplicationCommandLocalizations {
 	description_localizations?: Localizations;
 }
 
-export interface ApplicationChatInputCommand extends ApplicationCommand {
-	options?: ApplicationCommandOption[];
+export interface ApplicationChatInputCommand<T extends ApplicationCommandOption> extends ApplicationCommand {
+	options?: T[];
 }
 
 export interface ApplicationUserCommand extends ApplicationCommand {}
@@ -66,7 +66,8 @@ export interface ApplicationCommandOption extends ApplicationCommandLocalization
 	autocomplete?: boolean;
 }
 
-export interface ApplicationCommandWithOptions<T = any> extends Omit<ApplicationCommandOption, 'autocomplete'> {
+export interface ApplicationCommandWithOptions<T extends ApplicationCommandOption>
+	extends Omit<ApplicationCommandOption, 'autocomplete'> {
 	options: T[];
 }
 
@@ -130,17 +131,17 @@ export enum ApplicationCommandOptionTypes {
 	SubCommand = 1,
 	SubCommandGroup,
 	String,
-    /** Any integer between -2^53 and 2^53 */
+	/** Any integer between -2^53 and 2^53 */
 	Integer,
 	Boolean,
 	User,
-    /** Includes all channel types + categories */
+	/** Includes all channel types + categories */
 	Channel,
 	Role,
-    /** Includes users and roles */
+	/** Includes users and roles */
 	Mentionable,
-    /** Any double between -2^53 and 2^53 */
+	/** Any double between -2^53 and 2^53 */
 	Number,
-    /** attachment object */
+	/** attachment object */
 	Attachment,
 }

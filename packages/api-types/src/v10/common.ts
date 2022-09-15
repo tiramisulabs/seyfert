@@ -1,3 +1,20 @@
+
+/** @link https://discord.com/developers/docs/resources/emoji#emoji-object */
+export interface DiscordEmoji {
+	name: string | null;
+	id: Snowflake;
+	// TODO ROLE
+	roles?: Record<string, any>[];
+	// TODO USER
+	user?: Record<string, any>;
+	require_colons?: boolean;
+	managed?: boolean;
+	animated?: boolean;
+	available?: boolean;
+}
+
+export type DiscordPartialEmoji = Partial<Pick<DiscordEmoji, 'id' | 'name'| 'animated'>>;
+
 export type Localizations = Partial<Record<Locales, string>>;
 
 export enum Locales {
@@ -44,3 +61,7 @@ export interface DiscordBase {
  * except in some unique scenarios in which child objects share their parent's ID.
  */
  export type Snowflake = string;
+
+ export type PickPartial<T, K extends keyof T> = {
+	[P in keyof T]?: T[P] | undefined;
+} & { [P in K]: T[P] };
