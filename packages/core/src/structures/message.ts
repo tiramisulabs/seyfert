@@ -166,6 +166,8 @@ export class Message implements Model {
 		);
 		this.embeds = data.embeds.map(NewEmbedR);
 
+		if (data.position) { this.position = data.position; }
+
 		if (data.interaction) {
 			this.interaction = InteractionFactory.fromMessage(
 				session,
@@ -348,6 +350,9 @@ export class Message implements Model {
 
 	/** sent with Rich Presence-related chat embeds */
 	activity?: MessageActivity;
+
+	/** Represents the approximate position of the message in a thread */
+	position?: number;
 
 	/** gets the timestamp of this message, this does not requires the timestamp field */
 	get createdTimestamp(): number {
