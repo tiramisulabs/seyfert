@@ -211,6 +211,7 @@ export type TextBasedChannels =
     | ChannelTypes.GuildPrivateThread
     | ChannelTypes.GuildPublicThread
     | ChannelTypes.GuildNews
+    | ChannelTypes.GuildNewsThread
     | ChannelTypes.GuildVoice
     | ChannelTypes.GuildText;
 
@@ -237,14 +238,6 @@ export namespace TextChannel {
 
         /** When the last pinned message was pinned. This may be undefined in events such as GUILD_CREATE when a message is not pinned. */
         lastPinTimestamp?: string;
-
-        /** Amount of seconds a user has to wait before sending another message (0-21600); bots, as well as users with the permission manage_messages or manage_channel, are unaffected */
-        // TODO: move this
-        // rateLimitPerUser: number;
-
-        /** If the channel is NSFW (Not-Safe-For-Work content) */
-        // TODO: move this
-        // nsfw: boolean;
 
         // methods to be implemented
 
@@ -589,6 +582,7 @@ export class GuildChannel extends BaseChannel implements Model {
         this.permissionOverwrites = data.permission_overwrites
             ? ChannelFactory.permissionOverwrites(data.permission_overwrites)
             : [];
+        this.nsfw = data.nsfw ?? false;
     }
 
     /** Channel type. */
@@ -608,6 +602,9 @@ export class GuildChannel extends BaseChannel implements Model {
 
     /** Explicit permission overwrites for members and roles */
     permissionOverwrites: PermissionsOverwrites[];
+
+    /** If the channel is NSFW (Not-Safe-For-Work content) */
+    nsfw: boolean;
 
     /**
      * Gets the channel invites for the channel.
@@ -811,6 +808,10 @@ export class DMChannel extends BaseChannel implements Model, TextChannel.T {
         if (data.last_message_id) {
             this.lastMessageId = data.last_message_id;
         }
+
+        if (data.rate_limit_per_user) {
+            this.rateLimitPerUser = data.rate_limit_per_user;
+        }
     }
 
     override type: ChannelTypes.DM | ChannelTypes.GroupDm;
@@ -825,6 +826,10 @@ export class DMChannel extends BaseChannel implements Model, TextChannel.T {
 
     /** When the last pinned message was pinned. This may be undefined in events such as GUILD_CREATE when a message is not pinned. */
     lastPinTimestamp?: string;
+
+
+    /** Amount of seconds a user has to wait before sending another message (0-21600); bots, as well as users with the permission manage_messages or manage_channel, are unaffected */
+    rateLimitPerUser?: number;
 
     async close(): Promise<DMChannel> {
         const channel = await this.session.rest.delete<DiscordChannel>(CHANNEL(this.id), {});
@@ -848,9 +853,12 @@ export class VoiceChannel extends BaseVoiceChannel implements Model, TextChannel
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data, guildId);
         this.type = data.type as number;
+        this.rateLimitPerUser = data.rate_limit_per_user;
     }
 
     override type: ChannelTypes.GuildVoice;
+    /** Amount of seconds a user has to wait before sending another message (0-21600); bots, as well as users with the permission manage_messages or manage_channel, are unaffected */
+    rateLimitPerUser?: number;
 }
 
 Object.assign(VoiceChannel.prototype, TextChannel);
@@ -863,10 +871,14 @@ export class NewsChannel extends GuildChannel implements Model, TextChannel.T {
         super(session, data, guildId);
         this.type = data.type as ChannelTypes.GuildNews;
         this.defaultAutoArchiveDuration = data.default_auto_archive_duration;
+        this.rateLimitPerUser = data.rate_limit_per_user;
     }
 
     override type: ChannelTypes.GuildNews;
     defaultAutoArchiveDuration?: number;
+
+    /** Amount of seconds a user has to wait before sending another message (0-21600); bots, as well as users with the permission manage_messages or manage_channel, are unaffected */
+    rateLimitPerUser?: number;
 
     crosspostMessage(messageId: Snowflake): Promise<Message> {
         return Message.prototype.crosspost.call({ id: messageId, channelId: this.id, session: this.session });
@@ -905,6 +917,7 @@ export class ThreadChannel extends GuildChannel implements Model, TextChannel.T 
         this.messageCount = data.message_count;
         this.memberCount = data.member_count;
         this.ownerId = data.owner_id;
+        this.rateLimitPerUser = data.rate_limit_per_user;
 
         if (data.member) {
             this.member = new ThreadMember(session, data.member);
@@ -926,6 +939,9 @@ export class ThreadChannel extends GuildChannel implements Model, TextChannel.T 
     ownerId?: Snowflake;
     totalMessageSent?: number;
     appliedTags?: string[];
+
+    /** Amount of seconds a user has to wait before sending another message (0-21600); bots, as well as users with the permission manage_messages or manage_channel, are unaffected */
+    rateLimitPerUser?: number;
 
     async joinThread(): Promise<void> {
         await this.session.rest.put<undefined>(THREAD_ME(this.id), {});
@@ -991,8 +1007,13 @@ export class ForumChannel extends GuildChannel {
         this.defaultThreadRateLimitPerUser = data.default_thread_rate_limit_per_user;
     }
 
+    /** the IDs of the set of tags that have been applied to a thread in a GUILD_FORUM channel */
     availableTags?: ForumTag[];
+
+    /** the emoji to show in the add reaction button on a thread in a GUILD_FORUM channel */
     defaultReactionEmoji?: DefaultReactionEmoji;
+
+    /** the initial rate_limit_per_user to set on newly created threads in a channel. this field is copied to the thread at creation time and does not live update */
     defaultThreadRateLimitPerUser?: number;
 
     async setAvailableTags(tags: ForumTag[]) {
