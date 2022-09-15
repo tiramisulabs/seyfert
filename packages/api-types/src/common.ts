@@ -176,7 +176,7 @@ export interface BaseRole {
 }
 
 /** https://discord.com/developers/docs/resources/channel#forum-tag-object */
-export interface ForumTagObject {
+export interface DiscordForumTag {
 	/** the id of the tag */
 	id: Snowflake;
 	/** the name of the tag (0-20 characters) */

@@ -12,7 +12,7 @@ import type {
 	DefaultMessageNotificationLevels,
 	EmbedTypes,
 	ExplicitContentFilterLevels,
-	ForumTagObject,
+	DiscordForumTag,
 	GatewayEventNames,
 	GuildFeatures,
 	GuildNsfwLevel,
@@ -759,7 +759,7 @@ export interface DiscordChannel {
 	/** number of messages ever sent in a thread */
 	total_message_sent?: number;
 	/** the set of tags that can be used in a GUILD_FORUM channel */
-	available_tags?: ForumTagObject[];
+	available_tags?: DiscordForumTag[];
 	/** the IDs of the set of tags that have been applied to a thread in a GUILD_FORUM channel */
 	applied_tags?: string[];
 	/** the emoji to show in the add reaction button on a thread in a GUILD_FORUM channel */
