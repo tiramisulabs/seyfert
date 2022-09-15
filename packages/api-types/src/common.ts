@@ -175,6 +175,20 @@ export interface BaseRole {
 	unicodeEmoji?: string;
 }
 
+/** https://discord.com/developers/docs/resources/channel#forum-tag-object */
+export interface ForumTagObject {
+	/** the id of the tag */
+	id: Snowflake;
+	/** the name of the tag (0-20 characters) */
+	name: string;
+	/** whether this tag can only be added to or removed from threads by a member with the MANAGE_THREADS permission */
+	moderated: boolean;
+	/** the id of a guild's custom emoji * */
+	emoji_id: Snowflake | null;
+	/** he unicode character of the emoji  */
+	emoji_name: string | null;
+}
+
 /** https://discord.com/developers/docs/resources/guild#guild-object-guild-features */
 export enum GuildFeatures {
 	/** Guild has access to set an invite splash background */

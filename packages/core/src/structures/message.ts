@@ -16,7 +16,7 @@ import type { Component } from './components';
 import type { MessageInteraction } from './interactions';
 import type { StickerItem } from './sticker';
 import type { Embed } from './embed';
-import { NewEmbed } from './embed';
+import { NewEmbed, NewEmbedR } from './embed';
 import { MessageFlags } from '../utils/util';
 import { Snowflake } from '../snowflakes';
 import { ChannelFactory, ThreadChannel } from './channels';
@@ -27,7 +27,6 @@ import { ComponentFactory } from './components';
 import { MessageReaction } from './message-reaction';
 import { Application, NewTeam } from './application';
 import { InteractionFactory } from './interactions';
-import { NewEmbedR } from './embed';
 
 import {
 	CHANNEL_PIN,
@@ -166,6 +165,8 @@ export class Message implements Model {
 			attachment => new Attachment(session, attachment)
 		);
 		this.embeds = data.embeds.map(NewEmbedR);
+
+		if (data.position) { this.position = data.position; }
 
 		if (data.interaction) {
 			this.interaction = InteractionFactory.fromMessage(
@@ -349,6 +350,9 @@ export class Message implements Model {
 
 	/** sent with Rich Presence-related chat embeds */
 	activity?: MessageActivity;
+
+	/** Represents the approximate position of the message in a thread */
+	position?: number;
 
 	/** gets the timestamp of this message, this does not requires the timestamp field */
 	get createdTimestamp(): number {

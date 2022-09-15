@@ -104,6 +104,11 @@ export abstract class BaseChannel implements Model {
         return this.type === ChannelTypes.GuildStageVoice;
     }
 
+    /** If the channel is a ForumChannel */
+    isForum(): this is ForumChannel {
+        return this.type === ChannelTypes.GuildForum;
+    }
+
     async fetch(channelId?: Snowflake): Promise<Channel> {
         const channel = await this.session.rest.get<DiscordChannel>(CHANNEL(channelId ?? this.id));
 
@@ -506,8 +511,18 @@ export interface EditNewsChannelOptions extends EditGuildChannelOptions {
     defaultAutoArchiveDuration?: number | null;
 }
 
+export interface EditForumChannelOptions extends EditGuildChannelOptions {
+    availableTags?: ForumTag[];
+    defaultReactionEmoji?: DefaultReactionEmoji;
+    defaultThreadRateLimitPerUser?: number;
+}
+
 export interface EditGuildTextChannelOptions extends EditNewsChannelOptions {
     rateLimitPerUser?: number | null;
+}
+
+export interface EditThreadChannelOptions extends EditGuildTextChannelOptions {
+    appliedTags: string[];
 }
 
 export interface EditStageChannelOptions extends EditGuildChannelOptions {
@@ -589,9 +604,16 @@ export class GuildChannel extends BaseChannel implements Model {
     async edit(options: EditNewsChannelOptions): Promise<NewsChannel>;
     async edit(options: EditStageChannelOptions): Promise<StageChannel>;
     async edit(options: EditVoiceChannelOptions): Promise<VoiceChannel>;
+    async edit(options: EditForumChannelOptions): Promise<ForumChannel>;
+    async edit(options: EditThreadChannelOptions): Promise<ThreadChannel>;
     async edit(
-        options: EditGuildTextChannelOptions | EditNewsChannelOptions | EditVoiceChannelOptions,
-    ): Promise<Channel> {
+        options:
+        | EditGuildTextChannelOptions
+        | EditNewsChannelOptions
+        | EditVoiceChannelOptions
+        | EditForumChannelOptions
+        | EditThreadChannelOptions
+    ): Promise<GuildChannel> {
         const channel = await this.session.rest.patch<DiscordChannel>(
             CHANNEL(this.id),
             {
@@ -607,12 +629,30 @@ export class GuildChannel extends BaseChannel implements Model {
                 parent_id: 'parentId' in options ? options.parentId : undefined,
                 rtc_region: 'rtcRegion' in options ? options.rtcRegion : undefined,
                 video_quality_mode: 'videoQualityMode' in options ? options.videoQualityMode : undefined,
+                applied_tags: 'appliedTags' in options ? options.appliedTags : undefined,
                 default_auto_archive_duration: 'defaultAutoArchiveDuration' in options
                     ? options.defaultAutoArchiveDuration
                     : undefined,
+                default_reaction_emoji: 'defaultReactionEmoji' in options
+                    ? options.defaultReactionEmoji
+                    : undefined,
+                default_thread_rate_limit_per_user: 'defaultThreadRateLimitPerUser' in options
+                    ? options.defaultThreadRateLimitPerUser
+                    : undefined,
+                available_tags: 'availableTags' in options
+                    ? options.availableTags?.map(at => {
+                        return {
+                            id: at.id,
+                            name: at.name,
+                            moderated: at.moderated,
+                            emoji_id: at.emojiId,
+                            emoji_name: at.emojiName
+                        };
+                    })
+                    : undefined
             },
         );
-        return ChannelFactory.from(this.session, channel);
+        return ChannelFactory.fromGuildChannel(this.session, channel);
     }
 
     /**
@@ -827,6 +867,10 @@ export class ThreadChannel extends GuildChannel implements Model {
         if (data.member) {
             this.member = new ThreadMember(session, data.member);
         }
+
+        if (data.total_message_sent) { this.totalMessageSent = data.total_message_sent; }
+
+        if (data.applied_tags) { this.appliedTags = data.applied_tags; }
     }
 
     override type: ChannelTypes.GuildNewsThread | ChannelTypes.GuildPrivateThread | ChannelTypes.GuildPublicThread;
@@ -838,6 +882,8 @@ export class ThreadChannel extends GuildChannel implements Model {
     memberCount?: number;
     member?: ThreadMember;
     ownerId?: Snowflake;
+    totalMessageSent?: number;
+    appliedTags?: string[];
 
     async joinThread(): Promise<void> {
         await this.session.rest.put<undefined>(THREAD_ME(this.id), {});
@@ -866,11 +912,75 @@ export class ThreadChannel extends GuildChannel implements Model {
 
         return members.map(threadMember => new ThreadMember(this.session, threadMember));
     }
+
+    async setAppliedTags(tags: string[]) {
+        const thread = await this.edit({ appliedTags: tags });
+        return thread;
+    }
 }
 
 export interface ThreadChannel extends Omit<GuildChannel, 'type'>, Omit<TextChannel, 'type'> { }
 
 TextChannel.applyTo(ThreadChannel);
+
+/** ForumChannel */
+export class ForumChannel extends GuildChannel {
+    constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
+        super(session, data, guildId);
+
+        if (data.available_tags) {
+            this.availableTags = data.available_tags.map(at => {
+                return {
+                    id: at.id,
+                    name: at.name,
+                    moderated: at.moderated,
+                    emojiId: at.emoji_id,
+                    emojiName: at.emoji_name
+                };
+            });
+        }
+        if (data.default_reaction_emoji) {
+            this.defaultReactionEmoji = {
+                emojiId: data.default_reaction_emoji.emoji_id,
+                emojiName: data.default_reaction_emoji.emoji_name
+            };
+        }
+
+        this.defaultThreadRateLimitPerUser = data.default_thread_rate_limit_per_user;
+    }
+
+    availableTags?: ForumTag[];
+    defaultReactionEmoji?: DefaultReactionEmoji;
+    defaultThreadRateLimitPerUser?: number;
+
+    async setAvailableTags(tags: ForumTag[]) {
+        const forum = await this.edit({ availableTags: tags });
+        return forum;
+    }
+
+    async setDefaultReactionEmoji(emoji: DefaultReactionEmoji) {
+        const forum = await this.edit({ defaultReactionEmoji: emoji });
+        return forum;
+    }
+
+    async setDefaultThreadRateLimitPerUser(limit: number) {
+        const forum = await this.edit({ defaultThreadRateLimitPerUser: limit });
+        return forum;
+    }
+}
+
+export interface ForumTag {
+    id: Snowflake;
+	name: string;
+	moderated: boolean;
+	emojiId: Snowflake | null;
+	emojiName: string | null;
+}
+
+export interface DefaultReactionEmoji {
+    emojiId: Snowflake;
+    emojiName: string | null;
+}
 
 export class GuildTextChannel extends GuildChannel {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
@@ -894,14 +1004,16 @@ export type Channel =
     | NewsChannel
     | ThreadChannel
     | StageChannel
-    | CategoryChannel;
+    | CategoryChannel
+    | ForumChannel;
 
 export type ChannelInGuild =
     | GuildTextChannel
     | VoiceChannel
     | StageChannel
     | NewsChannel
-    | ThreadChannel;
+    | ThreadChannel
+    | ForumChannel;
 
 export type ChannelWithMessages =
     | GuildTextChannel
@@ -924,6 +1036,8 @@ export class ChannelFactory {
             case ChannelTypes.GuildPublicThread:
             case ChannelTypes.GuildPrivateThread:
                 return new ThreadChannel(session, channel, channel.guild_id!);
+            case ChannelTypes.GuildForum:
+                    return new ForumChannel(session, channel, channel.guild_id!);
             case ChannelTypes.GuildText:
                 return new GuildTextChannel(session, channel, channel.guild_id!);
             case ChannelTypes.GuildNews:
@@ -942,6 +1056,8 @@ export class ChannelFactory {
             case ChannelTypes.GuildPublicThread:
             case ChannelTypes.GuildPrivateThread:
                 return new ThreadChannel(session, channel, channel.guild_id!);
+            case ChannelTypes.GuildForum:
+                return new ForumChannel(session, channel, channel.guild_id!);
             case ChannelTypes.GuildText:
                 return new GuildTextChannel(session, channel, channel.guild_id!);
             case ChannelTypes.GuildNews:

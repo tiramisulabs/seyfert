@@ -12,6 +12,7 @@ import type {
 	DefaultMessageNotificationLevels,
 	EmbedTypes,
 	ExplicitContentFilterLevels,
+	ForumTagObject,
 	GatewayEventNames,
 	GuildFeatures,
 	GuildNsfwLevel,
@@ -754,6 +755,17 @@ export interface DiscordChannel {
 	newly_created?: boolean;
 	/** The recipients of the DM*/
 	recipients?: DiscordUser[];
+
+	/** number of messages ever sent in a thread */
+	total_message_sent?: number;
+	/** the set of tags that can be used in a GUILD_FORUM channel */
+	available_tags?: ForumTagObject[];
+	/** the IDs of the set of tags that have been applied to a thread in a GUILD_FORUM channel */
+	applied_tags?: string[];
+	/** the emoji to show in the add reaction button on a thread in a GUILD_FORUM channel */
+	default_reaction_emoji?: { emoji_id: string; emoji_name: string | null };
+	/** the initial rate_limit_per_user to set on newly created threads in a channel. this field is copied to the thread at creation time and does not live update. */
+	default_thread_rate_limit_per_user?: number;
 }
 
 /** https://discord.com/developers/docs/topics/gateway#presence-update */
@@ -1051,6 +1063,8 @@ export interface DiscordMessage {
 	components?: DiscordMessageComponents;
 	/** Sent if the message contains stickers */
 	sticker_items?: DiscordStickerItem[];
+	/** A generally increasing integer (there may be gaps or duplicates) */
+	position?: number;
 }
 
 /** https://discord.com/developers/docs/resources/channel#channel-mention-object */
