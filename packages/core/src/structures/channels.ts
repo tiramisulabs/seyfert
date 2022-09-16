@@ -722,6 +722,11 @@ export class GuildChannel extends BaseChannel implements Model {
     async setPermissions(overwrites: PermissionsOverwrites[]): Promise<Channel> {
         return this.edit({ permissionOverwrites: overwrites } as EditGuildChannelOptions);
     }
+
+    /** gets the url of the channel that points to the channel */
+    get url(): string {
+        return `https://discord.com/channels/${this.guildId}/${this.id}`;
+    }
 }
 
 /** BaseVoiceChannel */
@@ -933,7 +938,7 @@ TextChannel.applyTo(ThreadChannel);
 export class ForumChannel extends GuildChannel {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data, guildId);
-
+        
         this.type = data.type as ChannelTypes.GuildForum;
         this.nsfw = data.nsfw ?? false;
         this.rateLimitPerUser = data.rate_limit_per_user ?? 0;

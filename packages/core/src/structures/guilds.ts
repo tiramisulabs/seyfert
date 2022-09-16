@@ -133,6 +133,11 @@ export abstract class BaseGuild implements Model {
 		return this.features.includes(GuildFeatures.Partnered);
 	}
 
+	/** gets the url of the guild that points to the guild */
+	get url(): string {
+		return `https://discord.com/channels/${this.id}`;
+	}
+
 	/**
 	 * If the guild is verified.
 	 * @link https://discord.com/developers/docs/resources/guild#guild-object-guild-features
