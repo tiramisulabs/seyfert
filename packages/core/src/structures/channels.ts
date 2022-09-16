@@ -24,7 +24,7 @@ import {
     THREAD_ARCHIVED_PUBLIC,
     THREAD_ARCHIVED_PRIVATE_JOINED,
     THREAD_START_PUBLIC,
-    ChannelTypes
+    ChannelTypes,
 } from '@biscuitland/api-types';
 import type {
     DiscordChannel,
@@ -40,7 +40,8 @@ import type {
     GetReactions,
     GetMessagesOptions,
     ListArchivedThreads,
-    GatewayOpcodes as _GatewayOpcodes
+    GatewayOpcodes as _GatewayOpcodes,
+    ChannelFlags
 } from '@biscuitland/api-types';
 
 import type { CreateMessage, EditMessage, EmojiResolvable } from './message';
@@ -60,6 +61,7 @@ export abstract class BaseChannel implements Model {
         this.session = session;
         this.name = data.name;
         this.type = data.type;
+        if (data.flags) { this.flags = data.flags; }
     }
 
     /** id's refers to the identification of the channel */
@@ -73,6 +75,9 @@ export abstract class BaseChannel implements Model {
 
     /** Refers to the possible channel type implemented (Guild, DM, Voice, News, etc...) */
     type: ChannelTypes;
+
+    /** Channel flags combined */
+    flags?: ChannelFlags;
 
     /** If the channel is a TextChannel */
     isText(): this is TextChannel {
@@ -212,7 +217,8 @@ export type TextBasedChannels =
     | ChannelTypes.GuildPublicThread
     | ChannelTypes.GuildNews
     | ChannelTypes.GuildVoice
-    | ChannelTypes.GuildText;
+    | ChannelTypes.GuildText
+    | ChannelTypes.GuildForum;
 
 /**
  * Represents a text channel.
@@ -928,6 +934,9 @@ export class ForumChannel extends GuildChannel {
     constructor(session: Session, data: DiscordChannel, guildId: Snowflake) {
         super(session, data, guildId);
 
+        this.type = data.type as ChannelTypes.GuildForum;
+        this.nsfw = data.nsfw ?? false;
+        this.rateLimitPerUser = data.rate_limit_per_user ?? 0;
         if (data.available_tags) {
             this.availableTags = data.available_tags.map(at => {
                 return {
@@ -949,6 +958,7 @@ export class ForumChannel extends GuildChannel {
         this.defaultThreadRateLimitPerUser = data.default_thread_rate_limit_per_user;
     }
 
+    override type: ChannelTypes.GuildForum;
     availableTags?: ForumTag[];
     defaultReactionEmoji?: DefaultReactionEmoji;
     defaultThreadRateLimitPerUser?: number;
@@ -968,6 +978,19 @@ export class ForumChannel extends GuildChannel {
         return forum;
     }
 }
+
+export interface ForumChannel extends  GuildChannel, TextChannel {}
+
+TextChannel.applyTo(ForumChannel, [
+    'fetchMessages',
+    'sendTyping',
+    'pinMessage',
+    'unpinMessage',
+    'nukeReactions',
+    'fetchPins',
+    'sendMessage',
+    'editMessage',
+]);
 
 export interface ForumTag {
     id: Snowflake;

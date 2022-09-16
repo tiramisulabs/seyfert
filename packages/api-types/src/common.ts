@@ -23,10 +23,16 @@ export enum UserFlags {
 	BotHttpInteractions = 1 << 19,
 }
 
-/** https://discord.com/developers/docs/resources/channel#channels-resource */
+/** https://discord.com/developers/docs/resources/channel#channel-object-channel-flags */
 export enum ChannelFlags {
 	None,
-	Pinned = 1 << 1,
+	/** this thread is pinned to the top of its parent GUILD_FORUM channel */
+	PINNED = 1 << 1,
+	/**
+	 * whether a tag is required to be specified when creating a thread in a GUILD_FORUM channel.
+	 * Tags are specified in the applied_tags field.
+	 */
+	REQUIRE_TAG = 1 << 4,
 }
 
 /** https://discord.com/developers/docs/resources/guild#integration-object-integration-expire-behaviors */
