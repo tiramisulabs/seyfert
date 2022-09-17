@@ -17,6 +17,15 @@ export type DiscordPartialEmoji = Partial<Pick<DiscordEmoji, 'id' | 'name'| 'ani
 
 export type Localizations = Partial<Record<Locales, string>>;
 
+/** https://discord.com/developers/docs/interactions/slash-commands#interaction-interactiontype */
+export enum InteractionTypes {
+	Ping = 1,
+	ApplicationCommand = 2,
+	MessageComponent = 3,
+	ApplicationCommandAutocomplete = 4,
+	ModalSubmit = 5,
+}
+
 export enum Locales {
 	Danish = 'da',
 	German = 'de',

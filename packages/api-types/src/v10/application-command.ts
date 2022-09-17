@@ -107,7 +107,7 @@ export interface ApplicationCommandOptionChoice
 }
 
 export interface ApplicationCommandWithChoices extends Omit<ApplicationCommandOption, 'autocomplete'> {
-	choices: ApplicationCommandOptionChoice;
+	choices: ApplicationCommandOptionChoice[];
 }
 
 export type ApplicationCommandOptions =

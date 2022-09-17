@@ -84,11 +84,11 @@ export interface DiscordTextInput extends BaseComponent {
     placeholder?: string;
 }
 
-export type MessageComponentsWithoutRow = DiscordButton | DiscordSelectMenu | DiscordTextInput;
+export type DiscordMessageComponentsWithoutRow = DiscordButton | DiscordSelectMenu | DiscordTextInput;
 
-export type ActionRowComponent = DiscordActionRow<MessageComponentsWithoutRow>;
+export type DiscordActionRowComponent = DiscordActionRow<DiscordMessageComponentsWithoutRow>;
 
-export type DiscordMessageComponents =  ActionRowComponent | DiscordButton | DiscordSelectMenu | DiscordTextInput;
+export type DiscordMessageComponents =  DiscordActionRowComponent | DiscordButton | DiscordSelectMenu | DiscordTextInput;
 
 /** @link https://discord.com/developers/docs/interactions/message-components#component-types */
 export enum MessageComponentTypes {
