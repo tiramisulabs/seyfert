@@ -1191,5 +1191,3 @@ export type Camelize<T> = {
 export type OmitFirstFnArg<F> = F extends (x: any, ...args: infer P) => infer R
 	? (...args: P) => R
 	: never;
-
-export type Snowflake = string;

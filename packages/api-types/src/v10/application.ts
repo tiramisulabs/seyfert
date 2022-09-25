@@ -1,4 +1,5 @@
 import type { Snowflake, DiscordBase } from './common';
+import type { DiscordUser } from './user';
 
 /** @link https://discord.com/developers/docs/resources/application#application-object-application-structure */
 export interface DiscordApplication extends DiscordBase {
@@ -19,7 +20,7 @@ export interface DiscordApplication extends DiscordBase {
     /** the url of the app's privacy policy */
     privacy_police_url?: string;
     /** partial user object containing info on the owner of the application */
-    owner: Partial<any>;
+    owner: Partial<DiscordUser>;
     /** @deprecated and will be removed in v11. An empty string. */
     summary: string;
     /** the hex encoded key for verification in interactions and the GameSDK's  */

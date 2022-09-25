@@ -11,6 +11,7 @@ import type {
 	DiscordActionRowComponent,
     DiscordTextInput,
 } from './message-component';
+import type { DiscordUser } from './user';
 
 /** @link https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-interaction-structure */
 export interface DiscordInteraction extends DiscordBase {
@@ -41,7 +42,7 @@ export interface DiscordInteractionWithMember extends DiscordInteraction {
 
 export interface DiscordInteractionWithUser extends DiscordInteraction {
 	/** User object for the invoking user, if invoked in a DM */
-	user: Record<string, any>;
+	user: DiscordUser;
 }
 
 export interface DiscordApplicationCommandInteraction extends DiscordInteraction {
@@ -58,7 +59,7 @@ export interface DiscordComponentInteraction extends DiscordInteraction {
 	data?: DiscordMessageComponentInteractionData | DiscordMessageSelectMenuInteractionData;
 }
 
-export type DiscordComponentInteractionWithUser = DiscordComponentInteraction & { user: any };
+export type DiscordComponentInteractionWithUser = DiscordComponentInteraction & { user: DiscordUser };
 
 export type DiscordComponentInteractionWithMember = DiscordComponentInteraction & { member: any };
 
@@ -69,7 +70,7 @@ export interface DiscordMessageInteraction extends DiscordBase {
 	name: string;
 }
 
-export type DiscordMessageInteractionWithUser = DiscordComponentInteraction & { user: any };
+export type DiscordMessageInteractionWithUser = DiscordComponentInteraction & { user: DiscordUser };
 
 export type DiscordMessageInteractionWithMember = DiscordComponentInteraction & { member: any };
 
@@ -132,7 +133,7 @@ export interface DIscordModalSubmitData {
 /** @link https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-resolved-data-structure */
 export interface DiscordInteractionCommandDataResolved {
 	/** the ids and User objects */
-	users?: Record<string, any>;
+	users?: Record<Snowflake, DiscordUser>;
 	/** the ids and partial Member objects */
 	members?: Record<string, any>;
 	/** the ids and Role objects */

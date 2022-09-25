@@ -16,7 +16,7 @@ export interface DiscordAutoModerationRule extends DiscordBase {
     /**	the rule trigger metadata */
     trigger_metadata: AutoModerationTriggerMetadata;
     /** the actions which will execute when the rule is triggered */
-    actions: any[];
+    actions: AutoModerationAction[];
     /**	whether the rule is enabled */
     enabled: boolean;
     /** the role ids that should not be affected by the rule (Maximum of 20) */
