@@ -50,7 +50,9 @@ export interface ApplicationChatInputCommand<T extends ApplicationCommandOption>
 
 export interface ApplicationUserCommand extends ApplicationCommand {}
 
-export interface ApplicationMessageCommands extends ApplicationCommand {}
+export interface ApplicationMessageCommand extends ApplicationCommand {}
+
+export type DiscordApplicationCommand = ApplicationMessageCommand | ApplicationUserCommand | ApplicationChatInputCommand<ApplicationCommandOptions>;
 
 /** @link https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-structure */
 export interface ApplicationCommandOption extends ApplicationCommandLocalizations {

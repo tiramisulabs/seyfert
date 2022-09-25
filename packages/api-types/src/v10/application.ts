@@ -1,5 +1,4 @@
-import type { Snowflake } from '../common';
-import type { DiscordBase } from './common';
+import type { Snowflake, DiscordBase } from './common';
 
 /** @link https://discord.com/developers/docs/resources/application#application-object-application-structure */
 export interface DiscordApplication extends DiscordBase {
