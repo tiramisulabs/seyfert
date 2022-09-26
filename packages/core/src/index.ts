@@ -1,6 +1,6 @@
-// SESSION
 export * as Actions from './adapters/events';
 
+// SESSION
 export { Session as Biscuit } from './biscuit';
 export * from './biscuit';
 
