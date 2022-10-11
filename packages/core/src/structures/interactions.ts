@@ -30,6 +30,7 @@ import { Message } from './message';
 import { Permissions } from './special/permissions';
 import { Webhook } from './webhook';
 import { InteractionOptions } from './special/interaction-options';
+import { NewEmbed } from './embed';
 
 export type InteractionResponseWith = {
 	with: InteractionApplicationCommandCallbackData;
@@ -167,7 +168,7 @@ export abstract class BaseInteraction implements Model {
 				: WEBHOOK_MESSAGE_ORIGINAL(this.session.applicationId, this.token),
 			{
 				content: options.content,
-				embeds: options.embeds,
+				embeds: options.embeds?.map(NewEmbed),
 				file: options.files,
 				components: options.components,
 				allowed_mentions: options.allowedMentions && {
@@ -283,7 +284,7 @@ export abstract class BaseInteraction implements Model {
 			allowed_mentions: options?.allowedMentions,
 			flags: options?.flags,
 			chocies: options?.choices,
-			embeds: options?.embeds,
+			embeds: options?.embeds?.map(NewEmbed),
 			title: options?.title,
 			components: options?.components,
 		};
