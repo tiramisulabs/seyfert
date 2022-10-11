@@ -1,5 +1,11 @@
 # @biscuitland/api-types
 
+## 2.1.1
+
+### Patch Changes
+
+- dumb hotfix that LH asked for (blame Yuzu)
+
 ## 2.1.0
 
 ### Minor Changes

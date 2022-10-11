@@ -1,5 +1,14 @@
 # @biscuitland/helpers
 
+## 2.1.1
+
+### Patch Changes
+
+- dumb hotfix that LH asked for (blame Yuzu)
+- Updated dependencies
+  - @biscuitland/api-types@2.1.1
+  - @biscuitland/core@2.1.1
+
 ## 2.1.0
 
 ### Minor Changes
