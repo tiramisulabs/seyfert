@@ -121,7 +121,7 @@ export class Permissions implements BitField<bigint> {
 		}
 	}
 
-    static sum(permissions: Array<bigint | number>) {
+    static sum(permissions: (bigint | number)[]) {
         return permissions.reduce((y, x) => BigInt(y) | BigInt(x), Permissions.None);
     }
 

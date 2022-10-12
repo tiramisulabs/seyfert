@@ -27,7 +27,7 @@ export class User implements Model {
 			? data.avatar
 			: undefined;
 
-        this.accentColor = data.accent_color;
+		this.accentColor = data.accent_color;
 		this.bot = !!data.bot;
 		this.system = !!data.system;
 		this.banner = data.banner
@@ -103,15 +103,14 @@ export class User implements Model {
 
 	/** gets the user's avatar */
 	avatarURL(options: AvatarOptions): string {
-		let url: string;
-
 		if (!this.avatarHash) {
-			url = USER_DEFAULT_AVATAR(Number(this.discriminator) % 5);
-		} else {
-			url = USER_AVATAR(this.id, this.avatarHash);
+			return USER_DEFAULT_AVATAR(Number(this.discriminator) % 5);
 		}
 
-		return Util.formatImageURL(url, options.size ?? 128, options.format);
+		return Util.formatImageURL(USER_AVATAR(
+			this.id,
+			this.avatarHash
+		), options.size ?? 128, options.format);
 	}
 
 	openDM(): Promise<DMChannel> {
