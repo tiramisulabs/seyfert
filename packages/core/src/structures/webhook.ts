@@ -21,6 +21,7 @@ import {
 	WEBHOOK_MESSAGE,
 	WEBHOOK_MESSAGE_ORIGINAL,
 } from '@biscuitland/api-types';
+import { NewEmbed } from './embed';
 
 export type ExecuteWebhookOptions = WebhookOptions &
 	CreateMessage & { avatarUrl?: string; username?: string };
@@ -87,7 +88,7 @@ export class Webhook implements Model {
 
 		const data = {
 			content: options?.content,
-			embeds: options?.embeds,
+			embeds: options?.embeds?.map(NewEmbed),
 			tts: options?.tts,
 			allowed_mentions: options?.allowedMentions,
 			components: options?.components,
@@ -158,7 +159,7 @@ export class Webhook implements Model {
 				: WEBHOOK_MESSAGE_ORIGINAL(this.id, this.token),
 			{
 				content: options?.content,
-				embeds: options?.embeds,
+				embeds: options?.embeds?.map(NewEmbed),
 				file: options?.files,
 				components: options?.components,
 				allowed_mentions: options?.allowedMentions && {

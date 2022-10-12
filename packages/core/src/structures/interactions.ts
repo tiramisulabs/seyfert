@@ -306,6 +306,13 @@ export abstract class BaseInteraction implements Model {
 		return this.sendFollowUp(data);
 	}
 
+    /**
+     * internal usage only, same as respond but doesn't tries to follow up
+     * */
+	async respond_(resp: InteractionResponse): Promise<void> {
+        if (!this.responded) return this.respond(resp) as Promise<undefined>;
+    }
+
 	// start custom methods
 
 	async respondWith(
@@ -327,6 +334,31 @@ export abstract class BaseInteraction implements Model {
 			type: InteractionResponseTypes.ApplicationCommandAutocompleteResult,
 		});
 	}
+
+    /**
+     * taken from Detritus
+     * try respond, try edit, try follow up
+     * */
+    async editOrReply(resp: InteractionResponseWithData & EditWebhookMessage) {
+        if (this.responded) {
+            return this.editReply(resp);
+        }
+
+        let type: InteractionResponseTypes = InteractionResponseTypes.ChannelMessageWithSource;
+
+        switch (this.type) {
+            case InteractionTypes.ApplicationCommand:
+                type = InteractionResponseTypes.ChannelMessageWithSource;
+            break;
+            case InteractionTypes.MessageComponent:
+                type = InteractionResponseTypes.UpdateMessage;
+            break;
+        }
+
+        const result = await this.respond({ type, data: resp });
+
+        return result;
+    }
 
 	// end custom methods
 }
