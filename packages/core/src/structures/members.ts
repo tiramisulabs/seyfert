@@ -10,11 +10,7 @@ import type { AvatarOptions } from './user';
 import { User } from './user';
 import { Guild } from './guilds';
 import { Util } from '../utils/util';
-import {
-	USER_AVATAR,
-	USER_DEFAULT_AVATAR,
-	THREAD_USER,
-} from '@biscuitland/api-types';
+import { USER_AVATAR, THREAD_USER } from '@biscuitland/api-types';
 import { Permissions } from './special/permissions';
 
 /**
@@ -39,8 +35,8 @@ export class Member implements Model {
 			? Number.parseInt(data.premium_since)
 			: undefined;
 
-        this.channelPermissions = data.permissions ? new Permissions(BigInt(data.permissions)) : undefined;
-        this.joinedTimestamp = Number.parseInt(data.joined_at);
+		this.channelPermissions = data.permissions ? new Permissions(BigInt(data.permissions)) : undefined;
+		this.joinedTimestamp = Number.parseInt(data.joined_at);
 		this.roles = data.roles;
 		this.deaf = !!data.deaf;
 		this.mute = !!data.mute;
@@ -69,8 +65,8 @@ export class Member implements Model {
 	/** when the user started boosting the guild */
 	premiumSince?: number;
 
-    /** total permissions of the member in the channel, including overwrites, returned when in the interaction object */
-    channelPermissions?: Permissions;
+	/** total permissions of the member in the channel, including overwrites, returned when in the interaction object */
+	channelPermissions?: Permissions;
 
 	/** when the user joined the guild */
 	joinedTimestamp: number;
@@ -146,10 +142,10 @@ export class Member implements Model {
 		return member;
 	}
 
-    /** calls {@link Member#edit} which calls {@link Guild#editMember} under the hood */
-    async timeout(time: number | null) {
-        await this.edit({ communicationDisabledUntil: time });
-    }
+	/** calls {@link Member#edit} which calls {@link Guild#editMember} under the hood */
+	async timeout(time: number | null) {
+		await this.edit({ communicationDisabledUntil: time });
+	}
 
 	/** adds a role to this member */
 	async addRole(roleId: Snowflake, reason?: string): Promise<void> {
@@ -174,30 +170,22 @@ export class Member implements Model {
 		);
 	}
 
-    async fetch(): Promise<Member> {
-        const member = await Guild.prototype.fetchMember.call({ session: this.session, id: this.guildId }, this.id);
+	async fetch(): Promise<Member> {
+		const member = await Guild.prototype.fetchMember.call({ session: this.session, id: this.guildId }, this.id);
 
-        return member;
-    }
+		return member;
+	}
 
-	/** gets the members's guild avatar, not to be confused with Member.user.avatarURL() */
+	/** gets the members's guild avatar if the user has one, gets the user's avatar instead */
 	avatarURL(options: AvatarOptions): string {
-		let url: string;
-
-		if (this.user.bot) {
+		if (!this.avatarHash) {
 			return this.user.avatarURL(options);
 		}
 
-		if (!this.avatarHash) {
-			url = USER_DEFAULT_AVATAR(Number(this.user.discriminator) % 5);
-		} else {
-			url = USER_AVATAR(
-				this.user.id,
-				this.avatarHash
-			);
-		}
-
-		return Util.formatImageURL(url, options.size ?? 128, options.format);
+		return Util.formatImageURL(USER_AVATAR(
+			this.user.id,
+			this.avatarHash
+		), options.size ?? 128, options.format);
 	}
 
 	/**
