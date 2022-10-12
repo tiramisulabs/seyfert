@@ -10,11 +10,7 @@ import type { AvatarOptions } from './user';
 import { User } from './user';
 import { Guild } from './guilds';
 import { Util } from '../utils/util';
-import {
-	USER_AVATAR,
-	USER_DEFAULT_AVATAR,
-	THREAD_USER,
-} from '@biscuitland/api-types';
+import { USER_AVATAR, THREAD_USER } from '@biscuitland/api-types';
 import { Permissions } from './special/permissions';
 
 /**
@@ -180,10 +176,10 @@ export class Member implements Model {
 		return member;
 	}
 
-	/** gets the members's guild avatar, not to be confused with Member.user.avatarURL() */
+	/** gets the members's guild avatar if the user has one, gets the user's avatar instead */
 	avatarURL(options: AvatarOptions): string {
 		if (!this.avatarHash) {
-			return USER_DEFAULT_AVATAR(Number(this.user.discriminator) % 5);
+			return this.user.avatarURL(options);
 		}
 
 		return Util.formatImageURL(USER_AVATAR(
