@@ -1,5 +1,11 @@
 # @biscuitland/api-types
 
+## 2.1.2
+
+### Patch Changes
+
+- minor changes
+
 ## 2.1.1
 
 ### Patch Changes
