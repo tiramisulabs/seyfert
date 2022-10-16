@@ -1,5 +1,15 @@
 # @biscuitland/core
 
+## 2.1.2
+
+### Patch Changes
+
+- minor changes
+- Updated dependencies
+  - @biscuitland/api-types@2.1.2
+  - @biscuitland/rest@2.1.2
+  - @biscuitland/ws@2.1.2
+
 ## 2.1.1
 
 ### Patch Changes
