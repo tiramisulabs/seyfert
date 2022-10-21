@@ -232,6 +232,17 @@ export abstract class BaseInteraction implements Model {
 		return message;
 	}
 
+    async deleteEphemeral(messageId?: Snowflake): Promise<void> {
+        await Webhook.prototype.deleteFollowUp.call(
+            {
+                id: this.session.applicationId,
+                session: this.session,
+                token: this.token,
+            },
+            messageId
+        );
+    }
+
 	async deleteFollowUp(
 		messageId: Snowflake,
 		threadId?: Snowflake
