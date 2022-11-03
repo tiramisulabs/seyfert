@@ -131,7 +131,17 @@ export class Webhook implements Model {
 		return new Message(this.session, message);
 	}
 
-	async deleteMessage(
+    /**
+     * @deprecated you might want to delete an ephemeral message (deleteFollowUp)
+     * */
+	deleteMessage(
+		messageId: Snowflake,
+		threadId?: Snowflake
+	): Promise<void> {
+        return this.deleteThreadMessage(messageId, threadId);
+	}
+
+	async deleteThreadMessage(
 		messageId: Snowflake,
 		threadId?: Snowflake
 	): Promise<void> {
@@ -144,6 +154,18 @@ export class Webhook implements Model {
 			{}
 		);
 	}
+
+    async deleteFollowUp(messageId?: Snowflake): Promise<void> {
+		if (!this.token) {
+			throw new Error('No token found');
+		}
+
+        await this.session.rest.delete(
+            messageId
+                ? WEBHOOK_MESSAGE(this.id, this.token, messageId)
+                : WEBHOOK_MESSAGE_ORIGINAL(this.id, this.token)
+        );
+    }
 
 	async editMessage(
 		messageId?: Snowflake,
