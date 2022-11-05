@@ -223,6 +223,10 @@ export class ActionRow extends BaseComponent implements ActionRowComponent {
 					}
 					return new Button(session, component);
 				case MessageComponentTypes.SelectMenu:
+				case MessageComponentTypes.RoleSelect:
+				case MessageComponentTypes.UserSelect:
+				case MessageComponentTypes.MentionableSelect:
+				case MessageComponentTypes.ChannelSelect:
 					return new SelectMenu(session, component);
 				case MessageComponentTypes.InputText:
 					return new TextInput(
@@ -257,6 +261,10 @@ export class ComponentFactory {
 				}
 				return new Button(session, component);
 			case MessageComponentTypes.SelectMenu:
+			case MessageComponentTypes.RoleSelect:
+			case MessageComponentTypes.UserSelect:
+			case MessageComponentTypes.MentionableSelect:
+			case MessageComponentTypes.ChannelSelect:
 				return new SelectMenu(session, component);
 			case MessageComponentTypes.InputText:
 				return new TextInput(

@@ -79,6 +79,14 @@ export enum MessageComponentTypes {
 	SelectMenu = 3,
 	/** A text input object */
 	InputText = 4,
+	/** A select menu for picking from users */
+	UserSelect = 5,
+	/** A select menu for picking from roles */
+	RoleSelect = 6,
+	/** A select menu for picking from users and roles */
+	MentionableSelect = 7,
+	/** A select menu for picking from channels */
+	ChannelSelect = 8
 }
 
 export enum TextStyles {
@@ -1260,20 +1268,20 @@ export type MakeRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
 // THANK YOU YUI FOR SHARING THIS!
 export type CamelCase<S extends string> =
 	S extends `${infer P1}_${infer P2}${infer P3}`
-		? `${Lowercase<P1>}${Uppercase<P2>}${CamelCase<P3>}`
-		: Lowercase<S>;
+	? `${Lowercase<P1>}${Uppercase<P2>}${CamelCase<P3>}`
+	: Lowercase<S>;
 export type Camelize<T> = {
 	// eslint-disable-next-line @typescript-eslint/array-type
 	[K in keyof T as CamelCase<string & K>]: T[K] extends Array<infer U>
-		? // eslint-disable-next-line @typescript-eslint/ban-types
-		U extends {}
-			? // eslint-disable-next-line @typescript-eslint/array-type
-			Array<Camelize<U>>
-			: T[K]
-		: // eslint-disable-next-line @typescript-eslint/ban-types
-		T[K] extends {}
-		? Camelize<T[K]>
-		: never;
+	? // eslint-disable-next-line @typescript-eslint/ban-types
+	U extends {}
+	? // eslint-disable-next-line @typescript-eslint/array-type
+	Array<Camelize<U>>
+	: T[K]
+	: // eslint-disable-next-line @typescript-eslint/ban-types
+	T[K] extends {}
+	? Camelize<T[K]>
+	: never;
 };
 
 export type PickPartial<T, K extends keyof T> = {

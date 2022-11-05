@@ -30,10 +30,10 @@ export class ShardManager {
 		}
 	>();
 
-    readonly shards = new Map<number, Shard>();
+	readonly shards = new Map<number, Shard>();
 
 	constructor(options: ShardManagerOptions) {
-		this.options = Options({}, ShardManager.DEFAULTS, options);
+		this.options = Options(ShardManager.DEFAULTS, options);
 	}
 
 	/** Invokes internal processing and respawns shards */
@@ -59,11 +59,11 @@ export class ShardManager {
 
 		/** Create the start sequence of the shards inside the buckets. */
 		for (let i = 0; i < gateway.shards; i++) {
-            const bucketID = i % gateway.session_start_limit.max_concurrency;
+			const bucketID = i % gateway.session_start_limit.max_concurrency;
 			const bucket = this.buckets.get(bucketID);
 
 			if (bucket) {
-                const workerID = Math.floor(i / workers.shards);
+				const workerID = Math.floor(i / workers.shards);
 				const worker = bucket.workers.find(w => w.id === workerID);
 
 				if (worker) {
@@ -75,22 +75,22 @@ export class ShardManager {
 		}
 
 		/** Route all shards to workers */
-        this.buckets.forEach(async bucket => {
-            for (const worker of bucket.workers) {
+		this.buckets.forEach(async bucket => {
+			for (const worker of bucket.workers) {
 
 				for (const id of worker.queue) {
-                    await this.connect(id);
+					await this.connect(id);
 				}
 
-            }
-        });
+			}
+		});
 	}
 
 	/** Invokes the bucket to prepare the connection to the shard */
 	private async connect(id: number): Promise<Shard> {
 		const { gateway } = this.options;
 
-        let shard = this.shards.get(id);
+		let shard = this.shards.get(id);
 
 		if (!shard) {
 			shard = new Shard({
@@ -107,8 +107,8 @@ export class ShardManager {
 				},
 
 				handleIdentify: async (id: number) => {
-                    await this.buckets.get(id % gateway.session_start_limit.max_concurrency)!.leak.acquire(1); // remove await?
-                }
+					await this.buckets.get(id % gateway.session_start_limit.max_concurrency)!.leak.acquire(1); // remove await?
+				}
 			});
 
 			this.shards.set(id, shard);
