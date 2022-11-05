@@ -1187,7 +1187,11 @@ export interface DiscordActionRow {
 }
 
 export interface DiscordSelectMenuComponent {
-	type: MessageComponentTypes.SelectMenu;
+	type: MessageComponentTypes.SelectMenu |
+	MessageComponentTypes.RoleSelect |
+	MessageComponentTypes.UserSelect |
+	MessageComponentTypes.MentionableSelect |
+	MessageComponentTypes.ChannelSelect;
 	/** A custom identifier for this component. Maximum 100 characters. */
 	custom_id: string;
 	/** A custom placeholder text if nothing is selected. Maximum 150 characters. */
@@ -2396,8 +2400,8 @@ export interface DiscordGuildMemberUpdate {
 /** https://discord.com/developers/docs/topics/gateway#message-reaction-remove-all */
 export interface DiscordMessageReactionRemoveAll
 	extends Pick<
-	DiscordMessageReactionAdd,
-	'channel_id' | 'message_id' | 'guild_id'
+		DiscordMessageReactionAdd,
+		'channel_id' | 'message_id' | 'guild_id'
 	> { }
 
 // TODO: add docs link

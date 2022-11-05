@@ -27,7 +27,7 @@ export class Shard {
 	resumeURL: string | null = null;
 	sessionID: string | null = null;
 
-	sequence = 0 ;
+	sequence = 0;
 
 	resolves: Map<string, (payload?: unknown) => void> = new Map();
 
@@ -40,7 +40,7 @@ export class Shard {
 	ws: WebSocket | null = null;
 
 	constructor(options: ShardOptions) {
-		this.options = Options({}, Shard.DEFAULTS, options);
+		this.options = Options(Shard.DEFAULTS, options);
 
 		this.bucket = createLeakyBucket({
 			max: 120,
@@ -78,7 +78,7 @@ export class Shard {
 		this.heartbeatInterval = null;
 	}
 
-    connect() {
+	connect() {
 		if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
 			return;
 		}
@@ -101,7 +101,7 @@ export class Shard {
 				setTimeout(() => resolve(true), this.options.shards.timeout);
 			});
 		});
-    }
+	}
 
 	identify() {
 		this.status = 'Identifying';
@@ -110,14 +110,14 @@ export class Shard {
 			op: GatewayOpcodes.Identify,
 			d: {
 				token: `Bot ${this.options.config.token}`,
-                compress: false,
-                properties: {
-                    os: 'linux',
-                    device: 'Biscuit',
-                    browser: 'Biscuit'
-                },
-                intents: this.options.config.intents,
-                shard: [this.options.id, this.options.gateway.shards],
+				compress: false,
+				properties: {
+					os: 'linux',
+					device: 'Biscuit',
+					browser: 'Biscuit'
+				},
+				intents: this.options.config.intents,
+				shard: [this.options.id, this.options.gateway.shards],
 			}
 		});
 	}
@@ -203,7 +203,7 @@ export class Shard {
 	}
 
 	private async onMessage(data: any, isBinary: boolean) {
-        const payload = this.pack(data as Buffer | ArrayBuffer, isBinary);
+		const payload = this.pack(data as Buffer | ArrayBuffer, isBinary);
 
 		if (payload.s != null) {
 			this.sequence = payload.s;
