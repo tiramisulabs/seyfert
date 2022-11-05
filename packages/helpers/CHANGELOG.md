@@ -1,5 +1,17 @@
 # @biscuitland/helpers
 
+## 2.2.0
+
+### Minor Changes
+
+- Functionality to delete ephemeral messages added, select menus were updated
+
+### Patch Changes
+
+- Updated dependencies
+  - @biscuitland/api-types@2.2.0
+  - @biscuitland/core@2.2.0
+
 ## 2.1.2
 
 ### Patch Changes

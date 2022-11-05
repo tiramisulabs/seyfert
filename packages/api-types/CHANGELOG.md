@@ -1,5 +1,11 @@
 # @biscuitland/api-types
 
+## 2.2.0
+
+### Minor Changes
+
+- Functionality to delete ephemeral messages added, select menus were updated
+
 ## 2.1.2
 
 ### Patch Changes
