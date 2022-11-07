@@ -72,7 +72,7 @@ export interface LinkButtonComponent {
 export interface SelectMenuComponent {
 	type: MessageComponentTypes.SelectMenu;
 	customId: string;
-	options: SelectMenuOption[];
+	options?: SelectMenuOption[];
 	placeholder?: string;
 	minValue?: number;
 	maxValue?: number;
@@ -157,14 +157,18 @@ export class SelectMenu extends BaseComponent implements SelectMenuComponent {
 		this.session = session;
 		this.type = data.type as MessageComponentTypes.SelectMenu;
 		this.customId = data.custom_id!;
-		this.options = data.options!.map(option => {
-			return {
-				label: option.label,
-				description: option.description,
-				emoji: option.emoji ? new Emoji(session, option.emoji) : undefined,
-				value: option.value,
-			} as SelectMenuOption;
-		});
+
+		if ('options' in data) {
+			this.options = data.options?.map(option => {
+				return {
+					label: option.label,
+					description: option.description,
+					emoji: option.emoji ? new Emoji(session, option.emoji) : undefined,
+					value: option.value,
+				} as SelectMenuOption;
+			});
+		}
+
 		this.placeholder = data.placeholder;
 		this.minValues = data.min_values;
 		this.maxValues = data.max_values;
@@ -174,7 +178,7 @@ export class SelectMenu extends BaseComponent implements SelectMenuComponent {
 	readonly session: Session;
 	override type: MessageComponentTypes.SelectMenu;
 	customId: string;
-	options: SelectMenuOption[];
+	options?: SelectMenuOption[];
 	placeholder?: string;
 	minValues?: number;
 	maxValues?: number;
