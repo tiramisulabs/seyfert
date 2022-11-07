@@ -82,7 +82,7 @@ export abstract class BaseInteraction implements Model {
 		this.version = data.version;
 
         this.locale = data.locale as Locales;
-		this.guildLocales = data.guild_locale as Locales;
+		this.guildLocale = data.guild_locale as Locales;
 
 		const perms = data.app_permissions;
 
@@ -118,7 +118,7 @@ export abstract class BaseInteraction implements Model {
 
     // must be implemented
     locale: Locales;
-	guildLocales: Locales;
+	guildLocale: Locales;
 
     // readonly property according to docs
 	readonly version: 1;
@@ -555,7 +555,7 @@ export class PingInteraction extends BaseInteraction implements Model {
 	commandType: ApplicationCommandTypes;
 	commandGuildId?: Snowflake;
     override locale = undefined as never;
-	override guildLocales = undefined as never;
+	override guildLocale = undefined as never;
 
 	async pong(): Promise<void> {
 		await this.session.rest.post<undefined>(
