@@ -118,6 +118,7 @@ export class Shard {
 				},
 				intents: this.options.config.intents,
 				shard: [this.options.id, this.options.gateway.shards],
+				presence: this.options.presence
 			}
 		});
 	}

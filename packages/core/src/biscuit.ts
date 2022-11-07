@@ -133,7 +133,12 @@ export type PickOptions = Pick<
 export interface BiscuitOptions {
 	intents?: GatewayIntents;
 	token: string;
-
+    precense?: {
+        status: keyof typeof StatusTypes;
+        afk: boolean;
+        since: number | null;
+        activities: Activities[];
+    };
 	events?: {
 		adapter?: { new (...args: any[]): EventAdapter };
 		options: any;
@@ -244,6 +249,7 @@ export class Session {
                     token: this.options.token,
                     intents: this.options.intents,
 				},
+                makePresence: this.options.precense
 			};
 		}
 
@@ -341,37 +347,41 @@ export class Session {
                 status: status.status,
                 since: null,
                 afk: false,
-                activities: status.activities.map(activity => {
-                    return {
-                        name: activity.name,
-                        type: activity.type,
-                        url: activity.url,
-                        created_at: activity.createdAt,
-                        timestamps: activity.timestamps,
-                        application_id: this.applicationId,
-                        details: activity.details,
-                        state: activity.state,
-                        emoji: activity.emoji && {
-                            name: activity.emoji.name,
-                            id: activity.emoji.id,
-                            animated: activity.emoji.animated,
-                        },
-                        party: activity.party,
-                        assets: activity.assets &&
-                            {
-                                large_image: activity.assets.largeImage,
-                                large_text: activity.assets.largeText,
-                                small_image: activity.assets.smallImage,
-                                small_text: activity.assets.smallText,
-                            },
-                        secrets: activity.secrets,
-                        instance: activity.instance,
-                        flags: activity.flags,
-                        buttons: activity.buttons,
-                    };
-                }),
+                activities: this.makePresenceActivites(status.activities),
             },
         }, prio);
+    }
+
+    private makePresenceActivites(act: Activities[]): Record<string, unknown>[] {
+        return act.map(activity => {
+            return {
+                name: activity.name,
+                type: activity.type,
+                url: activity.url,
+                created_at: activity.createdAt,
+                timestamps: activity.timestamps,
+                application_id: this.applicationId,
+                details: activity.details,
+                state: activity.state,
+                emoji: activity.emoji && {
+                    name: activity.emoji.name,
+                    id: activity.emoji.id,
+                    animated: activity.emoji.animated,
+                },
+                party: activity.party,
+                assets: activity.assets &&
+                    {
+                        large_image: activity.assets.largeImage,
+                        large_text: activity.assets.largeText,
+                        small_image: activity.assets.smallImage,
+                        small_text: activity.assets.smallText,
+                    },
+                secrets: activity.secrets,
+                instance: activity.instance,
+                flags: activity.flags,
+                buttons: activity.buttons,
+            };
+        });
     }
 
     // END PRESENCE
