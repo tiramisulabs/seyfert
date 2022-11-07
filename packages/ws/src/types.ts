@@ -1,4 +1,4 @@
-import type { DiscordGatewayPayload, DiscordGetGatewayBot, GatewayIntents } from '@biscuitland/api-types';
+import type { DiscordGatewayPayload, DiscordGetGatewayBot, GatewayIntents, DiscordActivity } from '@biscuitland/api-types';
 
 import type { ShardManager } from './services/shard-manager';
 import type { Shard } from './services/shard';
@@ -21,6 +21,14 @@ export interface SMO {
 	config: {
 		intents?: GatewayIntents;
 		token: string;
+	};
+
+	/** Presence on identify */
+	makePresence?: {
+		status: 'idle' | 'dnd' | 'online' | 'offline';
+		afk: boolean;
+		since: number | null;
+		activities: DiscordActivity[];
 	};
 
 	/** Options shards */
@@ -80,6 +88,9 @@ export interface SO {
 		intents?: GatewayIntents;
 		token: string;
 	};
+
+	/** Presence on identify */
+	presence?: ShardManagerOptions['makePresence'];
 
 	/** Function for interpretation of messages from discord */
     handlePayloads: (shard: Shard, data: DiscordGatewayPayload) => Promise<void>;
