@@ -1,5 +1,11 @@
 # @biscuitland/api-types
 
+## 2.2.1
+
+### Patch Changes
+
+- select menu options now can be empty since the latest Discord API update
+
 ## 2.2.0
 
 ### Minor Changes

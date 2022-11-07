@@ -1,6 +1,6 @@
 {
 	"name": "@biscuitland/cache",
-	"version": "2.2.0",
+	"version": "2.2.1",
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",
 	"types": "./dist/index.d.ts",
@@ -23,7 +23,7 @@
 		}
 	},
 	"dependencies": {
-		"@biscuitland/api-types": "^2.2.0",
+		"@biscuitland/api-types": "^2.2.1",
 		"ioredis": "^5.2.2"
 	},
 	"devDependencies": {
