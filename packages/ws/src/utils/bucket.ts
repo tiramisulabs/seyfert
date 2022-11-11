@@ -1,6 +1,6 @@
 /** Create from scratch */
 
-import type { PickPartial } from '@biscuitland/api-types';
+import type { PickPartial } from '../types';
 
 export interface LeakyBucket {
 	/** How many tokens this bucket can hold. */

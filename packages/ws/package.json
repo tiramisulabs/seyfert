@@ -3,6 +3,7 @@
 	"version": "2.2.1",
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",
+	"type": "module",
 	"types": "./dist/index.d.ts",
 	"files": [
 		"dist/**"
@@ -23,7 +24,7 @@
 		}
 	},
 	"dependencies": {
-		"@biscuitland/api-types": "^2.2.1",
+		"discord-api-types": "^0.37.17",
 		"ws": "^8.8.1"
 	},
 	"devDependencies": {

@@ -102,8 +102,6 @@ export class ShardManager {
 
 				config: this.options.config,
 
-				presence: this.options.makePresence,
-
 				handlePayloads: async (shard, payload) => {
 					await this.options.handleDiscordPayload(shard, payload); // remove await?
 				},

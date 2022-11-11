@@ -1,4 +1,4 @@
-import type { DiscordGatewayPayload, DiscordGetGatewayBot, GatewayIntents, DiscordActivity } from '@biscuitland/api-types';
+import type { APIGatewayBotInfo, GatewayReceivePayload, GatewayIntentBits } from 'discord-api-types/v10';
 
 import type { ShardManager } from './services/shard-manager';
 import type { Shard } from './services/shard';
@@ -9,26 +9,18 @@ export type ShardManagerOptions = Pick<SMO, Exclude<keyof SMO, keyof typeof Shar
 
 export interface SMO {
 	/** Function for interpretation of messages from discord */
-	handleDiscordPayload: (shard: Shard, payload: DiscordGatewayPayload) => unknown;
+	handleDiscordPayload: (shard: Shard, payload: GatewayReceivePayload) => unknown;
 
 	/** Based on the information in Get Gateway */
-	gateway: DiscordGetGatewayBot;
+	gateway: APIGatewayBotInfo;
 
 	/** Workers options */
 	workers: ShardManagerWorkersOptions;
 
 	/** Authentication */
 	config: {
-		intents?: GatewayIntents;
+		intents?: GatewayIntentBits;
 		token: string;
-	};
-
-	/** Presence on identify */
-	makePresence?: {
-		status: 'idle' | 'dnd' | 'online' | 'offline';
-		afk: boolean;
-		since: number | null;
-		activities: DiscordActivity[];
 	};
 
 	/** Options shards */
@@ -78,25 +70,26 @@ export interface SO {
 	id: number;
 
 	/** Based on the information in Get Gateway */
-	gateway: DiscordGetGatewayBot;
+	gateway: APIGatewayBotInfo;
 
 	/** Options shards */
 	shards: ShardManagerShardsOptions;
 
 	/** Authentication */
 	config: {
-		intents?: GatewayIntents;
+		intents?: GatewayIntentBits;
 		token: string;
 	};
 
-	/** Presence on identify */
-	presence?: ShardManagerOptions['makePresence'];
-
 	/** Function for interpretation of messages from discord */
-    handlePayloads: (shard: Shard, data: DiscordGatewayPayload) => Promise<void>;
+    handlePayloads: (shard: Shard, data: GatewayReceivePayload) => Promise<void>;
 
 	/** Notify the manager if the shard is ready. */
 	handleIdentify: (id: number) => Promise<void>;
 }
 
 export type ShardStatus = 'Disconnected' | 'Handshaking' | 'Connecting' | 'Heartbeating' | 'Identifying' | 'Resuming' | 'Ready';
+
+export type PickPartial<T, K extends keyof T> = {
+	[P in keyof T]?: T[P] | undefined;
+} & { [P in K]: T[P] };

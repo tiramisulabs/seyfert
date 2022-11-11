@@ -1,9 +1,9 @@
-import type { DiscordGatewayPayload } from '@biscuitland/api-types';
+import type { GatewayReceivePayload, GatewaySendPayload } from 'discord-api-types/gateway/v10';
 import type { ShardOptions, SO, ShardStatus } from '../types';
 
 import type { LeakyBucket } from '../utils/bucket';
 
-import { GatewayOpcodes } from '@biscuitland/api-types';
+import { GatewayOpcodes } from 'discord-api-types/gateway/v10';
 import { createLeakyBucket } from '../utils/bucket';
 
 import { WebSocket } from 'ws';
@@ -56,7 +56,7 @@ export class Shard {
 			op: GatewayOpcodes.Resume,
 			d: {
 				token: `Bot ${this.options.config.token}`,
-				session_id: this.sessionID,
+				session_id: this.sessionID!,
 				seq: this.sequence,
 			}
 		});
@@ -116,9 +116,8 @@ export class Shard {
 					device: 'Biscuit',
 					browser: 'Biscuit'
 				},
-				intents: this.options.config.intents,
-				shard: [this.options.id, this.options.gateway.shards],
-				presence: this.options.presence
+				intents: Number(this.options.config.intents),
+				shard: [this.options.id, this.options.gateway.shards]
 			}
 		});
 	}
@@ -195,7 +194,7 @@ export class Shard {
 		}
 	}
 
-	async send(payload: Partial<DiscordGatewayPayload>, priority = false) {
+	async send(payload: Partial<GatewaySendPayload>, priority = false) {
 		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
 			await this.bucket.acquire(1, priority);
 
@@ -298,7 +297,7 @@ export class Shard {
 				}
 
 				break;
-			case GatewayOpcodes.HeartbeatACK:
+			case GatewayOpcodes.HeartbeatAck:
 				this.heartbeatAck = true;
 
 				break;
@@ -433,8 +432,8 @@ export class Shard {
 	}
 
 	/** temporal */
-	pack(data: Buffer | ArrayBuffer, _isBinary: boolean): DiscordGatewayPayload {
-		return JSON.parse(textDecoder.decode(new Uint8Array(data))) as DiscordGatewayPayload;
+	pack(data: Buffer | ArrayBuffer, _isBinary: boolean): GatewayReceivePayload {
+		return JSON.parse(textDecoder.decode(new Uint8Array(data))) as GatewayReceivePayload;
 	}
 
 	/** temporal */
