@@ -1,5 +1,13 @@
 # @biscuitland/ws
 
+## 2.2.2
+
+### Patch Changes
+
+- rename guildLocales to guildLocale in interactions
+- Updated dependencies
+  - @biscuitland/api-types@2.2.2
+
 ## 2.2.1
 
 ### Patch Changes
