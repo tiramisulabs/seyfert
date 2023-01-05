@@ -1,11 +1,13 @@
 {
 	"$schema": "https://turborepo.org/schema.json",
-	"baseBranch": "origin/main",
 	"pipeline": {
 		"@biscuitland/cache#build": {
 			"dependsOn": []
 		},
 		"@biscuitland/rest#build": {
+			"dependsOn": ["@biscuitland/common#build"]
+		},
+		"@biscuitland/common#build": {
 			"dependsOn": []
 		},
 		"@biscuitland/ws#build": {

@@ -1,26 +1,25 @@
-import type { ShardManagerOptions, SMO } from '../types';
-import type { LeakyBucket } from '../utils/bucket';
+import { EventEmitter } from 'events';
+import { Shard } from './Shard';
+import type { LeakyBucket } from './utils/Bucket';
+import { createLeakyBucket } from './utils/Bucket';
+import type {
+	APIGatewayBotInfo,
+	GatewayIntentBits,
+	GatewayIdentifyProperties,
+} from 'discord-api-types/v10';
 
-import { Shard } from './shard';
-
-import { createLeakyBucket } from '../utils/bucket';
-import { Options } from '../utils/options';
-
-export class ShardManager {
+export class ShardManager extends EventEmitter {
 	static readonly DEFAULTS = {
 		workers: {
 			shards: 25,
 			amount: 5,
-			delay: 5000
+			delay: 5000,
 		},
-
 		shards: {
 			timeout: 15000,
-			delay: 5000
-		}
+			delay: 5000,
+		},
 	};
-
-	readonly options: SMO;
 
 	readonly buckets = new Map<
 		number,
@@ -32,13 +31,8 @@ export class ShardManager {
 
 	readonly shards = new Map<number, Shard>();
 
-	constructor(options: ShardManagerOptions) {
-		this.options = Options(ShardManager.DEFAULTS, options);
-	}
-
-	/** Invokes internal processing and respawns shards */
-	async respawns(): Promise<void> {
-		//
+	constructor(public options: SMO) {
+		super();
 	}
 
 	/** Invoke internal processing and spawns shards */
@@ -86,30 +80,13 @@ export class ShardManager {
 		});
 	}
 
-	/** Invokes the bucket to prepare the connection to the shard */
 	private async connect(id: number): Promise<Shard> {
-		const { gateway } = this.options;
+		const { shards } = this.options;
 
 		let shard = this.shards.get(id);
 
 		if (!shard) {
-			shard = new Shard({
-				id,
-
-				gateway: this.options.gateway,
-
-				shards: this.options.shards,
-
-				config: this.options.config,
-
-				handlePayloads: async (shard, payload) => {
-					await this.options.handleDiscordPayload(shard, payload); // remove await?
-				},
-
-				handleIdentify: async (id: number) => {
-					await this.buckets.get(id % gateway.session_start_limit.max_concurrency)!.leak.acquire(1); // remove await?
-				}
-			});
+			shard = new Shard(this, { id, timeout: shards.timeout });
 
 			this.shards.set(id, shard);
 		}
@@ -119,3 +96,50 @@ export class ShardManager {
 		return shard;
 	}
 }
+
+export interface SMO {
+	token: string;
+	gateway: APIGatewayBotInfo;
+	workers: ShardManagerWorkersOptions;
+	shards: ShardManagerShardsOptions;
+	intents: GatewayIntentBits;
+	largeThreshold?: number;
+	properties: GatewayIdentifyProperties;
+}
+
+export type ShardManagerOptions = Pick<SMO, Exclude<keyof SMO, keyof typeof ShardManager.DEFAULTS>> & Partial<SMO>;
+
+export interface ShardManagerWorkersOptions {
+	/**
+	 * Number of shards per worker
+	 * @default 25
+	 */
+	shards: number;
+
+	/**
+	 * Number of workers
+	 * @default 5
+	 */
+	amount: number;
+
+	/**
+	 * Waiting time between workers
+	 * @default 5000
+	 */
+	delay: number;
+}
+
+export interface ShardManagerShardsOptions {
+	/**
+	 * Waiting time to receive the ready event.
+	 * @default 15000
+	 */
+	timeout: number;
+
+	/**
+	 * Waiting time between shards
+	 * @default 5000
+	 */
+	delay: number;
+}
+

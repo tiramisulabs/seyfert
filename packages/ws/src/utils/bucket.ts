@@ -1,6 +1,6 @@
 /** Create from scratch */
 
-import type { PickPartial } from '../types';
+import type { PickPartial } from '@biscuitland/common';
 
 export interface LeakyBucket {
 	/** How many tokens this bucket can hold. */
@@ -19,22 +19,26 @@ export interface LeakyBucket {
 	/** Current tokens in the bucket. */
 	tokens(): number;
 
-	/** @private Internal track of when the last refill of tokens was.
+	/**
+	 * @private Internal track of when the last refill of tokens was.
 	 * DO NOT TOUCH THIS! Unless you know what you are doing ofc :P
 	 */
 	lastRefill: number;
 
-	/** @private Internal state of whether currently it is allowed to acquire tokens.
+	/**
+	 * @private Internal state of whether currently it is allowed to acquire tokens.
 	 * DO NOT TOUCH THIS! Unless you know what you are doing ofc :P
 	 */
 	allowAcquire: boolean;
 
-	/** @private Internal number of currently available tokens.
+	/**
+	 * @private Internal number of currently available tokens.
 	 * DO NOT TOUCH THIS! Unless you know what you are doing ofc :P
 	 */
 	tokensState: number;
 
-	/** @private Internal array of promises necessary to guarantee no race conditions.
+	/**
+	 * @private Internal array of promises necessary to guarantee no race conditions.
 	 * DO NOT TOUCH THIS! Unless you know what you are doing ofc :P
 	 */
 	waiting: ((_?: unknown) => void)[];
