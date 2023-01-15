@@ -553,9 +553,10 @@ export class Guild extends BaseGuild implements Model {
 			data.default_message_notifications;
 		this.explicitContentFilterLevel = data.explicit_content_filter;
 		this.premiumTier = data.premium_tier;
+
 		this.members = new Map(
 			data.members?.map(member => [
-				data.id,
+			    member.user!.id,
 				new Member(session, { ...member, user: member.user! }, data.id),
 			])
 		);
