@@ -32,18 +32,18 @@ export class Member implements Model {
 
 		this.nickname = data.nick ? data.nick : undefined;
 		this.premiumSince = data.premium_since
-			? Number.parseInt(data.premium_since)
+			? Date.parse(data.premium_since)
 			: undefined;
 
 		this.channelPermissions = data.permissions ? new Permissions(BigInt(data.permissions)) : undefined;
-		this.joinedTimestamp = Number.parseInt(data.joined_at);
+		this.joinedTimestamp = Date.parse(data.joined_at);
 		this.roles = data.roles;
 		this.deaf = !!data.deaf;
 		this.mute = !!data.mute;
 		this.pending = !!data.pending;
 		this.communicationDisabledUntilTimestamp =
 			data.communication_disabled_until
-				? Number.parseInt(data.communication_disabled_until)
+				? Date.parse(data.communication_disabled_until)
 				: undefined;
 	}
 

@@ -108,7 +108,7 @@ export class Invite {
 			: undefined;
 		this.code = data.code;
 		this.expiresAt = data.expires_at
-			? Number.parseInt(data.expires_at)
+			? Date.parse(data.expires_at)
 			: undefined;
 		this.inviter = data.inviter
 			? new User(session, data.inviter)

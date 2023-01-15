@@ -1147,8 +1147,8 @@ export class ChannelFactory {
             return {
                 id: v.id,
                 type: v.type,
-                allow: new Permissions(parseInt(v.allow!)),
-                deny: new Permissions(parseInt(v.deny!)),
+                allow: new Permissions(Number.parseInt(v.allow!)),
+                deny: new Permissions(Number.parseInt(v.deny!)),
             };
         });
     }
