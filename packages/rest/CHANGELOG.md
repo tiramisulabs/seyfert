@@ -1,5 +1,13 @@
 # @biscuitland/rest
 
+## 2.2.3
+
+### Patch Changes
+
+- bug fixes
+- Updated dependencies
+  - @biscuitland/api-types@2.2.3
+
 ## 2.2.2
 
 ### Patch Changes

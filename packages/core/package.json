@@ -1,6 +1,6 @@
 {
 	"name": "@biscuitland/core",
-	"version": "2.2.2",
+	"version": "2.2.3",
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",
 	"types": "./dist/index.d.ts",
@@ -23,9 +23,9 @@
 		}
 	},
 	"dependencies": {
-		"@biscuitland/api-types": "^2.2.2",
-		"@biscuitland/rest": "^2.2.2",
-		"@biscuitland/ws": "^2.2.2"
+		"@biscuitland/api-types": "^2.2.3",
+		"@biscuitland/rest": "^2.2.3",
+		"@biscuitland/ws": "^2.2.3"
 	},
 	"devDependencies": {
 		"@types/node": "^18.7.14",
