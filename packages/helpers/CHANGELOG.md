@@ -1,5 +1,17 @@
 # @biscuitland/helpers
 
+## 2.3.0
+
+### Minor Changes
+
+- fix TODO
+
+### Patch Changes
+
+- Updated dependencies
+  - @biscuitland/api-types@2.3.0
+  - @biscuitland/core@2.3.0
+
 ## 2.2.3
 
 ### Patch Changes

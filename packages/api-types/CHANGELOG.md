@@ -1,5 +1,11 @@
 # @biscuitland/api-types
 
+## 2.3.0
+
+### Minor Changes
+
+- fix TODO
+
 ## 2.2.3
 
 ### Patch Changes
