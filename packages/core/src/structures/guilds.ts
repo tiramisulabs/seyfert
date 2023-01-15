@@ -562,7 +562,7 @@ export class Guild extends BaseGuild implements Model {
 		);
 
 		this.roles = new Map(
-			data.roles.map(role => [data.id, new Role(session, role, data.id)])
+			data.roles.map(role => [role.id, new Role(session, role, data.id)])
 		);
 
 		this.emojis = new Map(
