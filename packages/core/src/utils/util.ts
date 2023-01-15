@@ -1,6 +1,7 @@
 import type { SelectMenuBuilder, InputTextBuilder, ButtonBuilder } from '@biscuitland/helpers';
 import type { Permissions } from '../structures/special/permissions';
 import type { Snowflake } from '../snowflakes';
+import type { DiscordMessage, MakeRequired } from '@biscuitland/api-types';
 
 /*
  * @link https://discord.com/developers/docs/resources/channel#message-object-message-flags
@@ -94,4 +95,14 @@ export abstract class Util {
     static getBotIdFromToken(token: string): string {
         return atob(token.split('.')[0]);
     }
+
+    static isFullMessage(m: Partial<DiscordMessage> | DiscordMessage): m is DiscordMessage {
+        return !!m.edited_timestamp;
+    }
+
+    static isPartialMessage(m: Partial<DiscordMessage> | DiscordMessage): m is PartialMessage {
+        return !m.edited_timestamp;
+    }
 }
+
+export type PartialMessage = MakeRequired<DiscordMessage, "id" | "channel_id">;

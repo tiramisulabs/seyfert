@@ -82,6 +82,7 @@ import type {
 } from '../structures/message-reaction';
 
 import { NewMessageReactionAdd } from '../structures/message-reaction';
+import { Util, PartialMessage } from '../utils/util';
 
 export type RawHandler<T> = (...args: [Session, number, T]) => void;
 export type Handler<T extends [obj?: unknown, ddy?: unknown]> = (
@@ -106,21 +107,20 @@ export const MESSAGE_CREATE: RawHandler<DiscordMessage> = (
 	session.events.emit('messageCreate', new Message(session, message));
 };
 
-export const MESSAGE_UPDATE: RawHandler<DiscordMessage> = (
+export const MESSAGE_UPDATE: RawHandler<PartialMessage> = (
 	session,
 	_shardId,
 	new_message
 ) => {
 	// message is partial
-	if (!new_message.edited_timestamp) {
+	if (Util.isPartialMessage(new_message)) {
 		const message = {
-			// TODO: improve this
-			// ...new_message,
 			session,
 			id: new_message.id,
 			guildId: new_message.guild_id,
 			channelId: new_message.channel_id,
-		};
+            fields: new_message,
+		}; //satisfies Partial<Message>;
 
 		// all methods of Message can run on partial messages
 		// we aknowledge people that their callback could be partial but giving them all functions of Message
@@ -130,7 +130,12 @@ export const MESSAGE_UPDATE: RawHandler<DiscordMessage> = (
 		return;
 	}
 
-	session.events.emit('messageUpdate', new Message(session, new_message));
+    if (Util.isFullMessage(new_message)) {
+	    session.events.emit('messageUpdate', {
+            ...new Message(session, new_message),
+            fields: {} as PartialMessage
+        });
+    }
 };
 
 export const MESSAGE_DELETE: RawHandler<DiscordMessageDelete> = (
@@ -714,7 +719,7 @@ export type AllEvents = keyof Events;
 export interface Events {
 	ready: Handler<[Ready, number]>;
 	messageCreate: Handler<[Message]>;
-	messageUpdate: Handler<[Partial<Message>]>;
+	messageUpdate: Handler<[Partial<Message> & { fields: PartialMessage }]>;
 	messageDelete: Handler<
 		[{ id: Snowflake; channelId: Snowflake; guildId?: Snowflake }]
 	>;
