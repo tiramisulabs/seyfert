@@ -1,4 +1,4 @@
-import type { RestAdapater } from './RestAdapter';
+import type { RestAdapater } from '@biscuitland/common';
 import type { Routes } from './Routes';
 
 export enum RequestMethod {

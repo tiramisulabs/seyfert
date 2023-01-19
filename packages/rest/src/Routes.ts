@@ -1,4 +1,5 @@
-import type { RestAdapater, RestArguments } from './RestAdapter';
+import type { RestAdapater } from '@biscuitland/common';
+import type { RestArguments } from './REST';
 
 export interface Routes<CRA extends RestAdapater<any>> {
 	guilds(id: string): {
