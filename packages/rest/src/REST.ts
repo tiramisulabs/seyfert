@@ -3,12 +3,13 @@ import { REST } from '@discordjs/rest';
 import type { Identify, Tail, RestAdapater } from '@biscuitland/common';
 import type { RequestMethod } from './Router';
 
+export interface BiscuitREST extends RestAdapater<BiscuitRESTOptions> {
+	cRest: REST;
+}
 
-export class BiscuitREST
-	implements RestAdapater<BiscuitRESTOptions> {
-	rest: REST;
+export class BiscuitREST {
 	constructor(public options: BiscuitRESTOptions) {
-		this.rest = new REST(this.options);
+		this.cRest= new REST(this.options);
 	}
 
 	async get<T>(
@@ -16,7 +17,7 @@ export class BiscuitREST
 		body?: RequestBody,
 		options?: RequestOptions
 	): Promise<T> {
-		const data = await this.rest.get(route as `/${string}`, {
+		const data = await this.cRest.get(route as `/${string}`, {
 			...options,
 			...body,
 		});
@@ -29,7 +30,7 @@ export class BiscuitREST
 		body?: RequestBody,
 		options?: RequestOptions
 	): Promise<T> {
-		const data = await this.rest.post(route as `/${string}`, {
+		const data = await this.cRest.post(route as `/${string}`, {
 			...options,
 			...body,
 		});
@@ -42,7 +43,7 @@ export class BiscuitREST
 		body?: RequestBody,
 		options?: RequestOptions
 	): Promise<T> {
-		const data = await this.rest.put(route as `/${string}`, {
+		const data = await this.cRest.put(route as `/${string}`, {
 			...options,
 			...body,
 		});
@@ -55,7 +56,7 @@ export class BiscuitREST
 		body?: RequestBody,
 		options?: RequestOptions
 	): Promise<T> {
-		const data = await this.rest.patch(route as `/${string}`, {
+		const data = await this.cRest.patch(route as `/${string}`, {
 			...options,
 			...body,
 		});
@@ -68,7 +69,7 @@ export class BiscuitREST
 		body?: RequestBody,
 		options?: RequestOptions
 	): Promise<T> {
-		const data = await this.rest.delete(route as `/${string}`, {
+		const data = await this.cRest.delete(route as `/${string}`, {
 			...options,
 			...body,
 		});
@@ -80,7 +81,7 @@ export class BiscuitREST
 		if (!token || token?.length) {
 			throw new Error('[REST] The token has not been provided');
 		}
-		this.rest.setToken(token);
+		this.cRest.setToken(token);
 		return this;
 	}
 }

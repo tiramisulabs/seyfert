@@ -1,4 +1,6 @@
 import type { RestAdapater } from '@biscuitland/common';
+import { CDN_URL } from '@biscuitland/common';
+import type { CDNRoutes } from './CDN';
 import type { Routes } from './Routes';
 
 export enum RequestMethod {
@@ -14,7 +16,7 @@ export class Router<CustomRestAdapter extends RestAdapater<any>> {
 		return;
 	};
 
-	constructor(public rest: CustomRestAdapter) {}
+	constructor(private rest: CustomRestAdapter) {}
 
 	createProxy<T extends CustomRestAdapter>(
 		route = [] as string[]
@@ -33,5 +35,33 @@ export class Router<CustomRestAdapter extends RestAdapater<any>> {
 				return this.createProxy<T>(route);
 			},
 		}) as unknown as Routes<T>;
+	}
+}
+
+export class CDN {
+	static createProxy(route = [] as string[]): CDNRoutes {
+		const noop = () => {
+			return;
+		};
+		return new Proxy(noop, {
+			get: (_, key: string) => {
+				if (key === 'get') {
+					return (value?: string) => {
+						const lastRoute = `${CDN_URL}/${route.join('/')}`;
+						if (value) {
+							if (typeof value !== 'string') { value = String(value); }
+							return `${lastRoute}/${value}`;
+						}
+						return lastRoute;
+					};
+				}
+				route.push(key);
+				return this.createProxy(route);
+			},
+			apply: (...[, _, args]) => {
+				route.push(...args.filter(x => x != null));
+				return this.createProxy(route);
+			},
+		}) as unknown as CDNRoutes;
 	}
 }
