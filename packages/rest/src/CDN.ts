@@ -4,33 +4,29 @@ export interface CDNRoutes {
 			get(embed: UserAvatarDefault): string;
 		};
 	};
-	user(id: string): {
-		avatar(icon: string): {
-			get(): string;
-		};
+	avatars(id: string): {
+		get(hash: string): string;
 	};
-	icons: {
-		guild(id: string): {
-			icon(hash: string): {
-				get: string;
-			};
-		};
+	icons(guildId: string): {
+		get(hash: string): string;
+
+	};
+	splashes(guildId: string): {
+		get(hash: string): string;
 	};
 	discoverySplashes(guidId: string): {
 		get(hash: string): string;
 	};
-	banners: {
-		guild(id: string): {
-			get(hash: string): string;
-		};
+	banners(id: string): {
+		get(hash: string): string;
 	};
 	guilds(id: string): {
 		users(id: string): {
 			avatars(hash: string): {
-				get: string;
+				get(): string;
 			};
 			banners(hash: string): {
-				get: string;
+				get(): string;
 			};
 		};
 	};

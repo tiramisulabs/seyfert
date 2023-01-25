@@ -5,10 +5,8 @@ import { UserManager } from './UserManager';
 
 export class MainManager {
 	constructor(private readonly session: Session) {
-		this.user = new UserManager(this.session);
-		this.guild = new GuildManager(this.session);
 	}
 
-	user: UserManager;
-	guild: GuildManager;
+	users: UserManager = new UserManager(this.session);
+	guilds: GuildManager = new GuildManager(this.session);
 }

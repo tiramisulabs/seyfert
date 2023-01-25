@@ -1,4 +1,4 @@
-import type { APIGuild, GuildDefaultMessageNotifications, GuildPremiumTier } from 'discord-api-types/v10';
+import type { APIGuild, GuildDefaultMessageNotifications, GuildNSFWLevel, GuildPremiumTier } from 'discord-api-types/v10';
 import type { Session } from '../session';
 import { AnonymousGuild } from './AnonymousGuild';
 
@@ -7,9 +7,11 @@ export class Guild extends AnonymousGuild {
 	constructor(session: Session, data: APIGuild) {
 		super(session, data);
 		this.ownerId = data.owner_id;
+		this.nsfwLevel = data.nsfw_level;
 		this.widgetEnabled = !!data.widget_enabled;
 		this.defaultMessageNotificationLevel = data.default_message_notifications;
 		this.premiumTier = data.premium_tier;
+		this.premiumSubscriptionCount = data.premium_subscription_count;
 		this.members = [];
 		this.roles = [];
 		this.emojis = [];
@@ -21,6 +23,12 @@ export class Guild extends AnonymousGuild {
 	 * There are servers that do not return this property
 	 */
 	ownerId: string;
+
+	/**
+	 * The guild's nsfw level.
+	 * @link https://discord.com/developers/docs/resources/guild#guild-object-guild-nsfw-level
+	 */
+	nsfwLevel: GuildNSFWLevel;
 
 	/** True if the server widget is enabled */
 	widgetEnabled: boolean;
@@ -39,6 +47,9 @@ export class Guild extends AnonymousGuild {
 	 * @link https://discord.com/developers/docs/resources/guild#guild-object-premium-tier
 	 */
 	premiumTier: GuildPremiumTier;
+
+	/** The number of boosts this guild currently has. */
+	premiumSubscriptionCount?: number;
 
 	/**
 	 * A map with the guild's members.

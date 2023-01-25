@@ -18,7 +18,7 @@ export class Member extends Base {
 		super(session, data.user!.id);
 		this.user = new User(session, data.user!);
 		this.guildId = guildId;
-		this.avatarHash = data.avatar ?? undefined;
+		this.avatar = data.avatar ?? undefined;
 		this.nickname = data.nick ?? undefined;
 		this.joinedTimestamp = Date.parse(data.joined_at);
 		this.premiumSince = Date.parse(data.premium_since ?? '');
@@ -35,7 +35,7 @@ export class Member extends Base {
 	user: User;
 
 	/** the member's guild avatar hash */
-	avatarHash?: string;
+	avatar?: string;
 
 	/** this user's guild nickname */
 	nickname?: string;
@@ -72,14 +72,14 @@ export class Member extends Base {
 	}
 
 	dynamicAvatarURL(options?: ImageOptions): string {
-		if (!this.avatarHash) {
+		if (!this.avatar) {
 			return this.user.avatarURL(options);
 		}
 		return this.session.utils.formatImageURL(
 			this.session.cdn
 				.guilds(this.guildId)
 				.users(this.id)
-				.avatars(this.avatarHash)
+				.avatars(this.avatar)
 				.get(),
 			options?.size,
 			options?.format

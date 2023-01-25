@@ -8,7 +8,7 @@ export class User extends Base {
 		super(session, data.id);
 		this.username = data.username;
 		this.discriminator = data.discriminator;
-		this.avatarHash = data.avatar ?? undefined;
+		this.avatar = data.avatar ?? undefined;
 		this.accentColor = data.accent_color ?? undefined;
 		this.bot = !!data.bot;
 		this.system = !!data.system;
@@ -23,7 +23,7 @@ export class User extends Base {
 	discriminator: string;
 
 	/** the user's avatar hash */
-	avatarHash?: string;
+	avatar?: string;
 
 	/** the user's banner color encoded as an integer representation of hexadecimal color code */
 	accentColor?: number;
@@ -45,15 +45,19 @@ export class User extends Base {
 	}
 
 	avatarURL(options?: ImageOptions): string {
-		if (!this.avatarHash) {
+		if (!this.avatar) {
 			return `${this.session.cdn.embed.avatars
 				.get(Number(this.discriminator) % 5)}.png`;
 		}
 		return this.session.utils.formatImageURL(
-			this.session.cdn.user(this.id).avatar(this.avatarHash).get(),
+			this.session.cdn.avatars(this.id).get(this.avatar),
 			options?.size,
 			options?.format
 		);
+	}
+
+	fetch(): Promise<User | undefined> {
+		return this.session.managers.users.fetch(this.id);
 	}
 
 	toString(): string {

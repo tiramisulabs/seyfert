@@ -1,6 +1,5 @@
 import type {
-	APIGuild,
-	GuildNSFWLevel,
+	APIPartialGuild,
 	GuildVerificationLevel,
 } from 'discord-api-types/v10';
 import type { Session } from '../session';
@@ -12,50 +11,38 @@ import { BaseGuild } from './extra/BaseGuild';
  * @link https://discord.com/developers/docs/resources/guild#guild-resource
  */
 export class AnonymousGuild extends BaseGuild {
-	constructor(session: Session, data: APIGuild) {
+	constructor(session: Session, data: APIPartialGuild) {
 		super(session, data);
 		this.verificationLevel = data.verification_level;
-		this.nsfwLevel = data.nsfw_level;
-
-		this.splashHash = data.splash ?? undefined;
-		this.bannerHash = data.banner ?? undefined;
+		this.splash = data.splash ?? undefined;
+		this.banner = data.banner ?? undefined;
 		this.vanityUrlCode = data.vanity_url_code ?? undefined;
 		this.description = data.description ?? undefined;
-		this.premiumSubscriptionCount = data.premium_subscription_count;
 	}
 
 	/**
 	 * The guild's splash hash.
 	 * @link https://discord.com/developers/docs/reference#image-formatting
 	 */
-	splashHash?: string;
+	splash?: string;
 
 	/**
 	 * The guild's banner hash.
 	 * @link https://discord.com/developers/docs/reference#image-formatting
 	 */
-	bannerHash?: string;
+	banner?: string;
 
 	/**
 	 * The guild's verification level.
 	 * @link https://discord.com/developers/docs/resources/guild#guild-object-verification-level
 	 */
-	verificationLevel: GuildVerificationLevel;
+	verificationLevel?: GuildVerificationLevel;
 
 	/** The guild's vanity url code. */
 	vanityUrlCode?: string;
 
-	/**
-	 * The guild's nsfw level.
-	 * @link https://discord.com/developers/docs/resources/guild#guild-object-guild-nsfw-level
-	 */
-	nsfwLevel: GuildNSFWLevel;
-
 	/** The guild's description. */
 	description?: string;
-
-	/** The number of boosts this guild currently has. */
-	premiumSubscriptionCount?: number;
 
 	/**
 	 * splashURL gets the current guild splash as a string.
@@ -64,12 +51,11 @@ export class AnonymousGuild extends BaseGuild {
 	 * @returns Splash url or void.
 	 */
 	splashURL(options?: ImageOptions): string | void {
-		if (!this.splashHash) { return; }
+		if (!this.splash) {
+			return;
+		}
 		this.session.utils.formatImageURL(
-			this.session.cdn.splashes
-				.guild(this.id)
-				.splash(this.splashHash)
-				.get(),
+			this.session.cdn.discoverySplashes(this.id).get(this.splash),
 			options?.size,
 			options?.format
 		);
@@ -82,12 +68,11 @@ export class AnonymousGuild extends BaseGuild {
 	 * @returns Banner url or void
 	 */
 	bannerURL(options?: ImageOptions): string | void {
-		if (!this.bannerHash) { return; }
+		if (!this.banner) {
+			return;
+		}
 		this.session.utils.formatImageURL(
-			this.session.cdn.banners
-				.guild(this.id)
-				.banner(this.bannerHash)
-				.get(),
+			this.session.cdn.banners.guild(this.id).get(this.banner),
 			options?.size,
 			options?.format
 		);

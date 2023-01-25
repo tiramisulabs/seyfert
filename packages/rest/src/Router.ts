@@ -25,7 +25,7 @@ export class Router<CustomRestAdapter extends RestAdapater<any>> {
 			get: (_, key: string) => {
 				if (RequestMethod[key]) {
 					return (...options: any[]) =>
-						this.rest[key](route, ...options);
+						this.rest[key](route.join('/'), ...options);
 				}
 				route.push(key);
 				return this.createProxy<T>(route);

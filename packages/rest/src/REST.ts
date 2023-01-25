@@ -14,12 +14,10 @@ export class BiscuitREST {
 
 	async get<T>(
 		route: string,
-		body?: RequestBody,
 		options?: RequestOptions
 	): Promise<T> {
 		const data = await this.cRest.get(route as `/${string}`, {
-			...options,
-			...body,
+			...options
 		});
 
 		return data as T;
@@ -66,12 +64,10 @@ export class BiscuitREST {
 
 	async delete<T>(
 		route: string,
-		body?: RequestBody,
 		options?: RequestOptions
 	): Promise<T> {
 		const data = await this.cRest.delete(route as `/${string}`, {
-			...options,
-			...body,
+			...options
 		});
 
 		return data as T;
