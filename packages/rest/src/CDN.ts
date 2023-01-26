@@ -30,6 +30,40 @@ export interface CDNRoutes {
 			};
 		};
 	};
+	emojis(id: string): {
+		get(): string;
+	};
+	appIcons(appId: string): {
+		get(iconOrCover: string): string;
+	};
+	appAssets(appId: string): {
+		get(asset: string): string;
+		achievements(id: string): {
+			icons(hash: string): {
+				get(): string;
+			};
+		};
+	};
+	teamIcons(teamId: string): {
+		get(hash: string): string;
+	};
+	stickers(id: string): {
+		get(): string;
+	};
+	roleIcons(roleId: string): {
+		get(icon: string): string;
+	};
+	guildEvents(id: string): {
+		get(cover: string): string;
+	};
+}
+
+export interface CDNRoutes {
+	appAssets(id: '710982414301790216'): {
+		store(packBannerId: string): {
+			get(): string;
+		};
+	};
 }
 
 export type UserAvatarDefault = 1 | 2 | 3 | 4 | 5 | number;
