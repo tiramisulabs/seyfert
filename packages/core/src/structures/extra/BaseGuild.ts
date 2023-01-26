@@ -1,7 +1,7 @@
 import type { APIGuild, APIPartialGuild } from 'discord-api-types/v10';
 import { GuildFeature } from 'discord-api-types/v10';
 import type { Session } from '../../session';
-import type { ImageOptions } from '../../utils/types';
+import type { ImageOptions } from '../../';
 import { Base } from './base';
 
 /**
@@ -36,7 +36,9 @@ export class BaseGuild extends Base {
 	 * @link https://discord.com/developers/docs/resources/guild#guild-object-guild-features
 	 */
 	get partnered(): boolean {
-		if (!this.features) { return false; }
+		if (!this.features) {
+			return false;
+		}
 		return this.features.includes(GuildFeature.Partnered);
 	}
 
@@ -45,7 +47,9 @@ export class BaseGuild extends Base {
 	 * @link https://discord.com/developers/docs/resources/guild#guild-object-guild-features
 	 */
 	get verifed(): boolean {
-		if (!this.features) { return false; }
+		if (!this.features) {
+			return false;
+		}
 		return this.features.includes(GuildFeature.Verified);
 	}
 
@@ -58,7 +62,7 @@ export class BaseGuild extends Base {
 			return;
 		}
 		return this.session.utils.formatImageURL(
-			this.session.cdn.icons.guild(this.id).icon(this.icon).get(),
+			this.session.cdn.icons(this.id).get(this.icon),
 			options?.size,
 			options?.format
 		);

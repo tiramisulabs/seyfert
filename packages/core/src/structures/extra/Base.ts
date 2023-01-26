@@ -5,8 +5,11 @@ import type { Session } from '../../session';
  */
 export class Base {
 	constructor(
+		// rome-ignore lint/correctness/noUnusedVariables: Declaring them here avoids reassigning them manually
 		readonly session: Session,
+
 		/** Unique ID of the object */
+		// rome-ignore lint/correctness/noUnusedVariables: Declaring them here avoids reassigning them manually
 		readonly id: string
 	) {}
 

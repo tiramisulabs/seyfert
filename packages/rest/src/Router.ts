@@ -8,7 +8,7 @@ export enum RequestMethod {
 	Get = 'get',
 	Patch = 'patch',
 	Post = 'post',
-	Put = 'put',
+	Put = 'put'
 }
 
 export class Router<CustomRestAdapter extends RestAdapater<any>> {
@@ -18,9 +18,7 @@ export class Router<CustomRestAdapter extends RestAdapater<any>> {
 
 	constructor(private rest: CustomRestAdapter) {}
 
-	createProxy<T extends CustomRestAdapter>(
-		route = [] as string[]
-	): Routes<T> {
+	createProxy<T extends CustomRestAdapter>(route = [] as string[]): Routes<T> {
 		return new Proxy(this.noop, {
 			get: (_, key: string) => {
 				if (RequestMethod[key]) {
@@ -31,9 +29,9 @@ export class Router<CustomRestAdapter extends RestAdapater<any>> {
 				return this.createProxy<T>(route);
 			},
 			apply: (...[, _, args]) => {
-				route.push(...args.filter(x => x != null));
+				route.push(...args.filter((x) => x != null));
 				return this.createProxy<T>(route);
-			},
+			}
 		}) as unknown as Routes<T>;
 	}
 }
@@ -49,7 +47,9 @@ export class CDN {
 					return (value?: string) => {
 						const lastRoute = `${CDN_URL}/${route.join('/')}`;
 						if (value) {
-							if (typeof value !== 'string') { value = String(value); }
+							if (typeof value !== 'string') {
+								value = String(value);
+							}
 							return `${lastRoute}/${value}`;
 						}
 						return lastRoute;
@@ -59,9 +59,9 @@ export class CDN {
 				return this.createProxy(route);
 			},
 			apply: (...[, _, args]) => {
-				route.push(...args.filter(x => x != null));
+				route.push(...args.filter((x) => x != null));
 				return this.createProxy(route);
-			},
+			}
 		}) as unknown as CDNRoutes;
 	}
 }

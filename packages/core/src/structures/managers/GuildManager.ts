@@ -9,7 +9,9 @@ import type {
 	GuildDefaultMessageNotifications,
 	GuildExplicitContentFilter,
 	GuildFeature,
-	APIChannel
+	APIChannel,
+	APIThreadList,
+	APIBan
 } from 'discord-api-types/v10';
 import { Guild } from '../Guild';
 
@@ -20,8 +22,8 @@ export class GuildManager {
 		const guild = this.session.api
 			.guilds(guildId)
 			.get<APIGuild>()
-			.then(g => new Guild(this.session, g))
-			.catch(_ => undefined);
+			.then((g) => new Guild(this.session, g))
+			.catch((_) => undefined);
 
 		return guild;
 	}
@@ -30,41 +32,65 @@ export class GuildManager {
 		const guild = this.session.api
 			.guilds()
 			.post<APIGuild>({ body: options })
-			.then(g => new Guild(this.session, g));
+			.then((g) => new Guild(this.session, g));
 
 		return guild;
 	}
 
 	async delete(guildId: string): Promise<void> {
-		return this.session.api
-			.guilds(guildId)
-			.delete();
+		return this.session.api.guilds(guildId).delete();
 	}
 
 	async edit(guildId: string, options: GuildEditOptions): Promise<Guild> {
 		const guild = this.session.api
 			.guilds(guildId)
 			.patch<APIGuild>({ body: options })
-			.then(g => new Guild(this.session, g));
+			.then((g) => new Guild(this.session, g));
 		return guild;
 	}
 
-	async getChannels(guildId: string): Promise<APIChannel[]> { // TODO CHANNELS
+	async getChannels(guildId: string): Promise<APIChannel[]> {
+		// TODO CHANNELS
 		const channels = this.session.api
 			.guilds(guildId)
-			.channels
-			.get<APIChannel[]>();
+			.channels.get<APIChannel[]>();
 
 		return channels;
 	}
 
-	async createChannel(guildId: string, options: GuildCreateOptionsChannel): Promise<APIChannel> { // TODO CHANNELS
+	async createChannel(
+		guildId: string,
+		options: GuildCreateOptionsChannel
+	): Promise<APIChannel> {
+		// TODO CHANNELS
 		const channel = this.session.api
 			.guilds(guildId)
-			.channels
-			.post<APIChannel>({ body: options });
+			.channels.post<APIChannel>({ body: options });
 
 		return channel;
+	}
+
+	async editChannelPositions(
+		guildId: string,
+		options: GuildChannelEditPositionOptions[]
+	): Promise<void> {
+		return this.session.api
+			.guilds(guildId)
+			.channels.patch<void>({ body: options })
+			.catch((_) => undefined);
+	}
+
+	async getActiveThreads(guildId: string): Promise<APIThreadList[]> {
+		const threads = this.session.api
+			.guilds(guildId)
+			.threads()
+			.active.get<APIThreadList[]>();
+
+		return threads;
+	}
+
+	async getBans(guildId: string): Promise<APIBan[]> {
+		return this.session.api.guilds(guildId).bans().get<APIBan[]>();
 	}
 }
 
@@ -136,6 +162,17 @@ export interface GuildEditOptions extends Partial<GuildCreateOptions> {
 /**
  * @link https://discord.com/developers/docs/resources/guild#create-guild-channel
  */
-export interface GuildChannelCreateOptions extends Partial<GuildCreateOptionsChannel> {
+export interface GuildChannelCreateOptions
+	extends Partial<GuildCreateOptionsChannel> {
 	name: string;
+}
+
+/**
+ * @link https://discord.com/developers/docs/resources/guild#modify-guild-channel-positions
+ */
+export interface GuildChannelEditPositionOptions {
+	id: string;
+	position: number;
+	lockPermissions?: boolean;
+	parentId?: string;
 }

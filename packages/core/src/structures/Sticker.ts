@@ -1,8 +1,11 @@
-import type { APISticker, StickerFormatType, StickerType } from 'discord-api-types/v10';
+import type {
+	APISticker,
+	StickerFormatType,
+	StickerType
+} from 'discord-api-types/v10';
 import type { Session } from '../session';
 import { Base } from './extra/base';
 import { User } from './User';
-
 
 export class Sticker extends Base {
 	constructor(session: Session, data: APISticker) {
@@ -18,7 +21,9 @@ export class Sticker extends Base {
 		this.guildId = data.guild_id;
 		this.sortValue = data.sort_value;
 
-		if (data.user) { this.user = new User(this.session, data.user); }
+		if (data.user) {
+			this.user = new User(this.session, data.user);
+		}
 	}
 
 	/**	name of the sticker */

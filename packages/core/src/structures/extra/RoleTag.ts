@@ -1,6 +1,5 @@
 import type { APIRoleTags } from 'discord-api-types/v10';
 
-
 export class RoleTag {
 	constructor(data: APIRoleTags) {
 		this.botId = data.bot_id;

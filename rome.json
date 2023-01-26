@@ -1,0 +1,49 @@
+{
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": false,
+      "correctness": {
+        "recommended": true,
+        "noUnusedVariables": "warn"
+      },
+      "style": {
+        "recommended": true,
+        "noNegationElse": "error",
+        "useShorthandArrayType": "error",
+        "useWhile": "off"
+      },
+      "suspicious": {
+        "recommended": true,
+        "noExplicitAny": "off"
+      },
+      "nursery": {
+        "recommended": true,
+        "noBannedTypes": "error",
+        "noConstructorReturn": "error",
+        "noVoidTypeReturn": "error",
+        "useCamelCase": "off",
+        "noDuplicateObjectKeys": "warn",
+        "noVar": "warn",
+        "useConst": "error",
+        "useNumericLiterals": "error"
+      }
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "indentSize": 2,
+    "indentStyle": "tab",
+    "lineWidth": 80,
+    "formatWithErrors": true
+  },
+  "files": {
+    "ignore": [
+      "node_modules/",
+      "build",
+      "dist",
+      "tsup.config.ts",
+      "__test__"
+    ]
+  }
+}

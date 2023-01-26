@@ -1,9 +1,6 @@
 {
 	"$schema": "https://turborepo.org/schema.json",
 	"pipeline": {
-		"@biscuitland/cache#build": {
-			"dependsOn": []
-		},
 		"@biscuitland/rest#build": {
 			"dependsOn": ["@biscuitland/common#build"]
 		},
@@ -16,14 +13,8 @@
 		"@biscuitland/core#build": {
 			"dependsOn": ["@biscuitland/rest#build", "@biscuitland/ws#build"]
 		},
-		"@biscuitland/helpers#build": {
-			"dependsOn": ["@biscuitland/core#build"]
-		},
 		"clean": {
 			"cache": false
-		},
-		"lint": {
-			"outputs": []
 		},
 		"dev": {
 			"cache": false

@@ -9,13 +9,10 @@ export interface BiscuitREST extends RestAdapater<BiscuitRESTOptions> {
 
 export class BiscuitREST {
 	constructor(public options: BiscuitRESTOptions) {
-		this.cRest= new REST(this.options);
+		this.cRest = new REST(this.options);
 	}
 
-	async get<T>(
-		route: string,
-		options?: RequestOptions
-	): Promise<T> {
+	async get<T>(route: string, options?: RequestOptions): Promise<T> {
 		const data = await this.cRest.get(route as `/${string}`, {
 			...options
 		});
@@ -30,7 +27,7 @@ export class BiscuitREST {
 	): Promise<T> {
 		const data = await this.cRest.post(route as `/${string}`, {
 			...options,
-			...body,
+			...body
 		});
 
 		return data as T;
@@ -43,7 +40,7 @@ export class BiscuitREST {
 	): Promise<T> {
 		const data = await this.cRest.put(route as `/${string}`, {
 			...options,
-			...body,
+			...body
 		});
 
 		return data as T;
@@ -56,16 +53,13 @@ export class BiscuitREST {
 	): Promise<T> {
 		const data = await this.cRest.patch(route as `/${string}`, {
 			...options,
-			...body,
+			...body
 		});
 
 		return data as T;
 	}
 
-	async delete<T>(
-		route: string,
-		options?: RequestOptions
-	): Promise<T> {
+	async delete<T>(route: string, options?: RequestOptions): Promise<T> {
 		const data = await this.cRest.delete(route as `/${string}`, {
 			...options
 		});

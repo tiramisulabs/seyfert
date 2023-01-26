@@ -5,7 +5,7 @@ import { createLeakyBucket } from './utils/Bucket';
 import type {
 	APIGatewayBotInfo,
 	GatewayIntentBits,
-	GatewayIdentifyProperties,
+	GatewayIdentifyProperties
 } from 'discord-api-types/v10';
 
 export class ShardManager extends EventEmitter {
@@ -13,12 +13,12 @@ export class ShardManager extends EventEmitter {
 		workers: {
 			shards: 25,
 			amount: 5,
-			delay: 5000,
+			delay: 5000
 		},
 		shards: {
 			timeout: 15000,
-			delay: 5000,
-		},
+			delay: 5000
+		}
 	};
 
 	readonly buckets = new Map<
@@ -46,8 +46,8 @@ export class ShardManager extends EventEmitter {
 				leak: createLeakyBucket({
 					max: 1,
 					refillAmount: 1,
-					refillInterval: workers.delay,
-				}),
+					refillInterval: workers.delay
+				})
 			});
 		}
 
@@ -58,7 +58,7 @@ export class ShardManager extends EventEmitter {
 
 			if (bucket) {
 				const workerID = Math.floor(i / workers.shards);
-				const worker = bucket.workers.find(w => w.id === workerID);
+				const worker = bucket.workers.find((w) => w.id === workerID);
 
 				if (worker) {
 					worker.queue.push(i);
@@ -69,13 +69,11 @@ export class ShardManager extends EventEmitter {
 		}
 
 		/** Route all shards to workers */
-		this.buckets.forEach(async bucket => {
+		this.buckets.forEach(async (bucket) => {
 			for (const worker of bucket.workers) {
-
 				for (const id of worker.queue) {
 					await this.connect(id);
 				}
-
 			}
 		});
 	}
@@ -107,7 +105,11 @@ export interface SMO {
 	properties: GatewayIdentifyProperties;
 }
 
-export type ShardManagerOptions = Pick<SMO, Exclude<keyof SMO, keyof typeof ShardManager.DEFAULTS>> & Partial<SMO>;
+export type ShardManagerOptions = Pick<
+	SMO,
+	Exclude<keyof SMO, keyof typeof ShardManager.DEFAULTS>
+> &
+	Partial<SMO>;
 
 export interface ShardManagerWorkersOptions {
 	/**
@@ -142,4 +144,3 @@ export interface ShardManagerShardsOptions {
 	 */
 	delay: number;
 }
-

@@ -45,11 +45,11 @@ export interface LeakyBucket {
 }
 
 export function delay(ms: number): Promise<void> {
-  return new Promise(result =>
-    setTimeout(() => {
-      result();
-    }, ms)
-  );
+	return new Promise((result) =>
+		setTimeout(() => {
+			result();
+		}, ms)
+	);
 }
 
 /** Update the tokens of that bucket.
@@ -85,7 +85,7 @@ async function acquire(
 	// check whether its currently allowed to acquire.
 	if (!bucket.allowAcquire) {
 		// create, push, and wait until the current running acquiring is finished.
-		await new Promise(resolve => {
+		await new Promise((resolve) => {
 			if (highPriority) {
 				bucket.waiting.unshift(resolve);
 			} else {
@@ -167,6 +167,6 @@ export function createLeakyBucket({
 		tokensState: tokens ?? max,
 		waiting: waiting ?? [],
 
-		...rest,
+		...rest
 	};
 }

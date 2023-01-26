@@ -1,9 +1,9 @@
 import type {
 	APIPartialGuild,
-	GuildVerificationLevel,
+	GuildVerificationLevel
 } from 'discord-api-types/v10';
 import type { Session } from '../session';
-import type { ImageOptions } from '../utils/types';
+import type { ImageOptions } from '../';
 import { BaseGuild } from './extra/BaseGuild';
 
 /**
@@ -72,7 +72,7 @@ export class AnonymousGuild extends BaseGuild {
 			return;
 		}
 		this.session.utils.formatImageURL(
-			this.session.cdn.banners.guild(this.id).get(this.banner),
+			this.session.cdn.banners(this.id).get(this.banner),
 			options?.size,
 			options?.format
 		);

@@ -23,7 +23,6 @@
 		}
 	},
 	"dependencies": {
-		"@biscuitland/api-types": "^2.2.1",
 		"@biscuitland/rest": "^2.2.1",
 		"@biscuitland/ws": "^2.2.1",
 		"discord-api-types": "^0.37.28",

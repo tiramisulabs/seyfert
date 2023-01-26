@@ -1,17 +1,26 @@
-import type { APIGuildMember } from 'discord-api-types/v10';
+import type {
+	APIGuildMember,
+	GatewayGuildMemberAddDispatchData,
+	GatewayGuildMemberUpdateDispatchData
+} from 'discord-api-types/v10';
 import type { Session } from '../session';
-import type { ImageOptions } from '../utils/types';
+import type { ImageOptions } from '../';
 import { Base } from './extra/base';
 import { User } from './User';
+
+export type GuildMemberData =
+	| APIGuildMember
+	| GatewayGuildMemberUpdateDispatchData
+	| GatewayGuildMemberAddDispatchData;
 
 /**
  * Represents a guild member
  * @link https://discord.com/developers/docs/resources/guild#guild-member-object
  */
-export class Member extends Base {
+export class GuildMember extends Base {
 	constructor(
 		session: Session,
-		data: APIGuildMember,
+		data: GuildMemberData,
 		/** the choosen guild id */
 		readonly guildId: string
 	) {
@@ -20,7 +29,6 @@ export class Member extends Base {
 		this.guildId = guildId;
 		this.avatar = data.avatar ?? undefined;
 		this.nickname = data.nick ?? undefined;
-		this.joinedTimestamp = Date.parse(data.joined_at);
 		this.premiumSince = Date.parse(data.premium_since ?? '');
 		this.roles = data.roles;
 		this.deaf = !!data.deaf;
@@ -29,6 +37,8 @@ export class Member extends Base {
 		this.communicationDisabledUntilTimestamp = Date.parse(
 			data.communication_disabled_until ?? ''
 		);
+
+		this.patch(data);
 	}
 
 	/** the user this guild member represents */
@@ -44,7 +54,7 @@ export class Member extends Base {
 	premiumSince?: number;
 
 	/** when the user joined the guild */
-	joinedTimestamp: number;
+	joinedTimestamp?: number;
 
 	/** array of role object ids */
 	roles: string[];
@@ -67,7 +77,10 @@ export class Member extends Base {
 	}
 
 	/** gets the joinedAt timestamp as a Date */
-	get joinedAt(): Date {
+	get joinedAt(): Date | null {
+		if (!this.joinedTimestamp) {
+			return null;
+		}
 		return new Date(this.joinedTimestamp);
 	}
 
@@ -88,5 +101,11 @@ export class Member extends Base {
 
 	toString(): string {
 		return `<@!${this.user.id}>`;
+	}
+
+	private patch(data: GuildMemberData) {
+		if ('joined_at' in data && data.joined_at) {
+			this.joinedTimestamp = Date.parse(data.joined_at);
+		}
 	}
 }

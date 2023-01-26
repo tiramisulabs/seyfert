@@ -9,8 +9,8 @@ export class UserManager {
 		const user = await this.session.api
 			.users(userId)
 			.get<APIUser>()
-			.then(u => new User(this.session, u))
-			.catch(_ => undefined);
+			.then((u) => new User(this.session, u))
+			.catch((_) => undefined);
 		return user;
 	}
 }

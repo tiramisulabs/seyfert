@@ -1,15 +1,12 @@
 import { GATEWAY_BASE_URL } from '@biscuitland/common';
-import {
-	GatewayDispatchEvents,
-	GatewayOpcodes,
-} from 'discord-api-types/v10';
+import { GatewayDispatchEvents, GatewayOpcodes } from 'discord-api-types/v10';
 import type {
 	GatewayHeartbeat,
 	GatewayResume,
 	GatewayReceivePayload,
 	GatewaySendPayload,
 	GatewayIdentifyData,
-	GatewayIdentify,
+	GatewayIdentify
 } from 'discord-api-types/v10';
 import type { RawData } from 'ws';
 import { WebSocket } from 'ws';
@@ -40,11 +37,14 @@ export class Shard {
 		return this.status;
 	}
 
-	constructor(public readonly manager: ShardManager, public readonly options: ShardOptions) {
+	constructor(
+		public readonly manager: ShardManager,
+		public readonly options: ShardOptions
+	) {
 		this.bucket = createLeakyBucket({
 			max: 120,
 			refillInterval: 60000,
-			refillAmount: 120,
+			refillAmount: 120
 		});
 	}
 
@@ -61,10 +61,12 @@ export class Shard {
 
 		this.websocket.on('open', this.onOpen.bind(this));
 		this.websocket.on('message', this.onMessage.bind(this));
-		this.websocket.on('error', err => this.debug('Error', this.options.id, [...Object.values(err)]));
+		this.websocket.on('error', (err) =>
+			this.debug('Error', this.options.id, [...Object.values(err)])
+		);
 		this.websocket.on('close', this.onClose.bind(this));
 
-		return new Promise(resolve => {
+		return new Promise((resolve) => {
 			this.resolves.set('READY', () => {
 				setTimeout(() => resolve(true), this.options.timeout);
 			});
@@ -74,7 +76,7 @@ export class Shard {
 	async identify() {
 		this.debug('Debug', this.options.id, [
 			'Identifying',
-			`Intents: ${this.manager.options.intents}`,
+			`Intents: ${this.manager.options.intents}`
 		]);
 
 		this.status = 'Identifying';
@@ -86,14 +88,14 @@ export class Shard {
 			properties: {
 				os: 'linux',
 				device: 'Biscuit',
-				browser: 'Biscuit',
+				browser: 'Biscuit'
 			},
-			shard: [this.options.id, this.manager.options.gateway.shards],
+			shard: [this.options.id, this.manager.options.gateway.shards]
 		};
 
 		await this.send<GatewayIdentify>({
 			op: GatewayOpcodes.Identify,
-			d,
+			d
 		});
 	}
 
@@ -106,8 +108,8 @@ export class Shard {
 			d: {
 				token: `Bot ${this.manager.options.token}`,
 				session_id: this.sessionID!,
-				seq: this.sequence,
-			},
+				seq: this.sequence
+			}
 		});
 	}
 
@@ -117,7 +119,7 @@ export class Shard {
 		this.bucket = createLeakyBucket({
 			max: 120,
 			refillInterval: 60000,
-			refillAmount: 120,
+			refillAmount: 120
 		});
 
 		this.sequence = 0;
@@ -180,8 +182,8 @@ export class Shard {
 						heartbeatInterval: this.heartbeatInterval,
 						heartbeatAck: this.heartbeatAck,
 						timestamp: Date.now(),
-						status: this.status,
-					}),
+						status: this.status
+					})
 				]);
 				this.disconnect();
 				return;
@@ -195,7 +197,7 @@ export class Shard {
 		this.send<GatewayHeartbeat>(
 			{
 				op: GatewayOpcodes.Heartbeat,
-				d: this.sequence,
+				d: this.sequence
 			},
 			true
 		);
@@ -220,9 +222,7 @@ export class Shard {
 			case GatewayOpcodes.Dispatch:
 				switch (payload.t) {
 					case GatewayDispatchEvents.Ready:
-						this.debug('Ready', this.options.id, [
-							'Shard is ready',
-						]);
+						this.debug('Ready', this.options.id, ['Shard is ready']);
 
 						this.status = 'Ready';
 						this.resumeURL = `${payload.d.resume_gateway_url}/?v=10&encoding=json`;
@@ -234,9 +234,7 @@ export class Shard {
 
 						break;
 					case GatewayDispatchEvents.Resumed:
-						this.debug('Resumed', this.options.id, [
-							'Shard has been resumed',
-						]);
+						this.debug('Resumed', this.options.id, ['Shard has been resumed']);
 						this.status = 'Ready';
 
 						this.resolves.get('RESUMED')?.(payload);
@@ -251,9 +249,7 @@ export class Shard {
 				this.disconnect(true);
 				break;
 			case GatewayOpcodes.InvalidSession:
-				this.debug('Debug', this.options.id, [
-					'Invalid session recieved',
-				]);
+				this.debug('Debug', this.options.id, ['Invalid session recieved']);
 				if (payload.d) {
 					this.resume();
 				} else {
@@ -280,7 +276,7 @@ export class Shard {
 						max: this.safe(),
 						refillInterval: 60000,
 						refillAmount: this.safe(),
-						waiting: this.bucket.waiting,
+						waiting: this.bucket.waiting
 					});
 				}
 
@@ -430,17 +426,28 @@ export interface SO {
 	timeout: number;
 }
 
-export type ShardOptions = Pick<SO, Exclude<keyof SO, keyof typeof Shard.DEFAULTS>> & Partial<SO>;
+export type ShardOptions = Pick<
+	SO,
+	Exclude<keyof SO, keyof typeof Shard.DEFAULTS>
+> &
+	Partial<SO>;
 
-export type ShardStatus = 'Disconnected' | 'Handshaking' | 'Connecting' | 'Heartbeating' | 'Identifying' | 'Resuming' | 'Ready';
+export type ShardStatus =
+	| 'Disconnected'
+	| 'Handshaking'
+	| 'Connecting'
+	| 'Heartbeating'
+	| 'Identifying'
+	| 'Resuming'
+	| 'Ready';
 
-export const enum ShardEvents {
-	Open,
-	Message,
-	Close,
-	Error,
-	Ready,
-	Resumed,
-	Send,
-	Debug,
+export enum ShardEvents {
+	Open = 0,
+	Message = 1,
+	Close = 2,
+	Error = 3,
+	Ready = 4,
+	Resumed = 5,
+	Send = 6,
+	Debug = 7
 }

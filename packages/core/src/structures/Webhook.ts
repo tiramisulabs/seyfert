@@ -1,5 +1,6 @@
 import type { APIWebhook, WebhookType } from 'discord-api-types/v10';
 import type { Session } from '../session';
+import type { ImageOptions } from '../';
 import { AnonymousGuild } from './AnonymousGuild';
 import { Base } from './extra/base';
 import { User } from './User';
@@ -57,4 +58,16 @@ export class Webhook extends Base {
 
 	/** the url used for executing the webhook (returned by the webhooks OAuth2 flow) */
 	url?: string;
+
+	avatarURL(options?: ImageOptions): string | null {
+		if (!this.avatar) {
+			return null;
+		}
+
+		return this.session.utils.formatImageURL(
+			this.session.cdn.avatars(this.id).get(this.avatar),
+			options?.size,
+			options?.format
+		);
+	}
 }

@@ -9,7 +9,6 @@ export interface CDNRoutes {
 	};
 	icons(guildId: string): {
 		get(hash: string): string;
-
 	};
 	splashes(guildId: string): {
 		get(hash: string): string;

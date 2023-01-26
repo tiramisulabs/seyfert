@@ -3,9 +3,8 @@ import type { Session } from '../session';
 import { Base } from './extra/base';
 import { RoleTag } from './extra/RoleTag';
 
-
 export class Role extends Base {
-	constructor(session: Session, data: APIRole, readonly guildId: string) {
+	constructor(session: Session, data: APIRole, readonly _guildId: string) {
 		super(session, data.id);
 
 		this.name = data.name;
@@ -18,7 +17,9 @@ export class Role extends Base {
 		this.icon = data.icon ?? undefined;
 		this.unicodeEmoji = data.unicode_emoji ?? undefined;
 
-		if (Array.isArray(data.tags)) { this.tags = data.tags.map(tag => new RoleTag(tag)); }
+		if (Array.isArray(data.tags)) {
+			this.tags = data.tags.map((tag) => new RoleTag(tag));
+		}
 	}
 
 	/** role name */

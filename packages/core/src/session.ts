@@ -1,11 +1,13 @@
 import type { CDNRoutes, Routes } from '@biscuitland/rest';
-import { CDN, BiscuitREST, Router  } from '@biscuitland/rest';
+import { CDN, BiscuitREST, Router } from '@biscuitland/rest';
 import type { RestAdapater } from '@biscuitland/common';
 import { EventEmitter2 } from 'eventemitter2';
-import * as Utils from './utils/utils';
+import { Utils } from '.';
 import { MainManager } from './structures/managers/MainManager';
 
-export class Session<RA extends RestAdapater<any> = BiscuitREST> extends EventEmitter2 {
+export class Session<
+	RA extends RestAdapater<any> = BiscuitREST,
+> extends EventEmitter2 {
 	constructor(public token: string, rest?: RA) {
 		super();
 		this.rest = rest ?? new BiscuitREST({});
