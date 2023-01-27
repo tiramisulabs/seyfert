@@ -121,7 +121,7 @@ export function GUILD_ROLES(guildId: Snowflake): string {
 
 export function USER_GUILDS(guildId?: Snowflake): string {
 	if (guildId) { return `/users/@me/guilds/${guildId}`; }
-	return `/users/@me/guilds/`;
+	return `/users/@me/guilds`;
 }
 
 export function USER_DM() {
