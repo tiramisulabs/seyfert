@@ -7,6 +7,8 @@ import type { DiscordMessage, MakeRequired } from '@biscuitland/api-types';
  * @link https://discord.com/developers/docs/resources/channel#message-object-message-flags
  */
 export enum MessageFlags {
+	/** normal messages, visible to everyone */
+	NormalMessage = 0,
     /** this message has been published to subscribed channels (via Channel Following) */
     CrossPosted = 1 << 0,
     /** this message originated from a message in another channel (via Channel Following) */
