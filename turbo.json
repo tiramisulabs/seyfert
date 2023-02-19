@@ -18,7 +18,8 @@
 		"@biscuitland/core#build": {
 			"dependsOn": [
 				"@biscuitland/rest#build",
-				"@biscuitland/ws#build"
+				"@biscuitland/ws#build",
+				"@biscuitland/common#build"
 			]
 		},
 		"clean": {

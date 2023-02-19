@@ -1,6 +1,6 @@
 {
 	"name": "@biscuitland/ws",
-	"version": "2.2.1",
+	"version": "3.0.0",
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",
 	"types": "./dist/index.d.ts",
@@ -25,8 +25,8 @@
 	},
 	"dependencies": {
 		"@discordjs/util": "^0.1.0",
-		"@biscuitland/rest": "workspace:^^",
-		"@biscuitland/common": "workspace:^^",
+		"@biscuitland/rest": "^3.0.0",
+		"@biscuitland/common": "^0.0.1",
 		"@sapphire/async-queue": "^1.5.0",
 		"@vladfrangu/async_event_emitter": "^2.1.4",
 		"discord-api-types": "^0.37.35",

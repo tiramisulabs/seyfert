@@ -17,6 +17,12 @@ export class Session<RA extends RestAdapater<any> = BiscuitREST,> extends EventE
 		this.api = new Router(this.rest).createProxy();
 		this.cdn = CDN.createProxy();
 		this.managers = new MainManager(this);
+		this.websocket = new WebSocketManager({
+			token: this.options.token,
+			rest: this.rest,
+			intents: this.options.intents ?? 0,
+			...this.options.ws.manager,
+		});
 	}
 
 	utils = Utils;
@@ -24,6 +30,7 @@ export class Session<RA extends RestAdapater<any> = BiscuitREST,> extends EventE
 	api: Routes<RA | BiscuitREST>;
 	cdn: CDNRoutes;
 	managers: MainManager;
+	websocket: WebSocketManager;
 	private _applicationId?: string;
 	private _botId?: string;
 	override on<K extends keyof Events>(event: K, func: Events[K]): this;
@@ -82,20 +89,14 @@ export class Session<RA extends RestAdapater<any> = BiscuitREST,> extends EventE
 	}
 
 	async start() {
-		const manager = new WebSocketManager({
-			token: this.options.token,
-			rest: this.rest,
-			intents: this.options.intents ?? 0,
-			...this.options.ws.manager,
-		});
-
-		manager.on(WebSocketShardEvents.Dispatch, (payload) => {
+		this.websocket.on(WebSocketShardEvents.Dispatch, (payload) => {
 			if (!payload.data.d || !payload.data.t) return;
 			const { shardId, ...p } = payload;
-			Actions[payload.data.t](this, shardId, p);
+			const action = Actions[payload.data.t];
+			if (action) action(this, shardId, p.data.d);
 		});
 
-		await manager.connect();
+		await this.websocket.connect();
 	}
 }
 

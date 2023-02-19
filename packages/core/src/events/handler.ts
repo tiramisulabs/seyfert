@@ -1,7 +1,7 @@
 import { GatewayReadyDispatchData } from "discord-api-types/v10";
 import { Session, ClientUser } from "../index";
 
-export const Ready: RawHandler<GatewayReadyDispatchData> = (session, shardId, payload) => {
+export const READY: RawHandler<GatewayReadyDispatchData> = (session, shardId, payload) => {
 	session.applicationId = payload.application.id;
 	session.botId = payload.user.id;
 	session.emit("ready", new ClientUser(session, payload.user), shardId);
