@@ -1,4 +1,4 @@
-import type { ImageFormat } from 'discord-api-types/v10';
+import type { ImageFormat } from "discord-api-types/v10";
 
 export type EditNickname = { nick?: string; reason?: string };
 
@@ -6,7 +6,6 @@ export type EditNickname = { nick?: string; reason?: string };
  * @link https://discord.com/developers/docs/reference#image-formatting
  */
 export type ImageSize = 16 | 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096;
-
 export type ImageOptions = {
 	format?: ImageFormat;
 	size?: ImageSize;
@@ -22,5 +21,5 @@ export enum ChannelType {
 	GroupDM = 3,
 	GuildCategory = 4,
 	GuildNews = 5,
-	GuildStore = 6
+	GuildStore = 6,
 }

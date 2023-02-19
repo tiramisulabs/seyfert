@@ -58,7 +58,7 @@ export interface CDNRoutes {
 }
 
 export interface CDNRoutes {
-	appAssets(id: '710982414301790216'): {
+	appAssets(id: "710982414301790216"): {
 		store(packBannerId: string): {
 			get(): string;
 		};

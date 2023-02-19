@@ -1,21 +1,21 @@
 import type {
 	APIGuild,
 	GatewayGuildCreateDispatchData,
+	GatewayGuildModifyDispatchData,
 	GuildDefaultMessageNotifications,
 	GuildNSFWLevel,
-	GuildPremiumTier
-} from 'discord-api-types/v10';
-import type { Session } from '../session';
-import { AnonymousGuild } from './AnonymousGuild';
-import { GuildEmoji } from './GuildEmoji';
-import { GuildMember } from './GuildMember';
-import { Role } from './GuildRole';
+	GuildPremiumTier,
+} from "discord-api-types/v10";
+import type { Session } from "../session";
+import { AnonymousGuild } from "./AnonymousGuild";
+import { GuildEmoji } from "./GuildEmoji";
+import { GuildMember } from "./GuildMember";
+import { Role } from "./GuildRole";
+
+export type GuildData = GatewayGuildCreateDispatchData | APIGuild | GatewayGuildModifyDispatchData;
 
 export class Guild extends AnonymousGuild {
-	constructor(
-		session: Session,
-		data: GatewayGuildCreateDispatchData | APIGuild
-	) {
+	constructor(session: Session, data: GuildData) {
 		super(session, data);
 		this.ownerId = data.owner_id;
 		this.nsfwLevel = data.nsfw_level;
@@ -23,15 +23,8 @@ export class Guild extends AnonymousGuild {
 		this.defaultMessageNotificationLevel = data.default_message_notifications;
 		this.premiumTier = data.premium_tier;
 		this.premiumSubscriptionCount = data.premium_subscription_count;
-		this.roles = new Map(
-			data.roles.map((role) => [role.id, new Role(this.session, role, this.id)])
-		);
-		this.emojis = new Map(
-			data.emojis.map((emoji) => [
-				emoji.id!,
-				new GuildEmoji(this.session, emoji, this.id)
-			])
-		);
+		this.roles = new Map(data.roles.map((role) => [role.id, new Role(this.session, role, this.id)]));
+		this.emojis = new Map(data.emojis.map((emoji) => [emoji.id!, new GuildEmoji(this.session, emoji, this.id)]));
 		this.channels = [];
 
 		this.gatewayPatch(data as GatewayGuildCreateDispatchData);
@@ -142,12 +135,9 @@ export class Guild extends AnonymousGuild {
 	}
 
 	private gatewayPatch(data: GatewayGuildCreateDispatchData) {
-		if ('members' in data && data.members.length) {
+		if ("members" in data && data.members.length) {
 			this.members = new Map(
-				data.members.map((member) => [
-					`${member.user?.id}`,
-					new GuildMember(this.session, member, this.id)
-				])
+				data.members.map((member) => [`${member.user?.id}`, new GuildMember(this.session, member, this.id)]),
 			);
 		}
 

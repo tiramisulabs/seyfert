@@ -3,7 +3,6 @@
 	"version": "2.2.1",
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",
-	"type": "module",
 	"types": "./dist/index.d.ts",
 	"files": [
 		"dist/**"
@@ -11,7 +10,8 @@
 	"scripts": {
 		"build": "tsup",
 		"clean": "rm -rf dist && rm -rf .turbo",
-		"dev": "tsup --watch"
+		"dev": "tsup --watch",
+		"test": "vitest run"
 	},
 	"exports": {
 		"./package.json": "./package.json",
@@ -24,12 +24,26 @@
 		}
 	},
 	"dependencies": {
-		"discord-api-types": "^0.37.17",
-		"ws": "^8.8.1"
+		"@discordjs/util": "^0.1.0",
+		"@biscuitland/rest": "workspace:^^",
+		"@biscuitland/common": "workspace:^^",
+		"@sapphire/async-queue": "^1.5.0",
+		"@vladfrangu/async_event_emitter": "^2.1.4",
+		"discord-api-types": "^0.37.35",
+		"ws": "^8.12.1"
 	},
 	"devDependencies": {
-		"@types/ws": "^8.5.3",
-		"tsup": "^6.1.3"
+		"@types/node": "^18.14.0",
+		"@types/ws": "^8.5.4",
+		"@vitest/coverage-c8": "^0.28.5",
+		"mock-socket": "^9.2.1",
+		"tsup": "^6.1.3",
+		"undici": "^5.20.0",
+		"vitest": "^0.28.5"
+	},
+	"directories": {
+		"lib": "src",
+		"test": "tests"
 	},
 	"license": "Apache-2.0",
 	"author": "Yuzuru <yuzuru@programmer.net>",
@@ -54,7 +68,13 @@
 		{
 			"name": "Drylozu",
 			"url": "https://github.com/Drylozu"
-		}
+		},
+		"Crawl <icrawltogo@gmail.com>",
+		"Amish Shah <amishshah.2k@gmail.com>",
+		"SpaceEEC <spaceeec@yahoo.com>",
+		"Vlad Frangu <kingdgrizzle@gmail.com>",
+		"Aura Román <kyradiscord@gmail.com>",
+		"DD <didinele.dev@gmail.com>"
 	],
 	"homepage": "https://biscuitjs.com",
 	"repository": {

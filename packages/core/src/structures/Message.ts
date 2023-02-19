@@ -5,25 +5,23 @@ import type {
 	GatewayMessageCreateDispatchData,
 	GatewayMessageUpdateDispatchData,
 	MessageFlags,
-	MessageType
-} from 'discord-api-types/v10';
-import type { Session } from '../session';
-import { Base } from './extra/base';
-import { GuildMember } from './GuildMember';
-import { User } from './User';
+	MessageType,
+} from "discord-api-types/v10";
+import type { Session } from "../session";
+import { Base } from "./extra/Base";
+import { GuildMember } from "./GuildMember";
+import { User } from "./User";
 
-export type MessageData =
-	| APIMessage
-	| GatewayMessageCreateDispatchData
-	| GatewayMessageUpdateDispatchData;
+export type MessageData = APIMessage | GatewayMessageCreateDispatchData | GatewayMessageUpdateDispatchData;
 
 export class Message extends Base {
 	constructor(session: Session, data: MessageData) {
 		super(session, data.id);
+		this.id = data.id;
 		this.channelId = data.channel_id;
 		this.mentions = {
 			roles: data.mention_roles ?? [],
-			channels: data.mention_channels ?? []
+			channels: data.mention_channels ?? [],
 		};
 		this.pinned = !!data.pinned;
 		this.tts = !!data.tts;
@@ -31,6 +29,8 @@ export class Message extends Base {
 
 		this.patch(data);
 	}
+
+	override id: string;
 
 	/** type of message */
 	type?: MessageType;
@@ -78,39 +78,38 @@ export class Message extends Base {
 	editedTimestamp?: number;
 
 	private patch(data: MessageData) {
-		if ('type' in data) {
+		if ("type" in data) {
 			this.type = data.type;
 		}
 
-		if ('guild_id' in data) {
+		if ("guild_id" in data) {
 			this.guildId = data.guild_id;
 		}
 
-		if ('timestamp' in data && data.timestamp) {
+		if ("timestamp" in data && data.timestamp) {
 			this.timestamp = Date.parse(data.timestamp);
 		}
 
-		if ('application_id' in data) {
+		if ("application_id" in data) {
 			this.applicationId = data.application_id;
 		}
 
-		if ('author' in data && data.author) {
+		if ("author" in data && data.author) {
 			this.author = new User(this.session, data.author);
 		}
 
-		if ('mentions' in data && data.mentions.length) {
+		if (data.mentions.length) {
 			this.mentions.users = this.guildId
 				? data.mentions.map(
 						(m) =>
 							new GuildMember(
 								this.session,
 								{
-									...(m as APIUser & { member?: Omit<APIGuildMember, 'user'> })
-										.member!,
-									user: m
+									...(m as APIUser & { member?: Omit<APIGuildMember, "user"> }).member!,
+									user: m,
 								},
-								this.guildId!
-							)
+								this.guildId!,
+							),
 				  )
 				: data.mentions.map((u) => new User(this.session, u));
 		}

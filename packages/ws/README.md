@@ -1,5 +1,11 @@
 # @biscuitland/ws
+
+## Advice
+
+This version of @biscuitland/ws is a completely @discordjs/ws "fork" with some minor changes, like compression being removed. All credits for this go to the Discord.js team.
+
 ## Most importantly, biscuit's ws is:
+
 A standalone gateway to interface Discord, it is meant to be used with a rest manager to send fetch requests to Discord
 
 [<img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white">](https://github.com/oasisjs/biscuit)
@@ -15,36 +21,29 @@ yarn add @biscuitland/ws
 ```
 
 ## Example (GW proxy)
+
 ```ts
-import { ShardManager } from '@biscuitland/ws';
-import { DefaultRestAdapter } from '@biscuitland/rest';
-import { GatewayIntents } from '@biscuitland/api-types';
-import type { DiscordGetGatewayBot, DiscordReady } from '@biscuitland/api-types';
+import { WebSocketManager, type WebSocketShardEvents } from '@biscuitland/ws';
+import { BiscuitREST } from '@biscuitland/rest';
+import { GatewayIntentBits } from 'discord-api-types/v10';
 
-const intents = GatewayIntents.Guilds;
+const intents = GatewayIntentBits.Guilds;
 const token = 'your token goes here';
-const rest = new DefaultRestAdapter({ token });
-
-const gateway = await rest.get<DiscordGetGatewayBot>('/gateway/bot');
+const rest = new BiscuitREST().setToken(token);
 
 // gateway bot code ↓
-const ws = new ShardManager({
-    gateway,
-    config: { intents, token },
-    handleDiscordPayload(shard, payload) {
-        if (payload.t === "READY") {
-            const data = payload.d as DiscordReady;
-            console.log("logged in as:", data.user.username);
-            console.log("shard: %d", shard.options.id);
-        }
-    },
+const ws = new WebSocketManager({ token, intents, rest });
+
+ws.on(WebSocketShardEvents.Ready, (ready) => {
+	console.log(`Logged as ${ready.user.username}`);
 });
 
-await ws.spawns();
+await ws.connect();
 ```
 
 ## Links
-* [Website](https://biscuitjs.com/)
-* [Documentation](https://docs.biscuitjs.com/)
-* [Discord](https://discord.gg/XNw2RZFzaP) 
-* [core](https://www.npmjs.com/package/@biscuitland/core) | [api-types](https://www.npmjs.com/package/@biscuitland/api-types) | [cache](https://www.npmjs.com/package/@biscuitland/cache) | [rest](https://www.npmjs.com/package/@biscuitland/rest) | [helpers](https://www.npmjs.com/package/@biscuitland/helpers)
+
+- [Website](https://biscuitjs.com/)
+- [Documentation](https://docs.biscuitjs.com/)
+- [Discord](https://discord.gg/XNw2RZFzaP)
+- [core](https://www.npmjs.com/package/@biscuitland/core) | [api-types](https://www.npmjs.com/package/@biscuitland/api-types) | [cache](https://www.npmjs.com/package/@biscuitland/cache) | [rest](https://www.npmjs.com/package/@biscuitland/rest) | [helpers](https://www.npmjs.com/package/@biscuitland/helpers)

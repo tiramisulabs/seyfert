@@ -1,8 +1,8 @@
-import type { APIGuild, APIPartialGuild } from 'discord-api-types/v10';
-import { GuildFeature } from 'discord-api-types/v10';
-import type { Session } from '../../session';
-import type { ImageOptions } from '../../';
-import { Base } from './base';
+import type { APIGuild, APIPartialGuild } from "discord-api-types/v10";
+import { GuildFeature } from "discord-api-types/v10";
+import type { Session } from "../../session";
+import type { ImageOptions } from "../../";
+import { Base } from "./Base";
 
 /**
  * Class for {@link Guild} and {@link AnonymousGuild}
@@ -10,11 +10,13 @@ import { Base } from './base';
 export class BaseGuild extends Base {
 	constructor(session: Session, data: APIGuild | APIPartialGuild) {
 		super(session, data.id);
-
+		this.id = data.id;
 		this.name = data.name;
 		this.icon = data.icon ?? undefined;
 		this.features = data.features;
 	}
+
+	override id: string;
 
 	/** Guild name. */
 	name: string;
@@ -64,7 +66,7 @@ export class BaseGuild extends Base {
 		return this.session.utils.formatImageURL(
 			this.session.cdn.icons(this.id).get(this.icon),
 			options?.size,
-			options?.format
+			options?.format,
 		);
 	}
 

@@ -34,7 +34,7 @@
     "enabled": true,
     "indentSize": 2,
     "indentStyle": "tab",
-    "lineWidth": 80,
+    "lineWidth": 120,
     "formatWithErrors": true
   },
   "files": {

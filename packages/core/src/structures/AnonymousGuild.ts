@@ -1,10 +1,7 @@
-import type {
-	APIPartialGuild,
-	GuildVerificationLevel
-} from 'discord-api-types/v10';
-import type { Session } from '../session';
-import type { ImageOptions } from '../';
-import { BaseGuild } from './extra/BaseGuild';
+import type { APIPartialGuild, GuildVerificationLevel } from "discord-api-types/v10";
+import type { Session } from "../session";
+import type { ImageOptions } from "../";
+import { BaseGuild } from "./extra/BaseGuild";
 
 /**
  * Class for anonymous guilds.
@@ -57,7 +54,7 @@ export class AnonymousGuild extends BaseGuild {
 		this.session.utils.formatImageURL(
 			this.session.cdn.discoverySplashes(this.id).get(this.splash),
 			options?.size,
-			options?.format
+			options?.format,
 		);
 	}
 
@@ -74,7 +71,7 @@ export class AnonymousGuild extends BaseGuild {
 		this.session.utils.formatImageURL(
 			this.session.cdn.banners(this.id).get(this.banner),
 			options?.size,
-			options?.format
+			options?.format,
 		);
 	}
 }

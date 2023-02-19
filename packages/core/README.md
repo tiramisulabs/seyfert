@@ -17,29 +17,12 @@ yarn add @biscuitland/core
 `project/index.js`:
 ```js
 import { Session } from '@biscuitland/core';
-import { GatewayIntents } from '@biscuitland/api-types';
+import { GatewayIntentBits } from "discord-api-types/v10";
 
-const session = new Session({ token: 'your token', intents: GatewayIntents.Guilds });
+const session = new Session({ token: 'your token', intents: GatewayIntentBits.Guilds });
 
-const commands = [
-    {
-        name: 'ping',
-        description: 'Replies with pong!'
-    }
-];
-
-session.events.on('ready', ({ user }) => {
-    console.log('Logged in as:', user.tag);
-    session.upsertApplicationCommands(commands, 'GUILD_ID');
-});
-
-session.events.on('interactionCreate', (interaction) => {
-    if (interaction.isCommand()) {
-        // your commands go here
-        if (interaction.commandName === 'ping') {
-            interaction.respondWith({ content: 'pong!' });
-        }
-    }
+session.events.on('ready', (client) => {
+    console.log('Logged in as:', client.tag);
 });
 
 session.start();

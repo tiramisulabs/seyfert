@@ -1,5 +1,5 @@
 export interface RestAdapater<AdapterOptions> {
-	options: AdapterOptions;
+	options?: AdapterOptions;
 	cRest: any;
 	get<T>(route: string, data?: unknown, options?: any): Promise<T>;
 

@@ -1,4 +1,4 @@
-import type { Session } from '../../session';
+import type { Session } from "../../session";
 import type {
 	APIGuild,
 	GuildVerificationLevel,
@@ -11,30 +11,33 @@ import type {
 	GuildFeature,
 	APIChannel,
 	APIThreadList,
-	APIBan
-} from 'discord-api-types/v10';
-import { Guild } from '../Guild';
+	APIBan,
+	GuildMFALevel,
+	APIRole,
+} from "discord-api-types/v10";
+import { Guild } from "../Guild";
 
 export class GuildManager {
-	constructor(private readonly session: Session) {}
+	readonly session!: Session;
+	constructor(session: Session) {
+		Object.defineProperty(this, "session", {
+			value: session,
+			writable: false,
+		});
+	}
 
 	async get(guildId: string): Promise<Guild | undefined> {
-		const guild = this.session.api
+		return this.session.api
 			.guilds(guildId)
 			.get<APIGuild>()
-			.then((g) => new Guild(this.session, g))
-			.catch((_) => undefined);
-
-		return guild;
+			.then((g) => new Guild(this.session, g));
 	}
 
 	async create(options: GuildCreateOptions): Promise<Guild> {
-		const guild = this.session.api
+		return this.session.api
 			.guilds()
 			.post<APIGuild>({ body: options })
 			.then((g) => new Guild(this.session, g));
-
-		return guild;
 	}
 
 	async delete(guildId: string): Promise<void> {
@@ -42,55 +45,82 @@ export class GuildManager {
 	}
 
 	async edit(guildId: string, options: GuildEditOptions): Promise<Guild> {
-		const guild = this.session.api
+		return this.session.api
 			.guilds(guildId)
 			.patch<APIGuild>({ body: options })
 			.then((g) => new Guild(this.session, g));
-		return guild;
 	}
 
 	async getChannels(guildId: string): Promise<APIChannel[]> {
 		// TODO CHANNELS
-		const channels = this.session.api
-			.guilds(guildId)
-			.channels.get<APIChannel[]>();
-
-		return channels;
+		return this.session.api.guilds(guildId).channels.get<APIChannel[]>();
 	}
 
-	async createChannel(
-		guildId: string,
-		options: GuildCreateOptionsChannel
-	): Promise<APIChannel> {
+	async createChannel(guildId: string, options: GuildCreateOptionsChannel): Promise<APIChannel> {
 		// TODO CHANNELS
-		const channel = this.session.api
-			.guilds(guildId)
-			.channels.post<APIChannel>({ body: options });
-
-		return channel;
+		return this.session.api.guilds(guildId).channels.post<APIChannel>({ body: options });
 	}
 
-	async editChannelPositions(
-		guildId: string,
-		options: GuildChannelEditPositionOptions[]
-	): Promise<void> {
-		return this.session.api
-			.guilds(guildId)
-			.channels.patch<void>({ body: options })
-			.catch((_) => undefined);
+	async editChannelPositions(guildId: string, options: GuildChannelEditPositionOptions[]): Promise<void> {
+		return this.session.api.guilds(guildId).channels.patch<void>({ body: options });
 	}
 
 	async getActiveThreads(guildId: string): Promise<APIThreadList[]> {
-		const threads = this.session.api
-			.guilds(guildId)
-			.threads()
-			.active.get<APIThreadList[]>();
+		const threads = this.session.api.guilds(guildId).threads().active.get<APIThreadList[]>();
 
 		return threads;
 	}
 
-	async getBans(guildId: string): Promise<APIBan[]> {
-		return this.session.api.guilds(guildId).bans().get<APIBan[]>();
+	async getBans(guildId: string, query?: { limit?: number; before?: string; after?: string }): Promise<APIBan[]> {
+		return this.session.api
+			.guilds(guildId)
+			.bans()
+			.get<APIBan[]>({
+				query: new URLSearchParams({ ...query, limit: String(query?.limit) }),
+			});
+	}
+
+	async getBan(guildId: string, userId: string): Promise<APIBan> {
+		return this.session.api
+			.guilds(guildId)
+			.bans(userId) // free was here :D
+			.get<APIBan>();
+	}
+
+	async createBan(guildId: string, userId: string, options: GuildBanCreateOptions): Promise<void> {
+		return this.session.api.guilds(guildId).bans(userId).put<void>({ body: options });
+	}
+
+	async removeBan(guildId: string, userId: string): Promise<void> {
+		return this.session.api.guilds(guildId).bans(userId).delete();
+	}
+
+	async getRoles(guildId: string): Promise<APIRole[]> {
+		return this.session.api.guilds(guildId).roles().get<APIRole[]>();
+	}
+
+	async createRole(guildId: string, options: GuildRoleCreate): Promise<APIRole> {
+		return this.session.api.guilds(guildId).roles().post<APIRole>({ body: options });
+	}
+
+	async editRolePositions(guildId: string, options: GuildRoleEditPositionOptions[]): Promise<APIRole[]> {
+		return this.session.api.guilds(guildId).roles().patch<APIRole[]>({ body: options });
+	}
+
+	async editRole(guildId: string, roleId: string, options: GuildRoleCreate): Promise<APIRole> {
+		return this.session.api.guilds(guildId).roles(roleId).patch<APIRole>({ body: options });
+	}
+
+	async modifyGuildMFALevel(guildId: string, level: GuildMFALevel): Promise<void> {
+		return this.session.api.guilds(guildId).mfa(level).post<void>();
+	}
+
+	async deleteRole(guildId: string, roleId: string): Promise<void> {
+		return this.session.api.guilds(guildId).roles(roleId).delete();
+	}
+
+	async getPruneCount(guildId: string, options: GuildPruneCountOptions): Promise<number> {
+		return this.session.api.guilds(guildId).prune.get<number>({ query: this.session.utils.objectToParams(options) });
 	}
 }
 
@@ -162,8 +192,7 @@ export interface GuildEditOptions extends Partial<GuildCreateOptions> {
 /**
  * @link https://discord.com/developers/docs/resources/guild#create-guild-channel
  */
-export interface GuildChannelCreateOptions
-	extends Partial<GuildCreateOptionsChannel> {
+export interface GuildChannelCreateOptions extends Partial<GuildCreateOptionsChannel> {
 	name: string;
 }
 
@@ -175,4 +204,38 @@ export interface GuildChannelEditPositionOptions {
 	position: number;
 	lockPermissions?: boolean;
 	parentId?: string;
+}
+
+export interface GuildBanCreateOptions {
+	deleteMessageDays?: number;
+	deleteMessageSeconds?: number;
+}
+
+/**
+ * @link https://discord.com/developers/docs/resources/guild#create-guild-role
+ */
+export interface GuildRoleCreate {
+	name?: string;
+	permissions?: bigint;
+	color?: number;
+	hoist?: boolean;
+	icon?: string;
+	unicodeEmoji?: string;
+	mentionable?: boolean;
+}
+
+/**
+ * @link https://discord.com/developers/docs/resources/guild#modify-guild-role-positions
+ */
+export interface GuildRoleEditPositionOptions {
+	id: string;
+	position: number;
+}
+
+/**
+ * @link https://discord.com/developers/docs/resources/guild#get-guild-prune-count
+ */
+export interface GuildPruneCountOptions {
+	days: number;
+	includeRoles?: string;
 }

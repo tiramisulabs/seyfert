@@ -16,14 +16,13 @@ yarn add @biscuitland/rest
 
 ## Example (Standalone rest)
 ```ts
-import { DefaultRestAdapter } from "@biscuitland/rest";
+import { BiscuitREST } from "@biscuitland/rest";
 import Fastify from "fastify";
 
-const manager = new DefaultRestAdapter({
-    url: "http://localhost:port...",
-    token: "your token goes here",
+const manager = new BiscuitREST({
+    api: "http://any.rest.proxy/",
     version: 10,
-});
+}).setToken("your token goes here");
 
 const app = Fastify({});
 

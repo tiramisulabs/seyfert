@@ -1,12 +1,13 @@
-import type { APIRole } from 'discord-api-types/v10';
-import type { Session } from '../session';
-import { Base } from './extra/base';
-import { RoleTag } from './extra/RoleTag';
+import type { APIRole } from "discord-api-types/v10";
+import type { Session } from "../session";
+import { Base } from "./extra/Base";
+import { RoleTag } from "./extra/RoleTag";
 
 export class Role extends Base {
-	constructor(session: Session, data: APIRole, readonly _guildId: string) {
+	// rome-ignore lint/correctness/noUnusedVariables: Declaring them here avoids reassigning them manually
+	constructor(session: Session, data: APIRole, readonly guildId: string) {
 		super(session, data.id);
-
+		this.id = data.id;
 		this.name = data.name;
 		this.color = data.color;
 		this.hoist = !!data.hoist;
@@ -21,6 +22,8 @@ export class Role extends Base {
 			this.tags = data.tags.map((tag) => new RoleTag(tag));
 		}
 	}
+
+	override id: string;
 
 	/** role name */
 	name: string;

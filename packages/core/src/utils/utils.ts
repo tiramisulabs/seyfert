@@ -1,31 +1,37 @@
-import type { ObjectToLower, ObjectToSnake } from '@biscuitland/common';
-import { DiscordEpoch } from '@biscuitland/common';
-import type { ImageFormat } from 'discord-api-types/v10';
-import type { ImageSize } from './types';
+import type { ObjectToLower, ObjectToSnake } from "@biscuitland/common";
+import { DiscordEpoch } from "@biscuitland/common";
+import type { ImageFormat } from "discord-api-types/v10";
+import type { ImageSize } from "./types";
 
+/**
+ * Convert a timestamp to a snowflake.
+ * @param timestamp The timestamp to convert.
+ * @returns The snowflake.
+ */
 export function snowflakeToTimestamp(id: string): number {
 	return (Number(id) >> 22) + DiscordEpoch;
 }
 
-export async function toSnakeCase<Obj extends { [k: string]: unknown }>(
-	target: Obj
-): Promise<ObjectToSnake<Obj>> {
+/**
+ * Convert a camelCase object to snake_case.
+ * @param target The object to convert.
+ * @returns The converted object.
+ */
+export async function toSnakeCase<Obj extends { [k: string]: unknown }>(target: Obj): Promise<ObjectToSnake<Obj>> {
 	const result = {};
 	for (const [key, value] of Object.entries(target)) {
 		switch (typeof value) {
-			case 'string':
-			case 'bigint':
-			case 'boolean':
-			case 'function':
-			case 'symbol':
-			case 'undefined':
+			case "string":
+			case "bigint":
+			case "boolean":
+			case "function":
+			case "symbol":
+			case "undefined":
 				result[replace.camel(key)] = value;
 				break;
-			case 'object':
+			case "object":
 				if (Array.isArray(value)) {
-					result[replace.camel(key)] = Promise.all(
-						value.map((prop) => toSnakeCase(prop))
-					);
+					result[replace.camel(key)] = Promise.all(value.map((prop) => toSnakeCase(prop)));
 					break;
 				}
 				if (!Number.isNaN(value)) {
@@ -39,25 +45,26 @@ export async function toSnakeCase<Obj extends { [k: string]: unknown }>(
 	return result as ObjectToSnake<Obj>;
 }
 
-export async function toCamelCase<Obj extends { [k: string]: unknown }>(
-	target: Obj
-): Promise<ObjectToLower<Obj>> {
+/**
+ * Convert a snake_case object to camelCase.
+ * @param target The object to convert.
+ * @returns The converted object.
+ */
+export async function toCamelCase<Obj extends { [k: string]: unknown }>(target: Obj): Promise<ObjectToLower<Obj>> {
 	const result = {};
 	for (const [key, value] of Object.entries(target)) {
 		switch (typeof value) {
-			case 'string':
-			case 'bigint':
-			case 'boolean':
-			case 'function':
-			case 'symbol':
-			case 'undefined':
+			case "string":
+			case "bigint":
+			case "boolean":
+			case "function":
+			case "symbol":
+			case "undefined":
 				result[replace.snake(key)] = value;
 				break;
-			case 'object':
+			case "object":
 				if (Array.isArray(value)) {
-					result[replace.snake(key)] = Promise.all(
-						value.map((prop) => toCamelCase(prop))
-					);
+					result[replace.snake(key)] = Promise.all(value.map((prop) => toCamelCase(prop)));
 					break;
 				}
 				if (!Number.isNaN(value)) {
@@ -77,15 +84,41 @@ export const replace = {
 	},
 	camel: (s: string) => {
 		return s.replace(/[A-Z]/g, (a) => `_${a.toLowerCase()}`);
-	}
+	},
 };
 
-export function formatImageURL(
-	url: string,
-	size: ImageSize = 128,
-	format?: ImageFormat
-): string {
-	return `${replace.snake(url)}.${
-		format ?? (url.includes('/a_') ? 'gif' : 'jpg')
-	}?size=${size}`;
+/**
+ * Format an image URL.
+ * @param url The URL to format.
+ * @param size The size of the image.
+ * @param format The format of the image.
+ * @returns The formatted URL.
+ */
+export function formatImageURL(url: string, size: ImageSize = 128, format?: ImageFormat): string {
+	return `${replace.snake(url)}.${format ?? (url.includes("/a_") ? "gif" : "jpg")}?size=${size}`;
+}
+
+/**
+ * Get the bot ID from a token.
+ * @param token The token to get the bot ID from.
+ * @returns The bot ID.
+ * @warning Discord staff has mentioned this may not be stable forever xd.
+ */
+export function getBotIdFromToken(token: string): string {
+	return Buffer.from(token.split(".")[0], "base64").toString("ascii");
+}
+
+/**
+ * Convert an object to a URLSearchParams object.
+ * @param obj The object to convert.
+ * @returns The URLSearchParams object.
+ */
+export function objectToParams(obj: object): URLSearchParams {
+	const query = new URLSearchParams();
+	for (const [key, value] of Object.entries(obj)) {
+		if (!value) continue;
+		query.append(replace.camel(key), String(value));
+	}
+
+	return query;
 }

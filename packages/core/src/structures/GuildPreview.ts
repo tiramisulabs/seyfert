@@ -1,8 +1,8 @@
-import type { APIGuildPreview, APIPartialGuild } from 'discord-api-types/v10';
-import type { Session } from '../session';
-import { AnonymousGuild } from './AnonymousGuild';
-import { GuildEmoji } from './GuildEmoji';
-import { Sticker } from './Sticker';
+import type { APIGuildPreview, APIPartialGuild } from "discord-api-types/v10";
+import type { Session } from "../session";
+import { AnonymousGuild } from "./AnonymousGuild";
+import { GuildEmoji } from "./GuildEmoji";
+import { Sticker } from "./Sticker";
 
 /**
  * Represent Discord Guild Preview Object
@@ -11,12 +11,8 @@ import { Sticker } from './Sticker';
 export class GuildPreview extends AnonymousGuild {
 	constructor(session: Session, data: APIGuildPreview) {
 		super(session, data as APIPartialGuild);
-		this.emojis = data.emojis.map(
-			(emoji) => new GuildEmoji(this.session, emoji, this.id)
-		);
-		this.stickers = data.stickers.map(
-			(sticker) => new Sticker(this.session, sticker)
-		);
+		this.emojis = data.emojis.map((emoji) => new GuildEmoji(this.session, emoji, this.id));
+		this.stickers = data.stickers.map((sticker) => new Sticker(this.session, sticker));
 		this.discoverySplash = data.discovery_splash ?? undefined;
 		this.approximateMemberCount = data.approximate_member_count;
 		this.approximatePresenceCount = data.approximate_presence_count;

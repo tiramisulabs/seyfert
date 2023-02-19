@@ -1,25 +1,24 @@
-import type { APIThreadMember, ThreadMemberFlags } from 'discord-api-types/v10';
-import type { Session } from '../session';
-import { Base } from './extra/base';
+import type { APIThreadMember, GatewayThreadMemberUpdateDispatchData, ThreadMemberFlags } from "discord-api-types/v10";
+import type { Session } from "../session";
+import { Base } from "./extra/Base";
+
+export type ThreadMemberData = GatewayThreadMemberUpdateDispatchData | APIThreadMember;
 
 /**
  * A member that comes from a thread
  * @link https://discord.com/developers/docs/resources/channel#thread-member-object
  */
 export class ThreadMember extends Base {
-	constructor(session: Session, data: APIThreadMember) {
-		super(session, `${data.user_id}`);
-		this.id = `${data.user_id}`;
+	constructor(session: Session, data: ThreadMemberData) {
+		super(session, data.user_id);
 		this.threadId = data.id;
 		this.joinTimestamp = Date.parse(data.join_timestamp);
 		this.flags = data.flags;
-	}
 
-	/**
-	 * ID of the user
-	 * This field is omitted on the member sent within each thread in the GUILD_CREATE event.
-	 */
-	override readonly id: string;
+		if ("guild_id" in data) {
+			this.guildId = data.guild_id;
+		}
+	}
 
 	/**	ID of the thread */
 	threadId?: string;
@@ -29,4 +28,7 @@ export class ThreadMember extends Base {
 
 	/** Any user-thread settings, currently only used for notifications */
 	flags: ThreadMemberFlags;
+
+	/**	ID of the guild */
+	guildId?: string;
 }

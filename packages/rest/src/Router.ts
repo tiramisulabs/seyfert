@@ -1,14 +1,14 @@
-import type { RestAdapater } from '@biscuitland/common';
-import { CDN_URL } from '@biscuitland/common';
-import type { CDNRoutes } from './CDN';
-import type { Routes } from './Routes';
+import type { RestAdapater } from "@biscuitland/common";
+import { CDN_URL } from "@biscuitland/common";
+import type { CDNRoutes } from "./CDN";
+import type { Routes } from "./Routes";
 
 export enum RequestMethod {
-	Delete = 'delete',
-	Get = 'get',
-	Patch = 'patch',
-	Post = 'post',
-	Put = 'put'
+	Delete = "delete",
+	Get = "get",
+	Patch = "patch",
+	Post = "post",
+	Put = "put",
 }
 
 export class Router<CustomRestAdapter extends RestAdapater<any>> {
@@ -22,8 +22,7 @@ export class Router<CustomRestAdapter extends RestAdapater<any>> {
 		return new Proxy(this.noop, {
 			get: (_, key: string) => {
 				if (RequestMethod[key]) {
-					return (...options: any[]) =>
-						this.rest[key](route.join('/'), ...options);
+					return (...options: any[]) => this.rest[key](route.join("/"), ...options);
 				}
 				route.push(key);
 				return this.createProxy<T>(route);
@@ -31,7 +30,7 @@ export class Router<CustomRestAdapter extends RestAdapater<any>> {
 			apply: (...[, _, args]) => {
 				route.push(...args.filter((x) => x != null));
 				return this.createProxy<T>(route);
-			}
+			},
 		}) as unknown as Routes<T>;
 	}
 }
@@ -43,11 +42,11 @@ export class CDN {
 		};
 		return new Proxy(noop, {
 			get: (_, key: string) => {
-				if (key === 'get') {
+				if (key === "get") {
 					return (value?: string) => {
-						const lastRoute = `${CDN_URL}/${route.join('/')}`;
+						const lastRoute = `${CDN_URL}/${route.join("/")}`;
 						if (value) {
-							if (typeof value !== 'string') {
+							if (typeof value !== "string") {
 								value = String(value);
 							}
 							return `${lastRoute}/${value}`;
@@ -61,7 +60,7 @@ export class CDN {
 			apply: (...[, _, args]) => {
 				route.push(...args.filter((x) => x != null));
 				return this.createProxy(route);
-			}
+			},
 		}) as unknown as CDNRoutes;
 	}
 }

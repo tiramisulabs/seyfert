@@ -2,16 +2,24 @@
 	"$schema": "https://turborepo.org/schema.json",
 	"pipeline": {
 		"@biscuitland/rest#build": {
-			"dependsOn": ["@biscuitland/common#build"]
+			"dependsOn": [
+				"@biscuitland/common#build"
+			]
 		},
 		"@biscuitland/common#build": {
 			"dependsOn": []
 		},
 		"@biscuitland/ws#build": {
-			"dependsOn": []
+			"dependsOn": [
+				"@biscuitland/rest#build",
+				"@biscuitland/common#build"
+			]
 		},
 		"@biscuitland/core#build": {
-			"dependsOn": ["@biscuitland/rest#build", "@biscuitland/ws#build"]
+			"dependsOn": [
+				"@biscuitland/rest#build",
+				"@biscuitland/ws#build"
+			]
 		},
 		"clean": {
 			"cache": false

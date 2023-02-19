@@ -1,17 +1,14 @@
 import type {
 	APIGuildMember,
 	GatewayGuildMemberAddDispatchData,
-	GatewayGuildMemberUpdateDispatchData
-} from 'discord-api-types/v10';
-import type { Session } from '../session';
-import type { ImageOptions } from '../';
-import { Base } from './extra/base';
-import { User } from './User';
+	GatewayGuildMemberUpdateDispatchData,
+} from "discord-api-types/v10";
+import type { Session } from "../session";
+import type { ImageOptions } from "../";
+import { Base } from "./extra/Base";
+import { User } from "./User";
 
-export type GuildMemberData =
-	| APIGuildMember
-	| GatewayGuildMemberUpdateDispatchData
-	| GatewayGuildMemberAddDispatchData;
+export type GuildMemberData = APIGuildMember | GatewayGuildMemberUpdateDispatchData | GatewayGuildMemberAddDispatchData;
 
 /**
  * Represents a guild member
@@ -22,24 +19,24 @@ export class GuildMember extends Base {
 		session: Session,
 		data: GuildMemberData,
 		/** the choosen guild id */
-		readonly guildId: string
+		readonly guildId: string,
 	) {
-		super(session, data.user!.id);
+		super(session, data.user?.id);
 		this.user = new User(session, data.user!);
 		this.guildId = guildId;
+		this.id = data.user!.id;
 		this.avatar = data.avatar ?? undefined;
 		this.nickname = data.nick ?? undefined;
-		this.premiumSince = Date.parse(data.premium_since ?? '');
+		this.premiumSince = Date.parse(data.premium_since ?? "");
 		this.roles = data.roles;
 		this.deaf = !!data.deaf;
 		this.mute = !!data.mute;
 		this.pending = !!data.pending;
-		this.communicationDisabledUntilTimestamp = Date.parse(
-			data.communication_disabled_until ?? ''
-		);
-
 		this.patch(data);
 	}
+	// In the few cases where user is not present, it can be parsed with another property that does present it.
+	// For example, on event `MESSAGE_CREATE` exists `messsage.author`.
+	override id: string;
 
 	/** the user this guild member represents */
 	user: User;
@@ -68,8 +65,11 @@ export class GuildMember extends Base {
 	/** whether the user has not yet passed the guild's Membership Screening requirements */
 	pending: boolean;
 
-	/** when the user's timeout will expire and the user will be able to communicate in the guild again, null or a time in the past if the user is not timed out */
-	communicationDisabledUntilTimestamp?: number;
+	/**
+	 * when the user's timeout will expire and the user will be able to communicate in the guild again,
+	 * null or a time in the past if the user is not timed out
+	 */
+	communicationDisabledUntilTimestamp?: number | null;
 
 	/** gets the nickname or the username */
 	get nicknameOrUsername(): string {
@@ -84,19 +84,12 @@ export class GuildMember extends Base {
 		return new Date(this.joinedTimestamp);
 	}
 
-	dynamicAvatarURL(options?: ImageOptions): string {
+	dynamicAvatarURL(options?: ImageOptions): string | null {
 		if (!this.avatar) {
 			return this.user.avatarURL(options);
 		}
-		return this.session.utils.formatImageURL(
-			this.session.cdn
-				.guilds(this.guildId)
-				.users(this.id)
-				.avatars(this.avatar)
-				.get(),
-			options?.size,
-			options?.format
-		);
+
+		return this.session.managers.members.dynamicAvatarURL(this.guildId, this.id, this.avatar, options);
 	}
 
 	toString(): string {
@@ -104,8 +97,13 @@ export class GuildMember extends Base {
 	}
 
 	private patch(data: GuildMemberData) {
-		if ('joined_at' in data && data.joined_at) {
+		if ("joined_at" in data && data.joined_at) {
 			this.joinedTimestamp = Date.parse(data.joined_at);
+		}
+		if ("communication_disabled_until" in data) {
+			this.communicationDisabledUntilTimestamp = data.communication_disabled_until?.length
+				? Date.parse(data.communication_disabled_until)
+				: null;
 		}
 	}
 }

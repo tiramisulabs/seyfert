@@ -1,19 +1,15 @@
-import type {
-	APISticker,
-	StickerFormatType,
-	StickerType
-} from 'discord-api-types/v10';
-import type { Session } from '../session';
-import { Base } from './extra/base';
-import { User } from './User';
+import type { APISticker, StickerFormatType, StickerType } from "discord-api-types/v10";
+import type { Session } from "../session";
+import { Base } from "./extra/Base";
+import { User } from "./User";
 
 export class Sticker extends Base {
 	constructor(session: Session, data: APISticker) {
 		super(session, data.id);
-
+		this.id = data.id;
 		this.name = data.name;
 		this.description = data.description?.length ? data.description : undefined;
-		this.tags = data.tags.split(',');
+		this.tags = data.tags.split(",");
 		this.type = data.type;
 		this.formatType = data.format_type;
 		this.packId = data.pack_id;
@@ -25,6 +21,8 @@ export class Sticker extends Base {
 			this.user = new User(this.session, data.user);
 		}
 	}
+
+	override id: string;
 
 	/**	name of the sticker */
 	name: string;
