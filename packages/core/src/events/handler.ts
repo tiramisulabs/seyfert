@@ -1,5 +1,5 @@
-import { GatewayReadyDispatchData } from "discord-api-types/v10";
-import { Session, ClientUser } from "../index";
+import { GatewayGuildCreateDispatchData, GatewayReadyDispatchData } from "discord-api-types/v10";
+import { Session, ClientUser, Guild } from "../index";
 
 export const READY: RawHandler<GatewayReadyDispatchData> = (session, shardId, payload) => {
 	session.applicationId = payload.application.id;
@@ -7,8 +7,13 @@ export const READY: RawHandler<GatewayReadyDispatchData> = (session, shardId, pa
 	session.emit("ready", new ClientUser(session, payload.user), shardId);
 };
 
+export const GUILD_CREATE: RawHandler<GatewayGuildCreateDispatchData> = (session, shardId, payload) => {
+	session.emit("guildCreate", new Guild(session, payload), shardId);
+};
+
 export interface Events {
 	ready: Handler<[ClientUser, number]>;
+	guildCreate: Handler<[Guild, number]>;
 }
 
 export type RawHandler<T> = (...args: [Session, number, T]) => void;

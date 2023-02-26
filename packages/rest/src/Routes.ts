@@ -34,6 +34,28 @@ export interface Routes<CRA extends RestAdapater<any>> {
 		};
 		prune: {
 			get<T>(...args: RestArguments<CRA, "get">): Promise<T>;
+			post<T>(...args: RestArguments<CRA, "post">): Promise<T>;
+		};
+		regions: {
+			get<T>(...args: RestArguments<CRA, "get">): Promise<T>;
+		};
+		invites: {
+			get<T>(...args: RestArguments<CRA, "get">): Promise<T>;
+		};
+		widget: {
+			get<T>(...args: RestArguments<CRA, "get">): Promise<T>;
+			patch<T>(...args: RestArguments<CRA, "patch">): Promise<T>;
+		};
+		integrations(id?: string): {
+			get<T>(...args: RestArguments<CRA, "get">): Promise<T>;
+			delete<T>(...args: RestArguments<CRA, "delete">): Promise<T>;
+		};
+		"vanity-url": {
+			get<T>(...args: RestArguments<CRA, "get">): Promise<T>;
+		};
+		"welcome-screen": {
+			get<T>(...args: RestArguments<CRA, "get">): Promise<T>;
+			patch<T>(...args: RestArguments<CRA, "patch">): Promise<T>;
 		};
 		get<T>(...args: RestArguments<CRA, "get">): Promise<T>;
 		patch<T>(...args: RestArguments<CRA, "patch">): Promise<T>;

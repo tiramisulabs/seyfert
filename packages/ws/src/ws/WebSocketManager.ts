@@ -152,6 +152,11 @@ export interface OptionalWebSocketManagerOptions {
 	 * @defaultValue `'10'`
 	 */
 	version: string;
+
+	/**
+	 * Gateway information from Discord
+	 */
+	gateway: APIGatewayBotInfo;
 }
 
 export type WebSocketManagerOptions = OptionalWebSocketManagerOptions & RequiredWebSocketManagerOptions;
@@ -191,6 +196,12 @@ export class WebSocketManager extends AsyncEventEmitter<ManagerShardEventsMap> {
 	public constructor(options: Partial<OptionalWebSocketManagerOptions> & RequiredWebSocketManagerOptions) {
 		super();
 		this.options = { ...DefaultWebSocketManagerOptions, ...options };
+		if (options.gateway) {
+			this.gatewayInformation = {
+				data: options.gateway,
+				expiresAt: Date.now() + options.gateway.session_start_limit.reset_after,
+			};
+		}
 	}
 
 	public setStrategy(strategy: IShardingStrategy) {

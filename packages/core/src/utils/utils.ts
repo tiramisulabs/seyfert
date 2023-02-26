@@ -1,7 +1,10 @@
 import type { ObjectToLower, ObjectToSnake } from "@biscuitland/common";
 import { DiscordEpoch } from "@biscuitland/common";
-import type { ImageFormat } from "discord-api-types/v10";
-import type { ImageSize } from "./types";
+import { APIChannel, APIDMChannel, ChannelType, ImageFormat } from "discord-api-types/v10";
+import { Session } from "../session";
+import { DMChannel } from "../structures/DMChannel";
+import { BaseChannel } from "../structures/extra/BaseChannel";
+import type { BiscuitChannels, ImageSize } from "./types";
 
 /**
  * Convert a timestamp to a snowflake.
@@ -121,4 +124,18 @@ export function objectToParams(obj: object): URLSearchParams {
 	}
 
 	return query;
+}
+
+export function channelLink(channelId: string, guildId?: string) {
+	return `https://discord.com/channels/${guildId ?? "@me"}/${channelId}`;
+}
+
+export function channelFactory(session: Session, channel: { type: ChannelType }): BiscuitChannels {
+	switch (channel.type) {
+		case ChannelType.DM:
+			return new DMChannel(session, channel as APIDMChannel);
+
+		default:
+			return new BaseChannel(session, channel as APIChannel);
+	}
 }

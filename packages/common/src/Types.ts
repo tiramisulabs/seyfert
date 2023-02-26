@@ -33,3 +33,5 @@ export type ObjectToLower<T> = Identify<{
 export type ObjectToSnake<T> = Identify<{
 	[K in keyof T as SnakeCase<Exclude<K, symbol | number>>]: T[K] extends object ? Identify<ObjectToSnake<T[K]>> : T[K];
 }>;
+
+export type ConstructorReturnType<T> = T extends new (..._args: any) => infer Instance ? Instance : any;
