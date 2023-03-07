@@ -1,6 +1,27 @@
-import type { ImageFormat } from "discord-api-types/v10";
-import { DMChannel } from '../structures/DMChannel';
-import { BaseChannel } from '../structures/extra/BaseChannel';
+import type {
+	ChannelSelectMenuComponent,
+	ImageFormat,
+	LinkButtonComponent,
+	MentionableSelectMenuComponent,
+	RoleSelectMenuComponent,
+	StringSelectMenuComponent,
+	TextInputComponent,
+	UserSelectMenuComponent,
+} from "../index";
+import { DMChannel, ButtonComponent } from "../index";
+import { BaseChannel } from "../structures/extra/BaseChannel";
+
+export type BiscuitComponents =
+	| ButtonComponent
+	| LinkButtonComponent
+	| RoleSelectMenuComponent
+	| UserSelectMenuComponent
+	| StringSelectMenuComponent
+	| ChannelSelectMenuComponent
+	| MentionableSelectMenuComponent
+	| TextInputComponent;
+
+export type BiscuitActionRowMessageComponents = Exclude<BiscuitComponents, TextInputComponent>;
 
 export type EditNickname = { nick?: string; reason?: string };
 
@@ -13,7 +34,7 @@ export type ImageOptions = {
 	size?: ImageSize;
 };
 
-export type BiscuitChannels = DMChannel | BaseChannel; 
+export type BiscuitChannels = DMChannel | BaseChannel;
 
 export enum ThreadTypes {
 	AnnouncementThread = 10,

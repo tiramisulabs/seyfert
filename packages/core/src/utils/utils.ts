@@ -1,10 +1,28 @@
 import type { ObjectToLower, ObjectToSnake } from "@biscuitland/common";
 import { DiscordEpoch } from "@biscuitland/common";
-import { APIChannel, APIDMChannel, ChannelType, ImageFormat } from "discord-api-types/v10";
-import { Session } from "../session";
-import { DMChannel } from "../structures/DMChannel";
+import {
+	APIChannel,
+	APIDMChannel,
+	APIMessageActionRowComponent,
+	ButtonStyle,
+	ChannelType,
+	ComponentType,
+	ImageFormat,
+} from "discord-api-types/v10";
+import {
+	Session,
+	DMChannel,
+	LinkButtonComponent,
+	ButtonComponent,
+	ChannelSelectMenuComponent,
+	RoleSelectMenuComponent,
+	StringSelectMenuComponent,
+	UserSelectMenuComponent,
+	MentionableSelectMenuComponent,
+} from "../";
 import { BaseChannel } from "../structures/extra/BaseChannel";
-import type { BiscuitChannels, ImageSize } from "./types";
+import { BaseComponent } from "../structures/extra/BaseComponent";
+import type { BiscuitActionRowMessageComponents, BiscuitChannels, ImageSize } from "./types";
 
 /**
  * Convert a timestamp to a snowflake.
@@ -98,7 +116,7 @@ export const replace = {
  * @returns The formatted URL.
  */
 export function formatImageURL(url: string, size: ImageSize = 128, format?: ImageFormat): string {
-	return `${replace.snake(url)}.${format ?? (url.includes("/a_") ? "gif" : "jpg")}?size=${size}`;
+	return `${url}.${format ?? (url.includes("/a_") ? "gif" : "jpg")}?size=${size}`;
 }
 
 /**
@@ -126,10 +144,20 @@ export function objectToParams(obj: object): URLSearchParams {
 	return query;
 }
 
+/**
+ * Get the channel link from a channel ID and guild ID.
+ *
+ * @param channelId The channel ID.
+ * @param guildId The guild ID.
+ * @returns The channel link.
+ */
 export function channelLink(channelId: string, guildId?: string) {
 	return `https://discord.com/channels/${guildId ?? "@me"}/${channelId}`;
 }
 
+/**
+ * Return a new channel instance based on the channel type.
+ */
 export function channelFactory(session: Session, channel: { type: ChannelType }): BiscuitChannels {
 	switch (channel.type) {
 		case ChannelType.DM:
@@ -137,5 +165,35 @@ export function channelFactory(session: Session, channel: { type: ChannelType })
 
 		default:
 			return new BaseChannel(session, channel as APIChannel);
+	}
+}
+
+/**
+ * Return a new component instance based on the component type.
+ *
+ * @param component The component to create.
+ * @returns The component instance.
+ */
+export function componentFactory(
+	component: APIMessageActionRowComponent,
+): BiscuitActionRowMessageComponents | BaseComponent<BiscuitActionRowMessageComponents["type"]> {
+	switch (component.type) {
+		case ComponentType.Button:
+			if (component.style === ButtonStyle.Link) {
+				return new LinkButtonComponent(component);
+			}
+			return new ButtonComponent(component);
+		case ComponentType.ChannelSelect:
+			return new ChannelSelectMenuComponent(component);
+		case ComponentType.RoleSelect:
+			return new RoleSelectMenuComponent(component);
+		case ComponentType.StringSelect:
+			return new StringSelectMenuComponent(component);
+		case ComponentType.UserSelect:
+			return new UserSelectMenuComponent(component);
+		case ComponentType.MentionableSelect:
+			return new MentionableSelectMenuComponent(component);
+		default:
+			return new BaseComponent<BiscuitActionRowMessageComponents["type"]>(component);
 	}
 }

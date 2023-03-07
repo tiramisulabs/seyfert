@@ -2,9 +2,7 @@ import type { BiscuitRESTOptions, CDNRoutes, Routes } from "@biscuitland/rest";
 import { CDN, BiscuitREST, Router } from "@biscuitland/rest";
 import type { RestAdapater } from "@biscuitland/common";
 import { EventEmitter2 } from "eventemitter2";
-import { Utils } from ".";
-import { MainManager } from "./structures/managers/MainManager";
-import { Events } from "./events/handler";
+import { Utils, MainManager, Events } from ".";
 import { WebSocketManager, WebSocketManagerOptions, WebSocketShardEvents } from "@biscuitland/ws";
 import { GatewayIntentBits } from "discord-api-types/v10";
 

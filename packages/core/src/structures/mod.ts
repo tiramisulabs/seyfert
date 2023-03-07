@@ -13,3 +13,5 @@ export * from "./Sticker";
 export * from "./ThreadMember";
 export * from "./User";
 export * from "./Webhook";
+export * from "./DMChannel";
+export * from "./Components/mod";

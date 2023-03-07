@@ -2,21 +2,18 @@ import type { APIGuild, APIPartialGuild } from "discord-api-types/v10";
 import { GuildFeature } from "discord-api-types/v10";
 import type { Session } from "../../session";
 import type { ImageOptions } from "../../";
-import { Base } from "./Base";
+import { DiscordBase } from "./DiscordBase";
 
 /**
  * Class for {@link Guild} and {@link AnonymousGuild}
  */
-export class BaseGuild extends Base {
+export class BaseGuild extends DiscordBase {
 	constructor(session: Session, data: APIGuild | APIPartialGuild) {
 		super(session, data.id);
-		this.id = data.id;
 		this.name = data.name;
 		this.icon = data.icon ?? undefined;
 		this.features = data.features;
 	}
-
-	override id: string;
 
 	/** Guild name. */
 	name: string;

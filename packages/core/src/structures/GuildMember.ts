@@ -5,7 +5,7 @@ import type {
 } from "discord-api-types/v10";
 import type { Session } from "../session";
 import type { ImageOptions } from "../";
-import { Base } from "./extra/Base";
+import { DiscordBase } from "./extra/DiscordBase";
 import { User } from "./User";
 
 export type GuildMemberData = APIGuildMember | GatewayGuildMemberUpdateDispatchData | GatewayGuildMemberAddDispatchData;
@@ -14,17 +14,16 @@ export type GuildMemberData = APIGuildMember | GatewayGuildMemberUpdateDispatchD
  * Represents a guild member
  * @link https://discord.com/developers/docs/resources/guild#guild-member-object
  */
-export class GuildMember extends Base {
+export class GuildMember extends DiscordBase {
 	constructor(
 		session: Session,
 		data: GuildMemberData,
 		/** the choosen guild id */
 		readonly guildId: string,
 	) {
-		super(session, data.user?.id);
+		super(session, data.user!.id);
 		this.user = new User(session, data.user!);
 		this.guildId = guildId;
-		this.id = data.user!.id;
 		this.avatar = data.avatar ?? undefined;
 		this.nickname = data.nick ?? undefined;
 		this.premiumSince = Date.parse(data.premium_since ?? "");
@@ -34,9 +33,6 @@ export class GuildMember extends Base {
 		this.pending = !!data.pending;
 		this.patch(data);
 	}
-	// In the few cases where user is not present, it can be parsed with another property that does present it.
-	// For example, on event `MESSAGE_CREATE` exists `messsage.author`.
-	override id: string;
 
 	/** the user this guild member represents */
 	user: User;

@@ -1,15 +1,14 @@
 import type { APIEmoji } from "discord-api-types/v10";
 import type { Session } from "../session";
-import { Base } from "./extra/Base";
+import { DiscordBase } from "./extra/DiscordBase";
 import type { Emoji } from "./extra/Emoji";
 import { User } from "./User";
 
-export class GuildEmoji extends Base implements Emoji {
+export class GuildEmoji extends DiscordBase implements Emoji {
 	// rome-ignore lint/correctness/noUnusedVariables: Declaring them here avoids reassigning them manually
 	constructor(session: Session, data: APIEmoji, readonly guildId: string) {
 		super(session, data.id!);
 		this.name = data.name!;
-		this.id = data.id!;
 		this.managed = !!data.managed;
 		this.animated = !!data.animated;
 		this.avialable = !!data.available;
@@ -18,8 +17,6 @@ export class GuildEmoji extends Base implements Emoji {
 
 		if (data.user) this.user = new User(this.session, data.user);
 	}
-
-	override id: string;
 
 	/** emoji name */
 	name: string;

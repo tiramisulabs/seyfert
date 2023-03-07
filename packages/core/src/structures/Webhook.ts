@@ -2,13 +2,12 @@ import type { APIWebhook, WebhookType } from "discord-api-types/v10";
 import type { Session } from "../session";
 import type { ImageOptions } from "../";
 import { AnonymousGuild } from "./AnonymousGuild";
-import { Base } from "./extra/Base";
+import { DiscordBase } from "./extra/DiscordBase";
 import { User } from "./User";
 
-export class Webhook extends Base {
+export class Webhook extends DiscordBase {
 	constructor(session: Session, data: APIWebhook) {
 		super(session, data.id);
-		this.id = data.id;
 		this.type = data.type;
 		this.channelId = data.channel_id;
 		this.name = data.name ?? undefined;
@@ -26,8 +25,6 @@ export class Webhook extends Base {
 			this.sourceGuild = new AnonymousGuild(this.session, data.source_guild);
 		}
 	}
-
-	override id: string;
 
 	/**	the type of the webhook */
 	type: WebhookType;

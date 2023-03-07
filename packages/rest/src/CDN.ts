@@ -13,7 +13,7 @@ export interface CDNRoutes {
 	splashes(guildId: string): {
 		get(hash: string): string;
 	};
-	discoverySplashes(guidId: string): {
+	"discovery-splashes"(guidId: string): {
 		get(hash: string): string;
 	};
 	banners(id: string): {
@@ -35,7 +35,7 @@ export interface CDNRoutes {
 	appIcons(appId: string): {
 		get(iconOrCover: string): string;
 	};
-	appAssets(appId: string): {
+	"app-assets"(appId: string): {
 		get(asset: string): string;
 		achievements(id: string): {
 			icons(hash: string): {
@@ -43,22 +43,22 @@ export interface CDNRoutes {
 			};
 		};
 	};
-	teamIcons(teamId: string): {
+	"team-icons"(teamId: string): {
 		get(hash: string): string;
 	};
 	stickers(id: string): {
 		get(): string;
 	};
-	roleIcons(roleId: string): {
+	"role-icons"(roleId: string): {
 		get(icon: string): string;
 	};
-	guildEvents(id: string): {
+	"guild-events"(id: string): {
 		get(cover: string): string;
 	};
 }
 
 export interface CDNRoutes {
-	appAssets(id: "710982414301790216"): {
+	"app-assets"(id: "710982414301790216"): {
 		store(packBannerId: string): {
 			get(): string;
 		};

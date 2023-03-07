@@ -66,7 +66,19 @@ export interface Routes<CRA extends RestAdapater<any>> {
 
 export interface Routes<CRA extends RestAdapater<any>> {
 	channels(id: string): {
+		typing: {
+			post<T>(...args: RestArguments<CRA, "post">): Promise<T>;
+		};
 		get<T>(...args: RestArguments<CRA, "get">): Promise<T>;
+		patch<T>(...args: RestArguments<CRA, "patch">): Promise<T>;
+		delete<T>(...args: RestArguments<CRA, "delete">): Promise<T>;
+		webhooks: {
+			get<T>(...args: RestArguments<CRA, "get">): Promise<T>;
+		};
+		messages(id?: string): {
+			get<T>(...args: RestArguments<CRA, "get">): Promise<T>;
+			post<T>(...args: RestArguments<CRA, "post">): Promise<T>;
+		}
 	};
 }
 

@@ -52,7 +52,7 @@ export class AnonymousGuild extends BaseGuild {
 			return;
 		}
 		this.session.utils.formatImageURL(
-			this.session.cdn.discoverySplashes(this.id).get(this.splash),
+			this.session.cdn["discovery-splashes"](this.id).get(this.splash),
 			options?.size,
 			options?.format,
 		);

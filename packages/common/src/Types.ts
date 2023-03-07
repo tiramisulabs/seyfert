@@ -16,6 +16,8 @@ export type PickPartial<T, K extends keyof T> = {
 	[P in K]: T[P];
 };
 
+export type MakeRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
+
 export type CamelCase<S extends string> = S extends `${infer P1}_${infer P2}${infer P3}`
 	? `${Lowercase<P1>}${Uppercase<P2>}${CamelCase<P3>}`
 	: Lowercase<S>;

@@ -1,14 +1,13 @@
-import { Base } from "./extra/Base";
+import { DiscordBase } from "./extra/DiscordBase";
 import type { APIUser, GatewayUserUpdateDispatchData, UserFlags } from "discord-api-types/v10";
 import type { Session } from "../session";
 import type { ImageOptions } from "../";
 
 export type DataUser = APIUser | GatewayUserUpdateDispatchData;
 
-export class User extends Base {
+export class User extends DiscordBase {
 	constructor(session: Session, data: DataUser) {
 		super(session, data.id);
-		this.id = data.id;
 		this.username = data.username;
 		this.discriminator = data.discriminator;
 		this.avatar = data.avatar ?? undefined;
@@ -18,8 +17,6 @@ export class User extends Base {
 		this.banner = data.banner;
 		this.publicFlags = data.public_flags;
 	}
-
-	override id: string;
 
 	/** the user's username, not unique across the platform */
 	username: string;

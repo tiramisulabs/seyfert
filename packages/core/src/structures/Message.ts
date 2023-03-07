@@ -8,16 +8,15 @@ import type {
 	MessageType,
 } from "discord-api-types/v10";
 import type { Session } from "../session";
-import { Base } from "./extra/Base";
+import { DiscordBase } from "./extra/DiscordBase";
 import { GuildMember } from "./GuildMember";
 import { User } from "./User";
 
 export type MessageData = APIMessage | GatewayMessageCreateDispatchData | GatewayMessageUpdateDispatchData;
 
-export class Message extends Base {
+export class Message extends DiscordBase {
 	constructor(session: Session, data: MessageData) {
 		super(session, data.id);
-		this.id = data.id;
 		this.channelId = data.channel_id;
 		this.mentions = {
 			roles: data.mention_roles ?? [],
@@ -29,8 +28,6 @@ export class Message extends Base {
 
 		this.patch(data);
 	}
-
-	override id: string;
 
 	/** type of message */
 	type?: MessageType;
