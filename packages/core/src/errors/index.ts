@@ -1,6 +1,6 @@
 // CLASS
-export { BiscuitError } from './biscuit-error';
+export { BiscuitError } from './biscuitError';
 
 // ENUM
-export { ErrorCodes } from './error-codes';
-export { ErrorMessages } from './error-messages';
+export { ErrorCodes } from './errorCodes';
+export { ErrorMessages } from './errorMessages';
