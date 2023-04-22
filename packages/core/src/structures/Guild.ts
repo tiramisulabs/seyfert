@@ -4,13 +4,13 @@ import type {
 	GatewayGuildModifyDispatchData,
 	GuildDefaultMessageNotifications,
 	GuildNSFWLevel,
-	GuildPremiumTier,
-} from "discord-api-types/v10";
-import type { Session } from "../session";
-import { AnonymousGuild } from "./AnonymousGuild";
-import { GuildEmoji } from "./GuildEmoji";
-import { GuildMember } from "./GuildMember";
-import { Role } from "./GuildRole";
+	GuildPremiumTier
+} from '@biscuitland/common';
+import type { Session } from '../session';
+import { AnonymousGuild } from './AnonymousGuild';
+import { GuildEmoji } from './GuildEmoji';
+import { GuildMember } from './GuildMember';
+import { Role } from './GuildRole';
 
 export type GuildData = GatewayGuildCreateDispatchData | APIGuild | GatewayGuildModifyDispatchData;
 
@@ -135,9 +135,9 @@ export class Guild extends AnonymousGuild {
 	}
 
 	private gatewayPatch(data: GatewayGuildCreateDispatchData) {
-		if ("members" in data && data.members.length) {
+		if ('members' in data && data.members.length) {
 			this.members = new Map(
-				data.members.map((member) => [`${member.user?.id}`, new GuildMember(this.session, member, this.id)]),
+				data.members.map((member) => [`${member.user?.id}`, new GuildMember(this.session, member, this.id)])
 			);
 		}
 

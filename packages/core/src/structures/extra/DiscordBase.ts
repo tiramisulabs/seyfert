@@ -1,12 +1,12 @@
-import { Session } from "../../index";
-import { Base } from "./Base";
+import { Session, snowflakeToTimestamp } from '../../index';
+import { Base } from './Base';
 
 export class DiscordBase extends Base {
 	constructor(
 		session: Session,
 		/** Unique ID of the object */
 		// rome-ignore lint/correctness/noUnusedVariables: Declaring them here avoids reassigning them manually
-		readonly id: string,
+		readonly id: string
 	) {
 		super(session);
 	}
@@ -15,7 +15,7 @@ export class DiscordBase extends Base {
 	 * Create a timestamp for the current object.
 	 */
 	get createdTimestamp(): number {
-		return this.session.utils.snowflakeToTimestamp(this.id);
+		return snowflakeToTimestamp(this.id);
 	}
 
 	/**

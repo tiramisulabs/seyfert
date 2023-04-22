@@ -142,5 +142,5 @@ export enum ErrorMessages {
 
 	SweepFilterReturn = 'Sweep filter must return a boolean.',
 
-	GuildForumMessageRequired = 'Guild forum message is required.',
+	GuildForumMessageRequired = 'Guild forum message is required.'
 }

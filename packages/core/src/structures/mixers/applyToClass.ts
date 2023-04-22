@@ -3,7 +3,7 @@ export function applyToClass<T extends {}, U extends {}>(structToApply: T, struc
 	// @ts-expect-error
 	const props = Object.getOwnPropertyNames(structToApply.prototype);
 	for (const prop of props) {
-		if (ignore?.includes(prop as keyof T) || prop === "constructor") continue;
+		if (ignore?.includes(prop as keyof T) || prop === 'constructor') continue;
 		// @ts-expect-error
 		Object.defineProperty(struct.prototype, prop, Object.getOwnPropertyDescriptor(structToApply.prototype, prop)!);
 	}

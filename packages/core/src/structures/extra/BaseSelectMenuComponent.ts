@@ -1,5 +1,5 @@
-import { APIBaseSelectMenuComponent, ComponentType } from "discord-api-types/v10";
-import { BaseComponent } from "./BaseComponent";
+import { APIBaseSelectMenuComponent, ComponentType } from '@biscuitland/common';
+import { BaseComponent } from './BaseComponent';
 
 export type APISelectMenuComponentTypes =
 	| ComponentType.ChannelSelect
@@ -8,7 +8,9 @@ export type APISelectMenuComponentTypes =
 	| ComponentType.StringSelect
 	| ComponentType.UserSelect;
 
-export class BaseSelectMenuComponent<T extends APISelectMenuComponentTypes> extends BaseComponent<APISelectMenuComponentTypes> {
+export class BaseSelectMenuComponent<
+	T extends APISelectMenuComponentTypes
+> extends BaseComponent<APISelectMenuComponentTypes> {
 	constructor(data: APIBaseSelectMenuComponent<T>) {
 		super(data);
 		this.customId = data.custom_id;

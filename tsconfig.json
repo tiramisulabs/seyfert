@@ -4,6 +4,7 @@
 		"baseUrl": ".",
 		"paths": {
 			"@biscuitland/*": ["packages/*/src"]
-		}
+		},
+		"ignoreDeprecations": "5.0",
 	}
 }

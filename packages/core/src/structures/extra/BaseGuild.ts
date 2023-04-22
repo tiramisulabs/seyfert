@@ -1,8 +1,8 @@
-import type { APIGuild, APIPartialGuild } from "discord-api-types/v10";
-import { GuildFeature } from "discord-api-types/v10";
-import type { Session } from "../../session";
-import type { ImageOptions } from "../../";
-import { DiscordBase } from "./DiscordBase";
+import type { APIGuild, APIPartialGuild } from '@biscuitland/common';
+import { GuildFeature } from '@biscuitland/common';
+import type { Session } from '../../session';
+import { ImageOptions, formatImageURL } from '../../';
+import { DiscordBase } from './DiscordBase';
 
 /**
  * Class for {@link Guild} and {@link AnonymousGuild}
@@ -60,10 +60,10 @@ export class BaseGuild extends DiscordBase {
 		if (!this.icon) {
 			return;
 		}
-		return this.session.utils.formatImageURL(
+		return formatImageURL(
 			this.session.cdn.icons(this.id).get(this.icon),
 			options?.size,
-			options?.format,
+			options?.format
 		);
 	}
 

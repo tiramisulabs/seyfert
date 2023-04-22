@@ -12,7 +12,7 @@ export class BiscuitError extends Error {
 	getError() {
 		return {
 			error: this.error,
-			message: this.message,
+			message: this.message
 		};
 	}
 }

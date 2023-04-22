@@ -3,10 +3,10 @@ import {
 	APIDMChannel,
 	APIGroupDMChannel,
 	APIGuildTextChannel,
-	GuildTextChannelType,
-} from "discord-api-types/v10";
-import { Session } from "../../session";
-import { BaseChannel } from "./BaseChannel";
+	GuildTextChannelType
+} from '@biscuitland/common';
+import { Session } from '../../session';
+import { BaseChannel } from './BaseChannel';
 
 export class TextBaseChannel extends BaseChannel {
 	constructor(session: Session, data: APIGuildTextChannel<GuildTextChannelType> | APIDMChannel | APIGroupDMChannel) {

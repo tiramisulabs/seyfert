@@ -24,26 +24,19 @@
 		}
 	},
 	"dependencies": {
-		"@discordjs/util": "^0.1.0",
-		"@biscuitland/rest": "^3.0.0",
 		"@biscuitland/common": "^0.0.1",
-		"@sapphire/async-queue": "^1.5.0",
-		"@vladfrangu/async_event_emitter": "^2.1.4",
-		"discord-api-types": "^0.37.35",
-		"ws": "^8.12.1"
+		"@biscuitland/rest": "^3.0.0",
+		"@discordeno/gateway": "^19.0.0-next.e2d86ea",
+		"@discordeno/utils": "^19.0.0-next.e2d86ea",
+		"ws": "^8.13.0"
 	},
 	"devDependencies": {
 		"@types/node": "^18.14.0",
 		"@types/ws": "^8.5.4",
-		"@vitest/coverage-c8": "^0.28.5",
-		"mock-socket": "^9.2.1",
-		"tsup": "^6.1.3",
-		"undici": "^5.20.0",
-		"vitest": "^0.28.5"
+		"tsup": "^6.1.3"
 	},
 	"directories": {
-		"lib": "src",
-		"test": "tests"
+		"lib": "src"
 	},
 	"license": "Apache-2.0",
 	"author": "Yuzuru <yuzuru@programmer.net>",

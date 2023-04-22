@@ -1,4 +1,4 @@
-import type { Session } from "../../session";
+import type { Session } from '../../session';
 import type {
 	APIGuild,
 	GuildVerificationLevel,
@@ -18,16 +18,17 @@ import type {
 	APIInvite,
 	APIGuildIntegration,
 	APIGuildWidget,
-	APIGuildWelcomeScreen,
-} from "discord-api-types/v10";
-import { Guild } from "../Guild";
+	APIGuildWelcomeScreen
+} from '@biscuitland/common';
+import { Guild } from '../Guild';
+import { objectToParams } from '../../utils/utils';
 
 export class GuildManager {
 	readonly session!: Session;
 	constructor(session: Session) {
-		Object.defineProperty(this, "session", {
+		Object.defineProperty(this, 'session', {
 			value: session,
-			writable: false,
+			writable: false
 		});
 	}
 
@@ -81,7 +82,7 @@ export class GuildManager {
 			.guilds(guildId)
 			.bans()
 			.get<APIBan[]>({
-				query: this.session.utils.objectToParams(query),
+				query: objectToParams(query)
 			});
 	}
 
@@ -122,7 +123,7 @@ export class GuildManager {
 	}
 
 	async getPruneCount(guildId: string, options: GuildPruneCountOptions): Promise<number> {
-		return this.session.api.guilds(guildId).prune.get<number>({ query: this.session.utils.objectToParams(options) });
+		return this.session.api.guilds(guildId).prune.get<number>({ query: objectToParams(options) });
 	}
 
 	async beginGuildPrune(guildId: string, options: GuildPruneOptions): Promise<number> {
@@ -154,15 +155,15 @@ export class GuildManager {
 	}
 
 	async getVanityUrl(guildId: string): Promise<Partial<APIInvite>> {
-		return this.session.api.guilds(guildId)["vanity-url"].get<Partial<APIInvite>>();
+		return this.session.api.guilds(guildId)['vanity-url'].get<Partial<APIInvite>>();
 	}
 
 	async getWelcomeScreen(guildId: string): Promise<APIGuildWelcomeScreen> {
-		return this.session.api.guilds(guildId)["welcome-screen"].get<APIGuildWelcomeScreen>();
+		return this.session.api.guilds(guildId)['welcome-screen'].get<APIGuildWelcomeScreen>();
 	}
 
 	async modifyWelcomeScreen(guildId: string, options: GuildWelcomeScreenModifyOptions): Promise<APIGuildWelcomeScreen> {
-		return this.session.api.guilds(guildId)["welcome-screen"].patch<APIGuildWelcomeScreen>({ body: options });
+		return this.session.api.guilds(guildId)['welcome-screen'].patch<APIGuildWelcomeScreen>({ body: options });
 	}
 }
 

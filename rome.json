@@ -2,31 +2,15 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": false,
-      "correctness": {
-        "recommended": true,
-        "noUnusedVariables": "warn"
-      },
+      "all": true,
       "style": {
-        "recommended": true,
-        "noNegationElse": "error",
-        "useShorthandArrayType": "error",
         "useWhile": "off"
       },
       "suspicious": {
-        "recommended": true,
         "noExplicitAny": "off"
       },
       "nursery": {
-        "recommended": true,
-        "noBannedTypes": "error",
-        "noConstructorReturn": "error",
-        "noVoidTypeReturn": "error",
-        "useCamelCase": "off",
-        "noDuplicateObjectKeys": "warn",
-        "noVar": "warn",
-        "useConst": "error",
-        "useNumericLiterals": "error"
+        "useCamelCase": "off"
       }
     }
   },

@@ -1,8 +1,8 @@
-import type { Session } from "../../session";
-import { ChannelManager } from "./ChannelManager";
-import { GuildManager } from "./GuildManager";
-import { MemberManager } from "./MemberManager";
-import { UserManager } from "./UserManager";
+import type { Session } from '../../session';
+import { ChannelManager } from './ChannelManager';
+import { GuildManager } from './GuildManager';
+import { MemberManager } from './MemberManager';
+import { UserManager } from './UserManager';
 
 export class MainManager {
 	constructor(private readonly session: Session) {

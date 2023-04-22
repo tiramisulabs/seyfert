@@ -1,8 +1,8 @@
-import { APIDMChannel } from "discord-api-types/v10";
-import { Session } from "../session";
-import { applyToClass } from "./mixers/applyToClass";
-import { TextBaseChannel } from "./extra/TextBaseChannel";
-import { BaseChannel } from "./extra/BaseChannel";
+import { APIDMChannel } from '@biscuitland/common';
+import { Session } from '../session';
+import { applyToClass } from './mixers/applyToClass';
+import { TextBaseChannel } from './extra/TextBaseChannel';
+import { BaseChannel } from './extra/BaseChannel';
 
 // rome-ignore lint/correctness/noUnusedVariables: typing resolve
 interface DM extends BaseChannel {

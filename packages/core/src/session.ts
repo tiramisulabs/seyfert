@@ -1,34 +1,27 @@
-import type { BiscuitRESTOptions, CDNRoutes, Routes } from "@biscuitland/rest";
-import { CDN, BiscuitREST, Router } from "@biscuitland/rest";
-import type { RestAdapater } from "@biscuitland/common";
-import { EventEmitter2 } from "eventemitter2";
-import { Utils, MainManager, Events } from ".";
-import { WebSocketManager, WebSocketManagerOptions, WebSocketShardEvents } from "@biscuitland/ws";
-import { GatewayIntentBits } from "discord-api-types/v10";
+import type { BiscuitRESTOptions, CDNRoutes, Routes } from '@biscuitland/rest';
+import { CDN, BiscuitREST, Router } from '@biscuitland/rest';
+import type { When } from '@biscuitland/common';
+import { EventEmitter2 } from 'eventemitter2';
+import { MainManager, Events, getBotIdFromToken } from '.';
+import { GatewayManager, CreateGatewayManagerOptions } from '@biscuitland/ws';
+import { GatewayIntentBits } from '@biscuitland/common';
 
-import * as Actions from "./events/handler";
+// import * as Actions from './events/handler';
 
-export class Session<RA extends RestAdapater<any> = BiscuitREST,> extends EventEmitter2 {
-	constructor(public options: BiscuitOptions<RA>) {
+export class Session<On extends boolean = boolean> extends EventEmitter2 {
+	constructor(public options: BiscuitOptions) {
 		super();
-		this.createRest(this.options.rest);
+		this.rest = this.createRest(this.options.rest);
 		this.api = new Router(this.rest).createProxy();
 		this.cdn = CDN.createProxy();
 		this.managers = new MainManager(this);
-		this.websocket = new WebSocketManager({
-			token: this.options.token,
-			rest: this.rest,
-			intents: this.options.intents ?? 0,
-			...this.options.ws.manager,
-		});
 	}
 
-	utils = Utils;
-	rest!: RA | BiscuitREST;
-	api: Routes<RA | BiscuitREST>;
+	rest: BiscuitREST;
+	api: Routes<BiscuitREST>;
 	cdn: CDNRoutes;
 	managers: MainManager;
-	websocket: WebSocketManager;
+	websocket!: When<On, GatewayManager>;
 	private _applicationId?: string;
 	private _botId?: string;
 	override on<K extends keyof Events>(event: K, func: Events[K]): this;
@@ -65,7 +58,7 @@ export class Session<RA extends RestAdapater<any> = BiscuitREST,> extends EventE
 	}
 
 	get botId() {
-		return this._botId ?? this.utils.getBotIdFromToken(this.options.token);
+		return this._botId ?? getBotIdFromToken(this.options.token);
 	}
 
 	get applicationId() {
@@ -74,36 +67,38 @@ export class Session<RA extends RestAdapater<any> = BiscuitREST,> extends EventE
 
 	private createRest(rest: any) {
 		if (!rest) {
-			this.rest = new BiscuitREST({ ...this.options.defaultRestOptions }).setToken(this.options.token);
-			return;
+			return new BiscuitREST({
+				...this.options.defaultRestOptions,
+				token: this.options.token
+			});
 		}
 
 		if (rest instanceof BiscuitREST || rest.cRest) {
-			this.rest = rest;
-			return;
+			return rest;
 		}
 
-		throw new Error("[CORE] REST not found");
+		throw new Error('[CORE] REST not found');
 	}
 
 	async start() {
-		this.websocket.on(WebSocketShardEvents.Dispatch, (payload) => {
-			if (!payload.data.d || !payload.data.t) return;
-			const { shardId, ...p } = payload;
-			const action = Actions[payload.data.t];
-			if (action) action(this, shardId, p.data.d);
+		const ctx = this as Session<true>;
+		const { connection, ...gMOptions } = this.options.defaultGatewayOptions!;
+
+		ctx.websocket = new GatewayManager({
+			token: this.options.token,
+			intents: this.options.intents ?? 0,
+			connection: connection ?? (await this.rest.get('/gateway/bot')),
+			...gMOptions
 		});
 
-		await this.websocket.connect();
+		await ctx.websocket.spawnShards();
 	}
 }
 
-export interface BiscuitOptions<RA extends RestAdapater<any>> {
+export interface BiscuitOptions {
 	token: string;
 	intents: number | GatewayIntentBits;
-	rest: RA;
-	defaultRestOptions: Partial<BiscuitRESTOptions>;
-	ws: {
-		manager: Omit<WebSocketManagerOptions, "token" | "rest" | "intents">;
-	};
+	rest?: BiscuitREST;
+	defaultRestOptions?: Partial<BiscuitRESTOptions>;
+	defaultGatewayOptions?: Omit<CreateGatewayManagerOptions, 'token' | 'intents'>;
 }

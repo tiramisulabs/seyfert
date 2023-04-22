@@ -1,1 +1,1 @@
-export * from "./MainManager";
+export * from './MainManager';

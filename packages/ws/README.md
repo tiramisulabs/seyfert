@@ -2,7 +2,7 @@
 
 ## Advice
 
-This version of @biscuitland/ws is a completely @discordjs/ws "fork" with some minor changes, like compression being removed. All credits for this go to the Discord.js team.
+This version of @biscuitland/ws is a **fork** of @discordeno/gateway, all credits go to them. However it has been heavily modified for proper use within biscuit.
 
 ## Most importantly, biscuit's ws is:
 
@@ -20,25 +20,25 @@ npm install @biscuitland/ws
 yarn add @biscuitland/ws
 ```
 
-## Example (GW proxy)
+## Example
 
 ```ts
-import { WebSocketManager, type WebSocketShardEvents } from '@biscuitland/ws';
+import { GatewayManager } from '@biscuitland/ws';
 import { BiscuitREST } from '@biscuitland/rest';
-import { GatewayIntentBits } from 'discord-api-types/v10';
+import { GatewayIntentBits, Routes} from '@biscuitland/common';
 
 const intents = GatewayIntentBits.Guilds;
 const token = 'your token goes here';
-const rest = new BiscuitREST().setToken(token);
+const rest = new BiscuitREST({ token });
 
-// gateway bot code ↓
-const ws = new WebSocketManager({ token, intents, rest });
+(async () => {
+	const connection = await rest.get(Routes.gatewayBot())
 
-ws.on(WebSocketShardEvents.Ready, (ready) => {
-	console.log(`Logged as ${ready.user.username}`);
-});
+	// gateway bot code ↓
+	const ws = new GatewayManager({ token, intents, connection });
 
-await ws.connect();
+	await ws.spawnShards();
+})();
 ```
 
 ## Links

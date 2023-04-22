@@ -1,7 +1,7 @@
-import { DiscordBase } from "./extra/DiscordBase";
-import type { APIUser, GatewayUserUpdateDispatchData, UserFlags } from "discord-api-types/v10";
-import type { Session } from "../session";
-import type { ImageOptions } from "../";
+import { DiscordBase } from './extra/DiscordBase';
+import type { APIUser, GatewayUserUpdateDispatchData, UserFlags } from '@biscuitland/common';
+import type { Session } from '../session';
+import { ImageOptions, formatImageURL } from '../';
 
 export type DataUser = APIUser | GatewayUserUpdateDispatchData;
 
@@ -50,10 +50,10 @@ export class User extends DiscordBase {
 		if (!this.avatar) {
 			return `${this.session.cdn.embed.avatars.get(Number(this.discriminator) % 5)}.png`;
 		}
-		return this.session.utils.formatImageURL(
+		return formatImageURL(
 			this.session.cdn.avatars(this.id).get(this.avatar),
 			options?.size,
-			options?.format,
+			options?.format
 		);
 	}
 

@@ -1,5 +1,5 @@
-import type { ObjectToLower, ObjectToSnake } from "@biscuitland/common";
-import { DiscordEpoch } from "@biscuitland/common";
+import type { ObjectToLower, ObjectToSnake } from '@biscuitland/common';
+import { DiscordEpoch } from '@biscuitland/common';
 import {
 	APIChannel,
 	APIDMChannel,
@@ -7,8 +7,8 @@ import {
 	ButtonStyle,
 	ChannelType,
 	ComponentType,
-	ImageFormat,
-} from "discord-api-types/v10";
+	ImageFormat
+} from '@biscuitland/common';
 import {
 	Session,
 	DMChannel,
@@ -18,11 +18,11 @@ import {
 	RoleSelectMenuComponent,
 	StringSelectMenuComponent,
 	UserSelectMenuComponent,
-	MentionableSelectMenuComponent,
-} from "../";
-import { BaseChannel } from "../structures/extra/BaseChannel";
-import { BaseComponent } from "../structures/extra/BaseComponent";
-import type { BiscuitActionRowMessageComponents, BiscuitChannels, ImageSize } from "./types";
+	MentionableSelectMenuComponent
+} from '../';
+import { BaseChannel } from '../structures/extra/BaseChannel';
+import { BaseComponent } from '../structures/extra/BaseComponent';
+import type { BiscuitActionRowMessageComponents, BiscuitChannels, ImageSize } from './types';
 
 /**
  * Convert a timestamp to a snowflake.
@@ -42,15 +42,15 @@ export async function toSnakeCase<Obj extends { [k: string]: unknown }>(target: 
 	const result = {};
 	for (const [key, value] of Object.entries(target)) {
 		switch (typeof value) {
-			case "string":
-			case "bigint":
-			case "boolean":
-			case "function":
-			case "symbol":
-			case "undefined":
+			case 'string':
+			case 'bigint':
+			case 'boolean':
+			case 'function':
+			case 'symbol':
+			case 'undefined':
 				result[replace.camel(key)] = value;
 				break;
-			case "object":
+			case 'object':
 				if (Array.isArray(value)) {
 					result[replace.camel(key)] = Promise.all(value.map((prop) => toSnakeCase(prop)));
 					break;
@@ -75,15 +75,15 @@ export async function toCamelCase<Obj extends { [k: string]: unknown }>(target: 
 	const result = {};
 	for (const [key, value] of Object.entries(target)) {
 		switch (typeof value) {
-			case "string":
-			case "bigint":
-			case "boolean":
-			case "function":
-			case "symbol":
-			case "undefined":
+			case 'string':
+			case 'bigint':
+			case 'boolean':
+			case 'function':
+			case 'symbol':
+			case 'undefined':
 				result[replace.snake(key)] = value;
 				break;
-			case "object":
+			case 'object':
 				if (Array.isArray(value)) {
 					result[replace.snake(key)] = Promise.all(value.map((prop) => toCamelCase(prop)));
 					break;
@@ -105,7 +105,7 @@ export const replace = {
 	},
 	camel: (s: string) => {
 		return s.replace(/[A-Z]/g, (a) => `_${a.toLowerCase()}`);
-	},
+	}
 };
 
 /**
@@ -116,7 +116,7 @@ export const replace = {
  * @returns The formatted URL.
  */
 export function formatImageURL(url: string, size: ImageSize = 128, format?: ImageFormat): string {
-	return `${url}.${format ?? (url.includes("/a_") ? "gif" : "jpg")}?size=${size}`;
+	return `${url}.${format ?? (url.includes('/a_') ? 'gif' : 'jpg')}?size=${size}`;
 }
 
 /**
@@ -126,7 +126,7 @@ export function formatImageURL(url: string, size: ImageSize = 128, format?: Imag
  * @warning Discord staff has mentioned this may not be stable forever xd.
  */
 export function getBotIdFromToken(token: string): string {
-	return Buffer.from(token.split(".")[0], "base64").toString("ascii");
+	return Buffer.from(token.split('.')[0], 'base64').toString('ascii');
 }
 
 /**
@@ -152,7 +152,7 @@ export function objectToParams(obj: object): URLSearchParams {
  * @returns The channel link.
  */
 export function channelLink(channelId: string, guildId?: string) {
-	return `https://discord.com/channels/${guildId ?? "@me"}/${channelId}`;
+	return `https://discord.com/channels/${guildId ?? '@me'}/${channelId}`;
 }
 
 /**
@@ -175,8 +175,8 @@ export function channelFactory(session: Session, channel: { type: ChannelType })
  * @returns The component instance.
  */
 export function componentFactory(
-	component: APIMessageActionRowComponent,
-): BiscuitActionRowMessageComponents | BaseComponent<BiscuitActionRowMessageComponents["type"]> {
+	component: APIMessageActionRowComponent
+): BiscuitActionRowMessageComponents | BaseComponent<BiscuitActionRowMessageComponents['type']> {
 	switch (component.type) {
 		case ComponentType.Button:
 			if (component.style === ButtonStyle.Link) {
@@ -194,6 +194,6 @@ export function componentFactory(
 		case ComponentType.MentionableSelect:
 			return new MentionableSelectMenuComponent(component);
 		default:
-			return new BaseComponent<BiscuitActionRowMessageComponents["type"]>(component);
+			return new BaseComponent<BiscuitActionRowMessageComponents['type']>(component);
 	}
 }

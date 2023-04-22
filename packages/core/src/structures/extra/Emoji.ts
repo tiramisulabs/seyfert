@@ -1,4 +1,4 @@
-import type { APIEmoji } from "discord-api-types/v10";
+import type { APIEmoji } from '@biscuitland/common';
 
 export class Emoji {
 	constructor(data: APIEmoji) {

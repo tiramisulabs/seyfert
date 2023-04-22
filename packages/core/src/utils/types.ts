@@ -1,15 +1,15 @@
 import type {
 	ChannelSelectMenuComponent,
-	ImageFormat,
 	LinkButtonComponent,
 	MentionableSelectMenuComponent,
 	RoleSelectMenuComponent,
 	StringSelectMenuComponent,
 	TextInputComponent,
-	UserSelectMenuComponent,
-} from "../index";
-import { DMChannel, ButtonComponent } from "../index";
-import { BaseChannel } from "../structures/extra/BaseChannel";
+	UserSelectMenuComponent
+} from '../index';
+import type { ImageFormat } from '@biscuitland/common'
+import { DMChannel, ButtonComponent } from '../index';
+import { BaseChannel } from '../structures/extra/BaseChannel';
 
 export type BiscuitComponents =
 	| ButtonComponent
@@ -39,5 +39,5 @@ export type BiscuitChannels = DMChannel | BaseChannel;
 export enum ThreadTypes {
 	AnnouncementThread = 10,
 	PublicThread = 11,
-	PrivateThread = 12,
+	PrivateThread = 12
 }

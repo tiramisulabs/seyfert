@@ -1,16 +1,17 @@
-import { ObjectToLower } from "@biscuitland/common";
-import { APIChannel, APIEmbed, APIMessage, APIWebhook, RESTPatchAPIChannelJSONBody } from "discord-api-types/v10";
-import { Session } from "../../session";
-import { BiscuitActionRowMessageComponents } from "../../utils/types";
-import { Message, MessageActionRowComponent } from "../mod";
-import { Webhook } from "../Webhook";
+import { ObjectToLower } from '@biscuitland/common';
+import { APIChannel, APIEmbed, APIMessage, APIWebhook, RESTPatchAPIChannelJSONBody } from '@biscuitland/common';
+import { Session } from '../../session';
+import { BiscuitActionRowMessageComponents } from '../../utils/types';
+import { Message, MessageActionRowComponent } from '../mod';
+import { Webhook } from '../Webhook';
+import { objectToParams } from '../../utils/utils';
 
 export class ChannelManager {
 	readonly session!: Session;
 	constructor(session: Session) {
-		Object.defineProperty(this, "session", {
+		Object.defineProperty(this, 'session', {
 			value: session,
-			writable: false,
+			writable: false
 		});
 	}
 
@@ -38,7 +39,9 @@ export class ChannelManager {
 		const messages = await this.session.api
 			.channels(id)
 			.messages()
-			.get<APIMessage[]>({ query: this.session.utils.objectToParams({ limit }) });
+			.get<APIMessage[]>({
+				query: objectToParams({ limit })
+			});
 
 		return messages.reduce((data, message) => data.set(message.id, new Message(this.session, message)), new Map());
 	}
@@ -64,7 +67,7 @@ export class ChannelManager {
  * @link https://discord.com/developers/docs/resources/channel#allowed-mentions-object
  */
 export interface ChannelMessageAllowedMentions {
-	parse?: ("roles" | "users" | "everyone")[];
+	parse?: ('roles' | 'users' | 'everyone')[];
 	users?: string[];
 	roles?: string[];
 	repliedUser?: boolean;

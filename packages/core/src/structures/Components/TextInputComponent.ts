@@ -1,5 +1,5 @@
-import { APIModalComponent, APITextInputComponent, ComponentType } from "discord-api-types/v10";
-import { BaseComponent } from "../extra/BaseComponent";
+import { APIModalComponent, APITextInputComponent, ComponentType } from '@biscuitland/common';
+import { BaseComponent } from '../extra/BaseComponent';
 
 export class TextInputComponent extends BaseComponent<ComponentType.TextInput> {
 	constructor(data: APITextInputComponent) {

@@ -1,6 +1,6 @@
-import { APIChannel, ChannelFlags, ChannelType } from "discord-api-types/v10";
-import { BiscuitChannels, Session } from "../../index";
-import { DiscordBase } from "./DiscordBase";
+import { APIChannel, ChannelFlags, ChannelType } from '@biscuitland/common';
+import { BiscuitChannels, Session, channelFactory, channelLink } from '../../index';
+import { DiscordBase } from './DiscordBase';
 
 export class BaseChannel extends DiscordBase {
 	constructor(session: Session, data: APIChannel) {
@@ -17,13 +17,13 @@ export class BaseChannel extends DiscordBase {
 
 	/** The URL to the channel */
 	get url() {
-		return this.session.utils.channelLink(this.id);
+		return channelLink(this.id);
 	}
 
 	async fetch(): Promise<BiscuitChannels> {
 		const channel = await this.session.managers.channels.fetch(this.id);
 
-		return this.session.utils.channelFactory(this.session, channel);
+		return channelFactory(this.session, channel);
 	}
 
 	toString() {

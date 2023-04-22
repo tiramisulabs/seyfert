@@ -1,20 +1,20 @@
 const isPlainObject = (value: any) => {
 	return (
 		(value !== null &&
-			typeof value === "object" &&
-			typeof value.constructor === "function" &&
+			typeof value === 'object' &&
+			typeof value.constructor === 'function' &&
 			// eslint-disable-next-line no-prototype-builtins
-			(value.constructor.prototype.hasOwnProperty("isPrototypeOf") ||
+			(value.constructor.prototype.hasOwnProperty('isPrototypeOf') ||
 				Object.getPrototypeOf(value.constructor.prototype) === null)) ||
 		(value && Object.getPrototypeOf(value) === null)
 	);
 };
 
 const isObject = (o: any) => {
-	return !!o && typeof o === "object" && !Array.isArray(o);
+	return !!o && typeof o === 'object' && !Array.isArray(o);
 };
 
-export const Options = (defaults: any, ...options: any[]): any => {
+export const Options = <T = any>(defaults: any, ...options: any[]): T => {
 	if (!options.length) {
 		return defaults;
 	}
@@ -23,7 +23,7 @@ export const Options = (defaults: any, ...options: any[]): any => {
 
 	if (isObject(defaults) && isPlainObject(source)) {
 		Object.entries(source).forEach(([key, value]) => {
-			if (typeof value === "undefined") {
+			if (typeof value === 'undefined') {
 				return;
 			}
 

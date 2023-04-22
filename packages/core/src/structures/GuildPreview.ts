@@ -1,8 +1,8 @@
-import type { APIGuildPreview, APIPartialGuild } from "discord-api-types/v10";
-import type { Session } from "../session";
-import { AnonymousGuild } from "./AnonymousGuild";
-import { GuildEmoji } from "./GuildEmoji";
-import { Sticker } from "./Sticker";
+import type { APIGuildPreview, APIPartialGuild } from '@biscuitland/common';
+import type { Session } from '../session';
+import { AnonymousGuild } from './AnonymousGuild';
+import { GuildEmoji } from './GuildEmoji';
+import { Sticker } from './Sticker';
 
 /**
  * Represent Discord Guild Preview Object

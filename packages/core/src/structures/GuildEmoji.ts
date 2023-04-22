@@ -1,8 +1,8 @@
-import type { APIEmoji } from "discord-api-types/v10";
-import type { Session } from "../session";
-import { DiscordBase } from "./extra/DiscordBase";
-import type { Emoji } from "./extra/Emoji";
-import { User } from "./User";
+import type { APIEmoji } from '@biscuitland/common';
+import type { Session } from '../session';
+import { DiscordBase } from './extra/DiscordBase';
+import type { Emoji } from './extra/Emoji';
+import { User } from './User';
 
 export class GuildEmoji extends DiscordBase implements Emoji {
 	// rome-ignore lint/correctness/noUnusedVariables: Declaring them here avoids reassigning them manually

@@ -1,12 +1,12 @@
 import type {
 	APIGuildMember,
 	GatewayGuildMemberAddDispatchData,
-	GatewayGuildMemberUpdateDispatchData,
-} from "discord-api-types/v10";
-import type { Session } from "../session";
-import type { ImageOptions } from "../";
-import { DiscordBase } from "./extra/DiscordBase";
-import { User } from "./User";
+	GatewayGuildMemberUpdateDispatchData
+} from '@biscuitland/common';
+import type { Session } from '../session';
+import type { ImageOptions } from '../';
+import { DiscordBase } from './extra/DiscordBase';
+import { User } from './User';
 
 export type GuildMemberData = APIGuildMember | GatewayGuildMemberUpdateDispatchData | GatewayGuildMemberAddDispatchData;
 
@@ -19,14 +19,14 @@ export class GuildMember extends DiscordBase {
 		session: Session,
 		data: GuildMemberData,
 		/** the choosen guild id */
-		readonly guildId: string,
+		readonly guildId: string
 	) {
 		super(session, data.user!.id);
 		this.user = new User(session, data.user!);
 		this.guildId = guildId;
 		this.avatar = data.avatar ?? undefined;
 		this.nickname = data.nick ?? undefined;
-		this.premiumSince = Date.parse(data.premium_since ?? "");
+		this.premiumSince = Date.parse(data.premium_since ?? '');
 		this.roles = data.roles;
 		this.deaf = !!data.deaf;
 		this.mute = !!data.mute;
@@ -93,10 +93,10 @@ export class GuildMember extends DiscordBase {
 	}
 
 	private patch(data: GuildMemberData) {
-		if ("joined_at" in data && data.joined_at) {
+		if ('joined_at' in data && data.joined_at) {
 			this.joinedTimestamp = Date.parse(data.joined_at);
 		}
-		if ("communication_disabled_until" in data) {
+		if ('communication_disabled_until' in data) {
 			this.communicationDisabledUntilTimestamp = data.communication_disabled_until?.length
 				? Date.parse(data.communication_disabled_until)
 				: null;

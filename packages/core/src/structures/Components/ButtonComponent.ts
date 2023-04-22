@@ -3,9 +3,9 @@ import {
 	APIButtonComponentWithURL,
 	APIMessageComponentEmoji,
 	ButtonStyle,
-	ComponentType,
-} from "discord-api-types/v10";
-import { BaseComponent } from "../extra/BaseComponent";
+	ComponentType
+} from '@biscuitland/common';
+import { BaseComponent } from '../extra/BaseComponent';
 
 export class LinkButtonComponent extends BaseComponent<ComponentType.Button> {
 	constructor(data: APIButtonComponentWithURL) {

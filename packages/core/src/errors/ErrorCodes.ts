@@ -142,5 +142,5 @@ export enum ErrorCodes {
 
 	SweepFilterReturn = 'SWEEP_FILTER_RETURN',
 
-	GuildForumMessageRequired = 'GUILD_FORUM_MESSAGE_REQUIRED',
+	GuildForumMessageRequired = 'GUILD_FORUM_MESSAGE_REQUIRED'
 }

@@ -23,10 +23,10 @@
 		}
 	},
 	"dependencies": {
-		"discord-api-types": "^0.37.28",
-		"eventemitter2": "^6.4.9",
+		"@biscuitland/common": "^0.0.1",
 		"@biscuitland/rest": "^3.0.0",
-		"@biscuitland/ws": "^3.0.0"
+		"@biscuitland/ws": "^3.0.0",
+		"eventemitter2": "^6.4.9"
 	},
 	"devDependencies": {
 		"@types/node": "^18.7.14",

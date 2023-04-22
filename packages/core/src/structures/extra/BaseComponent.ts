@@ -1,4 +1,4 @@
-import { APIBaseComponent, ComponentType } from "discord-api-types/v10";
+import { APIBaseComponent, ComponentType } from '@biscuitland/common';
 
 export class BaseComponent<T extends ComponentType> {
 	constructor(private data: APIBaseComponent<T>) {

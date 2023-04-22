@@ -1,5 +1,5 @@
-import { APIMentionableSelectComponent, ComponentType } from "discord-api-types/v10";
-import { BaseSelectMenuComponent } from "../extra/BaseSelectMenuComponent";
+import { APIMentionableSelectComponent, ComponentType } from '@biscuitland/common';
+import { BaseSelectMenuComponent } from '../extra/BaseSelectMenuComponent';
 
 export interface MentionableSelectMenuComponent extends BaseSelectMenuComponent<ComponentType.MentionableSelect> {
 	constructor(data: APIMentionableSelectComponent): MentionableSelectMenuComponent;

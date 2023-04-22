@@ -1,14 +1,14 @@
-import { GatewayGuildCreateDispatchData, GatewayReadyDispatchData } from "discord-api-types/v10";
-import { Session, ClientUser, Guild } from "../index";
+import { GatewayGuildCreateDispatchData, GatewayReadyDispatchData } from '@biscuitland/common';
+import { Session, ClientUser, Guild } from '../index';
 
 export const READY: RawHandler<GatewayReadyDispatchData> = (session, shardId, payload) => {
 	session.applicationId = payload.application.id;
 	session.botId = payload.user.id;
-	session.emit("ready", new ClientUser(session, payload.user), shardId);
+	session.emit('ready', new ClientUser(session, payload.user), shardId);
 };
 
 export const GUILD_CREATE: RawHandler<GatewayGuildCreateDispatchData> = (session, shardId, payload) => {
-	session.emit("guildCreate", new Guild(session, payload), shardId);
+	session.emit('guildCreate', new Guild(session, payload), shardId);
 };
 
 export interface Events {
