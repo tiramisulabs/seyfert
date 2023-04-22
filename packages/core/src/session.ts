@@ -6,7 +6,7 @@ import { MainManager, Events, getBotIdFromToken } from '.';
 import { GatewayManager, CreateGatewayManagerOptions } from '@biscuitland/ws';
 import { GatewayIntentBits } from '@biscuitland/common';
 
-// import * as Actions from './events/handler';
+import * as Actions from './events/handler';
 
 export class Session<On extends boolean = boolean> extends EventEmitter2 {
 	constructor(public options: BiscuitOptions) {
@@ -82,13 +82,15 @@ export class Session<On extends boolean = boolean> extends EventEmitter2 {
 
 	async start() {
 		const ctx = this as Session<true>;
-		const { connection, ...gMOptions } = this.options.defaultGatewayOptions!;
-
 		ctx.websocket = new GatewayManager({
 			token: this.options.token,
 			intents: this.options.intents ?? 0,
-			connection: connection ?? (await this.rest.get('/gateway/bot')),
-			...gMOptions
+			connection: this.options.defaultGatewayOptions?.connection ?? (await this.rest.get('/gateway/bot')),
+			async handlePayload(shard, data) {
+				if (!data.t || !data.d) return;
+				Actions[data.t]?.(ctx, shard, data.d);
+			},
+			...this.options.defaultGatewayOptions
 		});
 
 		await ctx.websocket.spawnShards();
@@ -100,5 +102,5 @@ export interface BiscuitOptions {
 	intents: number | GatewayIntentBits;
 	rest?: BiscuitREST;
 	defaultRestOptions?: Partial<BiscuitRESTOptions>;
-	defaultGatewayOptions?: Omit<CreateGatewayManagerOptions, 'token' | 'intents'>;
+	defaultGatewayOptions?: Omit<CreateGatewayManagerOptions, 'token' | 'intents' | 'handlePayload'>;
 }
