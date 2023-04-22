@@ -1,16 +1,16 @@
 import { bgBrightWhite, black, bold, cyan, gray, italic, red, yellow } from './Util';
 
 export enum LogLevels {
-	Debug,
-	Info,
-	Warn,
-	Error,
-	Fatal
+	Debug = 0,
+	Info = 1,
+	Warn = 2,
+	Error = 3,
+	Fatal = 4
 }
 
 export enum LogDepth {
-	Minimal,
-	Full
+	Minimal = 0,
+	Full = 1
 }
 
 const prefixes = new Map<LogLevels, string>([

@@ -1,4 +1,4 @@
-import type { Session } from '../../session';
+import type { Session } from "../../session";
 import type {
 	APIGuild,
 	GuildVerificationLevel,
@@ -9,7 +9,6 @@ import type {
 	GuildDefaultMessageNotifications,
 	GuildExplicitContentFilter,
 	GuildFeature,
-	APIChannel,
 	APIThreadList,
 	APIBan,
 	GuildMFALevel,
@@ -18,152 +17,144 @@ import type {
 	APIInvite,
 	APIGuildIntegration,
 	APIGuildWidget,
-	APIGuildWelcomeScreen
-} from '@biscuitland/common';
-import { Guild } from '../Guild';
-import { objectToParams } from '../../utils/utils';
+	APIGuildWelcomeScreen,
+	APIGuildChannel,
+	GuildChannelType,
+	ObjectToSnake,
+} from "@biscuitland/common";
+import { objectToParams } from "../../utils/utils";
 
 export class GuildManager {
 	readonly session!: Session;
 	constructor(session: Session) {
-		Object.defineProperty(this, 'session', {
+		Object.defineProperty(this, "session", {
 			value: session,
-			writable: false
+			writable: false,
 		});
 	}
 
-	async get(guildId: string): Promise<Guild | undefined> {
-		return this.session.api
-			.guilds(guildId)
-			.get<APIGuild>()
-			.then((g) => new Guild(this.session, g));
+	async get(guildId: string) {
+		return this.session.api.guilds(guildId).get<APIGuild>();
 	}
 
-	async create(options: GuildCreateOptions): Promise<Guild> {
-		return this.session.api
-			.guilds()
-			.post<APIGuild>({ body: options })
-			.then((g) => new Guild(this.session, g));
+	async create(options: ObjectToSnake<GuildCreateOptions>) {
+		return this.session.api.guilds().post<APIGuild>({ body: options });
 	}
 
-	async delete(guildId: string): Promise<void> {
+	async delete(guildId: string) {
 		return this.session.api.guilds(guildId).delete();
 	}
 
-	async edit(guildId: string, options: GuildEditOptions): Promise<Guild> {
-		return this.session.api
-			.guilds(guildId)
-			.patch<APIGuild>({ body: options })
-			.then((g) => new Guild(this.session, g));
+	async edit(guildId: string, options: ObjectToSnake<GuildEditOptions>) {
+		return this.session.api.guilds(guildId).patch<APIGuild>({ body: options });
 	}
 
-	async getChannels(guildId: string): Promise<APIChannel[]> {
-		// TODO CHANNELS
-		return this.session.api.guilds(guildId).channels.get<APIChannel[]>();
+	async getChannels(guildId: string) {
+		return this.session.api.guilds(guildId).channels.get<APIGuildChannel<GuildChannelType>[]>();
 	}
 
-	async createChannel(guildId: string, options: GuildCreateOptionsChannel): Promise<APIChannel> {
-		// TODO CHANNELS
-		return this.session.api.guilds(guildId).channels.post<APIChannel>({ body: options });
+	async createChannel(guildId: string, options: ObjectToSnake<GuildCreateOptionsChannel>) {
+		return this.session.api.guilds(guildId).channels.post<APIGuildChannel<GuildChannelType>[]>({ body: options });
 	}
 
-	async editChannelPositions(guildId: string, options: GuildChannelEditPositionOptions[]): Promise<void> {
+	async editChannelPositions(
+		guildId: string,
+		options: ObjectToSnake<GuildChannelEditPositionOptions>[],
+	): Promise<void> {
 		return this.session.api.guilds(guildId).channels.patch<void>({ body: options });
 	}
 
-	async getActiveThreads(guildId: string): Promise<APIThreadList[]> {
-		const threads = this.session.api.guilds(guildId).threads().active.get<APIThreadList[]>();
-
-		return threads;
+	async getActiveThreads(guildId: string) {
+		return this.session.api.guilds(guildId).threads().active.get<APIThreadList[]>();
 	}
 
-	async getBans(guildId: string, query: { limit?: number; before?: string; after?: string } = {}): Promise<APIBan[]> {
+	async getBans(guildId: string, query: { limit?: number; before?: string; after?: string } = {}) {
 		return this.session.api
 			.guilds(guildId)
 			.bans()
 			.get<APIBan[]>({
-				query: objectToParams(query)
+				query: objectToParams(query),
 			});
 	}
 
-	async getBan(guildId: string, userId: string): Promise<APIBan> {
+	async getBan(guildId: string, userId: string) {
 		return this.session.api.guilds(guildId).bans(userId).get<APIBan>();
 	}
 
-	async createBan(guildId: string, userId: string, options: GuildBanCreateOptions): Promise<void> {
+	async createBan(guildId: string, userId: string, options: ObjectToSnake<GuildBanCreateOptions>) {
 		return this.session.api.guilds(guildId).bans(userId).put<void>({ body: options });
 	}
 
-	async removeBan(guildId: string, userId: string): Promise<void> {
+	async removeBan(guildId: string, userId: string) {
 		return this.session.api.guilds(guildId).bans(userId).delete();
 	}
 
-	async getRoles(guildId: string): Promise<APIRole[]> {
+	async getRoles(guildId: string) {
 		return this.session.api.guilds(guildId).roles().get<APIRole[]>();
 	}
 
-	async createRole(guildId: string, options: GuildRoleCreate): Promise<APIRole> {
+	async createRole(guildId: string, options: ObjectToSnake<GuildRoleCreate>) {
 		return this.session.api.guilds(guildId).roles().post<APIRole>({ body: options });
 	}
 
-	async editRolePositions(guildId: string, options: GuildRoleEditPositionOptions[]): Promise<APIRole[]> {
+	async editRolePositions(guildId: string, options: ObjectToSnake<GuildRoleEditPositionOptions>[]) {
 		return this.session.api.guilds(guildId).roles().patch<APIRole[]>({ body: options });
 	}
 
-	async editRole(guildId: string, roleId: string, options: GuildRoleCreate): Promise<APIRole> {
+	async editRole(guildId: string, roleId: string, options: ObjectToSnake<GuildRoleCreate>) {
 		return this.session.api.guilds(guildId).roles(roleId).patch<APIRole>({ body: options });
 	}
 
-	async deleteRole(guildId: string, roleId: string): Promise<void> {
+	async deleteRole(guildId: string, roleId: string) {
 		return this.session.api.guilds(guildId).roles(roleId).delete();
 	}
 
-	async modifyGuildMFALevel(guildId: string, level: GuildMFALevel): Promise<void> {
+	async modifyGuildMFALevel(guildId: string, level: GuildMFALevel) {
 		return this.session.api.guilds(guildId).mfa(level).post<void>();
 	}
 
-	async getPruneCount(guildId: string, options: GuildPruneCountOptions): Promise<number> {
+	async getPruneCount(guildId: string, options: ObjectToSnake<GuildPruneCountOptions>) {
 		return this.session.api.guilds(guildId).prune.get<number>({ query: objectToParams(options) });
 	}
 
-	async beginGuildPrune(guildId: string, options: GuildPruneOptions): Promise<number> {
+	async beginGuildPrune(guildId: string, options: ObjectToSnake<GuildPruneOptions>): Promise<number> {
 		return this.session.api.guilds(guildId).prune.post<number>({ body: options });
 	}
 
-	async getVoiceRegions(guildId: string): Promise<APIVoiceRegion[]> {
+	async getVoiceRegions(guildId: string) {
 		return this.session.api.guilds(guildId).regions.get<APIVoiceRegion[]>();
 	}
 
-	async getInvites(guildId: string): Promise<APIInvite[]> {
+	async getInvites(guildId: string) {
 		return this.session.api.guilds(guildId).invites.get<APIInvite[]>();
 	}
 
-	async getIntegrations(guildId: string): Promise<APIGuildIntegration[]> {
+	async getIntegrations(guildId: string) {
 		return this.session.api.guilds(guildId).integrations().get<APIGuildIntegration[]>();
 	}
 
-	async deleteIntegration(guildId: string, integrationId: string): Promise<void> {
+	async deleteIntegration(guildId: string, integrationId: string) {
 		return this.session.api.guilds(guildId).integrations(integrationId).delete();
 	}
 
-	async getWidget(guildId: string): Promise<APIGuildWidget> {
+	async getWidget(guildId: string) {
 		return this.session.api.guilds(guildId).widget.get<APIGuildWidget>();
 	}
 
-	async modifyWidget(guildId: string, options: GuildWidgetModifyOptions): Promise<APIGuildWidget> {
+	async modifyWidget(guildId: string, options: ObjectToSnake<GuildWidgetModifyOptions>) {
 		return this.session.api.guilds(guildId).widget.patch<APIGuildWidget>({ body: options });
 	}
 
-	async getVanityUrl(guildId: string): Promise<Partial<APIInvite>> {
-		return this.session.api.guilds(guildId)['vanity-url'].get<Partial<APIInvite>>();
+	async getVanityUrl(guildId: string) {
+		return this.session.api.guilds(guildId)["vanity-url"].get<Partial<APIInvite>>();
 	}
 
-	async getWelcomeScreen(guildId: string): Promise<APIGuildWelcomeScreen> {
-		return this.session.api.guilds(guildId)['welcome-screen'].get<APIGuildWelcomeScreen>();
+	async getWelcomeScreen(guildId: string) {
+		return this.session.api.guilds(guildId)["welcome-screen"].get<APIGuildWelcomeScreen>();
 	}
 
-	async modifyWelcomeScreen(guildId: string, options: GuildWelcomeScreenModifyOptions): Promise<APIGuildWelcomeScreen> {
-		return this.session.api.guilds(guildId)['welcome-screen'].patch<APIGuildWelcomeScreen>({ body: options });
+	async modifyWelcomeScreen(guildId: string, options: ObjectToSnake<GuildWelcomeScreenModifyOptions>) {
+		return this.session.api.guilds(guildId)["welcome-screen"].patch<APIGuildWelcomeScreen>({ body: options });
 	}
 }
 
@@ -209,8 +200,8 @@ export interface GuildCreateOptions {
 	verificationLevel?: GuildVerificationLevel;
 	defaultMessageNotifications?: GuildDefaultMessageNotifications;
 	explicitContentFilter?: GuildExplicitContentFilter;
-	roles?: GuildCreateOptionsRole[];
-	channels?: GuildCreateOptionsChannel;
+	roles?: ObjectToSnake<GuildCreateOptionsRole>[];
+	channels?: ObjectToSnake<GuildCreateOptionsChannel>;
 	afkChannelId?: string;
 	afkTimeout?: number;
 	systemChannelId?: string;
@@ -315,7 +306,7 @@ export interface APIGuildWelcomeScreenChannel {
  */
 export interface GuildWelcomeScreenModifyOptions {
 	enabled?: boolean;
-	welcomeChannels?: APIGuildWelcomeScreenChannel[];
+	welcomeChannels?: ObjectToSnake<APIGuildWelcomeScreenChannel>[];
 	description?: string;
 }
 

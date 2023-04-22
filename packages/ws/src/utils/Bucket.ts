@@ -7,11 +7,11 @@ export class LeakyBucket implements LeakyBucketOptions {
 	refillAmount: number;
 
 	/** The amount of requests that have been used up already. */
-	used: number = 0;
+	used = 0;
 	/** The queue of requests to acquire an available request. Mapped by <shardId, resolve()> */
 	queue: Array<(value: void | PromiseLike<void>) => void> = [];
 	/** Whether or not the queue is already processing. */
-	processing: boolean = false;
+	processing = false;
 	/** The timeout id for the timer to reduce the used amount by the refill amount.  */
 	timeoutId?: NodeJS.Timeout;
 	/** The timestamp in milliseconds when the next refill is scheduled. */
@@ -30,7 +30,7 @@ export class LeakyBucket implements LeakyBucketOptions {
 
 	/** Refills the bucket as needed. */
 	refillBucket(): void {
-		logger.debug(`[LeakyBucket] Timeout for leaky bucket requests executed. Refilling bucket.`);
+		logger.debug("[LeakyBucket] Timeout for leaky bucket requests executed. Refilling bucket.");
 		// Lower the used amount by the refill amount
 		this.used = this.refillAmount > this.used ? 0 : this.used - this.refillAmount;
 		// Reset the refillsAt timestamp since it just got refilled
@@ -62,7 +62,7 @@ export class LeakyBucket implements LeakyBucketOptions {
 
 				// Create a new timeout for this request if none exists.
 				if (!this.timeoutId) {
-					logger.debug(`[LeakyBucket] Creating new timeout for leaky bucket requests.`);
+					logger.debug("[LeakyBucket] Creating new timeout for leaky bucket requests.");
 
 					this.timeoutId = setTimeout(() => {
 						this.refillBucket();
@@ -79,7 +79,7 @@ export class LeakyBucket implements LeakyBucketOptions {
 				if (this.refillsAt > now) {
 					logger.debug(`[LeakyBucket] Delaying execution of leaky bucket requests for ${this.refillsAt - now}ms`);
 					await delay(this.refillsAt - now);
-					logger.debug(`[LeakyBucket] Resuming execution`);
+					logger.debug("[LeakyBucket] Resuming execution");
 				}
 			}
 		}

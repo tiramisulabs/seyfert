@@ -1,27 +1,4 @@
-import type {
-	ChannelSelectMenuComponent,
-	LinkButtonComponent,
-	MentionableSelectMenuComponent,
-	RoleSelectMenuComponent,
-	StringSelectMenuComponent,
-	TextInputComponent,
-	UserSelectMenuComponent
-} from '../index';
-import type { ImageFormat } from '@biscuitland/common'
-import { DMChannel, ButtonComponent } from '../index';
-import { BaseChannel } from '../structures/extra/BaseChannel';
-
-export type BiscuitComponents =
-	| ButtonComponent
-	| LinkButtonComponent
-	| RoleSelectMenuComponent
-	| UserSelectMenuComponent
-	| StringSelectMenuComponent
-	| ChannelSelectMenuComponent
-	| MentionableSelectMenuComponent
-	| TextInputComponent;
-
-export type BiscuitActionRowMessageComponents = Exclude<BiscuitComponents, TextInputComponent>;
+import type { APIUser, ImageFormat } from "@biscuitland/common";
 
 export type EditNickname = { nick?: string; reason?: string };
 
@@ -34,10 +11,10 @@ export type ImageOptions = {
 	size?: ImageSize;
 };
 
-export type BiscuitChannels = DMChannel | BaseChannel;
+export type ClientUser = { bot: true } & APIUser;
 
 export enum ThreadTypes {
 	AnnouncementThread = 10,
 	PublicThread = 11,
-	PrivateThread = 12
+	PrivateThread = 12,
 }

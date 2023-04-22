@@ -28,11 +28,11 @@ export class Shard {
 	/** This contains all the heartbeat information */
 	heart: ShardHeart;
 	/** The maximum of requests which can be send to discord per rate limit tick. Typically this value should not be changed. */
-	maxRequestsPerRateLimitTick: number = 120;
+	maxRequestsPerRateLimitTick = 120;
 	/** The previous payload sequence number. */
 	previousSequenceNumber: number | null = null;
 	/** In which interval (in milliseconds) the gateway resets it's rate limit. */
-	rateLimitResetInterval: number = 60000;
+	rateLimitResetInterval = 60000;
 	/** Current session id of the shard if present. */
 	sessionId?: string;
 	/** This contains the WebSocket connection to Discord, if currently connected. */
@@ -40,7 +40,7 @@ export class Shard {
 	/** Current internal state of the this. */
 	state = ShardState.Offline;
 	/** The url provided by discord to use when resuming a connection for this this. */
-	resumeGatewayUrl: string = '';
+	resumeGatewayUrl = '';
 	/** Cache for pending gateway requests which should have been send while the gateway went offline. */
 	offlineSendQueue: ((_?: unknown) => void)[] = [];
 	/** Resolve internal waiting states. Mapped by SelectedEvents => ResolveFunction */
@@ -310,10 +310,6 @@ export class Shard {
 				this.state = ShardState.Offline;
 				// disconnected event
 				throw new Error(close.reason || 'Discord gave no reason! GG! You broke Discord!');
-			// Gateway connection closes on which a resume is allowed.
-			case GatewayCloseCodes.UnknownError:
-			case GatewayCloseCodes.DecodeError:
-			case GatewayCloseCodes.AlreadyAuthenticated:
 			default:
 				this.logger.info(`Closed shard #${this.id}. Resuming...`);
 				// disconnected event
@@ -342,11 +338,12 @@ export class Shard {
 				this.socket?.send(JSON.stringify({ op: GatewayOpcodes.Heartbeat, d: this.previousSequenceNumber }));
 				// hearbeat event
 				break;
-			case GatewayOpcodes.Hello:
+			case GatewayOpcodes.Hello: {
 				const interval = packet.d.heartbeat_interval;
 				this.logger.info(`Hello on Shard #${this.id}`);
 				this.startHeartbeating(interval);
 				break;
+			}
 		}
 		this.handlePayload(this.id, packet);
 	}

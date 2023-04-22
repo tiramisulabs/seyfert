@@ -1,13 +1,12 @@
-import type { BiscuitRESTOptions, CDNRoutes, Routes } from '@biscuitland/rest';
-import { CDN, BiscuitREST, Router } from '@biscuitland/rest';
-import type { When } from '@biscuitland/common';
-import { EventEmitter2 } from 'eventemitter2';
-import { MainManager, Events, getBotIdFromToken } from '.';
-import { GatewayManager, CreateGatewayManagerOptions } from '@biscuitland/ws';
-import { GatewayIntentBits } from '@biscuitland/common';
+import type { BiscuitRESTOptions, CDNRoutes, Routes } from "@biscuitland/rest";
+import { CDN, BiscuitREST, Router } from "@biscuitland/rest";
+import type { When } from "@biscuitland/common";
+import { EventEmitter2 } from "eventemitter2";
+import { MainManager, Events, getBotIdFromToken } from ".";
+import { GatewayManager, CreateGatewayManagerOptions } from "@biscuitland/ws";
+import { GatewayIntentBits } from "@biscuitland/common";
 
-import * as Actions from './events/handler';
-
+import * as Actions from "./events/handler";
 export class Session<On extends boolean = boolean> extends EventEmitter2 {
 	constructor(public options: BiscuitOptions) {
 		super();
@@ -16,7 +15,6 @@ export class Session<On extends boolean = boolean> extends EventEmitter2 {
 		this.cdn = CDN.createProxy();
 		this.managers = new MainManager(this);
 	}
-
 	rest: BiscuitREST;
 	api: Routes<BiscuitREST>;
 	cdn: CDNRoutes;
@@ -69,7 +67,7 @@ export class Session<On extends boolean = boolean> extends EventEmitter2 {
 		if (!rest) {
 			return new BiscuitREST({
 				...this.options.defaultRestOptions,
-				token: this.options.token
+				token: this.options.token,
 			});
 		}
 
@@ -77,20 +75,21 @@ export class Session<On extends boolean = boolean> extends EventEmitter2 {
 			return rest;
 		}
 
-		throw new Error('[CORE] REST not found');
+		throw new Error("[CORE] REST not found");
 	}
 
 	async start() {
+		// TODO: better type for this
 		const ctx = this as Session<true>;
 		ctx.websocket = new GatewayManager({
 			token: this.options.token,
 			intents: this.options.intents ?? 0,
-			connection: this.options.defaultGatewayOptions?.connection ?? (await this.rest.get('/gateway/bot')),
+			connection: this.options.defaultGatewayOptions?.connection ?? (await this.rest.get("/gateway/bot")),
 			async handlePayload(shard, data) {
-				if (!data.t || !data.d) return;
+				if (!(data.t && data.d)) return;
 				Actions[data.t]?.(ctx, shard, data.d);
 			},
-			...this.options.defaultGatewayOptions
+			...this.options.defaultGatewayOptions,
 		});
 
 		await ctx.websocket.spawnShards();
@@ -102,5 +101,5 @@ export interface BiscuitOptions {
 	intents: number | GatewayIntentBits;
 	rest?: BiscuitREST;
 	defaultRestOptions?: Partial<BiscuitRESTOptions>;
-	defaultGatewayOptions?: Omit<CreateGatewayManagerOptions, 'token' | 'intents' | 'handlePayload'>;
+	defaultGatewayOptions?: Omit<CreateGatewayManagerOptions, "token" | "intents" | "handlePayload">;
 }

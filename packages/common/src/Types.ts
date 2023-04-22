@@ -8,7 +8,7 @@ export type Tail<A> = A extends [unknown, ...infer rest]
 
 export type Identify<T> = T extends infer U ? { [K in keyof U]: U[K] } : never;
 
-export type When<T extends boolean, A, B = null> = T extends true ? A : T extends false ? B : A | B;
+export type When<T extends boolean, A, B = never> = T extends true ? A : B;
 
 export type PickPartial<T, K extends keyof T> = {
 	[P in keyof T]?: T[P] | undefined;

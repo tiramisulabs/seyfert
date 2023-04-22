@@ -1,17 +1,24 @@
-import { ObjectToLower } from '@biscuitland/common';
-import { APIChannel, APIEmbed, APIMessage, APIWebhook, RESTPatchAPIChannelJSONBody } from '@biscuitland/common';
-import { Session } from '../../session';
-import { BiscuitActionRowMessageComponents } from '../../utils/types';
-import { Message, MessageActionRowComponent } from '../mod';
-import { Webhook } from '../Webhook';
-import { objectToParams } from '../../utils/utils';
+import {
+	APIAttachment,
+	APIMessageActionRowComponent,
+	ObjectToSnake,
+	APIChannel,
+	APIEmbed,
+	APIMessage,
+	APIWebhook,
+	RESTPatchAPIChannelJSONBody,
+} from "@biscuitland/common";
+import { DJS } from "@biscuitland/rest";
+
+import { Session } from "../../session";
+import { objectToParams } from "../../utils/utils";
 
 export class ChannelManager {
 	readonly session!: Session;
 	constructor(session: Session) {
-		Object.defineProperty(this, 'session', {
+		Object.defineProperty(this, "session", {
 			value: session,
-			writable: false
+			writable: false,
 		});
 	}
 
@@ -19,46 +26,43 @@ export class ChannelManager {
 		return this.session.api.channels(id).get();
 	}
 
-	async fetchWebhooks(channelId: string): Promise<Map<string, Webhook> | null> {
+	async fetchWebhooks(channelId: string): Promise<Map<string, APIWebhook> | null> {
 		const webhooks = await this.session.api.channels(channelId).webhooks.get<APIWebhook[]>();
 
 		if (!webhooks.length) return null;
 
-		return webhooks.reduce((data, webhook) => data.set(webhook.id, new Webhook(this.session, webhook)), new Map());
+		return webhooks.reduce((data, webhook) => data.set(webhook.id, webhook), new Map());
 	}
 
-	async modify(id: string, data: ObjectToLower<RESTPatchAPIChannelJSONBody>): Promise<APIChannel> {
+	async modify(id: string, data: RESTPatchAPIChannelJSONBody): Promise<APIChannel> {
 		return this.session.api.channels(id).patch({ body: data });
 	}
 
-	async delete(id: string): Promise<APIChannel> {
-		return this.session.api.channels(id).delete();
+	async delete(id: string) {
+		return this.session.api.channels(id).delete<APIChannel>();
 	}
 
-	async fetchMessages(id: string, limit = 50): Promise<Map<string, Message>> {
+	async fetchMessages(id: string, limit = 50): Promise<Map<string, APIMessage> | null> {
 		const messages = await this.session.api
 			.channels(id)
 			.messages()
 			.get<APIMessage[]>({
-				query: objectToParams({ limit })
+				query: objectToParams({ limit }),
 			});
 
-		return messages.reduce((data, message) => data.set(message.id, new Message(this.session, message)), new Map());
+		if (!messages.length) return null;
+
+		return messages.reduce((data, message) => data.set(message.id, message), new Map());
 	}
 
-	async fetchMessage(id: string, messageId: string): Promise<Message | null> {
-		const message = await this.session.api.channels(id).messages(messageId).get<APIMessage>();
-
-		if (!message) return null;
-		return new Message(this.session, message);
+	async fetchMessage(id: string, messageId: string) {
+		return this.session.api.channels(id).messages(messageId).get<APIMessage>();
+	}
+	async createMessage(id: string, data: ObjectToSnake<ChannelCreateMessage>) {
+		return this.session.api.channels(id).messages().post<APIMessage>({ body: data });
 	}
 
-	async createMessage(id: string, data: ChannelCreateMessage): Promise<Message> {
-		const message = await this.session.api.channels(id).messages().post<APIMessage>({ body: data });
-		return new Message(this.session, message);
-	}
-
-	async sendTyping(id: string): Promise<void> {
+	async sendTyping(id: string) {
 		await this.session.api.channels(id).typing.post();
 	}
 }
@@ -67,7 +71,7 @@ export class ChannelManager {
  * @link https://discord.com/developers/docs/resources/channel#allowed-mentions-object
  */
 export interface ChannelMessageAllowedMentions {
-	parse?: ('roles' | 'users' | 'everyone')[];
+	parse?: ("roles" | "users" | "everyone")[];
 	users?: string[];
 	roles?: string[];
 	repliedUser?: boolean;
@@ -91,12 +95,12 @@ export interface ChannelCreateMessage {
 	nonce?: string | number;
 	tts?: boolean;
 	embeds?: APIEmbed[];
-	allowedMentions?: ChannelMessageAllowedMentions;
-	messageReference?: ChannelMessageReference;
-	components?: MessageActionRowComponent<BiscuitActionRowMessageComponents>[];
+	allowedMentions?: ObjectToSnake<ChannelMessageAllowedMentions>;
+	messageReference?: ObjectToSnake<ChannelMessageReference>;
+	components?: APIMessageActionRowComponent[];
 	stickerIds?: string[];
-	files?: any; // TODO
+	files?: DJS.RawFile[];
 	payloadJson?: string;
-	attachment?: any[]; // TODO
+	attachment?: APIAttachment[];
 	flags?: number;
 }
