@@ -1,4 +1,4 @@
-import { APIGuild, GatewayGuildCreateDispatchData, GatewayReadyDispatchData } from "@biscuitland/common";
+import { GatewayGuildCreateDispatchData, GatewayReadyDispatchData } from "@biscuitland/common";
 import { ClientUser, Session } from "../index";
 
 export const READY: RawHandler<GatewayReadyDispatchData & { user: ClientUser }> = (session, shardId, payload) => {
@@ -13,7 +13,7 @@ export const GUILD_CREATE: RawHandler<GatewayGuildCreateDispatchData> = (session
 
 export interface Events {
 	ready: Handler<[ClientUser, number]>;
-	guildCreate: Handler<[APIGuild, number]>;
+	guildCreate: Handler<[GatewayGuildCreateDispatchData, number]>;
 }
 
 export type RawHandler<T> = (...args: [Session, number, T]) => void;

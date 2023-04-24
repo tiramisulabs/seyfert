@@ -1,14 +1,10 @@
 import {
-	APIAttachment,
-	APIMessageActionRowComponent,
-	ObjectToSnake,
 	APIChannel,
-	APIEmbed,
 	APIMessage,
+	RESTPostAPIChannelMessageJSONBody,
 	APIWebhook,
 	RESTPatchAPIChannelJSONBody,
 } from "@biscuitland/common";
-import { DJS } from "@biscuitland/rest";
 
 import { Session } from "../../session";
 import { objectToParams } from "../../utils/utils";
@@ -58,49 +54,11 @@ export class ChannelManager {
 	async fetchMessage(id: string, messageId: string) {
 		return this.session.api.channels(id).messages(messageId).get<APIMessage>();
 	}
-	async createMessage(id: string, data: ObjectToSnake<ChannelCreateMessage>) {
+	async createMessage(id: string, data: RESTPostAPIChannelMessageJSONBody) {
 		return this.session.api.channels(id).messages().post<APIMessage>({ body: data });
 	}
 
 	async sendTyping(id: string) {
 		await this.session.api.channels(id).typing.post();
 	}
-}
-
-/**
- * @link https://discord.com/developers/docs/resources/channel#allowed-mentions-object
- */
-export interface ChannelMessageAllowedMentions {
-	parse?: ("roles" | "users" | "everyone")[];
-	users?: string[];
-	roles?: string[];
-	repliedUser?: boolean;
-}
-
-/**
- * @link https://discord.com/developers/docs/resources/channel#message-reference-object-message-reference-structure
- */
-export interface ChannelMessageReference {
-	messageId?: string;
-	channelId?: string;
-	guildId?: string;
-	failIfNotExists?: boolean;
-}
-
-/**
- * @link https://discord.com/developers/docs/resources/channel#create-message
- */
-export interface ChannelCreateMessage {
-	content?: string;
-	nonce?: string | number;
-	tts?: boolean;
-	embeds?: APIEmbed[];
-	allowedMentions?: ObjectToSnake<ChannelMessageAllowedMentions>;
-	messageReference?: ObjectToSnake<ChannelMessageReference>;
-	components?: APIMessageActionRowComponent[];
-	stickerIds?: string[];
-	files?: DJS.RawFile[];
-	payloadJson?: string;
-	attachment?: APIAttachment[];
-	flags?: number;
 }
