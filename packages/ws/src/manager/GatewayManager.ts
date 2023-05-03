@@ -1,13 +1,12 @@
-import { Collection, Logger, createLogger, delay } from '../index';
-import { Options } from '@biscuitland/common';
+import { Options, Collection, Logger, delay } from "@biscuitland/common";
 import {
 	Shard,
 	GatewayMemberRequest,
 	BucketData,
 	CreateGatewayManagerOptions,
 	JoinVoiceOptions,
-	GatewayManagerDefaultOptions
-} from '../index';
+	GatewayManagerDefaultOptions,
+} from "../index";
 export class GatewayManager {
 	buckets = new Map<number, BucketData>();
 	shards = new Map<number, Shard>();
@@ -17,7 +16,7 @@ export class GatewayManager {
 	constructor(options: CreateGatewayManagerOptions) {
 		this.options = Options<Required<CreateGatewayManagerOptions>>(GatewayManagerDefaultOptions, options);
 		if (this.options.cache) this.cache = new Collection();
-		this.logger = createLogger({ name: '[GatewayManager]', active: options.debug });
+		this.logger = new Logger({ name: "[GatewayManager]", active: options.debug });
 	}
 
 	calculateTotalShards(): number {
@@ -26,9 +25,9 @@ export class GatewayManager {
 			return this.options.totalShards;
 		}
 		this.logger.info(
-			'Calculating total shards',
+			"Calculating total shards",
 			this.options.totalShards,
-			this.options.connection.session_start_limit.max_concurrency
+			this.options.connection.session_start_limit.max_concurrency,
 		);
 
 		// Calculate a multiple of `maxConcurrency` which can be used to connect to the gateway.
@@ -38,7 +37,7 @@ export class GatewayManager {
 					// If `maxConcurrency` is 1 we can safely use 16.
 					(this.options.connection.session_start_limit.max_concurrency === 1
 						? 16
-						: this.options.connection.session_start_limit.max_concurrency)
+						: this.options.connection.session_start_limit.max_concurrency),
 			) * this.options.connection.session_start_limit.max_concurrency
 		);
 	}
@@ -46,7 +45,7 @@ export class GatewayManager {
 	calculateWorekId(shardId: number): number {
 		const workerId = shardId % this.options.shardsPerWorker;
 		this.logger.info(
-			`Calculating workerId: Shard: ${shardId} -> Worker: ${workerId} -> Per Worker: ${this.options.shardsPerWorker} -> Total: ${this.options.totalWorkers}`
+			`Calculating workerId: Shard: ${shardId} -> Worker: ${workerId} -> Per Worker: ${this.options.shardsPerWorker} -> Total: ${this.options.totalWorkers}`,
 		);
 		return workerId;
 	}
@@ -61,7 +60,7 @@ export class GatewayManager {
 			this.logger.info(`Preparing bucket for shard: ${shardId}`);
 			if (shardId >= this.options.totalShards) {
 				throw new Error(
-					`Shard (id: ${shardId}) is bigger or equal to the used amount of used shards which is ${this.options.totalShards}`
+					`Shard (id: ${shardId}) is bigger or equal to the used amount of used shards which is ${this.options.totalShards}`,
 				);
 			}
 
@@ -71,7 +70,7 @@ export class GatewayManager {
 				throw new Error(
 					`Shard (id: ${shardId}) got assigned to an illegal bucket id: ${bucketId}, expected a bucket id between 0 and ${
 						this.options.connection.session_start_limit.max_concurrency - 1
-					}`
+					}`,
 				);
 
 			const workerId = this.calculateWorekId(shardId);
@@ -96,7 +95,7 @@ export class GatewayManager {
 				for (const worker of bucket.workers) {
 					worker.queue.forEach(async (shardId) => await this.tellWorkerIdentify(worker.id, shardId, bucketId));
 				}
-			})
+			}),
 		);
 	}
 
@@ -108,7 +107,7 @@ export class GatewayManager {
 	async identify(shardId: number, bId?: number) {
 		const bucketId = bId ?? shardId % this.options.connection.session_start_limit.max_concurrency;
 		let shard = this.shards.get(shardId);
-		this.logger.info(`identifying ${shard ? 'existing' : 'new'} shard (${shardId})`);
+		this.logger.info(`identifying ${shard ? "existing" : "new"} shard (${shardId})`);
 		if (!shard) {
 			shard = new Shard({
 				id: shardId,
@@ -118,17 +117,18 @@ export class GatewayManager {
 					version: this.options.version,
 					token: this.options.token,
 					totalShards: this.options.totalShards,
-					properties: this.options.properties
+					properties: this.options.properties,
 				},
 				logger: this.logger,
+				// @ts-ignore
 				handlePayload: this.options.handlePayload,
 				requestIdentify: async () => await this.identify(shardId),
 				shardIsReady: async () => {
 					this.logger.info(`<Shard> Shard #${shardId} is ready`);
 					await delay(this.options.spawnShardDelay);
-					this.logger.info('<Shard> Resolving shard identify request');
+					this.logger.info("<Shard> Resolving shard identify request");
 					this.buckets.get(bucketId)?.identifyRequest.shift()?.();
-				}
+				},
 			});
 
 			this.shards.set(shardId, shard);
@@ -176,6 +176,6 @@ export class GatewayManager {
 		if (!shard) throw new Error(`Shard #${shardId}`);
 
 		this.logger.info(`joinVoice guildId ${options.guild_id} channelId ${options.channel_id}`);
-		//shard.joinVoiceChannel(options);
+		shard.joinVoiceChannel(options);
 	}
 }

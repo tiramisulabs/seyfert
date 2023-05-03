@@ -4,9 +4,7 @@
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",
 	"types": "./dist/index.d.ts",
-	"files": [
-		"dist/**"
-	],
+	"files": ["dist/**"],
 	"scripts": {
 		"build": "tsup",
 		"clean": "rm -rf dist && rm -rf .turbo",
@@ -26,8 +24,6 @@
 	"dependencies": {
 		"@biscuitland/common": "^0.0.1",
 		"@biscuitland/rest": "^3.0.0",
-		"@discordeno/gateway": "^19.0.0-next.e2d86ea",
-		"@discordeno/utils": "^19.0.0-next.e2d86ea",
 		"ws": "^8.13.0"
 	},
 	"devDependencies": {
@@ -61,13 +57,7 @@
 		{
 			"name": "Drylozu",
 			"url": "https://github.com/Drylozu"
-		},
-		"Crawl <icrawltogo@gmail.com>",
-		"Amish Shah <amishshah.2k@gmail.com>",
-		"SpaceEEC <spaceeec@yahoo.com>",
-		"Vlad Frangu <kingdgrizzle@gmail.com>",
-		"Aura Román <kyradiscord@gmail.com>",
-		"DD <didinele.dev@gmail.com>"
+		}
 	],
 	"homepage": "https://biscuitjs.com",
 	"repository": {
@@ -77,13 +67,7 @@
 	"bugs": {
 		"url": "https://github.com/oasisjs/biscuit"
 	},
-	"keywords": [
-		"api",
-		"discord",
-		"bots",
-		"typescript",
-		"botdev"
-	],
+	"keywords": ["api", "discord", "bots", "typescript", "botdev"],
 	"publishConfig": {
 		"access": "public"
 	}

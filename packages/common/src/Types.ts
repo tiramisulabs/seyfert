@@ -6,7 +6,15 @@ export type Tail<A> = A extends [unknown, ...infer rest]
 	? first[]
 	: never;
 
+export type ArrayFirsElement<A> = A extends [...infer arr] ? arr[0] : never;
+
+export type RestToKeys<T extends unknown[]> = T extends [infer V, ...infer Keys]
+	? { [K in Extract<Keys[number], string>]: V }
+	: never;
+
 export type Identify<T> = T extends infer U ? { [K in keyof U]: U[K] } : never;
+
+export type TypeArray<T> = T | T[]; 
 
 export type When<T extends boolean, A, B = never> = T extends true ? A : B;
 

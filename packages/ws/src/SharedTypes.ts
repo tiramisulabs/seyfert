@@ -1,16 +1,63 @@
-import type { LogDepth, LogLevels } from '@discordeno/utils';
-import { Shard } from './shard/Shard';
 import type {
 	GatewayPresenceUpdateData,
 	PresenceUpdateStatus,
-	ActivityType,
 	GatewayActivity,
-	GatewayOpcodes,
-	GatewayReceivePayload,
 	APIGuildMember,
 	GatewayRequestGuildMembersDataWithQuery,
-	GatewayRequestGuildMembersDataWithUserIds
-} from '@biscuitland/common';
+	GatewayRequestGuildMembersDataWithUserIds,
+	APIAuditLogEntry,
+	APIAutoModerationRule,
+	APIChannel,
+	APIGuild,
+	APIGuildScheduledEvent,
+	APIStageInstance,
+	GatewayAutoModerationActionExecutionDispatchData,
+	GatewayChannelPinsUpdateDispatchData,
+	GatewayChannelUpdateDispatchData,
+	GatewayDispatchEvents,
+	GatewayGuildBanAddDispatchData,
+	GatewayGuildBanRemoveDispatchData,
+	GatewayGuildCreateDispatchData,
+	GatewayGuildDeleteDispatchData,
+	GatewayGuildEmojisUpdateDispatchData,
+	GatewayGuildIntegrationsUpdateDispatchData,
+	GatewayGuildMemberAddDispatchData,
+	GatewayGuildMemberRemoveDispatchData,
+	GatewayGuildMemberUpdateDispatchData,
+	GatewayGuildMembersChunkDispatchData,
+	GatewayGuildRoleCreateDispatchData,
+	GatewayGuildRoleDeleteDispatchData,
+	GatewayGuildRoleUpdateDispatchData,
+	GatewayGuildScheduledEventUserRemoveDispatchData,
+	GatewayGuildStickersUpdateDispatchData,
+	GatewayIntegrationCreateDispatchData,
+	GatewayIntegrationDeleteDispatchData,
+	GatewayInteractionCreateDispatchData,
+	GatewayInviteCreateDispatchData,
+	GatewayInviteDeleteDispatchData,
+	GatewayMessageCreateDispatchData,
+	GatewayMessageDeleteBulkDispatchData,
+	GatewayMessageDeleteDispatchData,
+	GatewayMessageReactionAddDispatchData,
+	GatewayMessageReactionRemoveAllDispatchData,
+	GatewayMessageReactionRemoveDispatchData,
+	GatewayMessageReactionRemoveEmojiDispatchData,
+	GatewayMessageUpdateDispatchData,
+	GatewayPresenceUpdateDispatchData,
+	GatewayReadyDispatchData,
+	GatewayThreadCreateDispatchData,
+	GatewayThreadDeleteDispatchData,
+	GatewayThreadListSyncDispatchData,
+	GatewayThreadMemberUpdateDispatchData,
+	GatewayThreadMembersUpdateDispatchData,
+	GatewayTypingStartDispatchData,
+	GatewayUserUpdateDispatchData,
+	GatewayVoiceServerUpdateDispatchData,
+	GatewayVoiceStateUpdateData,
+	GatewayWebhooksUpdateDispatchData,
+	RestToKeys,
+	APIUser,
+} from "@biscuitland/common";
 
 export enum ShardState {
 	/** Shard is fully connected to the gateway and receiving events from Discord. */
@@ -26,36 +73,7 @@ export enum ShardState {
 	/** Shard is trying to resume a session with the gateway. */
 	Resuming = 5,
 	/** Shard got shut down studied or due to a not (self) fixable error and may not attempt to reconnect on its own. */
-	Offline = 6
-}
-
-export interface ShardEvents {
-	/** A heartbeat has been send. */
-	heartbeat?: (shard: Shard) => unknown;
-	/** A heartbeat ACK was received. */
-	heartbeatAck?: (shard: Shard) => unknown;
-	/** Shard has received a Hello payload. */
-	hello?: (shard: Shard) => unknown;
-	/** The Shards session has been invalidated. */
-	invalidSession?: (shard: Shard, resumable: boolean) => unknown;
-	/** The shard has started a resume action. */
-	resuming?: (shard: Shard) => unknown;
-	/** The shard has successfully resumed an old session. */
-	resumed?: (shard: Shard) => unknown;
-	/** Discord has requested the Shard to reconnect. */
-	requestedReconnect?: (shard: Shard) => unknown;
-	/** The shard started to connect to Discord's gateway. */
-	connecting?: (shard: Shard) => unknown;
-	/** The shard is connected with Discord's gateway. */
-	connected?: (shard: Shard) => unknown;
-	/** The shard has been disconnected from Discord's gateway. */
-	disconnected?: (shard: Shard) => unknown;
-	/** The shard has started to identify itself to Discord. */
-	identifying?: (shard: Shard) => unknown;
-	/** The shard has successfully been identified itself with Discord. */
-	identified?: (shard: Shard) => unknown;
-	/** The shard has received a message from Discord. */
-	message?: (shard: Shard, payload: GatewayReceivePayload) => unknown;
+	Offline = 6,
 }
 
 export enum ShardSocketCloseCodes {
@@ -72,31 +90,15 @@ export enum ShardSocketCloseCodes {
 	/** Special close code reserved for Discordeno's zero-downtime resharding system. */
 	Resharded = 3065,
 	/** Shard is re-identifying therefore the old connection needs to be closed. */
-	ReIdentifying = 3066
-}
-
-export interface ShardSocketRequest {
-	/** The OP-Code for the payload to send. */
-	op: GatewayOpcodes;
-	/** Payload data. */
-	d: unknown;
+	ReIdentifying = 3066,
 }
 
 /** https://discord.com/developers/docs/topics/gateway-events#update-presence */
-export interface BotStatusUpdate {
-	// /** Unix time (in milliseconds) of when the client went idle, or null if the client is not idle */
-	since: number | null;
+export interface StatusUpdate {
 	/** The user's activities */
-	activities: BotActivity[];
+	activities?: Omit<GatewayActivity, "created_at">[];
 	/** The user's new status */
-	status: `${PresenceUpdateStatus}`;
-}
-
-/** https://discord.com/developers/docs/topics/gateway-events#activity-object */
-export interface BotActivity {
-	name: string;
-	type: ActivityType;
-	url?: string;
+	status: PresenceUpdateStatus;
 }
 
 /** https://discord.com/developers/docs/topics/gateway#update-voice-state */
@@ -111,21 +113,7 @@ export interface UpdateVoiceState {
 	self_deaf: boolean;
 }
 
-/** https://discord.com/developers/docs/topics/gateway-events#update-presence */
-export interface StatusUpdate {
-	// /** Unix time (in milliseconds) of when the client went idle, or null if the client is not idle */
-	// since: number | null;
-	/** The user's activities */
-	activities?: Omit<GatewayActivity, 'created_at'>[];
-	/** The user's new status */
-	status: PresenceUpdateStatus;
-	// /** Whether or not the client is afk */
-	// afk: boolean;
-}
-
-export type BigString = bigint | string;
-
-export type ShardStatusUpdate = Pick<GatewayPresenceUpdateData, 'activities' | 'status'>;
+export type ShardStatusUpdate = Pick<GatewayPresenceUpdateData, "activities" | "status">;
 
 export interface RequestGuildMembersOptions
 	extends GatewayRequestGuildMembersDataWithQuery,
@@ -144,16 +132,116 @@ export type AtLeastOne<
 	T,
 	U = {
 		[K in keyof T]: Pick<T, K>;
-	}
+	},
 > = Partial<T> & U[keyof U];
 
-export interface Logger {
-	log: (level: LogLevels, ...args: any[]) => void;
-	setDepth: (level: LogDepth) => void;
-	setLevel: (level: LogLevels) => void;
-	debug: (...args: any[]) => void;
-	info: (...args: any[]) => void;
-	warn: (...args: any[]) => void;
-	error: (...args: any[]) => void;
-	fatal: (...args: any[]) => void;
+export type ClientUser = { bot: true } & APIUser;
+
+export interface Events {
+	[GatewayDispatchEvents.Ready]: GatewayReadyDispatchData & { user: ClientUser };
+	[GatewayDispatchEvents.ChannelUpdate]: GatewayChannelUpdateDispatchData;
+	[GatewayDispatchEvents.AutoModerationActionExecution]: GatewayAutoModerationActionExecutionDispatchData;
+	[GatewayDispatchEvents.ThreadCreate]: GatewayThreadCreateDispatchData;
+	[GatewayDispatchEvents.ThreadDelete]: GatewayThreadDeleteDispatchData;
+	[GatewayDispatchEvents.ThreadUpdate]: GatewayThreadDeleteDispatchData;
+	[GatewayDispatchEvents.ThreadListSync]: GatewayThreadListSyncDispatchData;
+	[GatewayDispatchEvents.ThreadMemberUpdate]: GatewayThreadMemberUpdateDispatchData;
+	[GatewayDispatchEvents.ThreadMembersUpdate]: GatewayThreadMembersUpdateDispatchData;
+	[GatewayDispatchEvents.ChannelPinsUpdate]: GatewayChannelPinsUpdateDispatchData;
+	[GatewayDispatchEvents.GuildCreate]: GatewayGuildCreateDispatchData;
+	[GatewayDispatchEvents.GuildUpdate]: APIGuild;
+	[GatewayDispatchEvents.GuildDelete]: GatewayGuildDeleteDispatchData;
+	[GatewayDispatchEvents.GuildAuditLogEntryCreate]: APIAuditLogEntry;
+	[GatewayDispatchEvents.GuildBanAdd]: GatewayGuildBanAddDispatchData;
+	[GatewayDispatchEvents.GuildBanRemove]: GatewayGuildBanRemoveDispatchData;
+	[GatewayDispatchEvents.GuildEmojisUpdate]: GatewayGuildEmojisUpdateDispatchData;
+	[GatewayDispatchEvents.GuildStickersUpdate]: GatewayGuildStickersUpdateDispatchData;
+	[GatewayDispatchEvents.GuildIntegrationsUpdate]: GatewayGuildIntegrationsUpdateDispatchData;
+	[GatewayDispatchEvents.GuildMemberAdd]: GatewayGuildMemberAddDispatchData;
+	[GatewayDispatchEvents.GuildMemberRemove]: GatewayGuildMemberRemoveDispatchData;
+	[GatewayDispatchEvents.GuildMemberUpdate]: GatewayGuildMemberUpdateDispatchData;
+	[GatewayDispatchEvents.GuildMembersChunk]: GatewayGuildMembersChunkDispatchData;
+	[GatewayDispatchEvents.GuildRoleCreate]: GatewayGuildRoleCreateDispatchData;
+	[GatewayDispatchEvents.GuildRoleUpdate]: GatewayGuildRoleUpdateDispatchData;
+	[GatewayDispatchEvents.GuildRoleDelete]: GatewayGuildRoleDeleteDispatchData;
+	[GatewayDispatchEvents.IntegrationDelete]: GatewayIntegrationDeleteDispatchData;
+	[GatewayDispatchEvents.InviteCreate]: GatewayInviteCreateDispatchData;
+	[GatewayDispatchEvents.InviteDelete]: GatewayInviteDeleteDispatchData;
+	[GatewayDispatchEvents.MessageCreate]: GatewayMessageCreateDispatchData;
+	[GatewayDispatchEvents.MessageUpdate]: GatewayMessageUpdateDispatchData;
+	[GatewayDispatchEvents.MessageDelete]: GatewayMessageDeleteDispatchData;
+	[GatewayDispatchEvents.MessageDeleteBulk]: GatewayMessageDeleteBulkDispatchData;
+	[GatewayDispatchEvents.MessageReactionAdd]: GatewayMessageReactionAddDispatchData;
+	[GatewayDispatchEvents.MessageReactionRemove]: GatewayMessageReactionRemoveDispatchData;
+	[GatewayDispatchEvents.MessageReactionRemoveAll]: GatewayMessageReactionRemoveAllDispatchData;
+	[GatewayDispatchEvents.MessageReactionRemoveEmoji]: GatewayMessageReactionRemoveEmojiDispatchData;
+	[GatewayDispatchEvents.PresenceUpdate]: GatewayPresenceUpdateDispatchData;
+	[GatewayDispatchEvents.TypingStart]: GatewayTypingStartDispatchData;
+	[GatewayDispatchEvents.UserUpdate]: GatewayUserUpdateDispatchData;
+	[GatewayDispatchEvents.VoiceStateUpdate]: GatewayVoiceStateUpdateData;
+	[GatewayDispatchEvents.VoiceServerUpdate]: GatewayVoiceServerUpdateDispatchData;
+	[GatewayDispatchEvents.WebhooksUpdate]: GatewayWebhooksUpdateDispatchData;
+	[GatewayDispatchEvents.InteractionCreate]: GatewayInteractionCreateDispatchData;
 }
+
+export type StageSameEvents = RestToKeys<
+	[
+		APIStageInstance,
+		GatewayDispatchEvents.StageInstanceCreate,
+		GatewayDispatchEvents.StageInstanceUpdate,
+		GatewayDispatchEvents.StageInstanceDelete,
+	]
+>;
+
+export type IntegrationSameEvents = RestToKeys<
+	[
+		GatewayIntegrationCreateDispatchData,
+		GatewayDispatchEvents.IntegrationCreate,
+		GatewayDispatchEvents.IntegrationUpdate,
+	]
+>;
+
+export type GuildScheduledUserSameEvents = RestToKeys<
+	[
+		GatewayGuildScheduledEventUserRemoveDispatchData,
+		GatewayDispatchEvents.GuildScheduledEventUserRemove,
+		GatewayDispatchEvents.GuildScheduledEventUserAdd,
+	]
+>;
+
+export type GuildScheduledSameEvents = RestToKeys<
+	[
+		APIGuildScheduledEvent,
+		GatewayDispatchEvents.GuildScheduledEventCreate,
+		GatewayDispatchEvents.GuildScheduledEventDelete,
+		GatewayDispatchEvents.GuildScheduledEventUpdate,
+	]
+>;
+
+export type ChannelSameEvents = RestToKeys<
+	[
+		APIChannel,
+		GatewayDispatchEvents.ChannelCreate,
+		GatewayDispatchEvents.ChannelDelete,
+		GatewayDispatchEvents.ChannelUpdate,
+	]
+>;
+
+export type AutoModetaractionRuleEvents = RestToKeys<
+	[
+		APIAutoModerationRule,
+		GatewayDispatchEvents.AutoModerationRuleCreate,
+		GatewayDispatchEvents.AutoModerationRuleDelete,
+		GatewayDispatchEvents.AutoModerationRuleUpdate,
+	]
+>;
+
+export type NormalizeEvents = Events &
+	AutoModetaractionRuleEvents &
+	ChannelSameEvents &
+	GuildScheduledSameEvents &
+	GuildScheduledUserSameEvents &
+	IntegrationSameEvents &
+	StageSameEvents;
+
+export type GatewayEvents = { [x in keyof Events]: Events[x] };

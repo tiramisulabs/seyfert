@@ -5,6 +5,3 @@ export * from './shard/ShardTypes';
 export * from './defaults';
 export * from './SharedTypes';
 export * from './utils/Bucket';
-export * from './utils/Collection';
-export * from './utils/Logger';
-export * from './utils/Util';

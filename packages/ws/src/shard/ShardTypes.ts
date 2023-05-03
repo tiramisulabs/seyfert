@@ -1,5 +1,4 @@
-import { GatewayPresenceUpdateData, GatewayReceivePayload } from '@biscuitland/common';
-import { Logger } from '../SharedTypes';
+import type { GatewayPresenceUpdateData, GatewayReceivePayload, Logger } from '@biscuitland/common';
 
 export interface ShardGatewayConfig {
 	/** The calculated intent value of the events which the shard should receive.

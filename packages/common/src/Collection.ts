@@ -1,3 +1,4 @@
+// https://github.com/discordeno/discordeno/blob/main/packages/utils/src/Collection.ts
 export class Collection<K, V> extends Map<K, V> {
 	/**
 	 * The maximum amount of items allowed in this collection. To disable cache, set it 0, set to undefined to make it infinite.
@@ -34,7 +35,7 @@ export class Collection<K, V> extends Map<K, V> {
 	}
 
 	stopSweeper(): void {
-		return clearInterval(this.sweeper?.intervalId);
+		clearInterval(this.sweeper?.intervalId);
 	}
 
 	changeSweeperInterval(newInterval: number): void {

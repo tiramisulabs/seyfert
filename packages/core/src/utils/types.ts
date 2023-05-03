@@ -1,4 +1,4 @@
-import type { APIUser, ImageFormat } from "@biscuitland/common";
+import type { ImageFormat } from "@biscuitland/common";
 
 export type EditNickname = { nick?: string; reason?: string };
 
@@ -10,8 +10,6 @@ export type ImageOptions = {
 	format?: ImageFormat;
 	size?: ImageSize;
 };
-
-export type ClientUser = { bot: true } & APIUser;
 
 export enum ThreadTypes {
 	AnnouncementThread = 10,
