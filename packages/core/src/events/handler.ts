@@ -1,5 +1,5 @@
-import type { Session } from "../index";
-import type { GatewayEvents } from "@biscuitland/ws";
+import type { Session } from '../index';
+import type { GatewayEvents } from '@biscuitland/ws';
 
 export function actionHandler([session, payload, shardId]: Parameters<ActionHandler>) {
 	// @ts-expect-error At this point, typescript sucks

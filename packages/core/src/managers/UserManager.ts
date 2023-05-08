@@ -1,13 +1,13 @@
-import type { APIUser } from "@biscuitland/common";
-import type { Session, ImageOptions } from "../../index";
-import { formatImageURL } from "../../index";
+import type { APIUser } from '@biscuitland/common';
+import type { Session, ImageOptions } from '../index';
+import { formatImageURL } from '../index';
 
 export class UserManager {
 	readonly session!: Session;
 	constructor(session: Session) {
-		Object.defineProperty(this, "session", {
+		Object.defineProperty(this, 'session', {
 			value: session,
-			writable: false,
+			writable: false
 		});
 	}
 

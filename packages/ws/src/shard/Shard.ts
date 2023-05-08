@@ -1,12 +1,12 @@
-import { LeakyBucket } from "../index";
-import { ShardGatewayConfig, ShardHeart, ShardCreateOptions } from "./ShardTypes";
+import { LeakyBucket } from '../index';
+import { ShardGatewayConfig, ShardHeart, ShardCreateOptions } from './ShardTypes';
 import {
 	GatewayMemberRequest,
 	RequestGuildMembersOptions,
 	ShardSocketCloseCodes,
 	ShardState,
-	StatusUpdate,
-} from "../SharedTypes";
+	StatusUpdate
+} from '../SharedTypes';
 import {
 	APIGuildMember,
 	GatewayCloseCodes,
@@ -16,10 +16,10 @@ import {
 	GatewayReceivePayload,
 	GatewaySendPayload,
 	Collection,
-	Logger,
-} from "@biscuitland/common";
-import { WebSocket, CloseEvent, MessageEvent } from "ws";
-import { JoinVoiceOptions } from "../manager/GatewayManagerTypes";
+	Logger
+} from '@biscuitland/common';
+import { WebSocket, CloseEvent, MessageEvent } from 'ws';
+import { JoinVoiceOptions } from '../manager/GatewayManagerTypes';
 
 export class Shard {
 	/** The id of the shard */
@@ -41,11 +41,11 @@ export class Shard {
 	/** Current internal state of the this. */
 	state = ShardState.Offline;
 	/** The url provided by discord to use when resuming a connection for this this. */
-	resumeGatewayUrl = "";
+	resumeGatewayUrl = '';
 	/** Cache for pending gateway requests which should have been send while the gateway went offline. */
 	offlineSendQueue: ((_?: unknown) => void)[] = [];
 	/** Resolve internal waiting states. Mapped by SelectedEvents => ResolveFunction */
-	resolves = new Map<"READY" | "RESUMED" | "INVALID_SESSION", (payload: GatewayReceivePayload) => void>();
+	resolves = new Map<'READY' | 'RESUMED' | 'INVALID_SESSION', (payload: GatewayReceivePayload) => void>();
 	/** Shard bucket. Only access this if you know what you are doing. Bucket for handling shard request rate limits. */
 	bucket: LeakyBucket;
 	logger: Logger;
@@ -59,8 +59,8 @@ export class Shard {
 			 */
 			enabled: false,
 			/** The pending requests. */
-			pending: new Collection<string, GatewayMemberRequest>(),
-		},
+			pending: new Collection<string, GatewayMemberRequest>()
+		}
 	};
 	constructor(options: ShardCreateOptions) {
 		this.id = options.id;
@@ -68,7 +68,7 @@ export class Shard {
 		this.logger = options.logger;
 		this.heart = {
 			acknowledged: false,
-			interval: 45e3,
+			interval: 45e3
 		};
 
 		if (options.requestIdentify) this.requestIdentify = options.requestIdentify;
@@ -81,7 +81,7 @@ export class Shard {
 		this.bucket = new LeakyBucket({
 			max: safe,
 			refillAmount: safe,
-			refillInterval: 6e4,
+			refillInterval: 6e4
 		});
 	}
 
@@ -130,8 +130,8 @@ export class Shard {
 		}
 
 		const url = new URL(this.connectionUrl);
-		url.searchParams.set("v", this.connection.version.toString());
-		url.searchParams.set("enconding", "json");
+		url.searchParams.set('v', this.connection.version.toString());
+		url.searchParams.set('enconding', 'json');
 
 		this.socket = new WebSocket(url.toString());
 
@@ -158,7 +158,7 @@ export class Shard {
 		// Therefore we need to close the old connection and heartbeating before creating a new one.
 		if (this.isOpen) {
 			this.logger.info(`Closing existing shard: #${this.id}`);
-			this.close(ShardSocketCloseCodes.ReIdentifying, "Re-identifying closure of old connection");
+			this.close(ShardSocketCloseCodes.ReIdentifying, 'Re-identifying closure of old connection');
 		}
 		this.state = ShardState.Identifying;
 		// identifying
@@ -175,14 +175,14 @@ export class Shard {
 					properties: this.connection.properties,
 					intents: this.connection.intents,
 					shard: [this.id, this.connection.totalShards],
-					presence: this.connection.presence,
-				},
+					presence: this.connection.presence
+				}
 			},
-			true,
+			true
 		);
 
 		return new Promise<void>((resolve) => {
-			this.resolves.set("READY", () => {
+			this.resolves.set('READY', () => {
 				// event idenfity
 				this.shardIsReady();
 				resolve();
@@ -191,8 +191,8 @@ export class Shard {
 			// When identifying too fast,
 			// Discord sends an invalid session payload.
 			// This can safely be ignored though and the shard starts a new identify action.
-			this.resolves.set("INVALID_SESSION", () => {
-				this.resolves.delete("READY");
+			this.resolves.set('INVALID_SESSION', () => {
+				this.resolves.delete('READY');
 				resolve();
 			});
 		});
@@ -204,7 +204,7 @@ export class Shard {
 		// It's possible that the shard is still connected with Discord's gateway therefore we need to forcefully close it.
 		if (this.isOpen) {
 			this.logger.info(`Resuming Shard #${this.id} in isOpen`);
-			this.close(ShardSocketCloseCodes.ResumeClosingOldConnection, "Reconnecting the shard, closing old connection.");
+			this.close(ShardSocketCloseCodes.ResumeClosingOldConnection, 'Reconnecting the shard, closing old connection.');
 		}
 
 		// Shard has never identified, so we cannot resume.
@@ -220,7 +220,7 @@ export class Shard {
 		// Before we can resume, we need to create a new connection with Discord's gateway.
 		await this.connect();
 		this.logger.info(
-			`Resuming Shard #${this.id}, after connecting. ${this.connection.token} | ${this.sessionId} | ${this.previousSequenceNumber}`,
+			`Resuming Shard #${this.id}, after connecting. ${this.connection.token} | ${this.sessionId} | ${this.previousSequenceNumber}`
 		);
 
 		this.send(
@@ -229,20 +229,20 @@ export class Shard {
 				d: {
 					token: `Bot ${this.connection.token}`,
 					session_id: this.sessionId,
-					seq: this.previousSequenceNumber ?? 0,
-				},
+					seq: this.previousSequenceNumber ?? 0
+				}
 			},
-			true,
+			true
 		);
 		this.logger.info(`Resuming Shard #${this.id} after send resumg`);
 
 		return new Promise<void>((resolve) => {
-			this.resolves.set("RESUMED", () => resolve());
+			this.resolves.set('RESUMED', () => resolve());
 			// If it is attempted to resume with an invalid session id,
 			// Discord sends an invalid session payload
 			// Not erroring here since it is easy that this happens, also it would be not catchable
-			this.resolves.set("INVALID_SESSION", () => {
-				this.resolves.delete("RESUMED");
+			this.resolves.set('INVALID_SESSION', () => {
+				this.resolves.delete('RESUMED');
 				resolve();
 			});
 		});
@@ -267,7 +267,7 @@ export class Shard {
 
 	/** Shutdown the this. Forcefully disconnect the shard from Discord. The shard may not attempt to reconnect with Discord. */
 	async shutdown(): Promise<void> {
-		this.close(ShardSocketCloseCodes.Shutdown, "Shard shutting down.");
+		this.close(ShardSocketCloseCodes.Shutdown, 'Shard shutting down.');
 		this.state = ShardState.Offline;
 	}
 
@@ -310,7 +310,7 @@ export class Shard {
 			case GatewayCloseCodes.DisallowedIntents:
 				this.state = ShardState.Offline;
 				// disconnected event
-				throw new Error(close.reason || "Discord gave no reason! GG! You broke Discord!");
+				throw new Error(close.reason || 'Discord gave no reason! GG! You broke Discord!');
 			default:
 				this.logger.info(`Closed shard #${this.id}. Resuming...`);
 				// disconnected event
@@ -353,7 +353,7 @@ export class Shard {
 	async handleMessage(message: MessageEvent) {
 		const preProcessMessage = message.data;
 
-		if (typeof preProcessMessage !== "string") return;
+		if (typeof preProcessMessage !== 'string') return;
 
 		return await this.handleDiscordPacket(JSON.parse(preProcessMessage) as GatewayDispatchPayload);
 	}
@@ -405,7 +405,7 @@ export class Shard {
 					this.logger.info(`heartbeat not acknowledged for shard #${this.id}.`);
 					this.close(
 						ShardSocketCloseCodes.ZombiedConnection,
-						"Zombied connection, did not receive an heartbeat ACK in time.",
+						'Zombied connection, did not receive an heartbeat ACK in time.'
 					);
 					return await this.identify();
 				}
@@ -452,10 +452,10 @@ export class Shard {
 			(!options.limit || options.limit > 1) &&
 			!(this.connection.intents & GatewayIntentBits.GuildMembers)
 		)
-			throw new Error("MISSING_INTENT_GUILD_MEMBERS");
+			throw new Error('MISSING_INTENT_GUILD_MEMBERS');
 		if (options.user_ids?.length) {
 			this.logger.info(
-				`requestMembers guildId: ${options.guild_id} -> setting user limit based on userIds length: ${options.user_ids.length}`,
+				`requestMembers guildId: ${options.guild_id} -> setting user limit based on userIds length: ${options.user_ids.length}`
 			);
 			options.limit = options.user_ids.length;
 		}
@@ -465,7 +465,7 @@ export class Shard {
 		// Gateway does not require caching these requests so directly send and return
 		if (!this.cache.requestMembers.enabled) {
 			this.logger.info(
-				`requestMembers guildId: ${options.guild_id} -> skipping cache -> options ${JSON.stringify(options)}`,
+				`requestMembers guildId: ${options.guild_id} -> skipping cache -> options ${JSON.stringify(options)}`
 			);
 
 			await this.send({
@@ -474,12 +474,12 @@ export class Shard {
 					guild_id: options.guild_id,
 					// @ts-expect-error
 					// If a query is provided use it, OR if a limit is NOT provided use ""
-					query: options.query ?? (options.limit ? undefined : ""),
+					query: options.query ?? (options.limit ? undefined : ''),
 					limit: options.limit ?? 0,
 					presences: options.presences ?? false,
 					user_ids: options.user_ids,
-					nonce,
-				},
+					nonce
+				}
 			});
 			return [];
 		}
@@ -487,12 +487,10 @@ export class Shard {
 			this.cache.requestMembers.pending.set(nonce, {
 				nonce,
 				resolve,
-				members: [],
+				members: []
 			});
 			this.logger.info(
-				`requestMembers options.guild_id: ${options.guild_id} -> requesting members -> data: ${JSON.stringify(
-					options,
-				)}`,
+				`requestMembers options.guild_id: ${options.guild_id} -> requesting members -> data: ${JSON.stringify(options)}`
 			);
 			this.send({
 				op: GatewayOpcodes.RequestGuildMembers,
@@ -500,12 +498,12 @@ export class Shard {
 					guild_id: options.guild_id,
 					// @ts-expect-error
 					// If a query is provided use it, OR if a limit is NOT provided use ""
-					query: options?.query ?? (options?.limit ? undefined : ""),
+					query: options?.query ?? (options?.limit ? undefined : ''),
 					limit: options?.limit ?? 0,
 					presences: options?.presences ?? false,
 					user_ids: options?.user_ids,
-					nonce,
-				},
+					nonce
+				}
 			});
 		});
 	}
@@ -530,8 +528,8 @@ export class Shard {
 				guild_id,
 				channel_id,
 				self_mute: Boolean(self_mute),
-				self_deaf: self_deaf ?? true,
-			},
+				self_deaf: self_deaf ?? true
+			}
 		});
 	}
 
@@ -555,8 +553,8 @@ export class Shard {
 				guild_id,
 				channel_id: null,
 				self_deaf: false,
-				self_mute: false,
-			},
+				self_mute: false
+			}
 		});
 	}
 
@@ -574,8 +572,8 @@ export class Shard {
 				since: null,
 				afk: false,
 				activities: data.activities,
-				status: data.status,
-			},
+				status: data.status
+			}
 		});
 	}
 

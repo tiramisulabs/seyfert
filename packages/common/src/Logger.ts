@@ -1,16 +1,16 @@
-import { Options, bgBrightWhite, black, bold, cyan, gray, italic, red, yellow } from "./Util";
+import { Options, bgBrightWhite, black, bold, cyan, gray, italic, red, yellow } from './Util';
 
 export enum LogLevels {
 	Debug = 0,
 	Info = 1,
 	Warn = 2,
 	Error = 3,
-	Fatal = 4,
+	Fatal = 4
 }
 
 export enum LogDepth {
 	Minimal = 0,
-	Full = 1,
+	Full = 1
 }
 
 export type LoggerOptions = { logLevel?: LogLevels; name?: string; active?: boolean };
@@ -55,9 +55,9 @@ export class Logger {
 		const date = new Date();
 		const log = [
 			bgBrightWhite(black(`[${date.toLocaleDateString()} ${date.toLocaleTimeString()}]`)),
-			color(Logger.prefixes.get(level) ?? "DEBUG"),
-			name ? `${name} >` : ">",
-			...args,
+			color(Logger.prefixes.get(level) ?? 'DEBUG'),
+			name ? `${name} >` : '>',
+			...args
 		];
 
 		switch (level) {
@@ -98,8 +98,8 @@ export class Logger {
 
 	static DEFAULT_OPTIONS: Required<LoggerOptions> = {
 		logLevel: LogLevels.Info,
-		name: "BISCUIT",
-		active: true,
+		name: 'BISCUIT',
+		active: true
 	};
 
 	static noColor(msg: string) {
@@ -111,14 +111,14 @@ export class Logger {
 		[LogLevels.Info, cyan],
 		[LogLevels.Warn, yellow],
 		[LogLevels.Error, (str: string) => red(str)],
-		[LogLevels.Fatal, (str: string) => red(bold(italic(str)))],
+		[LogLevels.Fatal, (str: string) => red(bold(italic(str)))]
 	]);
 
 	static prefixes = new Map<LogLevels, string>([
-		[LogLevels.Debug, "DEBUG"],
-		[LogLevels.Info, "INFO"],
-		[LogLevels.Warn, "WARN"],
-		[LogLevels.Error, "ERROR"],
-		[LogLevels.Fatal, "FATAL"],
+		[LogLevels.Debug, 'DEBUG'],
+		[LogLevels.Info, 'INFO'],
+		[LogLevels.Warn, 'WARN'],
+		[LogLevels.Error, 'ERROR'],
+		[LogLevels.Fatal, 'FATAL']
 	]);
 }

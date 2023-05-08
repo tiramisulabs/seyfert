@@ -14,7 +14,7 @@ export type RestToKeys<T extends unknown[]> = T extends [infer V, ...infer Keys]
 
 export type Identify<T> = T extends infer U ? { [K in keyof U]: U[K] } : never;
 
-export type TypeArray<T> = T | T[]; 
+export type TypeArray<T> = T | T[];
 
 export type When<T extends boolean, A, B = never> = T extends true ? A : B;
 

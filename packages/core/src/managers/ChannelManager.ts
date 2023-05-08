@@ -6,8 +6,8 @@ import {
 	RESTPatchAPIChannelJSONBody,
 } from "@biscuitland/common";
 
-import { Session } from "../../session";
-import { objectToParams } from "../../utils/utils";
+import { Session } from "../session";
+import { objectToParams } from "../utils/utils";
 
 export class ChannelManager {
 	readonly session!: Session;
@@ -18,7 +18,7 @@ export class ChannelManager {
 		});
 	}
 
-	async fetch(id: string): Promise<APIChannel> {
+	async fetch<T extends APIChannel = APIChannel>(id: string): Promise<T> {
 		return this.session.api.channels(id).get();
 	}
 
@@ -30,12 +30,12 @@ export class ChannelManager {
 		return webhooks.reduce((data, webhook) => data.set(webhook.id, webhook), new Map());
 	}
 
-	async modify(id: string, data: RESTPatchAPIChannelJSONBody): Promise<APIChannel> {
+	async modify<T extends APIChannel = APIChannel>(id: string, data: RESTPatchAPIChannelJSONBody): Promise<T> {
 		return this.session.api.channels(id).patch({ body: data });
 	}
 
-	async delete(id: string) {
-		return this.session.api.channels(id).delete<APIChannel>();
+	async delete<T extends APIChannel = APIChannel>(id: string) {
+		return this.session.api.channels(id).delete<T>();
 	}
 
 	async fetchMessages(id: string, limit = 50): Promise<Map<string, APIMessage> | null> {
@@ -54,6 +54,7 @@ export class ChannelManager {
 	async fetchMessage(id: string, messageId: string) {
 		return this.session.api.channels(id).messages(messageId).get<APIMessage>();
 	}
+
 	async createMessage(id: string, data: RESTPostAPIChannelMessageJSONBody) {
 		return this.session.api.channels(id).messages().post<APIMessage>({ body: data });
 	}

@@ -66,8 +66,5 @@
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/oasisjs/biscuit.git"
-	},
-	"dependencies": {
-		"@biscuitland/common": "^0.0.1"
 	}
 }

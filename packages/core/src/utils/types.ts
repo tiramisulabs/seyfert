@@ -1,4 +1,4 @@
-import type { ImageFormat } from "@biscuitland/common";
+import type { ImageFormat } from '@biscuitland/common';
 
 export type EditNickname = { nick?: string; reason?: string };
 
@@ -14,5 +14,5 @@ export type ImageOptions = {
 export enum ThreadTypes {
 	AnnouncementThread = 10,
 	PublicThread = 11,
-	PrivateThread = 12,
+	PrivateThread = 12
 }

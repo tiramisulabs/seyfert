@@ -1,7 +1,7 @@
-import { ReplaceRegex } from "@biscuitland/common";
-import { DiscordEpoch } from "@biscuitland/common";
-import { ImageFormat } from "@biscuitland/common";
-import type { ImageSize } from "./types";
+import { ReplaceRegex } from '@biscuitland/common';
+import { DiscordEpoch } from '@biscuitland/common';
+import { ImageFormat } from '@biscuitland/common';
+import type { ImageSize } from './types';
 
 /**
  * Convert a timestamp to a snowflake.
@@ -20,7 +20,7 @@ export function snowflakeToTimestamp(id: string): number {
  * @returns The formatted URL.
  */
 export function formatImageURL(url: string, size: ImageSize = 128, format?: ImageFormat): string {
-	return `${url}.${format ?? (url.includes("/a_") ? "gif" : "jpg")}?size=${size}`;
+	return `${url}.${format ?? (url.includes('/a_') ? 'gif' : 'jpg')}?size=${size}`;
 }
 
 /**
@@ -30,7 +30,7 @@ export function formatImageURL(url: string, size: ImageSize = 128, format?: Imag
  * @warning Discord staff has mentioned this may not be stable forever xd.
  */
 export function getBotIdFromToken(token: string): string {
-	return Buffer.from(token.split(".")[0], "base64").toString("ascii");
+	return Buffer.from(token.split('.')[0], 'base64').toString('ascii');
 }
 
 /**
@@ -56,5 +56,5 @@ export function objectToParams(obj: object): URLSearchParams {
  * @returns The channel link.
  */
 export function channelLink(channelId: string, guildId?: string) {
-	return `https://discord.com/channels/${guildId ?? "@me"}/${channelId}`;
+	return `https://discord.com/channels/${guildId ?? '@me'}/${channelId}`;
 }

@@ -2,10 +2,10 @@ import {
 	ApplicationCommandType,
 	PermissionFlagsBits,
 	RESTPostAPIChatInputApplicationCommandsJSONBody,
-	applyToClass,
-} from "@biscuitland/common";
-import { AllSlashOpitions, SlashSubcommandGroupOption, SlashSubcommandOption } from "./SlashCommandOption";
-import { PermissionsStrings } from "../../Utils";
+	applyToClass
+} from '@biscuitland/common';
+import { AllSlashOpitions, SlashSubcommandGroupOption, SlashSubcommandOption } from './SlashCommandOption';
+import { PermissionsStrings } from '../../Utils';
 
 class SlashCommandB {
 	constructor(public data: Partial<RESTPostAPIChatInputApplicationCommandsJSONBody> = {}) {}
@@ -37,7 +37,7 @@ class SlashCommandB {
 		return this;
 	}
 
-	addRawOption(option: ReturnType<AllSlashOpitions["toJSON"]>) {
+	addRawOption(option: ReturnType<AllSlashOpitions['toJSON']>) {
 		this.data.options ??= [];
 		this.data.options.push(option);
 	}
@@ -45,10 +45,10 @@ class SlashCommandB {
 	toJSON(): RESTPostAPIChatInputApplicationCommandsJSONBody {
 		return {
 			...this.data,
-			type: ApplicationCommandType.ChatInput,
+			type: ApplicationCommandType.ChatInput
 		} as RESTPostAPIChatInputApplicationCommandsJSONBody & { type: ApplicationCommandType.ChatInput };
 	}
 }
 
-export const SlashCommand = applyToClass(SlashSubcommandOption, SlashCommandB, ["toJSON"]);
+export const SlashCommand = applyToClass(SlashSubcommandOption, SlashCommandB, ['toJSON']);
 export type SlashCommand = InstanceType<typeof SlashCommand>;

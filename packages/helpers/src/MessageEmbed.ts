@@ -5,8 +5,8 @@ import {
 	APIEmbedFooter,
 	ObjectToLower,
 	TypeArray,
-	toSnakeCase,
-} from "@biscuitland/common";
+	toSnakeCase
+} from '@biscuitland/common';
 
 export class MessageEmbed {
 	constructor(public data: Partial<APIEmbed> = {}) {

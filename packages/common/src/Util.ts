@@ -1,20 +1,20 @@
 import { setTimeout } from 'node:timers/promises';
-import { ObjectToSnake, ObjectToLower } from "./Types";
+import { ObjectToSnake, ObjectToLower } from './Types';
 
 const isPlainObject = (value: any) => {
 	return (
 		(value !== null &&
-			typeof value === "object" &&
-			typeof value.constructor === "function" &&
+			typeof value === 'object' &&
+			typeof value.constructor === 'function' &&
 			// eslint-disable-next-line no-prototype-builtins
-			(value.constructor.prototype.hasOwnProperty("isPrototypeOf") ||
+			(value.constructor.prototype.hasOwnProperty('isPrototypeOf') ||
 				Object.getPrototypeOf(value.constructor.prototype) === null)) ||
 		(value && Object.getPrototypeOf(value) === null)
 	);
 };
 
 const isObject = (o: any) => {
-	return !!o && typeof o === "object" && !Array.isArray(o);
+	return !!o && typeof o === 'object' && !Array.isArray(o);
 };
 
 export const Options = <T = any>(defaults: any, ...options: any[]): T => {
@@ -26,7 +26,7 @@ export const Options = <T = any>(defaults: any, ...options: any[]): T => {
 
 	if (isObject(defaults) && isPlainObject(source)) {
 		Object.entries(source).forEach(([key, value]) => {
-			if (typeof value === "undefined") {
+			if (typeof value === 'undefined') {
 				return;
 			}
 
@@ -53,15 +53,15 @@ export function toSnakeCase<Obj extends { [k: string]: unknown }>(target: Obj): 
 	const result = {};
 	for (const [key, value] of Object.entries(target)) {
 		switch (typeof value) {
-			case "string":
-			case "bigint":
-			case "boolean":
-			case "function":
-			case "symbol":
-			case "undefined":
+			case 'string':
+			case 'bigint':
+			case 'boolean':
+			case 'function':
+			case 'symbol':
+			case 'undefined':
 				result[ReplaceRegex.camel(key)] = value;
 				break;
-			case "object":
+			case 'object':
 				if (Array.isArray(value)) {
 					result[ReplaceRegex.camel(key)] = Promise.all(value.map((prop) => toSnakeCase(prop)));
 					break;
@@ -86,15 +86,15 @@ export function toCamelCase<Obj extends { [k: string]: unknown }>(target: Obj): 
 	const result = {};
 	for (const [key, value] of Object.entries(target)) {
 		switch (typeof value) {
-			case "string":
-			case "bigint":
-			case "boolean":
-			case "function":
-			case "symbol":
-			case "undefined":
+			case 'string':
+			case 'bigint':
+			case 'boolean':
+			case 'function':
+			case 'symbol':
+			case 'undefined':
 				result[ReplaceRegex.snake(key)] = value;
 				break;
-			case "object":
+			case 'object':
 				if (Array.isArray(value)) {
 					result[ReplaceRegex.snake(key)] = Promise.all(value.map((prop) => toCamelCase(prop)));
 					break;
@@ -116,9 +116,8 @@ export const ReplaceRegex = {
 	},
 	camel: (s: string) => {
 		return s.replace(/[A-Z]/g, (a) => `_${a.toLowerCase()}`);
-	},
+	}
 };
-
 
 // https://github.com/discordeno/discordeno/blob/main/packages/utils/src/colors.ts
 

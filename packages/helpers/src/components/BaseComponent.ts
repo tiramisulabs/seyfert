@@ -1,4 +1,4 @@
-import { APIBaseComponent, ComponentType } from "@biscuitland/common";
+import { APIBaseComponent, ComponentType } from '@biscuitland/common';
 
 export abstract class BaseComponent<
 	TYPE extends Partial<APIBaseComponent<ComponentType>> = APIBaseComponent<ComponentType>,

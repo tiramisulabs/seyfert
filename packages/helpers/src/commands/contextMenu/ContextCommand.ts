@@ -3,9 +3,9 @@ import {
 	ApplicationCommandType,
 	Permissions,
 	PermissionFlagsBits,
-	RESTPostAPIContextMenuApplicationCommandsJSONBody,
-} from "@biscuitland/common";
-import { PermissionsStrings } from "../../Utils";
+	RESTPostAPIContextMenuApplicationCommandsJSONBody
+} from '@biscuitland/common';
+import { PermissionsStrings } from '../../Utils';
 
 export type ContextCommandType = ApplicationCommandType.Message | ApplicationCommandType.User;
 

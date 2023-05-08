@@ -1,4 +1,4 @@
-import type { Session } from '../../session';
+import type { Session } from '../session';
 import { ChannelManager } from './ChannelManager';
 import { GuildManager } from './GuildManager';
 import { MemberManager } from './MemberManager';

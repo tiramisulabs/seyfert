@@ -47,6 +47,7 @@ export class CDN {
 						const lastRoute = `${CDN_URL}/${route.join('/')}`;
 						if (value) {
 							if (typeof value !== 'string') {
+								// rome-ignore lint/nursery/noParameterAssign: better than alias
 								value = String(value);
 							}
 							return `${lastRoute}/${value}`;

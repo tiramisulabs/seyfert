@@ -1,5 +1,5 @@
-import type { APIGatewayBotInfo, Identify, MakeRequired } from "@biscuitland/common";
-import type { GatewayEvents, UpdateVoiceState } from "../SharedTypes";
+import type { APIGatewayBotInfo, Identify, MakeRequired } from '@biscuitland/common';
+import type { GatewayEvents, UpdateVoiceState } from '../SharedTypes';
 
 export interface CreateGatewayManagerOptions {
 	/** Important data which is used by the manager to connect shards to the gateway. */
@@ -72,7 +72,7 @@ export interface CreateGatewayManagerOptions {
 	/** The payload handlers for messages on the shard. */
 	handlePayload: <K extends keyof GatewayEvents>(
 		shardId: number,
-		data: { t: K; d: GatewayEvents[K] },
+		data: { t: K; d: GatewayEvents[K] }
 	) => Promise<unknown>;
 	/** This managers cache related settings. */
 	cache?: boolean;
@@ -85,7 +85,7 @@ export interface BucketData {
 }
 
 export type JoinVoiceOptions = Identify<
-	Omit<MakeRequired<Partial<UpdateVoiceState>, "guild_id">, "channel_id"> & {
+	Omit<MakeRequired<Partial<UpdateVoiceState>, 'guild_id'>, 'channel_id'> & {
 		channel_id: string;
 	}
 >;

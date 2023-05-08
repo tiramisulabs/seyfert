@@ -1,4 +1,4 @@
-import type { Session } from "../../session";
+import type { Session } from '../session';
 import type {
 	APIGuild,
 	ChannelType,
@@ -28,16 +28,16 @@ import type {
 	RESTPatchAPIGuildRoleJSONBody,
 	RESTPatchAPIGuildWidgetSettingsJSONBody,
 	RESTGetAPIGuildVanityUrlResult,
-	RESTPatchAPIGuildWelcomeScreenJSONBody,
-} from "@biscuitland/common";
-import { objectToParams } from "../../utils/utils";
+	RESTPatchAPIGuildWelcomeScreenJSONBody
+} from '@biscuitland/common';
+import { objectToParams } from '../utils/utils';
 
 export class GuildManager {
 	readonly session!: Session;
 	constructor(session: Session) {
-		Object.defineProperty(this, "session", {
+		Object.defineProperty(this, 'session', {
 			value: session,
-			writable: false,
+			writable: false
 		});
 	}
 
@@ -61,8 +61,8 @@ export class GuildManager {
 		return this.session.api.guilds(guildId).channels.get<APIGuildChannel<GuildChannelType>[]>();
 	}
 
-	async createChannel(guildId: string, options: RESTPostAPIGuildChannelJSONBody) {
-		return this.session.api.guilds(guildId).channels.post<APIGuildChannel<GuildChannelType>[]>({ body: options });
+	async createChannel<T extends APIGuildChannel<GuildChannelType>[]>(guildId: string, options: RESTPostAPIGuildChannelJSONBody) {
+		return this.session.api.guilds(guildId).channels.post<T>({ body: options });
 	}
 
 	async editChannelPositions(guildId: string, options: RESTPatchAPIGuildChannelPositionsJSONBody): Promise<void> {
@@ -78,10 +78,10 @@ export class GuildManager {
 
 	async getArchivedThreads(
 		guildId: string,
-		options: RESTGetAPIChannelThreadsArchivedOptions,
+		options: RESTGetAPIChannelThreadsArchivedOptions
 	): Promise<RESTGetAPIChannelUsersThreadsArchivedResult> {
 		const { type, ...query } = options;
-		if (type === "private") {
+		if (type === 'private') {
 			return this.session.api
 				.guilds(guildId)
 				.threads()
@@ -99,7 +99,7 @@ export class GuildManager {
 			.guilds(guildId)
 			.bans()
 			.get<APIBan[]>({
-				query: objectToParams(query),
+				query: objectToParams(query)
 			});
 	}
 
@@ -172,17 +172,17 @@ export class GuildManager {
 	}
 
 	async getVanityUrl(guildId: string) {
-		return this.session.api.guilds(guildId)["vanity-url"].get<RESTGetAPIGuildVanityUrlResult>();
+		return this.session.api.guilds(guildId)['vanity-url'].get<RESTGetAPIGuildVanityUrlResult>();
 	}
 
 	async getWelcomeScreen(guildId: string) {
-		return this.session.api.guilds(guildId)["welcome-screen"].get<APIGuildWelcomeScreen>();
+		return this.session.api.guilds(guildId)['welcome-screen'].get<APIGuildWelcomeScreen>();
 	}
 
 	async modifyWelcomeScreen(guildId: string, options: RESTPatchAPIGuildWelcomeScreenJSONBody) {
-		return this.session.api.guilds(guildId)["welcome-screen"].patch<APIGuildWelcomeScreen>({ body: options });
+		return this.session.api.guilds(guildId)['welcome-screen'].patch<APIGuildWelcomeScreen>({ body: options });
 	}
 }
 
-export type RESTGetAPIChannelThreadsArchivedOptions = ({ type: "private" } | { type: "public" }) &
+export type RESTGetAPIChannelThreadsArchivedOptions = ({ type: 'private' } | { type: 'public' }) &
 	RESTGetAPIChannelThreadsArchivedQuery;

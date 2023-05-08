@@ -23,7 +23,7 @@
 		}
 	},
 	"dependencies": {
-		"@biscuitland/common": "^2.3.0"
+		"@biscuitland/common": "^0.0.1"
 	},
 	"devDependencies": {
 		"@types/node": "^18.7.14",

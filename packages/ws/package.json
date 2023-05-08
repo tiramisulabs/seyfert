@@ -39,8 +39,7 @@
 	"contributors": [
 		{
 			"name": "Yuzuru",
-			"url": "https://github.com/yuzudev",
-			"author": true
+			"url": "https://github.com/yuzudev"
 		},
 		{
 			"name": "miia",
@@ -52,7 +51,8 @@
 		},
 		{
 			"name": "socram03",
-			"url": "https://github.com/socram03"
+			"url": "https://github.com/socram03",
+			"author": true
 		},
 		{
 			"name": "Drylozu",

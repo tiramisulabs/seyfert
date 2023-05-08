@@ -18,9 +18,9 @@ import {
 	APIApplicationCommandRoleOption,
 	APIApplicationCommandMentionableOption,
 	APIApplicationCommandAttachmentOption,
-	APIApplicationCommandBooleanOption,
-} from "@biscuitland/common";
-import { OptionValuesLength } from "../../";
+	APIApplicationCommandBooleanOption
+} from '@biscuitland/common';
+import { OptionValuesLength } from '../../';
 
 export type SlashBaseOptionTypes =
 	| Exclude<APIApplicationCommandOption, AACSO | AACNO | AACIO | AACSCO>
@@ -51,7 +51,7 @@ export abstract class SlashBaseOption<DataType extends SlashBaseOptionTypes> {
 		return this;
 	}
 
-	addLocalizations(locals: RestToKeys<[LocalizationMap, "name", "description"]>): this {
+	addLocalizations(locals: RestToKeys<[LocalizationMap, 'name', 'description']>): this {
 		this.data.name_localizations = locals.name;
 		this.data.description_localizations = locals.description;
 		return this;
@@ -311,7 +311,7 @@ export class SlashSubcommandOption extends SlashBaseOption<APIApplicationCommand
 		return this;
 	}
 
-	addRawOption(option: ReturnType<BasicSlashOptions["toJSON"]>) {
+	addRawOption(option: ReturnType<BasicSlashOptions['toJSON']>) {
 		this.data.options ??= [];
 		this.data.options.push(option);
 	}
@@ -333,7 +333,7 @@ export class SlashSubcommandGroupOption extends SlashBaseOption<APIApplicationCo
 		return this;
 	}
 
-	addRawOption(option: ReturnType<SlashSubcommandOption["toJSON"]>) {
+	addRawOption(option: ReturnType<SlashSubcommandOption['toJSON']>) {
 		this.data.options ??= [];
 		this.data.options.push(option);
 	}
