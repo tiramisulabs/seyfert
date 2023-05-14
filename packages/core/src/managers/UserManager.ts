@@ -12,7 +12,7 @@ export class UserManager {
 	}
 
 	async fetch(userId: string) {
-		return await this.session.api.users(userId).get<APIUser>();
+		return await this.session.api.users(userId).get();
 	}
 
 	avatarURL(user: APIUser, { size, format }: ImageOptions) {

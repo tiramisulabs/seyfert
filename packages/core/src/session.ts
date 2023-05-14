@@ -16,7 +16,7 @@ export class Session<On extends boolean = boolean> extends EventEmitter2 {
 		this.managers = new MainManager(this);
 	}
 	rest: BiscuitREST;
-	api: Routes<BiscuitREST>;
+	api: Routes;
 	cdn: CDNRoutes;
 	managers: MainManager;
 	gateway!: When<On, GatewayManager>;

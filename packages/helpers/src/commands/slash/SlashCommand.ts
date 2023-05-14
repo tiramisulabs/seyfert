@@ -4,7 +4,7 @@ import {
 	RESTPostAPIChatInputApplicationCommandsJSONBody,
 	applyToClass
 } from '@biscuitland/common';
-import { AllSlashOpitions, SlashSubcommandGroupOption, SlashSubcommandOption } from './SlashCommandOption';
+import { AllSlashOptions, SlashSubcommandGroupOption, SlashSubcommandOption } from './SlashCommandOption';
 import { PermissionsStrings } from '../../Utils';
 
 class SlashCommandB {
@@ -37,8 +37,9 @@ class SlashCommandB {
 		return this;
 	}
 
-	addRawOption(option: ReturnType<AllSlashOpitions['toJSON']>) {
+	addRawOption(option: ReturnType<AllSlashOptions['toJSON']>) {
 		this.data.options ??= [];
+		// @ts-expect-error discord-api-types bad typing, again
 		this.data.options.push(option);
 	}
 
@@ -46,7 +47,9 @@ class SlashCommandB {
 		return {
 			...this.data,
 			type: ApplicationCommandType.ChatInput
-		} as RESTPostAPIChatInputApplicationCommandsJSONBody & { type: ApplicationCommandType.ChatInput };
+		} as RESTPostAPIChatInputApplicationCommandsJSONBody & {
+			type: ApplicationCommandType.ChatInput;
+		};
 	}
 }
 
