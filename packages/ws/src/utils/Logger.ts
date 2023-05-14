@@ -1,4 +1,4 @@
-import { bgBrightWhite, black, bold, cyan, gray, italic, red, yellow } from './Util';
+import { bgBrightWhite, black, bold, cyan, gray, italic, red, yellow } from '@biscuitland/common';
 
 export enum LogLevels {
 	Debug = 0,

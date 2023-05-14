@@ -16,22 +16,22 @@ export class Router<CustomRestAdapter extends BiscuitREST> {
 		return;
 	};
 
-	constructor(private rest: CustomRestAdapter) {}
+	constructor(private rest: CustomRestAdapter) { }
 
-	createProxy<T extends CustomRestAdapter>(route = [] as string[]): Routes<T> {
+	createProxy(route = [] as string[]): Routes {
 		return new Proxy(this.noop, {
 			get: (_, key: string) => {
 				if (RequestMethod[key]) {
 					return (...options: any[]) => this.rest[key](route.join('/'), ...options);
 				}
 				route.push(key);
-				return this.createProxy<T>(route);
+				return this.createProxy(route);
 			},
 			apply: (...[, _, args]) => {
 				route.push(...args.filter((x) => x != null));
-				return this.createProxy<T>(route);
+				return this.createProxy(route);
 			}
-		}) as unknown as Routes<T>;
+		}) as unknown as Routes;
 	}
 }
 
@@ -47,7 +47,6 @@ export class CDN {
 						const lastRoute = `${CDN_URL}/${route.join('/')}`;
 						if (value) {
 							if (typeof value !== 'string') {
-								// rome-ignore lint/nursery/noParameterAssign: better than alias
 								value = String(value);
 							}
 							return `${lastRoute}/${value}`;

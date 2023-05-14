@@ -36,7 +36,9 @@ export type ApplicationCommandBasicOptions =
 	| APIApplicationCommandMentionableOption
 	| APIApplicationCommandNumberOption
 	| APIApplicationCommandStringOption
-	| APIApplicationCommandRoleOption;
+	| APIApplicationCommandRoleOption
+	| APIApplicationCommandBooleanOption
+	| APIApplicationCommandUserOption;
 
 export abstract class SlashBaseOption<DataType extends SlashBaseOptionTypes> {
 	constructor(public data: Partial<DataType> = {}) {}
@@ -250,7 +252,9 @@ export type BasicSlashOptions =
 	| SlashUserOption
 	| SlashBooleanOption;
 
-export type APIApplicationCommandSubcommandOption = AACSCO & { options?: ApplicationCommandBasicOptions[] };
+export type APIApplicationCommandSubcommandOption = AACSCO & {
+	options?: ApplicationCommandBasicOptions[];
+};
 
 export class SlashSubcommandOption extends SlashBaseOption<APIApplicationCommandSubcommandOption> {
 	constructor(data: Partial<APIApplicationCommandSubcommandOption> = {}) {
@@ -311,15 +315,17 @@ export class SlashSubcommandOption extends SlashBaseOption<APIApplicationCommand
 		return this;
 	}
 
-	addRawOption(option: ReturnType<BasicSlashOptions['toJSON']>) {
+	addRawOption(option: ApplicationCommandBasicOptions) {
 		this.data.options ??= [];
 		this.data.options.push(option);
 	}
 }
 
-export type APIApplicationCommandSubcommandGroupOption = AACSGO & { options?: APIApplicationCommandSubcommandOption[] };
+export type APIApplicationCommandSubcommandGroupOption = AACSGO & {
+	options?: APIApplicationCommandSubcommandOption[];
+};
 
-export type AllSlashOpitions = BasicSlashOptions | SlashSubcommandGroupOption | SlashSubcommandOption;
+export type AllSlashOptions = BasicSlashOptions | SlashSubcommandGroupOption | SlashSubcommandOption;
 
 export class SlashSubcommandGroupOption extends SlashBaseOption<APIApplicationCommandSubcommandGroupOption> {
 	constructor(data: Partial<APIApplicationCommandSubcommandGroupOption> = {}) {

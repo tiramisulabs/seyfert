@@ -1,6 +1,6 @@
-import type { RequestData } from '@discordjs/rest';
+import type { RawFile, RequestData } from '@discordjs/rest';
 import { REST } from '@discordjs/rest';
-import type { Identify, Tail } from '@biscuitland/common';
+import type { Identify } from '@biscuitland/common';
 import type { RequestMethod } from './Router';
 export class BiscuitREST {
 	api: REST;
@@ -9,44 +9,52 @@ export class BiscuitREST {
 		this.api = new REST(restOptions).setToken(token);
 	}
 
-	async get<T>(route: string, options?: RequestOptions): Promise<T> {
+	async get<T>(route: string, options?: RequestObject<RequestMethod.Get>): Promise<T> {
 		const data = await this.api.get(route as `/${string}`, {
-			...options
+			...options,
+			query: options?.query ? new URLSearchParams(options.query) : undefined
 		});
 
 		return data as T;
 	}
 
-	async post<T>(route: string, body?: RequestBody, options?: RequestOptions): Promise<T> {
+	async post<T>(route: string, body?: RequestObject<RequestMethod.Post>): Promise<T> {
 		const data = await this.api.post(route as `/${string}`, {
-			...options,
-			...body
+			...body,
+			body: body?.body,
+			query: body?.query ? new URLSearchParams(body.query) : undefined,
+			files: body?.files
 		});
 
 		return data as T;
 	}
 
-	async put<T>(route: string, body?: RequestBody, options?: RequestOptions): Promise<T> {
+	async put<T>(route: string, body?: RequestObject<RequestMethod.Put>): Promise<T> {
 		const data = await this.api.put(route as `/${string}`, {
-			...options,
-			...body
+			...body,
+			body: body?.body,
+			query: body?.query ? new URLSearchParams(body.query) : undefined,
+			files: body?.files
 		});
 
 		return data as T;
 	}
 
-	async patch<T>(route: string, body?: RequestBody, options?: RequestOptions): Promise<T> {
+	async patch<T>(route: string, body?: RequestObject<RequestMethod.Patch>): Promise<T> {
 		const data = await this.api.patch(route as `/${string}`, {
-			...options,
-			...body
+			...body,
+			body: body?.body,
+			query: body?.query ? new URLSearchParams(body.query) : undefined,
+			files: body?.files
 		});
 
 		return data as T;
 	}
 
-	async delete<T>(route: string, options?: RequestOptions): Promise<T> {
+	async delete<T>(route: string, options?: RequestObject<RequestMethod.Delete>): Promise<T> {
 		const data = await this.api.delete(route as `/${string}`, {
-			...options
+			...options,
+			query: options?.query ? new URLSearchParams(options.query) : undefined
 		});
 
 		return data as T;
@@ -55,8 +63,17 @@ export class BiscuitREST {
 
 export type BiscuitRESTOptions = Identify<ConstructorParameters<typeof REST>[0] & { token: string }>;
 
-export type RequestOptions = Pick<RequestData, 'passThroughBody' | 'query' | 'reason'>;
+export type RequestOptions = Pick<RequestData, 'passThroughBody' | 'reason'>;
 
-export type RequestBody = Pick<RequestData, 'files' | 'body'>;
+export type RequestObject<M extends RequestMethod, B = Record<string, any>, Q = Record<string, any>> = {
+	query?: Q;
+} & RequestOptions &
+	(M extends `${RequestMethod.Get}`
+		? // rome-ignore lint/nursery/noBannedTypes: bro
+		{}
+		: {
+			body?: B;
+			files?: RawFile[];
+		});
 
-export type RestArguments<RA extends BiscuitREST, M extends `${RequestMethod}`> = Tail<Parameters<RA[M]>>;
+export type RestArguments<M extends RequestMethod, B = unknown, Q = unknown> = RequestObject<M, B, Q>;
