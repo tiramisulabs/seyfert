@@ -3,9 +3,9 @@ import type { Session, ImageOptions } from '../index';
 import { formatImageURL } from '../index';
 
 export class MemberManager {
-	constructor(private readonly session: Session) {}
+	constructor(private readonly session: Session) { }
 
-	dynamicAvatarURL({ avatar, guild_id, user }: FullMember, { size, format }: ImageOptions): string {
+	dynamicAvatarURL({ avatar, guild_id, user }: DynamicMember, { size, format }: ImageOptions): string {
 		if (avatar?.length) {
 			return formatImageURL(this.session.cdn.guilds(guild_id).users(user.id).avatars(avatar).get(), size, format);
 		}
@@ -14,4 +14,6 @@ export class MemberManager {
 	}
 }
 
-export type FullMember = MakeRequired<APIGuildMember, 'user'> & { guild_id: string };
+export type DynamicMember = MakeRequired<APIGuildMember, 'user'> & {
+	guild_id: string;
+};

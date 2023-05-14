@@ -336,7 +336,12 @@ export class Shard {
 				this.heart.lastBeat = Date.now();
 				// Discord randomly sends this requiring an immediate heartbeat back.
 				// Using a direct socket.send call here because heartbeat requests are reserved by us.
-				this.socket?.send(JSON.stringify({ op: GatewayOpcodes.Heartbeat, d: this.previousSequenceNumber }));
+				this.socket?.send(
+					JSON.stringify({
+						op: GatewayOpcodes.Heartbeat,
+						d: this.previousSequenceNumber
+					})
+				);
 				// hearbeat event
 				break;
 			case GatewayOpcodes.Hello: {
@@ -385,7 +390,12 @@ export class Shard {
 			this.logger.info(`start heartbeting shard #${this.id} c ${this.previousSequenceNumber}`);
 
 			// Using a direct socket.send call here because heartbeat requests are reserved by us.
-			this.socket?.send(JSON.stringify({ op: GatewayOpcodes.Heartbeat, d: this.previousSequenceNumber }));
+			this.socket?.send(
+				JSON.stringify({
+					op: GatewayOpcodes.Heartbeat,
+					d: this.previousSequenceNumber
+				})
+			);
 
 			this.logger.info(`start hearting shard #${this.id} d`);
 			this.heart.lastBeat = Date.now();
@@ -414,7 +424,12 @@ export class Shard {
 
 				this.logger.info(`start Heartbeating Shard #${this.id} g`);
 				// Using a direct socket.send call here because heartbeat requests are reserved by us.
-				this.socket?.send(JSON.stringify({ op: GatewayOpcodes.Heartbeat, d: this.previousSequenceNumber }));
+				this.socket?.send(
+					JSON.stringify({
+						op: GatewayOpcodes.Heartbeat,
+						d: this.previousSequenceNumber
+					})
+				);
 				this.heart.lastBeat = Date.now();
 
 				// heartbeat event

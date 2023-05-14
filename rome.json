@@ -1,34 +1,35 @@
 {
-  "linter": {
-    "enabled": true,
-    "rules": {
-      "all": true,
-      "style": {
-        "useWhile": "off",
-        "noNonNullAssertion": "off"
-      },
-      "suspicious": {
-        "noExplicitAny": "off"
-      },
-      "nursery": {
-        "useCamelCase": "off"
-      }
-    }
-  },
-  "formatter": {
-    "enabled": true,
-    "indentSize": 2,
-    "indentStyle": "tab",
-    "lineWidth": 120,
-    "formatWithErrors": true
-  },
-  "files": {
-    "ignore": [
-      "node_modules/",
-      "build",
-      "dist",
-      "tsup.config.ts",
-      "__test__"
-    ]
-  }
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"all": true,
+			"style": {
+				"useWhile": "off",
+				"noNonNullAssertion": "off",
+				"noParameterAssign": "off"
+			},
+			"suspicious": {
+				"noExplicitAny": "off"
+			},
+			"nursery": {
+				"useCamelCase": "off"
+			}
+		}
+	},
+	"formatter": {
+		"enabled": true,
+		"indentSize": 2,
+		"indentStyle": "tab",
+		"lineWidth": 120,
+		"formatWithErrors": true
+	},
+	"files": {
+		"ignore": [
+			"node_modules/",
+			"build",
+			"dist",
+			"tsup.config.ts",
+			"__test__"
+		]
+	}
 }

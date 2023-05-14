@@ -6,6 +6,8 @@ export type Tail<A> = A extends [unknown, ...infer rest]
 	? first[]
 	: never;
 
+export type ValueOf<T> = T[keyof T];
+
 export type ArrayFirsElement<A> = A extends [...infer arr] ? arr[0] : never;
 
 export type RestToKeys<T extends unknown[]> = T extends [infer V, ...infer Keys]
@@ -21,8 +23,8 @@ export type When<T extends boolean, A, B = never> = T extends true ? A : B;
 export type PickPartial<T, K extends keyof T> = {
 	[P in keyof T]?: T[P] | undefined;
 } & {
-	[P in K]: T[P];
-};
+		[P in K]: T[P];
+	};
 
 export type MakeRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
 
@@ -32,8 +34,8 @@ export type CamelCase<S extends string> = S extends `${infer P1}_${infer P2}${in
 
 export type SnakeCase<S extends string> = S extends `${infer A}${infer Rest}`
 	? A extends Uppercase<A>
-		? `_${Lowercase<A>}${SnakeCase<Rest>}`
-		: `${A}${SnakeCase<Rest>}`
+	? `_${Lowercase<A>}${SnakeCase<Rest>}`
+	: `${A}${SnakeCase<Rest>}`
 	: Lowercase<S>;
 
 export type ObjectToLower<T> = Identify<{

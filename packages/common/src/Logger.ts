@@ -13,7 +13,11 @@ export enum LogDepth {
 	Full = 1
 }
 
-export type LoggerOptions = { logLevel?: LogLevels; name?: string; active?: boolean };
+export type LoggerOptions = {
+	logLevel?: LogLevels;
+	name?: string;
+	active?: boolean;
+};
 
 export class Logger {
 	readonly options: Required<LoggerOptions>;

@@ -1,5 +1,5 @@
 import logger from './Logger';
-import { delay } from './Util';
+import { delay } from '@biscuitland/common';
 
 export class LeakyBucket implements LeakyBucketOptions {
 	max: number;

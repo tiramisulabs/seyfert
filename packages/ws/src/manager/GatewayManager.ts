@@ -21,7 +21,10 @@ export class GatewayManager {
 				(options.totalShards ? options.totalShards - 1 : options.connection ? options.connection.shards - 1 : 0)
 		});
 		if (this.options.cache) this.cache = new Collection();
-		this.logger = new Logger({ name: '[GatewayManager]', active: options.debug });
+		this.logger = new Logger({
+			name: '[GatewayManager]',
+			active: options.debug
+		});
 	}
 
 	calculateTotalShards(): number {

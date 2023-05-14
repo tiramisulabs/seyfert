@@ -138,7 +138,9 @@ export type AtLeastOne<
 export type ClientUser = { bot: true } & APIUser;
 
 export interface Events {
-	[GatewayDispatchEvents.Ready]: GatewayReadyDispatchData & { user: ClientUser };
+	[GatewayDispatchEvents.Ready]: GatewayReadyDispatchData & {
+		user: ClientUser;
+	};
 	[GatewayDispatchEvents.ChannelUpdate]: GatewayChannelUpdateDispatchData;
 	[GatewayDispatchEvents.AutoModerationActionExecution]: GatewayAutoModerationActionExecutionDispatchData;
 	[GatewayDispatchEvents.ThreadCreate]: GatewayThreadCreateDispatchData;
