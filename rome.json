@@ -5,8 +5,7 @@
 			"all": true,
 			"style": {
 				"useWhile": "off",
-				"noNonNullAssertion": "off",
-				"noParameterAssign": "off"
+				"noNonNullAssertion": "off"
 			},
 			"suspicious": {
 				"noExplicitAny": "off"
