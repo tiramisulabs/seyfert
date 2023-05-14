@@ -343,7 +343,7 @@ export interface Routes {
 				): Promise<RESTPatchAPIGuildWelcomeScreenResult>;
 			};
 			// onboarding: {
-			// 	get(args:RestArguments<RequestMethod.Get,boarding>);
+			// 	get(args:RestArguments<RequestMethod.Get,boarding>)
 			// }
 			emojis: {
 				get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIGuildEmojisResult>;
