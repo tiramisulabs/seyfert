@@ -344,7 +344,6 @@ export interface Routes {
 			};
 			// onboarding: {
 			// 	get(args:RestArguments<RequestMethod.Get,boarding>);
-			//
 			// }
 			emojis: {
 				get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIGuildEmojisResult>;
