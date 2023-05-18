@@ -1,7 +1,7 @@
 {
-	"extends": ["./tsconfig.json"],
-	"compilerOptions": {
-		"outDir": "./tests"
-	},
-	"include": ["./tests/connection.spec.ts"]
+  "extends": ["./tsconfig.json"],
+  "compilerOptions": {
+    "outDir": "./tests"
+  },
+  "include": ["./tests/connection.spec.ts"]
 }
