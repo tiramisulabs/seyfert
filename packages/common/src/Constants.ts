@@ -12,9 +12,9 @@ export const GATEWAY_BASE_URL = 'wss://gateway.discord.gg/?v=10&encoding=json';
 export const OK_STATUS_CODES = [200, 201, 204, 304];
 
 export enum HTTPMethods {
-	Delete = 'DELETE',
-	Get = 'GET',
-	Patch = 'PATCH',
-	Post = 'POST',
-	Put = 'PUT'
+  Delete = 'DELETE',
+  Get = 'GET',
+  Patch = 'PATCH',
+  Post = 'POST',
+  Put = 'PUT'
 }

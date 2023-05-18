@@ -19,7 +19,7 @@
 	"formatter": {
 		"enabled": true,
 		"indentSize": 2,
-		"indentStyle": "tab",
+		"indentStyle": "space",
 		"lineWidth": 120,
 		"formatWithErrors": true
 	},

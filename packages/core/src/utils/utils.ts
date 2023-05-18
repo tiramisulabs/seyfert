@@ -9,7 +9,7 @@ import type { ImageSize } from './types';
  * @returns The snowflake.
  */
 export function snowflakeToTimestamp(id: string): number {
-	return (Number(id) >> 22) + DiscordEpoch;
+  return (Number(id) >> 22) + DiscordEpoch;
 }
 
 /**
@@ -20,7 +20,7 @@ export function snowflakeToTimestamp(id: string): number {
  * @returns The formatted URL.
  */
 export function formatImageURL(url: string, size: ImageSize = 128, format?: ImageFormat): string {
-	return `${url}.${format ?? (url.includes('/a_') ? 'gif' : 'jpg')}?size=${size}`;
+  return `${url}.${format ?? (url.includes('/a_') ? 'gif' : 'jpg')}?size=${size}`;
 }
 
 /**
@@ -30,7 +30,7 @@ export function formatImageURL(url: string, size: ImageSize = 128, format?: Imag
  * @warning Discord staff has mentioned this may not be stable forever xd.
  */
 export function getBotIdFromToken(token: string): string {
-	return Buffer.from(token.split('.')[0], 'base64').toString('ascii');
+  return Buffer.from(token.split('.')[0], 'base64').toString('ascii');
 }
 
 /**
@@ -39,13 +39,13 @@ export function getBotIdFromToken(token: string): string {
  * @returns The URLSearchParams object.
  */
 export function objectToParams(obj: object): URLSearchParams {
-	const query = new URLSearchParams();
-	for (const [key, value] of Object.entries(obj)) {
-		if (!value) continue;
-		query.append(ReplaceRegex.camel(key), String(value));
-	}
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(obj)) {
+    if (!value) continue;
+    query.append(ReplaceRegex.camel(key), String(value));
+  }
 
-	return query;
+  return query;
 }
 
 /**
@@ -56,5 +56,5 @@ export function objectToParams(obj: object): URLSearchParams {
  * @returns The channel link.
  */
 export function channelLink(channelId: string, guildId?: string) {
-	return `https://discord.com/channels/${guildId ?? '@me'}/${channelId}`;
+  return `https://discord.com/channels/${guildId ?? '@me'}/${channelId}`;
 }
