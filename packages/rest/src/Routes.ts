@@ -53,7 +53,6 @@ import {
   RESTGetAPIChannelThreadsArchivedPublicResult,
   RESTGetAPIChannelThreadsArchivedQuery,
   RESTGetAPIChannelUsersThreadsArchivedResult,
-  RESTGetAPIChannelWebhooksResult,
   RESTGetAPICurrentUserApplicationRoleConnectionResult,
   RESTGetAPICurrentUserConnectionsResult,
   RESTGetAPICurrentUserGuildsQuery,
@@ -603,7 +602,7 @@ export interface Routes {
       post(args?: RestArguments<RequestMethod.Post>): Promise<RESTPostAPIChannelTypingResult>;
     };
     webhooks: {
-      get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIChannelWebhooksResult>;
+      get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIGuildWebhooksResult>;
       post(
         args: RestArguments<RequestMethod.Post, RESTPostAPIChannelWebhookJSONBody>,
       ): Promise<RESTPostAPIChannelWebhookResult>;
