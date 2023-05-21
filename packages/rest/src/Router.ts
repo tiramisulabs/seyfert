@@ -16,7 +16,7 @@ export class Router {
     return;
   };
 
-  constructor(private rest: BiscuitREST) { }
+  constructor(private rest: BiscuitREST) {}
 
   createProxy(route = [] as string[]): Routes {
     return new Proxy(this.noop, {
