@@ -12,16 +12,16 @@ import {
   RESTPostAPIWebhookWithTokenQuery,
   RESTPostAPIWebhookWithTokenSlackQuery,
   RESTPostAPIWebhookWithTokenSlackWaitResult,
-  RESTPostAPIWebhookWithTokenWaitResult,
-} from "@biscuitland/common";
-import type { Session } from "..";
+  RESTPostAPIWebhookWithTokenWaitResult
+} from '@biscuitland/common';
+import type { Session } from '..';
 
 export class WebhookManager {
   readonly session!: Session;
   constructor(session: Session) {
-    Object.defineProperty(this, "session", {
+    Object.defineProperty(this, 'session', {
       value: session,
-      writable: false,
+      writable: false
     });
   }
 
@@ -42,14 +42,11 @@ export class WebhookManager {
     return this.session.api.webhooks(webhookdId)(token).get();
   }
 
-  edit(
-    webhookId: string,
-    body: RESTPatchAPIWebhookJSONBody,
-  ): Promise<RESTPatchAPIWebhookResult>;
+  edit(webhookId: string, body: RESTPatchAPIWebhookJSONBody): Promise<RESTPatchAPIWebhookResult>;
   edit(
     webhookId: string,
     body: RESTPatchAPIWebhookWithTokenJSONBody,
-    token: string,
+    token: string
   ): Promise<RESTPatchAPIWebhookWithTokenResult>;
   edit(webhookId: string, body: RESTPatchAPIWebhookJSONBody, token?: string) {
     if (!token?.length) {
@@ -67,17 +64,17 @@ export class WebhookManager {
     webhookId: string,
     token: string,
     body: RESTPostAPIWebhookWithTokenJSONBody,
-    query: Identify<RESTPostAPIWebhookWithTokenQuery & { wait: true }>,
+    query: Identify<RESTPostAPIWebhookWithTokenQuery & { wait: true }>
   ): Promise<RESTPostAPIWebhookWithTokenWaitResult>;
   execute(
     webhookId: string,
     token: string,
     body: RESTPostAPIWebhookWithTokenJSONBody,
-    query?: RESTPostAPIWebhookWithTokenQuery,
+    query?: RESTPostAPIWebhookWithTokenQuery
   ) {
     return this.session.api.webhooks(webhookId)(token).post({
       body,
-      query,
+      query
     });
   }
 
@@ -85,17 +82,17 @@ export class WebhookManager {
     webhookId: string,
     token: string,
     body: RESTPostAPIWebhookWithTokenJSONBody,
-    query: Identify<RESTPostAPIWebhookWithTokenGitHubQuery & { wait: true }>,
+    query: Identify<RESTPostAPIWebhookWithTokenGitHubQuery & { wait: true }>
   ): Promise<RESTPostAPIWebhookWithTokenGitHubWaitResult>;
   executeGithub(
     webhookId: string,
     token: string,
     body: RESTPostAPIWebhookWithTokenJSONBody,
-    query?: RESTPostAPIWebhookWithTokenGitHubQuery,
+    query?: RESTPostAPIWebhookWithTokenGitHubQuery
   ) {
     return this.session.api.webhooks(webhookId)(token).github.post({
       body,
-      query,
+      query
     });
   }
 
@@ -103,28 +100,23 @@ export class WebhookManager {
     webhookId: string,
     token: string,
     body: RESTPostAPIWebhookWithTokenJSONBody,
-    query: Identify<RESTPostAPIWebhookWithTokenSlackQuery & { wait: true }>,
+    query: Identify<RESTPostAPIWebhookWithTokenSlackQuery & { wait: true }>
   ): Promise<RESTPostAPIWebhookWithTokenSlackWaitResult>;
   executeSlack(
     webhookId: string,
     token: string,
     body: RESTPostAPIWebhookWithTokenJSONBody,
-    query?: RESTPostAPIWebhookWithTokenSlackQuery,
+    query?: RESTPostAPIWebhookWithTokenSlackQuery
   ) {
     return this.session.api.webhooks(webhookId)(token).slack.post({
       body,
-      query,
+      query
     });
   }
 
-  getMessage(
-    webhookId: string,
-    token: string,
-    messageId: string,
-    query?: { thread_id?: string },
-  ) {
+  getMessage(webhookId: string, token: string, messageId: string, query?: { thread_id?: string }) {
     return this.session.api.webhooks(webhookId)(token).messages(messageId).get({
-      query,
+      query
     });
   }
 
@@ -133,19 +125,12 @@ export class WebhookManager {
     token: string,
     messageId: string,
     body: RESTPatchAPIWebhookWithTokenMessageJSONBody,
-    query?: { thread_id?: string },
+    query?: { thread_id?: string }
   ) {
-    return this.session.api.webhooks(webhookId)(token).messages(messageId)
-      .patch({ query, body });
+    return this.session.api.webhooks(webhookId)(token).messages(messageId).patch({ query, body });
   }
 
-  deleteMessage(
-    webhookId: string,
-    token: string,
-    messageId: string,
-    query?: { thread_id?: string },
-  ) {
-    return this.session.api.webhooks(webhookId)(token).messages(messageId)
-      .delete({ query });
+  deleteMessage(webhookId: string, token: string, messageId: string, query?: { thread_id?: string }) {
+    return this.session.api.webhooks(webhookId)(token).messages(messageId).delete({ query });
   }
 }

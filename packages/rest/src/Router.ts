@@ -11,18 +11,20 @@ export enum RequestMethod {
   Put = 'put'
 }
 
+const ArrRequestsMethods = Object.values(RequestMethod) as string[];
+
 export class Router {
   noop = () => {
     return;
   };
 
-  constructor(private rest: BiscuitREST) { }
+  constructor(private rest: BiscuitREST) {}
 
   createProxy(route = [] as string[]): Routes {
     return new Proxy(this.noop, {
       get: (_, key: string) => {
-        if (RequestMethod[key]) {
-          return (...options: any[]) => this.rest[key](route.join('/'), ...options);
+        if (ArrRequestsMethods.includes(key)) {
+          return (...options: any[]) => this.rest[key](`/${route.join('/')}`, ...options);
         }
         route.push(key);
         return this.createProxy(route);
@@ -47,6 +49,7 @@ export class CDN {
             const lastRoute = `${CDN_URL}/${route.join('/')}`;
             if (value) {
               if (typeof value !== 'string') {
+                // rome-ignore lint/style/noParameterAssign: ?!
                 value = String(value);
               }
               return `${lastRoute}/${value}`;
