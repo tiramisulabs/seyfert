@@ -60,7 +60,7 @@ export class Logger {
     const log = [
       bgBrightWhite(black(`[${date.toLocaleDateString()} ${date.toLocaleTimeString()}]`)),
       color(Logger.prefixes.get(level) ?? 'DEBUG'),
-      name ? `${name} >` : '>',
+      this.name ? `${this.name} >` : '>',
       ...args
     ];
 

@@ -58,6 +58,8 @@ import {
   RESTGetAPICurrentUserGuildsQuery,
   RESTGetAPICurrentUserGuildsResult,
   RESTGetAPICurrentUserResult,
+  RESTGetAPIGatewayBotResult,
+  RESTGetAPIGatewayResult,
   RESTGetAPIGuildApplicationCommandsPermissionsResult,
   RESTGetAPIGuildBanResult,
   RESTGetAPIGuildBansQuery,
@@ -801,6 +803,15 @@ export interface Routes {
           post(args: RestArguments<RequestMethod.Post, RESTPostAPIInteractionCallbackJSONBody>): Promise<never>;
         };
       };
+    };
+  };
+}
+
+export interface Routes {
+  gateway: {
+    get(args: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIGatewayResult>;
+    bot: {
+      get(args: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIGatewayBotResult>;
     };
   };
 }
