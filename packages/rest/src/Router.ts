@@ -1,6 +1,5 @@
 import { CDN_URL } from '@biscuitland/common';
-import type { CDNRoutes } from './CDN';
-import type { Routes } from './Routes';
+import type { CDNRoutes, Routes } from './';
 import { BiscuitREST } from './REST';
 
 export enum RequestMethod {

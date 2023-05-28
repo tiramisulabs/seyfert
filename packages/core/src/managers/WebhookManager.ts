@@ -64,7 +64,7 @@ export class WebhookManager {
     webhookId: string,
     token: string,
     body: RESTPostAPIWebhookWithTokenJSONBody,
-    query: Identify<RESTPostAPIWebhookWithTokenQuery & { wait: true }>
+    query: RESTPostAPIWebhookWithTokenWaitQuery
   ): Promise<RESTPostAPIWebhookWithTokenWaitResult>;
   execute(
     webhookId: string,
@@ -134,3 +134,5 @@ export class WebhookManager {
     return this.session.api.webhooks(webhookId)(token).messages(messageId).delete({ query });
   }
 }
+
+export type RESTPostAPIWebhookWithTokenWaitQuery = Identify<RESTPostAPIWebhookWithTokenQuery & { wait: true }>;
