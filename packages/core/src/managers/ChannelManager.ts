@@ -1,13 +1,27 @@
-import {
+import type {
   APIChannel,
-  APIMessage,
   RESTPostAPIChannelMessageJSONBody,
-  APIWebhook,
   RESTPatchAPIChannelJSONBody,
-  RESTGetAPIChannelThreadsArchivedQuery
+  RESTGetAPIChannelThreadsArchivedQuery,
+  RESTGetAPIChannelMessageReactionUsersQuery,
+  RESTPatchAPIChannelMessageJSONBody,
+  RESTPostAPIChannelMessagesBulkDeleteJSONBody,
+  RESTPutAPIChannelPermissionJSONBody,
+  RESTPostAPIChannelInviteJSONBody,
+  RESTPostAPIChannelFollowersJSONBody,
+  RESTPutAPIChannelRecipientJSONBody,
+  RESTPostAPIChannelMessagesThreadsJSONBody,
+  RESTPostAPIChannelThreadsJSONBody,
+  RESTPostAPIChannelThreadsResult,
+  RESTPostAPIGuildForumThreadsJSONBody,
+  RESTGetAPIChannelThreadMembersQuery,
+  RESTGetAPIChannelThreadMemberQuery,
+  RESTPostAPIChannelWebhookJSONBody,
+  RESTPatchAPIStageInstanceJSONBody
 } from '@biscuitland/common';
+import type { RawFile } from '@biscuitland/rest';
 
-import { Session } from '../session';
+import type { Session } from '../session';
 
 export class ChannelManager {
   readonly session!: Session;
@@ -18,49 +32,45 @@ export class ChannelManager {
     });
   }
 
-  async fetch<T extends APIChannel = APIChannel>(id: string): Promise<T> {
-    return (await this.session.api.channels(id).get()) as T;
+  get<T extends APIChannel = APIChannel>(id: string) {
+    return this.session.api.channels(id).get() as Promise<T>;
   }
 
-  async fetchWebhooks(channelId: string): Promise<Map<string, APIWebhook> | null> {
-    const webhooks = await this.session.api.channels(channelId).webhooks.get();
-
-    if (!webhooks.length) return null;
-
-    return webhooks.reduce((data, webhook) => data.set(webhook.id, webhook), new Map());
+  getWebhooks(channelId: string) {
+    return this.session.api.channels(channelId).webhooks.get();
   }
 
-  async edit(id: string, data: RESTPatchAPIChannelJSONBody) {
+  createWebhook(channelId: string, body: RESTPostAPIChannelWebhookJSONBody) {
+    return this.session.api.channels(channelId).webhooks.post({ body });
+  }
+
+  edit(id: string, data: RESTPatchAPIChannelJSONBody) {
     return this.session.api.channels(id).patch({ body: data });
   }
 
-  async delete(id: string) {
+  delete(id: string) {
     return this.session.api.channels(id).delete();
   }
 
-  async fetchMessages(id: string, limit = 50): Promise<Map<string, APIMessage> | null> {
-    const messages = await this.session.api.channels(id).messages.get({
+  getMessages(id: string, limit = 50) {
+    return this.session.api.channels(id).messages.get({
       query: { limit }
     });
-
-    if (!messages.length) return null;
-
-    return messages.reduce((data, message) => data.set(message.id, message), new Map());
   }
 
-  async fetchMessage(id: string, messageId: string) {
+  getMessage(id: string, messageId: string) {
     return this.session.api.channels(id).messages(messageId).get();
   }
 
-  async createMessage(id: string, data: RESTPostAPIChannelMessageJSONBody) {
+  createMessage(id: string, data: RESTPostAPIChannelMessageJSONBody) {
     return this.session.api.channels(id).messages.post({ body: data });
   }
 
-  async sendTyping(id: string) {
-    await this.session.api.channels(id).typing.post();
+  sendTyping(id: string) {
+    return this.session.api.channels(id).typing.post();
   }
 
-  async getArchivedThreads(channelId: string, options: RESTGetAPIChannelThreadsArchivedOptions) {
+  getArchivedThreads(channelId: string, options: RESTGetAPIChannelThreadsArchivedOptions) {
     const { type, ...query } = options;
     if (type === 'private') {
       return this.session.api.channels(channelId).threads.archived.private.get({ query });
@@ -68,7 +78,151 @@ export class ChannelManager {
 
     return this.session.api.channels(channelId).threads.archived.public.get({ query });
   }
+
+  crosspostMessage(channelId: string, messageId: string) {
+    return this.session.api.channels(channelId).messages(messageId).crosspost.post({});
+  }
+
+  createReaction(channelId: string, messageId: string, emoji: string) {
+    return this.session.api.channels(channelId).messages(messageId).reactions(emoji)('@me').put({});
+  }
+
+  deleteReaction(channelId: string, messageId: string, emoji: string, user = '@me') {
+    return this.session.api.channels(channelId).messages(messageId).reactions(emoji)(user).delete();
+  }
+
+  getReactions(
+    channelId: string,
+    messageId: string,
+    emoji: string,
+    query?: RESTGetAPIChannelMessageReactionUsersQuery
+  ) {
+    return this.session.api.channels(channelId).messages(messageId).reactions(emoji).get({ query });
+  }
+
+  deleteAllReactions(channelId: string, messageId: string, emoji?: string) {
+    if (emoji?.length) return this.session.api.channels(channelId).messages(messageId).reactions(emoji).delete();
+    return this.session.api.channels(channelId).messages(messageId).reactions.delete();
+  }
+
+  editMessage(channelId: string, messageId: string, body: RESTPatchAPIChannelMessageJSONBody, files?: RawFile[]) {
+    return this.session.api.channels(channelId).messages(messageId).patch({
+      body,
+      files
+    });
+  }
+
+  deleteMessage(channelId: string, messageId: string, reason?: string) {
+    return this.session.api.channels(channelId).messages(messageId).delete({ reason });
+  }
+
+  bulkMessages(channelId: string, body: RESTPostAPIChannelMessagesBulkDeleteJSONBody, reason?: string) {
+    return this.session.api.channels(channelId).messages['bulk-delete'].post({ body, reason });
+  }
+
+  editPermissions(channelId: string, overwriteId: string, body: RESTPutAPIChannelPermissionJSONBody, reason?: string) {
+    return this.session.api.channels(channelId).permissions(overwriteId).put({ body, reason });
+  }
+
+  deletePermission(channelId: string, overwriteId: string, reason?: string) {
+    return this.session.api.channels(channelId).permissions(overwriteId).delete({ reason });
+  }
+
+  getInvites(channelId: string) {
+    return this.session.api.channels(channelId).invites.get();
+  }
+
+  createInvite(channelId: string, body: RESTPostAPIChannelInviteJSONBody) {
+    return this.session.api.channels(channelId).invites.post({ body });
+  }
+
+  followAnnoucement(channelId: string, body: RESTPostAPIChannelFollowersJSONBody) {
+    return this.session.api.channels(channelId).followers.post({ body });
+  }
+
+  getPinnedMessages(channelId: string) {
+    return this.session.api.channels(channelId).pins.get();
+  }
+
+  pinMessage(channelId: string, messageId: string, reason?: string) {
+    return this.session.api.channels(channelId).pins(messageId).put({ reason });
+  }
+
+  unpinMessage(channelId: string, messageId: string, reason?: string) {
+    return this.session.api.channels(channelId).pins(messageId).delete({ reason });
+  }
+
+  groupDMAddRecipient(channelId: string, userId: string, body: RESTPutAPIChannelRecipientJSONBody) {
+    return this.session.api.channels(channelId).recipients(userId).put({ body });
+  }
+
+  groupDMRemoveRecipient(channelId: string, userId: string) {
+    return this.session.api.channels(channelId).recipients(userId).delete();
+  }
+
+  startThreadFromMessage(
+    channelId: string,
+    messageId: string,
+    body: RESTPostAPIChannelMessagesThreadsJSONBody,
+    reason?: string
+  ) {
+    return this.session.api.channels(channelId).messages(messageId).threads.post({ body, reason });
+  }
+
+  startThread(
+    channelId: string,
+    body: RESTPostAPIChannelThreadsJSONBody,
+    reason?: string
+  ): Promise<RESTPostAPIChannelThreadsResult>;
+  startThread(channelId: string, body: RESTPostAPIGuildForumThreadsJSONBody, reason?: string) {
+    return this.session.api.channels(channelId).threads.post({ body, reason });
+  }
+
+  getListJoinedPrivateArchivedThreads(channelId: string, query?: RESTGetAPIChannelThreadsArchivedQuery) {
+    return this.session.api.channels(channelId).users('@me').threads.archived.private.get({ query });
+  }
+
+  getThreadMembers(channelId: string, query?: RESTGetAPIChannelThreadMembersQuery) {
+    return this.session.api.channels(channelId)['thread-members'].get({ query });
+  }
+
+  getThreadMember(channelId: string, userId: string, query?: RESTGetAPIChannelThreadMemberQuery) {
+    return this.session.api.channels(channelId)['thread-members'](userId).get({ query });
+  }
+
+  addThreadMember(channelId: string, userId: string) {
+    return this.session.api.channels(channelId)['thread-members'](userId).put({});
+  }
+
+  removeThreadMember(channelId: string, userId: string) {
+    return this.session.api.channels(channelId)['thread-members'](userId).delete();
+  }
+
+  leaveThread(channelId: string) {
+    return this.session.api.channels(channelId)['thread-members']('@me').delete();
+  }
+
+  joinThread(channelId: string) {
+    return this.session.api.channels(channelId)['thread-members']('@me').put({});
+  }
+
+  getVoiceRegions() {
+    return this.session.api.voice.region.get();
+  }
+
+  getStageInstance(channelId: string) {
+    return this.session.api['stage-instances'](channelId).get();
+  }
+
+  editStageInstance(channelId: string, body: RESTPatchAPIStageInstanceJSONBody, reason?: string) {
+    return this.session.api['stage-instances'](channelId).patch({ body, reason })
+  }
+
+  deleteStageInstance(channelId: string, reason?: string) {
+    return this.session.api['stage-instances'](channelId).delete({ reason });
+  }
 }
 
-export type RESTGetAPIChannelThreadsArchivedOptions = ({ type: 'private' } | { type: 'public' }) &
-  RESTGetAPIChannelThreadsArchivedQuery;
+export type RESTGetAPIChannelThreadsArchivedOptions = {
+  type: 'private' | 'public';
+} & RESTGetAPIChannelThreadsArchivedQuery;
