@@ -43,4 +43,4 @@ B:\project> node --experimental-fetch index.js
 * [Website](https://biscuitjs.com/)
 * [Documentation](https://docs.biscuitjs.com/)
 * [Discord](https://discord.gg/XNw2RZFzaP) 
-* [api-types](https://www.npmjs.com/package/@biscuitland/api-types) | [cache](https://www.npmjs.com/package/@biscuitland/cache) | [rest](https://www.npmjs.com/package/@biscuitland/rest) | [ws](https://www.npmjs.com/package/@biscuitland/ws) | [helpers](https://www.npmjs.com/package/@biscuitland/helpers)
+* [rest](https://www.npmjs.com/package/@biscuitland/rest) | [ws](https://www.npmjs.com/package/@biscuitland/ws) | [helpers](https://www.npmjs.com/package/@biscuitland/helpers)

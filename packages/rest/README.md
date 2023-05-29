@@ -22,7 +22,8 @@ import Fastify from "fastify";
 const manager = new BiscuitREST({
     api: "http://any.rest.proxy/",
     version: 10,
-}).setToken("your token goes here");
+    token: "your token goes here"
+});
 
 const app = Fastify({});
 
@@ -57,10 +58,8 @@ app.all("*", (req, reply) => {
 app.listen({ port: "port..." });
 ```
 
-This package can be delivered through [unpkg](https://unpkg.com/) however is not tested yet
-
 ## Links
 * [Website](https://biscuitjs.com/)
 * [Documentation](https://docs.biscuitjs.com/)
 * [Discord](https://discord.gg/XNw2RZFzaP) 
-* [core](https://www.npmjs.com/package/@biscuitland/core) | [api-types](https://www.npmjs.com/package/@biscuitland/api-types) | [cache](https://www.npmjs.com/package/@biscuitland/cache) | [ws](https://www.npmjs.com/package/@biscuitland/ws) | [helpers](https://www.npmjs.com/package/@biscuitland/helpers)
+* [core](https://www.npmjs.com/package/@biscuitland/core) | [ws](https://www.npmjs.com/package/@biscuitland/ws) | [helpers](https://www.npmjs.com/package/@biscuitland/helpers)

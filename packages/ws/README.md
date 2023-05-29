@@ -42,8 +42,7 @@ const rest = new BiscuitREST({ token });
 ```
 
 ## Links
-
-- [Website](https://biscuitjs.com/)
-- [Documentation](https://docs.biscuitjs.com/)
-- [Discord](https://discord.gg/XNw2RZFzaP)
-- [core](https://www.npmjs.com/package/@biscuitland/core) | [api-types](https://www.npmjs.com/package/@biscuitland/api-types) | [cache](https://www.npmjs.com/package/@biscuitland/cache) | [rest](https://www.npmjs.com/package/@biscuitland/rest) | [helpers](https://www.npmjs.com/package/@biscuitland/helpers)
+* [Website](https://biscuitjs.com/)
+* [Documentation](https://docs.biscuitjs.com/)
+* [Discord](https://discord.gg/XNw2RZFzaP) 
+* [rest](https://www.npmjs.com/package/@biscuitland/rest) | [core](https://www.npmjs.com/package/@biscuitland/core) | [helpers](https://www.npmjs.com/package/@biscuitland/helpers)
