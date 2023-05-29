@@ -76,12 +76,7 @@ export class ApplicationManager {
     return this.session.api.applications(applicationId).guilds(guildId).commands(commandId).permissions.get();
   }
 
-  editCommandPermissions(
-    applicationId: string,
-    guildId: string,
-    commandId: string,
-    body: RESTPutAPIApplicationCommandPermissionsJSONBody
-  ) {
+  editCommandPermissions(applicationId: string, guildId: string, commandId: string, body: RESTPutAPIApplicationCommandPermissionsJSONBody) {
     return this.session.api.applications(applicationId).guilds(guildId).commands(commandId).permissions.put({ body });
   }
 
@@ -102,12 +97,7 @@ export class ApplicationManager {
     return this.session.api.applications(applicationId).guilds(guildId).commands(commandId).get();
   }
 
-  editGuildCommand(
-    applicationId: string,
-    guildId: string,
-    commandId: string,
-    body: RESTPatchAPIApplicationGuildCommandJSONBody
-  ) {
+  editGuildCommand(applicationId: string, guildId: string, commandId: string, body: RESTPatchAPIApplicationGuildCommandJSONBody) {
     return this.session.api.applications(applicationId).guilds(guildId).commands(commandId).patch({ body });
   }
 
@@ -128,5 +118,4 @@ export type RESTGetAPIApplicationCommandsWithLocalizationsResult = Identify<
   MakeRequired<APIApplicationCommand, 'name_localizations' | 'description_localizations'>
 >[];
 
-export type RESTGetAPIApplicationGuildCommandsWithLocalizationsResult =
-  RESTGetAPIApplicationCommandsWithLocalizationsResult;
+export type RESTGetAPIApplicationGuildCommandsWithLocalizationsResult = RESTGetAPIApplicationCommandsWithLocalizationsResult;

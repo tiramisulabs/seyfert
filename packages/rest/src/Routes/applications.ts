@@ -43,9 +43,7 @@ export interface ApplicationRoutes {
               args: RestArguments<RequestMethod.Put, RESTPutAPIApplicationGuildCommandsJSONBody>
             ): Promise<RESTPutAPIApplicationGuildCommandsResult>;
             permissions: {
-              get(
-                args?: RestArguments<RequestMethod.Get>
-              ): Promise<RESTGetAPIGuildApplicationCommandsPermissionsResult>;
+              get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIGuildApplicationCommandsPermissionsResult>;
               // put(args: RestArguments<RequestMethod.Put, RESTPutAPIGuildApplicationCommandsPermissionsJSONBody>): Promise<RESTPutAPIGuildApplicationCommandsPermissionsResult>
             };
             (id: string): {
@@ -55,9 +53,7 @@ export interface ApplicationRoutes {
               ): Promise<RESTPatchAPIApplicationGuildCommandResult>;
               delete(args?: RestArguments<RequestMethod.Delete>): Promise<never>;
               permissions: {
-                get(
-                  args?: RestArguments<RequestMethod.Get>
-                ): Promise<RESTGetAPIGuildApplicationCommandsPermissionsResult>;
+                get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIGuildApplicationCommandsPermissionsResult>;
                 put(
                   args: RestArguments<RequestMethod.Put, RESTPutAPIApplicationCommandPermissionsJSONBody>
                 ): Promise<RESTPutAPIGuildApplicationCommandsPermissionsResult>;
@@ -67,15 +63,11 @@ export interface ApplicationRoutes {
         };
       };
       commands: {
-        get(
-          args?: RestArguments<RequestMethod.Get, RESTGetAPIApplicationCommandsQuery>
-        ): Promise<RESTGetAPIApplicationCommandsResult>;
+        get(args?: RestArguments<RequestMethod.Get, RESTGetAPIApplicationCommandsQuery>): Promise<RESTGetAPIApplicationCommandsResult>;
         post(
           args: RestArguments<RequestMethod.Post, RESTPostAPIApplicationCommandsJSONBody>
         ): Promise<RESTPostAPIApplicationCommandsResult>;
-        put(
-          args: RestArguments<RequestMethod.Put, RESTPutAPIApplicationCommandsJSONBody>
-        ): Promise<RESTPutAPIApplicationCommandsResult>;
+        put(args: RestArguments<RequestMethod.Put, RESTPutAPIApplicationCommandsJSONBody>): Promise<RESTPutAPIApplicationCommandsResult>;
         (id: string): {
           get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIApplicationCommandResult>;
           patch(

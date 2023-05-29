@@ -43,11 +43,7 @@ export class WebhookManager {
   }
 
   edit(webhookId: string, body: RESTPatchAPIWebhookJSONBody): Promise<RESTPatchAPIWebhookResult>;
-  edit(
-    webhookId: string,
-    body: RESTPatchAPIWebhookWithTokenJSONBody,
-    token: string
-  ): Promise<RESTPatchAPIWebhookWithTokenResult>;
+  edit(webhookId: string, body: RESTPatchAPIWebhookWithTokenJSONBody, token: string): Promise<RESTPatchAPIWebhookWithTokenResult>;
   edit(webhookId: string, body: RESTPatchAPIWebhookJSONBody, token?: string) {
     if (!token?.length) {
       return this.session.api.webhooks(webhookId).patch({ body });
@@ -66,12 +62,7 @@ export class WebhookManager {
     body: RESTPostAPIWebhookWithTokenJSONBody,
     query: RESTPostAPIWebhookWithTokenWaitQuery
   ): Promise<RESTPostAPIWebhookWithTokenWaitResult>;
-  execute(
-    webhookId: string,
-    token: string,
-    body: RESTPostAPIWebhookWithTokenJSONBody,
-    query?: RESTPostAPIWebhookWithTokenQuery
-  ) {
+  execute(webhookId: string, token: string, body: RESTPostAPIWebhookWithTokenJSONBody, query?: RESTPostAPIWebhookWithTokenQuery) {
     return this.session.api.webhooks(webhookId)(token).post({
       body,
       query
@@ -102,12 +93,7 @@ export class WebhookManager {
     body: RESTPostAPIWebhookWithTokenJSONBody,
     query: Identify<RESTPostAPIWebhookWithTokenSlackQuery & { wait: true }>
   ): Promise<RESTPostAPIWebhookWithTokenSlackWaitResult>;
-  executeSlack(
-    webhookId: string,
-    token: string,
-    body: RESTPostAPIWebhookWithTokenJSONBody,
-    query?: RESTPostAPIWebhookWithTokenSlackQuery
-  ) {
+  executeSlack(webhookId: string, token: string, body: RESTPostAPIWebhookWithTokenJSONBody, query?: RESTPostAPIWebhookWithTokenSlackQuery) {
     return this.session.api.webhooks(webhookId)(token).slack.post({
       body,
       query

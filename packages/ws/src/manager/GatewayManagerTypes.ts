@@ -70,10 +70,7 @@ export interface CreateGatewayManagerOptions {
    */
   version?: number;
   /** The payload handlers for messages on the shard. */
-  handlePayload: <K extends keyof GatewayEvents>(
-    shardId: number,
-    data: { t: K; d: GatewayEvents[K] }
-  ) => Promise<unknown>;
+  handlePayload: <K extends keyof GatewayEvents>(shardId: number, data: { t: K; d: GatewayEvents[K] }) => Promise<unknown>;
   /** This managers cache related settings. */
   cache?: boolean;
   debug?: boolean;

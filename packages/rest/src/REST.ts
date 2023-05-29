@@ -75,8 +75,8 @@ export type RequestObject<M extends RequestMethod, B = Record<string, any>, Q = 
         files?: RawFile[];
       });
 
-export type RestArguments<
-  M extends RequestMethod,
-  B = any,
-  Q extends never | Record<string, any> = any
-> = M extends RequestMethod.Get ? (Q extends never ? RequestObject<M, never, B> : never) : RequestObject<M, B, Q>;
+export type RestArguments<M extends RequestMethod, B = any, Q extends never | Record<string, any> = any> = M extends RequestMethod.Get
+  ? Q extends never
+    ? RequestObject<M, never, B>
+    : never
+  : RequestObject<M, B, Q>;

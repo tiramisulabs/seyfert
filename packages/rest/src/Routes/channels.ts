@@ -80,9 +80,7 @@ export interface ChannelRoutes {
     };
     'thread-members': {
       //.
-      get(
-        args?: RestArguments<RequestMethod.Get, RESTGetAPIChannelThreadMembersQuery>
-      ): Promise<RESTGetAPIChannelThreadMembersResult>;
+      get(args?: RestArguments<RequestMethod.Get, RESTGetAPIChannelThreadMembersQuery>): Promise<RESTGetAPIChannelThreadMembersResult>;
       (id: '@me'): {
         //.
         put(args: RestArguments<RequestMethod.Put>): Promise<RESTPutAPIChannelThreadMembersResult>;
@@ -91,9 +89,7 @@ export interface ChannelRoutes {
       };
       (id: string): {
         //.
-        get(
-          args?: RestArguments<RequestMethod.Get, RESTGetAPIChannelThreadMemberQuery>
-        ): Promise<RESTGetAPIChannelThreadMemberResult>;
+        get(args?: RestArguments<RequestMethod.Get, RESTGetAPIChannelThreadMemberQuery>): Promise<RESTGetAPIChannelThreadMemberResult>;
         //.
         put(args: RestArguments<RequestMethod.Put>): Promise<RESTPutAPIChannelThreadMembersResult>;
         //.
@@ -103,10 +99,7 @@ export interface ChannelRoutes {
     threads: {
       //.
       post(
-        args: RestArguments<
-          RequestMethod.Post,
-          RESTPostAPIChannelThreadsJSONBody | RESTPostAPIGuildForumThreadsJSONBody
-        >
+        args: RestArguments<RequestMethod.Post, RESTPostAPIChannelThreadsJSONBody | RESTPostAPIGuildForumThreadsJSONBody>
       ): Promise<RESTPostAPIChannelThreadsResult>;
       archived: {
         public: {
@@ -126,9 +119,7 @@ export interface ChannelRoutes {
     recipients: {
       (id: string): {
         //.
-        put(
-          args: RestArguments<RequestMethod.Put, RESTPutAPIChannelRecipientJSONBody>
-        ): Promise<RESTPutAPIChannelRecipientResult>;
+        put(args: RestArguments<RequestMethod.Put, RESTPutAPIChannelRecipientJSONBody>): Promise<RESTPutAPIChannelRecipientResult>;
         //.
         delete(args?: RestArguments<RequestMethod.Delete>): Promise<RESTDeleteAPIChannelRecipientResult>;
       };
@@ -145,16 +136,12 @@ export interface ChannelRoutes {
     };
     followers: {
       //.
-      post(
-        args: RestArguments<RequestMethod.Post, RESTPostAPIChannelFollowersJSONBody>
-      ): Promise<RESTPostAPIChannelFollowersResult>;
+      post(args: RestArguments<RequestMethod.Post, RESTPostAPIChannelFollowersJSONBody>): Promise<RESTPostAPIChannelFollowersResult>;
     };
     permissions: {
       (id: string): {
         //.
-        put(
-          args: RestArguments<RequestMethod.Put, RESTPutAPIChannelPermissionJSONBody>
-        ): Promise<RESTPutAPIChannelPermissionResult>;
+        put(args: RestArguments<RequestMethod.Put, RESTPutAPIChannelPermissionJSONBody>): Promise<RESTPutAPIChannelPermissionResult>;
         //.
         delete(args?: RestArguments<RequestMethod.Delete>): Promise<RESTDeleteAPIChannelPermissionResult>;
       };
@@ -163,19 +150,13 @@ export interface ChannelRoutes {
       //.
       get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIChannelInvitesResult>;
       //.
-      post(
-        args: RestArguments<RequestMethod.Post, RESTPostAPIChannelInviteJSONBody>
-      ): Promise<RESTPostAPIChannelInviteResult>;
+      post(args: RestArguments<RequestMethod.Post, RESTPostAPIChannelInviteJSONBody>): Promise<RESTPostAPIChannelInviteResult>;
     };
     messages: {
       //.
-      get(
-        args?: RestArguments<RequestMethod.Get, RESTGetAPIChannelMessagesQuery>
-      ): Promise<RESTGetAPIChannelMessagesResult>;
+      get(args?: RestArguments<RequestMethod.Get, RESTGetAPIChannelMessagesQuery>): Promise<RESTGetAPIChannelMessagesResult>;
       //.
-      post(
-        args: RestArguments<RequestMethod.Post, RESTPostAPIChannelMessageJSONBody>
-      ): Promise<RESTPostAPIChannelMessageResult>;
+      post(args: RestArguments<RequestMethod.Post, RESTPostAPIChannelMessageJSONBody>): Promise<RESTPostAPIChannelMessageResult>;
       'bulk-delete': {
         //.
         post(
@@ -186,9 +167,7 @@ export interface ChannelRoutes {
         //.
         get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIChannelMessageResult>;
         //.
-        patch(
-          args: RestArguments<RequestMethod.Patch, RESTPatchAPIChannelMessageJSONBody>
-        ): Promise<RESTPatchAPIChannelMessageResult>;
+        patch(args: RestArguments<RequestMethod.Patch, RESTPatchAPIChannelMessageJSONBody>): Promise<RESTPatchAPIChannelMessageResult>;
         //.
         delete(args?: RestArguments<RequestMethod.Delete>): Promise<RESTDeleteAPIChannelMessageResult>;
         threads: {
@@ -233,9 +212,7 @@ export interface ChannelRoutes {
       //.
       get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIGuildWebhooksResult>;
       //.
-      post(
-        args: RestArguments<RequestMethod.Post, RESTPostAPIChannelWebhookJSONBody>
-      ): Promise<RESTPostAPIChannelWebhookResult>;
+      post(args: RestArguments<RequestMethod.Post, RESTPostAPIChannelWebhookJSONBody>): Promise<RESTPostAPIChannelWebhookResult>;
     };
   };
 }

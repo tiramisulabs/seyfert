@@ -7,8 +7,7 @@ const isPlainObject = (value: any) => {
       typeof value === 'object' &&
       typeof value.constructor === 'function' &&
       // eslint-disable-next-line no-prototype-builtins
-      (value.constructor.prototype.hasOwnProperty('isPrototypeOf') ||
-        Object.getPrototypeOf(value.constructor.prototype) === null)) ||
+      (value.constructor.prototype.hasOwnProperty('isPrototypeOf') || Object.getPrototypeOf(value.constructor.prototype) === null)) ||
     (value && Object.getPrototypeOf(value) === null)
   );
 };

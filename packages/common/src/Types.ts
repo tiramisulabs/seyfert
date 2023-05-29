@@ -1,18 +1,10 @@
-export type Tail<A> = A extends [unknown, ...infer rest]
-  ? rest
-  : A extends [unknown]
-  ? []
-  : A extends (infer first)[]
-  ? first[]
-  : never;
+export type Tail<A> = A extends [unknown, ...infer rest] ? rest : A extends [unknown] ? [] : A extends (infer first)[] ? first[] : never;
 
 export type ValueOf<T> = T[keyof T];
 
 export type ArrayFirsElement<A> = A extends [...infer arr] ? arr[0] : never;
 
-export type RestToKeys<T extends unknown[]> = T extends [infer V, ...infer Keys]
-  ? { [K in Extract<Keys[number], string>]: V }
-  : never;
+export type RestToKeys<T extends unknown[]> = T extends [infer V, ...infer Keys] ? { [K in Extract<Keys[number], string>]: V } : never;
 
 export type Identify<T> = T extends infer U ? { [K in keyof U]: U[K] } : never;
 

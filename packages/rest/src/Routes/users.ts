@@ -24,13 +24,9 @@ export interface UserRoutes {
     };
     (id: '@me'): {
       get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPICurrentUserResult>;
-      patch(
-        args: RestArguments<RequestMethod.Patch, RESTPatchAPICurrentUserJSONBody>
-      ): Promise<RESTPatchAPICurrentUserResult>;
+      patch(args: RestArguments<RequestMethod.Patch, RESTPatchAPICurrentUserJSONBody>): Promise<RESTPatchAPICurrentUserResult>;
       guilds: {
-        get(
-          args?: RestArguments<RequestMethod.Get, RESTGetAPICurrentUserGuildsQuery>
-        ): Promise<RESTGetAPICurrentUserGuildsResult>;
+        get(args?: RestArguments<RequestMethod.Get, RESTGetAPICurrentUserGuildsQuery>): Promise<RESTGetAPICurrentUserGuildsResult>;
         (id: string): {
           member: {
             get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetCurrentUserGuildMemberResult>;
@@ -39,9 +35,7 @@ export interface UserRoutes {
         };
       };
       channels: {
-        post(
-          args: RestArguments<RequestMethod.Post, RESTPostAPICurrentUserCreateDMChannelJSONBody>
-        ): Promise<APIDMChannel>;
+        post(args: RestArguments<RequestMethod.Post, RESTPostAPICurrentUserCreateDMChannelJSONBody>): Promise<APIDMChannel>;
       };
       connections: {
         get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPICurrentUserConnectionsResult>;

@@ -17,8 +17,7 @@ export class GatewayManager {
     this.options = Options<Required<CreateGatewayManagerOptions>>(GatewayManagerDefaultOptions, {
       ...options,
       lastShardId:
-        options.lastShardId ??
-        (options.totalShards ? options.totalShards - 1 : options.connection ? options.connection.shards - 1 : 0)
+        options.lastShardId ?? (options.totalShards ? options.totalShards - 1 : options.connection ? options.connection.shards - 1 : 0)
     });
     if (this.options.cache) this.cache = new Collection();
     this.logger = new Logger({
@@ -32,11 +31,7 @@ export class GatewayManager {
       this.logger.info(`Calculating total shards: ${this.options.totalShards}`);
       return this.options.totalShards;
     }
-    this.logger.info(
-      'Calculating total shards',
-      this.options.totalShards,
-      this.options.connection.session_start_limit.max_concurrency
-    );
+    this.logger.info('Calculating total shards', this.options.totalShards, this.options.connection.session_start_limit.max_concurrency);
 
     // Calculate a multiple of `maxConcurrency` which can be used to connect to the gateway.
     return (
@@ -67,9 +62,7 @@ export class GatewayManager {
     for (let shardId = this.options.firstShardId; shardId <= this.options.lastShardId; ++shardId) {
       this.logger.info(`Preparing bucket for shard: ${shardId}`);
       if (shardId >= this.options.totalShards) {
-        throw new Error(
-          `Shard (id: ${shardId}) is bigger or equal to the used amount of used shards which is ${this.options.totalShards}`
-        );
+        throw new Error(`Shard (id: ${shardId}) is bigger or equal to the used amount of used shards which is ${this.options.totalShards}`);
       }
 
       const bucketId = shardId % this.options.connection.session_start_limit.max_concurrency;

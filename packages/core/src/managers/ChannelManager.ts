@@ -91,12 +91,7 @@ export class ChannelManager {
     return this.session.api.channels(channelId).messages(messageId).reactions(emoji)(user).delete();
   }
 
-  getReactions(
-    channelId: string,
-    messageId: string,
-    emoji: string,
-    query?: RESTGetAPIChannelMessageReactionUsersQuery
-  ) {
+  getReactions(channelId: string, messageId: string, emoji: string, query?: RESTGetAPIChannelMessageReactionUsersQuery) {
     return this.session.api.channels(channelId).messages(messageId).reactions(emoji).get({ query });
   }
 
@@ -160,20 +155,11 @@ export class ChannelManager {
     return this.session.api.channels(channelId).recipients(userId).delete();
   }
 
-  startThreadFromMessage(
-    channelId: string,
-    messageId: string,
-    body: RESTPostAPIChannelMessagesThreadsJSONBody,
-    reason?: string
-  ) {
+  startThreadFromMessage(channelId: string, messageId: string, body: RESTPostAPIChannelMessagesThreadsJSONBody, reason?: string) {
     return this.session.api.channels(channelId).messages(messageId).threads.post({ body, reason });
   }
 
-  startThread(
-    channelId: string,
-    body: RESTPostAPIChannelThreadsJSONBody,
-    reason?: string
-  ): Promise<RESTPostAPIChannelThreadsResult>;
+  startThread(channelId: string, body: RESTPostAPIChannelThreadsJSONBody, reason?: string): Promise<RESTPostAPIChannelThreadsResult>;
   startThread(channelId: string, body: RESTPostAPIGuildForumThreadsJSONBody, reason?: string) {
     return this.session.api.channels(channelId).threads.post({ body, reason });
   }
@@ -215,7 +201,7 @@ export class ChannelManager {
   }
 
   editStageInstance(channelId: string, body: RESTPatchAPIStageInstanceJSONBody, reason?: string) {
-    return this.session.api['stage-instances'](channelId).patch({ body, reason })
+    return this.session.api['stage-instances'](channelId).patch({ body, reason });
   }
 
   deleteStageInstance(channelId: string, reason?: string) {

@@ -32,29 +32,19 @@ export interface WebhookRoutes {
     delete(args?: RestArguments<RequestMethod.Delete>): Promise<RESTDeleteAPIWebhookResult>;
     (token: string): {
       get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIWebhookWithTokenResult>;
-      patch(
-        args: RestArguments<RequestMethod.Patch, RESTPatchAPIWebhookWithTokenJSONBody>
-      ): Promise<RESTPatchAPIWebhookWithTokenResult>;
+      patch(args: RestArguments<RequestMethod.Patch, RESTPatchAPIWebhookWithTokenJSONBody>): Promise<RESTPatchAPIWebhookWithTokenResult>;
       delete(args?: RestArguments<RequestMethod.Delete>): Promise<RESTDeleteAPIWebhookWithTokenResult>;
       post(
         args: RestArguments<RequestMethod.Post, RESTPostAPIWebhookWithTokenJSONBody, RESTPostAPIWebhookWithTokenQuery>
       ): Promise<RESTPostAPIWebhookWithTokenResult | RESTPostAPIWebhookWithTokenWaitResult>;
       slack: {
         post(
-          args: RestArguments<
-            RequestMethod.Post,
-            RESTPostAPIWebhookWithTokenJSONBody,
-            RESTPostAPIWebhookWithTokenSlackQuery
-          >
+          args: RestArguments<RequestMethod.Post, RESTPostAPIWebhookWithTokenJSONBody, RESTPostAPIWebhookWithTokenSlackQuery>
         ): Promise<RESTPostAPIWebhookWithTokenSlackResult | RESTPostAPIWebhookWithTokenSlackWaitResult>;
       };
       github: {
         post(
-          args: RestArguments<
-            RequestMethod.Post,
-            RESTPostAPIWebhookWithTokenJSONBody,
-            RESTPostAPIWebhookWithTokenGitHubQuery
-          >
+          args: RestArguments<RequestMethod.Post, RESTPostAPIWebhookWithTokenJSONBody, RESTPostAPIWebhookWithTokenGitHubQuery>
         ): Promise<RESTPostAPIWebhookWithTokenGitHubResult | RESTPostAPIWebhookWithTokenGitHubWaitResult>;
       };
       messages: {

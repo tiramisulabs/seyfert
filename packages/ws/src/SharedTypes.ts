@@ -115,9 +115,7 @@ export interface UpdateVoiceState {
 
 export type ShardStatusUpdate = Pick<GatewayPresenceUpdateData, 'activities' | 'status'>;
 
-export interface RequestGuildMembersOptions
-  extends GatewayRequestGuildMembersDataWithQuery,
-    GatewayRequestGuildMembersDataWithUserIds {}
+export interface RequestGuildMembersOptions extends GatewayRequestGuildMembersDataWithQuery, GatewayRequestGuildMembersDataWithUserIds {}
 
 export interface GatewayMemberRequest {
   /** The unique nonce for this request. */
@@ -196,11 +194,7 @@ export type StageSameEvents = RestToKeys<
 >;
 
 export type IntegrationSameEvents = RestToKeys<
-  [
-    GatewayIntegrationCreateDispatchData,
-    GatewayDispatchEvents.IntegrationCreate,
-    GatewayDispatchEvents.IntegrationUpdate
-  ]
+  [GatewayIntegrationCreateDispatchData, GatewayDispatchEvents.IntegrationCreate, GatewayDispatchEvents.IntegrationUpdate]
 >;
 
 export type GuildScheduledUserSameEvents = RestToKeys<
@@ -221,12 +215,7 @@ export type GuildScheduledSameEvents = RestToKeys<
 >;
 
 export type ChannelSameEvents = RestToKeys<
-  [
-    APIChannel,
-    GatewayDispatchEvents.ChannelCreate,
-    GatewayDispatchEvents.ChannelDelete,
-    GatewayDispatchEvents.ChannelUpdate
-  ]
+  [APIChannel, GatewayDispatchEvents.ChannelCreate, GatewayDispatchEvents.ChannelDelete, GatewayDispatchEvents.ChannelUpdate]
 >;
 
 export type AutoModetaractionRuleEvents = RestToKeys<

@@ -26,7 +26,7 @@ export class InteractionManager {
       files
     });
   }
-  
+
   getResponse(applicationId: string, token: string, messageId = '@original') {
     return this.session.api.webhooks(applicationId)(token).messages(messageId).get();
   }

@@ -19,7 +19,7 @@
 		"enabled": true,
 		"indentSize": 2,
 		"indentStyle": "space",
-		"lineWidth": 120,
+		"lineWidth": 140,
 		"formatWithErrors": true
 	},
 	"files": {

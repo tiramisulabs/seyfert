@@ -123,9 +123,7 @@ export interface GuildRoutes {
       //.
       get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPITemplateResult>;
       //.
-      post(
-        args: RestArguments<RequestMethod.Post, RESTPostAPITemplateCreateGuildJSONBody>
-      ): Promise<RESTPostAPITemplateCreateGuildResult>;
+      post(args: RestArguments<RequestMethod.Post, RESTPostAPITemplateCreateGuildJSONBody>): Promise<RESTPostAPITemplateCreateGuildResult>;
     };
     (id: string): {
       //.
@@ -170,9 +168,7 @@ export interface GuildRoutes {
         //.
         get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIGuildChannelsResult>;
         //.
-        post(
-          args: RestArguments<RequestMethod.Post, RESTPostAPIGuildChannelJSONBody>
-        ): Promise<RESTPostAPIGuildChannelResult>;
+        post(args: RestArguments<RequestMethod.Post, RESTPostAPIGuildChannelJSONBody>): Promise<RESTPostAPIGuildChannelResult>;
         //.
         patch(
           args: RestArguments<RequestMethod.Patch, RESTPatchAPIGuildChannelPositionsJSONBody>
@@ -180,33 +176,23 @@ export interface GuildRoutes {
       };
       members: {
         //.
-        get(
-          args?: RestArguments<RequestMethod.Get, RESTGetAPIGuildMembersQuery>
-        ): Promise<RESTGetAPIGuildMembersResult>;
+        get(args?: RestArguments<RequestMethod.Get, RESTGetAPIGuildMembersQuery>): Promise<RESTGetAPIGuildMembersResult>;
         search: {
           //.
-          get(
-            args: RestArguments<RequestMethod.Get, RESTGetAPIGuildMembersSearchQuery>
-          ): Promise<RESTGetAPIGuildMembersSearchResult>;
+          get(args: RestArguments<RequestMethod.Get, RESTGetAPIGuildMembersSearchQuery>): Promise<RESTGetAPIGuildMembersSearchResult>;
         };
         '@me': {
           //.
-          patch(
-            args: RestArguments<RequestMethod.Patch, RESTPatchAPICurrentGuildMemberJSONBody>
-          ): Promise<RESTGetAPIGuildMemberResult>;
+          patch(args: RestArguments<RequestMethod.Patch, RESTPatchAPICurrentGuildMemberJSONBody>): Promise<RESTGetAPIGuildMemberResult>;
         };
         (id: string): {
           //.
           get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIGuildMemberResult>;
           //.
-          put(
-            args: RestArguments<RequestMethod.Put, RESTPutAPIGuildMemberJSONBody>
-          ): Promise<RESTPutAPIGuildMemberResult>;
+          put(args: RestArguments<RequestMethod.Put, RESTPutAPIGuildMemberJSONBody>): Promise<RESTPutAPIGuildMemberResult>;
           //.
           //.
-          patch(
-            args: RestArguments<RequestMethod.Patch, RESTPatchAPIGuildMemberJSONBody>
-          ): Promise<RESTPatchAPIGuildMemberResult>;
+          patch(args: RestArguments<RequestMethod.Patch, RESTPatchAPIGuildMemberJSONBody>): Promise<RESTPatchAPIGuildMemberResult>;
           //.
           delete(args?: RestArguments<RequestMethod.Delete>): Promise<RESTDeleteAPIGuildMemberResult>;
           roles(id: string): {
@@ -229,18 +215,14 @@ export interface GuildRoutes {
         //.
         get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIGuildRolesResult>;
         //.
-        post(
-          args: RestArguments<RequestMethod.Post, RESTPostAPIGuildRoleJSONBody>
-        ): Promise<RESTPostAPIGuildRoleResult>;
+        post(args: RestArguments<RequestMethod.Post, RESTPostAPIGuildRoleJSONBody>): Promise<RESTPostAPIGuildRoleResult>;
         //.
         patch(
           args: RestArguments<RequestMethod.Patch, RESTPatchAPIGuildRolePositionsJSONBody>
         ): Promise<RESTPatchAPIGuildRolePositionsResult>;
         (id: string): {
           //.
-          patch(
-            args: RestArguments<RequestMethod.Patch, RESTPatchAPIGuildRoleJSONBody>
-          ): Promise<RESTPatchAPIGuildRoleResult>;
+          patch(args: RestArguments<RequestMethod.Patch, RESTPatchAPIGuildRoleJSONBody>): Promise<RESTPatchAPIGuildRoleResult>;
           //.
           delete(args?: RestArguments<RequestMethod.Delete>): Promise<RESTDeleteAPIGuildRoleResult>;
         };
@@ -259,19 +241,13 @@ export interface GuildRoutes {
       };
       mfa: {
         //.
-        post(
-          args: RestArguments<RequestMethod.Post, RESTPostAPIGuildsMFAJSONBody>
-        ): Promise<RESTPostAPIGuildsMFAResult>;
+        post(args: RestArguments<RequestMethod.Post, RESTPostAPIGuildsMFAJSONBody>): Promise<RESTPostAPIGuildsMFAResult>;
       };
       prune: {
         //.
-        get(
-          args: RestArguments<RequestMethod.Get, RESTGetAPIGuildPruneCountQuery>
-        ): Promise<RESTGetAPIGuildPruneCountResult>;
+        get(args: RestArguments<RequestMethod.Get, RESTGetAPIGuildPruneCountQuery>): Promise<RESTGetAPIGuildPruneCountResult>;
         //.
-        post(
-          args: RestArguments<RequestMethod.Post, RESTPostAPIGuildPruneJSONBody>
-        ): Promise<RESTPostAPIGuildPruneResult>;
+        post(args: RestArguments<RequestMethod.Post, RESTPostAPIGuildPruneJSONBody>): Promise<RESTPostAPIGuildPruneResult>;
       };
       regions: {
         //.
@@ -295,9 +271,7 @@ export interface GuildRoutes {
       };
       'widget.png': {
         //.
-        get(
-          args?: RestArguments<RequestMethod.Get, RESTGetAPIGuildWidgetImageQuery>
-        ): Promise<RESTGetAPIGuildWidgetImageResult>;
+        get(args?: RestArguments<RequestMethod.Get, RESTGetAPIGuildWidgetImageQuery>): Promise<RESTGetAPIGuildWidgetImageResult>;
       };
       integrations: {
         //.
@@ -326,16 +300,12 @@ export interface GuildRoutes {
         //.
         get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIGuildEmojisResult>;
         //.
-        post(
-          args: RestArguments<RequestMethod.Post, RESTPostAPIGuildEmojiJSONBody>
-        ): Promise<RESTPostAPIGuildEmojiResult>;
+        post(args: RestArguments<RequestMethod.Post, RESTPostAPIGuildEmojiJSONBody>): Promise<RESTPostAPIGuildEmojiResult>;
         (id: string): {
           //.
           get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIGuildEmojiResult>;
           //.
-          patch(
-            args: RestArguments<RequestMethod.Patch, RESTPatchAPIGuildEmojiJSONBody>
-          ): Promise<RESTPatchAPIGuildEmojiResult>;
+          patch(args: RestArguments<RequestMethod.Patch, RESTPatchAPIGuildEmojiJSONBody>): Promise<RESTPatchAPIGuildEmojiResult>;
           //.
           delete(args?: RestArguments<RequestMethod.Delete>): Promise<RESTDeleteAPIGuildEmojiResult>;
         };
@@ -358,34 +328,26 @@ export interface GuildRoutes {
         //.
         get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIGuildStickersResult>;
         //.
-        post(
-          args: RestArguments<RequestMethod.Post, RESTPostAPIGuildStickerFormDataBody>
-        ): Promise<RESTPostAPIGuildStickerResult>;
+        post(args: RestArguments<RequestMethod.Post, RESTPostAPIGuildStickerFormDataBody>): Promise<RESTPostAPIGuildStickerResult>;
         (id: string): {
           //.
           get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIGuildStickerResult>;
           //.
-          patch(
-            args: RestArguments<RequestMethod.Patch, RESTPatchAPIGuildStickerJSONBody>
-          ): Promise<RESTPatchAPIGuildStickerResult>;
+          patch(args: RestArguments<RequestMethod.Patch, RESTPatchAPIGuildStickerJSONBody>): Promise<RESTPatchAPIGuildStickerResult>;
           //.
           delete(args?: RestArguments<RequestMethod.Delete>): Promise<RESTDeleteAPIGuildStickerResult>;
         };
       };
       'scheduled-events': {
         //.
-        get(
-          args?: RestArguments<RequestMethod.Get, RESTGetAPIGuildScheduledEventsQuery>
-        ): Promise<RESTGetAPIGuildScheduledEventsResult>;
+        get(args?: RestArguments<RequestMethod.Get, RESTGetAPIGuildScheduledEventsQuery>): Promise<RESTGetAPIGuildScheduledEventsResult>;
         //.
         post(
           args: RestArguments<RequestMethod.Post, RESTPostAPIGuildScheduledEventJSONBody>
         ): Promise<RESTPostAPIGuildScheduledEventResult>;
         (id: string): {
           //.
-          get(
-            args?: RestArguments<RequestMethod.Get, RESTGetAPIGuildScheduledEventQuery>
-          ): Promise<RESTGetAPIGuildScheduledEventResult>;
+          get(args?: RestArguments<RequestMethod.Get, RESTGetAPIGuildScheduledEventQuery>): Promise<RESTGetAPIGuildScheduledEventResult>;
           //.
           patch(
             args: RestArguments<RequestMethod.Patch, RESTPatchAPIGuildScheduledEventJSONBody>
@@ -404,16 +366,12 @@ export interface GuildRoutes {
         //.
         get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIGuildTemplatesResult>;
         //.
-        post(
-          args: RestArguments<RequestMethod.Post, RESTPostAPIGuildTemplatesJSONBody>
-        ): Promise<RESTPostAPIGuildTemplatesResult>;
+        post(args: RestArguments<RequestMethod.Post, RESTPostAPIGuildTemplatesJSONBody>): Promise<RESTPostAPIGuildTemplatesResult>;
         (code: string): {
           //.
           put(args: RestArguments<RequestMethod.Put>): Promise<RESTPutAPIGuildTemplateSyncResult>;
           //.
-          patch(
-            args: RestArguments<RequestMethod.Patch, RESTPatchAPIGuildTemplateJSONBody>
-          ): Promise<RESTPatchAPIGuildTemplateResult>;
+          patch(args: RestArguments<RequestMethod.Patch, RESTPatchAPIGuildTemplateJSONBody>): Promise<RESTPatchAPIGuildTemplateResult>;
           //.
           delete(args?: RestArguments<RequestMethod.Delete>): Promise<RESTDeleteAPIGuildTemplateResult>;
         };

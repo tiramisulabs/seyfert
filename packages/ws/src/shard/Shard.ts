@@ -1,12 +1,6 @@
 import { LeakyBucket } from '../index';
 import { ShardGatewayConfig, ShardHeart, ShardCreateOptions } from './ShardTypes';
-import {
-  GatewayMemberRequest,
-  RequestGuildMembersOptions,
-  ShardSocketCloseCodes,
-  ShardState,
-  StatusUpdate
-} from '../SharedTypes';
+import { GatewayMemberRequest, RequestGuildMembersOptions, ShardSocketCloseCodes, ShardState, StatusUpdate } from '../SharedTypes';
 import {
   APIGuildMember,
   GatewayCloseCodes,
@@ -98,8 +92,7 @@ export class Shard {
   /** Calculate the amount of requests which can safely be made per rate limit interval, before the gateway gets disconnected due to an exceeded rate limit. */
   calculateSafeRequests(): number {
     // * 2 adds extra safety layer for discords OP 1 requests that we need to respond to
-    const safeRequests =
-      this.maxRequestsPerRateLimitTick - Math.ceil(this.rateLimitResetInterval / this.heart.interval) * 2;
+    const safeRequests = this.maxRequestsPerRateLimitTick - Math.ceil(this.rateLimitResetInterval / this.heart.interval) * 2;
 
     return safeRequests < 0 ? 0 : safeRequests;
   }
@@ -413,10 +406,7 @@ export class Shard {
         // Reference: https://discord.com/developers/docs/topics/gateway#heartbeating-example-gateway-heartbeat-ack
         if (!this.heart.acknowledged) {
           this.logger.info(`heartbeat not acknowledged for shard #${this.id}.`);
-          this.close(
-            ShardSocketCloseCodes.ZombiedConnection,
-            'Zombied connection, did not receive an heartbeat ACK in time.'
-          );
+          this.close(ShardSocketCloseCodes.ZombiedConnection, 'Zombied connection, did not receive an heartbeat ACK in time.');
           return await this.identify();
         }
 
@@ -462,11 +452,7 @@ export class Shard {
   async requestMembers(options: { guild_id: string } & Partial<RequestGuildMembersOptions>): Promise<APIGuildMember[]> {
     // You can request 1 member without the intent
     // Check if intents is not 0 as proxy ws won't set intents in other instances
-    if (
-      this.connection.intents &&
-      (!options.limit || options.limit > 1) &&
-      !(this.connection.intents & GatewayIntentBits.GuildMembers)
-    )
+    if (this.connection.intents && (!options.limit || options.limit > 1) && !(this.connection.intents & GatewayIntentBits.GuildMembers))
       throw new Error('MISSING_INTENT_GUILD_MEMBERS');
     if (options.user_ids?.length) {
       this.logger.info(
@@ -479,9 +465,7 @@ export class Shard {
 
     // Gateway does not require caching these requests so directly send and return
     if (!this.cache.requestMembers.enabled) {
-      this.logger.info(
-        `requestMembers guildId: ${options.guild_id} -> skipping cache -> options ${JSON.stringify(options)}`
-      );
+      this.logger.info(`requestMembers guildId: ${options.guild_id} -> skipping cache -> options ${JSON.stringify(options)}`);
 
       await this.send({
         op: GatewayOpcodes.RequestGuildMembers,
@@ -504,9 +488,7 @@ export class Shard {
         resolve,
         members: []
       });
-      this.logger.info(
-        `requestMembers options.guild_id: ${options.guild_id} -> requesting members -> data: ${JSON.stringify(options)}`
-      );
+      this.logger.info(`requestMembers options.guild_id: ${options.guild_id} -> requesting members -> data: ${JSON.stringify(options)}`);
       this.send({
         op: GatewayOpcodes.RequestGuildMembers,
         d: {
