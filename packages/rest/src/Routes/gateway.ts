@@ -4,9 +4,9 @@ import { RequestMethod } from '../Router';
 
 export interface GatewayRoutes {
   gateway: {
-    get(args: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIGatewayResult>;
+    get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIGatewayResult>;
     bot: {
-      get(args: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIGatewayBotResult>;
+      get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIGatewayBotResult>;
     };
   };
 }

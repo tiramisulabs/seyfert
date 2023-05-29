@@ -16,7 +16,8 @@ import type {
   RESTPostAPIGuildForumThreadsJSONBody,
   RESTGetAPIChannelThreadMembersQuery,
   RESTGetAPIChannelThreadMemberQuery,
-  RESTPostAPIChannelWebhookJSONBody
+  RESTPostAPIChannelWebhookJSONBody,
+  RESTPatchAPIStageInstanceJSONBody
 } from '@biscuitland/common';
 import type { RawFile } from '@biscuitland/rest';
 
@@ -199,12 +200,26 @@ export class ChannelManager {
 
   leaveThread(channelId: string) {
     return this.session.api.channels(channelId)['thread-members']('@me').delete();
-    // return this.removeThreadMember(channelId, '@me');
   }
 
   joinThread(channelId: string) {
     return this.session.api.channels(channelId)['thread-members']('@me').put({});
-    // return this.addThreadMember(channelId, '@me');
+  }
+
+  getVoiceRegions() {
+    return this.session.api.voice.region.get();
+  }
+
+  getStageInstance(channelId: string) {
+    return this.session.api['stage-instances'](channelId).get();
+  }
+
+  editStageInstance(channelId: string, body: RESTPatchAPIStageInstanceJSONBody, reason?: string) {
+    return this.session.api['stage-instances'](channelId).patch({ body, reason })
+  }
+
+  deleteStageInstance(channelId: string, reason?: string) {
+    return this.session.api['stage-instances'](channelId).delete({ reason });
   }
 }
 

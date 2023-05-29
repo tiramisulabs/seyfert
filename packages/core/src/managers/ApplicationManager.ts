@@ -24,6 +24,18 @@ export class ApplicationManager {
     });
   }
 
+  getBotGateway() {
+    return this.session.api.gateway.bot.get();
+  }
+
+  getGateway() {
+    return this.session.api.gateway.get();
+  }
+
+  getNitroStickerPacks() {
+    return this.session.api['sticker-packs'].get();
+  }
+
   getRoleConnectionMetadata(applicationId: string) {
     return this.session.api.applications(applicationId)['role-connections'].metadata.get();
   }
