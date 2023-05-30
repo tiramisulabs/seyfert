@@ -1,4 +1,10 @@
-import { APIButtonComponentBase, APIMessageComponentEmoji, ButtonStyle, ComponentType, When } from '@biscuitland/common';
+import {
+  APIButtonComponentBase,
+  APIMessageComponentEmoji,
+  ButtonStyle,
+  ComponentType,
+  When
+} from '@biscuitland/common';
 import { BaseComponent } from './BaseComponent';
 
 export type ButtonStylesForID = Exclude<ButtonStyle, ButtonStyle.Link>;

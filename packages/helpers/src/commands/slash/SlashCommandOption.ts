@@ -94,7 +94,9 @@ export interface APIApplicationCommandStringOption<AC extends boolean = boolean>
   choices: When<AC, APIApplicationCommandOptionChoice<string>[], never>;
 }
 
-export class SlashStringOption<AC extends boolean = boolean> extends SlashRequiredOption<APIApplicationCommandStringOption<AC>> {
+export class SlashStringOption<AC extends boolean = boolean> extends SlashRequiredOption<
+  APIApplicationCommandStringOption<AC>
+> {
   constructor(data: Partial<APIApplicationCommandStringOption<AC>> = {}) {
     super({ ...data, type: ApplicationCommandOptionType.String });
   }
@@ -140,7 +142,9 @@ interface APIApplicationCommandNumberOption<AC extends boolean = boolean>
   choices: When<AC, APIApplicationCommandOptionChoice<number>[], never>;
 }
 
-export class SlashNumberOption<AC extends boolean = boolean> extends SlashRequiredOption<APIApplicationCommandNumberOption<AC>> {
+export class SlashNumberOption<AC extends boolean = boolean> extends SlashRequiredOption<
+  APIApplicationCommandNumberOption<AC>
+> {
   constructor(data: Partial<APIApplicationCommandNumberOption<AC>> = {}) {
     super({ ...data, type: ApplicationCommandOptionType.Number });
   }
@@ -186,7 +190,9 @@ interface APIApplicationCommandIntegerOption<AC extends boolean = boolean>
   choices: When<AC, APIApplicationCommandOptionChoice<number>[], never>;
 }
 
-export class SlashIntegerOption<AC extends boolean = boolean> extends SlashRequiredOption<APIApplicationCommandIntegerOption<AC>> {
+export class SlashIntegerOption<AC extends boolean = boolean> extends SlashRequiredOption<
+  APIApplicationCommandIntegerOption<AC>
+> {
   constructor(data: Partial<APIApplicationCommandIntegerOption<AC>> = {}) {
     super({ ...data, type: ApplicationCommandOptionType.Integer });
   }

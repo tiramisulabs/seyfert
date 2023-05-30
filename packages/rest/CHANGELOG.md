@@ -1,5 +1,32 @@
 # @biscuitland/rest
 
+## 2.3.0
+
+### Minor Changes
+
+- fix TODO
+
+### Patch Changes
+
+- Updated dependencies
+  - @biscuitland/api-types@2.3.0
+
+## 2.2.3
+
+### Patch Changes
+
+- bug fixes
+- Updated dependencies
+  - @biscuitland/api-types@2.2.3
+
+## 2.2.2
+
+### Patch Changes
+
+- rename guildLocales to guildLocale in interactions
+- Updated dependencies
+  - @biscuitland/api-types@2.2.2
+
 ## 2.2.1
 
 ### Patch Changes
