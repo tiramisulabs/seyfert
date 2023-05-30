@@ -1,0 +1,75 @@
+{
+  "name": "@biscuitland/common",
+  "version": "0.0.1",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/**"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "clean": "rm -rf dist && rm -rf .turbo",
+    "dev": "tsup --watch"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": "./dist/index.cjs"
+    }
+  },
+  "devDependencies": {
+    "tsup": "^6.1.3"
+  },
+  "license": "Apache-2.0",
+  "author": "Yuzuru <yuzuru@programmer.net>",
+  "contributors": [
+    {
+      "name": "Yuzuru",
+      "url": "https://github.com/yuzudev"
+    },
+    {
+      "name": "miia",
+      "url": "https://github.com/dragurimu"
+    },
+    {
+      "name": "n128",
+      "url": "https://github.com/nicolito128"
+    },
+    {
+      "name": "socram03",
+      "url": "https://github.com/socram03",
+      "author": true
+    },
+    {
+      "name": "Drylozu",
+      "url": "https://github.com/Drylozu"
+    }
+  ],
+  "homepage": "https://biscuitjs.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oasisjs/biscuit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/oasisjs/biscuit"
+  },
+  "keywords": [
+    "api",
+    "discord",
+    "bots",
+    "typescript",
+    "botdev"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "discord-api-types": "^0.37.39"
+  }
+}

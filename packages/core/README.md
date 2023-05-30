@@ -1,5 +1,5 @@
 # @biscuitland/core
-Classes, functions and main structures to create an application with biscuit. Core contains the essentials to launch you to develop your own customized and scalable bot.
+Core contains the essentials to launch you to develop your own customized and scalable bot.
 
 [<img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white">](https://github.com/oasisjs/biscuit)
 [<img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white">](https://discord.gg/XNw2RZFzaP)
@@ -17,29 +17,12 @@ yarn add @biscuitland/core
 `project/index.js`:
 ```js
 import { Session } from '@biscuitland/core';
-import { GatewayIntents } from '@biscuitland/api-types';
+import { GatewayIntentBits } from "discord-api-types/v10";
 
-const session = new Session({ token: 'your token', intents: GatewayIntents.Guilds });
+const session = new Session({ token: 'your token', intents: GatewayIntentBits.Guilds });
 
-const commands = [
-    {
-        name: 'ping',
-        description: 'Replies with pong!'
-    }
-];
-
-session.events.on('ready', ({ user }) => {
-    console.log('Logged in as:', user.tag);
-    session.upsertApplicationCommands(commands, 'GUILD_ID');
-});
-
-session.events.on('interactionCreate', (interaction) => {
-    if (interaction.isCommand()) {
-        // your commands go here
-        if (interaction.commandName === 'ping') {
-            interaction.respondWith({ content: 'pong!' });
-        }
-    }
+session.events.on('READY', (payload) => {
+    console.log('Logged in as:', payload.user.username);
 });
 
 session.start();
@@ -60,4 +43,4 @@ B:\project> node --experimental-fetch index.js
 * [Website](https://biscuitjs.com/)
 * [Documentation](https://docs.biscuitjs.com/)
 * [Discord](https://discord.gg/XNw2RZFzaP) 
-* [api-types](https://www.npmjs.com/package/@biscuitland/api-types) | [cache](https://www.npmjs.com/package/@biscuitland/cache) | [rest](https://www.npmjs.com/package/@biscuitland/rest) | [ws](https://www.npmjs.com/package/@biscuitland/ws) | [helpers](https://www.npmjs.com/package/@biscuitland/helpers)
+* [rest](https://www.npmjs.com/package/@biscuitland/rest) | [ws](https://www.npmjs.com/package/@biscuitland/ws) | [helpers](https://www.npmjs.com/package/@biscuitland/helpers)

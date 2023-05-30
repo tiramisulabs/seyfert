@@ -1,5 +1,0 @@
-node_modules/
-build
-dist
-examples/**
-tsup.config.ts

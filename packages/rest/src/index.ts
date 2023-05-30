@@ -1,3 +1,5 @@
-export { RestAdapter } from './adapters/rest-adapter';
-
-export { DefaultRestAdapter } from './adapters/default-rest-adapter';
+export * from './Routes/';
+export * from './Router';
+export * from './REST';
+export * from './CDN';
+export { type RawFile, REST } from '@discordjs/rest';

@@ -1,3 +1,7 @@
-export { ShardManager } from './services/shard-manager';
-export { Shard } from './services/shard';
-export { Options } from './utils/options';
+export * from './manager/GatewayManager';
+export * from './manager/GatewayManagerTypes';
+export * from './shard/Shard';
+export * from './shard/ShardTypes';
+export * from './defaults';
+export * from './SharedTypes';
+export * from './utils/Bucket';

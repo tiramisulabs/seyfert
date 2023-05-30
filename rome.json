@@ -1,0 +1,34 @@
+{
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"all": true,
+			"style": {
+				"useWhile": "off",
+				"noNonNullAssertion": "off"
+			},
+			"suspicious": {
+				"noExplicitAny": "off"
+			},
+			"nursery": {
+				"useCamelCase": "off"
+			}
+		}
+	},
+	"formatter": {
+		"enabled": true,
+		"indentSize": 2,
+		"indentStyle": "space",
+		"lineWidth": 140,
+		"formatWithErrors": true
+	},
+	"files": {
+		"ignore": [
+			"node_modules/",
+			"build",
+			"dist",
+			"tsup.config.ts",
+			"__test__"
+		]
+	}
+}
