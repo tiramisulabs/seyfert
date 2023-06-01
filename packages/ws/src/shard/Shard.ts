@@ -576,8 +576,8 @@ export class Shard {
   }
 
   /** This function communicates with the management process, in order to know whether its free to identify. When this function resolves, this means that the shard is allowed to send an identify payload to discord. */
-  async requestIdentify(): Promise<void> {}
+  async requestIdentify(): Promise<void> { }
 
   /** This function communicates with the management process, in order to tell it can identify the next shard. */
-  async shardIsReady(): Promise<void> {}
+  async shardIsReady(): Promise<void> { }
 }
