@@ -1,6 +1,6 @@
 {
   "name": "@biscuitland/core",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -23,9 +23,9 @@
     }
   },
   "dependencies": {
-    "@biscuitland/common": "^0.0.2",
-    "@biscuitland/rest": "^3.0.1",
-    "@biscuitland/ws": "^3.0.1",
+    "@biscuitland/common": "^0.0.3",
+    "@biscuitland/rest": "^3.0.2",
+    "@biscuitland/ws": "^3.0.2",
     "eventemitter2": "^6.4.9"
   },
   "devDependencies": {
