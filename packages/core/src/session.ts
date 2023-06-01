@@ -1,7 +1,7 @@
 import type { BiscuitRESTOptions, CDNRoutes, Routes } from '@biscuitland/rest';
 import { CDN, BiscuitREST, Router } from '@biscuitland/rest';
 import { When } from '@biscuitland/common';
-import { EventEmitter2 } from 'eventemitter2';
+import EventEmitter2 from 'eventemitter2';
 import { MainManager, getBotIdFromToken } from '.';
 import { GatewayManager, CreateGatewayManagerOptions, GatewayEvents } from '@biscuitland/ws';
 import { GatewayIntentBits } from '@biscuitland/common';
