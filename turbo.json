@@ -1,32 +1,35 @@
 {
-	"$schema": "https://turborepo.org/schema.json",
-	"pipeline": {
-		"@biscuitland/rest#build": {
-			"dependsOn": [
-				"@biscuitland/common#build"
-			]
-		},
-		"@biscuitland/common#build": {
-			"dependsOn": []
-		},
-		"@biscuitland/ws#build": {
-			"dependsOn": [
-				"@biscuitland/rest#build",
-				"@biscuitland/common#build"
-			]
-		},
-		"@biscuitland/core#build": {
-			"dependsOn": [
-				"@biscuitland/rest#build",
-				"@biscuitland/ws#build",
-				"@biscuitland/common#build"
-			]
-		},
-		"clean": {
-			"cache": false
-		},
-		"dev": {
-			"cache": false
-		}
-	}
+  "$schema": "https://turborepo.org/schema.json",
+  "pipeline": {
+    "@biscuitland/rest#build": {
+      "dependsOn": [
+        "@biscuitland/common#build"
+      ]
+    },
+    "@biscuitland/common#build": {
+      "dependsOn": []
+    },
+    "@biscuitland/ws#build": {
+      "dependsOn": [
+        "@biscuitland/rest#build",
+        "@biscuitland/common#build"
+      ]
+    },
+    "@biscuitland/core#build": {
+      "dependsOn": [
+        "@biscuitland/rest#build",
+        "@biscuitland/ws#build",
+        "@biscuitland/common#build"
+      ]
+    },
+    "@biscuitland/helpers#build": {
+      "dependsOn": []
+    },
+    "clean": {
+      "cache": false
+    },
+    "dev": {
+      "cache": false
+    }
+  }
 }
