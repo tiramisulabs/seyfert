@@ -44,7 +44,7 @@ const commands = [{
 
 session.on('READY', (payload) => {
     const username = payload.user.username;
-    console.log('I'm ready! logged in as %s', username);
+    console.log('I\'m ready! logged in as %s', username);
 
     const [shardId, _shardCount] = payload.shard ?? [0, 0];
 
