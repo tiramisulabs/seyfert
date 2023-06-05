@@ -13,18 +13,18 @@ yarn add @biscuitland/core
 
 for further reading join our [Discord](https://discord.com/invite/XNw2RZFzaP)
 
-## Most importantly, biscuit is:
+## Most importantly, biscuit:
+Stands apart from other libraries like Discord.js or Eris as it takes a conscious and dedicated approach, adhering strictly to [simplicity](https://en.wikipedia.org/wiki/Unix_philosophy). We have examined the features and functionalities that contribute to [bloat](https://en.wikipedia.org/wiki/Code_bloat) in libraries, intentionally removing unnecessary complexities we deliver a [minimalistic](https://en.wikipedia.org/wiki/Minimalism_(computing)) and efficient solution that includes only essential components for Discord API interaction, reducing the library's footprint and enabling scalability.
 
-- A wrapper to interface the Discord API
-- A bleeding edge library
+High RAM usage in other libraries often arises due to unnecessary features and functionalities and suboptimal caching mechanisms tied to the core library.
 
-Biscuit is primarily inspired by Discord.js and Discordeno but it does not include a cache layer by default, we believe
-that you should not make software that does things it is not supposed to do.
+### Leveraging the power of meta programming
+The Proxy object enables dynamic, flexible and efficient calls to the API, it is typesafe due to TypeScript wizardry, meta programming is not for the weak minded.
 
 ## Why biscuit?:
-
-- [Minimal](https://en.wikipedia.org/wiki/Unix_philosophy), non feature-rich!
+- Remarkably minimal memory footprint
 - Scalable
+- Non feature-rich!
 
 ## Example bot (TS/JS)
 
@@ -72,5 +72,4 @@ session.start();
 
 ## Known issues:
 - node18 is required to run the library, however --experimental-fetch flag should work on node16+
-- redis cache (wip)
 - no optimal way to deliver a webspec bun version to the registry (#50)
