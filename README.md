@@ -33,7 +33,7 @@ import { Session } from '@biscuitland/core';
 import { GatewayIntentBits, InteractionType, InteractionResponseType } from '@biscuitland/common';
 
 const session = new Session({
-    intents: GatewayIntentBits,
+    intents: GatewayIntentBits.Guilds,
     token: 'your token goes here'
 });
 
