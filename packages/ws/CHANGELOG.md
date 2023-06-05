@@ -1,5 +1,14 @@
 # @biscuitland/ws
 
+## 3.0.4
+
+### Patch Changes
+
+- first 3.0.\* without bugs
+- Updated dependencies
+  - @biscuitland/common@0.0.4
+  - @biscuitland/rest@3.0.4
+
 ## 2.3.0
 
 ### Minor Changes
