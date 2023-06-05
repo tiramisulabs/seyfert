@@ -30,29 +30,35 @@ that you should not make software that does things it is not supposed to do.
 
 ```js
 import { Session } from '@biscuitland/core';
-import { GatewayIntents } from '@biscuitland/api-types';
+import { GatewayIntentBits, InteractionType, InteractionResponseType } from '@biscuitland/common';
 
-const session = new Session({ token: 'your token', intents: GatewayIntents.Guilds });
-
-const commands = [
-    {
-        name: 'ping',
-        description: 'Replies with pong!'
-    }
-];
-
-session.events.on('ready', ({ user }) => {
-    console.log('Logged in as:', user.tag);
-    session.upsertApplicationCommands(commands, 'GUILD_ID');
+const session = new Session({
+    intents: GatewayIntentBits,
+    token: 'your token goes here'
 });
 
-session.events.on('interactionCreate', (interaction) => {
-    if (interaction.isCommand()) {
-        // your commands go here
-        if (interaction.commandName === 'ping') {
-            interaction.respondWith({ content: 'pong!' });
+const commands = [{
+    name: 'ping',
+    description: 'Replies with pong!'
+}];
+
+session.on('READY', (payload) => {
+    const username = payload.user.username;
+    console.log('I'm ready! logged in as %s', username);
+
+    const [shardId, _shardCount] = payload.shard ?? [0, 0];
+
+    if (shardId === 0) session.managers.application.bulkCommands(session.applicationId!, commands);
+});
+
+session.on('INTERACTION_CREATE', (interaction) => {
+    if (interaction.type !== InteractionType.ApplicationCommand) return;
+    session.api.managers.interaction.reply(interaction.id, interaction.token, {
+        body: {
+            type: InteractionResponseType.ChannelMessageWithSource,
+            data: { content: 'pong!' }
         }
-    }
+    });
 });
 
 session.start();
