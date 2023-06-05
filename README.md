@@ -53,7 +53,7 @@ session.on('READY', (payload) => {
 
 session.on('INTERACTION_CREATE', (interaction) => {
     if (interaction.type !== InteractionType.ApplicationCommand) return;
-    session.api.managers.interaction.reply(interaction.id, interaction.token, {
+    session.managers.interaction.reply(interaction.id, interaction.token, {
         body: {
             type: InteractionResponseType.ChannelMessageWithSource,
             data: { content: 'pong!' }
