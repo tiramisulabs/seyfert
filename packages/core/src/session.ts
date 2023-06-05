@@ -86,13 +86,19 @@ export class Session<On extends boolean = boolean> extends EventEmitter2 {
     ctx.gateway = new GatewayManager({
       token: this.options.token,
       intents: this.options.intents ?? 0,
-      connection: this.options.defaultGatewayOptions?.connection ?? (await this.rest.get('/gateway/bot')),
+      connection: this.options.defaultGatewayOptions?.connection ?? (await this.api.gateway.bot.get()),
       async handlePayload(shard, data) {
         const { t, d } = data;
         if (!(t && d)) return;
         actionHandler([ctx, { t, d }, shard]);
       },
       ...this.options.defaultGatewayOptions
+    });
+
+    ctx.once('READY', (payload) => {
+      const { user, application } = payload;
+      this.botId = user.id;
+      this.applicationId = application.id;
     });
 
     await ctx.gateway.spawnShards();

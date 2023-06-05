@@ -13,16 +13,16 @@ export class MainManager {
     this.guilds = new GuildManager(this.session);
     this.members = new MemberManager(this.session);
     this.channels = new ChannelManager(this.session);
-    this.application = new ApplicationManager(this.session);
-    this.interaction = new InteractionManager(this.session);
-    this.webhook = new WebhookManager(this.session);
+    this.applications = new ApplicationManager(this.session);
+    this.interactions = new InteractionManager(this.session);
+    this.webhooks = new WebhookManager(this.session);
   }
 
   users: UserManager;
   guilds: GuildManager;
   members: MemberManager;
   channels: ChannelManager;
-  application: ApplicationManager;
-  interaction: InteractionManager;
-  webhook: WebhookManager;
+  applications: ApplicationManager;
+  interactions: InteractionManager;
+  webhooks: WebhookManager;
 }

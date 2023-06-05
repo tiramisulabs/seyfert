@@ -28,37 +28,34 @@ The Proxy object enables dynamic, flexible and efficient calls to the API, it is
 
 ## Example bot (TS/JS)
 
-```js
+```ts
 import { Session } from '@biscuitland/core';
 import { GatewayIntentBits, InteractionType, InteractionResponseType } from '@biscuitland/common';
 
 const session = new Session({
-    intents: GatewayIntentBits.Guilds,
-    token: 'your token goes here'
+  intents: GatewayIntentBits.Guilds,
+  token: 'your token goes here'
 });
 
-const commands = [{
+const commands = [
+  {
     name: 'ping',
     description: 'Replies with pong!'
-}];
+  }
+];
 
-session.on('READY', (payload) => {
-    const username = payload.user.username;
-    console.log('I\'m ready! logged in as %s', username);
-
-    const [shardId, _shardCount] = payload.shard ?? [0, 0];
-
-    if (shardId === 0) session.managers.application.bulkCommands(session.applicationId!, commands);
+session.once('READY', (payload) => {
+  const username = payload.user.username;
+  console.log('Logged in as: %s', username);
+  session.managers.applications.bulkCommands(session.applicationId, commands);
 });
 
 session.on('INTERACTION_CREATE', (interaction) => {
-    if (interaction.type !== InteractionType.ApplicationCommand) return;
-    session.managers.interaction.reply(interaction.id, interaction.token, {
-        body: {
-            type: InteractionResponseType.ChannelMessageWithSource,
-            data: { content: 'pong!' }
-        }
-    });
+  if (interaction.type !== InteractionType.ApplicationCommand) return;
+  session.managers.interactions.reply(interaction.id, interaction.token, {
+    type: InteractionResponseType.ChannelMessageWithSource,
+    data: { content: 'pong!' }
+  });
 });
 
 session.start();
@@ -68,8 +65,4 @@ session.start();
 * [Website](https://biscuitjs.com/)
 * [Documentation](https://docs.biscuitjs.com/)
 * [Discord](https://discord.gg/XNw2RZFzaP)
-* [core](https://www.npmjs.com/package/@biscuitland/core) | [api-types](https://www.npmjs.com/package/@biscuitland/api-types) | [cache](https://www.npmjs.com/package/@biscuitland/cache) | [rest](https://www.npmjs.com/package/@biscuitland/rest) | [ws](https://www.npmjs.com/package/@biscuitland/ws) | [helpers](https://www.npmjs.com/package/@biscuitland/helpers)
-
-## Known issues:
-- node18 is required to run the library, however --experimental-fetch flag should work on node16+
-- no optimal way to deliver a webspec bun version to the registry (#50)
+* [core](https://www.npmjs.com/package/@biscuitland/core) | [rest](https://www.npmjs.com/package/@biscuitland/rest) | [ws](https://www.npmjs.com/package/@biscuitland/ws) | [helpers](https://www.npmjs.com/package/@biscuitland/helpers)
