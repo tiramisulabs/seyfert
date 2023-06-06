@@ -2,10 +2,10 @@ import {
   ApplicationCommandType,
   PermissionFlagsBits,
   RESTPostAPIChatInputApplicationCommandsJSONBody,
-  applyToClass
 } from '@biscuitland/common';
 import { AllSlashOptions, SlashSubcommandGroupOption, SlashSubcommandOption } from './SlashCommandOption';
 import { PermissionsStrings } from '../../Utils';
+import { Mixin } from 'ts-mixer';
 
 class SlashCommandB {
   constructor(public data: Partial<RESTPostAPIChatInputApplicationCommandsJSONBody> = {}) {}
@@ -53,5 +53,5 @@ class SlashCommandB {
   }
 }
 
-export const SlashCommand = applyToClass(SlashSubcommandOption, SlashCommandB, ['toJSON']);
+export const SlashCommand = Mixin(SlashCommandB, SlashSubcommandOption);
 export type SlashCommand = InstanceType<typeof SlashCommand>;
