@@ -1,6 +1,6 @@
 import type { BiscuitRESTOptions, CDNRoutes, Routes } from '@biscuitland/rest';
 import { CDN, BiscuitREST, Router } from '@biscuitland/rest';
-import { When } from '@biscuitland/common';
+import { Identify, When } from '@biscuitland/common';
 import EventEmitter2 from 'eventemitter2';
 import { MainManager, getBotIdFromToken } from '.';
 import { GatewayManager, CreateGatewayManagerOptions, GatewayEvents } from '@biscuitland/ws';
@@ -112,5 +112,5 @@ export interface BiscuitOptions {
   intents: number | GatewayIntentBits;
   rest?: BiscuitREST;
   defaultRestOptions?: Partial<BiscuitRESTOptions>;
-  defaultGatewayOptions?: Omit<CreateGatewayManagerOptions, 'token' | 'intents'>;
+  defaultGatewayOptions?: Identify<Partial<Omit<CreateGatewayManagerOptions, 'token' | 'intents'>>>;
 }
