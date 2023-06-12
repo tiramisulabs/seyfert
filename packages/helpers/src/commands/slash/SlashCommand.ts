@@ -1,8 +1,4 @@
-import {
-  ApplicationCommandType,
-  PermissionFlagsBits,
-  RESTPostAPIChatInputApplicationCommandsJSONBody,
-} from '@biscuitland/common';
+import { ApplicationCommandType, PermissionFlagsBits, RESTPostAPIChatInputApplicationCommandsJSONBody } from '@biscuitland/common';
 import { AllSlashOptions, SlashSubcommandGroupOption, SlashSubcommandOption } from './SlashCommandOption';
 import { PermissionsStrings } from '../../Utils';
 import { Mixin } from 'ts-mixer';
