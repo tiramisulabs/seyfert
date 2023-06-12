@@ -152,13 +152,13 @@ export interface GuildRoutes {
           post(
             args: RestArguments<RequestMethod.Post, RESTPostAPIAutoModerationRuleJSONBody>
           ): Promise<RESTPostAPIAutoModerationRuleResult>;
-          //.
-          patch(
-            args: RestArguments<RequestMethod.Post, RESTPatchAPIAutoModerationRuleJSONBody>
-          ): Promise<RESTPatchAPIAutoModerationRuleResult>;
           (id: string): {
             //.
             get(args?: RestArguments<RequestMethod.Get>): Promise<RESTGetAPIAutoModerationRuleResult>;
+            //.
+            patch(
+              args: RestArguments<RequestMethod.Post, RESTPatchAPIAutoModerationRuleJSONBody>
+            ): Promise<RESTPatchAPIAutoModerationRuleResult>;
             //.
             delete(args?: RestArguments<RequestMethod.Delete>): Promise<RESTDeleteAPIAutoModerationRuleResult>;
           };
