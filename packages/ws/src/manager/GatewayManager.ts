@@ -1,11 +1,11 @@
-import { Options, Collection, Logger, delay } from '@biscuitland/common';
+import { Collection, Logger, Options, delay } from '@biscuitland/common';
 import {
-  Shard,
-  GatewayMemberRequest,
   BucketData,
   CreateGatewayManagerOptions,
+  GatewayManagerDefaultOptions,
+  GatewayMemberRequest,
   JoinVoiceOptions,
-  GatewayManagerDefaultOptions
+  Shard
 } from '../index';
 export class GatewayManager {
   buckets = new Map<number, BucketData>();
@@ -22,7 +22,7 @@ export class GatewayManager {
     if (this.options.cache) this.cache = new Collection();
     this.logger = new Logger({
       name: '[GatewayManager]',
-      active: options.debug
+      active: this.options.debug
     });
   }
 

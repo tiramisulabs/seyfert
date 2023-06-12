@@ -3,5 +3,7 @@
 	"compilerOptions": {
 		"outDir": "./dist"
 	},
-	"include": ["src/**/*", "../common/src/Collection.ts"]
+	"include": [
+		"src/**/*"
+	]
 }
