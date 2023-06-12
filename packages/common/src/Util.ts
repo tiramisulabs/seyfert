@@ -1,12 +1,12 @@
 import { setTimeout } from 'node:timers/promises';
-import { ObjectToSnake, ObjectToLower } from './Types';
+import { ObjectToLower, ObjectToSnake } from './Types';
 
 const isPlainObject = (value: any) => {
   return (
     (value !== null &&
       typeof value === 'object' &&
       typeof value.constructor === 'function' &&
-      // eslint-disable-next-line no-prototype-builtins
+      // rome-ignore lint/suspicious/noPrototypeBuiltins: js tricks
       (value.constructor.prototype.hasOwnProperty('isPrototypeOf') || Object.getPrototypeOf(value.constructor.prototype) === null)) ||
     (value && Object.getPrototypeOf(value) === null)
   );
@@ -48,7 +48,7 @@ export const Options = <T = any>(defaults: any, ...options: any[]): T => {
  * @param target The object to convert.
  * @returns The converted object.
  */
-export function toSnakeCase<Obj extends { [k: string]: unknown }>(target: Obj): ObjectToSnake<Obj> {
+export function toSnakeCase<Obj extends Record<string, unknown>>(target: Obj): ObjectToSnake<Obj> {
   const result = {};
   for (const [key, value] of Object.entries(target)) {
     switch (typeof value) {
@@ -62,7 +62,7 @@ export function toSnakeCase<Obj extends { [k: string]: unknown }>(target: Obj): 
         break;
       case 'object':
         if (Array.isArray(value)) {
-          result[ReplaceRegex.camel(key)] = Promise.all(value.map((prop) => toSnakeCase(prop)));
+          result[ReplaceRegex.camel(key)] = value.map((prop) => toSnakeCase(prop));
           break;
         }
         if (!Number.isNaN(value)) {
@@ -81,7 +81,7 @@ export function toSnakeCase<Obj extends { [k: string]: unknown }>(target: Obj): 
  * @param target The object to convert.
  * @returns The converted object.
  */
-export function toCamelCase<Obj extends { [k: string]: unknown }>(target: Obj): ObjectToLower<Obj> {
+export function toCamelCase<Obj extends Record<string, unknown>>(target: Obj): ObjectToLower<Obj> {
   const result = {};
   for (const [key, value] of Object.entries(target)) {
     switch (typeof value) {
@@ -95,7 +95,7 @@ export function toCamelCase<Obj extends { [k: string]: unknown }>(target: Obj): 
         break;
       case 'object':
         if (Array.isArray(value)) {
-          result[ReplaceRegex.snake(key)] = Promise.all(value.map((prop) => toCamelCase(prop)));
+          result[ReplaceRegex.snake(key)] = value.map((prop) => toCamelCase(prop));
           break;
         }
         if (!Number.isNaN(value)) {
