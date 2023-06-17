@@ -48,7 +48,7 @@ export const Options = <T = any>(defaults: any, ...options: any[]): T => {
  * @param target The object to convert.
  * @returns The converted object.
  */
-export function toSnakeCase<Obj extends Record<string, unknown>>(target: Obj): ObjectToSnake<Obj> {
+export function toSnakeCase<Obj extends Record<string, any>>(target: Obj): ObjectToSnake<Obj> {
   const result = {};
   for (const [key, value] of Object.entries(target)) {
     switch (typeof value) {
@@ -81,7 +81,7 @@ export function toSnakeCase<Obj extends Record<string, unknown>>(target: Obj): O
  * @param target The object to convert.
  * @returns The converted object.
  */
-export function toCamelCase<Obj extends Record<string, unknown>>(target: Obj): ObjectToLower<Obj> {
+export function toCamelCase<Obj extends Record<string, any>>(target: Obj): ObjectToLower<Obj> {
   const result = {};
   for (const [key, value] of Object.entries(target)) {
     switch (typeof value) {
