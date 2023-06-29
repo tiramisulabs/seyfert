@@ -1,5 +1,11 @@
 # @biscuitland/common
 
+## 0.0.7
+
+### Patch Changes
+
+- fix the silly logger and other silly things affected by this bug
+
 ## 0.0.6
 
 ### Patch Changes
