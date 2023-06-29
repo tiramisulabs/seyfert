@@ -1,5 +1,12 @@
 # @biscuitland/helpers
 
+## 3.0.11
+
+### Patch Changes
+
+- Updated dependencies
+  - @biscuitland/common@0.0.8
+
 ## 3.0.10
 
 ### Patch Changes

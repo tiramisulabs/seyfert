@@ -1,6 +1,6 @@
 {
   "name": "@biscuitland/ws",
-  "version": "3.0.7",
+  "version": "3.0.8",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -24,7 +24,7 @@
     }
   },
   "dependencies": {
-    "@biscuitland/common": "^0.0.7",
+    "@biscuitland/common": "^0.0.8",
     "@biscuitland/rest": "^3.0.6",
     "ws": "^8.13.0"
   },
