@@ -1,11 +1,10 @@
+import { GatewayIntentBits, Identify, When } from '@biscuitland/common';
 import type { BiscuitRESTOptions, CDNRoutes, Routes } from '@biscuitland/rest';
-import { CDN, BiscuitREST, Router } from '@biscuitland/rest';
-import { Identify, When } from '@biscuitland/common';
+import { BiscuitREST, CDN, Router } from '@biscuitland/rest';
+import { CreateGatewayManagerOptions, GatewayEvents, GatewayManager } from '@biscuitland/ws';
 import EventEmitter2 from 'eventemitter2';
 import { MainManager, getBotIdFromToken } from '.';
-import { GatewayManager, CreateGatewayManagerOptions, GatewayEvents } from '@biscuitland/ws';
-import { GatewayIntentBits } from '@biscuitland/common';
-import { actionHandler, Handler } from './events/handler';
+import { Handler, actionHandler } from './events/handler';
 
 export class Session<On extends boolean = boolean> extends EventEmitter2 {
   constructor(public options: BiscuitOptions) {
@@ -67,8 +66,8 @@ export class Session<On extends boolean = boolean> extends EventEmitter2 {
   private createRest(rest: any) {
     if (!rest) {
       return new BiscuitREST({
-        ...this.options.defaultRestOptions,
-        token: this.options.token
+        token: this.options.token,
+        ...this.options.defaultRestOptions
       });
     }
 
@@ -102,6 +101,11 @@ export class Session<On extends boolean = boolean> extends EventEmitter2 {
     });
 
     await ctx.gateway.spawnShards();
+  }
+
+  async stop(code = 1000, error = 'Stopped') {
+    this.removeAllListeners();
+    await this.gateway.shutdown(code, error);
   }
 }
 
