@@ -23,25 +23,28 @@ export const Options = <T = any>(defaults: any, ...options: any[]): T => {
 
   const source = options.shift();
 
-  if (isObject(defaults) && isPlainObject(source)) {
+  // This prevents default options from being intercepted by `Object.assign`
+  const $ = { ...defaults };
+
+  if (isObject($) && isPlainObject(source)) {
     Object.entries(source).forEach(([key, value]) => {
       if (typeof value === 'undefined') {
         return;
       }
 
       if (isPlainObject(value)) {
-        if (!(key in defaults)) {
-          Object.assign(defaults, { [key]: {} });
+        if (!(key in $)) {
+          Object.assign($, { [key]: {} });
         }
 
-        Options(defaults[key], value);
+        Options($[key], value);
       } else {
-        Object.assign(defaults, { [key]: value });
+        Object.assign($, { [key]: value });
       }
     });
   }
 
-  return Options(defaults, ...options);
+  return Options($, ...options);
 };
 /**
  * Convert a camelCase object to snake_case.
