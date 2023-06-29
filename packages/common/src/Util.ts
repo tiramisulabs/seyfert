@@ -8,7 +8,7 @@ const isPlainObject = (value: any) => {
       typeof value.constructor === 'function' &&
       // rome-ignore lint/suspicious/noPrototypeBuiltins: js tricks
       (value.constructor.prototype.hasOwnProperty('isPrototypeOf') || Object.getPrototypeOf(value.constructor.prototype) === null)) ||
-    (value && Object.getPrototypeOf(value) === null)
+    (value != undefined && Object.getPrototypeOf(value) === null)
   );
 };
 
