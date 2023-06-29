@@ -1,5 +1,14 @@
 # @biscuitland/ws
 
+## 3.0.6
+
+### Patch Changes
+
+- I meessed up
+- Updated dependencies
+  - @biscuitland/common@0.0.6
+  - @biscuitland/rest@3.0.6
+
 ## 3.0.5
 
 ### Patch Changes
