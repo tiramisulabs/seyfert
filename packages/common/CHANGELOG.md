@@ -1,5 +1,11 @@
 # @biscuitland/common
 
+## 0.0.5
+
+### Patch Changes
+
+- fix: logger on every module
+
 ## 0.0.4
 
 ### Patch Changes

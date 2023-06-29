@@ -1,5 +1,14 @@
 # @biscuitland/ws
 
+## 3.0.5
+
+### Patch Changes
+
+- fix: logger on every module
+- Updated dependencies
+  - @biscuitland/common@0.0.5
+  - @biscuitland/rest@3.0.5
+
 ## 3.0.4
 
 ### Patch Changes
