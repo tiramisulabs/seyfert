@@ -1,5 +1,11 @@
 # @biscuitland/ws
 
+## 3.0.9
+
+### Patch Changes
+
+- silly bug on options
+
 ## 3.0.8
 
 ### Patch Changes
