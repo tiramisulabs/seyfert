@@ -64,7 +64,6 @@ export function toSnakeCase<Obj extends Record<string, any>>(target: Obj): Objec
         result[ReplaceRegex.snake(key)] = value;
         break;
       case 'object':
-        console.log(Array.isArray(value), isObject(value),)
         if (Array.isArray(value)) {
           result[ReplaceRegex.snake(key)] = value.map((prop) => typeof prop === 'object' && prop ? toSnakeCase(prop) : prop);
           break;
@@ -102,7 +101,6 @@ export function toCamelCase<Obj extends Record<string, any>>(target: Obj): Objec
         result[ReplaceRegex.camel(key)] = value;
         break;
       case 'object':
-        console.log(Array.isArray(value), isObject(value),)
         if (Array.isArray(value)) {
           result[ReplaceRegex.camel(key)] = value.map((prop) => typeof prop === 'object' && prop ? toCamelCase(prop) : prop);
           break;
