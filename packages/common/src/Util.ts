@@ -61,18 +61,22 @@ export function toSnakeCase<Obj extends Record<string, any>>(target: Obj): Objec
       case 'function':
       case 'symbol':
       case 'undefined':
-        result[ReplaceRegex.camel(key)] = value;
+        result[ReplaceRegex.snake(key)] = value;
         break;
       case 'object':
         if (Array.isArray(value)) {
-          result[ReplaceRegex.camel(key)] = value.map((prop) => toSnakeCase(prop));
+          result[ReplaceRegex.snake(key)] = value.map((prop) => typeof prop === 'object' && prop ? toSnakeCase(prop) : prop);
+          break;
+        }
+        if (isObject(value)) {
+          result[ReplaceRegex.snake(key)] = toSnakeCase({ ...value })
           break;
         }
         if (!Number.isNaN(value)) {
-          result[ReplaceRegex.camel(key)] = null;
+          result[ReplaceRegex.snake(key)] = null;
           break;
         }
-        result[ReplaceRegex.camel(key)] = toSnakeCase({ ...value });
+        result[ReplaceRegex.snake(key)] = toSnakeCase({ ...value });
         break;
     }
   }
@@ -94,18 +98,22 @@ export function toCamelCase<Obj extends Record<string, any>>(target: Obj): Objec
       case 'function':
       case 'symbol':
       case 'undefined':
-        result[ReplaceRegex.snake(key)] = value;
+        result[ReplaceRegex.camel(key)] = value;
         break;
       case 'object':
         if (Array.isArray(value)) {
-          result[ReplaceRegex.snake(key)] = value.map((prop) => toCamelCase(prop));
+          result[ReplaceRegex.camel(key)] = value.map((prop) => typeof prop === 'object' && prop ? toCamelCase(prop) : prop);
+          break;
+        }
+        if (isObject(value)) {
+          result[ReplaceRegex.camel(key)] = toCamelCase({ ...value })
           break;
         }
         if (!Number.isNaN(value)) {
-          result[ReplaceRegex.snake(key)] = null;
+          result[ReplaceRegex.camel(key)] = null;
           break;
         }
-        result[ReplaceRegex.snake(key)] = toCamelCase({ ...value });
+        result[ReplaceRegex.camel(key)] = toCamelCase({ ...value });
         break;
     }
   }
@@ -113,10 +121,10 @@ export function toCamelCase<Obj extends Record<string, any>>(target: Obj): Objec
 }
 
 export const ReplaceRegex = {
-  snake: (s: string) => {
+  camel: (s: string) => {
     return s.replace(/(_\S)/gi, (a) => a[1].toUpperCase());
   },
-  camel: (s: string) => {
+  snake: (s: string) => {
     return s.replace(/[A-Z]/g, (a) => `_${a.toLowerCase()}`);
   }
 };

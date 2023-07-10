@@ -42,7 +42,7 @@ export function objectToParams(obj: object): URLSearchParams {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(obj)) {
     if (!value) continue;
-    query.append(ReplaceRegex.camel(key), String(value));
+    query.append(ReplaceRegex.snake(key), String(value));
   }
 
   return query;
