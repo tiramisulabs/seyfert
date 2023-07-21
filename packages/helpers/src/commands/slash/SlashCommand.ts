@@ -1,7 +1,7 @@
-import { ApplicationCommandType, PermissionFlagsBits, RESTPostAPIChatInputApplicationCommandsJSONBody } from '@biscuitland/common';
-import { AllSlashOptions, SlashSubcommandGroupOption, SlashSubcommandOption } from './SlashCommandOption';
-import { PermissionsStrings } from '../../Utils';
-import { Mixin } from 'ts-mixer';
+import { ApplicationCommandType, RESTPostAPIChatInputApplicationCommandsJSONBody } from "@biscuitland/common";
+import { Mixin } from "ts-mixer";
+import { PermissionResolvable, Permissions } from "../../Permissions";
+import { AllSlashOptions, SlashSubcommandGroupOption, SlashSubcommandOption } from "./SlashCommandOption";
 
 class SlashCommandB {
   constructor(public data: Partial<RESTPostAPIChatInputApplicationCommandsJSONBody> = {}) {}
@@ -16,8 +16,8 @@ class SlashCommandB {
     return this;
   }
 
-  setDefautlMemberPermissions(permissions: PermissionsStrings[]): this {
-    this.data.default_member_permissions = `$${permissions.reduce((y, x) => y | PermissionFlagsBits[x], 0n)}`;
+  setDefautlMemberPermissions(permissions: PermissionResolvable[]): this {
+    this.data.default_member_permissions = Permissions.reduce(permissions).bitfield.toString();
     return this;
   }
 
@@ -33,7 +33,7 @@ class SlashCommandB {
     return this;
   }
 
-  addRawOption(option: ReturnType<AllSlashOptions['toJSON']>) {
+  addRawOption(option: ReturnType<AllSlashOptions["toJSON"]>) {
     this.data.options ??= [];
     // @ts-expect-error discord-api-types bad typing, again
     this.data.options.push(option);
@@ -42,7 +42,7 @@ class SlashCommandB {
   toJSON(): RESTPostAPIChatInputApplicationCommandsJSONBody {
     return {
       ...this.data,
-      type: ApplicationCommandType.ChatInput
+      type: ApplicationCommandType.ChatInput,
     } as RESTPostAPIChatInputApplicationCommandsJSONBody & {
       type: ApplicationCommandType.ChatInput;
     };

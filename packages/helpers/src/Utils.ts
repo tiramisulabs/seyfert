@@ -1,4 +1,4 @@
-import { APIMessageActionRowComponent, APIModalActionRowComponent, ComponentType, PermissionFlagsBits } from '@biscuitland/common';
+import { APIMessageActionRowComponent, APIModalActionRowComponent, ComponentType } from "@biscuitland/common";
 import {
   ChannelSelectMenu,
   MentionableSelectMenu,
@@ -6,9 +6,9 @@ import {
   ModalTextInput,
   RoleSelectMenu,
   StringSelectMenu,
-  UserSelectMenu
-} from './components';
-import { BaseComponent } from './components/BaseComponent';
+  UserSelectMenu,
+} from "./components";
+import { BaseComponent } from "./components/BaseComponent";
 
 export function createComponent(data: APIMessageActionRowComponent): HelperComponents;
 export function createComponent(data: APIModalActionRowComponent): HelperComponents;
@@ -36,7 +36,6 @@ export function createComponent(data: HelperComponents | APIMessageActionRowComp
   }
 }
 
-export type PermissionsStrings = `${keyof typeof PermissionFlagsBits}`;
 export type OptionValuesLength = { max: number; min: number };
 export type MessageSelectMenus = RoleSelectMenu | UserSelectMenu | StringSelectMenu | ChannelSelectMenu | MentionableSelectMenu;
 export type MessageComponents = MessageButton | MessageSelectMenus;

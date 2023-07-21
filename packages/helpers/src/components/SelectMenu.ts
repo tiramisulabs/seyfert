@@ -9,10 +9,10 @@ import {
   APIUserSelectComponent,
   ChannelType,
   ComponentType,
-  TypeArray
-} from '@biscuitland/common';
-import { BaseComponent } from './BaseComponent';
-import { OptionValuesLength } from '..';
+  TypeArray,
+} from "@biscuitland/common";
+import { OptionValuesLength } from "..";
+import { BaseComponent } from "./BaseComponent";
 
 class SelectMenu<Select extends APISelectMenuComponent = APISelectMenuComponent,> extends BaseComponent<Select> {
   setCustomId(id: string): this {
