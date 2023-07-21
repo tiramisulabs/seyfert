@@ -1,16 +1,13 @@
 import type {
-  GatewayPresenceUpdateData,
-  PresenceUpdateStatus,
-  GatewayActivity,
-  APIGuildMember,
-  GatewayRequestGuildMembersDataWithQuery,
-  GatewayRequestGuildMembersDataWithUserIds,
   APIAuditLogEntry,
   APIAutoModerationRule,
   APIChannel,
   APIGuild,
+  APIGuildMember,
   APIGuildScheduledEvent,
   APIStageInstance,
+  APIUser,
+  GatewayActivity,
   GatewayAutoModerationActionExecutionDispatchData,
   GatewayChannelPinsUpdateDispatchData,
   GatewayChannelUpdateDispatchData,
@@ -43,8 +40,11 @@ import type {
   GatewayMessageReactionRemoveDispatchData,
   GatewayMessageReactionRemoveEmojiDispatchData,
   GatewayMessageUpdateDispatchData,
+  GatewayPresenceUpdateData,
   GatewayPresenceUpdateDispatchData,
   GatewayReadyDispatchData,
+  GatewayRequestGuildMembersDataWithQuery,
+  GatewayRequestGuildMembersDataWithUserIds,
   GatewayThreadCreateDispatchData,
   GatewayThreadDeleteDispatchData,
   GatewayThreadListSyncDispatchData,
@@ -55,9 +55,9 @@ import type {
   GatewayVoiceServerUpdateDispatchData,
   GatewayVoiceStateUpdateData,
   GatewayWebhooksUpdateDispatchData,
+  PresenceUpdateStatus,
   RestToKeys,
-  APIUser
-} from '@biscuitland/common';
+} from "@biscuitland/common";
 
 export enum ShardState {
   /** Shard is fully connected to the gateway and receiving events from Discord. */
@@ -73,7 +73,7 @@ export enum ShardState {
   /** Shard is trying to resume a session with the gateway. */
   Resuming = 5,
   /** Shard got shut down studied or due to a not (self) fixable error and may not attempt to reconnect on its own. */
-  Offline = 6
+  Offline = 6,
 }
 
 export enum ShardSocketCloseCodes {
@@ -90,13 +90,13 @@ export enum ShardSocketCloseCodes {
   /** Special close code reserved for Discordeno's zero-downtime resharding system. */
   Resharded = 3065,
   /** Shard is re-identifying therefore the old connection needs to be closed. */
-  ReIdentifying = 3066
+  ReIdentifying = 3066,
 }
 
 /** https://discord.com/developers/docs/topics/gateway-events#update-presence */
 export interface StatusUpdate {
   /** The user's activities */
-  activities?: Omit<GatewayActivity, 'created_at'>[];
+  activities?: Omit<GatewayActivity, "created_at" | "id">[];
   /** The user's new status */
   status: PresenceUpdateStatus;
 }
@@ -113,7 +113,7 @@ export interface UpdateVoiceState {
   self_deaf: boolean;
 }
 
-export type ShardStatusUpdate = Pick<GatewayPresenceUpdateData, 'activities' | 'status'>;
+export type ShardStatusUpdate = Pick<GatewayPresenceUpdateData, "activities" | "status">;
 
 export interface RequestGuildMembersOptions extends GatewayRequestGuildMembersDataWithQuery, GatewayRequestGuildMembersDataWithUserIds {}
 
@@ -130,7 +130,7 @@ export type AtLeastOne<
   T,
   U = {
     [K in keyof T]: Pick<T, K>;
-  }
+  },
 > = Partial<T> & U[keyof U];
 
 export type ClientUser = { bot: true } & APIUser;
@@ -189,7 +189,7 @@ export type StageSameEvents = RestToKeys<
     APIStageInstance,
     GatewayDispatchEvents.StageInstanceCreate,
     GatewayDispatchEvents.StageInstanceUpdate,
-    GatewayDispatchEvents.StageInstanceDelete
+    GatewayDispatchEvents.StageInstanceDelete,
   ]
 >;
 
@@ -201,7 +201,7 @@ export type GuildScheduledUserSameEvents = RestToKeys<
   [
     GatewayGuildScheduledEventUserRemoveDispatchData,
     GatewayDispatchEvents.GuildScheduledEventUserRemove,
-    GatewayDispatchEvents.GuildScheduledEventUserAdd
+    GatewayDispatchEvents.GuildScheduledEventUserAdd,
   ]
 >;
 
@@ -210,7 +210,7 @@ export type GuildScheduledSameEvents = RestToKeys<
     APIGuildScheduledEvent,
     GatewayDispatchEvents.GuildScheduledEventCreate,
     GatewayDispatchEvents.GuildScheduledEventDelete,
-    GatewayDispatchEvents.GuildScheduledEventUpdate
+    GatewayDispatchEvents.GuildScheduledEventUpdate,
   ]
 >;
 
@@ -223,7 +223,7 @@ export type AutoModetaractionRuleEvents = RestToKeys<
     APIAutoModerationRule,
     GatewayDispatchEvents.AutoModerationRuleCreate,
     GatewayDispatchEvents.AutoModerationRuleDelete,
-    GatewayDispatchEvents.AutoModerationRuleUpdate
+    GatewayDispatchEvents.AutoModerationRuleUpdate,
   ]
 >;
 
@@ -233,6 +233,6 @@ export type NormalizeEvents = Events &
   GuildScheduledSameEvents &
   GuildScheduledUserSameEvents &
   IntegrationSameEvents &
-  StageSameEvents;
+  StageSameEvents & { RAW: GatewayDispatchEvents };
 
-export type GatewayEvents = { [x in keyof Events]: Events[x] };
+export type GatewayEvents = { [x in keyof NormalizeEvents]: NormalizeEvents[x] };
