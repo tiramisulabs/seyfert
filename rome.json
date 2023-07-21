@@ -8,7 +8,8 @@
 				"noNonNullAssertion": "off"
 			},
 			"suspicious": {
-				"noExplicitAny": "off"
+				"noExplicitAny": "off",
+				"noAssignInExpressions": "off"
 			},
 			"nursery": {
 				"useCamelCase": "off"
