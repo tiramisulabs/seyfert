@@ -3,7 +3,7 @@ import { MessageComponents, createComponent } from "../Utils";
 import { BaseComponent } from "./BaseComponent";
 
 export class MessageActionRow<T extends MessageComponents> extends BaseComponent<APIActionRowComponent<APIMessageActionRowComponent>> {
-  constructor({ components, ...data }: Partial<APIActionRowComponent<APIMessageActionRowComponent>>) {
+  constructor({ components, ...data }: Partial<APIActionRowComponent<APIMessageActionRowComponent>> = {}) {
     super({ ...data, type: ComponentType.ActionRow });
     this.components = (components?.map(createComponent) ?? []) as T[];
   }
