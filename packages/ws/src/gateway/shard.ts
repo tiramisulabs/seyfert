@@ -386,11 +386,7 @@ export class Shard<Connected extends boolean = true> {
       options.reconnect();
     }
 
-    if (this.isConnected()) {
-      this.websocket.close(1000, "BiscuitWS: close to reconnect");
-    } else {
-      this.websocket.terminate();
-    }
+    this.websocket.terminate();
 
     this.resetState();
   }

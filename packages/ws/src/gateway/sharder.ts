@@ -34,7 +34,7 @@ export class GatewayManager extends Collection<number, Shard> {
    * https://discord.com/developers/docs/topics/gateway#sharding-max-concurrency
    */
   spawnBuckets(): Shard[][] {
-    //https://github.com/oasisjs/socket/blob/a09c89c5cf8f42bfe043a4675028b45e85c87d99/src/gateway/sharder.ts#L35
+    this.logger.info("Preparing buckets");
     const chunks = SequentialBucket.chunk(new Array(this.options.totalShards), this.concurrency);
 
     chunks.forEach((arr: any[], index: number) => {
@@ -50,6 +50,7 @@ export class GatewayManager extends Collection<number, Shard> {
   async spawnShards(): Promise<void> {
     const buckets = this.spawnBuckets();
 
+    this.logger.info("Spawn shards");
     for (const bucket of buckets) {
       for (const shard of bucket) {
         if (!shard) break;
