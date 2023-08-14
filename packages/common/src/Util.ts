@@ -59,6 +59,7 @@ export function toSnakeCase<Obj extends Record<string, any>>(target: Obj): Objec
       case "bigint":
       case "boolean":
       case "function":
+      case "number":
       case "symbol":
       case "undefined":
         result[ReplaceRegex.snake(key)] = value;
@@ -97,6 +98,7 @@ export function toCamelCase<Obj extends Record<string, any>>(target: Obj): Objec
       case "boolean":
       case "function":
       case "symbol":
+      case "number":
       case "undefined":
         result[ReplaceRegex.camel(key)] = value;
         break;
