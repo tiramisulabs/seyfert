@@ -1,4 +1,4 @@
-import { APIEmbed, APIEmbedAuthor, APIEmbedField, APIEmbedFooter, ObjectToLower, TypeArray, toSnakeCase } from '@biscuitland/common';
+import { APIEmbed, APIEmbedAuthor, APIEmbedField, APIEmbedFooter, ObjectToLower, TypeArray, toSnakeCase } from "@biscuitland/common";
 
 export class MessageEmbed {
   constructor(public data: Partial<APIEmbed> = {}) {
@@ -22,7 +22,7 @@ export class MessageEmbed {
   }
 
   addFields(field: TypeArray<APIEmbedField>): this {
-    this.data.fields?.concat(field);
+    this.data.fields = this.data.fields!.concat(field);
     return this;
   }
 

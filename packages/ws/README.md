@@ -23,21 +23,29 @@ yarn add @biscuitland/ws
 ## Example
 
 ```ts
-import { GatewayManager } from '@biscuitland/ws';
-import { BiscuitREST } from '@biscuitland/rest';
-import { GatewayIntentBits, Routes} from '@biscuitland/common';
+import { GatewayManager } from "@biscuitland/ws";
+import { BiscuitREST, Router } from "@biscuitland/rest";
+import { GatewayIntentBits } from "@biscuitland/common";
 
 const intents = GatewayIntentBits.Guilds;
-const token = 'your token goes here';
+const token = "your token goes here";
 const rest = new BiscuitREST({ token });
+const api = new Router(rest).createProxy();
 
 (async () => {
-	const connection = await rest.get(Routes.gatewayBot())
+  const connection = await api.gateway.bot.get();
 
-	// gateway bot code ↓
-	const ws = new GatewayManager({ token, intents, connection });
+  // gateway bot code ↓
+  const ws = new GatewayManager({
+    token,
+    intents,
+    connection,
+    async handlePayload(shardId, payload) {
+      console.log("Received payload on shard #%s", shardId, payload);
+    },
+  });
 
-	await ws.spawnShards();
+  await ws.spawnShards();
 })();
 ```
 

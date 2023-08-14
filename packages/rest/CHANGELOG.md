@@ -1,5 +1,23 @@
 # @biscuitland/rest
 
+## 3.0.6
+
+### Patch Changes
+
+- I meessed up
+
+## 3.0.5
+
+### Patch Changes
+
+- fix: logger on every module
+
+## 3.0.4
+
+### Patch Changes
+
+- first 3.0.\* without bugs
+
 ## 2.3.0
 
 ### Minor Changes

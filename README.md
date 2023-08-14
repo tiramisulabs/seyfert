@@ -13,46 +13,49 @@ yarn add @biscuitland/core
 
 for further reading join our [Discord](https://discord.com/invite/XNw2RZFzaP)
 
-## Most importantly, biscuit is:
+## Most importantly, biscuit:
+Stands apart from other libraries like Discord.js or Eris as it takes a conscious and dedicated approach, adhering strictly to [simplicity](https://en.wikipedia.org/wiki/Unix_philosophy). We have examined the features and functionalities that contribute to [bloat](https://en.wikipedia.org/wiki/Code_bloat) in libraries, intentionally removing unnecessary complexities we deliver a [minimalistic](https://en.wikipedia.org/wiki/Minimalism_(computing)) and efficient solution that includes only essential components for Discord API interaction, reducing the library's footprint and enabling scalability.
 
-- A wrapper to interface the Discord API
-- A bleeding edge library
+High RAM usage in other libraries often arises due to unnecessary features and functionalities and suboptimal caching mechanisms tied to the core library.
 
-Biscuit is primarily inspired by Discord.js and Discordeno but it does not include a cache layer by default, we believe
-that you should not make software that does things it is not supposed to do.
+### Leveraging the power of meta programming
+The Proxy object enables dynamic, flexible and efficient calls to the API, it is typesafe due to TypeScript wizardry, meta programming is not for the weak minded.
 
 ## Why biscuit?:
-
-- [Minimal](https://en.wikipedia.org/wiki/Unix_philosophy), non feature-rich!
+- Remarkably minimal memory footprint
 - Scalable
+- Non feature-rich!
 
 ## Example bot (TS/JS)
 
-```js
+```ts
 import { Session } from '@biscuitland/core';
-import { GatewayIntents } from '@biscuitland/api-types';
+import { GatewayIntentBits, InteractionType, InteractionResponseType } from '@biscuitland/common';
 
-const session = new Session({ token: 'your token', intents: GatewayIntents.Guilds });
-
-const commands = [
-    {
-        name: 'ping',
-        description: 'Replies with pong!'
-    }
-];
-
-session.events.on('ready', ({ user }) => {
-    console.log('Logged in as:', user.tag);
-    session.upsertApplicationCommands(commands, 'GUILD_ID');
+const session = new Session({
+  intents: GatewayIntentBits.Guilds,
+  token: 'your token goes here'
 });
 
-session.events.on('interactionCreate', (interaction) => {
-    if (interaction.isCommand()) {
-        // your commands go here
-        if (interaction.commandName === 'ping') {
-            interaction.respondWith({ content: 'pong!' });
-        }
-    }
+const commands = [
+  {
+    name: 'ping',
+    description: 'Replies with pong!'
+  }
+];
+
+session.once('READY', (payload) => {
+  const username = payload.user.username;
+  console.log('Logged in as: %s', username);
+  session.managers.applications.bulkCommands(session.applicationId, commands);
+});
+
+session.on('INTERACTION_CREATE', (interaction) => {
+  if (interaction.type !== InteractionType.ApplicationCommand) return;
+  session.managers.interactions.reply(interaction.id, interaction.token, {
+    type: InteractionResponseType.ChannelMessageWithSource,
+    data: { content: 'pong!' }
+  });
 });
 
 session.start();
@@ -62,9 +65,4 @@ session.start();
 * [Website](https://biscuitjs.com/)
 * [Documentation](https://docs.biscuitjs.com/)
 * [Discord](https://discord.gg/XNw2RZFzaP)
-* [core](https://www.npmjs.com/package/@biscuitland/core) | [api-types](https://www.npmjs.com/package/@biscuitland/api-types) | [cache](https://www.npmjs.com/package/@biscuitland/cache) | [rest](https://www.npmjs.com/package/@biscuitland/rest) | [ws](https://www.npmjs.com/package/@biscuitland/ws) | [helpers](https://www.npmjs.com/package/@biscuitland/helpers)
-
-## Known issues:
-- node18 is required to run the library, however --experimental-fetch flag should work on node16+
-- redis cache (wip)
-- no optimal way to deliver a webspec bun version to the registry (#50)
+* [core](https://www.npmjs.com/package/@biscuitland/core) | [rest](https://www.npmjs.com/package/@biscuitland/rest) | [ws](https://www.npmjs.com/package/@biscuitland/ws) | [helpers](https://www.npmjs.com/package/@biscuitland/helpers)

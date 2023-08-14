@@ -186,8 +186,8 @@ export class GuildManager {
     return this.session.api.guilds(guildId)['auto-moderation'].rules.post({ body, reason });
   }
 
-  editAutoModerationRule(guildId: string, body: RESTPatchAPIAutoModerationRuleJSONBody, reason?: string) {
-    return this.session.api.guilds(guildId)['auto-moderation'].rules.patch({ body, reason });
+  editAutoModerationRule(guildId: string, ruleId: string, body: RESTPatchAPIAutoModerationRuleJSONBody, reason?: string) {
+    return this.session.api.guilds(guildId)['auto-moderation'].rules(ruleId).patch({ body, reason });
   }
 
   deleteAutoModerationRule(guildId: string, ruleId: string, reason?: string) {

@@ -1,11 +1,11 @@
-import { Options, Collection, Logger, delay } from '@biscuitland/common';
+import { Collection, Logger, Options, delay } from '@biscuitland/common';
 import {
-  Shard,
-  GatewayMemberRequest,
   BucketData,
   CreateGatewayManagerOptions,
+  GatewayManagerDefaultOptions,
+  GatewayMemberRequest,
   JoinVoiceOptions,
-  GatewayManagerDefaultOptions
+  Shard
 } from '../index';
 export class GatewayManager {
   buckets = new Map<number, BucketData>();
@@ -13,16 +13,17 @@ export class GatewayManager {
   cache: Collection<string, GatewayMemberRequest> | null = null;
   options: Required<CreateGatewayManagerOptions>;
   logger: Logger;
-  constructor(options: CreateGatewayManagerOptions) {
+  constructor({ connection, ...options }: CreateGatewayManagerOptions) {
     this.options = Options<Required<CreateGatewayManagerOptions>>(GatewayManagerDefaultOptions, {
       ...options,
-      lastShardId:
-        options.lastShardId ?? (options.totalShards ? options.totalShards - 1 : options.connection ? options.connection.shards - 1 : 0)
+      lastShardId: options.lastShardId ?? (options.totalShards ? options.totalShards - 1 : connection ? connection.shards - 1 : 0)
     });
+
+    this.options.connection = connection;
     if (this.options.cache) this.cache = new Collection();
     this.logger = new Logger({
       name: '[GatewayManager]',
-      active: options.debug
+      active: this.options.debug
     });
   }
 
@@ -114,7 +115,7 @@ export class GatewayManager {
         id: shardId,
         connection: {
           intents: this.options.intents,
-          url: this.options.url,
+          url: this.options.connection.url,
           version: this.options.version,
           token: this.options.token,
           totalShards: this.options.totalShards,

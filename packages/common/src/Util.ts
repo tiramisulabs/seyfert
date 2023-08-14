@@ -1,19 +1,19 @@
-import { setTimeout } from 'node:timers/promises';
-import { ObjectToSnake, ObjectToLower } from './Types';
+import { setTimeout } from "node:timers/promises";
+import { ObjectToLower, ObjectToSnake } from "./Types";
 
 const isPlainObject = (value: any) => {
   return (
     (value !== null &&
-      typeof value === 'object' &&
-      typeof value.constructor === 'function' &&
-      // eslint-disable-next-line no-prototype-builtins
-      (value.constructor.prototype.hasOwnProperty('isPrototypeOf') || Object.getPrototypeOf(value.constructor.prototype) === null)) ||
-    (value && Object.getPrototypeOf(value) === null)
+      typeof value === "object" &&
+      typeof value.constructor === "function" &&
+      // rome-ignore lint/suspicious/noPrototypeBuiltins: js tricks
+      (value.constructor.prototype.hasOwnProperty("isPrototypeOf") || Object.getPrototypeOf(value.constructor.prototype) === null)) ||
+    (value !== undefined && Object.getPrototypeOf(value) === null)
   );
 };
 
 const isObject = (o: any) => {
-  return !!o && typeof o === 'object' && !Array.isArray(o);
+  return !!o && typeof o === "object" && !Array.isArray(o);
 };
 
 export const Options = <T = any>(defaults: any, ...options: any[]): T => {
@@ -23,53 +23,60 @@ export const Options = <T = any>(defaults: any, ...options: any[]): T => {
 
   const source = options.shift();
 
-  if (isObject(defaults) && isPlainObject(source)) {
+  // This prevents default options from being intercepted by `Object.assign`
+  const $ = { ...defaults };
+
+  if (isObject($) && isPlainObject(source)) {
     Object.entries(source).forEach(([key, value]) => {
-      if (typeof value === 'undefined') {
+      if (typeof value === "undefined") {
         return;
       }
 
       if (isPlainObject(value)) {
-        if (!(key in defaults)) {
-          Object.assign(defaults, { [key]: {} });
+        if (!(key in $)) {
+          Object.assign($, { [key]: {} });
         }
 
-        Options(defaults[key], value);
+        Options($[key], value);
       } else {
-        Object.assign(defaults, { [key]: value });
+        Object.assign($, { [key]: value });
       }
     });
   }
 
-  return Options(defaults, ...options);
+  return Options($, ...options);
 };
 /**
  * Convert a camelCase object to snake_case.
  * @param target The object to convert.
  * @returns The converted object.
  */
-export function toSnakeCase<Obj extends { [k: string]: unknown }>(target: Obj): ObjectToSnake<Obj> {
+export function toSnakeCase<Obj extends Record<string, any>>(target: Obj): ObjectToSnake<Obj> {
   const result = {};
   for (const [key, value] of Object.entries(target)) {
     switch (typeof value) {
-      case 'string':
-      case 'bigint':
-      case 'boolean':
-      case 'function':
-      case 'symbol':
-      case 'undefined':
-        result[ReplaceRegex.camel(key)] = value;
+      case "string":
+      case "bigint":
+      case "boolean":
+      case "function":
+      case "symbol":
+      case "undefined":
+        result[ReplaceRegex.snake(key)] = value;
         break;
-      case 'object':
+      case "object":
         if (Array.isArray(value)) {
-          result[ReplaceRegex.camel(key)] = Promise.all(value.map((prop) => toSnakeCase(prop)));
+          result[ReplaceRegex.snake(key)] = value.map((prop) => (typeof prop === "object" && prop ? toSnakeCase(prop) : prop));
+          break;
+        }
+        if (isObject(value)) {
+          result[ReplaceRegex.snake(key)] = toSnakeCase({ ...value });
           break;
         }
         if (!Number.isNaN(value)) {
-          result[ReplaceRegex.camel(key)] = null;
+          result[ReplaceRegex.snake(key)] = null;
           break;
         }
-        result[ReplaceRegex.camel(key)] = toSnakeCase({ ...value });
+        result[ReplaceRegex.snake(key)] = toSnakeCase({ ...value });
         break;
     }
   }
@@ -81,28 +88,32 @@ export function toSnakeCase<Obj extends { [k: string]: unknown }>(target: Obj): 
  * @param target The object to convert.
  * @returns The converted object.
  */
-export function toCamelCase<Obj extends { [k: string]: unknown }>(target: Obj): ObjectToLower<Obj> {
+export function toCamelCase<Obj extends Record<string, any>>(target: Obj): ObjectToLower<Obj> {
   const result = {};
   for (const [key, value] of Object.entries(target)) {
     switch (typeof value) {
-      case 'string':
-      case 'bigint':
-      case 'boolean':
-      case 'function':
-      case 'symbol':
-      case 'undefined':
-        result[ReplaceRegex.snake(key)] = value;
+      case "string":
+      case "bigint":
+      case "boolean":
+      case "function":
+      case "symbol":
+      case "undefined":
+        result[ReplaceRegex.camel(key)] = value;
         break;
-      case 'object':
+      case "object":
         if (Array.isArray(value)) {
-          result[ReplaceRegex.snake(key)] = Promise.all(value.map((prop) => toCamelCase(prop)));
+          result[ReplaceRegex.camel(key)] = value.map((prop) => (typeof prop === "object" && prop ? toCamelCase(prop) : prop));
+          break;
+        }
+        if (isObject(value)) {
+          result[ReplaceRegex.camel(key)] = toCamelCase({ ...value });
           break;
         }
         if (!Number.isNaN(value)) {
-          result[ReplaceRegex.snake(key)] = null;
+          result[ReplaceRegex.camel(key)] = null;
           break;
         }
-        result[ReplaceRegex.snake(key)] = toCamelCase({ ...value });
+        result[ReplaceRegex.camel(key)] = toCamelCase({ ...value });
         break;
     }
   }
@@ -110,12 +121,12 @@ export function toCamelCase<Obj extends { [k: string]: unknown }>(target: Obj): 
 }
 
 export const ReplaceRegex = {
-  snake: (s: string) => {
+  camel: (s: string) => {
     return s.replace(/(_\S)/gi, (a) => a[1].toUpperCase());
   },
-  camel: (s: string) => {
+  snake: (s: string) => {
     return s.replace(/[A-Z]/g, (a) => `_${a.toLowerCase()}`);
-  }
+  },
 };
 
 // https://github.com/discordeno/discordeno/blob/main/packages/utils/src/colors.ts
@@ -155,9 +166,9 @@ export function getColorEnabled(): boolean {
  */
 function code(open: number[], close: number): Code {
   return {
-    open: `\x1b[${open.join(';')}m`,
+    open: `\x1b[${open.join(";")}m`,
     close: `\x1b[${close}m`,
-    regexp: new RegExp(`\\x1b\\[${close}m`, 'g')
+    regexp: new RegExp(`\\x1b\\[${close}m`, "g"),
   };
 }
 
@@ -546,7 +557,7 @@ export function bgRgb8(str: string, color: number): string {
  * @param color code
  */
 export function rgb24(str: string, color: number | Rgb): string {
-  if (typeof color === 'number') {
+  if (typeof color === "number") {
     return run(str, code([38, 2, (color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff], 39));
   }
   return run(str, code([38, 2, clampAndTruncate(color.r), clampAndTruncate(color.g), clampAndTruncate(color.b)], 39));
@@ -568,7 +579,7 @@ export function rgb24(str: string, color: number | Rgb): string {
  * @param color code
  */
 export function bgRgb24(str: string, color: number | Rgb): string {
-  if (typeof color === 'number') {
+  if (typeof color === "number") {
     return run(str, code([48, 2, (color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff], 49));
   }
   return run(str, code([48, 2, clampAndTruncate(color.r), clampAndTruncate(color.g), clampAndTruncate(color.b)], 49));
@@ -577,10 +588,10 @@ export function bgRgb24(str: string, color: number | Rgb): string {
 // https://github.com/chalk/ansi-regex/blob/02fa893d619d3da85411acc8fd4e2eea0e95a9d9/index.js
 const ANSI_PATTERN = new RegExp(
   [
-    '[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)',
-    '(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-nq-uy=><~]))'
-  ].join('|'),
-  'g'
+    "[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)",
+    "(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-nq-uy=><~]))",
+  ].join("|"),
+  "g",
 );
 
 /**
@@ -588,7 +599,7 @@ const ANSI_PATTERN = new RegExp(
  * @param string to remove ANSI escape codes from
  */
 export function stripColor(string: string): string {
-  return string.replace(ANSI_PATTERN, '');
+  return string.replace(ANSI_PATTERN, "");
 }
 
 export function delay<T>(time: number, result?: T) {

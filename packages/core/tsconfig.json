@@ -3,5 +3,5 @@
 	"compilerOptions": {
 		"outDir": "./dist"
 	},
-	"include": ["src/**/*", "../../bot/Components", "../common/src/applyToClass.ts"]
+	"include": ["src/**/*"]
 }

@@ -7,8 +7,8 @@
 		"build": "turbo run build",
 		"clean": "turbo run clean",
 		"check": "rome check ./packages/",
-		"check:apply": "rome check ./packages/ --apply",
-		"lint": "rome format ./packages/ --write --quote-style single --trailing-comma none",
+		"check:apply": "rome check --apply --max-diagnostics 200 --quote-style single --trailing-comma none ./packages/",
+		"lint": "rome format --write --quote-style single --trailing-comma none ./packages/",
 		"dev": "turbo run dev --parallel"
 	},
 	"engines": {

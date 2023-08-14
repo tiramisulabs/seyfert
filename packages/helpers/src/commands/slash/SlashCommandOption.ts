@@ -1,26 +1,26 @@
 import {
-  APIApplicationCommandOption,
-  APIApplicationCommandOptionChoice,
-  ApplicationCommandOptionType,
+  APIApplicationCommandIntegerOption as AACIO,
+  APIApplicationCommandNumberOption as AACNO,
+  APIApplicationCommandSubcommandOption as AACSCO,
+  APIApplicationCommandSubcommandGroupOption as AACSGO,
   APIApplicationCommandStringOption as AACSO,
+  APIApplicationCommandAttachmentOption,
+  APIApplicationCommandBooleanOption,
+  APIApplicationCommandChannelOption,
+  APIApplicationCommandMentionableOption,
+  APIApplicationCommandOption,
   APIApplicationCommandOptionBase,
+  APIApplicationCommandOptionChoice,
+  APIApplicationCommandRoleOption,
+  APIApplicationCommandUserOption,
+  ApplicationCommandOptionType,
+  ChannelType,
   LocalizationMap,
   RestToKeys,
   TypeArray,
   When,
-  APIApplicationCommandNumberOption as AACNO,
-  APIApplicationCommandIntegerOption as AACIO,
-  APIApplicationCommandSubcommandGroupOption as AACSGO,
-  APIApplicationCommandSubcommandOption as AACSCO,
-  APIApplicationCommandUserOption,
-  APIApplicationCommandChannelOption,
-  ChannelType,
-  APIApplicationCommandRoleOption,
-  APIApplicationCommandMentionableOption,
-  APIApplicationCommandAttachmentOption,
-  APIApplicationCommandBooleanOption
-} from '@biscuitland/common';
-import { OptionValuesLength } from '../../';
+} from "@biscuitland/common";
+import { OptionValuesLength } from "../../";
 
 export type SlashBaseOptionTypes =
   | Exclude<APIApplicationCommandOption, AACSO | AACNO | AACIO | AACSCO>
@@ -53,7 +53,7 @@ export abstract class SlashBaseOption<DataType extends SlashBaseOptionTypes> {
     return this;
   }
 
-  addLocalizations(locals: RestToKeys<[LocalizationMap, 'name', 'description']>): this {
+  addLocalizations(locals: RestToKeys<[LocalizationMap, "name", "description"]>): this {
     this.data.name_localizations = locals.name;
     this.data.description_localizations = locals.description;
     return this;
@@ -333,7 +333,7 @@ export class SlashSubcommandGroupOption extends SlashBaseOption<APIApplicationCo
     return this;
   }
 
-  addRawOption(option: ReturnType<SlashSubcommandOption['toJSON']>) {
+  addRawOption(option: ReturnType<SlashSubcommandOption["toJSON"]>) {
     this.data.options ??= [];
     this.data.options.push(option);
   }

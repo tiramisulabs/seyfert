@@ -1,11 +1,10 @@
+import { GatewayIntentBits, Identify, When } from '@biscuitland/common';
 import type { BiscuitRESTOptions, CDNRoutes, Routes } from '@biscuitland/rest';
-import { CDN, BiscuitREST, Router } from '@biscuitland/rest';
-import { When } from '@biscuitland/common';
+import { BiscuitREST, CDN, Router } from '@biscuitland/rest';
+import { CreateGatewayManagerOptions, GatewayEvents, GatewayManager } from '@biscuitland/ws';
 import EventEmitter2 from 'eventemitter2';
 import { MainManager, getBotIdFromToken } from '.';
-import { GatewayManager, CreateGatewayManagerOptions, GatewayEvents } from '@biscuitland/ws';
-import { GatewayIntentBits } from '@biscuitland/common';
-import { actionHandler, Handler } from './events/handler';
+import { Handler, actionHandler } from './events/handler';
 
 export class Session<On extends boolean = boolean> extends EventEmitter2 {
   constructor(public options: BiscuitOptions) {
@@ -67,8 +66,8 @@ export class Session<On extends boolean = boolean> extends EventEmitter2 {
   private createRest(rest: any) {
     if (!rest) {
       return new BiscuitREST({
-        ...this.options.defaultRestOptions,
-        token: this.options.token
+        token: this.options.token,
+        ...this.options.defaultRestOptions
       });
     }
 
@@ -86,7 +85,7 @@ export class Session<On extends boolean = boolean> extends EventEmitter2 {
     ctx.gateway = new GatewayManager({
       token: this.options.token,
       intents: this.options.intents ?? 0,
-      connection: this.options.defaultGatewayOptions?.connection ?? (await this.rest.get('/gateway/bot')),
+      connection: this.options.defaultGatewayOptions?.connection ?? (await this.api.gateway.bot.get()),
       async handlePayload(shard, data) {
         const { t, d } = data;
         if (!(t && d)) return;
@@ -95,7 +94,18 @@ export class Session<On extends boolean = boolean> extends EventEmitter2 {
       ...this.options.defaultGatewayOptions
     });
 
+    ctx.once('READY', (payload) => {
+      const { user, application } = payload;
+      this.botId = user.id;
+      this.applicationId = application.id;
+    });
+
     await ctx.gateway.spawnShards();
+  }
+
+  async stop(code = 1000, error = 'Stopped') {
+    this.removeAllListeners();
+    await this.gateway.shutdown(code, error);
   }
 }
 
@@ -106,5 +116,5 @@ export interface BiscuitOptions {
   intents: number | GatewayIntentBits;
   rest?: BiscuitREST;
   defaultRestOptions?: Partial<BiscuitRESTOptions>;
-  defaultGatewayOptions?: Omit<CreateGatewayManagerOptions, 'token' | 'intents'>;
+  defaultGatewayOptions?: Identify<Partial<Omit<CreateGatewayManagerOptions, 'token' | 'intents'>>>;
 }

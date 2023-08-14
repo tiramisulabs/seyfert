@@ -15,14 +15,14 @@ yarn add @biscuitland/core
 
 ### Example bot
 `project/index.js`:
-```js
+```ts
 import { Session } from '@biscuitland/core';
-import { GatewayIntentBits } from "discord-api-types/v10";
+import { GatewayIntentBits } from '@biscuitland/common';
 
 const session = new Session({ token: 'your token', intents: GatewayIntentBits.Guilds });
 
-session.events.on('READY', (payload) => {
-    console.log('Logged in as:', payload.user.username);
+session.on('READY', (payload, shardId) => {
+    console.log('Logged in as: %s in shard #%s', payload.user.username, shardId);
 });
 
 session.start();

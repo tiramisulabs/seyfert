@@ -30,5 +30,8 @@
 			"tsup.config.ts",
 			"__test__"
 		]
+	},
+	"organizeImports": {
+		"enabled": true
 	}
 }

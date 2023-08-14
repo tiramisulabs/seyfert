@@ -31,9 +31,16 @@ export type SnakeCase<S extends string> = S extends `${infer A}${infer Rest}`
   : Lowercase<S>;
 
 export type ObjectToLower<T> = Identify<{
-  [K in keyof T as CamelCase<Exclude<K, symbol | number>>]: T[K] extends object ? Identify<ObjectToLower<T[K]>> : T[K];
+  [K in keyof T as CamelCase<Exclude<K, symbol | number>>]: T[K] extends unknown[]
+    ? Identify<ObjectToLower<T[K][0]>[]>
+    : T[K] extends object
+    ? Identify<ObjectToLower<T[K]>>
+    : T[K];
 }>;
-
 export type ObjectToSnake<T> = Identify<{
-  [K in keyof T as SnakeCase<Exclude<K, symbol | number>>]: T[K] extends object ? Identify<ObjectToSnake<T[K]>> : T[K];
+  [K in keyof T as SnakeCase<Exclude<K, symbol | number>>]: T[K] extends unknown[]
+    ? Identify<ObjectToSnake<T[K][0]>[]>
+    : T[K] extends object
+    ? Identify<ObjectToSnake<T[K]>>
+    : T[K];
 }>;

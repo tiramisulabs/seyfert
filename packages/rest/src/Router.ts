@@ -25,12 +25,10 @@ export class Router {
         if (ArrRequestsMethods.includes(key)) {
           return (...options: any[]) => this.rest[key](`/${route.join('/')}`, ...options);
         }
-        route.push(key);
-        return this.createProxy(route);
+        return this.createProxy([...route, key]);
       },
       apply: (...[, _, args]) => {
-        route.push(...args.filter((x) => x != null));
-        return this.createProxy(route);
+        return this.createProxy([...route, ...args.filter((x) => x != null)]);
       }
     }) as unknown as Routes;
   }
@@ -48,7 +46,7 @@ export class CDN {
             const lastRoute = `${CDN_URL}/${route.join('/')}`;
             if (value) {
               if (typeof value !== 'string') {
-                // rome-ignore lint/style/noParameterAssign: ?!
+                // rome-ignore lint/nursery/noParameterAssign: fix multiples value types
                 value = String(value);
               }
               return `${lastRoute}/${value}`;
@@ -56,12 +54,10 @@ export class CDN {
             return lastRoute;
           };
         }
-        route.push(key);
-        return this.createProxy(route);
+        return this.createProxy([...route, key]);
       },
       apply: (...[, _, args]) => {
-        route.push(...args.filter((x) => x != null));
-        return this.createProxy(route);
+        return this.createProxy([...route, ...args.filter((x) => x != null)]);
       }
     }) as unknown as CDNRoutes;
   }
