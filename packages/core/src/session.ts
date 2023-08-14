@@ -1,10 +1,10 @@
-import { GatewayIntentBits, Identify, When } from '@biscuitland/common';
-import type { BiscuitRESTOptions, CDNRoutes, Routes } from '@biscuitland/rest';
-import { BiscuitREST, CDN, Router } from '@biscuitland/rest';
-import { CreateGatewayManagerOptions, GatewayEvents, GatewayManager } from '@biscuitland/ws';
-import EventEmitter2 from 'eventemitter2';
-import { MainManager, getBotIdFromToken } from '.';
-import { Handler, actionHandler } from './events/handler';
+import { GatewayIntentBits, Identify, When } from "@biscuitland/common";
+import type { BiscuitRESTOptions, CDNRoutes, Routes } from "@biscuitland/rest";
+import { BiscuitREST, CDN, Router } from "@biscuitland/rest";
+import { GatewayEvents, GatewayManager, GatewayManagerOptions } from "@biscuitland/ws";
+import EventEmitter2 from "eventemitter2";
+import { MainManager, getBotIdFromToken } from ".";
+import { Handler, actionHandler } from "./events/handler";
 
 export class Session<On extends boolean = boolean> extends EventEmitter2 {
   constructor(public options: BiscuitOptions) {
@@ -67,7 +67,7 @@ export class Session<On extends boolean = boolean> extends EventEmitter2 {
     if (!rest) {
       return new BiscuitREST({
         token: this.options.token,
-        ...this.options.defaultRestOptions
+        ...this.options.defaultRestOptions,
       });
     }
 
@@ -75,7 +75,7 @@ export class Session<On extends boolean = boolean> extends EventEmitter2 {
       return rest;
     }
 
-    throw new Error('[CORE] REST not found');
+    throw new Error("[CORE] REST not found");
   }
 
   async start() {
@@ -85,16 +85,17 @@ export class Session<On extends boolean = boolean> extends EventEmitter2 {
     ctx.gateway = new GatewayManager({
       token: this.options.token,
       intents: this.options.intents ?? 0,
-      connection: this.options.defaultGatewayOptions?.connection ?? (await this.api.gateway.bot.get()),
+      info: this.options.defaultGatewayOptions?.info ?? (await this.api.gateway.bot.get()),
       async handlePayload(shard, data) {
         const { t, d } = data;
         if (!(t && d)) return;
+        // @ts-expect-error
         actionHandler([ctx, { t, d }, shard]);
       },
-      ...this.options.defaultGatewayOptions
+      ...this.options.defaultGatewayOptions,
     });
 
-    ctx.once('READY', (payload) => {
+    ctx.once("READY", (payload) => {
       const { user, application } = payload;
       this.botId = user.id;
       this.applicationId = application.id;
@@ -103,18 +104,18 @@ export class Session<On extends boolean = boolean> extends EventEmitter2 {
     await ctx.gateway.spawnShards();
   }
 
-  async stop(code = 1000, error = 'Stopped') {
+  async stop() {
     this.removeAllListeners();
-    await this.gateway.shutdown(code, error);
+    await this.gateway.explode();
   }
 }
 
-export type HandlePayload = Pick<CreateGatewayManagerOptions, 'handlePayload'>['handlePayload'];
+export type HandlePayload = Pick<GatewayManagerOptions, "handlePayload">["handlePayload"];
 
 export interface BiscuitOptions {
   token: string;
   intents: number | GatewayIntentBits;
   rest?: BiscuitREST;
   defaultRestOptions?: Partial<BiscuitRESTOptions>;
-  defaultGatewayOptions?: Identify<Partial<Omit<CreateGatewayManagerOptions, 'token' | 'intents'>>>;
+  defaultGatewayOptions?: Identify<Partial<Omit<GatewayManagerOptions, "token" | "intents">>>;
 }
