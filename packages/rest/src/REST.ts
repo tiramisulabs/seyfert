@@ -2,6 +2,7 @@ import type { RawFile, RequestData } from '@discordjs/rest';
 import { REST } from '@discordjs/rest';
 import type { Identify } from '@biscuitland/common';
 import type { RequestMethod } from './Router';
+import { Routes } from './Routes';
 export class BiscuitREST {
   api: REST;
   constructor(public options: BiscuitRESTOptions) {
@@ -63,7 +64,7 @@ export class BiscuitREST {
 
 export type BiscuitRESTOptions = Identify<ConstructorParameters<typeof REST>[0] & { token: string }>;
 
-export type RequestOptions = Pick<RequestData, 'passThroughBody' | 'reason'>;
+export type RequestOptions = Pick<RequestData, 'passThroughBody' | 'reason' | 'auth'>;
 
 export type RequestObject<M extends RequestMethod, B = Record<string, any>, Q = Record<string, any>> = {
   query?: Q;
@@ -71,12 +72,12 @@ export type RequestObject<M extends RequestMethod, B = Record<string, any>, Q = 
   (M extends `${RequestMethod.Get}`
     ? unknown
     : {
-        body?: B;
-        files?: RawFile[];
-      });
+      body?: B;
+      files?: RawFile[];
+    });
 
 export type RestArguments<M extends RequestMethod, B = any, Q extends never | Record<string, any> = any> = M extends RequestMethod.Get
   ? Q extends never
-    ? RequestObject<M, never, B>
-    : never
+  ? RequestObject<M, never, B>
+  : never
   : RequestObject<M, B, Q>;
