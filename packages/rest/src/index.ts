@@ -1,5 +1,5 @@
-export * from './Routes/';
-export * from './Router';
-export * from './REST';
+export { REST, type RawFile } from '@discordjs/rest';
 export * from './CDN';
-export { type RawFile, REST } from '@discordjs/rest';
+export * from './REST';
+export * from './Router';
+export * from './Routes';

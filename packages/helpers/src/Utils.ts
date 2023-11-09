@@ -1,4 +1,4 @@
-import { APIMessageActionRowComponent, APIModalActionRowComponent, ComponentType } from "@biscuitland/common";
+import { APIMessageActionRowComponent, APIModalActionRowComponent, ComponentType } from '@biscuitland/common';
 import {
   ChannelSelectMenu,
   MentionableSelectMenu,
@@ -6,9 +6,9 @@ import {
   ModalTextInput,
   RoleSelectMenu,
   StringSelectMenu,
-  UserSelectMenu,
-} from "./components";
-import { BaseComponent } from "./components/BaseComponent";
+  UserSelectMenu
+} from './components';
+import { BaseComponent } from './components/BaseComponent';
 
 export function createComponent(data: APIMessageActionRowComponent): HelperComponents;
 export function createComponent(data: APIModalActionRowComponent): HelperComponents;

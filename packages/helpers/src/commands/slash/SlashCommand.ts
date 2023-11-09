@@ -1,7 +1,7 @@
-import { ApplicationCommandType, RESTPostAPIChatInputApplicationCommandsJSONBody } from "@biscuitland/common";
-import { Mixin } from "ts-mixer";
-import { PermissionResolvable, Permissions } from "../../Permissions";
-import { AllSlashOptions, SlashSubcommandGroupOption, SlashSubcommandOption } from "./SlashCommandOption";
+import { ApplicationCommandType, RESTPostAPIChatInputApplicationCommandsJSONBody } from '@biscuitland/common';
+import { Mixin } from 'ts-mixer';
+import { PermissionResolvable, Permissions } from '../../Permissions';
+import { AllSlashOptions, SlashSubcommandGroupOption, SlashSubcommandOption } from './SlashCommandOption';
 
 class SlashCommandB {
   constructor(public data: Partial<RESTPostAPIChatInputApplicationCommandsJSONBody> = {}) {}
@@ -33,7 +33,7 @@ class SlashCommandB {
     return this;
   }
 
-  addRawOption(option: ReturnType<AllSlashOptions["toJSON"]>) {
+  addRawOption(option: ReturnType<AllSlashOptions['toJSON']>) {
     this.data.options ??= [];
     // @ts-expect-error discord-api-types bad typing, again
     this.data.options.push(option);
@@ -42,7 +42,7 @@ class SlashCommandB {
   toJSON(): RESTPostAPIChatInputApplicationCommandsJSONBody {
     return {
       ...this.data,
-      type: ApplicationCommandType.ChatInput,
+      type: ApplicationCommandType.ChatInput
     } as RESTPostAPIChatInputApplicationCommandsJSONBody & {
       type: ApplicationCommandType.ChatInput;
     };

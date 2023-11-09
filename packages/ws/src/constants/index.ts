@@ -1,24 +1,24 @@
-import type { GatewayDispatchPayload } from "@biscuitland/common";
-import type { GatewayManagerOptions } from "../gateway";
+import type { GatewayDispatchPayload } from '@biscuitland/common';
+import { ShardManagerOptions } from '../discord';
 
 const COMPRESS = false;
 
 const properties = {
   os: process.platform,
-  browser: "Biscuit",
-  device: "Biscuit",
+  browser: 'Biscuit',
+  device: 'Biscuit'
 };
 
-const GatewayManagerDefaults: Partial<GatewayManagerOptions> = {
+const ShardManagerDefaults: Partial<ShardManagerOptions> = {
   totalShards: 1,
   spawnShardDelay: 5300,
   debug: false,
   intents: 0,
   properties: properties,
   version: 10,
-  handlePayload: function (shardId: number, packet: GatewayDispatchPayload): void {
+  handlePayload: (shardId: number, packet: GatewayDispatchPayload): void => {
     console.info(`Packet ${packet.t} on shard ${shardId}`);
-  },
+  }
 };
 
 export interface IdentifyProperties {
@@ -51,41 +51,7 @@ enum ShardState {
   /** Shard is trying to resume a session with the gateway. */
   Resuming = 5,
   /** Shard got shut down studied or due to a not (self) fixable error and may not attempt to reconnect on its own. */
-  Offline = 6,
+  Offline = 6
 }
 
-function isObject(o: any) {
-  return o && typeof o === "object" && !Array.isArray(o);
-}
-
-function Options<T>(defaults: any, ...options: any[]): T {
-  const option = options.shift();
-  if (!option) return defaults;
-
-  return Options(
-    {
-      ...option,
-      ...Object.fromEntries(
-        Object.entries(defaults).map(([key, value]) => [
-          key,
-          isObject(value) ? Options(value, option?.[key] || {}) : option?.[key] || value,
-        ]),
-      ),
-    },
-    ...options,
-  );
-}
-
-// nutella truco
-function OptionsD<O extends Record<any, any>>(o: O) {
-  return function (target: { new (...args: any[]): any }) {
-    return class extends target {
-      constructor(...args: any[]) {
-        super();
-        this.options = Options(o, ...args.filter(isObject));
-      }
-    };
-  };
-}
-
-export { COMPRESS, GatewayManagerDefaults, Options, OptionsD, ShardState, isObject, properties };
+export { COMPRESS, ShardManagerDefaults, ShardState, properties };

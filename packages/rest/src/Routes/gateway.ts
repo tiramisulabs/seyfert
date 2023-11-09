@@ -1,4 +1,4 @@
-import { RESTGetAPIGatewayResult, RESTGetAPIGatewayBotResult } from '@biscuitland/common';
+import { RESTGetAPIGatewayBotResult, RESTGetAPIGatewayResult } from '@biscuitland/common';
 import { RestArguments } from '../REST';
 import { RequestMethod } from '../Router';
 

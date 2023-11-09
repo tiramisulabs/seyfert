@@ -1,5 +1,5 @@
-import { ApplicationCommandType, LocalizationMap, RESTPostAPIContextMenuApplicationCommandsJSONBody } from "@biscuitland/common";
-import { PermissionResolvable, Permissions } from "../../Permissions";
+import { ApplicationCommandType, LocalizationMap, RESTPostAPIContextMenuApplicationCommandsJSONBody } from '@biscuitland/common';
+import { PermissionResolvable, Permissions } from '../../Permissions';
 
 export type ContextCommandType = ApplicationCommandType.Message | ApplicationCommandType.User;
 

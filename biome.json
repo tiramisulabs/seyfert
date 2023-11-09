@@ -10,15 +10,12 @@
 			"suspicious": {
 				"noExplicitAny": "off",
 				"noAssignInExpressions": "off"
-			},
-			"nursery": {
-				"useCamelCase": "off"
 			}
 		}
 	},
 	"formatter": {
 		"enabled": true,
-		"indentSize": 2,
+		"indentWidth": 2,
 		"indentStyle": "space",
 		"lineWidth": 140,
 		"formatWithErrors": true

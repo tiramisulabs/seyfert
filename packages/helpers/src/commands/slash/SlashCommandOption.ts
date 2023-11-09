@@ -1,26 +1,26 @@
 import {
-  APIApplicationCommandIntegerOption as AACIO,
-  APIApplicationCommandNumberOption as AACNO,
-  APIApplicationCommandSubcommandOption as AACSCO,
-  APIApplicationCommandSubcommandGroupOption as AACSGO,
-  APIApplicationCommandStringOption as AACSO,
   APIApplicationCommandAttachmentOption,
   APIApplicationCommandBooleanOption,
   APIApplicationCommandChannelOption,
+  APIApplicationCommandIntegerOption as AACIO,
   APIApplicationCommandMentionableOption,
+  APIApplicationCommandNumberOption as AACNO,
   APIApplicationCommandOption,
   APIApplicationCommandOptionBase,
   APIApplicationCommandOptionChoice,
   APIApplicationCommandRoleOption,
+  APIApplicationCommandStringOption as AACSO,
+  APIApplicationCommandSubcommandGroupOption as AACSGO,
+  APIApplicationCommandSubcommandOption as AACSCO,
   APIApplicationCommandUserOption,
   ApplicationCommandOptionType,
   ChannelType,
   LocalizationMap,
   RestToKeys,
   TypeArray,
-  When,
-} from "@biscuitland/common";
-import { OptionValuesLength } from "../../";
+  When
+} from '@biscuitland/common';
+import { OptionValuesLength } from '../../';
 
 export type SlashBaseOptionTypes =
   | Exclude<APIApplicationCommandOption, AACSO | AACNO | AACIO | AACSCO>
@@ -53,7 +53,7 @@ export abstract class SlashBaseOption<DataType extends SlashBaseOptionTypes> {
     return this;
   }
 
-  addLocalizations(locals: RestToKeys<[LocalizationMap, "name", "description"]>): this {
+  addLocalizations(locals: RestToKeys<[LocalizationMap, 'name', 'description']>): this {
     this.data.name_localizations = locals.name;
     this.data.description_localizations = locals.description;
     return this;
@@ -102,7 +102,7 @@ export class SlashStringOption<AC extends boolean = boolean> extends SlashRequir
   addChoices(choices: TypeArray<APIApplicationCommandOptionChoice<string>>): SlashStringOption<true> {
     const ctx = this as SlashStringOption<true>;
     ctx.data.choices ??= [];
-    ctx.data.choices.concat(choices);
+    ctx.data.choices = ctx.data.choices!.concat(choices);
     return ctx;
   }
 
@@ -148,7 +148,7 @@ export class SlashNumberOption<AC extends boolean = boolean> extends SlashRequir
   addChoices(choices: TypeArray<APIApplicationCommandOptionChoice<number>>): SlashNumberOption<true> {
     const ctx = this as SlashNumberOption<true>;
     ctx.data.choices ??= [];
-    ctx.data.choices.concat(choices);
+    ctx.data.choices = ctx.data.choices.concat(choices);
     return ctx;
   }
 
@@ -333,7 +333,7 @@ export class SlashSubcommandGroupOption extends SlashBaseOption<APIApplicationCo
     return this;
   }
 
-  addRawOption(option: ReturnType<SlashSubcommandOption["toJSON"]>) {
+  addRawOption(option: ReturnType<SlashSubcommandOption['toJSON']>) {
     this.data.options ??= [];
     this.data.options.push(option);
   }

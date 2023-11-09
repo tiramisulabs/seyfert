@@ -1,6 +1,6 @@
-import type { APIGuildMember, MakeRequired } from "@biscuitland/common";
-import type { ImageOptions, Session } from "../index";
-import { formatImageURL } from "../index";
+import type { APIGuildMember, MakeRequired } from '@biscuitland/common';
+import type { ImageOptions, Session } from '../index';
+import { formatImageURL } from '../index';
 
 export class MemberManager {
   constructor(private readonly session: Session) {}
@@ -14,6 +14,6 @@ export class MemberManager {
   }
 }
 
-export type DynamicMember = MakeRequired<APIGuildMember, "user"> & {
+export type DynamicMember = MakeRequired<APIGuildMember, 'user'> & {
   guild_id: string;
 };

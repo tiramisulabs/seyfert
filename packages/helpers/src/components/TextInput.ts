@@ -1,6 +1,6 @@
-import { APITextInputComponent, ComponentType, TextInputStyle } from "@biscuitland/common";
-import { OptionValuesLength } from "..";
-import { BaseComponent } from "./BaseComponent";
+import { APITextInputComponent, ComponentType, TextInputStyle } from '@biscuitland/common';
+import { OptionValuesLength } from '..';
+import { BaseComponent } from './BaseComponent';
 
 export class ModalTextInput extends BaseComponent<APITextInputComponent> {
   constructor(data: Partial<APITextInputComponent> = {}) {

@@ -1,6 +1,6 @@
-import { APIActionRowComponent, APIMessageActionRowComponent, ComponentType, TypeArray } from "@biscuitland/common";
-import { MessageComponents, createComponent } from "../Utils";
-import { BaseComponent } from "./BaseComponent";
+import { APIActionRowComponent, APIMessageActionRowComponent, ComponentType, TypeArray } from '@biscuitland/common';
+import { MessageComponents, createComponent } from '../Utils';
+import { BaseComponent } from './BaseComponent';
 
 export class MessageActionRow<T extends MessageComponents> extends BaseComponent<APIActionRowComponent<APIMessageActionRowComponent>> {
   constructor({ components, ...data }: Partial<APIActionRowComponent<APIMessageActionRowComponent>> = {}) {
@@ -10,7 +10,7 @@ export class MessageActionRow<T extends MessageComponents> extends BaseComponent
   components: T[];
 
   addComponents(component: TypeArray<T>): this {
-    this.components.concat(component);
+    this.components = this.components.concat(component);
     return this;
   }
 
@@ -22,7 +22,7 @@ export class MessageActionRow<T extends MessageComponents> extends BaseComponent
   toJSON(): APIActionRowComponent<APIMessageActionRowComponent> {
     return {
       ...this.data,
-      components: this.components.map((c) => c.toJSON()),
-    } as APIActionRowComponent<ReturnType<T["toJSON"]>>;
+      components: this.components.map((c) => c.toJSON())
+    } as APIActionRowComponent<ReturnType<T['toJSON']>>;
   }
 }

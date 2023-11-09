@@ -3,8 +3,8 @@ import type {
   RESTPostAPIInteractionCallbackJSONBody,
   RESTPostAPIInteractionFollowupJSONBody
 } from '@biscuitland/common';
-import type { Session } from '..';
 import type { RawFile } from '@biscuitland/rest';
+import type { Session } from '..';
 
 export class InteractionManager {
   readonly session!: Session;

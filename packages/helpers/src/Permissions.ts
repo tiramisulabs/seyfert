@@ -1,4 +1,4 @@
-import { PermissionFlagsBits } from "@biscuitland/common";
+import { PermissionFlagsBits } from '@biscuitland/common';
 
 export type PermissionsStrings = keyof typeof PermissionFlagsBits;
 export type PermissionResolvable = bigint | PermissionsStrings | PermissionsStrings[] | PermissionsStrings | PermissionsStrings[];
@@ -89,17 +89,17 @@ export class Permissions {
 
   static resolve(bit: PermissionResolvable): bigint {
     switch (typeof bit) {
-      case "bigint":
+      case 'bigint':
         return bit;
-      case "number":
+      case 'number':
         return BigInt(bit);
-      case "string":
+      case 'string':
         return BigInt(Permissions.Flags[bit]);
-      case "object":
+      case 'object':
         return Permissions.resolve(
           bit
-            .map((p) => (typeof p === "string" ? BigInt(Permissions.Flags[p]) : BigInt(p)))
-            .reduce((acc, cur) => acc | cur, Permissions.None),
+            .map((p) => (typeof p === 'string' ? BigInt(Permissions.Flags[p]) : BigInt(p)))
+            .reduce((acc, cur) => acc | cur, Permissions.None)
         );
       default:
         throw new TypeError(`Cannot resolve permission: ${bit}`);
@@ -125,7 +125,7 @@ export class Permissions {
   }
 
   toJSON(): { fields: string[] } {
-    const fields = Object.keys(Permissions.Flags).filter((bit) => typeof bit === "number" && this.has(bit));
+    const fields = Object.keys(Permissions.Flags).filter((bit) => typeof bit === 'number' && this.has(bit));
 
     return { fields };
   }

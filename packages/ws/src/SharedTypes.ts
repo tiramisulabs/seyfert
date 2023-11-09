@@ -11,7 +11,6 @@ import type {
   GatewayAutoModerationActionExecutionDispatchData,
   GatewayChannelPinsUpdateDispatchData,
   GatewayChannelUpdateDispatchData,
-  GatewayDispatchEvents,
   GatewayGuildBanAddDispatchData,
   GatewayGuildBanRemoveDispatchData,
   GatewayGuildCreateDispatchData,
@@ -56,13 +55,15 @@ import type {
   GatewayVoiceStateUpdateData,
   GatewayWebhooksUpdateDispatchData,
   PresenceUpdateStatus,
-  RestToKeys,
-} from "@biscuitland/common";
+  RestToKeys
+} from '@biscuitland/common';
+
+import { GatewayDispatchEvents } from '@biscuitland/common';
 
 /** https://discord.com/developers/docs/topics/gateway-events#update-presence */
 export interface StatusUpdate {
   /** The user's activities */
-  activities?: Omit<GatewayActivity, "created_at" | "id">[];
+  activities?: Omit<GatewayActivity, 'created_at' | 'id'>[];
   /** The user's new status */
   status: PresenceUpdateStatus;
 }
@@ -79,7 +80,7 @@ export interface UpdateVoiceState {
   self_deaf: boolean;
 }
 
-export type ShardStatusUpdate = Pick<GatewayPresenceUpdateData, "activities" | "status">;
+export type ShardStatusUpdate = Pick<GatewayPresenceUpdateData, 'activities' | 'status'>;
 
 export interface RequestGuildMembersOptions extends GatewayRequestGuildMembersDataWithQuery, GatewayRequestGuildMembersDataWithUserIds {}
 
@@ -96,7 +97,7 @@ export type AtLeastOne<
   T,
   U = {
     [K in keyof T]: Pick<T, K>;
-  },
+  }
 > = Partial<T> & U[keyof U];
 
 export type ClientUser = { bot: true } & APIUser;
@@ -155,7 +156,7 @@ export type StageSameEvents = RestToKeys<
     APIStageInstance,
     GatewayDispatchEvents.StageInstanceCreate,
     GatewayDispatchEvents.StageInstanceUpdate,
-    GatewayDispatchEvents.StageInstanceDelete,
+    GatewayDispatchEvents.StageInstanceDelete
   ]
 >;
 
@@ -167,7 +168,7 @@ export type GuildScheduledUserSameEvents = RestToKeys<
   [
     GatewayGuildScheduledEventUserRemoveDispatchData,
     GatewayDispatchEvents.GuildScheduledEventUserRemove,
-    GatewayDispatchEvents.GuildScheduledEventUserAdd,
+    GatewayDispatchEvents.GuildScheduledEventUserAdd
   ]
 >;
 
@@ -176,7 +177,7 @@ export type GuildScheduledSameEvents = RestToKeys<
     APIGuildScheduledEvent,
     GatewayDispatchEvents.GuildScheduledEventCreate,
     GatewayDispatchEvents.GuildScheduledEventDelete,
-    GatewayDispatchEvents.GuildScheduledEventUpdate,
+    GatewayDispatchEvents.GuildScheduledEventUpdate
   ]
 >;
 
@@ -189,7 +190,7 @@ export type AutoModetaractionRuleEvents = RestToKeys<
     APIAutoModerationRule,
     GatewayDispatchEvents.AutoModerationRuleCreate,
     GatewayDispatchEvents.AutoModerationRuleDelete,
-    GatewayDispatchEvents.AutoModerationRuleUpdate,
+    GatewayDispatchEvents.AutoModerationRuleUpdate
   ]
 >;
 

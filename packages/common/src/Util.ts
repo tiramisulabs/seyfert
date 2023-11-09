@@ -1,51 +1,27 @@
-import { setTimeout } from "node:timers/promises";
-import { ObjectToLower, ObjectToSnake } from "./Types";
+import { setTimeout } from 'node:timers/promises';
+import { ObjectToLower, ObjectToSnake } from './Types';
 
-const isPlainObject = (value: any) => {
-  return (
-    (value !== null &&
-      typeof value === "object" &&
-      typeof value.constructor === "function" &&
-      // rome-ignore lint/suspicious/noPrototypeBuiltins: js tricks
-      (value.constructor.prototype.hasOwnProperty("isPrototypeOf") || Object.getPrototypeOf(value.constructor.prototype) === null)) ||
-    (value !== undefined && Object.getPrototypeOf(value) === null)
+export function isObject(o: any) {
+  return o && typeof o === 'object' && !Array.isArray(o);
+}
+
+export function Options<T>(defaults: any, ...options: any[]): T {
+  const option = options.shift();
+  if (!option) return defaults;
+
+  return Options(
+    {
+      ...option,
+      ...Object.fromEntries(
+        Object.entries(defaults).map(([key, value]) => [
+          key,
+          isObject(value) ? Options(value, option?.[key] || {}) : option?.[key] || value
+        ])
+      )
+    },
+    ...options
   );
-};
-
-const isObject = (o: any) => {
-  return !!o && typeof o === "object" && !Array.isArray(o);
-};
-
-export const Options = <T = any>(defaults: any, ...options: any[]): T => {
-  if (!options.length) {
-    return defaults;
-  }
-
-  const source = options.shift();
-
-  // This prevents default options from being intercepted by `Object.assign`
-  const $ = { ...defaults };
-
-  if (isObject($) && isPlainObject(source)) {
-    Object.entries(source).forEach(([key, value]) => {
-      if (typeof value === "undefined") {
-        return;
-      }
-
-      if (isPlainObject(value)) {
-        if (!(key in $)) {
-          Object.assign($, { [key]: {} });
-        }
-
-        Options($[key], value);
-      } else {
-        Object.assign($, { [key]: value });
-      }
-    });
-  }
-
-  return Options($, ...options);
-};
+}
 /**
  * Convert a camelCase object to snake_case.
  * @param target The object to convert.
@@ -55,18 +31,18 @@ export function toSnakeCase<Obj extends Record<string, any>>(target: Obj): Objec
   const result = {};
   for (const [key, value] of Object.entries(target)) {
     switch (typeof value) {
-      case "string":
-      case "bigint":
-      case "boolean":
-      case "function":
-      case "number":
-      case "symbol":
-      case "undefined":
+      case 'string':
+      case 'bigint':
+      case 'boolean':
+      case 'function':
+      case 'number':
+      case 'symbol':
+      case 'undefined':
         result[ReplaceRegex.snake(key)] = value;
         break;
-      case "object":
+      case 'object':
         if (Array.isArray(value)) {
-          result[ReplaceRegex.snake(key)] = value.map((prop) => (typeof prop === "object" && prop ? toSnakeCase(prop) : prop));
+          result[ReplaceRegex.snake(key)] = value.map((prop) => (typeof prop === 'object' && prop ? toSnakeCase(prop) : prop));
           break;
         }
         if (isObject(value)) {
@@ -93,18 +69,18 @@ export function toCamelCase<Obj extends Record<string, any>>(target: Obj): Objec
   const result = {};
   for (const [key, value] of Object.entries(target)) {
     switch (typeof value) {
-      case "string":
-      case "bigint":
-      case "boolean":
-      case "function":
-      case "symbol":
-      case "number":
-      case "undefined":
+      case 'string':
+      case 'bigint':
+      case 'boolean':
+      case 'function':
+      case 'symbol':
+      case 'number':
+      case 'undefined':
         result[ReplaceRegex.camel(key)] = value;
         break;
-      case "object":
+      case 'object':
         if (Array.isArray(value)) {
-          result[ReplaceRegex.camel(key)] = value.map((prop) => (typeof prop === "object" && prop ? toCamelCase(prop) : prop));
+          result[ReplaceRegex.camel(key)] = value.map((prop) => (typeof prop === 'object' && prop ? toCamelCase(prop) : prop));
           break;
         }
         if (isObject(value)) {
@@ -128,7 +104,7 @@ export const ReplaceRegex = {
   },
   snake: (s: string) => {
     return s.replace(/[A-Z]/g, (a) => `_${a.toLowerCase()}`);
-  },
+  }
 };
 
 // https://github.com/discordeno/discordeno/blob/main/packages/utils/src/colors.ts
@@ -168,9 +144,9 @@ export function getColorEnabled(): boolean {
  */
 function code(open: number[], close: number): Code {
   return {
-    open: `\x1b[${open.join(";")}m`,
+    open: `\x1b[${open.join(';')}m`,
     close: `\x1b[${close}m`,
-    regexp: new RegExp(`\\x1b\\[${close}m`, "g"),
+    regexp: new RegExp(`\\x1b\\[${close}m`, 'g')
   };
 }
 
@@ -559,7 +535,7 @@ export function bgRgb8(str: string, color: number): string {
  * @param color code
  */
 export function rgb24(str: string, color: number | Rgb): string {
-  if (typeof color === "number") {
+  if (typeof color === 'number') {
     return run(str, code([38, 2, (color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff], 39));
   }
   return run(str, code([38, 2, clampAndTruncate(color.r), clampAndTruncate(color.g), clampAndTruncate(color.b)], 39));
@@ -581,7 +557,7 @@ export function rgb24(str: string, color: number | Rgb): string {
  * @param color code
  */
 export function bgRgb24(str: string, color: number | Rgb): string {
-  if (typeof color === "number") {
+  if (typeof color === 'number') {
     return run(str, code([48, 2, (color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff], 49));
   }
   return run(str, code([48, 2, clampAndTruncate(color.r), clampAndTruncate(color.g), clampAndTruncate(color.b)], 49));
@@ -590,10 +566,10 @@ export function bgRgb24(str: string, color: number | Rgb): string {
 // https://github.com/chalk/ansi-regex/blob/02fa893d619d3da85411acc8fd4e2eea0e95a9d9/index.js
 const ANSI_PATTERN = new RegExp(
   [
-    "[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)",
-    "(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-nq-uy=><~]))",
-  ].join("|"),
-  "g",
+    '[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)',
+    '(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-nq-uy=><~]))'
+  ].join('|'),
+  'g'
 );
 
 /**
@@ -601,9 +577,9 @@ const ANSI_PATTERN = new RegExp(
  * @param string to remove ANSI escape codes from
  */
 export function stripColor(string: string): string {
-  return string.replace(ANSI_PATTERN, "");
+  return string.replace(ANSI_PATTERN, '');
 }
 
-export function delay<T>(time: number, result?: T) {
+export function delay<T>(time: number, result?: T): Promise<T> {
   return setTimeout(time, result);
 }

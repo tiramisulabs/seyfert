@@ -2,21 +2,21 @@ import type {
   APIUser,
   RESTGetAPICurrentUserGuildsQuery,
   RESTPatchAPICurrentUserJSONBody,
-  RESTPutAPICurrentUserApplicationRoleConnectionJSONBody,
-} from "@biscuitland/common";
-import type { ImageOptions, Session } from "../index";
-import { formatImageURL } from "../index";
+  RESTPutAPICurrentUserApplicationRoleConnectionJSONBody
+} from '@biscuitland/common';
+import type { ImageOptions, Session } from '../index';
+import { formatImageURL } from '../index';
 
 export class UserManager {
   readonly session!: Session;
   constructor(session: Session) {
-    Object.defineProperty(this, "session", {
+    Object.defineProperty(this, 'session', {
       value: session,
-      writable: false,
+      writable: false
     });
   }
 
-  get(userId = "@me") {
+  get(userId = '@me') {
     return this.session.api.users(userId).get();
   }
 
@@ -29,36 +29,36 @@ export class UserManager {
   }
 
   createDM(userId: string) {
-    return this.session.api.users("@me").channels.post({ body: { recipient_id: userId } });
+    return this.session.api.users('@me').channels.post({ body: { recipient_id: userId } });
   }
 
   editCurrent(body: RESTPatchAPICurrentUserJSONBody) {
-    return this.session.api.users("@me").patch({
-      body,
+    return this.session.api.users('@me').patch({
+      body
     });
   }
 
   getGuilds(query?: RESTGetAPICurrentUserGuildsQuery) {
-    return this.session.api.users("@me").guilds.get({ query });
+    return this.session.api.users('@me').guilds.get({ query });
   }
 
   getGuildMember(guildId: string) {
-    return this.session.api.users("@me").guilds(guildId).member.get();
+    return this.session.api.users('@me').guilds(guildId).member.get();
   }
 
   leaveGuild(guildId: string) {
-    return this.session.api.users("@me").guilds(guildId).delete();
+    return this.session.api.users('@me').guilds(guildId).delete();
   }
 
   getConnections() {
-    return this.session.api.users("@me").connections.get();
+    return this.session.api.users('@me').connections.get();
   }
 
   getRoleConnections(applicationId: string) {
-    return this.session.api.users("@me").applications(applicationId)["role-connection"].get();
+    return this.session.api.users('@me').applications(applicationId)['role-connection'].get();
   }
 
   updateRoleConnection(applicationId: string, body: RESTPutAPICurrentUserApplicationRoleConnectionJSONBody) {
-    return this.session.api.users("@me").applications(applicationId)["role-connection"].put({ body });
+    return this.session.api.users('@me').applications(applicationId)['role-connection'].put({ body });
   }
 }

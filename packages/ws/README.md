@@ -23,7 +23,7 @@ yarn add @biscuitland/ws
 ## Example
 
 ```ts
-import { GatewayManager } from "@biscuitland/ws";
+import { ShardManager } from "@biscuitland/ws";
 import { BiscuitREST, Router } from "@biscuitland/rest";
 import { GatewayIntentBits } from "@biscuitland/common";
 
@@ -36,7 +36,7 @@ const api = new Router(rest).createProxy();
   const connection = await api.gateway.bot.get();
 
   // gateway bot code ↓
-  const ws = new GatewayManager({
+  const ws = new ShardManager({
     token,
     intents,
     connection,

@@ -73,7 +73,7 @@ export class StringSelectMenu extends SelectMenu<APIStringSelectComponent> {
 
   addOption(option: TypeArray<APISelectMenuOption>): this {
     this.data.options ??= [];
-    this.data.options.concat(option);
+    this.data.options = this.data.options.concat(option);
     return this;
   }
 
@@ -84,6 +84,7 @@ export class StringSelectMenu extends SelectMenu<APIStringSelectComponent> {
 }
 
 export class StringSelectOption {
+  // biome-ignore lint/nursery/noEmptyBlockStatements: <explanation>
   constructor(public data: Partial<APISelectMenuOption> = {}) {}
 
   setLabel(label: string): this {

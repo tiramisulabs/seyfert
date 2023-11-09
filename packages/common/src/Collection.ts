@@ -6,7 +6,7 @@ export class Collection<K, V> extends Map<K, V> {
    */
   maxSize: number | undefined;
   /** Handler to remove items from the collection every so often. */
-  sweeper: (CollectionSweeper<K, V> & { intervalId?: NodeJS.Timer }) | undefined;
+  sweeper: (CollectionSweeper<K, V> & { intervalId?: NodeJS.Timeout }) | undefined;
 
   constructor(entries?: (ReadonlyArray<readonly [K, V]> | null) | Map<K, V>, options?: CollectionOptions<K, V>) {
     super(entries ?? []);
@@ -23,6 +23,7 @@ export class Collection<K, V> extends Map<K, V> {
 
     this.sweeper = options;
     this.sweeper.intervalId = setInterval(() => {
+      // biome-ignore lint/complexity/noForEach: <explanation>
       this.forEach((value, key) => {
         if (!this.sweeper?.filter(value, key)) return;
 
@@ -98,6 +99,7 @@ export class Collection<K, V> extends Map<K, V> {
   /** Find all elements in this collection that match the given pattern. */
   filter(callback: (value: V, key: K) => boolean): Collection<K, V> {
     const relevant = new Collection<K, V>();
+    // biome-ignore lint/complexity/noForEach: <explanation>
     this.forEach((value, key) => {
       if (callback(value, key)) relevant.set(key, value);
     });
