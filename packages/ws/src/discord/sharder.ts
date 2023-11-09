@@ -108,8 +108,11 @@ export class ShardManager extends Collection<number, Shard> {
 
   disconnectAll() {
     this.logger.info("Disconnect all shards");
-    // biome-ignore lint/complexity/noForEach: In maps, for each and for of have same performance
-    return this.forEach((shard) => shard.disconnect());
+    return new Promise((resolve) => {
+      // biome-ignore lint/complexity/noForEach: In maps, for each and for of have same performance
+      this.forEach((shard) => shard.disconnect());
+      resolve(null);
+    });
   }
 
   setShardPresence(shardId: number, payload: GatewayUpdatePresence["d"]) {
