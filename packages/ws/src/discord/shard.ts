@@ -47,7 +47,6 @@ export class Shard {
   }
 
   isOpen() {
-    this.logger.fatal(`[Shard #${this.id}]`, "isOpen", this.websocket?.readyState === WebSocket.OPEN);
     return this.websocket?.readyState === WebSocket.OPEN;
   }
 
@@ -67,7 +66,6 @@ export class Shard {
   }
 
   connect() {
-    this.logger.fatal(`[Shard #${this.id}]`, "Connect", this.state);
     if (![ShardState.Resuming, ShardState.Identifying].includes(this.state)) {
       this.state = ShardState.Connecting;
     }
@@ -96,9 +94,6 @@ export class Shard {
   }
 
   checkOffline(priority: number) {
-    // biome-ignore lint/style/noArguments: <explanation>
-    // biome-ignore lint/correctness/noUndeclaredVariables: <explanation>
-    this.logger.fatal(`[Shard #${this.id}]`, "checkOffline", ...arguments);
     if (!this.isOpen()) {
       return new Promise((resolve) => this.offlineSendQueue.push(resolve, priority));
     }
@@ -108,17 +103,17 @@ export class Shard {
   async identify(justTry = false) {
     this.logger.debug(`[Shard #${this.id}] ${justTry ? "Trying " : ""}on identify ${this.isOpen()}`);
 
-    if (this.isOpen()) {
-      if (justTry) return;
-      this.logger.debug(`[Shard #${this.id}] CLOSING EXISTING SHARD`);
-      this.close(ShardSocketCloseCodes.ReIdentifying, "Re-identifying closure of old connection.");
-    }
+    // if (this.isOpen()) {
+    //   if (justTry) return;
+    //   this.logger.debug(`[Shard #${this.id}] CLOSING EXISTING SHARD`);
+    //   this.close(ShardSocketCloseCodes.ReIdentifying, "Re-identifying closure of old connection.");
+    // }
 
     this.state = ShardState.Identifying;
 
-    if (!this.isOpen()) {
-      await this.connect();
-    }
+    // if (!this.isOpen()) {
+    //   await this.connect();
+    // }
 
     this.send(0, {
       op: GatewayOpcodes.Identify,
@@ -132,15 +127,19 @@ export class Shard {
     });
   }
 
+  reconnect() {
+    this.heartbeater.stopHeartbeating()
+    this.disconnect();
+    return this.connect();
+  }
+
   resume() {
-    this.logger.fatal(`[Shard #${this.id}]`, "Resuming");
     this.state = ShardState.Resuming;
     const data = {
       seq: this.data.resumeSeq!,
       session_id: this.data.session_id!,
       token: `Bot ${this.options.token}`,
     };
-    console.log({ data });
     return this.send(0, { d: data, op: GatewayOpcodes.Resume });
   }
 
@@ -151,9 +150,6 @@ export class Shard {
    * in simpler terms, do not use where we don't want buckets
    */
   async send<T extends GatewaySendPayload = GatewaySendPayload>(priority: number, message: T) {
-    // biome-ignore lint/style/noArguments: <explanation>
-    // biome-ignore lint/correctness/noUndeclaredVariables: <explanation>
-    this.logger.fatal(`[Shard #${this.id}]`, "Send", ...arguments);
     // Before acquiring a token from the bucket, check whether the shard is currently offline or not.
     // Else bucket and token wait time just get wasted.
     await this.checkOffline(priority);
@@ -197,20 +193,19 @@ export class Shard {
     this.heartbeater.onpacket(packet);
 
     switch (packet.op) {
-      case GatewayOpcodes.Hello:
-        if (this.data.session_id) {
-          await this.resume();
-        } else {
-          // await this.identify(true);
-        }
-        break;
+      // case GatewayOpcodes.Hello:
+      //   if (this.data.session_id) {
+      //     await this.resume();
+      //   } else {
+      //     // await this.identify(true);
+      //   }
+      //   break;
       case GatewayOpcodes.Reconnect:
-        this.disconnect();
-        await this.connect();
+        this.reconnect();
         // await this.resume();
         break;
       case GatewayOpcodes.InvalidSession: {
-        const resumable = packet.d as boolean;
+        const resumable = packet.d && this.data.session_id
         // We need to wait for a random amount of time between 1 and 5
         // Reference: https://discord.com/developers/docs/topics/gateway#resuming
         // el delay es el tipico timoeut promise, hazmelo pls
@@ -220,7 +215,7 @@ export class Shard {
         if (!resumable) {
           this.data.resumeSeq = 0;
           this.data.session_id = undefined;
-          await this.identify(true);
+          await this.connect();
           break;
         }
         await this.resume();
@@ -281,7 +276,8 @@ export class Shard {
         this.logger.debug(`[Shard #${this.id}] Gateway connection closing requiring re-identify. Code: ${close.code}`);
         this.state = ShardState.Identifying;
 
-        return this.identify();
+        this.connect();
+        break;
       case GatewayCloseCodes.AuthenticationFailed:
       case GatewayCloseCodes.InvalidShard:
       case GatewayCloseCodes.ShardingRequired:
@@ -293,7 +289,6 @@ export class Shard {
         throw new Error(close.reason || "Discord gave no reason! GG! You broke Discord!");
       // Gateway connection closes on which a resume is allowed.
       default:
-        console.log(close.code);
         this.logger.info(`[Shard #${this.id}] closed shard #${this.id}. Resuming...`);
         this.state = ShardState.Resuming;
 

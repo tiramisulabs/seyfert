@@ -72,7 +72,7 @@ export class ShardManager extends Collection<number, Shard> {
       for (const shard of bucket) {
         if (!shard) break;
         this.logger.info(`${shard.id} add to connect queue`);
-        await this.connectQueue.push(shard.identify.bind(shard, false));
+        await this.connectQueue.push(shard.connect.bind(shard));
       }
     }
   }

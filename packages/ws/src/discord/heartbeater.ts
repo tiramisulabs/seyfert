@@ -30,7 +30,7 @@ export class ShardHeartBeater {
     interval: 30_000
   };
   // biome-ignore lint/nursery/noEmptyBlockStatements: <explanation>
-  constructor(public shard: Shard) {}
+  constructor(public shard: Shard) { }
 
   acknowledge(ack = true) {
     this.heart.ack = ack;
@@ -106,9 +106,15 @@ export class ShardHeartBeater {
     }
 
     this.startHeartBeating();
+
+    if (this.shard.data.session_id) {
+      this.shard.resume();
+    } else {
+      this.shard.identify()
+    }
   }
 
-  onpacket(packet: GatewayReceivePayload) {
+  onpacket(packet: GatewayReceivePayload,) {
     switch (packet.op) {
       case GatewayOpcodes.Heartbeat:
         return this.handleHeartbeat(packet);
