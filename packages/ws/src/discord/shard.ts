@@ -100,20 +100,10 @@ export class Shard {
     return Promise.resolve();
   }
 
-  async identify(justTry = false) {
-    this.logger.debug(`[Shard #${this.id}] ${justTry ? "Trying " : ""}on identify ${this.isOpen()}`);
-
-    // if (this.isOpen()) {
-    //   if (justTry) return;
-    //   this.logger.debug(`[Shard #${this.id}] CLOSING EXISTING SHARD`);
-    //   this.close(ShardSocketCloseCodes.ReIdentifying, "Re-identifying closure of old connection.");
-    // }
+  async identify() {
+    this.logger.debug(`[Shard #${this.id}] on identify ${this.isOpen()}`);
 
     this.state = ShardState.Identifying;
-
-    // if (!this.isOpen()) {
-    //   await this.connect();
-    // }
 
     this.send(0, {
       op: GatewayOpcodes.Identify,
@@ -193,23 +183,13 @@ export class Shard {
     this.heartbeater.onpacket(packet);
 
     switch (packet.op) {
-      // case GatewayOpcodes.Hello:
-      //   if (this.data.session_id) {
-      //     await this.resume();
-      //   } else {
-      //     // await this.identify(true);
-      //   }
-      //   break;
       case GatewayOpcodes.Reconnect:
         this.reconnect();
-        // await this.resume();
         break;
       case GatewayOpcodes.InvalidSession: {
         const resumable = packet.d && this.data.session_id
         // We need to wait for a random amount of time between 1 and 5
         // Reference: https://discord.com/developers/docs/topics/gateway#resuming
-        // el delay es el tipico timoeut promise, hazmelo pls
-        //yo con un import { setTimeout as delay } from 'node:timers/promises'; en la mochila
         await delay(Math.floor((Math.random() * 4 + 1) * 1000));
 
         if (!resumable) {
@@ -249,8 +229,6 @@ export class Shard {
   }
 
   disconnect() {
-    // biome-ignore lint/style/noArguments: <explanation>
-    // biome-ignore lint/correctness/noUndeclaredVariables: <explanation>
     this.logger.info(`[Shard #${this.id}]`, "Disconnect", ...arguments);
     this.close(ShardSocketCloseCodes.Shutdown, "Shard down request");
     this.state = ShardState.Offline;
@@ -289,7 +267,7 @@ export class Shard {
         throw new Error(close.reason || "Discord gave no reason! GG! You broke Discord!");
       // Gateway connection closes on which a resume is allowed.
       default:
-        this.logger.info(`[Shard #${this.id}] closed shard #${this.id}. Resuming...`);
+        this.logger.info(`[Shard #${this.id}] (${close.code}) closed shard #${this.id}. Resuming...`);
         this.state = ShardState.Resuming;
 
         this.disconnect();

@@ -114,7 +114,7 @@ export class ShardHeartBeater {
     }
   }
 
-  onpacket(packet: GatewayReceivePayload,) {
+  onpacket(packet: GatewayReceivePayload) {
     switch (packet.op) {
       case GatewayOpcodes.Heartbeat:
         return this.handleHeartbeat(packet);
