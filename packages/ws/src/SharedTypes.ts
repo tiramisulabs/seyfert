@@ -11,6 +11,7 @@ import type {
   GatewayAutoModerationActionExecutionDispatchData,
   GatewayChannelPinsUpdateDispatchData,
   GatewayChannelUpdateDispatchData,
+  GatewayDispatchEvents,
   GatewayGuildBanAddDispatchData,
   GatewayGuildBanRemoveDispatchData,
   GatewayGuildCreateDispatchData,
@@ -57,8 +58,6 @@ import type {
   PresenceUpdateStatus,
   RestToKeys
 } from '@biscuitland/common';
-
-import { GatewayDispatchEvents } from '@biscuitland/common';
 
 /** https://discord.com/developers/docs/topics/gateway-events#update-presence */
 export interface StatusUpdate {

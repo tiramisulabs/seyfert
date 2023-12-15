@@ -7,7 +7,9 @@ export function isObject(o: any) {
 
 export function Options<T>(defaults: any, ...options: any[]): T {
   const option = options.shift();
-  if (!option) return defaults;
+  if (!option) {
+    return defaults;
+  }
 
   return Options(
     {
@@ -15,7 +17,7 @@ export function Options<T>(defaults: any, ...options: any[]): T {
       ...Object.fromEntries(
         Object.entries(defaults).map(([key, value]) => [
           key,
-          isObject(value) ? Options(value, option?.[key] || {}) : option?.[key] || value
+          isObject(value) ? Options(value, option?.[key] || {}) : option?.[key] ?? value
         ])
       )
     },

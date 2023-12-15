@@ -1,4 +1,7 @@
-import { Logger, delay } from '@biscuitland/common';
+import type { Logger } from '@biscuitland/common';
+import { delay } from '@biscuitland/common';
+
+export * from './timeout';
 
 /**
  * just any kind of request to queue and resolve later
@@ -54,7 +57,9 @@ export class DynamicBucket {
   }
 
   get remaining(): number {
-    if (this.limit < this.used) return 0;
+    if (this.limit < this.used) {
+      return 0;
+    }
     return this.limit - this.used;
   }
 
@@ -119,8 +124,8 @@ export class DynamicBucket {
 
   /** Pauses the execution until the request is available to be made. */
   async acquire(priority: number): Promise<void> {
-    return await new Promise((resolve) => {
-      this.queue.push(resolve, priority);
+    return await new Promise((_resolve) => {
+      this.queue.push(_resolve, priority);
       // biome-ignore lint/complexity/noVoid: <explanation>
       void this.processQueue();
     });
@@ -233,6 +238,7 @@ export abstract class Queue<T> {
   public toArray(): T[] {
     return Array.from(this);
   }
+
   public toString() {
     return this.head?.toString() || '';
   }

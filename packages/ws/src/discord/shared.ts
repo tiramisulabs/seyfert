@@ -1,5 +1,5 @@
-import { APIGatewayBotInfo, GatewayDispatchPayload, GatewayIntentBits, Logger } from '@biscuitland/common';
-import { IdentifyProperties, ShardState } from '../constants';
+import type { APIGatewayBotInfo, GatewayDispatchPayload, GatewayIntentBits, GatewayPresenceUpdateData, Logger } from '@biscuitland/common';
+import type { IdentifyProperties } from '../constants';
 
 export interface ShardManagerOptions extends ShardDetails {
   /** Important data which is used by the manager to connect shards to the gateway. */
@@ -22,12 +22,10 @@ export interface ShardManagerOptions extends ShardDetails {
    * wheter to send debug information to the console
    */
   debug?: boolean;
+  presence?: GatewayPresenceUpdateData;
 }
 
 export interface ShardData {
-  /** state */
-  shardState: ShardState;
-
   /** resume seq to resume connections */
   resumeSeq: number | null;
 
@@ -76,21 +74,10 @@ export interface ShardOptions extends ShardDetails {
   };
   logger: Logger;
   compress: boolean;
+  presence?: GatewayPresenceUpdateData;
 }
 
 export enum ShardSocketCloseCodes {
-  /** A regular Shard shutdown. */
   Shutdown = 3000,
-  /** A resume has been requested and therefore the old connection needs to be closed. */
-  ResumeClosingOldConnection = 3024,
-  /** Did not receive a heartbeat ACK in time.
-   * Closing the shard and creating a new session.
-   */
-  ZombiedConnection = 3010,
-  /** Discordeno's gateway tests hae been finished, therefore the Shard can be turned off. */
-  TestingFinished = 3064,
-  /** Special close code reserved for Discordeno's zero-downtime resharding system. */
-  Resharded = 3065,
-  /** Shard is re-identifying therefore the old connection needs to be closed. */
-  ReIdentifying = 3066
+  ZombiedConnection = 3010
 }
