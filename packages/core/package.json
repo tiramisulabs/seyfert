@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "tsup": "^7.0.0"
+    "tsup": "^8.0.0"
   },
   "license": "Apache-2.0",
   "author": "Yuzuru <yuzuru@programmer.net>",
