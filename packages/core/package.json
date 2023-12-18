@@ -23,9 +23,9 @@
     }
   },
   "dependencies": {
-    "@biscuitland/common": "^0.0.9",
+    "@biscuitland/common": "^0.0.10",
     "@biscuitland/rest": "^3.0.7",
-    "@biscuitland/ws": "^3.0.10",
+    "@biscuitland/ws": "^3.0.11",
     "eventemitter2": "^6.4.9"
   },
   "devDependencies": {
