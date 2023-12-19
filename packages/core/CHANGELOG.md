@@ -1,5 +1,15 @@
 # @biscuitland/core
 
+## 3.0.12
+
+### Patch Changes
+
+- new changes
+- new changes
+- Updated dependencies
+- Updated dependencies
+  - @biscuitland/ws@3.0.12
+
 ## 3.0.8
 
 ### Patch Changes

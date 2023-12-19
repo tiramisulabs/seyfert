@@ -1,5 +1,12 @@
 # @biscuitland/ws
 
+## 3.0.12
+
+### Patch Changes
+
+- new changes
+- new changes
+
 ## 3.0.9
 
 ### Patch Changes
