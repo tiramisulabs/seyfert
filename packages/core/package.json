@@ -1,6 +1,6 @@
 {
   "name": "@biscuitland/core",
-  "version": "3.0.10",
+  "version": "3.0.11",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
