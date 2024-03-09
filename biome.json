@@ -1,35 +1,75 @@
 {
+	"$schema": "https://biomejs.dev/schemas/1.5.0/schema.json",
 	"linter": {
 		"enabled": true,
 		"rules": {
 			"all": true,
-			"style": {
-				"useWhile": "off",
-				"noNonNullAssertion": "off"
-			},
 			"suspicious": {
 				"noExplicitAny": "off",
-				"noAssignInExpressions": "off"
+				"noAssignInExpressions": "off",
+				"noUnsafeDeclarationMerging": "off",
+				"noRedeclare": "off",
+				"noEmptyInterface": "off",
+				"noConfusingVoidType": "off",
+				"noImplicitAnyLet": "off"
+			},
+			"style": {
+				"noNonNullAssertion": "off",
+				"noParameterAssign": "off"
+			},
+			"correctness": {
+				"noUnusedVariables": "off"
+			},
+			"nursery": {
+				"useExportType": "error",
+				"useImportType": "error",
+				"useNodejsImportProtocol": "error",
+				"noUselessLoneBlockStatements": "warn",
+				"noUselessTernary": "error",
+				"noEmptyBlockStatements": "off"
+			},
+			"complexity": {
+				"noBannedTypes": "off",
+				"noForEach": "off",
+				"noUselessConstructor": "off",
+				"noThisInStatic": "off"
+			},
+			"a11y": {
+				"all": false
+			},
+			"performance": {
+				"noDelete": "off"
 			}
+		}
+	},
+	"json": {
+		"formatter": {
+			"enabled": true,
+			"indentWidth": 2,
+			"lineWidth": 80
 		}
 	},
 	"formatter": {
 		"enabled": true,
 		"indentWidth": 2,
-		"indentStyle": "space",
-		"lineWidth": 140,
+		"indentStyle": "tab",
+		"lineWidth": 120,
+		"lineEnding": "crlf",
 		"formatWithErrors": true
 	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "single",
+			"arrowParentheses": "asNeeded",
+			"bracketSameLine": true,
+			"semicolons": "always"
+		}
+	},
 	"files": {
-		"ignore": [
-			"node_modules/",
-			"build",
-			"dist",
-			"tsup.config.ts",
-			"__test__"
-		]
+		"ignoreUnknown": true,
+		"ignore": ["node_modules/", "build", "lib", "__test__"]
 	},
 	"organizeImports": {
-		"enabled": true
+		"enabled": false
 	}
 }

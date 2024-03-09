@@ -1,70 +1,74 @@
 {
-  "name": "@biscuitland/core",
-  "workspaces": [
-    "packages/*"
-  ],
-  "scripts": {
-    "build": "turbo run build",
-    "clean": "turbo run clean",
-    "check": "biome check ./packages/",
-    "check:apply": "biome check --apply --max-diagnostics 200 --quote-style single --trailing-comma none ./packages/",
-    "lint": "biome format --write --quote-style single --trailing-comma none ./packages/",
-    "dev": "turbo run dev --parallel"
-  },
-  "engines": {
-    "npm": ">=7.0.0",
-    "node": ">=16.0.0"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^1.3.3",
-    "@changesets/cli": "^2.24.1",
-    "@types/node": "^20.0.0",
-    "turbo": "^1.4.2",
-    "typescript": "^5.0.4"
-  },
-  "packageManager": "npm@8.19.4",
-  "bugs": {
-    "url": "https://github.com/oasisjs/biscuit"
-  },
-  "keywords": [
-    "api",
-    "discord",
-    "bots",
-    "typescript",
-    "botdev"
-  ],
-  "license": "Apache-2.0",
-  "author": "Yuzuru <yuzuru@programmer.net>",
-  "contributors": [
-    {
-      "name": "Yuzuru",
-      "url": "https://github.com/yuzudev",
-      "author": true
-    },
-    {
-      "name": "miia",
-      "url": "https://github.com/dragurimu"
-    },
-    {
-      "name": "n128",
-      "url": "https://github.com/nicolito128"
-    },
-    {
-      "name": "socram03",
-      "url": "https://github.com/socram03"
-    },
-    {
-      "name": "Drylozu",
-      "url": "https://github.com/Drylozu"
-    },
-    {
-      "name": "FreeAoi",
-      "url": "https://github.com/FreeAoi"
-    }
-  ],
-  "homepage": "https://biscuitjs.com",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/oasisjs/biscuit.git"
-  }
+	"name": "seyfert",
+	"version": "0.1.0",
+	"main": "./lib/index.js",
+	"module": "./lib/index.js",
+	"types": "./lib/index.d.ts",
+	"files": [
+		"lib/**"
+	],
+	"scripts": {
+		"build": "tsc --outDir ./lib",
+		"dev": "swc src -d lib -w",
+		"prepublishOnly": "npm run build",
+		"prepare": "npm run build && husky install",
+		"lint": "biome lint --apply ./src",
+		"format": "biome format --write ./src",
+		"check-h": "biome check --apply ./src",
+		"check": "biome check --apply --changed --no-errors-on-unmatched ./src"
+	},
+	"author": "MARCROCK22",
+	"license": "ISC",
+	"dependencies": {
+		"chokidar": "^3.5.3",
+		"discord-api-types": "^0.37.71",
+		"magic-bytes.js": "^1.7.0",
+		"ts-mixer": "^6.0.3",
+		"ws": "^8.16.0"
+	},
+	"lint-staged": {
+		"*.ts": [
+			"biome check --apply",
+			"biome format --write"
+		]
+	},
+	"devDependencies": {
+		"lint-staged": "^15.2.2",
+		"@biomejs/biome": "1.5.0",
+		"@swc/cli": "^0.1.63",
+		"@swc/core": "^1.3.102",
+		"@types/node": "^20.10.7",
+		"@types/ws": "^8.5.10",
+		"husky": "^8.0.3",
+		"typescript": "^5.3.3"
+	},
+	"optionalDependencies": {
+		"ioredis": "^5.3.2",
+		"tweetnacl": "^1.0.3",
+		"uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.39.0"
+	},
+	"homepage": "https://biscuitjs.com",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/tiramisulabs/biscuit.git"
+	},
+	"bugs": {
+		"url": "https://github.com/tiramisulabs/biscuit"
+	},
+	"keywords": [
+		"api",
+		"discord",
+		"bots",
+		"typescript",
+		"botdev"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"contributors": [
+		{
+			"name": "socram03",
+			"url": "https://github.com/socram03"
+		}
+	]
 }
