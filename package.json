@@ -4,9 +4,7 @@
 	"main": "./lib/index.js",
 	"module": "./lib/index.js",
 	"types": "./lib/index.d.ts",
-	"files": [
-		"lib/**"
-	],
+	"files": ["lib/**"],
 	"scripts": {
 		"build": "tsc --outDir ./lib",
 		"prepublishOnly": "npm run build",
@@ -26,13 +24,10 @@
 		"ws": "^8.16.0"
 	},
 	"lint-staged": {
-		"*.ts": [
-			"biome check --apply",
-			"biome format --write"
-		]
+		"*.ts": ["biome check --apply", "biome format --write"]
 	},
 	"devDependencies": {
-		"@biomejs/biome": "1.5.0",
+		"@biomejs/biome": "1.6.0",
 		"@types/node": "^20.10.7",
 		"@types/ws": "^8.5.10",
 		"husky": "^8.0.3",
@@ -52,13 +47,7 @@
 	"bugs": {
 		"url": "https://github.com/tiramisulabs/seyfert"
 	},
-	"keywords": [
-		"api",
-		"discord",
-		"bots",
-		"typescript",
-		"botdev"
-	],
+	"keywords": ["api", "discord", "bots", "typescript", "botdev"],
 	"publishConfig": {
 		"access": "public"
 	},

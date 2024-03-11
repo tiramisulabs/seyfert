@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.5.0/schema.json",
+	"$schema": "https://biomejs.dev/schemas/1.6.0/schema.json",
 	"linter": {
 		"enabled": true,
 		"rules": {
@@ -11,24 +11,21 @@
 				"noRedeclare": "off",
 				"noEmptyInterface": "off",
 				"noConfusingVoidType": "off",
-				"noImplicitAnyLet": "off"
+				"noImplicitAnyLet": "off",
+				"noEmptyBlockStatements": "off"
 			},
 			"style": {
 				"noNonNullAssertion": "off",
-				"noParameterAssign": "off"
+				"noParameterAssign": "off",
+				"useExportType": "error",
+				"useImportType": "error",
+				"useNodejsImportProtocol": "error"
 			},
 			"correctness": {
 				"noUnusedVariables": "off"
 			},
-			"nursery": {
-				"useExportType": "error",
-				"useImportType": "error",
-				"useNodejsImportProtocol": "error",
-				"noUselessLoneBlockStatements": "warn",
-				"noUselessTernary": "error",
-				"noEmptyBlockStatements": "off"
-			},
 			"complexity": {
+				"noUselessLoneBlockStatements": "warn",
 				"noBannedTypes": "off",
 				"noForEach": "off",
 				"noUselessConstructor": "off",
