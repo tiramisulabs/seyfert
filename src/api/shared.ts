@@ -1,18 +1,20 @@
+import type { MakeRequired } from '../common';
+
 export * from './api';
 export * from './utils/constants';
 export * from './utils/types';
 export { calculateUserDefaultAvatarIndex } from './utils/utils';
 
 export interface ApiHandlerOptions {
-	baseUrl: string;
-	domain: string;
+	baseUrl?: string;
+	domain?: string;
 	token: string;
 	debug?: boolean;
 	agent?: string;
 	smartBucket?: boolean;
 }
 
-export interface ApiHandlerInternalOptions extends ApiHandlerOptions {
+export interface ApiHandlerInternalOptions extends MakeRequired<ApiHandlerOptions, 'baseUrl' | 'domain'> {
 	userAgent: string;
 }
 

@@ -27,6 +27,8 @@ export class ApiHandler {
 
 	constructor(options: ApiHandlerOptions) {
 		this.options = {
+			baseUrl: 'api/v10',
+			domain: 'https://discord.com',
 			...options,
 			userAgent: DefaultUserAgent,
 		};
