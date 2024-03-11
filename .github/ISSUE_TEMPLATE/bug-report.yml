@@ -6,19 +6,6 @@ body:
     attributes:
       value: |
         Use Discord for questions: https://discord.com/invite/XNw2RZFzaP
-  - type: dropdown
-    id: package
-    attributes:
-      label: Which package is this bug report for?
-      options:
-        - core
-        - api-types
-        - cache
-        - rest
-        - helpers
-        - ws
-    validations:
-      required: true
   - type: textarea
     id: description
     attributes:
@@ -47,11 +34,10 @@ body:
         ... Complete - Provide all parts someone else needs to reproduce your problem
         ... Reproducible - Test the code you're about to provide to make sure it reproduces the problem
   - type: input
-    id: biscuit-version
+    id: seyfert-version
     attributes:
       label: Package version
       description: Which version of are you using? Run `npm list <package>` in your project directory and paste the output.
-      placeholder: We no longer support version 0.1.+ of biscuit
     validations:
       required: true
   - type: input
@@ -61,7 +47,7 @@ body:
       description: |
         Which version of Node.js are you using? Run `node --version` in your project directory and paste the output.
         If you are using TypeScript, please include its version (`npm list typescript`) as well.
-      placeholder: Node.js version 18.+ or 16.+ with experimental fetch is required to use this package
+      placeholder: Node.js version 18.+ or LTS
     validations:
       required: true
   - type: input
