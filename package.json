@@ -44,7 +44,7 @@
 		"tweetnacl": "^1.0.3",
 		"uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.39.0"
 	},
-	"homepage": "https://biscuitjs.com",
+	"homepage": "https://seyfert.dev",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/tiramisulabs/seyfert.git"
