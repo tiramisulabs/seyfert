@@ -51,7 +51,6 @@ import type {
 	MessageWebhookCreateBodyRequest,
 	ModalCreateBodyRequest,
 } from '../common/types/write';
-import { ComponentsListener } from '../components/listener';
 import { InteractionGuildMember, type AllChannels } from './';
 import { GuildRole } from './GuildRole';
 import { Message, type WebhookMessage } from './Message';
@@ -126,14 +125,12 @@ export class BaseInteraction<
 			case InteractionResponseType.UpdateMessage:
 				return {
 					type: body.type,
+					// @ts-ignore
 					data: {
+						// @ts-ignore
 						...(body.data ?? {}),
-						// @ts-expect-error
-						components:
-							(body.data?.components instanceof ComponentsListener
-								? body.data.components.components
-								: body.data!.components
-							)?.map(x => (x instanceof ActionRow ? x.toJSON() : x)) ?? undefined,
+						// @ts-ignore
+						components: body.data?.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)) ?? undefined,
 						embeds: body.data?.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)) ?? undefined,
 						attachments: body.data?.attachments?.map((x, i) => ({ id: i, ...resolveAttachment(x) })) ?? undefined,
 					},
@@ -169,10 +166,7 @@ export class BaseInteraction<
 	) {
 		return {
 			...body,
-			components:
-				(body?.components instanceof ComponentsListener ? body.components.components : body.components)?.map(x =>
-					x instanceof ActionRow ? x.toJSON() : x,
-				) ?? undefined,
+			components: body.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)) ?? undefined,
 			embeds: body?.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)) ?? undefined,
 			// attachments: body.attachments?.map((x, i) => ({ id: i, ...resolveAttachment(x) })) ?? undefined,
 		} as T;
@@ -199,16 +193,10 @@ export class BaseInteraction<
 			this.matchReplied(rest, body.type, await resolveFiles(files));
 			// @ts-expect-error
 		} else this.matchReplied(body.data, body.type);
-
-		this.client.components.onRequestInteraction(
-			body.type === InteractionResponseType.Modal
-				? this.user.id
-				: body.type === InteractionResponseType.UpdateMessage
-				  ? this.message!.interaction?.id ?? this.message!.id
-				  : this.id,
-			body,
-		);
-
+		// @ts-expect-error
+		if (body.data instanceof Modal)
+			// @ts-expect-error
+			this.client.components.modals.set(this.user.id, (body.data as Modal).__exec);
 		await this.replied;
 	}
 
@@ -385,8 +373,6 @@ export class Interaction<
 				body: BaseInteraction.transformBody(data),
 				files: files ? await resolveFiles(files) : undefined,
 			});
-
-		this.client.components.onRequestInteractionUpdate(body, apiMessage);
 		return new Message(this.client, apiMessage);
 	}
 
@@ -414,8 +400,6 @@ export class Interaction<
 				body: BaseInteraction.transformBody(body),
 				files: files as RawFile[] | undefined,
 			});
-
-		this.client.components.onRequestMessage(body, apiMessage);
 		return new Message(this.client, apiMessage);
 	}
 }
@@ -452,6 +436,7 @@ export class ComponentInteraction<
 	declare channelId: string;
 	declare channel: AllChannels;
 	declare type: InteractionType.MessageComponent;
+	declare message: Message;
 
 	update(data: ComponentInteractionMessageUpdate) {
 		return this.reply({

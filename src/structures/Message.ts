@@ -1,3 +1,4 @@
+import type { ListenerOptions } from '../builders';
 import type { BaseClient } from '../client/base';
 import type {
 	APIChannelMention,
@@ -43,6 +44,10 @@ export class BaseMessage extends DiscordBase {
 		};
 		this.components = data.components?.map(x => new MessageActionRowComponent(x)) ?? [];
 		this.patch(data);
+	}
+
+	createComponentCollector(options?: ListenerOptions) {
+		return this.client.components.createComponentCollector(this.id, options);
 	}
 
 	get url() {

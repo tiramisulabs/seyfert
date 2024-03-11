@@ -24,7 +24,6 @@ export class MessageShorter extends BaseShorter {
 						files: parsedFiles,
 					})
 					.then(message => {
-						this.client.components.onRequestMessage(body, message);
 						return new Message(this.client, message);
 					});
 			},
@@ -38,7 +37,6 @@ export class MessageShorter extends BaseShorter {
 						files: parsedFiles,
 					})
 					.then(message => {
-						this.client.components.onRequestUpdateMessage(body, message);
 						return new Message(this.client, message);
 					});
 			},

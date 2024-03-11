@@ -10,7 +10,7 @@ import {
 	type WebhookMessage,
 } from '../..';
 import type { Client, WorkerClient } from '../../client';
-import { MessageFlags, type If, type UnionToTuple } from '../../common';
+import { MessageFlags, type When, type If, type UnionToTuple } from '../../common';
 import type { InteractionCreateBodyRequest, InteractionMessageUpdateBodyRequest } from '../../common/types/write';
 import {
 	Message,
@@ -56,8 +56,11 @@ export class CommandContext<T extends OptionsRecord = {}, M extends keyof Regist
 		return this.client.langs.get(this.interaction?.locale ?? this.client.langs.defaultLang ?? 'en-US');
 	}
 
-	async write(body: InteractionCreateBodyRequest) {
-		if (this.interaction) return this.interaction.write(body);
+	async write<FR extends boolean = false>(
+		body: InteractionCreateBodyRequest,
+		fetchReply?: FR,
+	): Promise<When<FR, WebhookMessage | Message, void | WebhookMessage | Message>> {
+		if (this.interaction) return this.interaction.write(body, fetchReply);
 		const options = (this.client as Client | WorkerClient).options?.commands;
 		return (this.messageResponse = await (this.message! as Message)[
 			!this.messageResponse && options?.reply?.(this) ? 'reply' : 'write'
@@ -82,12 +85,15 @@ export class CommandContext<T extends OptionsRecord = {}, M extends keyof Regist
 		return this.messageResponse!.delete();
 	}
 
-	editOrReply(body: InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest) {
-		if (this.interaction) return this.interaction.editOrReply(body as InteractionCreateBodyRequest);
+	editOrReply<FR extends boolean = false>(
+		body: InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest,
+		fetchReply?: FR,
+	): Promise<When<FR, WebhookMessage | Message, void | WebhookMessage | Message>> {
+		if (this.interaction) return this.interaction.editOrReply(body as InteractionCreateBodyRequest, fetchReply);
 		if (this.messageResponse) {
 			return this.editResponse(body);
 		}
-		return this.write(body as InteractionCreateBodyRequest);
+		return this.write(body as InteractionCreateBodyRequest, fetchReply);
 	}
 
 	async fetchResponse(): Promise<

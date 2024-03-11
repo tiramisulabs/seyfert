@@ -4,7 +4,9 @@
 	"main": "./lib/index.js",
 	"module": "./lib/index.js",
 	"types": "./lib/index.d.ts",
-	"files": ["lib/**"],
+	"files": [
+		"lib/**"
+	],
 	"scripts": {
 		"build": "tsc --outDir ./lib",
 		"prepublishOnly": "npm run build",
@@ -17,27 +19,30 @@
 	"author": "MARCROCK22",
 	"license": "ISC",
 	"dependencies": {
-		"chokidar": "^3.5.3",
-		"discord-api-types": "^0.37.71",
-		"magic-bytes.js": "^1.7.0",
-		"ts-mixer": "^6.0.3",
+		"chokidar": "^3.6.0",
+		"discord-api-types": "^0.37.73",
+		"magic-bytes.js": "^1.10.0",
+		"ts-mixer": "^6.0.4",
 		"ws": "^8.16.0"
 	},
 	"lint-staged": {
-		"*.ts": ["biome check --apply", "biome format --write"]
+		"*.ts": [
+			"biome check --apply",
+			"biome format --write"
+		]
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.6.0",
-		"@types/node": "^20.10.7",
+		"@types/node": "^20.11.25",
 		"@types/ws": "^8.5.10",
-		"husky": "^8.0.3",
+		"husky": "^9.0.11",
 		"lint-staged": "^15.2.2",
-		"typescript": "^5.3.3"
+		"typescript": "^5.4.2"
 	},
 	"optionalDependencies": {
 		"ioredis": "^5.3.2",
 		"tweetnacl": "^1.0.3",
-		"uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.39.0"
+		"uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.42.0"
 	},
 	"homepage": "https://seyfert.dev",
 	"repository": {
@@ -47,7 +52,13 @@
 	"bugs": {
 		"url": "https://github.com/tiramisulabs/seyfert"
 	},
-	"keywords": ["api", "discord", "bots", "typescript", "botdev"],
+	"keywords": [
+		"api",
+		"discord",
+		"bots",
+		"typescript",
+		"botdev"
+	],
 	"publishConfig": {
 		"access": "public"
 	},

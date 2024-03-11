@@ -1,10 +1,14 @@
-import type { ComponentInteraction, ModalSubmitInteraction } from '../structures/Interaction';
+import type {
+	ComponentInteraction,
+	ModalSubmitInteraction,
+	StringSelectMenuInteraction,
+} from '../structures/Interaction';
 import type { Button } from './Button';
 import type { TextInput } from './Modal';
 import type { BuilderSelectMenus } from './SelectMenu';
 
-export type ComponentCallback<T = ComponentInteraction> = (
-	interaction: T,
+export type ComponentCallback = (
+	interaction: ComponentInteraction | StringSelectMenuInteraction,
 	stop: ComponentStopCallback,
 	refresh: ComponentRefreshCallback,
 ) => any;

@@ -1,7 +1,8 @@
-import { CommandContext, type ReturnCache } from '../..';
+import { CommandContext, type WebhookMessage, type ReturnCache } from '../..';
 import {
 	ApplicationCommandType,
 	MessageFlags,
+	type When,
 	toSnakeCase,
 	type InteractionCreateBodyRequest,
 	type InteractionMessageUpdateBodyRequest,
@@ -61,8 +62,11 @@ export class MenuCommandContext<
 		return this.client.langs.get(this.interaction.locale);
 	}
 
-	write(body: InteractionCreateBodyRequest) {
-		return this.interaction.write(body);
+	write<FR extends boolean = false>(
+		body: InteractionCreateBodyRequest,
+		fetchReply?: FR,
+	): Promise<When<FR, WebhookMessage, void | WebhookMessage>> {
+		return this.interaction.write(body, fetchReply);
 	}
 
 	get modal() {
@@ -81,8 +85,11 @@ export class MenuCommandContext<
 		return this.interaction.deleteResponse();
 	}
 
-	editOrReply(body: InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest) {
-		return this.interaction.editOrReply(body as InteractionCreateBodyRequest);
+	editOrReply<FR extends boolean = false>(
+		body: InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest,
+		fetchReply?: FR,
+	): Promise<When<FR, WebhookMessage | Message, void | WebhookMessage | Message>> {
+		return this.interaction.editOrReply(body as InteractionCreateBodyRequest, fetchReply);
 	}
 
 	fetchResponse() {

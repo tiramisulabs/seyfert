@@ -35,7 +35,6 @@ import type {
 	StringToNumber,
 	ToClass,
 } from '../common';
-import { ComponentsListener } from '../components';
 import type { GuildMember } from './GuildMember';
 import type { GuildRole } from './GuildRole';
 import { Webhook } from './Webhook';
@@ -255,13 +254,8 @@ export class MessagesMethods extends DiscordBase {
 	static transformMessageBody<T>(body: MessageCreateBodyRequest | MessageUpdateBodyRequest) {
 		return {
 			...body,
-			components: body.components
-				? (body?.components instanceof ComponentsListener ? body.components.components : body.components).map(x =>
-						'toJSON' in x ? x.toJSON() : x,
-				  )
-				: undefined,
+			components: body.components?.map(x => ('toJSON' in x ? x.toJSON() : x)) ?? undefined,
 			embeds: body.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)) ?? undefined,
-			//?
 			attachments: body.attachments?.map((x, i) => ({ id: i, ...resolveAttachment(x) })) ?? undefined,
 		} as T;
 	}

@@ -12,17 +12,12 @@ import type {
 } from '..';
 import type { RawFile } from '../../api';
 import type { ActionRow, Attachment, AttachmentBuilder, BuilderComponents, Embed, Modal } from '../../builders';
-import type { ComponentsListener } from '../../components/listener';
 
 import type { OmitInsert } from './util';
 
 export interface ResolverProps {
 	embeds?: Embed[] | APIEmbed[] | undefined;
-	components?:
-		| ComponentsListener<BuilderComponents>
-		| APIActionRowComponent<APIMessageActionRowComponent>[]
-		| ActionRow<BuilderComponents>[]
-		| undefined;
+	components?: APIActionRowComponent<APIMessageActionRowComponent>[] | ActionRow<BuilderComponents>[] | undefined;
 	files?: AttachmentBuilder[] | Attachment[] | RawFile[] | undefined;
 }
 

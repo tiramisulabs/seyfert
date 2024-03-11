@@ -9,9 +9,7 @@ import {
 	type EmojiResolvable,
 	type When,
 } from '../common';
-import type { ButtonInteraction } from '../structures';
 import { resolvePartialEmoji } from '../structures/extra/functions';
-import type { ComponentCallback } from './types';
 
 export type ButtonStylesForID = Exclude<ButtonStyle, ButtonStyle.Link>;
 
@@ -20,9 +18,6 @@ export type ButtonStylesForID = Exclude<ButtonStyle, ButtonStyle.Link>;
  * @template Type - The type of the button component.
  */
 export class Button<Type extends boolean = boolean> {
-	/** @internal */
-	__exec?: ComponentCallback<ButtonInteraction>;
-
 	/**
 	 * Creates a new Button instance.
 	 * @param data - The initial data for the button.
@@ -87,16 +82,6 @@ export class Button<Type extends boolean = boolean> {
 
 	setStyle(style: ButtonStyle) {
 		this.data.style = style;
-		return this;
-	}
-
-	/**
-	 * Sets the callback function to be executed when the button is interacted with.
-	 * @param func - The callback function to set.
-	 * @returns The modified Button instance.
-	 */
-	run(func: ComponentCallback<ButtonInteraction>) {
-		this.__exec = func;
 		return this;
 	}
 

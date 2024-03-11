@@ -1,40 +1,17 @@
-import { Button, Modal, SelectMenu, type BuilderComponents } from '../builders';
-import type { ComponentCallback, ModalSubmitCallback } from '../builders/types';
+import type { ComponentCallback, ListenerOptions, ModalSubmitCallback } from '../builders/types';
 import type { BaseClient } from '../client/base';
 import { LimitedCollection } from '../collection';
-import {
-	BaseHandler,
-	InteractionResponseType,
-	magicImport,
-	type APIMessage,
-	type APIModalInteractionResponseCallbackData,
-	type Logger,
-	type OnFailCallback,
-} from '../common';
-import type {
-	InteractionMessageUpdateBodyRequest,
-	MessageCreateBodyRequest,
-	MessageUpdateBodyRequest,
-	ModalCreateBodyRequest,
-	ResolverProps,
-} from '../common/types/write';
-import type { ComponentInteraction, ModalSubmitInteraction, ReplyInteractionBody } from '../structures';
+import { BaseHandler, magicImport, type Logger, type OnFailCallback } from '../common';
+import type { ComponentInteraction, ModalSubmitInteraction } from '../structures';
 import { ComponentCommand, InteractionCommandType, ModalCommand } from './command';
-import { ComponentsListener } from './listener';
 
 type COMPONENTS = {
-	buttons: Partial<
-		Record<
-			string,
-			{
-				callback: ComponentCallback;
-			}
-		>
-	>;
-	listener: ComponentsListener<BuilderComponents>;
+	components: Partial<Record<string, ComponentCallback>>;
+	options?: ListenerOptions;
 	messageId?: string;
 	idle?: NodeJS.Timeout;
 	timeout?: NodeJS.Timeout;
+	__run: (customId: string, callback: ComponentCallback) => any;
 };
 
 export class ComponentHandler extends BaseHandler {
@@ -56,28 +33,69 @@ export class ComponentHandler extends BaseHandler {
 		this.onFail = cb;
 	}
 
-	hasComponent(id: string, customId: string) {
-		return !!this.values.get(id)?.buttons?.[customId];
+	createComponentCollector(messageId: string, options: ListenerOptions = {}) {
+		this.values.set(messageId, {
+			components: {},
+			options,
+			idle: options.idle
+				? setTimeout(() => {
+						this.deleteValue(messageId);
+						options.onStop?.('idle', () => {
+							this.createComponentCollector(messageId, options);
+						});
+				  }, options.idle)
+				: undefined,
+			timeout: options.timeout
+				? setTimeout(() => {
+						this.deleteValue(messageId);
+						options.onStop?.('timeout', () => {
+							this.createComponentCollector(messageId, options);
+						});
+				  }, options.timeout)
+				: undefined,
+			__run: (customId, callback) => {
+				if (this.values.has(messageId)) {
+					this.values.get(messageId)!.components[customId] = callback;
+				}
+			},
+		});
+
+		return {
+			run: this.values.get(messageId)!.__run,
+			stop: (reason?: string) => {
+				this.deleteValue(messageId);
+				options.onStop?.(reason, () => {
+					this.createComponentCollector(messageId, options);
+				});
+			},
+		};
 	}
 
-	async onComponent(id: string, interaction: ComponentInteraction) {
-		const row = this.values.get(id);
-		const component = row?.buttons?.[interaction.customId];
-		if (!component) return;
-		if (row.listener.options?.filter) {
-			if (!(await row.listener.options.filter(interaction))) return;
+	async onComponent(ids: [string, string], interaction: ComponentInteraction) {
+		for (const id of ids) {
+			const row = this.values.get(id);
+			const component = row?.components?.[interaction.customId];
+			if (!component) continue;
+			if (row.options?.filter) {
+				if (!(await row.options.filter(interaction))) return;
+			}
+			row.idle?.refresh();
+			await component(
+				interaction,
+				reason => {
+					row.options?.onStop?.(reason ?? 'stop');
+					this.deleteValue(id);
+				},
+				() => {
+					this.resetTimeouts(id);
+				},
+			);
+			break;
 		}
-		row.idle?.refresh();
-		await component.callback(
-			interaction,
-			reason => {
-				row.listener.options?.onStop?.(reason ?? 'stop');
-				this.deleteValue(id);
-			},
-			() => {
-				this.resetTimeouts(id);
-			},
-		);
+	}
+
+	hasComponent(ids: [string, string], customId: string) {
+		return ids.some(id => this.values.get(id)?.components?.[customId]);
 	}
 
 	resetTimeouts(id: string) {
@@ -97,105 +115,18 @@ export class ComponentHandler extends BaseHandler {
 		return this.modals.get(interaction.user.id)?.(interaction);
 	}
 
-	__setComponents(id: string, record: NonNullable<ResolverProps['components']>) {
-		this.deleteValue(id);
-		if (!(record instanceof ComponentsListener)) return;
-		const components: COMPONENTS = {
-			buttons: {},
-			listener: record,
-		};
-
-		if ((record.options.idle ?? -1) > 0) {
-			components.idle = setTimeout(() => {
-				clearTimeout(components.timeout);
-				clearTimeout(components.idle);
-				record.options?.onStop?.('idle', () => {
-					this.__setComponents(id, record);
-				});
-				this.values.delete(id);
-			}, record.options.idle);
-		}
-		if ((record.options.timeout ?? -1) > 0) {
-			components.timeout = setTimeout(() => {
-				clearTimeout(components.timeout);
-				clearTimeout(components.idle);
-				record.options?.onStop?.('timeout', () => {
-					this.__setComponents(id, record);
-				});
-				this.values.delete(id);
-			}, record.options.timeout);
-		}
-
-		for (const actionRow of record.components) {
-			for (const child of actionRow.components) {
-				if ((child instanceof SelectMenu || child instanceof Button) && 'custom_id' in child.data) {
-					components.buttons[child.data.custom_id!] = {
-						callback: child.__exec as ComponentCallback,
-					};
-				}
-			}
-		}
-
-		if (Object.entries(components.buttons).length) {
-			this.values.set(id, components);
-		}
-	}
-
-	protected __setModal(id: string, record: APIModalInteractionResponseCallbackData | ModalCreateBodyRequest) {
-		if ('__exec' in record) {
-			this.modals.set(id, record.__exec!);
-		}
-	}
-
 	deleteValue(id: string, reason?: string) {
 		const component = this.values.get(id);
 		if (component) {
-			if (reason !== undefined) component.listener.options.onStop?.(reason);
+			if (reason !== undefined) component.options?.onStop?.(reason);
 			clearTimeout(component.timeout);
 			clearTimeout(component.idle);
 			this.values.delete(id);
 		}
 	}
 
-	onRequestInteraction(interactionId: string, interaction: ReplyInteractionBody) {
-		// @ts-expect-error dapi
-		if (!interaction.data) {
-			return;
-		}
-		switch (interaction.type) {
-			case InteractionResponseType.ChannelMessageWithSource:
-			case InteractionResponseType.UpdateMessage:
-				if (!interaction.data.components) return;
-				this.__setComponents(interactionId, interaction.data.components);
-				break;
-			case InteractionResponseType.Modal:
-				if (!(interaction.data instanceof Modal)) return;
-				this.__setModal(interactionId, interaction.data);
-				break;
-		}
-	}
-
 	onMessageDelete(id: string) {
 		this.deleteValue(id, 'messageDelete');
-	}
-
-	onRequestMessage(body: MessageCreateBodyRequest, message: APIMessage) {
-		if (!body.components) {
-			return;
-		}
-		this.__setComponents(message.id, body.components);
-	}
-
-	onRequestInteractionUpdate(body: InteractionMessageUpdateBodyRequest, message: APIMessage) {
-		if (!body.components) {
-			return;
-		}
-		this.__setComponents(message.interaction!.id, body.components);
-	}
-
-	onRequestUpdateMessage(body: MessageUpdateBodyRequest, message: APIMessage) {
-		if (!body.components) return;
-		this.__setComponents(message.id, body.components);
 	}
 
 	async load(componentsDir: string) {

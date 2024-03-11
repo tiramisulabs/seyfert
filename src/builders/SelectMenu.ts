@@ -26,7 +26,6 @@ import type {
 } from '../structures';
 import { resolvePartialEmoji } from '../structures/extra/functions';
 import { BaseComponentBuilder, type OptionValuesLength } from './Base';
-import type { ComponentCallback } from './types';
 
 export type BuilderSelectMenus =
 	| RoleSelectMenu
@@ -63,11 +62,9 @@ function mappedDefault<T extends SelectMenuDefaultValueType>(
  */
 export class SelectMenu<
 	Select extends APISelectMenuComponent = APISelectMenuComponent,
+	//@ts-expect-error
 	Interaction = ComponentInteraction,
 > extends BaseComponentBuilder<Select> {
-	/** @internal */
-	__exec?: ComponentCallback<Interaction>;
-
 	/**
 	 * Sets the custom ID for the select menu.
 	 * @param id - The custom ID for the select menu.
@@ -106,16 +103,6 @@ export class SelectMenu<
 	 */
 	setDisabled(disabled = true): this {
 		this.data.disabled = disabled;
-		return this;
-	}
-
-	/**
-	 * Sets the callback function to be executed when the select menu is interacted with.
-	 *  func - The callback function.
-	 * @returns The current SelectMenu instance.
-	 */
-	run(func: ComponentCallback<Interaction>): this {
-		this.__exec = func;
 		return this;
 	}
 }
