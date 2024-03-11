@@ -1,7 +1,15 @@
 import { randomUUID } from 'node:crypto';
 import { Worker } from 'node:worker_threads';
+import { ApiHandler, Router } from '../..';
 import { MemoryAdapter, type Adapter } from '../../cache';
-import { Logger, MergeOptions, type GatewayPresenceUpdateData, type GatewaySendPayload } from '../../common';
+import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
+import {
+	Logger,
+	type MakePartial,
+	MergeOptions,
+	type GatewayPresenceUpdateData,
+	type GatewaySendPayload,
+} from '../../common';
 import { WorkerManagerDefaults } from '../constants';
 import { SequentialBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';
@@ -9,44 +17,27 @@ import { MemberUpdateHandler } from './events/memberUpdate';
 import { PresenceUpdateHandler } from './events/presenceUpdate';
 import type { ShardOptions, WorkerData, WorkerManagerOptions } from './shared';
 import type { WorkerInfo, WorkerMessage, WorkerShardInfo } from './worker';
-
-export class WorkerManager extends Map<number, Worker> {
-	options: Required<WorkerManagerOptions>;
+export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
+	options!: Required<WorkerManagerOptions>;
 	debugger?: Logger;
-	connectQueue: ConnectQueue;
+	connectQueue!: ConnectQueue;
 	cacheAdapter: Adapter;
 	promises = new Map<string, { resolve: (value: any) => void; timeout: NodeJS.Timeout }>();
 	memberUpdateHandler = new MemberUpdateHandler();
 	presenceUpdateHandler = new PresenceUpdateHandler();
-	constructor(options: WorkerManagerOptions) {
+	rest!: ApiHandler;
+	constructor(options: MakePartial<WorkerManagerOptions, 'token' | 'intents' | 'info'>) {
 		super();
-		options.totalShards ??= options.info.shards;
 		this.options = MergeOptions<Required<WorkerManagerOptions>>(WorkerManagerDefaults, options);
-		this.options.workers ??= Math.ceil(this.options.totalShards / this.options.shardsPerWorker);
-		this.options.info.shards = options.totalShards;
-		options.shardEnd ??= options.totalShards;
-		options.shardStart ??= 0;
-		this.connectQueue = new ConnectQueue(5.5e3, this.concurrency);
-
-		if (this.options.debug) {
-			this.debugger = new Logger({
-				name: '[WorkerManager]',
-			});
-		}
-
-		if (this.totalShards / this.shardsPerWorker > this.workers) {
-			throw new Error(
-				`Cannot create enough shards in the specified workers, minimum: ${Math.ceil(
-					this.totalShards / this.shardsPerWorker,
-				)}`,
-			);
-		}
-
 		this.cacheAdapter = new MemoryAdapter();
 	}
 
 	setCache(adapter: Adapter) {
 		this.cacheAdapter = adapter;
+	}
+
+	setRest(rest: ApiHandler) {
+		this.rest = rest;
 	}
 
 	get remaining() {
@@ -244,10 +235,14 @@ export class WorkerManager extends Map<number, Worker> {
 				break;
 			case 'WORKER_READY':
 				{
-					if (message.workerId === [...this.keys()].at(-1)) {
+					this.get(message.workerId)!.ready = true;
+					if ([...this.values()].every(w => w.ready)) {
 						this.get(this.keys().next().value)?.postMessage({
 							type: 'BOT_READY',
 						} satisfies ManagerSendBotReady);
+						this.forEach(w => {
+							delete w.ready;
+						});
 					}
 				}
 				break;
@@ -330,6 +325,38 @@ export class WorkerManager extends Map<number, Worker> {
 	}
 
 	async start() {
+		const rc = await BaseClient.prototype.getRC<InternalRuntimeConfig>();
+
+		this.options.debug ||= rc.debug;
+		this.options.intents ||= rc.intents ?? 0;
+		this.options.token ??= rc.token;
+		this.rest ??= new ApiHandler({
+			token: this.options.token,
+			baseUrl: 'api/v10',
+			domain: 'https://discord.com',
+		}); //TODO: share ratelimits with all workers
+		this.options.info ??= await new Router(this.rest).createProxy().gateway.bot.get();
+		this.options.totalShards ??= this.options.info.shards;
+		this.options = MergeOptions<Required<WorkerManagerOptions>>(WorkerManagerDefaults, this.options);
+		this.options.workers ??= Math.ceil(this.options.totalShards / this.options.shardsPerWorker);
+		this.options.info.shards = this.options.totalShards;
+		this.options.shardEnd ??= this.options.totalShards;
+		this.options.shardStart ??= 0;
+		this.connectQueue = new ConnectQueue(5.5e3, this.concurrency);
+
+		if (this.options.debug) {
+			this.debugger = new Logger({
+				name: '[WorkerManager]',
+			});
+		}
+		if (this.totalShards / this.shardsPerWorker > this.workers) {
+			throw new Error(
+				`Cannot create enough shards in the specified workers, minimum: ${Math.ceil(
+					this.totalShards / this.shardsPerWorker,
+				)}`,
+			);
+		}
+
 		const spaces = this.prepareSpaces();
 		await this.prepareWorkers(spaces);
 	}

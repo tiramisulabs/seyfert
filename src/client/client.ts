@@ -1,12 +1,13 @@
 import { parentPort, workerData } from 'node:worker_threads';
 import type { Command, CommandContext, Message, SubCommand } from '..';
-import type {
-	DeepPartial,
-	GatewayDispatchPayload,
-	GatewayPresenceUpdateData,
-	If,
-	WatcherPayload,
-	WatcherSendToShard,
+import {
+	GatewayIntentBits,
+	type DeepPartial,
+	type GatewayDispatchPayload,
+	type GatewayPresenceUpdateData,
+	type If,
+	type WatcherPayload,
+	type WatcherSendToShard,
 } from '../common';
 import { EventHandler } from '../events';
 import { ClientUser } from '../structures';
@@ -145,15 +146,18 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						this.botId = packet.d.user.id;
 						this.applicationId = packet.d.application.id;
 						this.me = new ClientUser(this, packet.d.user, packet.d.application) as never;
-						if (!this.__handleGuilds?.size) {
+						if (
+							!this.__handleGuilds?.size ||
+							!((this.gateway.options.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds)
+						) {
 							if (
 								[...this.gateway.values()].every(shard => shard.data.session_id) &&
 								this.events.values.BOT_READY &&
 								(this.events.values.BOT_READY.fired ? !this.events.values.BOT_READY.data.once : true)
 							) {
 								await this.events.runEvent('BOT_READY', this, this.me, -1);
-								delete this.__handleGuilds;
 							}
+							delete this.__handleGuilds;
 						}
 						this.debugger?.debug(`#${shardId}[${packet.d.user.username}](${this.botId}) is online...`);
 						break;
@@ -168,6 +172,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 							) {
 								await this.events.runEvent('BOT_READY', this, this.me, -1);
 							}
+							if (!this.__handleGuilds.size) delete this.__handleGuilds;
 							return;
 						}
 						break;

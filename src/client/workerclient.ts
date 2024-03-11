@@ -2,7 +2,7 @@ import { workerData as __workerData__, parentPort as manager } from 'node:worker
 import type { Cache } from '../cache';
 import { WorkerAdapter } from '../cache';
 import type { GatewayDispatchPayload, GatewaySendPayload, When } from '../common';
-import { LogLevels, Logger, type DeepPartial } from '../common';
+import { GatewayIntentBits, LogLevels, Logger, type DeepPartial } from '../common';
 import { EventHandler } from '../events';
 import { ClientUser } from '../structures';
 import { Shard, type ShardManagerOptions, type WorkerData } from '../websocket';
@@ -58,6 +58,14 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	get workerId() {
 		return workerData.workerId;
+	}
+
+	get latency() {
+		let acc = 0;
+
+		this.shards.forEach(s => (acc += s.latency));
+
+		return acc / this.shards.size;
 	}
 
 	async start(options: Omit<DeepPartial<StartOptions>, 'httpConnection' | 'token' | 'connection'> = {}) {
@@ -208,7 +216,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							this.botId = packet.d.user.id;
 							this.applicationId = packet.d.application.id;
 							this.me = new ClientUser(this, packet.d.user, packet.d.application) as never;
-							if (!this.__handleGuilds?.size) {
+							if (
+								!this.__handleGuilds?.size ||
+								!((workerData.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds)
+							) {
 								if (
 									[...this.shards.values()].every(shard => shard.data.session_id) &&
 									this.events.values.WORKER_READY &&
@@ -219,8 +230,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 										workerId: this.workerId,
 									} as WorkerReady);
 									await this.events.runEvent('WORKER_READY', this, this.me, -1);
-									delete this.__handleGuilds;
 								}
+								delete this.__handleGuilds;
 							}
 							this.debugger?.debug(`#${shardId} [${packet.d.user.username}](${this.botId}) is online...`);
 							break;
@@ -245,6 +256,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 									} as WorkerReady);
 									await this.events.runEvent('WORKER_READY', this, this.me, -1);
 								}
+								if (!this.__handleGuilds.size) delete this.__handleGuilds;
 								return;
 							}
 						}
