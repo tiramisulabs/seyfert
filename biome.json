@@ -24,6 +24,9 @@
 			"correctness": {
 				"noUnusedVariables": "off"
 			},
+			"nursery": {
+				"useImportRestrictions": "off"
+			},
 			"complexity": {
 				"noUselessLoneBlockStatements": "warn",
 				"noBannedTypes": "off",

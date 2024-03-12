@@ -5,10 +5,10 @@ import { MemoryAdapter, type Adapter } from '../../cache';
 import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
 import {
 	Logger,
-	type MakePartial,
 	MergeOptions,
 	type GatewayPresenceUpdateData,
 	type GatewaySendPayload,
+	type MakePartial,
 } from '../../common';
 import { WorkerManagerDefaults } from '../constants';
 import { SequentialBucket } from '../structures';
@@ -26,7 +26,7 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 	memberUpdateHandler = new MemberUpdateHandler();
 	presenceUpdateHandler = new PresenceUpdateHandler();
 	rest!: ApiHandler;
-	constructor(options: MakePartial<WorkerManagerOptions, 'token' | 'intents' | 'info'>) {
+	constructor(options: MakePartial<WorkerManagerOptions, 'token' | 'intents' | 'info' | 'handlePayload'>) {
 		super();
 		this.options = MergeOptions<Required<WorkerManagerOptions>>(WorkerManagerDefaults, options);
 		this.cacheAdapter = new MemoryAdapter();

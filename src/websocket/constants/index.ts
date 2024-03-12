@@ -24,9 +24,7 @@ const ShardManagerDefaults: Partial<ShardManagerOptions> = {
 const WorkerManagerDefaults: Partial<WorkerManagerOptions> = {
 	...ShardManagerDefaults,
 	shardsPerWorker: 32,
-	handlePayload: (shardId: number, workerId: number, packet: GatewayDispatchPayload): void => {
-		console.info(`Packet ${packet.t} on shard ${shardId} worker ${workerId}`);
-	},
+	handlePayload: (_shardId: number, _workerId: number, _packet: GatewayDispatchPayload): void => {},
 };
 
 export interface IdentifyProperties {
