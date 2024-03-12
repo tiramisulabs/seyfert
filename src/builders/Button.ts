@@ -12,14 +12,6 @@ import { resolvePartialEmoji } from '../structures/extra/functions';
 
 export type ButtonStylesForID = Exclude<ButtonStyle, ButtonStyle.Link>;
 
-export type ButtonSelect<T extends ButtonStyle> = T extends ButtonStyle.Link
-	? Omit<Button<false>, 'setCustomId' | 'setURL' | 'setStyle'> & {
-			setStyle(style: ButtonStyle.Link): Omit<Button<false>, 'setCustomId' | 'setURL' | 'setStyle'>;
-	  }
-	: Omit<Button<true>, 'setCustomId' | 'setURL' | 'setStyle'> & {
-			setStyle(style: ButtonStylesForID): Omit<Button<true>, 'setCustomId' | 'setURL' | 'setStyle'>;
-	  };
-
 /**
  * Represents a button component.
  * @template Type - The type of the button component.
@@ -38,10 +30,10 @@ export class Button<Type extends boolean = boolean> {
 	 * @param id - The custom ID to set.
 	 * @returns The modified Button instance.
 	 */
-	setCustomId(id: string): ButtonSelect<ButtonStylesForID> {
+	setCustomId(id: string) {
 		// @ts-expect-error
 		this.data.custom_id = id;
-		return this as ButtonSelect<ButtonStylesForID>;
+		return this;
 	}
 
 	/**
@@ -49,10 +41,10 @@ export class Button<Type extends boolean = boolean> {
 	 * @param url - The URL to set.
 	 * @returns The modified Button instance.
 	 */
-	setURL(url: string): ButtonSelect<ButtonStyle.Link> {
+	setURL(url: string) {
 		// @ts-expect-error
 		this.data.url = url;
-		return this as ButtonSelect<ButtonStyle.Link>;
+		return this;
 	}
 
 	/**
@@ -87,8 +79,6 @@ export class Button<Type extends boolean = boolean> {
 		return this;
 	}
 
-	setStyle(style: ButtonStyle.Link): Omit<Button, 'setCustomId'>;
-	setStyle(style: ButtonStylesForID): Omit<Button, 'setURL'>;
 	setStyle(style: ButtonStyle) {
 		this.data.style = style;
 		return this;
