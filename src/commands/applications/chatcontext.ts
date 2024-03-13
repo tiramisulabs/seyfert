@@ -10,7 +10,7 @@ import {
 	type WebhookMessage,
 } from '../..';
 import type { Client, WorkerClient } from '../../client';
-import { MessageFlags, type When, type If, type UnionToTuple } from '../../common';
+import { MessageFlags, type If, type UnionToTuple, type When } from '../../common';
 import type { InteractionCreateBodyRequest, InteractionMessageUpdateBodyRequest } from '../../common/types/write';
 import {
 	Message,
@@ -108,12 +108,12 @@ export class CommandContext<T extends OptionsRecord = {}, M extends keyof Regist
 	channel(mode?: 'cache'): ReturnCache<If<InferWithPrefix, AllChannels | undefined, AllChannels>>;
 	channel(mode: 'cache' | 'rest' | 'flow' = 'cache') {
 		if (this.interaction?.channel && mode === 'cache')
-			return this.client.cache.asyncCache ? Promise.resolve(this.interaction.channel) : this.interaction.channel;
+			return this.client.cache.adapter.isAsync ? Promise.resolve(this.interaction.channel) : this.interaction.channel;
 		switch (mode) {
 			case 'cache':
 				return (
 					this.client.cache.channels?.get(this.channelId) ||
-					(this.client.cache.asyncCache ? (Promise.resolve() as any) : undefined)
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
 				);
 			default:
 				return this.client.channels.fetch(this.channelId, mode === 'rest');
@@ -124,12 +124,12 @@ export class CommandContext<T extends OptionsRecord = {}, M extends keyof Regist
 	me(mode?: 'cache'): ReturnCache<GuildMember | undefined>;
 	me(mode: 'cache' | 'rest' | 'flow' = 'cache') {
 		if (!this.guildId)
-			return mode === 'cache' ? (this.client.cache.asyncCache ? Promise.resolve() : undefined) : Promise.resolve();
+			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
 		switch (mode) {
 			case 'cache':
 				return (
 					this.client.cache.members?.get(this.client.botId, this.guildId) ||
-					(this.client.cache.asyncCache ? (Promise.resolve() as any) : undefined)
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
 				);
 			default:
 				return this.client.members.fetch(this.guildId, this.client.botId, mode === 'rest');
@@ -141,7 +141,7 @@ export class CommandContext<T extends OptionsRecord = {}, M extends keyof Regist
 	guild(mode: 'cache' | 'rest' | 'flow' = 'cache') {
 		if (!this.guildId)
 			return (mode === 'cache'
-				? this.client.cache.asyncCache
+				? this.client.cache.adapter.isAsync
 					? Promise.resolve()
 					: undefined
 				: Promise.resolve()) as unknown as undefined;
@@ -149,7 +149,7 @@ export class CommandContext<T extends OptionsRecord = {}, M extends keyof Regist
 			case 'cache':
 				return (
 					this.client.cache.guilds?.get(this.guildId) ||
-					(this.client.cache.asyncCache ? (Promise.resolve() as any) : undefined)
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
 				);
 			default:
 				return this.client.guilds.fetch(this.guildId, mode === 'rest');

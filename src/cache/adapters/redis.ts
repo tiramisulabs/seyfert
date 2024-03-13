@@ -14,6 +14,8 @@ interface RedisAdapterOptions {
 }
 
 export class RedisAdapter implements Adapter {
+	isAsync = true;
+
 	client: import('ioredis').Redis;
 	namespace: string;
 

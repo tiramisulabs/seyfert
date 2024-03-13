@@ -5,6 +5,7 @@ import type { WorkerSendCacheRequest } from '../../websocket/discord/worker';
 import type { Adapter } from './types';
 
 export class WorkerAdapter implements Adapter {
+	isAsync = true;
 	promises = new Map<string, { resolve: (value: unknown) => void; timeout: NodeJS.Timeout }>();
 
 	constructor(readonly parent: MessagePort) {}

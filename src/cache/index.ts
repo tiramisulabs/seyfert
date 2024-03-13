@@ -102,7 +102,6 @@ export class Cache {
 	constructor(
 		public intents: number,
 		public adapter: Adapter,
-		public asyncCache = false,
 		readonly disabledCache: (NonGuildBased | GuildBased | GuildRelated)[] = [],
 		client?: BaseClient,
 	) {

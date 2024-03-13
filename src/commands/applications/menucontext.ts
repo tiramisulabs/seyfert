@@ -1,12 +1,12 @@
-import { CommandContext, type WebhookMessage, type ReturnCache } from '../..';
+import { CommandContext, type ReturnCache, type WebhookMessage } from '../..';
 import {
 	ApplicationCommandType,
 	MessageFlags,
-	type When,
 	toSnakeCase,
 	type InteractionCreateBodyRequest,
 	type InteractionMessageUpdateBodyRequest,
 	type UnionToTuple,
+	type When,
 } from '../../common';
 import {
 	Message,
@@ -100,7 +100,7 @@ export class MenuCommandContext<
 	channel(mode?: 'cache'): ReturnCache<AllChannels>;
 	channel(mode: 'cache' | 'rest' | 'flow' = 'cache') {
 		if (this.interaction?.channel && mode === 'cache')
-			return this.client.cache.asyncCache ? Promise.resolve(this.interaction.channel) : this.interaction.channel;
+			return this.client.cache.adapter.isAsync ? Promise.resolve(this.interaction.channel) : this.interaction.channel;
 		return this.client.channels.fetch(this.channelId, mode === 'rest');
 	}
 
@@ -108,7 +108,7 @@ export class MenuCommandContext<
 	me(mode?: 'cache'): ReturnCache<GuildMember | undefined>;
 	me(mode: 'cache' | 'rest' | 'flow' = 'cache') {
 		if (!this.guildId)
-			return mode === 'cache' ? (this.client.cache.asyncCache ? Promise.resolve() : undefined) : Promise.resolve();
+			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
 		switch (mode) {
 			case 'cache':
 				return this.client.cache.members?.get(this.client.botId, this.guildId);
@@ -122,7 +122,7 @@ export class MenuCommandContext<
 	guild(mode: 'cache' | 'rest' | 'flow' = 'cache') {
 		if (!this.guildId)
 			return (
-				mode === 'cache' ? (this.client.cache.asyncCache ? Promise.resolve() : undefined) : Promise.resolve()
+				mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve()
 			) as any;
 		switch (mode) {
 			case 'cache':

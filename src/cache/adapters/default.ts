@@ -1,6 +1,8 @@
 import type { Adapter } from './types';
 
 export class MemoryAdapter implements Adapter {
+	isAsync = false;
+
 	readonly storage = new Map<string, string>();
 	readonly relationships = new Map<string, string[]>();
 

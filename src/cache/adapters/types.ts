@@ -1,4 +1,6 @@
 export interface Adapter {
+	isAsync: boolean;
+
 	scan(query: string, keys?: false): RPV<any[]>;
 	scan(query: string, keys: true): RPV<string[]>;
 	scan(query: string, keys?: boolean): RPV<(any | string)[]>;
