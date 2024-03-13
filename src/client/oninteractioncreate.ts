@@ -209,8 +209,8 @@ export async function onInteractionCreate(
 		case InteractionType.MessageComponent:
 			{
 				const interaction = BaseInteraction.from(self, body, __reply) as ComponentInteraction;
-				if (self.components.hasComponent([body.message.id, body.id], interaction.customId)) {
-					await self.components.onComponent([body.message.id, body.id], interaction);
+				if (self.components.hasComponent(body.message.id, interaction.customId)) {
+					await self.components.onComponent(body.message.id, interaction);
 				} else {
 					await self.components.executeComponent(interaction);
 				}

@@ -46,6 +46,8 @@ export interface WorkerManagerOptions extends Omit<ShardManagerOptions, 'handleP
 	 */
 	shardsPerWorker?: number;
 
+	workerProxy?: boolean;
+
 	path: string;
 
 	handlePayload(shardId: number, workerId: number, packet: GatewayDispatchPayload): unknown;
@@ -115,4 +117,5 @@ export interface WorkerData {
 	shards: number[];
 	workerId: number;
 	debug: boolean;
+	workerProxy: boolean;
 }

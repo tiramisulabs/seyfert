@@ -12,6 +12,7 @@ export interface ApiHandlerOptions {
 	debug?: boolean;
 	agent?: string;
 	smartBucket?: boolean;
+	workerProxy?: boolean;
 }
 
 export interface ApiHandlerInternalOptions extends MakeRequired<ApiHandlerOptions, 'baseUrl' | 'domain'> {

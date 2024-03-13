@@ -1,7 +1,11 @@
 import { filetypeinfo } from 'magic-bytes.js';
+import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
+import { parentPort, workerData } from 'node:worker_threads';
 import { Logger } from '../common';
 import { snowflakeToTimestamp } from '../structures/extra/functions';
+import type { WorkerData } from '../websocket';
+import type { WorkerSendApiRequest } from '../websocket/discord/worker';
 import { CDN } from './CDN';
 import type { ProxyRequestMethod } from './Router';
 import { Bucket } from './bucket';
@@ -24,6 +28,7 @@ export class ApiHandler {
 	readyQueue: (() => void)[] = [];
 	cdn = new CDN();
 	debugger?: Logger;
+	workerPromises?: Map<string, { resolve: (value: any) => any; reject: (error: any) => any }>;
 
 	constructor(options: ApiHandlerOptions) {
 		this.options = {
@@ -37,6 +42,9 @@ export class ApiHandler {
 				name: '[API]',
 			});
 		}
+
+		if (options.workerProxy && !parentPort) throw new Error('Cannot use workerProxy without a parent.');
+		if (options.workerProxy) this.workerPromises = new Map();
 	}
 
 	globalUnblock() {
@@ -47,11 +55,39 @@ export class ApiHandler {
 		}
 	}
 
+	#randomUUID(): string {
+		const uuid = randomUUID();
+		if (this.workerPromises!.has(uuid)) return this.#randomUUID();
+		return uuid;
+	}
+
 	async request<T = any>(
 		method: HttpMethods,
 		url: `/${string}`,
 		{ auth = true, ...request }: ApiRequestOptions = {},
 	): Promise<T> {
+		if (this.options.workerProxy) {
+			const nonce = this.#randomUUID();
+			parentPort!.postMessage({
+				method,
+				url,
+				type: 'WORKER_API_REQUEST',
+				workerId: (workerData as WorkerData).workerId,
+				nonce,
+				requestOptions: { auth, ...request },
+			} satisfies WorkerSendApiRequest);
+			let resolve = (_value: T) => {};
+			let reject = () => {};
+
+			const promise = new Promise<T>((res, rej) => {
+				resolve = res;
+				reject = rej;
+			});
+
+			this.workerPromises!.set(nonce, { reject, resolve });
+
+			return promise;
+		}
 		const route = request.route || this.routefy(url, method);
 		let attempts = 0;
 

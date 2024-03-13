@@ -1,4 +1,5 @@
 import { workerData as __workerData__, parentPort as manager } from 'node:worker_threads';
+import { ApiHandler } from '..';
 import type { Cache } from '../cache';
 import { WorkerAdapter } from '../cache';
 import type { GatewayDispatchPayload, GatewaySendPayload, When } from '../common';
@@ -51,6 +52,15 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			this.debugger = new Logger({
 				name: `[Worker #${workerData.workerId}]`,
 				logLevel: LogLevels.Debug,
+			});
+		}
+		if (workerData.workerProxy) {
+			this.setServices({
+				rest: new ApiHandler({
+					token: workerData.token,
+					workerProxy: true,
+					debug: workerData.debug,
+				}),
 			});
 		}
 	}
@@ -106,6 +116,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					manager!.postMessage({
 						type: 'RESULT_PAYLOAD',
 						nonce: data.nonce,
+						workerId: this.workerId,
 					} satisfies WorkerSendResultPayload);
 				}
 				break;
@@ -169,6 +180,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						...generateShardInfo(shard),
 						nonce: data.nonce,
 						type: 'SHARD_INFO',
+						workerId: this.workerId,
 					} satisfies WorkerSendShardInfo);
 				}
 				break;
@@ -183,11 +195,15 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				}
 				break;
 			case 'BOT_READY':
-				if (
-					this.events.values.BOT_READY &&
-					(this.events.values.BOT_READY.fired ? !this.events.values.BOT_READY.data.once : true)
-				) {
-					await this.events.runEvent('BOT_READY', this, this.me, -1);
+				await this.events.runEvent('BOT_READY', this, this.me, -1);
+				break;
+			case 'API_RESPONSE':
+				{
+					const promise = this.rest.workerPromises!.get(data.nonce);
+					if (!promise) return;
+					this.rest.workerPromises!.delete(data.nonce);
+					if (data.error) return promise.reject(data.error);
+					promise.resolve(data.response);
 				}
 				break;
 		}
@@ -219,11 +235,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 								!this.__handleGuilds?.size ||
 								!((workerData.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds)
 							) {
-								if (
-									[...this.shards.values()].every(shard => shard.data.session_id) &&
-									this.events.values.WORKER_READY &&
-									(this.events.values.WORKER_READY.fired ? !this.events.values.WORKER_READY.data.once : true)
-								) {
+								if ([...this.shards.values()].every(shard => shard.data.session_id)) {
 									manager!.postMessage({
 										type: 'WORKER_READY',
 										workerId: this.workerId,
@@ -243,12 +255,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						case 'GUILD_CREATE': {
 							if (this.__handleGuilds?.has(packet.d.id)) {
 								this.__handleGuilds.delete(packet.d.id);
-								if (
-									!this.__handleGuilds.size &&
-									[...this.shards.values()].every(shard => shard.data.session_id) &&
-									this.events.values.WORKER_READY &&
-									(this.events.values.WORKER_READY.fired ? !this.events.values.WORKER_READY.data.once : true)
-								) {
+								if (!this.__handleGuilds.size && [...this.shards.values()].every(shard => shard.data.session_id)) {
 									manager!.postMessage({
 										type: 'WORKER_READY',
 										workerId: this.workerId,

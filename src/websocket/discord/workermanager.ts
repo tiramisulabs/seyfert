@@ -17,6 +17,7 @@ import { MemberUpdateHandler } from './events/memberUpdate';
 import { PresenceUpdateHandler } from './events/presenceUpdate';
 import type { ShardOptions, WorkerData, WorkerManagerOptions } from './shared';
 import type { WorkerInfo, WorkerMessage, WorkerShardInfo } from './worker';
+
 export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 	options!: Required<WorkerManagerOptions>;
 	debugger?: Logger;
@@ -28,7 +29,7 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 	rest!: ApiHandler;
 	constructor(options: MakePartial<WorkerManagerOptions, 'token' | 'intents' | 'info' | 'handlePayload'>) {
 		super();
-		this.options = MergeOptions<Required<WorkerManagerOptions>>(WorkerManagerDefaults, options);
+		this.options = MergeOptions<WorkerManager['options']>(WorkerManagerDefaults, options);
 		this.cacheAdapter = new MemoryAdapter();
 	}
 
@@ -126,6 +127,7 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 					shards: shards[i],
 					intents: this.options.intents,
 					workerId: i,
+					workerProxy: this.options.workerProxy,
 				});
 				this.set(i, worker);
 			}
@@ -246,6 +248,16 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 					}
 				}
 				break;
+			case 'WORKER_API_REQUEST':
+				{
+					const response = await this.rest.request(message.method, message.url, message.requestOptions);
+					this.get(message.workerId)!.postMessage({
+						nonce: message.nonce,
+						response,
+						type: 'API_RESPONSE',
+					} satisfies ManagerSendApiResponse);
+				}
+				break;
 		}
 	}
 
@@ -334,7 +346,8 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 			token: this.options.token,
 			baseUrl: 'api/v10',
 			domain: 'https://discord.com',
-		}); //TODO: share ratelimits with all workers
+			debug: this.options.debug,
+		});
 		this.options.info ??= await new Router(this.rest).createProxy().gateway.bot.get();
 		this.options.totalShards ??= this.options.info.shards;
 		this.options = MergeOptions<Required<WorkerManagerOptions>>(WorkerManagerDefaults, this.options);
@@ -380,6 +393,14 @@ export type ManagerRequestShardInfo = CreateManagerMessage<'SHARD_INFO', { nonce
 export type ManagerRequestWorkerInfo = CreateManagerMessage<'WORKER_INFO', { nonce: string }>;
 export type ManagerSendCacheResult = CreateManagerMessage<'CACHE_RESULT', { nonce: string; result: any }>;
 export type ManagerSendBotReady = CreateManagerMessage<'BOT_READY'>;
+export type ManagerSendApiResponse = CreateManagerMessage<
+	'API_RESPONSE',
+	{
+		response: any;
+		error?: any;
+		nonce: string;
+	}
+>;
 
 export type ManagerMessages =
 	| ManagerAllowConnect
@@ -388,4 +409,5 @@ export type ManagerMessages =
 	| ManagerRequestShardInfo
 	| ManagerRequestWorkerInfo
 	| ManagerSendCacheResult
-	| ManagerSendBotReady;
+	| ManagerSendBotReady
+	| ManagerSendApiResponse;

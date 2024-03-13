@@ -71,31 +71,28 @@ export class ComponentHandler extends BaseHandler {
 		};
 	}
 
-	async onComponent(ids: [string, string], interaction: ComponentInteraction) {
-		for (const id of ids) {
-			const row = this.values.get(id);
-			const component = row?.components?.[interaction.customId];
-			if (!component) continue;
-			if (row.options?.filter) {
-				if (!(await row.options.filter(interaction))) return;
-			}
-			row.idle?.refresh();
-			await component(
-				interaction,
-				reason => {
-					row.options?.onStop?.(reason ?? 'stop');
-					this.deleteValue(id);
-				},
-				() => {
-					this.resetTimeouts(id);
-				},
-			);
-			break;
+	async onComponent(id: string, interaction: ComponentInteraction) {
+		const row = this.values.get(id);
+		const component = row?.components?.[interaction.customId];
+		if (!component) return;
+		if (row.options?.filter) {
+			if (!(await row.options.filter(interaction))) return;
 		}
+		row.idle?.refresh();
+		await component(
+			interaction,
+			reason => {
+				row.options?.onStop?.(reason ?? 'stop');
+				this.deleteValue(id);
+			},
+			() => {
+				this.resetTimeouts(id);
+			},
+		);
 	}
 
-	hasComponent(ids: [string, string], customId: string) {
-		return ids.some(id => this.values.get(id)?.components?.[customId]);
+	hasComponent(id: string, customId: string) {
+		return this.values.get(id)?.components?.[customId];
 	}
 
 	resetTimeouts(id: string) {

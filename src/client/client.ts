@@ -149,11 +149,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 							!this.__handleGuilds?.size ||
 							!((this.gateway.options.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds)
 						) {
-							if (
-								[...this.gateway.values()].every(shard => shard.data.session_id) &&
-								this.events.values.BOT_READY &&
-								(this.events.values.BOT_READY.fired ? !this.events.values.BOT_READY.data.once : true)
-							) {
+							if ([...this.gateway.values()].every(shard => shard.data.session_id)) {
 								await this.events.runEvent('BOT_READY', this, this.me, -1);
 							}
 							delete this.__handleGuilds;
@@ -163,12 +159,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 					case 'GUILD_CREATE': {
 						if (this.__handleGuilds?.has(packet.d.id)) {
 							this.__handleGuilds.delete(packet.d.id);
-							if (
-								!this.__handleGuilds.size &&
-								[...this.gateway.values()].every(shard => shard.data.session_id) &&
-								this.events.values.BOT_READY &&
-								(this.events.values.BOT_READY.fired ? !this.events.values.BOT_READY.data.once : true)
-							) {
+							if (!this.__handleGuilds.size && [...this.gateway.values()].every(shard => shard.data.session_id)) {
 								await this.events.runEvent('BOT_READY', this, this.me, -1);
 							}
 							if (!this.__handleGuilds.size) delete this.__handleGuilds;

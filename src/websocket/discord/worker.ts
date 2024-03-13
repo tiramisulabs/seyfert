@@ -1,3 +1,4 @@
+import type { ApiRequestOptions, HttpMethods } from '../..';
 import type { GatewayDispatchPayload } from '../../common';
 
 export interface WorkerShardInfo {
@@ -7,14 +8,17 @@ export interface WorkerShardInfo {
 	resumable: boolean;
 }
 
-export type WorkerInfo = { shards: WorkerShardInfo[]; workerId: number };
+export type WorkerInfo = { shards: WorkerShardInfo[] };
 
-type CreateWorkerMessage<T extends string, D extends object = {}> = { type: T } & D;
+type CreateWorkerMessage<T extends string, D extends object = {}> = {
+	type: T;
+	workerId: number;
+} & D;
 
-export type WorkerRequestConnect = CreateWorkerMessage<'CONNECT_QUEUE', { shardId: number; workerId: number }>;
+export type WorkerRequestConnect = CreateWorkerMessage<'CONNECT_QUEUE', { shardId: number }>;
 export type WorkerReceivePayload = CreateWorkerMessage<
 	'RECEIVE_PAYLOAD',
-	{ shardId: number; workerId: number; payload: GatewayDispatchPayload }
+	{ shardId: number; payload: GatewayDispatchPayload }
 >;
 export type WorkerSendResultPayload = CreateWorkerMessage<'RESULT_PAYLOAD', { nonce: string }>;
 export type WorkerSendCacheRequest = CreateWorkerMessage<
@@ -37,15 +41,18 @@ export type WorkerSendCacheRequest = CreateWorkerMessage<
 			| 'removeRelationship'
 			| 'removeToRelationship';
 		args: any[];
-		workerId: number;
 	}
 >;
 export type WorkerSendShardInfo = CreateWorkerMessage<'SHARD_INFO', WorkerShardInfo & { nonce: string }>;
 export type WorkerSendInfo = CreateWorkerMessage<'WORKER_INFO', WorkerInfo & { nonce: string }>;
-export type WorkerReady = CreateWorkerMessage<
-	'WORKER_READY',
+export type WorkerReady = CreateWorkerMessage<'WORKER_READY'>;
+export type WorkerSendApiRequest = CreateWorkerMessage<
+	'WORKER_API_REQUEST',
 	{
-		workerId: number;
+		method: HttpMethods;
+		url: `/${string}`;
+		requestOptions: ApiRequestOptions;
+		nonce: string;
 	}
 >;
 
@@ -56,4 +63,5 @@ export type WorkerMessage =
 	| WorkerSendCacheRequest
 	| WorkerSendShardInfo
 	| WorkerSendInfo
-	| WorkerReady;
+	| WorkerReady
+	| WorkerSendApiRequest;
