@@ -37,7 +37,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	constructor(options?: WorkerClientOptions) {
 		super(options);
-		this.__handleGuilds = new Set();
 		if (!manager) {
 			throw new Error('WorkerClient cannot spawn without manager');
 		}
