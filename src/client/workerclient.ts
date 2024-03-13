@@ -25,7 +25,7 @@ import { onMessageCreate } from './onmessagecreate';
 const workerData = __workerData__ as WorkerData;
 
 export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
-	private __handleGuilds?: Set<string>;
+	private __handleGuilds?: Set<string> = new Set();
 	logger = new Logger({
 		name: `[Worker #${workerData.workerId}]`,
 	});

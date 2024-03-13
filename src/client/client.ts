@@ -20,7 +20,7 @@ import { onInteractionCreate } from './oninteractioncreate';
 import { onMessageCreate } from './onmessagecreate';
 
 export class Client<Ready extends boolean = boolean> extends BaseClient {
-	private __handleGuilds?: Set<string>;
+	private __handleGuilds?: Set<string> = new Set();
 	gateway!: ShardManager;
 	events = new EventHandler(this.logger);
 	me!: If<Ready, ClientUser>;
@@ -38,7 +38,6 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 	}: ServicesOptions & {
 		gateway?: ShardManager;
 	}) {
-		this.__handleGuilds = new Set();
 		super.setServices(rest);
 		if (gateway) {
 			const onPacket = this.onPacket.bind(this);
