@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { workerData as __workerData__, parentPort as manager } from 'node:worker_threads';
 import { ApiHandler } from '..';
 import type { Cache } from '../cache';
@@ -11,6 +12,8 @@ import type {
 	WorkerReady,
 	WorkerReceivePayload,
 	WorkerRequestConnect,
+	WorkerSendEval,
+	WorkerSendEvalResponse,
 	WorkerSendInfo,
 	WorkerSendResultPayload,
 	WorkerSendShardInfo,
@@ -33,6 +36,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	events = new EventHandler(this.logger);
 	me!: When<Ready, ClientUser>;
+	promises = new Map<string, { resolve: (value: any) => void; timeout: NodeJS.Timeout }>();
+
 	shards = new Map<number, Shard>();
 	declare options: WorkerClientOptions | undefined;
 
@@ -206,7 +211,73 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					promise.resolve(data.response);
 				}
 				break;
+			case 'EXECUTE_EVAL':
+				{
+					let result;
+					try {
+						// biome-ignore lint/security/noGlobalEval: yes
+						result = await eval(`
+					(${data.func})(this)
+					`);
+					} catch (e) {
+						result = e;
+					}
+					manager!.postMessage({
+						type: 'EVAL_RESPONSE',
+						response: result,
+						workerId: workerData.workerId,
+						nonce: data.nonce,
+					} satisfies WorkerSendEvalResponse);
+				}
+				break;
+			case 'EVAL_RESPONSE':
+				{
+					const evalResponse = this.promises.get(data.nonce);
+					if (!evalResponse) return;
+					this.promises.delete(data.nonce);
+					clearTimeout(evalResponse.timeout);
+					evalResponse.resolve(data.response);
+				}
+				break;
 		}
+	}
+
+	private generateNonce(large = true): string {
+		const uuid = randomUUID();
+		const nonce = large ? uuid : uuid.split('-')[0];
+		if (this.promises.has(nonce)) return this.generateNonce(large);
+		return nonce;
+	}
+
+	private generateSendPromise<T = unknown>(nonce: string, message = 'Timeout'): Promise<T> {
+		let resolve = (_: T) => {
+			/**/
+		};
+		let timeout = -1 as unknown as NodeJS.Timeout;
+
+		const promise = new Promise<T>((res, rej) => {
+			resolve = res;
+			timeout = setTimeout(() => {
+				this.promises.delete(nonce);
+				rej(new Error(message));
+			}, 60e3);
+		});
+
+		this.promises.set(nonce, { resolve, timeout });
+
+		return promise;
+	}
+
+	tellWorker(workerId: number, func: (_: this) => {}) {
+		const nonce = this.generateNonce();
+		manager!.postMessage({
+			type: 'EVAL',
+			func: func.toString(),
+			toWorkerId: workerId,
+			workerId: workerData.workerId,
+			nonce,
+		} satisfies WorkerSendEval);
+		return this.generateSendPromise(nonce);
 	}
 
 	protected async onPacket(packet: GatewayDispatchPayload, shardId: number) {

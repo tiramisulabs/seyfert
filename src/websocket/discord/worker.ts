@@ -55,6 +55,29 @@ export type WorkerSendApiRequest = CreateWorkerMessage<
 		nonce: string;
 	}
 >;
+export type WorkerExecuteEval = CreateWorkerMessage<
+	'EXECUTE_EVAL',
+	{
+		func: string;
+		nonce: string;
+		toWorkerId: number;
+	}
+>;
+export type WorkerSendEvalResponse = CreateWorkerMessage<
+	'EVAL_RESPONSE',
+	{
+		response: any;
+		nonce: string;
+	}
+>;
+export type WorkerSendEval = CreateWorkerMessage<
+	'EVAL',
+	{
+		func: string;
+		nonce: string;
+		toWorkerId: number;
+	}
+>;
 
 export type WorkerMessage =
 	| WorkerRequestConnect
@@ -64,4 +87,7 @@ export type WorkerMessage =
 	| WorkerSendShardInfo
 	| WorkerSendInfo
 	| WorkerReady
-	| WorkerSendApiRequest;
+	| WorkerSendApiRequest
+	| WorkerExecuteEval
+	| WorkerSendEvalResponse
+	| WorkerSendEval;

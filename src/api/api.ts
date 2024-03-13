@@ -68,14 +68,19 @@ export class ApiHandler {
 	): Promise<T> {
 		if (this.options.workerProxy) {
 			const nonce = this.#randomUUID();
-			parentPort!.postMessage({
-				method,
-				url,
-				type: 'WORKER_API_REQUEST',
-				workerId: (workerData as WorkerData).workerId,
-				nonce,
-				requestOptions: { auth, ...request },
-			} satisfies WorkerSendApiRequest);
+			parentPort!.postMessage(
+				{
+					method,
+					url,
+					type: 'WORKER_API_REQUEST',
+					workerId: (workerData as WorkerData).workerId,
+					nonce,
+					requestOptions: { auth, ...request },
+				} satisfies WorkerSendApiRequest,
+				request.files
+					?.filter(x => !['string', 'boolean', 'number'].includes(typeof x.data))
+					.map(x => x.data as Buffer | Uint8Array),
+			);
 			let resolve = (_value: T) => {};
 			let reject = () => {};
 

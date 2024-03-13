@@ -202,37 +202,37 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 				break;
 			case 'RESULT_PAYLOAD':
 				{
-					const cacheData = this.promises.get(message.nonce);
-					if (!cacheData) {
+					const resultPayload = this.promises.get(message.nonce);
+					if (!resultPayload) {
 						return;
 					}
 					this.promises.delete(message.nonce);
-					clearTimeout(cacheData.timeout);
-					cacheData.resolve(true);
+					clearTimeout(resultPayload.timeout);
+					resultPayload.resolve(true);
 				}
 				break;
 			case 'SHARD_INFO':
 				{
 					const { nonce, type, ...data } = message;
-					const cacheData = this.promises.get(nonce);
-					if (!cacheData) {
+					const shardInfo = this.promises.get(nonce);
+					if (!shardInfo) {
 						return;
 					}
 					this.promises.delete(nonce);
-					clearTimeout(cacheData.timeout);
-					cacheData.resolve(data);
+					clearTimeout(shardInfo.timeout);
+					shardInfo.resolve(data);
 				}
 				break;
 			case 'WORKER_INFO':
 				{
 					const { nonce, type, ...data } = message;
-					const cacheData = this.promises.get(nonce);
-					if (!cacheData) {
+					const workerInfo = this.promises.get(nonce);
+					if (!workerInfo) {
 						return;
 					}
 					this.promises.delete(nonce);
-					clearTimeout(cacheData.timeout);
-					cacheData.resolve(data);
+					clearTimeout(workerInfo.timeout);
+					workerInfo.resolve(data);
 				}
 				break;
 			case 'WORKER_READY':
@@ -258,6 +258,36 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 					} satisfies ManagerSendApiResponse);
 				}
 				break;
+			case 'EVAL_RESPONSE':
+				{
+					const { nonce, type, ...data } = message;
+					const evalResponse = this.promises.get(nonce);
+					if (!evalResponse) {
+						return;
+					}
+					this.promises.delete(nonce);
+					clearTimeout(evalResponse.timeout);
+					evalResponse.resolve(data.response);
+				}
+				break;
+			case 'EVAL':
+				{
+					const nonce = this.generateNonce();
+					this.get(message.toWorkerId)!.postMessage({
+						nonce,
+						func: message.func,
+						type: 'EXECUTE_EVAL',
+						toWorkerId: message.toWorkerId,
+					} satisfies ManagerExecuteEval);
+					this.generateSendPromise(nonce, 'Eval timeout').then(val =>
+						this.get(message.workerId)!.postMessage({
+							nonce: message.nonce,
+							response: val,
+							type: 'EVAL_RESPONSE',
+						} satisfies ManagerSendEvalResponse),
+					);
+				}
+				break;
 		}
 	}
 
@@ -279,7 +309,7 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 			timeout = setTimeout(() => {
 				this.promises.delete(nonce);
 				rej(new Error(message));
-			}, 3e3);
+			}, 60e3);
 		});
 
 		this.promises.set(nonce, { resolve, timeout });
@@ -401,6 +431,21 @@ export type ManagerSendApiResponse = CreateManagerMessage<
 		nonce: string;
 	}
 >;
+export type ManagerExecuteEval = CreateManagerMessage<
+	'EXECUTE_EVAL',
+	{
+		func: string;
+		nonce: string;
+		toWorkerId: number;
+	}
+>;
+export type ManagerSendEvalResponse = CreateManagerMessage<
+	'EVAL_RESPONSE',
+	{
+		response: any;
+		nonce: string;
+	}
+>;
 
 export type ManagerMessages =
 	| ManagerAllowConnect
@@ -410,4 +455,6 @@ export type ManagerMessages =
 	| ManagerRequestWorkerInfo
 	| ManagerSendCacheResult
 	| ManagerSendBotReady
-	| ManagerSendApiResponse;
+	| ManagerSendApiResponse
+	| ManagerSendEvalResponse
+	| ManagerExecuteEval;
