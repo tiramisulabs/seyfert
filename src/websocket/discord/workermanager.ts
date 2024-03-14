@@ -86,7 +86,7 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 	}
 
 	calculateWorkerId(shardId: number) {
-		const workerId = Math.floor(shardId / this.shardsPerWorker);
+		const workerId = Math.floor((shardId - this.options.shardStart) / this.shardsPerWorker);
 		if (workerId >= this.workers) {
 			throw new Error('Invalid shardId');
 		}
