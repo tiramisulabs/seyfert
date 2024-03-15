@@ -98,6 +98,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				debug: debugRC,
 				shardStart: this.options?.shards?.start,
 				shardEnd: this.options?.shards?.end,
+				totalShards: this.options?.shards?.total ?? this.options?.shards?.end,
 			});
 		}
 
@@ -180,6 +181,7 @@ export interface ClientOptions extends BaseClientOptions {
 	shards?: {
 		start: number;
 		end: number;
+		total?: number;
 	};
 	commands?: {
 		prefix: (message: Message) => Promise<string[]> | string[];

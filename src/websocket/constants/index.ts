@@ -16,6 +16,7 @@ const ShardManagerDefaults: Partial<ShardManagerOptions> = {
 	intents: 0,
 	properties,
 	version: 10,
+	shardStart: 0,
 	handlePayload: (shardId: number, packet: GatewayDispatchPayload): void => {
 		console.info(`Packet ${packet.t} on shard ${shardId}`);
 	},

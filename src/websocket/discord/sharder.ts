@@ -36,6 +36,18 @@ export class ShardManager extends Map<number, Shard> {
 		}
 	}
 
+	get totalShards() {
+		return this.options.totalShards ?? this.options.info.shards;
+	}
+
+	get shardStart() {
+		return this.options.shardStart ?? 0;
+	}
+
+	get shardEnd() {
+		return this.options.shardEnd ?? this.totalShards;
+	}
+
 	get remaining() {
 		return this.options.info.session_start_limit.remaining;
 	}
@@ -63,7 +75,7 @@ export class ShardManager extends Map<number, Shard> {
 		shard ??= new Shard(shardId, {
 			token: this.options.token,
 			intents: this.options.intents,
-			info: { ...this.options.info, shards: (this.options.shardEnd ?? this.options.totalShards)! },
+			info: { ...this.options.info, shards: this.totalShards },
 			handlePayload: this.options.handlePayload,
 			properties: this.options.properties,
 			debugger: this.debugger,
@@ -97,17 +109,10 @@ export class ShardManager extends Map<number, Shard> {
 	 */
 	spawnBuckets(): Shard[][] {
 		this.debugger?.info('#0 Preparing buckets');
-		const chunks = SequentialBucket.chunk(
-			new Array(
-				this.options.shardStart !== undefined && this.options.shardEnd !== undefined
-					? this.options.shardEnd - this.options.shardStart
-					: this.options.totalShards,
-			),
-			this.concurrency,
-		);
+		const chunks = SequentialBucket.chunk(new Array(this.shardEnd - this.shardStart), this.concurrency);
 		chunks.forEach((arr: any[], index: number) => {
 			for (let i = 0; i < arr.length; i++) {
-				const id = i + (index > 0 ? index * this.concurrency : 0) + (this.options.shardStart ?? 0);
+				const id = i + (index > 0 ? index * this.concurrency : 0) + this.shardStart;
 				chunks[index][i] = this.spawn(id);
 			}
 		});

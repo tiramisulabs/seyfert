@@ -29,7 +29,7 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 	rest!: ApiHandler;
 	constructor(options: MakePartial<WorkerManagerOptions, 'token' | 'intents' | 'info' | 'handlePayload'>) {
 		super();
-		this.options = MergeOptions<WorkerManager['options']>(WorkerManagerDefaults, options);
+		this.options = options as WorkerManager['options'];
 		this.cacheAdapter = new MemoryAdapter();
 	}
 
@@ -54,7 +54,15 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 	}
 
 	get totalShards() {
-		return this.options.totalShards;
+		return this.options.totalShards ?? this.options.info.shards;
+	}
+
+	get shardStart() {
+		return this.options.shardStart ?? 0;
+	}
+
+	get shardEnd() {
+		return this.options.shardEnd ?? this.totalShards;
 	}
 
 	get shardsPerWorker() {
@@ -82,11 +90,11 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 	}
 
 	calculateShardId(guildId: string) {
-		return Number((BigInt(guildId) >> 22n) % BigInt(this.options.info.shards ?? 1));
+		return Number((BigInt(guildId) >> 22n) % BigInt(this.totalShards ?? 1));
 	}
 
 	calculateWorkerId(shardId: number) {
-		const workerId = Math.floor((shardId - this.options.shardStart) / this.shardsPerWorker);
+		const workerId = Math.floor((shardId - this.shardStart) / this.shardsPerWorker);
 		if (workerId >= this.workers) {
 			throw new Error('Invalid shardId');
 		}
@@ -97,17 +105,13 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 		this.debugger?.info('Preparing buckets');
 
 		const chunks = SequentialBucket.chunk<number>(
-			new Array(
-				this.options.shardStart !== undefined && this.options.shardEnd !== undefined
-					? this.options.shardEnd - this.options.shardStart
-					: this.options.totalShards,
-			),
+			new Array(this.shardEnd - this.shardStart),
 			this.options.shardsPerWorker,
 		);
 
 		chunks.forEach((shards, index) => {
 			for (let i = 0; i < shards.length; i++) {
-				const id = i + (index > 0 ? index * this.options.shardsPerWorker : 0) + (this.options.shardStart ?? 0);
+				const id = i + (index > 0 ? index * this.options.shardsPerWorker : 0) + this.shardStart;
 				chunks[index][i] = id;
 			}
 		});
@@ -134,7 +138,10 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 			worker.postMessage({
 				type: 'SPAWN_SHARDS',
 				compress: this.options.compress ?? false,
-				info: this.options.info,
+				info: {
+					...this.options.info,
+					shards: this.totalShards,
+				},
 				properties: this.options.properties,
 			} satisfies ManagerSpawnShards);
 		}
@@ -379,12 +386,10 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 			debug: this.options.debug,
 		});
 		this.options.info ??= await new Router(this.rest).createProxy().gateway.bot.get();
-		this.options.totalShards ??= this.options.info.shards;
+		this.options.shardEnd ??= this.options.info.shards;
+		this.options.totalShards ??= this.options.shardEnd;
 		this.options = MergeOptions<Required<WorkerManagerOptions>>(WorkerManagerDefaults, this.options);
 		this.options.workers ??= Math.ceil(this.options.totalShards / this.options.shardsPerWorker);
-		this.options.info.shards = this.options.totalShards;
-		this.options.shardEnd ??= this.options.totalShards;
-		this.options.shardStart ??= 0;
 		this.connectQueue = new ConnectQueue(5.5e3, this.concurrency);
 
 		if (this.options.debug) {

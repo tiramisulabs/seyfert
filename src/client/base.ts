@@ -96,8 +96,8 @@ export class BaseClient {
 		if (cache) {
 			this.cache = new Cache(
 				this.cache?.intents ?? 0,
-				cache.adapter,
-				cache.disabledCache ?? this.cache?.disabledCache,
+				cache?.adapter ?? this.cache?.adapter ?? new MemoryAdapter(),
+				cache.disabledCache ?? this.cache?.disabledCache ?? [],
 				this,
 			);
 		}
@@ -289,7 +289,7 @@ export type RuntimeConfig = OmitInsert<InternalRuntimeConfig, 'intents', { inten
 
 export type ServicesOptions = {
 	rest?: ApiHandler;
-	cache?: { adapter: Adapter; disabledCache?: Cache['disabledCache'] };
+	cache?: { adapter?: Adapter; disabledCache?: Cache['disabledCache'] };
 	langs?: {
 		default?: string;
 		aliases?: Record<string, LocaleString[]>;
