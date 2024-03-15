@@ -287,7 +287,7 @@ export type RuntimeConfigHTTP = Omit<MakeRequired<RC, 'publicKey' | 'application
 export type InternalRuntimeConfig = Omit<MakeRequired<RC, 'intents'>, 'publicKey' | 'port'>;
 export type RuntimeConfig = OmitInsert<InternalRuntimeConfig, 'intents', { intents?: IntentStrings | number }>;
 
-export type ServicesOptions = {
+export interface ServicesOptions {
 	rest?: ApiHandler;
 	cache?: { adapter?: Adapter; disabledCache?: Cache['disabledCache'] };
 	langs?: {
@@ -295,4 +295,4 @@ export type ServicesOptions = {
 		aliases?: Record<string, LocaleString[]>;
 	};
 	middlewares?: Record<string, MiddlewareContext>;
-};
+}
