@@ -90,7 +90,7 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 	}
 
 	calculateShardId(guildId: string) {
-		return Number((BigInt(guildId) >> 22n) % BigInt(this.totalShards ?? 1));
+		return Number((BigInt(guildId) >> 22n) % BigInt(this.totalShards));
 	}
 
 	calculateWorkerId(shardId: number) {
