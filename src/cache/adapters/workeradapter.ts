@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { parentPort, type MessagePort } from 'node:worker_threads';
+import { parentPort } from 'node:worker_threads';
 import type { WorkerData } from '../../websocket';
 import type { WorkerSendCacheRequest } from '../../websocket/discord/worker';
 import type { Adapter } from './types';
@@ -8,10 +8,7 @@ export class WorkerAdapter implements Adapter {
 	isAsync = true;
 	promises = new Map<string, { resolve: (value: unknown) => void; timeout: NodeJS.Timeout }>();
 
-	constructor(
-		readonly parent: MessagePort | NodeJS.Process,
-		public workerData: WorkerData,
-	) {}
+	constructor(public workerData: WorkerData) {}
 
 	postMessage(body: any) {
 		if (parentPort) return parentPort.postMessage(body);

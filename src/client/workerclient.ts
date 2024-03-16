@@ -65,7 +65,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		(manager ?? process).on('message', (data: ManagerMessages) => this.handleManagerMessages(data));
 		this.setServices({
 			cache: {
-				adapter: new WorkerAdapter(manager ?? process, workerData),
+				adapter: new WorkerAdapter(workerData),
 				disabledCache: options?.disabledCache,
 			},
 		});
