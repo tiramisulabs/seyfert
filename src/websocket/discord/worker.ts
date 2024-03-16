@@ -46,6 +46,7 @@ export type WorkerSendCacheRequest = CreateWorkerMessage<
 export type WorkerSendShardInfo = CreateWorkerMessage<'SHARD_INFO', WorkerShardInfo & { nonce: string }>;
 export type WorkerSendInfo = CreateWorkerMessage<'WORKER_INFO', WorkerInfo & { nonce: string }>;
 export type WorkerReady = CreateWorkerMessage<'WORKER_READY'>;
+export type WorkerStart = CreateWorkerMessage<'WORKER_START'>;
 export type WorkerSendApiRequest = CreateWorkerMessage<
 	'WORKER_API_REQUEST',
 	{
@@ -90,4 +91,5 @@ export type WorkerMessage =
 	| WorkerSendApiRequest
 	| WorkerExecuteEval
 	| WorkerSendEvalResponse
-	| WorkerSendEval;
+	| WorkerSendEval
+	| WorkerStart;

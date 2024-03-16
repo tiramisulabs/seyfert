@@ -1,5 +1,6 @@
+import cluster, { type Worker as ClusterWorker } from 'node:cluster';
 import { randomUUID } from 'node:crypto';
-import { Worker } from 'node:worker_threads';
+import { Worker as ThreadWorker } from 'node:worker_threads';
 import { ApiHandler, Router } from '../..';
 import { MemoryAdapter, type Adapter } from '../../cache';
 import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
@@ -16,9 +17,9 @@ import { ConnectQueue } from '../structures/timeout';
 import { MemberUpdateHandler } from './events/memberUpdate';
 import { PresenceUpdateHandler } from './events/presenceUpdate';
 import type { ShardOptions, WorkerData, WorkerManagerOptions } from './shared';
-import type { WorkerInfo, WorkerMessage, WorkerShardInfo } from './worker';
+import type { WorkerInfo, WorkerMessage, WorkerShardInfo, WorkerStart } from './worker';
 
-export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
+export class WorkerManager extends Map<number, (ClusterWorker | ThreadWorker) & { ready?: boolean }> {
 	options!: Required<WorkerManagerOptions>;
 	debugger?: Logger;
 	connectQueue!: ConnectQueue;
@@ -120,6 +121,19 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 		return chunks;
 	}
 
+	postMessage(id: number, body: any) {
+		const worker = this.get(id);
+		if (!worker) return this.debugger?.error(`Worker ${id} doesnt exists.`);
+		switch (this.options.mode) {
+			case 'clusters':
+				(worker as ClusterWorker).send(body);
+				break;
+			case 'threads':
+				(worker as ThreadWorker).postMessage(body);
+				break;
+		}
+	}
+
 	async prepareWorkers(shards: number[][]) {
 		for (let i = 0; i < shards.length; i++) {
 			let worker = this.get(i);
@@ -135,23 +149,47 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 				});
 				this.set(i, worker);
 			}
-			worker.postMessage({
-				type: 'SPAWN_SHARDS',
-				compress: this.options.compress ?? false,
-				info: {
-					...this.options.info,
-					shards: this.totalShards,
-				},
-				properties: this.options.properties,
-			} satisfies ManagerSpawnShards);
+			const listener = (message: WorkerStart) => {
+				if (message.type !== 'WORKER_START') return;
+				worker!.removeListener('message', listener);
+				this.postMessage(i, {
+					type: 'SPAWN_SHARDS',
+					compress: this.options.compress ?? false,
+					info: {
+						...this.options.info,
+						shards: this.totalShards,
+					},
+					properties: this.options.properties,
+				} satisfies ManagerSpawnShards);
+			};
+			worker.on('message', listener);
 		}
 	}
 
 	createWorker(workerData: WorkerData) {
-		const worker = new Worker(workerData.path, { workerData });
-		worker.on('message', data => this.handleWorkerMessage(data));
-
-		return worker;
+		const env: Record<string, any> = {
+			SEYFERT_SPAWNING: 'true',
+		};
+		for (const i in workerData) {
+			env[`SEYFERT_WORKER_${i.toUpperCase()}`] = workerData[i as keyof WorkerData];
+		}
+		switch (this.options.mode) {
+			case 'threads': {
+				const worker = new ThreadWorker(workerData.path, {
+					env,
+				});
+				worker.on('message', data => this.handleWorkerMessage(data));
+				return worker;
+			}
+			case 'clusters': {
+				cluster.setupPrimary({
+					exec: workerData.path,
+				});
+				const worker = cluster.fork(env);
+				worker.on('message', data => this.handleWorkerMessage(data));
+				return worker;
+			}
+		}
 	}
 
 	spawn(workerId: number, shardId: number) {
@@ -161,8 +199,7 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 				this.debugger?.fatal("Trying spawn with worker doesn't exist");
 				return;
 			}
-
-			worker.postMessage({
+			this.postMessage(workerId, {
 				type: 'ALLOW_CONNECT',
 				shardId,
 				presence: this.options.presence?.(shardId, workerId),
@@ -183,7 +220,7 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 					}
 					// @ts-expect-error
 					const result = await this.cacheAdapter[message.method](...message.args);
-					worker.postMessage({
+					this.postMessage(message.workerId, {
 						type: 'CACHE_RESULT',
 						nonce: message.nonce,
 						result,
@@ -246,7 +283,7 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 				{
 					this.get(message.workerId)!.ready = true;
 					if ([...this.values()].every(w => w.ready)) {
-						this.get(this.keys().next().value)?.postMessage({
+						this.postMessage(this.keys().next().value, {
 							type: 'BOT_READY',
 						} satisfies ManagerSendBotReady);
 						this.forEach(w => {
@@ -258,7 +295,7 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 			case 'WORKER_API_REQUEST':
 				{
 					const response = await this.rest.request(message.method, message.url, message.requestOptions);
-					this.get(message.workerId)!.postMessage({
+					this.postMessage(message.workerId, {
 						nonce: message.nonce,
 						response,
 						type: 'API_RESPONSE',
@@ -280,14 +317,14 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 			case 'EVAL':
 				{
 					const nonce = this.generateNonce();
-					this.get(message.toWorkerId)!.postMessage({
+					this.postMessage(message.toWorkerId, {
 						nonce,
 						func: message.func,
 						type: 'EXECUTE_EVAL',
 						toWorkerId: message.toWorkerId,
 					} satisfies ManagerExecuteEval);
 					this.generateSendPromise(nonce, 'Eval timeout').then(val =>
-						this.get(message.workerId)!.postMessage({
+						this.postMessage(message.workerId, {
 							nonce: message.nonce,
 							response: val,
 							type: 'EVAL_RESPONSE',
@@ -334,7 +371,7 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 
 		const nonce = this.generateNonce();
 
-		worker.postMessage({
+		this.postMessage(workerId, {
 			type: 'SEND_PAYLOAD',
 			shardId,
 			nonce,
@@ -354,7 +391,7 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 
 		const nonce = this.generateNonce(false);
 
-		worker.postMessage({ shardId, nonce, type: 'SHARD_INFO' } satisfies ManagerRequestShardInfo);
+		this.postMessage(workerId, { shardId, nonce, type: 'SHARD_INFO' } satisfies ManagerRequestShardInfo);
 
 		return this.generateSendPromise<WorkerShardInfo>(nonce, 'Get shard info timeout');
 	}
@@ -368,7 +405,7 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 
 		const nonce = this.generateNonce();
 
-		worker.postMessage({ nonce, type: 'WORKER_INFO' } satisfies ManagerRequestWorkerInfo);
+		this.postMessage(workerId, { nonce, type: 'WORKER_INFO' } satisfies ManagerRequestWorkerInfo);
 
 		return this.generateSendPromise<WorkerInfo>(nonce, 'Get worker info timeout');
 	}
@@ -386,7 +423,7 @@ export class WorkerManager extends Map<number, Worker & { ready?: boolean }> {
 			debug: this.options.debug,
 		});
 		this.options.info ??= await new Router(this.rest).createProxy().gateway.bot.get();
-		this.options.shardEnd ??= this.options.info.shards;
+		this.options.shardEnd ??= this.options.totalShards ?? this.options.info.shards;
 		this.options.totalShards ??= this.options.shardEnd;
 		this.options = MergeOptions<Required<WorkerManagerOptions>>(WorkerManagerDefaults, this.options);
 		this.options.workers ??= Math.ceil(this.options.totalShards / this.options.shardsPerWorker);

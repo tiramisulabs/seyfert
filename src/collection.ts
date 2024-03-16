@@ -216,7 +216,7 @@ export interface LimitedCollectionOptions {
 export class LimitedCollection<K, V> {
 	static readonly default: LimitedCollectionOptions = {
 		resetOnDemand: false,
-		limit: Infinity,
+		limit: Number.POSITIVE_INFINITY,
 		expire: 0,
 	};
 
@@ -262,7 +262,7 @@ export class LimitedCollection<K, V> {
 			}
 		}
 
-		if (this.closer!.expireOn === expireOn) {
+		if (this.closer?.expireOn === expireOn) {
 			this.resetTimeout();
 		}
 	}

@@ -39,6 +39,8 @@ export interface ShardManagerOptions extends ShardDetails {
 }
 
 export interface WorkerManagerOptions extends Omit<ShardManagerOptions, 'handlePayload'> {
+	mode: 'threads' | 'clusters';
+
 	workers?: number;
 
 	/**

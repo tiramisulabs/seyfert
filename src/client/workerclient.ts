@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { workerData as __workerData__, parentPort as manager } from 'node:worker_threads';
+import { parentPort as manager } from 'node:worker_threads';
 import { ApiHandler } from '..';
 import type { Cache } from '../cache';
 import { WorkerAdapter } from '../cache';
@@ -18,6 +18,7 @@ import type {
 	WorkerSendResultPayload,
 	WorkerSendShardInfo,
 	WorkerShardInfo,
+	WorkerStart,
 } from '../websocket/discord/worker';
 import type { ManagerMessages } from '../websocket/discord/workermanager';
 import type { BaseClientOptions, StartOptions } from './base';
@@ -26,7 +27,18 @@ import type { Client } from './client';
 import { onInteractionCreate } from './oninteractioncreate';
 import { onMessageCreate } from './onmessagecreate';
 
-const workerData = __workerData__ as WorkerData;
+let workerData: WorkerData;
+try {
+	workerData = {
+		debug: process.env.SEYFERT_WORKER_DEBUG === 'true',
+		intents: Number.parseInt(process.env.SEYFERT_WORKER_INTENTS!),
+		path: process.env.SEYFERT_WORKER_PATH!,
+		shards: process.env.SEYFERT_WORKER_SHARDS!.split(',').map(id => Number.parseInt(id)),
+		token: process.env.SEYFERT_WORKER_TOKEN!,
+		workerId: Number.parseInt(process.env.SEYFERT_WORKER_WORKERID!),
+		workerProxy: process.env.SEYFERT_WORKER_WORKERPROXY === 'true',
+	} as WorkerData;
+} catch {}
 
 export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	private __handleGuilds?: Set<string> = new Set();
@@ -43,13 +55,17 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	constructor(options?: WorkerClientOptions) {
 		super(options);
-		if (!manager) {
+		if (!process.env.SEYFERT_SPAWNING) {
 			throw new Error('WorkerClient cannot spawn without manager');
 		}
-		manager.on('message', data => this.handleManagerMessages(data));
+		this.postMessage({
+			type: 'WORKER_START',
+			workerId: workerData.workerId,
+		} satisfies WorkerStart);
+		(manager ?? process).on('message', (data: ManagerMessages) => this.handleManagerMessages(data));
 		this.setServices({
 			cache: {
-				adapter: new WorkerAdapter(manager),
+				adapter: new WorkerAdapter(manager ?? process, workerData),
 				disabledCache: options?.disabledCache,
 			},
 		});
@@ -96,6 +112,11 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		}
 	}
 
+	postMessage(body: any) {
+		if (manager) return manager.postMessage(body);
+		return process.send!(body);
+	}
+
 	protected async handleManagerMessages(data: ManagerMessages) {
 		switch (data.type) {
 			case 'CACHE_RESULT':
@@ -118,7 +139,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						...data,
 					} satisfies GatewaySendPayload);
 
-					manager!.postMessage({
+					this.postMessage({
 						type: 'RESULT_PAYLOAD',
 						nonce: data.nonce,
 						workerId: this.workerId,
@@ -138,9 +159,9 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			case 'SPAWN_SHARDS':
 				{
-					const cache = this.cache;
 					const onPacket = this.onPacket.bind(this);
 					const handlePayload = this.options?.handlePayload?.bind(this);
+					const self = this;
 					for (const id of workerData.shards) {
 						let shard = this.shards.get(id);
 						if (!shard) {
@@ -152,9 +173,9 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 								debugger: this.debugger,
 								async handlePayload(shardId, payload) {
 									await handlePayload?.(shardId, payload);
-									await cache.onPacket(payload);
+									await self.cache.onPacket(payload);
 									await onPacket?.(payload, shardId);
-									manager!.postMessage({
+									self.postMessage({
 										workerId: workerData.workerId,
 										shardId,
 										type: 'RECEIVE_PAYLOAD',
@@ -165,7 +186,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							this.shards.set(id, shard);
 						}
 
-						manager!.postMessage({
+						this.postMessage({
 							type: 'CONNECT_QUEUE',
 							shardId: id,
 							workerId: workerData.workerId,
@@ -181,7 +202,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						return;
 					}
 
-					manager!.postMessage({
+					this.postMessage({
 						...generateShardInfo(shard),
 						nonce: data.nonce,
 						type: 'SHARD_INFO',
@@ -191,7 +212,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			case 'WORKER_INFO':
 				{
-					manager!.postMessage({
+					this.postMessage({
 						shards: [...this.shards.values()].map(generateShardInfo),
 						workerId: workerData.workerId,
 						type: 'WORKER_INFO',
@@ -222,7 +243,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					} catch (e) {
 						result = e;
 					}
-					manager!.postMessage({
+					this.postMessage({
 						type: 'EVAL_RESPONSE',
 						response: result,
 						workerId: workerData.workerId,
@@ -270,7 +291,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	tellWorker(workerId: number, func: (_: this) => {}) {
 		const nonce = this.generateNonce();
-		manager!.postMessage({
+		this.postMessage({
 			type: 'EVAL',
 			func: func.toString(),
 			toWorkerId: workerId,
@@ -307,7 +328,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 								!((workerData.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds)
 							) {
 								if ([...this.shards.values()].every(shard => shard.data.session_id)) {
-									manager!.postMessage({
+									this.postMessage({
 										type: 'WORKER_READY',
 										workerId: this.workerId,
 									} as WorkerReady);
@@ -327,7 +348,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							if (this.__handleGuilds?.has(packet.d.id)) {
 								this.__handleGuilds.delete(packet.d.id);
 								if (!this.__handleGuilds.size && [...this.shards.values()].every(shard => shard.data.session_id)) {
-									manager!.postMessage({
+									this.postMessage({
 										type: 'WORKER_READY',
 										workerId: this.workerId,
 									} as WorkerReady);
