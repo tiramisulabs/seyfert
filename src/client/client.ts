@@ -97,7 +97,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				presence: this.options?.presence,
 				debug: debugRC,
 				shardStart: this.options?.shards?.start,
-				shardEnd: this.options?.shards?.end,
+				shardEnd: this.options?.shards?.end ?? this.options?.shards?.total,
 				totalShards: this.options?.shards?.total ?? this.options?.shards?.end,
 			});
 		}
