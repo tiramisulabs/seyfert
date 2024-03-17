@@ -1,4 +1,4 @@
-import { CommandContext, type ReturnCache, type WebhookMessage } from '../..';
+import { CommandContext, type ContextMenuCommand, type ReturnCache, type WebhookMessage } from '../..';
 import {
 	ApplicationCommandType,
 	MessageFlags,
@@ -35,6 +35,7 @@ export class MenuCommandContext<
 		readonly client: UsingClient,
 		readonly interaction: T,
 		readonly shardId: number,
+		readonly command: ContextMenuCommand,
 	) {}
 
 	metadata: CommandMetadata<UnionToTuple<M>> = {} as never;

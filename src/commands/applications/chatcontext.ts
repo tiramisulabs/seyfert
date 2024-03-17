@@ -20,7 +20,7 @@ import {
 } from '../../structures';
 import type { RegisteredMiddlewares } from '../decorators';
 import type { OptionResolver } from '../optionresolver';
-import type { ContextOptions, OptionsRecord } from './chat';
+import type { Command, ContextOptions, OptionsRecord, SubCommand } from './chat';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
 
 export interface CommandContext<T extends OptionsRecord = {}, M extends keyof RegisteredMiddlewares = never>
@@ -33,9 +33,10 @@ export class CommandContext<T extends OptionsRecord = {}, M extends keyof Regist
 	messageResponse?: If<InferWithPrefix, Message | undefined>;
 	constructor(
 		readonly client: UsingClient,
-		data: ChatInputCommandInteraction | Message,
-		public resolver: OptionResolver,
+		readonly data: ChatInputCommandInteraction | Message,
+		readonly resolver: OptionResolver,
 		readonly shardId: number,
+		readonly command: Command | SubCommand,
 	) {
 		if (data instanceof Message) {
 			this.message = data as never;

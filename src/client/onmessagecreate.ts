@@ -96,7 +96,7 @@ export async function onMessageCreate(
 	const args = (self.options?.commands?.argsParser ?? defaultArgsParser)(content, command);
 	const { options, errors } = await parseOptions(self, command, rawMessage, args, resolved);
 	const optionsResolver = new OptionResolver(self, options, parent as Command, message.guildId, resolved);
-	const context = new CommandContext(self, message, optionsResolver, shardId);
+	const context = new CommandContext(self, message, optionsResolver, shardId, command);
 	try {
 		if (command.botPermissions && message.guildId) {
 			const meMember = await self.cache.members?.get(self.botId, message.guildId);

@@ -81,7 +81,7 @@ export async function onInteractionCreate(
 							// idc, is a YOU problem
 							if (!command?.run)
 								return self.logger.warn(`${command.name ?? 'Unknown'} command does not have 'run' callback`);
-							const context = new MenuCommandContext(self, interaction, shardId);
+							const context = new MenuCommandContext(self, interaction, shardId, command);
 							const extendContext = self.options?.context?.(interaction) ?? {};
 							Object.assign(context, extendContext);
 							try {
@@ -145,7 +145,7 @@ export async function onInteractionCreate(
 							const command = optionsResolver.getCommand();
 							if (!command?.run)
 								return self.logger.warn(`${optionsResolver.fullCommandName} command does not have 'run' callback`);
-							const context = new CommandContext(self, interaction, optionsResolver, shardId);
+							const context = new CommandContext(self, interaction, optionsResolver, shardId, command);
 							const extendContext = self.options?.context?.(interaction) ?? {};
 							Object.assign(context, extendContext);
 							try {
