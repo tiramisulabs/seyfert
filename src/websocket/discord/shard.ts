@@ -55,7 +55,9 @@ export class Shard {
 	}
 
 	get latency() {
-		return this.heart.lastAck && this.heart.lastBeat ? this.heart.lastAck - this.heart.lastBeat : Infinity;
+		return this.heart.lastAck && this.heart.lastBeat
+			? this.heart.lastAck - this.heart.lastBeat
+			: Number.POSITIVE_INFINITY;
 	}
 
 	get isOpen() {

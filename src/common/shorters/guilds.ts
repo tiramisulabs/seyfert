@@ -1,23 +1,21 @@
 import type {
+	APIChannel,
 	GuildWidgetStyle,
 	RESTGetAPICurrentUserGuildsQuery,
 	RESTPatchAPIAutoModerationRuleJSONBody,
 	RESTPatchAPIChannelJSONBody,
 	RESTPatchAPIGuildChannelPositionsJSONBody,
-	RESTPatchAPIGuildEmojiJSONBody,
 	RESTPatchAPIGuildStickerJSONBody,
 	RESTPostAPIAutoModerationRuleJSONBody,
 	RESTPostAPIGuildChannelJSONBody,
-	RESTPostAPIGuildEmojiJSONBody,
 	RESTPostAPIGuildsJSONBody,
 } from 'discord-api-types/v10';
-import type { ImageResolvable, ObjectToLower, OmitInsert } from '..';
-import { resolveFiles, resolveImage } from '../../builders';
+import type { ObjectToLower } from '..';
+import { resolveFiles } from '../../builders';
 import {
 	AnonymousGuild,
 	BaseChannel,
 	Guild,
-	GuildEmoji,
 	GuildMember,
 	Sticker,
 	type CreateStickerBodyRequest,
@@ -27,163 +25,67 @@ import { BaseShorter } from './base';
 
 export class GuildShorter extends BaseShorter {
 	/**
-	 * Provides access to guild-related functionality.
+	 * Creates a new guild.
+	 * @param body The data for creating the guild.
+	 * @returns A Promise that resolves to the created guild.
 	 */
-	get guilds() {
-		return {
-			/**
-			 * Creates a new guild.
-			 * @param body The data for creating the guild.
-			 * @returns A Promise that resolves to the created guild.
-			 */
-			create: async (body: RESTPostAPIGuildsJSONBody) => {
-				const guild = await this.client.proxy.guilds.post({ body });
-				await this.client.cache.guilds?.setIfNI('Guilds', guild.id, guild);
-				return new Guild<'api'>(this.client, guild);
-			},
-
-			/**
-			 * Fetches a guild by its ID.
-			 * @param id The ID of the guild to fetch.
-			 * @param force Whether to force fetching the guild from the API even if it exists in the cache.
-			 * @returns A Promise that resolves to the fetched guild.
-			 */
-			fetch: async (id: string, force = false) => {
-				if (!force) {
-					const guild = await this.client.cache.guilds?.get(id);
-					if (guild) return guild;
-				}
-
-				const data = await this.client.proxy.guilds(id).get();
-				await this.client.cache.guilds?.patch(id, data);
-				return (await this.client.cache.guilds?.get(id)) ?? new Guild<'api'>(this.client, data);
-			},
-
-			/**
-			 * Generates the widget URL for the guild.
-			 * @param id The ID of the guild.
-			 * @param style The style of the widget.
-			 * @returns The generated widget URL.
-			 */
-			widgetURL: (id: string, style?: GuildWidgetStyle) => {
-				const query = new URLSearchParams();
-				if (style) {
-					query.append('style', style);
-				}
-
-				return this.client.proxy.guilds(id).widget.get({ query });
-			},
-			list: (query?: RESTGetAPICurrentUserGuildsQuery) => {
-				return this.client.proxy
-					.users('@me')
-					.guilds.get({ query })
-					.then(guilds => guilds.map(guild => new AnonymousGuild(this.client, { ...guild, splash: null })));
-			},
-			fetchSelf: async (id: string) => {
-				const self = await this.client.proxy.guilds(id).members(this.client.botId).get();
-				await this.client.cache.members?.patch(self.user!.id, id, self);
-				return new GuildMember(this.client, self, self.user!, id);
-			},
-			leave: (id: string) => {
-				return this.client.proxy
-					.users('@me')
-					.guilds(id)
-					.delete()
-					.then(() => this.client.cache.guilds?.removeIfNI('Guilds', id));
-			},
-			channels: this.channels,
-			moderation: this.moderation,
-			stickers: this.stickers,
-			emojis: this.emojis,
-		};
+	async create(body: RESTPostAPIGuildsJSONBody): Promise<Guild<'api'>> {
+		const guild = await this.client.proxy.guilds.post({ body });
+		await this.client.cache.guilds?.setIfNI('Guilds', guild.id, guild);
+		return new Guild<'api'>(this.client, guild);
 	}
 
 	/**
-	 * Provides access to emoji-related functionality in a guild.
+	 * Fetches a guild by its ID.
+	 * @param id The ID of the guild to fetch.
+	 * @param force Whether to force fetching the guild from the API even if it exists in the cache.
+	 * @returns A Promise that resolves to the fetched guild.
 	 */
-	get emojis() {
-		return {
-			/**
-			 * Retrieves a list of emojis in the guild.
-			 * @param guildId The ID of the guild.
-			 * @param force Whether to force fetching emojis from the API even if they exist in the cache.
-			 * @returns A Promise that resolves to an array of emojis.
-			 */
-			list: async (guildId: string, force = false) => {
-				let emojis;
-				if (!force) {
-					emojis = (await this.client.cache.emojis?.values(guildId)) ?? [];
-					if (emojis.length) {
-						return emojis;
-					}
-				}
-				emojis = await this.client.proxy.guilds(guildId).emojis.get();
-				await this.client.cache.emojis?.set(
-					emojis.map(x => [x.id!, x]),
-					guildId,
-				);
-				return emojis.map(m => new GuildEmoji(this.client, m, guildId));
-			},
+	async fetch(id: string, force = false) {
+		if (!force) {
+			const guild = await this.client.cache.guilds?.get(id);
+			if (guild) return guild;
+		}
 
-			/**
-			 * Creates a new emoji in the guild.
-			 * @param guildId The ID of the guild.
-			 * @param body The data for creating the emoji.
-			 * @returns A Promise that resolves to the created emoji.
-			 */
-			create: async (
-				guildId: string,
-				body: OmitInsert<RESTPostAPIGuildEmojiJSONBody, 'image', { image: ImageResolvable }>,
-			) => {
-				const bodyResolved = { ...body, image: await resolveImage(body.image) };
-				const emoji = await this.client.proxy.guilds(guildId).emojis.post({
-					body: bodyResolved,
-				});
-				await this.client.cache.channels?.setIfNI('GuildEmojisAndStickers', emoji.id!, guildId, emoji);
-			},
+		const data = await this.client.proxy.guilds(id).get();
+		await this.client.cache.guilds?.patch(id, data);
+		return (await this.client.cache.guilds?.get(id)) ?? new Guild<'api'>(this.client, data);
+	}
 
-			/**
-			 * Fetches an emoji by its ID.
-			 * @param guildId The ID of the guild.
-			 * @param emojiId The ID of the emoji to fetch.
-			 * @param force Whether to force fetching the emoji from the API even if it exists in the cache.
-			 * @returns A Promise that resolves to the fetched emoji.
-			 */
-			fetch: async (guildId: string, emojiId: string, force = false) => {
-				let emoji;
-				if (!force) {
-					emoji = await this.client.cache.emojis?.get(emojiId);
-					if (emoji) return emoji;
-				}
-				emoji = await this.client.proxy.guilds(guildId).emojis(emojiId).get();
-				return new GuildEmoji(this.client, emoji, guildId);
-			},
+	/**
+	 * Generates the widget URL for the guild.
+	 * @param id The ID of the guild.
+	 * @param style The style of the widget.
+	 * @returns The generated widget URL.
+	 */
+	widgetURL(id: string, style?: GuildWidgetStyle) {
+		const query = new URLSearchParams();
+		if (style) {
+			query.append('style', style);
+		}
 
-			/**
-			 * Deletes an emoji from the guild.
-			 * @param guildId The ID of the guild.
-			 * @param emojiId The ID of the emoji to delete.
-			 * @param reason The reason for deleting the emoji.
-			 */
-			delete: async (guildId: string, emojiId: string, reason?: string) => {
-				await this.client.proxy.guilds(guildId).emojis(emojiId).delete({ reason });
-				await this.client.cache.channels?.removeIfNI('GuildEmojisAndStickers', emojiId, guildId);
-			},
+		return this.client.proxy.guilds(id).widget.get({ query });
+	}
 
-			/**
-			 * Edits an emoji in the guild.
-			 * @param guildId The ID of the guild.
-			 * @param emojiId The ID of the emoji to edit.
-			 * @param body The data to update the emoji with.
-			 * @param reason The reason for editing the emoji.
-			 * @returns A Promise that resolves to the edited emoji.
-			 */
-			edit: async (guildId: string, emojiId: string, body: RESTPatchAPIGuildEmojiJSONBody, reason?: string) => {
-				const emoji = await this.client.proxy.guilds(guildId).emojis(emojiId).patch({ body, reason });
-				await this.client.cache.channels?.setIfNI('GuildEmojisAndStickers', emoji.id!, guildId, emoji);
-				return new GuildEmoji(this.client, emoji, guildId);
-			},
-		};
+	list(query?: RESTGetAPICurrentUserGuildsQuery) {
+		return this.client.proxy
+			.users('@me')
+			.guilds.get({ query })
+			.then(guilds => guilds.map(guild => new AnonymousGuild(this.client, { ...guild, splash: null })));
+	}
+
+	async fetchSelf(id: string) {
+		const self = await this.client.proxy.guilds(id).members(this.client.botId).get();
+		await this.client.cache.members?.patch(self.user!.id, id, self);
+		return new GuildMember(this.client, self, self.user!, id);
+	}
+
+	leave(id: string) {
+		return this.client.proxy
+			.users('@me')
+			.guilds(id)
+			.delete()
+			.then(() => this.client.cache.guilds?.removeIfNI('Guilds', id));
 	}
 
 	/**
@@ -207,7 +109,7 @@ export class GuildShorter extends BaseShorter {
 				}
 				channels = await this.client.proxy.guilds(guildId).channels.get();
 				await this.client.cache.channels?.set(
-					channels.map(x => [x.id, x]),
+					channels.map<[string, APIChannel]>(x => [x.id, x]),
 					guildId,
 				);
 				return channels.map(m => channelFrom(m, this.client));
