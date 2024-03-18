@@ -37,7 +37,6 @@ import type {
 } from '../common';
 import type { GuildMember } from './GuildMember';
 import type { GuildRole } from './GuildRole';
-import { Webhook } from './Webhook';
 import { DiscordBase } from './extra/DiscordBase';
 import { channelLink } from './extra/functions';
 
@@ -353,10 +352,7 @@ export class WebhookGuildMethods extends DiscordBase {
 
 	static guild(ctx: MethodContext<{ guildId: string }>) {
 		return {
-			list: async () => {
-				const webhooks = await ctx.client.proxy.guilds(ctx.guildId).webhooks.get();
-				return webhooks.map(webhook => new Webhook(ctx.client, webhook));
-			},
+			list: () => ctx.client.webhooks.listFromChannel(ctx.guildId),
 		};
 	}
 }
@@ -366,16 +362,8 @@ export class WebhookChannelMethods extends DiscordBase {
 
 	static channel(ctx: MethodContext<{ channelId: string }>) {
 		return {
-			list: async () => {
-				const webhooks = await ctx.client.proxy.channels(ctx.channelId).webhooks.get();
-				return webhooks.map(webhook => new Webhook(ctx.client, webhook));
-			},
-			create: async (body: RESTPostAPIChannelWebhookJSONBody) => {
-				const webhook = await ctx.client.proxy.channels(ctx.channelId).webhooks.post({
-					body,
-				});
-				return new Webhook(ctx.client, webhook);
-			},
+			list: () => ctx.client.webhooks.listFromChannel(ctx.channelId),
+			create: async (body: RESTPostAPIChannelWebhookJSONBody) => ctx.client.webhooks.create(ctx.channelId, body),
 		};
 	}
 }

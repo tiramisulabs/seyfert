@@ -1,6 +1,7 @@
 import type {
 	RESTPatchAPIWebhookJSONBody,
 	RESTPatchAPIWebhookWithTokenJSONBody,
+	RESTPostAPIChannelWebhookJSONBody,
 	RESTPostAPIWebhookWithTokenJSONBody,
 } from '..';
 import { resolveFiles } from '../../builders';
@@ -14,6 +15,12 @@ import {
 import { BaseShorter } from './base';
 
 export class WebhookShorter extends BaseShorter {
+	async create(channelId: string, body: RESTPostAPIChannelWebhookJSONBody) {
+		const webhook = await this.client.proxy.channels(channelId).webhooks.post({
+			body,
+		});
+		return new Webhook(this.client, webhook);
+	}
 	/**
 	 * Deletes a webhook.
 	 * @param webhookId The ID of the webhook.
@@ -127,6 +134,16 @@ export class WebhookShorter extends BaseShorter {
 			.messages(messageId)
 			.get({ auth: false, query: { threadId } });
 		return message ? new WebhookMessage(this.client, message, webhookId, token) : undefined;
+	}
+
+	async listFromGuild(guildId: string) {
+		const webhooks = await this.client.proxy.guilds(guildId).webhooks.get();
+		return webhooks.map(webhook => new Webhook(this.client, webhook));
+	}
+
+	async listFromChannel(channelId: string) {
+		const webhooks = await this.client.proxy.channels(channelId).webhooks.get();
+		return webhooks.map(webhook => new Webhook(this.client, webhook));
 	}
 }
 
