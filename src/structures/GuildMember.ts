@@ -96,8 +96,8 @@ export class BaseGuildMember extends DiscordBase {
 	get roles() {
 		return {
 			values: Object.freeze(this._roles),
-			add: (id: string) => this.client.members.roles.add(this.guildId, this.id, id),
-			remove: (id: string) => this.client.members.roles.remove(this.guildId, this.id, id),
+			add: (id: string) => this.client.members.addRole(this.guildId, this.id, id),
+			remove: (id: string) => this.client.members.removeRole(this.guildId, this.id, id),
 			permissions: async () =>
 				new PermissionsBitField(
 					((await this.cache.roles?.bulk(this.roles.values as string[])) ?? [])

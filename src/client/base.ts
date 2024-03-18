@@ -7,37 +7,42 @@ import type { MiddlewareContext } from '../commands/applications/shared';
 import { CommandHandler } from '../commands/handler';
 import {
 	ChannelShorter,
+	EmojiShorter,
 	GuildShorter,
 	LogLevels,
 	Logger,
+	MemberShorter,
+	MessageShorter,
+	ReactionShorter,
+	RoleShorter,
+	TemplateShorter,
 	UsersShorter,
+	WebhookShorter,
 	filterSplit,
 	magicImport,
 	type LocaleString,
 	type MakeRequired,
 } from '../common';
-import { MemberShorter } from '../common/shorters/members';
-import { MessageShorter } from '../common/shorters/messages';
-import { RoleShorter } from '../common/shorters/roles';
-import { TemplateShorter } from '../common/shorters/templates';
-import { WebhookShorter } from '../common/shorters/webhook';
+
 import type { DeepPartial, IntentStrings, OmitInsert } from '../common/types/util';
 import { ComponentHandler } from '../components/handler';
 import { LangsHandler } from '../langs/handler';
-import type { ChatInputCommandInteraction, MessageCommandInteraction, UserCommandInteraction } from '../structures';
+import type { ChatInputCommandInteraction, Message, MessageCommandInteraction, UserCommandInteraction } from '../structures';
 
 export class BaseClient {
 	rest!: ApiHandler;
 	cache!: Cache;
 
-	users = new UsersShorter(this).users;
-	channels = new ChannelShorter(this).channels;
-	guilds = new GuildShorter(this).guilds;
-	messages = new MessageShorter(this).messages;
-	members = new MemberShorter(this).members;
-	webhooks = new WebhookShorter(this).webhooks;
-	templates = new TemplateShorter(this).templates;
-	roles = new RoleShorter(this).roles;
+	users = new UsersShorter(this);
+	channels = new ChannelShorter(this);
+	guilds = new GuildShorter(this);
+	messages = new MessageShorter(this);
+	members = new MemberShorter(this);
+	webhooks = new WebhookShorter(this);
+	templates = new TemplateShorter(this);
+	roles = new RoleShorter(this);
+	reactions = new ReactionShorter(this);
+	emojis = new EmojiShorter(this);
 
 	debugger?: Logger;
 
@@ -240,7 +245,8 @@ export interface BaseClientOptions {
 		interaction:
 			| ChatInputCommandInteraction<boolean>
 			| UserCommandInteraction<boolean>
-			| MessageCommandInteraction<boolean>,
+			| MessageCommandInteraction<boolean>
+			| Message
 	) => {};
 	globalMiddlewares?: readonly (keyof RegisteredMiddlewares)[];
 }

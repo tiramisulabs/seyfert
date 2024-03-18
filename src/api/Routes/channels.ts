@@ -66,18 +66,14 @@ export interface ChannelRoutes {
 		): Promise<RESTPatchAPIChannelResult>;
 		//.
 		delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIChannelResult>;
-		users: {
-			(
-				id: '@me',
-			): {
-				threads: {
-					archived: {
-						private: {
-							//.
-							get(
-								args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIChannelThreadsArchivedQuery>,
-							): Promise<RESTGetAPIChannelUsersThreadsArchivedResult>;
-						};
+		users: (id: '@me') => {
+			threads: {
+				archived: {
+					private: {
+						//.
+						get(
+							args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIChannelThreadsArchivedQuery>,
+						): Promise<RESTGetAPIChannelUsersThreadsArchivedResult>;
 					};
 				};
 			};
@@ -131,17 +127,13 @@ export interface ChannelRoutes {
 				};
 			};
 		};
-		recipients: {
-			(
-				id: string,
-			): {
-				//.
-				put(
-					args?: RestArguments<ProxyRequestMethod.Put, RESTPutAPIChannelRecipientJSONBody>,
-				): Promise<RESTPutAPIChannelRecipientResult>;
-				//.
-				delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIChannelRecipientResult>;
-			};
+		recipients: (id: string) => {
+			//.
+			put(
+				args?: RestArguments<ProxyRequestMethod.Put, RESTPutAPIChannelRecipientJSONBody>,
+			): Promise<RESTPutAPIChannelRecipientResult>;
+			//.
+			delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIChannelRecipientResult>;
 		};
 		pins: {
 			//.
@@ -161,17 +153,13 @@ export interface ChannelRoutes {
 				args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIChannelFollowersJSONBody>,
 			): Promise<RESTPostAPIChannelFollowersResult>;
 		};
-		permissions: {
-			(
-				id: string,
-			): {
-				//.
-				put(
-					args?: RestArguments<ProxyRequestMethod.Put, RESTPutAPIChannelPermissionJSONBody>,
-				): Promise<RESTPutAPIChannelPermissionResult>;
-				//.
-				delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIChannelPermissionResult>;
-			};
+		permissions: (id: string) => {
+			//.
+			put(
+				args?: RestArguments<ProxyRequestMethod.Put, RESTPutAPIChannelPermissionJSONBody>,
+			): Promise<RESTPutAPIChannelPermissionResult>;
+			//.
+			delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIChannelPermissionResult>;
 		};
 		invites: {
 			//.
