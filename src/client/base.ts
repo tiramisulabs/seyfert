@@ -27,7 +27,7 @@ import {
 import type { DeepPartial, IntentStrings, OmitInsert } from '../common/types/util';
 import { ComponentHandler } from '../components/handler';
 import { LangsHandler } from '../langs/handler';
-import type { ChatInputCommandInteraction, MessageCommandInteraction, UserCommandInteraction } from '../structures';
+import type { ChatInputCommandInteraction, Message, MessageCommandInteraction, UserCommandInteraction } from '../structures';
 
 export class BaseClient {
 	rest!: ApiHandler;
@@ -245,7 +245,8 @@ export interface BaseClientOptions {
 		interaction:
 			| ChatInputCommandInteraction<boolean>
 			| UserCommandInteraction<boolean>
-			| MessageCommandInteraction<boolean>,
+			| MessageCommandInteraction<boolean>
+			| Message
 	) => {};
 	globalMiddlewares?: readonly (keyof RegisteredMiddlewares)[];
 }
