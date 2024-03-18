@@ -57,6 +57,10 @@ export class CommandContext<T extends OptionsRecord = {}, M extends keyof Regist
 		return this.client.langs.get(this.interaction?.locale ?? this.client.langs.defaultLang ?? 'en-US');
 	}
 
+	get fullCommandName() {
+		return this.resolver.fullCommandName;
+	}
+
 	async write<FR extends boolean = false>(
 		body: InteractionCreateBodyRequest,
 		fetchReply?: FR,

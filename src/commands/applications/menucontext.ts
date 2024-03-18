@@ -63,6 +63,10 @@ export class MenuCommandContext<
 		return this.client.langs.get(this.interaction.locale);
 	}
 
+	get fullCommandName() {
+		return this.command.name;
+	}
+
 	write<FR extends boolean = false>(
 		body: InteractionCreateBodyRequest,
 		fetchReply?: FR,
