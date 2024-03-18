@@ -44,15 +44,15 @@ function getCommandFromContent(
 	const command =
 		groupName || subcommandName
 			? (parent.options?.find(opt => {
-					if (opt instanceof SubCommand) {
-						if (groupName) {
-							if (opt.group !== groupName) return false;
-						}
-						if (opt.group && !groupName) return false;
-						return subcommandName === opt.name;
+				if (opt instanceof SubCommand) {
+					if (groupName) {
+						if (opt.group !== groupName) return false;
 					}
-					return false;
-			  }) as SubCommand)
+					if (opt.group && !groupName) return false;
+					return subcommandName === opt.name;
+				}
+				return false;
+			}) as SubCommand)
 			: parent;
 
 	return {
@@ -97,6 +97,8 @@ export async function onMessageCreate(
 	const { options, errors } = await parseOptions(self, command, rawMessage, args, resolved);
 	const optionsResolver = new OptionResolver(self, options, parent as Command, message.guildId, resolved);
 	const context = new CommandContext(self, message, optionsResolver, shardId, command);
+	const extendContext = self.options?.context?.(message) ?? {};
+	Object.assign(context, extendContext);
 	try {
 		if (command.botPermissions && message.guildId) {
 			const meMember = await self.cache.members?.get(self.botId, message.guildId);

@@ -1,7 +1,7 @@
 import type { InternalRuntimeConfig, InternalRuntimeConfigHTTP, RuntimeConfig, RuntimeConfigHTTP } from './client/base';
 import { GatewayIntentBits } from './common';
 import type { ClientNameEvents, EventContext } from './events';
-import type { ChatInputCommandInteraction, MessageCommandInteraction, UserCommandInteraction } from './structures';
+import type { ChatInputCommandInteraction, Message, MessageCommandInteraction, UserCommandInteraction } from './structures';
 
 export { Logger, PermissionFlagsBits, PermissionStrings, Watcher } from './common';
 //
@@ -95,7 +95,7 @@ export const config = {
  * });
  */
 export function extendContext<T extends {}>(
-	cb: (interaction: ChatInputCommandInteraction | UserCommandInteraction | MessageCommandInteraction) => T,
+	cb: (interaction: ChatInputCommandInteraction | UserCommandInteraction | MessageCommandInteraction | Message) => T,
 ) {
 	return cb;
 }
