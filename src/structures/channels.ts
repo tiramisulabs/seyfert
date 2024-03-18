@@ -176,15 +176,15 @@ export class BaseGuildChannel extends BaseChannel<ChannelType> {
 	};
 
 	memberPermissions(member: GuildMember, checkAdmin = true) {
-		return this.client.channels.overwrites.memberPermissions(this.id, member, checkAdmin);
+		return this.client.channels.memberPermissions(this.id, member, checkAdmin);
 	}
 
 	rolePermissions(role: GuildRole, checkAdmin = true) {
-		return this.client.channels.overwrites.rolePermissions(this.id, role, checkAdmin);
+		return this.client.channels.rolePermissions(this.id, role, checkAdmin);
 	}
 
 	overwritesFor(member: GuildMember) {
-		return this.client.channels.overwrites.overwritesFor(this.id, member);
+		return this.client.channels.overwritesFor(this.id, member);
 	}
 
 	guild(force = false) {
@@ -233,21 +233,20 @@ export class MessagesMethods extends DiscordBase {
 
 	static reactions(ctx: MethodContext<{ channelId: string }>) {
 		return {
-			add: (messageId: string, emoji: EmojiResolvable) =>
-				ctx.client.messages.reactions.add(messageId, ctx.channelId, emoji),
+			add: (messageId: string, emoji: EmojiResolvable) => ctx.client.reactions.add(messageId, ctx.channelId, emoji),
 			delete: (messageId: string, emoji: EmojiResolvable, userId = '@me') =>
-				ctx.client.messages.reactions.delete(messageId, ctx.channelId, emoji, userId),
+				ctx.client.reactions.delete(messageId, ctx.channelId, emoji, userId),
 			fetch: (messageId: string, emoji: EmojiResolvable, query?: RESTGetAPIChannelMessageReactionUsersQuery) =>
-				ctx.client.messages.reactions.fetch(messageId, ctx.channelId, emoji, query),
+				ctx.client.reactions.fetch(messageId, ctx.channelId, emoji, query),
 			purge: (messageId: string, emoji?: EmojiResolvable) =>
-				ctx.client.messages.reactions.purge(messageId, ctx.channelId, emoji),
+				ctx.client.reactions.purge(messageId, ctx.channelId, emoji),
 		};
 	}
 	static pins(ctx: MethodContext<{ channelId: string }>) {
 		return {
-			fetch: () => ctx.client.channels.pins.fetch(ctx.channelId),
-			set: (messageId: string, reason?: string) => ctx.client.channels.pins.set(messageId, ctx.channelId, reason),
-			delete: (messageId: string, reason?: string) => ctx.client.channels.pins.delete(messageId, ctx.channelId, reason),
+			fetch: () => ctx.client.channels.pins(ctx.channelId),
+			set: (messageId: string, reason?: string) => ctx.client.channels.setPin(messageId, ctx.channelId, reason),
+			delete: (messageId: string, reason?: string) => ctx.client.channels.deletePin(messageId, ctx.channelId, reason),
 		};
 	}
 

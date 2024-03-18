@@ -2,7 +2,7 @@ import type { BaseImageURLOptions } from '../api';
 import type { BaseClient } from '../client/base';
 import type {
 	APIEmoji,
-	GuildShorter,
+	EmojiShorter,
 	MethodContext,
 	ObjectToLower,
 	RESTPatchAPIChannelJSONBody,
@@ -27,15 +27,15 @@ export class GuildEmoji extends DiscordBase {
 	}
 
 	edit(body: RESTPatchAPIChannelJSONBody, reason?: string) {
-		return this.client.guilds.emojis.edit(this.guildId, this.id, body, reason);
+		return this.client.emojis.edit(this.guildId, this.id, body, reason);
 	}
 
 	delete(reason?: string) {
-		return this.client.guilds.emojis.delete(this.guildId, this.id, reason);
+		return this.client.emojis.delete(this.guildId, this.id, reason);
 	}
 
 	fetch(force = false) {
-		return this.client.guilds.emojis.fetch(this.guildId, this.id, force);
+		return this.client.emojis.fetch(this.guildId, this.id, force);
 	}
 
 	url(options?: BaseImageURLOptions) {
@@ -57,10 +57,10 @@ export class GuildEmoji extends DiscordBase {
 	static methods({ client, guildId }: MethodContext<{ guildId: string }>) {
 		return {
 			edit: (emojiId: string, body: RESTPatchAPIGuildEmojiJSONBody, reason?: string) =>
-				client.guilds.emojis.edit(guildId, emojiId, body, reason),
-			create: (body: Parameters<GuildShorter['emojis']['create']>[1]) => client.guilds.emojis.create(guildId, body),
-			fetch: (emojiId: string, force = false) => client.guilds.emojis.fetch(guildId, emojiId, force),
-			list: (force = false) => client.guilds.emojis.list(guildId, force),
+				client.emojis.edit(guildId, emojiId, body, reason),
+			create: (body: Parameters<EmojiShorter['create']>[1]) => client.emojis.create(guildId, body),
+			fetch: (emojiId: string, force = false) => client.emojis.fetch(guildId, emojiId, force),
+			list: (force = false) => client.emojis.list(guildId, force),
 		};
 	}
 }

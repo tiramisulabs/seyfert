@@ -71,11 +71,10 @@ export class Webhook extends DiscordBase {
 	static messages({ client, webhookId, webhookToken }: MethodContext<{ webhookId: string; webhookToken: string }>) {
 		return {
 			write: (payload: MessageWebhookMethodWriteParams) =>
-				client.webhooks.messages.write(webhookId, webhookToken, payload),
-			edit: (payload: MessageWebhookMethodEditParams) =>
-				client.webhooks.messages.edit(webhookId, webhookToken, payload),
+				client.webhooks.writeMessage(webhookId, webhookToken, payload),
+			edit: (payload: MessageWebhookMethodEditParams) => client.webhooks.editMessage(webhookId, webhookToken, payload),
 			delete: (messageId: string, reason?: string) =>
-				client.webhooks.messages.delete(webhookId, webhookToken, messageId, reason),
+				client.webhooks.deleteMessage(webhookId, webhookToken, messageId, reason),
 		};
 	}
 

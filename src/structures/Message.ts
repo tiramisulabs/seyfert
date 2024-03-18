@@ -64,7 +64,7 @@ export class BaseMessage extends DiscordBase {
 	}
 
 	react(emoji: EmojiResolvable) {
-		return this.client.messages.reactions.add(this.id, this.channelId, emoji);
+		return this.client.reactions.add(this.id, this.channelId, emoji);
 	}
 
 	private patch(data: MessageData) {
@@ -170,14 +170,14 @@ export class WebhookMessage extends BaseMessage {
 	}
 
 	edit(body: EditMessageWebhook) {
-		return this.client.webhooks.messages.edit(this.webhookId, this.webhookToken, { ...body, messageId: this.id });
+		return this.client.webhooks.editMessage(this.webhookId, this.webhookToken, { ...body, messageId: this.id });
 	}
 
 	write(body: WriteMessageWebhook) {
-		return this.client.webhooks.messages.write(this.webhookId, this.webhookToken, body);
+		return this.client.webhooks.writeMessage(this.webhookId, this.webhookToken, body);
 	}
 
 	delete(reason?: string) {
-		return this.client.webhooks.messages.delete(this.webhookId, this.webhookToken, this.id, reason);
+		return this.client.webhooks.deleteMessage(this.webhookId, this.webhookToken, this.id, reason);
 	}
 }

@@ -326,7 +326,7 @@ export class Interaction<
 	Type extends APIInteraction = APIInteraction,
 > extends BaseInteraction<FromGuild, Type> {
 	fetchMessage(messageId: string) {
-		return this.client.webhooks.messages.fetch(this.applicationId, this.token, messageId);
+		return this.client.webhooks.fetchMessage(this.applicationId, this.token, messageId);
 	}
 
 	fetchResponse() {
