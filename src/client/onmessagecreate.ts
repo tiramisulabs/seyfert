@@ -95,7 +95,6 @@ export async function onMessageCreate(
 	};
 	const args = (self.options?.commands?.argsParser ?? defaultArgsParser)(content, command);
 	const { options, errors } = await parseOptions(self, command, rawMessage, args, resolved);
-	console.log({ options, errors });
 	const optionsResolver = new OptionResolver(self, options, parent as Command, message.guildId, resolved);
 	const context = new CommandContext(self, message, optionsResolver, shardId, command);
 	const extendContext = self.options?.context?.(message) ?? {};
