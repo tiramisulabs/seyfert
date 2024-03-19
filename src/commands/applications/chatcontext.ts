@@ -33,7 +33,7 @@ export class CommandContext<T extends OptionsRecord = {}, M extends keyof Regist
 	messageResponse?: If<InferWithPrefix, Message | undefined>;
 	constructor(
 		readonly client: UsingClient,
-		readonly data: ChatInputCommandInteraction | Message,
+		data: ChatInputCommandInteraction | Message,
 		readonly resolver: OptionResolver,
 		readonly shardId: number,
 		readonly command: Command | SubCommand,
