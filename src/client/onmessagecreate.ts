@@ -37,7 +37,7 @@ function getCommandFromContent(
 
 	if (!(parent instanceof Command)) return { fullCommandName };
 
-	if (groupName && !parent.groups?.[groupName!]) return getCommandFromContent([parentName, subcommandName], self);
+	if (groupName && !parent.groups?.[groupName!]) return getCommandFromContent([parentName, groupName], self);
 	if (subcommandName && !parent.options?.some(x => x instanceof SubCommand && x.name === subcommandName))
 		return getCommandFromContent([parentName], self);
 

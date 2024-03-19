@@ -44,11 +44,11 @@ export class GuildBasedResource<T = any> {
 	}
 
 	get(id: string, guild: string): ReturnCache<(T & { guild_id: string }) | undefined> {
-		return this.adapter.get(this.hashGuildId(id, guild));
+		return this.adapter.get(this.hashGuildId(guild, id));
 	}
 
 	bulk(ids: string[], guild: string): ReturnCache<(T & { guild_id: string })[]> {
-		return fakePromise(this.adapter.get(ids.map(id => this.hashGuildId(id, guild)))).then(x => x.filter(y => y));
+		return fakePromise(this.adapter.get(ids.map(id => this.hashGuildId(guild, id)))).then(x => x.filter(y => y));
 	}
 
 	set(__keys: string, guild: string, data: any): ReturnCache<void>;
@@ -64,7 +64,7 @@ export class GuildBasedResource<T = any> {
 		).then(() =>
 			this.adapter.set(
 				keys.map(([key, value]) => {
-					return [this.hashGuildId(key, guild), this.parse(value, key, guild)];
+					return [this.hashGuildId(guild, key), this.parse(value, key, guild)];
 				}),
 			),
 		) as void;
@@ -74,7 +74,7 @@ export class GuildBasedResource<T = any> {
 	patch(__keys: [string, any][], guild: string): ReturnCache<void>;
 	patch(__keys: string | [string, any][], guild: string, data?: any): ReturnCache<void> {
 		const keys: [string, any][] = Array.isArray(__keys) ? __keys : [[__keys, data]];
-		return fakePromise(this.adapter.get(keys.map(([key]) => this.hashGuildId(key, guild)))).then(oldDatas =>
+		return fakePromise(this.adapter.get(keys.map(([key]) => this.hashGuildId(guild, key)))).then(oldDatas =>
 			fakePromise(
 				this.addToRelationship(
 					keys.map(x => x[0]),
@@ -84,7 +84,7 @@ export class GuildBasedResource<T = any> {
 				this.adapter.set(
 					keys.map(([key, value]) => {
 						const oldData = oldDatas.find(x => x.id === key) ?? {};
-						return [this.hashGuildId(key, guild), this.parse({ ...oldData, ...value }, key, guild)];
+						return [this.hashGuildId(guild, key), this.parse({ ...oldData, ...value }, key, guild)];
 					}),
 				),
 			),
@@ -94,7 +94,7 @@ export class GuildBasedResource<T = any> {
 	remove(id: string | string[], guild: string) {
 		const ids = Array.isArray(id) ? id : [id];
 		return fakePromise(this.removeToRelationship(ids, guild)).then(() =>
-			this.adapter.remove(ids.map(x => this.hashGuildId(x, guild))),
+			this.adapter.remove(ids.map(x => this.hashGuildId(guild, x))),
 		);
 	}
 

@@ -54,7 +54,6 @@ export class GuildRelatedResource<T = any> {
 	set(__keys: [string, any][], guild: string): ReturnCache<void>;
 	set(__keys: string | [string, any][], guild: string, data?: any): ReturnCache<void> {
 		const keys: [string, any][] = Array.isArray(__keys) ? __keys : [[__keys, data]];
-
 		return fakePromise(
 			this.addToRelationship(
 				keys.map(x => x[0]),

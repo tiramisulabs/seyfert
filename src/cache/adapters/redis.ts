@@ -197,7 +197,9 @@ const isObject = (o: unknown) => {
 	return !!o && typeof o === 'object' && !Array.isArray(o);
 };
 
-function toNormal(target: Record<string, any>) {
+function toNormal(target: Record<string, any>): undefined | Record<string, any> | Record<string, any>[] {
+	if (typeof target.ARRAY_OF === 'string') return JSON.parse(target.ARRAY_OF as string).map(toNormal);
+	if (!Object.keys(target).length) return undefined;
 	const result: Record<string, any> = {};
 	for (const [key, value] of Object.entries(target)) {
 		if (key.startsWith('O_')) {
@@ -213,7 +215,8 @@ function toNormal(target: Record<string, any>) {
 	return result;
 }
 
-function toDb(target: Record<string, any>) {
+function toDb(target: Record<string, any>): Record<string, any> | Record<string, any>[] {
+	if (Array.isArray(target)) return { ARRAY_OF: JSON.stringify(target.map(toDb)) };
 	const result: Record<string, any> = {};
 	for (const [key, value] of Object.entries(target)) {
 		switch (typeof value) {

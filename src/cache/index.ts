@@ -335,7 +335,7 @@ export class Cache {
 						}
 						relationshipsData[hashId].push(id);
 						data.guild_id = guildId;
-						allData.push([this[type]!.hashGuildId(id, guildId), this[type]!.parse(data, id, guildId!)]);
+						allData.push([this[type]!.hashGuildId(guildId, id), this[type]!.parse(data, id, guildId!)]);
 					}
 					break;
 				case 'users':
@@ -422,7 +422,7 @@ export class Cache {
 						}
 						relationshipsData[hashId].push(id);
 						data.guild_id = guildId;
-						allData.push([this[type]!.hashGuildId(id, guildId), this[type]!.parse(data, id, guildId!)]);
+						allData.push([this[type]!.hashGuildId(guildId, id), this[type]!.parse(data, id, guildId!)]);
 					}
 					break;
 				case 'users':

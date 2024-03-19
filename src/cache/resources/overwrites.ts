@@ -7,20 +7,24 @@ import { GuildRelatedResource } from './default/guild-related';
 export class Overwrites extends GuildRelatedResource {
 	namespace = 'overwrite';
 
-	parse(data: any, _id: string, _guild_id: string) {
+	parse(data: any[], _id: string, guild_id: string) {
+		data.forEach(x => {
+			x.guild_id = guild_id;
+		});
 		return data;
 	}
 
 	override get(
 		id: string,
 	): ReturnCache<{ type: number; id: string; deny: PermissionsBitField; allow: PermissionsBitField }[] | undefined> {
-		return fakePromise(super.get(id) as APIOverwrite[] | undefined).then(rawOverwrites =>
+		return fakePromise(super.get(id) as (APIOverwrite & { guild_id: string })[] | undefined).then(rawOverwrites =>
 			rawOverwrites
 				? rawOverwrites.map(rawOverwrite => ({
 						allow: new PermissionsBitField(BigInt(rawOverwrite.allow)),
 						deny: new PermissionsBitField(BigInt(rawOverwrite.deny)),
 						id: rawOverwrite.id,
 						type: rawOverwrite.type,
+						guildId: rawOverwrite.guild_id,
 				  }))
 				: undefined,
 		);
@@ -29,13 +33,14 @@ export class Overwrites extends GuildRelatedResource {
 	override values(
 		guild: string,
 	): ReturnCache<{ type: number; id: string; deny: PermissionsBitField; allow: PermissionsBitField }[][]> {
-		return fakePromise(super.values(guild) as APIOverwrite[][]).then(values =>
+		return fakePromise(super.values(guild) as (APIOverwrite & { guild_id: string })[][]).then(values =>
 			values.map(rawOverwrites =>
 				rawOverwrites.map(rawOverwrite => ({
 					allow: new PermissionsBitField(BigInt(rawOverwrite.allow)),
 					deny: new PermissionsBitField(BigInt(rawOverwrite.deny)),
 					id: rawOverwrite.id,
 					type: rawOverwrite.type,
+					guildId: rawOverwrite.guild_id,
 				})),
 			),
 		);
@@ -44,13 +49,14 @@ export class Overwrites extends GuildRelatedResource {
 	override bulk(
 		ids: string[],
 	): ReturnCache<{ type: number; id: string; deny: PermissionsBitField; allow: PermissionsBitField }[][]> {
-		return fakePromise(super.bulk(ids) as APIOverwrite[][]).then(values =>
+		return fakePromise(super.bulk(ids) as (APIOverwrite & { guild_id: string })[][]).then(values =>
 			values.map(rawOverwrites =>
 				rawOverwrites.map(rawOverwrite => ({
 					allow: new PermissionsBitField(BigInt(rawOverwrite.allow)),
 					deny: new PermissionsBitField(BigInt(rawOverwrite.deny)),
 					id: rawOverwrite.id,
 					type: rawOverwrite.type,
+					guildId: rawOverwrite.guild_id,
 				})),
 			),
 		);
