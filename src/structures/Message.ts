@@ -46,6 +46,10 @@ export class BaseMessage extends DiscordBase {
 		this.patch(data);
 	}
 
+	get user() {
+		return this.author;
+	}
+
 	createComponentCollector(options?: ListenerOptions) {
 		return this.client.components.createComponentCollector(this.id, options);
 	}

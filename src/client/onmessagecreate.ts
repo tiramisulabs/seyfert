@@ -44,15 +44,15 @@ function getCommandFromContent(
 	const command =
 		groupName || subcommandName
 			? (parent.options?.find(opt => {
-				if (opt instanceof SubCommand) {
-					if (groupName) {
-						if (opt.group !== groupName) return false;
+					if (opt instanceof SubCommand) {
+						if (groupName) {
+							if (opt.group !== groupName) return false;
+						}
+						if (opt.group && !groupName) return false;
+						return subcommandName === opt.name;
 					}
-					if (opt.group && !groupName) return false;
-					return subcommandName === opt.name;
-				}
-				return false;
-			}) as SubCommand)
+					return false;
+			  }) as SubCommand)
 			: parent;
 
 	return {
@@ -95,6 +95,7 @@ export async function onMessageCreate(
 	};
 	const args = (self.options?.commands?.argsParser ?? defaultArgsParser)(content, command);
 	const { options, errors } = await parseOptions(self, command, rawMessage, args, resolved);
+	console.log({ options, errors });
 	const optionsResolver = new OptionResolver(self, options, parent as Command, message.guildId, resolved);
 	const context = new CommandContext(self, message, optionsResolver, shardId, command);
 	const extendContext = self.options?.context?.(message) ?? {};
@@ -364,6 +365,11 @@ async function parseOptions(
 				value,
 			} as APIApplicationCommandInteractionDataOption);
 		}
+		if (i.required && value === undefined)
+			errors.push({
+				error: 'Option is required but returned undefined',
+				name: i.name,
+			});
 	}
 
 	return { errors, options };

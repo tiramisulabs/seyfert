@@ -130,15 +130,14 @@ class BaseCommand {
 		ctx: CommandContext<{}, never>,
 		resolver: OptionResolver,
 	): Promise<[boolean, OnOptionsReturnObject]> {
-		const command = resolver.getCommand();
-		if (!command?.options?.length) {
+		if (!this?.options?.length) {
 			return [false, {}];
 		}
 		const data: OnOptionsReturnObject = {};
 		let errored = false;
-		for (const i of command.options ?? []) {
+		for (const i of this.options ?? []) {
 			try {
-				const option = command.options!.find(x => x.name === i.name) as __CommandOption;
+				const option = this.options!.find(x => x.name === i.name) as __CommandOption;
 				const value =
 					resolver.getHoisted(i.name)?.value !== undefined
 						? await new Promise(
@@ -147,7 +146,6 @@ class BaseCommand {
 									res(resolver.getValue(i.name)),
 						  )
 						: undefined;
-
 				if (value === undefined) {
 					if (option.required) {
 						errored = true;
