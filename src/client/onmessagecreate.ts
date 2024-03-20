@@ -33,7 +33,9 @@ function getCommandFromContent(
 	const groupName = commandRaw.length === 3 ? commandRaw[1] : undefined;
 	const subcommandName = groupName ? commandRaw[2] : commandRaw[1];
 	const parent = self.commands.values.find(x => x.name === parentName);
-	const fullCommandName = `${parentName}${groupName ? ` ${groupName} ${subcommandName}` : ` ${subcommandName ?? ''}`}`;
+	const fullCommandName = `${parentName}${
+		groupName ? ` ${groupName} ${subcommandName}` : `${subcommandName ? ` ${subcommandName}` : ''}`
+	}`;
 
 	if (!(parent instanceof Command)) return { fullCommandName };
 
