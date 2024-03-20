@@ -2,7 +2,7 @@ import { mix } from 'ts-mixer';
 import type { RawFile } from '../api';
 import { ActionRow, Embed, Modal, resolveAttachment, resolveFiles } from '../builders';
 import type { BaseClient } from '../client/base';
-import { OptionResolver, type UsingClient } from '../commands';
+import { type ContextOptionsResolved, OptionResolver, type UsingClient } from '../commands';
 import type {
 	APIActionRowComponent,
 	APIApplicationCommandAutocompleteInteraction,
@@ -303,7 +303,7 @@ export class AutocompleteInteraction<FromGuild extends boolean = boolean> extend
 			interaction.data.options,
 			undefined,
 			interaction.guild_id,
-			interaction.data.resolved,
+			interaction.data.resolved as ContextOptionsResolved,
 		);
 	}
 

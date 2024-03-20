@@ -1,11 +1,28 @@
 import { Attachment, GuildMember } from '..';
-import type { APIApplicationCommandInteractionDataOption, APIInteractionDataResolved, MakeRequired } from '../common';
+import type {
+	APIApplicationCommandInteractionDataOption,
+	APIAttachment,
+	APIGuildMember,
+	APIInteractionDataResolvedChannel,
+	APIInteractionGuildMember,
+	APIRole,
+	APIUser,
+	MakeRequired,
+} from '../common';
 import { ApplicationCommandOptionType } from '../common';
 import type { AllChannels } from '../structures';
 import { GuildRole, InteractionGuildMember, User } from '../structures';
 import channelFrom from '../structures/channels';
 import type { Command, CommandAutocompleteOption, CommandOption, SubCommand } from './applications/chat';
 import type { UsingClient } from './applications/shared';
+
+export type ContextOptionsResolved = {
+	members?: Record<string, APIGuildMember | APIInteractionGuildMember | GuildMember | InteractionGuildMember>;
+	users?: Record<string, APIUser | User>;
+	roles?: Record<string, APIRole | GuildRole>;
+	channels?: Record<string, APIInteractionDataResolvedChannel | AllChannels>;
+	attachments?: Record<string, APIAttachment | Attachment>;
+};
 
 export class OptionResolver {
 	readonly options: OptionResolved[];
@@ -17,7 +34,7 @@ export class OptionResolver {
 		options: APIApplicationCommandInteractionDataOption[],
 		public parent?: Command,
 		public guildId?: string,
-		public resolved?: APIInteractionDataResolved,
+		public resolved?: ContextOptionsResolved,
 	) {
 		this.hoistedOptions = this.options = options.map(option => this.transformOption(option, resolved));
 
@@ -129,7 +146,7 @@ export class OptionResolver {
 		return option.value as string;
 	}
 
-	transformOption(option: APIApplicationCommandInteractionDataOption, resolved?: APIInteractionDataResolved) {
+	transformOption(option: APIApplicationCommandInteractionDataOption, resolved?: ContextOptionsResolved) {
 		const resolve: OptionResolved = {
 			...option,
 		};
@@ -144,16 +161,18 @@ export class OptionResolver {
 			const value = resolve.value as string;
 			const user = resolved.users?.[value];
 			if (user) {
-				resolve.user = new User(this.client, user);
+				resolve.user = user instanceof User ? user : new User(this.client, user);
 			}
 
 			const member = resolved.members?.[value];
 
 			if (member) {
 				resolve.member =
-					member instanceof GuildMember
+					member instanceof GuildMember || member instanceof InteractionGuildMember
 						? member
-						: new InteractionGuildMember(this.client, member, user!, this.guildId!);
+						: 'permissions' in member
+						  ? new InteractionGuildMember(this.client, member, user!, this.guildId!)
+						  : new GuildMember(this.client, member, user!, this.guildId!);
 			}
 
 			const channel = resolved.channels?.[value];
@@ -168,7 +187,7 @@ export class OptionResolver {
 
 			const attachment = resolved.attachments?.[value];
 			if (attachment) {
-				resolve.attachment = new Attachment(this.client, attachment);
+				resolve.attachment = attachment instanceof Attachment ? attachment : new Attachment(this.client, attachment);
 			}
 		}
 

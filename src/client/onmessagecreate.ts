@@ -2,14 +2,15 @@ import {
 	ApplicationCommandOptionType,
 	ChannelType,
 	type APIApplicationCommandInteractionDataOption,
-	type APIInteractionDataResolved,
 	type GatewayMessageCreateDispatchData,
 } from 'discord-api-types/v10';
 import {
 	Command,
 	CommandContext,
+	type ContextOptionsResolved,
 	OptionResolver,
 	SubCommand,
+	User,
 	type Client,
 	type CommandOption,
 	type SeyfertChannelOption,
@@ -88,7 +89,7 @@ export async function onMessageCreate(
 	if (command.dm && !message.guildId) return;
 	if (command.guild_id && !command.guild_id?.includes(message.guildId!)) return;
 
-	const resolved: MakeRequired<APIInteractionDataResolved> = {
+	const resolved: MakeRequired<ContextOptionsResolved> = {
 		channels: {},
 		roles: {},
 		users: {},
@@ -99,6 +100,7 @@ export async function onMessageCreate(
 	const { options, errors } = await parseOptions(self, command, rawMessage, args, resolved);
 	const optionsResolver = new OptionResolver(self, options, parent as Command, message.guildId, resolved);
 	const context = new CommandContext(self, message, optionsResolver, shardId, command);
+	//@ts-expect-error
 	const extendContext = self.options?.context?.(message) ?? {};
 	Object.assign(context, extendContext);
 	try {
@@ -167,123 +169,201 @@ async function parseOptions(
 	command: Command | SubCommand,
 	message: GatewayMessageCreateDispatchData,
 	args: Partial<Record<string, string>>,
-	resolved: MakeRequired<APIInteractionDataResolved, keyof APIInteractionDataResolved>,
+	resolved: MakeRequired<ContextOptionsResolved>,
 ) {
 	const options: APIApplicationCommandInteractionDataOption[] = [];
 	const errors: { name: string; error: string }[] = [];
 	for (const i of (command.options ?? []) as (CommandOption & { type: ApplicationCommandOptionType })[]) {
-		let value: string | boolean | number | undefined;
-		let indexAttachment = -1;
-		switch (i.type) {
-			case ApplicationCommandOptionType.Attachment:
-				if (message.attachments[++indexAttachment]) {
-					value = message.attachments[indexAttachment].id;
-					resolved.attachments[value] = message.attachments[indexAttachment];
-				}
-				break;
-			case ApplicationCommandOptionType.Boolean:
-				if (args[i.name]) {
-					value = ['yes', 'y', 'true', 'treu'].includes(args[i.name]!.toLowerCase());
-				}
-				break;
-			case ApplicationCommandOptionType.Channel:
-				{
-					const rawId = message.content.match(/(?<=<#)[0-9]{17,19}(?=>)/g)?.find(x => args[i.name]?.includes(x));
-					if (rawId) {
-						const channel = i.required ? await self.channels.fetch(rawId) : await self.cache.channels?.get(rawId);
-						if (channel) {
-							if ('channel_types' in i) {
-								if (!(i as SeyfertChannelOption).channel_types!.includes(channel.type)) {
+		try {
+			let value: string | boolean | number | undefined;
+			let indexAttachment = -1;
+			switch (i.type) {
+				case ApplicationCommandOptionType.Attachment:
+					if (message.attachments[++indexAttachment]) {
+						value = message.attachments[indexAttachment].id;
+						resolved.attachments[value] = message.attachments[indexAttachment];
+					}
+					break;
+				case ApplicationCommandOptionType.Boolean:
+					if (args[i.name]) {
+						value = ['yes', 'y', 'true', 'treu'].includes(args[i.name]!.toLowerCase());
+					}
+					break;
+				case ApplicationCommandOptionType.Channel:
+					{
+						const rawId =
+							message.content.match(/(?<=<#)[0-9]{17,19}(?=>)/g)?.find(x => args[i.name]?.includes(x)) ||
+							args[i.name]?.match(/[0-9]{17,19}/g)?.[0];
+						if (rawId) {
+							const channel =
+								(await self.cache.channels?.get(rawId)) ?? (i.required ? await self.channels.fetch(rawId) : undefined);
+							if (channel) {
+								if ('channel_types' in i) {
+									if (!(i as SeyfertChannelOption).channel_types!.includes(channel.type)) {
+										errors.push({
+											name: i.name,
+											error: `The entered channel type is not one of ${(i as SeyfertChannelOption)
+												.channel_types!.map(t => ChannelType[t])
+												.join(', ')}`,
+										});
+										break;
+									}
+								}
+								value = rawId;
+								resolved.channels[rawId] = channel;
+							}
+						}
+					}
+					break;
+				case ApplicationCommandOptionType.Mentionable:
+					{
+						const matches = message.content.match(/<@[0-9]{17,19}(?=>)|<@&[0-9]{17,19}(?=>)/g) ?? [];
+						for (const match of matches) {
+							if (match.includes('&')) {
+								const rawId = match.slice(3);
+								if (rawId) {
+									const role =
+										(await self.cache.roles?.get(rawId)) ??
+										(i.required ? (await self.roles.list(message.guild_id!)).find(x => x.id === rawId) : undefined);
+									if (role) {
+										value = rawId;
+										resolved.roles[rawId] = role;
+										break;
+									}
+								}
+							} else {
+								const rawId = match.slice(2);
+								const raw = message.mentions.find(x => rawId === x.id);
+								if (raw) {
+									const { member, ...user } = raw;
+									value = raw.id;
+									resolved.users[raw.id] = user;
+									if (member) resolved.members[raw.id] = member;
+									break;
+								}
+							}
+						}
+					}
+					break;
+				case ApplicationCommandOptionType.Role:
+					{
+						const rawId =
+							message.mention_roles.find(x => args[i.name]?.includes(x)) || args[i.name]?.match(/[0-9]{17,19}/g)?.[0];
+						if (rawId) {
+							const role =
+								(await self.cache.roles?.get(rawId)) ??
+								(i.required ? (await self.roles.list(message.guild_id!)).find(x => x.id === rawId) : undefined);
+
+							if (role) {
+								value = rawId;
+								resolved.roles[rawId] = role;
+							}
+						}
+					}
+					break;
+				case ApplicationCommandOptionType.User:
+					{
+						const rawId =
+							message.mentions.find(x => args[i.name]?.includes(x.id))?.id || args[i.name]?.match(/[0-9]{17,19}/g)?.[0];
+						if (rawId) {
+							const raw =
+								message.mentions.find(x => args[i.name]?.includes(x.id)) ??
+								(await self.cache.users?.get(rawId)) ??
+								(i.required ? await self.users.fetch(rawId) : undefined);
+							if (raw) {
+								value = raw.id;
+								if (raw instanceof User) {
+									resolved.users[raw.id] = raw;
+									if (message.guild_id) {
+										const member =
+											message.mentions.find(x => args[i.name]?.includes(x.id))?.member ??
+											(await self.cache.members?.get(rawId, message.guild_id)) ??
+											(i.required ? await self.members.fetch(rawId, message.guild_id) : undefined);
+										if (member) resolved.members[raw.id] = member;
+									}
+								} else {
+									const { member, ...user } = raw;
+									resolved.users[user.id] = user;
+									if (member) resolved.members[user.id] = member;
+								}
+							}
+						}
+					}
+					break;
+				case ApplicationCommandOptionType.String:
+					{
+						value = args[i.name];
+						const option = i as SeyfertStringOption;
+						if (value) {
+							if (option.min_length) {
+								if (value.length < option.min_length) {
+									value = undefined;
 									errors.push({
 										name: i.name,
-										error: `The entered channel type is not one of ${(i as SeyfertChannelOption)
-											.channel_types!.map(t => ChannelType[t])
-											.join(', ')}`,
+										error: `The entered string has less than ${option.min_length} characters. The minimum required is ${option.min_length} characters.`,
 									});
 									break;
 								}
 							}
-							value = rawId;
-							//@ts-expect-error
-							resolved.channels[rawId] = channel;
-						}
-					}
-				}
-				break;
-			case ApplicationCommandOptionType.Mentionable:
-				{
-					const matches = message.content.match(/<@[0-9]{17,19}(?=>)|<@&[0-9]{17,19}(?=>)/g) ?? [];
-					for (const match of matches) {
-						if (match.includes('&')) {
-							const rawId = match.slice(3);
-							if (rawId) {
-								const role = i.required
-									? (await self.roles.list(message.guild_id!)).find(x => x.id === rawId)
-									: await self.cache.roles?.get(rawId);
-								if (role) {
-									value = rawId;
-									//@ts-expect-error
-									resolved.roles[rawId] = role;
+							if (option.max_length) {
+								if (value.length > option.max_length) {
+									value = undefined;
+									errors.push({
+										name: i.name,
+										error: `The entered string has more than ${option.max_length} characters. The maximum required is ${option.max_length} characters.`,
+									});
 									break;
 								}
 							}
-						} else {
-							const rawId = match.slice(2);
-							const raw = message.mentions.find(x => rawId === x.id);
-							if (raw) {
-								value = raw.id;
-								resolved.users[raw.id] = raw;
-								break;
+							if (option.choices?.length) {
+								if (!option.choices.some(x => x.name === value)) {
+									value = undefined;
+									errors.push({
+										name: i.name,
+										error: `The entered choice is invalid. Please choose one of the following options: ${option.choices
+											.map(x => x.name)
+											.join(', ')}.`,
+									});
+									break;
+								}
+								value = option.choices.find(x => x.name === value)!.value;
 							}
 						}
 					}
-				}
-				break;
-			case ApplicationCommandOptionType.Role:
-				{
-					const rawId = message.mention_roles.find(x => args[i.name]?.includes(x));
-					if (rawId) {
-						const role = i.required
-							? (await self.roles.list(message.guild_id!)).find(x => x.id === rawId) //why, discord, why
-							: await self.cache.roles?.get(rawId);
-						if (role) {
-							value = rawId;
-							//@ts-expect-error
-							resolved.roles[rawId] = role;
+					break;
+				case ApplicationCommandOptionType.Number:
+				case ApplicationCommandOptionType.Integer:
+					{
+						value = Number(args[i.name]);
+						if (args[i.name] === undefined) {
+							value = undefined;
+							break;
 						}
-					}
-				}
-				break;
-			case ApplicationCommandOptionType.User:
-				{
-					const raw = message.mentions.find(x => args[i.name]?.includes(x.id));
-					if (raw) {
-						value = raw.id;
-						resolved.users[raw.id] = raw;
-					}
-				}
-				break;
-			case ApplicationCommandOptionType.String:
-				{
-					value = args[i.name];
-					const option = i as SeyfertStringOption;
-					if (value) {
-						if (option.min_length) {
-							if (value.length < option.min_length) {
+						if (Number.isNaN(value)) {
+							value = undefined;
+							errors.push({
+								name: i.name,
+								error: 'The entered choice is an invalid number.',
+							});
+							break;
+						}
+						const option = i as SeyfertNumberOption | SeyfertIntegerOption;
+						if (option.min_value) {
+							if (value < option.min_value) {
 								value = undefined;
 								errors.push({
 									name: i.name,
-									error: `The entered string has less than ${option.min_length} characters. The minimum required is ${option.min_length} characters.`,
+									error: `The entered number is less than ${option.min_value}. The minimum allowed is ${option.min_value}`,
 								});
 								break;
 							}
 						}
-						if (option.max_length) {
-							if (value.length > option.max_length) {
+						if (option.max_value) {
+							if (value > option.max_value) {
 								value = undefined;
 								errors.push({
 									name: i.name,
-									error: `The entered string has more than ${option.max_length} characters. The maximum required is ${option.max_length} characters.`,
+									error: `The entered number is greater than ${option.max_value}. The maximum allowed is ${option.max_value}`,
 								});
 								break;
 							}
@@ -302,75 +382,27 @@ async function parseOptions(
 							value = option.choices.find(x => x.name === value)!.value;
 						}
 					}
-				}
-				break;
-			case ApplicationCommandOptionType.Number:
-			case ApplicationCommandOptionType.Integer:
-				{
-					value = Number(args[i.name]);
-					if (args[i.name] === undefined) {
-						value = undefined;
-						break;
-					}
-					if (Number.isNaN(value)) {
-						value = undefined;
-						errors.push({
-							name: i.name,
-							error: 'The entered choice is an invalid number.',
-						});
-						break;
-					}
-					const option = i as SeyfertNumberOption | SeyfertIntegerOption;
-					if (option.min_value) {
-						if (value < option.min_value) {
-							value = undefined;
-							errors.push({
-								name: i.name,
-								error: `The entered number is less than ${option.min_value}. The minimum allowed is ${option.min_value}`,
-							});
-							break;
-						}
-					}
-					if (option.max_value) {
-						if (value > option.max_value) {
-							value = undefined;
-							errors.push({
-								name: i.name,
-								error: `The entered number is greater than ${option.max_value}. The maximum allowed is ${option.max_value}`,
-							});
-							break;
-						}
-					}
-					if (option.choices?.length) {
-						if (!option.choices.some(x => x.name === value)) {
-							value = undefined;
-							errors.push({
-								name: i.name,
-								error: `The entered choice is invalid. Please choose one of the following options: ${option.choices
-									.map(x => x.name)
-									.join(', ')}.`,
-							});
-							break;
-						}
-						value = option.choices.find(x => x.name === value)!.value;
-					}
-				}
-				break;
-			default:
-				break;
-		}
-		if (value !== undefined) {
-			options.push({
-				name: i.name,
-				type: i.type,
-				value,
-			} as APIApplicationCommandInteractionDataOption);
-		}
-		if (i.required && value === undefined)
+					break;
+				default:
+					break;
+			}
+			if (value !== undefined) {
+				options.push({
+					name: i.name,
+					type: i.type,
+					value,
+				} as APIApplicationCommandInteractionDataOption);
+			} else if (i.required)
+				errors.push({
+					error: 'Option is required but returned undefined',
+					name: i.name,
+				});
+		} catch (e) {
 			errors.push({
-				error: 'Option is required but returned undefined',
+				error: e && typeof e === 'object' && 'message' in e ? (e.message as string) : `${e}`,
 				name: i.name,
 			});
+		}
 	}
 
 	return { errors, options };

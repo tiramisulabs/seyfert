@@ -1,5 +1,12 @@
 import { ApplicationCommandType, InteractionType, type APIInteraction } from 'discord-api-types/v10';
-import { CommandContext, MenuCommandContext, OptionResolver, type Command, type ContextMenuCommand } from '../commands';
+import {
+	CommandContext,
+	type ContextOptionsResolved,
+	MenuCommandContext,
+	OptionResolver,
+	type Command,
+	type ContextMenuCommand,
+} from '../commands';
 import type {
 	ChatInputCommandInteraction,
 	ComponentInteraction,
@@ -32,7 +39,7 @@ export async function onInteractionCreate(
 					body.data.options ?? [],
 					parentCommand as Command,
 					body.data.guild_id,
-					body.data.resolved,
+					body.data.resolved as ContextOptionsResolved,
 				);
 				const interaction = new AutocompleteInteraction(self, body, __reply);
 				const command = optionsResolver.getAutocomplete();
@@ -139,7 +146,7 @@ export async function onInteractionCreate(
 								packetData.options ?? [],
 								parentCommand as Command,
 								packetData.guild_id,
-								packetData.resolved,
+								packetData.resolved as ContextOptionsResolved,
 							);
 							const interaction = BaseInteraction.from(self, body, __reply) as ChatInputCommandInteraction;
 							const command = optionsResolver.getCommand();

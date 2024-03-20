@@ -3,7 +3,7 @@ import { ApiHandler, Router } from '../api';
 import type { Adapter } from '../cache';
 import { Cache, MemoryAdapter } from '../cache';
 import type { RegisteredMiddlewares } from '../commands';
-import type { MiddlewareContext } from '../commands/applications/shared';
+import type { InferWithPrefix, MiddlewareContext } from '../commands/applications/shared';
 import { CommandHandler } from '../commands/handler';
 import {
 	ChannelShorter,
@@ -24,10 +24,15 @@ import {
 	type MakeRequired,
 } from '../common';
 
-import type { DeepPartial, IntentStrings, OmitInsert } from '../common/types/util';
+import type { DeepPartial, IntentStrings, OmitInsert, When } from '../common/types/util';
 import { ComponentHandler } from '../components/handler';
 import { LangsHandler } from '../langs/handler';
-import type { ChatInputCommandInteraction, Message, MessageCommandInteraction, UserCommandInteraction } from '../structures';
+import type {
+	ChatInputCommandInteraction,
+	Message,
+	MessageCommandInteraction,
+	UserCommandInteraction,
+} from '../structures';
 
 export class BaseClient {
 	rest!: ApiHandler;
@@ -246,7 +251,7 @@ export interface BaseClientOptions {
 			| ChatInputCommandInteraction<boolean>
 			| UserCommandInteraction<boolean>
 			| MessageCommandInteraction<boolean>
-			| Message
+			| When<InferWithPrefix, Message, never>,
 	) => {};
 	globalMiddlewares?: readonly (keyof RegisteredMiddlewares)[];
 }
