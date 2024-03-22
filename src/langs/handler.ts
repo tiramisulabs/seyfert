@@ -15,8 +15,12 @@ export class LangsHandler extends BaseHandler {
 	getKey(lang: string, message: string) {
 		let value = this.values[lang as string];
 
-		for (const i of message.split('.')) {
-			value = value[i];
+		try {
+			for (const i of message.split('.')) {
+				value = value[i];
+			}
+		} catch {
+			return;
 		}
 
 		if (typeof value !== 'string') {

@@ -4,6 +4,7 @@ import type {
 	APIApplicationCommandBasicOption,
 	APIApplicationCommandOption,
 	APIApplicationCommandSubcommandGroupOption,
+	FlatObjectKeys,
 	LocaleString,
 	PermissionStrings,
 } from '../../common';
@@ -13,6 +14,7 @@ import type { Groups, RegisteredMiddlewares } from '../decorators';
 import type { OptionResolver } from '../optionresolver';
 import type { CommandContext } from './chatcontext';
 import type {
+	DefaultLocale,
 	NextFunction,
 	OKFunction,
 	OnOptionsReturnObject,
@@ -50,6 +52,10 @@ type Wrap<N extends ApplicationCommandOptionType> = N extends
 			description: string;
 			description_localizations?: APIApplicationCommandBasicOption['description_localizations'];
 			name_localizations?: APIApplicationCommandBasicOption['name_localizations'];
+			locales?: {
+				name?: FlatObjectKeys<DefaultLocale>;
+				description?: FlatObjectKeys<DefaultLocale>;
+			};
 	  };
 
 export type __TypeWrapper<T extends ApplicationCommandOptionType> = Wrap<T>;

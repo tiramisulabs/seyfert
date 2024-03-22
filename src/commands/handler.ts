@@ -135,6 +135,30 @@ export class CommandHandler extends BaseHandler {
 			}
 		}
 
+		for (const options of command.options ?? []) {
+			if (options instanceof SubCommand || !options.locales) continue;
+			options.name_localizations = {};
+			options.description_localizations = {};
+			for (const locale of Object.keys(client.langs.values)) {
+				const locales = this.client.langs.aliases.find(x => x[0] === locale)?.[1] ?? [];
+				if (Object.values<string>(Locale).includes(locale)) locales.push(locale as LocaleString);
+
+				if (options.locales.name) {
+					for (const i of locales) {
+						const valueName = client.langs.getKey(locale, options.locales.name!);
+						if (valueName) options.name_localizations[i] = valueName;
+					}
+				}
+
+				if (options.locales.description) {
+					for (const i of locales) {
+						const valueKey = client.langs.getKey(locale, options.locales.description!);
+						if (valueKey) options.description_localizations[i] = valueKey;
+					}
+				}
+			}
+		}
+
 		if (command instanceof Command && command.__tGroups) {
 			command.groups = {};
 			for (const locale of Object.keys(client.langs.values)) {
