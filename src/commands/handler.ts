@@ -138,7 +138,6 @@ export class CommandHandler extends BaseHandler {
 		if (command instanceof Command && command.__tGroups) {
 			command.groups = {};
 			for (const locale of Object.keys(client.langs.values)) {
-				const aliases = this.client.langs.aliases.find(x => x[0] === locale)?.[1] ?? [];
 				const locales = this.client.langs.aliases.find(x => x[0] === locale)?.[1] ?? [];
 				if (Object.values<string>(Locale).includes(locale)) locales.push(locale as LocaleString);
 				for (const group in command.__tGroups) {
@@ -158,7 +157,7 @@ export class CommandHandler extends BaseHandler {
 					}
 
 					if (command.__tGroups[group].description) {
-						for (const i of aliases) {
+						for (const i of locales) {
 							const valueKey = client.langs.getKey(locale, command.__tGroups[group].description!);
 							if (valueKey) {
 								command.groups[group].description!.push([i as LocaleString, valueKey]);
