@@ -100,7 +100,7 @@ export class ComponentHandler extends BaseHandler {
 
 	hasComponent(id: string, customId: string) {
 		return this.values.get(id)?.components?.some(x => {
-			if (typeof x.match === 'string' && x.match === customId) return true;
+			if (typeof x.match === 'string') return x.match === customId;
 			if (Array.isArray(x.match)) return x.match.includes(customId);
 			return customId.match(x.match);
 		});
