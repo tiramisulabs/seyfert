@@ -1,4 +1,5 @@
 import type { BaseClient } from '../../../client/base';
+import type { UsingClient } from '../../../commands';
 import { fakePromise, type GatewayIntentBits } from '../../../common';
 import type { Cache, ReturnCache } from '../../index';
 
@@ -8,7 +9,7 @@ export class GuildRelatedResource<T = any> {
 
 	constructor(
 		protected cache: Cache,
-		client?: BaseClient,
+		client?: UsingClient,
 	) {
 		if (client) {
 			this.client = client;
@@ -16,7 +17,7 @@ export class GuildRelatedResource<T = any> {
 	}
 
 	/** @internal */
-	__setClient(client: BaseClient) {
+	__setClient(client: UsingClient) {
 		this.client = client;
 	}
 

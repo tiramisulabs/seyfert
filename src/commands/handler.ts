@@ -1,9 +1,9 @@
 import { basename, dirname } from 'node:path';
-import type { BaseClient } from '../client/base';
 import type { Logger } from '../common';
 import { BaseHandler, Locale, type LocaleString } from '../common';
 import { Command, SubCommand } from './applications/chat';
 import { ContextMenuCommand } from './applications/menu';
+import type { UsingClient } from './applications/shared';
 
 export class CommandHandler extends BaseHandler {
 	values: (Command | ContextMenuCommand)[] = [];
@@ -11,7 +11,7 @@ export class CommandHandler extends BaseHandler {
 
 	constructor(
 		protected logger: Logger,
-		protected client: BaseClient,
+		protected client: UsingClient,
 	) {
 		super(logger);
 	}
@@ -35,7 +35,7 @@ export class CommandHandler extends BaseHandler {
 		}
 	}
 
-	async load(commandsDir: string, client: BaseClient) {
+	async load(commandsDir: string, client: UsingClient) {
 		const result = (await this.loadFilesK<typeof Command>(await this.getFiles(commandsDir))).filter(x => x.file);
 		this.values = [];
 
@@ -65,6 +65,7 @@ export class CommandHandler extends BaseHandler {
 			commandInstance.__filePath = command.path;
 			commandInstance.options ??= [] as NonNullable<Command['options']>;
 			if (commandInstance.__d) {
+				//@AutoLoad
 				const options = await this.getFiles(dirname(command.path));
 				for (const option of options) {
 					if (command.name === basename(option)) {
@@ -98,11 +99,11 @@ export class CommandHandler extends BaseHandler {
 			}
 
 			this.values.push(commandInstance);
-			this.__parseLocales(commandInstance, client);
+			this.__parseCommandLocales(commandInstance, client);
 
 			for (const i of commandInstance.options ?? []) {
 				if (i instanceof SubCommand) {
-					this.__parseLocales(i, client);
+					this.__parseCommandLocales(i, client);
 				}
 			}
 		}
@@ -110,30 +111,23 @@ export class CommandHandler extends BaseHandler {
 		return this.values;
 	}
 
-	private __parseLocales(command: Command | SubCommand, client: BaseClient) {
+	private __parseCommandLocales(command: Command | SubCommand, client: UsingClient) {
 		if (command.__t) {
 			command.name_localizations = {};
 			command.description_localizations = {};
 			for (const locale of Object.keys(client.langs.values)) {
-				const aliases = this.client.langs.aliases.find(x => x[0] === locale)?.[1] ?? [];
-				if (Object.values<string>(Locale).includes(locale)) {
-					if (command.__t.name) {
-						const valueName = client.langs.getKey(locale, command.__t.name!);
-						if (valueName) command.name_localizations[locale as LocaleString] = valueName;
-					}
-					if (command.__t.description) {
-						const valueKey = client.langs.getKey(locale, command.__t.description!);
-						if (valueKey) command.description_localizations[locale as LocaleString] = valueKey;
-					}
-				}
-				for (const i of aliases) {
-					if (command.__t.name) {
+				const locales = this.client.langs.aliases.find(x => x[0] === locale)?.[1] ?? [];
+				if (Object.values<string>(Locale).includes(locale)) locales.push(locale as LocaleString);
+
+				if (command.__t.name) {
+					for (const i of locales) {
 						const valueName = client.langs.getKey(locale, command.__t.name!);
 						if (valueName) command.name_localizations[i] = valueName;
 					}
 				}
-				for (const i of aliases) {
-					if (command.__t.description) {
+
+				if (command.__t.description) {
+					for (const i of locales) {
 						const valueKey = client.langs.getKey(locale, command.__t.description!);
 						if (valueKey) command.description_localizations[i] = valueKey;
 					}

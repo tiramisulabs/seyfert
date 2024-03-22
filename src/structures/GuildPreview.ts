@@ -1,4 +1,4 @@
-import type { BaseClient } from '../client/base';
+import type { UsingClient } from '../commands';
 import type { APIGuildPreview, APIPartialGuild } from '../common';
 import { AnonymousGuild } from './AnonymousGuild';
 
@@ -7,7 +7,7 @@ import { AnonymousGuild } from './AnonymousGuild';
  * @link https://discord.com/developers/docs/resources/guild#guild-preview-object
  */
 export class GuildPreview extends AnonymousGuild {
-	constructor(client: BaseClient, data: APIGuildPreview) {
+	constructor(client: UsingClient, data: APIGuildPreview) {
 		super(client, data as APIPartialGuild);
 	}
 }

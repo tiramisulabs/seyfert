@@ -1,8 +1,7 @@
 import { mix } from 'ts-mixer';
 import type { RawFile } from '../api';
 import { ActionRow, Embed, Modal, resolveAttachment, resolveFiles } from '../builders';
-import type { BaseClient } from '../client/base';
-import { type ContextOptionsResolved, OptionResolver, type UsingClient } from '../commands';
+import { OptionResolver, type ContextOptionsResolved, type UsingClient } from '../commands';
 import type {
 	APIActionRowComponent,
 	APIApplicationCommandAutocompleteInteraction,
@@ -209,7 +208,7 @@ export class BaseInteraction<
 		});
 	}
 
-	static from(client: BaseClient, gateway: GatewayInteractionCreateDispatchData, __reply?: __InternalReplyFunction) {
+	static from(client: UsingClient, gateway: GatewayInteractionCreateDispatchData, __reply?: __InternalReplyFunction) {
 		switch (gateway.type) {
 			case InteractionType.ApplicationCommandAutocomplete:
 				return new AutocompleteInteraction(client, gateway, __reply);
@@ -293,7 +292,7 @@ export class AutocompleteInteraction<FromGuild extends boolean = boolean> extend
 	declare data: ObjectToLower<APIApplicationCommandAutocompleteInteraction['data']>;
 	options: OptionResolver;
 	constructor(
-		client: BaseClient,
+		client: UsingClient,
 		interaction: APIApplicationCommandAutocompleteInteraction,
 		protected __reply?: __InternalReplyFunction,
 	) {
@@ -492,7 +491,7 @@ export class SelectMenuInteraction extends ComponentInteraction {
 	declare data: ObjectToLower<APIMessageComponentSelectMenuInteraction['data']>;
 
 	constructor(
-		client: BaseClient,
+		client: UsingClient,
 		interaction: APIMessageComponentSelectMenuInteraction,
 		protected __reply?: __InternalReplyFunction,
 	) {
@@ -517,7 +516,7 @@ export class StringSelectMenuInteraction<
 export class ChannelSelectMenuInteraction extends SelectMenuInteraction {
 	channels: AllChannels[];
 	constructor(
-		client: BaseClient,
+		client: UsingClient,
 		interaction: APIMessageComponentSelectMenuInteraction,
 		protected __reply?: __InternalReplyFunction,
 	) {
@@ -532,7 +531,7 @@ export class MentionableSelectMenuInteraction extends SelectMenuInteraction {
 	members: InteractionGuildMember[];
 	users: User[];
 	constructor(
-		client: BaseClient,
+		client: UsingClient,
 		interaction: APIMessageComponentSelectMenuInteraction,
 		protected __reply?: __InternalReplyFunction,
 	) {
@@ -559,7 +558,7 @@ export class MentionableSelectMenuInteraction extends SelectMenuInteraction {
 export class RoleSelectMenuInteraction extends SelectMenuInteraction {
 	roles: GuildRole[];
 	constructor(
-		client: BaseClient,
+		client: UsingClient,
 		interaction: APIMessageComponentSelectMenuInteraction,
 		protected __reply?: __InternalReplyFunction,
 	) {
@@ -573,7 +572,7 @@ export class UserSelectMenuInteraction extends SelectMenuInteraction {
 	members: InteractionGuildMember[];
 	users: User[];
 	constructor(
-		client: BaseClient,
+		client: UsingClient,
 		interaction: APIMessageComponentSelectMenuInteraction,
 		protected __reply?: __InternalReplyFunction,
 	) {

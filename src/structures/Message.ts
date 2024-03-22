@@ -1,5 +1,5 @@
 import type { ListenerOptions } from '../builders';
-import type { BaseClient } from '../client/base';
+import type { UsingClient } from '../commands';
 import type {
 	APIChannelMention,
 	APIGuildMember,
@@ -35,7 +35,7 @@ export class BaseMessage extends DiscordBase {
 		users: (GuildMember | User)[];
 	};
 
-	constructor(client: BaseClient, data: MessageData) {
+	constructor(client: UsingClient, data: MessageData) {
 		super(client, data);
 		this.mentions = {
 			roles: data.mention_roles ?? [],
@@ -119,7 +119,7 @@ export interface Message
 		ObjectToLower<Omit<MessageData, 'timestamp' | 'author' | 'mentions' | 'components'>> {}
 
 export class Message extends BaseMessage {
-	constructor(client: BaseClient, data: MessageData) {
+	constructor(client: UsingClient, data: MessageData) {
 		super(client, data);
 	}
 
@@ -161,7 +161,7 @@ export type WriteMessageWebhook = MessageWebhookMethodWriteParams;
 
 export class WebhookMessage extends BaseMessage {
 	constructor(
-		client: BaseClient,
+		client: UsingClient,
 		data: MessageData,
 		readonly webhookId: string,
 		readonly webhookToken: string,

@@ -2,8 +2,7 @@ import type { APIAttachment, RESTAPIAttachment } from 'discord-api-types/v10';
 import { randomBytes } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
-import { throwError, type RawFile } from '..';
-import type { BaseClient } from '../client/base';
+import { type UsingClient, throwError, type RawFile } from '..';
 import type { ImageResolvable, ObjectToLower } from '../common';
 import { Base } from '../structures/extra/Base';
 
@@ -27,7 +26,7 @@ export interface AttachmentData {
 export interface Attachment extends ObjectToLower<APIAttachment> {}
 export class Attachment extends Base {
 	constructor(
-		client: BaseClient,
+		client: UsingClient,
 		public data: APIAttachment,
 	) {
 		super(client);

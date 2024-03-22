@@ -1,11 +1,11 @@
-import type { BaseClient } from '../../client/base';
+import type { UsingClient } from '../../commands';
 import { Base } from './Base';
 import { snowflakeToTimestamp } from './functions';
 
 export class DiscordBase<Data extends Record<string, any> = { id: string }> extends Base {
 	id: string;
 	constructor(
-		client: BaseClient,
+		client: UsingClient,
 		/** Unique ID of the object */
 		data: Data,
 	) {

@@ -1,5 +1,5 @@
 import type { BaseImageURLOptions } from '../api';
-import type { BaseClient } from '../client/base';
+import type { UsingClient } from '../commands';
 import type {
 	APIEmoji,
 	EmojiShorter,
@@ -14,7 +14,7 @@ export interface GuildEmoji extends DiscordBase, ObjectToLower<Omit<APIEmoji, 'i
 
 export class GuildEmoji extends DiscordBase {
 	constructor(
-		client: BaseClient,
+		client: UsingClient,
 		data: APIEmoji,
 		readonly guildId: string,
 	) {

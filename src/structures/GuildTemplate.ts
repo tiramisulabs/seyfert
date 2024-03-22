@@ -1,4 +1,4 @@
-import type { BaseClient } from '../client/base';
+import type { UsingClient } from '../commands';
 import type {
 	APITemplate,
 	MethodContext,
@@ -11,7 +11,7 @@ import { Base } from './extra/Base';
 export interface GuildTemplate extends Base, ObjectToLower<APITemplate> {}
 
 export class GuildTemplate extends Base {
-	constructor(client: BaseClient, data: APITemplate) {
+	constructor(client: UsingClient, data: APITemplate) {
 		super(client);
 		this.__patchThis(data);
 	}

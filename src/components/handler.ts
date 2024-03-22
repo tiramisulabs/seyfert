@@ -1,6 +1,6 @@
 import type { ComponentCallback, ListenerOptions, ModalSubmitCallback } from '../builders/types';
-import type { BaseClient } from '../client/base';
 import { LimitedCollection } from '../collection';
+import type { UsingClient } from '../commands';
 import { BaseHandler, magicImport, type Logger, type OnFailCallback } from '../common';
 import type { ComponentInteraction, ModalSubmitInteraction } from '../structures';
 import { ComponentCommand, InteractionCommandType, ModalCommand } from './command';
@@ -24,7 +24,7 @@ export class ComponentHandler extends BaseHandler {
 
 	constructor(
 		logger: Logger,
-		protected client: BaseClient,
+		protected client: UsingClient,
 	) {
 		super(logger);
 	}

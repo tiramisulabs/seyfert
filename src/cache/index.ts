@@ -22,8 +22,7 @@ import { Stickers } from './resources/stickers';
 import { Threads } from './resources/threads';
 import { VoiceStates } from './resources/voice-states';
 
-import type { BaseClient } from '../client/base';
-import type { InternalOptions } from '../commands';
+import type { InternalOptions, UsingClient } from '../commands';
 import { ChannelType, GatewayIntentBits } from '../common';
 import { Overwrites } from './resources/overwrites';
 
@@ -103,7 +102,7 @@ export class Cache {
 		public intents: number,
 		public adapter: Adapter,
 		readonly disabledCache: (NonGuildBased | GuildBased | GuildRelated)[] = [],
-		client?: BaseClient,
+		client?: UsingClient,
 	) {
 		// non-guild based
 		if (!this.disabledCache.includes('users')) {
@@ -149,7 +148,7 @@ export class Cache {
 	}
 
 	/** @internal */
-	__setClient(client: BaseClient) {
+	__setClient(client: UsingClient) {
 		this.users?.__setClient(client);
 		this.guilds?.__setClient(client);
 

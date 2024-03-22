@@ -1,4 +1,4 @@
-import type { BaseClient } from '../client/base';
+import type { UsingClient } from '../commands';
 import type {
 	APIWebhook,
 	ImageOptions,
@@ -22,7 +22,7 @@ export class Webhook extends DiscordBase {
 	user?: User;
 	sourceGuild?: Partial<AnonymousGuild>;
 	messages!: ReturnType<typeof Webhook.messages>;
-	constructor(client: BaseClient, data: APIWebhook) {
+	constructor(client: UsingClient, data: APIWebhook) {
 		super(client, data);
 
 		if (data.user) {

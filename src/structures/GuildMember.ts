@@ -22,7 +22,7 @@ export type GuildMemberData =
 	| GatewayGuildMemberAddDispatchData
 	| APIInteractionDataResolvedGuildMember;
 
-import type { BaseClient } from '../client/base';
+import type { UsingClient } from '../commands';
 import type { ImageOptions, MethodContext } from '../common/types/options';
 import type { GuildMemberResolvable } from '../common/types/resolvables';
 import { User } from './User';
@@ -38,7 +38,7 @@ export class BaseGuildMember extends DiscordBase {
 	joinedTimestamp?: number;
 	communicationDisabledUntilTimestamp?: number | null;
 	constructor(
-		client: BaseClient,
+		client: UsingClient,
 		data: GuildMemberData,
 		id: string,
 		/** the choosen guild id */
@@ -133,7 +133,7 @@ export interface GuildMember extends ObjectToLower<Omit<APIGuildMember, 'user' |
 export class GuildMember extends BaseGuildMember {
 	user: User;
 	constructor(
-		client: BaseClient,
+		client: UsingClient,
 		data: GuildMemberData,
 		user: APIUser | User,
 		/** the choosen guild id */
@@ -212,7 +212,7 @@ export class InteractionGuildMember extends (GuildMember as unknown as ToClass<
 >) {
 	permissions: PermissionsBitField;
 	constructor(
-		client: BaseClient,
+		client: UsingClient,
 		data: APIInteractionDataResolvedGuildMember,
 		user: APIUser | User,
 		/** the choosen guild id */

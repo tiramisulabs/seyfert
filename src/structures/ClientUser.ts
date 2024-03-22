@@ -1,11 +1,11 @@
-import type { BaseClient } from '../client/base';
+import type { UsingClient } from '../commands';
 import type { GatewayReadyDispatchData, RESTPatchAPICurrentUserJSONBody } from '../common';
 import { User } from './User';
 
 export class ClientUser extends User {
 	bot = true;
 	constructor(
-		client: BaseClient,
+		client: UsingClient,
 		data: GatewayReadyDispatchData['user'],
 		public application: GatewayReadyDispatchData['application'],
 	) {

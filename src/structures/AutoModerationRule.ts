@@ -1,4 +1,4 @@
-import type { BaseClient } from '../client/base';
+import type { UsingClient } from '../commands';
 import type {
 	APIAutoModerationRule,
 	MethodContext,
@@ -11,7 +11,7 @@ import { DiscordBase } from './extra/DiscordBase';
 export interface AutoModerationRule extends ObjectToLower<APIAutoModerationRule> {}
 
 export class AutoModerationRule extends DiscordBase<APIAutoModerationRule> {
-	constructor(client: BaseClient, data: APIAutoModerationRule) {
+	constructor(client: UsingClient, data: APIAutoModerationRule) {
 		super(client, data);
 	}
 

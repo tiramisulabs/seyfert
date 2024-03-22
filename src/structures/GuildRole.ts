@@ -1,4 +1,4 @@
-import type { BaseClient } from '../client/base';
+import type { UsingClient } from '../commands';
 import type {
 	APIRole,
 	MethodContext,
@@ -15,7 +15,7 @@ export interface GuildRole extends DiscordBase, ObjectToLower<Omit<APIRole, 'per
 export class GuildRole extends DiscordBase {
 	permissions: PermissionsBitField;
 	constructor(
-		client: BaseClient,
+		client: UsingClient,
 		data: APIRole,
 		readonly guildId: string,
 	) {

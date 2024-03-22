@@ -1,5 +1,5 @@
+import type { UsingClient } from '..';
 import type { Attachment } from '../builders';
-import type { BaseClient } from '../client/base';
 import type {
 	APISticker,
 	MethodContext,
@@ -14,7 +14,7 @@ export interface Sticker extends DiscordBase, ObjectToLower<Omit<APISticker, 'us
 
 export class Sticker extends DiscordBase {
 	user?: User;
-	constructor(client: BaseClient, data: APISticker) {
+	constructor(client: UsingClient, data: APISticker) {
 		super(client, data);
 		if (data.user) {
 			this.user = new User(this.client, data.user);

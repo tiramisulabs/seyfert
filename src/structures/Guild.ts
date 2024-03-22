@@ -1,4 +1,4 @@
-import type { BaseClient } from '../client/base';
+import type { UsingClient } from '../commands';
 import type { APIGuild, APIPartialGuild, GatewayGuildCreateDispatchData, ObjectToLower } from '../common';
 import type { StructPropState, StructStates, ToClass } from '../common/types/util';
 import { AutoModerationRule } from './AutoModerationRule';
@@ -21,7 +21,7 @@ export class Guild<State extends StructStates = 'api'> extends (BaseGuild as unk
 	large!: StructPropState<boolean, State, 'create'>;
 	unavailable?: StructPropState<boolean, State, 'create'>;
 
-	constructor(client: BaseClient, data: APIGuild | GatewayGuildCreateDispatchData) {
+	constructor(client: UsingClient, data: APIGuild | GatewayGuildCreateDispatchData) {
 		super(client, data);
 
 		if ('joined_at' in data) {

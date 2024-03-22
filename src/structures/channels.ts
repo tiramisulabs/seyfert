@@ -15,7 +15,7 @@ import {
 } from 'discord-api-types/v10';
 import { mix } from 'ts-mixer';
 import { Embed, resolveAttachment } from '../builders';
-import type { BaseClient } from '../client/base';
+import type { UsingClient } from '../commands';
 import type {
 	APIChannelBase,
 	APIGuildChannel,
@@ -43,7 +43,7 @@ import { channelLink } from './extra/functions';
 export class BaseChannel<T extends ChannelType> extends DiscordBase<APIChannelBase<ChannelType>> {
 	declare type: T;
 
-	constructor(client: BaseClient, data: APIChannelBase<ChannelType>) {
+	constructor(client: UsingClient, data: APIChannelBase<ChannelType>) {
 		super(client, data);
 	}
 
@@ -164,7 +164,7 @@ interface IChannelTypes {
 
 export interface BaseGuildChannel extends ObjectToLower<Omit<APIGuildChannel<ChannelType>, 'permission_overwrites'>> {}
 export class BaseGuildChannel extends BaseChannel<ChannelType> {
-	constructor(client: BaseClient, data: APIGuildChannel<ChannelType>) {
+	constructor(client: UsingClient, data: APIGuildChannel<ChannelType>) {
 		const { permission_overwrites, ...rest } = data;
 		super(client, rest);
 	}
@@ -265,7 +265,7 @@ export interface TextBaseGuildChannel
 @mix(MessagesMethods)
 export class TextBaseGuildChannel extends BaseGuildChannel {}
 
-export default function channelFrom(data: APIChannelBase<ChannelType>, client: BaseClient): AllChannels {
+export default function channelFrom(data: APIChannelBase<ChannelType>, client: UsingClient): AllChannels {
 	switch (data.type) {
 		case ChannelType.GuildStageVoice:
 			return new StageChannel(client, data);
