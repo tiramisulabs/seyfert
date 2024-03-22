@@ -151,7 +151,7 @@ export class CommandHandler extends BaseHandler {
 						for (const i of locales) {
 							const valueName = client.langs.getKey(locale, command.__tGroups[group].name!);
 							if (valueName) {
-								command.groups[group].name!.push([i as LocaleString, valueName]);
+								command.groups[group].name!.push([i, valueName]);
 							}
 						}
 					}
@@ -160,7 +160,7 @@ export class CommandHandler extends BaseHandler {
 						for (const i of locales) {
 							const valueKey = client.langs.getKey(locale, command.__tGroups[group].description!);
 							if (valueKey) {
-								command.groups[group].description!.push([i as LocaleString, valueKey]);
+								command.groups[group].description!.push([i, valueKey]);
 							}
 						}
 					}
