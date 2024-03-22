@@ -6,12 +6,12 @@ import type { ComponentInteraction, ModalSubmitInteraction } from '../structures
 import { ComponentCommand, InteractionCommandType, ModalCommand } from './command';
 
 type COMPONENTS = {
-	components: Partial<Record<string, ComponentCallback>>;
+	components: { match: string | string[] | RegExp; callback: ComponentCallback }[];
 	options?: ListenerOptions;
 	messageId?: string;
 	idle?: NodeJS.Timeout;
 	timeout?: NodeJS.Timeout;
-	__run: (customId: string, callback: ComponentCallback) => any;
+	__run: (customId: string | string[] | RegExp, callback: ComponentCallback) => any;
 };
 
 export class ComponentHandler extends BaseHandler {
@@ -35,7 +35,7 @@ export class ComponentHandler extends BaseHandler {
 
 	createComponentCollector(messageId: string, options: ListenerOptions = {}) {
 		this.values.set(messageId, {
-			components: {},
+			components: [],
 			options,
 			idle: options.idle
 				? setTimeout(() => {
@@ -55,7 +55,10 @@ export class ComponentHandler extends BaseHandler {
 				: undefined,
 			__run: (customId, callback) => {
 				if (this.values.has(messageId)) {
-					this.values.get(messageId)!.components[customId] = callback;
+					this.values.get(messageId)!.components.push({
+						callback,
+						match: customId,
+					});
 				}
 			},
 		});
@@ -72,14 +75,18 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	async onComponent(id: string, interaction: ComponentInteraction) {
-		const row = this.values.get(id);
-		const component = row?.components?.[interaction.customId];
+		const row = this.values.get(id)!;
+		const component = row?.components?.find(x => {
+			if (typeof x.match === 'string') return x.match === interaction.customId;
+			if (Array.isArray(x.match)) return x.match.includes(interaction.customId);
+			return interaction.customId.match(x.match);
+		});
 		if (!component) return;
 		if (row.options?.filter) {
 			if (!(await row.options.filter(interaction))) return;
 		}
 		row.idle?.refresh();
-		await component(
+		await component.callback(
 			interaction,
 			reason => {
 				row.options?.onStop?.(reason ?? 'stop');
@@ -92,7 +99,11 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	hasComponent(id: string, customId: string) {
-		return this.values.get(id)?.components?.[customId];
+		return this.values.get(id)?.components?.some(x => {
+			if (typeof x.match === 'string' && x.match === customId) return true;
+			if (Array.isArray(x.match)) return x.match.includes(customId);
+			return customId.match(x.match);
+		});
 	}
 
 	resetTimeouts(id: string) {
