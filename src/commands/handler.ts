@@ -139,6 +139,8 @@ export class CommandHandler extends BaseHandler {
 			command.groups = {};
 			for (const locale of Object.keys(client.langs.values)) {
 				const aliases = this.client.langs.aliases.find(x => x[0] === locale)?.[1] ?? [];
+				const locales = this.client.langs.aliases.find(x => x[0] === locale)?.[1] ?? [];
+				if (Object.values<string>(Locale).includes(locale)) locales.push(locale as LocaleString);
 				for (const group in command.__tGroups) {
 					command.groups[group] ??= {
 						defaultDescription: command.__tGroups[group].defaultDescription,
@@ -146,31 +148,17 @@ export class CommandHandler extends BaseHandler {
 						name: [],
 					};
 
-					if (Object.values<string>(Locale).includes(locale)) {
-						if (command.__tGroups[group].name) {
-							const valueName = client.langs.getKey(locale, command.__tGroups[group].name!);
-							if (valueName) {
-								command.groups[group].name!.push([locale as LocaleString, valueName]);
-							}
-						}
-						if (command.__tGroups[group].description) {
-							const valueKey = client.langs.getKey(locale, command.__tGroups[group].description!);
-							if (valueKey) {
-								command.groups[group].description!.push([locale as LocaleString, valueKey]);
-							}
-						}
-					}
-
-					for (const i of aliases) {
-						if (command.__tGroups[group].name) {
+					if (command.__tGroups[group].name) {
+						for (const i of locales) {
 							const valueName = client.langs.getKey(locale, command.__tGroups[group].name!);
 							if (valueName) {
 								command.groups[group].name!.push([i as LocaleString, valueName]);
 							}
 						}
 					}
-					for (const i of aliases) {
-						if (command.__tGroups[group].description) {
+
+					if (command.__tGroups[group].description) {
+						for (const i of aliases) {
 							const valueKey = client.langs.getKey(locale, command.__tGroups[group].description!);
 							if (valueKey) {
 								command.groups[group].description!.push([i as LocaleString, valueKey]);
