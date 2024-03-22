@@ -48,7 +48,7 @@ export interface MakeURLOptions {
 	 *
 	 * @defaultValue `'webp'`
 	 */
-	extension?: string | undefined;
+	extension?: ImageExtension | StickerExtension | undefined;
 	/**
 	 * The size specified in the image URL
 	 */
@@ -306,9 +306,6 @@ export class CDN {
 		route: string,
 		{ allowedExtensions = ALLOWED_EXTENSIONS, extension = 'webp', size }: Readonly<MakeURLOptions> = {},
 	): string {
-		// eslint-disable-next-line no-param-reassign
-		extension = String(extension).toLowerCase();
-
 		if (!allowedExtensions.includes(extension)) {
 			throw new RangeError(`Invalid extension provided: ${extension}\nMust be one of: ${allowedExtensions.join(', ')}`);
 		}
