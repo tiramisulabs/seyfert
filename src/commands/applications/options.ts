@@ -84,16 +84,11 @@ export function createAttachmentOption<T extends SeyfertAttachmentOption = Seyfe
 	return { ...data, type: ApplicationCommandOptionType.Attachment } as const;
 }
 
-export type ParseMiddlewareType<T> = T extends MiddlewareContext<
-	any,
-	CommandContext | MenuCommandContext<MessageCommandInteraction<boolean> | UserCommandInteraction<boolean>>
->
-	? T
-	: MiddlewareContext<
-			T,
-			CommandContext | MenuCommandContext<MessageCommandInteraction<boolean> | UserCommandInteraction<boolean>>
-	  >;
-
-export function createMiddleware<T = ParseMiddlewareType<unknown>>(data: ParseMiddlewareType<T>) {
+export function createMiddleware<
+	T = any,
+	C extends CommandContext | MenuCommandContext<MessageCommandInteraction<boolean> | UserCommandInteraction<boolean>> =
+		| CommandContext
+		| MenuCommandContext<MessageCommandInteraction<boolean> | UserCommandInteraction<boolean>>,
+>(data: MiddlewareContext<T, C>) {
 	return data;
 }
