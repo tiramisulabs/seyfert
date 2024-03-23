@@ -86,6 +86,7 @@ export class Cache {
 
 	// guild based
 	members?: Members;
+	voiceStates?: VoiceStates;
 
 	// guild related
 	overwrites?: Overwrites;
@@ -95,7 +96,6 @@ export class Cache {
 	channels?: Channels;
 	stickers?: Stickers;
 	presences?: Presences;
-	voiceStates?: VoiceStates;
 	stageInstances?: StageInstances;
 
 	constructor(
@@ -156,6 +156,7 @@ export class Cache {
 		this.voiceStates?.__setClient(client);
 
 		this.roles?.__setClient(client);
+		this.overwrites?.__setClient(client);
 		this.channels?.__setClient(client);
 		this.emojis?.__setClient(client);
 		this.stickers?.__setClient(client);
