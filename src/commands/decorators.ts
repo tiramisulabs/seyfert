@@ -10,25 +10,39 @@ import type { DefaultLocale, MiddlewareContext } from './applications/shared';
 
 export interface RegisteredMiddlewares {}
 
+export enum IntegrationTypes {
+	GUILD_INSTALL = 0,
+	USER_INSTALL = 1,
+}
+export enum InteractionContextTypes {
+	GUILD = 0,
+	BOT_DM = 1,
+	PRIVATE_CHANNEL = 2,
+}
+
 type DeclareOptions =
 	| {
 			name: string;
 			description: string;
 			botPermissions?: PermissionStrings | bigint;
-			defaultPermissions?: PermissionStrings | bigint;
+			defaultMemberPermissions?: PermissionStrings | bigint;
 			guildId?: string[];
-			dm?: boolean;
+			// dm?: boolean;
 			nsfw?: boolean;
+			integrationTypes?: (keyof typeof IntegrationTypes)[];
+			contexts?: (keyof typeof InteractionContextTypes)[];
 	  }
 	| (Omit<
 			{
 				name: string;
 				description: string;
 				botPermissions?: PermissionStrings | bigint;
-				defaultPermissions?: PermissionStrings | bigint;
+				defaultMemberPermissions?: PermissionStrings | bigint;
 				guildId?: string[];
-				dm?: boolean;
+				// dm?: boolean;
 				nsfw?: boolean;
+				integrationTypes?: (keyof typeof IntegrationTypes)[];
+				contexts?: (keyof typeof InteractionContextTypes)[];
 			},
 			'type' | 'description'
 	  > & {
@@ -132,13 +146,14 @@ export function Declare(declare: DeclareOptions) {
 		class extends target {
 			name = declare.name;
 			nsfw = declare.nsfw;
-			default_member_permissions = Array.isArray(declare.defaultPermissions)
-				? declare.defaultPermissions?.reduce((acc, prev) => acc | PermissionFlagsBits[prev], BigInt(0)).toString()
-				: declare.defaultPermissions;
+			contexts = declare.contexts?.map(i => InteractionContextTypes[i]);
+			integration_types = declare.integrationTypes?.map(i => IntegrationTypes[i]);
+			default_member_permissions = Array.isArray(declare.defaultMemberPermissions)
+				? declare.defaultMemberPermissions?.reduce((acc, prev) => acc | PermissionFlagsBits[prev], BigInt(0)).toString()
+				: declare.defaultMemberPermissions;
 			botPermissions = Array.isArray(declare.botPermissions)
 				? declare.botPermissions?.reduce((acc, prev) => acc | PermissionFlagsBits[prev], BigInt(0))
 				: declare.botPermissions;
-			dm?: boolean;
 			description = '';
 			type: ApplicationCommandType = ApplicationCommandType.ChatInput;
 			guild_id?: string[];
@@ -146,7 +161,6 @@ export function Declare(declare: DeclareOptions) {
 				super(...args);
 				if ('description' in declare) this.description = declare.description;
 				if ('type' in declare) this.type = declare.type;
-				if ('dm' in declare) this.dm = !!declare.dm;
 				if ('guildId' in declare) this.guild_id = declare.guildId;
 				// check if all properties are valid
 			}

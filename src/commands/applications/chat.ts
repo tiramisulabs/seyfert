@@ -10,7 +10,7 @@ import type {
 } from '../../common';
 import { ApplicationCommandOptionType, ApplicationCommandType, magicImport } from '../../common';
 import type { AllChannels, AutocompleteInteraction, GuildRole, InteractionGuildMember, User } from '../../structures';
-import type { Groups, RegisteredMiddlewares } from '../decorators';
+import type { Groups, IntegrationTypes, InteractionContextTypes, RegisteredMiddlewares } from '../decorators';
 import type { OptionResolver } from '../optionresolver';
 import type { CommandContext } from './chatcontext';
 import type {
@@ -124,8 +124,9 @@ class BaseCommand {
 	nsfw?: boolean;
 	description!: string;
 	default_member_permissions?: string;
+	integration_types?: IntegrationTypes[];
+	contexts?: InteractionContextTypes[];
 	botPermissions?: bigint;
-	dm?: boolean;
 	name_localizations?: Partial<Record<LocaleString, string>>;
 	description_localizations?: Partial<Record<LocaleString, string>>;
 
@@ -247,6 +248,8 @@ class BaseCommand {
 			description_localizations: this.description_localizations,
 			guild_id: this.guild_id,
 			default_member_permissions: this.default_member_permissions,
+			contexts: this.contexts,
+			integration_types: this.integration_types,
 		} as {
 			name: BaseCommand['name'];
 			type: BaseCommand['type'];
@@ -256,9 +259,10 @@ class BaseCommand {
 			description_localizations: BaseCommand['description_localizations'];
 			guild_id: BaseCommand['guild_id'];
 			default_member_permissions: BaseCommand['default_member_permissions'];
-			dm_permission?: boolean;
+			contexts: BaseCommand['contexts'];
+			integration_types: BaseCommand['integration_types'];
 		};
-		if ('dm' in this) data.dm_permission = this.dm;
+		if (data.contexts) console.log(data);
 		return data;
 	}
 

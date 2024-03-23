@@ -1,5 +1,5 @@
 import { magicImport, type ApplicationCommandType, type LocaleString, type PermissionStrings } from '../../common';
-import type { RegisteredMiddlewares } from '../decorators';
+import type { IntegrationTypes, InteractionContextTypes, RegisteredMiddlewares } from '../decorators';
 import type { MenuCommandContext } from './menucontext';
 import type { NextFunction, PassFunction, StopFunction, UsingClient } from './shared';
 
@@ -13,6 +13,8 @@ export abstract class ContextMenuCommand {
 	name!: string;
 	type!: ApplicationCommandType.User | ApplicationCommandType.Message;
 	nsfw?: boolean;
+	integration_types?: IntegrationTypes[];
+	contexts?: InteractionContextTypes[];
 	description!: string;
 	default_member_permissions?: string;
 	botPermissions?: bigint;
@@ -89,6 +91,8 @@ export abstract class ContextMenuCommand {
 			guild_id: this.guild_id,
 			dm_permission: this.dm,
 			default_member_permissions: this.default_member_permissions,
+			contexts: this.contexts,
+			integration_types: this.integration_types,
 		};
 	}
 

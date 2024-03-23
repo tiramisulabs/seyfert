@@ -7,12 +7,13 @@ import {
 import {
 	Command,
 	CommandContext,
-	type ContextOptionsResolved,
+	InteractionContextTypes,
 	OptionResolver,
 	SubCommand,
 	User,
 	type Client,
 	type CommandOption,
+	type ContextOptionsResolved,
 	type SeyfertChannelOption,
 	type SeyfertIntegerOption,
 	type SeyfertNumberOption,
@@ -86,7 +87,13 @@ export async function onMessageCreate(
 	if (!command) return;
 	if (!command.run) return self.logger.warn(`${fullCommandName} command does not have 'run' callback`);
 
-	if (command.dm && !message.guildId) return;
+	if (
+		[InteractionContextTypes.BOT_DM, InteractionContextTypes.PRIVATE_CHANNEL].some(i =>
+			command.contexts?.includes(i),
+		) &&
+		!message.guildId
+	)
+		return;
 	if (command.guild_id && !command.guild_id?.includes(message.guildId!)) return;
 
 	const resolved: MakeRequired<ContextOptionsResolved> = {
