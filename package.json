@@ -21,7 +21,7 @@
 	"license": "ISC",
 	"dependencies": {
 		"chokidar": "^3.6.0",
-		"discord-api-types": "^0.37.73",
+		"discord-api-types": "^0.37.76",
 		"magic-bytes.js": "^1.10.0",
 		"ts-mixer": "^6.0.4",
 		"ws": "^8.16.0"
@@ -34,11 +34,13 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.6.0",
-		"@types/node": "^20.11.25",
+		"@commitlint/cli": "^19.2.1",
+		"@commitlint/config-conventional": "^19.1.0",
+		"@types/node": "^20.11.30",
 		"@types/ws": "^8.5.10",
 		"husky": "^9.0.11",
 		"lint-staged": "^15.2.2",
-		"typescript": "^5.4.2"
+		"typescript": "^5.4.3"
 	},
 	"optionalDependencies": {
 		"ioredis": "^5.3.2",
