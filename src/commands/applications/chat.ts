@@ -262,7 +262,6 @@ class BaseCommand {
 			contexts: BaseCommand['contexts'];
 			integration_types: BaseCommand['integration_types'];
 		};
-		if (data.contexts) console.log(data);
 		return data;
 	}
 
