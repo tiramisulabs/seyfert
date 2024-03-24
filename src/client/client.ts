@@ -11,7 +11,7 @@ import {
 } from '../common';
 import { EventHandler } from '../events';
 import { ClientUser } from '../structures';
-import { ShardManager, type ShardManagerOptions } from '../websocket';
+import { ShardManager, properties, type ShardManagerOptions } from '../websocket';
 import { MemberUpdateHandler } from '../websocket/discord/events/memberUpdate';
 import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdate';
 import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';
@@ -99,7 +99,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				shardStart: this.options?.shards?.start,
 				shardEnd: this.options?.shards?.end ?? this.options?.shards?.total,
 				totalShards: this.options?.shards?.total ?? this.options?.shards?.end,
-				properties: this.options?.gateway?.properties,
+				properties: { ...this.options?.gateway?.properties, ...properties },
 				compress: this.options?.gateway?.compress,
 			});
 		}
@@ -186,7 +186,7 @@ export interface ClientOptions extends BaseClientOptions {
 		total?: number;
 	};
 	gateway?: {
-		properties?: ShardManagerOptions['properties'];
+		properties?: Partial<ShardManagerOptions['properties']>;
 		compress?: ShardManagerOptions['compress'];
 	};
 	commands?: {
