@@ -128,7 +128,7 @@ export class Shard {
 			d: {
 				token: `Bot ${this.options.token}`,
 				compress: this.options.compress,
-				properties,
+				properties: this.options.properties ?? properties,
 				shard: [this.id, this.options.info.shards],
 				intents: this.options.intents,
 				presence: this.options.presence,
