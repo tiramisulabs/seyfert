@@ -18,7 +18,7 @@
 		"check": "biome check --apply --changed --no-errors-on-unmatched ./src"
 	},
 	"author": "MARCROCK22",
-	"license": "ISC",
+	"license": "Apache-2.0",
 	"dependencies": {
 		"chokidar": "^3.6.0",
 		"discord-api-types": "^0.37.76",
