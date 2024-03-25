@@ -1,7 +1,7 @@
 import { magicImport, type ApplicationCommandType, type LocaleString, type PermissionStrings } from '../../common';
 import type { IntegrationTypes, InteractionContextTypes, RegisteredMiddlewares } from '../decorators';
 import type { MenuCommandContext } from './menucontext';
-import type { NextFunction, PassFunction, StopFunction, UsingClient } from './shared';
+import type { PassFunction, StopFunction, UsingClient } from './shared';
 
 export abstract class ContextMenuCommand {
 	middlewares: (keyof RegisteredMiddlewares)[] = [];
@@ -42,19 +42,21 @@ export abstract class ContextMenuCommand {
 				running = false;
 				return res({ pass: true });
 			};
-			const next: NextFunction<any> = obj => {
+			function next(obj: any) {
 				if (!running) {
 					return;
 				}
-				context[global ? 'globalMetadata' : 'metadata'] ??= {};
-				// @ts-expect-error
-				context[global ? 'globalMetadata' : 'metadata'][middlewares[index]] = obj;
+				// biome-ignore lint/style/noArguments: yes
+				if (arguments.length) {
+					// @ts-expect-error
+					context[global ? 'globalMetadata' : 'metadata'][middlewares[index]] = obj;
+				}
 				if (++index >= middlewares.length) {
 					running = false;
 					return res({});
 				}
 				context.client.middlewares![middlewares[index]]({ context, next, stop, pass });
-			};
+			}
 			const stop: StopFunction = err => {
 				if (!running) {
 					return;

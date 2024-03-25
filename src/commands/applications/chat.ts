@@ -15,7 +15,6 @@ import type { OptionResolver } from '../optionresolver';
 import type { CommandContext } from './chatcontext';
 import type {
 	DefaultLocale,
-	NextFunction,
 	OKFunction,
 	OnOptionsReturnObject,
 	PassFunction,
@@ -200,19 +199,21 @@ class BaseCommand {
 				running = false;
 				return res({ pass: true });
 			};
-			const next: NextFunction<any> = obj => {
+			function next(obj: any) {
 				if (!running) {
 					return;
 				}
-				context[global ? 'globalMetadata' : 'metadata'] ??= {};
-				// @ts-expect-error
-				context[global ? 'globalMetadata' : 'metadata'][middlewares[index]] = obj;
+				// biome-ignore lint/style/noArguments: yes
+				if (arguments.length) {
+					// @ts-expect-error
+					context[global ? 'globalMetadata' : 'metadata'][middlewares[index]] = obj;
+				}
 				if (++index >= middlewares.length) {
 					running = false;
 					return res({});
 				}
 				context.client.middlewares![middlewares[index]]({ context, next, stop, pass });
-			};
+			}
 			const stop: StopFunction = err => {
 				if (!running) {
 					return;
