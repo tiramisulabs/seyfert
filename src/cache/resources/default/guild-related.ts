@@ -125,7 +125,7 @@ export class GuildRelatedResource<T = any> {
 	}
 
 	count(to: string) {
-		return this.adapter.count(this.hashId(to));
+		return to === '*' ? fakePromise(this.keys(to)).then(x => x.length) : this.adapter.count(this.hashId(to));
 	}
 
 	contains(id: string, guild: string) {
