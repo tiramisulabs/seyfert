@@ -188,6 +188,10 @@ export class GuildMember extends BaseGuildMember {
 		return this.rest.cdn.guildMemberAvatar(this.guildId, this.id, this.avatar, options);
 	}
 
+	bannerURL(options?: ImageOptions) {
+		return this.user.bannerURL(options);
+	}
+
 	async fetchPermissions() {
 		if ('permissions' in this) return this.permissions as PermissionsBitField;
 		return this.roles.permissions();

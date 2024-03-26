@@ -126,7 +126,7 @@ export function Options(options: (new () => SubCommand)[] | OptionsRecord) {
 export function AutoLoad() {
 	return <T extends { new (...args: any[]): {} }>(target: T) =>
 		class extends target {
-			__d = true;
+			__autoload = true;
 		};
 }
 

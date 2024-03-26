@@ -107,7 +107,7 @@ class BaseCommand {
 
 	__filePath?: string;
 	__t?: { name: string | undefined; description: string | undefined };
-	__d?: true;
+	__autoload?: true;
 	__tGroups?: Record<
 		string /* name for group*/,
 		{

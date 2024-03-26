@@ -76,7 +76,7 @@ export class CommandHandler extends BaseHandler {
 			}
 			commandInstance.__filePath = command.path;
 			commandInstance.options ??= [] as NonNullable<Command['options']>;
-			if (commandInstance.__d) {
+			if (commandInstance.__autoload) {
 				//@AutoLoad
 				const options = await this.getFiles(dirname(command.path));
 				for (const option of options) {
