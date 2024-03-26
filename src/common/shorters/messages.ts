@@ -50,7 +50,7 @@ export class MessageShorter extends BaseShorter {
 			.messages(messageId)
 			.delete({ reason })
 			.then(() => {
-				return this.client.components.onMessageDelete(messageId);
+				return this.client.components?.onMessageDelete(messageId);
 			});
 	}
 	fetch(messageId: string, channelId: string) {

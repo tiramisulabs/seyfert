@@ -51,7 +51,7 @@ export class BaseMessage extends DiscordBase {
 	}
 
 	createComponentCollector(options?: ListenerOptions) {
-		return this.client.components.createComponentCollector(this.id, options);
+		return this.client.components!.createComponentCollector(this.id, options);
 	}
 
 	get url() {

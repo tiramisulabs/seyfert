@@ -5,7 +5,7 @@ import type { Cache } from '../cache';
 import { WorkerAdapter } from '../cache';
 import type { GatewayDispatchPayload, GatewaySendPayload, When } from '../common';
 import { GatewayIntentBits, LogLevels, Logger, type DeepPartial } from '../common';
-import { EventHandler } from '../events';
+import { EventHandler, type EventHandlerLike } from '../events';
 import { ClientUser } from '../structures';
 import { Shard, type ShardManagerOptions, type WorkerData } from '../websocket';
 import type {
@@ -21,7 +21,7 @@ import type {
 	WorkerStart,
 } from '../websocket/discord/worker';
 import type { ManagerMessages } from '../websocket/discord/workermanager';
-import type { BaseClientOptions, StartOptions } from './base';
+import type { BaseClientOptions, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import type { Client } from './client';
 import { onInteractionCreate } from './oninteractioncreate';
@@ -46,7 +46,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		name: `[Worker #${workerData.workerId}]`,
 	});
 
-	events = new EventHandler(this.logger);
+	events?: EventHandlerLike = new EventHandler(this.logger);
 	me!: When<Ready, ClientUser>;
 	promises = new Map<string, { resolve: (value: any) => void; timeout: NodeJS.Timeout }>();
 
@@ -98,6 +98,19 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		return acc / this.shards.size;
 	}
 
+	setServices({
+		...rest
+	}: ServicesOptions & {
+		handlers?: ServicesOptions['handlers'] & {
+			events?: EventHandlerLike;
+		};
+	}) {
+		super.setServices(rest);
+		if (rest.handlers && 'events' in rest.handlers) {
+			this.events = rest.handlers.events;
+		}
+	}
+
 	async start(options: Omit<DeepPartial<StartOptions>, 'httpConnection' | 'token' | 'connection'> = {}) {
 		await super.start(options);
 		await this.loadEvents(options.eventsDir);
@@ -106,7 +119,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	async loadEvents(dir?: string) {
 		dir ??= await this.getRC().then(x => x.events);
-		if (dir) {
+		if (dir && this.events) {
 			await this.events.load(dir);
 			this.logger.info('EventHandler loaded');
 		}
@@ -221,7 +234,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				}
 				break;
 			case 'BOT_READY':
-				await this.events.runEvent('BOT_READY', this, this.me, -1);
+				await this.events?.runEvent('BOT_READY', this, this.me, -1);
 				break;
 			case 'API_RESPONSE':
 				{
@@ -302,14 +315,14 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	protected async onPacket(packet: GatewayDispatchPayload, shardId: number) {
-		await this.events.execute('RAW', packet, this as WorkerClient<true>, shardId);
+		await this.events?.execute('RAW', packet, this as WorkerClient<true>, shardId);
 		switch (packet.t) {
 			case 'GUILD_MEMBER_UPDATE':
-				await this.events.execute(packet.t, packet, this as WorkerClient<true>, shardId);
+				await this.events?.execute(packet.t, packet, this as WorkerClient<true>, shardId);
 				await this.cache.onPacket(packet);
 				break;
 			case 'PRESENCE_UPDATE':
-				await this.events.execute(packet.t, packet, this as WorkerClient<true>, shardId);
+				await this.events?.execute(packet.t, packet, this as WorkerClient<true>, shardId);
 				await this.cache.onPacket(packet);
 				break;
 			//rest of the events
@@ -332,7 +345,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 										type: 'WORKER_READY',
 										workerId: this.workerId,
 									} as WorkerReady);
-									await this.events.runEvent('WORKER_READY', this, this.me, -1);
+									await this.events?.runEvent('WORKER_READY', this, this.me, -1);
 								}
 								delete this.__handleGuilds;
 							}
@@ -352,14 +365,14 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 										type: 'WORKER_READY',
 										workerId: this.workerId,
 									} as WorkerReady);
-									await this.events.runEvent('WORKER_READY', this, this.me, -1);
+									await this.events?.runEvent('WORKER_READY', this, this.me, -1);
 								}
 								if (!this.__handleGuilds.size) delete this.__handleGuilds;
 								return;
 							}
 						}
 					}
-					await this.events.execute(packet.t, packet, this, shardId);
+					await this.events?.execute(packet.t, packet, this, shardId);
 				}
 				break;
 		}

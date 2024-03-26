@@ -14,8 +14,28 @@ type COMPONENTS = {
 	__run: (customId: string | string[] | RegExp, callback: ComponentCallback) => any;
 };
 
+export interface ComponentHandlerLike {
+	readonly values: Map<string, COMPONENTS>;
+	readonly commands: (ComponentCommand | ModalCommand)[];
+	readonly modals: Map<string, ModalSubmitCallback> | LimitedCollection<string, ModalSubmitCallback>;
+
+	createComponentCollector: ComponentHandler['createComponentCollector'];
+
+	hasModal: ComponentHandler['hasModal'];
+	onModalSubmit: ComponentHandler['onModalSubmit'];
+	executeModal: ComponentHandler['executeModal'];
+
+	hasComponent: ComponentHandler['hasComponent'];
+	executeComponent: ComponentHandler['executeComponent'];
+	onComponent: ComponentHandler['onComponent'];
+
+	load: ComponentHandler['load'];
+
+	onMessageDelete: ComponentHandler['onMessageDelete'];
+}
+
 export class ComponentHandler extends BaseHandler {
-	protected onFail?: OnFailCallback;
+	onFail?: OnFailCallback;
 	readonly values = new Map<string, COMPONENTS>();
 	// 10 minutes timeout, because discord dont send an event when the user cancel the modal
 	readonly modals = new LimitedCollection<string, ModalSubmitCallback>({ expire: 60e3 * 10 });
@@ -99,11 +119,13 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	hasComponent(id: string, customId: string) {
-		return this.values.get(id)?.components?.some(x => {
-			if (typeof x.match === 'string') return x.match === customId;
-			if (Array.isArray(x.match)) return x.match.includes(customId);
-			return customId.match(x.match);
-		});
+		return (
+			this.values.get(id)?.components?.some(x => {
+				if (typeof x.match === 'string') return x.match === customId;
+				if (Array.isArray(x.match)) return x.match.includes(customId);
+				return customId.match(x.match);
+			}) ?? false
+		);
 	}
 
 	resetTimeouts(id: string) {
@@ -164,6 +186,7 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	async reload(path: string) {
+		if (!this.client.components) return;
 		const component = this.client.components.commands.find(
 			x =>
 				x.__filePath?.endsWith(`${path}.js`) ||
@@ -184,6 +207,7 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	async reloadAll() {
+		if (!this.client.components) return;
 		for (const i of this.client.components.commands) {
 			if (!i.__filePath) return this.logger.warn('Unknown command dont have __filePath property', i);
 			await this.reload(i.__filePath);

@@ -1,6 +1,15 @@
 import { BaseHandler, type Locale, type LocaleString } from '../common';
 import { LangRouter } from './router';
 
+export interface LangsHandlerLike {
+	getKey: LangsHandler['getKey'];
+	load: LangsHandler['load'];
+	values: LangsHandler['values'];
+	aliases: LangsHandler['aliases'];
+	get: LangsHandler['get'];
+	defaultLang?: LangsHandler['defaultLang'];
+}
+
 export class LangsHandler extends BaseHandler {
 	values: Partial<Record<string, any>> = {};
 	protected filter = (path: string) =>

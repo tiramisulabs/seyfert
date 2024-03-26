@@ -19,6 +19,13 @@ type EventValue = MakeRequired<ClientEvent, '__filePath'> & { fired?: boolean };
 
 type GatewayEvents = Uppercase<SnakeCase<keyof ClientEvents>>;
 
+export interface EventHandlerLike {
+	runEvent: EventHandler['runEvent'];
+	execute: EventHandler['execute'];
+	load: EventHandler['load'];
+	values: EventHandler['values'];
+}
+
 export class EventHandler extends BaseHandler {
 	protected onFail: OnFailCallback = err => this.logger.warn('<Client>.events.OnFail', err);
 	protected filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
@@ -54,7 +61,7 @@ export class EventHandler extends BaseHandler {
 			case 'MESSAGE_CREATE':
 				{
 					const { d: data } = args[0] as GatewayMessageCreateDispatch;
-					if (args[1].components.values.has(data.interaction?.id ?? data.id)) {
+					if (args[1].components?.values.has(data.interaction?.id ?? data.id)) {
 						args[1].components.values.get(data.interaction?.id ?? data.id)!.messageId = data.id;
 					}
 				}
@@ -62,20 +69,20 @@ export class EventHandler extends BaseHandler {
 			case 'MESSAGE_DELETE':
 				{
 					const { d: data } = args[0] as GatewayMessageDeleteDispatch;
-					const value = [...args[1].components.values].find(x => x[1].messageId === data.id);
+					const value = [...(args[1].components?.values ?? [])].find(x => x[1].messageId === data.id);
 					if (value) {
-						args[1].components.onMessageDelete(value[0]);
+						args[1].components!.onMessageDelete(value[0]);
 					}
 				}
 				break;
 			case 'MESSAGE_DELETE_BULK':
 				{
 					const { d: data } = args[0] as GatewayMessageDeleteBulkDispatch;
-					const values = [...args[1].components.values];
+					const values = [...(args[1].components?.values ?? [])];
 					data.ids.forEach(id => {
 						const value = values.find(x => x[1].messageId === id);
 						if (value) {
-							args[1].components.onMessageDelete(value[0]);
+							args[1].components!.onMessageDelete(value[0]);
 						}
 					});
 				}

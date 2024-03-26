@@ -54,7 +54,7 @@ export class CommandContext<T extends OptionsRecord = {}, M extends keyof Regist
 	}
 
 	get t() {
-		return this.client.langs.get(this.interaction?.locale ?? this.client.langs.defaultLang ?? 'en-US');
+		return this.client.langs!.get(this.interaction?.locale ?? this.client.langs!.defaultLang ?? 'en-US');
 	}
 
 	get fullCommandName() {

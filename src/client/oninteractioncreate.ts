@@ -1,11 +1,11 @@
 import { ApplicationCommandType, InteractionType, type APIInteraction } from 'discord-api-types/v10';
 import {
 	CommandContext,
-	type ContextOptionsResolved,
 	MenuCommandContext,
 	OptionResolver,
 	type Command,
 	type ContextMenuCommand,
+	type ContextOptionsResolved,
 } from '../commands';
 import type {
 	ChatInputCommandInteraction,
@@ -28,7 +28,7 @@ export async function onInteractionCreate(
 	switch (body.type) {
 		case InteractionType.ApplicationCommandAutocomplete:
 			{
-				const parentCommand = self.commands.values.find(x => {
+				const parentCommand = self.commands?.values.find(x => {
 					if (x.guild_id && !x.guild_id.includes(body.data.guild_id ?? '')) {
 						return false;
 					}
@@ -76,7 +76,7 @@ export async function onInteractionCreate(
 					case ApplicationCommandType.Message:
 					case ApplicationCommandType.User:
 						{
-							const command = self.commands.values.find(x => {
+							const command = self.commands?.values.find(x => {
 								if (x.guild_id && !x.guild_id.includes(body.data.guild_id ?? '')) {
 									return false;
 								}
@@ -135,7 +135,7 @@ export async function onInteractionCreate(
 					case ApplicationCommandType.ChatInput:
 						{
 							const packetData = body.data;
-							const parentCommand = self.commands.values.find(x => {
+							const parentCommand = self.commands?.values.find(x => {
 								if (x.guild_id && !x.guild_id.includes(packetData.guild_id ?? '')) {
 									return false;
 								}
@@ -206,20 +206,20 @@ export async function onInteractionCreate(
 		case InteractionType.ModalSubmit:
 			{
 				const interaction = BaseInteraction.from(self, body, __reply) as ModalSubmitInteraction;
-				if (self.components.hasModal(interaction)) {
+				if (self.components?.hasModal(interaction)) {
 					await self.components.onModalSubmit(interaction);
 				} else {
-					await self.components.executeModal(interaction);
+					await self.components?.executeModal(interaction);
 				}
 			}
 			break;
 		case InteractionType.MessageComponent:
 			{
 				const interaction = BaseInteraction.from(self, body, __reply) as ComponentInteraction;
-				if (self.components.hasComponent(body.message.id, interaction.customId)) {
+				if (self.components?.hasComponent(body.message.id, interaction.customId)) {
 					await self.components.onComponent(body.message.id, interaction);
 				} else {
-					await self.components.executeComponent(interaction);
+					await self.components?.executeComponent(interaction);
 				}
 			}
 			break;

@@ -4,7 +4,7 @@ import type { Adapter } from '../cache';
 import { Cache, MemoryAdapter } from '../cache';
 import type { RegisteredMiddlewares } from '../commands';
 import type { InferWithPrefix, MiddlewareContext } from '../commands/applications/shared';
-import { CommandHandler } from '../commands/handler';
+import { CommandHandler, type CommandHandlerLike } from '../commands/handler';
 import {
 	ChannelShorter,
 	EmojiShorter,
@@ -25,8 +25,8 @@ import {
 } from '../common';
 
 import type { DeepPartial, IntentStrings, OmitInsert, When } from '../common/types/util';
-import { ComponentHandler } from '../components/handler';
-import { LangsHandler } from '../langs/handler';
+import { ComponentHandler, type ComponentHandlerLike } from '../components/handler';
+import { LangsHandler, type LangsHandlerLike } from '../langs/handler';
 import type {
 	ChatInputCommandInteraction,
 	Message,
@@ -55,9 +55,9 @@ export class BaseClient {
 		name: '[Seyfert]',
 	});
 
-	langs = new LangsHandler(this.logger);
-	commands = new CommandHandler(this.logger, this);
-	components = new ComponentHandler(this.logger, this);
+	langs?: LangsHandlerLike = new LangsHandler(this.logger);
+	commands?: CommandHandlerLike = new CommandHandler(this.logger, this);
+	components?: ComponentHandlerLike = new ComponentHandler(this.logger, this);
 
 	private _applicationId?: string;
 	private _botId?: string;
@@ -99,7 +99,7 @@ export class BaseClient {
 		return new Router(this.rest).createProxy();
 	}
 
-	setServices({ rest, cache, langs, middlewares }: ServicesOptions) {
+	setServices({ rest, cache, langs, middlewares, handlers }: ServicesOptions) {
 		if (rest) {
 			this.rest = rest;
 		}
@@ -111,12 +111,23 @@ export class BaseClient {
 				this,
 			);
 		}
-		if (langs) {
-			if (langs.default) this.langs.defaultLang = langs.default;
-			if (langs.aliases) this.langs.aliases = Object.entries(langs.aliases);
-		}
 		if (middlewares) {
 			this.middlewares = middlewares;
+		}
+		if (handlers) {
+			if ('components' in handlers) {
+				this.components = handlers.components;
+			}
+			if ('commands' in handlers) {
+				this.commands = handlers.commands;
+			}
+			if ('langs' in handlers) {
+				this.langs = handlers.langs;
+			}
+		}
+		if (langs) {
+			if (langs.default) this.langs!.defaultLang = langs.default;
+			if (langs.aliases) this.langs!.aliases = Object.entries(langs.aliases);
 		}
 	}
 
@@ -170,7 +181,7 @@ export class BaseClient {
 		applicationId ??= await this.getRC().then(x => x.applicationId ?? this.applicationId);
 		BaseClient.assertString(applicationId, 'applicationId is not a string');
 
-		const commands = this.commands.values.map(x => x.toJSON());
+		const commands = this.commands!.values.map(x => x.toJSON());
 		const filter = filterSplit(commands, command => !command.guild_id);
 
 		await this.proxy.applications(applicationId).commands.put({
@@ -197,7 +208,7 @@ export class BaseClient {
 
 	async loadCommands(dir?: string) {
 		dir ??= await this.getRC().then(x => x.commands);
-		if (dir) {
+		if (dir && this.commands) {
 			await this.commands.load(dir, this);
 			this.logger.info('CommandHandler loaded');
 		}
@@ -205,7 +216,7 @@ export class BaseClient {
 
 	async loadComponents(dir?: string) {
 		dir ??= await this.getRC().then(x => x.components);
-		if (dir) {
+		if (dir && this.components) {
 			await this.components.load(dir);
 			this.logger.info('ComponentHandler loaded');
 		}
@@ -213,14 +224,14 @@ export class BaseClient {
 
 	async loadLangs(dir?: string) {
 		dir ??= await this.getRC().then(x => x.langs);
-		if (dir) {
+		if (dir && this.langs) {
 			await this.langs.load(dir);
 			this.logger.info('LangsHandler loaded');
 		}
 	}
 
 	t(locale: string) {
-		return this.langs.get(locale);
+		return this.langs!.get(locale);
 	}
 
 	async getRC<
@@ -310,4 +321,9 @@ export interface ServicesOptions {
 		aliases?: Record<string, LocaleString[]>;
 	};
 	middlewares?: Record<string, MiddlewareContext>;
+	handlers?: {
+		components?: ComponentHandlerLike;
+		commands?: CommandHandlerLike;
+		langs?: LangsHandlerLike;
+	};
 }

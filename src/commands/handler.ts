@@ -5,6 +5,11 @@ import { Command, SubCommand } from './applications/chat';
 import { ContextMenuCommand } from './applications/menu';
 import type { UsingClient } from './applications/shared';
 
+export interface CommandHandlerLike {
+	values: CommandHandler['values'];
+	load: CommandHandler['load'];
+}
+
 export class CommandHandler extends BaseHandler {
 	values: (Command | ContextMenuCommand)[] = [];
 	protected filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
@@ -122,20 +127,20 @@ export class CommandHandler extends BaseHandler {
 		if (command.__t) {
 			command.name_localizations = {};
 			command.description_localizations = {};
-			for (const locale of Object.keys(client.langs.values)) {
-				const locales = this.client.langs.aliases.find(x => x[0] === locale)?.[1] ?? [];
+			for (const locale of Object.keys(client.langs!.values)) {
+				const locales = this.client.langs!.aliases.find(x => x[0] === locale)?.[1] ?? [];
 				if (Object.values<string>(Locale).includes(locale)) locales.push(locale as LocaleString);
 
 				if (command.__t.name) {
 					for (const i of locales) {
-						const valueName = client.langs.getKey(locale, command.__t.name!);
+						const valueName = client.langs!.getKey(locale, command.__t.name!);
 						if (valueName) command.name_localizations[i] = valueName;
 					}
 				}
 
 				if (command.__t.description) {
 					for (const i of locales) {
-						const valueKey = client.langs.getKey(locale, command.__t.description!);
+						const valueKey = client.langs!.getKey(locale, command.__t.description!);
 						if (valueKey) command.description_localizations[i] = valueKey;
 					}
 				}
@@ -146,20 +151,20 @@ export class CommandHandler extends BaseHandler {
 			if (options instanceof SubCommand || !options.locales) continue;
 			options.name_localizations = {};
 			options.description_localizations = {};
-			for (const locale of Object.keys(client.langs.values)) {
-				const locales = this.client.langs.aliases.find(x => x[0] === locale)?.[1] ?? [];
+			for (const locale of Object.keys(client.langs!.values)) {
+				const locales = this.client.langs!.aliases.find(x => x[0] === locale)?.[1] ?? [];
 				if (Object.values<string>(Locale).includes(locale)) locales.push(locale as LocaleString);
 
 				if (options.locales.name) {
 					for (const i of locales) {
-						const valueName = client.langs.getKey(locale, options.locales.name!);
+						const valueName = client.langs!.getKey(locale, options.locales.name!);
 						if (valueName) options.name_localizations[i] = valueName;
 					}
 				}
 
 				if (options.locales.description) {
 					for (const i of locales) {
-						const valueKey = client.langs.getKey(locale, options.locales.description!);
+						const valueKey = client.langs!.getKey(locale, options.locales.description!);
 						if (valueKey) options.description_localizations[i] = valueKey;
 					}
 				}
@@ -168,8 +173,8 @@ export class CommandHandler extends BaseHandler {
 
 		if (command instanceof Command && command.__tGroups) {
 			command.groups = {};
-			for (const locale of Object.keys(client.langs.values)) {
-				const locales = this.client.langs.aliases.find(x => x[0] === locale)?.[1] ?? [];
+			for (const locale of Object.keys(client.langs!.values)) {
+				const locales = this.client.langs!.aliases.find(x => x[0] === locale)?.[1] ?? [];
 				if (Object.values<string>(Locale).includes(locale)) locales.push(locale as LocaleString);
 				for (const group in command.__tGroups) {
 					command.groups[group] ??= {
@@ -180,7 +185,7 @@ export class CommandHandler extends BaseHandler {
 
 					if (command.__tGroups[group].name) {
 						for (const i of locales) {
-							const valueName = client.langs.getKey(locale, command.__tGroups[group].name!);
+							const valueName = client.langs!.getKey(locale, command.__tGroups[group].name!);
 							if (valueName) {
 								command.groups[group].name!.push([i, valueName]);
 							}
@@ -189,7 +194,7 @@ export class CommandHandler extends BaseHandler {
 
 					if (command.__tGroups[group].description) {
 						for (const i of locales) {
-							const valueKey = client.langs.getKey(locale, command.__tGroups[group].description!);
+							const valueKey = client.langs!.getKey(locale, command.__tGroups[group].description!);
 							if (valueKey) {
 								command.groups[group].description!.push([i, valueKey]);
 							}

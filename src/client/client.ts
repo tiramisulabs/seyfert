@@ -1,5 +1,5 @@
 import { parentPort, workerData } from 'node:worker_threads';
-import type { Command, CommandContext, Message, SubCommand } from '..';
+import type { Command, CommandContext, EventHandlerLike, Message, SubCommand } from '..';
 import {
 	GatewayIntentBits,
 	type DeepPartial,
@@ -22,7 +22,7 @@ import { onMessageCreate } from './onmessagecreate';
 export class Client<Ready extends boolean = boolean> extends BaseClient {
 	private __handleGuilds?: Set<string> = new Set();
 	gateway!: ShardManager;
-	events = new EventHandler(this.logger);
+	events?: EventHandlerLike = new EventHandler(this.logger);
 	me!: If<Ready, ClientUser>;
 	declare options: ClientOptions | undefined;
 	memberUpdateHandler = new MemberUpdateHandler();
@@ -37,6 +37,9 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 		...rest
 	}: ServicesOptions & {
 		gateway?: ShardManager;
+		handlers?: ServicesOptions['handlers'] & {
+			events?: EventHandlerLike;
+		};
 	}) {
 		super.setServices(rest);
 		if (gateway) {
@@ -48,11 +51,14 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			};
 			this.gateway = gateway;
 		}
+		if (rest.handlers && 'events' in rest.handlers) {
+			this.events = rest.handlers.events;
+		}
 	}
 
 	async loadEvents(dir?: string) {
 		dir ??= await this.getRC().then(x => x.events);
-		if (dir) {
+		if (dir && this.events) {
 			await this.events.load(dir);
 			this.logger.info('EventHandler loaded');
 		}
@@ -114,21 +120,21 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	protected async onPacket(shardId: number, packet: GatewayDispatchPayload) {
-		await this.events.runEvent('RAW', this, packet, shardId);
+		await this.events?.runEvent('RAW', this, packet, shardId);
 		switch (packet.t) {
 			//// Cases where we must obtain the old data before updating
 			case 'GUILD_MEMBER_UPDATE':
 				if (!this.memberUpdateHandler.check(packet.d)) {
 					return;
 				}
-				await this.events.execute(packet.t, packet, this as Client<true>, shardId);
+				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
 				await this.cache.onPacket(packet);
 				break;
 			case 'PRESENCE_UPDATE':
 				if (!this.presenceUpdateHandler.check(packet.d as any)) {
 					return;
 				}
-				await this.events.execute(packet.t, packet, this as Client<true>, shardId);
+				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
 				await this.cache.onPacket(packet);
 				break;
 			//rest of the events
@@ -153,7 +159,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 							!((this.gateway.options.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds)
 						) {
 							if ([...this.gateway.values()].every(shard => shard.data.session_id)) {
-								await this.events.runEvent('BOT_READY', this, this.me, -1);
+								await this.events?.runEvent('BOT_READY', this, this.me, -1);
 							}
 							delete this.__handleGuilds;
 						}
@@ -163,7 +169,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						if (this.__handleGuilds?.has(packet.d.id)) {
 							this.__handleGuilds.delete(packet.d.id);
 							if (!this.__handleGuilds.size && [...this.gateway.values()].every(shard => shard.data.session_id)) {
-								await this.events.runEvent('BOT_READY', this, this.me, -1);
+								await this.events?.runEvent('BOT_READY', this, this.me, -1);
 							}
 							if (!this.__handleGuilds.size) delete this.__handleGuilds;
 							return;
@@ -171,7 +177,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						break;
 					}
 				}
-				await this.events.execute(packet.t, packet, this as Client<true>, shardId);
+				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
 				break;
 			}
 		}

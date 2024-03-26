@@ -60,7 +60,7 @@ export class MenuCommandContext<
 	}
 
 	get t() {
-		return this.client.langs.get(this.interaction.locale);
+		return this.client.langs!.get(this.interaction.locale ?? this.client.langs!.defaultLang ?? 'en-US');
 	}
 
 	get fullCommandName() {

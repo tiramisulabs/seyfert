@@ -388,7 +388,7 @@ export class Interaction<
 			.webhooks(this.applicationId)(this.token)
 			.messages(messageId)
 			.delete()
-			.then(() => this.client.components.onMessageDelete(messageId === '@original' ? this.id : messageId));
+			.then(() => this.client.components?.onMessageDelete(messageId === '@original' ? this.id : messageId));
 	}
 
 	async createResponse({ files, ...body }: MessageWebhookCreateBodyRequest) {
