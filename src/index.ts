@@ -68,7 +68,10 @@ export const config = {
 				'intents' in data
 					? typeof data.intents === 'number'
 						? data.intents
-						: data.intents?.reduce((pr, acc) => pr | GatewayIntentBits[acc], 0) ?? 0
+						: data.intents?.reduce<number>(
+								(pr, acc) => pr | (typeof acc === 'number' ? acc : GatewayIntentBits[acc]),
+								0,
+						  ) ?? 0
 					: 0,
 		} as InternalRuntimeConfig;
 	},

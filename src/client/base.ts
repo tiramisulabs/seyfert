@@ -296,7 +296,11 @@ export type RuntimeConfigHTTP = Omit<MakeRequired<RC, 'publicKey' | 'application
 };
 
 export type InternalRuntimeConfig = Omit<MakeRequired<RC, 'intents'>, 'publicKey' | 'port'>;
-export type RuntimeConfig = OmitInsert<InternalRuntimeConfig, 'intents', { intents?: IntentStrings | number }>;
+export type RuntimeConfig = OmitInsert<
+	InternalRuntimeConfig,
+	'intents',
+	{ intents?: IntentStrings | number[] | number }
+>;
 
 export interface ServicesOptions {
 	rest?: ApiHandler;
