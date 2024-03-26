@@ -27,7 +27,6 @@ type DeclareOptions =
 			botPermissions?: PermissionStrings | bigint;
 			defaultMemberPermissions?: PermissionStrings | bigint;
 			guildId?: string[];
-			// dm?: boolean;
 			nsfw?: boolean;
 			integrationTypes?: (keyof typeof IntegrationTypes)[];
 			contexts?: (keyof typeof InteractionContextTypes)[];
@@ -39,7 +38,6 @@ type DeclareOptions =
 				botPermissions?: PermissionStrings | bigint;
 				defaultMemberPermissions?: PermissionStrings | bigint;
 				guildId?: string[];
-				// dm?: boolean;
 				nsfw?: boolean;
 				integrationTypes?: (keyof typeof IntegrationTypes)[];
 				contexts?: (keyof typeof InteractionContextTypes)[];
