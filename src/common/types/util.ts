@@ -190,3 +190,5 @@ export type FlatObjectKeys<T extends Record<string, any>, Key = keyof T> = Key e
 		  ? `${Key}`
 		  : never
 	: never;
+
+export type Awaitable<V> = Promise<V> | V;
