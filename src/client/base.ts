@@ -344,8 +344,8 @@ export interface ServicesOptions {
 	};
 	middlewares?: Record<string, MiddlewareContext>;
 	handlers?: {
-		components?: ComponentHandlerLike | ((component: ComponentCommand | ModalCommand) => void);
-		commands?: CommandHandlerLike | ((command: Command | ContextMenuCommand) => void);
-		langs?: LangsHandlerLike | ((locale: string, record: Record<string, unknown>) => void);
+		components?: ComponentHandlerLike | ((component: ComponentCommand | ModalCommand) => any);
+		commands?: CommandHandlerLike | ((command: Command | ContextMenuCommand) => any);
+		langs?: LangsHandlerLike | ((locale: string, record: Record<string, unknown>) => any);
 	};
 }
