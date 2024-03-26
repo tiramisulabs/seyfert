@@ -48,15 +48,15 @@ function getCommandFromContent(
 	const command =
 		groupName || subcommandName
 			? (parent.options?.find(opt => {
-					if (opt instanceof SubCommand) {
-						if (groupName) {
-							if (opt.group !== groupName) return false;
-						}
-						if (opt.group && !groupName) return false;
-						return subcommandName === opt.name;
+				if (opt instanceof SubCommand) {
+					if (groupName) {
+						if (opt.group !== groupName) return false;
 					}
-					return false;
-			  }) as SubCommand)
+					if (opt.group && !groupName) return false;
+					return subcommandName === opt.name;
+				}
+				return false;
+			}) as SubCommand)
 			: parent;
 
 	return {
@@ -80,7 +80,7 @@ export async function onMessageCreate(
 
 	const content = message.content.slice(prefix.length).trimStart();
 	const { fullCommandName, command, parent } = getCommandFromContent(
-		content.split(' ').filter(x => x),
+		content.split(' ').filter(x => x).slice(0, 3),
 		self,
 	);
 
