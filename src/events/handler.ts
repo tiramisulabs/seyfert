@@ -23,6 +23,8 @@ export interface EventHandlerLike {
 	runEvent: EventHandler['runEvent'];
 	execute: EventHandler['execute'];
 	load: EventHandler['load'];
+	reload: EventHandler['reload'];
+	reloadAll: EventHandler['reloadAll'];
 	values: EventHandler['values'];
 }
 

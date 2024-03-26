@@ -8,6 +8,8 @@ import type { UsingClient } from './applications/shared';
 export interface CommandHandlerLike {
 	values: CommandHandler['values'];
 	load: CommandHandler['load'];
+	reload: CommandHandler['reload'];
+	reloadAll: CommandHandler['reloadAll'];
 }
 
 export class CommandHandler extends BaseHandler {

@@ -30,6 +30,8 @@ export interface ComponentHandlerLike {
 	onComponent: ComponentHandler['onComponent'];
 
 	load: ComponentHandler['load'];
+	reload: ComponentHandler['reload'];
+	reloadAll: ComponentHandler['reloadAll'];
 
 	onMessageDelete: ComponentHandler['onMessageDelete'];
 }
