@@ -22,7 +22,7 @@ export class GuildRelatedResource<T = any> {
 	}
 
 	parse(data: any, id: string, guild_id: string) {
-		data.id = id;
+		if (!data.id) data.id = id;
 		data.guild_id = guild_id;
 		return data;
 	}
