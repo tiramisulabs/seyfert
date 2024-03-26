@@ -69,6 +69,7 @@ export class CommandHandler extends BaseHandler {
 			if (commandInstance instanceof ContextMenuCommand) {
 				this.values.push(commandInstance);
 				commandInstance.__filePath = command.path;
+				await this.__callback?.(commandInstance);
 				continue;
 			}
 			if (!(commandInstance instanceof Command)) {
@@ -120,6 +121,8 @@ export class CommandHandler extends BaseHandler {
 					this.__parseCommandLocales(i, client);
 				}
 			}
+
+			await this.__callback?.(commandInstance);
 		}
 
 		return this.values;

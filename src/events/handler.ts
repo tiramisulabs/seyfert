@@ -50,6 +50,7 @@ export class EventHandler extends BaseHandler {
 			}
 			instance.__filePath = i.path;
 			this.values[ReplaceRegex.snake(instance.data.name).toUpperCase() as GatewayEvents] = instance as EventValue;
+			await this.__callback?.(instance);
 		}
 	}
 

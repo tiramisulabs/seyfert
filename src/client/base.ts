@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { ApiHandler, Router } from '../api';
 import type { Adapter } from '../cache';
 import { Cache, MemoryAdapter } from '../cache';
-import type { RegisteredMiddlewares } from '../commands';
+import type { Command, ContextMenuCommand, RegisteredMiddlewares } from '../commands';
 import type { InferWithPrefix, MiddlewareContext } from '../commands/applications/shared';
 import { CommandHandler, type CommandHandlerLike } from '../commands/handler';
 import {
@@ -25,6 +25,7 @@ import {
 } from '../common';
 
 import type { DeepPartial, IntentStrings, OmitInsert, When } from '../common/types/util';
+import type { ComponentCommand, ModalCommand } from '../components';
 import { ComponentHandler, type ComponentHandlerLike } from '../components/handler';
 import { LangsHandler, type LangsHandlerLike } from '../langs/handler';
 import type {
@@ -116,13 +117,34 @@ export class BaseClient {
 		}
 		if (handlers) {
 			if ('components' in handlers) {
-				this.components = handlers.components;
+				if (!handlers.components) {
+					this.components = undefined;
+				} else if (typeof handlers.components === 'function') {
+					this.components = new ComponentHandler(this.logger, this);
+					(this.components as ComponentHandler).__callback = handlers.components;
+				} else {
+					this.components = handlers.components;
+				}
 			}
 			if ('commands' in handlers) {
-				this.commands = handlers.commands;
+				if (!handlers.commands) {
+					this.commands = undefined;
+				} else if (typeof handlers.commands === 'function') {
+					this.commands = new CommandHandler(this.logger, this);
+					(this.commands as CommandHandler).__callback = handlers.commands;
+				} else {
+					this.commands = handlers.commands;
+				}
 			}
 			if ('langs' in handlers) {
-				this.langs = handlers.langs;
+				if (!handlers.langs) {
+					this.langs = undefined;
+				} else if (typeof handlers.langs === 'function') {
+					this.langs = new LangsHandler(this.logger);
+					(this.langs as LangsHandler).__callback = handlers.langs;
+				} else {
+					this.langs = handlers.langs;
+				}
 			}
 		}
 		if (langs) {
@@ -322,8 +344,8 @@ export interface ServicesOptions {
 	};
 	middlewares?: Record<string, MiddlewareContext>;
 	handlers?: {
-		components?: ComponentHandlerLike;
-		commands?: CommandHandlerLike;
-		langs?: LangsHandlerLike;
+		components?: ComponentHandlerLike | ((component: ComponentCommand | ModalCommand) => void);
+		commands?: CommandHandlerLike | ((command: Command | ContextMenuCommand) => void);
+		langs?: LangsHandlerLike | ((locale: string, record: Record<string, unknown>) => void);
 	};
 }

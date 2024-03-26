@@ -184,6 +184,7 @@ export class ComponentHandler extends BaseHandler {
 			if (!(component instanceof ModalCommand) && !(component instanceof ComponentCommand)) continue;
 			component.__filePath = paths[i].path;
 			this.commands.push(component);
+			await this.__callback?.(component);
 		}
 	}
 

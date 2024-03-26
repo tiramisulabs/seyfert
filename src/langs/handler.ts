@@ -49,6 +49,7 @@ export class LangsHandler extends BaseHandler {
 		for (const i of files) {
 			const locale = i.name.split('.').slice(0, -1).join('.');
 			this.values[locale] = i.file;
+			await this.__callback?.(locale, i.file);
 		}
 	}
 }

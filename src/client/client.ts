@@ -1,5 +1,5 @@
 import { parentPort, workerData } from 'node:worker_threads';
-import type { Command, CommandContext, EventHandlerLike, Message, SubCommand } from '..';
+import type { ClientEvent, Command, CommandContext, EventHandlerLike, Message, SubCommand } from '..';
 import {
 	GatewayIntentBits,
 	type DeepPartial,
@@ -38,7 +38,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 	}: ServicesOptions & {
 		gateway?: ShardManager;
 		handlers?: ServicesOptions['handlers'] & {
-			events?: EventHandlerLike;
+			events?: EventHandlerLike | ((event: ClientEvent) => any);
 		};
 	}) {
 		super.setServices(rest);
@@ -52,7 +52,14 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			this.gateway = gateway;
 		}
 		if (rest.handlers && 'events' in rest.handlers) {
-			this.events = rest.handlers.events;
+			if (!rest.handlers.events) {
+				this.events = undefined;
+			} else if (typeof rest.handlers.events === 'function') {
+				this.events = new EventHandler(this.logger);
+				(this.events as EventHandler).__callback = rest.handlers.events;
+			} else {
+				this.events = rest.handlers.events;
+			}
 		}
 	}
 
