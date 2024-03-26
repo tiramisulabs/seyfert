@@ -36,12 +36,17 @@ export class CommandHandler extends BaseHandler {
 	}
 
 	async load(commandsDir: string, client: UsingClient) {
-		const result = (await this.loadFilesK<typeof Command>(await this.getFiles(commandsDir))).filter(x => x.file);
+		const result = (
+			await this.loadFilesK<typeof Command | typeof SubCommand | typeof ContextMenuCommand>(
+				await this.getFiles(commandsDir),
+			)
+		).filter(x => x.file);
 		this.values = [];
 
 		for (const command of result) {
 			let commandInstance;
 			try {
+				//@ts-expect-error abstract class
 				commandInstance = new command.file();
 			} catch (e) {
 				if (e instanceof Error && e.message === 'command.file is not a constructor') {
@@ -72,8 +77,10 @@ export class CommandHandler extends BaseHandler {
 						continue;
 					}
 					try {
+						//@ts-expect-error abstract class
 						const subCommand = new (result.find(x => x.path === option)!.file)();
 						if (subCommand instanceof SubCommand) {
+							subCommand.__filePath = option;
 							commandInstance.options.push(subCommand);
 						}
 					} catch {

@@ -271,6 +271,12 @@ class BaseCommand {
 		const __tempCommand = await magicImport(this.__filePath!).then(x => x.default ?? x);
 
 		Object.setPrototypeOf(this, __tempCommand.prototype);
+
+		for (const i of this.options ?? []) {
+			if (i instanceof SubCommand && i.__filePath) {
+				await i.reload();
+			}
+		}
 	}
 
 	run?(context: CommandContext<any>): any;

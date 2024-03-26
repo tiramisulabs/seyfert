@@ -251,7 +251,7 @@ export async function magicImport(path: string) {
 		return require(path);
 	} catch {
 		// biome-ignore lint/security/noGlobalEval: modules import broke
-		return eval('((path) => import(`file:///${path}`))')(path.split('\\').join('\\\\'));
+		return eval('((path) => import(`file:///${path}?update=${Date.now()}`))')(path.split('\\').join('\\\\'));
 	}
 }
 
