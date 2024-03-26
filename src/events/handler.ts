@@ -26,17 +26,14 @@ export interface EventHandlerLike {
 	reload: EventHandler['reload'];
 	reloadAll: EventHandler['reloadAll'];
 	values: EventHandler['values'];
+	onFail: EventHandler['onFail'];
 }
 
 export class EventHandler extends BaseHandler {
-	protected onFail: OnFailCallback = err => this.logger.warn('<Client>.events.OnFail', err);
+	onFail: OnFailCallback = err => this.logger.warn('<Client>.events.onFail', err);
 	protected filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
 
 	values: Partial<Record<GatewayEvents, EventValue>> = {};
-
-	set OnFail(cb: OnFailCallback) {
-		this.onFail = cb;
-	}
 
 	async load(eventsDir: string) {
 		for (const i of await this.loadFilesK<ClientEvent>(await this.getFiles(eventsDir))) {
@@ -108,7 +105,7 @@ export class EventHandler extends BaseHandler {
 			const hook = await RawEvents[name]?.(client, packet as never);
 			await Event.run(...[hook, client, shardId]);
 		} catch (e) {
-			await this.onFail?.(e);
+			await this.onFail(e);
 		}
 	}
 

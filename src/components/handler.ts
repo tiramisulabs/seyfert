@@ -19,6 +19,8 @@ export interface ComponentHandlerLike {
 	readonly commands: (ComponentCommand | ModalCommand)[];
 	readonly modals: Map<string, ModalSubmitCallback> | LimitedCollection<string, ModalSubmitCallback>;
 
+	onFail: ComponentHandler['onFail'];
+
 	createComponentCollector: ComponentHandler['createComponentCollector'];
 
 	hasModal: ComponentHandler['hasModal'];
@@ -37,7 +39,7 @@ export interface ComponentHandlerLike {
 }
 
 export class ComponentHandler extends BaseHandler {
-	onFail?: OnFailCallback;
+	onFail: OnFailCallback = err => this.logger.warn('<Client>.components.onFail', err);
 	readonly values = new Map<string, COMPONENTS>();
 	// 10 minutes timeout, because discord dont send an event when the user cancel the modal
 	readonly modals = new LimitedCollection<string, ModalSubmitCallback>({ expire: 60e3 * 10 });
@@ -49,10 +51,6 @@ export class ComponentHandler extends BaseHandler {
 		protected client: UsingClient,
 	) {
 		super(logger);
-	}
-
-	set OnFail(cb: OnFailCallback) {
-		this.onFail = cb;
 	}
 
 	createComponentCollector(messageId: string, options: ListenerOptions = {}) {
@@ -229,7 +227,7 @@ export class ComponentHandler extends BaseHandler {
 					break;
 				}
 			} catch (e) {
-				await this.onFail?.(e);
+				await this.onFail(e);
 			}
 		}
 	}
@@ -242,7 +240,7 @@ export class ComponentHandler extends BaseHandler {
 					break;
 				}
 			} catch (e) {
-				await this.onFail?.(e);
+				await this.onFail(e);
 			}
 		}
 	}
