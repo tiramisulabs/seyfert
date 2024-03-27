@@ -1,41 +1,49 @@
-import type {
-	APIButtonComponentWithCustomId,
-	APIButtonComponentWithURL,
-	APIMessageComponentEmoji,
-	ComponentType,
-} from '../common';
-import { ButtonStyle } from '../common';
-import { BaseComponent } from '../structures/extra/BaseComponent';
+import { Button, type ButtonStylesForID } from '../builders';
+import type { ButtonStyle, ComponentType } from '../common';
+import { BaseComponent } from './BaseComponent';
 
 export class LinkButtonComponent extends BaseComponent<ComponentType.Button> {
-	constructor(data: APIButtonComponentWithURL) {
-		super(data);
-		this.label = data.label;
-		this.emoji = data.emoji;
-		this.disabled = !!data.disabled;
-		this.url = data.url;
+	get style() {
+		return this.data.style as ButtonStyle.Link;
 	}
 
-	style = ButtonStyle.Link;
-	label?: string;
-	emoji?: APIMessageComponentEmoji;
-	disabled: boolean;
-	url: string;
+	get label() {
+		return this.data.label;
+	}
+
+	get disabled() {
+		return this.data.disabled;
+	}
+
+	get emoji() {
+		return this.data.emoji;
+	}
+
+	toBuilder() {
+		return new Button<false>(this.data as never);
+	}
 }
 
 export type ButtonStyleExludeLink = Exclude<ButtonStyle, ButtonStyle.Link>;
 
 export class ButtonComponent extends BaseComponent<ComponentType.Button> {
-	constructor(data: APIButtonComponentWithCustomId) {
-		super(data);
-		this.style = data.style;
-		this.label = data.label;
-		this.emoji = data.emoji;
-		this.disabled = !!data.disabled;
+	get style() {
+		return this.data.style as ButtonStylesForID;
 	}
 
-	style: ButtonStyleExludeLink;
-	label?: string;
-	emoji?: APIMessageComponentEmoji;
-	disabled: boolean;
+	get label() {
+		return this.data.label;
+	}
+
+	get disabled() {
+		return this.data.disabled;
+	}
+
+	get emoji() {
+		return this.data.emoji;
+	}
+
+	toBuilder() {
+		return new Button<true>(this.data as never);
+	}
 }

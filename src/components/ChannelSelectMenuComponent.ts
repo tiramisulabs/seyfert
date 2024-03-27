@@ -1,12 +1,12 @@
-import type { APIChannelSelectComponent, ChannelType, ComponentType } from '../common';
-import { BaseSelectMenuComponent } from '../structures/extra/BaseSelectMenuComponent';
+import type { ComponentType } from '../common';
+import { BaseSelectMenuComponent } from './BaseSelectMenuComponent';
 
 export class ChannelSelectMenuComponent extends BaseSelectMenuComponent<ComponentType.ChannelSelect> {
-	constructor(data: APIChannelSelectComponent) {
-		super(data);
-
-		this.channelTypes = data.channel_types;
+	get channelsTypes() {
+		return this.data.channel_types;
 	}
 
-	channelTypes?: ChannelType[];
+	get defaultValues() {
+		return this.data.default_values;
+	}
 }

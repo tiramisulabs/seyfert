@@ -1,14 +1,36 @@
-import type { APIModalComponent, APITextInputComponent, ComponentType } from '../common';
-import { BaseComponent } from '../structures/extra/BaseComponent';
+import type { ComponentType } from '../common';
+import { BaseComponent } from './BaseComponent';
 
 export class TextInputComponent extends BaseComponent<ComponentType.TextInput> {
-	constructor(data: APITextInputComponent) {
-		super(data);
-
-		this.customId = data.custom_id;
-		this.value = data.value!;
+	get customId() {
+		return this.data.custom_id;
 	}
 
-	customId: string;
-	value: string | APIModalComponent;
+	get value() {
+		return this.data.value;
+	}
+
+	get style() {
+		return this.data.style;
+	}
+
+	get label() {
+		return this.data.label;
+	}
+
+	get max() {
+		return this.data.max_length;
+	}
+
+	get min() {
+		return this.data.min_length;
+	}
+
+	get required() {
+		return this.data.required;
+	}
+
+	get placeholder() {
+		return this.data.placeholder;
+	}
 }

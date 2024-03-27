@@ -1,4 +1,8 @@
 import type { ComponentType } from '../common';
-import { BaseSelectMenuComponent } from '../structures/extra/BaseSelectMenuComponent';
+import { BaseSelectMenuComponent } from './BaseSelectMenuComponent';
 
-export class MentionableSelectMenuComponent extends BaseSelectMenuComponent<ComponentType.MentionableSelect> {}
+export class MentionableSelectMenuComponent extends BaseSelectMenuComponent<ComponentType.MentionableSelect> {
+	get defaultValues() {
+		return this.data.default_values;
+	}
+}
