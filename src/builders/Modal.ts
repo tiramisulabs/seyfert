@@ -93,7 +93,7 @@ export class Modal<T extends ModalBuilderComponents = TextInput> {
  * Represents a text input component builder.
  * @example
  * const textInput = new TextInput().setLabel("Enter text");
- * textInput.setStyle(TextInputStyle.FULL);
+ * textInput.setStyle(TextInputStyle.Paragraph);
  * textInput.setPlaceholder("Type here");
  * const json = textInput.toJSON();
  */
