@@ -95,15 +95,17 @@ export class BaseGuildMember extends DiscordBase {
 
 	get roles() {
 		return {
-			values: Object.freeze(this._roles),
+			keys: Object.freeze(this._roles.concat(this.guildId)) as string[],
+			list: (force = false) =>
+				this.client.roles
+					.list(this.guildId, force)
+					.then(roles => roles.filter(role => this.roles.keys.includes(role.id))),
 			add: (id: string) => this.client.members.addRole(this.guildId, this.id, id),
 			remove: (id: string) => this.client.members.removeRole(this.guildId, this.id, id),
-			permissions: async () =>
-				new PermissionsBitField(
-					((await this.cache.roles?.bulk(this.roles.values as string[])) ?? [])
-						.filter(x => x)
-						.map(x => BigInt(x!.permissions.bits)),
-				),
+			permissions: (force = false) =>
+				this.roles.list(force).then(roles => new PermissionsBitField(roles.map(x => BigInt(x.permissions.bits)))),
+			sorted: (force = false) => this.roles.list(force).then(roles => roles.sort((a, b) => b.position - a.position)),
+			highest: (force = false) => this.roles.sorted(force).then(roles => roles[0]),
 		};
 	}
 
@@ -132,6 +134,7 @@ export interface GuildMember extends ObjectToLower<Omit<APIGuildMember, 'user' |
  */
 export class GuildMember extends BaseGuildMember {
 	user: User;
+	private __me?: GuildMember;
 	constructor(
 		client: UsingClient,
 		data: GuildMemberData,
@@ -192,9 +195,34 @@ export class GuildMember extends BaseGuildMember {
 		return this.user.bannerURL(options);
 	}
 
-	async fetchPermissions() {
+	async fetchPermissions(force = false) {
 		if ('permissions' in this) return this.permissions as PermissionsBitField;
-		return this.roles.permissions();
+		return this.roles.permissions(force);
+	}
+
+	async manageable(force = false) {
+		this.__me = await this.client.guilds.fetchSelf(this.guildId, force);
+		const ownerId = (await this.client.guilds.fetch(this.guildId, force)).ownerId;
+		if (this.user.id === ownerId) return false;
+		if (this.user.id === this.client.botId) return false;
+		if (this.client.botId === ownerId) return true;
+		return (await this.__me!.roles.highest()).position > (await this.roles.highest(force)).position;
+	}
+
+	async bannable(force = false) {
+		return (await this.manageable(force)) && (await this.__me!.fetchPermissions(force)).has('BanMembers');
+	}
+
+	async kickable(force = false) {
+		return (await this.manageable(force)) && (await this.__me!.fetchPermissions(force)).has('KickMembers');
+	}
+
+	async moderatable(force = false) {
+		return (
+			!(await this.roles.permissions(force)).has('Administrator') &&
+			(await this.manageable(force)) &&
+			(await this.__me!.fetchPermissions(force)).has('KickMembers')
+		);
 	}
 }
 

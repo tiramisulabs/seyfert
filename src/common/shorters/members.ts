@@ -9,6 +9,7 @@ import {
 	type RESTPutAPIGuildMemberJSONBody,
 } from '..';
 import { GuildMember } from '../../structures';
+import { PermissionsBitField } from '../../structures/extra/Permissions';
 import { BaseShorter } from './base';
 
 export class MemberShorter extends BaseShorter {
@@ -180,5 +181,31 @@ export class MemberShorter extends BaseShorter {
 	 */
 	removeRole(guildId: string, memberId: string, id: string) {
 		return this.client.proxy.guilds(guildId).members(memberId).roles(id).delete();
+	}
+
+	async listRoles(guildId: string, memberId: string, force = false) {
+		if (!force) {
+			const member = await this.client.cache.members?.get(memberId, guildId);
+			if (member) {
+				const roles = (await this.client.cache.roles?.bulk(member.roles.keys)) ?? [];
+				if (roles.length) return roles;
+			}
+		}
+
+		const member = await this.client.members.fetch(guildId, memberId, force);
+		const allRoles = await this.client.roles.list(guildId, force);
+		const rolesId = member.roles.keys.concat(guildId);
+		return allRoles.filter(role => rolesId.includes(role.id));
+	}
+
+	async sortRoles(guildId: string, memberId: string, force = false) {
+		const roles = await this.listRoles(guildId, memberId, force);
+		return roles.sort((a, b) => b.position - a.position);
+	}
+
+	async permissions(guildId: string, memberId: string, force = false) {
+		const roles = await this.listRoles(guildId, memberId, force);
+
+		return new PermissionsBitField(roles.map(x => BigInt(x.permissions.bits)));
 	}
 }

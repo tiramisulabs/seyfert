@@ -6,7 +6,7 @@ export class PermissionsBitField extends BitField<typeof PermissionFlagsBits> {
 	Flags = PermissionFlagsBits;
 	static All = Object.values(PermissionFlagsBits).reduce((acc, value) => acc | value, 0n);
 
-	declare keys: (...bits: BitFieldResolvable<typeof PermissionFlagsBits>[]) => PermissionStrings;
+	declare keys: (bits: BitFieldResolvable<typeof PermissionFlagsBits>[]) => PermissionStrings;
 
 	has(...bits: BitFieldResolvable<typeof PermissionFlagsBits>[]) {
 		return super.has(...bits) || super.has('Administrator');

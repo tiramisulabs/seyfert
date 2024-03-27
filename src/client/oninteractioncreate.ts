@@ -94,7 +94,7 @@ export async function onInteractionCreate(
 							try {
 								if (command.botPermissions && interaction.appPermissions) {
 									const permissions = interaction.appPermissions.missings(
-										...interaction.appPermissions.values(command.botPermissions),
+										...interaction.appPermissions.values([command.botPermissions]),
 									);
 									if (permissions.length) {
 										return command.onPermissionsFail?.(context, interaction.appPermissions.keys(permissions));
@@ -158,7 +158,7 @@ export async function onInteractionCreate(
 							try {
 								if (command.botPermissions && interaction.appPermissions) {
 									const permissions = interaction.appPermissions.missings(
-										...interaction.appPermissions.values(command.botPermissions),
+										...interaction.appPermissions.values([command.botPermissions]),
 									);
 									if (permissions.length) {
 										return command.onPermissionsFail?.(context, interaction.appPermissions.keys(permissions));

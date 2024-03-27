@@ -90,13 +90,7 @@ export async function onMessageCreate(
 	if (!command) return;
 	if (!command.run) return self.logger.warn(`${fullCommandName} command does not have 'run' callback`);
 
-	if (
-		[InteractionContextTypes.BOT_DM, InteractionContextTypes.PRIVATE_CHANNEL].some(i =>
-			command.contexts?.includes(i),
-		) &&
-		!message.guildId
-	)
-		return;
+	if (!command.contexts?.includes(InteractionContextTypes.BOT_DM) && !message.guildId) return;
 	if (command.guild_id && !command.guild_id?.includes(message.guildId!)) return;
 
 	const resolved: MakeRequired<ContextOptionsResolved> = {
@@ -118,7 +112,7 @@ export async function onMessageCreate(
 			const meMember = await self.cache.members?.get(self.botId, message.guildId);
 			if (!meMember) return; //enable member cache and "Guilds" intent, lol
 			const appPermissions = await meMember.fetchPermissions();
-			const permissions = appPermissions.missings(...appPermissions.values(command.botPermissions));
+			const permissions = appPermissions.missings(...appPermissions.values([command.botPermissions]));
 			if (permissions.length) {
 				return command.onPermissionsFail?.(context, appPermissions.keys(permissions));
 			}

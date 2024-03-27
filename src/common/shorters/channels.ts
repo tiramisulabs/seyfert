@@ -128,7 +128,7 @@ export class ChannelShorter extends BaseShorter {
 		for (const overwrite of channelOverwrites) {
 			if (overwrite.id === member.guildId) {
 				everyoneOverwrites = overwrite;
-			} else if (member.roles.values.includes(overwrite.id)) {
+			} else if (member.roles.keys.includes(overwrite.id)) {
 				roleOverwrites.push(overwrite);
 			} else if (overwrite.id === member.id) {
 				memberOverwrites = overwrite;
