@@ -177,6 +177,8 @@ export class RoleSelectMenu extends SelectMenu<APIRoleSelectComponent, RoleSelec
 	}
 }
 
+export type MentionableDefaultElement = { id: string; type: keyof Omit<typeof SelectMenuDefaultValueType, 'Channel'> };
+
 /**
  * Represents a Select Menu for selecting mentionable entities.
  * @example
@@ -186,6 +188,34 @@ export class RoleSelectMenu extends SelectMenu<APIRoleSelectComponent, RoleSelec
 export class MentionableSelectMenu extends SelectMenu<APIMentionableSelectComponent, MentionableSelectMenuInteraction> {
 	constructor(data: Partial<APIMentionableSelectComponent> = {}) {
 		super({ ...data, type: ComponentType.MentionableSelect });
+	}
+
+	/**
+	 * Sets the default selected roles or users for the select menu.
+	 * @param mentionables - Role/User id and type to be set as default.
+	 * @returns The current MentionableSelectMenu instance.
+	 */
+	setDefaults(...mentionables: RestOrArray<MentionableDefaultElement>) {
+		this.data.default_values = mentionables.flat().map(mentionable => ({
+			id: mentionable.id,
+			type: SelectMenuDefaultValueType[mentionable.type],
+		}));
+		return this;
+	}
+
+	/**
+	 * Adds default selected roles or users for the select menu.
+	 * @param mentionables - Role/User id and type to be added as default.
+	 * @returns The current MentionableSelectMenu instance.
+	 */
+	addDefaultMentionables(...mentionables: RestOrArray<MentionableDefaultElement>) {
+		this.data.default_values = (this.data.default_values ?? []).concat(
+			mentionables.flat().map(mentionable => ({
+				id: mentionable.id,
+				type: SelectMenuDefaultValueType[mentionable.type],
+			})),
+		);
+		return this;
 	}
 }
 
