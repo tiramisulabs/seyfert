@@ -1,4 +1,4 @@
-import { CommandContext, type ContextMenuCommand, type ReturnCache, type WebhookMessage } from '../..';
+import type { ContextMenuCommand, ReturnCache, WebhookMessage } from '../..';
 import {
 	ApplicationCommandType,
 	MessageFlags,
@@ -17,6 +17,7 @@ import {
 	type MessageCommandInteraction,
 	type UserCommandInteraction,
 } from '../../structures';
+import { BaseContext } from '../basecontex';
 import type { RegisteredMiddlewares } from '../decorators';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
 
@@ -25,25 +26,24 @@ export type InteractionTarget<T> = T extends MessageCommandInteraction ? Message
 export interface MenuCommandContext<
 	T extends MessageCommandInteraction | UserCommandInteraction,
 	M extends keyof RegisteredMiddlewares = never,
-> extends ExtendContext {}
+> extends BaseContext,
+		ExtendContext {}
 
 export class MenuCommandContext<
 	T extends MessageCommandInteraction | UserCommandInteraction,
 	M extends keyof RegisteredMiddlewares = never,
-> {
+> extends BaseContext {
 	constructor(
 		readonly client: UsingClient,
 		readonly interaction: T,
 		readonly shardId: number,
 		readonly command: ContextMenuCommand,
-	) {}
+	) {
+		super(client);
+	}
 
 	metadata: CommandMetadata<UnionToTuple<M>> = {} as never;
 	globalMetadata: GlobalMetadata = {};
-
-	get proxy() {
-		return this.client.proxy;
-	}
 
 	// biome-ignore lint/suspicious/useGetterReturn: default don't exist.
 	get target(): InteractionTarget<T> {
@@ -151,21 +151,5 @@ export class MenuCommandContext<
 
 	get member() {
 		return this.interaction.member;
-	}
-
-	isChat(): this is CommandContext {
-		return this instanceof CommandContext;
-	}
-
-	isMenu(): this is MenuCommandContext<any> {
-		return this instanceof MenuCommandContext;
-	}
-
-	isMenuUser(): this is MenuCommandContext<UserCommandInteraction> {
-		return this instanceof MenuCommandContext && this.target instanceof User;
-	}
-
-	isMenuMessage(): this is MenuCommandContext<MessageCommandInteraction> {
-		return this instanceof MenuCommandContext && this.target instanceof Message;
 	}
 }

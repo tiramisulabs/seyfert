@@ -30,6 +30,7 @@ import { ComponentHandler, type ComponentHandlerLike } from '../components/handl
 import { LangsHandler, type LangsHandlerLike } from '../langs/handler';
 import type {
 	ChatInputCommandInteraction,
+	ComponentInteraction,
 	Message,
 	MessageCommandInteraction,
 	UserCommandInteraction,
@@ -284,6 +285,7 @@ export interface BaseClientOptions {
 			| ChatInputCommandInteraction<boolean>
 			| UserCommandInteraction<boolean>
 			| MessageCommandInteraction<boolean>
+			| ComponentInteraction
 			| When<InferWithPrefix, Message, never>,
 	) => {};
 	globalMiddlewares?: readonly (keyof RegisteredMiddlewares)[];

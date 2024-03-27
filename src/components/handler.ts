@@ -4,6 +4,7 @@ import type { UsingClient } from '../commands';
 import { BaseHandler, magicImport, type Logger, type OnFailCallback } from '../common';
 import type { ComponentInteraction, ModalSubmitInteraction } from '../structures';
 import { ComponentCommand, InteractionCommandType, ModalCommand } from './command';
+import { ComponentContext } from './componentcontext';
 
 type COMPONENTS = {
 	components: { match: string | string[] | RegExp; callback: ComponentCallback }[];
@@ -218,12 +219,13 @@ export class ComponentHandler extends BaseHandler {
 	async executeComponent(interaction: ComponentInteraction) {
 		for (const i of this.commands) {
 			try {
-				if (
-					i.type === InteractionCommandType.COMPONENT &&
-					i.componentType === interaction.componentType &&
-					(await i.filter(interaction))
-				) {
-					await i.run(interaction);
+				if (i.type === InteractionCommandType.COMPONENT && i.cType === interaction.componentType) {
+					const context = new ComponentContext(this.client, interaction);
+					const extended = this.client.options?.context?.(interaction) ?? {};
+					Object.assign(context, extended);
+					// @ts-expect-error
+					if (!(await i.filter(interaction))) continue;
+					await i.run(context);
 					break;
 				}
 			} catch (e) {

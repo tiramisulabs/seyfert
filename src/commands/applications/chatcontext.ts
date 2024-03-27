@@ -1,14 +1,4 @@
-import {
-	MenuCommandContext,
-	User,
-	type AllChannels,
-	type Guild,
-	type InferWithPrefix,
-	type MessageCommandInteraction,
-	type ReturnCache,
-	type UserCommandInteraction,
-	type WebhookMessage,
-} from '../..';
+import type { AllChannels, Guild, InferWithPrefix, ReturnCache, WebhookMessage } from '../..';
 import type { Client, WorkerClient } from '../../client';
 import { MessageFlags, type If, type UnionToTuple, type When } from '../../common';
 import type { InteractionCreateBodyRequest, InteractionMessageUpdateBodyRequest } from '../../common/types/write';
@@ -18,15 +8,20 @@ import {
 	type GuildMember,
 	type InteractionGuildMember,
 } from '../../structures';
+import { BaseContext } from '../basecontex';
 import type { RegisteredMiddlewares } from '../decorators';
 import type { OptionResolver } from '../optionresolver';
 import type { Command, ContextOptions, OptionsRecord, SubCommand } from './chat';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
 
 export interface CommandContext<T extends OptionsRecord = {}, M extends keyof RegisteredMiddlewares = never>
-	extends ExtendContext {}
+	extends BaseContext,
+		ExtendContext {}
 
-export class CommandContext<T extends OptionsRecord = {}, M extends keyof RegisteredMiddlewares = never> {
+export class CommandContext<
+	T extends OptionsRecord = {},
+	M extends keyof RegisteredMiddlewares = never,
+> extends BaseContext {
 	message!: If<InferWithPrefix, Message | undefined, undefined>;
 	interaction!: If<InferWithPrefix, ChatInputCommandInteraction | undefined, ChatInputCommandInteraction>;
 
@@ -38,6 +33,7 @@ export class CommandContext<T extends OptionsRecord = {}, M extends keyof Regist
 		readonly shardId: number,
 		readonly command: Command | SubCommand,
 	) {
+		super(client);
 		if (data instanceof Message) {
 			this.message = data as never;
 		} else {
@@ -54,7 +50,7 @@ export class CommandContext<T extends OptionsRecord = {}, M extends keyof Regist
 	}
 
 	get t() {
-		return this.client.langs!.get(this.interaction?.locale ?? this.client.langs!.defaultLang ?? 'en-US');
+		return this.client.t(this.interaction?.locale ?? this.client.langs?.defaultLang ?? 'en-US');
 	}
 
 	get fullCommandName() {
@@ -179,21 +175,5 @@ export class CommandContext<T extends OptionsRecord = {}, M extends keyof Regist
 		InteractionGuildMember | undefined
 	> {
 		return this.interaction?.member || ((this.message! as Message)?.member as any);
-	}
-
-	isChat(): this is CommandContext {
-		return this instanceof CommandContext;
-	}
-
-	isMenu(): this is MenuCommandContext<any> {
-		return this instanceof MenuCommandContext;
-	}
-
-	isMenuUser(): this is MenuCommandContext<UserCommandInteraction> {
-		return this instanceof MenuCommandContext && this.target instanceof User;
-	}
-
-	isMenuMessage(): this is MenuCommandContext<MessageCommandInteraction> {
-		return this instanceof MenuCommandContext && this.target instanceof Message;
 	}
 }
