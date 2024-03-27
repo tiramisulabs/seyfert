@@ -195,7 +195,7 @@ export class MentionableSelectMenu extends SelectMenu<APIMentionableSelectCompon
 	 * @param mentionables - Role/User id and type to be set as default.
 	 * @returns The current MentionableSelectMenu instance.
 	 */
-	setDefaults(...mentionables: RestOrArray<MentionableDefaultElement>) {
+	setDefaultMentionables(...mentionables: RestOrArray<MentionableDefaultElement>) {
 		this.data.default_values = mentionables.flat().map(mentionable => ({
 			id: mentionable.id,
 			type: SelectMenuDefaultValueType[mentionable.type],
