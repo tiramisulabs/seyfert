@@ -307,20 +307,7 @@ export class Shard {
 		if (data instanceof Buffer) {
 			data = inflateSync(data);
 		}
-		/**
-		 * Idk why, but Bun sends this event when websocket connects.
-		 * MessageEvent {
-		 *  type: "message",
-		 *  data: "Already authenticated."
-		 * }
-		 */
-		if ((data as string).startsWith('{')) {
-			data = JSON.parse(data as string);
-		}
-
-		const packet = data as unknown as GatewayReceivePayload;
-
-		return this.onpacket(packet);
+		return this.onpacket(JSON.parse(data as string));
 	}
 
 	checkOffline(priority: number) {

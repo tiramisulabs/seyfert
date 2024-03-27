@@ -29,6 +29,8 @@ export enum EmbedColors {
 	Greyple = 0x99aab5,
 	DarkButNotBlack = 0x2c2f33,
 	NotQuiteBlack = 0x23272a,
+	DiscordDark = 0x313338,
+	DiscordLight = 0xf9f9f9,
 }
 
 export const DiscordEpoch = 1420070400000n;
