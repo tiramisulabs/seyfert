@@ -7,6 +7,11 @@ export class LinkButtonComponent extends BaseComponent<ComponentType.Button> {
 		return this.data.style as ButtonStyle.Link;
 	}
 
+	get url(): string {
+		// @ts-ignore
+		return this.data.url;
+	}
+
 	get label() {
 		return this.data.label;
 	}
