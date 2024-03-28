@@ -223,8 +223,7 @@ export class ComponentHandler extends BaseHandler {
 					const context = new ComponentContext(this.client, interaction);
 					const extended = this.client.options?.context?.(interaction) ?? {};
 					Object.assign(context, extended);
-					// @ts-expect-error
-					if (!(await i.filter(interaction))) continue;
+					if (!(await i.filter(context))) continue;
 					await i.run(context);
 					break;
 				}

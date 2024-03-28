@@ -1,13 +1,12 @@
-import type { InternalRuntimeConfig, InternalRuntimeConfigHTTP, RuntimeConfig, RuntimeConfigHTTP } from './client/base';
-import type { InferWithPrefix } from './commands';
-import { GatewayIntentBits, type When } from './common';
-import type { ClientNameEvents, EventContext } from './events';
 import type {
-	ChatInputCommandInteraction,
-	Message,
-	MessageCommandInteraction,
-	UserCommandInteraction,
-} from './structures';
+	BaseClientOptions,
+	InternalRuntimeConfig,
+	InternalRuntimeConfigHTTP,
+	RuntimeConfig,
+	RuntimeConfigHTTP,
+} from './client/base';
+import { GatewayIntentBits } from './common';
+import type { ClientNameEvents, EventContext } from './events';
 
 export { Logger, PermissionFlagsBits, PermissionStrings, Watcher } from './common';
 //
@@ -104,13 +103,7 @@ export const config = {
  * });
  */
 export function extendContext<T extends {}>(
-	cb: (
-		interaction:
-			| ChatInputCommandInteraction
-			| UserCommandInteraction
-			| MessageCommandInteraction
-			| When<InferWithPrefix, Message, never>,
-	) => T,
+	cb: (interaction: Parameters<NonNullable<BaseClientOptions['context']>>[0]) => T,
 ) {
 	return cb;
 }

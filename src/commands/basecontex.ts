@@ -1,7 +1,15 @@
-import { ComponentContext, type ComponentCommandInteractionMap } from '../components/componentcontext';
-import { Message, User, type MessageCommandInteraction, type UserCommandInteraction } from '../structures';
-import { CommandContext } from './applications/chatcontext';
-import { MenuCommandContext } from './applications/menucontext';
+import { ApplicationCommandType, InteractionType } from 'discord-api-types/v10';
+import type { ComponentContext, ComponentCommandInteractionMap } from '../components/componentcontext';
+import {
+	type ChatInputCommandInteraction,
+	type ComponentInteraction,
+	Message,
+	User,
+	type MessageCommandInteraction,
+	type UserCommandInteraction,
+} from '../structures';
+import type { CommandContext } from './applications/chatcontext';
+import type { MenuCommandContext } from './applications/menucontext';
 import type { UsingClient } from './applications/shared';
 
 export class BaseContext {
@@ -12,22 +20,26 @@ export class BaseContext {
 	}
 
 	isChat(): this is CommandContext {
-		return this instanceof CommandContext;
+		//@ts-expect-error
+		return this.message || (this.interaction as ChatInputCommandInteraction).type === ApplicationCommandType.ChatInput;
 	}
 
 	isMenu(): this is MenuCommandContext<any> {
-		return this instanceof MenuCommandContext;
+		return this.isMenuUser() || this.isMenuMessage();
 	}
 
 	isMenuUser(): this is MenuCommandContext<UserCommandInteraction> {
-		return this instanceof MenuCommandContext && this.target instanceof User;
+		//@ts-expect-error
+		return this.target instanceof User;
 	}
 
 	isMenuMessage(): this is MenuCommandContext<MessageCommandInteraction> {
-		return this instanceof MenuCommandContext && this.target instanceof Message;
+		//@ts-expect-error
+		return this.target instanceof Message;
 	}
 
 	isComponent(): this is ComponentContext<keyof ComponentCommandInteractionMap> {
-		return this instanceof ComponentContext;
+		//@ts-expect-error
+		return (this.interaction as ComponentInteraction).type === InteractionType.MessageComponent;
 	}
 }
