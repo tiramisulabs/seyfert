@@ -18,7 +18,6 @@ export abstract class ComponentCommand {
 	abstract run(interaction: ComponentContext<typeof this.componentType>): any;
 
 	get cType(): number {
-		// @ts-expect-error
 		return ComponentType[this.componentType];
 	}
 }
