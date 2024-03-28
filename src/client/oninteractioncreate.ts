@@ -29,8 +29,8 @@ export async function onInteractionCreate(
 		case InteractionType.ApplicationCommandAutocomplete:
 			{
 				const parentCommand = self.commands?.values.find(x => {
-					if (x.guild_id && !x.guild_id.includes(body.data.guild_id ?? '')) {
-						return false;
+					if (body.data.guild_id) {
+						return x.guild_id?.includes(body.data.guild_id) && x.name === body.data.name;
 					}
 					return x.name === body.data.name;
 				});
@@ -38,7 +38,7 @@ export async function onInteractionCreate(
 					self,
 					body.data.options ?? [],
 					parentCommand as Command,
-					body.data.guild_id,
+					body.guild_id,
 					body.data.resolved as ContextOptionsResolved,
 				);
 				const interaction = new AutocompleteInteraction(self, body, __reply);
@@ -77,8 +77,8 @@ export async function onInteractionCreate(
 					case ApplicationCommandType.User:
 						{
 							const command = self.commands?.values.find(x => {
-								if (x.guild_id && !x.guild_id.includes(body.data.guild_id ?? '')) {
-									return false;
+								if (body.data.guild_id) {
+									return x.guild_id?.includes(body.data.guild_id) && x.name === body.data.name;
 								}
 								return x.name === body.data.name;
 							}) as ContextMenuCommand;
@@ -134,19 +134,18 @@ export async function onInteractionCreate(
 						break;
 					case ApplicationCommandType.ChatInput:
 						{
-							const packetData = body.data;
 							const parentCommand = self.commands?.values.find(x => {
-								if (x.guild_id && !x.guild_id.includes(packetData.guild_id ?? '')) {
-									return false;
+								if (body.data.guild_id) {
+									return x.guild_id?.includes(body.data.guild_id) && x.name === body.data.name;
 								}
-								return x.name === packetData.name;
+								return x.name === body.data.name;
 							});
 							const optionsResolver = new OptionResolver(
 								self,
-								packetData.options ?? [],
+								body.data.options ?? [],
 								parentCommand as Command,
-								packetData.guild_id,
-								packetData.resolved as ContextOptionsResolved,
+								body.guild_id,
+								body.data.resolved as ContextOptionsResolved,
 							);
 							const interaction = BaseInteraction.from(self, body, __reply) as ChatInputCommandInteraction;
 							const command = optionsResolver.getCommand();
