@@ -1,10 +1,10 @@
 import { ApplicationCommandType, InteractionType } from 'discord-api-types/v10';
-import type { ComponentContext, ComponentCommandInteractionMap } from '../components/componentcontext';
+import type { ComponentCommandInteractionMap, ComponentContext } from '../components/componentcontext';
 import {
-	type ChatInputCommandInteraction,
-	type ComponentInteraction,
 	Message,
 	User,
+	type ChatInputCommandInteraction,
+	type ComponentInteraction,
 	type MessageCommandInteraction,
 	type UserCommandInteraction,
 } from '../structures';
@@ -24,7 +24,7 @@ export class BaseContext {
 		return this.message || (this.interaction as ChatInputCommandInteraction).type === ApplicationCommandType.ChatInput;
 	}
 
-	isMenu(): this is MenuCommandContext<any> {
+	isMenu(): this is MenuCommandContext<UserCommandInteraction | MessageCommandInteraction> {
 		return this.isMenuUser() || this.isMenuMessage();
 	}
 
