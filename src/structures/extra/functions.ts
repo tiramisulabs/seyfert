@@ -1,6 +1,8 @@
+import { FormattingPatterns } from 'discord-api-types/globals';
+import type { APIPartialEmoji } from 'discord-api-types/v10';
 import type { Cache } from '../../cache';
-import type { APIPartialEmoji, TypeArray } from '../../common';
-import { DiscordEpoch, FormattingPatterns } from '../../common';
+import type { TypeArray } from '../../common';
+import { DiscordEpoch } from '../../common';
 import type { EmojiResolvable } from '../../common/types/resolvables';
 
 /** * Convert a timestamp to a snowflake. * @param timestamp The timestamp to convert. * @returns The snowflake. */

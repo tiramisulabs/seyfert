@@ -1,4 +1,4 @@
-import type { GatewayIntentBits, PermissionFlagsBits } from '..';
+import type { GatewayIntentBits, PermissionFlagsBits } from 'discord-api-types/v10';
 
 export type ToClass<T, This> = new (
 	...args: any[]

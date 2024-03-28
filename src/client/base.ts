@@ -20,16 +20,17 @@ import {
 	WebhookShorter,
 	filterSplit,
 	magicImport,
-	type LocaleString,
 	type MakeRequired,
 } from '../common';
 
+import type { LocaleString } from 'discord-api-types/rest/v10';
 import type { DeepPartial, IntentStrings, OmitInsert, When } from '../common/types/util';
 import type { ComponentCommand, ModalCommand } from '../components';
 import { ComponentHandler, type ComponentHandlerLike } from '../components/handler';
 import { LangsHandler, type LangsHandlerLike } from '../langs/handler';
 import type {
 	ChatInputCommandInteraction,
+	ComponentInteraction,
 	Message,
 	MessageCommandInteraction,
 	UserCommandInteraction,
@@ -284,6 +285,7 @@ export interface BaseClientOptions {
 			| ChatInputCommandInteraction<boolean>
 			| UserCommandInteraction<boolean>
 			| MessageCommandInteraction<boolean>
+			| ComponentInteraction
 			| When<InferWithPrefix, Message, never>,
 	) => {};
 	globalMiddlewares?: readonly (keyof RegisteredMiddlewares)[];

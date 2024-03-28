@@ -1,5 +1,6 @@
+import type { APIThreadChannel } from 'discord-api-types/v10';
 import type { ReturnCache } from '../..';
-import { fakePromise, type APIThreadChannel } from '../../common';
+import { fakePromise } from '../../common';
 import { ThreadChannel } from '../../structures';
 import { GuildRelatedResource } from './default/guild-related';
 

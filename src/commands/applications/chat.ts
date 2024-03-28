@@ -1,14 +1,14 @@
-import type { SeyfertNumberOption, SeyfertStringOption } from '../..';
+import {
+	type APIApplicationCommandBasicOption,
+	type APIApplicationCommandOption,
+	type APIApplicationCommandSubcommandGroupOption,
+	ApplicationCommandOptionType,
+	ApplicationCommandType,
+	type LocaleString,
+} from 'discord-api-types/v10';
+import type { PermissionStrings, SeyfertNumberOption, SeyfertStringOption } from '../..';
 import type { Attachment } from '../../builders';
-import type {
-	APIApplicationCommandBasicOption,
-	APIApplicationCommandOption,
-	APIApplicationCommandSubcommandGroupOption,
-	FlatObjectKeys,
-	LocaleString,
-	PermissionStrings,
-} from '../../common';
-import { ApplicationCommandOptionType, ApplicationCommandType, magicImport } from '../../common';
+import { type FlatObjectKeys, magicImport } from '../../common';
 import type { AllChannels, AutocompleteInteraction, GuildRole, InteractionGuildMember, User } from '../../structures';
 import type { Groups, IntegrationTypes, InteractionContextTypes, RegisteredMiddlewares } from '../decorators';
 import type { OptionResolver } from '../optionresolver';

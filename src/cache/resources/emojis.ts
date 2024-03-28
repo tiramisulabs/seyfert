@@ -1,5 +1,6 @@
+import type { APIEmoji } from 'discord-api-types/v10';
 import type { ReturnCache } from '../..';
-import { fakePromise, type APIEmoji } from '../../common';
+import { fakePromise } from '../../common';
 import { GuildEmoji } from '../../structures';
 import { GuildRelatedResource } from './default/guild-related';
 

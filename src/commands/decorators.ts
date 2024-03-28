@@ -1,10 +1,5 @@
-import {
-	ApplicationCommandType,
-	PermissionFlagsBits,
-	type FlatObjectKeys,
-	type LocaleString,
-	type PermissionStrings,
-} from '../common';
+import { ApplicationCommandType, type LocaleString, PermissionFlagsBits } from 'discord-api-types/v10';
+import type { FlatObjectKeys, PermissionStrings } from '../common';
 import type { CommandOption, OptionsRecord, SubCommand } from './applications/chat';
 import type { DefaultLocale, MiddlewareContext } from './applications/shared';
 

@@ -1,9 +1,9 @@
+import { type APIInteraction, InteractionResponseType, InteractionType } from 'discord-api-types/v10';
 import { filetypeinfo } from 'magic-bytes.js';
 import type { HttpRequest, HttpResponse } from 'uWebSockets.js';
 import { OverwrittenMimeTypes } from '../api';
 import { isBufferLike } from '../api/utils/utils';
-import type { APIInteraction, DeepPartial } from '../common';
-import { InteractionResponseType, InteractionType } from '../common';
+import type { DeepPartial } from '../common';
 import type { BaseClientOptions, InternalRuntimeConfigHTTP, StartOptions } from './base';
 import { BaseClient } from './base';
 import { onInteractionCreate } from './oninteractioncreate';

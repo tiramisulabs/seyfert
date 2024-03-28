@@ -15,7 +15,7 @@
 		"lint": "biome lint --apply ./src",
 		"format": "biome format --write ./src",
 		"check-h": "biome check --apply ./src",
-		"check": "biome check --apply --changed --no-errors-on-unmatched ./src"
+		"check": "biome check --apply --no-errors-on-unmatched ./src"
 	},
 	"author": "MARCROCK22",
 	"license": "Apache-2.0",
@@ -70,5 +70,22 @@
 			"name": "socram03",
 			"url": "https://github.com/socram03"
 		}
-	]
+	],
+	"exports": {
+		".": "./lib/index.js",
+		"./api": "./lib/api/index.js",
+		"./builders": "./lib/builders/index.js",
+		"./cache": "./lib/cache/index.js",
+		"./client": "./lib/client/index.js",
+		"./commands": "./lib/commands/index.js",
+		"./common": "./lib/common/index.js",
+		"./components": "./lib/components/index.js",
+		"./events": "./lib/events/index.js",
+		"./langs": "./lib/langs/index.js",
+		"./structures": "./lib/structures/index.js",
+		"./websocket": "./lib/websocket/index.js",
+		"./collection": "./lib/collection.js",
+		"./package.json": "./package.json",
+		"./dapi": "./lib/types/index.js"
+	}
 }

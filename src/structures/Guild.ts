@@ -1,6 +1,6 @@
+import type { APIGuild, APIPartialGuild, GatewayGuildCreateDispatchData } from 'discord-api-types/v10';
 import type { UsingClient } from '../commands';
-import type { APIGuild, APIPartialGuild, GatewayGuildCreateDispatchData, ObjectToLower } from '../common';
-import type { StructPropState, StructStates, ToClass } from '../common/types/util';
+import type { ObjectToLower, StructPropState, StructStates, ToClass } from '../common/types/util';
 import { AutoModerationRule } from './AutoModerationRule';
 import { GuildEmoji } from './GuildEmoji';
 import { GuildMember } from './GuildMember';

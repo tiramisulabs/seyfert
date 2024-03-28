@@ -1,7 +1,5 @@
 import type {
 	APIThreadChannel,
-	Identify,
-	OmitInsert,
 	RESTDeleteAPIAutoModerationRuleResult,
 	RESTDeleteAPIGuildBanResult,
 	RESTDeleteAPIGuildEmojiResult,
@@ -112,7 +110,8 @@ import type {
 	RESTPutAPIGuildMemberResult,
 	RESTPutAPIGuildMemberRoleResult,
 	RESTPutAPIGuildTemplateSyncResult,
-} from '../../common';
+} from 'discord-api-types/v10';
+import type { Identify, OmitInsert } from '../../common';
 import type { ProxyRequestMethod } from '../Router';
 import type { RestArguments } from '../api';
 import type { RawFile } from '../shared';

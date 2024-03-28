@@ -3,7 +3,7 @@ import type {
 	RESTPatchAPIWebhookWithTokenJSONBody,
 	RESTPostAPIChannelWebhookJSONBody,
 	RESTPostAPIWebhookWithTokenJSONBody,
-} from '..';
+} from 'discord-api-types/v10';
 import { resolveFiles } from '../../builders';
 import {
 	MessagesMethods,

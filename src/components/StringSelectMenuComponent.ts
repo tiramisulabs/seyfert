@@ -1,12 +1,8 @@
-import type { APISelectMenuOption, APIStringSelectComponent, ComponentType } from '../common';
-import { BaseSelectMenuComponent } from '../structures/extra/BaseSelectMenuComponent';
+import type { ComponentType } from 'discord-api-types/v10';
+import { BaseSelectMenuComponent } from './BaseSelectMenuComponent';
 
 export class StringSelectMenuComponent extends BaseSelectMenuComponent<ComponentType.StringSelect> {
-	constructor(data: APIStringSelectComponent) {
-		super(data);
-
-		this.options = data.options;
+	get options() {
+		return this.data.options;
 	}
-
-	options: APISelectMenuOption[];
 }

@@ -1,11 +1,11 @@
 import {
-	ComponentType,
 	type APIActionRowComponent,
 	type APIModalInteractionResponseCallbackData,
 	type APITextInputComponent,
-	type RestOrArray,
+	ComponentType,
 	type TextInputStyle,
-} from '../common';
+} from 'discord-api-types/v10';
+import type { RestOrArray } from '../common';
 import type { ActionRow } from './ActionRow';
 import { BaseComponentBuilder, type OptionValuesLength } from './Base';
 import { fromComponent } from './index';

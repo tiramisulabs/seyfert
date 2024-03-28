@@ -1,8 +1,9 @@
+import type { GatewayReceivePayload, GatewaySendPayload } from 'discord-api-types/v10';
+import { GatewayCloseCodes, GatewayDispatchEvents, GatewayOpcodes } from 'discord-api-types/v10';
 import { inflateSync } from 'node:zlib';
 import type WS from 'ws';
 import { WebSocket, type CloseEvent, type ErrorEvent } from 'ws';
-import type { GatewayReceivePayload, GatewaySendPayload, Logger } from '../../common';
-import { GatewayCloseCodes, GatewayDispatchEvents, GatewayOpcodes } from '../../common';
+import type { Logger } from '../../common';
 import { properties } from '../constants';
 import { DynamicBucket, PriorityQueue } from '../structures';
 import { ConnectTimeout } from '../structures/timeout';

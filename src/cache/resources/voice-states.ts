@@ -1,4 +1,4 @@
-import type { GatewayVoiceState } from '../../common';
+import type { GatewayVoiceState } from 'discord-api-types/v10';
 import { GuildBasedResource } from './default/guild-based';
 
 export class VoiceStates extends GuildBasedResource<VoiceStateResource> {

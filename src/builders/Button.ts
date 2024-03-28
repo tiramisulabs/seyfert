@@ -1,13 +1,12 @@
-import { throwError } from '..';
 import {
-	ComponentType,
 	type APIButtonComponentWithCustomId,
 	type APIButtonComponentWithURL,
 	type APIMessageComponentEmoji,
 	type ButtonStyle,
-	type EmojiResolvable,
-	type When,
-} from '../common';
+	ComponentType,
+} from 'discord-api-types/v10';
+import { throwError } from '..';
+import type { EmojiResolvable, When } from '../common';
 import { resolvePartialEmoji } from '../structures/extra/functions';
 
 export type ButtonStylesForID = Exclude<ButtonStyle, ButtonStyle.Link>;

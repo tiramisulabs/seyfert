@@ -1,14 +1,5 @@
-import {
-	resolveColor,
-	toSnakeCase,
-	type APIEmbed,
-	type APIEmbedAuthor,
-	type APIEmbedField,
-	type APIEmbedFooter,
-	type ColorResolvable,
-	type ObjectToLower,
-	type RestOrArray,
-} from '../common';
+import type { APIEmbed, APIEmbedAuthor, APIEmbedField, APIEmbedFooter } from 'discord-api-types/v10';
+import { resolveColor, toSnakeCase, type ColorResolvable, type ObjectToLower, type RestOrArray } from '../common';
 
 /**
  * Represents a message embed.

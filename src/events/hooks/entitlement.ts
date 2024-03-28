@@ -1,5 +1,6 @@
+import type { APIEntitlement } from 'discord-api-types/v10';
 import type { BaseClient } from '../../client/base';
-import { type APIEntitlement, toCamelCase } from '../../common';
+import { toCamelCase } from '../../common';
 
 export const ENTITLEMENT_CREATE = (_: BaseClient, data: APIEntitlement) => {
 	return toCamelCase(data);

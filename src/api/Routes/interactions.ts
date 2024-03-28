@@ -1,6 +1,6 @@
-import type { RESTPostAPIInteractionCallbackJSONBody } from '../../common';
-import type { RestArguments } from '../api';
+import type { RESTPostAPIInteractionCallbackJSONBody } from 'discord-api-types/v10';
 import type { ProxyRequestMethod } from '../Router';
+import type { RestArguments } from '../api';
 
 export interface InteractionRoutes {
 	interactions: (id: string) => (token: string) => {

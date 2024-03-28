@@ -1,4 +1,4 @@
-import { ComponentType, type APIActionRowComponent, type APIActionRowComponentTypes } from '../common';
+import { type APIActionRowComponent, type APIActionRowComponentTypes, ComponentType } from 'discord-api-types/v10';
 import { ActionRow } from './ActionRow';
 import { Button } from './Button';
 import { TextInput } from './Modal';

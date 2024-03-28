@@ -1,12 +1,11 @@
-import type { UsingClient } from '..';
-import type { Attachment } from '../builders';
 import type {
 	APISticker,
-	MethodContext,
-	ObjectToLower,
 	RESTPatchAPIGuildStickerJSONBody,
 	RESTPostAPIGuildStickerFormDataBody,
-} from '../common';
+} from 'discord-api-types/v10';
+import type { UsingClient } from '..';
+import type { Attachment } from '../builders';
+import type { MethodContext, ObjectToLower } from '../common';
 import { User } from './User';
 import { DiscordBase } from './extra/DiscordBase';
 

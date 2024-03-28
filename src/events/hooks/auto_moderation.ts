@@ -1,11 +1,11 @@
+import type {
+	GatewayAutoModerationActionExecutionDispatchData,
+	GatewayAutoModerationRuleCreateDispatchData,
+	GatewayAutoModerationRuleDeleteDispatchData,
+	GatewayAutoModerationRuleUpdateDispatchData,
+} from 'discord-api-types/v10';
 import type { BaseClient } from '../../client/base';
-import {
-	type GatewayAutoModerationActionExecutionDispatchData,
-	type GatewayAutoModerationRuleCreateDispatchData,
-	type GatewayAutoModerationRuleDeleteDispatchData,
-	type GatewayAutoModerationRuleUpdateDispatchData,
-	toCamelCase,
-} from '../../common';
+import { toCamelCase } from '../../common';
 import { AutoModerationRule } from '../../structures';
 
 export const AUTO_MODERATION_ACTION_EXECUTION = (

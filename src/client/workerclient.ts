@@ -1,10 +1,10 @@
+import { type GatewayDispatchPayload, GatewayIntentBits, type GatewaySendPayload } from 'discord-api-types/v10';
 import { randomUUID } from 'node:crypto';
 import { parentPort as manager } from 'node:worker_threads';
-import { ApiHandler } from '..';
+import { ApiHandler, Logger } from '..';
 import type { Cache } from '../cache';
 import { WorkerAdapter } from '../cache';
-import type { GatewayDispatchPayload, GatewaySendPayload, When } from '../common';
-import { GatewayIntentBits, LogLevels, Logger, type DeepPartial } from '../common';
+import { type DeepPartial, LogLevels, type When } from '../common';
 import { EventHandler, type EventHandlerLike } from '../events';
 import { ClientUser } from '../structures';
 import { Shard, type ShardManagerOptions, type WorkerData } from '../websocket';

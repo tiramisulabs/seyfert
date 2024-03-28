@@ -1,6 +1,7 @@
+import { Locale, type LocaleString } from 'discord-api-types/v10';
 import { basename, dirname } from 'node:path';
 import type { Logger } from '../common';
-import { BaseHandler, Locale, type LocaleString } from '../common';
+import { BaseHandler } from '../common';
 import { Command, SubCommand } from './applications/chat';
 import { ContextMenuCommand } from './applications/menu';
 import type { UsingClient } from './applications/shared';

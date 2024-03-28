@@ -1,12 +1,14 @@
+import type {
+	GatewayDispatchPayload,
+	GatewayMessageCreateDispatch,
+	GatewayMessageDeleteBulkDispatch,
+	GatewayMessageDeleteDispatch,
+} from 'discord-api-types/v10';
 import type { Client, WorkerClient } from '../client';
 import {
 	BaseHandler,
 	ReplaceRegex,
 	magicImport,
-	type GatewayDispatchPayload,
-	type GatewayMessageCreateDispatch,
-	type GatewayMessageDeleteBulkDispatch,
-	type GatewayMessageDeleteDispatch,
 	type MakeRequired,
 	type OnFailCallback,
 	type SnakeCase,

@@ -3,8 +3,8 @@ import type {
 	GatewayDispatchPayload,
 	GatewayIntentBits,
 	GatewayPresenceUpdateData,
-	Logger,
-} from '../../common';
+} from 'discord-api-types/v10';
+import type { Logger } from '../../common';
 import type { IdentifyProperties } from '../constants';
 
 export interface ShardManagerOptions extends ShardDetails {

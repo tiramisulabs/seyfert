@@ -1,5 +1,5 @@
-import type { APIPartialGuild, ObjectToLower } from '../../common';
-import { GuildFeature } from '../../common';
+import { type APIPartialGuild, GuildFeature } from 'discord-api-types/v10';
+import type { ObjectToLower } from '../../common';
 import type { ImageOptions } from '../../common/types/options';
 import { DiscordBase } from './DiscordBase';
 

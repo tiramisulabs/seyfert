@@ -1,5 +1,5 @@
+import type { GatewayDispatchPayload, GatewayReadyDispatchData, GatewayResumedDispatch } from 'discord-api-types/v10';
 import type { BaseClient } from '../../client/base';
-import type { GatewayDispatchPayload, GatewayReadyDispatchData, GatewayResumedDispatch } from '../../common';
 import { ClientUser } from '../../structures';
 
 export const READY = (self: BaseClient, data: GatewayReadyDispatchData) => {

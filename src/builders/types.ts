@@ -7,11 +7,9 @@ import type { Button } from './Button';
 import type { TextInput } from './Modal';
 import type { BuilderSelectMenus } from './SelectMenu';
 
-export type ComponentCallback = (
-	interaction: ComponentInteraction | StringSelectMenuInteraction,
-	stop: ComponentStopCallback,
-	refresh: ComponentRefreshCallback,
-) => any;
+export type ComponentCallback<
+	T extends ComponentInteraction | StringSelectMenuInteraction = ComponentInteraction | StringSelectMenuInteraction,
+> = (interaction: T, stop: ComponentStopCallback, refresh: ComponentRefreshCallback) => any;
 export type ComponentFilterCallback<T = ComponentInteraction> = (interaction: T) => any;
 export type ComponentStopCallback = (reason?: string, refresh?: ComponentRefreshCallback) => any;
 export type ComponentRefreshCallback = () => any;

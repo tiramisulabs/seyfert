@@ -1,4 +1,5 @@
-import { magicImport, type ApplicationCommandType, type LocaleString, type PermissionStrings } from '../../common';
+import type { ApplicationCommandType, LocaleString } from 'discord-api-types/v10';
+import { type PermissionStrings, magicImport } from '../../common';
 import type { IntegrationTypes, InteractionContextTypes, RegisteredMiddlewares } from '../decorators';
 import type { MenuCommandContext } from './menucontext';
 import type { PassFunction, StopFunction, UsingClient } from './shared';

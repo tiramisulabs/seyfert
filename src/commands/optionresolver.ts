@@ -1,15 +1,15 @@
+import {
+	type APIApplicationCommandInteractionDataOption,
+	type APIAttachment,
+	type APIGuildMember,
+	type APIInteractionDataResolvedChannel,
+	type APIInteractionGuildMember,
+	type APIRole,
+	type APIUser,
+	ApplicationCommandOptionType,
+} from 'discord-api-types/v10';
 import { Attachment, GuildMember } from '..';
-import type {
-	APIApplicationCommandInteractionDataOption,
-	APIAttachment,
-	APIGuildMember,
-	APIInteractionDataResolvedChannel,
-	APIInteractionGuildMember,
-	APIRole,
-	APIUser,
-	MakeRequired,
-} from '../common';
-import { ApplicationCommandOptionType } from '../common';
+import type { MakeRequired } from '../common';
 import type { AllChannels } from '../structures';
 import { GuildRole, InteractionGuildMember, User } from '../structures';
 import channelFrom from '../structures/channels';

@@ -2,8 +2,9 @@ import type { ComponentCallback, ListenerOptions, ModalSubmitCallback } from '..
 import { LimitedCollection } from '../collection';
 import type { UsingClient } from '../commands';
 import { BaseHandler, magicImport, type Logger, type OnFailCallback } from '../common';
-import type { ComponentInteraction, ModalSubmitInteraction } from '../structures';
+import type { ComponentInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from '../structures';
 import { ComponentCommand, InteractionCommandType, ModalCommand } from './command';
+import { ComponentContext } from './componentcontext';
 
 type COMPONENTS = {
 	components: { match: string | string[] | RegExp; callback: ComponentCallback }[];
@@ -53,7 +54,15 @@ export class ComponentHandler extends BaseHandler {
 		super(logger);
 	}
 
-	createComponentCollector(messageId: string, options: ListenerOptions = {}) {
+	createComponentCollector(
+		messageId: string,
+		options: ListenerOptions = {},
+	): {
+		run<
+			T extends ComponentInteraction | StringSelectMenuInteraction = ComponentInteraction | StringSelectMenuInteraction,
+		>(customId: string | string[] | RegExp, callback: ComponentCallback<T>): any;
+		stop(reason?: string): any;
+	} {
 		this.values.set(messageId, {
 			components: [],
 			options,
@@ -84,6 +93,7 @@ export class ComponentHandler extends BaseHandler {
 		});
 
 		return {
+			//@ts-expect-error generic
 			run: this.values.get(messageId)!.__run,
 			stop: (reason?: string) => {
 				this.deleteValue(messageId);
@@ -218,12 +228,12 @@ export class ComponentHandler extends BaseHandler {
 	async executeComponent(interaction: ComponentInteraction) {
 		for (const i of this.commands) {
 			try {
-				if (
-					i.type === InteractionCommandType.COMPONENT &&
-					i.componentType === interaction.componentType &&
-					(await i.filter(interaction))
-				) {
-					await i.run(interaction);
+				if (i.type === InteractionCommandType.COMPONENT && i.cType === interaction.componentType) {
+					const context = new ComponentContext(this.client, interaction);
+					const extended = this.client.options?.context?.(interaction) ?? {};
+					Object.assign(context, extended);
+					if (!(await i.filter(context))) continue;
+					await i.run(context);
 					break;
 				}
 			} catch (e) {

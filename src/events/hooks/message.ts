@@ -1,4 +1,3 @@
-import type { BaseClient } from '../../client/base';
 import type {
 	APIMessage,
 	GatewayMessageCreateDispatchData,
@@ -9,10 +8,9 @@ import type {
 	GatewayMessageReactionRemoveDispatchData,
 	GatewayMessageReactionRemoveEmojiDispatchData,
 	GatewayMessageUpdateDispatchData,
-	MakeRequired,
-	PartialClass,
-} from '../../common';
-import { toCamelCase } from '../../common';
+} from 'discord-api-types/v10';
+import type { BaseClient } from '../../client/base';
+import { type MakeRequired, type PartialClass, toCamelCase } from '../../common';
 import { Message } from '../../structures';
 
 export const MESSAGE_CREATE = (self: BaseClient, data: GatewayMessageCreateDispatchData) => {

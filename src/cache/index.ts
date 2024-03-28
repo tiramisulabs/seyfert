@@ -1,11 +1,4 @@
-import type {
-	APIEmoji,
-	APISticker,
-	APIThreadChannel,
-	GatewayDispatchPayload,
-	GatewayReadyDispatchData,
-	If,
-} from '../common';
+import type { If } from '../common';
 
 import type { Adapter } from './adapters';
 
@@ -22,8 +15,16 @@ import { Stickers } from './resources/stickers';
 import { Threads } from './resources/threads';
 import { VoiceStates } from './resources/voice-states';
 
+import {
+	type APIEmoji,
+	type APISticker,
+	type APIThreadChannel,
+	ChannelType,
+	type GatewayDispatchPayload,
+	GatewayIntentBits,
+	type GatewayReadyDispatchData,
+} from 'discord-api-types/v10';
 import type { InternalOptions, UsingClient } from '../commands';
-import { ChannelType, GatewayIntentBits } from '../common';
 import { Overwrites } from './resources/overwrites';
 
 export type InferAsyncCache = InternalOptions extends { asyncCache: infer P } ? P : false;

@@ -1,4 +1,5 @@
-import type { APIUser, MessageCreateBodyRequest, ObjectToLower } from '../common';
+import type { APIUser } from 'discord-api-types/v10';
+import type { MessageCreateBodyRequest, ObjectToLower } from '../common';
 import type { ImageOptions } from '../common/types/options';
 import { DiscordBase } from './extra/DiscordBase';
 

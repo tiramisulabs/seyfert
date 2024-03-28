@@ -1,4 +1,3 @@
-import type { BaseClient } from '../../client/base';
 import type {
 	GatewayThreadCreateDispatchData,
 	GatewayThreadDeleteDispatchData,
@@ -6,7 +5,8 @@ import type {
 	GatewayThreadMemberUpdateDispatchData,
 	GatewayThreadMembersUpdateDispatchData,
 	GatewayThreadUpdateDispatchData,
-} from '../../common';
+} from 'discord-api-types/v10';
+import type { BaseClient } from '../../client/base';
 import { toCamelCase } from '../../common';
 import { ThreadChannel } from '../../structures';
 
