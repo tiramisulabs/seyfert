@@ -1,5 +1,6 @@
+import type { APIGuild } from 'discord-api-types/v10';
 import type { Cache, ReturnCache } from '..';
-import { fakePromise, type APIGuild } from '../../common';
+import { fakePromise } from '../../common';
 import { Guild } from '../../structures';
 import { BaseResource } from './default/base';
 

@@ -1,6 +1,6 @@
-import type { RESTGetAPIStickerResult, RESTGetNitroStickerPacksResult } from '../../common';
-import type { RestArguments } from '../api';
+import type { RESTGetAPIStickerResult, RESTGetNitroStickerPacksResult } from 'discord-api-types/v10';
 import type { ProxyRequestMethod } from '../Router';
+import type { RestArguments } from '../api';
 
 export interface StickerRoutes {
 	stickers(id: string): {

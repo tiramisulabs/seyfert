@@ -1,9 +1,9 @@
-import type { BaseClient } from '../../client/base';
 import type {
 	GatewayIntegrationCreateDispatchData,
 	GatewayIntegrationDeleteDispatchData,
 	GatewayIntegrationUpdateDispatchData,
-} from '../../common';
+} from 'discord-api-types/v10';
+import type { BaseClient } from '../../client/base';
 import { toCamelCase } from '../../common';
 import { User } from '../../structures';
 

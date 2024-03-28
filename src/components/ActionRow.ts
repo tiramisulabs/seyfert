@@ -1,4 +1,4 @@
-import type { APIMessageActionRowComponent, ComponentType } from '../common';
+import type { APIMessageActionRowComponent, ComponentType } from 'discord-api-types/v10';
 import { BaseComponent } from './BaseComponent';
 import type { ActionRowMessageComponents } from './index';
 import { componentFactory } from './index';

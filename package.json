@@ -5,7 +5,9 @@
 	"main": "./lib/index.js",
 	"module": "./lib/index.js",
 	"types": "./lib/index.d.ts",
-	"files": ["lib/**"],
+	"files": [
+		"lib/**"
+	],
 	"scripts": {
 		"build": "tsc --outDir ./lib",
 		"prepublishOnly": "npm run build",
@@ -25,7 +27,10 @@
 		"ws": "^8.16.0"
 	},
 	"lint-staged": {
-		"*.ts": ["biome check --apply", "biome format --write"]
+		"*.ts": [
+			"biome check --apply",
+			"biome format --write"
+		]
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.6.0",
@@ -50,7 +55,13 @@
 	"bugs": {
 		"url": "https://github.com/tiramisulabs/seyfert"
 	},
-	"keywords": ["api", "discord", "bots", "typescript", "botdev"],
+	"keywords": [
+		"api",
+		"discord",
+		"bots",
+		"typescript",
+		"botdev"
+	],
 	"publishConfig": {
 		"access": "public"
 	},
@@ -59,5 +70,22 @@
 			"name": "socram03",
 			"url": "https://github.com/socram03"
 		}
-	]
+	],
+	"exports": {
+		".": "./lib/index.js",
+		"./api": "./lib/api/index.js",
+		"./builders": "./lib/builders/index.js",
+		"./cache": "./lib/cache/index.js",
+		"./client": "./lib/client/index.js",
+		"./commands": "./lib/commands/index.js",
+		"./common": "./lib/common/index.js",
+		"./components": "./lib/components/index.js",
+		"./events": "./lib/events/index.js",
+		"./langs": "./lib/langs/index.js",
+		"./structures": "./lib/structures/index.js",
+		"./websocket": "./lib/websocket/index.js",
+		"./collection": "./lib/collection.js",
+		"./package.json": "./package.json",
+		"./dapi": "./lib/types/index.js"
+	}
 }

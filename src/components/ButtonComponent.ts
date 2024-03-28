@@ -1,5 +1,5 @@
+import type { ButtonStyle, ComponentType } from 'discord-api-types/v10';
 import { Button, type ButtonStylesForID } from '../builders';
-import type { ButtonStyle, ComponentType } from '../common';
 import { BaseComponent } from './BaseComponent';
 
 export class LinkButtonComponent extends BaseComponent<ComponentType.Button> {

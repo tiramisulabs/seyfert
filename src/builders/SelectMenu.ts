@@ -1,7 +1,4 @@
-import { throwError } from '..';
 import {
-	ComponentType,
-	SelectMenuDefaultValueType,
 	type APIChannelSelectComponent,
 	type APIMentionableSelectComponent,
 	type APIMessageComponentEmoji,
@@ -12,10 +9,11 @@ import {
 	type APIStringSelectComponent,
 	type APIUserSelectComponent,
 	type ChannelType,
-	type EmojiResolvable,
-	type RestOrArray,
-	type ToClass,
-} from '../common';
+	ComponentType,
+	SelectMenuDefaultValueType,
+} from 'discord-api-types/v10';
+import { throwError } from '..';
+import type { EmojiResolvable, RestOrArray, ToClass } from '../common';
 import type {
 	ChannelSelectMenuInteraction,
 	ComponentInteraction,

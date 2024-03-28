@@ -1,13 +1,13 @@
-import type { ListenerOptions } from '../builders';
-import type { UsingClient } from '../commands';
 import type {
 	APIChannelMention,
 	APIGuildMember,
 	APIMessage,
 	APIUser,
 	GatewayMessageCreateDispatchData,
-	ObjectToLower,
-} from '../common';
+} from 'discord-api-types/v10';
+import type { ListenerOptions } from '../builders';
+import type { UsingClient } from '../commands';
+import type { ObjectToLower } from '../common';
 import type { EmojiResolvable } from '../common/types/resolvables';
 import type { MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../common/types/write';
 import type { ActionRowMessageComponents } from '../components';

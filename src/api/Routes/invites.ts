@@ -1,6 +1,6 @@
-import type { RESTDeleteAPIInviteResult, RESTGetAPIInviteQuery, RESTGetAPIInviteResult } from '../../common';
-import type { RestArguments } from '../api';
+import type { RESTDeleteAPIInviteResult, RESTGetAPIInviteQuery, RESTGetAPIInviteResult } from 'discord-api-types/v10';
 import type { ProxyRequestMethod } from '../Router';
+import type { RestArguments } from '../api';
 
 export interface InviteRoutes {
 	invites(id: string): {

@@ -1,6 +1,7 @@
+import { MessageFlags } from 'discord-api-types/v10';
 import type { AllChannels, Guild, InferWithPrefix, ReturnCache, WebhookMessage } from '../..';
 import type { Client, WorkerClient } from '../../client';
-import { MessageFlags, type If, type UnionToTuple, type When } from '../../common';
+import type { If, UnionToTuple, When } from '../../common';
 import type { InteractionCreateBodyRequest, InteractionMessageUpdateBodyRequest } from '../../common/types/write';
 import {
 	Message,

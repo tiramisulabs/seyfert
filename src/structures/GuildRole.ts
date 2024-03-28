@@ -1,12 +1,11 @@
-import type { UsingClient } from '../commands';
 import type {
 	APIRole,
-	MethodContext,
-	ObjectToLower,
 	RESTPatchAPIGuildRoleJSONBody,
 	RESTPatchAPIGuildRolePositionsJSONBody,
 	RESTPostAPIGuildRoleJSONBody,
-} from '../common';
+} from 'discord-api-types/v10';
+import type { UsingClient } from '../commands';
+import type { MethodContext, ObjectToLower } from '../common';
 import { DiscordBase } from './extra/DiscordBase';
 import { PermissionsBitField } from './extra/Permissions';
 

@@ -1,16 +1,16 @@
-import { fromComponent } from '../builders';
-import type {
-	APIActionRowComponent,
-	APIActionRowComponentTypes,
-	APIButtonComponent,
-	APIChannelSelectComponent,
-	APIMentionableSelectComponent,
-	APIRoleSelectComponent,
-	APIStringSelectComponent,
-	APITextInputComponent,
-	APIUserSelectComponent,
+import {
+	type APIActionRowComponent,
+	type APIActionRowComponentTypes,
+	type APIButtonComponent,
+	type APIChannelSelectComponent,
+	type APIMentionableSelectComponent,
+	type APIRoleSelectComponent,
+	type APIStringSelectComponent,
+	type APITextInputComponent,
+	type APIUserSelectComponent,
 	ComponentType,
-} from '../common';
+} from 'discord-api-types/v10';
+import { fromComponent } from '../builders';
 
 export class BaseComponent<T extends ComponentType> {
 	constructor(public data: APIComponentsMap[T]) {}

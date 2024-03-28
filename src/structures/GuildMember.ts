@@ -1,19 +1,3 @@
-import type {
-	APIGuildMember,
-	APIInteractionDataResolvedGuildMember,
-	APIUser,
-	GatewayGuildMemberAddDispatchData,
-	GatewayGuildMemberUpdateDispatchData,
-	MakeRequired,
-	MessageCreateBodyRequest,
-	ObjectToLower,
-	RESTGetAPIGuildMembersQuery,
-	RESTGetAPIGuildMembersSearchQuery,
-	RESTPatchAPIGuildMemberJSONBody,
-	RESTPutAPIGuildBanJSONBody,
-	RESTPutAPIGuildMemberJSONBody,
-	ToClass,
-} from '../common';
 import { DiscordBase } from './extra/DiscordBase';
 
 export type GuildMemberData =
@@ -22,7 +6,20 @@ export type GuildMemberData =
 	| GatewayGuildMemberAddDispatchData
 	| APIInteractionDataResolvedGuildMember;
 
+import type {
+	APIGuildMember,
+	APIInteractionDataResolvedGuildMember,
+	APIUser,
+	GatewayGuildMemberAddDispatchData,
+	GatewayGuildMemberUpdateDispatchData,
+	RESTGetAPIGuildMembersQuery,
+	RESTGetAPIGuildMembersSearchQuery,
+	RESTPatchAPIGuildMemberJSONBody,
+	RESTPutAPIGuildBanJSONBody,
+	RESTPutAPIGuildMemberJSONBody,
+} from 'discord-api-types/v10';
 import type { UsingClient } from '../commands';
+import type { MakeRequired, MessageCreateBodyRequest, ObjectToLower, ToClass } from '../common';
 import type { ImageOptions, MethodContext } from '../common/types/options';
 import type { GuildMemberResolvable } from '../common/types/resolvables';
 import { User } from './User';

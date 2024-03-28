@@ -1,11 +1,10 @@
-import type { UsingClient } from '../commands';
 import type {
 	APITemplate,
-	MethodContext,
-	ObjectToLower,
 	RESTPatchAPIGuildTemplateJSONBody,
 	RESTPostAPIGuildTemplatesJSONBody,
-} from '../common';
+} from 'discord-api-types/v10';
+import type { UsingClient } from '../commands';
+import type { MethodContext, ObjectToLower } from '../common';
 import { Base } from './extra/Base';
 
 export interface GuildTemplate extends Base, ObjectToLower<APITemplate> {}

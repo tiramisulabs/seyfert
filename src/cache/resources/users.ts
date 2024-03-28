@@ -1,5 +1,6 @@
+import type { APIUser } from 'discord-api-types/v10';
 import type { ReturnCache } from '../..';
-import { fakePromise, type APIUser } from '../../common';
+import { fakePromise } from '../../common';
 import { User } from '../../structures';
 import { BaseResource } from './default/base';
 

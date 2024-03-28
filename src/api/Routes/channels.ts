@@ -52,9 +52,9 @@ import type {
 	RESTPutAPIChannelRecipientJSONBody,
 	RESTPutAPIChannelRecipientResult,
 	RESTPutAPIChannelThreadMembersResult,
-} from '../../common';
-import type { RestArguments } from '../api';
+} from 'discord-api-types/v10';
 import type { ProxyRequestMethod } from '../Router';
+import type { RestArguments } from '../api';
 
 export interface ChannelRoutes {
 	channels(id: string): {

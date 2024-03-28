@@ -21,9 +21,9 @@ import type {
 	RESTPostAPIWebhookWithTokenSlackResult,
 	RESTPostAPIWebhookWithTokenSlackWaitResult,
 	RESTPostAPIWebhookWithTokenWaitResult,
-} from '../../common';
-import type { RestArguments } from '../api';
+} from 'discord-api-types/v10';
 import type { ProxyRequestMethod } from '../Router';
+import type { RestArguments } from '../api';
 
 export interface WebhookRoutes {
 	webhooks(id: string): {

@@ -1,3 +1,4 @@
+import { GatewayIntentBits } from 'discord-api-types/gateway/v10';
 import type {
 	BaseClientOptions,
 	InternalRuntimeConfig,
@@ -5,10 +6,8 @@ import type {
 	RuntimeConfig,
 	RuntimeConfigHTTP,
 } from './client/base';
-import { GatewayIntentBits } from './common';
 import type { ClientNameEvents, EventContext } from './events';
-
-export { Logger, PermissionFlagsBits, PermissionStrings, Watcher } from './common';
+export { Logger, PermissionStrings, Watcher } from './common';
 //
 export { Collection, LimitedCollection } from './collection';
 //

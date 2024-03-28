@@ -1,6 +1,16 @@
 import {
+	type APIChannelBase,
+	type APIGuildChannel,
+	type APIGuildForumDefaultReactionEmoji,
+	type APIGuildForumTag,
 	ChannelFlags,
 	ChannelType,
+	type RESTGetAPIChannelMessageReactionUsersQuery,
+	type RESTPatchAPIChannelJSONBody,
+	type RESTPatchAPIGuildChannelPositionsJSONBody,
+	type RESTPostAPIChannelWebhookJSONBody,
+	type RESTPostAPIGuildChannelJSONBody,
+	type SortOrderType,
 	VideoQualityMode,
 	type APIDMChannel,
 	type APIGuildCategoryChannel,
@@ -17,21 +27,11 @@ import { mix } from 'ts-mixer';
 import { Embed, resolveAttachment } from '../builders';
 import type { UsingClient } from '../commands';
 import type {
-	APIChannelBase,
-	APIGuildChannel,
-	APIGuildForumDefaultReactionEmoji,
-	APIGuildForumTag,
 	EmojiResolvable,
 	MessageCreateBodyRequest,
 	MessageUpdateBodyRequest,
 	MethodContext,
 	ObjectToLower,
-	RESTGetAPIChannelMessageReactionUsersQuery,
-	RESTPatchAPIChannelJSONBody,
-	RESTPatchAPIGuildChannelPositionsJSONBody,
-	RESTPostAPIChannelWebhookJSONBody,
-	RESTPostAPIGuildChannelJSONBody,
-	SortOrderType,
 	StringToNumber,
 	ToClass,
 } from '../common';

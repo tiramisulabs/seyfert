@@ -1,7 +1,6 @@
+import { ApplicationCommandType, MessageFlags } from 'discord-api-types/v10';
 import type { ContextMenuCommand, ReturnCache, WebhookMessage } from '../..';
 import {
-	ApplicationCommandType,
-	MessageFlags,
 	toSnakeCase,
 	type InteractionCreateBodyRequest,
 	type InteractionMessageUpdateBodyRequest,

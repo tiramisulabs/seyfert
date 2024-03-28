@@ -1,5 +1,5 @@
+import type { GatewayVoiceServerUpdateDispatchData, GatewayVoiceStateUpdateDispatchData } from 'discord-api-types/v10';
 import type { BaseClient } from '../../client/base';
-import type { GatewayVoiceServerUpdateDispatchData, GatewayVoiceStateUpdateDispatchData } from '../../common';
 import { toCamelCase } from '../../common';
 import { GuildMember } from '../../structures';
 

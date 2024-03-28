@@ -1,16 +1,11 @@
+import type { GatewayPresenceUpdateData, GatewaySendPayload } from 'discord-api-types/v10';
 import cluster, { type Worker as ClusterWorker } from 'node:cluster';
 import { randomUUID } from 'node:crypto';
 import { Worker as ThreadWorker } from 'node:worker_threads';
-import { ApiHandler, Router } from '../..';
+import { ApiHandler, Logger, Router } from '../..';
 import { MemoryAdapter, type Adapter } from '../../cache';
 import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
-import {
-	Logger,
-	MergeOptions,
-	type GatewayPresenceUpdateData,
-	type GatewaySendPayload,
-	type MakePartial,
-} from '../../common';
+import { type MakePartial, MergeOptions } from '../../common';
 import { WorkerManagerDefaults } from '../constants';
 import { SequentialBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';

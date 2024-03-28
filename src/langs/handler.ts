@@ -1,4 +1,5 @@
-import { BaseHandler, type Locale, type LocaleString } from '../common';
+import type { Locale, LocaleString } from 'discord-api-types/v10';
+import { BaseHandler } from '../common';
 import { LangRouter } from './router';
 
 export interface LangsHandlerLike {

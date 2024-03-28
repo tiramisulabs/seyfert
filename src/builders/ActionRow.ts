@@ -3,8 +3,8 @@ import {
 	type APIActionRowComponent,
 	type APIActionRowComponentTypes,
 	type APIMessageActionRowComponent,
-	type RestOrArray,
-} from '../common';
+} from 'discord-api-types/v10';
+import type { RestOrArray } from '../common/types/util';
 import { BaseComponentBuilder } from './Base';
 import { fromComponent } from './index';
 import type { BuilderComponents, FixedComponents } from './types';

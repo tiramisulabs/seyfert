@@ -1,4 +1,4 @@
-import { PermissionFlagsBits, type RESTPatchAPIChannelJSONBody } from '..';
+import { PermissionFlagsBits, type RESTPatchAPIChannelJSONBody } from 'discord-api-types/v10';
 import { BaseChannel, Message, type GuildMember, type GuildRole } from '../../structures';
 import channelFrom, { type AllChannels } from '../../structures/channels';
 import { PermissionsBitField } from '../../structures/extra/Permissions';

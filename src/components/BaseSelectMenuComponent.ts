@@ -1,4 +1,4 @@
-import type { ComponentType } from '../common';
+import type { ComponentType } from 'discord-api-types/v10';
 import { BaseComponent } from './BaseComponent';
 
 export type APISelectMenuComponentTypes =

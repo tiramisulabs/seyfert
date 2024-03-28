@@ -1,16 +1,18 @@
-import type { UsingClient } from '../commands';
 import type {
 	APIWebhook,
+	RESTGetAPIWebhookWithTokenMessageQuery,
+	RESTPatchAPIWebhookJSONBody,
+	RESTPatchAPIWebhookWithTokenJSONBody,
+	RESTPostAPIWebhookWithTokenQuery,
+} from 'discord-api-types/v10';
+import type { UsingClient } from '../commands';
+import type {
 	ImageOptions,
 	MessageWebhookCreateBodyRequest,
 	MessageWebhookPayload,
 	MessageWebhookUpdateBodyRequest,
 	MethodContext,
 	ObjectToLower,
-	RESTGetAPIWebhookWithTokenMessageQuery,
-	RESTPatchAPIWebhookJSONBody,
-	RESTPatchAPIWebhookWithTokenJSONBody,
-	RESTPostAPIWebhookWithTokenQuery,
 } from '../common';
 import { AnonymousGuild } from './AnonymousGuild';
 import { User } from './User';

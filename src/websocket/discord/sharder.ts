@@ -1,13 +1,15 @@
-import { parentPort, workerData } from 'node:worker_threads';
 import {
 	GatewayOpcodes,
+	type GatewaySendPayload,
+	type GatewayUpdatePresence,
+	type GatewayVoiceStateUpdate,
+} from 'discord-api-types/v10';
+import { parentPort, workerData } from 'node:worker_threads';
+import {
 	LogLevels,
 	Logger,
 	MergeOptions,
 	toSnakeCase,
-	type GatewaySendPayload,
-	type GatewayUpdatePresence,
-	type GatewayVoiceStateUpdate,
 	type ObjectToLower,
 	type WatcherSendToShard,
 } from '../../common';

@@ -1,4 +1,3 @@
-import type { BaseClient } from '../../client/base';
 import type {
 	GatewayGuildAuditLogEntryCreateDispatchData,
 	GatewayGuildBanAddDispatchData,
@@ -20,7 +19,8 @@ import type {
 	GatewayGuildScheduledEventUserRemoveDispatchData,
 	GatewayGuildStickersUpdateDispatchData,
 	GatewayGuildUpdateDispatchData,
-} from '../../common';
+} from 'discord-api-types/v10';
+import type { BaseClient } from '../../client/base';
 import { toCamelCase } from '../../common';
 import {
 	Guild,

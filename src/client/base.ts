@@ -20,10 +20,10 @@ import {
 	WebhookShorter,
 	filterSplit,
 	magicImport,
-	type LocaleString,
 	type MakeRequired,
 } from '../common';
 
+import type { LocaleString } from 'discord-api-types/rest/v10';
 import type { DeepPartial, IntentStrings, OmitInsert, When } from '../common/types/util';
 import type { ComponentCommand, ModalCommand } from '../components';
 import { ComponentHandler, type ComponentHandlerLike } from '../components/handler';

@@ -1,4 +1,4 @@
-import type { APIBaseComponent, ComponentType } from '../common';
+import type { APIBaseComponent, ComponentType } from 'discord-api-types/v10';
 
 export abstract class BaseComponentBuilder<
 	TYPE extends Partial<APIBaseComponent<ComponentType>> = APIBaseComponent<ComponentType>,
