@@ -128,6 +128,6 @@ export interface ComponentCommandInteractionMap {
 	TextInput: never;
 	UserSelect: UserSelectMenuInteraction;
 	RoleSelect: RoleSelectMenuInteraction;
-	MentioableSelect: MentionableSelectMenuInteraction;
+	MentionableSelect: MentionableSelectMenuInteraction;
 	ChannelSelect: ChannelSelectMenuInteraction;
 }
