@@ -2,7 +2,7 @@ import type { ComponentCallback, ListenerOptions, ModalSubmitCallback } from '..
 import { LimitedCollection } from '../collection';
 import type { UsingClient } from '../commands';
 import { BaseHandler, magicImport, type Logger, type OnFailCallback } from '../common';
-import type { ComponentInteraction, ModalSubmitInteraction } from '../structures';
+import type { ComponentInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from '../structures';
 import { ComponentCommand, InteractionCommandType, ModalCommand } from './command';
 import { ComponentContext } from './componentcontext';
 
@@ -54,7 +54,15 @@ export class ComponentHandler extends BaseHandler {
 		super(logger);
 	}
 
-	createComponentCollector(messageId: string, options: ListenerOptions = {}) {
+	createComponentCollector(
+		messageId: string,
+		options: ListenerOptions = {},
+	): {
+		run<
+			T extends ComponentInteraction | StringSelectMenuInteraction = ComponentInteraction | StringSelectMenuInteraction,
+		>(customId: string | string[] | RegExp, callback: ComponentCallback<T>): any;
+		stop(reason?: string): any;
+	} {
 		this.values.set(messageId, {
 			components: [],
 			options,
@@ -85,6 +93,7 @@ export class ComponentHandler extends BaseHandler {
 		});
 
 		return {
+			//@ts-expect-error generic
 			run: this.values.get(messageId)!.__run,
 			stop: (reason?: string) => {
 				this.deleteValue(messageId);
