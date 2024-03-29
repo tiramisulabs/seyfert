@@ -66,7 +66,7 @@ export class ShardManager extends Map<number, Shard> {
 		return acc / this.size;
 	}
 
-	calculeShardId(guildId: string) {
+	calculateShardId(guildId: string) {
 		return Number((BigInt(guildId) >> 22n) % BigInt(this.options.info.shards ?? 1));
 	}
 
@@ -162,7 +162,7 @@ export class ShardManager extends Map<number, Shard> {
 		channel_id: string,
 		options: ObjectToLower<Pick<GatewayVoiceStateUpdate['d'], 'self_deaf' | 'self_mute'>>,
 	) {
-		const shardId = this.calculeShardId(guild_id);
+		const shardId = this.calculateShardId(guild_id);
 		this.debugger?.info(`Shard #${shardId} join voice ${channel_id} in ${guild_id}`);
 
 		return this.send<GatewayVoiceStateUpdate>(shardId, {
@@ -176,7 +176,7 @@ export class ShardManager extends Map<number, Shard> {
 	}
 
 	leaveVoice(guild_id: string) {
-		const shardId = this.calculeShardId(guild_id);
+		const shardId = this.calculateShardId(guild_id);
 		this.debugger?.info(`Shard #${shardId} leave voice in ${guild_id}`);
 
 		return this.send<GatewayVoiceStateUpdate>(shardId, {
