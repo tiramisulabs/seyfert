@@ -6,6 +6,7 @@ import {
 	type InteractionMessageUpdateBodyRequest,
 	type UnionToTuple,
 	type When,
+	type ModalCreateBodyRequest,
 } from '../../common';
 import {
 	Message,
@@ -73,8 +74,8 @@ export class MenuCommandContext<
 		return this.interaction.write(body, fetchReply);
 	}
 
-	get modal() {
-		return this.interaction.modal;
+	modal(body: ModalCreateBodyRequest) {
+		return this.interaction.modal(body);
 	}
 
 	deferReply(ephemeral = false) {
