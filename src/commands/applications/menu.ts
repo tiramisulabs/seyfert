@@ -17,7 +17,7 @@ export abstract class ContextMenuCommand {
 	integrationTypes?: IntegrationTypes[];
 	contexts?: InteractionContextTypes[];
 	description!: string;
-	defaultMemberPermissions?: string;
+	defaultMemberPermissions?: bigint;
 	botPermissions?: bigint;
 	dm?: boolean;
 	name_localizations?: Partial<Record<LocaleString, string>>;
@@ -93,7 +93,7 @@ export abstract class ContextMenuCommand {
 			description_localizations: this.description_localizations,
 			guild_id: this.guildId,
 			dm_permission: this.dm,
-			default_member_permissions: this.defaultMemberPermissions,
+			default_member_permissions: this.defaultMemberPermissions ? this.defaultMemberPermissions.toString() : undefined,
 			contexts: this.contexts,
 			integration_types: this.integrationTypes,
 		};
