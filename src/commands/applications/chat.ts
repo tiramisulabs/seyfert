@@ -248,7 +248,7 @@ class BaseCommand {
 			name_localizations: this.name_localizations,
 			description_localizations: this.description_localizations,
 			guild_id: this.guildId,
-			default_member_permissions: this.defaultMemberPermissions ? this.defaultMemberPermissions.toString() : '',
+			default_member_permissions: this.defaultMemberPermissions ? this.defaultMemberPermissions.toString() : undefined,
 			contexts: this.contexts,
 			integration_types: this.integrationTypes,
 		} as {

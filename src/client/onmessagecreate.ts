@@ -111,7 +111,11 @@ export async function onMessageCreate(
 		if (command.defaultMemberPermissions && message.guildId) {
 			const memberPermissions = await self.members.permissions(message.guildId, message.author.id);
 			const permissions = memberPermissions.missings(...memberPermissions.values([command.defaultMemberPermissions]));
-			if (!memberPermissions.has('Administrator') && permissions.length) {
+			if (
+				!memberPermissions.has('Administrator') &&
+				permissions.length &&
+				(await message.guild())!.ownerId !== message.author.id
+			) {
 				return command.onPermissionsFail?.(context, memberPermissions.keys(permissions));
 			}
 		}
