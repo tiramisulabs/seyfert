@@ -1,4 +1,9 @@
-import { type APIInteraction, InteractionResponseType, InteractionType } from 'discord-api-types/v10';
+import {
+	type APIInteractionResponse,
+	InteractionResponseType,
+	InteractionType,
+	type APIInteraction,
+} from 'discord-api-types/v10';
 import { filetypeinfo } from 'magic-bytes.js';
 import type { HttpRequest, HttpResponse } from 'uWebSockets.js';
 import { OverwrittenMimeTypes } from '../api';
@@ -131,44 +136,46 @@ export class HttpClient extends BaseClient {
 					break;
 				default:
 					await onInteractionCreate(this, rawBody, -1, async ({ body, files }) => {
-						let response;
-						const headers: { 'Content-Type'?: string } = {};
+						res.cork(() => {
+							let response: FormData | APIInteractionResponse;
+							const headers: { 'Content-Type'?: string } = {};
 
-						if (files) {
-							response = new FormData();
-							for (const [index, file] of files.entries()) {
-								const fileKey = file.key ?? `files[${index}]`;
-								if (isBufferLike(file.data)) {
-									let contentType = file.contentType;
+							if (files) {
+								response = new FormData();
+								for (const [index, file] of files.entries()) {
+									const fileKey = file.key ?? `files[${index}]`;
+									if (isBufferLike(file.data)) {
+										let contentType = file.contentType;
 
-									if (!contentType) {
-										const [parsedType] = filetypeinfo(file.data);
+										if (!contentType) {
+											const [parsedType] = filetypeinfo(file.data);
 
-										if (parsedType) {
-											contentType =
-												OverwrittenMimeTypes[parsedType.mime as keyof typeof OverwrittenMimeTypes] ??
-												parsedType.mime ??
-												'application/octet-stream';
+											if (parsedType) {
+												contentType =
+													OverwrittenMimeTypes[parsedType.mime as keyof typeof OverwrittenMimeTypes] ??
+													parsedType.mime ??
+													'application/octet-stream';
+											}
 										}
+										response.append(fileKey, new Blob([file.data], { type: contentType }), file.name);
+									} else {
+										response.append(fileKey, new Blob([`${file.data}`], { type: file.contentType }), file.name);
 									}
-									response.append(fileKey, new Blob([file.data], { type: contentType }), file.name);
-								} else {
-									response.append(fileKey, new Blob([`${file.data}`], { type: file.contentType }), file.name);
 								}
+								if (body) {
+									response.append('payload_json', JSON.stringify(body));
+								}
+							} else {
+								response = body ?? {};
+								headers['Content-Type'] = 'application/json';
 							}
-							if (body) {
-								response.append('payload_json', JSON.stringify(body));
+
+							for (const i in headers) {
+								res.writeHeader(i, headers[i as keyof typeof headers]!);
 							}
-						} else {
-							response = body ?? {};
-							headers['Content-Type'] = 'application/json';
-						}
 
-						for (const i in headers) {
-							res.writeHeader(i, headers[i as keyof typeof headers]!);
-						}
-
-						return res.end(JSON.stringify(response));
+							return res.end(JSON.stringify(response));
+						});
 					});
 					break;
 			}
