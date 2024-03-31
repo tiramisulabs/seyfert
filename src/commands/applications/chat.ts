@@ -1,14 +1,14 @@
 import {
+	ApplicationCommandOptionType,
+	ApplicationCommandType,
 	type APIApplicationCommandBasicOption,
 	type APIApplicationCommandOption,
 	type APIApplicationCommandSubcommandGroupOption,
-	ApplicationCommandOptionType,
-	ApplicationCommandType,
 	type LocaleString,
 } from 'discord-api-types/v10';
 import type { PermissionStrings, SeyfertNumberOption, SeyfertStringOption } from '../..';
 import type { Attachment } from '../../builders';
-import { type FlatObjectKeys, magicImport } from '../../common';
+import { magicImport, type FlatObjectKeys } from '../../common';
 import type { AllChannels, AutocompleteInteraction, GuildRole, InteractionGuildMember, User } from '../../structures';
 import type { Groups, IntegrationTypes, InteractionContextTypes, RegisteredMiddlewares } from '../decorators';
 import type { OptionResolver } from '../optionresolver';
@@ -117,13 +117,13 @@ class BaseCommand {
 		}
 	>;
 
-	guild_id?: string[];
+	guildId?: string[];
 	name!: string;
 	type!: number; // ApplicationCommandType.ChatInput | ApplicationCommandOptionType.Subcommand
 	nsfw?: boolean;
 	description!: string;
-	default_member_permissions?: string;
-	integration_types?: IntegrationTypes[];
+	defaultMemberPermissions?: bigint;
+	integrationTypes?: IntegrationTypes[];
 	contexts?: InteractionContextTypes[];
 	botPermissions?: bigint;
 	name_localizations?: Partial<Record<LocaleString, string>>;
@@ -247,10 +247,10 @@ class BaseCommand {
 			description: this.description,
 			name_localizations: this.name_localizations,
 			description_localizations: this.description_localizations,
-			guild_id: this.guild_id,
-			default_member_permissions: this.default_member_permissions,
+			guild_id: this.guildId,
+			default_member_permissions: this.defaultMemberPermissions ? this.defaultMemberPermissions.toString() : '',
 			contexts: this.contexts,
-			integration_types: this.integration_types,
+			integration_types: this.integrationTypes,
 		} as {
 			name: BaseCommand['name'];
 			type: BaseCommand['type'];
@@ -258,10 +258,10 @@ class BaseCommand {
 			description: BaseCommand['description'];
 			name_localizations: BaseCommand['name_localizations'];
 			description_localizations: BaseCommand['description_localizations'];
-			guild_id: BaseCommand['guild_id'];
-			default_member_permissions: BaseCommand['default_member_permissions'];
+			guild_id: BaseCommand['guildId'];
+			default_member_permissions: string;
 			contexts: BaseCommand['contexts'];
-			integration_types: BaseCommand['integration_types'];
+			integration_types: BaseCommand['integrationTypes'];
 		};
 		return data;
 	}
@@ -284,6 +284,7 @@ class BaseCommand {
 	onRunError?(context: CommandContext<any>, error: unknown): any;
 	onOptionsError?(context: CommandContext<{}, never>, metadata: OnOptionsReturnObject): any;
 	onMiddlewaresError?(context: CommandContext<{}, never>, error: string): any;
+	onBotPermissionsFail?(context: CommandContext<{}, never>, permissions: PermissionStrings): any;
 	onPermissionsFail?(context: CommandContext<{}, never>, permissions: PermissionStrings): any;
 	onInternalError?(client: UsingClient, error?: unknown): any;
 }
@@ -332,6 +333,9 @@ export class Command extends BaseCommand {
 	}
 	onMiddlewaresError(context: CommandContext<{}, never>, error: string): any {
 		context.client.logger.fatal(`${this.name}.<onMiddlewaresError>`, context.author.id, error);
+	}
+	onBotPermissionsFail(context: CommandContext<{}, never>, permissions: PermissionStrings): any {
+		context.client.logger.fatal(`${this.name}.<onBotPermissionsFail>`, context.author.id, permissions);
 	}
 	onPermissionsFail(context: CommandContext<{}, never>, permissions: PermissionStrings): any {
 		context.client.logger.fatal(`${this.name}.<onPermissionsFail>`, context.author.id, permissions);

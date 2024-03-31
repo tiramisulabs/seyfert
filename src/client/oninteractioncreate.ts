@@ -30,7 +30,7 @@ export async function onInteractionCreate(
 			{
 				const parentCommand = self.commands?.values.find(x => {
 					if (body.data.guild_id) {
-						return x.guild_id?.includes(body.data.guild_id) && x.name === body.data.name;
+						return x.guildId?.includes(body.data.guild_id) && x.name === body.data.name;
 					}
 					return x.name === body.data.name;
 				});
@@ -78,7 +78,7 @@ export async function onInteractionCreate(
 						{
 							const command = self.commands?.values.find(x => {
 								if (body.data.guild_id) {
-									return x.guild_id?.includes(body.data.guild_id) && x.name === body.data.name;
+									return x.guildId?.includes(body.data.guild_id) && x.name === body.data.name;
 								}
 								return x.name === body.data.name;
 							}) as ContextMenuCommand;
@@ -96,8 +96,8 @@ export async function onInteractionCreate(
 									const permissions = interaction.appPermissions.missings(
 										...interaction.appPermissions.values([command.botPermissions]),
 									);
-									if (permissions.length) {
-										return command.onPermissionsFail?.(context, interaction.appPermissions.keys(permissions));
+									if (!interaction.appPermissions.has('Administrator') && permissions.length) {
+										return command.onBotPermissionsFail?.(context, interaction.appPermissions.keys(permissions));
 									}
 								}
 								const resultRunGlobalMiddlewares = await command.__runGlobalMiddlewares(context);
@@ -136,7 +136,7 @@ export async function onInteractionCreate(
 						{
 							const parentCommand = self.commands?.values.find(x => {
 								if (body.data.guild_id) {
-									return x.guild_id?.includes(body.data.guild_id) && x.name === body.data.name;
+									return x.guildId?.includes(body.data.guild_id) && x.name === body.data.name;
 								}
 								return x.name === body.data.name;
 							});
@@ -159,8 +159,8 @@ export async function onInteractionCreate(
 									const permissions = interaction.appPermissions.missings(
 										...interaction.appPermissions.values([command.botPermissions]),
 									);
-									if (permissions.length) {
-										return command.onPermissionsFail?.(context, interaction.appPermissions.keys(permissions));
+									if (!interaction.appPermissions.has('Administrator') && permissions.length) {
+										return command.onBotPermissionsFail?.(context, interaction.appPermissions.keys(permissions));
 									}
 								}
 								const [erroredOptions, result] = await command.__runOptions(context, optionsResolver);

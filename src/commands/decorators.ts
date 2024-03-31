@@ -1,4 +1,4 @@
-import { ApplicationCommandType, type LocaleString, PermissionFlagsBits } from 'discord-api-types/v10';
+import { ApplicationCommandType, PermissionFlagsBits, type LocaleString } from 'discord-api-types/v10';
 import type { FlatObjectKeys, PermissionStrings } from '../common';
 import type { CommandOption, OptionsRecord, SubCommand } from './applications/chat';
 import type { DefaultLocale, MiddlewareContext } from './applications/shared';
@@ -140,21 +140,21 @@ export function Declare(declare: DeclareOptions) {
 			name = declare.name;
 			nsfw = declare.nsfw;
 			contexts = declare.contexts?.map(i => InteractionContextTypes[i]);
-			integration_types = declare.integrationTypes?.map(i => IntegrationTypes[i]);
-			default_member_permissions = Array.isArray(declare.defaultMemberPermissions)
-				? declare.defaultMemberPermissions?.reduce((acc, prev) => acc | PermissionFlagsBits[prev], BigInt(0)).toString()
+			integrationTypes = declare.integrationTypes?.map(i => IntegrationTypes[i]);
+			defaultMemberPermissions = Array.isArray(declare.defaultMemberPermissions)
+				? declare.defaultMemberPermissions?.reduce((acc, prev) => acc | PermissionFlagsBits[prev], BigInt(0))
 				: declare.defaultMemberPermissions;
 			botPermissions = Array.isArray(declare.botPermissions)
 				? declare.botPermissions?.reduce((acc, prev) => acc | PermissionFlagsBits[prev], BigInt(0))
 				: declare.botPermissions;
 			description = '';
 			type: ApplicationCommandType = ApplicationCommandType.ChatInput;
-			guild_id?: string[];
+			guildId?: string[];
 			constructor(...args: any[]) {
 				super(...args);
 				if ('description' in declare) this.description = declare.description;
 				if ('type' in declare) this.type = declare.type;
-				if ('guildId' in declare) this.guild_id = declare.guildId;
+				if ('guildId' in declare) this.guildId = declare.guildId;
 				// check if all properties are valid
 			}
 		};

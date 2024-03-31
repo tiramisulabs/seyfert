@@ -1,5 +1,5 @@
 import type { ApplicationCommandType, LocaleString } from 'discord-api-types/v10';
-import { type PermissionStrings, magicImport } from '../../common';
+import { magicImport, type PermissionStrings } from '../../common';
 import type { IntegrationTypes, InteractionContextTypes, RegisteredMiddlewares } from '../decorators';
 import type { MenuCommandContext } from './menucontext';
 import type { PassFunction, StopFunction, UsingClient } from './shared';
@@ -10,14 +10,14 @@ export abstract class ContextMenuCommand {
 	__filePath?: string;
 	__t?: { name: string | undefined; description: string | undefined };
 
-	guild_id?: string[];
+	guildId?: string[];
 	name!: string;
 	type!: ApplicationCommandType.User | ApplicationCommandType.Message;
 	nsfw?: boolean;
-	integration_types?: IntegrationTypes[];
+	integrationTypes?: IntegrationTypes[];
 	contexts?: InteractionContextTypes[];
 	description!: string;
-	default_member_permissions?: string;
+	defaultMemberPermissions?: string;
 	botPermissions?: bigint;
 	dm?: boolean;
 	name_localizations?: Partial<Record<LocaleString, string>>;
@@ -91,11 +91,11 @@ export abstract class ContextMenuCommand {
 			description: this.description,
 			name_localizations: this.name_localizations,
 			description_localizations: this.description_localizations,
-			guild_id: this.guild_id,
+			guild_id: this.guildId,
 			dm_permission: this.dm,
-			default_member_permissions: this.default_member_permissions,
+			default_member_permissions: this.defaultMemberPermissions,
 			contexts: this.contexts,
-			integration_types: this.integration_types,
+			integration_types: this.integrationTypes,
 		};
 	}
 
@@ -113,6 +113,9 @@ export abstract class ContextMenuCommand {
 	}
 	onMiddlewaresError(context: MenuCommandContext<any, never>, error: string): any {
 		context.client.logger.fatal(`${this.name}.<onMiddlewaresError>`, context.author.id, error);
+	}
+	onBotPermissionsFail(context: MenuCommandContext<any, never>, permissions: PermissionStrings): any {
+		context.client.logger.fatal(`${this.name}.<onBotPermissionsFail>`, context.author.id, permissions);
 	}
 	onPermissionsFail(context: MenuCommandContext<any, never>, permissions: PermissionStrings): any {
 		context.client.logger.fatal(`${this.name}.<onPermissionsFail>`, context.author.id, permissions);

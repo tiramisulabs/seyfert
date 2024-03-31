@@ -91,7 +91,7 @@ export async function onMessageCreate(
 	if (!command.run) return self.logger.warn(`${fullCommandName} command does not have 'run' callback`);
 
 	if (!command.contexts?.includes(InteractionContextTypes.BOT_DM) && !message.guildId) return;
-	if (command.guild_id && !command.guild_id?.includes(message.guildId!)) return;
+	if (command.guildId && !command.guildId?.includes(message.guildId!)) return;
 
 	const resolved: MakeRequired<ContextOptionsResolved> = {
 		channels: {},
@@ -108,13 +108,20 @@ export async function onMessageCreate(
 	const extendContext = self.options?.context?.(message) ?? {};
 	Object.assign(context, extendContext);
 	try {
+		if (command.defaultMemberPermissions && message.guildId) {
+			const memberPermissions = await self.members.permissions(message.guildId, message.author.id);
+			const permissions = memberPermissions.missings(...memberPermissions.values([command.defaultMemberPermissions]));
+			if (!memberPermissions.has('Administrator') && permissions.length) {
+				return command.onPermissionsFail?.(context, memberPermissions.keys(permissions));
+			}
+		}
 		if (command.botPermissions && message.guildId) {
 			const meMember = await self.cache.members?.get(self.botId, message.guildId);
 			if (!meMember) return; //enable member cache and "Guilds" intent, lol
 			const appPermissions = await meMember.fetchPermissions();
 			const permissions = appPermissions.missings(...appPermissions.values([command.botPermissions]));
-			if (permissions.length) {
-				return command.onPermissionsFail?.(context, appPermissions.keys(permissions));
+			if (!appPermissions.has('Administrator') && permissions.length) {
+				return command.onBotPermissionsFail?.(context, appPermissions.keys(permissions));
 			}
 		}
 		if (errors.length) {
