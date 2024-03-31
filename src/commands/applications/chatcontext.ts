@@ -177,4 +177,8 @@ export class CommandContext<
 	> {
 		return this.interaction?.member || ((this.message! as Message)?.member as any);
 	}
+
+	isChat(): this is CommandContext {
+		return true;
+	}
 }

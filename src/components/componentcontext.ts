@@ -196,6 +196,10 @@ export class ComponentContext<Type extends keyof ComponentCommandInteractionMap>
 	get member() {
 		return this.interaction.member;
 	}
+
+	isComponent(): this is ComponentContext<keyof ComponentCommandInteractionMap> {
+		return true;
+	}
 }
 
 export interface ComponentCommandInteractionMap {

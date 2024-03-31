@@ -1,13 +1,5 @@
-import { ApplicationCommandType, InteractionType } from 'discord-api-types/v10';
 import type { ComponentCommandInteractionMap, ComponentContext } from '../components/componentcontext';
-import {
-	Message,
-	User,
-	type ChatInputCommandInteraction,
-	type ComponentInteraction,
-	type MessageCommandInteraction,
-	type UserCommandInteraction,
-} from '../structures';
+import type { MessageCommandInteraction, UserCommandInteraction } from '../structures';
 import type { CommandContext } from './applications/chatcontext';
 import type { MenuCommandContext } from './applications/menucontext';
 import type { UsingClient } from './applications/shared';
@@ -20,26 +12,22 @@ export class BaseContext {
 	}
 
 	isChat(): this is CommandContext {
-		//@ts-expect-error
-		return this.message || (this.interaction as ChatInputCommandInteraction).type === ApplicationCommandType.ChatInput;
+		return false;
 	}
 
 	isMenu(): this is MenuCommandContext<UserCommandInteraction | MessageCommandInteraction> {
-		return this.isMenuUser() || this.isMenuMessage();
+		return false;
 	}
 
 	isMenuUser(): this is MenuCommandContext<UserCommandInteraction> {
-		//@ts-expect-error
-		return this.target instanceof User;
+		return false;
 	}
 
 	isMenuMessage(): this is MenuCommandContext<MessageCommandInteraction> {
-		//@ts-expect-error
-		return this.target instanceof Message;
+		return false;
 	}
 
 	isComponent(): this is ComponentContext<keyof ComponentCommandInteractionMap> {
-		//@ts-expect-error
-		return (this.interaction as ComponentInteraction).type === InteractionType.MessageComponent;
+		return false;
 	}
 }

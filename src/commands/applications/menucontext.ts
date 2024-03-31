@@ -4,9 +4,9 @@ import {
 	toSnakeCase,
 	type InteractionCreateBodyRequest,
 	type InteractionMessageUpdateBodyRequest,
+	type ModalCreateBodyRequest,
 	type UnionToTuple,
 	type When,
-	type ModalCreateBodyRequest,
 } from '../../common';
 import {
 	Message,
@@ -151,5 +151,17 @@ export class MenuCommandContext<
 
 	get member() {
 		return this.interaction.member;
+	}
+
+	isMenu(): this is MenuCommandContext<UserCommandInteraction | MessageCommandInteraction> {
+		return true;
+	}
+
+	isMenuUser(): this is MenuCommandContext<UserCommandInteraction> {
+		return this.target instanceof User;
+	}
+
+	isMenuMessage(): this is MenuCommandContext<MessageCommandInteraction> {
+		return this.target instanceof Message;
 	}
 }
