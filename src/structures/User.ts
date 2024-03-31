@@ -34,7 +34,8 @@ export class User extends DiscordBase<APIUser> {
 
 	avatarURL(options?: ImageOptions) {
 		if (!this.avatar) {
-			return this.rest.cdn.defaultAvatar(Number(this.discriminator));
+			const avatarIndex = this.discriminator == '0' ? Number(BigInt(this.id) >> 22n) % 6 : this.discriminator % 5;
+			return this.rest.cdn.defaultAvatar(avatarIndex);
 		}
 		return this.rest.cdn.avatar(this.id, this.avatar, options);
 	}
