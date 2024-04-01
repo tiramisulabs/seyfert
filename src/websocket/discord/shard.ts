@@ -5,7 +5,7 @@ import type WS from 'ws';
 import { WebSocket, type CloseEvent, type ErrorEvent } from 'ws';
 import type { Logger } from '../../common';
 import { properties } from '../constants';
-import { DynamicBucket, PriorityQueue } from '../structures';
+import { DynamicBucket } from '../structures';
 import { ConnectTimeout } from '../structures/timeout';
 import { BaseSocket } from './basesocket';
 import type { ShardData, ShardOptions } from './shared';
@@ -33,7 +33,7 @@ export class Shard {
 	};
 
 	bucket: DynamicBucket;
-	offlineSendQueue = new PriorityQueue<(_?: unknown) => void>();
+	offlineSendQueue: ((_?: unknown) => void)[] = [];
 
 	constructor(
 		public id: number,
@@ -47,12 +47,7 @@ export class Shard {
 		if (options.debugger) this.debugger = options.debugger;
 
 		const safe = this.calculateSafeRequests();
-		this.bucket = new DynamicBucket({
-			limit: safe,
-			refillAmount: safe,
-			refillInterval: 6e4,
-			debugger: this.debugger,
-		});
+		this.bucket = new DynamicBucket({ refillInterval: 6e4, limit: safe, debugger: options.debugger });
 	}
 
 	get latency() {
@@ -102,7 +97,7 @@ export class Shard {
 		};
 	}
 
-	async send<T extends GatewaySendPayload = GatewaySendPayload>(priority: number, message: T) {
+	async send<T extends GatewaySendPayload = GatewaySendPayload>(message: T) {
 		this.debugger?.info(
 			`[Shard #${this.id}] Sending: ${GatewayOpcodes[message.op]} ${JSON.stringify(
 				message.d,
@@ -117,14 +112,14 @@ export class Shard {
 				1,
 			)}`,
 		);
-		await this.checkOffline(priority);
-		await this.bucket.acquire(priority);
-		await this.checkOffline(priority);
+		await this.checkOffline();
+		await this.bucket.acquire();
+		await this.checkOffline();
 		this.websocket?.send(JSON.stringify(message));
 	}
 
 	async identify() {
-		await this.send(0, {
+		await this.send({
 			op: GatewayOpcodes.Identify,
 			d: {
 				token: `Bot ${this.options.token}`,
@@ -142,7 +137,7 @@ export class Shard {
 	}
 
 	async resume() {
-		await this.send(0, {
+		await this.send({
 			op: GatewayOpcodes.Resume,
 			d: {
 				seq: this.data.resumeSeq!,
@@ -234,13 +229,13 @@ export class Shard {
 				{
 					switch (packet.t) {
 						case GatewayDispatchEvents.Resumed:
-							this.offlineSendQueue.toArray().map((resolve: () => any) => resolve());
+							this.offlineSendQueue.map((resolve: () => any) => resolve());
 							this.options.handlePayload(this.id, packet);
 							break;
 						case GatewayDispatchEvents.Ready: {
 							this.data.resume_gateway_url = packet.d.resume_gateway_url;
 							this.data.session_id = packet.d.session_id;
-							this.offlineSendQueue.toArray().map((resolve: () => any) => resolve());
+							this.offlineSendQueue.map((resolve: () => any) => resolve());
 							this.options.handlePayload(this.id, packet);
 							break;
 						}
@@ -311,9 +306,9 @@ export class Shard {
 		return this.onpacket(JSON.parse(data as string));
 	}
 
-	checkOffline(priority: number) {
+	checkOffline() {
 		if (!this.isOpen) {
-			return new Promise(resolve => this.offlineSendQueue.push(resolve, priority));
+			return new Promise(resolve => this.offlineSendQueue.push(resolve));
 		}
 		return Promise.resolve();
 	}

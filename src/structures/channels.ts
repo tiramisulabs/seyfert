@@ -366,7 +366,7 @@ export class WebhookGuildMethods extends DiscordBase {
 
 	static guild(ctx: MethodContext<{ guildId: string }>) {
 		return {
-			list: () => ctx.client.webhooks.listFromChannel(ctx.guildId),
+			list: () => ctx.client.webhooks.listFromGuild(ctx.guildId),
 		};
 	}
 }
