@@ -1,26 +1,26 @@
 import {
-	type APIChannelBase,
-	type APIGuildChannel,
-	type APIGuildForumDefaultReactionEmoji,
-	type APIGuildForumTag,
 	ChannelFlags,
 	ChannelType,
-	type RESTGetAPIChannelMessageReactionUsersQuery,
-	type RESTPatchAPIChannelJSONBody,
-	type RESTPatchAPIGuildChannelPositionsJSONBody,
-	type RESTPostAPIChannelWebhookJSONBody,
-	type RESTPostAPIGuildChannelJSONBody,
-	type SortOrderType,
 	VideoQualityMode,
+	type APIChannelBase,
 	type APIDMChannel,
 	type APIGuildCategoryChannel,
+	type APIGuildChannel,
 	type APIGuildForumChannel,
+	type APIGuildForumDefaultReactionEmoji,
+	type APIGuildForumTag,
 	type APIGuildMediaChannel,
 	type APIGuildStageVoiceChannel,
 	type APIGuildVoiceChannel,
 	type APINewsChannel,
 	type APITextChannel,
 	type APIThreadChannel,
+	type RESTGetAPIChannelMessageReactionUsersQuery,
+	type RESTPatchAPIChannelJSONBody,
+	type RESTPatchAPIGuildChannelPositionsJSONBody,
+	type RESTPostAPIChannelWebhookJSONBody,
+	type RESTPostAPIGuildChannelJSONBody,
+	type SortOrderType,
 	type ThreadAutoArchiveDuration,
 } from 'discord-api-types/v10';
 import { mix } from 'ts-mixer';
@@ -352,7 +352,7 @@ export class WebhookGuildMethods extends DiscordBase {
 
 	static guild(ctx: MethodContext<{ guildId: string }>) {
 		return {
-			list: () => ctx.client.webhooks.listFromChannel(ctx.guildId),
+			list: () => ctx.client.webhooks.listFromGuild(ctx.guildId),
 		};
 	}
 }
