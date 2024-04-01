@@ -116,10 +116,13 @@ export class ChannelShorter extends BaseShorter {
 		body: RESTPostAPIChannelThreadsJSONBody | RESTPostAPIGuildForumThreadsJSONBody,
 		reason?: string,
 	) {
-		return this.client.proxy
-			.channels(channelId)
-			.threads.post({ body, reason })
-			.then(thread => channelFrom(thread, this.client) as ThreadChannel);
+		return (
+			this.client.proxy
+				.channels(channelId)
+				.threads.post({ body, reason })
+				// When testing this, discord returns the thread object, but in discord api types it does not.
+				.then(thread => channelFrom(thread, this.client) as ThreadChannel)
+		);
 	}
 
 	async memberPermissions(channelId: string, member: GuildMember, checkAdmin = true): Promise<PermissionsBitField> {
