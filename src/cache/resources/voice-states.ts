@@ -24,7 +24,7 @@ export class VoiceStates extends GuildBasedResource {
 		return fakePromise(super.values(guildId)).then(states => states.map(state => new VoiceState(this.client, state)));
 	}
 
-	override parse(data: any, id: string, guild_id: string): ReturnCache<VoiceState> {
+	override parse(data: any, id: string, guild_id: string) {
 		const { member, ...rest } = super.parse(data, id, guild_id);
 		return rest;
 	}
