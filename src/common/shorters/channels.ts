@@ -1,6 +1,11 @@
-import { PermissionFlagsBits, type RESTPatchAPIChannelJSONBody } from 'discord-api-types/v10';
+import {
+	PermissionFlagsBits,
+	type RESTPatchAPIChannelJSONBody,
+	type RESTPostAPIChannelThreadsJSONBody,
+	type RESTPostAPIGuildForumThreadsJSONBody,
+} from 'discord-api-types/v10';
 import { BaseChannel, Message, type GuildMember, type GuildRole } from '../../structures';
-import channelFrom, { type AllChannels } from '../../structures/channels';
+import channelFrom, { type AllChannels, type ThreadChannel } from '../../structures/channels';
 import { PermissionsBitField } from '../../structures/extra/Permissions';
 import { BaseShorter } from './base';
 
@@ -98,6 +103,26 @@ export class ChannelShorter extends BaseShorter {
 	 */
 	deletePin(messageId: string, channelId: string, reason?: string) {
 		return this.client.proxy.channels(channelId).pins(messageId).delete({ reason });
+	}
+
+	/**
+	 * Creates a new thread in the channel (only guild based channels).
+	 * @param channelId The ID of the parent channel.
+	 * @param reason The reason for unpinning the message.
+	 * @returns A promise that resolves when the thread is succesfully created.
+	 */
+	async thread(
+		channelId: string,
+		body: RESTPostAPIChannelThreadsJSONBody | RESTPostAPIGuildForumThreadsJSONBody,
+		reason?: string,
+	) {
+		return (
+			this.client.proxy
+				.channels(channelId)
+				.threads.post({ body, reason })
+				// When testing this, discord returns the thread object, but in discord api types it does not.
+				.then(thread => channelFrom(thread, this.client) as ThreadChannel)
+		);
 	}
 
 	async memberPermissions(channelId: string, member: GuildMember, checkAdmin = true): Promise<PermissionsBitField> {

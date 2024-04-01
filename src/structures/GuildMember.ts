@@ -68,11 +68,11 @@ export class BaseGuildMember extends DiscordBase {
 	}
 
 	presence() {
-		return this.cache.presences?.get(this.id);
+		return this.client.members.presence(this.id);
 	}
 
 	voice() {
-		return this.cache.voiceStates?.get(this.id, this.guildId);
+		return this.client.members.voice(this.guildId, this.id);
 	}
 
 	toString() {

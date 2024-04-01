@@ -20,6 +20,7 @@ import {
 	type RESTPatchAPIGuildChannelPositionsJSONBody,
 	type RESTPostAPIChannelWebhookJSONBody,
 	type RESTPostAPIGuildChannelJSONBody,
+	type RESTPostAPIGuildForumThreadsJSONBody,
 	type SortOrderType,
 	type ThreadAutoArchiveDuration,
 } from 'discord-api-types/v10';
@@ -326,10 +327,15 @@ export class ThreadOnlyMethods extends DiscordBase {
 	setThreadRateLimit(rate: number, reason?: string) {
 		return this.edit({ default_thread_rate_limit_per_user: rate }, reason);
 	}
+
+	async thread(body: RESTPostAPIGuildForumThreadsJSONBody, reason?: string) {
+		return this.client.channels.thread(this.id, body, reason);
+	}
 }
 
 export interface VoiceChannelMethods extends BaseChannel<ChannelType> {}
 export class VoiceChannelMethods extends DiscordBase {
+	guildId?: string;
 	setBitrate(bitrate: number | null, reason?: string) {
 		return this.edit({ bitrate }, reason);
 	}
@@ -344,6 +350,14 @@ export class VoiceChannelMethods extends DiscordBase {
 
 	setVideoQuality(quality: keyof typeof VideoQualityMode, reason?: string) {
 		return this.edit({ video_quality_mode: VideoQualityMode[quality] }, reason);
+	}
+
+	async states() {
+		if (!this.guildId) return [];
+		const states = await this.cache.voiceStates?.values(this.guildId);
+		if (!states?.length) return [];
+		const filter = states.filter(state => state.channelId === this.id);
+		return filter;
 	}
 }
 
