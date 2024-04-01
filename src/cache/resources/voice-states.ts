@@ -13,8 +13,11 @@ export class VoiceStates extends GuildBasedResource {
 		);
 	}
 
-	override bulk(ids: string[], guild: string): ReturnCache<(VoiceState | undefined)[]> {
-		return fakePromise(ids.map(id => this.get(id, guild))).then(x => x.filter(y => y));
+	override bulk(ids: string[], guild: string): ReturnCache<VoiceState[]> {
+		return fakePromise(super.bulk(ids, guild)).then(
+			states =>
+				states.map(state => (state ? new VoiceState(this.client, state) : undefined)).filter(y => !!y) as VoiceState[],
+		);
 	}
 
 	override values(guildId: string): ReturnCache<VoiceState[]> {
