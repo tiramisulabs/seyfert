@@ -355,7 +355,7 @@ export class VoiceChannelMethods extends DiscordBase {
 	async states() {
 		if (!this.guildId) return [];
 		const states = await this.cache.voiceStates?.values(this.guildId);
-		if (!states || (states?.length ?? 0) <= 0) return [];
+		if (!states?.length) return [];
 		const filter = states.filter(state => state.channelId === this.id);
 		return filter;
 	}
