@@ -11,5 +11,6 @@ export * from './Interaction';
 export * from './Message';
 export * from './Sticker';
 export * from './User';
+export * from './VoiceState';
 export * from './Webhook';
 export * from './channels';

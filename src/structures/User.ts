@@ -47,7 +47,7 @@ export class User extends DiscordBase<APIUser> {
 	}
 
 	presence() {
-		return this.cache.presences?.get(this.id);
+		return this.client.members.presence(this.id);
 	}
 
 	toString() {

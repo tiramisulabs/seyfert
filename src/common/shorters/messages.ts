@@ -4,7 +4,8 @@ import type {
 	RESTPostAPIChannelMessagesThreadsJSONBody,
 } from 'discord-api-types/v10';
 import { resolveFiles } from '../../builders';
-import { Message, MessagesMethods, ThreadChannel } from '../../structures';
+import { Message, MessagesMethods, type ThreadChannel } from '../../structures';
+import channelFrom from '../../structures/channels';
 import type { MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
 
@@ -50,7 +51,7 @@ export class MessageShorter extends BaseShorter {
 			.messages(messageId)
 			.delete({ reason })
 			.then(() => {
-				return this.client.components?.onMessageDelete(messageId);
+				void this.client.components?.onMessageDelete(messageId);
 			});
 	}
 	fetch(messageId: string, channelId: string) {
@@ -64,7 +65,7 @@ export class MessageShorter extends BaseShorter {
 		return this.client.proxy.channels(channelId).messages['bulk-delete'].post({ body: { messages }, reason });
 	}
 
-	thread(
+	async thread(
 		channelId: string,
 		messageId: string,
 		options: RESTPostAPIChannelMessagesThreadsJSONBody & { reason?: string },
@@ -75,6 +76,6 @@ export class MessageShorter extends BaseShorter {
 			.channels(channelId)
 			.messages(messageId)
 			.threads.post({ body, reason })
-			.then(x => new ThreadChannel(this.client, x));
+			.then(thread => channelFrom(thread, this.client) as ThreadChannel);
 	}
 }

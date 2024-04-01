@@ -1,26 +1,27 @@
 import {
-	type APIChannelBase,
-	type APIGuildChannel,
-	type APIGuildForumDefaultReactionEmoji,
-	type APIGuildForumTag,
 	ChannelFlags,
 	ChannelType,
-	type RESTGetAPIChannelMessageReactionUsersQuery,
-	type RESTPatchAPIChannelJSONBody,
-	type RESTPatchAPIGuildChannelPositionsJSONBody,
-	type RESTPostAPIChannelWebhookJSONBody,
-	type RESTPostAPIGuildChannelJSONBody,
-	type SortOrderType,
 	VideoQualityMode,
+	type APIChannelBase,
 	type APIDMChannel,
 	type APIGuildCategoryChannel,
+	type APIGuildChannel,
 	type APIGuildForumChannel,
+	type APIGuildForumDefaultReactionEmoji,
+	type APIGuildForumTag,
 	type APIGuildMediaChannel,
 	type APIGuildStageVoiceChannel,
 	type APIGuildVoiceChannel,
 	type APINewsChannel,
 	type APITextChannel,
 	type APIThreadChannel,
+	type RESTGetAPIChannelMessageReactionUsersQuery,
+	type RESTPatchAPIChannelJSONBody,
+	type RESTPatchAPIGuildChannelPositionsJSONBody,
+	type RESTPostAPIChannelWebhookJSONBody,
+	type RESTPostAPIGuildChannelJSONBody,
+	type RESTPostAPIGuildForumThreadsJSONBody,
+	type SortOrderType,
 	type ThreadAutoArchiveDuration,
 } from 'discord-api-types/v10';
 import { mix } from 'ts-mixer';
@@ -37,6 +38,7 @@ import type {
 } from '../common';
 import type { GuildMember } from './GuildMember';
 import type { GuildRole } from './GuildRole';
+import { VoiceState } from './VoiceState';
 import { DiscordBase } from './extra/DiscordBase';
 import { channelLink } from './extra/functions';
 
@@ -326,10 +328,15 @@ export class ThreadOnlyMethods extends DiscordBase {
 	setThreadRateLimit(rate: number, reason?: string) {
 		return this.edit({ default_thread_rate_limit_per_user: rate }, reason);
 	}
+
+	async thread(body: RESTPostAPIGuildForumThreadsJSONBody, reason?: string) {
+		return this.client.channels.thread(this.id, body, reason);
+	}
 }
 
 export interface VoiceChannelMethods extends BaseChannel<ChannelType> {}
 export class VoiceChannelMethods extends DiscordBase {
+	guildId?: string;
 	setBitrate(bitrate: number | null, reason?: string) {
 		return this.edit({ bitrate }, reason);
 	}
@@ -344,6 +351,16 @@ export class VoiceChannelMethods extends DiscordBase {
 
 	setVideoQuality(quality: keyof typeof VideoQualityMode, reason?: string) {
 		return this.edit({ video_quality_mode: VideoQualityMode[quality] }, reason);
+	}
+
+	async states() {
+		if (!this.guildId) return [];
+		const states = await this.cache.voiceStates?.values(this.guildId);
+		if (!states || (states?.length ?? 0) <= 0) return [];
+		const filter = states.filter(state => state.channel_id === this.id);
+		if (!filter.length) return [];
+
+		return filter.map(voiceState => new VoiceState(this.client, voiceState));
 	}
 }
 

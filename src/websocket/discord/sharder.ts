@@ -148,7 +148,7 @@ export class ShardManager extends Map<number, Shard> {
 		});
 	}
 
-	setPresence(payload: GatewayUpdatePresence['d']): Promise<void> | undefined {
+	setPresence(payload: GatewayUpdatePresence['d']): Promise<void> {
 		return new Promise(resolve => {
 			this.forEach(shard => {
 				this.setShardPresence(shard.id, payload);

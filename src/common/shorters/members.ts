@@ -208,4 +208,12 @@ export class MemberShorter extends BaseShorter {
 
 		return new PermissionsBitField(roles.map(x => BigInt(x.permissions.bits)));
 	}
+
+	async presence(memberId: string) {
+		return this.client.cache.presences?.get(memberId);
+	}
+
+	async voice(guildId: string, memberId: string) {
+		return this.client.cache.voiceStates?.get(memberId, guildId);
+	}
 }
