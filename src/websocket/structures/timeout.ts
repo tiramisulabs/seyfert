@@ -36,11 +36,11 @@ export class ConnectQueue {
 		public concurrency = 1,
 	) {}
 
-	push(callback: () => any) {
+	async push(callback: () => any) {
 		this.queue.push({ cb: callback });
 		if (this.queue.length === this.concurrency) {
 			for (let i = 0; i < this.concurrency; i++) {
-				this.queue[i].cb?.();
+				await this.queue[i].cb?.();
 				this.queue[i].cb = undefined;
 			}
 			this.interval = setInterval(() => {
@@ -51,7 +51,7 @@ export class ConnectQueue {
 		}
 	}
 
-	shift(): any {
+	async shift(): Promise<any> {
 		const shift = this.queue.shift();
 		if (!shift) {
 			if (!this.queue.length) {
@@ -61,7 +61,7 @@ export class ConnectQueue {
 			return;
 		}
 		if (!shift.cb) return this.shift();
-		shift.cb?.();
+		await shift.cb?.();
 		if (!this.queue.length) {
 			clearInterval(this.interval);
 			this.interval = undefined;

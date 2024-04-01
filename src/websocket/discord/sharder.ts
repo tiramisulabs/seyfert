@@ -14,7 +14,7 @@ import {
 	type WatcherSendToShard,
 } from '../../common';
 import { ShardManagerDefaults } from '../constants';
-import { SequentialBucket } from '../structures';
+import { DynamicBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';
 import { Shard } from './shard.js';
 import type { ShardManagerOptions } from './shared';
@@ -111,7 +111,7 @@ export class ShardManager extends Map<number, Shard> {
 	 */
 	spawnBuckets(): Shard[][] {
 		this.debugger?.info('#0 Preparing buckets');
-		const chunks = SequentialBucket.chunk(new Array(this.shardEnd - this.shardStart), this.concurrency);
+		const chunks = DynamicBucket.chunk(new Array(this.shardEnd - this.shardStart), this.concurrency);
 		chunks.forEach((arr: any[], index: number) => {
 			for (let i = 0; i < arr.length; i++) {
 				const id = i + (index > 0 ? index * this.concurrency : 0) + this.shardStart;
@@ -148,7 +148,7 @@ export class ShardManager extends Map<number, Shard> {
 		});
 	}
 
-	setPresence(payload: GatewayUpdatePresence['d']): Promise<void> | undefined {
+	setPresence(payload: GatewayUpdatePresence['d']): Promise<void> {
 		return new Promise(resolve => {
 			this.forEach(shard => {
 				this.setShardPresence(shard.id, payload);
@@ -198,6 +198,6 @@ export class ShardManager extends Map<number, Shard> {
 				payload,
 			} satisfies WatcherSendToShard);
 		}
-		this.get(shardId)?.send(1, payload);
+		this.get(shardId)?.send(payload);
 	}
 }

@@ -5,9 +5,9 @@ import { Worker as ThreadWorker } from 'node:worker_threads';
 import { ApiHandler, Logger, Router } from '../..';
 import { MemoryAdapter, type Adapter } from '../../cache';
 import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
-import { type MakePartial, MergeOptions } from '../../common';
+import { MergeOptions, type MakePartial } from '../../common';
 import { WorkerManagerDefaults } from '../constants';
-import { SequentialBucket } from '../structures';
+import { DynamicBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';
 import { MemberUpdateHandler } from './events/memberUpdate';
 import { PresenceUpdateHandler } from './events/presenceUpdate';
@@ -100,7 +100,7 @@ export class WorkerManager extends Map<number, (ClusterWorker | ThreadWorker) & 
 	prepareSpaces() {
 		this.debugger?.info('Preparing buckets');
 
-		const chunks = SequentialBucket.chunk<number>(
+		const chunks = DynamicBucket.chunk<number>(
 			new Array(this.shardEnd - this.shardStart),
 			this.options.shardsPerWorker,
 		);
