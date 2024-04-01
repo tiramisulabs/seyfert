@@ -4,19 +4,26 @@ import { fakePromise } from '../../common';
 import { VoiceState } from '../../structures';
 import { GuildBasedResource } from './default/guild-based';
 
-export class VoiceStates extends GuildBasedResource<VoiceStateResource> {
+export class VoiceStates extends GuildBasedResource {
 	namespace = 'voice_state';
 
-	// @ts-expect-error typescript cry about it
 	override get(memberId: string, guildId: string): ReturnCache<VoiceState | undefined> {
 		return fakePromise(super.get(memberId, guildId)).then(state =>
 			state ? new VoiceState(this.client, state) : undefined,
 		);
 	}
 
-	override parse(data: any, id: string, guild_id: string): VoiceStateResource {
+	override bulk(ids: string[], guild: string): ReturnCache<(VoiceState | undefined)[]> {
+		return fakePromise(ids.map(id => this.get(id, guild))).then(x => x.filter(y => y));
+	}
+
+	override values(guildId: string): ReturnCache<VoiceState[]> {
+		return fakePromise(super.values(guildId)).then(states => states.map(state => new VoiceState(this.client, state)));
+	}
+
+	override parse(data: any, id: string, guild_id: string): ReturnCache<VoiceState> {
 		const { member, ...rest } = super.parse(data, id, guild_id);
-		return rest;
+		return new VoiceState(this.client, rest);
 	}
 }
 

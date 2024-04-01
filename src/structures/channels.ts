@@ -38,7 +38,6 @@ import type {
 } from '../common';
 import type { GuildMember } from './GuildMember';
 import type { GuildRole } from './GuildRole';
-import { VoiceState } from './VoiceState';
 import { DiscordBase } from './extra/DiscordBase';
 import { channelLink } from './extra/functions';
 
@@ -357,10 +356,8 @@ export class VoiceChannelMethods extends DiscordBase {
 		if (!this.guildId) return [];
 		const states = await this.cache.voiceStates?.values(this.guildId);
 		if (!states || (states?.length ?? 0) <= 0) return [];
-		const filter = states.filter(state => state.channel_id === this.id);
-		if (!filter.length) return [];
-
-		return filter.map(voiceState => new VoiceState(this.client, voiceState));
+		const filter = states.filter(state => state.channelId === this.id);
+		return !filter.length ? [] : filter;
 	}
 }
 
