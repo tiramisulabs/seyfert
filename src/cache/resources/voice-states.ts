@@ -26,7 +26,7 @@ export class VoiceStates extends GuildBasedResource {
 
 	override parse(data: any, id: string, guild_id: string): ReturnCache<VoiceState> {
 		const { member, ...rest } = super.parse(data, id, guild_id);
-		return new VoiceState(this.client, rest);
+		return rest;
 	}
 }
 
