@@ -33,13 +33,17 @@ export class VoiceState extends Base {
 	}
 
 	async setMute(mute = !this.mute, reason?: string) {
-		this.mute = mute;
-		return this.client.members.edit(this.guildId, this.userId, { mute }, reason);
+		return this.client.members.edit(this.guildId, this.userId, { mute }, reason).then(member => {
+			this.mute = mute;
+			return member;
+		});
 	}
 
 	async setDeaf(deaf = !this.deaf, reason?: string) {
-		this.deaf = deaf;
-		return this.client.members.edit(this.guildId, this.userId, { deaf }, reason);
+		return this.client.members.edit(this.guildId, this.userId, { deaf }, reason).then(member => {
+			this.deaf = deaf;
+			return member;
+		});
 	}
 
 	async disconnect(reason?: string) {
@@ -47,7 +51,9 @@ export class VoiceState extends Base {
 	}
 
 	async setChannel(channel_id: null | string, reason?: string) {
-		this.channelId = channel_id;
-		return this.client.members.edit(this.guildId, this.userId, { channel_id }, reason);
+		return this.client.members.edit(this.guildId, this.userId, { channel_id }, reason).then(member => {
+			this.channelId = channel_id;
+			return member;
+		});
 	}
 }
