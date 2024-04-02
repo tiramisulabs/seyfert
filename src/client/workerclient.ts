@@ -148,7 +148,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						return;
 					}
 
-					await shard.send({
+					await shard.send(true, {
 						...data,
 					} satisfies GatewaySendPayload);
 

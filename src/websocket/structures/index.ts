@@ -66,9 +66,9 @@ export class DynamicBucket {
 		this.processing = false;
 	}
 
-	acquire() {
+	acquire(force = false) {
 		return new Promise(res => {
-			this.queue.push(res);
+			this.queue[force ? 'unshift' : 'push'](res);
 			void this.processQueue();
 		});
 	}

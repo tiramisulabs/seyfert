@@ -97,7 +97,7 @@ export class Shard {
 		};
 	}
 
-	async send<T extends GatewaySendPayload = GatewaySendPayload>(message: T) {
+	async send<T extends GatewaySendPayload = GatewaySendPayload>(force: boolean, message: T) {
 		this.debugger?.info(
 			`[Shard #${this.id}] Sending: ${GatewayOpcodes[message.op]} ${JSON.stringify(
 				message.d,
@@ -112,14 +112,14 @@ export class Shard {
 				1,
 			)}`,
 		);
-		await this.checkOffline();
-		await this.bucket.acquire();
-		await this.checkOffline();
+		await this.checkOffline(force);
+		await this.bucket.acquire(force);
+		await this.checkOffline(force);
 		this.websocket?.send(JSON.stringify(message));
 	}
 
 	async identify() {
-		await this.send({
+		await this.send(true, {
 			op: GatewayOpcodes.Identify,
 			d: {
 				token: `Bot ${this.options.token}`,
@@ -137,7 +137,7 @@ export class Shard {
 	}
 
 	async resume() {
-		await this.send({
+		await this.send(true, {
 			op: GatewayOpcodes.Resume,
 			d: {
 				seq: this.data.resumeSeq!,
@@ -306,9 +306,9 @@ export class Shard {
 		return this.onpacket(JSON.parse(data as string));
 	}
 
-	checkOffline() {
+	checkOffline(force: boolean) {
 		if (!this.isOpen) {
-			return new Promise(resolve => this.offlineSendQueue.push(resolve));
+			return new Promise(resolve => this.offlineSendQueue[force ? 'unshift' : 'push'](resolve));
 		}
 		return Promise.resolve();
 	}

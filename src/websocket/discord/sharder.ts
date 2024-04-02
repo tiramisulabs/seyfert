@@ -198,6 +198,6 @@ export class ShardManager extends Map<number, Shard> {
 				payload,
 			} satisfies WatcherSendToShard);
 		}
-		this.get(shardId)?.send(payload);
+		this.get(shardId)?.send(false, payload);
 	}
 }
