@@ -13,7 +13,7 @@ export class DynamicBucket {
 	queue: ((value?: unknown) => any)[] = [];
 	used = 0;
 	processing?: boolean;
-	refillsAt? = 0;
+	refillsAt?: number;
 	timeoutId?: NodeJS.Timeout;
 
 	constructor(public options: DynamicBucketOptions) {}
@@ -76,7 +76,7 @@ export class DynamicBucket {
 	static chunk<T>(array: T[], chunks: number): T[][] {
 		let index = 0;
 		let resIndex = 0;
-		const result = Array(Math.ceil(array.length / chunks));
+		const result = new Array<T[]>(Math.ceil(array.length / chunks));
 
 		while (index < array.length) {
 			result[resIndex] = array.slice(index, (index += chunks));
