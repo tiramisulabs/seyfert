@@ -1,5 +1,5 @@
 import type { APIEmoji, RESTPatchAPIChannelJSONBody, RESTPatchAPIGuildEmojiJSONBody } from 'discord-api-types/v10';
-import type { BaseImageURLOptions } from '../api';
+import type { BaseCDNUrlOptions } from '../api';
 import type { UsingClient } from '../commands';
 import type { EmojiShorter, MethodContext, ObjectToLower } from '../common';
 import { DiscordBase } from './extra/DiscordBase';
@@ -32,8 +32,8 @@ export class GuildEmoji extends DiscordBase {
 		return this.client.emojis.fetch(this.guildId, this.id, force);
 	}
 
-	url(options?: BaseImageURLOptions) {
-		return this.rest.cdn.emoji(this.id, options);
+	url(options?: BaseCDNUrlOptions) {
+		return this.rest.cdn.emojis(this.id).get(options);
 	}
 
 	toString() {

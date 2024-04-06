@@ -185,7 +185,7 @@ export class GuildMember extends BaseGuildMember {
 			return this.user.avatarURL(options);
 		}
 
-		return this.rest.cdn.guildMemberAvatar(this.guildId, this.id, this.avatar, options);
+		return this.rest.cdn.guilds(this.guildId).users(this.id).avatars(this.avatar).get(options);
 	}
 
 	bannerURL(options?: ImageOptions) {

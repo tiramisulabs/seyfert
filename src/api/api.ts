@@ -6,8 +6,7 @@ import { Logger } from '../common';
 import { snowflakeToTimestamp } from '../structures/extra/functions';
 import type { WorkerData } from '../websocket';
 import type { WorkerSendApiRequest } from '../websocket/discord/worker';
-import { CDN } from './CDN';
-import type { ProxyRequestMethod } from './Router';
+import { CDNRouter, type ProxyRequestMethod } from './Router';
 import { Bucket } from './bucket';
 import {
 	DefaultUserAgent,
@@ -26,7 +25,7 @@ export class ApiHandler {
 	globalBlock = false;
 	ratelimits = new Map<string, Bucket>();
 	readyQueue: (() => void)[] = [];
-	cdn = new CDN();
+	cdn = CDNRouter.createProxy();
 	debugger?: Logger;
 	workerPromises?: Map<string, { resolve: (value: any) => any; reject: (error: any) => any }>;
 

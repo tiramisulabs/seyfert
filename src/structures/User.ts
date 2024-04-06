@@ -36,14 +36,19 @@ export class User extends DiscordBase<APIUser> {
 		if (!this.avatar) {
 			const avatarIndex =
 				this.discriminator === '0' ? Number(BigInt(this.id) >> 22n) % 6 : Number.parseInt(this.discriminator) % 5;
-			return this.rest.cdn.defaultAvatar(avatarIndex);
+			return this.rest.cdn.embed.avatars.get(avatarIndex);
 		}
-		return this.rest.cdn.avatar(this.id, this.avatar, options);
+		return this.rest.cdn.avatars(this.id).get(this.avatar, options);
+	}
+
+	avatarDecorationURL(options?: ImageOptions) {
+		if (!this.avatarDecoration) return;
+		return this.rest.cdn['avatar-decorations'](this.id).get(this.avatarDecoration, options);
 	}
 
 	bannerURL(options?: ImageOptions) {
 		if (!this.banner) return;
-		return this.rest.cdn.banner(this.id, this.banner, options);
+		return this.rest.cdn.banners(this.id).get(this.banner, options);
 	}
 
 	presence() {

@@ -84,7 +84,7 @@ export class Webhook extends DiscordBase {
 			return null;
 		}
 
-		return this.rest.cdn.avatar(this.id, this.avatar, options);
+		return this.rest.cdn.avatars(this.id).get(this.avatar, options);
 	}
 
 	/**

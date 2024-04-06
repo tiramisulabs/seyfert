@@ -42,7 +42,7 @@ export class BaseGuild extends DiscordBase<APIPartialGuild> {
 		if (!this.icon) {
 			return;
 		}
-		return this.rest.cdn.icon(this.id, this.icon, options);
+		return this.rest.cdn.icons(this.id).get(this.icon, options);
 	}
 
 	/**
@@ -55,7 +55,7 @@ export class BaseGuild extends DiscordBase<APIPartialGuild> {
 		if (!this.splash) {
 			return;
 		}
-		return this.rest.cdn.discoverySplash(this.id, this.splash, options);
+		return this.rest.cdn['discovery-splashes'](this.id).get(this.splash, options);
 	}
 
 	/**
@@ -68,7 +68,7 @@ export class BaseGuild extends DiscordBase<APIPartialGuild> {
 		if (!this.banner) {
 			return;
 		}
-		return this.rest.cdn.banner(this.id, this.banner, options);
+		return this.rest.cdn.banners(this.id).get(this.banner, options);
 	}
 
 	toString(): string {

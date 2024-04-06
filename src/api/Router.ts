@@ -1,6 +1,6 @@
 import { CDN_URL } from '../common';
 import type { APIRoutes, ApiHandler, CDNRoute } from './index';
-import type { HttpMethods } from './shared';
+import type { HttpMethods, ImageExtension, ImageSize, StickerExtension } from './shared';
 
 export enum ProxyRequestMethod {
 	Delete = 'delete',
@@ -43,15 +43,15 @@ export const CDNRouter = {
 		return new Proxy(noop, {
 			get: (_, key: string) => {
 				if (key === 'get') {
-					return (value?: string) => {
+					return (value: string | undefined, options?: CDNUrlOptions) => {
 						const lastRoute = `${CDN_URL}/${route.join('/')}`;
-						if (value) {
-							if (typeof value !== 'string') {
-								value = String(value);
-							}
-							return `${lastRoute}/${value}`;
+						let routeResult = lastRoute;
+						if (value && typeof value === 'string') {
+							routeResult = `${lastRoute}/${value}`;
+							return parseCDNURL(routeResult, options);
 						}
-						return lastRoute;
+						// @ts-expect-error
+						return parseCDNURL(routeResult, value);
 					};
 				}
 				return this.createProxy([...route, key]);
@@ -62,3 +62,22 @@ export const CDNRouter = {
 		}) as unknown as CDNRoute;
 	},
 };
+
+export interface BaseCDNUrlOptions {
+	extension?: ImageExtension | StickerExtension | undefined;
+	size?: ImageSize;
+}
+
+export interface CDNUrlOptions extends BaseCDNUrlOptions {
+	forceStatic?: boolean;
+}
+
+export function parseCDNURL(route: string, options: CDNUrlOptions = { forceStatic: false }) {
+	if (options.forceStatic && route.includes('a_')) options.extension = 'png';
+
+	const url = new URL(`${route}.${options.extension}`);
+
+	if (options.size) url.searchParams.set('size', `${options.size}`);
+
+	return url.toString();
+}
