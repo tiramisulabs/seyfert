@@ -50,8 +50,7 @@ export const CDNRouter = {
 							routeResult = `${lastRoute}/${value}`;
 							return parseCDNURL(routeResult, options);
 						}
-						// @ts-expect-error
-						return parseCDNURL(routeResult, value);
+						return parseCDNURL(routeResult, options);
 					};
 				}
 				return this.createProxy([...route, key]);
