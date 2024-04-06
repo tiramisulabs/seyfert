@@ -16,7 +16,9 @@ export class Overwrites extends GuildRelatedResource {
 
 	override get(
 		id: string,
-	): ReturnCache<{ type: number; id: string; deny: PermissionsBitField; allow: PermissionsBitField }[] | undefined> {
+	): ReturnCache<
+		{ type: number; id: string; deny: PermissionsBitField; allow: PermissionsBitField; guildId: string }[] | undefined
+	> {
 		return fakePromise(super.get(id) as (APIOverwrite & { guild_id: string })[] | undefined).then(rawOverwrites =>
 			rawOverwrites
 				? rawOverwrites.map(rawOverwrite => ({
@@ -32,7 +34,9 @@ export class Overwrites extends GuildRelatedResource {
 
 	override values(
 		guild: string,
-	): ReturnCache<{ type: number; id: string; deny: PermissionsBitField; allow: PermissionsBitField }[][]> {
+	): ReturnCache<
+		{ type: number; id: string; deny: PermissionsBitField; allow: PermissionsBitField; guildId: string }[][]
+	> {
 		return fakePromise(super.values(guild) as (APIOverwrite & { guild_id: string })[][]).then(values =>
 			values.map(rawOverwrites =>
 				rawOverwrites.map(rawOverwrite => ({
