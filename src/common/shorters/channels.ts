@@ -126,13 +126,14 @@ export class ChannelShorter extends BaseShorter {
 	}
 
 	async memberPermissions(channelId: string, member: GuildMember, checkAdmin = true): Promise<PermissionsBitField> {
-		const permissions = await member.fetchPermissions();
+		const memberPermissions = await member.fetchPermissions();
 
-		if (checkAdmin && permissions.has(PermissionFlagsBits.Administrator)) {
+		if (checkAdmin && memberPermissions.has(PermissionFlagsBits.Administrator)) {
 			return new PermissionsBitField(PermissionsBitField.All);
 		}
 
 		const overwrites = await this.overwritesFor(channelId, member);
+		const permissions = new PermissionsBitField(memberPermissions.bits);
 
 		permissions.remove(overwrites.everyone?.deny.bits ?? 0n);
 		permissions.add(overwrites.everyone?.allow.bits ?? 0n);
