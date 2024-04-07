@@ -4,18 +4,15 @@ export class ConnectTimeout {
 	constructor(public intervalTime = 5000) {}
 
 	wait() {
-		let resolve = (_x: boolean) => {
-			//
-		};
-		const promise = new Promise<boolean>(r => (resolve = r));
-		if (!this.promises.length) {
-			this.interval = setInterval(() => {
-				this.shift();
-			}, this.intervalTime);
-			resolve(true);
-		}
-		this.promises.push(resolve);
-		return promise;
+		return new Promise<boolean>(res => {
+			if (!this.promises.length) {
+				this.interval = setInterval(() => {
+					this.shift();
+				}, this.intervalTime);
+				res(true);
+			}
+			this.promises.push(res);
+		});
 	}
 
 	shift() {

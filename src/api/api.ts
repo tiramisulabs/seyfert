@@ -80,17 +80,10 @@ export class ApiHandler {
 					?.filter(x => !['string', 'boolean', 'number'].includes(typeof x.data))
 					.map(x => x.data as Buffer | Uint8Array),
 			);
-			let resolve = (_value: T) => {};
-			let reject = () => {};
 
-			const promise = new Promise<T>((res, rej) => {
-				resolve = res;
-				reject = rej;
+			return new Promise<T>((res, rej) => {
+				this.workerPromises!.set(nonce, { reject: rej, resolve: res });
 			});
-
-			this.workerPromises!.set(nonce, { reject, resolve });
-
-			return promise;
 		}
 		const route = request.route || this.routefy(url, method);
 		let attempts = 0;

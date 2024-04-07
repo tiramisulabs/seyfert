@@ -27,22 +27,13 @@ export class WorkerAdapter implements Adapter {
 			workerId: this.workerData.workerId,
 		} satisfies WorkerSendCacheRequest);
 
-		let resolve = (_: any) => {
-			/**/
-		};
-		let timeout = -1 as unknown as NodeJS.Timeout;
-
-		const promise = new Promise<any>((res, rej) => {
-			resolve = res;
-			timeout = setTimeout(() => {
+		return new Promise<any>((res, rej) => {
+			const timeout = setTimeout(() => {
 				this.promises.delete(nonce);
 				rej(new Error('Timeout cache request'));
 			}, 60e3);
+			this.promises.set(nonce, { resolve: res, timeout });
 		});
-
-		this.promises.set(nonce, { resolve, timeout });
-
-		return promise;
 	}
 
 	scan(...rest: any[]) {

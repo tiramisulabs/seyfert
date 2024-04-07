@@ -338,22 +338,13 @@ export class WorkerManager extends Map<number, (ClusterWorker | ThreadWorker) & 
 	}
 
 	private generateSendPromise<T = unknown>(nonce: string, message = 'Timeout'): Promise<T> {
-		let resolve = (_: T) => {
-			/**/
-		};
-		let timeout = -1 as unknown as NodeJS.Timeout;
-
-		const promise = new Promise<T>((res, rej) => {
-			resolve = res;
-			timeout = setTimeout(() => {
+		return new Promise<T>((res, rej) => {
+			const timeout = setTimeout(() => {
 				this.promises.delete(nonce);
 				rej(new Error(message));
 			}, 60e3);
+			this.promises.set(nonce, { resolve: res, timeout });
 		});
-
-		this.promises.set(nonce, { resolve, timeout });
-
-		return promise;
 	}
 
 	async send(data: GatewaySendPayload, shardId: number) {
