@@ -34,6 +34,7 @@ export type WorkerSendCacheRequest = CreateWorkerMessage<
 			| 'keys'
 			| 'count'
 			| 'remove'
+			| 'flush'
 			| 'contains'
 			| 'getToRelationship'
 			| 'bulkAddToRelationShip'

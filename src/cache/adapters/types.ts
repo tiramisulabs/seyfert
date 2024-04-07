@@ -27,6 +27,8 @@ export interface Adapter {
 
 	remove(keys: string | string[]): Awaitable<void>;
 
+	flush(): Awaitable<void>;
+
 	contains(to: string, keys: string): Awaitable<boolean>;
 
 	getToRelationship(to: string): Awaitable<string[]>;

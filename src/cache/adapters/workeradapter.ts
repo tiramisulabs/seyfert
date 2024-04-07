@@ -77,6 +77,10 @@ export class WorkerAdapter implements Adapter {
 		return this.send('remove', ...rest);
 	}
 
+	flush() {
+		return this.send('flush');
+	}
+
 	contains(...rest: any[]) {
 		return this.send('contains', ...rest);
 	}

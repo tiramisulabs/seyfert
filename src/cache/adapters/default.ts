@@ -104,6 +104,11 @@ export class MemoryAdapter implements Adapter {
 		}
 	}
 
+	flush(): void {
+		this.storage.clear();
+		this.relationships.clear();
+	}
+
 	contains(to: string, keys: string): boolean {
 		return this.getToRelationship(to).includes(keys);
 	}

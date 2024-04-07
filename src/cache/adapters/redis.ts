@@ -27,6 +27,23 @@ export class RedisAdapter implements Adapter {
 		this.namespace = data.namespace ?? 'seyfert';
 	}
 
+	private __scanSets(query: string, returnKeys?: false): Promise<any[]>;
+	private __scanSets(query: string, returnKeys: true): Promise<string[]>;
+	private __scanSets(query: string, returnKeys = false) {
+		const match = this.buildKey(query);
+		return new Promise<string[]>((r, j) => {
+			const stream = this.client.scanStream({
+				match,
+				type: 'set',
+			});
+			const keys: string[] = [];
+			stream
+				.on('data', resultKeys => keys.push(...resultKeys))
+				.on('end', () => (returnKeys ? r(keys.map(x => this.buildKey(x))) : r(this.get(keys))))
+				.on('error', err => j(err));
+		});
+	}
+
 	scan(query: string, returnKeys?: false): Promise<any[]>;
 	scan(query: string, returnKeys: true): Promise<string[]>;
 	scan(query: string, returnKeys = false) {
@@ -154,6 +171,14 @@ export class RedisAdapter implements Adapter {
 		}
 
 		await this.client.del(...keys.map(x => this.buildKey(x)));
+	}
+
+	async flush(): Promise<void> {
+		await this.remove(
+			await Promise.all([this.scan(this.buildKey('*'), true), this.__scanSets(this.buildKey('*'), true)]).then(x =>
+				x.flat(),
+			),
+		);
 	}
 
 	async contains(to: string, keys: string): Promise<boolean> {

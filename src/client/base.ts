@@ -3,7 +3,7 @@ import { ApiHandler, Router } from '../api';
 import type { Adapter } from '../cache';
 import { Cache, MemoryAdapter } from '../cache';
 import type { Command, ContextMenuCommand, RegisteredMiddlewares } from '../commands';
-import type { InferWithPrefix, MiddlewareContext } from '../commands/applications/shared';
+import { IgnoreCommand, type InferWithPrefix, type MiddlewareContext } from '../commands/applications/shared';
 import { CommandHandler, type CommandHandlerLike } from '../commands/handler';
 import {
 	ChannelShorter,
@@ -204,17 +204,17 @@ export class BaseClient {
 		applicationId ??= await this.getRC().then(x => x.applicationId ?? this.applicationId);
 		BaseClient.assertString(applicationId, 'applicationId is not a string');
 
-		const commands = this.commands!.values.map(x => x.toJSON());
-		const filter = filterSplit(commands, command => !command.guild_id);
+		const commands = this.commands!.values;
+		const filter = filterSplit(commands, command => !command.guildId);
 
 		await this.proxy.applications(applicationId).commands.put({
-			body: filter.expect,
+			body: filter.expect.filter(cmd => !('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash).map(x => x.toJSON()),
 		});
 
 		const guilds = new Set<string>();
 
 		for (const command of filter.never) {
-			for (const guild_id of command.guild_id!) {
+			for (const guild_id of command.guildId!) {
 				guilds.add(guild_id);
 			}
 		}
@@ -224,7 +224,9 @@ export class BaseClient {
 				.applications(applicationId)
 				.guilds(guild)
 				.commands.put({
-					body: filter.never.filter(x => x.guild_id?.includes(guild)),
+					body: filter.never
+						.filter(cmd => cmd.guildId?.includes(guild) && (!('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash))
+						.map(x => x.toJSON()),
 				});
 		}
 	}

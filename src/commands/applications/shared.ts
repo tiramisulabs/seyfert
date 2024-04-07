@@ -52,3 +52,8 @@ export type OnOptionsReturnObject = Record<
 			value: string;
 	  }
 >;
+
+export enum IgnoreCommand {
+	Slash = 0,
+	Message = 1,
+}

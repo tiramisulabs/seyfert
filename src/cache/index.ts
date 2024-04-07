@@ -16,12 +16,12 @@ import { Threads } from './resources/threads';
 import { VoiceStates } from './resources/voice-states';
 
 import {
+	ChannelType,
+	GatewayIntentBits,
 	type APIEmoji,
 	type APISticker,
 	type APIThreadChannel,
-	ChannelType,
 	type GatewayDispatchPayload,
-	GatewayIntentBits,
 	type GatewayReadyDispatchData,
 } from 'discord-api-types/v10';
 import type { InternalOptions, UsingClient } from '../commands';
@@ -164,6 +164,10 @@ export class Cache {
 		this.presences?.__setClient(client);
 		this.threads?.__setClient(client);
 		this.stageInstances?.__setClient(client);
+	}
+
+	flush(): ReturnCache<void> {
+		return this.adapter.flush() as void;
 	}
 
 	// internal use ./structures

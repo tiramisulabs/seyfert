@@ -7,6 +7,7 @@ import {
 import {
 	Command,
 	CommandContext,
+	IgnoreCommand,
 	InteractionContextTypes,
 	OptionResolver,
 	SubCommand,
@@ -34,7 +35,9 @@ function getCommandFromContent(
 	const parentName = commandRaw[0];
 	const groupName = commandRaw.length === 3 ? commandRaw[1] : undefined;
 	const subcommandName = groupName ? commandRaw[2] : commandRaw[1];
-	const parent = self.commands!.values.find(x => x.name === parentName);
+	const parent = self.commands!.values.find(
+		x => (!('ignore' in x) || x.ignore !== IgnoreCommand.Message) && x.name === parentName,
+	);
 	const fullCommandName = `${parentName}${
 		groupName ? ` ${groupName} ${subcommandName}` : `${subcommandName ? ` ${subcommandName}` : ''}`
 	}`;
@@ -73,7 +76,7 @@ export async function onMessageCreate(
 ) {
 	if (!self.options?.commands) return;
 	const message = new Message(self, rawMessage);
-	const prefixes = ((await self.options.commands.prefix?.(message)) ?? []).sort((a, b) => b.length - a.length);
+	const prefixes = (await self.options.commands.prefix(message)).sort((a, b) => b.length - a.length);
 	const prefix = prefixes.find(x => message.content.startsWith(x));
 
 	if (!prefix || !message.content.startsWith(prefix)) return;

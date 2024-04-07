@@ -15,6 +15,7 @@ import type { OptionResolver } from '../optionresolver';
 import type { CommandContext } from './chatcontext';
 import type {
 	DefaultLocale,
+	IgnoreCommand,
 	OKFunction,
 	OnOptionsReturnObject,
 	PassFunction,
@@ -130,6 +131,8 @@ class BaseCommand {
 	description_localizations?: Partial<Record<LocaleString, string>>;
 
 	options?: CommandOption[] | SubCommand[];
+
+	ignore?: IgnoreCommand;
 
 	/** @internal */
 	async __runOptions(

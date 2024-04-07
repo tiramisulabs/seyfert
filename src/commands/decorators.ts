@@ -1,7 +1,7 @@
 import { ApplicationCommandType, PermissionFlagsBits, type LocaleString } from 'discord-api-types/v10';
 import type { FlatObjectKeys, PermissionStrings } from '../common';
 import type { CommandOption, OptionsRecord, SubCommand } from './applications/chat';
-import type { DefaultLocale, MiddlewareContext } from './applications/shared';
+import type { DefaultLocale, IgnoreCommand, MiddlewareContext } from './applications/shared';
 
 export interface RegisteredMiddlewares {}
 
@@ -25,6 +25,7 @@ type DeclareOptions =
 			nsfw?: boolean;
 			integrationTypes?: (keyof typeof IntegrationTypes)[];
 			contexts?: (keyof typeof InteractionContextTypes)[];
+			ignore?: IgnoreCommand;
 	  }
 	| (Omit<
 			{
@@ -150,11 +151,13 @@ export function Declare(declare: DeclareOptions) {
 			description = '';
 			type: ApplicationCommandType = ApplicationCommandType.ChatInput;
 			guildId?: string[];
+			ignore?: IgnoreCommand;
 			constructor(...args: any[]) {
 				super(...args);
 				if ('description' in declare) this.description = declare.description;
 				if ('type' in declare) this.type = declare.type;
 				if ('guildId' in declare) this.guildId = declare.guildId;
+				if ('ignore' in declare) this.ignore = declare.ignore;
 				// check if all properties are valid
 			}
 		};
