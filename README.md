@@ -17,7 +17,7 @@
 Seyfert is the ultimate Discord framework! We make easy to interact with the Discord API, big cache control, scalable code and a pretty dev experience.
 
 ## Why I should use it?
-There is a lot of reasons to use Seyfert, but we cannot put them all in here so there is a few of them!
+There are many to use Seyfert, but we cannot put them all in here so there is a few of them!
 
 - **RAM Saver**
 - **Latest features**

@@ -17,7 +17,10 @@ import type { ModalBuilderComponents, ModalSubmitCallback } from './types';
  * @example
  * const modal = new Modal();
  * modal.setTitle("Sample Modal");
- * modal.addComponents(new TextInput().setLabel("Enter text"));
+ * modal.addComponents(
+ *   new ActionRow<TextInput>()
+ *   .addComponents(new TextInput().setLabel("Enter text"))
+ * ));
  * modal.run((interaction) => {
  *   // Handle modal submission
  * });
