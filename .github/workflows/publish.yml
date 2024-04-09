@@ -25,6 +25,7 @@ jobs:
       - name: Create Release Pull Request
         uses: changesets/action@v1
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         with:
           commit: "chore: release packages"
