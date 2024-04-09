@@ -1,0 +1,36 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - build
+
+jobs:
+  build:
+    name: Publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: check out code
+        uses: actions/checkout@v4
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Add npm
+        run: bun add npm
+
+      - name: Build package
+        run: bun run build
+
+      - name: Create Release Pull Request
+        uses: changesets/action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        with:
+          commit: "chore: release packages"
+          publish: bunx npm publish
+          title: "chore: release packages"
