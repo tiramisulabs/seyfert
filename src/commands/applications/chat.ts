@@ -109,14 +109,6 @@ class BaseCommand {
 	__filePath?: string;
 	__t?: { name: string | undefined; description: string | undefined };
 	__autoload?: true;
-	__tGroups?: Record<
-		string /* name for group*/,
-		{
-			name: string | undefined;
-			description: string | undefined;
-			defaultDescription: string;
-		}
-	>;
 
 	guildId?: string[];
 	name!: string;
@@ -133,6 +125,8 @@ class BaseCommand {
 	options?: CommandOption[] | SubCommand[];
 
 	ignore?: IgnoreCommand;
+
+	aliases?: string[];
 
 	/** @internal */
 	async __runOptions(
@@ -296,6 +290,16 @@ export class Command extends BaseCommand {
 	type = ApplicationCommandType.ChatInput;
 
 	groups?: Parameters<typeof Groups>[0];
+	groupsAliases?: Record<string, string>;
+	__tGroups?: Record<
+		string /* name for group*/,
+		{
+			name: string | undefined;
+			description: string | undefined;
+			defaultDescription: string;
+		}
+	>;
+
 	toJSON() {
 		const options: APIApplicationCommandOption[] = [];
 

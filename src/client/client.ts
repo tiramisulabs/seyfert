@@ -1,4 +1,4 @@
-import { type GatewayDispatchPayload, GatewayIntentBits, type GatewayPresenceUpdateData } from 'discord-api-types/v10';
+import { GatewayIntentBits, type GatewayDispatchPayload, type GatewayPresenceUpdateData } from 'discord-api-types/v10';
 import { parentPort, workerData } from 'node:worker_threads';
 import type { ClientEvent, Command, CommandContext, EventHandlerLike, Message, SubCommand } from '..';
 import type { DeepPartial, If, WatcherPayload, WatcherSendToShard } from '../common';

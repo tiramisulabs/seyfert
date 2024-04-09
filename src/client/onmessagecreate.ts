@@ -32,31 +32,41 @@ function getCommandFromContent(
 	parent?: Command;
 	fullCommandName: string;
 } {
-	const parentName = commandRaw[0];
-	const groupName = commandRaw.length === 3 ? commandRaw[1] : undefined;
-	const subcommandName = groupName ? commandRaw[2] : commandRaw[1];
+	const rawParentName = commandRaw[0];
+	const rawGroupName = commandRaw.length === 3 ? commandRaw[1] : undefined;
+	const rawSubcommandName = rawGroupName ? commandRaw[2] : commandRaw[1];
 	const parent = self.commands!.values.find(
-		x => (!('ignore' in x) || x.ignore !== IgnoreCommand.Message) && x.name === parentName,
+		x =>
+			(!('ignore' in x) || x.ignore !== IgnoreCommand.Message) &&
+			(x.name === rawParentName || ('aliases' in x ? x.aliases?.includes(rawParentName) : false)),
 	);
-	const fullCommandName = `${parentName}${
-		groupName ? ` ${groupName} ${subcommandName}` : `${subcommandName ? ` ${subcommandName}` : ''}`
+	const fullCommandName = `${rawParentName}${
+		rawGroupName ? ` ${rawGroupName} ${rawSubcommandName}` : `${rawSubcommandName ? ` ${rawSubcommandName}` : ''}`
 	}`;
 
 	if (!(parent instanceof Command)) return { fullCommandName };
 
-	if (groupName && !parent.groups?.[groupName!]) return getCommandFromContent([parentName, groupName], self);
-	if (subcommandName && !parent.options?.some(x => x instanceof SubCommand && x.name === subcommandName))
-		return getCommandFromContent([parentName], self);
+	if (rawGroupName && !parent.groups?.[rawGroupName] && !parent.groupsAliases?.[rawGroupName])
+		return getCommandFromContent([rawParentName, rawGroupName], self);
+	if (
+		rawSubcommandName &&
+		!parent.options?.some(
+			x => x instanceof SubCommand && (x.name === rawSubcommandName || x.aliases?.includes(rawSubcommandName)),
+		)
+	)
+		return getCommandFromContent([rawParentName], self);
+
+	const groupName = rawGroupName ? parent.groupsAliases?.[rawGroupName] || rawGroupName : undefined;
 
 	const command =
-		groupName || subcommandName
+		groupName || rawSubcommandName
 			? (parent.options?.find(opt => {
 					if (opt instanceof SubCommand) {
 						if (groupName) {
 							if (opt.group !== groupName) return false;
 						}
 						if (opt.group && !groupName) return false;
-						return subcommandName === opt.name;
+						return rawSubcommandName === opt.name || opt.aliases?.includes(rawSubcommandName);
 					}
 					return false;
 			  }) as SubCommand)

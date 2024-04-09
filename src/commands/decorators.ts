@@ -26,6 +26,7 @@ type DeclareOptions =
 			integrationTypes?: (keyof typeof IntegrationTypes)[];
 			contexts?: (keyof typeof InteractionContextTypes)[];
 			ignore?: IgnoreCommand;
+			aliases?: string[];
 	  }
 	| (Omit<
 			{
@@ -71,12 +72,22 @@ export function GroupsT(
 			name?: FlatObjectKeys<DefaultLocale>;
 			description?: FlatObjectKeys<DefaultLocale>;
 			defaultDescription: string;
+			aliases?: string[];
 		}
 	>,
 ) {
 	return <T extends { new (...args: any[]): {} }>(target: T) =>
 		class extends target {
 			__tGroups = groups;
+			groupsAliases: Record<string, string> = {};
+			constructor(...args: any[]) {
+				super(...args);
+				for (const i in groups) {
+					for (const j of groups[i].aliases ?? []) {
+						this.groupsAliases[j] = i;
+					}
+				}
+			}
 		};
 }
 
@@ -87,12 +98,22 @@ export function Groups(
 			name?: [language: LocaleString, value: string][];
 			description?: [language: LocaleString, value: string][];
 			defaultDescription: string;
+			aliases?: string[];
 		}
 	>,
 ) {
 	return <T extends { new (...args: any[]): {} }>(target: T) =>
 		class extends target {
 			groups = groups;
+			groupsAliases: Record<string, string> = {};
+			constructor(...args: any[]) {
+				super(...args);
+				for (const i in groups) {
+					for (const j of groups[i].aliases ?? []) {
+						this.groupsAliases[j] = i;
+					}
+				}
+			}
 		};
 }
 
@@ -152,12 +173,14 @@ export function Declare(declare: DeclareOptions) {
 			type: ApplicationCommandType = ApplicationCommandType.ChatInput;
 			guildId?: string[];
 			ignore?: IgnoreCommand;
+			aliases?: string[];
 			constructor(...args: any[]) {
 				super(...args);
 				if ('description' in declare) this.description = declare.description;
 				if ('type' in declare) this.type = declare.type;
 				if ('guildId' in declare) this.guildId = declare.guildId;
 				if ('ignore' in declare) this.ignore = declare.ignore;
+				if ('aliases' in declare) this.aliases = declare.aliases;
 				// check if all properties are valid
 			}
 		};
