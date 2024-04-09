@@ -36,7 +36,9 @@ function getCommandFromContent(
 	const groupName = commandRaw.length === 3 ? commandRaw[1] : undefined;
 	const subcommandName = groupName ? commandRaw[2] : commandRaw[1];
 	const parent = self.commands!.values.find(
-		x => (!('ignore' in x) || x.ignore !== IgnoreCommand.Message) && x.name === parentName,
+		x =>
+			(!('ignore' in x) || x.ignore !== IgnoreCommand.Message) &&
+			(x.name === parentName || (x instanceof Command ? x.aliases.includes(parentName) : false)),
 	);
 	const fullCommandName = `${parentName}${
 		groupName ? ` ${groupName} ${subcommandName}` : `${subcommandName ? ` ${subcommandName}` : ''}`
@@ -45,7 +47,12 @@ function getCommandFromContent(
 	if (!(parent instanceof Command)) return { fullCommandName };
 
 	if (groupName && !parent.groups?.[groupName!]) return getCommandFromContent([parentName, groupName], self);
-	if (subcommandName && !parent.options?.some(x => x instanceof SubCommand && x.name === subcommandName))
+	if (
+		subcommandName &&
+		!parent.options?.some(
+			x => x instanceof SubCommand && (x.name === subcommandName || x.aliases.includes(subcommandName)),
+		)
+	)
 		return getCommandFromContent([parentName], self);
 
 	const command =
@@ -56,7 +63,7 @@ function getCommandFromContent(
 							if (opt.group !== groupName) return false;
 						}
 						if (opt.group && !groupName) return false;
-						return subcommandName === opt.name;
+						return subcommandName === opt.name || opt.aliases.includes(subcommandName);
 					}
 					return false;
 			  }) as SubCommand)

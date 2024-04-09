@@ -120,6 +120,7 @@ class BaseCommand {
 
 	guildId?: string[];
 	name!: string;
+	aliases: string[] = [];
 	type!: number; // ApplicationCommandType.ChatInput | ApplicationCommandOptionType.Subcommand
 	nsfw?: boolean;
 	description!: string;

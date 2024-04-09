@@ -66,6 +66,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 
 	protected async execute(options: { token?: string; intents?: number } = {}) {
 		await super.execute(options);
+		this.debugger?.debug(`Watcher mode?: ${workerData?.__USING_WATCHER__ ?? false}`);
 		if (!workerData?.__USING_WATCHER__) {
 			await this.gateway.spawnShards();
 		} else {

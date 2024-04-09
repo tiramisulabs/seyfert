@@ -15,31 +15,22 @@ export enum InteractionContextTypes {
 	PRIVATE_CHANNEL = 2,
 }
 
-type DeclareOptions =
-	| {
-			name: string;
-			description: string;
-			botPermissions?: PermissionStrings | bigint;
-			defaultMemberPermissions?: PermissionStrings | bigint;
-			guildId?: string[];
-			nsfw?: boolean;
-			integrationTypes?: (keyof typeof IntegrationTypes)[];
-			contexts?: (keyof typeof InteractionContextTypes)[];
-			ignore?: IgnoreCommand;
-	  }
-	| (Omit<
-			{
-				name: string;
-				description: string;
-				botPermissions?: PermissionStrings | bigint;
-				defaultMemberPermissions?: PermissionStrings | bigint;
-				guildId?: string[];
-				nsfw?: boolean;
-				integrationTypes?: (keyof typeof IntegrationTypes)[];
-				contexts?: (keyof typeof InteractionContextTypes)[];
-			},
-			'type' | 'description'
-	  > & {
+interface DeclareOptionsBase {
+	name: string;
+	description: string;
+	botPermissions?: PermissionStrings | bigint;
+	defaultMemberPermissions?: PermissionStrings | bigint;
+	guildId?: string[];
+	nsfw?: boolean;
+	integrationTypes?: (keyof typeof IntegrationTypes)[];
+	contexts?: (keyof typeof InteractionContextTypes)[];
+	aliases?: string[];
+	ignore?: IgnoreCommand;
+}
+
+export type DeclareOptions =
+	| DeclareOptionsBase
+	| (Omit<DeclareOptionsBase, 'description' | 'ignore' | 'aliases'> & {
 			type: ApplicationCommandType.User | ApplicationCommandType.Message;
 	  });
 
@@ -152,12 +143,14 @@ export function Declare(declare: DeclareOptions) {
 			type: ApplicationCommandType = ApplicationCommandType.ChatInput;
 			guildId?: string[];
 			ignore?: IgnoreCommand;
+			aliases!: string[];
 			constructor(...args: any[]) {
 				super(...args);
 				if ('description' in declare) this.description = declare.description;
 				if ('type' in declare) this.type = declare.type;
 				if ('guildId' in declare) this.guildId = declare.guildId;
 				if ('ignore' in declare) this.ignore = declare.ignore;
+				if ('aliases' in declare) this.aliases = declare.aliases ?? [];
 				// check if all properties are valid
 			}
 		};
