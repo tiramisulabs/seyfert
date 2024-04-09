@@ -13,20 +13,17 @@ jobs:
       - name: check out code
         uses: actions/checkout@v4
 
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v1
+      - name: Install Node
+        uses: actions/setup-node@v3
+        with:
+          cache: "npm"
+          node-version: "lts/*"
 
       - name: Install dependencies
-        run: bun install
-
-      - name: Trust all dependencies
-        run: bun pm trust --all
-
-      - name: Add npm
-        run: bun add npm
+        run: npm ci
 
       - name: Build package
-        run: bun run build
+        run: npm run build
 
       - name: Create Release Pull Request
         uses: changesets/action@v1
@@ -35,5 +32,5 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         with:
           commit: "chore: release packages"
-          publish: bunx npm publish
+          publish: npm publish
           title: "chore: release packages"
