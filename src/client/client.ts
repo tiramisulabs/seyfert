@@ -1,6 +1,6 @@
 import { GatewayIntentBits, type GatewayDispatchPayload, type GatewayPresenceUpdateData } from 'discord-api-types/v10';
 import { parentPort, workerData } from 'node:worker_threads';
-import type { ClientEvent, Command, CommandContext, EventHandlerLike, Message, SubCommand } from '..';
+import type { Command, CommandContext, Message, SubCommand } from '..';
 import type { DeepPartial, If, WatcherPayload, WatcherSendToShard } from '../common';
 import { EventHandler } from '../events';
 import { ClientUser } from '../structures';
@@ -15,7 +15,7 @@ import { onMessageCreate } from './onmessagecreate';
 export class Client<Ready extends boolean = boolean> extends BaseClient {
 	private __handleGuilds?: Set<string> = new Set();
 	gateway!: ShardManager;
-	events?: EventHandlerLike = new EventHandler(this.logger);
+	events? = new EventHandler(this.logger);
 	me!: If<Ready, ClientUser>;
 	declare options: ClientOptions | undefined;
 	memberUpdateHandler = new MemberUpdateHandler();
@@ -31,7 +31,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 	}: ServicesOptions & {
 		gateway?: ShardManager;
 		handlers?: ServicesOptions['handlers'] & {
-			events?: EventHandlerLike | ((event: ClientEvent) => any);
+			events?: EventHandler['callback'];
 		};
 	}) {
 		super.setServices(rest);
@@ -49,7 +49,9 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				this.events = undefined;
 			} else if (typeof rest.handlers.events === 'function') {
 				this.events = new EventHandler(this.logger);
-				(this.events as EventHandler).__callback = rest.handlers.events;
+				this.events.setHandlers({
+					callback: rest.handlers.events,
+				});
 			} else {
 				this.events = rest.handlers.events;
 			}

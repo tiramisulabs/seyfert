@@ -15,30 +15,6 @@ type COMPONENTS = {
 	__run: (customId: string | string[] | RegExp, callback: ComponentCallback) => any;
 };
 
-export interface ComponentHandlerLike {
-	readonly values: Map<string, COMPONENTS>;
-	readonly commands: (ComponentCommand | ModalCommand)[];
-	readonly modals: Map<string, ModalSubmitCallback> | LimitedCollection<string, ModalSubmitCallback>;
-
-	onFail: ComponentHandler['onFail'];
-
-	createComponentCollector: ComponentHandler['createComponentCollector'];
-
-	hasModal: ComponentHandler['hasModal'];
-	onModalSubmit: ComponentHandler['onModalSubmit'];
-	executeModal: ComponentHandler['executeModal'];
-
-	hasComponent: ComponentHandler['hasComponent'];
-	executeComponent: ComponentHandler['executeComponent'];
-	onComponent: ComponentHandler['onComponent'];
-
-	load: ComponentHandler['load'];
-	reload: ComponentHandler['reload'];
-	reloadAll: ComponentHandler['reloadAll'];
-
-	onMessageDelete: ComponentHandler['onMessageDelete'];
-}
-
 export class ComponentHandler extends BaseHandler {
 	onFail: OnFailCallback = err => this.logger.warn('<Client>.components.onFail', err);
 	readonly values = new Map<string, COMPONENTS>();
@@ -177,7 +153,8 @@ export class ComponentHandler extends BaseHandler {
 		for (let i = 0; i < paths.length; i++) {
 			let component;
 			try {
-				component = new paths[i].file();
+				component = this.callback(paths[i].file);
+				if (!component) continue;
 			} catch (e) {
 				if (e instanceof Error && e.message === 'paths[i].file is not a constructor') {
 					this.logger.warn(
@@ -192,7 +169,6 @@ export class ComponentHandler extends BaseHandler {
 			if (!(component instanceof ModalCommand) && !(component instanceof ComponentCommand)) continue;
 			component.__filePath = paths[i].path;
 			this.commands.push(component);
-			await this.__callback?.(component);
 		}
 	}
 
@@ -254,4 +230,10 @@ export class ComponentHandler extends BaseHandler {
 			}
 		}
 	}
+
+	setHandlers({ callback }: { callback: ComponentHandler['callback'] }) {
+		this.callback = callback;
+	}
+
+	callback = (file: { new (): ModalCommand | ComponentCommand }): ModalCommand | ComponentCommand | false => new file();
 }

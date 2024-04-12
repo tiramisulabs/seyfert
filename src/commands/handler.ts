@@ -6,13 +6,6 @@ import { Command, SubCommand } from './applications/chat';
 import { ContextMenuCommand } from './applications/menu';
 import type { UsingClient } from './applications/shared';
 
-export interface CommandHandlerLike {
-	values: CommandHandler['values'];
-	load: CommandHandler['load'];
-	reload: CommandHandler['reload'];
-	reloadAll: CommandHandler['reloadAll'];
-}
-
 export class CommandHandler extends BaseHandler {
 	values: (Command | ContextMenuCommand)[] = [];
 	protected filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
@@ -45,17 +38,15 @@ export class CommandHandler extends BaseHandler {
 
 	async load(commandsDir: string, client: UsingClient) {
 		const result = (
-			await this.loadFilesK<typeof Command | typeof SubCommand | typeof ContextMenuCommand>(
-				await this.getFiles(commandsDir),
-			)
+			await this.loadFilesK<{ new (): Command | SubCommand | ContextMenuCommand }>(await this.getFiles(commandsDir))
 		).filter(x => x.file);
 		this.values = [];
 
 		for (const command of result) {
 			let commandInstance;
 			try {
-				//@ts-expect-error abstract class
-				commandInstance = new command.file();
+				commandInstance = this.onCommand(command.file);
+				if (!commandInstance) continue;
 			} catch (e) {
 				if (e instanceof Error && e.message === 'command.file is not a constructor') {
 					this.logger.warn(
@@ -70,7 +61,6 @@ export class CommandHandler extends BaseHandler {
 			if (commandInstance instanceof ContextMenuCommand) {
 				this.values.push(commandInstance);
 				commandInstance.__filePath = command.path;
-				await this.__callback?.(commandInstance);
 				continue;
 			}
 			if (!(commandInstance instanceof Command)) {
@@ -86,9 +76,8 @@ export class CommandHandler extends BaseHandler {
 						continue;
 					}
 					try {
-						//@ts-expect-error abstract class
-						const subCommand = new (result.find(x => x.path === option)!.file)();
-						if (subCommand instanceof SubCommand) {
+						const subCommand = this.onSubCommand(result.find(x => x.path === option)!.file as { new (): SubCommand });
+						if (subCommand && subCommand instanceof SubCommand) {
 							subCommand.__filePath = option;
 							commandInstance.options.push(subCommand);
 						}
@@ -124,8 +113,6 @@ export class CommandHandler extends BaseHandler {
 					this.__parseCommandLocales(i, client);
 				}
 			}
-
-			await this.__callback?.(commandInstance);
 		}
 
 		return this.values;
@@ -212,4 +199,22 @@ export class CommandHandler extends BaseHandler {
 			}
 		}
 	}
+
+	setHandlers({
+		onCommand,
+		onSubCommand,
+	}: {
+		onCommand?: CommandHandler['onCommand'];
+		onSubCommand?: CommandHandler['onSubCommand'];
+	}) {
+		if (onCommand) this.onCommand = onCommand;
+		if (onSubCommand) this.onSubCommand = onSubCommand;
+	}
+
+	onCommand = (file: { new (): Command | SubCommand | ContextMenuCommand }):
+		| Command
+		| SubCommand
+		| ContextMenuCommand
+		| false => new file();
+	onSubCommand = (file: { new (): SubCommand }): SubCommand | false => new file();
 }

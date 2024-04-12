@@ -2,9 +2,9 @@ import { join } from 'node:path';
 import { ApiHandler, Router } from '../api';
 import type { Adapter } from '../cache';
 import { Cache, MemoryAdapter } from '../cache';
-import type { Command, ContextMenuCommand, RegisteredMiddlewares } from '../commands';
+import type { RegisteredMiddlewares } from '../commands';
 import { IgnoreCommand, type InferWithPrefix, type MiddlewareContext } from '../commands/applications/shared';
-import { CommandHandler, type CommandHandlerLike } from '../commands/handler';
+import { CommandHandler } from '../commands/handler';
 import {
 	ChannelShorter,
 	EmojiShorter,
@@ -25,9 +25,8 @@ import {
 
 import type { LocaleString } from 'discord-api-types/rest/v10';
 import type { DeepPartial, IntentStrings, OmitInsert, When } from '../common/types/util';
-import type { ComponentCommand, ModalCommand } from '../components';
-import { ComponentHandler, type ComponentHandlerLike } from '../components/handler';
-import { LangsHandler, type LangsHandlerLike } from '../langs/handler';
+import { ComponentHandler } from '../components/handler';
+import { LangsHandler } from '../langs/handler';
 import type {
 	ChatInputCommandInteraction,
 	ComponentInteraction,
@@ -57,9 +56,9 @@ export class BaseClient {
 		name: '[Seyfert]',
 	});
 
-	langs?: LangsHandlerLike = new LangsHandler(this.logger);
-	commands?: CommandHandlerLike = new CommandHandler(this.logger, this);
-	components?: ComponentHandlerLike = new ComponentHandler(this.logger, this);
+	langs? = new LangsHandler(this.logger);
+	commands? = new CommandHandler(this.logger, this);
+	components? = new ComponentHandler(this.logger, this);
 
 	private _applicationId?: string;
 	private _botId?: string;
@@ -121,8 +120,8 @@ export class BaseClient {
 				if (!handlers.components) {
 					this.components = undefined;
 				} else if (typeof handlers.components === 'function') {
-					this.components = new ComponentHandler(this.logger, this);
-					(this.components as ComponentHandler).__callback = handlers.components;
+					this.components ??= new ComponentHandler(this.logger, this);
+					this.components.setHandlers({ callback: handlers.components });
 				} else {
 					this.components = handlers.components;
 				}
@@ -130,9 +129,9 @@ export class BaseClient {
 			if ('commands' in handlers) {
 				if (!handlers.commands) {
 					this.commands = undefined;
-				} else if (typeof handlers.commands === 'function') {
-					this.commands = new CommandHandler(this.logger, this);
-					(this.commands as CommandHandler).__callback = handlers.commands;
+				} else if (typeof handlers.commands === 'object') {
+					this.commands ??= new CommandHandler(this.logger, this);
+					this.commands.setHandlers(handlers.commands);
 				} else {
 					this.commands = handlers.commands;
 				}
@@ -141,8 +140,8 @@ export class BaseClient {
 				if (!handlers.langs) {
 					this.langs = undefined;
 				} else if (typeof handlers.langs === 'function') {
-					this.langs = new LangsHandler(this.logger);
-					(this.langs as LangsHandler).__callback = handlers.langs;
+					this.langs ??= new LangsHandler(this.logger);
+					this.langs.setHandlers({ callback: handlers.langs });
 				} else {
 					this.langs = handlers.langs;
 				}
@@ -348,8 +347,8 @@ export interface ServicesOptions {
 	};
 	middlewares?: Record<string, MiddlewareContext>;
 	handlers?: {
-		components?: ComponentHandlerLike | ((component: ComponentCommand | ModalCommand) => any);
-		commands?: CommandHandlerLike | ((command: Command | ContextMenuCommand) => any);
-		langs?: LangsHandlerLike | ((locale: string, record: Record<string, unknown>) => any);
+		components?: ComponentHandler | ComponentHandler['callback'];
+		commands?: CommandHandler | Parameters<CommandHandler['setHandlers']>[0];
+		langs?: LangsHandler | LangsHandler['callback'];
 	};
 }

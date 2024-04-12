@@ -5,7 +5,7 @@ import { ApiHandler, Logger } from '..';
 import type { Cache } from '../cache';
 import { WorkerAdapter } from '../cache';
 import { LogLevels, type DeepPartial, type When } from '../common';
-import { EventHandler, type EventHandlerLike } from '../events';
+import { EventHandler } from '../events';
 import { ClientUser } from '../structures';
 import { Shard, type ShardManagerOptions, type WorkerData } from '../websocket';
 import type {
@@ -46,7 +46,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		name: `[Worker #${workerData.workerId}]`,
 	});
 
-	events?: EventHandlerLike = new EventHandler(this.logger);
+	events? = new EventHandler(this.logger);
 	me!: When<Ready, ClientUser>;
 	promises = new Map<string, { resolve: (value: any) => void; timeout: NodeJS.Timeout }>();
 
@@ -102,12 +102,21 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		...rest
 	}: ServicesOptions & {
 		handlers?: ServicesOptions['handlers'] & {
-			events?: EventHandlerLike;
+			events?: EventHandler['callback'];
 		};
 	}) {
 		super.setServices(rest);
 		if (rest.handlers && 'events' in rest.handlers) {
-			this.events = rest.handlers.events;
+			if (!rest.handlers.events) {
+				this.events = undefined;
+			} else if (typeof rest.handlers.events === 'function') {
+				this.events = new EventHandler(this.logger);
+				this.events.setHandlers({
+					callback: rest.handlers.events,
+				});
+			} else {
+				this.events = rest.handlers.events;
+			}
 		}
 	}
 

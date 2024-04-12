@@ -5,41 +5,25 @@ import type {
 	GatewayMessageDeleteDispatch,
 } from 'discord-api-types/v10';
 import type { Client, WorkerClient } from '../client';
-import {
-	BaseHandler,
-	ReplaceRegex,
-	magicImport,
-	type MakeRequired,
-	type OnFailCallback,
-	type SnakeCase,
-} from '../common';
+import { BaseHandler, ReplaceRegex, magicImport, type MakeRequired, type SnakeCase } from '../common';
 import type { ClientEvents } from '../events/hooks';
 import * as RawEvents from '../events/hooks';
 import type { ClientEvent, ClientNameEvents } from './event';
 
-type EventValue = MakeRequired<ClientEvent, '__filePath'> & { fired?: boolean };
+export type EventValue = MakeRequired<ClientEvent, '__filePath'> & { fired?: boolean };
 
-type GatewayEvents = Uppercase<SnakeCase<keyof ClientEvents>>;
-
-export interface EventHandlerLike {
-	runEvent: EventHandler['runEvent'];
-	execute: EventHandler['execute'];
-	load: EventHandler['load'];
-	reload: EventHandler['reload'];
-	reloadAll: EventHandler['reloadAll'];
-	values: EventHandler['values'];
-	onFail: EventHandler['onFail'];
-}
+export type GatewayEvents = Uppercase<SnakeCase<keyof ClientEvents>>;
 
 export class EventHandler extends BaseHandler {
-	onFail: OnFailCallback = err => this.logger.warn('<Client>.events.onFail', err);
+	onFail = (event: GatewayEvents, err: unknown) => this.logger.warn('<Client>.events.onFail', err, event);
 	protected filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
 
 	values: Partial<Record<GatewayEvents, EventValue>> = {};
 
 	async load(eventsDir: string) {
 		for (const i of await this.loadFilesK<ClientEvent>(await this.getFiles(eventsDir))) {
-			const instance = i.file;
+			const instance = this.callback(i.file);
+			if (!instance) continue;
 			if (typeof instance?.run !== 'function') {
 				this.logger.warn(
 					i.path.split(process.cwd()).slice(1).join(process.cwd()),
@@ -49,7 +33,6 @@ export class EventHandler extends BaseHandler {
 			}
 			instance.__filePath = i.path;
 			this.values[ReplaceRegex.snake(instance.data.name).toUpperCase() as GatewayEvents] = instance as EventValue;
-			await this.__callback?.(instance);
 		}
 	}
 
@@ -107,7 +90,7 @@ export class EventHandler extends BaseHandler {
 			const hook = await RawEvents[name]?.(client, packet as never);
 			await Event.run(...[hook, client, shardId]);
 		} catch (e) {
-			await this.onFail(e);
+			await this.onFail(name, e);
 		}
 	}
 
@@ -127,4 +110,10 @@ export class EventHandler extends BaseHandler {
 			await this.reload(ReplaceRegex.camel(i) as ClientNameEvents);
 		}
 	}
+
+	setHandlers({ callback }: { callback: EventHandler['callback'] }) {
+		this.callback = callback;
+	}
+
+	callback = (file: ClientEvent): ClientEvent | false => file;
 }

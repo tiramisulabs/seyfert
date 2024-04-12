@@ -94,7 +94,6 @@ export function filterSplit<Element, Predicate extends (value: Element) => boole
  * Represents a base handler class.
  */
 export class BaseHandler {
-	__callback?: (...args: any[]) => any;
 	/**
 	 * Initializes a new instance of the BaseHandler class.
 	 * @param logger The logger instance.
