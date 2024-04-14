@@ -1,4 +1,5 @@
 import type { APIUser } from 'discord-api-types/v10';
+import { calculateUserDefaultAvatarIndex } from '../api';
 import type { MessageCreateBodyRequest, ObjectToLower } from '../common';
 import type { ImageOptions } from '../common/types/options';
 import { DiscordBase } from './extra/DiscordBase';
@@ -34,9 +35,7 @@ export class User extends DiscordBase<APIUser> {
 
 	avatarURL(options?: ImageOptions) {
 		if (!this.avatar) {
-			const avatarIndex =
-				this.discriminator === '0' ? Number(BigInt(this.id) >> 22n) % 6 : Number.parseInt(this.discriminator) % 5;
-			return this.rest.cdn.embed.avatars.get(avatarIndex);
+			return this.rest.cdn.embed.avatars.get(calculateUserDefaultAvatarIndex(this.id, this.discriminator));
 		}
 		return this.rest.cdn.avatars(this.id).get(this.avatar, options);
 	}
