@@ -185,7 +185,7 @@ export async function onMessageCreate(
 		}
 	} catch (error) {
 		try {
-			await command.onInternalError?.(context, error);
+			await command.onInternalError?.(self, context.command, error);
 		} catch {
 			// supress error
 		}

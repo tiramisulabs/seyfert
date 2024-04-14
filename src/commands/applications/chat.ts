@@ -20,6 +20,7 @@ import type {
 	OnOptionsReturnObject,
 	PassFunction,
 	StopFunction,
+	UsingClient,
 } from './shared';
 
 export interface ReturnOptionsTypes {
@@ -283,7 +284,7 @@ class BaseCommand {
 	onMiddlewaresError?(context: CommandContext, error: string): any;
 	onBotPermissionsFail?(context: CommandContext, permissions: PermissionStrings): any;
 	onPermissionsFail?(context: CommandContext, permissions: PermissionStrings): any;
-	onInternalError?(client: CommandContext | AutocompleteInteraction, error?: unknown): any;
+	onInternalError?(client: UsingClient, command: Command | SubCommand, error?: unknown): any;
 }
 
 export class Command extends BaseCommand {

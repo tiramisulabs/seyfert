@@ -63,7 +63,7 @@ export async function onInteractionCreate(
 					}
 				} catch (error) {
 					try {
-						await optionsResolver.getCommand()?.onInternalError?.(interaction, error);
+						await optionsResolver.getCommand()?.onInternalError?.(self, optionsResolver.getCommand()!, error);
 					} catch {
 						// supress error
 					}
@@ -191,7 +191,7 @@ export async function onInteractionCreate(
 								}
 							} catch (error) {
 								try {
-									await command.onInternalError?.(context, error);
+									await command.onInternalError?.(self, context.command, error);
 								} catch {
 									// supress error
 								}

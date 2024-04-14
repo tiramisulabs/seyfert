@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { ApiHandler, Router } from '../api';
 import type { Adapter } from '../cache';
 import { Cache, MemoryAdapter } from '../cache';
-import type { Command, CommandContext, OnOptionsReturnObject, RegisteredMiddlewares } from '../commands';
+import type { Command, CommandContext, OnOptionsReturnObject, RegisteredMiddlewares, UsingClient } from '../commands';
 import { IgnoreCommand, type InferWithPrefix, type MiddlewareContext } from '../commands/applications/shared';
 import { CommandHandler } from '../commands/handler';
 import {
@@ -86,19 +86,27 @@ export class BaseClient {
 							context.client.logger.fatal(`${context.command.name}.<onRunError>`, context.author.id, error);
 						},
 						onOptionsError(context: CommandContext<{}, never>, metadata: OnOptionsReturnObject): any {
-							context.client.logger.fatal(`${context.command}.<onOptionsError>`, context.author.id, metadata);
+							context.client.logger.fatal(`${context.command.name}.<onOptionsError>`, context.author.id, metadata);
 						},
 						onMiddlewaresError(context: CommandContext<{}, never>, error: string): any {
-							context.client.logger.fatal(`${context.command}.<onMiddlewaresError>`, context.author.id, error);
+							context.client.logger.fatal(`${context.command.name}.<onMiddlewaresError>`, context.author.id, error);
 						},
 						onBotPermissionsFail(context: CommandContext<{}, never>, permissions: PermissionStrings): any {
-							context.client.logger.fatal(`${context.command}.<onBotPermissionsFail>`, context.author.id, permissions);
+							context.client.logger.fatal(
+								`${context.command.name}.<onBotPermissionsFail>`,
+								context.author.id,
+								permissions,
+							);
 						},
 						onPermissionsFail(context: CommandContext<{}, never>, permissions: PermissionStrings): any {
-							context.client.logger.fatal(`${context.command}.<onPermissionsFail>`, context.author.id, permissions);
+							context.client.logger.fatal(
+								`${context.command.name}.<onPermissionsFail>`,
+								context.author.id,
+								permissions,
+							);
 						},
-						onInternalError(context: CommandContext, error?: unknown): any {
-							context.client.logger.fatal(`${context.command}.<onInternalError>`, error);
+						onInternalError(client: UsingClient, command: Command, error?: unknown): any {
+							client.logger.fatal(`${command.name}.<onInternalError>`, error);
 						},
 					},
 				},
