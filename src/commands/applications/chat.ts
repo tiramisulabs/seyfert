@@ -265,15 +265,16 @@ class BaseCommand {
 
 	async reload() {
 		delete require.cache[this.__filePath!];
-		const __tempCommand = await magicImport(this.__filePath!).then(x => x.default ?? x);
-
-		Object.setPrototypeOf(this, __tempCommand.prototype);
 
 		for (const i of this.options ?? []) {
 			if (i instanceof SubCommand && i.__filePath) {
 				await i.reload();
 			}
 		}
+
+		const __tempCommand = await magicImport(this.__filePath!).then(x => x.default ?? x);
+
+		Object.setPrototypeOf(this, __tempCommand.prototype);
 	}
 
 	run?(context: CommandContext<any>): any;
