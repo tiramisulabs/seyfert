@@ -20,7 +20,6 @@ import type {
 	OnOptionsReturnObject,
 	PassFunction,
 	StopFunction,
-	UsingClient,
 } from './shared';
 
 export interface ReturnOptionsTypes {
@@ -277,14 +276,14 @@ class BaseCommand {
 		Object.setPrototypeOf(this, __tempCommand.prototype);
 	}
 
-	run?(context: CommandContext<any>): any;
-	onAfterRun?(context: CommandContext<any>, error: unknown | undefined): any;
-	onRunError?(context: CommandContext<any>, error: unknown): any;
-	onOptionsError?(context: CommandContext<{}, never>, metadata: OnOptionsReturnObject): any;
-	onMiddlewaresError?(context: CommandContext<{}, never>, error: string): any;
-	onBotPermissionsFail?(context: CommandContext<{}, never>, permissions: PermissionStrings): any;
-	onPermissionsFail?(context: CommandContext<{}, never>, permissions: PermissionStrings): any;
-	onInternalError?(client: UsingClient, error?: unknown): any;
+	run?(context: CommandContext): any;
+	onAfterRun?(context: CommandContext, error: unknown | undefined): any;
+	onRunError?(context: CommandContext, error: unknown): any;
+	onOptionsError?(context: CommandContext, metadata: OnOptionsReturnObject): any;
+	onMiddlewaresError?(context: CommandContext, error: string): any;
+	onBotPermissionsFail?(context: CommandContext, permissions: PermissionStrings): any;
+	onPermissionsFail?(context: CommandContext, permissions: PermissionStrings): any;
+	onInternalError?(client: CommandContext | AutocompleteInteraction, error?: unknown): any;
 }
 
 export class Command extends BaseCommand {
@@ -331,25 +330,6 @@ export class Command extends BaseCommand {
 			...super.toJSON(),
 			options,
 		};
-	}
-
-	onRunError(context: CommandContext<any>, error: unknown): any {
-		context.client.logger.fatal(`${this.name}.<onRunError>`, context.author.id, error);
-	}
-	onOptionsError(context: CommandContext<{}, never>, metadata: OnOptionsReturnObject): any {
-		context.client.logger.fatal(`${this.name}.<onOptionsError>`, context.author.id, metadata);
-	}
-	onMiddlewaresError(context: CommandContext<{}, never>, error: string): any {
-		context.client.logger.fatal(`${this.name}.<onMiddlewaresError>`, context.author.id, error);
-	}
-	onBotPermissionsFail(context: CommandContext<{}, never>, permissions: PermissionStrings): any {
-		context.client.logger.fatal(`${this.name}.<onBotPermissionsFail>`, context.author.id, permissions);
-	}
-	onPermissionsFail(context: CommandContext<{}, never>, permissions: PermissionStrings): any {
-		context.client.logger.fatal(`${this.name}.<onPermissionsFail>`, context.author.id, permissions);
-	}
-	onInternalError(client: UsingClient, error?: unknown): any {
-		client.logger.fatal(`${this.name}.<onInternalError>`, error);
 	}
 }
 

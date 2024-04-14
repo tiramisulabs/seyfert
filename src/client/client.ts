@@ -197,8 +197,8 @@ export interface ClientOptions extends BaseClientOptions {
 		properties?: Partial<ShardManagerOptions['properties']>;
 		compress?: ShardManagerOptions['compress'];
 	};
-	commands?: {
-		prefix: (message: Message) => Promise<string[]> | string[];
+	commands?: BaseClientOptions['commands'] & {
+		prefix?: (message: Message) => Promise<string[]> | string[];
 		deferReplyResponse?: (ctx: CommandContext) => Parameters<Message['write']>[0];
 		reply?: (ctx: CommandContext) => boolean;
 		argsParser?: (content: string, command: SubCommand | Command) => Record<string, string>;

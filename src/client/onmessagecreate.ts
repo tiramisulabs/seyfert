@@ -84,7 +84,7 @@ export async function onMessageCreate(
 	rawMessage: GatewayMessageCreateDispatchData,
 	shardId: number,
 ) {
-	if (!self.options?.commands) return;
+	if (!self.options?.commands?.prefix) return;
 	const message = new Message(self, rawMessage);
 	const prefixes = (await self.options.commands.prefix(message)).sort((a, b) => b.length - a.length);
 	const prefix = prefixes.find(x => message.content.startsWith(x));
@@ -185,7 +185,7 @@ export async function onMessageCreate(
 		}
 	} catch (error) {
 		try {
-			await command.onInternalError?.(self, error);
+			await command.onInternalError?.(context, error);
 		} catch {
 			// supress error
 		}

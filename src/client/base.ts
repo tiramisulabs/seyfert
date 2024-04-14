@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { ApiHandler, Router } from '../api';
 import type { Adapter } from '../cache';
 import { Cache, MemoryAdapter } from '../cache';
-import type { RegisteredMiddlewares } from '../commands';
+import type { Command, CommandContext, OnOptionsReturnObject, RegisteredMiddlewares } from '../commands';
 import { IgnoreCommand, type InferWithPrefix, type MiddlewareContext } from '../commands/applications/shared';
 import { CommandHandler } from '../commands/handler';
 import {
@@ -12,6 +12,7 @@ import {
 	LogLevels,
 	Logger,
 	MemberShorter,
+	MergeOptions,
 	MessageShorter,
 	ReactionShorter,
 	RoleShorter,
@@ -24,7 +25,7 @@ import {
 } from '../common';
 
 import type { LocaleString } from 'discord-api-types/rest/v10';
-import type { DeepPartial, IntentStrings, OmitInsert, When } from '../common/types/util';
+import type { DeepPartial, IntentStrings, OmitInsert, PermissionStrings, When } from '../common/types/util';
 import { ComponentHandler } from '../components/handler';
 import { LangsHandler } from '../langs/handler';
 import type {
@@ -77,7 +78,33 @@ export class BaseClient {
 	options: BaseClientOptions | undefined;
 
 	constructor(options?: BaseClientOptions) {
-		this.options = options;
+		this.options = MergeOptions(
+			{
+				commands: {
+					defaults: {
+						onRunError(context: CommandContext<any>, error: unknown): any {
+							context.client.logger.fatal(`${context.command.name}.<onRunError>`, context.author.id, error);
+						},
+						onOptionsError(context: CommandContext<{}, never>, metadata: OnOptionsReturnObject): any {
+							context.client.logger.fatal(`${context.command}.<onOptionsError>`, context.author.id, metadata);
+						},
+						onMiddlewaresError(context: CommandContext<{}, never>, error: string): any {
+							context.client.logger.fatal(`${context.command}.<onMiddlewaresError>`, context.author.id, error);
+						},
+						onBotPermissionsFail(context: CommandContext<{}, never>, permissions: PermissionStrings): any {
+							context.client.logger.fatal(`${context.command}.<onBotPermissionsFail>`, context.author.id, permissions);
+						},
+						onPermissionsFail(context: CommandContext<{}, never>, permissions: PermissionStrings): any {
+							context.client.logger.fatal(`${context.command}.<onPermissionsFail>`, context.author.id, permissions);
+						},
+						onInternalError(context: CommandContext, error?: unknown): any {
+							context.client.logger.fatal(`${context.command}.<onInternalError>`, error);
+						},
+					},
+				},
+			} satisfies BaseClientOptions,
+			options,
+		);
 	}
 
 	set botId(id: string) {
@@ -290,6 +317,17 @@ export interface BaseClientOptions {
 			| When<InferWithPrefix, Message, never>,
 	) => {};
 	globalMiddlewares?: readonly (keyof RegisteredMiddlewares)[];
+	commands?: {
+		defaults?: {
+			onRunError?: Command['onRunError'];
+			onPermissionsFail?: Command['onPermissionsFail'];
+			onBotPermissionsFail?: Command['onBotPermissionsFail'];
+			onInternalError?: Command['onInternalError'];
+			onMiddlewaresError?: Command['onMiddlewaresError'];
+			onOptionsError?: Command['onOptionsError'];
+			onAfterRun?: Command['onAfterRun'];
+		};
+	};
 }
 
 export interface StartOptions {

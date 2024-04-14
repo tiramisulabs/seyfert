@@ -66,6 +66,13 @@ export class CommandHandler extends BaseHandler {
 			if (!(commandInstance instanceof Command)) {
 				continue;
 			}
+			commandInstance.onAfterRun ??= client.options?.commands?.defaults?.onAfterRun;
+			commandInstance.onBotPermissionsFail ??= client.options?.commands?.defaults?.onBotPermissionsFail;
+			commandInstance.onInternalError ??= client.options?.commands?.defaults?.onInternalError;
+			commandInstance.onMiddlewaresError ??= client.options?.commands?.defaults?.onMiddlewaresError;
+			commandInstance.onOptionsError ??= client.options?.commands?.defaults?.onOptionsError;
+			commandInstance.onPermissionsFail ??= client.options?.commands?.defaults?.onPermissionsFail;
+			commandInstance.onRunError ??= client.options?.commands?.defaults?.onRunError;
 			commandInstance.__filePath = command.path;
 			commandInstance.options ??= [] as NonNullable<Command['options']>;
 			if (commandInstance.__autoload) {
@@ -91,17 +98,33 @@ export class CommandHandler extends BaseHandler {
 				if (option instanceof SubCommand) {
 					option.middlewares = (commandInstance.middlewares ?? []).concat(option.middlewares ?? []);
 					option.onMiddlewaresError =
-						option.onMiddlewaresError?.bind(option) ?? commandInstance.onMiddlewaresError?.bind(commandInstance);
-					option.onRunError = option.onRunError?.bind(option) ?? commandInstance.onRunError?.bind(commandInstance);
+						option.onMiddlewaresError?.bind(option) ??
+						commandInstance.onMiddlewaresError?.bind(commandInstance) ??
+						this.client.options?.commands?.defaults?.onMiddlewaresError;
+					option.onRunError =
+						option.onRunError?.bind(option) ??
+						commandInstance.onRunError?.bind(commandInstance) ??
+						this.client.options?.commands?.defaults?.onRunError;
 					option.onOptionsError =
-						option.onOptionsError?.bind(option) ?? commandInstance.onOptionsError?.bind(commandInstance);
+						option.onOptionsError?.bind(option) ??
+						commandInstance.onOptionsError?.bind(commandInstance) ??
+						this.client.options?.commands?.defaults?.onOptionsError;
 					option.onInternalError =
-						option.onInternalError?.bind(option) ?? commandInstance.onInternalError?.bind(commandInstance);
-					option.onAfterRun = option.onAfterRun?.bind(option) ?? commandInstance.onAfterRun?.bind(commandInstance);
+						option.onInternalError?.bind(option) ??
+						commandInstance.onInternalError?.bind(commandInstance) ??
+						this.client.options?.commands?.defaults?.onInternalError;
+					option.onAfterRun =
+						option.onAfterRun?.bind(option) ??
+						commandInstance.onAfterRun?.bind(commandInstance) ??
+						this.client.options?.commands?.defaults?.onAfterRun;
 					option.onBotPermissionsFail =
-						option.onBotPermissionsFail?.bind(option) ?? commandInstance.onBotPermissionsFail?.bind(commandInstance);
+						option.onBotPermissionsFail?.bind(option) ??
+						commandInstance.onBotPermissionsFail?.bind(commandInstance) ??
+						this.client.options?.commands?.defaults?.onBotPermissionsFail;
 					option.onPermissionsFail =
-						option.onPermissionsFail?.bind(option) ?? commandInstance.onPermissionsFail?.bind(commandInstance);
+						option.onPermissionsFail?.bind(option) ??
+						commandInstance.onPermissionsFail?.bind(commandInstance) ??
+						this.client.options?.commands?.defaults?.onPermissionsFail;
 				}
 			}
 
