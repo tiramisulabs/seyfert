@@ -19,6 +19,7 @@ import {
 	GuildMember,
 	Sticker,
 	type CreateStickerBodyRequest,
+	AutoModerationRule,
 } from '../../structures';
 import channelFrom from '../../structures/channels';
 import { BaseShorter } from './base';
@@ -197,7 +198,11 @@ export class GuildShorter extends BaseShorter {
 			 * @param guildId The ID of the guild.
 			 * @returns A Promise that resolves to an array of auto-moderation rules.
 			 */
-			list: (guildId: string) => this.client.proxy.guilds(guildId)['auto-moderation'].rules.get(),
+			list: (guildId: string) =>
+				this.client.proxy
+					.guilds(guildId)
+					['auto-moderation'].rules.get()
+					.then(rules => rules.map(rule => new AutoModerationRule(this.client, rule))),
 
 			/**
 			 * Creates a new auto-moderation rule in the guild.
@@ -206,7 +211,10 @@ export class GuildShorter extends BaseShorter {
 			 * @returns A Promise that resolves to the created auto-moderation rule.
 			 */
 			create: (guildId: string, body: RESTPostAPIAutoModerationRuleJSONBody) =>
-				this.client.proxy.guilds(guildId)['auto-moderation'].rules.post({ body }),
+				this.client.proxy
+					.guilds(guildId)
+					['auto-moderation'].rules.post({ body })
+					.then(rule => new AutoModerationRule(this.client, rule)),
 
 			/**
 			 * Deletes an auto-moderation rule from the guild.
@@ -226,7 +234,11 @@ export class GuildShorter extends BaseShorter {
 			 * @returns A Promise that resolves to the fetched auto-moderation rule.
 			 */
 			fetch: (guildId: string, ruleId: string) => {
-				return this.client.proxy.guilds(guildId)['auto-moderation'].rules(ruleId).get();
+				return this.client.proxy
+					.guilds(guildId)
+					['auto-moderation'].rules(ruleId)
+					.get()
+					.then(rule => new AutoModerationRule(this.client, rule));
 			},
 
 			/**
@@ -243,7 +255,11 @@ export class GuildShorter extends BaseShorter {
 				body: ObjectToLower<RESTPatchAPIAutoModerationRuleJSONBody>,
 				reason?: string,
 			) => {
-				return this.client.proxy.guilds(guildId)['auto-moderation'].rules(ruleId).patch({ body, reason });
+				return this.client.proxy
+					.guilds(guildId)
+					['auto-moderation'].rules(ruleId)
+					.patch({ body, reason })
+					.then(rule => new AutoModerationRule(this.client, rule));
 			},
 		};
 	}

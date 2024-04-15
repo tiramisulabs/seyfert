@@ -47,9 +47,15 @@ export class WebhookShorter extends BaseShorter {
 		options: WebhookShorterOptionalParams,
 	) {
 		if (options.token) {
-			return this.client.proxy.webhooks(webhookId)(options.token).patch({ body, reason: options.reason, auth: false });
+			return this.client.proxy
+				.webhooks(webhookId)(options.token)
+				.patch({ body, reason: options.reason, auth: false })
+				.then(webhook => new Webhook(this.client, webhook));
 		}
-		return this.client.proxy.webhooks(webhookId).patch({ body, reason: options.reason });
+		return this.client.proxy
+			.webhooks(webhookId)
+			.patch({ body, reason: options.reason })
+			.then(webhook => new Webhook(this.client, webhook));
 	}
 
 	/**
