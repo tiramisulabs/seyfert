@@ -60,7 +60,7 @@ export class GuildRelatedResource<T = any> {
 	set(__keys: string, guild: string, data: any): ReturnCache<void>;
 	set(__keys: [string, any][], guild: string): ReturnCache<void>;
 	set(__keys: string | [string, any][], guild: string, data?: any): ReturnCache<void> {
-		const keys = (Array.isArray(__keys) ? __keys : [[__keys, data]]).filter(x => this.filter(x[1], x[1], guild)) as [
+		const keys = (Array.isArray(__keys) ? __keys : [[__keys, data]]).filter(x => this.filter(x[1], x[0], guild)) as [
 			string,
 			any,
 		][];
@@ -83,7 +83,7 @@ export class GuildRelatedResource<T = any> {
 	patch(__keys: string, guild?: string, data?: any): ReturnCache<void>;
 	patch(__keys: [string, any][], guild?: string): ReturnCache<void>;
 	patch(__keys: string | [string, any][], guild?: string, data?: any): ReturnCache<void> {
-		const keys = (Array.isArray(__keys) ? __keys : [[__keys, data]]).filter(x => this.filter(x[1], x[1], guild)) as [
+		const keys = (Array.isArray(__keys) ? __keys : [[__keys, data]]).filter(x => this.filter(x[1], x[0], guild)) as [
 			string,
 			any,
 		][];
