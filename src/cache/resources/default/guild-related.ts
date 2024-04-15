@@ -22,6 +22,11 @@ export class GuildRelatedResource<T = any> {
 		this.client = client;
 	}
 
+	//@ts-expect-error
+	filter(data: any, id: string, guild_id?: string) {
+		return true;
+	}
+
 	parse(data: any, id: string, guild_id: string) {
 		if (!data.id) data.id = id;
 		data.guild_id = guild_id;
@@ -40,7 +45,7 @@ export class GuildRelatedResource<T = any> {
 
 	setIfNI(intent: keyof typeof GatewayIntentBits, id: string, guildId: string, data: any) {
 		if (!this.cache.hasIntent(intent)) {
-			return fakePromise(this.set(id, guildId, data)).then(() => data);
+			return this.set(id, guildId, data);
 		}
 	}
 
@@ -55,7 +60,11 @@ export class GuildRelatedResource<T = any> {
 	set(__keys: string, guild: string, data: any): ReturnCache<void>;
 	set(__keys: [string, any][], guild: string): ReturnCache<void>;
 	set(__keys: string | [string, any][], guild: string, data?: any): ReturnCache<void> {
-		const keys: [string, any][] = Array.isArray(__keys) ? __keys : [[__keys, data]];
+		const keys = (Array.isArray(__keys) ? __keys : [[__keys, data]]).filter(x => this.filter(x[1], x[1], guild)) as [
+			string,
+			any,
+		][];
+
 		return fakePromise(
 			this.addToRelationship(
 				keys.map(x => x[0]),
@@ -65,7 +74,7 @@ export class GuildRelatedResource<T = any> {
 			() =>
 				this.adapter.set(
 					keys.map(([key, value]) => {
-						return [this.hashId(key), this.parse(value, key, guild)];
+						return [this.hashId(key), this.parse(value, key, guild)] as const;
 					}),
 				) as void,
 		);
@@ -74,7 +83,10 @@ export class GuildRelatedResource<T = any> {
 	patch(__keys: string, guild?: string, data?: any): ReturnCache<void>;
 	patch(__keys: [string, any][], guild?: string): ReturnCache<void>;
 	patch(__keys: string | [string, any][], guild?: string, data?: any): ReturnCache<void> {
-		const keys: [string, any][] = Array.isArray(__keys) ? __keys : [[__keys, data]];
+		const keys = (Array.isArray(__keys) ? __keys : [[__keys, data]]).filter(x => this.filter(x[1], x[1], guild)) as [
+			string,
+			any,
+		][];
 
 		if (guild) {
 			return fakePromise(
@@ -87,7 +99,7 @@ export class GuildRelatedResource<T = any> {
 					this.adapter.patch(
 						false,
 						keys.map(([key, value]) => {
-							return [this.hashId(key), this.parse(value, key, guild)];
+							return [this.hashId(key), this.parse(value, key, guild)] as const;
 						}),
 					) as void,
 			);

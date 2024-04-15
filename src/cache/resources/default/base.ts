@@ -22,8 +22,9 @@ export class BaseResource<T = any> {
 		this.client = client;
 	}
 
-	get rest() {
-		return this.client!.rest;
+	//@ts-expect-error
+	filter(data: any, id: string) {
+		return true;
 	}
 
 	get adapter() {
@@ -39,7 +40,7 @@ export class BaseResource<T = any> {
 
 	setIfNI(intent: keyof typeof GatewayIntentBits, id: string, data: any) {
 		if (!this.cache.hasIntent(intent)) {
-			return fakePromise(this.set(id, data)).then(() => data);
+			return this.set(id, data);
 		}
 	}
 
@@ -52,10 +53,12 @@ export class BaseResource<T = any> {
 	}
 
 	set(id: string, data: any) {
+		if (!this.filter(data, id)) return;
 		return fakePromise(this.addToRelationship(id)).then(() => this.adapter.set(this.hashId(id), data));
 	}
 
-	patch<T extends Record<any, any> = Record<any, any>>(id: string, data: T) {
+	patch(id: string, data: any) {
+		if (!this.filter(data, id)) return;
 		return fakePromise(this.addToRelationship(id)).then(() => this.adapter.patch(false, this.hashId(id), data));
 	}
 

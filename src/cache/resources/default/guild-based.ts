@@ -22,6 +22,11 @@ export class GuildBasedResource<T = any> {
 		this.client = client;
 	}
 
+	//@ts-expect-error
+	filter(data: any, id: string, guild_id: string) {
+		return true;
+	}
+
 	parse(data: any, id: string, guild_id: string) {
 		if (!data.id) data.id = id;
 		data.guild_id = guild_id;
@@ -41,7 +46,7 @@ export class GuildBasedResource<T = any> {
 
 	setIfNI(intent: keyof typeof GatewayIntentBits, id: string, guildId: string, data: any) {
 		if (!this.cache.hasIntent(intent)) {
-			return fakePromise(this.set(id, guildId, data)).then(() => data);
+			return this.set(id, guildId, data);
 		}
 	}
 
@@ -56,7 +61,10 @@ export class GuildBasedResource<T = any> {
 	set(__keys: string, guild: string, data: any): ReturnCache<void>;
 	set(__keys: [string, any][], guild: string): ReturnCache<void>;
 	set(__keys: string | [string, any][], guild: string, data?: any): ReturnCache<void> {
-		const keys: [string, any][] = Array.isArray(__keys) ? __keys : [[__keys, data]];
+		const keys = (Array.isArray(__keys) ? __keys : [[__keys, data]]).filter(x => this.filter(x[1], x[1], guild)) as [
+			string,
+			any,
+		][];
 
 		return fakePromise(
 			this.addToRelationship(
@@ -66,7 +74,7 @@ export class GuildBasedResource<T = any> {
 		).then(() =>
 			this.adapter.set(
 				keys.map(([key, value]) => {
-					return [this.hashGuildId(guild, key), this.parse(value, key, guild)];
+					return [this.hashGuildId(guild, key), this.parse(value, key, guild)] as const;
 				}),
 			),
 		) as void;
@@ -75,7 +83,11 @@ export class GuildBasedResource<T = any> {
 	patch(__keys: string, guild: string, data: any): ReturnCache<void>;
 	patch(__keys: [string, any][], guild: string): ReturnCache<void>;
 	patch(__keys: string | [string, any][], guild: string, data?: any): ReturnCache<void> {
-		const keys: [string, any][] = Array.isArray(__keys) ? __keys : [[__keys, data]];
+		const keys = (Array.isArray(__keys) ? __keys : [[__keys, data]]).filter(x => this.filter(x[1], x[1], guild)) as [
+			string,
+			any,
+		][];
+
 		return fakePromise(this.adapter.get(keys.map(([key]) => this.hashGuildId(guild, key)))).then(oldDatas =>
 			fakePromise(
 				this.addToRelationship(

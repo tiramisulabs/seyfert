@@ -14,12 +14,12 @@ import type { ObjectToLower } from '..';
 import { resolveFiles } from '../../builders';
 import {
 	AnonymousGuild,
+	AutoModerationRule,
 	BaseChannel,
 	Guild,
 	GuildMember,
 	Sticker,
 	type CreateStickerBodyRequest,
-	AutoModerationRule,
 } from '../../structures';
 import channelFrom from '../../structures/channels';
 import { BaseShorter } from './base';
@@ -277,7 +277,7 @@ export class GuildShorter extends BaseShorter {
 			list: async (guildId: string) => {
 				const stickers = await this.client.proxy.guilds(guildId).stickers.get();
 				await this.client.cache.stickers?.set(
-					stickers.map(st => [st.id, st]),
+					stickers.map(st => [st.id, st] as any),
 					guildId,
 				);
 				return stickers.map(st => new Sticker(this.client, st));

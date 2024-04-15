@@ -15,15 +15,7 @@ import { Stickers } from './resources/stickers';
 import { Threads } from './resources/threads';
 import { VoiceStates } from './resources/voice-states';
 
-import {
-	ChannelType,
-	GatewayIntentBits,
-	type APIEmoji,
-	type APISticker,
-	type APIThreadChannel,
-	type GatewayDispatchPayload,
-	type GatewayReadyDispatchData,
-} from 'discord-api-types/v10';
+import { ChannelType, GatewayIntentBits, type GatewayDispatchPayload } from 'discord-api-types/v10';
 import type { InternalOptions, UsingClient } from '../commands';
 import { Overwrites } from './resources/overwrites';
 
@@ -314,6 +306,7 @@ export class Cache {
 				case 'emojis':
 				case 'overwrites':
 					{
+						if (!this[type]?.filter(data, id, guildId)) continue;
 						const hashId = this[type]?.hashId(guildId!);
 						if (!hashId) {
 							continue;
@@ -331,6 +324,7 @@ export class Cache {
 				case 'voiceStates':
 				case 'members':
 					{
+						if (!this[type]?.filter(data, id, guildId)) continue;
 						const hashId = this[type]?.hashId(guildId!);
 						if (!hashId) {
 							continue;
@@ -346,6 +340,7 @@ export class Cache {
 				case 'users':
 				case 'guilds':
 					{
+						if (!this[type]?.filter(data, id)) continue;
 						const hashId = this[type]?.namespace;
 						if (!hashId) {
 							continue;
@@ -401,6 +396,7 @@ export class Cache {
 				case 'emojis':
 				case 'overwrites':
 					{
+						if (!this[type]?.filter(data, id, guildId)) continue;
 						const hashId = this[type]?.hashId(guildId!);
 						if (!hashId) {
 							continue;
@@ -418,6 +414,7 @@ export class Cache {
 				case 'voiceStates':
 				case 'members':
 					{
+						if (!this[type]?.filter(data, id, guildId)) continue;
 						const hashId = this[type]?.hashId(guildId!);
 						if (!hashId) {
 							continue;
@@ -433,6 +430,7 @@ export class Cache {
 				case 'users':
 				case 'guilds':
 					{
+						if (!this[type]?.filter(data, id)) continue;
 						const hashId = this[type]?.namespace;
 						if (!hashId) {
 							continue;
@@ -456,10 +454,7 @@ export class Cache {
 	async onPacket(event: GatewayDispatchPayload) {
 		switch (event.t) {
 			case 'READY':
-				{
-					const data = event.d as GatewayReadyDispatchData;
-					await this.users?.set(data.user.id, data.user);
-				}
+				await this.users?.set(event.d.user.id, event.d.user);
 				break;
 			case 'GUILD_CREATE':
 			case 'GUILD_UPDATE':
@@ -498,14 +493,14 @@ export class Cache {
 			case 'GUILD_EMOJIS_UPDATE':
 				await this.emojis?.remove(await this.emojis?.keys(event.d.guild_id), event.d.guild_id);
 				await this.emojis?.set(
-					(event.d.emojis as APIEmoji[]).map(x => [x.id!, x]),
+					event.d.emojis.map(x => [x.id!, x]),
 					event.d.guild_id,
 				);
 				break;
 			case 'GUILD_STICKERS_UPDATE':
 				await this.stickers?.remove(await this.stickers?.keys(event.d.guild_id), event.d.guild_id);
 				await this.stickers?.set(
-					(event.d.stickers as APISticker[]).map(x => [x.id, x]),
+					event.d.stickers.map(x => [x.id, x]),
 					event.d.guild_id,
 				);
 				break;
@@ -524,11 +519,11 @@ export class Cache {
 
 			case 'THREAD_CREATE':
 			case 'THREAD_UPDATE':
-				await this.threads?.set(event.d.id, (event.d as APIThreadChannel).guild_id!, event.d);
+				if (event.d.guild_id) await this.threads?.set(event.d.id, event.d.guild_id, event.d);
 				break;
 
 			case 'THREAD_DELETE':
-				await this.threads?.remove(event.d.id, (event.d as APIThreadChannel).guild_id!);
+				await this.threads?.remove(event.d.id, event.d.guild_id);
 				break;
 
 			case 'USER_UPDATE':
