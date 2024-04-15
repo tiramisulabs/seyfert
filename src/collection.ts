@@ -194,9 +194,10 @@ export class Collection<K, V> extends Map<K, V> {
 
 type LimitedCollectionData<V> = { expire: number; expireOn: number; value: V };
 
-export interface LimitedCollectionOptions {
+export interface LimitedCollectionOptions<K> {
 	limit: number;
 	expire: number;
+	onDelete?: (key: K) => void;
 	resetOnDemand: boolean;
 }
 
@@ -214,7 +215,7 @@ export interface LimitedCollectionOptions {
  * console.log(mappedArray); // Output: ['1: one', '2: two', '3: three']
  */
 export class LimitedCollection<K, V> {
-	static readonly default: LimitedCollectionOptions = {
+	static readonly default: LimitedCollectionOptions<any> = {
 		resetOnDemand: false,
 		limit: Number.POSITIVE_INFINITY,
 		expire: 0,
@@ -222,10 +223,10 @@ export class LimitedCollection<K, V> {
 
 	private readonly data = new Map<K, LimitedCollectionData<V>>();
 
-	private readonly options: LimitedCollectionOptions;
+	private readonly options: LimitedCollectionOptions<K>;
 	private timeout: NodeJS.Timeout | undefined = undefined;
 
-	constructor(options: Partial<LimitedCollectionOptions> = {}) {
+	constructor(options: Partial<LimitedCollectionOptions<K>> = {}) {
 		this.options = MergeOptions(LimitedCollection.default, options);
 	}
 
@@ -258,7 +259,8 @@ export class LimitedCollection<K, V> {
 		if (this.size > this.options.limit) {
 			const iter = this.data.keys();
 			while (this.size > this.options.limit) {
-				this.delete(iter.next().value);
+				const keyValue = iter.next().value;
+				this.delete(keyValue);
 			}
 		}
 
@@ -296,7 +298,7 @@ export class LimitedCollection<K, V> {
 		if (this.options.resetOnDemand && data && data.expire !== -1) {
 			const oldExpireOn = data.expireOn;
 			data.expireOn = Date.now() + data.expire;
-			if (this.closer!.expireOn === oldExpireOn) {
+			if (this.closer?.expireOn === oldExpireOn) {
 				this.resetTimeout();
 			}
 		}
@@ -329,7 +331,8 @@ export class LimitedCollection<K, V> {
 	 */
 	delete(key: K) {
 		const value = this.raw(key);
-		if (value && value.expireOn === this.closer!.expireOn) setImmediate(() => this.resetTimeout());
+		if (value && value.expireOn === this.closer?.expireOn) setImmediate(() => this.resetTimeout());
+		this.options.onDelete?.(key);
 		return this.data.delete(key);
 	}
 
@@ -398,12 +401,30 @@ export class LimitedCollection<K, V> {
 		}, expireOn - Date.now());
 	}
 
+	keys() {
+		return this.data.keys;
+	}
+
+	values() {
+		return this.data.values;
+	}
+
+	entries() {
+		return this.data.entries();
+	}
+
+	clear() {
+		this.data.clear();
+		this.resetTimeout();
+	}
+
 	private clearExpired() {
 		for (const [key, value] of this.data) {
 			if (value.expireOn === -1) {
 				continue;
 			}
 			if (Date.now() >= value.expireOn) {
+				this.options.onDelete?.(key);
 				this.data.delete(key);
 			}
 		}

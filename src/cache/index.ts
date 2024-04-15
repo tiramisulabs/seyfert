@@ -362,8 +362,8 @@ export class Cache {
 			}
 		}
 
-		await this.adapter.patch(false, allData);
 		await this.adapter.bulkAddToRelationShip(relationshipsData);
+		await this.adapter.patch(false, allData);
 	}
 
 	async bulkSet(
@@ -449,8 +449,8 @@ export class Cache {
 			}
 		}
 
-		await this.adapter.set(allData);
 		await this.adapter.bulkAddToRelationShip(relationshipsData);
+		await this.adapter.set(allData);
 	}
 
 	async onPacket(event: GatewayDispatchPayload) {

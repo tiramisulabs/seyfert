@@ -1,0 +1,249 @@
+import { LimitedCollection } from '../..';
+import { MergeOptions, type MakeRequired } from '../../common';
+import type { Adapter } from './types';
+
+export interface ResourceLimitedMemoryAdapter {
+	expire?: number;
+	limit?: number;
+}
+
+export interface LimitedMemoryAdapterOptions {
+	default?: ResourceLimitedMemoryAdapter;
+	guild?: ResourceLimitedMemoryAdapter;
+	user?: ResourceLimitedMemoryAdapter;
+	member?: ResourceLimitedMemoryAdapter;
+	voice_state?: ResourceLimitedMemoryAdapter;
+	channel?: ResourceLimitedMemoryAdapter;
+	emoji?: ResourceLimitedMemoryAdapter;
+	overwrite?: ResourceLimitedMemoryAdapter;
+	presence?: ResourceLimitedMemoryAdapter;
+	role?: ResourceLimitedMemoryAdapter;
+	stage_instance?: ResourceLimitedMemoryAdapter;
+	sticker?: ResourceLimitedMemoryAdapter;
+	thread?: ResourceLimitedMemoryAdapter;
+}
+
+export class LimitedMemoryAdapter implements Adapter {
+	isAsync = false;
+
+	readonly storage = new Map<string, LimitedCollection<string, string>>();
+	readonly relationships = new Map<string, Map<string, string[]>>();
+
+	options: MakeRequired<LimitedMemoryAdapterOptions, 'default'>;
+
+	constructor(options: LimitedMemoryAdapterOptions) {
+		this.options = MergeOptions(
+			{
+				default: {
+					expire: undefined,
+					limit: Number.POSITIVE_INFINITY,
+				},
+			} satisfies LimitedMemoryAdapterOptions,
+			options,
+		);
+	}
+
+	scan(query: string, keys?: false): any[];
+	scan(query: string, keys: true): string[];
+	scan(query: string, keys = false) {
+		const values = [];
+		const sq = query.split('.');
+		for (const iterator of [...this.storage.values()].flatMap(x => x.entries()))
+			for (const [key, value] of iterator) {
+				if (key.split('.').every((value, i) => (sq[i] === '*' ? !!value : sq[i] === value))) {
+					values.push(keys ? key : JSON.parse(value.value));
+				}
+			}
+
+		return values;
+	}
+
+	get(keys: string): any;
+	get(keys: string[]): any[];
+	get(keys: string | string[]) {
+		if (!Array.isArray(keys)) {
+			const data = this.storage.get(keys.split('.')[0])?.get(keys);
+			return data ? JSON.parse(data) : null;
+		}
+		return keys
+			.map(x => {
+				const data = this.storage.get(x.split('.')[0])?.get(x);
+				return data ? JSON.parse(data) : null;
+			})
+			.filter(x => x);
+	}
+
+	private __set(key: string, data: any) {
+		const namespace = key.split('.')[0];
+		const self = this;
+		if (!this.storage.has(namespace)) {
+			this.storage.set(
+				namespace,
+				new LimitedCollection({
+					expire: this.options[namespace as keyof LimitedMemoryAdapterOptions]?.expire ?? this.options.default.expire,
+					limit: this.options[namespace as keyof LimitedMemoryAdapterOptions]?.limit ?? this.options.default.limit,
+					resetOnDemand: true,
+					onDelete(k) {
+						const relation = self.relationships.get(namespace);
+						if (relation) {
+							switch (namespace) {
+								case 'guild':
+								case 'user':
+									self.removeToRelationship(namespace, k.split('.')[1]);
+									break;
+								case 'member':
+								case 'voice_state':
+									{
+										const split = k.split('.');
+										self.removeToRelationship(`${namespace}.${split[1]}`, split[2]);
+									}
+									break;
+								case 'channel':
+								case 'emoji':
+								case 'overwrite':
+								case 'presence':
+								case 'role':
+								case 'stage_instance':
+								case 'sticker':
+								case 'thread':
+									{
+										const split = k.split('.');
+										for (const i of relation.entries()) {
+											if (i[1].includes(split[1])) {
+												self.removeToRelationship(i[0], split[1]);
+												break;
+											}
+										}
+									}
+									break;
+							}
+						}
+					},
+				}),
+			);
+		}
+
+		this.storage.get(namespace)!.set(key, JSON.stringify(data));
+	}
+
+	set(keys: string, data: any): void;
+	set(keys: [string, any][]): void;
+	set(keys: string | [string, any][], data?: any): void {
+		if (Array.isArray(keys)) {
+			for (const [key, value] of keys) {
+				this.__set(key, value);
+			}
+		} else {
+			this.__set(keys, data);
+		}
+	}
+
+	patch(updateOnly: boolean, keys: string, data: any): void;
+	patch(updateOnly: boolean, keys: [string, any][]): void;
+	patch(updateOnly: boolean, keys: string | [string, any][], data?: any): void {
+		if (Array.isArray(keys)) {
+			for (const [key, value] of keys) {
+				const oldData = this.get(key);
+				if (updateOnly && !oldData) {
+					continue;
+				}
+				this.__set(key, Array.isArray(value) ? value : { ...(oldData ?? {}), ...value });
+			}
+		} else {
+			const oldData = this.get(keys);
+			if (updateOnly && !oldData) {
+				return;
+			}
+			this.__set(keys, Array.isArray(data) ? data : { ...(oldData ?? {}), ...data });
+		}
+	}
+
+	values(to: string) {
+		const array: any[] = [];
+		const data = this.keys(to);
+
+		for (const key of data) {
+			const content = this.get(key);
+
+			if (content) {
+				array.push(content);
+			}
+		}
+
+		return array;
+	}
+
+	keys(to: string) {
+		return this.getToRelationship(to).map(id => `${to}.${id}`);
+	}
+
+	count(to: string) {
+		return this.getToRelationship(to).length;
+	}
+
+	remove(keys: string): void;
+	remove(keys: string[]): void;
+	remove(keys: string | string[]) {
+		for (const i of Array.isArray(keys) ? keys : [keys]) {
+			this.storage.get(i.split('.')[0])?.delete(i);
+		}
+	}
+
+	flush(): void {
+		this.storage.clear();
+		this.relationships.clear();
+	}
+
+	contains(to: string, keys: string): boolean {
+		return this.getToRelationship(to).includes(keys);
+	}
+
+	getToRelationship(to: string) {
+		const key = to.split('.')[0];
+		if (!this.relationships.has(key)) this.relationships.set(key, new Map<string, string[]>());
+		const relation = this.relationships.get(key)!;
+		if (!relation.has(to)) {
+			relation.set(to, []);
+		}
+		return relation!.get(to)!;
+	}
+
+	bulkAddToRelationShip(data: Record<string, string[]>) {
+		for (const i in data) {
+			this.addToRelationship(i, data[i]);
+		}
+	}
+
+	addToRelationship(to: string, keys: string | string[]) {
+		const key = to.split('.')[0];
+		if (!this.relationships.has(key)) {
+			this.relationships.set(key, new Map<string, string[]>());
+		}
+
+		const data = this.getToRelationship(to);
+
+		for (const key of Array.isArray(keys) ? keys : [keys]) {
+			if (!data.includes(key)) {
+				data.push(key);
+			}
+		}
+	}
+
+	removeToRelationship(to: string, keys: string | string[]) {
+		const data = this.getToRelationship(to);
+		if (data) {
+			for (const key of Array.isArray(keys) ? keys : [keys]) {
+				const idx = data.indexOf(key);
+				if (idx !== -1) {
+					data.splice(idx, 1);
+				}
+			}
+		}
+	}
+
+	removeRelationship(to: string | string[]) {
+		for (const i of Array.isArray(to) ? to : [to]) {
+			this.relationships.delete(i);
+		}
+	}
+}

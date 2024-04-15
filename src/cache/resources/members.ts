@@ -39,7 +39,7 @@ export class Members extends GuildBasedResource {
 					members
 						.map(rawMember => {
 							const user = users.find(x => x.id === rawMember.id);
-							return user ? new GuildMember(this.client, rawMember, user, guild) : undefined;
+							return user ? new GuildMember(this.client, rawMember, user, rawMember.guild_id) : undefined;
 						})
 						.filter(Boolean) as GuildMember[],
 			),
