@@ -455,6 +455,16 @@ export class ThreadChannel extends BaseChannel<
 		channelId: this.parentId!,
 	});
 
+	async join() {
+		await this.client.threads.join(this.id);
+		return this;
+	}
+
+	async leave() {
+		await this.client.threads.leave(this.id);
+		return this;
+	}
+
 	setRatelimitPerUser(rate_limit_per_user: number | null | undefined) {
 		return this.edit({ rate_limit_per_user });
 	}
@@ -506,13 +516,8 @@ export interface NewsChannel extends ObjectToLower<APINewsChannel>, WebhookChann
 export class NewsChannel extends BaseChannel<ChannelType.GuildAnnouncement> {
 	declare type: ChannelType.GuildAnnouncement;
 
-	addFollower(webhook_channel_id: string, reason?: string) {
-		return this.api.channels(this.id).followers.post({
-			body: {
-				webhook_channel_id,
-			},
-			reason,
-		});
+	addFollower(webhookChannelId: string, reason?: string) {
+		return this.client.guilds.channels.addFollower(this.id, webhookChannelId, reason);
 	}
 }
 

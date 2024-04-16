@@ -17,6 +17,7 @@ import {
 	ReactionShorter,
 	RoleShorter,
 	TemplateShorter,
+	ThreadShorter,
 	UsersShorter,
 	WebhookShorter,
 	filterSplit,
@@ -50,6 +51,7 @@ export class BaseClient {
 	roles = new RoleShorter(this);
 	reactions = new ReactionShorter(this);
 	emojis = new EmojiShorter(this);
+	threads = new ThreadShorter(this);
 
 	debugger?: Logger;
 

@@ -185,6 +185,15 @@ export class GuildShorter extends BaseShorter {
 			 */
 			editPositions: (guildId: string, body: RESTPatchAPIGuildChannelPositionsJSONBody) =>
 				this.client.proxy.guilds(guildId).channels.patch({ body }),
+
+			addFollower: async (channelId: string, webhook_channel_id: string, reason?: string) => {
+				return this.client.proxy.channels(channelId).followers.post({
+					body: {
+						webhook_channel_id,
+					},
+					reason,
+				});
+			},
 		};
 	}
 

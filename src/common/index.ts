@@ -12,6 +12,7 @@ export * from './shorters/reactions';
 export * from './shorters/roles';
 export * from './shorters/templates';
 export * from './shorters/users';
+export * from './shorters/threads';
 export * from './shorters/webhook';
 export * from './types/options';
 export * from './types/resolvables';
