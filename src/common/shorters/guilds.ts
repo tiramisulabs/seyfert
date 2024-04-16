@@ -14,6 +14,7 @@ import type { ObjectToLower } from '..';
 import { resolveFiles } from '../../builders';
 import {
 	AnonymousGuild,
+	AutoModerationRule,
 	BaseChannel,
 	Guild,
 	GuildMember,
@@ -206,7 +207,11 @@ export class GuildShorter extends BaseShorter {
 			 * @param guildId The ID of the guild.
 			 * @returns A Promise that resolves to an array of auto-moderation rules.
 			 */
-			list: (guildId: string) => this.client.proxy.guilds(guildId)['auto-moderation'].rules.get(),
+			list: (guildId: string) =>
+				this.client.proxy
+					.guilds(guildId)
+					['auto-moderation'].rules.get()
+					.then(rules => rules.map(rule => new AutoModerationRule(this.client, rule))),
 
 			/**
 			 * Creates a new auto-moderation rule in the guild.
@@ -215,7 +220,10 @@ export class GuildShorter extends BaseShorter {
 			 * @returns A Promise that resolves to the created auto-moderation rule.
 			 */
 			create: (guildId: string, body: RESTPostAPIAutoModerationRuleJSONBody) =>
-				this.client.proxy.guilds(guildId)['auto-moderation'].rules.post({ body }),
+				this.client.proxy
+					.guilds(guildId)
+					['auto-moderation'].rules.post({ body })
+					.then(rule => new AutoModerationRule(this.client, rule)),
 
 			/**
 			 * Deletes an auto-moderation rule from the guild.
@@ -235,7 +243,11 @@ export class GuildShorter extends BaseShorter {
 			 * @returns A Promise that resolves to the fetched auto-moderation rule.
 			 */
 			fetch: (guildId: string, ruleId: string) => {
-				return this.client.proxy.guilds(guildId)['auto-moderation'].rules(ruleId).get();
+				return this.client.proxy
+					.guilds(guildId)
+					['auto-moderation'].rules(ruleId)
+					.get()
+					.then(rule => new AutoModerationRule(this.client, rule));
 			},
 
 			/**
@@ -252,7 +264,11 @@ export class GuildShorter extends BaseShorter {
 				body: ObjectToLower<RESTPatchAPIAutoModerationRuleJSONBody>,
 				reason?: string,
 			) => {
-				return this.client.proxy.guilds(guildId)['auto-moderation'].rules(ruleId).patch({ body, reason });
+				return this.client.proxy
+					.guilds(guildId)
+					['auto-moderation'].rules(ruleId)
+					.patch({ body, reason })
+					.then(rule => new AutoModerationRule(this.client, rule));
 			},
 		};
 	}
@@ -270,7 +286,7 @@ export class GuildShorter extends BaseShorter {
 			list: async (guildId: string) => {
 				const stickers = await this.client.proxy.guilds(guildId).stickers.get();
 				await this.client.cache.stickers?.set(
-					stickers.map(st => [st.id, st]),
+					stickers.map(st => [st.id, st] as any),
 					guildId,
 				);
 				return stickers.map(st => new Sticker(this.client, st));

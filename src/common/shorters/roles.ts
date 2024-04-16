@@ -15,11 +15,10 @@ export class RoleShorter extends BaseShorter {
 	 * @param reason The reason for creating the role.
 	 * @returns A Promise that resolves when the role is created.
 	 */
-	create(guildId: string, body: RESTPostAPIGuildRoleJSONBody, reason?: string) {
-		return this.client.proxy
-			.guilds(guildId)
-			.roles.post({ body, reason })
-			.then(res => this.client.cache.roles?.setIfNI('Guilds', res.id, guildId, res));
+	async create(guildId: string, body: RESTPostAPIGuildRoleJSONBody, reason?: string) {
+		const res = await this.client.proxy.guilds(guildId).roles.post({ body, reason });
+		await this.client.cache.roles?.setIfNI('Guilds', res.id, guildId, res);
+		return new GuildRole(this.client, res, guildId);
 	}
 
 	/**
@@ -52,12 +51,10 @@ export class RoleShorter extends BaseShorter {
 	 * @param reason The reason for editing the role.
 	 * @returns A Promise that resolves when the role is edited.
 	 */
-	edit(guildId: string, roleId: string, body: RESTPatchAPIGuildRoleJSONBody, reason?: string) {
-		return this.client.proxy
-			.guilds(guildId)
-			.roles(roleId)
-			.patch({ body, reason })
-			.then(res => this.client.cache.roles?.setIfNI('Guilds', roleId, guildId, res));
+	async edit(guildId: string, roleId: string, body: RESTPatchAPIGuildRoleJSONBody, reason?: string) {
+		const res = await this.client.proxy.guilds(guildId).roles(roleId).patch({ body, reason });
+		await this.client.cache.roles?.setIfNI('Guilds', roleId, guildId, res);
+		return new GuildRole(this.client, res, guildId);
 	}
 
 	/**
@@ -67,12 +64,10 @@ export class RoleShorter extends BaseShorter {
 	 * @param reason The reason for deleting the role.
 	 * @returns A Promise that resolves when the role is deleted.
 	 */
-	delete(guildId: string, roleId: string, reason?: string) {
-		return this.client.proxy
-			.guilds(guildId)
-			.roles(roleId)
-			.delete({ reason })
-			.then(() => this.client.cache.roles?.removeIfNI('Guilds', roleId, guildId));
+	async delete(guildId: string, roleId: string, reason?: string) {
+		const res = await this.client.proxy.guilds(guildId).roles(roleId).delete({ reason });
+		this.client.cache.roles?.removeIfNI('Guilds', roleId, guildId);
+		return new GuildRole(this.client, res, guildId);
 	}
 
 	/**

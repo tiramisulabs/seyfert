@@ -194,10 +194,10 @@ export class Collection<K, V> extends Map<K, V> {
 
 type LimitedCollectionData<V> = { expire: number; expireOn: number; value: V };
 
-export interface LimitedCollectionOptions<K> {
+export interface LimitedCollectionOptions<K, V> {
 	limit: number;
 	expire: number;
-	onDelete?: (key: K) => void;
+	onDelete?: (key: K, value: V) => void;
 	resetOnDemand: boolean;
 }
 
@@ -215,7 +215,7 @@ export interface LimitedCollectionOptions<K> {
  * console.log(mappedArray); // Output: ['1: one', '2: two', '3: three']
  */
 export class LimitedCollection<K, V> {
-	static readonly default: LimitedCollectionOptions<any> = {
+	static readonly default: LimitedCollectionOptions<any, any> = {
 		resetOnDemand: false,
 		limit: Number.POSITIVE_INFINITY,
 		expire: 0,
@@ -223,10 +223,10 @@ export class LimitedCollection<K, V> {
 
 	private readonly data = new Map<K, LimitedCollectionData<V>>();
 
-	private readonly options: LimitedCollectionOptions<K>;
+	private readonly options: LimitedCollectionOptions<K, V>;
 	private timeout: NodeJS.Timeout | undefined = undefined;
 
-	constructor(options: Partial<LimitedCollectionOptions<K>> = {}) {
+	constructor(options: Partial<LimitedCollectionOptions<K, V>> = {}) {
 		this.options = MergeOptions(LimitedCollection.default, options);
 	}
 
@@ -331,8 +331,10 @@ export class LimitedCollection<K, V> {
 	 */
 	delete(key: K) {
 		const value = this.raw(key);
-		if (value && value.expireOn === this.closer?.expireOn) setImmediate(() => this.resetTimeout());
-		this.options.onDelete?.(key);
+		if (value) {
+			if (value.expireOn === this.closer?.expireOn) setImmediate(() => this.resetTimeout());
+			this.options.onDelete?.(key, value.value);
+		}
 		return this.data.delete(key);
 	}
 
@@ -424,7 +426,7 @@ export class LimitedCollection<K, V> {
 				continue;
 			}
 			if (Date.now() >= value.expireOn) {
-				this.options.onDelete?.(key);
+				this.options.onDelete?.(key, value.value);
 				this.data.delete(key);
 			}
 		}
