@@ -1,7 +1,7 @@
 import { LimitedCollection } from '../..';
 import { MergeOptions, type MakeRequired } from '../../common';
 import type { Adapter } from './types';
-
+//TODO: optimizar esto
 export interface ResourceLimitedMemoryAdapter {
 	expire?: number;
 	limit?: number;
@@ -62,31 +62,35 @@ export class LimitedMemoryAdapter implements Adapter {
 	get(keys: string[]): any[];
 	get(keys: string | string[]) {
 		if (!Array.isArray(keys)) {
-			const data = this.storage.get(keys.split('.')[0])?.get(keys);
+			const data = [...this.storage.values()].find(x => x.has(keys))?.get(keys);
 			return data ? JSON.parse(data) : null;
 		}
 		return keys
-			.map(x => {
-				const data = this.storage.get(x.split('.')[0])?.get(x);
+			.map(key => {
+				const data = [...this.storage.values()].find(x => x.has(key))?.get(key);
 				return data ? JSON.parse(data) : null;
 			})
 			.filter(x => x);
 	}
 
 	private __set(key: string, data: any) {
-		const namespace = key.split('.')[0];
+		const __guildId = Array.isArray(data) ? data[0].guild_id : data.guild_id;
+		const namespace = `${key.split('.')[0]}${__guildId ? `.${__guildId}` : ''}`;
 		const self = this;
 		if (!this.storage.has(namespace)) {
 			this.storage.set(
 				namespace,
 				new LimitedCollection({
-					expire: this.options[namespace as keyof LimitedMemoryAdapterOptions]?.expire ?? this.options.default.expire,
-					limit: this.options[namespace as keyof LimitedMemoryAdapterOptions]?.limit ?? this.options.default.limit,
+					expire:
+						this.options[key.split('.')[0] as keyof LimitedMemoryAdapterOptions]?.expire ?? this.options.default.expire,
+					limit:
+						this.options[key.split('.')[0] as keyof LimitedMemoryAdapterOptions]?.limit ?? this.options.default.limit,
 					resetOnDemand: true,
 					onDelete(k) {
-						const relation = self.relationships.get(namespace);
+						const relationshipNamespace = key.split('.')[0];
+						const relation = self.relationships.get(relationshipNamespace);
 						if (relation) {
-							switch (namespace) {
+							switch (relationshipNamespace) {
 								case 'guild':
 								case 'user':
 									self.removeToRelationship(namespace, k.split('.')[1]);
@@ -100,21 +104,15 @@ export class LimitedMemoryAdapter implements Adapter {
 									break;
 								case 'channel':
 								case 'emoji':
-								case 'overwrite':
 								case 'presence':
 								case 'role':
 								case 'stage_instance':
 								case 'sticker':
 								case 'thread':
-									{
-										const split = k.split('.');
-										for (const i of relation.entries()) {
-											if (i[1].includes(split[1])) {
-												self.removeToRelationship(i[0], split[1]);
-												break;
-											}
-										}
-									}
+									self.removeToRelationship(namespace, k.split('.')[1]);
+									break;
+								case 'overwrite':
+									self.removeToRelationship(namespace, k.split('.')[1]);
 									break;
 							}
 						}
@@ -202,10 +200,11 @@ export class LimitedMemoryAdapter implements Adapter {
 		const key = to.split('.')[0];
 		if (!this.relationships.has(key)) this.relationships.set(key, new Map<string, string[]>());
 		const relation = this.relationships.get(key)!;
-		if (!relation.has(to)) {
-			relation.set(to, []);
+		const subrelationKey = to.split('.')[1] ?? '*';
+		if (!relation.has(subrelationKey)) {
+			relation.set(subrelationKey, []);
 		}
-		return relation!.get(to)!;
+		return relation!.get(subrelationKey)!;
 	}
 
 	bulkAddToRelationShip(data: Record<string, string[]>) {
@@ -231,11 +230,16 @@ export class LimitedMemoryAdapter implements Adapter {
 
 	removeToRelationship(to: string, keys: string | string[]) {
 		const data = this.getToRelationship(to);
+		// console.log({ data, to })
 		if (data) {
 			for (const key of Array.isArray(keys) ? keys : [keys]) {
+				// console.log(data, key, '????')
 				const idx = data.indexOf(key);
 				if (idx !== -1) {
+					console.log('borrado');
 					data.splice(idx, 1);
+				} else {
+					console.log({ to, keys });
 				}
 			}
 		}
