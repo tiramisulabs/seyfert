@@ -437,6 +437,12 @@ export class ComponentInteraction<
 	declare type: InteractionType.MessageComponent;
 	declare message: Message;
 
+	constructor(...[client, interaction, type]: ConstructorParameters<typeof Interaction<FromGuild, Type>>) {
+		super(client, interaction, type);
+		this.channel = channelFrom(interaction.channel, client);
+		this.message = new Message(client, interaction.message);
+	}
+
 	update(data: ComponentInteractionMessageUpdate) {
 		return this.reply({
 			type: InteractionResponseType.UpdateMessage,

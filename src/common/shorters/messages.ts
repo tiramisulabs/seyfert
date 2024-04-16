@@ -4,8 +4,8 @@ import type {
 	RESTPostAPIChannelMessagesThreadsJSONBody,
 } from 'discord-api-types/v10';
 import { resolveFiles } from '../../builders';
-import { Message, MessagesMethods, type ThreadChannel } from '../../structures';
-import channelFrom from '../../structures/channels';
+import { Message, MessagesMethods } from '../../structures';
+
 import type { MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
 
@@ -70,12 +70,6 @@ export class MessageShorter extends BaseShorter {
 		messageId: string,
 		options: RESTPostAPIChannelMessagesThreadsJSONBody & { reason?: string },
 	) {
-		const { reason, ...body } = options;
-
-		return this.client.proxy
-			.channels(channelId)
-			.messages(messageId)
-			.threads.post({ body, reason })
-			.then(thread => channelFrom(thread, this.client) as ThreadChannel);
+		return this.client.threads.fromMessage(channelId, messageId, options);
 	}
 }

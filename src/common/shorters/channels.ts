@@ -5,7 +5,7 @@ import {
 	type RESTPostAPIGuildForumThreadsJSONBody,
 } from 'discord-api-types/v10';
 import { BaseChannel, Message, type GuildMember, type GuildRole } from '../../structures';
-import channelFrom, { type AllChannels, type ThreadChannel } from '../../structures/channels';
+import channelFrom, { type AllChannels } from '../../structures/channels';
 import { PermissionsBitField } from '../../structures/extra/Permissions';
 import { BaseShorter } from './base';
 
@@ -116,13 +116,7 @@ export class ChannelShorter extends BaseShorter {
 		body: RESTPostAPIChannelThreadsJSONBody | RESTPostAPIGuildForumThreadsJSONBody,
 		reason?: string,
 	) {
-		return (
-			this.client.proxy
-				.channels(channelId)
-				.threads.post({ body, reason })
-				// When testing this, discord returns the thread object, but in discord api types it does not.
-				.then(thread => channelFrom(thread, this.client) as ThreadChannel)
-		);
+		return this.client.threads.create(channelId, body, reason);
 	}
 
 	async memberPermissions(channelId: string, member: GuildMember, checkAdmin = true): Promise<PermissionsBitField> {
