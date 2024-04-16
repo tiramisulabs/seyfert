@@ -74,11 +74,11 @@ export class ThreadShorter extends BaseShorter {
 		return this.client.proxy.channels(threadId)['thread-members'](memberId).put();
 	}
 
-	async listMembers(
+	async listMembers<T extends RESTGetAPIChannelThreadMembersQuery = RESTGetAPIChannelThreadMembersQuery>(
 		threadId: string,
-		query?: RESTGetAPIChannelThreadMembersQuery,
-	): Promise<InferWithMemberOnList<typeof query>> {
-		return this.client.proxy.channels(threadId)['thread-members'].get() as never;
+		query?: T,
+	): Promise<InferWithMemberOnList<T>> {
+		return this.client.proxy.channels(threadId)['thread-members'].get({ query }) as never;
 	}
 
 	async listArchivedThreads(
@@ -107,10 +107,10 @@ export class ThreadShorter extends BaseShorter {
 
 export type GetAPIChannelThreadMemberResult = MakeRequired<APIThreadMember, 'id' | 'user_id'>;
 
-type InferWithMemberOnList<T extends RESTGetAPIChannelThreadMembersQuery | undefined> = T extends {
-	with_member?: infer B;
+type InferWithMemberOnList<T extends RESTGetAPIChannelThreadMembersQuery> = T extends {
+	with_member: infer B;
 }
-	? B extends boolean
-		? When<B, Required<APIThreadMember>[], GetAPIChannelThreadMemberResult[]>
-		: Required<APIThreadMember>[]
+	? B extends true
+		? Required<APIThreadMember>[]
+		: GetAPIChannelThreadMemberResult[]
 	: GetAPIChannelThreadMemberResult[];
