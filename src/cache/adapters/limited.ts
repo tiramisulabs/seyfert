@@ -230,16 +230,11 @@ export class LimitedMemoryAdapter implements Adapter {
 
 	removeToRelationship(to: string, keys: string | string[]) {
 		const data = this.getToRelationship(to);
-		// console.log({ data, to })
 		if (data) {
 			for (const key of Array.isArray(keys) ? keys : [keys]) {
-				// console.log(data, key, '????')
 				const idx = data.indexOf(key);
 				if (idx !== -1) {
-					console.log('borrado');
 					data.splice(idx, 1);
-				} else {
-					console.log({ to, keys });
 				}
 			}
 		}
