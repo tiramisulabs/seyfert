@@ -2,6 +2,7 @@ import type {
 	APIThreadMember,
 	RESTGetAPIChannelThreadMembersQuery,
 	RESTGetAPIChannelThreadsArchivedQuery,
+	RESTPatchAPIChannelJSONBody,
 	RESTPostAPIChannelMessagesThreadsJSONBody,
 	RESTPostAPIChannelThreadsJSONBody,
 	RESTPostAPIGuildForumThreadsJSONBody,
@@ -52,6 +53,14 @@ export class ThreadShorter extends BaseShorter {
 
 	async leave(threadId: string) {
 		return this.client.proxy.channels(threadId)['thread-members']('@me').delete();
+	}
+
+	async lock(threadId: string, locked = true, reason?: string) {
+		return this.edit(threadId, { locked }, reason).then(x => channelFrom(x, this.client) as ThreadChannel);
+	}
+
+	async edit(threadId: string, body: RESTPatchAPIChannelJSONBody, reason?: string) {
+		return this.client.channels.edit(threadId, body, { reason });
 	}
 
 	async removeMember(threadId: string, memberId: string) {

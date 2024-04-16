@@ -8,6 +8,7 @@ import { BaseChannel, Message, type GuildMember, type GuildRole } from '../../st
 import channelFrom, { type AllChannels } from '../../structures/channels';
 import { PermissionsBitField } from '../../structures/extra/Permissions';
 import { BaseShorter } from './base';
+import { MergeOptions } from '../it/utils';
 
 export class ChannelShorter extends BaseShorter {
 	/**
@@ -35,8 +36,9 @@ export class ChannelShorter extends BaseShorter {
 	 * @returns A Promise that resolves to the deleted channel.
 	 */
 	async delete(id: string, optional: ChannelShorterOptionalParams = { guildId: '@me' }): Promise<AllChannels> {
-		const res = await this.client.proxy.channels(id).delete({ reason: optional.reason });
-		await this.client.cache.channels?.removeIfNI(BaseChannel.__intent__(optional.guildId!), res.id, optional.guildId!);
+		const options = MergeOptions<ChannelShorterOptionalParams>({ guildId: '@me' }, optional);
+		const res = await this.client.proxy.channels(id).delete({ reason: options.reason });
+		await this.client.cache.channels?.removeIfNI(BaseChannel.__intent__(options.guildId!), res.id, options.guildId!);
 		return channelFrom(res, this.client);
 	}
 
@@ -52,18 +54,14 @@ export class ChannelShorter extends BaseShorter {
 		body: RESTPatchAPIChannelJSONBody,
 		optional: ChannelShorterOptionalParams = { guildId: '@me' },
 	): Promise<AllChannels> {
-		const res = await this.client.proxy.channels(id).patch({ body, reason: optional.reason });
-		await this.client.cache.channels?.setIfNI(
-			BaseChannel.__intent__(optional.guildId!),
-			res.id,
-			optional.guildId!,
-			res,
-		);
+		const options = MergeOptions<ChannelShorterOptionalParams>({ guildId: '@me' }, optional);
+		const res = await this.client.proxy.channels(id).patch({ body, reason: options.reason });
+		await this.client.cache.channels?.setIfNI(BaseChannel.__intent__(options.guildId!), res.id, options.guildId!, res);
 		if (body.permission_overwrites && 'permission_overwrites' in res)
 			await this.client.cache.overwrites?.setIfNI(
-				BaseChannel.__intent__(optional.guildId!),
+				BaseChannel.__intent__(options.guildId!),
 				res.id,
-				optional.guildId!,
+				options.guildId!,
 				res.permission_overwrites,
 			);
 		return channelFrom(res, this.client);
