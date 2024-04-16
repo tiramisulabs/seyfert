@@ -65,9 +65,10 @@ export class LimitedMemoryAdapter implements Adapter {
 			const data = [...this.storage.values()].find(x => x.has(keys))?.get(keys);
 			return data ? JSON.parse(data) : null;
 		}
+		const iterator = [...this.storage.values()];
 		return keys
 			.map(key => {
-				const data = [...this.storage.values()].find(x => x.has(key))?.get(key);
+				const data = iterator.find(x => x.has(key))?.get(key);
 				return data ? JSON.parse(data) : null;
 			})
 			.filter(x => x);
@@ -109,8 +110,6 @@ export class LimitedMemoryAdapter implements Adapter {
 								case 'stage_instance':
 								case 'sticker':
 								case 'thread':
-									self.removeToRelationship(namespace, k.split('.')[1]);
-									break;
 								case 'overwrite':
 									self.removeToRelationship(namespace, k.split('.')[1]);
 									break;
