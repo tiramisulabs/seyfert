@@ -24,6 +24,7 @@ export class MessageShorter extends BaseShorter {
 				return new Message(this.client, message);
 			});
 	}
+
 	async edit(messageId: string, channelId: string, { files, ...body }: MessageUpdateBodyRequest) {
 		const parsedFiles = files ? await resolveFiles(files) : [];
 		return this.client.proxy
@@ -45,6 +46,7 @@ export class MessageShorter extends BaseShorter {
 			.crosspost.post({ reason })
 			.then(m => new Message(this.client, m));
 	}
+
 	delete(messageId: string, channelId: string, reason?: string) {
 		return this.client.proxy
 			.channels(channelId)
@@ -54,6 +56,7 @@ export class MessageShorter extends BaseShorter {
 				void this.client.components?.onMessageDelete(messageId);
 			});
 	}
+
 	fetch(messageId: string, channelId: string) {
 		return this.client.proxy
 			.channels(channelId)
@@ -61,11 +64,12 @@ export class MessageShorter extends BaseShorter {
 			.get()
 			.then(x => new Message(this.client, x));
 	}
+
 	purge(messages: string[], channelId: string, reason?: string) {
 		return this.client.proxy.channels(channelId).messages['bulk-delete'].post({ body: { messages }, reason });
 	}
 
-	async thread(
+	thread(
 		channelId: string,
 		messageId: string,
 		options: RESTPostAPIChannelMessagesThreadsJSONBody & { reason?: string },
