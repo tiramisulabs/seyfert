@@ -185,7 +185,7 @@ export class ChannelShorter extends BaseShorter {
 	}
 
 	setVoiceStatus(channelId: string, status: string | null = null) {
-		this.client.proxy.channels(channelId)['voice-status'].put({ body: { status } });
+		return this.client.proxy.channels(channelId)['voice-status'].put({ body: { status } });
 	}
 }
 
