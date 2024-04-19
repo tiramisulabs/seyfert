@@ -325,7 +325,7 @@ export class Interaction<
 	Type extends APIInteraction = APIInteraction,
 > extends BaseInteraction<FromGuild, Type> {
 	fetchMessage(messageId: string) {
-		return this.client.webhooks.fetchMessage(this.applicationId, this.token, messageId);
+		return this.client.interactions.fetchResponse(this.token, messageId);
 	}
 
 	fetchResponse() {
@@ -363,16 +363,8 @@ export class Interaction<
 		return this.write(body as InteractionCreateBodyRequest, fetchReply);
 	}
 
-	async editMessage(messageId: string, body: InteractionMessageUpdateBodyRequest) {
-		const { files, ...data } = body;
-		const apiMessage = await this.api
-			.webhooks(this.applicationId)(this.token)
-			.messages(messageId)
-			.patch({
-				body: BaseInteraction.transformBody(data),
-				files: files ? await resolveFiles(files) : undefined,
-			});
-		return new Message(this.client, apiMessage);
+	editMessage(messageId: string, body: InteractionMessageUpdateBodyRequest) {
+		return this.client.interactions.editMessage(this.token, messageId, body);
 	}
 
 	editResponse(body: InteractionMessageUpdateBodyRequest) {
@@ -384,22 +376,11 @@ export class Interaction<
 	}
 
 	deleteMessage(messageId: string) {
-		return this.api
-			.webhooks(this.applicationId)(this.token)
-			.messages(messageId)
-			.delete()
-			.then(() => this.client.components?.onMessageDelete(messageId === '@original' ? this.id : messageId));
+		return this.client.interactions.deleteResponse(this.id, this.token, messageId);
 	}
 
-	async createResponse({ files, ...body }: MessageWebhookCreateBodyRequest) {
-		files ??= files ? await resolveFiles(files) : undefined;
-		const apiMessage = await this.api
-			.webhooks(this.applicationId)(this.token)
-			.post({
-				body: BaseInteraction.transformBody(body),
-				files: files as RawFile[] | undefined,
-			});
-		return new Message(this.client, apiMessage);
+	async followup(body: MessageWebhookCreateBodyRequest) {
+		return this.client.interactions.followup(this.token, body);
 	}
 }
 
