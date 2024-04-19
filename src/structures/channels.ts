@@ -352,6 +352,10 @@ export class VoiceChannelMethods extends DiscordBase {
 		return this.edit({ video_quality_mode: VideoQualityMode[quality] }, reason);
 	}
 
+	setVoiceState(status: string | null = null) {
+		return this.client.channels.setVoiceStatus(this.id, status);
+	}
+
 	async states() {
 		if (!this.guildId) return [];
 		const states = await this.cache.voiceStates?.values(this.guildId);

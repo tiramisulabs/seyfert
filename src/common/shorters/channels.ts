@@ -183,6 +183,10 @@ export class ChannelShorter extends BaseShorter {
 			query,
 		});
 	}
+
+	setVoiceStatus(channelId: string, status: string | null = null) {
+		this.client.proxy.channels(channelId)['voice-status'].put({ body: { status } });
+	}
 }
 
 export type ChannelShorterOptionalParams = Partial<{ guildId: string; reason: string }>;
