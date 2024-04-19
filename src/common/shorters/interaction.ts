@@ -44,7 +44,7 @@ export class InteractionShorter extends BaseShorter {
 	}
 
 	async followup(token: string, { files, ...body }: MessageWebhookCreateBodyRequest) {
-		files ??= files ? await resolveFiles(files) : undefined;
+		files = files ? await resolveFiles(files) : undefined;
 		const apiMessage = await this.client.proxy
 			.webhooks(this.appId)(token)
 			.post({
