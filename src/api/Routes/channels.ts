@@ -253,5 +253,8 @@ export interface ChannelRoutes {
 				args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIChannelWebhookJSONBody>,
 			): Promise<RESTPostAPIChannelWebhookResult>;
 		};
+		'voice-status': {
+			put(args: RestArguments<ProxyRequestMethod.Put, { status: string | null }>): Promise<never>;
+		};
 	};
 }
