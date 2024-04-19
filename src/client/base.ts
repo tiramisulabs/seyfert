@@ -9,6 +9,7 @@ import {
 	ChannelShorter,
 	EmojiShorter,
 	GuildShorter,
+	InteractionShorter,
 	LogLevels,
 	Logger,
 	MemberShorter,
@@ -52,6 +53,7 @@ export class BaseClient {
 	reactions = new ReactionShorter(this);
 	emojis = new EmojiShorter(this);
 	threads = new ThreadShorter(this);
+	interactions = new InteractionShorter(this);
 
 	debugger?: Logger;
 
