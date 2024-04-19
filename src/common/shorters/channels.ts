@@ -1,5 +1,6 @@
 import {
 	PermissionFlagsBits,
+	type RESTGetAPIChannelMessagesQuery,
 	type RESTPatchAPIChannelJSONBody,
 	type RESTPostAPIChannelThreadsJSONBody,
 	type RESTPostAPIGuildForumThreadsJSONBody,
@@ -175,6 +176,12 @@ export class ChannelShorter extends BaseShorter {
 		permissions.remove(roleOverwrites?.deny.bits ?? 0n);
 		permissions.add(roleOverwrites?.allow.bits ?? 0n);
 		return permissions;
+	}
+
+	fetchMessages(channelId: string, query?: RESTGetAPIChannelMessagesQuery) {
+		return this.client.proxy.channels(channelId).messages.get({
+			query,
+		});
 	}
 }
 
