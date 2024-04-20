@@ -7,7 +7,7 @@ import { GuildRelatedResource } from './default/guild-related';
 export class Emojis extends GuildRelatedResource {
 	namespace = 'emoji';
 
-	//@ts-ignore
+	//@ts-expect-error
 	filter(data: APIEmoji, id: string, guild_id?: string) {
 		return true;
 	}

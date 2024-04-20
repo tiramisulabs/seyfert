@@ -124,11 +124,10 @@ export class BaseInteraction<
 			case InteractionResponseType.UpdateMessage:
 				return {
 					type: body.type,
-					// @ts-ignore
+					//@ts-ignore
 					data: {
-						// @ts-ignore
 						...(body.data ?? {}),
-						// @ts-ignore
+						//@ts-ignore
 						components: body.data?.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)) ?? undefined,
 						embeds: body.data?.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)) ?? undefined,
 						attachments: body.data?.attachments?.map((x, i) => ({ id: i, ...resolveAttachment(x) })) ?? undefined,

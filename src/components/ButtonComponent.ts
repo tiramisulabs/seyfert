@@ -8,7 +8,7 @@ export class LinkButtonComponent extends BaseComponent<ComponentType.Button> {
 	}
 
 	get url(): string {
-		// @ts-ignore
+		// @ts-expect-error
 		return this.data.url;
 	}
 
