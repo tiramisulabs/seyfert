@@ -4,6 +4,11 @@ import { GuildRelatedResource } from './default/guild-related';
 export class Presences extends GuildRelatedResource<PresenceResource> {
 	namespace = 'presence';
 
+	//@ts-expect-error
+	filter(data: GatewayPresenceUpdate, id: string, guild_id?: string) {
+		return true;
+	}
+
 	override parse(data: any, key: string, guild_id: string): PresenceResource {
 		const { user, ...rest } = super.parse(data, key, guild_id);
 		rest.user_id ??= key;

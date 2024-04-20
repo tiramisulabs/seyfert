@@ -7,6 +7,11 @@ import { GuildBasedResource } from './default/guild-based';
 export class VoiceStates extends GuildBasedResource {
 	namespace = 'voice_state';
 
+	//@ts-expect-error
+	filter(data: GatewayVoiceState, id: string, guild_id: string) {
+		return true;
+	}
+
 	override parse(data: any, id: string, guild_id: string) {
 		const { member, ...rest } = super.parse(data, id, guild_id);
 		return rest;

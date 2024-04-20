@@ -7,6 +7,11 @@ import { GuildRelatedResource } from './default/guild-related';
 export class Overwrites extends GuildRelatedResource {
 	namespace = 'overwrite';
 
+	//@ts-expect-error
+	filter(data: APIOverwrite[], id: string, guild_id?: string) {
+		return true;
+	}
+
 	parse(data: any[], _id: string, guild_id: string) {
 		data.forEach(x => {
 			x.guild_id = guild_id;

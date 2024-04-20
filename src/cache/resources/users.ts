@@ -7,6 +7,11 @@ import { BaseResource } from './default/base';
 export class Users extends BaseResource {
 	namespace = 'user';
 
+	//@ts-expect-error
+	filter(data: APIUser, id: string) {
+		return true;
+	}
+
 	override get(id: string): ReturnCache<User | undefined> {
 		return fakePromise(super.get(id)).then(rawUser => (rawUser ? new User(this.client, rawUser) : undefined));
 	}

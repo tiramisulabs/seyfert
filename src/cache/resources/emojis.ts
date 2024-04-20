@@ -7,6 +7,11 @@ import { GuildRelatedResource } from './default/guild-related';
 export class Emojis extends GuildRelatedResource {
 	namespace = 'emoji';
 
+	//@ts-ignore
+	filter(data: APIEmoji, id: string, guild_id?: string) {
+		return true;
+	}
+
 	override get(id: string): ReturnCache<GuildEmoji | undefined> {
 		return fakePromise(super.get(id)).then(rawEmoji =>
 			rawEmoji ? new GuildEmoji(this.client, rawEmoji, rawEmoji.guild_id) : undefined,

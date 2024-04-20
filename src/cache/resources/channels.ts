@@ -1,3 +1,4 @@
+import type { APIChannel } from 'discord-api-types/v10';
 import { fakePromise } from '../../common';
 import type { AllChannels } from '../../structures';
 import channelFrom from '../../structures/channels';
@@ -7,7 +8,7 @@ import { GuildRelatedResource } from './default/guild-related';
 export class Channels extends GuildRelatedResource {
 	namespace = 'channel';
 
-	parse(data: any, id: string, guild_id: string) {
+	parse(data: APIChannel, id: string, guild_id: string) {
 		const { permission_overwrites, ...rest } = super.parse(data, id, guild_id);
 		return rest;
 	}

@@ -3,4 +3,9 @@ import { GuildRelatedResource } from './default/guild-related';
 
 export class StageInstances extends GuildRelatedResource<APIStageInstance> {
 	namespace = 'stage_instance';
+
+	//@ts-expect-error
+	filter(data: APIStageInstance, id: string, guild_id?: string) {
+		return true;
+	}
 }

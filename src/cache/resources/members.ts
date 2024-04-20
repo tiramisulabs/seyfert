@@ -1,9 +1,15 @@
+import type { APIGuildMember } from 'discord-api-types/v10';
 import type { ReturnCache } from '../..';
 import { fakePromise } from '../../common';
 import { GuildMember } from '../../structures';
 import { GuildBasedResource } from './default/guild-based';
 export class Members extends GuildBasedResource {
 	namespace = 'member';
+
+	//@ts-expect-error
+	filter(data: APIGuildMember, id: string, guild_id: string) {
+		return true;
+	}
 
 	override parse(data: any, key: string, guild_id: string) {
 		const { user, ...rest } = super.parse(data, data.user?.id ?? key, guild_id);

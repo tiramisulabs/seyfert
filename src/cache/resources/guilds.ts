@@ -7,6 +7,11 @@ import { BaseResource } from './default/base';
 export class Guilds extends BaseResource {
 	namespace = 'guild';
 
+	//@ts-expect-error
+	filter(data: APIGuild, id: string) {
+		return true;
+	}
+
 	override get(id: string): ReturnCache<Guild<'cached'> | undefined> {
 		return fakePromise(super.get(id)).then(guild => (guild ? new Guild<'cached'>(this.client, guild) : undefined));
 	}

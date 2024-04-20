@@ -7,6 +7,11 @@ import { GuildRelatedResource } from './default/guild-related';
 export class Stickers extends GuildRelatedResource {
 	namespace = 'sticker';
 
+	//@ts-expect-error
+	filter(data: APISticker, id: string, guild_id?: string) {
+		return true;
+	}
+
 	override get(id: string): ReturnCache<Sticker | undefined> {
 		return fakePromise(super.get(id)).then(rawSticker =>
 			rawSticker ? new Sticker(this.client, rawSticker) : undefined,

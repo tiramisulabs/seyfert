@@ -7,6 +7,11 @@ import { GuildRelatedResource } from './default/guild-related';
 export class Threads extends GuildRelatedResource {
 	namespace = 'thread';
 
+	//@ts-expect-error
+	filter(data: APIThreadChannel, id: string, guild_id?: string) {
+		return true;
+	}
+
 	override get(id: string): ReturnCache<ThreadChannel | undefined> {
 		return fakePromise(super.get(id)).then(rawThread =>
 			rawThread ? new ThreadChannel(this.client, rawThread) : undefined,
