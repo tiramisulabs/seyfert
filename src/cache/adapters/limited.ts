@@ -111,6 +111,7 @@ export class LimitedMemoryAdapter implements Adapter {
 								case 'sticker':
 								case 'thread':
 								case 'overwrite':
+								case 'message':
 									self.removeToRelationship(namespace, k.split('.')[1]);
 									break;
 							}

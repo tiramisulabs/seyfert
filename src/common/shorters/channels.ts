@@ -79,6 +79,12 @@ export class ChannelShorter extends BaseShorter {
 
 	async pins(channelId: string): Promise<Message[]> {
 		const messages = await this.client.proxy.channels(channelId).pins.get();
+		await this.client.cache.messages?.patch(
+			messages.map(x => {
+				return [x.id, x];
+			}) satisfies [string, any][],
+			channelId,
+		);
 		return messages.map(message => new Message(this.client, message));
 	}
 
@@ -178,10 +184,17 @@ export class ChannelShorter extends BaseShorter {
 		return permissions;
 	}
 
-	fetchMessages(channelId: string, query?: RESTGetAPIChannelMessagesQuery) {
-		return this.client.proxy.channels(channelId).messages.get({
+	async fetchMessages(channelId: string, query?: RESTGetAPIChannelMessagesQuery) {
+		const result = await this.client.proxy.channels(channelId).messages.get({
 			query,
 		});
+		await this.client.cache.messages?.patch(
+			result.map(x => {
+				return [x.id, x];
+			}) satisfies [string, any][],
+			channelId,
+		);
+		return result.map(message => new Message(this.client, message));
 	}
 
 	setVoiceStatus(channelId: string, status: string | null = null) {

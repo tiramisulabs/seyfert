@@ -18,6 +18,7 @@ import { VoiceStates } from './resources/voice-states';
 import { ChannelType, GatewayIntentBits, type GatewayDispatchPayload } from 'discord-api-types/v10';
 import type { InternalOptions, UsingClient } from '../commands';
 import { Overwrites } from './resources/overwrites';
+import { Messages } from './resources/messages';
 
 export type InferAsyncCache = InternalOptions extends { asyncCache: infer P } ? P : false;
 export type ReturnCache<T> = If<InferAsyncCache, Promise<T>, T>;
@@ -34,7 +35,8 @@ export type GuildRelated =
 	| 'stickers'
 	| 'presences'
 	| 'stageInstances'
-	| 'overwrites';
+	| 'overwrites'
+	| 'messages';
 
 // ClientBased
 export type NonGuildBased = 'users' | 'guilds';
@@ -90,6 +92,7 @@ export class Cache {
 	stickers?: Stickers;
 	presences?: Presences;
 	stageInstances?: StageInstances;
+	messages?: Messages;
 
 	constructor(
 		public intents: number,
@@ -138,6 +141,9 @@ export class Cache {
 		if (!this.disabledCache.includes('stageInstances')) {
 			this.stageInstances = new StageInstances(this, client);
 		}
+		if (!this.disabledCache.includes('messages')) {
+			this.messages = new Messages(this, client);
+		}
 	}
 
 	/** @internal */
@@ -156,6 +162,7 @@ export class Cache {
 		this.presences?.__setClient(client);
 		this.threads?.__setClient(client);
 		this.stageInstances?.__setClient(client);
+		this.messages?.__setClient(client);
 	}
 
 	flush(): ReturnCache<void> {
@@ -239,6 +246,7 @@ export class Cache {
 				case 'users':
 				case 'guilds':
 				case 'overwrites':
+				case 'messages':
 					{
 						if (!allData[type]) {
 							allData[type] = [];
@@ -305,6 +313,7 @@ export class Cache {
 				case 'stageInstances':
 				case 'emojis':
 				case 'overwrites':
+				case 'messages':
 					{
 						if (!this[type]?.filter(data, id, guildId)) continue;
 						const hashId = this[type]?.hashId(guildId!);
@@ -395,6 +404,7 @@ export class Cache {
 				case 'stageInstances':
 				case 'emojis':
 				case 'overwrites':
+				case 'messages':
 					{
 						if (!this[type]?.filter(data, id, guildId)) continue;
 						const hashId = this[type]?.hashId(guildId!);
@@ -500,7 +510,7 @@ export class Cache {
 			case 'GUILD_STICKERS_UPDATE':
 				await this.stickers?.remove(await this.stickers?.keys(event.d.guild_id), event.d.guild_id);
 				await this.stickers?.set(
-					event.d.stickers.map(x => [x.id, x]),
+					event.d.stickers.map(x => [x.id, x] as const),
 					event.d.guild_id,
 				);
 				break;
@@ -547,6 +557,18 @@ export class Cache {
 				break;
 			case 'STAGE_INSTANCE_DELETE':
 				await this.stageInstances?.remove(event.d.id, event.d.guild_id);
+				break;
+			case 'MESSAGE_CREATE':
+				await this.messages?.set(event.d.id, event.d.channel_id, event.d);
+				break;
+			case 'MESSAGE_UPDATE':
+				await this.messages?.patch(event.d.id, event.d.channel_id, event.d);
+				break;
+			case 'MESSAGE_DELETE':
+				await this.messages?.remove(event.d.id, event.d.channel_id);
+				break;
+			case 'MESSAGE_DELETE_BULK':
+				await this.messages?.remove(event.d.ids, event.d.channel_id);
 				break;
 		}
 	}
