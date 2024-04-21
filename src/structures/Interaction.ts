@@ -174,13 +174,10 @@ export class BaseInteraction<
 		if (this.__reply) {
 			//@ts-expect-error
 			const { files, ...data } = body.data ?? {};
-			return this.__reply({
-				body: {
-					type: body.type,
-					data,
-				},
+			return (this.replied = this.__reply({
+				body: BaseInteraction.transformBodyRequest({ data, type: body.type }),
 				files: files ? await resolveFiles(files) : undefined,
-			});
+			}).then(() => (this.replied = true)));
 		}
 		return (this.replied = this.client.interactions.reply(this.id, this.token, body).then(() => (this.replied = true)));
 	}
