@@ -20,7 +20,8 @@ export class MessageShorter extends BaseShorter {
 				body: transformedBody,
 				files: parsedFiles,
 			})
-			.then(message => {
+			.then(async message => {
+				await this.client.cache.messages?.setIfNI('GuildMessages', message.id, message.channel_id, message);
 				return new Message(this.client, message);
 			});
 	}
@@ -34,7 +35,8 @@ export class MessageShorter extends BaseShorter {
 				body: MessagesMethods.transformMessageBody<RESTPatchAPIChannelMessageJSONBody>(body),
 				files: parsedFiles,
 			})
-			.then(message => {
+			.then(async message => {
+				await this.client.cache.messages?.setIfNI('GuildMessages', message.id, message.channel_id, message);
 				return new Message(this.client, message);
 			});
 	}
@@ -44,7 +46,10 @@ export class MessageShorter extends BaseShorter {
 			.channels(channelId)
 			.messages(messageId)
 			.crosspost.post({ reason })
-			.then(m => new Message(this.client, m));
+			.then(async m => {
+				await this.client.cache.messages?.setIfNI('GuildMessages', m.id, m.channel_id, m);
+				return new Message(this.client, m);
+			});
 	}
 
 	delete(messageId: string, channelId: string, reason?: string) {
@@ -52,7 +57,8 @@ export class MessageShorter extends BaseShorter {
 			.channels(channelId)
 			.messages(messageId)
 			.delete({ reason })
-			.then(() => {
+			.then(async () => {
+				await this.client.cache.messages?.removeIfNI('GuildMessages', messageId, channelId);
 				void this.client.components?.onMessageDelete(messageId);
 			});
 	}
@@ -62,11 +68,17 @@ export class MessageShorter extends BaseShorter {
 			.channels(channelId)
 			.messages(messageId)
 			.get()
-			.then(x => new Message(this.client, x));
+			.then(async x => {
+				await this.client.cache.messages?.set(x.id, x.channel_id, x);
+				return new Message(this.client, x);
+			});
 	}
 
 	purge(messages: string[], channelId: string, reason?: string) {
-		return this.client.proxy.channels(channelId).messages['bulk-delete'].post({ body: { messages }, reason });
+		return this.client.proxy
+			.channels(channelId)
+			.messages['bulk-delete'].post({ body: { messages }, reason })
+			.then(() => this.client.cache.messages?.removeIfNI('GuildMessages', messages, channelId));
 	}
 
 	thread(
