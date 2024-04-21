@@ -38,7 +38,7 @@ import {
 } from 'discord-api-types/v10';
 import { mix } from 'ts-mixer';
 import type { RawFile } from '../api';
-import { ActionRow, Embed, Modal, resolveAttachment } from '../builders';
+import { ActionRow, Embed, Modal, resolveAttachment, resolveFiles } from '../builders';
 import { OptionResolver, type ContextOptionsResolved, type UsingClient } from '../commands';
 import type { ObjectToLower, OmitInsert, ToClass, When } from '../common';
 import type {
@@ -170,8 +170,19 @@ export class BaseInteraction<
 		} as T;
 	}
 
-	private matchReplied(data: ReplyInteractionBody) {
-		return (this.replied = this.client.interactions.reply(this.id, this.token, data).then(() => (this.replied = true)));
+	private async matchReplied(body: ReplyInteractionBody) {
+		if (this.__reply) {
+			//@ts-expect-error
+			const { files, ...data } = body.data ?? {};
+			return this.__reply({
+				body: {
+					type: body.type,
+					data,
+				},
+				files: files ? await resolveFiles(files) : undefined,
+			});
+		}
+		return (this.replied = this.client.interactions.reply(this.id, this.token, body).then(() => (this.replied = true)));
 	}
 
 	async reply(body: ReplyInteractionBody) {
