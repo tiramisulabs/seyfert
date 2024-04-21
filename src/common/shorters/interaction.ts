@@ -1,14 +1,24 @@
-import { BaseInteraction, type RawFile, WebhookMessage, resolveFiles } from '../..';
+import { BaseInteraction, type RawFile, WebhookMessage, resolveFiles, type ReplyInteractionBody } from '../..';
 import type { InteractionMessageUpdateBodyRequest, MessageWebhookCreateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
 
 export class InteractionShorter extends BaseShorter {
-	protected get appId() {
-		return this.client.applicationId;
+	async reply(id: string, token: string, body: ReplyInteractionBody) {
+		//@ts-expect-error
+		const { files, ...data } = body.data ?? {};
+		return this.client.proxy
+			.interactions(id)(token)
+			.callback.post({
+				body: BaseInteraction.transformBodyRequest({
+					type: body.type,
+					data,
+				}),
+				files: files ? await resolveFiles(files) : undefined,
+			});
 	}
 
 	fetchResponse(token: string, messageId: string) {
-		return this.client.webhooks.fetchMessage(this.appId, token, messageId);
+		return this.client.webhooks.fetchMessage(this.client.applicationId, token, messageId);
 	}
 
 	fetchOriginal(token: string) {
@@ -18,7 +28,7 @@ export class InteractionShorter extends BaseShorter {
 	async editMessage(token: string, messageId: string, body: InteractionMessageUpdateBodyRequest) {
 		const { files, ...data } = body;
 		const apiMessage = await this.client.proxy
-			.webhooks(this.appId)(token)
+			.webhooks(this.client.applicationId)(token)
 			.messages(messageId)
 			.patch({
 				body: BaseInteraction.transformBody(data),
@@ -33,7 +43,7 @@ export class InteractionShorter extends BaseShorter {
 
 	deleteResponse(interactionId: string, token: string, messageId: string) {
 		return this.client.proxy
-			.webhooks(this.appId)(token)
+			.webhooks(this.client.applicationId)(token)
 			.messages(messageId)
 			.delete()
 			.then(() => this.client.components?.onMessageDelete(messageId === '@original' ? interactionId : messageId));
@@ -46,11 +56,11 @@ export class InteractionShorter extends BaseShorter {
 	async followup(token: string, { files, ...body }: MessageWebhookCreateBodyRequest) {
 		files = files ? await resolveFiles(files) : undefined;
 		const apiMessage = await this.client.proxy
-			.webhooks(this.appId)(token)
+			.webhooks(this.client.applicationId)(token)
 			.post({
 				body: BaseInteraction.transformBody(body),
 				files: files as RawFile[] | undefined,
 			});
-		return new WebhookMessage(this.client, apiMessage, this.appId, token);
+		return new WebhookMessage(this.client, apiMessage, this.client.applicationId, token);
 	}
 }

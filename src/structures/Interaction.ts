@@ -38,7 +38,7 @@ import {
 } from 'discord-api-types/v10';
 import { mix } from 'ts-mixer';
 import type { RawFile } from '../api';
-import { ActionRow, Embed, Modal, resolveAttachment, resolveFiles } from '../builders';
+import { ActionRow, Embed, Modal, resolveAttachment } from '../builders';
 import { OptionResolver, type ContextOptionsResolved, type UsingClient } from '../commands';
 import type { ObjectToLower, OmitInsert, ToClass, When } from '../common';
 import type {
@@ -170,32 +170,19 @@ export class BaseInteraction<
 		} as T;
 	}
 
-	private matchReplied(data: ReplyInteractionBody, type: InteractionResponseType, filesParsed: RawFile[] | undefined) {
-		this.replied = (this.__reply ?? this.api.interactions(this.id)(this.token).callback.post)({
-			// @ts-expect-error
-			body: BaseInteraction.transformBodyRequest({ data, type }),
-			files: filesParsed,
-		}).then(() => (this.replied = true));
+	private matchReplied(data: ReplyInteractionBody) {
+		return (this.replied = this.client.interactions.reply(this.id, this.token, data).then(() => (this.replied = true)));
 	}
 
 	async reply(body: ReplyInteractionBody) {
 		if (this.replied) {
 			throw new Error('Interaction already replied');
 		}
-
-		// @ts-expect-error
-		if (body.data?.files) {
-			// @ts-expect-error
-			const { files, ...rest } = body.data;
-
-			this.matchReplied(rest, body.type, await resolveFiles(files));
-			// @ts-expect-error
-		} else this.matchReplied(body.data, body.type);
+		await this.matchReplied(body);
 		// @ts-expect-error
 		if (body.data instanceof Modal && body.data.__exec)
 			// @ts-expect-error
 			this.client.components.modals.set(this.user.id, (body.data as Modal).__exec);
-		await this.replied;
 	}
 
 	deferReply(flags?: MessageFlags) {
