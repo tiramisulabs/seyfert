@@ -8,7 +8,7 @@ export class PollBuilder {
 		this.data.layout_type = PollLayoutType.Default;
 	}
 
-	addAnswers(...answers: RestOrArray<APIPollMedia>) {
+	addAnswers(...answers: RestOrArray<PollMedia>) {
 		this.data.answers = (this.data.answers ?? []).concat(
 			answers.flat().map(x => ({ poll_media: this.resolvedPollMedia(x) })),
 		);
