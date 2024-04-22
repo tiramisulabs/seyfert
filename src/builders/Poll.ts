@@ -4,13 +4,11 @@ import { throwError } from '..';
 import { resolvePartialEmoji } from '../structures/extra/functions';
 
 export class PollBuilder {
-	constructor(
-		public data: DeepPartial<Omit<RESTAPIPollCreate, 'answers'> & { answers: { poll_media: APIPollMedia }[] }> = {},
-	) {
+	constructor(public data: DeepPartial<RESTAPIPollCreate> = {}) {
 		this.data.layout_type = PollLayoutType.Default;
 	}
 
-	addAnswers(...answers: RestOrArray<PollMedia>) {
+	addAnswers(...answers: RestOrArray<APIPollMedia>) {
 		this.data.answers = (this.data.answers ?? []).concat(
 			answers.flat().map(x => ({ poll_media: this.resolvedPollMedia(x) })),
 		);
@@ -52,4 +50,4 @@ export class PollBuilder {
 	}
 }
 
-export type PollMedia = { text?: string; emoji?: EmojiResolvable };
+export type PollMedia = Omit<APIPollMedia, 'emoji'> & { emoji?: EmojiResolvable };
