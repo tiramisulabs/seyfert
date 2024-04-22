@@ -24,6 +24,8 @@ import type {
 	RESTGetAPIChannelThreadsArchivedQuery,
 	RESTGetAPIChannelUsersThreadsArchivedResult,
 	RESTGetAPIGuildWebhooksResult,
+	RESTGetAPIPollAnswerVotersQuery,
+	RESTGetAPIPollAnswerVotersResult,
 	RESTPatchAPIChannelJSONBody,
 	RESTPatchAPIChannelMessageJSONBody,
 	RESTPatchAPIChannelMessageResult,
@@ -45,6 +47,7 @@ import type {
 	RESTPostAPIChannelWebhookJSONBody,
 	RESTPostAPIChannelWebhookResult,
 	RESTPostAPIGuildForumThreadsJSONBody,
+	RESTPostAPIPollExpireResult,
 	RESTPutAPIChannelMessageReactionResult,
 	RESTPutAPIChannelPermissionJSONBody,
 	RESTPutAPIChannelPermissionResult,
@@ -256,5 +259,17 @@ export interface ChannelRoutes {
 		'voice-status': {
 			put(args: RestArguments<ProxyRequestMethod.Put, { status: string | null }>): Promise<never>;
 		};
+		polls(messageId: string): {
+			answers(id: ValidAnswerId): {
+				get(
+					args?: RestArguments<ProxyRequestMethod.Get, never, RESTGetAPIPollAnswerVotersQuery>,
+				): Promise<RESTGetAPIPollAnswerVotersResult>;
+			};
+			expire: {
+				post(args?: RestArguments<ProxyRequestMethod.Post>): Promise<RESTPostAPIPollExpireResult>;
+			};
+		};
 	};
 }
+
+export type ValidAnswerId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;

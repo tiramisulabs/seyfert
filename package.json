@@ -21,7 +21,7 @@
 	"license": "Apache-2.0",
 	"dependencies": {
 		"chokidar": "^3.6.0",
-		"discord-api-types": "^0.37.76",
+		"discord-api-types": "^0.37.80",
 		"magic-bytes.js": "^1.10.0",
 		"ts-mixer": "^6.0.4",
 		"ws": "^8.16.0"

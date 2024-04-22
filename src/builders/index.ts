@@ -18,6 +18,7 @@ export * from './Button';
 export * from './Embed';
 export * from './Modal';
 export * from './SelectMenu';
+export * from './Poll';
 export * from './types';
 
 export function fromComponent(

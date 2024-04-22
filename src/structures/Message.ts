@@ -17,18 +17,20 @@ import { User } from './User';
 import type { MessageWebhookMethodEditParams, MessageWebhookMethodWriteParams } from './Webhook';
 import { DiscordBase } from './extra/DiscordBase';
 import { messageLink } from './extra/functions';
+import { Poll } from '..';
 
 export type MessageData = APIMessage | GatewayMessageCreateDispatchData;
 
 export interface BaseMessage
 	extends DiscordBase,
-		ObjectToLower<Omit<MessageData, 'timestamp' | 'author' | 'mentions' | 'components'>> {}
+		ObjectToLower<Omit<MessageData, 'timestamp' | 'author' | 'mentions' | 'components' | 'poll'>> {}
 export class BaseMessage extends DiscordBase {
 	guildId: string | undefined;
 	timestamp?: number;
 	author!: User;
 	member?: GuildMember;
 	components: MessageActionRowComponent<ActionRowMessageComponents>[];
+	poll?: Poll;
 	mentions: {
 		roles: string[];
 		channels: APIChannelMention[];
@@ -111,12 +113,16 @@ export class BaseMessage extends DiscordBase {
 				  )
 				: data.mentions.map(u => new User(this.client, u));
 		}
+
+		if (data.poll) {
+			this.poll = new Poll(this.client, data.poll, this.channelId, this.id);
+		}
 	}
 }
 
 export interface Message
 	extends BaseMessage,
-		ObjectToLower<Omit<MessageData, 'timestamp' | 'author' | 'mentions' | 'components'>> {}
+		ObjectToLower<Omit<MessageData, 'timestamp' | 'author' | 'mentions' | 'components' | 'poll'>> {}
 
 export class Message extends BaseMessage {
 	constructor(client: UsingClient, data: MessageData) {
