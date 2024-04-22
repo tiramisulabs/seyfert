@@ -5,20 +5,20 @@ import { resolvePartialEmoji } from '../structures/extra/functions';
 
 export class PollBuilder {
 	constructor(
-		public data: DeepPartial<Omit<RESTAPIPollCreate, 'answers'> & { answers: { media: APIPollMedia }[] }> = {},
+		public data: DeepPartial<Omit<RESTAPIPollCreate, 'answers'> & { answers: { poll_media: APIPollMedia }[] }> = {},
 	) {
 		this.data.layout_type = PollLayoutType.Default;
 	}
 
 	addAnswers(...answers: RestOrArray<PollMedia>) {
 		this.data.answers = (this.data.answers ?? []).concat(
-			answers.flat().map(x => ({ media: this.resolvedPollMedia(x) })),
+			answers.flat().map(x => ({ poll_media: this.resolvedPollMedia(x) })),
 		);
 		return this;
 	}
 
 	setAnswers(...answers: RestOrArray<PollMedia>) {
-		this.data.answers = answers.flat().map(x => ({ media: this.resolvedPollMedia(x) }));
+		this.data.answers = answers.flat().map(x => ({ poll_media: this.resolvedPollMedia(x) }));
 		return this;
 	}
 
@@ -38,6 +38,10 @@ export class PollBuilder {
 	allowMultiselect(value = true) {
 		this.data.allow_multiselect = value;
 		return this;
+	}
+
+	toJSON(): RESTAPIPollCreate {
+		return { ...this.data } as RESTAPIPollCreate;
 	}
 
 	private resolvedPollMedia(data: PollMedia) {

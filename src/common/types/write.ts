@@ -72,8 +72,8 @@ export type ComponentInteractionMessageUpdate = OmitInsert<
 
 export type InteractionCreateBodyRequest = OmitInsert<
 	APIInteractionResponseChannelMessageWithSource['data'],
-	'components' | 'embeds',
-	ResolverProps
+	'components' | 'embeds' | 'poll',
+	SendResolverProps
 >;
 
 export type ModalCreateBodyRequest = APIModalInteractionResponse['data'] | Modal;
