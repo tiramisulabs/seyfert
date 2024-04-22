@@ -18,12 +18,15 @@ export const MESSAGE_CREATE = (self: BaseClient, data: GatewayMessageCreateDispa
 	return new Message(self, data);
 };
 
-export const MESSAGE_DELETE = (_self: BaseClient, data: GatewayMessageDeleteDispatchData) => {
-	return toCamelCase(data);
+export const MESSAGE_DELETE = async (self: BaseClient, data: GatewayMessageDeleteDispatchData) => {
+	return (await self.cache.messages?.get(data.id)) ?? toCamelCase(data);
 };
 
-export const MESSAGE_DELETE_BULK = (_self: BaseClient, data: GatewayMessageDeleteBulkDispatchData) => {
-	return toCamelCase(data);
+export const MESSAGE_DELETE_BULK = async (self: BaseClient, data: GatewayMessageDeleteBulkDispatchData) => {
+	return {
+		...data,
+		messages: await Promise.all(data.ids.map(id => self.cache.messages?.get(id))),
+	};
 };
 
 export const MESSAGE_REACTION_ADD = (_self: BaseClient, data: GatewayMessageReactionAddDispatchData) => {
@@ -45,14 +48,19 @@ export const MESSAGE_REACTION_REMOVE_EMOJI = (
 	return toCamelCase(data);
 };
 
-export const MESSAGE_UPDATE = (
+export const MESSAGE_UPDATE = async (
 	self: BaseClient,
 	data: GatewayMessageUpdateDispatchData,
-): MakeRequired<
-	PartialClass<Message>,
-	'id' | 'channelId' | 'createdAt' | 'createdTimestamp' | 'rest' | 'cache' | 'api' | 'client'
+): Promise<
+	[
+		undefined | Message,
+		MakeRequired<
+			PartialClass<Message>,
+			'id' | 'channelId' | 'createdAt' | 'createdTimestamp' | 'rest' | 'cache' | 'api' | 'client'
+		>,
+	]
 > => {
-	return new Message(self, data as APIMessage);
+	return [await self.cache.messages?.get(data.id), new Message(self, data as APIMessage)];
 };
 
 export const MESSAGE_POLL_VOTE_ADD = (_: BaseClient, data: GatewayMessagePollVoteDispatchData) => {

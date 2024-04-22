@@ -49,8 +49,8 @@ export const GUILD_CREATE = (self: BaseClient, data: GatewayGuildCreateDispatchD
 	return new Guild<'create'>(self, data);
 };
 
-export const GUILD_DELETE = async (_self: BaseClient, data: GatewayGuildDeleteDispatchData) => {
-	return data;
+export const GUILD_DELETE = async (self: BaseClient, data: GatewayGuildDeleteDispatchData) => {
+	return (await self.cache.guilds?.get(data.id)) ?? data;
 };
 
 export const GUILD_EMOJIS_UPDATE = (self: BaseClient, data: GatewayGuildEmojisUpdateDispatchData) => {

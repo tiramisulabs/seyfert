@@ -318,10 +318,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		await this.events?.execute('RAW', packet, this as WorkerClient<true>, shardId);
 		switch (packet.t) {
 			case 'GUILD_MEMBER_UPDATE':
-				await this.events?.execute(packet.t, packet, this as WorkerClient<true>, shardId);
-				await this.cache.onPacket(packet);
-				break;
 			case 'PRESENCE_UPDATE':
+			case 'MESSAGE_UPDATE':
+			case 'MESSAGE_DELETE_BULK':
+			case 'MESSAGE_DELETE':
 				await this.events?.execute(packet.t, packet, this as WorkerClient<true>, shardId);
 				await this.cache.onPacket(packet);
 				break;
