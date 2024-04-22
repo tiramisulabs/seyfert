@@ -25,7 +25,7 @@ import {
 	type ThreadAutoArchiveDuration,
 } from 'discord-api-types/v10';
 import { mix } from 'ts-mixer';
-import { Embed, resolveAttachment } from '../builders';
+import { ActionRow, Embed, PollBuilder, resolveAttachment } from '../builders';
 import type { UsingClient } from '../commands';
 import type {
 	EmojiResolvable,
@@ -254,10 +254,10 @@ export class MessagesMethods extends DiscordBase {
 		const poll = (body as MessageCreateBodyRequest).poll;
 		return {
 			...body,
-			components: body.components?.map(x => ('toJSON' in x ? x.toJSON() : x)) ?? undefined,
+			components: body.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)) ?? undefined,
 			embeds: body.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)) ?? undefined,
 			attachments: body.attachments?.map((x, i) => ({ id: i, ...resolveAttachment(x) })) ?? undefined,
-			poll: poll ? ('toJSON' in poll ? poll.toJSON() : poll) : undefined,
+			poll: poll ? (poll instanceof PollBuilder ? poll.toJSON() : poll) : undefined,
 		} as T;
 	}
 }

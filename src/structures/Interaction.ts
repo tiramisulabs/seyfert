@@ -38,7 +38,7 @@ import {
 } from 'discord-api-types/v10';
 import { mix } from 'ts-mixer';
 import type { RawFile } from '../api';
-import { ActionRow, Embed, Modal, resolveAttachment, resolveFiles } from '../builders';
+import { ActionRow, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
 import { OptionResolver, type ContextOptionsResolved, type UsingClient } from '../commands';
 import type { ObjectToLower, OmitInsert, ToClass, When } from '../common';
 import type {
@@ -132,7 +132,7 @@ export class BaseInteraction<
 						components: body.data?.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)) ?? undefined,
 						embeds: body.data?.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)) ?? undefined,
 						attachments: body.data?.attachments?.map((x, i) => ({ id: i, ...resolveAttachment(x) })) ?? undefined,
-						poll: poll ? ('toJSON' in poll ? poll.toJSON() : poll) : undefined,
+						poll: poll ? (poll instanceof PollBuilder ? poll.toJSON() : poll) : undefined,
 					},
 				};
 			}
@@ -170,8 +170,7 @@ export class BaseInteraction<
 			...body,
 			components: body.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)) ?? undefined,
 			embeds: body?.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)) ?? undefined,
-			poll: poll ? ('toJSON' in poll ? poll.toJSON() : poll) : undefined,
-			// attachments: body.attachments?.map((x, i) => ({ id: i, ...resolveAttachment(x) })) ?? undefined,
+			poll: poll ? (poll instanceof PollBuilder ? poll.toJSON() : poll) : undefined,
 		} as T;
 	}
 
