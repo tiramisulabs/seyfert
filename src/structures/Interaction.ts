@@ -121,7 +121,8 @@ export class BaseInteraction<
 			case InteractionResponseType.DeferredChannelMessageWithSource:
 				return body;
 			case InteractionResponseType.ChannelMessageWithSource:
-			case InteractionResponseType.UpdateMessage:
+			case InteractionResponseType.UpdateMessage: {
+				const poll = (body as InteractionCreateBodyRequest).poll;
 				return {
 					type: body.type,
 					//@ts-ignore
@@ -131,8 +132,10 @@ export class BaseInteraction<
 						components: body.data?.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)) ?? undefined,
 						embeds: body.data?.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)) ?? undefined,
 						attachments: body.data?.attachments?.map((x, i) => ({ id: i, ...resolveAttachment(x) })) ?? undefined,
+						poll: poll ? ('toJSON' in poll ? poll.toJSON() : poll) : undefined,
 					},
 				};
+			}
 			case InteractionResponseType.Modal:
 				return {
 					type: body.type,
@@ -162,10 +165,12 @@ export class BaseInteraction<
 			| MessageCreateBodyRequest
 			| MessageWebhookCreateBodyRequest,
 	) {
+		const poll = (body as MessageWebhookCreateBodyRequest).poll;
 		return {
 			...body,
 			components: body.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)) ?? undefined,
 			embeds: body?.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)) ?? undefined,
+			poll: poll ? ('toJSON' in poll ? poll.toJSON() : poll) : undefined,
 			// attachments: body.attachments?.map((x, i) => ({ id: i, ...resolveAttachment(x) })) ?? undefined,
 		} as T;
 	}

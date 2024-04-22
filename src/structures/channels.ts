@@ -251,11 +251,13 @@ export class MessagesMethods extends DiscordBase {
 	}
 
 	static transformMessageBody<T>(body: MessageCreateBodyRequest | MessageUpdateBodyRequest) {
+		const poll = (body as MessageCreateBodyRequest).poll;
 		return {
 			...body,
 			components: body.components?.map(x => ('toJSON' in x ? x.toJSON() : x)) ?? undefined,
 			embeds: body.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)) ?? undefined,
 			attachments: body.attachments?.map((x, i) => ({ id: i, ...resolveAttachment(x) })) ?? undefined,
+			poll: poll ? ('toJSON' in poll ? poll.toJSON() : poll) : undefined,
 		} as T;
 	}
 }
