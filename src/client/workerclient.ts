@@ -325,6 +325,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				await this.events?.execute(packet.t, packet, this as WorkerClient<true>, shardId);
 				await this.cache.onPacket(packet);
 				break;
+			case 'GUILD_DELETE':
+			case 'CHANNEL_UPDATE':
+				await this.events?.execute(packet.t, packet, this as WorkerClient<true>, shardId);
+				break;
 			//rest of the events
 			default:
 				{
