@@ -14,3 +14,4 @@ export * from './User';
 export * from './VoiceState';
 export * from './Webhook';
 export * from './channels';
+export * from './Poll';

@@ -4,10 +4,11 @@ import type {
 	RESTPostAPIChannelMessagesThreadsJSONBody,
 } from 'discord-api-types/v10';
 import { resolveFiles } from '../../builders';
-import { Message, MessagesMethods } from '../../structures';
+import { Message, MessagesMethods, User } from '../../structures';
 
 import type { MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
+import type { ValidAnswerId } from '../../api/Routes/channels';
 
 export class MessageShorter extends BaseShorter {
 	async write(channelId: string, { files, ...body }: MessageCreateBodyRequest) {
@@ -87,5 +88,22 @@ export class MessageShorter extends BaseShorter {
 		options: RESTPostAPIChannelMessagesThreadsJSONBody & { reason?: string },
 	) {
 		return this.client.threads.fromMessage(channelId, messageId, options);
+	}
+
+	endPoll(channelId: string, messageId: string) {
+		return this.client.proxy
+			.channels(channelId)
+			.polls(messageId)
+			.expire.post()
+			.then(message => new Message(this.client, message));
+	}
+
+	getAnswerVoters(channelId: string, messageId: string, answerId: ValidAnswerId) {
+		return this.client.proxy
+			.channels(channelId)
+			.polls(messageId)
+			.answers(answerId)
+			.get()
+			.then(data => data.users.map(user => new User(this.client, user)));
 	}
 }

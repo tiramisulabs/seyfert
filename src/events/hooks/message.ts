@@ -3,6 +3,7 @@ import type {
 	GatewayMessageCreateDispatchData,
 	GatewayMessageDeleteBulkDispatchData,
 	GatewayMessageDeleteDispatchData,
+	GatewayMessagePollVoteDispatchData,
 	GatewayMessageReactionAddDispatchData,
 	GatewayMessageReactionRemoveAllDispatchData,
 	GatewayMessageReactionRemoveDispatchData,
@@ -52,4 +53,12 @@ export const MESSAGE_UPDATE = (
 	'id' | 'channelId' | 'createdAt' | 'createdTimestamp' | 'rest' | 'cache' | 'api' | 'client'
 > => {
 	return new Message(self, data as APIMessage);
+};
+
+export const MESSAGE_POLL_VOTE_ADD = (_: BaseClient, data: GatewayMessagePollVoteDispatchData) => {
+	return toCamelCase(data);
+};
+
+export const MESSAGE_POLL_VOTE_REMOVE = (_: BaseClient, data: GatewayMessagePollVoteDispatchData) => {
+	return toCamelCase(data);
 };

@@ -5,13 +5,22 @@ import type {
 	APIInteractionResponseChannelMessageWithSource,
 	APIMessageActionRowComponent,
 	APIModalInteractionResponse,
+	RESTAPIPollCreate,
 	RESTPatchAPIChannelMessageJSONBody,
 	RESTPatchAPIWebhookWithTokenMessageJSONBody,
 	RESTPostAPIChannelMessageJSONBody,
 	RESTPostAPIWebhookWithTokenJSONBody,
 } from 'discord-api-types/v10';
 import type { RawFile } from '../../api';
-import type { ActionRow, Attachment, AttachmentBuilder, BuilderComponents, Embed, Modal } from '../../builders';
+import type {
+	ActionRow,
+	Attachment,
+	AttachmentBuilder,
+	BuilderComponents,
+	Embed,
+	Modal,
+	PollBuilder,
+} from '../../builders';
 
 import type { OmitInsert } from './util';
 
@@ -21,10 +30,14 @@ export interface ResolverProps {
 	files?: AttachmentBuilder[] | Attachment[] | RawFile[] | undefined;
 }
 
+export interface SendResolverProps extends ResolverProps {
+	poll?: PollBuilder | RESTAPIPollCreate | undefined;
+}
+
 export type MessageCreateBodyRequest = OmitInsert<
 	RESTPostAPIChannelMessageJSONBody,
-	'components' | 'embeds',
-	ResolverProps
+	'components' | 'embeds' | 'poll',
+	SendResolverProps
 >;
 
 export type MessageUpdateBodyRequest = OmitInsert<
@@ -35,8 +48,8 @@ export type MessageUpdateBodyRequest = OmitInsert<
 
 export type MessageWebhookCreateBodyRequest = OmitInsert<
 	RESTPostAPIWebhookWithTokenJSONBody,
-	'components' | 'embeds',
-	ResolverProps
+	'components' | 'embeds' | 'poll',
+	SendResolverProps
 >;
 
 export type MessageWebhookUpdateBodyRequest = OmitInsert<

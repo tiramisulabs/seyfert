@@ -56,6 +56,7 @@ import {
 	type GatewayVoiceStateUpdateData,
 	type GatewayWebhooksUpdateDispatchData,
 	type PresenceUpdateStatus,
+	type GatewayMessagePollVoteDispatchData,
 } from 'discord-api-types/v10';
 import type { RestToKeys } from '../common';
 import type { GatewayGuildMemberAddDispatchDataFixed } from '../structures';
@@ -155,6 +156,14 @@ export type StageSameEvents = RestToKeys<
 	]
 >;
 
+export type PollVoteSameEvents = RestToKeys<
+	[
+		GatewayMessagePollVoteDispatchData,
+		GatewayDispatchEvents.MessagePollVoteRemove,
+		GatewayDispatchEvents.MessagePollVoteAdd,
+	]
+>;
+
 export type IntegrationSameEvents = RestToKeys<
 	[
 		GatewayIntegrationCreateDispatchData,
@@ -214,6 +223,7 @@ export type NormalizeEvents = Events &
 	GuildScheduledUserSameEvents &
 	IntegrationSameEvents &
 	EntitlementEvents &
+	PollVoteSameEvents &
 	StageSameEvents & { RAW: GatewayDispatchEvents };
 
 export type GatewayEvents = { [x in keyof NormalizeEvents]: NormalizeEvents[x] };
