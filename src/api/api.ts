@@ -383,6 +383,10 @@ export class ApiHandler {
 	}
 
 	routefy(url: string, method: HttpMethods): `/${string}` {
+		if (url.startsWith('/interactions/') && url.endsWith('/callback')) {
+			return '/interactions/:id/:token/callback';
+		}
+
 		let route = url
 			.replace(/\/([a-z-]+)\/(?:[0-9]{17,19})/g, (match, p) =>
 				p === 'channels' || p === 'guilds' || p === 'webhooks' ? match : `/${p}/:id`,
