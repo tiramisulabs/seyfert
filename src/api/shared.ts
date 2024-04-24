@@ -36,6 +36,7 @@ export interface ApiRequestOptions {
 	route?: `/${string}`;
 	unshift?: boolean;
 	appendToFormData?: boolean;
+	token?: string;
 }
 
 export type HttpMethods = 'GET' | 'DELETE' | 'PUT' | 'POST' | 'PATCH';
