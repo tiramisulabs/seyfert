@@ -33,6 +33,7 @@ export class ApiHandler {
 		this.options = {
 			baseUrl: 'api/v10',
 			domain: 'https://discord.com',
+			type: 'Bot',
 			...options,
 			userAgent: DefaultUserAgent,
 		};
@@ -329,7 +330,7 @@ export class ApiHandler {
 		let finalUrl = options.url;
 		let data: string | FormData | undefined;
 		if (options.request.auth) {
-			options.headers.Authorization = `Bot ${this.options.token}`;
+			options.headers.Authorization = `${this.options.type} ${this.options.token}`;
 		}
 		if (options.request.query) {
 			finalUrl += `?${new URLSearchParams(options.request.query)}`;

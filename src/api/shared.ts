@@ -13,9 +13,10 @@ export interface ApiHandlerOptions {
 	agent?: string;
 	smartBucket?: boolean;
 	workerProxy?: boolean;
+	type?: 'Bearer' | 'Bot';
 }
 
-export interface ApiHandlerInternalOptions extends MakeRequired<ApiHandlerOptions, 'baseUrl' | 'domain'> {
+export interface ApiHandlerInternalOptions extends MakeRequired<ApiHandlerOptions, 'baseUrl' | 'domain' | 'type'> {
 	userAgent: string;
 }
 
