@@ -103,7 +103,7 @@ export class Shard {
 				message.d,
 				(_, value) => {
 					if (typeof value === 'string')
-						return value.replace(this.options.token, v => {
+						return value.replaceAll(this.options.token, v => {
 							const split = v.split('.');
 							return `${split[0]}.${'*'.repeat(split[1].length)}.${'*'.repeat(split[2].length)}`;
 						});
