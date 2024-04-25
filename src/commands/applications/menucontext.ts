@@ -1,4 +1,4 @@
-import { ApplicationCommandType, MessageFlags } from 'discord-api-types/v10';
+import { type APIMessage, ApplicationCommandType, MessageFlags } from 'discord-api-types/v10';
 import type { ContextMenuCommand, ReturnCache, WebhookMessage } from '../..';
 import {
 	toSnakeCase,
@@ -50,7 +50,7 @@ export class MenuCommandContext<
 		switch (this.interaction.data.type) {
 			case ApplicationCommandType.Message: {
 				const data = this.interaction.data.resolved.messages[this.interaction.data.targetId as Lowercase<string>];
-				return new Message(this.client, toSnakeCase(data)) as never;
+				return new Message(this.client, toSnakeCase(data) as APIMessage) as never;
 			}
 			case ApplicationCommandType.User: {
 				const data = this.interaction.data.resolved.users[this.interaction.data.targetId as Lowercase<string>];

@@ -104,16 +104,40 @@ export type ObjectToLower<T> = Identify<{
 		? Identify<ObjectToLower<T[K][0]>[]>
 		: T[K] extends object
 		  ? Identify<ObjectToLower<T[K]>>
-		  : T[K];
+		  : AuxIsStrictlyUndefined<T[K]> extends true
+			  ? undefined
+			  : ObjectToLowerUndefined<T[K]>;
 }>;
+
+export type ObjectToLowerUndefined<T> = T extends unknown[]
+	? ObjectToLower<T[0]>[]
+	: Identify<{
+			[K in keyof T as CamelCase<Exclude<K, symbol | number>>]?: T[K] extends unknown[]
+				? ObjectToLower<T[K][0]>[]
+				: T[K] extends object
+				  ? ObjectToLower<T[K]>
+				  : T[K];
+	  }>;
 
 export type ObjectToSnake<T> = Identify<{
 	[K in keyof T as SnakeCase<Exclude<K, symbol | number>>]: T[K] extends unknown[]
 		? Identify<ObjectToSnake<T[K][0]>[]>
 		: T[K] extends object
 		  ? Identify<ObjectToSnake<T[K]>>
-		  : T[K];
+		  : AuxIsStrictlyUndefined<T[K]> extends true
+			  ? undefined
+			  : ObjectToSnakeUndefined<T[K]>;
 }>;
+
+export type ObjectToSnakeUndefined<T> = T extends unknown[]
+	? ObjectToSnake<T[0]>[]
+	: Identify<{
+			[K in keyof T as SnakeCase<Exclude<K, symbol | number>>]?: T[K] extends unknown[]
+				? ObjectToSnake<T[K][0]>[]
+				: T[K] extends object
+				  ? ObjectToSnake<T[K]>
+				  : T[K];
+	  }>;
 
 export type UnionToTuple<U, A extends any[] = []> = (U extends void ? void : (arg: () => U) => never) extends (
 	arg: infer I,

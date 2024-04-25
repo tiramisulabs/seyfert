@@ -10,7 +10,7 @@ import type {
 	RESTPostAPIGuildChannelJSONBody,
 	RESTPostAPIGuildsJSONBody,
 } from 'discord-api-types/v10';
-import type { ObjectToLower } from '..';
+import { toSnakeCase, type ObjectToLower } from '..';
 import { resolveFiles } from '../../builders';
 import {
 	AnonymousGuild,
@@ -267,7 +267,7 @@ export class GuildShorter extends BaseShorter {
 				return this.client.proxy
 					.guilds(guildId)
 					['auto-moderation'].rules(ruleId)
-					.patch({ body, reason })
+					.patch({ body: toSnakeCase(body), reason })
 					.then(rule => new AutoModerationRule(this.client, rule));
 			},
 		};
