@@ -174,11 +174,12 @@ export class RedisAdapter implements Adapter {
 	}
 
 	async flush(): Promise<void> {
-		await this.remove(
-			await Promise.all([this.scan(this.buildKey('*'), true), this.__scanSets(this.buildKey('*'), true)]).then(x =>
-				x.flat(),
-			),
-		);
+		const keys = await Promise.all([
+			this.scan(this.buildKey('*'), true),
+			this.__scanSets(this.buildKey('*'), true),
+		]).then(x => x.flat());
+		if (!keys.length) return;
+		await this.remove(keys);
 	}
 
 	async contains(to: string, keys: string): Promise<boolean> {

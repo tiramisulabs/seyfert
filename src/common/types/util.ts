@@ -112,7 +112,7 @@ export type ObjectToLower<T> = Identify<{
 export type ObjectToLowerUndefined<T> = T extends unknown[]
 	? ObjectToLower<T[0]>[]
 	: Identify<{
-			[K in keyof T as CamelCase<Exclude<K, symbol | number>>]?: T[K] extends unknown[]
+			[K in keyof T as CamelCase<Exclude<K, symbol | number>>]: T[K] extends unknown[]
 				? ObjectToLower<T[K][0]>[]
 				: T[K] extends object
 				  ? ObjectToLower<T[K]>
@@ -132,7 +132,7 @@ export type ObjectToSnake<T> = Identify<{
 export type ObjectToSnakeUndefined<T> = T extends unknown[]
 	? ObjectToSnake<T[0]>[]
 	: Identify<{
-			[K in keyof T as SnakeCase<Exclude<K, symbol | number>>]?: T[K] extends unknown[]
+			[K in keyof T as SnakeCase<Exclude<K, symbol | number>>]: T[K] extends unknown[]
 				? ObjectToSnake<T[K][0]>[]
 				: T[K] extends object
 				  ? ObjectToSnake<T[K]>
