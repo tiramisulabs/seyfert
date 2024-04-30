@@ -162,7 +162,8 @@ export class Message extends BaseMessage {
 	}
 }
 
-export type EditMessageWebhook = Omit<MessageWebhookMethodEditParams, 'messageId'>;
+export type EditMessageWebhook = Omit<MessageWebhookMethodEditParams, 'messageId'>['body'] &
+	Pick<MessageWebhookMethodEditParams, 'query'>;
 export type WriteMessageWebhook = MessageWebhookMethodWriteParams;
 
 export class WebhookMessage extends BaseMessage {
@@ -180,7 +181,12 @@ export class WebhookMessage extends BaseMessage {
 	}
 
 	edit(body: EditMessageWebhook) {
-		return this.client.webhooks.editMessage(this.webhookId, this.webhookToken, { ...body, messageId: this.id });
+		const { query, ...rest } = body;
+		return this.client.webhooks.editMessage(this.webhookId, this.webhookToken, {
+			body: rest,
+			query,
+			messageId: this.id,
+		});
 	}
 
 	write(body: WriteMessageWebhook) {
