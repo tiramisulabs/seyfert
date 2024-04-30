@@ -177,7 +177,9 @@ export class BaseInteraction<
 	private async matchReplied(body: ReplyInteractionBody) {
 		if (this.__reply) {
 			//@ts-expect-error
-			const { files, ...data } = body.data ?? {};
+			const { files, ...rest } = body.data ?? {};
+			//@ts-expect-error
+			const data = body.data instanceof Modal ? body.data : rest;
 			return (this.replied = this.__reply({
 				body: BaseInteraction.transformBodyRequest({ data, type: body.type }),
 				files: files ? await resolveFiles(files) : undefined,
