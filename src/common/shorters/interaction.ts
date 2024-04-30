@@ -5,7 +5,9 @@ import { BaseShorter } from './base';
 export class InteractionShorter extends BaseShorter {
 	async reply(id: string, token: string, body: ReplyInteractionBody) {
 		//@ts-expect-error
-		const { files, ...data } = body.data ?? {};
+		const { files, ...rest } = body.data ?? {};
+		//@ts-expect-error
+		const data = body.data instanceof Modal ? body.data : rest;
 		return this.client.proxy
 			.interactions(id)(token)
 			.callback.post({
