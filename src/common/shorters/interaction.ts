@@ -1,4 +1,4 @@
-import { BaseInteraction, type RawFile, WebhookMessage, resolveFiles, type ReplyInteractionBody } from '../..';
+import { BaseInteraction, type RawFile, WebhookMessage, resolveFiles, type ReplyInteractionBody, Modal } from '../..';
 import type { InteractionMessageUpdateBodyRequest, MessageWebhookCreateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
 
