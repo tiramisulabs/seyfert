@@ -250,9 +250,10 @@ export class MessagesMethods extends DiscordBase {
 		};
 	}
 
-	static transformMessageBody<T>(body: MessageCreateBodyRequest | MessageUpdateBodyRequest) {
+	static transformMessageBody<T>(body: MessageCreateBodyRequest | MessageUpdateBodyRequest, self: UsingClient) {
 		const poll = (body as MessageCreateBodyRequest).poll;
 		return {
+			allowed_mentions: self.options?.allowedMentions,
 			...body,
 			components: body.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)) ?? undefined,
 			embeds: body.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)) ?? undefined,

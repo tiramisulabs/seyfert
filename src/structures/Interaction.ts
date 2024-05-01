@@ -57,6 +57,7 @@ import { User } from './User';
 import channelFrom from './channels';
 import { DiscordBase } from './extra/DiscordBase';
 import { PermissionsBitField } from './extra/Permissions';
+import type { BaseClient } from '../client/base';
 
 export type ReplyInteractionBody =
 	| { type: InteractionResponseType.Modal; data: ModalCreateBodyRequest }
@@ -114,7 +115,7 @@ export class BaseInteraction<
 		this.user = this.member?.user ?? new User(client, interaction.user!);
 	}
 
-	static transformBodyRequest(body: ReplyInteractionBody): APIInteractionResponse {
+	static transformBodyRequest(body: ReplyInteractionBody, self: BaseClient): APIInteractionResponse {
 		switch (body.type) {
 			case InteractionResponseType.ApplicationCommandAutocompleteResult:
 			case InteractionResponseType.DeferredMessageUpdate:
@@ -127,6 +128,8 @@ export class BaseInteraction<
 					type: body.type,
 					//@ts-ignore
 					data: {
+						//@ts-ignore
+						allowed_mentions: self.options?.allowedMentions,
 						...(body.data ?? {}),
 						//@ts-ignore
 						components: body.data?.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)) ?? undefined,
@@ -164,9 +167,11 @@ export class BaseInteraction<
 			| MessageUpdateBodyRequest
 			| MessageCreateBodyRequest
 			| MessageWebhookCreateBodyRequest,
+		self: UsingClient,
 	) {
 		const poll = (body as MessageWebhookCreateBodyRequest).poll;
 		return {
+			allowed_mentions: self.options?.allowedMentions,
 			...body,
 			components: body.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)) ?? undefined,
 			embeds: body?.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)) ?? undefined,
@@ -181,7 +186,7 @@ export class BaseInteraction<
 			//@ts-expect-error
 			const data = body.data instanceof Modal ? body.data : rest;
 			return (this.replied = this.__reply({
-				body: BaseInteraction.transformBodyRequest({ data, type: body.type }),
+				body: BaseInteraction.transformBodyRequest({ data, type: body.type }, this.client),
 				files: files ? await resolveFiles(files) : undefined,
 			}).then(() => (this.replied = true)));
 		}

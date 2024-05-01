@@ -26,7 +26,7 @@ import {
 	type MakeRequired,
 } from '../common';
 
-import type { LocaleString } from 'discord-api-types/rest/v10';
+import type { LocaleString, RESTPostAPIChannelMessageJSONBody } from 'discord-api-types/rest/v10';
 import type { DeepPartial, IntentStrings, OmitInsert, PermissionStrings, When } from '../common/types/util';
 import { ComponentHandler } from '../components/handler';
 import { LangsHandler } from '../langs/handler';
@@ -339,6 +339,9 @@ export interface BaseClientOptions {
 			onOptionsError?: Command['onOptionsError'];
 			onAfterRun?: Command['onAfterRun'];
 		};
+	};
+	allowedMentions?: Omit<NonNullable<RESTPostAPIChannelMessageJSONBody['allowed_mentions']>, 'parse'> & {
+		parse?: ('everyone' | 'roles' | 'users')[]; //nice types, d-api
 	};
 }
 

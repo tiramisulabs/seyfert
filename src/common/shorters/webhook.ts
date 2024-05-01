@@ -83,7 +83,10 @@ export class WebhookShorter extends BaseShorter {
 	 */
 	async writeMessage(webhookId: string, token: string, { body: data, ...payload }: MessageWebhookMethodWriteParams) {
 		const { files, ...body } = data;
-		const transformedBody = MessagesMethods.transformMessageBody<RESTPostAPIWebhookWithTokenJSONBody>(body);
+		const transformedBody = MessagesMethods.transformMessageBody<RESTPostAPIWebhookWithTokenJSONBody>(
+			body,
+			this.client,
+		);
 		const parsedFiles = files ? await resolveFiles(files) : [];
 		return this.client.proxy
 			.webhooks(webhookId)(token)
@@ -105,7 +108,10 @@ export class WebhookShorter extends BaseShorter {
 		{ messageId, body: data, ...json }: MessageWebhookMethodEditParams,
 	) {
 		const { files, ...body } = data;
-		const transformedBody = MessagesMethods.transformMessageBody<RESTPostAPIWebhookWithTokenJSONBody>(body);
+		const transformedBody = MessagesMethods.transformMessageBody<RESTPostAPIWebhookWithTokenJSONBody>(
+			body,
+			this.client,
+		);
 		const parsedFiles = files ? await resolveFiles(files) : [];
 		return this.client.proxy
 			.webhooks(webhookId)(token)

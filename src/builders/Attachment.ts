@@ -172,7 +172,13 @@ export async function resolveFiles(resources: (AttachmentBuilder | RawFile | Att
  * @param type - The type of the attachment data.
  * @returns The resolved attachment data.
  */
-export async function resolveAttachmentData(data: AttachmentResolvable, type: AttachmentDataType) {
+export async function resolveAttachmentData(
+	data: AttachmentResolvable,
+	type: AttachmentDataType,
+): Promise<{
+	data: AttachmentResolvable;
+	contentType?: string | null;
+}> {
 	if (data instanceof AttachmentBuilder) {
 		if (!data.data.resolvable)
 			return throwError('The attachment type has been expressed as attachment but cannot be resolved as one.');
