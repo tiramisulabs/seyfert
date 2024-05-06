@@ -4,11 +4,11 @@ import {
 	type GatewayUpdatePresence,
 	type GatewayVoiceStateUpdate,
 } from 'discord-api-types/v10';
-import { parentPort, workerData } from 'node:worker_threads';
 import {
 	LogLevels,
 	Logger,
 	MergeOptions,
+	lazyLoadPackage,
 	toSnakeCase,
 	type ObjectToLower,
 	type WatcherSendToShard,
@@ -17,7 +17,10 @@ import { ShardManagerDefaults } from '../constants';
 import { DynamicBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';
 import { Shard } from './shard.js';
-import type { ShardManagerOptions } from './shared';
+import type { ShardManagerOptions, WorkerData } from './shared';
+
+let parentPort: import('node:worker_threads').MessagePort;
+let workerData: WorkerData;
 
 export class ShardManager extends Map<number, Shard> {
 	connectQueue: ConnectQueue;
@@ -35,6 +38,13 @@ export class ShardManager extends Map<number, Shard> {
 				name: '[ShardManager]',
 				logLevel: LogLevels.Debug,
 			});
+		}
+
+		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
+
+		if (worker_threads) {
+			workerData = worker_threads.workerData;
+			if (worker_threads.parentPort) parentPort = worker_threads.parentPort;
 		}
 	}
 

@@ -1,11 +1,10 @@
 import type { GatewayPresenceUpdateData, GatewaySendPayload } from 'discord-api-types/v10';
 import cluster, { type Worker as ClusterWorker } from 'node:cluster';
 import { randomUUID } from 'node:crypto';
-import { Worker as ThreadWorker } from 'node:worker_threads';
 import { ApiHandler, Logger, Router } from '../..';
 import { MemoryAdapter, type Adapter } from '../../cache';
 import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
-import { MergeOptions, type MakePartial } from '../../common';
+import { MergeOptions, lazyLoadPackage, type MakePartial } from '../../common';
 import { WorkerManagerDefaults } from '../constants';
 import { DynamicBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';
@@ -14,7 +13,10 @@ import { PresenceUpdateHandler } from './events/presenceUpdate';
 import type { ShardOptions, WorkerData, WorkerManagerOptions } from './shared';
 import type { WorkerInfo, WorkerMessage, WorkerShardInfo, WorkerStart } from './worker';
 
-export class WorkerManager extends Map<number, (ClusterWorker | ThreadWorker) & { ready?: boolean }> {
+export class WorkerManager extends Map<
+	number,
+	(ClusterWorker | import('node:worker_threads').Worker) & { ready?: boolean }
+> {
 	options!: Required<WorkerManagerOptions>;
 	debugger?: Logger;
 	connectQueue!: ConnectQueue;
@@ -124,7 +126,7 @@ export class WorkerManager extends Map<number, (ClusterWorker | ThreadWorker) & 
 				(worker as ClusterWorker).send(body);
 				break;
 			case 'threads':
-				(worker as ThreadWorker).postMessage(body);
+				(worker as import('worker_threads').Worker).postMessage(body);
 				break;
 		}
 	}
@@ -162,6 +164,8 @@ export class WorkerManager extends Map<number, (ClusterWorker | ThreadWorker) & 
 	}
 
 	createWorker(workerData: WorkerData) {
+		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
+		if (!worker_threads) throw new Error('Cannot create worker without worker_threads.');
 		const env: Record<string, any> = {
 			SEYFERT_SPAWNING: 'true',
 		};
@@ -170,7 +174,7 @@ export class WorkerManager extends Map<number, (ClusterWorker | ThreadWorker) & 
 		}
 		switch (this.options.mode) {
 			case 'threads': {
-				const worker = new ThreadWorker(workerData.path, {
+				const worker = new worker_threads.Worker(workerData.path, {
 					env,
 				});
 				worker.on('message', data => this.handleWorkerMessage(data));

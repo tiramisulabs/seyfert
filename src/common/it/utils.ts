@@ -1,6 +1,6 @@
-import { readdir } from 'node:fs/promises';
+import type fs from 'node:fs';
+import { type Dirent, readFile, readdir, stat, unlink } from 'node:fs';
 import { basename, join } from 'node:path';
-import { setTimeout } from 'node:timers/promises';
 import { EmbedColors, type ColorResolvable, type Logger, type ObjectToLower, type ObjectToSnake } from '..';
 
 /**
@@ -33,7 +33,7 @@ export function resolveColor(color: ColorResolvable): number {
  * @returns A Promise that resolves after the specified time with the provided result.
  */
 export function delay<T>(time: number, result?: T): Promise<T> {
-	return setTimeout(time, result);
+	return new Promise(r => setTimeout(r, time, result));
 }
 
 /**
@@ -115,7 +115,7 @@ export class BaseHandler {
 	protected async getFiles(dir: string) {
 		const files: string[] = [];
 
-		for (const i of await readdir(dir, { withFileTypes: true })) {
+		for (const i of await promisesReaddir(dir)) {
 			if (i.isDirectory()) {
 				files.push(...(await this.getFiles(join(dir, i.name))));
 			} else {
@@ -267,4 +267,60 @@ export function fakePromise<T = unknown | Promise<unknown>>(
 		// biome-ignore lint/suspicious/noThenProperty: magic
 		then: callback => callback(value as Awaited<T>),
 	};
+}
+
+const packages: Record<string, any> = {};
+
+export function lazyLoadPackage<T>(mod: string): T | undefined {
+	try {
+		if (mod in packages) return packages[mod];
+		const pack = require(mod);
+		packages[mod] = pack;
+		return pack;
+	} catch (e) {
+		if (!process.memoryUsage) console.log(`Cannot import ${mod}`);
+		return;
+	}
+}
+
+export function isCloudfareWorker() {
+	//@ts-expect-error
+	return process.platform === 'browser';
+}
+
+//cloudfare support
+export function promisesReadFile(file: string) {
+	return new Promise<Buffer>((res, rej) =>
+		readFile(file, (err, result) => {
+			if (err) return rej(err);
+			res(result);
+		}),
+	);
+}
+
+export function promisesUnlink(file: string) {
+	return new Promise<void>((res, rej) =>
+		unlink(file, err => {
+			if (err) return rej(err);
+			res();
+		}),
+	);
+}
+
+export function promisesStat(file: string) {
+	return new Promise<fs.Stats>((res, rej) =>
+		stat(file, (err, result) => {
+			if (err) return rej(err);
+			res(result);
+		}),
+	);
+}
+
+export function promisesReaddir(file: string) {
+	return new Promise<Dirent[]>((res, rej) =>
+		readdir(file, { withFileTypes: true }, (err, result) => {
+			if (err) return rej(err);
+			res(result);
+		}),
+	);
 }

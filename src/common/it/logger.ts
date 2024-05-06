@@ -1,8 +1,7 @@
 import { createWriteStream, existsSync, mkdirSync, type WriteStream } from 'node:fs';
-import { readdir, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { bgBrightWhite, black, bold, brightBlack, cyan, gray, italic, red, stripColor, yellow } from './colors';
-import { MergeOptions } from './utils';
+import { MergeOptions, promisesReaddir, promisesUnlink } from './utils';
 export enum LogLevels {
 	Debug = 0,
 	Info = 1,
@@ -52,10 +51,10 @@ export class Logger {
 	}
 
 	static async clearLogs() {
-		for (const i of await readdir(join(process.cwd(), Logger.dirname))) {
-			if (this.streams[i]) await new Promise(res => this.streams[i]!.close(res));
-			await unlink(join(process.cwd(), Logger.dirname, i)).catch(() => {});
-			delete this.streams[i];
+		for (const i of await promisesReaddir(join(process.cwd(), Logger.dirname))) {
+			if (this.streams[i.name]) await new Promise(res => this.streams[i.name]!.close(res));
+			await promisesUnlink(join(process.cwd(), Logger.dirname, i.name)).catch(() => {});
+			delete this.streams[i.name];
 		}
 	}
 
@@ -131,10 +130,10 @@ export class Logger {
 
 		if (!Logger.__callback) {
 			const color = Logger.colorFunctions.get(level) ?? Logger.noColor;
-			const memoryData = process.memoryUsage();
+			const memoryData = process.memoryUsage?.();
 			const date = new Date();
 			log = [
-				brightBlack(formatMemoryUsage(memoryData.rss)),
+				brightBlack(formatMemoryUsage(memoryData?.rss ?? 0)),
 				bgBrightWhite(black(`[${date.toLocaleDateString()} ${date.toLocaleTimeString()}]`)),
 				color(Logger.prefixes.get(level) ?? 'DEBUG'),
 				this.name ? `${this.name} >` : '>',

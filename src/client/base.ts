@@ -81,6 +81,8 @@ export class BaseClient {
 
 	options: BaseClientOptions | undefined;
 
+	static seyfertConfig?: InternalRuntimeConfigHTTP | InternalRuntimeConfig;
+
 	constructor(options?: BaseClientOptions) {
 		this.options = MergeOptions(
 			{
@@ -300,11 +302,12 @@ export class BaseClient {
 	async getRC<
 		T extends InternalRuntimeConfigHTTP | InternalRuntimeConfig = InternalRuntimeConfigHTTP | InternalRuntimeConfig,
 	>() {
-		const { locations, debug, ...env } = (await magicImport(join(process.cwd(), 'seyfert.config.js')).then(
-			x => x.default ?? x,
-		)) as T;
+		const seyfertConfig = (BaseClient.seyfertConfig ||
+			(await magicImport(join(process.cwd(), 'seyfert.config.js')).then(x => x.default ?? x))) as T;
 
-		return {
+		const { locations, debug, ...env } = seyfertConfig;
+
+		const obj = {
 			debug: !!debug,
 			...env,
 			templates: locations.templates ? join(process.cwd(), locations.base, locations.templates) : undefined,
@@ -316,6 +319,10 @@ export class BaseClient {
 			base: join(process.cwd(), locations.base),
 			output: join(process.cwd(), locations.output),
 		};
+
+		BaseClient.seyfertConfig = seyfertConfig;
+
+		return obj;
 	}
 }
 

@@ -17,7 +17,7 @@ import {
 	type MessageCommandInteraction,
 	type UserCommandInteraction,
 } from '../../structures';
-import { BaseContext } from '../basecontex';
+import { BaseContext } from '../basecontext';
 import type { RegisteredMiddlewares } from '../decorators';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
 

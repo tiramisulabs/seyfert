@@ -1,8 +1,6 @@
 import { filetypeinfo } from 'magic-bytes.js';
 import { randomUUID } from 'node:crypto';
-import { setTimeout as delay } from 'node:timers/promises';
-import { parentPort, workerData } from 'node:worker_threads';
-import { Logger } from '../common';
+import { Logger, delay, lazyLoadPackage } from '../common';
 import { snowflakeToTimestamp } from '../structures/extra/functions';
 import type { WorkerData } from '../websocket';
 import type { WorkerSendApiRequest } from '../websocket/discord/worker';
@@ -19,6 +17,9 @@ import {
 	type RequestHeaders,
 } from './shared';
 import { isBufferLike } from './utils/utils';
+
+let parentPort: import('node:worker_threads').MessagePort;
+let workerData: WorkerData;
 
 export class ApiHandler {
 	options: ApiHandlerInternalOptions;
@@ -43,8 +44,15 @@ export class ApiHandler {
 			});
 		}
 
-		if (options.workerProxy && !parentPort) throw new Error('Cannot use workerProxy without a parent.');
+		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
+
+		if (options.workerProxy && !worker_threads?.parentPort) throw new Error('Cannot use workerProxy without a parent.');
 		if (options.workerProxy) this.workerPromises = new Map();
+
+		if (worker_threads) {
+			workerData = worker_threads.workerData;
+			if (worker_threads.parentPort) parentPort = worker_threads.parentPort;
+		}
 	}
 
 	globalUnblock() {

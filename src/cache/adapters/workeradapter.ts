@@ -1,14 +1,19 @@
 import { randomUUID } from 'node:crypto';
-import { parentPort } from 'node:worker_threads';
 import type { WorkerData } from '../../websocket';
 import type { WorkerSendCacheRequest } from '../../websocket/discord/worker';
 import type { Adapter } from './types';
+import { lazyLoadPackage } from '../../common';
+
+let parentPort: import('node:worker_threads').MessagePort;
 
 export class WorkerAdapter implements Adapter {
 	isAsync = true;
 	promises = new Map<string, { resolve: (value: unknown) => void; timeout: NodeJS.Timeout }>();
 
-	constructor(public workerData: WorkerData) {}
+	constructor(public workerData: WorkerData) {
+		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
+		if (worker_threads?.parentPort) parentPort = worker_threads.parentPort;
+	}
 
 	postMessage(body: any) {
 		if (parentPort) return parentPort.postMessage(body);

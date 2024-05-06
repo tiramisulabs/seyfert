@@ -35,9 +35,9 @@ export class HttpClient extends BaseClient {
 
 	constructor(options?: BaseClientOptions) {
 		super(options);
-		if (!UWS) {
-			throw new Error('No uws installed.');
-		}
+		// if (!UWS) {
+		// 	throw new Error('No uws installed.');
+		// }
 		if (!nacl) {
 			throw new Error('No tweetnacl installed.');
 		}
@@ -89,18 +89,38 @@ export class HttpClient extends BaseClient {
 
 		this.publicKey = publicKey;
 		this.publicKeyHex = Buffer.from(this.publicKey, 'hex');
-		this.app = UWS!.App();
-		this.app.post('/interactions', (res, req) => {
-			return this.onPacket(res, req);
-		});
-		this.app.listen(port, () => {
-			this.logger.info(`Listening to port ${port}`);
-		});
+		if (UWS) {
+			this.app = UWS.App();
+			this.app.post('/interactions', (res, req) => {
+				return this.onPacket(res, req);
+			});
+			this.app.listen(port, () => {
+				this.logger.info(`Listening to port ${port}`);
+			});
+		} else {
+			this.logger.warn('No UWS installed.');
+		}
 	}
 
-	async start(options: DeepPartial<Omit<StartOptions, 'connection'>> = {}) {
+	async start(options: DeepPartial<Omit<StartOptions, 'connection' | 'eventsDir'>> = {}) {
 		await super.start(options);
 		return this.execute(options.httpConnection);
+	}
+
+	protected async verifySignatureGenericRequest(req: Request) {
+		const timestamp = req.headers.get('x-signature-timestamp');
+		const ed25519 = req.headers.get('x-signature-ed25519') ?? '';
+		const body = (await req.json()) as APIInteraction;
+		if (
+			nacl!.sign.detached.verify(
+				Buffer.from(timestamp + JSON.stringify(body)),
+				Buffer.from(ed25519, 'hex'),
+				this.publicKeyHex,
+			)
+		) {
+			return body;
+		}
+		return;
 	}
 
 	// https://discord.com/developers/docs/interactions/receiving-and-responding#security-and-authorization
@@ -120,7 +140,71 @@ export class HttpClient extends BaseClient {
 		return;
 	}
 
-	async onPacket(res: HttpResponse, req: HttpRequest) {
+	async fetch(req: Request): Promise<Response> {
+		const rawBody = await this.verifySignatureGenericRequest(req);
+		if (!rawBody) {
+			this.debugger?.debug('Invalid request/No info, returning 418 status.');
+			// I'm a teapot
+			return new Response('', { status: 418 });
+		}
+		switch (rawBody.type) {
+			case InteractionType.Ping:
+				this.debugger?.debug('Ping interaction received, responding.');
+				return Response.json(
+					{ type: InteractionResponseType.Pong },
+					{
+						headers: {
+							'Content-Type': 'application/json',
+						},
+					},
+				);
+			default:
+				return new Promise<Response>(r => {
+					onInteractionCreate(this, rawBody, -1, async ({ body, files }) => {
+						let response: FormData | APIInteractionResponse;
+						const headers: { 'Content-Type'?: string } = {};
+
+						if (files) {
+							response = new FormData();
+							for (const [index, file] of files.entries()) {
+								const fileKey = file.key ?? `files[${index}]`;
+								if (isBufferLike(file.data)) {
+									let contentType = file.contentType;
+
+									if (!contentType) {
+										const [parsedType] = filetypeinfo(file.data);
+
+										if (parsedType) {
+											contentType =
+												OverwrittenMimeTypes[parsedType.mime as keyof typeof OverwrittenMimeTypes] ??
+												parsedType.mime ??
+												'application/octet-stream';
+										}
+									}
+									response.append(fileKey, new Blob([file.data], { type: contentType }), file.name);
+								} else {
+									response.append(fileKey, new Blob([`${file.data}`], { type: file.contentType }), file.name);
+								}
+							}
+							if (body) {
+								response.append('payload_json', JSON.stringify(body));
+							}
+						} else {
+							response = body ?? {};
+							headers['Content-Type'] = 'application/json';
+						}
+
+						r(
+							Response.json(response, {
+								headers,
+							}),
+						);
+					});
+				});
+		}
+	}
+
+	protected async onPacket(res: HttpResponse, req: HttpRequest) {
 		const rawBody = await this.verifySignature(res, req);
 		if (!rawBody) {
 			this.debugger?.debug('Invalid request/No info, returning 418 status.');

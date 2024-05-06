@@ -1,18 +1,18 @@
-import { watch } from 'chokidar';
+// import { watch } from 'chokidar';
 import type { GatewayDispatchPayload, GatewaySendPayload } from 'discord-api-types/v10';
 import { execSync } from 'node:child_process';
-import { Worker } from 'node:worker_threads';
 import { ApiHandler, Router } from '../../api';
 import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
 import { ShardManager, type ShardManagerOptions } from '../../websocket';
 import { Logger } from '../it/logger';
 import type { MakeRequired } from '../types/util';
+import { lazyLoadPackage } from '../it/utils';
 
 /**
  * Represents a watcher class that extends the ShardManager.
  */
 export class Watcher extends ShardManager {
-	worker?: Worker;
+	worker?: import('node:worker_threads').Worker;
 	logger = new Logger({
 		name: '[Watcher]',
 	});
@@ -47,11 +47,13 @@ export class Watcher extends ShardManager {
 	 * Resets the worker instance.
 	 */
 	resetWorker() {
+		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
+		if (!worker_threads) throw new Error('Cannot use worker_threads');
 		if (this.worker) {
 			this.worker.terminate();
 		}
 		this.build();
-		this.worker = new Worker(this.options.filePath, {
+		this.worker = new worker_threads.Worker(this.options.filePath, {
 			argv: this.options.argv,
 			workerData: {
 				__USING_WATCHER__: true,
@@ -95,13 +97,13 @@ export class Watcher extends ShardManager {
 		this.connectQueue.concurrency = this.options.info.session_start_limit.max_concurrency;
 
 		await super.spawnShards();
-		const watcher = watch(this.options.srcPath).on('ready', () => {
-			this.logger.debug(`Watching ${this.options.srcPath}`);
-			watcher.on('all', event => {
-				this.logger.debug(`${event} event detected, building`);
-				this.resetWorker();
-			});
-		});
+		// const watcher = watch(this.options.srcPath).on('ready', () => {
+		// 	this.logger.debug(`Watching ${this.options.srcPath}`);
+		// 	watcher.on('all', event => {
+		// 		this.logger.debug(`${event} event detected, building`);
+		// 		this.resetWorker();
+		// 	});
+		// });
 	}
 
 	/**

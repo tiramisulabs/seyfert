@@ -120,4 +120,5 @@ export interface WorkerData {
 	workerId: number;
 	debug: boolean;
 	workerProxy: boolean;
+	__USING_WATCHER__?: boolean;
 }

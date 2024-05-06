@@ -1,5 +1,5 @@
 import type { Locale, LocaleString } from 'discord-api-types/v10';
-import { BaseHandler } from '../common';
+import { BaseHandler, isCloudfareWorker } from '../common';
 import { LangRouter } from './router';
 
 export class LangsHandler extends BaseHandler {
@@ -37,6 +37,10 @@ export class LangsHandler extends BaseHandler {
 	}
 
 	async load(dir: string) {
+		if (isCloudfareWorker()) {
+			console.log('TODO langs');
+			return;
+		}
 		const files = await this.loadFilesK<Record<string, any>>(await this.getFiles(dir));
 		for (const i of files) {
 			const locale = i.name.split('.').slice(0, -1).join('.');
