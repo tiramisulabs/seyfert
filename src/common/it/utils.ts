@@ -269,16 +269,11 @@ export function fakePromise<T = unknown | Promise<unknown>>(
 	};
 }
 
-const packages: Record<string, any> = {};
-
 export function lazyLoadPackage<T>(mod: string): T | undefined {
 	try {
-		if (mod in packages) return packages[mod];
-		const pack = require(mod);
-		packages[mod] = pack;
-		return pack;
+		return require(mod);
 	} catch (e) {
-		if (!process.memoryUsage) console.log(`Cannot import ${mod}`);
+		console.log(`Cannot import ${mod}`);
 		return;
 	}
 }
