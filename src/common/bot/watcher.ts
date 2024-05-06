@@ -1,4 +1,3 @@
-// import { watch } from 'chokidar';
 import type { GatewayDispatchPayload, GatewaySendPayload } from 'discord-api-types/v10';
 import { execSync } from 'node:child_process';
 import { ApiHandler, Router } from '../../api';
@@ -97,13 +96,18 @@ export class Watcher extends ShardManager {
 		this.connectQueue.concurrency = this.options.info.session_start_limit.max_concurrency;
 
 		await super.spawnShards();
-		// const watcher = watch(this.options.srcPath).on('ready', () => {
-		// 	this.logger.debug(`Watching ${this.options.srcPath}`);
-		// 	watcher.on('all', event => {
-		// 		this.logger.debug(`${event} event detected, building`);
-		// 		this.resetWorker();
-		// 	});
-		// });
+
+		const chokidar = lazyLoadPackage<typeof import('chokidar')>('chokidar');
+
+		if (!chokidar?.watch) return this.logger.warn('No chokidar installed.');
+
+		const watcher = chokidar.watch(this.options.srcPath).on('ready', () => {
+			this.logger.debug(`Watching ${this.options.srcPath}`);
+			watcher.on('all', event => {
+				this.logger.debug(`${event} event detected, building`);
+				this.resetWorker();
+			});
+		});
 	}
 
 	/**

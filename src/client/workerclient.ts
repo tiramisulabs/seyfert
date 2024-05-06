@@ -68,7 +68,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		if (worker_threads?.parentPort) {
 			manager = worker_threads?.parentPort;
 		}
-		(worker_threads?.parentPort ?? process).on('message', (data: ManagerMessages) => this.handleManagerMessages(data));
+		(manager ?? process).on('message', (data: ManagerMessages) => this.handleManagerMessages(data));
 
 		this.setServices({
 			cache: {
