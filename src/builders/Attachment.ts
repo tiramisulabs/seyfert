@@ -1,9 +1,8 @@
 import type { APIAttachment, RESTAPIAttachment } from 'discord-api-types/v10';
 import { randomBytes } from 'node:crypto';
-import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { type UsingClient, throwError, type RawFile } from '..';
-import type { ImageResolvable, ObjectToLower } from '../common';
+import { promisesReadFile, promisesStat, type ImageResolvable, type ObjectToLower } from '../common';
 import { Base } from '../structures/extra/Base';
 
 export interface AttachmentResolvableMap {
@@ -196,12 +195,12 @@ export async function resolveAttachmentData(
 		}
 		case 'path': {
 			const file = path.resolve(data as string);
-			const stats = await stat(file);
+			const stats = await promisesStat(file);
 			if (!stats.isFile())
 				return throwError(
 					`The attachment type has been expressed as ${type.toUpperCase()} but cannot be resolved as one.`,
 				);
-			return { data: await readFile(file) };
+			return { data: await promisesReadFile(file) };
 		}
 		case 'buffer': {
 			if (Buffer.isBuffer(data)) return { data };

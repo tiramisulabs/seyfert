@@ -15,7 +15,7 @@ import type {
 	WebhookMessage,
 } from '..';
 import type { ExtendContext, UsingClient } from '../commands';
-import { BaseContext } from '../commands/basecontex';
+import { BaseContext } from '../commands/basecontext';
 import type {
 	ComponentInteractionMessageUpdate,
 	InteractionCreateBodyRequest,

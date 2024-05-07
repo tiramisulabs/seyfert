@@ -1,7 +1,6 @@
 import { GatewayIntentBits, type GatewayDispatchPayload, type GatewayPresenceUpdateData } from 'discord-api-types/v10';
-import { parentPort, workerData } from 'node:worker_threads';
 import type { Command, CommandContext, Message, SubCommand } from '..';
-import type { DeepPartial, If, WatcherPayload, WatcherSendToShard } from '../common';
+import { lazyLoadPackage, type DeepPartial, type If, type WatcherPayload, type WatcherSendToShard } from '../common';
 import { EventHandler } from '../events';
 import { ClientUser } from '../structures';
 import { ShardManager, properties, type ShardManagerOptions } from '../websocket';
@@ -11,6 +10,8 @@ import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOp
 import { BaseClient } from './base';
 import { onInteractionCreate } from './oninteractioncreate';
 import { onMessageCreate } from './onmessagecreate';
+
+let parentPort: import('node:worker_threads').MessagePort;
 
 export class Client<Ready extends boolean = boolean> extends BaseClient {
 	private __handleGuilds?: Set<string> = new Set();
@@ -68,7 +69,14 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 
 	protected async execute(options: { token?: string; intents?: number } = {}) {
 		await super.execute(options);
-		if (!workerData?.__USING_WATCHER__) {
+
+		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
+
+		if (worker_threads?.parentPort) {
+			parentPort = worker_threads.parentPort;
+		}
+
+		if (!worker_threads?.workerData.__USING_WATCHER__) {
 			await this.gateway.spawnShards();
 		} else {
 			parentPort?.on('message', (data: WatcherPayload | WatcherSendToShard) => {

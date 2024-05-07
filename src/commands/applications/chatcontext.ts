@@ -9,7 +9,7 @@ import {
 	type GuildMember,
 	type InteractionGuildMember,
 } from '../../structures';
-import { BaseContext } from '../basecontex';
+import { BaseContext } from '../basecontext';
 import type { RegisteredMiddlewares } from '../decorators';
 import type { OptionResolver } from '../optionresolver';
 import type { Command, ContextOptions, OptionsRecord, SubCommand } from './chat';

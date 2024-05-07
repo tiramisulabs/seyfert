@@ -1,13 +1,15 @@
 import { GatewayIntentBits } from 'discord-api-types/gateway/v10';
-import type {
-	BaseClientOptions,
-	InternalRuntimeConfig,
-	InternalRuntimeConfigHTTP,
-	RuntimeConfig,
-	RuntimeConfigHTTP,
+import {
+	BaseClient,
+	type BaseClientOptions,
+	type InternalRuntimeConfig,
+	type InternalRuntimeConfigHTTP,
+	type RuntimeConfig,
+	type RuntimeConfigHTTP,
 } from './client/base';
 import type { ClientNameEvents, EventContext } from './events';
-export { Logger, PermissionStrings, Watcher } from './common';
+import { isCloudfareWorker } from './common';
+export { Logger, PermissionStrings } from './common';
 //
 export { Collection, LimitedCollection } from './collection';
 //
@@ -80,10 +82,12 @@ export const config = {
 	 * @returns The internal runtime configuration for HTTP.
 	 */
 	http(data: RuntimeConfigHTTP) {
-		return {
+		const obj = {
 			port: 8080,
 			...data,
 		} as InternalRuntimeConfigHTTP;
+		if (isCloudfareWorker()) BaseClient.seyfertConfig = obj;
+		return obj;
 	},
 };
 

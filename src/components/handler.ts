@@ -145,10 +145,12 @@ export class ComponentHandler extends BaseHandler {
 		this.deleteValue(id, 'messageDelete');
 	}
 
-	async load(componentsDir: string) {
-		const paths = await this.loadFilesK<{ new (): ModalCommand | ComponentCommand }>(
-			await this.getFiles(componentsDir),
-		);
+	async load(componentsDir: string, instances?: { new (): ModalCommand | ComponentCommand }[]) {
+		const paths =
+			instances?.map(x => {
+				const i = new x();
+				return { file: x, path: i.__filePath ?? '*' };
+			}) ?? (await this.loadFilesK<{ new (): ModalCommand | ComponentCommand }>(await this.getFiles(componentsDir)));
 
 		for (let i = 0; i < paths.length; i++) {
 			let component;

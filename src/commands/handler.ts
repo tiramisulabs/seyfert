@@ -8,6 +8,7 @@ import type { UsingClient } from './applications/shared';
 
 export class CommandHandler extends BaseHandler {
 	values: (Command | ContextMenuCommand)[] = [];
+
 	protected filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
 
 	constructor(
@@ -36,10 +37,15 @@ export class CommandHandler extends BaseHandler {
 		}
 	}
 
-	async load(commandsDir: string, client: UsingClient) {
-		const result = (
-			await this.loadFilesK<{ new (): Command | SubCommand | ContextMenuCommand }>(await this.getFiles(commandsDir))
-		).filter(x => x.file);
+	async load(commandsDir: string, client: UsingClient, instances?: { new (): Command | ContextMenuCommand }[]) {
+		const result =
+			instances?.map(x => {
+				const i = new x();
+				return { name: i.name, file: x, path: i.__filePath ?? '*' };
+			}) ??
+			(
+				await this.loadFilesK<{ new (): Command | SubCommand | ContextMenuCommand }>(await this.getFiles(commandsDir))
+			).filter(x => x.file);
 		this.values = [];
 
 		for (const command of result) {

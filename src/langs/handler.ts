@@ -36,8 +36,8 @@ export class LangsHandler extends BaseHandler {
 		return LangRouter(locale, this.defaultLang ?? locale, this.values)();
 	}
 
-	async load(dir: string) {
-		const files = await this.loadFilesK<Record<string, any>>(await this.getFiles(dir));
+	async load(dir: string, instances?: { name: string; file: Record<string, any> }[]) {
+		const files = instances ?? (await this.loadFilesK<Record<string, any>>(await this.getFiles(dir)));
 		for (const i of files) {
 			const locale = i.name.split('.').slice(0, -1).join('.');
 			const result = this.callback(locale, i.file);

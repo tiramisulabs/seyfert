@@ -20,8 +20,8 @@ export class EventHandler extends BaseHandler {
 
 	values: Partial<Record<GatewayEvents, EventValue>> = {};
 
-	async load(eventsDir: string) {
-		for (const i of await this.loadFilesK<ClientEvent>(await this.getFiles(eventsDir))) {
+	async load(eventsDir: string, instances?: { file: ClientEvent; path: string }[]) {
+		for (const i of instances ?? (await this.loadFilesK<ClientEvent>(await this.getFiles(eventsDir)))) {
 			const instance = this.callback(i.file);
 			if (!instance) continue;
 			if (typeof instance?.run !== 'function') {

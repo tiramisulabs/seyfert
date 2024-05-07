@@ -1,10 +1,9 @@
 import { GatewayIntentBits, type GatewayDispatchPayload, type GatewaySendPayload } from 'discord-api-types/v10';
 import { randomUUID } from 'node:crypto';
-import { parentPort as manager } from 'node:worker_threads';
 import { ApiHandler, Logger } from '..';
 import type { Cache } from '../cache';
 import { WorkerAdapter } from '../cache';
-import { LogLevels, type DeepPartial, type When } from '../common';
+import { LogLevels, lazyLoadPackage, type DeepPartial, type When } from '../common';
 import { EventHandler } from '../events';
 import { ClientUser } from '../structures';
 import { Shard, type ShardManagerOptions, type WorkerData } from '../websocket';
@@ -28,6 +27,7 @@ import { onInteractionCreate } from './oninteractioncreate';
 import { onMessageCreate } from './onmessagecreate';
 
 let workerData: WorkerData;
+let manager: import('node:worker_threads').MessagePort;
 try {
 	workerData = {
 		debug: process.env.SEYFERT_WORKER_DEBUG === 'true',
@@ -51,6 +51,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	promises = new Map<string, { resolve: (value: any) => void; timeout: NodeJS.Timeout }>();
 
 	shards = new Map<number, Shard>();
+
 	declare options: WorkerClientOptions | undefined;
 
 	constructor(options?: WorkerClientOptions) {
@@ -62,7 +63,13 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			type: 'WORKER_START',
 			workerId: workerData.workerId,
 		} satisfies WorkerStart);
+
+		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
+		if (worker_threads?.parentPort) {
+			manager = worker_threads?.parentPort;
+		}
 		(manager ?? process).on('message', (data: ManagerMessages) => this.handleManagerMessages(data));
+
 		this.setServices({
 			cache: {
 				adapter: new WorkerAdapter(workerData),
