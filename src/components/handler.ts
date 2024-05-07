@@ -205,6 +205,7 @@ export class ComponentHandler extends BaseHandler {
 		for (const i of this.commands) {
 			try {
 				if (i.type === InteractionCommandType.COMPONENT && i.cType === interaction.componentType) {
+					// @ts-expect-error ComponentInteraction is a generic class
 					const context = new ComponentContext(this.client, interaction);
 					const extended = this.client.options?.context?.(interaction) ?? {};
 					Object.assign(context, extended);

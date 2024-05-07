@@ -1,4 +1,4 @@
-import type { ComponentCommandInteractionMap, ComponentContext } from '../components/componentcontext';
+import type { ContextComponentCommandInteractionMap, ComponentContext } from '../components/componentcontext';
 import type { MessageCommandInteraction, UserCommandInteraction } from '../structures';
 import type { CommandContext } from './applications/chatcontext';
 import type { MenuCommandContext } from './applications/menucontext';
@@ -27,7 +27,7 @@ export class BaseContext {
 		return false;
 	}
 
-	isComponent(): this is ComponentContext<keyof ComponentCommandInteractionMap> {
+	isComponent(): this is ComponentContext<keyof ContextComponentCommandInteractionMap> {
 		return false;
 	}
 }

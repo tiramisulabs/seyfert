@@ -1,9 +1,8 @@
-import { MessageFlags } from 'discord-api-types/v10';
+import { ComponentType, MessageFlags } from 'discord-api-types/v10';
 import type {
 	AllChannels,
 	ButtonInteraction,
 	ChannelSelectMenuInteraction,
-	ComponentInteraction,
 	Guild,
 	GuildMember,
 	MentionableSelectMenuInteraction,
@@ -20,18 +19,20 @@ import type {
 	ComponentInteractionMessageUpdate,
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
+	ModalCreateBodyRequest,
 	When,
 } from '../common';
 
-export interface ComponentContext<Type extends keyof ComponentCommandInteractionMap>
-	extends BaseContext,
+export interface ComponentContext<
+	Type extends keyof ContextComponentCommandInteractionMap = keyof ContextComponentCommandInteractionMap,
+> extends BaseContext,
 		ExtendContext {}
 
 /**
  * Represents a context for interacting with components in a Discord bot.
  * @template Type - The type of component interaction.
  */
-export class ComponentContext<Type extends keyof ComponentCommandInteractionMap> extends BaseContext {
+export class ComponentContext<Type extends keyof ContextComponentCommandInteractionMap> extends BaseContext {
 	/**
 	 * Creates a new instance of the ComponentContext class.
 	 * @param client - The UsingClient instance.
@@ -39,7 +40,7 @@ export class ComponentContext<Type extends keyof ComponentCommandInteractionMap>
 	 */
 	constructor(
 		readonly client: UsingClient,
-		public interaction: ComponentCommandInteractionMap[Type] | ComponentInteraction,
+		public interaction: ContextComponentCommandInteractionMap[Type],
 	) {
 		super(client);
 	}
@@ -116,6 +117,10 @@ export class ComponentContext<Type extends keyof ComponentCommandInteractionMap>
 	 */
 	deleteResponse() {
 		return this.interaction.deleteResponse();
+	}
+
+	modal(body: ModalCreateBodyRequest) {
+		return this.interaction.modal(body);
 	}
 
 	/**
@@ -197,16 +202,38 @@ export class ComponentContext<Type extends keyof ComponentCommandInteractionMap>
 		return this.interaction.member;
 	}
 
-	isComponent(): this is ComponentContext<keyof ComponentCommandInteractionMap> {
+	isComponent(): this is ComponentContext<keyof ContextComponentCommandInteractionMap> {
 		return true;
+	}
+
+	isButton(): this is ComponentContext<'Button'> {
+		return this.interaction.data.componentType === ComponentType.Button;
+	}
+
+	isChannelSelectMenu(): this is ComponentContext<'ChannelSelect'> {
+		return this.interaction.componentType === ComponentType.ChannelSelect;
+	}
+
+	isRoleSelectMenu(): this is ComponentContext<'RoleSelect'> {
+		return this.interaction.componentType === ComponentType.RoleSelect;
+	}
+
+	isMentionableSelectMenu(): this is ComponentContext<'MentionableSelect'> {
+		return this.interaction.componentType === ComponentType.MentionableSelect;
+	}
+
+	isUserSelectMenu(): this is ComponentContext<'UserSelect'> {
+		return this.interaction.componentType === ComponentType.UserSelect;
+	}
+
+	isStringSelectMenu(): this is ComponentContext<'StringSelect'> {
+		return this.interaction.componentType === ComponentType.StringSelect;
 	}
 }
 
-export interface ComponentCommandInteractionMap {
-	ActionRow: never;
+export interface ContextComponentCommandInteractionMap {
 	Button: ButtonInteraction;
 	StringSelect: StringSelectMenuInteraction;
-	TextInput: never;
 	UserSelect: UserSelectMenuInteraction;
 	RoleSelect: RoleSelectMenuInteraction;
 	MentionableSelect: MentionableSelectMenuInteraction;
