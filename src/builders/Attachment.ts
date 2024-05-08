@@ -38,7 +38,9 @@ export class AttachmentBuilder {
 	 * Creates a new Attachment instance.
 	 * @param data - The partial attachment data.
 	 */
-	constructor(public data: Partial<AttachmentData> = { name: `${randomBytes(8).toString('base64url')}.jpg` }) {}
+	constructor(
+		public data: Partial<AttachmentData> = { name: `${randomBytes?.(8)?.toString('base64url') || 'default'}.jpg` },
+	) {}
 
 	/**
 	 * Sets the name of the attachment.

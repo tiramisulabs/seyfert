@@ -195,9 +195,11 @@ export class HttpClient extends BaseClient {
 						}
 
 						r(
-							Response.json(response, {
-								headers,
-							}),
+							response instanceof FormData
+								? new Response(response, { headers })
+								: Response.json(response, {
+										headers,
+								  }),
 						);
 					});
 				});
