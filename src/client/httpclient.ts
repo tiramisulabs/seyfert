@@ -8,7 +8,7 @@ import { filetypeinfo } from 'magic-bytes.js';
 import type { HttpRequest, HttpResponse } from 'uWebSockets.js';
 import { OverwrittenMimeTypes } from '../api';
 import { isBufferLike } from '../api/utils/utils';
-import type { DeepPartial } from '../common';
+import { isCloudfareWorker, type DeepPartial } from '../common';
 import type { BaseClientOptions, InternalRuntimeConfigHTTP, StartOptions } from './base';
 import { BaseClient } from './base';
 import { onInteractionCreate } from './oninteractioncreate';
@@ -160,7 +160,11 @@ export class HttpClient extends BaseClient {
 				);
 			default:
 				return new Promise<Response>(r => {
-					onInteractionCreate(this, rawBody, -1, async ({ body, files }) => {
+					if (isCloudfareWorker())
+						return onInteractionCreate(this, rawBody, -1)
+							.then(() => r(new Response()))
+							.catch(() => r(new Response()));
+					return onInteractionCreate(this, rawBody, -1, async ({ body, files }) => {
 						let response: FormData | APIInteractionResponse;
 						const headers: { 'Content-Type'?: string } = {};
 
