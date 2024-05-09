@@ -216,7 +216,7 @@ export class BaseInteraction<
 	static from(client: UsingClient, gateway: GatewayInteractionCreateDispatchData, __reply?: __InternalReplyFunction) {
 		switch (gateway.type) {
 			case InteractionType.ApplicationCommandAutocomplete:
-				return new AutocompleteInteraction(client, gateway, __reply);
+				return new AutocompleteInteraction(client, gateway, undefined, __reply);
 			// biome-ignore lint/suspicious/noFallthroughSwitchClause: bad interaction  between biome and ts-server
 			case InteractionType.ApplicationCommand:
 				switch (gateway.data.type) {
@@ -299,16 +299,19 @@ export class AutocompleteInteraction<FromGuild extends boolean = boolean> extend
 	constructor(
 		client: UsingClient,
 		interaction: APIApplicationCommandAutocompleteInteraction,
+		resolver?: OptionResolver,
 		protected __reply?: __InternalReplyFunction,
 	) {
 		super(client, interaction);
-		this.options = new OptionResolver(
-			client,
-			interaction.data.options,
-			undefined,
-			interaction.guild_id,
-			interaction.data.resolved as ContextOptionsResolved,
-		);
+		this.options =
+			resolver ??
+			new OptionResolver(
+				client,
+				interaction.data.options,
+				undefined,
+				interaction.guild_id,
+				interaction.data.resolved as ContextOptionsResolved,
+			);
 	}
 
 	getInput() {

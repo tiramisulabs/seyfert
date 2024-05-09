@@ -9,7 +9,7 @@ import {
 } from './client/base';
 import type { ClientNameEvents, EventContext } from './events';
 import { isCloudfareWorker } from './common';
-export { Logger, PermissionStrings } from './common';
+export { Logger, PermissionStrings, Watcher } from './common';
 //
 export { Collection, LimitedCollection } from './collection';
 //

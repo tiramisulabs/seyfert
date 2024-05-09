@@ -41,7 +41,7 @@ export async function onInteractionCreate(
 					body.guild_id,
 					body.data.resolved as ContextOptionsResolved,
 				);
-				const interaction = new AutocompleteInteraction(self, body, __reply);
+				const interaction = new AutocompleteInteraction(self, body, optionsResolver, __reply);
 				const command = optionsResolver.getAutocomplete();
 
 				// idc, is a YOU problem
