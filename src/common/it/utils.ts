@@ -1,5 +1,4 @@
-import type fs from 'node:fs';
-import { type Dirent, readFile, readdir, stat, unlink } from 'node:fs';
+import { promises } from 'node:fs';
 import { basename, join } from 'node:path';
 import { EmbedColors, type ColorResolvable, type Logger, type ObjectToLower, type ObjectToSnake } from '..';
 
@@ -115,7 +114,7 @@ export class BaseHandler {
 	protected async getFiles(dir: string) {
 		const files: string[] = [];
 
-		for (const i of await promisesReaddir(dir)) {
+		for (const i of await promises.readdir(dir, { withFileTypes: true })) {
 			if (i.isDirectory()) {
 				files.push(...(await this.getFiles(join(dir, i.name))));
 			} else {
@@ -281,41 +280,4 @@ export function lazyLoadPackage<T>(mod: string): T | undefined {
 export function isCloudfareWorker() {
 	//@ts-expect-error
 	return process.platform === 'browser';
-}
-
-//cloudfare support
-export function promisesReadFile(file: string) {
-	return new Promise<Buffer>((res, rej) =>
-		readFile(file, (err, result) => {
-			if (err) return rej(err);
-			res(result);
-		}),
-	);
-}
-
-export function promisesUnlink(file: string) {
-	return new Promise<void>((res, rej) =>
-		unlink(file, err => {
-			if (err) return rej(err);
-			res();
-		}),
-	);
-}
-
-export function promisesStat(file: string) {
-	return new Promise<fs.Stats>((res, rej) =>
-		stat(file, (err, result) => {
-			if (err) return rej(err);
-			res(result);
-		}),
-	);
-}
-
-export function promisesReaddir(file: string) {
-	return new Promise<Dirent[]>((res, rej) =>
-		readdir(file, { withFileTypes: true }, (err, result) => {
-			if (err) return rej(err);
-			res(result);
-		}),
-	);
 }

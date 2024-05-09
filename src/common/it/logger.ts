@@ -1,7 +1,7 @@
-import { createWriteStream, existsSync, mkdirSync, type WriteStream } from 'node:fs';
+import { createWriteStream, existsSync, mkdirSync, promises, type WriteStream } from 'node:fs';
 import { join } from 'node:path';
 import { bgBrightWhite, black, bold, brightBlack, cyan, gray, italic, red, stripColor, yellow } from './colors';
-import { MergeOptions, promisesReaddir, promisesUnlink } from './utils';
+import { MergeOptions } from './utils';
 export enum LogLevels {
 	Debug = 0,
 	Info = 1,
@@ -51,9 +51,9 @@ export class Logger {
 	}
 
 	static async clearLogs() {
-		for (const i of await promisesReaddir(join(process.cwd(), Logger.dirname))) {
+		for (const i of await promises.readdir(join(process.cwd(), Logger.dirname), { withFileTypes: true })) {
 			if (this.streams[i.name]) await new Promise(res => this.streams[i.name]!.close(res));
-			await promisesUnlink(join(process.cwd(), Logger.dirname, i.name)).catch(() => {});
+			await promises.unlink(join(process.cwd(), Logger.dirname, i.name)).catch(() => {});
 			delete this.streams[i.name];
 		}
 	}
