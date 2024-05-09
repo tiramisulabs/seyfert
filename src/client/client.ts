@@ -76,7 +76,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			parentPort = worker_threads.parentPort;
 		}
 
-		if (!worker_threads?.workerData.__USING_WATCHER__) {
+		if (!worker_threads?.workerData?.__USING_WATCHER__) {
 			await this.gateway.spawnShards();
 		} else {
 			parentPort?.on('message', (data: WatcherPayload | WatcherSendToShard) => {
