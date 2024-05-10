@@ -1,22 +1,8 @@
-import { ComponentType, MessageFlags } from 'discord-api-types/v10';
-import type {
-	AllChannels,
-	ButtonInteraction,
-	ChannelSelectMenuInteraction,
-	Guild,
-	GuildMember,
-	MentionableSelectMenuInteraction,
-	Message,
-	ReturnCache,
-	RoleSelectMenuInteraction,
-	StringSelectMenuInteraction,
-	UserSelectMenuInteraction,
-	WebhookMessage,
-} from '..';
+import { MessageFlags } from 'discord-api-types/v10';
+import type { AllChannels, Guild, GuildMember, Message, ModalSubmitInteraction, ReturnCache, WebhookMessage } from '..';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, RegisteredMiddlewares, UsingClient } from '../commands';
 import { BaseContext } from '../commands/basecontext';
 import type {
-	ComponentInteractionMessageUpdate,
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
 	ModalCreateBodyRequest,
@@ -24,19 +10,13 @@ import type {
 	When,
 } from '../common';
 
-export interface ComponentContext<
-	Type extends keyof ContextComponentCommandInteractionMap = keyof ContextComponentCommandInteractionMap,
-> extends BaseContext,
-		ExtendContext {}
+export interface ModalContext extends BaseContext, ExtendContext {}
 
 /**
  * Represents a context for interacting with components in a Discord bot.
  * @template Type - The type of component interaction.
  */
-export class ComponentContext<
-	Type extends keyof ContextComponentCommandInteractionMap,
-	M extends keyof RegisteredMiddlewares = never,
-> extends BaseContext {
+export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends BaseContext {
 	/**
 	 * Creates a new instance of the ComponentContext class.
 	 * @param client - The UsingClient instance.
@@ -44,7 +24,7 @@ export class ComponentContext<
 	 */
 	constructor(
 		readonly client: UsingClient,
-		public interaction: ContextComponentCommandInteractionMap[Type],
+		public interaction: ModalSubmitInteraction,
 	) {
 		super(client);
 	}
@@ -52,18 +32,15 @@ export class ComponentContext<
 	metadata: CommandMetadata<UnionToTuple<M>> = {} as never;
 	globalMetadata: GlobalMetadata = {};
 
+	get components() {
+		return this.interaction.components;
+	}
+
 	/**
 	 * Gets the language object for the interaction's locale.
 	 */
 	get t() {
 		return this.client.t(this.interaction?.locale ?? this.client.langs?.defaultLang ?? 'en-US');
-	}
-
-	/**
-	 * Gets the custom ID of the interaction.
-	 */
-	get customId() {
-		return this.interaction.customId;
 	}
 
 	/**
@@ -92,14 +69,6 @@ export class ComponentContext<
 	}
 
 	/**
-	 * Updates the interaction with new data.
-	 * @param body - The updated body of the interaction.
-	 */
-	update(body: ComponentInteractionMessageUpdate) {
-		return this.interaction.update(body);
-	}
-
-	/**
 	 * Edits the response or replies to the interaction.
 	 * @param body - The body of the response or updated body of the interaction.
 	 * @param fetchReply - Whether to fetch the reply or not.
@@ -120,6 +89,7 @@ export class ComponentContext<
 	}
 
 	modal(body: ModalCreateBodyRequest) {
+		//@ts-expect-error
 		return this.interaction.modal(body);
 	}
 
@@ -202,40 +172,7 @@ export class ComponentContext<
 		return this.interaction.member;
 	}
 
-	isComponent(): this is ComponentContext<keyof ContextComponentCommandInteractionMap> {
+	isModal(): this is ModalContext {
 		return true;
 	}
-
-	isButton(): this is ComponentContext<'Button'> {
-		return this.interaction.data.componentType === ComponentType.Button;
-	}
-
-	isChannelSelectMenu(): this is ComponentContext<'ChannelSelect'> {
-		return this.interaction.componentType === ComponentType.ChannelSelect;
-	}
-
-	isRoleSelectMenu(): this is ComponentContext<'RoleSelect'> {
-		return this.interaction.componentType === ComponentType.RoleSelect;
-	}
-
-	isMentionableSelectMenu(): this is ComponentContext<'MentionableSelect'> {
-		return this.interaction.componentType === ComponentType.MentionableSelect;
-	}
-
-	isUserSelectMenu(): this is ComponentContext<'UserSelect'> {
-		return this.interaction.componentType === ComponentType.UserSelect;
-	}
-
-	isStringSelectMenu(): this is ComponentContext<'StringSelect'> {
-		return this.interaction.componentType === ComponentType.StringSelect;
-	}
-}
-
-export interface ContextComponentCommandInteractionMap {
-	Button: ButtonInteraction;
-	StringSelect: StringSelectMenuInteraction;
-	UserSelect: UserSelectMenuInteraction;
-	RoleSelect: RoleSelectMenuInteraction;
-	MentionableSelect: MentionableSelectMenuInteraction;
-	ChannelSelect: ChannelSelectMenuInteraction;
 }

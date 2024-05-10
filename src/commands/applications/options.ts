@@ -13,6 +13,8 @@ import type {
 import type { MessageCommandInteraction, UserCommandInteraction } from '../../structures';
 import type { CommandContext } from './chatcontext';
 import type { MiddlewareContext } from './shared';
+import type { ModalContext } from '../../components';
+import type { ComponentContext } from '../../components/componentcontext';
 
 export type SeyfertBasicOption<T extends keyof __TypesWrapper, D = {}> = __TypesWrapper[T] & D;
 
@@ -86,9 +88,15 @@ export function createAttachmentOption<T extends SeyfertAttachmentOption = Seyfe
 
 export function createMiddleware<
 	T = any,
-	C extends CommandContext | MenuCommandContext<MessageCommandInteraction<boolean> | UserCommandInteraction<boolean>> =
+	C extends
 		| CommandContext
-		| MenuCommandContext<MessageCommandInteraction<boolean> | UserCommandInteraction<boolean>>,
+		| MenuCommandContext<MessageCommandInteraction<boolean> | UserCommandInteraction<boolean>>
+		| ComponentContext
+		| ModalContext =
+		| CommandContext
+		| MenuCommandContext<MessageCommandInteraction<boolean> | UserCommandInteraction<boolean>>
+		| ComponentContext
+		| ModalContext,
 >(data: MiddlewareContext<T, C>) {
 	return data;
 }

@@ -17,6 +17,7 @@ import type {
 } from '../structures';
 import { AutocompleteInteraction, BaseInteraction } from '../structures';
 import type { BaseClient } from './base';
+import { ModalContext } from '../components';
 
 export async function onInteractionCreate(
 	self: BaseClient,
@@ -97,7 +98,7 @@ export async function onInteractionCreate(
 										...interaction.appPermissions.values([command.botPermissions]),
 									);
 									if (!interaction.appPermissions.has('Administrator') && permissions.length) {
-										return command.onBotPermissionsFail?.(context, interaction.appPermissions.keys(permissions));
+										return command.onBotPermissionsFail(context, interaction.appPermissions.keys(permissions));
 									}
 								}
 								const resultRunGlobalMiddlewares = await command.__runGlobalMiddlewares(context);
@@ -120,7 +121,7 @@ export async function onInteractionCreate(
 									await command.run(context);
 									await command.onAfterRun?.(context, undefined);
 								} catch (error) {
-									await command.onRunError?.(context, error);
+									await command.onRunError(context, error);
 									await command.onAfterRun?.(context, error);
 								}
 							} catch (error) {
@@ -208,7 +209,7 @@ export async function onInteractionCreate(
 				if (self.components?.hasModal(interaction)) {
 					await self.components.onModalSubmit(interaction);
 				} else {
-					await self.components?.executeModal(interaction);
+					await self.components?.executeModal(new ModalContext(self, interaction));
 				}
 			}
 			break;

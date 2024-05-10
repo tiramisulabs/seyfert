@@ -3,8 +3,10 @@ import { LimitedCollection } from '../collection';
 import type { UsingClient } from '../commands';
 import { BaseHandler, magicImport, type Logger, type OnFailCallback } from '../common';
 import type { ComponentInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from '../structures';
-import { ComponentCommand, InteractionCommandType, ModalCommand } from './command';
+import { ComponentCommand, InteractionCommandType } from './componentcommand';
 import { ComponentContext } from './componentcontext';
+import { ModalCommand } from './modalcommand';
+import type { ModalContext } from './modalcontext';
 
 type COMPONENTS = {
 	components: { match: string | string[] | RegExp; callback: ComponentCallback }[];
@@ -212,7 +214,37 @@ export class ComponentHandler extends BaseHandler {
 					const extended = this.client.options?.context?.(interaction) ?? {};
 					Object.assign(context, extended);
 					if (!(await i.filter(context))) continue;
-					await i.run(context);
+					try {
+						const resultRunGlobalMiddlewares = await i.__runGlobalMiddlewares(context);
+						if (resultRunGlobalMiddlewares.pass) {
+							return;
+						}
+						if ('error' in resultRunGlobalMiddlewares) {
+							return i.onMiddlewaresError(context, resultRunGlobalMiddlewares.error ?? 'Unknown error');
+						}
+
+						const resultRunMiddlewares = await i.__runMiddlewares(context);
+						if (resultRunMiddlewares.pass) {
+							return;
+						}
+						if ('error' in resultRunMiddlewares) {
+							return i.onMiddlewaresError(context, resultRunMiddlewares.error ?? 'Unknown error');
+						}
+
+						try {
+							await i.run(context);
+							await i.onAfterRun?.(context, undefined);
+						} catch (error) {
+							await i.onRunError(context, error);
+							await i.onAfterRun?.(context, error);
+						}
+					} catch (error) {
+						try {
+							await i.onInternalError(this.client, error);
+						} catch {
+							// supress error
+						}
+					}
 					break;
 				}
 			} catch (e) {
@@ -221,11 +253,41 @@ export class ComponentHandler extends BaseHandler {
 		}
 	}
 
-	async executeModal(interaction: ModalSubmitInteraction) {
+	async executeModal(context: ModalContext) {
 		for (const i of this.commands) {
 			try {
-				if (i.type === InteractionCommandType.MODAL && (await i.filter(interaction))) {
-					await i.run(interaction);
+				if (i.type === InteractionCommandType.MODAL && (await i.filter(context))) {
+					try {
+						const resultRunGlobalMiddlewares = await i.__runGlobalMiddlewares(context);
+						if (resultRunGlobalMiddlewares.pass) {
+							return;
+						}
+						if ('error' in resultRunGlobalMiddlewares) {
+							return i.onMiddlewaresError(context, resultRunGlobalMiddlewares.error ?? 'Unknown error');
+						}
+
+						const resultRunMiddlewares = await i.__runMiddlewares(context);
+						if (resultRunMiddlewares.pass) {
+							return;
+						}
+						if ('error' in resultRunMiddlewares) {
+							return i.onMiddlewaresError(context, resultRunMiddlewares.error ?? 'Unknown error');
+						}
+
+						try {
+							await i.run(context);
+							await i.onAfterRun?.(context, undefined);
+						} catch (error) {
+							await i.onRunError(context, error);
+							await i.onAfterRun?.(context, error);
+						}
+					} catch (error) {
+						try {
+							await i.onInternalError(this.client, error);
+						} catch {
+							// supress error
+						}
+					}
 					break;
 				}
 			} catch (e) {

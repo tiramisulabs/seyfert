@@ -1,3 +1,4 @@
+import type { ModalContext } from '../components';
 import type { ContextComponentCommandInteractionMap, ComponentContext } from '../components/componentcontext';
 import type { MessageCommandInteraction, UserCommandInteraction } from '../structures';
 import type { CommandContext } from './applications/chatcontext';
@@ -7,6 +8,9 @@ import type { UsingClient } from './applications/shared';
 export class BaseContext {
 	constructor(readonly client: UsingClient) {}
 
+	/**
+	 * Gets the proxy object.
+	 */
 	get proxy() {
 		return this.client.proxy;
 	}
@@ -28,6 +32,10 @@ export class BaseContext {
 	}
 
 	isComponent(): this is ComponentContext<keyof ContextComponentCommandInteractionMap> {
+		return false;
+	}
+
+	isModal(): this is ModalContext {
 		return false;
 	}
 }

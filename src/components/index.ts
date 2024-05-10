@@ -20,8 +20,10 @@ export type MessageComponents =
 
 export type ActionRowMessageComponents = Exclude<MessageComponents, TextInputComponent>;
 
-export * from './command';
-export * from './componentcontext';
+export * from './componentcommand';
+export * from './componentcommand';
+export * from './modalcommand';
+export * from './modalcontext';
 
 /**
  * Return a new component instance based on the component type.
