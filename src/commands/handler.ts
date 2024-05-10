@@ -54,7 +54,7 @@ export class CommandHandler extends BaseHandler {
 				commandInstance = this.onCommand(command.file);
 				if (!commandInstance) continue;
 			} catch (e) {
-				if (e instanceof Error && e.message === 'command.file is not a constructor') {
+				if (e instanceof Error && e.message.includes('is not a constructor')) {
 					this.logger.warn(
 						`${command.path
 							.split(process.cwd())
