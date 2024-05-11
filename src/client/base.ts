@@ -38,6 +38,7 @@ import type {
 	ModalSubmitInteraction,
 	UserCommandInteraction,
 } from '../structures';
+import type { ComponentCommand, ComponentContext, ModalCommand, ModalContext } from '../components';
 
 export class BaseClient {
 	rest!: ApiHandler;
@@ -114,6 +115,32 @@ export class BaseClient {
 						},
 						onInternalError(client: UsingClient, command: Command, error?: unknown): any {
 							client.logger.fatal(`${command.name}.<onInternalError>`, error);
+						},
+					},
+				},
+				components: {
+					defaults: {
+						onRunError(context: ComponentContext, error: unknown): any {
+							context.client.logger.fatal('ComponentCommand.<onRunError>', context.author.id, error);
+						},
+						onMiddlewaresError(context: ComponentContext, error: string): any {
+							context.client.logger.fatal('ComponentCommand.<onMiddlewaresError>', context.author.id, error);
+						},
+						onInternalError(client: UsingClient, error?: unknown): any {
+							client.logger.fatal(error);
+						},
+					},
+				},
+				modals: {
+					defaults: {
+						onRunError(context: ModalContext, error: unknown): any {
+							context.client.logger.fatal('ComponentCommand.<onRunError>', context.author.id, error);
+						},
+						onMiddlewaresError(context: ModalContext, error: string): any {
+							context.client.logger.fatal('ComponentCommand.<onMiddlewaresError>', context.author.id, error);
+						},
+						onInternalError(client: UsingClient, error?: unknown): any {
+							client.logger.fatal(error);
 						},
 					},
 				},
@@ -347,6 +374,22 @@ export interface BaseClientOptions {
 			onMiddlewaresError?: Command['onMiddlewaresError'];
 			onOptionsError?: Command['onOptionsError'];
 			onAfterRun?: Command['onAfterRun'];
+		};
+	};
+	components?: {
+		defaults?: {
+			onRunError?: ComponentCommand['onRunError'];
+			onInternalError?: ComponentCommand['onInternalError'];
+			onMiddlewaresError?: ComponentCommand['onMiddlewaresError'];
+			onAfterRun?: ComponentCommand['onAfterRun'];
+		};
+	};
+	modals?: {
+		defaults?: {
+			onRunError?: ModalCommand['onRunError'];
+			onInternalError?: ModalCommand['onInternalError'];
+			onMiddlewaresError?: ModalCommand['onMiddlewaresError'];
+			onAfterRun?: ModalCommand['onAfterRun'];
 		};
 	};
 	allowedMentions?: Omit<NonNullable<RESTPostAPIChannelMessageJSONBody['allowed_mentions']>, 'parse'> & {

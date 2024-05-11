@@ -171,6 +171,15 @@ export class ComponentHandler extends BaseHandler {
 				continue;
 			}
 			if (!(component instanceof ModalCommand) && !(component instanceof ComponentCommand)) continue;
+			if (component instanceof ModalCommand) {
+				component.onInternalError ??= this.client.options?.modals?.defaults?.onInternalError;
+				component.onMiddlewaresError ??= this.client.options?.modals?.defaults?.onMiddlewaresError;
+				component.onRunError ??= this.client.options?.modals?.defaults?.onRunError;
+			} else {
+				component.onInternalError ??= this.client.options?.components?.defaults?.onInternalError;
+				component.onMiddlewaresError ??= this.client.options?.components?.defaults?.onMiddlewaresError;
+				component.onRunError ??= this.client.options?.components?.defaults?.onRunError;
+			}
 			component.__filePath = paths[i].path;
 			this.commands.push(component);
 		}
@@ -224,7 +233,7 @@ export class ComponentHandler extends BaseHandler {
 							return;
 						}
 						if ('error' in resultRunGlobalMiddlewares) {
-							return i.onMiddlewaresError(context, resultRunGlobalMiddlewares.error ?? 'Unknown error');
+							return i.onMiddlewaresError?.(context, resultRunGlobalMiddlewares.error ?? 'Unknown error');
 						}
 
 						const resultRunMiddlewares = await BaseCommand.__runMiddlewares(context, i.middlewares, false);
@@ -232,19 +241,19 @@ export class ComponentHandler extends BaseHandler {
 							return;
 						}
 						if ('error' in resultRunMiddlewares) {
-							return i.onMiddlewaresError(context, resultRunMiddlewares.error ?? 'Unknown error');
+							return i.onMiddlewaresError?.(context, resultRunMiddlewares.error ?? 'Unknown error');
 						}
 
 						try {
 							await i.run(context);
 							await i.onAfterRun?.(context, undefined);
 						} catch (error) {
-							await i.onRunError(context, error);
+							await i.onRunError?.(context, error);
 							await i.onAfterRun?.(context, error);
 						}
 					} catch (error) {
 						try {
-							await i.onInternalError(this.client, error);
+							await i.onInternalError?.(this.client, error);
 						} catch {
 							// supress error
 						}
@@ -271,7 +280,7 @@ export class ComponentHandler extends BaseHandler {
 							return;
 						}
 						if ('error' in resultRunGlobalMiddlewares) {
-							return i.onMiddlewaresError(context, resultRunGlobalMiddlewares.error ?? 'Unknown error');
+							return i.onMiddlewaresError?.(context, resultRunGlobalMiddlewares.error ?? 'Unknown error');
 						}
 
 						const resultRunMiddlewares = await BaseCommand.__runMiddlewares(context, i.middlewares, false);
@@ -279,19 +288,19 @@ export class ComponentHandler extends BaseHandler {
 							return;
 						}
 						if ('error' in resultRunMiddlewares) {
-							return i.onMiddlewaresError(context, resultRunMiddlewares.error ?? 'Unknown error');
+							return i.onMiddlewaresError?.(context, resultRunMiddlewares.error ?? 'Unknown error');
 						}
 
 						try {
 							await i.run(context);
 							await i.onAfterRun?.(context, undefined);
 						} catch (error) {
-							await i.onRunError(context, error);
+							await i.onRunError?.(context, error);
 							await i.onAfterRun?.(context, error);
 						}
 					} catch (error) {
 						try {
-							await i.onInternalError(this.client, error);
+							await i.onInternalError?.(this.client, error);
 						} catch {
 							// supress error
 						}

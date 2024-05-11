@@ -14,13 +14,7 @@ export abstract class ModalCommand {
 	middlewares: (keyof RegisteredMiddlewares)[] = [];
 
 	onAfterRun?(context: ModalContext, error: unknown | undefined): any;
-	onRunError(context: ModalContext, error: unknown): any {
-		context.client.logger.fatal('ComponentCommand.<onRunError>', context.author.id, error);
-	}
-	onMiddlewaresError(context: ModalContext, error: string): any {
-		context.client.logger.fatal('ComponentCommand.<onMiddlewaresError>', context.author.id, error);
-	}
-	onInternalError(client: UsingClient, error?: unknown): any {
-		client.logger.fatal(error);
-	}
+	onRunError?(context: ModalContext, error: unknown): any;
+	onMiddlewaresError?(context: ModalContext, error: string): any;
+	onInternalError?(client: UsingClient, error?: unknown): any;
 }

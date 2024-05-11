@@ -22,15 +22,9 @@ export abstract class ComponentCommand {
 	}
 
 	onAfterRun?(context: ComponentContext, error: unknown | undefined): any;
-	onRunError(context: ComponentContext, error: unknown): any {
-		context.client.logger.fatal('ComponentCommand.<onRunError>', context.author.id, error);
-	}
-	onMiddlewaresError(context: ComponentContext, error: string): any {
-		context.client.logger.fatal('ComponentCommand.<onMiddlewaresError>', context.author.id, error);
-	}
-	onInternalError(client: UsingClient, error?: unknown): any {
-		client.logger.fatal(error);
-	}
+	onRunError?(context: ComponentContext, error: unknown): any;
+	onMiddlewaresError?(context: ComponentContext, error: string): any;
+	onInternalError?(client: UsingClient, error?: unknown): any;
 
 	middlewares: (keyof RegisteredMiddlewares)[] = [];
 }
