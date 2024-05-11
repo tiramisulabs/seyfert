@@ -175,10 +175,12 @@ export class ComponentHandler extends BaseHandler {
 				component.onInternalError ??= this.client.options?.modals?.defaults?.onInternalError;
 				component.onMiddlewaresError ??= this.client.options?.modals?.defaults?.onMiddlewaresError;
 				component.onRunError ??= this.client.options?.modals?.defaults?.onRunError;
+				component.onAfterRun ??= this.client.options?.modals?.defaults?.onAfterRun;
 			} else {
 				component.onInternalError ??= this.client.options?.components?.defaults?.onInternalError;
 				component.onMiddlewaresError ??= this.client.options?.components?.defaults?.onMiddlewaresError;
 				component.onRunError ??= this.client.options?.components?.defaults?.onRunError;
+				component.onAfterRun ??= this.client.options?.components?.defaults?.onAfterRun;
 			}
 			component.__filePath = paths[i].path;
 			this.commands.push(component);
