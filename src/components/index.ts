@@ -21,7 +21,7 @@ export type MessageComponents =
 export type ActionRowMessageComponents = Exclude<MessageComponents, TextInputComponent>;
 
 export * from './componentcommand';
-export * from './componentcommand';
+export * from './componentcontext';
 export * from './modalcommand';
 export * from './modalcontext';
 
