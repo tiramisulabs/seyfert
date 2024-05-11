@@ -35,6 +35,7 @@ import type {
 	ComponentInteraction,
 	Message,
 	MessageCommandInteraction,
+	ModalSubmitInteraction,
 	UserCommandInteraction,
 } from '../structures';
 
@@ -333,6 +334,7 @@ export interface BaseClientOptions {
 			| UserCommandInteraction<boolean>
 			| MessageCommandInteraction<boolean>
 			| ComponentInteraction
+			| ModalSubmitInteraction
 			| When<InferWithPrefix, Message, never>,
 	) => {};
 	globalMiddlewares?: readonly (keyof RegisteredMiddlewares)[];

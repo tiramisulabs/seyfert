@@ -219,7 +219,10 @@ export async function onInteractionCreate(
 				if (self.components?.hasModal(interaction)) {
 					await self.components.onModalSubmit(interaction);
 				} else {
-					await self.components?.executeModal(new ModalContext(self, interaction));
+					const context = new ModalContext(self, interaction);
+					const extended = self.options?.context?.(interaction) ?? {};
+					Object.assign(context, extended);
+					await self.components?.executeModal(context);
 				}
 			}
 			break;
