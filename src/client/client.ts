@@ -219,7 +219,7 @@ export interface ClientOptions extends BaseClientOptions {
 		prefix?: (message: Message) => Promise<string[]> | string[];
 		deferReplyResponse?: (ctx: CommandContext) => Parameters<Message['write']>[0];
 		reply?: (ctx: CommandContext) => boolean;
-		argsParser?: (content: string, command: SubCommand | Command) => Record<string, string>;
+		argsParser?: (content: string, command: SubCommand | Command, message: Message) => Record<string, string>;
 	};
 	handlePayload?: ShardManagerOptions['handlePayload'];
 }
