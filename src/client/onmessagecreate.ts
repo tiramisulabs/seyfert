@@ -322,82 +322,30 @@ async function parseOptions(
 					{
 						value = args[i.name];
 						const option = i as SeyfertStringOption;
-						if (value) {
-							if (option.min_length) {
-								if (value.length < option.min_length) {
-									value = undefined;
-									errors.push({
-										name: i.name,
-										error: `The entered string has less than ${option.min_length} characters. The minimum required is ${option.min_length} characters.`,
-									});
-									break;
-								}
-							}
-							if (option.max_length) {
-								if (value.length > option.max_length) {
-									value = undefined;
-									errors.push({
-										name: i.name,
-										error: `The entered string has more than ${option.max_length} characters. The maximum required is ${option.max_length} characters.`,
-									});
-									break;
-								}
-							}
-							if (option.choices?.length) {
-								if (!option.choices.some(x => x.name === value)) {
-									value = undefined;
-									errors.push({
-										name: i.name,
-										error: `The entered choice is invalid. Please choose one of the following options: ${option.choices
-											.map(x => x.name)
-											.join(', ')}.`,
-									});
-									break;
-								}
-								value = option.choices.find(x => x.name === value)!.value;
-							}
-						}
-					}
-					break;
-				case ApplicationCommandOptionType.Number:
-				case ApplicationCommandOptionType.Integer:
-					{
-						value = Number(args[i.name]);
-						if (args[i.name] === undefined) {
-							value = undefined;
-							break;
-						}
-						if (Number.isNaN(value)) {
-							value = undefined;
-							errors.push({
-								name: i.name,
-								error: 'The entered choice is an invalid number.',
-							});
-							break;
-						}
-						const option = i as SeyfertNumberOption | SeyfertIntegerOption;
-						if (option.min_value) {
-							if (value < option.min_value) {
+						if (!value) break;
+						if (option.min_length) {
+							if (value.length < option.min_length) {
 								value = undefined;
 								errors.push({
 									name: i.name,
-									error: `The entered number is less than ${option.min_value}. The minimum allowed is ${option.min_value}`,
+									error: `The entered string has less than ${option.min_length} characters. The minimum required is ${option.min_length} characters.`,
 								});
 								break;
 							}
 						}
-						if (option.max_value) {
-							if (value > option.max_value) {
+						if (option.max_length) {
+							if (value.length > option.max_length) {
 								value = undefined;
 								errors.push({
 									name: i.name,
-									error: `The entered number is greater than ${option.max_value}. The maximum allowed is ${option.max_value}`,
+									error: `The entered string has more than ${option.max_length} characters. The maximum required is ${option.max_length} characters.`,
 								});
 								break;
 							}
 						}
 						if (option.choices?.length) {
-							if (!option.choices.some(x => x.name === value)) {
+							const choice = option.choices.find(x => x.name === value);
+							if (!choice) {
 								value = undefined;
 								errors.push({
 									name: i.name,
@@ -407,8 +355,62 @@ async function parseOptions(
 								});
 								break;
 							}
-							value = option.choices.find(x => x.name === value)!.value;
+							value = choice.value;
 						}
+					}
+					break;
+				case ApplicationCommandOptionType.Number:
+				case ApplicationCommandOptionType.Integer:
+					{
+						const option = i as SeyfertNumberOption | SeyfertIntegerOption;
+						if (!option.choices?.length) {
+							value = Number(args[i.name]);
+							if (args[i.name] === undefined) {
+								value = undefined;
+								break;
+							}
+							if (Number.isNaN(value)) {
+								value = undefined;
+								errors.push({
+									name: i.name,
+									error: 'The entered choice is an invalid number.',
+								});
+								break;
+							}
+							if (option.min_value) {
+								if (value < option.min_value) {
+									value = undefined;
+									errors.push({
+										name: i.name,
+										error: `The entered number is less than ${option.min_value}. The minimum allowed is ${option.min_value}`,
+									});
+									break;
+								}
+							}
+							if (option.max_value) {
+								if (value > option.max_value) {
+									value = undefined;
+									errors.push({
+										name: i.name,
+										error: `The entered number is greater than ${option.max_value}. The maximum allowed is ${option.max_value}`,
+									});
+									break;
+								}
+							}
+							break;
+						}
+						const choice = option.choices.find(x => x.name === args[i.name]);
+						if (!choice) {
+							value = undefined;
+							errors.push({
+								name: i.name,
+								error: `The entered choice is invalid. Please choose one of the following options: ${option.choices
+									.map(x => x.name)
+									.join(', ')}.`,
+							});
+							break;
+						}
+						value = choice.value;
 					}
 					break;
 				default:
