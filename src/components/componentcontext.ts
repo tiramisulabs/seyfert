@@ -3,6 +3,7 @@ import type {
 	AllChannels,
 	ButtonInteraction,
 	ChannelSelectMenuInteraction,
+	ComponentCommand,
 	Guild,
 	GuildMember,
 	MentionableSelectMenuInteraction,
@@ -49,6 +50,7 @@ export class ComponentContext<
 		super(client);
 	}
 
+	command?: ComponentCommand;
 	metadata: CommandMetadata<UnionToTuple<M>> = {} as never;
 	globalMetadata: GlobalMetadata = {};
 

@@ -4,7 +4,7 @@ import { BaseCommand, type RegisteredMiddlewares, type UsingClient } from '../co
 import { BaseHandler, magicImport, type Logger, type OnFailCallback } from '../common';
 import type { ComponentInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from '../structures';
 import { ComponentCommand, InteractionCommandType } from './componentcommand';
-import { ComponentContext } from './componentcontext';
+import type { ComponentContext } from './componentcontext';
 import { ModalCommand } from './modalcommand';
 import type { ModalContext } from './modalcontext';
 
@@ -216,15 +216,15 @@ export class ComponentHandler extends BaseHandler {
 		}
 	}
 
-	async executeComponent(interaction: ComponentInteraction) {
+	async executeComponent(context: ComponentContext) {
 		for (const i of this.commands) {
 			try {
-				if (i.type === InteractionCommandType.COMPONENT && i.cType === interaction.componentType) {
-					// @ts-expect-error ComponentInteraction is a generic class
-					const context = new ComponentContext(this.client, interaction);
-					const extended = this.client.options?.context?.(interaction) ?? {};
-					Object.assign(context, extended);
-					if (!(await i.filter(context))) continue;
+				if (
+					i.type === InteractionCommandType.COMPONENT &&
+					i.cType === context.interaction.componentType &&
+					(await i.filter(context))
+				) {
+					context.command = i;
 					try {
 						const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
 							context,
@@ -272,6 +272,7 @@ export class ComponentHandler extends BaseHandler {
 		for (const i of this.commands) {
 			try {
 				if (i.type === InteractionCommandType.MODAL && (await i.filter(context))) {
+					context.command = i;
 					try {
 						const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
 							context,

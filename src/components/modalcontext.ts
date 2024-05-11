@@ -1,5 +1,14 @@
 import { MessageFlags } from 'discord-api-types/v10';
-import type { AllChannels, Guild, GuildMember, Message, ModalSubmitInteraction, ReturnCache, WebhookMessage } from '..';
+import type {
+	AllChannels,
+	Guild,
+	GuildMember,
+	Message,
+	ModalCommand,
+	ModalSubmitInteraction,
+	ReturnCache,
+	WebhookMessage,
+} from '..';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, RegisteredMiddlewares, UsingClient } from '../commands';
 import { BaseContext } from '../commands/basecontext';
 import type {
@@ -29,6 +38,7 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 		super(client);
 	}
 
+	command?: ModalCommand;
 	metadata: CommandMetadata<UnionToTuple<M>> = {} as never;
 	globalMetadata: GlobalMetadata = {};
 

@@ -19,7 +19,7 @@ import type {
 } from '../structures';
 import { AutocompleteInteraction, BaseInteraction } from '../structures';
 import type { BaseClient } from './base';
-import { ModalContext } from '../components';
+import { ComponentContext, ModalContext } from '../components';
 
 export async function onInteractionCreate(
 	self: BaseClient,
@@ -232,7 +232,11 @@ export async function onInteractionCreate(
 				if (self.components?.hasComponent(body.message.id, interaction.customId)) {
 					await self.components.onComponent(body.message.id, interaction);
 				} else {
-					await self.components?.executeComponent(interaction);
+					//@ts-expect-error
+					const context = new ComponentContext(self, interaction);
+					const extended = self.options?.context?.(interaction) ?? {};
+					Object.assign(context, extended);
+					await self.components?.executeComponent(context);
 				}
 			}
 			break;
