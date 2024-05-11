@@ -38,4 +38,28 @@ export class BaseContext {
 	isModal(): this is ModalContext {
 		return false;
 	}
+
+	isButton(): this is ComponentContext<'Button'> {
+		return false;
+	}
+
+	isChannelSelectMenu(): this is ComponentContext<'ChannelSelect'> {
+		return false;
+	}
+
+	isRoleSelectMenu(): this is ComponentContext<'RoleSelect'> {
+		return false;
+	}
+
+	isMentionableSelectMenu(): this is ComponentContext<'MentionableSelect'> {
+		return false;
+	}
+
+	isUserSelectMenu(): this is ComponentContext<'UserSelect'> {
+		return false;
+	}
+
+	isStringSelectMenu(): this is ComponentContext<'StringSelect'> {
+		return false;
+	}
 }

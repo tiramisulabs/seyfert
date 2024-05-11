@@ -2,7 +2,7 @@ import type { ApplicationCommandType, LocaleString } from 'discord-api-types/v10
 import { magicImport, type PermissionStrings } from '../../common';
 import type { IntegrationTypes, InteractionContextTypes, RegisteredMiddlewares } from '../decorators';
 import type { MenuCommandContext } from './menucontext';
-import type { PassFunction, StopFunction, UsingClient } from './shared';
+import type { UsingClient } from './shared';
 
 export abstract class ContextMenuCommand {
 	middlewares: (keyof RegisteredMiddlewares)[] = [];
@@ -22,66 +22,6 @@ export abstract class ContextMenuCommand {
 	dm?: boolean;
 	name_localizations?: Partial<Record<LocaleString, string>>;
 	description_localizations?: Partial<Record<LocaleString, string>>;
-
-	/** @internal */
-	static __runMiddlewares(
-		context: MenuCommandContext<any>,
-		middlewares: (keyof RegisteredMiddlewares)[],
-		global: boolean,
-	): Promise<{ error?: string; pass?: boolean }> {
-		if (!middlewares.length) {
-			return Promise.resolve({});
-		}
-		let index = 0;
-
-		return new Promise(res => {
-			let running = true;
-			const pass: PassFunction = () => {
-				if (!running) {
-					return;
-				}
-				running = false;
-				return res({ pass: true });
-			};
-			function next(obj: any) {
-				if (!running) {
-					return;
-				}
-				// biome-ignore lint/style/noArguments: yes
-				if (arguments.length) {
-					// @ts-expect-error
-					context[global ? 'globalMetadata' : 'metadata'][middlewares[index]] = obj;
-				}
-				if (++index >= middlewares.length) {
-					running = false;
-					return res({});
-				}
-				context.client.middlewares![middlewares[index]]({ context, next, stop, pass });
-			}
-			const stop: StopFunction = err => {
-				if (!running) {
-					return;
-				}
-				running = false;
-				return res({ error: err });
-			};
-			context.client.middlewares![middlewares[0]]({ context, next, stop, pass });
-		});
-	}
-
-	/** @internal */
-	__runMiddlewares(context: MenuCommandContext<any, never>) {
-		return ContextMenuCommand.__runMiddlewares(context, this.middlewares as (keyof RegisteredMiddlewares)[], false);
-	}
-
-	/** @internal */
-	__runGlobalMiddlewares(context: MenuCommandContext<any, never>) {
-		return ContextMenuCommand.__runMiddlewares(
-			context,
-			(context.client.options?.globalMiddlewares ?? []) as (keyof RegisteredMiddlewares)[],
-			true,
-		);
-	}
 
 	toJSON() {
 		return {

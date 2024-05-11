@@ -1,8 +1,10 @@
 import { ApplicationCommandType, InteractionType, type APIInteraction } from 'discord-api-types/v10';
 import {
+	BaseCommand,
 	CommandContext,
 	MenuCommandContext,
 	OptionResolver,
+	type RegisteredMiddlewares,
 	type Command,
 	type ContextMenuCommand,
 	type ContextOptionsResolved,
@@ -101,7 +103,11 @@ export async function onInteractionCreate(
 										return command.onBotPermissionsFail(context, interaction.appPermissions.keys(permissions));
 									}
 								}
-								const resultRunGlobalMiddlewares = await command.__runGlobalMiddlewares(context);
+								const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
+									context,
+									(self.options?.globalMiddlewares ?? []) as keyof RegisteredMiddlewares,
+									true,
+								);
 								if (resultRunGlobalMiddlewares.pass) {
 									return;
 								}
@@ -109,7 +115,11 @@ export async function onInteractionCreate(
 									return command.onMiddlewaresError(context, resultRunGlobalMiddlewares.error ?? 'Unknown error');
 								}
 
-								const resultRunMiddlewares = await command.__runMiddlewares(context);
+								const resultRunMiddlewares = await BaseCommand.__runMiddlewares(
+									context,
+									command.middlewares as keyof RegisteredMiddlewares,
+									false,
+								);
 								if (resultRunMiddlewares.pass) {
 									return;
 								}

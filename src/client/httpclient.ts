@@ -95,7 +95,7 @@ export class HttpClient extends BaseClient {
 				return this.onPacket(res, req);
 			});
 			this.app.listen(port, () => {
-				this.logger.info(`Listening to port ${port}`);
+				this.logger.info(`Listening to <url>:${port}/interactions`);
 			});
 		} else {
 			this.logger.warn('No UWS installed.');

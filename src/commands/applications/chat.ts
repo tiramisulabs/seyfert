@@ -6,7 +6,14 @@ import {
 	type APIApplicationCommandSubcommandGroupOption,
 	type LocaleString,
 } from 'discord-api-types/v10';
-import type { PermissionStrings, SeyfertNumberOption, SeyfertStringOption } from '../..';
+import type {
+	ComponentContext,
+	MenuCommandContext,
+	ModalContext,
+	PermissionStrings,
+	SeyfertNumberOption,
+	SeyfertStringOption,
+} from '../..';
 import type { Attachment } from '../../builders';
 import { magicImport, type FlatObjectKeys } from '../../common';
 import type { AllChannels, AutocompleteInteraction, GuildRole, InteractionGuildMember, User } from '../../structures';
@@ -103,7 +110,7 @@ type ContextOptionsAux<T extends OptionsRecord> = {
 
 export type ContextOptions<T extends OptionsRecord> = ContextOptionsAux<T>;
 
-class BaseCommand {
+export class BaseCommand {
 	middlewares: (keyof RegisteredMiddlewares)[] = [];
 
 	__filePath?: string;
@@ -178,7 +185,7 @@ class BaseCommand {
 
 	/** @internal */
 	static __runMiddlewares(
-		context: CommandContext<{}, never>,
+		context: CommandContext<{}, never> | ComponentContext | MenuCommandContext<any> | ModalContext,
 		middlewares: (keyof RegisteredMiddlewares)[],
 		global: boolean,
 	): Promise<{ error?: string; pass?: boolean }> {

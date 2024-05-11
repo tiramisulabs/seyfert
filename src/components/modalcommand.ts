@@ -1,4 +1,4 @@
-import type { RegisteredMiddlewares, PassFunction, StopFunction, UsingClient } from '../commands';
+import type { RegisteredMiddlewares, UsingClient } from '../commands';
 import { InteractionCommandType } from './componentcommand';
 import type { ModalContext } from './modalcontext';
 
@@ -22,65 +22,5 @@ export abstract class ModalCommand {
 	}
 	onInternalError(client: UsingClient, error?: unknown): any {
 		client.logger.fatal(error);
-	}
-
-	/** @internal */
-	static __runMiddlewares(
-		context: ModalContext,
-		middlewares: (keyof RegisteredMiddlewares)[],
-		global: boolean,
-	): Promise<{ error?: string; pass?: boolean }> {
-		if (!middlewares.length) {
-			return Promise.resolve({});
-		}
-		let index = 0;
-
-		return new Promise(res => {
-			let running = true;
-			const pass: PassFunction = () => {
-				if (!running) {
-					return;
-				}
-				running = false;
-				return res({ pass: true });
-			};
-			function next(obj: any) {
-				if (!running) {
-					return;
-				}
-				// biome-ignore lint/style/noArguments: yes
-				if (arguments.length) {
-					// @ts-expect-error
-					context[global ? 'globalMetadata' : 'metadata'][middlewares[index]] = obj;
-				}
-				if (++index >= middlewares.length) {
-					running = false;
-					return res({});
-				}
-				context.client.middlewares![middlewares[index]]({ context, next, stop, pass });
-			}
-			const stop: StopFunction = err => {
-				if (!running) {
-					return;
-				}
-				running = false;
-				return res({ error: err });
-			};
-			context.client.middlewares![middlewares[0]]({ context, next, stop, pass });
-		});
-	}
-
-	/** @internal */
-	__runMiddlewares(context: ModalContext) {
-		return ModalCommand.__runMiddlewares(context, this.middlewares as (keyof RegisteredMiddlewares)[], false);
-	}
-
-	/** @internal */
-	__runGlobalMiddlewares(context: ModalContext) {
-		return ModalCommand.__runMiddlewares(
-			context,
-			(context.client.options?.globalMiddlewares ?? []) as (keyof RegisteredMiddlewares)[],
-			true,
-		);
 	}
 }

@@ -1,6 +1,6 @@
 import { ComponentType } from 'discord-api-types/v10';
 import type { ContextComponentCommandInteractionMap, ComponentContext } from './componentcontext';
-import type { PassFunction, RegisteredMiddlewares, StopFunction, UsingClient } from '../commands';
+import type { RegisteredMiddlewares, UsingClient } from '../commands';
 
 export const InteractionCommandType = {
 	COMPONENT: 0,
@@ -33,63 +33,4 @@ export abstract class ComponentCommand {
 	}
 
 	middlewares: (keyof RegisteredMiddlewares)[] = [];
-	/** @internal */
-	static __runMiddlewares(
-		context: ComponentContext,
-		middlewares: (keyof RegisteredMiddlewares)[],
-		global: boolean,
-	): Promise<{ error?: string; pass?: boolean }> {
-		if (!middlewares.length) {
-			return Promise.resolve({});
-		}
-		let index = 0;
-
-		return new Promise(res => {
-			let running = true;
-			const pass: PassFunction = () => {
-				if (!running) {
-					return;
-				}
-				running = false;
-				return res({ pass: true });
-			};
-			function next(obj: any) {
-				if (!running) {
-					return;
-				}
-				// biome-ignore lint/style/noArguments: yes
-				if (arguments.length) {
-					// @ts-expect-error
-					context[global ? 'globalMetadata' : 'metadata'][middlewares[index]] = obj;
-				}
-				if (++index >= middlewares.length) {
-					running = false;
-					return res({});
-				}
-				context.client.middlewares![middlewares[index]]({ context, next, stop, pass });
-			}
-			const stop: StopFunction = err => {
-				if (!running) {
-					return;
-				}
-				running = false;
-				return res({ error: err });
-			};
-			context.client.middlewares![middlewares[0]]({ context, next, stop, pass });
-		});
-	}
-
-	/** @internal */
-	__runMiddlewares(context: ComponentContext) {
-		return ComponentCommand.__runMiddlewares(context, this.middlewares as (keyof RegisteredMiddlewares)[], false);
-	}
-
-	/** @internal */
-	__runGlobalMiddlewares(context: ComponentContext) {
-		return ComponentCommand.__runMiddlewares(
-			context,
-			(context.client.options?.globalMiddlewares ?? []) as (keyof RegisteredMiddlewares)[],
-			true,
-		);
-	}
 }

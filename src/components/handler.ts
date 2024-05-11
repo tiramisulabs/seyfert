@@ -1,6 +1,6 @@
 import type { ComponentCallback, ListenerOptions, ModalSubmitCallback } from '../builders/types';
 import { LimitedCollection } from '../collection';
-import type { UsingClient } from '../commands';
+import { BaseCommand, type RegisteredMiddlewares, type UsingClient } from '../commands';
 import { BaseHandler, magicImport, type Logger, type OnFailCallback } from '../common';
 import type { ComponentInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from '../structures';
 import { ComponentCommand, InteractionCommandType } from './componentcommand';
@@ -160,7 +160,7 @@ export class ComponentHandler extends BaseHandler {
 				component = this.callback(paths[i].file);
 				if (!component) continue;
 			} catch (e) {
-				if (e instanceof Error && e.message === 'paths[i].file is not a constructor') {
+				if (e instanceof Error && e.message.includes('is not a constructor')) {
 					this.logger.warn(
 						`${paths[i].path
 							.split(process.cwd())
@@ -215,7 +215,11 @@ export class ComponentHandler extends BaseHandler {
 					Object.assign(context, extended);
 					if (!(await i.filter(context))) continue;
 					try {
-						const resultRunGlobalMiddlewares = await i.__runGlobalMiddlewares(context);
+						const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
+							context,
+							(context.client.options?.globalMiddlewares ?? []) as keyof RegisteredMiddlewares,
+							true,
+						);
 						if (resultRunGlobalMiddlewares.pass) {
 							return;
 						}
@@ -223,7 +227,7 @@ export class ComponentHandler extends BaseHandler {
 							return i.onMiddlewaresError(context, resultRunGlobalMiddlewares.error ?? 'Unknown error');
 						}
 
-						const resultRunMiddlewares = await i.__runMiddlewares(context);
+						const resultRunMiddlewares = await BaseCommand.__runMiddlewares(context, i.middlewares, false);
 						if (resultRunMiddlewares.pass) {
 							return;
 						}
@@ -258,7 +262,11 @@ export class ComponentHandler extends BaseHandler {
 			try {
 				if (i.type === InteractionCommandType.MODAL && (await i.filter(context))) {
 					try {
-						const resultRunGlobalMiddlewares = await i.__runGlobalMiddlewares(context);
+						const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
+							context,
+							(context.client.options?.globalMiddlewares ?? []) as keyof RegisteredMiddlewares,
+							true,
+						);
 						if (resultRunGlobalMiddlewares.pass) {
 							return;
 						}
@@ -266,7 +274,7 @@ export class ComponentHandler extends BaseHandler {
 							return i.onMiddlewaresError(context, resultRunGlobalMiddlewares.error ?? 'Unknown error');
 						}
 
-						const resultRunMiddlewares = await i.__runMiddlewares(context);
+						const resultRunMiddlewares = await BaseCommand.__runMiddlewares(context, i.middlewares, false);
 						if (resultRunMiddlewares.pass) {
 							return;
 						}

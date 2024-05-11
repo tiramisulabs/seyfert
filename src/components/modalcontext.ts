@@ -32,6 +32,10 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	metadata: CommandMetadata<UnionToTuple<M>> = {} as never;
 	globalMetadata: GlobalMetadata = {};
 
+	get customId() {
+		return this.interaction.customId;
+	}
+
 	get components() {
 		return this.interaction.components;
 	}
