@@ -8,7 +8,7 @@ import { filetypeinfo } from 'magic-bytes.js';
 import type { HttpRequest, HttpResponse } from 'uWebSockets.js';
 import { OverwrittenMimeTypes } from '../api';
 import { isBufferLike } from '../api/utils/utils';
-import { isCloudfareWorker, type DeepPartial } from '../common';
+import { MergeOptions, isCloudfareWorker, type DeepPartial } from '../common';
 import type { BaseClientOptions, InternalRuntimeConfigHTTP, StartOptions } from './base';
 import { BaseClient } from './base';
 import { onInteractionCreate } from './oninteractioncreate';
@@ -29,7 +29,7 @@ try {
 }
 
 export class HttpClient extends BaseClient {
-	app!: ReturnType<typeof import('uWebSockets.js').App>;
+	app?: ReturnType<typeof import('uWebSockets.js').App>;
 	publicKey!: string;
 	publicKeyHex!: Buffer;
 
@@ -66,7 +66,7 @@ export class HttpClient extends BaseClient {
 		});
 	}
 
-	protected async execute(options?: { publicKey?: string; port?: number }) {
+	protected async execute(options: DeepPartial<StartOptions['httpConnection']>) {
 		await super.execute();
 		const {
 			publicKey: publicKeyRC,
@@ -74,8 +74,8 @@ export class HttpClient extends BaseClient {
 			applicationId: applicationIdRC,
 		} = await this.getRC<InternalRuntimeConfigHTTP>();
 
-		const publicKey = options?.publicKey ?? publicKeyRC;
-		const port = options?.port ?? portRC;
+		const publicKey = options.publicKey ?? publicKeyRC;
+		const port = options.port ?? portRC;
 
 		if (!publicKey) {
 			throw new Error('Expected a publicKey, check your config file');
@@ -89,7 +89,7 @@ export class HttpClient extends BaseClient {
 
 		this.publicKey = publicKey;
 		this.publicKeyHex = Buffer.from(this.publicKey, 'hex');
-		if (UWS) {
+		if (UWS && options.useUWS) {
 			this.app = UWS.App();
 			this.app.post('/interactions', (res, req) => {
 				return this.onPacket(res, req);
@@ -98,13 +98,16 @@ export class HttpClient extends BaseClient {
 				this.logger.info(`Listening to <url>:${port}/interactions`);
 			});
 		} else {
-			this.logger.warn('No UWS installed.');
+			if (options.useUWS) return this.logger.warn('No uWebSockets installed.');
+			this.logger.info('Use your preferred http server and invoke <HttpClient>.fetch(<Request>) to get started');
 		}
 	}
 
 	async start(options: DeepPartial<Omit<StartOptions, 'connection' | 'eventsDir'>> = {}) {
 		await super.start(options);
-		return this.execute(options.httpConnection);
+		return this.execute(
+			MergeOptions<DeepPartial<StartOptions['httpConnection']>>({ useUWS: true }, options.httpConnection),
+		);
 	}
 
 	protected async verifySignatureGenericRequest(req: Request) {

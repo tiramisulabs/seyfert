@@ -404,7 +404,11 @@ export interface StartOptions {
 	commandsDir: string;
 	componentsDir: string;
 	connection: { intents: number };
-	httpConnection: { publicKey: string; port: number };
+	httpConnection: {
+		publicKey: string;
+		port: number;
+		useUWS: boolean;
+	};
 	token: string;
 }
 

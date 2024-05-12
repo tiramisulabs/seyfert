@@ -17,7 +17,7 @@ export type LoggerOptions = {
 	saveOnFile?: boolean;
 };
 
-export type CustomCallback = (self: Logger, level: LogLevels, args: unknown[]) => unknown[];
+export type CustomCallback = (self: Logger, level: LogLevels, args: unknown[]) => unknown[] | undefined;
 
 /**
  * Represents a logger utility for logging messages with various log levels.
@@ -142,6 +142,7 @@ export class Logger {
 		} else {
 			log = Logger.__callback(this, level, args);
 		}
+		if (!log) return;
 		this.__write(log);
 		return console.log(...log);
 	}
