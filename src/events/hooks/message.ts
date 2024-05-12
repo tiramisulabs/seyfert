@@ -55,7 +55,18 @@ export const MESSAGE_UPDATE = async (
 	[
 		message: MakeRequired<
 			PartialClass<Message>,
-			'id' | 'channelId' | 'createdAt' | 'createdTimestamp' | 'rest' | 'cache' | 'api' | 'client'
+			| 'id'
+			| 'channelId'
+			| 'createdAt'
+			| 'createdTimestamp'
+			| 'rest'
+			| 'cache'
+			| 'api'
+			| 'client'
+			| 'mentions'
+			| 'url'
+			| 'user'
+			| 'author'
 		>,
 		old: undefined | Message,
 	]
