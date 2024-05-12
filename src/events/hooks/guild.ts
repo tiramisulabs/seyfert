@@ -118,12 +118,15 @@ export const GUILD_ROLE_CREATE = (self: BaseClient, data: GatewayGuildRoleCreate
 	return new GuildRole(self, data.role, data.guild_id);
 };
 
-export const GUILD_ROLE_DELETE = (_self: BaseClient, data: GatewayGuildRoleDeleteDispatchData) => {
-	return toCamelCase(data);
+export const GUILD_ROLE_DELETE = async (self: BaseClient, data: GatewayGuildRoleDeleteDispatchData) => {
+	return (await self.cache.roles?.get(data.role_id)) || toCamelCase(data);
 };
 
-export const GUILD_ROLE_UPDATE = (self: BaseClient, data: GatewayGuildRoleUpdateDispatchData) => {
-	return new GuildRole(self, data.role, data.guild_id);
+export const GUILD_ROLE_UPDATE = async (
+	self: BaseClient,
+	data: GatewayGuildRoleUpdateDispatchData,
+): Promise<[role: GuildRole, old?: GuildRole]> => {
+	return [new GuildRole(self, data.role, data.guild_id), await self.cache.roles?.get(data.role.id)];
 };
 
 export const GUILD_STICKERS_UPDATE = (self: BaseClient, data: GatewayGuildStickersUpdateDispatchData) => {
@@ -133,6 +136,9 @@ export const GUILD_STICKERS_UPDATE = (self: BaseClient, data: GatewayGuildSticke
 	};
 };
 
-export const GUILD_UPDATE = (self: BaseClient, data: GatewayGuildUpdateDispatchData) => {
-	return new Guild(self, data);
+export const GUILD_UPDATE = async (
+	self: BaseClient,
+	data: GatewayGuildUpdateDispatchData,
+): Promise<[guild: Guild, old?: Guild<'cached'>]> => {
+	return [new Guild(self, data), await self.cache.guilds?.get(data.id)];
 };

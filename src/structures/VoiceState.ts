@@ -1,18 +1,18 @@
-import type { GuildMember, UsingClient } from '../';
+import { GuildMember, type UsingClient } from '../';
 import type { VoiceStateResource } from '../cache/resources/voice-states';
 import type { ObjectToLower } from '../common';
+import type { GatewayVoiceState } from '../types';
 import { Base } from './extra/Base';
 
-export interface VoiceState extends Base, ObjectToLower<VoiceStateResource> {}
+export interface VoiceState extends Base, ObjectToLower<Omit<VoiceStateResource, 'member'>> {}
 
 export class VoiceState extends Base {
-	constructor(
-		client: UsingClient,
-		data: VoiceStateResource,
-		private withMember?: GuildMember,
-	) {
+	protected withMember?: GuildMember;
+	constructor(client: UsingClient, data: GatewayVoiceState) {
 		super(client);
-		this.__patchThis(data);
+		const { member, ...rest } = data;
+		this.__patchThis(rest);
+		if (member?.user && data.guild_id) this.withMember = new GuildMember(client, member, member.user, data.guild_id);
 	}
 
 	isMuted() {

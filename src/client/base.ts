@@ -81,9 +81,10 @@ export class BaseClient {
 		return Buffer.from(token.split('.')[0], 'base64').toString('ascii');
 	}
 
-	options: BaseClientOptions | undefined;
+	options: BaseClientOptions;
 
-	static seyfertConfig?: InternalRuntimeConfigHTTP | InternalRuntimeConfig;
+	/**@internal */
+	static _seyferHttpConfig?: InternalRuntimeConfigHTTP | InternalRuntimeConfig;
 
 	constructor(options?: BaseClientOptions) {
 		this.options = MergeOptions(
@@ -330,7 +331,7 @@ export class BaseClient {
 	async getRC<
 		T extends InternalRuntimeConfigHTTP | InternalRuntimeConfig = InternalRuntimeConfigHTTP | InternalRuntimeConfig,
 	>() {
-		const seyfertConfig = (BaseClient.seyfertConfig ||
+		const seyfertConfig = (BaseClient._seyferHttpConfig ||
 			(await magicImport(join(process.cwd(), 'seyfert.config.js')).then(x => x.default ?? x))) as T;
 
 		const { locations, debug, ...env } = seyfertConfig;
@@ -348,7 +349,7 @@ export class BaseClient {
 			output: join(process.cwd(), locations.output),
 		};
 
-		BaseClient.seyfertConfig = seyfertConfig;
+		BaseClient._seyferHttpConfig = seyfertConfig;
 
 		return obj;
 	}

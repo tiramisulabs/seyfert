@@ -53,14 +53,14 @@ export const MESSAGE_UPDATE = async (
 	data: GatewayMessageUpdateDispatchData,
 ): Promise<
 	[
-		undefined | Message,
-		MakeRequired<
+		message: MakeRequired<
 			PartialClass<Message>,
 			'id' | 'channelId' | 'createdAt' | 'createdTimestamp' | 'rest' | 'cache' | 'api' | 'client'
 		>,
+		old: undefined | Message,
 	]
 > => {
-	return [await self.cache.messages?.get(data.id), new Message(self, data as APIMessage)];
+	return [new Message(self, data as APIMessage), await self.cache.messages?.get(data.id)];
 };
 
 export const MESSAGE_POLL_VOTE_ADD = (_: BaseClient, data: GatewayMessagePollVoteDispatchData) => {

@@ -52,7 +52,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	shards = new Map<number, Shard>();
 
-	declare options: WorkerClientOptions | undefined;
+	declare options: WorkerClientOptions;
 
 	constructor(options?: WorkerClientOptions) {
 		super(options);
@@ -326,15 +326,23 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		switch (packet.t) {
 			case 'GUILD_MEMBER_UPDATE':
 			case 'PRESENCE_UPDATE':
+
 			case 'MESSAGE_UPDATE':
 			case 'MESSAGE_DELETE_BULK':
 			case 'MESSAGE_DELETE':
-				await this.events?.execute(packet.t, packet, this as WorkerClient<true>, shardId);
-				await this.cache.onPacket(packet);
-				break;
 			case 'GUILD_DELETE':
 			case 'CHANNEL_UPDATE':
+			case 'GUILD_EMOJIS_UPDATE':
+			case 'GUILD_UPDATE':
+			case 'GUILD_ROLE_UPDATE':
+			case 'GUILD_ROLE_DELETE':
+			case 'THREAD_UPDATE':
+			case 'USER_UPDATE':
+			case 'VOICE_STATE_UPDATE':
+			case 'STAGE_INSTANCE_UPDATE':
+			case 'GUILD_STICKERS_UPDATE':
 				await this.events?.execute(packet.t, packet, this as WorkerClient<true>, shardId);
+				await this.cache.onPacket(packet);
 				break;
 			//rest of the events
 			default:

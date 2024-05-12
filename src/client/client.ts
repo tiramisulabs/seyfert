@@ -18,7 +18,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 	gateway!: ShardManager;
 	events? = new EventHandler(this.logger);
 	me!: If<Ready, ClientUser>;
-	declare options: ClientOptions | undefined;
+	declare options: ClientOptions;
 	memberUpdateHandler = new MemberUpdateHandler();
 	presenceUpdateHandler = new PresenceUpdateHandler();
 
@@ -147,15 +147,23 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
 				await this.cache.onPacket(packet);
 				break;
+
 			case 'MESSAGE_UPDATE':
 			case 'MESSAGE_DELETE_BULK':
 			case 'MESSAGE_DELETE':
-				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
-				await this.cache.onPacket(packet);
-				break;
 			case 'GUILD_DELETE':
 			case 'CHANNEL_UPDATE':
+			case 'GUILD_EMOJIS_UPDATE':
+			case 'GUILD_UPDATE':
+			case 'GUILD_ROLE_UPDATE':
+			case 'GUILD_ROLE_DELETE':
+			case 'THREAD_UPDATE':
+			case 'USER_UPDATE':
+			case 'VOICE_STATE_UPDATE':
+			case 'STAGE_INSTANCE_UPDATE':
+			case 'GUILD_STICKERS_UPDATE':
 				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
+				await this.cache.onPacket(packet);
 				break;
 			//rest of the events
 			default: {
