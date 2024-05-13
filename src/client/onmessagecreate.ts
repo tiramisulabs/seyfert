@@ -328,7 +328,6 @@ async function parseOptions(
 						value = args[i.name];
 						const option = i as SeyfertStringOption;
 						if (!value) break;
-						console.log({ option, value }, value.length);
 						if (option.min_length) {
 							if (value.length < option.min_length) {
 								value = undefined;
