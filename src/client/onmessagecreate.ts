@@ -114,11 +114,12 @@ export async function onMessageCreate(
 		attachments: {},
 	};
 
-	const args = (self.options?.commands?.argsParser ?? defaultArgsParser)(
-		content.slice(fullCommandName.length + 1),
-		command,
-		message,
-	);
+	let newContent = content;
+	for (const i of fullCommandName.split(' ')) {
+		newContent = newContent.slice(newContent.indexOf(i) + i.length);
+	}
+
+	const args = (self.options?.commands?.argsParser ?? defaultArgsParser)(newContent.slice(1), command, message);
 	const { options, errors } = await parseOptions(self, command, rawMessage, args, resolved);
 	const optionsResolver = new OptionResolver(self, options, parent as Command, message.guildId, resolved);
 	const context = new CommandContext(self, message, optionsResolver, shardId, command);
