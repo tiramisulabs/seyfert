@@ -1,11 +1,10 @@
 import type { GatewayIntentBits } from 'discord-api-types/v10';
-import type { BaseClient } from '../../../client/base';
 import type { UsingClient } from '../../../commands';
 import { fakePromise } from '../../../common';
 import type { Cache, ReturnCache } from '../../index';
 
 export class GuildBasedResource<T = any> {
-	client!: BaseClient;
+	client!: UsingClient;
 	namespace = 'base';
 
 	constructor(

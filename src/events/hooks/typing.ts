@@ -1,10 +1,9 @@
 import type { GatewayTypingStartDispatchData } from 'discord-api-types/v10';
-
-import type { BaseClient } from '../../client/base';
 import { toCamelCase } from '../../common';
 import { GuildMember } from '../../structures';
+import type { UsingClient } from '../../commands';
 
-export const TYPING_START = (self: BaseClient, data: GatewayTypingStartDispatchData) => {
+export const TYPING_START = (self: UsingClient, data: GatewayTypingStartDispatchData) => {
 	return data.member
 		? {
 				...toCamelCase(data),

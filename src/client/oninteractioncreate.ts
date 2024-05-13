@@ -8,6 +8,7 @@ import {
 	type Command,
 	type ContextMenuCommand,
 	type ContextOptionsResolved,
+	type UsingClient,
 } from '../commands';
 import type {
 	ChatInputCommandInteraction,
@@ -18,11 +19,10 @@ import type {
 	__InternalReplyFunction,
 } from '../structures';
 import { AutocompleteInteraction, BaseInteraction } from '../structures';
-import type { BaseClient } from './base';
 import { ComponentContext, ModalContext } from '../components';
 
 export async function onInteractionCreate(
-	self: BaseClient,
+	self: UsingClient,
 	body: APIInteraction,
 	shardId: number,
 	__reply?: __InternalReplyFunction,

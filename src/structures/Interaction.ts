@@ -57,7 +57,6 @@ import { User } from './User';
 import channelFrom from './channels';
 import { DiscordBase } from './extra/DiscordBase';
 import { PermissionsBitField } from './extra/Permissions';
-import type { BaseClient } from '../client/base';
 
 export type ReplyInteractionBody =
 	| { type: InteractionResponseType.Modal; data: ModalCreateBodyRequest }
@@ -115,7 +114,7 @@ export class BaseInteraction<
 		this.user = this.member?.user ?? new User(client, interaction.user!);
 	}
 
-	static transformBodyRequest(body: ReplyInteractionBody, self: BaseClient): APIInteractionResponse {
+	static transformBodyRequest(body: ReplyInteractionBody, self: UsingClient): APIInteractionResponse {
 		switch (body.type) {
 			case InteractionResponseType.ApplicationCommandAutocompleteResult:
 			case InteractionResponseType.DeferredMessageUpdate:

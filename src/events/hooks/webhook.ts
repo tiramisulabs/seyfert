@@ -1,7 +1,7 @@
 import type { GatewayWebhooksUpdateDispatchData } from 'discord-api-types/v10';
-import type { BaseClient } from '../../client/base';
 import { toCamelCase } from '../../common';
+import type { UsingClient } from '../../commands';
 
-export const WEBHOOKS_UPDATE = (_self: BaseClient, data: GatewayWebhooksUpdateDispatchData) => {
+export const WEBHOOKS_UPDATE = (_self: UsingClient, data: GatewayWebhooksUpdateDispatchData) => {
 	return toCamelCase(data);
 };

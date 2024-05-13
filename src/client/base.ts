@@ -39,6 +39,7 @@ import type {
 	UserCommandInteraction,
 } from '../structures';
 import type { ComponentCommand, ComponentContext, ModalCommand, ModalContext } from '../components';
+import { promises } from 'node:fs';
 
 export class BaseClient {
 	rest!: ApiHandler;
@@ -267,6 +268,13 @@ export class BaseClient {
 
 	protected async onPacket(..._packet: unknown[]) {
 		throw new Error('Function not implemented');
+	}
+
+	shouldUploadCommands(cachePath: string) {
+		return this.commands!.shouldUpload(cachePath).then(async should => {
+			if (should) await promises.writeFile(cachePath, JSON.stringify(this.commands!.values.map(x => x.toJSON())));
+			return should;
+		});
 	}
 
 	async uploadCommands(applicationId?: string) {

@@ -4,25 +4,25 @@ import type {
 	GatewayAutoModerationRuleDeleteDispatchData,
 	GatewayAutoModerationRuleUpdateDispatchData,
 } from 'discord-api-types/v10';
-import type { BaseClient } from '../../client/base';
 import { toCamelCase } from '../../common';
 import { AutoModerationRule } from '../../structures';
+import type { UsingClient } from '../../commands';
 
 export const AUTO_MODERATION_ACTION_EXECUTION = (
-	_self: BaseClient,
+	_self: UsingClient,
 	data: GatewayAutoModerationActionExecutionDispatchData,
 ) => {
 	return toCamelCase(data);
 };
 
-export const AUTO_MODERATION_RULE_CREATE = (self: BaseClient, data: GatewayAutoModerationRuleCreateDispatchData) => {
+export const AUTO_MODERATION_RULE_CREATE = (self: UsingClient, data: GatewayAutoModerationRuleCreateDispatchData) => {
 	return new AutoModerationRule(self, data);
 };
 
-export const AUTO_MODERATION_RULE_DELETE = (self: BaseClient, data: GatewayAutoModerationRuleDeleteDispatchData) => {
+export const AUTO_MODERATION_RULE_DELETE = (self: UsingClient, data: GatewayAutoModerationRuleDeleteDispatchData) => {
 	return new AutoModerationRule(self, data);
 };
 
-export const AUTO_MODERATION_RULE_UPDATE = (self: BaseClient, data: GatewayAutoModerationRuleUpdateDispatchData) => {
+export const AUTO_MODERATION_RULE_UPDATE = (self: UsingClient, data: GatewayAutoModerationRuleUpdateDispatchData) => {
 	return new AutoModerationRule(self, data);
 };

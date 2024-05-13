@@ -328,6 +328,7 @@ async function parseOptions(
 						value = args[i.name];
 						const option = i as SeyfertStringOption;
 						if (!value) break;
+						console.log({ option, value }, value.length);
 						if (option.min_length) {
 							if (value.length < option.min_length) {
 								value = undefined;
@@ -428,10 +429,11 @@ async function parseOptions(
 					value,
 				} as APIApplicationCommandInteractionDataOption);
 			} else if (i.required)
-				errors.push({
-					error: 'Option is required but returned undefined',
-					name: i.name,
-				});
+				if (!errors.some(x => x.name === i.name))
+					errors.push({
+						error: 'Option is required but returned undefined',
+						name: i.name,
+					});
 		} catch (e) {
 			errors.push({
 				error: e && typeof e === 'object' && 'message' in e ? (e.message as string) : `${e}`,

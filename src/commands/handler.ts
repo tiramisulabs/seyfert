@@ -1,10 +1,21 @@
-import { Locale, type LocaleString } from 'discord-api-types/v10';
+import {
+	type APIApplicationCommandOption,
+	Locale,
+	type LocaleString,
+	ApplicationCommandOptionType,
+	type APIApplicationCommandIntegerOption,
+	type APIApplicationCommandStringOption,
+	type APIApplicationCommandSubcommandOption,
+	type APIApplicationCommandSubcommandGroupOption,
+	type APIApplicationCommandChannelOption,
+} from 'discord-api-types/v10';
 import { basename, dirname } from 'node:path';
 import type { Logger } from '../common';
 import { BaseHandler } from '../common';
 import { Command, SubCommand } from './applications/chat';
 import { ContextMenuCommand } from './applications/menu';
 import type { UsingClient } from './applications/shared';
+import { promises } from 'node:fs';
 
 export class CommandHandler extends BaseHandler {
 	values: (Command | ContextMenuCommand)[] = [];
@@ -35,6 +46,127 @@ export class CommandHandler extends BaseHandler {
 				}
 			}
 		}
+	}
+
+	protected shouldUploadOption(option: APIApplicationCommandOption, cached: APIApplicationCommandOption) {
+		if (option.description !== cached.description) return true;
+		if (option.type !== cached.type) return true;
+		if (option.required !== cached.required) return true;
+		if (option.name !== cached.name) return true;
+		//TODO: locales
+
+		switch (option.type) {
+			case ApplicationCommandOptionType.String:
+				return (
+					option.min_length !== (cached as APIApplicationCommandStringOption).min_length ||
+					option.max_length !== (cached as APIApplicationCommandStringOption).max_length
+				);
+			case ApplicationCommandOptionType.Channel:
+				{
+					if (option.channel_types?.length !== (cached as APIApplicationCommandChannelOption).channel_types?.length)
+						return true;
+					if ('channel_types' in option && 'channel_types' in cached) {
+						if (!option.channel_types || !cached.channel_types) return true;
+						return option.channel_types.some(ct => !cached.channel_types!.includes(ct));
+					}
+				}
+				return;
+			case ApplicationCommandOptionType.Subcommand:
+			case ApplicationCommandOptionType.SubcommandGroup:
+				if (
+					option.options?.length !==
+					(cached as APIApplicationCommandSubcommandOption | APIApplicationCommandSubcommandGroupOption).options?.length
+				) {
+					return true;
+				}
+				if (
+					option.options &&
+					(cached as APIApplicationCommandSubcommandOption | APIApplicationCommandSubcommandGroupOption).options
+				)
+					for (const i of option.options) {
+						const cachedOption = (
+							cached as APIApplicationCommandSubcommandOption | APIApplicationCommandSubcommandGroupOption
+						).options!.find(x => x.name === i.name);
+						if (!cachedOption) return true;
+						if (this.shouldUploadOption(i, cachedOption)) return true;
+					}
+				break;
+			case ApplicationCommandOptionType.Integer:
+			case ApplicationCommandOptionType.Number:
+				return (
+					option.min_value !== (cached as APIApplicationCommandIntegerOption).min_value ||
+					option.max_value !== (cached as APIApplicationCommandIntegerOption).max_value
+				);
+			case ApplicationCommandOptionType.Attachment:
+			case ApplicationCommandOptionType.Boolean:
+			case ApplicationCommandOptionType.Mentionable:
+			case ApplicationCommandOptionType.Role:
+			case ApplicationCommandOptionType.User:
+				break;
+		}
+
+		return false;
+	}
+
+	async shouldUpload(file: string) {
+		if (
+			!(await promises.access(file).then(
+				() => true,
+				() => false,
+			))
+		) {
+			await promises.writeFile(file, JSON.stringify(this.values.map(x => x.toJSON())));
+			return true;
+		}
+
+		const cachedCommands: (ReturnType<Command['toJSON']> | ReturnType<ContextMenuCommand['toJSON']>)[] = JSON.parse(
+			(await promises.readFile(file)).toString(),
+		);
+
+		if (cachedCommands.length !== this.values.length) return true;
+
+		for (const command of this.values.map(x => x.toJSON())) {
+			const cached = cachedCommands.find(x => {
+				if (x.name !== command.name) return false;
+				if (command.guild_id) return command.guild_id.every(id => x.guild_id?.includes(id));
+				return true;
+			});
+			if (!cached) return true;
+			if (cached.description !== command.description) return true;
+			if (cached.default_member_permissions !== command.default_member_permissions) return true;
+			if (cached.type !== command.type) return true;
+			if (cached.nsfw !== command.nsfw) return true;
+
+			if (!!('options' in cached) !== !!('options' in command)) return true;
+			if (!!cached.contexts !== !!command.contexts) return true;
+			if (!!cached.integration_types !== !!command.integration_types) return true;
+			//TODO: locales
+
+			if ('contexts' in command && 'contexts' in cached) {
+				if (command.contexts?.length !== cached.contexts?.length) return true;
+				if (command.contexts && cached.contexts) {
+					if (command.contexts.some(ctx => !cached.contexts!.includes(ctx))) return true;
+				}
+			}
+
+			if ('integration_types' in command && 'integration_types' in cached) {
+				if (command.integration_types?.length !== cached.integration_types?.length) return true;
+				if (command.integration_types && cached.integration_types) {
+					if (command.integration_types.some(ctx => !cached.integration_types!.includes(ctx))) return true;
+				}
+			}
+
+			if ('options' in command && 'options' in cached) {
+				if (command.options.length !== cached.options.length) return true;
+				for (const option of command.options) {
+					const cachedOption = cached.options.find(x => x.name === option.name);
+					if (!cachedOption) return true;
+					if (this.shouldUploadOption(option, cachedOption)) return true;
+				}
+			}
+		}
+
+		return false;
 	}
 
 	async load(commandsDir: string, client: UsingClient, instances?: { new (): Command | ContextMenuCommand }[]) {

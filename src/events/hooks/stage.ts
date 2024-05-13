@@ -3,21 +3,20 @@ import type {
 	GatewayStageInstanceDeleteDispatchData,
 	GatewayStageInstanceUpdateDispatchData,
 } from 'discord-api-types/v10';
-
-import type { BaseClient } from '../../client/base';
+import type { UsingClient } from '../../commands';
 import { type ObjectToLower, toCamelCase } from '../../common';
 import type { StageInstances } from '../../cache/resources/stage-instances';
 
-export const STAGE_INSTANCE_CREATE = (_self: BaseClient, data: GatewayStageInstanceCreateDispatchData) => {
+export const STAGE_INSTANCE_CREATE = (_self: UsingClient, data: GatewayStageInstanceCreateDispatchData) => {
 	return toCamelCase(data);
 };
 
-export const STAGE_INSTANCE_DELETE = (_self: BaseClient, data: GatewayStageInstanceDeleteDispatchData) => {
+export const STAGE_INSTANCE_DELETE = (_self: UsingClient, data: GatewayStageInstanceDeleteDispatchData) => {
 	return toCamelCase(data);
 };
 
 export const STAGE_INSTANCE_UPDATE = async (
-	self: BaseClient,
+	self: UsingClient,
 	data: GatewayStageInstanceUpdateDispatchData,
 ): Promise<[stage: ObjectToLower<GatewayStageInstanceUpdateDispatchData>, old?: ReturnType<StageInstances['get']>]> => {
 	return [toCamelCase(data), await self.cache.stageInstances?.get(data.id)];

@@ -1,7 +1,7 @@
 import type { GatewayInteractionCreateDispatchData } from 'discord-api-types/v10';
-import type { BaseClient } from '../../client/base';
 import { BaseInteraction } from '../../structures';
+import type { UsingClient } from '../../commands';
 
-export const INTERACTION_CREATE = (self: BaseClient, data: GatewayInteractionCreateDispatchData) => {
+export const INTERACTION_CREATE = (self: UsingClient, data: GatewayInteractionCreateDispatchData) => {
 	return BaseInteraction.from(self, data);
 };
