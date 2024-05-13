@@ -39,7 +39,7 @@ export class LangsHandler extends BaseHandler {
 	async load(dir: string, instances?: { name: string; file: Record<string, any> }[]) {
 		const files = instances ?? (await this.loadFilesK<Record<string, any>>(await this.getFiles(dir)));
 		for (const i of files) {
-			const locale = i.name.split('.').slice(0, -1).join('.');
+			const locale = i.name.split('.').slice(0, -1).join('.') || i.name;
 			const result = this.callback(locale, i.file);
 			if (result) this.values[locale] = result;
 		}
