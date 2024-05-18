@@ -14,15 +14,15 @@
 
 # FAQ
 ## So, what is `seyfert`?
-Seyfert is the ultimate Discord framework! We make easy to interact with the Discord API, big cache control, scalable code and a pretty dev experience.
+Seyfert is the ultimate Discord framework! We make it easy to interact with the Discord API, big cache control, scalable code and a pretty dev experience.
 
-## Why I should use it?
-There are many reasons to use Seyfert, but we cannot put them all in here so there is a few of them!
+## Why should I use it?
+There are many reasons to use Seyfert, but they dont all fit in this tiny readme, so here is a list of the most awesome reasons!
 
-- **RAM Saver**
+- **Low RAM Usage**
 - **Latest features**
 - **Dev experience**
-- **24/6 support (Sunday is for going to church)**
+- **24/6 support (Sunday is for church)**
 - **Written from Scratch**
 - **Type-safe**
 - **And many more!!**
@@ -30,12 +30,12 @@ There are many reasons to use Seyfert, but we cannot put them all in here so the
 
 ## Installation
 > [!NOTE]
-> You **NEED** Node.js 18>= for this to work, also we recomended Node.js 20 LTS and Bun latest
+> You **NEED** Node.js 18>= for this to work, Node.js 20 LTS and Bun latest are recommended
 ```sh
 pnpm add seyfert
 ```
 
-> You may use your preferred package manager, for this example I am using PNPM since is more efficient.
+> You may use your preferred package manager, for this example PNMP is being used since it’s more efficient.
 
 # Useful links
 
