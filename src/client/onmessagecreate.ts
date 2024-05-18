@@ -1,6 +1,7 @@
 import {
 	ApplicationCommandOptionType,
 	ChannelType,
+	InteractionContextType,
 	type APIApplicationCommandInteractionDataOption,
 	type GatewayMessageCreateDispatchData,
 } from 'discord-api-types/v10';
@@ -8,7 +9,6 @@ import {
 	Command,
 	CommandContext,
 	IgnoreCommand,
-	InteractionContextTypes,
 	OptionResolver,
 	SubCommand,
 	User,
@@ -103,7 +103,7 @@ export async function onMessageCreate(
 	if (!command) return;
 	if (!command.run) return self.logger.warn(`${fullCommandName} command does not have 'run' callback`);
 
-	if (!command.contexts?.includes(InteractionContextTypes.BOT_DM) && !message.guildId) return;
+	if (!command.contexts?.includes(InteractionContextType.BotDM) && !message.guildId) return;
 	if (command.guildId && !command.guildId?.includes(message.guildId!)) return;
 
 	const resolved: MakeRequired<ContextOptionsResolved> = {

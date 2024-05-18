@@ -1,6 +1,8 @@
 import {
 	ApplicationCommandOptionType,
 	ApplicationCommandType,
+	type ApplicationIntegrationType,
+	type InteractionContextType,
 	type APIApplicationCommandBasicOption,
 	type APIApplicationCommandOption,
 	type APIApplicationCommandSubcommandGroupOption,
@@ -17,7 +19,7 @@ import type {
 import type { Attachment } from '../../builders';
 import { magicImport, type FlatObjectKeys } from '../../common';
 import type { AllChannels, AutocompleteInteraction, GuildRole, InteractionGuildMember, User } from '../../structures';
-import type { Groups, IntegrationTypes, InteractionContextTypes, RegisteredMiddlewares } from '../decorators';
+import type { Groups, RegisteredMiddlewares } from '../decorators';
 import type { OptionResolver } from '../optionresolver';
 import type { CommandContext } from './chatcontext';
 import type {
@@ -123,8 +125,8 @@ export class BaseCommand {
 	nsfw?: boolean;
 	description!: string;
 	defaultMemberPermissions?: bigint;
-	integrationTypes?: IntegrationTypes[];
-	contexts?: InteractionContextTypes[];
+	integrationTypes?: ApplicationIntegrationType[];
+	contexts?: InteractionContextType[];
 	botPermissions?: bigint;
 	name_localizations?: Partial<Record<LocaleString, string>>;
 	description_localizations?: Partial<Record<LocaleString, string>>;

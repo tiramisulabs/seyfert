@@ -12,8 +12,8 @@ importers:
         specifier: ^3.6.0
         version: 3.6.0
       discord-api-types:
-        specifier: ^0.37.83
-        version: 0.37.83
+        specifier: ^0.37.84
+        version: 0.37.84
       magic-bytes.js:
         specifier: ^1.10.0
         version: 1.10.0
@@ -362,8 +362,8 @@ packages:
     resolution: {integrity: sha512-HVQE3AAb/pxF8fQAoiqpvg9i3evqug3hoiwakOyZAwJm+6vZehbkYXZ0l4JxS+I3QxM97v5aaRNhj8v5oBhekw==}
     engines: {node: '>=0.10'}
 
-  discord-api-types@0.37.83:
-    resolution: {integrity: sha512-urGGYeWtWNYMKnYlZnOnDHm8fVRffQs3U0SpE8RHeiuLKb/u92APS8HoQnPTFbnXmY1vVnXjXO4dOxcAn3J+DA==}
+  discord-api-types@0.37.84:
+    resolution: {integrity: sha512-NngmTBW8vermlbO0qNtaS7SHCWB/R96ICqflTwM/cV7zsxyQGd38E2bBlwaxLbXgb2YTF3+Yx6+qGs/3sXedCw==}
 
   dot-prop@5.3.0:
     resolution: {integrity: sha512-QM8q3zDe58hqUqjraQOmzZ1LIH9SWQJTlEKCH4kJ2oQvLZk7RbQXvtDM2XEq3fwkV9CCvvH4LA0AV+ogFsBM2Q==}
@@ -1191,7 +1191,7 @@ snapshots:
   denque@2.1.0:
     optional: true
 
-  discord-api-types@0.37.83: {}
+  discord-api-types@0.37.84: {}
 
   dot-prop@5.3.0:
     dependencies:

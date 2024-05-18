@@ -1,6 +1,11 @@
-import type { ApplicationCommandType, LocaleString } from 'discord-api-types/v10';
+import type {
+	ApplicationCommandType,
+	ApplicationIntegrationType,
+	InteractionContextType,
+	LocaleString,
+} from 'discord-api-types/v10';
 import { magicImport, type PermissionStrings } from '../../common';
-import type { IntegrationTypes, InteractionContextTypes, RegisteredMiddlewares } from '../decorators';
+import type { RegisteredMiddlewares } from '../decorators';
 import type { MenuCommandContext } from './menucontext';
 import type { UsingClient } from './shared';
 
@@ -14,8 +19,8 @@ export abstract class ContextMenuCommand {
 	name!: string;
 	type!: ApplicationCommandType.User | ApplicationCommandType.Message;
 	nsfw?: boolean;
-	integrationTypes?: IntegrationTypes[];
-	contexts?: InteractionContextTypes[];
+	integrationTypes?: ApplicationIntegrationType[];
+	contexts?: InteractionContextType[];
 	description!: string;
 	defaultMemberPermissions?: bigint;
 	botPermissions?: bigint;

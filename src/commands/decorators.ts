@@ -1,19 +1,15 @@
-import { ApplicationCommandType, PermissionFlagsBits, type LocaleString } from 'discord-api-types/v10';
+import {
+	ApplicationCommandType,
+	ApplicationIntegrationType,
+	InteractionContextType,
+	PermissionFlagsBits,
+	type LocaleString,
+} from 'discord-api-types/v10';
 import type { FlatObjectKeys, PermissionStrings } from '../common';
 import type { CommandOption, OptionsRecord, SubCommand } from './applications/chat';
 import type { DefaultLocale, IgnoreCommand, MiddlewareContext } from './applications/shared';
 
 export interface RegisteredMiddlewares {}
-
-export enum IntegrationTypes {
-	GUILD_INSTALL = 0,
-	USER_INSTALL = 1,
-}
-export enum InteractionContextTypes {
-	GUILD = 0,
-	BOT_DM = 1,
-	PRIVATE_CHANNEL = 2,
-}
 
 type DeclareOptions =
 	| {
@@ -23,8 +19,8 @@ type DeclareOptions =
 			defaultMemberPermissions?: PermissionStrings | bigint;
 			guildId?: string[];
 			nsfw?: boolean;
-			integrationTypes?: (keyof typeof IntegrationTypes)[];
-			contexts?: (keyof typeof InteractionContextTypes)[];
+			integrationTypes?: (keyof typeof ApplicationIntegrationType)[];
+			contexts?: (keyof typeof InteractionContextType)[];
 			ignore?: IgnoreCommand;
 			aliases?: string[];
 	  }
@@ -36,8 +32,8 @@ type DeclareOptions =
 				defaultMemberPermissions?: PermissionStrings | bigint;
 				guildId?: string[];
 				nsfw?: boolean;
-				integrationTypes?: (keyof typeof IntegrationTypes)[];
-				contexts?: (keyof typeof InteractionContextTypes)[];
+				integrationTypes?: (keyof typeof ApplicationIntegrationType)[];
+				contexts?: (keyof typeof InteractionContextType)[];
 			},
 			'type' | 'description'
 	  > & {
@@ -161,8 +157,8 @@ export function Declare(declare: DeclareOptions) {
 		class extends target {
 			name = declare.name;
 			nsfw = declare.nsfw;
-			contexts = declare.contexts?.map(i => InteractionContextTypes[i]);
-			integrationTypes = declare.integrationTypes?.map(i => IntegrationTypes[i]);
+			contexts = declare.contexts?.map(i => InteractionContextType[i]);
+			integrationTypes = declare.integrationTypes?.map(i => ApplicationIntegrationType[i]);
 			defaultMemberPermissions = Array.isArray(declare.defaultMemberPermissions)
 				? declare.defaultMemberPermissions?.reduce((acc, prev) => acc | PermissionFlagsBits[prev], BigInt(0))
 				: declare.defaultMemberPermissions;
