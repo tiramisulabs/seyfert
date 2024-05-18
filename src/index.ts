@@ -86,7 +86,7 @@ export const config = {
 			port: 8080,
 			...data,
 		} as InternalRuntimeConfigHTTP;
-		if (isCloudfareWorker()) BaseClient._seyferHttpConfig = obj;
+		if (isCloudfareWorker()) BaseClient._seyferConfig = obj;
 		return obj;
 	},
 };

@@ -27,7 +27,7 @@ import {
 } from '../common';
 
 import type { LocaleString, RESTPostAPIChannelMessageJSONBody } from 'discord-api-types/rest/v10';
-import type { DeepPartial, IntentStrings, OmitInsert, PermissionStrings, When } from '../common/types/util';
+import type { Awaitable, DeepPartial, IntentStrings, OmitInsert, PermissionStrings, When } from '../common/types/util';
 import { ComponentHandler } from '../components/handler';
 import { LangsHandler } from '../langs/handler';
 import type {
@@ -85,7 +85,7 @@ export class BaseClient {
 	options: BaseClientOptions;
 
 	/**@internal */
-	static _seyferHttpConfig?: InternalRuntimeConfigHTTP | InternalRuntimeConfig;
+	static _seyferConfig?: InternalRuntimeConfigHTTP | InternalRuntimeConfig;
 
 	constructor(options?: BaseClientOptions) {
 		this.options = MergeOptions(
@@ -339,7 +339,8 @@ export class BaseClient {
 	async getRC<
 		T extends InternalRuntimeConfigHTTP | InternalRuntimeConfig = InternalRuntimeConfigHTTP | InternalRuntimeConfig,
 	>() {
-		const seyfertConfig = (BaseClient._seyferHttpConfig ||
+		const seyfertConfig = (BaseClient._seyferConfig ||
+			(await this.options.getRC?.()) ||
 			(await magicImport(join(process.cwd(), 'seyfert.config.js')).then(x => x.default ?? x))) as T;
 
 		const { locations, debug, ...env } = seyfertConfig;
@@ -357,7 +358,7 @@ export class BaseClient {
 			output: join(process.cwd(), locations.output),
 		};
 
-		BaseClient._seyferHttpConfig = seyfertConfig;
+		BaseClient._seyferConfig = seyfertConfig;
 
 		return obj;
 	}
@@ -404,6 +405,7 @@ export interface BaseClientOptions {
 	allowedMentions?: Omit<NonNullable<RESTPostAPIChannelMessageJSONBody['allowed_mentions']>, 'parse'> & {
 		parse?: ('everyone' | 'roles' | 'users')[]; //nice types, d-api
 	};
+	getRC?(): Awaitable<InternalRuntimeConfig | InternalRuntimeConfigHTTP>;
 }
 
 export interface StartOptions {
