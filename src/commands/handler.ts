@@ -199,6 +199,7 @@ export class CommandHandler extends BaseHandler {
 			if (commandInstance instanceof ContextMenuCommand) {
 				this.values.push(commandInstance);
 				commandInstance.__filePath = command.path;
+				this.__parseCommandLocales(commandInstance);
 				continue;
 			}
 			if (!(commandInstance instanceof Command)) {
@@ -267,11 +268,11 @@ export class CommandHandler extends BaseHandler {
 			}
 
 			this.values.push(commandInstance);
-			this.__parseCommandLocales(commandInstance, client);
+			this.__parseCommandLocales(commandInstance);
 
 			for (const i of commandInstance.options ?? []) {
 				if (i instanceof SubCommand) {
-					this.__parseCommandLocales(i, client);
+					this.__parseCommandLocales(i);
 				}
 			}
 		}
@@ -279,48 +280,50 @@ export class CommandHandler extends BaseHandler {
 		return this.values;
 	}
 
-	private __parseCommandLocales(command: Command | SubCommand, client: UsingClient) {
+	private __parseCommandLocales(command: Command | SubCommand | ContextMenuCommand) {
 		if (command.__t) {
 			command.name_localizations = {};
 			command.description_localizations = {};
-			for (const locale of Object.keys(client.langs!.values)) {
+			for (const locale of Object.keys(this.client.langs!.values)) {
 				const locales = this.client.langs!.aliases.find(x => x[0] === locale)?.[1] ?? [];
 				if (Object.values<string>(Locale).includes(locale)) locales.push(locale as LocaleString);
 
 				if (command.__t.name) {
 					for (const i of locales) {
-						const valueName = client.langs!.getKey(locale, command.__t.name!);
+						const valueName = this.client.langs!.getKey(locale, command.__t.name!);
 						if (valueName) command.name_localizations[i] = valueName;
 					}
 				}
 
 				if (command.__t.description) {
 					for (const i of locales) {
-						const valueKey = client.langs!.getKey(locale, command.__t.description!);
+						const valueKey = this.client.langs!.getKey(locale, command.__t.description!);
 						if (valueKey) command.description_localizations[i] = valueKey;
 					}
 				}
 			}
 		}
 
+		if (command instanceof ContextMenuCommand) return;
+
 		for (const options of command.options ?? []) {
 			if (options instanceof SubCommand || !options.locales) continue;
 			options.name_localizations = {};
 			options.description_localizations = {};
-			for (const locale of Object.keys(client.langs!.values)) {
+			for (const locale of Object.keys(this.client.langs!.values)) {
 				const locales = this.client.langs!.aliases.find(x => x[0] === locale)?.[1] ?? [];
 				if (Object.values<string>(Locale).includes(locale)) locales.push(locale as LocaleString);
 
 				if (options.locales.name) {
 					for (const i of locales) {
-						const valueName = client.langs!.getKey(locale, options.locales.name!);
+						const valueName = this.client.langs!.getKey(locale, options.locales.name!);
 						if (valueName) options.name_localizations[i] = valueName;
 					}
 				}
 
 				if (options.locales.description) {
 					for (const i of locales) {
-						const valueKey = client.langs!.getKey(locale, options.locales.description!);
+						const valueKey = this.client.langs!.getKey(locale, options.locales.description!);
 						if (valueKey) options.description_localizations[i] = valueKey;
 					}
 				}
@@ -329,7 +332,7 @@ export class CommandHandler extends BaseHandler {
 
 		if (command instanceof Command && command.__tGroups) {
 			command.groups = {};
-			for (const locale of Object.keys(client.langs!.values)) {
+			for (const locale of Object.keys(this.client.langs!.values)) {
 				const locales = this.client.langs!.aliases.find(x => x[0] === locale)?.[1] ?? [];
 				if (Object.values<string>(Locale).includes(locale)) locales.push(locale as LocaleString);
 				for (const group in command.__tGroups) {
@@ -341,7 +344,7 @@ export class CommandHandler extends BaseHandler {
 
 					if (command.__tGroups[group].name) {
 						for (const i of locales) {
-							const valueName = client.langs!.getKey(locale, command.__tGroups[group].name!);
+							const valueName = this.client.langs!.getKey(locale, command.__tGroups[group].name!);
 							if (valueName) {
 								command.groups[group].name!.push([i, valueName]);
 							}
@@ -350,7 +353,7 @@ export class CommandHandler extends BaseHandler {
 
 					if (command.__tGroups[group].description) {
 						for (const i of locales) {
-							const valueKey = client.langs!.getKey(locale, command.__tGroups[group].description!);
+							const valueKey = this.client.langs!.getKey(locale, command.__tGroups[group].description!);
 							if (valueKey) {
 								command.groups[group].description!.push([i, valueKey]);
 							}
