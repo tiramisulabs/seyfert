@@ -92,7 +92,7 @@ export class EventHandler extends BaseHandler {
 	async reload(name: ClientNameEvents) {
 		const eventName = ReplaceRegex.snake(name).toUpperCase() as GatewayEvents;
 		const event = this.values[eventName];
-		if (!event) return null;
+		if (!event?.__filePath) return null;
 		delete require.cache[event.__filePath];
 		const imported = await magicImport(event.__filePath).then(x => x.default ?? x);
 		imported.__filePath = event.__filePath;
@@ -100,9 +100,15 @@ export class EventHandler extends BaseHandler {
 		return imported;
 	}
 
-	async reloadAll() {
+	async reloadAll(stopIfFail = true) {
 		for (const i in this.values) {
-			await this.reload(ReplaceRegex.camel(i) as ClientNameEvents);
+			try {
+				await this.reload(ReplaceRegex.camel(i) as ClientNameEvents);
+			} catch (e) {
+				if (stopIfFail) {
+					throw e;
+				}
+			}
 		}
 	}
 

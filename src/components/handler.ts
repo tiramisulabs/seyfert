@@ -196,7 +196,7 @@ export class ComponentHandler extends BaseHandler {
 				x.__filePath?.endsWith(path) ||
 				x.__filePath === path,
 		);
-		if (!component || !component.__filePath) return null;
+		if (!component?.__filePath) return null;
 		delete require.cache[component.__filePath];
 		const index = this.client.components.commands.findIndex(x => x.__filePath === component.__filePath!);
 		if (index === -1) return null;
@@ -208,11 +208,15 @@ export class ComponentHandler extends BaseHandler {
 		return imported;
 	}
 
-	async reloadAll() {
-		if (!this.client.components) return;
-		for (const i of this.client.components.commands) {
-			if (!i.__filePath) return this.logger.warn('Unknown command dont have __filePath property', i);
-			await this.reload(i.__filePath);
+	async reloadAll(stopIfFail = true) {
+		for (const i of this.commands) {
+			try {
+				await this.reload(i.__filePath ?? '');
+			} catch (e) {
+				if (stopIfFail) {
+					throw e;
+				}
+			}
 		}
 	}
 
