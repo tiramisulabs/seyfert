@@ -177,15 +177,18 @@ export class GuildMember extends BaseGuildMember {
 	}
 
 	avatarURL(options?: ImageOptions) {
-		return this.user.avatarURL(options);
-	}
-
-	dynamicAvatarURL(options?: ImageOptions) {
 		if (!this.avatar) {
-			return this.user.avatarURL(options);
+			return null;
 		}
 
-		return this.rest.cdn.guilds(this.guildId).users(this.id).avatars(this.avatar).get(options);
+		return this.rest.cdn
+			.guilds(this.guildId)
+			.users(this.id)
+			.avatars(this.avatar)
+			.get({
+				...options,
+				extension: this.avatar.startsWith('a_') ? 'gif' : options?.extension ?? 'webp',
+			});
 	}
 
 	bannerURL(options?: ImageOptions) {
