@@ -181,14 +181,11 @@ export class GuildMember extends BaseGuildMember {
 			return null;
 		}
 
-		return this.rest.cdn
-			.guilds(this.guildId)
-			.users(this.id)
-			.avatars(this.avatar)
-			.get({
-				...options,
-				extension: this.avatar.startsWith('a_') ? 'gif' : options?.extension ?? 'webp',
-			});
+		if (this.avatar.startsWith('a_') && !options?.extension) {
+			options = { ...options, extension: 'gif' };
+		}
+
+		return this.rest.cdn.guilds(this.guildId).users(this.id).avatars(this.avatar).get(options);
 	}
 
 	bannerURL(options?: ImageOptions) {
