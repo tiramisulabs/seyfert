@@ -38,10 +38,6 @@ export class User extends DiscordBase<APIUser> {
 			return this.rest.cdn.embed.avatars.get(calculateUserDefaultAvatarIndex(this.id, this.discriminator));
 		}
 
-		if (this.avatar.startsWith('a_') && !options?.extension) {
-			options = { ...options, extension: 'gif' };
-		}
-
 		return this.rest.cdn.avatars(this.id).get(this.avatar, options);
 	}
 

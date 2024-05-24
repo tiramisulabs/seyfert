@@ -181,10 +181,6 @@ export class GuildMember extends BaseGuildMember {
 			return null;
 		}
 
-		if (this.avatar.startsWith('a_') && !options?.extension) {
-			options = { ...options, extension: 'gif' };
-		}
-
 		return this.rest.cdn.guilds(this.guildId).users(this.id).avatars(this.avatar).get(options);
 	}
 
