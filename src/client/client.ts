@@ -170,6 +170,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			//rest of the events
 			default: {
 				await this.cache.onPacket(packet);
+				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
 				switch (packet.t) {
 					case 'INTERACTION_CREATE':
 						await onInteractionCreate(this, packet.d, shardId);
@@ -207,7 +208,6 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						break;
 					}
 				}
-				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
 				break;
 			}
 		}
