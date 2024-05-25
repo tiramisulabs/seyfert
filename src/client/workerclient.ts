@@ -25,6 +25,7 @@ import { BaseClient } from './base';
 import type { Client } from './client';
 import { onInteractionCreate } from './oninteractioncreate';
 import { onMessageCreate } from './onmessagecreate';
+import { Collectors } from './collectors';
 
 let workerData: WorkerData;
 let manager: import('node:worker_threads').MessagePort;
@@ -46,7 +47,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		name: `[Worker #${workerData.workerId}]`,
 	});
 
-	events? = new EventHandler(this.logger);
+	collectors = new Collectors();
+	events? = new EventHandler(this.logger, this.collectors);
 	me!: When<Ready, ClientUser>;
 	promises = new Map<string, { resolve: (value: any) => void; timeout: NodeJS.Timeout }>();
 
@@ -117,7 +119,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			if (!rest.handlers.events) {
 				this.events = undefined;
 			} else if (typeof rest.handlers.events === 'function') {
-				this.events = new EventHandler(this.logger);
+				this.events = new EventHandler(this.logger, this.collectors);
 				this.events.setHandlers({
 					callback: rest.handlers.events,
 				});

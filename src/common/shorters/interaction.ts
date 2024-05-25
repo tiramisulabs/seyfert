@@ -1,4 +1,4 @@
-import { BaseInteraction, type RawFile, WebhookMessage, resolveFiles, type ReplyInteractionBody, Modal } from '../..';
+import { BaseInteraction, WebhookMessage, resolveFiles, type ReplyInteractionBody, Modal } from '../..';
 import type { InteractionMessageUpdateBodyRequest, MessageWebhookCreateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
 
@@ -8,6 +8,7 @@ export class InteractionShorter extends BaseShorter {
 		const { files, ...rest } = body.data ?? {};
 		//@ts-expect-error
 		const data = body.data instanceof Modal ? body.data : rest;
+		const parsedFiles = files ? await resolveFiles(files) : undefined;
 		return this.client.proxy
 			.interactions(id)(token)
 			.callback.post({
@@ -16,9 +17,10 @@ export class InteractionShorter extends BaseShorter {
 						type: body.type,
 						data,
 					},
+					parsedFiles,
 					this.client,
 				),
-				files: files ? await resolveFiles(files) : undefined,
+				files: parsedFiles,
 			});
 	}
 
@@ -32,12 +34,13 @@ export class InteractionShorter extends BaseShorter {
 
 	async editMessage(token: string, messageId: string, body: InteractionMessageUpdateBodyRequest) {
 		const { files, ...data } = body;
+		const parsedFiles = files ? await resolveFiles(files) : undefined;
 		const apiMessage = await this.client.proxy
 			.webhooks(this.client.applicationId)(token)
 			.messages(messageId)
 			.patch({
-				body: BaseInteraction.transformBody(data, this.client),
-				files: files ? await resolveFiles(files) : undefined,
+				body: BaseInteraction.transformBody(data, parsedFiles, this.client),
+				files: parsedFiles,
 			});
 		return new WebhookMessage(this.client, apiMessage, this.client.applicationId, token);
 	}
@@ -59,12 +62,12 @@ export class InteractionShorter extends BaseShorter {
 	}
 
 	async followup(token: string, { files, ...body }: MessageWebhookCreateBodyRequest) {
-		files = files ? await resolveFiles(files) : undefined;
+		const parsedFiles = files ? await resolveFiles(files) : undefined;
 		const apiMessage = await this.client.proxy
 			.webhooks(this.client.applicationId)(token)
 			.post({
-				body: BaseInteraction.transformBody(body, this.client),
-				files: files as RawFile[] | undefined,
+				body: BaseInteraction.transformBody(body, parsedFiles, this.client),
+				files: parsedFiles,
 			});
 		return new WebhookMessage(this.client, apiMessage, this.client.applicationId, token);
 	}

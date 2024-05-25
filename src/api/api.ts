@@ -386,7 +386,6 @@ export class ApiHandler {
 		if (options.request.reason) {
 			options.headers['X-Audit-Log-Reason'] = encodeURIComponent(options.request.reason);
 		}
-
 		return { data, finalUrl } as { data: typeof data; finalUrl: `/${string}` };
 	}
 

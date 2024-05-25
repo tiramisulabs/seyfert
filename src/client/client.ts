@@ -10,17 +10,19 @@ import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOp
 import { BaseClient } from './base';
 import { onInteractionCreate } from './oninteractioncreate';
 import { onMessageCreate } from './onmessagecreate';
+import { Collectors } from './collectors';
 
 let parentPort: import('node:worker_threads').MessagePort;
 
 export class Client<Ready extends boolean = boolean> extends BaseClient {
 	private __handleGuilds?: Set<string> = new Set();
 	gateway!: ShardManager;
-	events? = new EventHandler(this.logger);
 	me!: If<Ready, ClientUser>;
 	declare options: ClientOptions;
 	memberUpdateHandler = new MemberUpdateHandler();
 	presenceUpdateHandler = new PresenceUpdateHandler();
+	collectors = new Collectors();
+	events? = new EventHandler(this.logger, this.collectors);
 
 	constructor(options?: ClientOptions) {
 		super(options);
@@ -49,7 +51,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			if (!rest.handlers.events) {
 				this.events = undefined;
 			} else if (typeof rest.handlers.events === 'function') {
-				this.events = new EventHandler(this.logger);
+				this.events = new EventHandler(this.logger, this.collectors);
 				this.events.setHandlers({
 					callback: rest.handlers.events,
 				});

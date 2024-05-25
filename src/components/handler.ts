@@ -44,22 +44,24 @@ export class ComponentHandler extends BaseHandler {
 		this.values.set(messageId, {
 			components: [],
 			options,
-			idle: options.idle
-				? setTimeout(() => {
-						this.deleteValue(messageId);
-						options.onStop?.('idle', () => {
-							this.createComponentCollector(messageId, options);
-						});
-				  }, options.idle)
-				: undefined,
-			timeout: options.timeout
-				? setTimeout(() => {
-						this.deleteValue(messageId);
-						options.onStop?.('timeout', () => {
-							this.createComponentCollector(messageId, options);
-						});
-				  }, options.timeout)
-				: undefined,
+			idle:
+				options.idle && options.idle > 0
+					? setTimeout(() => {
+							this.deleteValue(messageId);
+							options.onStop?.('idle', () => {
+								this.createComponentCollector(messageId, options);
+							});
+					  }, options.idle)
+					: undefined,
+			timeout:
+				options.timeout && options.timeout > 0
+					? setTimeout(() => {
+							this.deleteValue(messageId);
+							options.onStop?.('timeout', () => {
+								this.createComponentCollector(messageId, options);
+							});
+					  }, options.timeout)
+					: undefined,
 			__run: (customId, callback) => {
 				if (this.values.has(messageId)) {
 					this.values.get(messageId)!.components.push({
