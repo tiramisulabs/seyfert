@@ -75,8 +75,8 @@ export class Collectors {
 		const index = collectors.findIndex(x => x.nonce === nonce);
 		if (index === -1) return;
 		const collector = collectors[index];
-		clearTimeout(collector.options.idle);
-		clearTimeout(collector.options.timeout);
+		clearTimeout(collector.idle);
+		clearTimeout(collector.timeout);
 		collectors.splice(index, 1);
 		return collector.options.onStop?.(reason);
 	}
