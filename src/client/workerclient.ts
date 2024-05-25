@@ -349,6 +349,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			//rest of the events
 			default:
 				{
+					await this.events?.execute(packet.t, packet, this, shardId);
 					switch (packet.t) {
 						case 'READY':
 							for (const g of packet.d.guilds) {
@@ -393,7 +394,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							}
 						}
 					}
-					await this.events?.execute(packet.t, packet, this, shardId);
 				}
 				break;
 		}
