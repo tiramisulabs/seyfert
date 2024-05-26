@@ -404,11 +404,11 @@ export class LimitedCollection<K, V> {
 	}
 
 	keys() {
-		return this.data.keys;
+		return this.data.keys();
 	}
 
 	values() {
-		return this.data.values;
+		return this.data.values();
 	}
 
 	entries() {
