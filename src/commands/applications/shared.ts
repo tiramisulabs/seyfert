@@ -36,7 +36,7 @@ export type CommandMetadata<T extends readonly (keyof RegisteredMiddlewares)[]> 
 				? {}
 				: {
 						[key in first]: MetadataMiddleware<RegisteredMiddlewares[first]>;
-				  }) &
+					}) &
 				(rest extends readonly (keyof RegisteredMiddlewares)[] ? CommandMetadata<rest> : {})
 		: {}
 	: {};

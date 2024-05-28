@@ -259,10 +259,10 @@ export class BaseClient {
 			});
 		}
 
-		if (!this.cache) {
-			this.cache = new Cache(0, new MemoryAdapter(), [], this);
-		} else {
+		if (this.cache) {
 			this.cache.__setClient(this);
+		} else {
+			this.cache = new Cache(0, new MemoryAdapter(), [], this);
 		}
 	}
 

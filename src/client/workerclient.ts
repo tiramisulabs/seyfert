@@ -359,8 +359,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							this.applicationId = packet.d.application.id;
 							this.me = new ClientUser(this, packet.d.user, packet.d.application) as never;
 							if (
-								!this.__handleGuilds?.size ||
-								!((workerData.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds)
+								!(
+									this.__handleGuilds?.size &&
+									(workerData.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds
+								)
 							) {
 								if ([...this.shards.values()].every(shard => shard.data.session_id)) {
 									this.postMessage({

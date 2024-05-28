@@ -7,8 +7,8 @@ export type ToClass<T, This> = new (
 		? ReturnType<T[K]> extends Promise<T>
 			? (...args: Parameters<T[K]>) => Promise<This>
 			: ReturnType<T[K]> extends T
-			  ? (...args: Parameters<T[K]>) => This
-			  : T[K]
+				? (...args: Parameters<T[K]>) => This
+				: T[K]
 		: T[K];
 };
 
@@ -20,8 +20,8 @@ export type DeepPartial<T> = {
 	[K in keyof T]?: T[K] extends Record<any, any>
 		? DeepPartial<T[K]>
 		: T[K] extends (infer I)[]
-		  ? DeepPartial<I>[]
-		  : T[K];
+			? DeepPartial<I>[]
+			: T[K];
 };
 
 export type OmitInsert<T, K extends keyof T, I> = I extends [] ? Omit<T, K> & I[number] : Omit<T, K> & I;
@@ -50,10 +50,10 @@ export type WithID<More> = { id: string } & More;
 export type Tail<A> = A extends [unknown, ...infer rest]
 	? rest
 	: A extends [unknown]
-	  ? []
-	  : A extends (infer first)[]
-		  ? first[]
-		  : never;
+		? []
+		: A extends (infer first)[]
+			? first[]
+			: never;
 
 export type ValueOf<T> = T[keyof T];
 
@@ -74,8 +74,8 @@ export type AuxIsStrictlyUndefined<T> = T extends undefined | null | never | voi
 export type IsStrictlyUndefined<T> = AuxIsStrictlyUndefined<T> extends true
 	? true
 	: AuxIsStrictlyUndefined<T> extends false
-	  ? false
-	  : false;
+		? false
+		: false;
 
 export type If<T extends boolean, A, B = null> = T extends true ? A : B extends null ? A | null : B;
 
@@ -103,10 +103,10 @@ export type ObjectToLower<T> = Identify<{
 	[K in keyof T as CamelCase<Exclude<K, symbol | number>>]: T[K] extends unknown[]
 		? Identify<ObjectToLower<T[K][0]>[]>
 		: T[K] extends object
-		  ? Identify<ObjectToLower<T[K]>>
-		  : AuxIsStrictlyUndefined<T[K]> extends true
-			  ? undefined
-			  : ObjectToLowerUndefined<T[K]>;
+			? Identify<ObjectToLower<T[K]>>
+			: AuxIsStrictlyUndefined<T[K]> extends true
+				? undefined
+				: ObjectToLowerUndefined<T[K]>;
 }>;
 
 export type ObjectToLowerUndefined<T> = T extends unknown[]
@@ -115,18 +115,18 @@ export type ObjectToLowerUndefined<T> = T extends unknown[]
 			[K in keyof T as CamelCase<Exclude<K, symbol | number>>]: T[K] extends unknown[]
 				? ObjectToLower<T[K][0]>[]
 				: T[K] extends object
-				  ? ObjectToLower<T[K]>
-				  : T[K];
-	  }>;
+					? ObjectToLower<T[K]>
+					: T[K];
+		}>;
 
 export type ObjectToSnake<T> = Identify<{
 	[K in keyof T as SnakeCase<Exclude<K, symbol | number>>]: T[K] extends unknown[]
 		? Identify<ObjectToSnake<T[K][0]>[]>
 		: T[K] extends object
-		  ? Identify<ObjectToSnake<T[K]>>
-		  : AuxIsStrictlyUndefined<T[K]> extends true
-			  ? undefined
-			  : ObjectToSnakeUndefined<T[K]>;
+			? Identify<ObjectToSnake<T[K]>>
+			: AuxIsStrictlyUndefined<T[K]> extends true
+				? undefined
+				: ObjectToSnakeUndefined<T[K]>;
 }>;
 
 export type ObjectToSnakeUndefined<T> = T extends unknown[]
@@ -135,9 +135,9 @@ export type ObjectToSnakeUndefined<T> = T extends unknown[]
 			[K in keyof T as SnakeCase<Exclude<K, symbol | number>>]: T[K] extends unknown[]
 				? ObjectToSnake<T[K][0]>[]
 				: T[K] extends object
-				  ? ObjectToSnake<T[K]>
-				  : T[K];
-	  }>;
+					? ObjectToSnake<T[K]>
+					: T[K];
+		}>;
 
 export type UnionToTuple<U, A extends any[] = []> = (U extends void ? void : (arg: () => U) => never) extends (
 	arg: infer I,
@@ -164,10 +164,14 @@ type OptionalizeAux<T extends object> = Identify<
  * it is recursive
  */
 export type Optionalize<T> = T extends object
-	? T extends Array<unknown>
+	? // biome-ignore lint/style/useShorthandArrayType: typescript things
+		// biome-ignore lint/style/useConsistentArrayType: <explanation>
+		T extends Array<unknown>
 		? number extends T['length']
 			? T[number] extends object
-				? Array<OptionalizeAux<T[number]>>
+				? // biome-ignore lint/style/useShorthandArrayType: <explanation>
+					// biome-ignore lint/style/useConsistentArrayType: <explanation>
+					Array<OptionalizeAux<T[number]>>
 				: T
 			: Partial<T>
 		: OptionalizeAux<T>
@@ -211,8 +215,8 @@ export type FlatObjectKeys<T extends Record<string, any>, Key = keyof T> = Key e
 	? T[Key] extends Record<string, unknown>
 		? `${Key}.${FlatObjectKeys<T[Key]>}`
 		: T[Key] extends string
-		  ? `${Key}`
-		  : never
+			? `${Key}`
+			: never
 	: never;
 
 export type Awaitable<V> = Promise<V> | V;

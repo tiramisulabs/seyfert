@@ -51,13 +51,13 @@ export class Collectors {
 				options.idle && options.idle > 0
 					? setTimeout(() => {
 							return this.delete(options.event, nonce, 'idle');
-					  }, options.idle)
+						}, options.idle)
 					: undefined,
 			timeout:
 				options.timeout && options.timeout > 0
 					? setTimeout(() => {
 							return this.delete(options.event, nonce, 'timeout');
-					  }, options.timeout)
+						}, options.timeout)
 					: undefined,
 			nonce,
 		});

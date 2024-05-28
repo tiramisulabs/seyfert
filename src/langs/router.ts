@@ -42,12 +42,12 @@ export type __InternalParseLocale<T extends Record<string, any>> = {
 	[K in keyof T]: T[K] extends (...args: any[]) => any
 		? (...args: Parameters<T[K]>) => { get(locale?: string): ReturnType<T[K]> }
 		: T[K] extends string
-		  ? { get(locale?: string): T[K] }
-		  : T[K] extends unknown[]
-			  ? { get(locale?: string): T[K] }
-			  : T[K] extends Record<string, any>
-				  ? __InternalParseLocale<T[K]> & { get(locale?: string): T[K] }
-				  : never;
+			? { get(locale?: string): T[K] }
+			: T[K] extends unknown[]
+				? { get(locale?: string): T[K] }
+				: T[K] extends Record<string, any>
+					? __InternalParseLocale<T[K]> & { get(locale?: string): T[K] }
+					: never;
 };
 
 export type ParseLocales<T extends Record<string, any>> = T;

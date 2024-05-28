@@ -66,7 +66,7 @@ export class CommandHandler extends BaseHandler {
 					if (option.channel_types?.length !== (cached as APIApplicationCommandChannelOption).channel_types?.length)
 						return true;
 					if ('channel_types' in option && 'channel_types' in cached) {
-						if (!option.channel_types || !cached.channel_types) return true;
+						if (!(option.channel_types && cached.channel_types)) return true;
 						return option.channel_types.some(ct => !cached.channel_types!.includes(ct));
 					}
 				}

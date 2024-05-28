@@ -57,7 +57,7 @@ type Wrap<N extends ApplicationCommandOptionType> = N extends
 				ok: OKFunction<any>,
 				fail: StopFunction,
 			): void;
-	  } & {
+		} & {
 			description: string;
 			description_localizations?: APIApplicationCommandBasicOption['description_localizations'];
 			name_localizations?: APIApplicationCommandBasicOption['name_localizations'];
@@ -65,7 +65,7 @@ type Wrap<N extends ApplicationCommandOptionType> = N extends
 				name?: FlatObjectKeys<DefaultLocale>;
 				description?: FlatObjectKeys<DefaultLocale>;
 			};
-	  };
+		};
 
 export type __TypeWrapper<T extends ApplicationCommandOptionType> = Wrap<T>;
 
@@ -96,18 +96,18 @@ type ContextOptionsAux<T extends OptionsRecord> = {
 	[K in Exclude<keyof T, KeysWithoutRequired<T>>]: T[K]['value'] extends (...args: any) => any
 		? Parameters<Parameters<T[K]['value']>[1]>[0]
 		: T[K] extends SeyfertStringOption | SeyfertNumberOption
-		  ? T[K]['choices'] extends NonNullable<SeyfertStringOption['choices'] | SeyfertNumberOption['choices']>
+			? T[K]['choices'] extends NonNullable<SeyfertStringOption['choices'] | SeyfertNumberOption['choices']>
 				? T[K]['choices'][number]['value']
 				: ReturnOptionsTypes[T[K]['type']]
-		  : ReturnOptionsTypes[T[K]['type']];
+			: ReturnOptionsTypes[T[K]['type']];
 } & {
 	[K in KeysWithoutRequired<T>]?: T[K]['value'] extends (...args: any) => any
 		? Parameters<Parameters<T[K]['value']>[1]>[0]
 		: T[K] extends SeyfertStringOption | SeyfertNumberOption
-		  ? T[K]['choices'] extends NonNullable<SeyfertStringOption['choices'] | SeyfertNumberOption['choices']>
+			? T[K]['choices'] extends NonNullable<SeyfertStringOption['choices'] | SeyfertNumberOption['choices']>
 				? T[K]['choices'][number]['value']
 				: ReturnOptionsTypes[T[K]['type']]
-		  : ReturnOptionsTypes[T[K]['type']];
+			: ReturnOptionsTypes[T[K]['type']];
 };
 
 export type ContextOptions<T extends OptionsRecord> = ContextOptionsAux<T>;
@@ -156,7 +156,7 @@ export class BaseCommand {
 								(res, rej) =>
 									option.value?.({ context: ctx, value: resolver.getValue(i.name) } as never, res, rej) ||
 									res(resolver.getValue(i.name)),
-						  )
+							)
 						: undefined;
 				if (value === undefined) {
 					if (option.required) {
@@ -210,6 +210,7 @@ export class BaseCommand {
 					return;
 				}
 				// biome-ignore lint/style/noArguments: yes
+				// biome-ignore lint/correctness/noUndeclaredVariables: xd
 				if (arguments.length) {
 					// @ts-expect-error
 					context[global ? 'globalMetadata' : 'metadata'][middlewares[index]] = obj;
@@ -249,7 +250,7 @@ export class BaseCommand {
 		const data = {
 			name: this.name,
 			type: this.type,
-			nsfw: this.nsfw || false,
+			nsfw: !!this.nsfw,
 			description: this.description,
 			name_localizations: this.name_localizations,
 			description_localizations: this.description_localizations,

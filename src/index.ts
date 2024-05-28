@@ -71,7 +71,7 @@ export const config = {
 						: data.intents?.reduce<number>(
 								(pr, acc) => pr | (typeof acc === 'number' ? acc : GatewayIntentBits[acc]),
 								0,
-						  ) ?? 0
+							) ?? 0
 					: 0,
 		} as InternalRuntimeConfig;
 	},

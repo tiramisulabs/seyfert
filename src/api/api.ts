@@ -438,7 +438,7 @@ export type RequestObject<
 		: {
 				body?: B;
 				files?: F;
-		  });
+			});
 
 export type RestArguments<
 	M extends ProxyRequestMethod,

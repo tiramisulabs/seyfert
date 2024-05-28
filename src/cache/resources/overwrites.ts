@@ -32,7 +32,7 @@ export class Overwrites extends GuildRelatedResource {
 						id: rawOverwrite.id,
 						type: rawOverwrite.type,
 						guildId: rawOverwrite.guild_id,
-				  }))
+					}))
 				: undefined,
 		);
 	}

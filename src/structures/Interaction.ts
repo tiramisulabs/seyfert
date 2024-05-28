@@ -144,7 +144,7 @@ export class BaseInteraction<
 								: (files?.map((x, id) => ({
 										id,
 										filename: x.name,
-								  })) as RESTAPIAttachment[]),
+									})) as RESTAPIAttachment[]),
 						poll: poll ? (poll instanceof PollBuilder ? poll.toJSON() : poll) : undefined,
 					},
 				};
@@ -162,9 +162,9 @@ export class BaseInteraction<
 												x instanceof ActionRow
 													? (x.toJSON() as unknown as APIActionRowComponent<APITextInputComponent>)
 													: x,
-										  )
+											)
 										: [],
-							  },
+								},
 				};
 			default:
 				return body;
@@ -190,7 +190,7 @@ export class BaseInteraction<
 					: (files?.map((x, id) => ({
 							id,
 							filename: x.name,
-					  })) as RESTAPIAttachment[]),
+						})) as RESTAPIAttachment[]),
 			...body,
 			components: body.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)),
 			embeds: body?.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)),
@@ -558,7 +558,7 @@ export class MentionableSelectMenuInteraction extends SelectMenuInteraction {
 							this.users!.find(u => u.id === x)!,
 							this.guildId!,
 						),
-			  )
+				)
 			: [];
 		this.users = resolved.users ? this.values.map(x => new User(this.client, resolved.users![x])) : [];
 	}
@@ -597,7 +597,7 @@ export class UserSelectMenuInteraction extends SelectMenuInteraction {
 							this.users!.find(u => u.id === x)!,
 							this.guildId!,
 						),
-			  )
+				)
 			: [];
 	}
 }
