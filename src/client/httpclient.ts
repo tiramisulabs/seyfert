@@ -206,7 +206,7 @@ export class HttpClient extends BaseClient {
 								? new Response(response, { headers })
 								: Response.json(response, {
 										headers,
-								  }),
+									}),
 						);
 					});
 				});
@@ -215,11 +215,7 @@ export class HttpClient extends BaseClient {
 
 	protected async onPacket(res: HttpResponse, req: HttpRequest) {
 		const rawBody = await this.verifySignature(res, req);
-		if (!rawBody) {
-			this.debugger?.debug('Invalid request/No info, returning 418 status.');
-			// I'm a teapot
-			res.writeStatus('418').end();
-		} else {
+		if (rawBody) {
 			switch (rawBody.type) {
 				case InteractionType.Ping:
 					this.debugger?.debug('Ping interaction received, responding.');
@@ -272,6 +268,10 @@ export class HttpClient extends BaseClient {
 					});
 					break;
 			}
+		} else {
+			this.debugger?.debug('Invalid request/No info, returning 418 status.');
+			// I'm a teapot
+			res.writeStatus('418').end();
 		}
 	}
 }

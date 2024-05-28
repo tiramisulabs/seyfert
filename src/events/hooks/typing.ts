@@ -8,6 +8,6 @@ export const TYPING_START = (self: UsingClient, data: GatewayTypingStartDispatch
 		? {
 				...toCamelCase(data),
 				member: new GuildMember(self, data.member, data.member.user!, data.guild_id!),
-		  }
+			}
 		: toCamelCase(data);
 };

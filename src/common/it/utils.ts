@@ -117,10 +117,8 @@ export class BaseHandler {
 		for (const i of await promises.readdir(dir, { withFileTypes: true })) {
 			if (i.isDirectory()) {
 				files.push(...(await this.getFiles(join(dir, i.name))));
-			} else {
-				if (this.filter(join(dir, i.name))) {
-					files.push(join(dir, i.name));
-				}
+			} else if (this.filter(join(dir, i.name))) {
+				files.push(join(dir, i.name));
 			}
 		}
 

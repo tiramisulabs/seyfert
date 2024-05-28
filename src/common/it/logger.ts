@@ -128,7 +128,9 @@ export class Logger {
 
 		let log;
 
-		if (!Logger.__callback) {
+		if (Logger.__callback) {
+			log = Logger.__callback(this, level, args);
+		} else {
 			const color = Logger.colorFunctions.get(level) ?? Logger.noColor;
 			const memoryData = process.memoryUsage?.();
 			const date = new Date();
@@ -139,8 +141,6 @@ export class Logger {
 				this.name ? `${this.name} >` : '>',
 				...args,
 			];
-		} else {
-			log = Logger.__callback(this, level, args);
 		}
 		if (!log) return;
 		this.__write(log);
@@ -189,7 +189,7 @@ export class Logger {
 
 	private __write(log: unknown[]) {
 		if (this.saveOnFile || Logger.saveOnFile === 'all' || Logger.saveOnFile?.includes(this.name)) {
-			if (!Logger.createdDir && !existsSync(join(process.cwd(), Logger.dirname))) {
+			if (!(Logger.createdDir || existsSync(join(process.cwd(), Logger.dirname)))) {
 				Logger.createdDir = true;
 				mkdirSync(join(process.cwd(), Logger.dirname), { recursive: true });
 			}

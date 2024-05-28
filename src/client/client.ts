@@ -78,9 +78,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			parentPort = worker_threads.parentPort;
 		}
 
-		if (!worker_threads?.workerData?.__USING_WATCHER__) {
-			await this.gateway.spawnShards();
-		} else {
+		if (worker_threads?.workerData?.__USING_WATCHER__) {
 			parentPort?.on('message', (data: WatcherPayload | WatcherSendToShard) => {
 				switch (data.type) {
 					case 'PAYLOAD':
@@ -91,6 +89,8 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						break;
 				}
 			});
+		} else {
+			await this.gateway.spawnShards();
 		}
 	}
 
@@ -186,8 +186,10 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						this.applicationId = packet.d.application.id;
 						this.me = new ClientUser(this, packet.d.user, packet.d.application) as never;
 						if (
-							!this.__handleGuilds?.size ||
-							!((this.gateway.options.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds)
+							!(
+								this.__handleGuilds?.size &&
+								(this.gateway.options.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds
+							)
 						) {
 							if ([...this.gateway.values()].every(shard => shard.data.session_id)) {
 								await this.events?.runEvent('BOT_READY', this, this.me, -1);

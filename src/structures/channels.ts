@@ -269,7 +269,7 @@ export class MessagesMethods extends DiscordBase {
 					: (files?.map((x, id) => ({
 							id,
 							filename: x.name,
-					  })) as RESTAPIAttachment[]),
+						})) as RESTAPIAttachment[]),
 			poll: poll ? (poll instanceof PollBuilder ? poll.toJSON() : poll) : undefined,
 		} as T;
 	}
