@@ -10,7 +10,7 @@ import type {
 	GatewayMessageReactionRemoveEmojiDispatchData,
 	GatewayMessageUpdateDispatchData,
 } from 'discord-api-types/v10';
-import { type MakeRequired, type PartialClass, toCamelCase } from '../../common';
+import { type MakeRequired, type PartialClass, toCamelCase, type ObjectToLower } from '../../common';
 import { Message } from '../../structures';
 import type { UsingClient } from '../../commands';
 
@@ -18,7 +18,10 @@ export const MESSAGE_CREATE = (self: UsingClient, data: GatewayMessageCreateDisp
 	return new Message(self, data);
 };
 
-export const MESSAGE_DELETE = async (self: UsingClient, data: GatewayMessageDeleteDispatchData) => {
+export const MESSAGE_DELETE = async (
+	self: UsingClient,
+	data: GatewayMessageDeleteDispatchData,
+): Promise<Message | ObjectToLower<GatewayMessageDeleteDispatchData>> => {
 	return (await self.cache.messages?.get(data.id)) ?? toCamelCase(data);
 };
 
