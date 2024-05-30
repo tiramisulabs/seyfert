@@ -73,6 +73,7 @@ export interface CDNUrlOptions extends BaseCDNUrlOptions {
 
 export function parseCDNURL(route: string, options: CDNUrlOptions = {}) {
 	if (options.forceStatic && route.includes('a_')) options.extension = 'png';
+	if (!options.extension && route.includes('a_')) options.extension = 'gif';
 
 	const url = new URL(`${route}.${options.extension || 'png'}`);
 

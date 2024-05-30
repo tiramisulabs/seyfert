@@ -177,7 +177,11 @@ export class GuildMember extends BaseGuildMember {
 	}
 
 	avatarURL(options?: ImageOptions) {
-		return this.user.avatarURL(options);
+		if (!this.avatar) {
+			return null;
+		}
+
+		return this.rest.cdn.guilds(this.guildId).users(this.id).avatars(this.avatar).get(options);
 	}
 
 	dynamicAvatarURL(options?: ImageOptions) {
