@@ -74,6 +74,11 @@ export class Shard {
 		return url.href;
 	}
 
+	ping() {
+		if (!this.websocket) return Promise.resolve(Number.POSITIVE_INFINITY);
+		return this.websocket.ping();
+	}
+
 	async connect() {
 		await this.connectTimeout.wait();
 		if (this.isOpen) {
