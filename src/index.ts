@@ -71,7 +71,7 @@ export const config = {
 						: data.intents?.reduce<number>(
 								(pr, acc) => pr | (typeof acc === 'number' ? acc : GatewayIntentBits[acc]),
 								0,
-						  ) ?? 0
+							) ?? 0
 					: 0,
 		} as InternalRuntimeConfig;
 	},
@@ -86,7 +86,7 @@ export const config = {
 			port: 8080,
 			...data,
 		} as InternalRuntimeConfigHTTP;
-		if (isCloudfareWorker()) BaseClient._seyferConfig = obj;
+		if (isCloudfareWorker()) BaseClient._seyfertConfig = obj;
 		return obj;
 	},
 };

@@ -110,7 +110,7 @@ export class BaseMessage extends DiscordBase {
 								m,
 								this.guildId!,
 							),
-				  )
+					)
 				: data.mentions.map(u => new User(this.client, u));
 		}
 

@@ -25,6 +25,7 @@ import { BaseClient } from './base';
 import type { Client } from './client';
 import { onInteractionCreate } from './oninteractioncreate';
 import { onMessageCreate } from './onmessagecreate';
+import { Collectors } from './collectors';
 
 let workerData: WorkerData;
 let manager: import('node:worker_threads').MessagePort;
@@ -46,7 +47,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		name: `[Worker #${workerData.workerId}]`,
 	});
 
-	events? = new EventHandler(this.logger);
+	collectors = new Collectors();
+	events? = new EventHandler(this.logger, this.collectors);
 	me!: When<Ready, ClientUser>;
 	promises = new Map<string, { resolve: (value: any) => void; timeout: NodeJS.Timeout }>();
 
@@ -117,7 +119,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			if (!rest.handlers.events) {
 				this.events = undefined;
 			} else if (typeof rest.handlers.events === 'function') {
-				this.events = new EventHandler(this.logger);
+				this.events = new EventHandler(this.logger, this.collectors);
 				this.events.setHandlers({
 					callback: rest.handlers.events,
 				});
@@ -347,6 +349,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			//rest of the events
 			default:
 				{
+					await this.events?.execute(packet.t, packet, this, shardId);
 					switch (packet.t) {
 						case 'READY':
 							for (const g of packet.d.guilds) {
@@ -356,8 +359,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							this.applicationId = packet.d.application.id;
 							this.me = new ClientUser(this, packet.d.user, packet.d.application) as never;
 							if (
-								!this.__handleGuilds?.size ||
-								!((workerData.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds)
+								!(
+									this.__handleGuilds?.size &&
+									(workerData.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds
+								)
 							) {
 								if ([...this.shards.values()].every(shard => shard.data.session_id)) {
 									this.postMessage({
@@ -391,7 +396,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							}
 						}
 					}
-					await this.events?.execute(packet.t, packet, this, shardId);
 				}
 				break;
 		}

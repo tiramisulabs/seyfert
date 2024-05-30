@@ -126,7 +126,7 @@ export class GuildRelatedResource<T = any> {
 			? (this.adapter.scan(this.hashId(guild), true) as string[])
 			: (fakePromise(this.adapter.getToRelationship(this.hashId(guild))).then(keys =>
 					keys.map(x => `${this.namespace}.${x}`),
-			  ) as string[]);
+				) as string[]);
 	}
 
 	values(guild: string): ReturnCache<(T & { guild_id: string })[]> {
@@ -134,7 +134,7 @@ export class GuildRelatedResource<T = any> {
 			? (fakePromise(this.adapter.scan(this.hashId(guild))).then(x => x) as (T & { guild_id: string })[])
 			: (fakePromise(this.adapter.getToRelationship(this.hashId(guild))).then(keys =>
 					this.adapter.get(keys.map(x => `${this.namespace}.${x}`)),
-			  ) as (T & { guild_id: string })[]);
+				) as (T & { guild_id: string })[]);
 	}
 
 	count(to: string) {

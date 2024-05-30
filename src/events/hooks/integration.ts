@@ -12,7 +12,7 @@ export const INTEGRATION_CREATE = (self: UsingClient, data: GatewayIntegrationCr
 		? {
 				...toCamelCase(data),
 				user: new User(self, data.user!),
-		  }
+			}
 		: toCamelCase(data);
 };
 
@@ -21,7 +21,7 @@ export const INTEGRATION_UPDATE = (self: UsingClient, data: GatewayIntegrationUp
 		? {
 				...toCamelCase(data),
 				user: new User(self, data.user!),
-		  }
+			}
 		: toCamelCase(data);
 };
 

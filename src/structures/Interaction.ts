@@ -35,6 +35,7 @@ import {
 	InteractionType,
 	type MessageFlags,
 	type RESTPostAPIInteractionCallbackJSONBody,
+	type RESTAPIAttachment,
 } from 'discord-api-types/v10';
 import { mix } from 'ts-mixer';
 import type { RawFile } from '../api';
@@ -114,7 +115,11 @@ export class BaseInteraction<
 		this.user = this.member?.user ?? new User(client, interaction.user!);
 	}
 
-	static transformBodyRequest(body: ReplyInteractionBody, self: UsingClient): APIInteractionResponse {
+	static transformBodyRequest(
+		body: ReplyInteractionBody,
+		files: RawFile[] | undefined,
+		self: UsingClient,
+	): APIInteractionResponse {
 		switch (body.type) {
 			case InteractionResponseType.ApplicationCommandAutocompleteResult:
 			case InteractionResponseType.DeferredMessageUpdate:
@@ -131,9 +136,15 @@ export class BaseInteraction<
 						allowed_mentions: self.options?.allowedMentions,
 						...(body.data ?? {}),
 						//@ts-ignore
-						components: body.data?.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)) ?? undefined,
-						embeds: body.data?.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)) ?? undefined,
-						attachments: body.data?.attachments?.map((x, i) => ({ id: i, ...resolveAttachment(x) })) ?? undefined,
+						components: body.data?.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)),
+						embeds: body.data?.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)),
+						attachments:
+							body.data && 'attachments' in body.data
+								? body.data.attachments?.map((x, i) => ({ id: i, ...resolveAttachment(x) }))
+								: (files?.map((x, id) => ({
+										id,
+										filename: x.name,
+									})) as RESTAPIAttachment[]),
 						poll: poll ? (poll instanceof PollBuilder ? poll.toJSON() : poll) : undefined,
 					},
 				};
@@ -151,9 +162,9 @@ export class BaseInteraction<
 												x instanceof ActionRow
 													? (x.toJSON() as unknown as APIActionRowComponent<APITextInputComponent>)
 													: x,
-										  )
+											)
 										: [],
-							  },
+								},
 				};
 			default:
 				return body;
@@ -166,14 +177,23 @@ export class BaseInteraction<
 			| MessageUpdateBodyRequest
 			| MessageCreateBodyRequest
 			| MessageWebhookCreateBodyRequest,
+		files: RawFile[] | undefined,
 		self: UsingClient,
 	) {
 		const poll = (body as MessageWebhookCreateBodyRequest).poll;
+
 		return {
 			allowed_mentions: self.options?.allowedMentions,
+			attachments:
+				'attachments' in body
+					? body.attachments?.map((x, i) => ({ id: i, ...resolveAttachment(x) }))
+					: (files?.map((x, id) => ({
+							id,
+							filename: x.name,
+						})) as RESTAPIAttachment[]),
 			...body,
-			components: body.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)) ?? undefined,
-			embeds: body?.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)) ?? undefined,
+			components: body.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)),
+			embeds: body?.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)),
 			poll: poll ? (poll instanceof PollBuilder ? poll.toJSON() : poll) : undefined,
 		} as T;
 	}
@@ -184,9 +204,10 @@ export class BaseInteraction<
 			const { files, ...rest } = body.data ?? {};
 			//@ts-expect-error
 			const data = body.data instanceof Modal ? body.data : rest;
+			const parsedFiles = files ? await resolveFiles(files) : undefined;
 			return (this.replied = this.__reply({
-				body: BaseInteraction.transformBodyRequest({ data, type: body.type }, this.client),
-				files: files ? await resolveFiles(files) : undefined,
+				body: BaseInteraction.transformBodyRequest({ data, type: body.type }, parsedFiles, this.client),
+				files: parsedFiles,
 			}).then(() => (this.replied = true)));
 		}
 		return (this.replied = this.client.interactions.reply(this.id, this.token, body).then(() => (this.replied = true)));
@@ -537,7 +558,7 @@ export class MentionableSelectMenuInteraction extends SelectMenuInteraction {
 							this.users!.find(u => u.id === x)!,
 							this.guildId!,
 						),
-			  )
+				)
 			: [];
 		this.users = resolved.users ? this.values.map(x => new User(this.client, resolved.users![x])) : [];
 	}
@@ -576,7 +597,7 @@ export class UserSelectMenuInteraction extends SelectMenuInteraction {
 							this.users!.find(u => u.id === x)!,
 							this.guildId!,
 						),
-			  )
+				)
 			: [];
 	}
 }

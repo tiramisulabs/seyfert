@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import NodeWebSocket from 'ws';
 
 export class BaseSocket {
@@ -30,6 +31,21 @@ export class BaseSocket {
 	close(...args: Parameters<NodeWebSocket['close']>) {
 		// @ts-expect-error
 		return this.internal.close(...args);
+	}
+
+	async ping() {
+		if (!('ping' in this.internal)) throw new Error('Unexpected: Method ping not implemented');
+		return new Promise<number>(res => {
+			const nonce = randomUUID();
+			const start = performance.now();
+			const listener = (data: Buffer) => {
+				if (data.toString() !== nonce) return;
+				(this.internal as NodeWebSocket).removeListener('pong', listener);
+				res(performance.now() - start);
+			};
+			(this.internal as NodeWebSocket).on('pong', listener);
+			(this.internal as NodeWebSocket).ping(nonce);
+		});
 	}
 
 	get readyState() {

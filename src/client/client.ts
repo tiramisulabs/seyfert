@@ -10,17 +10,19 @@ import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOp
 import { BaseClient } from './base';
 import { onInteractionCreate } from './oninteractioncreate';
 import { onMessageCreate } from './onmessagecreate';
+import { Collectors } from './collectors';
 
 let parentPort: import('node:worker_threads').MessagePort;
 
 export class Client<Ready extends boolean = boolean> extends BaseClient {
 	private __handleGuilds?: Set<string> = new Set();
 	gateway!: ShardManager;
-	events? = new EventHandler(this.logger);
 	me!: If<Ready, ClientUser>;
 	declare options: ClientOptions;
 	memberUpdateHandler = new MemberUpdateHandler();
 	presenceUpdateHandler = new PresenceUpdateHandler();
+	collectors = new Collectors();
+	events? = new EventHandler(this.logger, this.collectors);
 
 	constructor(options?: ClientOptions) {
 		super(options);
@@ -49,7 +51,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			if (!rest.handlers.events) {
 				this.events = undefined;
 			} else if (typeof rest.handlers.events === 'function') {
-				this.events = new EventHandler(this.logger);
+				this.events = new EventHandler(this.logger, this.collectors);
 				this.events.setHandlers({
 					callback: rest.handlers.events,
 				});
@@ -76,9 +78,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			parentPort = worker_threads.parentPort;
 		}
 
-		if (!worker_threads?.workerData?.__USING_WATCHER__) {
-			await this.gateway.spawnShards();
-		} else {
+		if (worker_threads?.workerData?.__USING_WATCHER__) {
 			parentPort?.on('message', (data: WatcherPayload | WatcherSendToShard) => {
 				switch (data.type) {
 					case 'PAYLOAD':
@@ -89,6 +89,8 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						break;
 				}
 			});
+		} else {
+			await this.gateway.spawnShards();
 		}
 	}
 
@@ -168,6 +170,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			//rest of the events
 			default: {
 				await this.cache.onPacket(packet);
+				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
 				switch (packet.t) {
 					case 'INTERACTION_CREATE':
 						await onInteractionCreate(this, packet.d, shardId);
@@ -183,8 +186,10 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						this.applicationId = packet.d.application.id;
 						this.me = new ClientUser(this, packet.d.user, packet.d.application) as never;
 						if (
-							!this.__handleGuilds?.size ||
-							!((this.gateway.options.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds)
+							!(
+								this.__handleGuilds?.size &&
+								(this.gateway.options.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds
+							)
 						) {
 							if ([...this.gateway.values()].every(shard => shard.data.session_id)) {
 								await this.events?.runEvent('BOT_READY', this, this.me, -1);
@@ -205,7 +210,6 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						break;
 					}
 				}
-				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
 				break;
 			}
 		}

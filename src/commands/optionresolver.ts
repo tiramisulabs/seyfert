@@ -171,8 +171,8 @@ export class OptionResolver {
 					member instanceof GuildMember || member instanceof InteractionGuildMember
 						? member
 						: 'permissions' in member
-						  ? new InteractionGuildMember(this.client, member, user!, this.guildId!)
-						  : new GuildMember(this.client, member, user!, this.guildId!);
+							? new InteractionGuildMember(this.client, member, user!, this.guildId!)
+							: new GuildMember(this.client, member, user!, this.guildId!);
 			}
 
 			const channel = resolved.channels?.[value];

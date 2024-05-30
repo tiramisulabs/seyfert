@@ -1,6 +1,7 @@
 import {
 	ChannelFlags,
 	ChannelType,
+	type RESTAPIAttachment,
 	VideoQualityMode,
 	type APIChannelBase,
 	type APIDMChannel,
@@ -40,6 +41,7 @@ import type { GuildMember } from './GuildMember';
 import type { GuildRole } from './GuildRole';
 import { DiscordBase } from './extra/DiscordBase';
 import { channelLink } from './extra/functions';
+import type { RawFile } from '..';
 
 export class BaseChannel<T extends ChannelType> extends DiscordBase<APIChannelBase<ChannelType>> {
 	declare type: T;
@@ -250,14 +252,24 @@ export class MessagesMethods extends DiscordBase {
 		};
 	}
 
-	static transformMessageBody<T>(body: MessageCreateBodyRequest | MessageUpdateBodyRequest, self: UsingClient) {
+	static transformMessageBody<T>(
+		body: MessageCreateBodyRequest | MessageUpdateBodyRequest,
+		files: RawFile[] | undefined,
+		self: UsingClient,
+	) {
 		const poll = (body as MessageCreateBodyRequest).poll;
 		return {
 			allowed_mentions: self.options?.allowedMentions,
 			...body,
 			components: body.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)) ?? undefined,
 			embeds: body.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)) ?? undefined,
-			attachments: body.attachments?.map((x, i) => ({ id: i, ...resolveAttachment(x) })) ?? undefined,
+			attachments:
+				'attachments' in body
+					? body.attachments?.map((x, i) => ({ id: i, ...resolveAttachment(x) })) ?? undefined
+					: (files?.map((x, id) => ({
+							id,
+							filename: x.name,
+						})) as RESTAPIAttachment[]),
 			poll: poll ? (poll instanceof PollBuilder ? poll.toJSON() : poll) : undefined,
 		} as T;
 	}

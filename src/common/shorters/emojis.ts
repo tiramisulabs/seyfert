@@ -39,7 +39,9 @@ export class EmojiShorter extends BaseShorter {
 		const emoji = await this.client.proxy.guilds(guildId).emojis.post({
 			body: bodyResolved,
 		});
-		await this.client.cache.channels?.setIfNI('GuildEmojisAndStickers', emoji.id!, guildId, emoji);
+    
+		await this.client.cache.emojis?.setIfNI('GuildEmojisAndStickers', emoji.id!, guildId, emoji);
+
 		return new GuildEmoji(this.client, emoji, guildId);
 	}
 
@@ -68,7 +70,7 @@ export class EmojiShorter extends BaseShorter {
 	 */
 	async delete(guildId: string, emojiId: string, reason?: string) {
 		await this.client.proxy.guilds(guildId).emojis(emojiId).delete({ reason });
-		await this.client.cache.channels?.removeIfNI('GuildEmojisAndStickers', emojiId, guildId);
+		await this.client.cache.emojis?.removeIfNI('GuildEmojisAndStickers', emojiId, guildId);
 	}
 
 	/**
@@ -81,7 +83,7 @@ export class EmojiShorter extends BaseShorter {
 	 */
 	async edit(guildId: string, emojiId: string, body: RESTPatchAPIGuildEmojiJSONBody, reason?: string) {
 		const emoji = await this.client.proxy.guilds(guildId).emojis(emojiId).patch({ body, reason });
-		await this.client.cache.channels?.setIfNI('GuildEmojisAndStickers', emoji.id!, guildId, emoji);
+		await this.client.cache.emojis?.setIfNI('GuildEmojisAndStickers', emoji.id!, guildId, emoji);
 		return new GuildEmoji(this.client, emoji, guildId);
 	}
 }

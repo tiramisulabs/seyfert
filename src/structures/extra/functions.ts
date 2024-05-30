@@ -27,7 +27,7 @@ export function resolvePartialEmoji(emoji: EmojiResolvable): APIPartialEmoji | u
 		if (emoji.includes('%')) {
 			emoji = encodeURIComponent(emoji);
 		}
-		if (!emoji.includes(':') && !emoji.match(/\d{17,20}/g)) {
+		if (!(emoji.includes(':') || emoji.match(/\d{17,20}/g))) {
 			return { name: emoji, id: null };
 		}
 		return;

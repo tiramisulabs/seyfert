@@ -386,7 +386,6 @@ export class ApiHandler {
 		if (options.request.reason) {
 			options.headers['X-Audit-Log-Reason'] = encodeURIComponent(options.request.reason);
 		}
-
 		return { data, finalUrl } as { data: typeof data; finalUrl: `/${string}` };
 	}
 
@@ -439,7 +438,7 @@ export type RequestObject<
 		: {
 				body?: B;
 				files?: F;
-		  });
+			});
 
 export type RestArguments<
 	M extends ProxyRequestMethod,

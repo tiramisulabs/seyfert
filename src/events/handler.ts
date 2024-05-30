@@ -5,16 +5,24 @@ import type {
 	GatewayMessageDeleteDispatch,
 } from 'discord-api-types/v10';
 import type { Client, WorkerClient } from '../client';
-import { BaseHandler, ReplaceRegex, magicImport, type MakeRequired, type SnakeCase } from '../common';
+import { BaseHandler, type Logger, ReplaceRegex, magicImport, type MakeRequired, type SnakeCase } from '../common';
 import type { ClientEvents } from '../events/hooks';
 import * as RawEvents from '../events/hooks';
 import type { ClientEvent, ClientNameEvents } from './event';
+import type { Collectors } from '../client/collectors';
 
 export type EventValue = MakeRequired<ClientEvent, '__filePath'> & { fired?: boolean };
 
 export type GatewayEvents = Uppercase<SnakeCase<keyof ClientEvents>>;
 
 export class EventHandler extends BaseHandler {
+	constructor(
+		logger: Logger,
+		protected collectors: Collectors,
+	) {
+		super(logger);
+	}
+
 	onFail = (event: GatewayEvents, err: unknown) => this.logger.warn('<Client>.events.onFail', err, event);
 	protected filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
 
@@ -70,6 +78,7 @@ export class EventHandler extends BaseHandler {
 		}
 
 		await this.runEvent(args[0].t, args[1], args[0].d, args[2]);
+		await this.collectors.run(args[0].t, args[0].d);
 	}
 
 	async runEvent(name: GatewayEvents, client: Client | WorkerClient, packet: any, shardId: number) {

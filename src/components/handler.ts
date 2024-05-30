@@ -44,22 +44,24 @@ export class ComponentHandler extends BaseHandler {
 		this.values.set(messageId, {
 			components: [],
 			options,
-			idle: options.idle
-				? setTimeout(() => {
-						this.deleteValue(messageId);
-						options.onStop?.('idle', () => {
-							this.createComponentCollector(messageId, options);
-						});
-				  }, options.idle)
-				: undefined,
-			timeout: options.timeout
-				? setTimeout(() => {
-						this.deleteValue(messageId);
-						options.onStop?.('timeout', () => {
-							this.createComponentCollector(messageId, options);
-						});
-				  }, options.timeout)
-				: undefined,
+			idle:
+				options.idle && options.idle > 0
+					? setTimeout(() => {
+							this.deleteValue(messageId);
+							options.onStop?.('idle', () => {
+								this.createComponentCollector(messageId, options);
+							});
+						}, options.idle)
+					: undefined,
+			timeout:
+				options.timeout && options.timeout > 0
+					? setTimeout(() => {
+							this.deleteValue(messageId);
+							options.onStop?.('timeout', () => {
+								this.createComponentCollector(messageId, options);
+							});
+						}, options.timeout)
+					: undefined,
 			__run: (customId, callback) => {
 				if (this.values.has(messageId)) {
 					this.values.get(messageId)!.components.push({
@@ -154,23 +156,23 @@ export class ComponentHandler extends BaseHandler {
 				return { file: x, path: i.__filePath ?? '*' };
 			}) ?? (await this.loadFilesK<{ new (): ModalCommand | ComponentCommand }>(await this.getFiles(componentsDir)));
 
-		for (let i = 0; i < paths.length; i++) {
+		for (const value of paths) {
 			let component;
 			try {
-				component = this.callback(paths[i].file);
+				component = this.callback(value.file);
 				if (!component) continue;
 			} catch (e) {
 				if (e instanceof Error && e.message.includes('is not a constructor')) {
 					this.logger.warn(
-						`${paths[i].path
+						`${value.path
 							.split(process.cwd())
 							.slice(1)
 							.join(process.cwd())} doesn't export the class by \`export default <ComponentCommand>\``,
 					);
-				} else this.logger.warn(e, paths[i]);
+				} else this.logger.warn(e, value);
 				continue;
 			}
-			if (!(component instanceof ModalCommand) && !(component instanceof ComponentCommand)) continue;
+			if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) continue;
 			if (component instanceof ModalCommand) {
 				component.onInternalError ??= this.client.options?.modals?.defaults?.onInternalError;
 				component.onMiddlewaresError ??= this.client.options?.modals?.defaults?.onMiddlewaresError;
@@ -182,7 +184,7 @@ export class ComponentHandler extends BaseHandler {
 				component.onRunError ??= this.client.options?.components?.defaults?.onRunError;
 				component.onAfterRun ??= this.client.options?.components?.defaults?.onAfterRun;
 			}
-			component.__filePath = paths[i].path;
+			component.__filePath = value.path;
 			this.commands.push(component);
 		}
 	}

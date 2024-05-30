@@ -130,7 +130,7 @@ export function Options(options: (new () => SubCommand)[] | OptionsRecord) {
 							name,
 							...option,
 						} as CommandOption;
-				  });
+					});
 		};
 }
 

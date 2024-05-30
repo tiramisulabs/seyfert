@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.6.0/schema.json",
+	"$schema": "https://biomejs.dev/schemas/1.7.3/schema.json",
 	"linter": {
 		"enabled": true,
 		"rules": {
@@ -12,14 +12,23 @@
 				"noEmptyInterface": "off",
 				"noConfusingVoidType": "off",
 				"noImplicitAnyLet": "off",
-				"noEmptyBlockStatements": "off"
+				"noEmptyBlockStatements": "off",
+				"useAwait": "off",
+				"noConsoleLog": "off"
 			},
 			"style": {
 				"noNonNullAssertion": "off",
 				"noParameterAssign": "off",
 				"useExportType": "error",
 				"useImportType": "error",
-				"useNodejsImportProtocol": "error"
+				"useNodejsImportProtocol": "error",
+				"useNamingConvention": "off",
+				"noParameterProperties": "off",
+				"useFilenamingConvention": "off",
+				"noDefaultExport": "off",
+				"noNamespaceImport": "off",
+				"useSingleCaseStatement": "off",
+				"useBlockStatements": "off"
 			},
 			"correctness": {
 				"noUnusedVariables": "off"
@@ -32,13 +41,17 @@
 				"noBannedTypes": "off",
 				"noForEach": "off",
 				"noUselessConstructor": "off",
-				"noThisInStatic": "off"
+				"noThisInStatic": "off",
+				"noExcessiveCognitiveComplexity": "off",
+				"noVoid": "off"
 			},
 			"a11y": {
 				"all": false
 			},
 			"performance": {
-				"noDelete": "off"
+				"noDelete": "off",
+				"noBarrelFile": "off",
+				"noReExportAll": "off"
 			}
 		}
 	},

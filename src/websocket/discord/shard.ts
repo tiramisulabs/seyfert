@@ -74,6 +74,11 @@ export class Shard {
 		return url.href;
 	}
 
+	ping() {
+		if (!this.websocket) return Promise.resolve(Number.POSITIVE_INFINITY);
+		return this.websocket.ping();
+	}
+
 	async connect() {
 		await this.connectTimeout.wait();
 		if (this.isOpen) {
@@ -84,6 +89,7 @@ export class Shard {
 		this.debugger?.debug(`[Shard #${this.id}] Connecting to ${this.currentGatewayURL}`);
 
 		// @ts-expect-error @types/bun cause erros in compile
+		// biome-ignore lint/correctness/noUndeclaredVariables: /\ bun lol
 		this.websocket = new BaseSocket(typeof Bun === 'undefined' ? 'ws' : 'bun', this.currentGatewayURL);
 
 		this.websocket!.onmessage = (event: WS.MessageEvent) => this.handleMessage(event);
