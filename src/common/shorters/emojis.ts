@@ -40,6 +40,7 @@ export class EmojiShorter extends BaseShorter {
 			body: bodyResolved,
 		});
 		await this.client.cache.channels?.setIfNI('GuildEmojisAndStickers', emoji.id!, guildId, emoji);
+		return new GuildEmoji(this.client, emoji, guildId);
 	}
 
 	/**
