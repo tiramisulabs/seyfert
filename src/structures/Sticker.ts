@@ -3,8 +3,8 @@ import type {
 	RESTPatchAPIGuildStickerJSONBody,
 	RESTPostAPIGuildStickerFormDataBody,
 } from 'discord-api-types/v10';
-import type { UsingClient } from '..';
-import type { Attachment } from '../builders';
+import type { RawFile, UsingClient } from '..';
+import type { Attachment, AttachmentBuilder } from '../builders';
 import type { MethodContext, ObjectToLower } from '../common';
 import { User } from './User';
 import { DiscordBase } from './extra/DiscordBase';
@@ -54,5 +54,5 @@ export class Sticker extends DiscordBase {
 }
 
 export interface CreateStickerBodyRequest extends Omit<RESTPostAPIGuildStickerFormDataBody, 'file'> {
-	file: Attachment;
+	file: Attachment | AttachmentBuilder | RawFile;
 }
