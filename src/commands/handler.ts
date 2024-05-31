@@ -264,6 +264,7 @@ export class CommandHandler extends BaseHandler {
 						option.onPermissionsFail?.bind(option) ??
 						commandInstance.onPermissionsFail?.bind(commandInstance) ??
 						this.client.options?.commands?.defaults?.onPermissionsFail;
+					option.botPermissions ??= commandInstance.botPermissions;
 				}
 			}
 
