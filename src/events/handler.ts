@@ -49,8 +49,8 @@ export class EventHandler extends BaseHandler {
 			case 'MESSAGE_CREATE':
 				{
 					const { d: data } = args[0] as GatewayMessageCreateDispatch;
-					if (args[1].components?.values.has(data.interaction?.id ?? data.id)) {
-						args[1].components.values.get(data.interaction?.id ?? data.id)!.messageId = data.id;
+					if (args[1].components?.values.has(data.interaction_metadata?.id ?? data.id)) {
+						args[1].components.values.get(data.interaction_metadata?.id ?? data.id)!.messageId = data.id;
 					}
 				}
 				break;
