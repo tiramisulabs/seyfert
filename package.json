@@ -6,7 +6,8 @@
 	"module": "./lib/index.js",
 	"types": "./lib/index.d.ts",
 	"files": [
-		"lib/**"
+		"lib/**",
+		"./_build.js"
 	],
 	"scripts": {
 		"build": "tsc --outDir ./lib",
