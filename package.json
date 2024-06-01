@@ -11,7 +11,7 @@
 	"scripts": {
 		"build": "tsc --outDir ./lib",
 		"prepublishOnly": "npm run build",
-		"prepare": "npm run build && husky install",
+		"prepare": "node ./_build.js && husky install",
 		"lint": "biome lint --apply ./src",
 		"format": "biome format --write ./src",
 		"check-h": "biome check --apply ./src",
