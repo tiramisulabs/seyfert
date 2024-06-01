@@ -6,13 +6,12 @@
 	"module": "./lib/index.js",
 	"types": "./lib/index.d.ts",
 	"files": [
-		"lib/**",
-		"./_build.js"
+		"lib/**"
 	],
 	"scripts": {
 		"build": "tsc --outDir ./lib",
 		"prepublishOnly": "npm run build",
-		"prepare": "node ./_build.js && husky install",
+		"prepare": "npm run build && husky install",
 		"lint": "biome lint --apply ./src",
 		"format": "biome format --write ./src",
 		"check-h": "biome check --apply ./src",
