@@ -33,9 +33,13 @@ export class User extends DiscordBase<APIUser> {
 		return this.client.users.write(this.id, body);
 	}
 
+	defaultAvatarURL() {
+		return this.rest.cdn.embed.avatars.get(calculateUserDefaultAvatarIndex(this.id, this.discriminator));
+	}
+
 	avatarURL(options?: ImageOptions) {
 		if (!this.avatar) {
-			return this.rest.cdn.embed.avatars.get(calculateUserDefaultAvatarIndex(this.id, this.discriminator));
+			return this.defaultAvatarURL();
 		}
 
 		return this.rest.cdn.avatars(this.id).get(this.avatar, options);

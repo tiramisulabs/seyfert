@@ -46,7 +46,7 @@ export const CDNRouter = {
 					return (value: string | CDNUrlOptions | undefined, options?: CDNUrlOptions) => {
 						const lastRoute = `${CDN_URL}/${route.join('/')}`;
 						let routeResult = lastRoute;
-						if (typeof value === 'string') {
+						if (typeof value === 'string' || typeof value === 'number') {
 							routeResult = `${lastRoute}${value ? `/${value}` : ''}`;
 							return parseCDNURL(routeResult, options);
 						}
