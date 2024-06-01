@@ -2,8 +2,8 @@ const { execSync } = require("child_process");
 
 try {
 	execSync('tsc');
-	console.log('Builded');
+	console.log('[Seyfert]: Builded');
 } catch (e) {
 	console.error(e);
-	console.log('Builded with errors');
+	console.log('[Seyfert]: Builded with errors');
 }
