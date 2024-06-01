@@ -22,7 +22,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 	memberUpdateHandler = new MemberUpdateHandler();
 	presenceUpdateHandler = new PresenceUpdateHandler();
 	collectors = new Collectors();
-	events? = new EventHandler(this.logger, this.collectors);
+	events? = new EventHandler(this);
 
 	constructor(options?: ClientOptions) {
 		super(options);
@@ -51,7 +51,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			if (!rest.handlers.events) {
 				this.events = undefined;
 			} else if (typeof rest.handlers.events === 'function') {
-				this.events = new EventHandler(this.logger, this.collectors);
+				this.events = new EventHandler(this);
 				this.events.setHandlers({
 					callback: rest.handlers.events,
 				});
@@ -132,7 +132,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	protected async onPacket(shardId: number, packet: GatewayDispatchPayload) {
-		await this.events?.runEvent('RAW', this, packet, shardId);
+		// await this.events?.runEvent('RAW', this, packet, shardId);
 		switch (packet.t) {
 			//// Cases where we must obtain the old data before updating
 			case 'GUILD_MEMBER_UPDATE':
@@ -140,36 +140,16 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 					return;
 				}
 				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
-				await this.cache.onPacket(packet);
 				break;
 			case 'PRESENCE_UPDATE':
 				if (!this.presenceUpdateHandler.check(packet.d as any)) {
 					return;
 				}
 				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
-				await this.cache.onPacket(packet);
 				break;
 
-			case 'MESSAGE_UPDATE':
-			case 'MESSAGE_DELETE_BULK':
-			case 'MESSAGE_DELETE':
-			case 'GUILD_DELETE':
-			case 'CHANNEL_UPDATE':
-			case 'GUILD_EMOJIS_UPDATE':
-			case 'GUILD_UPDATE':
-			case 'GUILD_ROLE_UPDATE':
-			case 'GUILD_ROLE_DELETE':
-			case 'THREAD_UPDATE':
-			case 'USER_UPDATE':
-			case 'VOICE_STATE_UPDATE':
-			case 'STAGE_INSTANCE_UPDATE':
-			case 'GUILD_STICKERS_UPDATE':
-				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
-				await this.cache.onPacket(packet);
-				break;
 			//rest of the events
 			default: {
-				await this.cache.onPacket(packet);
 				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
 				switch (packet.t) {
 					case 'INTERACTION_CREATE':

@@ -48,7 +48,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	});
 
 	collectors = new Collectors();
-	events? = new EventHandler(this.logger, this.collectors);
+	events? = new EventHandler(this);
 	me!: When<Ready, ClientUser>;
 	promises = new Map<string, { resolve: (value: any) => void; timeout: NodeJS.Timeout }>();
 
@@ -119,7 +119,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			if (!rest.handlers.events) {
 				this.events = undefined;
 			} else if (typeof rest.handlers.events === 'function') {
-				this.events = new EventHandler(this.logger, this.collectors);
+				this.events = new EventHandler(this);
 				this.events.setHandlers({
 					callback: rest.handlers.events,
 				});
@@ -204,7 +204,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 								debugger: this.debugger,
 								async handlePayload(shardId, payload) {
 									await handlePayload?.(shardId, payload);
-									await self.cache.onPacket(payload);
 									await onPacket?.(payload, shardId);
 									self.postMessage({
 										workerId: workerData.workerId,
@@ -325,79 +324,49 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	protected async onPacket(packet: GatewayDispatchPayload, shardId: number) {
 		await this.events?.execute('RAW', packet, this as WorkerClient<true>, shardId);
+		await this.events?.execute(packet.t, packet, this, shardId);
 		switch (packet.t) {
-			case 'GUILD_MEMBER_UPDATE':
-			case 'PRESENCE_UPDATE':
-
-			case 'MESSAGE_UPDATE':
-			case 'MESSAGE_DELETE_BULK':
-			case 'MESSAGE_DELETE':
-			case 'GUILD_DELETE':
-			case 'CHANNEL_UPDATE':
-			case 'GUILD_EMOJIS_UPDATE':
-			case 'GUILD_UPDATE':
-			case 'GUILD_ROLE_UPDATE':
-			case 'GUILD_ROLE_DELETE':
-			case 'THREAD_UPDATE':
-			case 'USER_UPDATE':
-			case 'VOICE_STATE_UPDATE':
-			case 'STAGE_INSTANCE_UPDATE':
-			case 'GUILD_STICKERS_UPDATE':
-				await this.events?.execute(packet.t, packet, this as WorkerClient<true>, shardId);
-				await this.cache.onPacket(packet);
-				break;
-			//rest of the events
-			default:
-				{
-					await this.events?.execute(packet.t, packet, this, shardId);
-					switch (packet.t) {
-						case 'READY':
-							for (const g of packet.d.guilds) {
-								this.__handleGuilds?.add(g.id);
-							}
-							this.botId = packet.d.user.id;
-							this.applicationId = packet.d.application.id;
-							this.me = new ClientUser(this, packet.d.user, packet.d.application) as never;
-							if (
-								!(
-									this.__handleGuilds?.size &&
-									(workerData.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds
-								)
-							) {
-								if ([...this.shards.values()].every(shard => shard.data.session_id)) {
-									this.postMessage({
-										type: 'WORKER_READY',
-										workerId: this.workerId,
-									} as WorkerReady);
-									await this.events?.runEvent('WORKER_READY', this, this.me, -1);
-								}
-								delete this.__handleGuilds;
-							}
-							this.debugger?.debug(`#${shardId} [${packet.d.user.username}](${this.botId}) is online...`);
-							break;
-						case 'INTERACTION_CREATE':
-							await onInteractionCreate(this, packet.d, shardId);
-							break;
-						case 'MESSAGE_CREATE':
-							await onMessageCreate(this, packet.d, shardId);
-							break;
-						case 'GUILD_CREATE': {
-							if (this.__handleGuilds?.has(packet.d.id)) {
-								this.__handleGuilds.delete(packet.d.id);
-								if (!this.__handleGuilds.size && [...this.shards.values()].every(shard => shard.data.session_id)) {
-									this.postMessage({
-										type: 'WORKER_READY',
-										workerId: this.workerId,
-									} as WorkerReady);
-									await this.events?.runEvent('WORKER_READY', this, this.me, -1);
-								}
-								if (!this.__handleGuilds.size) delete this.__handleGuilds;
-								return;
-							}
-						}
-					}
+			case 'READY':
+				for (const g of packet.d.guilds) {
+					this.__handleGuilds?.add(g.id);
 				}
+				this.botId = packet.d.user.id;
+				this.applicationId = packet.d.application.id;
+				this.me = new ClientUser(this, packet.d.user, packet.d.application) as never;
+				if (
+					!(this.__handleGuilds?.size && (workerData.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds)
+				) {
+					if ([...this.shards.values()].every(shard => shard.data.session_id)) {
+						this.postMessage({
+							type: 'WORKER_READY',
+							workerId: this.workerId,
+						} as WorkerReady);
+						await this.events?.runEvent('WORKER_READY', this, this.me, -1);
+					}
+					delete this.__handleGuilds;
+				}
+				this.debugger?.debug(`#${shardId} [${packet.d.user.username}](${this.botId}) is online...`);
 				break;
+			case 'INTERACTION_CREATE':
+				await onInteractionCreate(this, packet.d, shardId);
+				break;
+			case 'MESSAGE_CREATE':
+				await onMessageCreate(this, packet.d, shardId);
+				break;
+			case 'GUILD_CREATE': {
+				if (this.__handleGuilds?.has(packet.d.id)) {
+					this.__handleGuilds.delete(packet.d.id);
+					if (!this.__handleGuilds.size && [...this.shards.values()].every(shard => shard.data.session_id)) {
+						this.postMessage({
+							type: 'WORKER_READY',
+							workerId: this.workerId,
+						} as WorkerReady);
+						await this.events?.runEvent('WORKER_READY', this, this.me, -1);
+					}
+					if (!this.__handleGuilds.size) delete this.__handleGuilds;
+					return;
+				}
+			}
 		}
 	}
 }
