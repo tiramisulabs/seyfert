@@ -24,11 +24,10 @@ export type MessageData = APIMessage | GatewayMessageCreateDispatchData;
 
 export interface BaseMessage
 	extends DiscordBase,
-		ObjectToLower<Omit<MessageData, 'timestamp' | 'author' | 'mentions' | 'components' | 'poll' | 'embeds'>> {}
-export class BaseMessage extends DiscordBase {
-	guildId: string | undefined;
+		ObjectToLower<Omit<MessageData, 'timestamp' | 'author' | 'mentions' | 'components' | 'poll' | 'embeds'>> {
 	timestamp?: number;
-	author!: User;
+	guildId?: string;
+	author: User;
 	member?: GuildMember;
 	components: MessageActionRowComponent<ActionRowMessageComponents>[];
 	poll?: Poll;
@@ -37,6 +36,8 @@ export class BaseMessage extends DiscordBase {
 		channels: APIChannelMention[];
 		users: (GuildMember | User)[];
 	};
+}
+export class BaseMessage extends DiscordBase {
 	embeds: InMessageEmbed[];
 
 	constructor(client: UsingClient, data: MessageData) {
@@ -77,21 +78,10 @@ export class BaseMessage extends DiscordBase {
 	}
 
 	private patch(data: MessageData) {
-		if ('guild_id' in data) {
-			this.guildId = data.guild_id;
-		}
-
-		if (data.type !== undefined) {
-			this.type = data.type;
-		}
-
 		if ('timestamp' in data && data.timestamp) {
 			this.timestamp = Date.parse(data.timestamp);
 		}
 
-		if ('application_id' in data) {
-			this.applicationId = data.application_id;
-		}
 		if ('author' in data && data.author) {
 			this.author = new User(this.client, data.author);
 		}

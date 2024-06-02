@@ -43,11 +43,11 @@ export class Collectors {
 	}
 
 	create<T extends SnakeCaseClientNameEvents>(options: RunData<T>['options']) {
+		const nonce = this.generateRandomUUID(options.event);
+
 		if (!this.values.has(options.event)) {
 			this.values.set(options.event, []);
 		}
-
-		const nonce = this.generateRandomUUID(options.event);
 
 		this.values.get(options.event)!.push({
 			options: {
