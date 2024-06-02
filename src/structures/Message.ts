@@ -1,5 +1,6 @@
 import type {
 	APIChannelMention,
+	APIEmbed,
 	APIGuildMember,
 	APIMessage,
 	APIUser,
@@ -7,7 +8,7 @@ import type {
 } from 'discord-api-types/v10';
 import type { ListenerOptions } from '../builders';
 import type { UsingClient } from '../commands';
-import type { ObjectToLower } from '../common';
+import { toCamelCase, type ObjectToLower } from '../common';
 import type { EmojiResolvable } from '../common/types/resolvables';
 import type { MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../common/types/write';
 import type { ActionRowMessageComponents } from '../components';
@@ -17,13 +18,13 @@ import { User } from './User';
 import type { MessageWebhookMethodEditParams, MessageWebhookMethodWriteParams } from './Webhook';
 import { DiscordBase } from './extra/DiscordBase';
 import { messageLink } from './extra/functions';
-import { Poll } from '..';
+import { Embed, Poll } from '..';
 
 export type MessageData = APIMessage | GatewayMessageCreateDispatchData;
 
 export interface BaseMessage
 	extends DiscordBase,
-		ObjectToLower<Omit<MessageData, 'timestamp' | 'author' | 'mentions' | 'components' | 'poll'>> {}
+		ObjectToLower<Omit<MessageData, 'timestamp' | 'author' | 'mentions' | 'components' | 'poll' | 'embeds'>> {}
 export class BaseMessage extends DiscordBase {
 	guildId: string | undefined;
 	timestamp?: number;
@@ -36,6 +37,7 @@ export class BaseMessage extends DiscordBase {
 		channels: APIChannelMention[];
 		users: (GuildMember | User)[];
 	};
+	embeds: InMessageEmbed[];
 
 	constructor(client: UsingClient, data: MessageData) {
 		super(client, data);
@@ -44,7 +46,8 @@ export class BaseMessage extends DiscordBase {
 			channels: data.mention_channels ?? [],
 			users: [],
 		};
-		this.components = data.components?.map(x => new MessageActionRowComponent(x)) ?? [];
+		this.components = (data.components ?? []).map(x => new MessageActionRowComponent(x));
+		this.embeds = data.embeds.map(embed => new InMessageEmbed(embed));
 		this.patch(data);
 	}
 
@@ -122,7 +125,7 @@ export class BaseMessage extends DiscordBase {
 
 export interface Message
 	extends BaseMessage,
-		ObjectToLower<Omit<MessageData, 'timestamp' | 'author' | 'mentions' | 'components' | 'poll'>> {}
+		ObjectToLower<Omit<MessageData, 'timestamp' | 'author' | 'mentions' | 'components' | 'poll' | 'embeds'>> {}
 
 export class Message extends BaseMessage {
 	constructor(client: UsingClient, data: MessageData) {
@@ -200,5 +203,69 @@ export class WebhookMessage extends BaseMessage {
 
 	delete(reason?: string) {
 		return this.client.webhooks.deleteMessage(this.webhookId, this.webhookToken, this.id, reason);
+	}
+}
+
+export class InMessageEmbed {
+	constructor(public data: APIEmbed) {}
+
+	get title() {
+		return this.data.title;
+	}
+
+	get type() {
+		return this.data.type;
+	}
+
+	get description() {
+		return this.data.description;
+	}
+
+	get url() {
+		return this.data.url;
+	}
+
+	get timestamp() {
+		return this.data.timestamp;
+	}
+
+	get color() {
+		return this.data.color;
+	}
+
+	get footer() {
+		return toCamelCase(this.data.footer ?? {});
+	}
+
+	get image() {
+		return toCamelCase(this.data.image ?? {});
+	}
+
+	get thumbnail() {
+		return toCamelCase(this.data.thumbnail ?? {});
+	}
+
+	get video() {
+		return toCamelCase(this.data.video ?? {});
+	}
+
+	get provider() {
+		return this.data.provider;
+	}
+
+	get author() {
+		return toCamelCase(this.data.author ?? {});
+	}
+
+	get fields() {
+		return this.data.fields;
+	}
+
+	toBuilder() {
+		return new Embed(this.data);
+	}
+
+	toJSON() {
+		return { ...this.data };
 	}
 }
