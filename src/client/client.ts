@@ -1,6 +1,29 @@
-import { GatewayIntentBits, type GatewayDispatchPayload, type GatewayPresenceUpdateData } from 'discord-api-types/v10';
-import type { Command, CommandContext, Message, SubCommand } from '..';
-import { lazyLoadPackage, type DeepPartial, type If, type WatcherPayload, type WatcherSendToShard } from '../common';
+import {
+	type APIApplicationCommandInteractionDataOption,
+	GatewayIntentBits,
+	type GatewayMessageCreateDispatchData,
+	type GatewayDispatchPayload,
+	type GatewayPresenceUpdateData,
+} from 'discord-api-types/v10';
+import type {
+	Command,
+	CommandContext,
+	ContextOptionsResolved,
+	Message,
+	MessageCommandOptionErrors,
+	SubCommand,
+	UsingClient,
+} from '..';
+import {
+	type Awaitable,
+	type MakeRequired,
+	MergeOptions,
+	lazyLoadPackage,
+	type DeepPartial,
+	type If,
+	type WatcherPayload,
+	type WatcherSendToShard,
+} from '../common';
 import { EventHandler } from '../events';
 import { ClientUser } from '../structures';
 import { ShardManager, properties, type ShardManagerOptions } from '../websocket';
@@ -9,7 +32,7 @@ import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdat
 import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import { onInteractionCreate } from './oninteractioncreate';
-import { onMessageCreate } from './onmessagecreate';
+import { defaultArgsParser, defaultParseOptions, onMessageCreate } from './onmessagecreate';
 import { Collectors } from './collectors';
 
 let parentPort: import('node:worker_threads').MessagePort;
@@ -18,7 +41,9 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 	private __handleGuilds?: Set<string> = new Set();
 	gateway!: ShardManager;
 	me!: If<Ready, ClientUser>;
-	declare options: ClientOptions;
+	declare options: Omit<ClientOptions, 'commands'> & {
+		commands: MakeRequired<NonNullable<ClientOptions['commands']>, 'argsParser' | 'optionsParser'>;
+	};
 	memberUpdateHandler = new MemberUpdateHandler();
 	presenceUpdateHandler = new PresenceUpdateHandler();
 	collectors = new Collectors();
@@ -26,6 +51,12 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 
 	constructor(options?: ClientOptions) {
 		super(options);
+		this.options = MergeOptions(this.options, {
+			commands: {
+				argsParser: defaultArgsParser,
+				optionsParser: defaultParseOptions,
+			},
+		} satisfies ClientOptions);
 	}
 
 	setServices({
@@ -212,6 +243,20 @@ export interface ClientOptions extends BaseClientOptions {
 		deferReplyResponse?: (ctx: CommandContext) => Parameters<Message['write']>[0];
 		reply?: (ctx: CommandContext) => boolean;
 		argsParser?: (content: string, command: SubCommand | Command, message: Message) => Record<string, string>;
+		optionsParser?: (
+			self: UsingClient,
+			command: Command | SubCommand,
+			message: GatewayMessageCreateDispatchData,
+			args: Partial<Record<string, string>>,
+			resolved: MakeRequired<ContextOptionsResolved>,
+		) => Awaitable<{
+			errors: {
+				name: string;
+				error: string;
+				fullError: MessageCommandOptionErrors;
+			}[];
+			options: APIApplicationCommandInteractionDataOption[];
+		}>;
 	};
 	handlePayload?: ShardManagerOptions['handlePayload'];
 }

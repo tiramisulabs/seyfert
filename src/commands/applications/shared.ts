@@ -1,3 +1,4 @@
+import type { ChannelType } from 'discord-api-types/v10';
 import type { BaseClient } from '../../client/base';
 import type { IsStrictlyUndefined } from '../../common';
 import type { RegisteredMiddlewares } from '../decorators';
@@ -41,6 +42,18 @@ export type CommandMetadata<T extends readonly (keyof RegisteredMiddlewares)[]> 
 		: {}
 	: {};
 
+export type MessageCommandOptionErrors =
+	| ['CHANNEL_TYPES', type: ChannelType[]]
+	| ['STRING_MIN_LENGTH', min: number]
+	| ['STRING_MAX_LENGTH', max: number]
+	| ['STRING_INVALID_CHOICE', choices: readonly { name: string; value: string }[]]
+	| ['NUMBER_NAN', value: string | undefined]
+	| ['NUMBER_MIN_VALUE', min: number]
+	| ['NUMBER_MAX_VALUE', max: number]
+	| ['NUMBER_INVALID_CHOICE', choices: readonly { name: string; value: number }[]]
+	| ['OPTION_REQUIRED']
+	| ['UNKNOWN', error: unknown];
+
 export type OnOptionsReturnObject = Record<
 	string,
 	| {
@@ -50,6 +63,8 @@ export type OnOptionsReturnObject = Record<
 	| {
 			failed: true;
 			value: string;
+			parseError?: //only for text command
+			MessageCommandOptionErrors;
 	  }
 >;
 

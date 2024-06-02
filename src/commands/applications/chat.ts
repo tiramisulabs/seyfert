@@ -31,6 +31,7 @@ import type {
 	StopFunction,
 	UsingClient,
 } from './shared';
+import { inspect } from 'node:util';
 
 export interface ReturnOptionsTypes {
 	1: never; // subcommand
@@ -153,9 +154,15 @@ export class BaseCommand {
 				const value =
 					resolver.getHoisted(i.name)?.value !== undefined
 						? await new Promise(
-								(res, rej) =>
-									option.value?.({ context: ctx, value: resolver.getValue(i.name) } as never, res, rej) ||
-									res(resolver.getValue(i.name)),
+								// biome-ignore lint/suspicious/noAsyncPromiseExecutor: yes
+								async (res, rej) => {
+									try {
+										(await option.value?.({ context: ctx, value: resolver.getValue(i.name) } as never, res, rej)) ||
+											res(resolver.getValue(i.name));
+									} catch (e) {
+										rej(e);
+									}
+								},
 							)
 						: undefined;
 				if (value === undefined) {
@@ -178,7 +185,7 @@ export class BaseCommand {
 				errored = true;
 				data[i.name] = {
 					failed: true,
-					value: e instanceof Error ? e.message : `${e}`,
+					value: e instanceof Error ? e.message : typeof e === 'string' ? e : inspect(e),
 				};
 			}
 		}

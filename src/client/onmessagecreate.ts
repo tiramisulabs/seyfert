@@ -9,9 +9,11 @@ import {
 	Command,
 	CommandContext,
 	IgnoreCommand,
+	type MessageCommandOptionErrors,
 	OptionResolver,
 	SubCommand,
 	User,
+	type UsingClient,
 	type Client,
 	type CommandOption,
 	type ContextOptionsResolved,
@@ -119,14 +121,30 @@ export async function onMessageCreate(
 		newContent = newContent.slice(newContent.indexOf(i) + i.length);
 	}
 
-	const args = (self.options?.commands?.argsParser ?? defaultArgsParser)(newContent.slice(1), command, message);
-	const { options, errors } = await parseOptions(self, command, rawMessage, args, resolved);
+	const args = self.options.commands.argsParser(newContent.slice(1), command, message);
+	const { options, errors } = await self.options.commands.optionsParser(self, command, rawMessage, args, resolved);
 	const optionsResolver = new OptionResolver(self, options, parent as Command, message.guildId, resolved);
 	const context = new CommandContext(self, message, optionsResolver, shardId, command);
 	//@ts-expect-error
 	const extendContext = self.options?.context?.(message) ?? {};
 	Object.assign(context, extendContext);
 	try {
+		if (errors.length) {
+			return command.onOptionsError?.(
+				context,
+				Object.fromEntries(
+					errors.map(x => {
+						return [
+							x.name,
+							{
+								failed: true,
+								value: x.error,
+							},
+						];
+					}),
+				),
+			);
+		}
 		if (command.defaultMemberPermissions && message.guildId) {
 			const memberPermissions = await self.members.permissions(message.guildId, message.author.id);
 			const permissions = memberPermissions.missings(...memberPermissions.values([command.defaultMemberPermissions]));
@@ -146,22 +164,6 @@ export async function onMessageCreate(
 			if (!appPermissions.has('Administrator') && permissions.length) {
 				return command.onBotPermissionsFail?.(context, appPermissions.keys(permissions));
 			}
-		}
-		if (errors.length) {
-			return command.onOptionsError?.(
-				context,
-				Object.fromEntries(
-					errors.map(x => {
-						return [
-							x.name,
-							{
-								failed: true,
-								value: x.error,
-							},
-						];
-					}),
-				),
-			);
 		}
 		const [erroredOptions, result] = await command.__runOptions(context, optionsResolver);
 		if (erroredOptions) {
@@ -198,15 +200,15 @@ export async function onMessageCreate(
 	}
 }
 
-async function parseOptions(
-	self: Client | WorkerClient,
+export async function defaultParseOptions(
+	self: UsingClient,
 	command: Command | SubCommand,
 	message: GatewayMessageCreateDispatchData,
 	args: Partial<Record<string, string>>,
 	resolved: MakeRequired<ContextOptionsResolved>,
 ) {
 	const options: APIApplicationCommandInteractionDataOption[] = [];
-	const errors: { name: string; error: string }[] = [];
+	const errors: { name: string; error: string; fullError: MessageCommandOptionErrors }[] = [];
 	for (const i of (command.options ?? []) as (CommandOption & { type: ApplicationCommandOptionType })[]) {
 		try {
 			let value: string | boolean | number | undefined;
@@ -239,6 +241,7 @@ async function parseOptions(
 											error: `The entered channel type is not one of ${(i as SeyfertChannelOption)
 												.channel_types!.map(t => ChannelType[t])
 												.join(', ')}`,
+											fullError: ['CHANNEL_TYPES', (i as SeyfertChannelOption).channel_types!],
 										});
 										break;
 									}
@@ -335,6 +338,7 @@ async function parseOptions(
 								errors.push({
 									name: i.name,
 									error: `The entered string has less than ${option.min_length} characters. The minimum required is ${option.min_length} characters.`,
+									fullError: ['STRING_MIN_LENGTH', option.min_length],
 								});
 								break;
 							}
@@ -345,6 +349,7 @@ async function parseOptions(
 								errors.push({
 									name: i.name,
 									error: `The entered string has more than ${option.max_length} characters. The maximum required is ${option.max_length} characters.`,
+									fullError: ['STRING_MAX_LENGTH', option.max_length],
 								});
 								break;
 							}
@@ -358,6 +363,7 @@ async function parseOptions(
 									error: `The entered choice is invalid. Please choose one of the following options: ${option.choices
 										.map(x => x.name)
 										.join(', ')}.`,
+									fullError: ['STRING_INVALID_CHOICE', option.choices],
 								});
 								break;
 							}
@@ -380,6 +386,7 @@ async function parseOptions(
 								errors.push({
 									name: i.name,
 									error: 'The entered choice is an invalid number.',
+									fullError: ['NUMBER_NAN', args[i.name]],
 								});
 								break;
 							}
@@ -389,6 +396,7 @@ async function parseOptions(
 									errors.push({
 										name: i.name,
 										error: `The entered number is less than ${option.min_value}. The minimum allowed is ${option.min_value}`,
+										fullError: ['NUMBER_MIN_VALUE', option.min_value],
 									});
 									break;
 								}
@@ -399,6 +407,7 @@ async function parseOptions(
 									errors.push({
 										name: i.name,
 										error: `The entered number is greater than ${option.max_value}. The maximum allowed is ${option.max_value}`,
+										fullError: ['NUMBER_MAX_VALUE', option.max_value],
 									});
 									break;
 								}
@@ -413,6 +422,7 @@ async function parseOptions(
 								error: `The entered choice is invalid. Please choose one of the following options: ${option.choices
 									.map(x => x.name)
 									.join(', ')}.`,
+								fullError: ['NUMBER_INVALID_CHOICE', option.choices],
 							});
 							break;
 						}
@@ -433,11 +443,13 @@ async function parseOptions(
 					errors.push({
 						error: 'Option is required but returned undefined',
 						name: i.name,
+						fullError: ['OPTION_REQUIRED'],
 					});
 		} catch (e) {
 			errors.push({
 				error: e && typeof e === 'object' && 'message' in e ? (e.message as string) : `${e}`,
 				name: i.name,
+				fullError: ['UNKNOWN', e],
 			});
 		}
 	}
@@ -445,7 +457,7 @@ async function parseOptions(
 	return { errors, options };
 }
 
-function defaultArgsParser(content: string) {
+export function defaultArgsParser(content: string) {
 	const args: Record<string, string> = {};
 	for (const i of content.match(/-(.*?)(?=\s-|$)/gs) ?? []) {
 		args[i.slice(1).split(' ')[0]] = i.split(' ').slice(1).join(' ');
