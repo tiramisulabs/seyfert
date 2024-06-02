@@ -46,7 +46,7 @@ export class BaseMessage extends DiscordBase {
 			channels: data.mention_channels ?? [],
 			users: [],
 		};
-		this.components = (data.components ?? []).map(x => new MessageActionRowComponent(x));
+		this.components = data.components?.map(x => new MessageActionRowComponent(x)) ?? [];
 		this.embeds = data.embeds.map(embed => new InMessageEmbed(embed));
 		this.patch(data);
 	}
@@ -213,6 +213,9 @@ export class InMessageEmbed {
 		return this.data.title;
 	}
 
+	/**
+	 * @deprecated
+	 */
 	get type() {
 		return this.data.type;
 	}
@@ -234,19 +237,19 @@ export class InMessageEmbed {
 	}
 
 	get footer() {
-		return toCamelCase(this.data.footer ?? {});
+		return this.data.footer ? toCamelCase(this.data.footer) : undefined;
 	}
 
 	get image() {
-		return toCamelCase(this.data.image ?? {});
+		return this.data.image ? toCamelCase(this.data.image) : undefined;
 	}
 
 	get thumbnail() {
-		return toCamelCase(this.data.thumbnail ?? {});
+		return this.data.thumbnail ? toCamelCase(this.data.thumbnail) : undefined;
 	}
 
 	get video() {
-		return toCamelCase(this.data.video ?? {});
+		return this.data.video ? toCamelCase(this.data.video) : undefined;
 	}
 
 	get provider() {
@@ -254,7 +257,7 @@ export class InMessageEmbed {
 	}
 
 	get author() {
-		return toCamelCase(this.data.author ?? {});
+		return this.data.author ? toCamelCase(this.data.author) : undefined;
 	}
 
 	get fields() {

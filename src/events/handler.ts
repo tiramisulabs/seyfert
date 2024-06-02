@@ -73,8 +73,10 @@ export class EventHandler extends BaseHandler {
 				break;
 		}
 
-		await this.runEvent(args[0].t, args[1], args[0].d, args[2]);
-		await this.client.collectors.run(args[0].t, args[0].d);
+		await Promise.all([
+			this.runEvent(args[0].t, args[1], args[0].d, args[2]),
+			this.client.collectors.run(args[0].t, args[0].d),
+		]);
 	}
 
 	async runEvent(name: GatewayEvents, client: Client | WorkerClient, packet: any, shardId: number) {

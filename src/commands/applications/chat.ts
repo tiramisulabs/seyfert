@@ -352,9 +352,8 @@ export abstract class SubCommand extends BaseCommand {
 	toJSON() {
 		return {
 			...super.toJSON(),
-			options: (this.options ?? []).map(
-				x => ({ ...x, autocomplete: 'autocomplete' in x }) as APIApplicationCommandBasicOption,
-			),
+			options:
+				this.options?.map(x => ({ ...x, autocomplete: 'autocomplete' in x }) as APIApplicationCommandBasicOption) ?? [],
 		};
 	}
 

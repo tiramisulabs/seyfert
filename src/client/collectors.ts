@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Awaitable, CamelCase, SnakeCase } from '../common';
 import type { ClientNameEvents, GatewayEvents } from '../events';
 import type { ClientEvents } from '../events/hooks';
+import { error } from 'node:console';
 
 type SnakeCaseClientNameEvents = Uppercase<SnakeCase<ClientNameEvents>>;
 
@@ -11,8 +12,14 @@ type RunData<T extends SnakeCaseClientNameEvents> = {
 		idle?: number;
 		timeout?: number;
 		onStop?: (reason: string) => unknown;
+		onStopError?: (reason: string, error: unknown) => unknown;
 		filter: (arg: Awaited<ClientEvents[CamelCase<Lowercase<T>>]>) => Awaitable<boolean>;
 		run: (arg: Awaited<ClientEvents[CamelCase<Lowercase<T>>]>, stop: (reason?: string) => void) => unknown;
+		onRunError?: (
+			arg: Awaited<ClientEvents[CamelCase<Lowercase<T>>]>,
+			error: unknown,
+			stop: (reason?: string) => void,
+		) => unknown;
 	};
 	idle?: NodeJS.Timeout;
 	timeout?: NodeJS.Timeout;
@@ -64,7 +71,7 @@ export class Collectors {
 		return options;
 	}
 
-	private delete(name: SnakeCaseClientNameEvents, nonce: string, reason = 'unknown') {
+	private async delete(name: SnakeCaseClientNameEvents, nonce: string, reason = 'unknown') {
 		const collectors = this.values.get(name);
 
 		if (!collectors?.length) {
@@ -78,7 +85,11 @@ export class Collectors {
 		clearTimeout(collector.idle);
 		clearTimeout(collector.timeout);
 		collectors.splice(index, 1);
-		return collector.options.onStop?.(reason);
+		try {
+			await collector.options.onStop?.(reason);
+		} catch (e) {
+			await collector.options.onStopError?.(reason, error);
+		}
 	}
 
 	/**@internal */
@@ -89,9 +100,14 @@ export class Collectors {
 		for (const i of collectors) {
 			if (await i.options.filter(data)) {
 				i.idle?.refresh();
-				await i.options.run(data, (reason = 'unknown') => {
+				const stop = (reason = 'unknown') => {
 					return this.delete(i.options.event, i.nonce, reason);
-				});
+				};
+				try {
+					await i.options.run(data, stop);
+				} catch (e) {
+					await i.options.onRunError?.(data, e, stop);
+				}
 				break;
 			}
 		}
