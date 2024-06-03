@@ -32,7 +32,7 @@ import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdat
 import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import { onInteractionCreate } from './oninteractioncreate';
-import { defaultArgsParser, defaultParseOptions, onMessageCreate } from './onmessagecreate';
+import { defaultArgsParser, defaultOptionsParser, onMessageCreate } from './onmessagecreate';
 import { Collectors } from './collectors';
 
 let parentPort: import('node:worker_threads').MessagePort;
@@ -51,12 +51,15 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 
 	constructor(options?: ClientOptions) {
 		super(options);
-		this.options = MergeOptions(this.options, {
-			commands: {
-				argsParser: options?.commands?.argsParser ?? defaultArgsParser,
-				optionsParser: options?.commands?.optionsParser ?? defaultParseOptions,
-			},
-		} satisfies ClientOptions);
+		this.options = MergeOptions(
+			{
+				commands: {
+					argsParser: defaultArgsParser,
+					optionsParser: defaultOptionsParser,
+				},
+			} satisfies ClientOptions,
+			this.options,
+		);
 	}
 
 	setServices({

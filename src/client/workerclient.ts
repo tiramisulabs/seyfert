@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { ApiHandler, Logger } from '..';
 import type { Cache } from '../cache';
 import { WorkerAdapter } from '../cache';
-import { LogLevels, lazyLoadPackage, type DeepPartial, type When } from '../common';
+import { LogLevels, MergeOptions, lazyLoadPackage, type DeepPartial, type When } from '../common';
 import { EventHandler } from '../events';
 import { ClientUser } from '../structures';
 import { Shard, type ShardManagerOptions, type WorkerData } from '../websocket';
@@ -24,7 +24,7 @@ import type { BaseClientOptions, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import type { Client } from './client';
 import { onInteractionCreate } from './oninteractioncreate';
-import { onMessageCreate } from './onmessagecreate';
+import { defaultArgsParser, defaultOptionsParser, onMessageCreate } from './onmessagecreate';
 import { Collectors } from './collectors';
 
 let workerData: WorkerData;
@@ -58,6 +58,15 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	constructor(options?: WorkerClientOptions) {
 		super(options);
+		this.options = MergeOptions(
+			{
+				commands: {
+					argsParser: defaultArgsParser,
+					optionsParser: defaultOptionsParser,
+				},
+			} satisfies Partial<WorkerClientOptions>,
+			this.options,
+		);
 		if (!process.env.SEYFERT_SPAWNING) {
 			throw new Error('WorkerClient cannot spawn without manager');
 		}

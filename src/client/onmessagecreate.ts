@@ -200,7 +200,7 @@ export async function onMessageCreate(
 	}
 }
 
-export async function defaultParseOptions(
+export async function defaultOptionsParser(
 	self: UsingClient,
 	command: Command | SubCommand,
 	message: GatewayMessageCreateDispatchData,
