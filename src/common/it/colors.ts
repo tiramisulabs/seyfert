@@ -62,8 +62,8 @@ export function reset(str: string): string {
  * Make the text bold.
  * @param str text to make bold
  */
-export function bold(str: string): string {
-	return run(str, code([1], 22));
+export function bold(str: string): `**${string}**` {
+	return `**${str}**`;
 }
 
 /**
