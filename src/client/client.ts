@@ -57,6 +57,8 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				optionsParser: defaultParseOptions,
 			},
 		} satisfies ClientOptions);
+
+		console.log(this.options);
 	}
 
 	setServices({
