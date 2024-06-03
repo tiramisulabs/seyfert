@@ -53,8 +53,8 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 		super(options);
 		this.options = MergeOptions(this.options, {
 			commands: {
-				argsParser: defaultArgsParser,
-				optionsParser: defaultParseOptions,
+				argsParser: options?.commands?.argsParser ?? defaultArgsParser,
+				optionsParser: options?.commands?.optionsParser ?? defaultParseOptions,
 			},
 		} satisfies ClientOptions);
 	}
