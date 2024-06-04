@@ -43,7 +43,8 @@
 				"noUselessConstructor": "off",
 				"noThisInStatic": "off",
 				"noExcessiveCognitiveComplexity": "off",
-				"noVoid": "off"
+				"noVoid": "off",
+				"noStaticOnlyClass": "off"
 			},
 			"a11y": {
 				"all": false
