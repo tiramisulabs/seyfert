@@ -7,22 +7,24 @@ import type {
 import type { Client, WorkerClient } from '../client';
 import { BaseHandler, ReplaceRegex, magicImport, type MakeRequired, type SnakeCase } from '../common';
 import * as RawEvents from '../events/hooks';
-import type { ClientEvent, ClientNameEvents, CustomEvents } from './event';
+import type { ClientEvent, ClientNameEvents } from './event';
 import type { UsingClient } from '../commands';
 
 export type EventValue = MakeRequired<ClientEvent, '__filePath'> & { fired?: boolean };
 
-export type ParseEvents = Uppercase<SnakeCase<ClientNameEvents>>;
+export type ParseEvents = Uppercase<SnakeCase<Extract<keyof RawEvents.DiscordEvents, string>>>;
+export type ParseOtherEvents = Extract<keyof RawEvents.OtherEvents, string>;
 
 export class EventHandler extends BaseHandler {
 	constructor(protected client: Client | WorkerClient) {
 		super(client.logger);
 	}
 
-	onFail = (event: ParseEvents, err: unknown) => this.logger.warn('<Client>.events.onFail', err, event);
+	onFail = (event: ParseEvents | ParseOtherEvents, err: unknown) =>
+		this.logger.warn('<Client>.events.onFail', err, event);
 	protected filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
 
-	values: Partial<Record<ParseEvents, EventValue>> = {};
+	values: Partial<Record<ParseEvents | ParseOtherEvents, EventValue>> = {};
 
 	async load(eventsDir: string, instances?: { file: ClientEvent; path: string }[]) {
 		for (const i of instances ?? (await this.loadFilesK<ClientEvent>(await this.getFiles(eventsDir)))) {
@@ -79,7 +81,7 @@ export class EventHandler extends BaseHandler {
 		]);
 	}
 
-	async runCustom<K extends keyof CustomEvents = keyof CustomEvents>(
+	async runCustom<K extends ParseOtherEvents = ParseOtherEvents>(
 		name: K,
 		client: UsingClient,
 		packet: RawEvents.ClientEvents[K],

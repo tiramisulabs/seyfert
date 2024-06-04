@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Awaitable, CamelCase, SnakeCase } from '../common';
-import type { ClientNameEvents, ParseEvents } from '../events';
-import type { ClientEvents } from '../events/hooks';
+import type { ClientNameEvents } from '../events';
+import type { ClientEvents, DiscordEvents } from '../events/hooks';
 import { error } from 'node:console';
 
 type SnakeCaseClientNameEvents = Uppercase<SnakeCase<ClientNameEvents>>;
@@ -93,7 +93,7 @@ export class Collectors {
 	}
 
 	/**@internal */
-	async run<T extends ParseEvents>(name: T, data: Awaited<ClientEvents[CamelCase<Lowercase<T>>]>) {
+	async run<T extends SnakeCaseClientNameEvents>(name: T, data: Awaited<DiscordEvents[CamelCase<T>]>) {
 		const collectors = this.values.get(name);
 		if (!collectors) return;
 
