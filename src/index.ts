@@ -7,7 +7,7 @@ import {
 	type RuntimeConfig,
 	type RuntimeConfigHTTP,
 } from './client/base';
-import type { ClientNameEvents, EventContext } from './events';
+import type { CustomEventsKeys, ClientNameEvents, EventContext } from './events';
 import { isCloudfareWorker } from './common';
 export { Logger, PermissionStrings, Watcher } from './common';
 //
@@ -46,7 +46,7 @@ export function throwError(msg: string): never {
  *   }
  * });
  */
-export function createEvent<E extends ClientNameEvents>(data: {
+export function createEvent<E extends ClientNameEvents | CustomEventsKeys>(data: {
 	data: { name: E; once?: boolean };
 	run: (...args: EventContext<{ data: { name: E } }>) => any;
 }) {
