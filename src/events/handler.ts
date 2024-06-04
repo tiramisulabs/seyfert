@@ -6,23 +6,23 @@ import type {
 } from 'discord-api-types/v10';
 import type { Client, WorkerClient } from '../client';
 import { BaseHandler, ReplaceRegex, magicImport, type MakeRequired, type SnakeCase } from '../common';
-import type { ClientEvents } from '../events/hooks';
 import * as RawEvents from '../events/hooks';
-import type { ClientEvent, ClientNameEvents } from './event';
+import type { ClientEvent, ClientNameEvents, CustomEvents } from './event';
+import type { UsingClient } from '../commands';
 
 export type EventValue = MakeRequired<ClientEvent, '__filePath'> & { fired?: boolean };
 
-export type GatewayEvents = Uppercase<SnakeCase<keyof ClientEvents>>;
+export type ParseEvents = Uppercase<SnakeCase<ClientNameEvents>>;
 
 export class EventHandler extends BaseHandler {
 	constructor(protected client: Client | WorkerClient) {
 		super(client.logger);
 	}
 
-	onFail = (event: GatewayEvents, err: unknown) => this.logger.warn('<Client>.events.onFail', err, event);
+	onFail = (event: ParseEvents, err: unknown) => this.logger.warn('<Client>.events.onFail', err, event);
 	protected filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
 
-	values: Partial<Record<GatewayEvents, EventValue>> = {};
+	values: Partial<Record<ParseEvents, EventValue>> = {};
 
 	async load(eventsDir: string, instances?: { file: ClientEvent; path: string }[]) {
 		for (const i of instances ?? (await this.loadFilesK<ClientEvent>(await this.getFiles(eventsDir)))) {
@@ -36,11 +36,11 @@ export class EventHandler extends BaseHandler {
 				continue;
 			}
 			instance.__filePath = i.path;
-			this.values[ReplaceRegex.snake(instance.data.name).toUpperCase() as GatewayEvents] = instance as EventValue;
+			this.values[ReplaceRegex.snake(instance.data.name).toUpperCase() as ParseEvents] = instance as EventValue;
 		}
 	}
 
-	async execute(name: GatewayEvents, ...args: [GatewayDispatchPayload, Client<true> | WorkerClient<true>, number]) {
+	async execute(name: ParseEvents, ...args: [GatewayDispatchPayload, Client<true> | WorkerClient<true>, number]) {
 		switch (name) {
 			case 'MESSAGE_CREATE':
 				{
@@ -79,7 +79,22 @@ export class EventHandler extends BaseHandler {
 		]);
 	}
 
-	async runEvent(name: GatewayEvents, client: Client | WorkerClient, packet: any, shardId: number) {
+	async runCustom<K extends keyof CustomEvents = keyof CustomEvents>(
+		name: K,
+		client: UsingClient,
+		packet: RawEvents.ClientEvents[K],
+	) {
+		const event = ReplaceRegex.snake(name).toUpperCase() as ParseEvents;
+		const Event = this.values[event];
+		this.logger.debug(`Seyfert executed a custom event ${event} once ${Event?.data.once}`);
+		try {
+			await Event?.run(...[packet, client]);
+		} catch (e) {
+			await this.onFail(event, e);
+		}
+	}
+
+	async runEvent(name: ParseEvents, client: Client | WorkerClient, packet: any, shardId: number) {
 		const Event = this.values[name];
 		if (!Event) {
 			return this.client.cache.onPacket({
@@ -101,14 +116,14 @@ export class EventHandler extends BaseHandler {
 					t: name,
 					d: packet,
 				} as GatewayDispatchPayload);
-			await Event.run(...[hook, client, shardId]);
+			await Event.run(hook, client, shardId);
 		} catch (e) {
 			await this.onFail(name, e);
 		}
 	}
 
 	async reload(name: ClientNameEvents) {
-		const eventName = ReplaceRegex.snake(name).toUpperCase() as GatewayEvents;
+		const eventName = ReplaceRegex.snake(name).toUpperCase() as ParseEvents;
 		const event = this.values[eventName];
 		if (!event?.__filePath) return null;
 		delete require.cache[event.__filePath];

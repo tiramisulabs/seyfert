@@ -18,8 +18,11 @@ export * from './voice';
 export * from './webhook';
 
 import type { CamelCase } from '../../common';
+import type { CustomEvents } from '../event';
 import type * as RawEvents from './index';
 
 export type ClientEvents = {
 	[X in keyof typeof RawEvents as CamelCase<X>]: ReturnType<(typeof RawEvents)[X]>;
+} & {
+	[X in keyof CustomEvents as CamelCase<X>]: CustomEvents[X];
 };
