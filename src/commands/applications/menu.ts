@@ -19,8 +19,8 @@ export abstract class ContextMenuCommand {
 	name!: string;
 	type!: ApplicationCommandType.User | ApplicationCommandType.Message;
 	nsfw?: boolean;
-	integrationTypes?: ApplicationIntegrationType[];
-	contexts?: InteractionContextType[];
+	integrationTypes: ApplicationIntegrationType[] = [];
+	contexts: InteractionContextType[] = [];
 	description!: string;
 	defaultMemberPermissions?: bigint;
 	botPermissions?: bigint;

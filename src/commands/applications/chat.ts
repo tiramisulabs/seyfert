@@ -126,8 +126,8 @@ export class BaseCommand {
 	nsfw?: boolean;
 	description!: string;
 	defaultMemberPermissions?: bigint;
-	integrationTypes?: ApplicationIntegrationType[];
-	contexts?: InteractionContextType[];
+	integrationTypes: ApplicationIntegrationType[] = [];
+	contexts: InteractionContextType[] = [];
 	botPermissions?: bigint;
 	name_localizations?: Partial<Record<LocaleString, string>>;
 	description_localizations?: Partial<Record<LocaleString, string>>;

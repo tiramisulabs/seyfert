@@ -143,14 +143,14 @@ export class CommandHandler extends BaseHandler {
 			//TODO: locales
 
 			if ('contexts' in command && 'contexts' in cached) {
-				if (command.contexts?.length !== cached.contexts?.length) return true;
+				if (command.contexts.length !== cached.contexts.length) return true;
 				if (command.contexts && cached.contexts) {
 					if (command.contexts.some(ctx => !cached.contexts!.includes(ctx))) return true;
 				}
 			}
 
 			if ('integration_types' in command && 'integration_types' in cached) {
-				if (command.integration_types?.length !== cached.integration_types?.length) return true;
+				if (command.integration_types.length !== cached.integration_types.length) return true;
 				if (command.integration_types && cached.integration_types) {
 					if (command.integration_types.some(ctx => !cached.integration_types!.includes(ctx))) return true;
 				}

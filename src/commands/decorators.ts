@@ -157,8 +157,12 @@ export function Declare(declare: DeclareOptions) {
 		class extends target {
 			name = declare.name;
 			nsfw = declare.nsfw;
-			contexts = declare.contexts?.map(i => InteractionContextType[i]);
-			integrationTypes = declare.integrationTypes?.map(i => ApplicationIntegrationType[i]);
+			contexts =
+				declare.contexts?.map(i => InteractionContextType[i]) ??
+				Object.values(InteractionContextType).filter(x => typeof x === 'number');
+			integrationTypes = declare.integrationTypes?.map(i => ApplicationIntegrationType[i]) ?? [
+				ApplicationIntegrationType.GuildInstall,
+			];
 			defaultMemberPermissions = Array.isArray(declare.defaultMemberPermissions)
 				? declare.defaultMemberPermissions?.reduce((acc, prev) => acc | PermissionFlagsBits[prev], BigInt(0))
 				: declare.defaultMemberPermissions;
