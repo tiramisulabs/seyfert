@@ -1,9 +1,8 @@
-import {
-	type GatewayDispatchPayload,
-	type GatewayMessageCreateDispatch,
-	type GatewayMessageDeleteBulkDispatch,
-	type GatewayMessageDeleteDispatch,
-	GatewayDispatchEvents,
+import type {
+	GatewayDispatchPayload,
+	GatewayMessageCreateDispatch,
+	GatewayMessageDeleteBulkDispatch,
+	GatewayMessageDeleteDispatch,
 } from 'discord-api-types/v10';
 import type { Client, WorkerClient } from '../client';
 import { BaseHandler, ReplaceRegex, magicImport, type MakeRequired, type SnakeCase } from '../common';
@@ -27,9 +26,7 @@ export class EventHandler extends BaseHandler {
 	values: Partial<Record<GatewayEvents | CustomEventsKeys, EventValue>> = {};
 
 	async load(eventsDir: string, instances?: { file: ClientEvent; path: string }[]) {
-		const discordEvents = Object.values(GatewayDispatchEvents).map(x =>
-			ReplaceRegex.camel(x.toLowerCase()),
-		) as ClientNameEvents[];
+		const discordEvents = Object.keys(RawEvents).map(x => ReplaceRegex.camel(x.toLowerCase())) as ClientNameEvents[];
 
 		for (const i of instances ?? (await this.loadFilesK<ClientEvent>(await this.getFiles(eventsDir)))) {
 			const instance = this.callback(i.file);
