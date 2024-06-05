@@ -181,7 +181,18 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				}
 				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
 				break;
-
+			case 'GUILD_CREATE': {
+				if (this.__handleGuilds?.has(packet.d.id)) {
+					this.__handleGuilds.delete(packet.d.id);
+					if (!this.__handleGuilds.size && [...this.gateway.values()].every(shard => shard.data.session_id)) {
+						await this.events?.runEvent('BOT_READY', this, this.me, -1);
+					}
+					if (!this.__handleGuilds.size) delete this.__handleGuilds;
+					return;
+				}
+				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
+				break;
+			}
 			//rest of the events
 			default: {
 				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
@@ -212,17 +223,6 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						}
 						this.debugger?.debug(`#${shardId}[${packet.d.user.username}](${this.botId}) is online...`);
 						break;
-					case 'GUILD_CREATE': {
-						if (this.__handleGuilds?.has(packet.d.id)) {
-							this.__handleGuilds.delete(packet.d.id);
-							if (!this.__handleGuilds.size && [...this.gateway.values()].every(shard => shard.data.session_id)) {
-								await this.events?.runEvent('BOT_READY', this, this.me, -1);
-							}
-							if (!this.__handleGuilds.size) delete this.__handleGuilds;
-							return;
-						}
-						break;
-					}
 				}
 				break;
 			}
