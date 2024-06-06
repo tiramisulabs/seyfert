@@ -151,7 +151,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				shardStart: this.options?.shards?.start,
 				shardEnd: this.options?.shards?.end ?? this.options?.shards?.total,
 				totalShards: this.options?.shards?.total ?? this.options?.shards?.end,
-				properties: { ...this.options?.gateway?.properties, ...properties },
+				properties: { ...properties, ...this.options?.gateway?.properties },
 				compress: this.options?.gateway?.compress,
 			});
 		}

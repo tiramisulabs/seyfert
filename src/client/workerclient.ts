@@ -6,7 +6,7 @@ import { WorkerAdapter } from '../cache';
 import { LogLevels, MergeOptions, lazyLoadPackage, type DeepPartial, type When } from '../common';
 import { EventHandler } from '../events';
 import { ClientUser } from '../structures';
-import { Shard, type ShardManagerOptions, type WorkerData } from '../websocket';
+import { Shard, properties, type ShardManagerOptions, type WorkerData } from '../websocket';
 import type {
 	WorkerReady,
 	WorkerReceivePayload,
@@ -22,7 +22,7 @@ import type {
 import type { ManagerMessages } from '../websocket/discord/workermanager';
 import type { BaseClientOptions, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
-import type { Client } from './client';
+import type { Client, ClientOptions } from './client';
 import { onInteractionCreate } from './oninteractioncreate';
 import { defaultArgsParser, defaultOptionsParser, onMessageCreate } from './onmessagecreate';
 import { Collectors } from './collectors';
@@ -211,6 +211,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 								info: data.info,
 								compress: data.compress,
 								debugger: this.debugger,
+								properties: {
+									...properties,
+									...this.options.gateway?.properties,
+								},
 								async handlePayload(shardId, payload) {
 									await handlePayload?.(shardId, payload);
 									await onPacket?.(payload, shardId);
@@ -403,4 +407,5 @@ interface WorkerClientOptions extends BaseClientOptions {
 	disabledCache: Cache['disabledCache'];
 	commands?: NonNullable<Client['options']>['commands'];
 	handlePayload?: ShardManagerOptions['handlePayload'];
+	gateway?: ClientOptions['gateway'];
 }
