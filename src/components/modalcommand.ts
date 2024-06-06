@@ -13,7 +13,7 @@ export abstract class ModalCommand {
 
 	middlewares: (keyof RegisteredMiddlewares)[] = [];
 
-	props: ExtraProps = {};
+	props!: ExtraProps;
 
 	onAfterRun?(context: ModalContext, error: unknown | undefined): any;
 	onRunError?(context: ModalContext, error: unknown): any;

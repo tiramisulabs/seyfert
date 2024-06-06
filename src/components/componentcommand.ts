@@ -19,7 +19,7 @@ export abstract class ComponentCommand {
 
 	middlewares: (keyof RegisteredMiddlewares)[] = [];
 
-	props: ExtraProps = {};
+	props!: ExtraProps;
 
 	get cType(): number {
 		return ComponentType[this.componentType];

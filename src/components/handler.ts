@@ -174,17 +174,11 @@ export class ComponentHandler extends BaseHandler {
 			}
 			if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) continue;
 			component.props ??= this.client.options.commands?.defaults?.props ?? {};
-			if (component instanceof ModalCommand) {
-				component.onInternalError ??= this.client.options?.modals?.defaults?.onInternalError;
-				component.onMiddlewaresError ??= this.client.options?.modals?.defaults?.onMiddlewaresError;
-				component.onRunError ??= this.client.options?.modals?.defaults?.onRunError;
-				component.onAfterRun ??= this.client.options?.modals?.defaults?.onAfterRun;
-			} else {
-				component.onInternalError ??= this.client.options?.components?.defaults?.onInternalError;
-				component.onMiddlewaresError ??= this.client.options?.components?.defaults?.onMiddlewaresError;
-				component.onRunError ??= this.client.options?.components?.defaults?.onRunError;
-				component.onAfterRun ??= this.client.options?.components?.defaults?.onAfterRun;
-			}
+			const is = component instanceof ModalCommand ? 'modals' : 'components';
+			component.onInternalError ??= this.client.options?.[is]?.defaults?.onInternalError;
+			component.onMiddlewaresError ??= this.client.options?.[is]?.defaults?.onMiddlewaresError;
+			component.onRunError ??= this.client.options?.[is]?.defaults?.onRunError;
+			component.onAfterRun ??= this.client.options?.[is]?.defaults?.onAfterRun;
 			component.__filePath = value.path;
 			this.commands.push(component);
 		}
