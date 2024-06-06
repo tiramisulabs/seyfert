@@ -173,6 +173,7 @@ export class ComponentHandler extends BaseHandler {
 				continue;
 			}
 			if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) continue;
+			component.props ??= this.client.options.commands?.defaults?.props ?? {};
 			if (component instanceof ModalCommand) {
 				component.onInternalError ??= this.client.options?.modals?.defaults?.onInternalError;
 				component.onMiddlewaresError ??= this.client.options?.modals?.defaults?.onMiddlewaresError;
