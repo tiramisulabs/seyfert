@@ -7,7 +7,7 @@ import {
 } from 'discord-api-types/v10';
 import type { FlatObjectKeys, PermissionStrings } from '../common';
 import type { CommandOption, OptionsRecord, SubCommand } from './applications/chat';
-import type { DefaultLocale, IgnoreCommand, MiddlewareContext } from './applications/shared';
+import type { DefaultLocale, ExtraProps, IgnoreCommand, MiddlewareContext } from './applications/shared';
 
 export interface RegisteredMiddlewares {}
 
@@ -23,6 +23,7 @@ type DeclareOptions =
 			contexts?: (keyof typeof InteractionContextType)[];
 			ignore?: IgnoreCommand;
 			aliases?: string[];
+			props?: ExtraProps;
 	  }
 	| (Omit<
 			{
@@ -34,6 +35,7 @@ type DeclareOptions =
 				nsfw?: boolean;
 				integrationTypes?: (keyof typeof ApplicationIntegrationType)[];
 				contexts?: (keyof typeof InteractionContextType)[];
+				props?: ExtraProps;
 			},
 			'type' | 'description'
 	  > & {
@@ -157,6 +159,7 @@ export function Declare(declare: DeclareOptions) {
 		class extends target {
 			name = declare.name;
 			nsfw = declare.nsfw;
+			props = declare.props;
 			contexts =
 				declare.contexts?.map(i => InteractionContextType[i]) ??
 				Object.values(InteractionContextType).filter(x => typeof x === 'number');

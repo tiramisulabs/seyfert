@@ -214,6 +214,8 @@ export class CommandHandler extends BaseHandler {
 			commandInstance.onRunError ??= client.options?.commands?.defaults?.onRunError;
 			commandInstance.__filePath = command.path;
 			commandInstance.options ??= [] as NonNullable<Command['options']>;
+			console.log(commandInstance, commandInstance.props);
+			commandInstance.props ??= client.options.commands?.defaults?.props ?? {};
 			if (commandInstance.__autoload) {
 				//@AutoLoad
 				const options = await this.getFiles(dirname(command.path));
@@ -239,35 +241,36 @@ export class CommandHandler extends BaseHandler {
 					option.onMiddlewaresError =
 						option.onMiddlewaresError?.bind(option) ??
 						commandInstance.onMiddlewaresError?.bind(commandInstance) ??
-						this.client.options?.commands?.defaults?.onMiddlewaresError;
+						this.client.options.commands?.defaults?.onMiddlewaresError;
 					option.onRunError =
 						option.onRunError?.bind(option) ??
 						commandInstance.onRunError?.bind(commandInstance) ??
-						this.client.options?.commands?.defaults?.onRunError;
+						this.client.options.commands?.defaults?.onRunError;
 					option.onOptionsError =
 						option.onOptionsError?.bind(option) ??
 						commandInstance.onOptionsError?.bind(commandInstance) ??
-						this.client.options?.commands?.defaults?.onOptionsError;
+						this.client.options.commands?.defaults?.onOptionsError;
 					option.onInternalError =
 						option.onInternalError?.bind(option) ??
 						commandInstance.onInternalError?.bind(commandInstance) ??
-						this.client.options?.commands?.defaults?.onInternalError;
+						this.client.options.commands?.defaults?.onInternalError;
 					option.onAfterRun =
 						option.onAfterRun?.bind(option) ??
 						commandInstance.onAfterRun?.bind(commandInstance) ??
-						this.client.options?.commands?.defaults?.onAfterRun;
+						this.client.options.commands?.defaults?.onAfterRun;
 					option.onBotPermissionsFail =
 						option.onBotPermissionsFail?.bind(option) ??
 						commandInstance.onBotPermissionsFail?.bind(commandInstance) ??
-						this.client.options?.commands?.defaults?.onBotPermissionsFail;
+						this.client.options.commands?.defaults?.onBotPermissionsFail;
 					option.onPermissionsFail =
 						option.onPermissionsFail?.bind(option) ??
 						commandInstance.onPermissionsFail?.bind(commandInstance) ??
-						this.client.options?.commands?.defaults?.onPermissionsFail;
+						this.client.options.commands?.defaults?.onPermissionsFail;
 					option.botPermissions ??= commandInstance.botPermissions;
 					option.defaultMemberPermissions ??= commandInstance.defaultMemberPermissions;
 					option.contexts ??= commandInstance.contexts;
 					option.integrationTypes ??= commandInstance.integrationTypes;
+					option.props ??= commandInstance.props;
 				}
 			}
 

@@ -1,4 +1,4 @@
-import type { RegisteredMiddlewares, UsingClient } from '../commands';
+import type { ExtraProps, RegisteredMiddlewares, UsingClient } from '../commands';
 import { InteractionCommandType } from './componentcommand';
 import type { ModalContext } from './modalcontext';
 
@@ -12,6 +12,8 @@ export abstract class ModalCommand {
 	abstract run(context: ModalContext): any;
 
 	middlewares: (keyof RegisteredMiddlewares)[] = [];
+
+	props: ExtraProps = {};
 
 	onAfterRun?(context: ModalContext, error: unknown | undefined): any;
 	onRunError?(context: ModalContext, error: unknown): any;

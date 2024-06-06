@@ -24,6 +24,7 @@ import type { OptionResolver } from '../optionresolver';
 import type { CommandContext } from './chatcontext';
 import type {
 	DefaultLocale,
+	ExtraProps,
 	IgnoreCommand,
 	OKFunction,
 	OnOptionsReturnObject,
@@ -137,6 +138,8 @@ export class BaseCommand {
 	ignore?: IgnoreCommand;
 
 	aliases?: string[];
+
+	props: ExtraProps = {};
 
 	/** @internal */
 	async __runOptions(

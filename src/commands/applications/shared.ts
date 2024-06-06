@@ -13,6 +13,7 @@ export type InferWithPrefix = InternalOptions extends { withPrefix: infer P } ? 
 export interface GlobalMetadata {}
 export interface DefaultLocale {}
 export interface ExtendContext {}
+export interface ExtraProps {}
 export interface UsingClient extends BaseClient {}
 export type ParseClient<T extends BaseClient> = T;
 export interface InternalOptions {}

@@ -2,7 +2,14 @@ import { join } from 'node:path';
 import { ApiHandler, Router } from '../api';
 import type { Adapter } from '../cache';
 import { Cache, MemoryAdapter } from '../cache';
-import type { Command, CommandContext, OnOptionsReturnObject, RegisteredMiddlewares, UsingClient } from '../commands';
+import type {
+	Command,
+	CommandContext,
+	ExtraProps,
+	OnOptionsReturnObject,
+	RegisteredMiddlewares,
+	UsingClient,
+} from '../commands';
 import { IgnoreCommand, type InferWithPrefix, type MiddlewareContext } from '../commands/applications/shared';
 import { CommandHandler } from '../commands/handler';
 import {
@@ -384,6 +391,7 @@ export interface BaseClientOptions {
 			onMiddlewaresError?: Command['onMiddlewaresError'];
 			onOptionsError?: Command['onOptionsError'];
 			onAfterRun?: Command['onAfterRun'];
+			props?: ExtraProps;
 		};
 	};
 	components?: {
