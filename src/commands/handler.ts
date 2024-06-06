@@ -214,7 +214,6 @@ export class CommandHandler extends BaseHandler {
 			commandInstance.onRunError ??= client.options?.commands?.defaults?.onRunError;
 			commandInstance.__filePath = command.path;
 			commandInstance.options ??= [] as NonNullable<Command['options']>;
-			console.log(commandInstance, commandInstance.props);
 			commandInstance.props ??= client.options.commands?.defaults?.props ?? {};
 			if (commandInstance.__autoload) {
 				//@AutoLoad
