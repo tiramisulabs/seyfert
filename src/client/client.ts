@@ -188,7 +188,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						await this.events?.runEvent('BOT_READY', this, this.me, -1);
 					}
 					if (!this.__handleGuilds.size) delete this.__handleGuilds;
-					return;
+					return this.cache.onPacket(packet);
 				}
 				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
 				break;
