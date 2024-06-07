@@ -200,18 +200,19 @@ export class CommandHandler extends BaseHandler {
 				this.values.push(commandInstance);
 				commandInstance.__filePath = command.path;
 				this.__parseCommandLocales(commandInstance);
+				commandInstance.props ??= client.options.commands?.defaults?.props ?? {};
 				continue;
 			}
 			if (!(commandInstance instanceof Command)) {
 				continue;
 			}
-			commandInstance.onAfterRun ??= client.options?.commands?.defaults?.onAfterRun;
-			commandInstance.onBotPermissionsFail ??= client.options?.commands?.defaults?.onBotPermissionsFail;
-			commandInstance.onInternalError ??= client.options?.commands?.defaults?.onInternalError;
-			commandInstance.onMiddlewaresError ??= client.options?.commands?.defaults?.onMiddlewaresError;
-			commandInstance.onOptionsError ??= client.options?.commands?.defaults?.onOptionsError;
-			commandInstance.onPermissionsFail ??= client.options?.commands?.defaults?.onPermissionsFail;
-			commandInstance.onRunError ??= client.options?.commands?.defaults?.onRunError;
+			commandInstance.onAfterRun ??= client.options.commands?.defaults?.onAfterRun;
+			commandInstance.onBotPermissionsFail ??= client.options.commands?.defaults?.onBotPermissionsFail;
+			commandInstance.onInternalError ??= client.options.commands?.defaults?.onInternalError;
+			commandInstance.onMiddlewaresError ??= client.options.commands?.defaults?.onMiddlewaresError;
+			commandInstance.onOptionsError ??= client.options.commands?.defaults?.onOptionsError;
+			commandInstance.onPermissionsFail ??= client.options.commands?.defaults?.onPermissionsFail;
+			commandInstance.onRunError ??= client.options.commands?.defaults?.onRunError;
 			commandInstance.__filePath = command.path;
 			commandInstance.options ??= [] as NonNullable<Command['options']>;
 			commandInstance.props ??= client.options.commands?.defaults?.props ?? {};

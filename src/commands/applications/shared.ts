@@ -64,8 +64,8 @@ export type OnOptionsReturnObject = Record<
 	| {
 			failed: true;
 			value: string;
-			parseError?: //only for text command
-			MessageCommandOptionErrors;
+			parseError: //only for text command
+			MessageCommandOptionErrors | undefined;
 	  }
 >;
 

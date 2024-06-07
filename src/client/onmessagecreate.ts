@@ -140,6 +140,7 @@ export async function onMessageCreate(
 							{
 								failed: true,
 								value: x.error,
+								parseError: x.fullError,
 							},
 						];
 					}),

@@ -174,6 +174,7 @@ export class BaseCommand {
 						data[i.name] = {
 							failed: true,
 							value: `${i.name} is required but returned no value`,
+							parseError: undefined,
 						};
 						continue;
 					}
@@ -189,6 +190,7 @@ export class BaseCommand {
 				data[i.name] = {
 					failed: true,
 					value: e instanceof Error ? e.message : typeof e === 'string' ? e : inspect(e),
+					parseError: undefined,
 				};
 			}
 		}
