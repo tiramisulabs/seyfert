@@ -387,6 +387,19 @@ export class VoiceChannelMethods extends DiscordBase {
 		const filter = states.filter(state => state.channelId === this.id);
 		return filter;
 	}
+
+	public async members(force?: boolean) {
+		const collection = new Collection<string, GuildMember>();
+
+		const states = await this.states();
+
+		for (const state of states) {
+			const member = await state.member(force);
+			collection.set(member.id, member);
+		}
+
+		return collection;
+	}
 }
 
 export class WebhookGuildMethods extends DiscordBase {
@@ -450,19 +463,6 @@ export interface VoiceChannel
 @mix(TextGuildChannel, WebhookChannelMethods, VoiceChannelMethods)
 export class VoiceChannel extends BaseChannel<ChannelType.GuildVoice> {
 	declare type: ChannelType.GuildVoice;
-
-	public async members(force?: boolean) {
-		const collection = new Collection<string, GuildMember>();
-
-		const states = await this.states();
-
-		for (const state of states) {
-			const member = await state.member(force);
-			collection.set(member.id, member);
-		}
-
-		return collection;
-	}
 }
 
 export interface StageChannel
@@ -472,19 +472,6 @@ export interface StageChannel
 @mix(TopicableGuildChannel, VoiceChannelMethods)
 export class StageChannel extends BaseChannel<ChannelType> {
 	declare type: ChannelType.GuildStageVoice;
-
-	public async members(force?: boolean) {
-		const collection = new Collection<string, GuildMember>();
-
-		const states = await this.states();
-
-		for (const state of states) {
-			const member = await state.member(force);
-			collection.set(member.id, member);
-		}
-
-		return collection;
-	}
 }
 
 export interface MediaChannel extends ObjectToLower<Omit<APIGuildMediaChannel, 'type'>>, ThreadOnlyMethods {}
