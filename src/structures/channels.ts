@@ -41,7 +41,7 @@ import type { GuildMember } from './GuildMember';
 import type { GuildRole } from './GuildRole';
 import { DiscordBase } from './extra/DiscordBase';
 import { channelLink } from './extra/functions';
-import type { RawFile } from '..';
+import { Collection, type RawFile } from '..';
 
 export class BaseChannel<T extends ChannelType> extends DiscordBase<APIChannelBase<ChannelType>> {
 	declare type: T;
@@ -216,9 +216,15 @@ export class MessagesMethods extends DiscordBase {
 		return this.client.channels.typing(this.id);
 	}
 
-	messages = MessagesMethods.messages({ client: this.client, channelId: this.id });
+	messages = MessagesMethods.messages({
+		client: this.client,
+		channelId: this.id,
+	});
 	pins = MessagesMethods.pins({ client: this.client, channelId: this.id });
-	reactions = MessagesMethods.reactions({ client: this.client, channelId: this.id });
+	reactions = MessagesMethods.reactions({
+		client: this.client,
+		channelId: this.id,
+	});
 
 	static messages(ctx: MethodContext<{ channelId: string }>) {
 		return {
@@ -265,7 +271,10 @@ export class MessagesMethods extends DiscordBase {
 			embeds: body.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)) ?? undefined,
 			attachments:
 				'attachments' in body
-					? body.attachments?.map((x, i) => ({ id: i, ...resolveAttachment(x) })) ?? undefined
+					? body.attachments?.map((x, i) => ({
+							id: i,
+							...resolveAttachment(x),
+						})) ?? undefined
 					: (files?.map((x, id) => ({
 							id,
 							filename: x.name,
@@ -381,7 +390,10 @@ export class VoiceChannelMethods extends DiscordBase {
 }
 
 export class WebhookGuildMethods extends DiscordBase {
-	webhooks = WebhookGuildMethods.guild({ client: this.client, guildId: this.id });
+	webhooks = WebhookGuildMethods.guild({
+		client: this.client,
+		guildId: this.id,
+	});
 
 	static guild(ctx: MethodContext<{ guildId: string }>) {
 		return {
@@ -391,7 +403,10 @@ export class WebhookGuildMethods extends DiscordBase {
 }
 
 export class WebhookChannelMethods extends DiscordBase {
-	webhooks = WebhookChannelMethods.channel({ client: this.client, channelId: this.id });
+	webhooks = WebhookChannelMethods.channel({
+		client: this.client,
+		channelId: this.id,
+	});
 
 	static channel(ctx: MethodContext<{ channelId: string }>) {
 		return {
@@ -435,6 +450,19 @@ export interface VoiceChannel
 @mix(TextGuildChannel, WebhookChannelMethods, VoiceChannelMethods)
 export class VoiceChannel extends BaseChannel<ChannelType.GuildVoice> {
 	declare type: ChannelType.GuildVoice;
+
+	public async members(force?: boolean) {
+		const collection = new Collection<string, GuildMember>();
+
+		const states = await this.states();
+
+		for (const state of states) {
+			const member = await state.member(force);
+			collection.set(member.id, member);
+		}
+
+		return collection;
+	}
 }
 
 export interface StageChannel
@@ -444,6 +472,19 @@ export interface StageChannel
 @mix(TopicableGuildChannel, VoiceChannelMethods)
 export class StageChannel extends BaseChannel<ChannelType> {
 	declare type: ChannelType.GuildStageVoice;
+
+	public async members(force?: boolean) {
+		const collection = new Collection<string, GuildMember>();
+
+		const states = await this.states();
+
+		for (const state of states) {
+			const member = await state.member(force);
+			collection.set(member.id, member);
+		}
+
+		return collection;
+	}
 }
 
 export interface MediaChannel extends ObjectToLower<Omit<APIGuildMediaChannel, 'type'>>, ThreadOnlyMethods {}
