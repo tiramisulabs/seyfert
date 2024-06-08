@@ -555,6 +555,7 @@ export type AllGuildChannels =
 
 export type AllTextableChannels = TextGuildChannel | VoiceChannel | DMChannel | NewsChannel | ThreadChannel;
 export type AllGuildTextableChannels = TextGuildChannel | VoiceChannel | NewsChannel | ThreadChannel;
+export type AllGuildVoiceChannels = VoiceChannel | StageChannel;
 
 export type AllChannels =
 	| BaseChannel<ChannelType>
