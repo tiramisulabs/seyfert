@@ -14,6 +14,7 @@ import { StageInstances } from './resources/stage-instances';
 import { Stickers } from './resources/stickers';
 import { Threads } from './resources/threads';
 import { VoiceStates } from './resources/voice-states';
+import { Bans } from './resources/bans';
 
 import { ChannelType, GatewayIntentBits, type GatewayDispatchPayload } from 'discord-api-types/v10';
 import type { InternalOptions, UsingClient } from '../commands';
@@ -36,7 +37,8 @@ export type GuildRelated =
 	| 'presences'
 	| 'stageInstances'
 	| 'overwrites'
-	| 'messages';
+	| 'messages'
+	| 'bans';
 
 // ClientBased
 export type NonGuildBased = 'users' | 'guilds';
@@ -58,6 +60,8 @@ export type CachedEvents =
 	| 'GUILD_ROLE_CREATE'
 	| 'GUILD_ROLE_UPDATE'
 	| 'GUILD_ROLE_DELETE'
+	| 'GUILD_BAN_ADD'
+	| 'GUILD_BAN_REMOVE'
 	| 'GUILD_EMOJIS_UPDATE'
 	| 'GUILD_STICKERS_UPDATE'
 	| 'GUILD_MEMBER_ADD'
@@ -93,6 +97,7 @@ export class Cache {
 	presences?: Presences;
 	stageInstances?: StageInstances;
 	messages?: Messages;
+	bans?: Bans;
 
 	constructor(
 		public intents: number,
@@ -144,6 +149,9 @@ export class Cache {
 		if (!this.disabledCache.includes('messages')) {
 			this.messages = new Messages(this, client);
 		}
+		if (!this.disabledCache.includes('bans')) {
+			this.bans = new Bans(this, client);
+		}
 	}
 
 	/** @internal */
@@ -163,6 +171,7 @@ export class Cache {
 		this.threads?.__setClient(client);
 		this.stageInstances?.__setClient(client);
 		this.messages?.__setClient(client);
+		this.bans?.__setClient(client);
 	}
 
 	flush(): ReturnCache<void> {
@@ -206,6 +215,10 @@ export class Cache {
 		return this.hasIntent('DirectMessages');
 	}
 
+	get hasBansIntent() {
+		return this.hasIntent('GuildBans');
+	}
+
 	async bulkGet(
 		keys: (
 			| readonly [
@@ -246,6 +259,7 @@ export class Cache {
 				case 'users':
 				case 'guilds':
 				case 'overwrites':
+				case 'bans':
 				case 'messages':
 					{
 						if (!allData[type]) {
@@ -313,6 +327,7 @@ export class Cache {
 				case 'stageInstances':
 				case 'emojis':
 				case 'overwrites':
+				case 'bans':
 				case 'messages':
 					{
 						if (!this[type]?.filter(data, id, guildId)) continue;
@@ -404,6 +419,7 @@ export class Cache {
 				case 'stageInstances':
 				case 'emojis':
 				case 'overwrites':
+				case 'bans':
 				case 'messages':
 					{
 						if (!this[type]?.filter(data, id, guildId)) continue;
@@ -499,6 +515,12 @@ export class Cache {
 				break;
 			case 'GUILD_ROLE_DELETE':
 				await this.roles?.remove(event.d.role_id, event.d.guild_id);
+				break;
+			case 'GUILD_BAN_ADD':
+				await this.bans?.set(event.d.user.id, event.d.guild_id, event.d);
+				break;
+			case 'GUILD_BAN_REMOVE':
+				await this.bans?.remove(event.d.user.id, event.d.guild_id);
 				break;
 			case 'GUILD_EMOJIS_UPDATE':
 				await this.emojis?.remove(await this.emojis?.keys(event.d.guild_id), event.d.guild_id);

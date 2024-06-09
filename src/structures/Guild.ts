@@ -10,6 +10,7 @@ import { Sticker } from './Sticker';
 import { BaseChannel, WebhookGuildMethods } from './channels';
 import { BaseGuild } from './extra/BaseGuild';
 import type { DiscordBase } from './extra/DiscordBase';
+import { GuildBan } from './GuildBan';
 
 export interface Guild extends ObjectToLower<Omit<APIGuild, 'stickers' | 'emojis' | 'roles'>>, DiscordBase {}
 export class Guild<State extends StructStates = 'api'> extends (BaseGuild as unknown as ToClass<
@@ -75,6 +76,7 @@ export class Guild<State extends StructStates = 'api'> extends (BaseGuild as unk
 	roles = GuildRole.methods({ client: this.client, guildId: this.id });
 	channels = BaseChannel.allMethods({ client: this.client, guildId: this.id });
 	emojis = GuildEmoji.methods({ client: this.client, guildId: this.id });
+	bans = GuildBan.methods({ client: this.client, guildId: this.id });
 }
 
 /** Maximun custom guild emojis per level */
