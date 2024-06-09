@@ -40,6 +40,7 @@ import type {
 } from '../structures';
 import type { ComponentCommand, ComponentContext, ModalCommand, ModalContext } from '../components';
 import { promises } from 'node:fs';
+import { BanShorter } from '../common/shorters/bans';
 
 export class BaseClient {
 	rest!: ApiHandler;
@@ -56,6 +57,7 @@ export class BaseClient {
 	reactions = new ReactionShorter(this);
 	emojis = new EmojiShorter(this);
 	threads = new ThreadShorter(this);
+	bans = new BanShorter(this);
 	interactions = new InteractionShorter(this);
 
 	debugger?: Logger;
