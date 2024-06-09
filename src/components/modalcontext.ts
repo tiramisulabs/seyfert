@@ -38,7 +38,7 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 		super(client);
 	}
 
-	command?: ModalCommand;
+	command!: ModalCommand;
 	metadata: CommandMetadata<UnionToTuple<M>> = {} as never;
 	globalMetadata: GlobalMetadata = {};
 

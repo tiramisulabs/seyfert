@@ -7,7 +7,7 @@ import type {
 import { magicImport, type PermissionStrings } from '../../common';
 import type { RegisteredMiddlewares } from '../decorators';
 import type { MenuCommandContext } from './menucontext';
-import type { UsingClient } from './shared';
+import type { ExtraProps, UsingClient } from './shared';
 
 export abstract class ContextMenuCommand {
 	middlewares: (keyof RegisteredMiddlewares)[] = [];
@@ -19,14 +19,16 @@ export abstract class ContextMenuCommand {
 	name!: string;
 	type!: ApplicationCommandType.User | ApplicationCommandType.Message;
 	nsfw?: boolean;
-	integrationTypes?: ApplicationIntegrationType[];
-	contexts?: InteractionContextType[];
+	integrationTypes: ApplicationIntegrationType[] = [];
+	contexts: InteractionContextType[] = [];
 	description!: string;
 	defaultMemberPermissions?: bigint;
 	botPermissions?: bigint;
 	dm?: boolean;
 	name_localizations?: Partial<Record<LocaleString, string>>;
 	description_localizations?: Partial<Record<LocaleString, string>>;
+
+	props: ExtraProps = {};
 
 	toJSON() {
 		return {

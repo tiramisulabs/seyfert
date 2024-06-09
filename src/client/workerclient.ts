@@ -3,10 +3,10 @@ import { randomUUID } from 'node:crypto';
 import { ApiHandler, Logger } from '..';
 import type { Cache } from '../cache';
 import { WorkerAdapter } from '../cache';
-import { LogLevels, lazyLoadPackage, type DeepPartial, type When } from '../common';
+import { LogLevels, MergeOptions, lazyLoadPackage, type DeepPartial, type When } from '../common';
 import { EventHandler } from '../events';
 import { ClientUser } from '../structures';
-import { Shard, type ShardManagerOptions, type WorkerData } from '../websocket';
+import { Shard, properties, type ShardManagerOptions, type WorkerData } from '../websocket';
 import type {
 	WorkerReady,
 	WorkerReceivePayload,
@@ -22,9 +22,9 @@ import type {
 import type { ManagerMessages } from '../websocket/discord/workermanager';
 import type { BaseClientOptions, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
-import type { Client } from './client';
+import type { Client, ClientOptions } from './client';
 import { onInteractionCreate } from './oninteractioncreate';
-import { onMessageCreate } from './onmessagecreate';
+import { defaultArgsParser, defaultOptionsParser, onMessageCreate } from './onmessagecreate';
 import { Collectors } from './collectors';
 
 let workerData: WorkerData;
@@ -58,6 +58,15 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	constructor(options?: WorkerClientOptions) {
 		super(options);
+		this.options = MergeOptions(
+			{
+				commands: {
+					argsParser: defaultArgsParser,
+					optionsParser: defaultOptionsParser,
+				},
+			} satisfies Partial<WorkerClientOptions>,
+			this.options,
+		);
 		if (!process.env.SEYFERT_SPAWNING) {
 			throw new Error('WorkerClient cannot spawn without manager');
 		}
@@ -202,6 +211,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 								info: data.info,
 								compress: data.compress,
 								debugger: this.debugger,
+								properties: {
+									...properties,
+									...this.options.gateway?.properties,
+								},
 								async handlePayload(shardId, payload) {
 									await handlePayload?.(shardId, payload);
 									await onPacket?.(payload, shardId);
@@ -324,35 +337,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	protected async onPacket(packet: GatewayDispatchPayload, shardId: number) {
 		await this.events?.execute('RAW', packet, this as WorkerClient<true>, shardId);
-		await this.events?.execute(packet.t, packet, this, shardId);
 		switch (packet.t) {
-			case 'READY':
-				for (const g of packet.d.guilds) {
-					this.__handleGuilds?.add(g.id);
-				}
-				this.botId = packet.d.user.id;
-				this.applicationId = packet.d.application.id;
-				this.me = new ClientUser(this, packet.d.user, packet.d.application) as never;
-				if (
-					!(this.__handleGuilds?.size && (workerData.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds)
-				) {
-					if ([...this.shards.values()].every(shard => shard.data.session_id)) {
-						this.postMessage({
-							type: 'WORKER_READY',
-							workerId: this.workerId,
-						} as WorkerReady);
-						await this.events?.runEvent('WORKER_READY', this, this.me, -1);
-					}
-					delete this.__handleGuilds;
-				}
-				this.debugger?.debug(`#${shardId} [${packet.d.user.username}](${this.botId}) is online...`);
-				break;
-			case 'INTERACTION_CREATE':
-				await onInteractionCreate(this, packet.d, shardId);
-				break;
-			case 'MESSAGE_CREATE':
-				await onMessageCreate(this, packet.d, shardId);
-				break;
 			case 'GUILD_CREATE': {
 				if (this.__handleGuilds?.has(packet.d.id)) {
 					this.__handleGuilds.delete(packet.d.id);
@@ -364,8 +349,46 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						await this.events?.runEvent('WORKER_READY', this, this.me, -1);
 					}
 					if (!this.__handleGuilds.size) delete this.__handleGuilds;
-					return;
+					return this.cache.onPacket(packet);
 				}
+				await this.events?.execute(packet.t, packet, this, shardId);
+				break;
+			}
+			default: {
+				await this.events?.execute(packet.t, packet, this, shardId);
+				switch (packet.t) {
+					case 'READY':
+						for (const g of packet.d.guilds) {
+							this.__handleGuilds?.add(g.id);
+						}
+						this.botId = packet.d.user.id;
+						this.applicationId = packet.d.application.id;
+						this.me = new ClientUser(this, packet.d.user, packet.d.application) as never;
+						if (
+							!(
+								this.__handleGuilds?.size &&
+								(workerData.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds
+							)
+						) {
+							if ([...this.shards.values()].every(shard => shard.data.session_id)) {
+								this.postMessage({
+									type: 'WORKER_READY',
+									workerId: this.workerId,
+								} as WorkerReady);
+								await this.events?.runEvent('WORKER_READY', this, this.me, -1);
+							}
+							delete this.__handleGuilds;
+						}
+						this.debugger?.debug(`#${shardId} [${packet.d.user.username}](${this.botId}) is online...`);
+						break;
+					case 'INTERACTION_CREATE':
+						await onInteractionCreate(this, packet.d, shardId);
+						break;
+					case 'MESSAGE_CREATE':
+						await onMessageCreate(this, packet.d, shardId);
+						break;
+				}
+				break;
 			}
 		}
 	}
@@ -384,4 +407,5 @@ interface WorkerClientOptions extends BaseClientOptions {
 	disabledCache: Cache['disabledCache'];
 	commands?: NonNullable<Client['options']>['commands'];
 	handlePayload?: ShardManagerOptions['handlePayload'];
+	gateway?: ClientOptions['gateway'];
 }

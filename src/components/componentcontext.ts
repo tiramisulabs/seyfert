@@ -50,7 +50,7 @@ export class ComponentContext<
 		super(client);
 	}
 
-	command?: ComponentCommand;
+	command!: ComponentCommand;
 	metadata: CommandMetadata<UnionToTuple<M>> = {} as never;
 	globalMetadata: GlobalMetadata = {};
 

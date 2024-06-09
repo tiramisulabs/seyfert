@@ -24,6 +24,7 @@ import type { OptionResolver } from '../optionresolver';
 import type { CommandContext } from './chatcontext';
 import type {
 	DefaultLocale,
+	ExtraProps,
 	IgnoreCommand,
 	OKFunction,
 	OnOptionsReturnObject,
@@ -126,8 +127,8 @@ export class BaseCommand {
 	nsfw?: boolean;
 	description!: string;
 	defaultMemberPermissions?: bigint;
-	integrationTypes?: ApplicationIntegrationType[];
-	contexts?: InteractionContextType[];
+	integrationTypes: ApplicationIntegrationType[] = [];
+	contexts: InteractionContextType[] = [];
 	botPermissions?: bigint;
 	name_localizations?: Partial<Record<LocaleString, string>>;
 	description_localizations?: Partial<Record<LocaleString, string>>;
@@ -137,6 +138,8 @@ export class BaseCommand {
 	ignore?: IgnoreCommand;
 
 	aliases?: string[];
+
+	props: ExtraProps = {};
 
 	/** @internal */
 	async __runOptions(
@@ -171,6 +174,7 @@ export class BaseCommand {
 						data[i.name] = {
 							failed: true,
 							value: `${i.name} is required but returned no value`,
+							parseError: undefined,
 						};
 						continue;
 					}
@@ -186,6 +190,7 @@ export class BaseCommand {
 				data[i.name] = {
 					failed: true,
 					value: e instanceof Error ? e.message : typeof e === 'string' ? e : inspect(e),
+					parseError: undefined,
 				};
 			}
 		}

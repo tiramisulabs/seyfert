@@ -1,6 +1,6 @@
 import { ComponentType } from 'discord-api-types/v10';
 import type { ContextComponentCommandInteractionMap, ComponentContext } from './componentcontext';
-import type { RegisteredMiddlewares, UsingClient } from '../commands';
+import type { ExtraProps, RegisteredMiddlewares, UsingClient } from '../commands';
 
 export const InteractionCommandType = {
 	COMPONENT: 0,
@@ -17,6 +17,10 @@ export abstract class ComponentCommand {
 	abstract filter(context: ComponentContext<typeof this.componentType>): Promise<boolean> | boolean;
 	abstract run(context: ComponentContext<typeof this.componentType>): any;
 
+	middlewares: (keyof RegisteredMiddlewares)[] = [];
+
+	props!: ExtraProps;
+
 	get cType(): number {
 		return ComponentType[this.componentType];
 	}
@@ -25,6 +29,4 @@ export abstract class ComponentCommand {
 	onRunError?(context: ComponentContext, error: unknown): any;
 	onMiddlewaresError?(context: ComponentContext, error: string): any;
 	onInternalError?(client: UsingClient, error?: unknown): any;
-
-	middlewares: (keyof RegisteredMiddlewares)[] = [];
 }

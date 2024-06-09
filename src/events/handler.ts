@@ -8,7 +8,7 @@ import type { Client, WorkerClient } from '../client';
 import { BaseHandler, ReplaceRegex, magicImport, type MakeRequired, type SnakeCase } from '../common';
 import type { ClientEvents } from '../events/hooks';
 import * as RawEvents from '../events/hooks';
-import type { ClientEvent, ClientNameEvents } from './event';
+import type { ClientEvent, CustomEvents, CustomEventsKeys, ClientNameEvents } from './event';
 
 export type EventValue = MakeRequired<ClientEvent, '__filePath'> & { fired?: boolean };
 
@@ -19,12 +19,15 @@ export class EventHandler extends BaseHandler {
 		super(client.logger);
 	}
 
-	onFail = (event: GatewayEvents, err: unknown) => this.logger.warn('<Client>.events.onFail', err, event);
+	onFail = (event: GatewayEvents | CustomEventsKeys, err: unknown) =>
+		this.logger.warn('<Client>.events.onFail', err, event);
 	protected filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
 
-	values: Partial<Record<GatewayEvents, EventValue>> = {};
+	values: Partial<Record<GatewayEvents | CustomEventsKeys, EventValue>> = {};
 
 	async load(eventsDir: string, instances?: { file: ClientEvent; path: string }[]) {
+		const discordEvents = Object.keys(RawEvents).map(x => ReplaceRegex.camel(x.toLowerCase())) as ClientNameEvents[];
+
 		for (const i of instances ?? (await this.loadFilesK<ClientEvent>(await this.getFiles(eventsDir)))) {
 			const instance = this.callback(i.file);
 			if (!instance) continue;
@@ -36,7 +39,11 @@ export class EventHandler extends BaseHandler {
 				continue;
 			}
 			instance.__filePath = i.path;
-			this.values[ReplaceRegex.snake(instance.data.name).toUpperCase() as GatewayEvents] = instance as EventValue;
+			this.values[
+				discordEvents.includes(instance.data.name)
+					? (ReplaceRegex.snake(instance.data.name).toUpperCase() as GatewayEvents)
+					: (instance.data.name as CustomEventsKeys)
+			] = instance as EventValue;
 		}
 	}
 
@@ -101,27 +108,43 @@ export class EventHandler extends BaseHandler {
 					t: name,
 					d: packet,
 				} as GatewayDispatchPayload);
-			await Event.run(...[hook, client, shardId]);
+			await Event.run(hook, client, shardId);
 		} catch (e) {
 			await this.onFail(name, e);
 		}
 	}
 
-	async reload(name: ClientNameEvents) {
-		const eventName = ReplaceRegex.snake(name).toUpperCase() as GatewayEvents;
-		const event = this.values[eventName];
+	async runCustom<T extends CustomEventsKeys>(name: T, ...args: Parameters<CustomEvents[T]>) {
+		const Event = this.values[name];
+		if (!Event) {
+			return this.client.collectors.run(name, args as never);
+		}
+		try {
+			if (Event.data.once && Event.fired) {
+				return this.client.collectors.run(name, args as never);
+			}
+			Event.fired = true;
+			this.logger.debug(`executed a custom event [${name}]`, Event.data.once ? 'once' : '');
+			await Promise.all([Event.run(args, this.client), this.client.collectors.run(name, args as never)]);
+		} catch (e) {
+			await this.onFail(name, e);
+		}
+	}
+
+	async reload(name: GatewayEvents | CustomEventsKeys) {
+		const event = this.values[name];
 		if (!event?.__filePath) return null;
 		delete require.cache[event.__filePath];
 		const imported = await magicImport(event.__filePath).then(x => x.default ?? x);
 		imported.__filePath = event.__filePath;
-		this.values[eventName] = imported;
+		this.values[name] = imported;
 		return imported;
 	}
 
 	async reloadAll(stopIfFail = true) {
 		for (const i in this.values) {
 			try {
-				await this.reload(ReplaceRegex.camel(i) as ClientNameEvents);
+				await this.reload(i as GatewayEvents | CustomEventsKeys);
 			} catch (e) {
 				if (stopIfFail) {
 					throw e;

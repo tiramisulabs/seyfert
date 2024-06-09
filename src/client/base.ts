@@ -2,8 +2,19 @@ import { join } from 'node:path';
 import { ApiHandler, Router } from '../api';
 import type { Adapter } from '../cache';
 import { Cache, MemoryAdapter } from '../cache';
-import type { Command, CommandContext, OnOptionsReturnObject, RegisteredMiddlewares, UsingClient } from '../commands';
-import { IgnoreCommand, type InferWithPrefix, type MiddlewareContext } from '../commands/applications/shared';
+import type {
+	Command,
+	CommandContext,
+	ExtraProps,
+	OnOptionsReturnObject,
+	RegisteredMiddlewares,
+	UsingClient,
+} from '../commands';
+import {
+	IgnoreCommand,
+	type InferWithPrefix,
+	type MiddlewareContext,
+} from '../commands/applications/shared';
 import { CommandHandler } from '../commands/handler';
 import {
 	ChannelShorter,
@@ -26,8 +37,18 @@ import {
 	type MakeRequired,
 } from '../common';
 
-import type { LocaleString, RESTPostAPIChannelMessageJSONBody } from 'discord-api-types/rest/v10';
-import type { Awaitable, DeepPartial, IntentStrings, OmitInsert, PermissionStrings, When } from '../common/types/util';
+import type {
+	LocaleString,
+	RESTPostAPIChannelMessageJSONBody,
+} from 'discord-api-types/rest/v10';
+import type {
+	Awaitable,
+	DeepPartial,
+	IntentStrings,
+	OmitInsert,
+	PermissionStrings,
+	When,
+} from '../common/types/util';
 import { ComponentHandler } from '../components/handler';
 import { LangsHandler } from '../langs/handler';
 import type {
@@ -38,7 +59,12 @@ import type {
 	ModalSubmitInteraction,
 	UserCommandInteraction,
 } from '../structures';
-import type { ComponentCommand, ComponentContext, ModalCommand, ModalContext } from '../components';
+import type {
+	ComponentCommand,
+	ComponentContext,
+	ModalCommand,
+	ModalContext,
+} from '../components';
 import { promises } from 'node:fs';
 import { BanShorter } from '../common/shorters/bans';
 
@@ -74,7 +100,10 @@ export class BaseClient {
 	private _botId?: string;
 	middlewares?: Record<string, MiddlewareContext>;
 
-	protected static assertString(value: unknown, message?: string): asserts value is string {
+	protected static assertString(
+		value: unknown,
+		message?: string
+	): asserts value is string {
 		if (!(typeof value === 'string' && value !== '')) {
 			throw new Error(message ?? 'Value is not a string');
 		}
@@ -94,43 +123,94 @@ export class BaseClient {
 			{
 				commands: {
 					defaults: {
-						onRunError(context: CommandContext<any>, error: unknown): any {
-							context.client.logger.fatal(`${context.command.name}.<onRunError>`, context.author.id, error);
+						onRunError(
+							context: CommandContext<any>,
+							error: unknown
+						): any {
+							context.client.logger.fatal(
+								`${context.command.name}.<onRunError>`,
+								context.author.id,
+								error
+							);
 						},
-						onOptionsError(context: CommandContext<{}, never>, metadata: OnOptionsReturnObject): any {
-							context.client.logger.fatal(`${context.command.name}.<onOptionsError>`, context.author.id, metadata);
+						onOptionsError(
+							context: CommandContext<{}, never>,
+							metadata: OnOptionsReturnObject
+						): any {
+							context.client.logger.fatal(
+								`${context.command.name}.<onOptionsError>`,
+								context.author.id,
+								metadata
+							);
 						},
-						onMiddlewaresError(context: CommandContext<{}, never>, error: string): any {
-							context.client.logger.fatal(`${context.command.name}.<onMiddlewaresError>`, context.author.id, error);
+						onMiddlewaresError(
+							context: CommandContext<{}, never>,
+							error: string
+						): any {
+							context.client.logger.fatal(
+								`${context.command.name}.<onMiddlewaresError>`,
+								context.author.id,
+								error
+							);
 						},
-						onBotPermissionsFail(context: CommandContext<{}, never>, permissions: PermissionStrings): any {
+						onBotPermissionsFail(
+							context: CommandContext<{}, never>,
+							permissions: PermissionStrings
+						): any {
 							context.client.logger.fatal(
 								`${context.command.name}.<onBotPermissionsFail>`,
 								context.author.id,
-								permissions,
+								permissions
 							);
 						},
-						onPermissionsFail(context: CommandContext<{}, never>, permissions: PermissionStrings): any {
+						onPermissionsFail(
+							context: CommandContext<{}, never>,
+							permissions: PermissionStrings
+						): any {
 							context.client.logger.fatal(
 								`${context.command.name}.<onPermissionsFail>`,
 								context.author.id,
-								permissions,
+								permissions
 							);
 						},
-						onInternalError(client: UsingClient, command: Command, error?: unknown): any {
-							client.logger.fatal(`${command.name}.<onInternalError>`, error);
+						onInternalError(
+							client: UsingClient,
+							command: Command,
+							error?: unknown
+						): any {
+							client.logger.fatal(
+								`${command.name}.<onInternalError>`,
+								error
+							);
 						},
 					},
 				},
 				components: {
 					defaults: {
-						onRunError(context: ComponentContext, error: unknown): any {
-							context.client.logger.fatal('ComponentCommand.<onRunError>', context.author.id, error);
+						onRunError(
+							context: ComponentContext,
+							error: unknown
+						): any {
+							context.client.logger.fatal(
+								'ComponentCommand.<onRunError>',
+								context.author.id,
+								error
+							);
 						},
-						onMiddlewaresError(context: ComponentContext, error: string): any {
-							context.client.logger.fatal('ComponentCommand.<onMiddlewaresError>', context.author.id, error);
+						onMiddlewaresError(
+							context: ComponentContext,
+							error: string
+						): any {
+							context.client.logger.fatal(
+								'ComponentCommand.<onMiddlewaresError>',
+								context.author.id,
+								error
+							);
 						},
-						onInternalError(client: UsingClient, error?: unknown): any {
+						onInternalError(
+							client: UsingClient,
+							error?: unknown
+						): any {
 							client.logger.fatal(error);
 						},
 					},
@@ -138,18 +218,32 @@ export class BaseClient {
 				modals: {
 					defaults: {
 						onRunError(context: ModalContext, error: unknown): any {
-							context.client.logger.fatal('ComponentCommand.<onRunError>', context.author.id, error);
+							context.client.logger.fatal(
+								'ComponentCommand.<onRunError>',
+								context.author.id,
+								error
+							);
 						},
-						onMiddlewaresError(context: ModalContext, error: string): any {
-							context.client.logger.fatal('ComponentCommand.<onMiddlewaresError>', context.author.id, error);
+						onMiddlewaresError(
+							context: ModalContext,
+							error: string
+						): any {
+							context.client.logger.fatal(
+								'ComponentCommand.<onMiddlewaresError>',
+								context.author.id,
+								error
+							);
 						},
-						onInternalError(client: UsingClient, error?: unknown): any {
+						onInternalError(
+							client: UsingClient,
+							error?: unknown
+						): any {
 							client.logger.fatal(error);
 						},
 					},
 				},
 			} satisfies BaseClientOptions,
-			options,
+			options
 		);
 	}
 
@@ -158,7 +252,9 @@ export class BaseClient {
 	}
 
 	get botId() {
-		return this._botId ?? BaseClient.getBotIdFromToken(this.rest.options.token);
+		return (
+			this._botId ?? BaseClient.getBotIdFromToken(this.rest.options.token)
+		);
 	}
 
 	set applicationId(id: string) {
@@ -173,7 +269,13 @@ export class BaseClient {
 		return new Router(this.rest).createProxy();
 	}
 
-	setServices({ rest, cache, langs, middlewares, handlers }: ServicesOptions) {
+	setServices({
+		rest,
+		cache,
+		langs,
+		middlewares,
+		handlers,
+	}: ServicesOptions) {
 		if (rest) {
 			this.rest = rest;
 		}
@@ -182,7 +284,7 @@ export class BaseClient {
 				this.cache?.intents ?? 0,
 				cache?.adapter ?? this.cache?.adapter ?? new MemoryAdapter(),
 				cache.disabledCache ?? this.cache?.disabledCache ?? [],
-				this,
+				this
 			);
 		}
 		if (middlewares) {
@@ -194,7 +296,9 @@ export class BaseClient {
 					this.components = undefined;
 				} else if (typeof handlers.components === 'function') {
 					this.components ??= new ComponentHandler(this.logger, this);
-					this.components.setHandlers({ callback: handlers.components });
+					this.components.setHandlers({
+						callback: handlers.components,
+					});
 				} else {
 					this.components = handlers.components;
 				}
@@ -222,7 +326,8 @@ export class BaseClient {
 		}
 		if (langs) {
 			if (langs.default) this.langs!.defaultLang = langs.default;
-			if (langs.aliases) this.langs!.aliases = Object.entries(langs.aliases);
+			if (langs.aliases)
+				this.langs!.aliases = Object.entries(langs.aliases);
 		}
 	}
 
@@ -236,13 +341,20 @@ export class BaseClient {
 	}
 
 	async start(
-		options: Pick<DeepPartial<StartOptions>, 'langsDir' | 'commandsDir' | 'connection' | 'token' | 'componentsDir'> = {
+		options: Pick<
+			DeepPartial<StartOptions>,
+			| 'langsDir'
+			| 'commandsDir'
+			| 'connection'
+			| 'token'
+			| 'componentsDir'
+		> = {
 			token: undefined,
 			langsDir: undefined,
 			commandsDir: undefined,
 			connection: undefined,
 			componentsDir: undefined,
-		},
+		}
 	) {
 		await this.loadLangs(options.langsDir);
 		await this.loadCommands(options.commandsDir);
@@ -273,21 +385,32 @@ export class BaseClient {
 	}
 
 	shouldUploadCommands(cachePath: string) {
-		return this.commands!.shouldUpload(cachePath).then(async should => {
-			if (should) await promises.writeFile(cachePath, JSON.stringify(this.commands!.values.map(x => x.toJSON())));
+		return this.commands!.shouldUpload(cachePath).then(async (should) => {
+			if (should)
+				await promises.writeFile(
+					cachePath,
+					JSON.stringify(this.commands!.values.map((x) => x.toJSON()))
+				);
 			return should;
 		});
 	}
 
 	async uploadCommands(applicationId?: string) {
-		applicationId ??= await this.getRC().then(x => x.applicationId ?? this.applicationId);
+		applicationId ??= await this.getRC().then(
+			(x) => x.applicationId ?? this.applicationId
+		);
 		BaseClient.assertString(applicationId, 'applicationId is not a string');
 
 		const commands = this.commands!.values;
-		const filter = filterSplit(commands, command => !command.guildId);
+		const filter = filterSplit(commands, (command) => !command.guildId);
 
 		await this.proxy.applications(applicationId).commands.put({
-			body: filter.expect.filter(cmd => !('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash).map(x => x.toJSON()),
+			body: filter.expect
+				.filter(
+					(cmd) =>
+						!('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash
+				)
+				.map((x) => x.toJSON()),
 		});
 
 		const guilds = new Set<string>();
@@ -304,14 +427,19 @@ export class BaseClient {
 				.guilds(guild)
 				.commands.put({
 					body: filter.never
-						.filter(cmd => cmd.guildId?.includes(guild) && (!('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash))
-						.map(x => x.toJSON()),
+						.filter(
+							(cmd) =>
+								cmd.guildId?.includes(guild) &&
+								(!('ignore' in cmd) ||
+									cmd.ignore !== IgnoreCommand.Slash)
+						)
+						.map((x) => x.toJSON()),
 				});
 		}
 	}
 
 	async loadCommands(dir?: string) {
-		dir ??= await this.getRC().then(x => x.commands);
+		dir ??= await this.getRC().then((x) => x.commands);
 		if (dir && this.commands) {
 			await this.commands.load(dir, this);
 			this.logger.info('CommandHandler loaded');
@@ -319,7 +447,7 @@ export class BaseClient {
 	}
 
 	async loadComponents(dir?: string) {
-		dir ??= await this.getRC().then(x => x.components);
+		dir ??= await this.getRC().then((x) => x.components);
 		if (dir && this.components) {
 			await this.components.load(dir);
 			this.logger.info('ComponentHandler loaded');
@@ -327,7 +455,7 @@ export class BaseClient {
 	}
 
 	async loadLangs(dir?: string) {
-		dir ??= await this.getRC().then(x => x.langs);
+		dir ??= await this.getRC().then((x) => x.langs);
 		if (dir && this.langs) {
 			await this.langs.load(dir);
 			this.logger.info('LangsHandler loaded');
@@ -339,23 +467,37 @@ export class BaseClient {
 	}
 
 	async getRC<
-		T extends InternalRuntimeConfigHTTP | InternalRuntimeConfig = InternalRuntimeConfigHTTP | InternalRuntimeConfig,
+		T extends InternalRuntimeConfigHTTP | InternalRuntimeConfig =
+			| InternalRuntimeConfigHTTP
+			| InternalRuntimeConfig
 	>() {
 		const seyfertConfig = (BaseClient._seyfertConfig ||
 			(await this.options.getRC?.()) ||
-			(await magicImport(join(process.cwd(), 'seyfert.config.js')).then(x => x.default ?? x))) as T;
+			(await magicImport(join(process.cwd(), 'seyfert.config.js')).then(
+				(x) => x.default ?? x
+			))) as T;
 
 		const { locations, debug, ...env } = seyfertConfig;
 
 		const obj = {
 			debug: !!debug,
 			...env,
-			templates: locations.templates ? join(process.cwd(), locations.base, locations.templates) : undefined,
-			langs: locations.langs ? join(process.cwd(), locations.output, locations.langs) : undefined,
+			templates: locations.templates
+				? join(process.cwd(), locations.base, locations.templates)
+				: undefined,
+			langs: locations.langs
+				? join(process.cwd(), locations.output, locations.langs)
+				: undefined,
 			events:
-				'events' in locations && locations.events ? join(process.cwd(), locations.output, locations.events) : undefined,
-			components: locations.components ? join(process.cwd(), locations.output, locations.components) : undefined,
-			commands: locations.commands ? join(process.cwd(), locations.output, locations.commands) : undefined,
+				'events' in locations && locations.events
+					? join(process.cwd(), locations.output, locations.events)
+					: undefined,
+			components: locations.components
+				? join(process.cwd(), locations.output, locations.components)
+				: undefined,
+			commands: locations.commands
+				? join(process.cwd(), locations.output, locations.commands)
+				: undefined,
 			base: join(process.cwd(), locations.base),
 			output: join(process.cwd(), locations.output),
 		};
@@ -374,7 +516,7 @@ export interface BaseClientOptions {
 			| MessageCommandInteraction<boolean>
 			| ComponentInteraction
 			| ModalSubmitInteraction
-			| When<InferWithPrefix, Message, never>,
+			| When<InferWithPrefix, Message, never>
 	) => {};
 	globalMiddlewares?: readonly (keyof RegisteredMiddlewares)[];
 	commands?: {
@@ -386,6 +528,7 @@ export interface BaseClientOptions {
 			onMiddlewaresError?: Command['onMiddlewaresError'];
 			onOptionsError?: Command['onOptionsError'];
 			onAfterRun?: Command['onAfterRun'];
+			props?: ExtraProps;
 		};
 	};
 	components?: {
@@ -404,7 +547,10 @@ export interface BaseClientOptions {
 			onAfterRun?: ModalCommand['onAfterRun'];
 		};
 	};
-	allowedMentions?: Omit<NonNullable<RESTPostAPIChannelMessageJSONBody['allowed_mentions']>, 'parse'> & {
+	allowedMentions?: Omit<
+		NonNullable<RESTPostAPIChannelMessageJSONBody['allowed_mentions']>,
+		'parse'
+	> & {
 		parse?: ('everyone' | 'roles' | 'users')[]; //nice types, d-api
 	};
 	getRC?(): Awaitable<InternalRuntimeConfig | InternalRuntimeConfigHTTP>;
@@ -449,11 +595,17 @@ export type InternalRuntimeConfigHTTP = Omit<
 	MakeRequired<RC, 'publicKey' | 'port' | 'applicationId'>,
 	'intents' | 'locations'
 > & { locations: Omit<RC['locations'], 'events'> };
-export type RuntimeConfigHTTP = Omit<MakeRequired<RC, 'publicKey' | 'applicationId'>, 'intents' | 'locations'> & {
+export type RuntimeConfigHTTP = Omit<
+	MakeRequired<RC, 'publicKey' | 'applicationId'>,
+	'intents' | 'locations'
+> & {
 	locations: Omit<RC['locations'], 'events'>;
 };
 
-export type InternalRuntimeConfig = Omit<MakeRequired<RC, 'intents'>, 'publicKey' | 'port'>;
+export type InternalRuntimeConfig = Omit<
+	MakeRequired<RC, 'intents'>,
+	'publicKey' | 'port'
+>;
 export type RuntimeConfig = OmitInsert<
 	InternalRuntimeConfig,
 	'intents',
@@ -470,7 +622,9 @@ export interface ServicesOptions {
 	middlewares?: Record<string, MiddlewareContext>;
 	handlers?: {
 		components?: ComponentHandler | ComponentHandler['callback'];
-		commands?: CommandHandler | Parameters<CommandHandler['setHandlers']>[0];
+		commands?:
+			| CommandHandler
+			| Parameters<CommandHandler['setHandlers']>[0];
 		langs?: LangsHandler | LangsHandler['callback'];
 	};
 }

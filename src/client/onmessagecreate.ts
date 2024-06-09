@@ -91,7 +91,7 @@ export async function onMessageCreate(
 	const prefixes = (await self.options.commands.prefix(message)).sort((a, b) => b.length - a.length);
 	const prefix = prefixes.find(x => message.content.startsWith(x));
 
-	if (!(prefix && message.content.startsWith(prefix))) return;
+	if (!(prefix !== undefined && message.content.startsWith(prefix))) return;
 
 	const content = message.content.slice(prefix.length).trimStart();
 	const { fullCommandName, command, parent } = getCommandFromContent(
@@ -105,7 +105,8 @@ export async function onMessageCreate(
 	if (!command) return;
 	if (!command.run) return self.logger.warn(`${fullCommandName} command does not have 'run' callback`);
 
-	if (!(command.contexts?.includes(InteractionContextType.BotDM) || message.guildId)) return;
+	if (!command.contexts.includes(InteractionContextType.BotDM) && !message.guildId) return;
+	if (!command.contexts.includes(InteractionContextType.Guild) && message.guildId) return;
 	if (command.guildId && !command.guildId?.includes(message.guildId!)) return;
 
 	const resolved: MakeRequired<ContextOptionsResolved> = {
@@ -139,6 +140,7 @@ export async function onMessageCreate(
 							{
 								failed: true,
 								value: x.error,
+								parseError: x.fullError,
 							},
 						];
 					}),
@@ -200,7 +202,7 @@ export async function onMessageCreate(
 	}
 }
 
-export async function defaultParseOptions(
+export async function defaultOptionsParser(
 	self: UsingClient,
 	command: Command | SubCommand,
 	message: GatewayMessageCreateDispatchData,
