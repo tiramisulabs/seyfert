@@ -22,11 +22,10 @@ export class BanShorter extends BaseShorter {
 	 * Unbans a member from the guild.
 	 * @param guildId The ID of the guild.
 	 * @param memberId The ID of the member to unban.
-	 * @param body The request body for unbanning the member.
 	 * @param reason The reason for unbanning the member.
 	 */
-	async remove(guildId: string, memberId: string, body?: RESTPutAPIGuildBanJSONBody, reason?: string) {
-		await this.client.proxy.guilds(guildId).bans(memberId).delete({ body, reason });
+	async remove(guildId: string, memberId: string, reason?: string) {
+		await this.client.proxy.guilds(guildId).bans(memberId).delete({ reason });
 	}
 
 	/**
