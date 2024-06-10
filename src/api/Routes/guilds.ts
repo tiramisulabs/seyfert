@@ -84,6 +84,8 @@ import type {
 	RESTPatchAPIGuildWidgetSettingsResult,
 	RESTPostAPIAutoModerationRuleJSONBody,
 	RESTPostAPIAutoModerationRuleResult,
+	RESTPostAPIGuildBulkBanJSONBody,
+	RESTPostAPIGuildBulkBanResult,
 	RESTPostAPIGuildChannelJSONBody,
 	RESTPostAPIGuildChannelResult,
 	RESTPostAPIGuildEmojiJSONBody,
@@ -232,6 +234,11 @@ export interface GuildRoutes {
 					): Promise<RESTPutAPIGuildBanResult>;
 					delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIGuildBanResult>;
 				};
+			};
+			'bulk-bans': {
+				post(
+					args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIGuildBulkBanJSONBody>,
+				): Promise<RESTPostAPIGuildBulkBanResult>;
 			};
 			mfa: {
 				post(
