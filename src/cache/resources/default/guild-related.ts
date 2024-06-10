@@ -38,13 +38,13 @@ export class GuildRelatedResource<T = any> {
 	}
 
 	removeIfNI(intent: keyof typeof GatewayIntentBits, id: string | string[], guildId: string) {
-		if (!this.cache.hasIntent(intent)) {
+		if (this.client.options.disabledIfNoIntent?.remove && !this.cache.hasIntent(intent)) {
 			return this.remove(id, guildId);
 		}
 	}
 
 	setIfNI(intent: keyof typeof GatewayIntentBits, id: string, guildId: string, data: any) {
-		if (!this.cache.hasIntent(intent)) {
+		if (this.client.options.disabledIfNoIntent?.set && !this.cache.hasIntent(intent)) {
 			return this.set(id, guildId, data);
 		}
 	}
