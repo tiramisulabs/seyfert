@@ -15,7 +15,9 @@ export class BanShorter extends BaseShorter {
 	 * @param reason The reason for bulk banning members.
 	 */
 	async bulkCreate(guildId: string, body: RESTPostAPIGuildBulkBanJSONBody, reason?: string) {
-		return await this.client.proxy.guilds(guildId)['bulk-bans'].post({ reason, body });
+		const bans = await this.client.proxy.guilds(guildId)['bulk-bans'].post({ reason, body });
+		for (const id of bans.banned_users) this.client.cache.members?.removeIfNI('GuildBans', id, guildId);
+		return bans;
 	}
 
 	/**
