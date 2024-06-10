@@ -2,6 +2,7 @@ import { DiscordBase } from './extra/DiscordBase';
 
 export type GuildMemberData =
 	| APIGuildMember
+	| Omit<APIGuildMember, 'user'>
 	| GatewayGuildMemberUpdateDispatchData
 	| GatewayGuildMemberAddDispatchData
 	| APIInteractionDataResolvedGuildMember;
@@ -19,15 +20,11 @@ import type {
 	RESTPutAPIGuildMemberJSONBody,
 } from 'discord-api-types/v10';
 import type { UsingClient } from '../commands';
-import type { MakeRequired, MessageCreateBodyRequest, ObjectToLower, ToClass } from '../common';
+import type { MessageCreateBodyRequest, ObjectToLower, ToClass } from '../common';
 import type { ImageOptions, MethodContext } from '../common/types/options';
 import type { GuildMemberResolvable } from '../common/types/resolvables';
 import { User } from './User';
 import { PermissionsBitField } from './extra/Permissions';
-
-export type GatewayGuildMemberAddDispatchDataFixed<Pending extends boolean> = Pending extends true
-	? Omit<GatewayGuildMemberAddDispatchData, 'user'> & { id: string }
-	: MakeRequired<GatewayGuildMemberAddDispatchData, 'user'>;
 
 export interface BaseGuildMember extends DiscordBase, ObjectToLower<Omit<APIGuildMember, 'user' | 'roles'>> {}
 export class BaseGuildMember extends DiscordBase {
