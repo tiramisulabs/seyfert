@@ -15,7 +15,6 @@ export class GuildBan extends DiscordBase {
 	}
 
 	guild(force = false) {
-		if (!this.guildId) return;
 		return this.client.guilds.fetch(this.guildId, force);
 	}
 

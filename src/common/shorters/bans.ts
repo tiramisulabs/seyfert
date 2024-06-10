@@ -1,8 +1,46 @@
-import type { APIBan, RESTGetAPIGuildBansQuery } from 'discord-api-types/v10';
+import type {
+	APIBan,
+	RESTGetAPIGuildBansQuery,
+	RESTPostAPIGuildBulkBanJSONBody,
+	RESTPutAPIGuildBanJSONBody,
+} from 'discord-api-types/v10';
 import { BaseShorter } from './base';
 import { GuildBan } from '../../structures/GuildBan';
 
 export class BanShorter extends BaseShorter {
+	/**
+	 * Bulk creates bans in the guild.
+	 * @param guildId The ID of the guild.
+	 * @param body The request body for bulk banning members.
+	 * @param reason The reason for bulk banning members.
+	 */
+	async bulkCreate(guildId: string, body: RESTPostAPIGuildBulkBanJSONBody, reason?: string) {
+		await this.client.proxy.guilds(guildId)['bulk-bans'].post({ reason, body });
+	}
+
+	/**
+	 * Unbans a member from the guild.
+	 * @param guildId The ID of the guild.
+	 * @param memberId The ID of the member to unban.
+	 * @param body The request body for unbanning the member.
+	 * @param reason The reason for unbanning the member.
+	 */
+	async remove(guildId: string, memberId: string, body?: RESTPutAPIGuildBanJSONBody, reason?: string) {
+		await this.client.proxy.guilds(guildId).bans(memberId).delete({ body, reason });
+	}
+
+	/**
+	 * Bans a member from the guild.
+	 * @param guildId The ID of the guild.
+	 * @param memberId The ID of the member to ban.
+	 * @param body The request body for banning the member.
+	 * @param reason The reason for banning the member.
+	 */
+	async create(guildId: string, memberId: string, body?: RESTPutAPIGuildBanJSONBody, reason?: string) {
+		await this.client.proxy.guilds(guildId).bans(memberId).put({ reason, body });
+		await this.client.cache.members?.removeIfNI('GuildBans', memberId, guildId);
+	}
+
 	/**
 	 * Fetches a ban from the guild.
 	 * @param guildId The ID of the guild.
