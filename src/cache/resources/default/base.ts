@@ -31,14 +31,14 @@ export class BaseResource<T = any> {
 	}
 
 	removeIfNI(intent: keyof typeof GatewayIntentBits, id: string) {
-		if (this.client.options.disabledIfNoIntent?.remove && !this.cache.hasIntent(intent)) {
+		if (!this.client.options.disabledIfNoIntent?.remove && this.cache.hasIntent(intent)) {
 			return this.remove(id);
 		}
 		return;
 	}
 
 	setIfNI(intent: keyof typeof GatewayIntentBits, id: string, data: any) {
-		if (this.client.options.disabledIfNoIntent?.set && !this.cache.hasIntent(intent)) {
+		if (!this.client.options.disabledIfNoIntent?.set && this.cache.hasIntent(intent)) {
 			return this.set(id, data);
 		}
 	}
