@@ -15,6 +15,14 @@ export class GuildBan extends DiscordBase {
 		super(client, { ...data, id: data.user.id });
 	}
 
+	create(body?: Parameters<BanShorter['create']>[2], reason?: string) {
+		return this.client.bans.create(this.guildId, this.id, body, reason);
+	}
+
+	remove(reason?: string) {
+		return this.client.bans.remove(this.guildId, this.id, reason);
+	}
+
 	guild(force = false) {
 		return this.client.guilds.fetch(this.guildId, force);
 	}
