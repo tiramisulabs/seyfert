@@ -17,7 +17,10 @@ import type { Command, CommandAutocompleteOption, CommandOption, SubCommand } fr
 import type { UsingClient } from './applications/shared';
 
 export type ContextOptionsResolved = {
-	members?: Record<string, APIGuildMember | APIInteractionGuildMember | GuildMember | InteractionGuildMember>;
+	members?: Record<
+		string,
+		APIGuildMember | Omit<APIGuildMember, 'user'> | APIInteractionGuildMember | GuildMember | InteractionGuildMember
+	>;
 	users?: Record<string, APIUser | User>;
 	roles?: Record<string, APIRole | GuildRole>;
 	channels?: Record<string, APIInteractionDataResolvedChannel | AllChannels>;

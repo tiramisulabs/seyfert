@@ -1,6 +1,6 @@
 {
 	"name": "seyfert",
-	"version": "1.4.0",
+	"version": "1.5.0",
 	"description": "The most advanced framework for discord bots",
 	"main": "./lib/index.js",
 	"module": "./lib/index.js",
@@ -12,31 +12,31 @@
 		"build": "tsc --outDir ./lib",
 		"prepublishOnly": "npm run build",
 		"prepare": "npm run build && husky install",
-		"lint": "biome lint --apply ./src",
+		"lint": "biome lint --write ./src",
 		"format": "biome format --write ./src",
-		"check-h": "biome check --apply ./src",
-		"check": "biome check --apply --no-errors-on-unmatched ./src"
+		"check-h": "biome check --write ./src",
+		"check": "biome check --write --no-errors-on-unmatched ./src"
 	},
 	"author": "MARCROCK22",
 	"license": "Apache-2.0",
 	"dependencies": {
 		"chokidar": "^3.6.0",
-		"discord-api-types": "^0.37.86",
+		"discord-api-types": "^0.37.88",
 		"magic-bytes.js": "^1.10.0",
 		"ts-mixer": "^6.0.4",
 		"ws": "^8.17.0"
 	},
 	"lint-staged": {
 		"*.ts": [
-			"biome check --apply",
+			"biome check --write",
 			"biome format --write"
 		]
 	},
 	"devDependencies": {
-		"@biomejs/biome": "1.7.3",
+		"@biomejs/biome": "1.8.1",
 		"@commitlint/cli": "^19.3.0",
 		"@commitlint/config-conventional": "^19.2.2",
-		"@types/node": "^20.12.12",
+		"@types/node": "^20.14.2",
 		"@types/ws": "^8.5.10",
 		"husky": "^9.0.11",
 		"lint-staged": "^15.2.5",

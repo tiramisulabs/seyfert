@@ -105,7 +105,7 @@ export async function onMessageCreate(
 	if (!command) return;
 	if (!command.run) return self.logger.warn(`${fullCommandName} command does not have 'run' callback`);
 
-	if (!command.contexts.includes(InteractionContextType.BotDM) && !message.guildId) return;
+	if (!(command.contexts.includes(InteractionContextType.BotDM) || message.guildId)) return;
 	if (!command.contexts.includes(InteractionContextType.Guild) && message.guildId) return;
 	if (command.guildId && !command.guildId?.includes(message.guildId!)) return;
 
