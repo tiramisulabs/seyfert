@@ -129,9 +129,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				this.events = undefined;
 			} else if (typeof rest.handlers.events === 'function') {
 				this.events = new EventHandler(this);
-				this.events.setHandlers({
-					callback: rest.handlers.events,
-				});
 			} else {
 				this.events = rest.handlers.events;
 			}

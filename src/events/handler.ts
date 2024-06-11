@@ -9,6 +9,7 @@ import { BaseHandler, ReplaceRegex, magicImport, type MakeRequired, type SnakeCa
 import type { ClientEvents } from '../events/hooks';
 import * as RawEvents from '../events/hooks';
 import type { ClientEvent, CustomEvents, CustomEventsKeys, ClientNameEvents } from './event';
+import type { FileLoaded } from '../commands/handler';
 
 export type EventValue = MakeRequired<ClientEvent, '__filePath'> & { fired?: boolean };
 
@@ -25,20 +26,25 @@ export class EventHandler extends BaseHandler {
 
 	values: Partial<Record<GatewayEvents | CustomEventsKeys, EventValue>> = {};
 
-	async load(eventsDir: string, instances?: { file: ClientEvent; path: string }[]) {
+	async load(eventsDir: string) {
 		const discordEvents = Object.keys(RawEvents).map(x => ReplaceRegex.camel(x.toLowerCase())) as ClientNameEvents[];
+		const paths = await this.loadFilesK<{ file: ClientEvent }>(await this.getFiles(eventsDir));
 
-		for (const i of instances ?? (await this.loadFilesK<ClientEvent>(await this.getFiles(eventsDir)))) {
-			const instance = this.callback(i.file);
+		let file;
+		let index = 0;
+		for (const i of paths.flatMap(x => this.onFile(x.file))) {
+			file = paths[index++];
+			if (!i) continue;
+			const instance = this.callback(i);
 			if (!instance) continue;
 			if (typeof instance?.run !== 'function') {
 				this.logger.warn(
-					i.path.split(process.cwd()).slice(1).join(process.cwd()),
+					file.path.split(process.cwd()).slice(1).join(process.cwd()),
 					'Missing run function, use `export default {...}` syntax',
 				);
 				continue;
 			}
-			instance.__filePath = i.path;
+			instance.__filePath = file.path;
 			this.values[
 				discordEvents.includes(instance.data.name)
 					? (ReplaceRegex.snake(instance.data.name).toUpperCase() as GatewayEvents)
@@ -53,7 +59,7 @@ export class EventHandler extends BaseHandler {
 				{
 					const { d: data } = args[0] as GatewayMessageCreateDispatch;
 					if (args[1].components?.values.has(data.interaction_metadata?.id ?? data.id)) {
-						args[1].components.values.get(data.interaction_metadata?.id ?? data.id)!.messageId = data.id;
+						args[1].components.values.get(data.interaction_metadata!.id ?? data.id)!.messageId = data.id;
 					}
 				}
 				break;
@@ -153,8 +159,8 @@ export class EventHandler extends BaseHandler {
 		}
 	}
 
-	setHandlers({ callback }: { callback: EventHandler['callback'] }) {
-		this.callback = callback;
+	onFile(file: FileLoaded<ClientEvent>): ClientEvent[] | undefined {
+		return file.default ? [file.default] : undefined;
 	}
 
 	callback = (file: ClientEvent): ClientEvent | false => file;
