@@ -6,6 +6,7 @@ import type {
 	GatewayGuildDeleteDispatchData,
 	GatewayGuildEmojisUpdateDispatchData,
 	GatewayGuildIntegrationsUpdateDispatchData,
+	GatewayGuildMemberAddDispatchData,
 	GatewayGuildMemberRemoveDispatchData,
 	GatewayGuildMemberUpdateDispatchData,
 	GatewayGuildMembersChunkDispatchData,
@@ -21,16 +22,7 @@ import type {
 	GatewayGuildUpdateDispatchData,
 } from 'discord-api-types/v10';
 import { toCamelCase } from '../../common';
-import {
-	Guild,
-	GuildEmoji,
-	GuildMember,
-	GuildRole,
-	Sticker,
-	UnavailableMember,
-	User,
-	type GatewayGuildMemberAddDispatchDataFixed,
-} from '../../structures';
+import { Guild, GuildEmoji, GuildMember, GuildRole, Sticker, User } from '../../structures';
 import type { UsingClient } from '../../commands';
 
 export const GUILD_AUDIT_LOG_ENTRY_CREATE = (_self: UsingClient, data: GatewayGuildAuditLogEntryCreateDispatchData) => {
@@ -64,8 +56,7 @@ export const GUILD_INTEGRATIONS_UPDATE = (_self: UsingClient, data: GatewayGuild
 	return toCamelCase(data);
 };
 
-export const GUILD_MEMBER_ADD = (self: UsingClient, data: GatewayGuildMemberAddDispatchDataFixed<boolean>) => {
-	if (!('user' in data)) return new UnavailableMember(self, data, data.id, data.guild_id);
+export const GUILD_MEMBER_ADD = (self: UsingClient, data: GatewayGuildMemberAddDispatchData) => {
 	return new GuildMember(self, data, data.user, data.guild_id);
 };
 

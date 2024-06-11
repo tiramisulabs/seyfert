@@ -57,9 +57,9 @@ import {
 	type GatewayWebhooksUpdateDispatchData,
 	type PresenceUpdateStatus,
 	type GatewayMessagePollVoteDispatchData,
+	type GatewayGuildMemberAddDispatchData,
 } from 'discord-api-types/v10';
 import type { RestToKeys } from '../common';
-import type { GatewayGuildMemberAddDispatchDataFixed } from '../structures';
 
 /** https://discord.com/developers/docs/topics/gateway-events#update-presence */
 export interface StatusUpdate {
@@ -120,7 +120,7 @@ export interface Events {
 	[GatewayDispatchEvents.GuildEmojisUpdate]: GatewayGuildEmojisUpdateDispatchData;
 	[GatewayDispatchEvents.GuildStickersUpdate]: GatewayGuildStickersUpdateDispatchData;
 	[GatewayDispatchEvents.GuildIntegrationsUpdate]: GatewayGuildIntegrationsUpdateDispatchData;
-	[GatewayDispatchEvents.GuildMemberAdd]: GatewayGuildMemberAddDispatchDataFixed<boolean>;
+	[GatewayDispatchEvents.GuildMemberAdd]: GatewayGuildMemberAddDispatchData;
 	[GatewayDispatchEvents.GuildMemberRemove]: GatewayGuildMemberRemoveDispatchData;
 	[GatewayDispatchEvents.GuildMemberUpdate]: GatewayGuildMemberUpdateDispatchData;
 	[GatewayDispatchEvents.GuildMembersChunk]: GatewayGuildMembersChunkDispatchData;
