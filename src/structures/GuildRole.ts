@@ -5,7 +5,7 @@ import type {
 	RESTPostAPIGuildRoleJSONBody,
 } from 'discord-api-types/v10';
 import type { UsingClient } from '../commands';
-import type { MethodContext, ObjectToLower } from '../common';
+import { Formatter, type MethodContext, type ObjectToLower } from '../common';
 import { DiscordBase } from './extra/DiscordBase';
 import { PermissionsBitField } from './extra/Permissions';
 
@@ -33,6 +33,10 @@ export class GuildRole extends DiscordBase {
 
 	delete(reason?: string) {
 		return this.client.roles.delete(this.guildId, this.id, reason);
+	}
+
+	toString() {
+		return Formatter.roleMention(this.id);
 	}
 
 	static methods(ctx: MethodContext<{ guildId: string }>) {

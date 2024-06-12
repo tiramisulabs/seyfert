@@ -1,6 +1,6 @@
 import type { APIUser } from 'discord-api-types/v10';
 import { calculateUserDefaultAvatarIndex } from '../api';
-import type { MessageCreateBodyRequest, ObjectToLower } from '../common';
+import { Formatter, type MessageCreateBodyRequest, type ObjectToLower } from '../common';
 import type { ImageOptions } from '../common/types/options';
 import { DiscordBase } from './extra/DiscordBase';
 
@@ -60,6 +60,6 @@ export class User extends DiscordBase<APIUser> {
 	}
 
 	toString() {
-		return `<@${this.id}>`;
+		return Formatter.userMention(this.id);
 	}
 }
