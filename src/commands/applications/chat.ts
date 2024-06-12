@@ -20,7 +20,6 @@ import type { Attachment } from '../../builders';
 import { magicImport, type FlatObjectKeys } from '../../common';
 import type { AllChannels, AutocompleteInteraction, GuildRole, InteractionGuildMember, User } from '../../structures';
 import type { Groups, RegisteredMiddlewares } from '../decorators';
-import type { OptionResolver } from '../optionresolver';
 import type { CommandContext } from './chatcontext';
 import type {
 	DefaultLocale,
@@ -33,6 +32,7 @@ import type {
 	UsingClient,
 } from './shared';
 import { inspect } from 'node:util';
+import type { HandleResolver } from '../handle';
 
 export interface ReturnOptionsTypes {
 	1: never; // subcommand
@@ -144,7 +144,7 @@ export class BaseCommand {
 	/** @internal */
 	async __runOptions(
 		ctx: CommandContext<{}, never>,
-		resolver: OptionResolver,
+		resolver: InstanceType<HandleResolver>,
 	): Promise<[boolean, OnOptionsReturnObject]> {
 		if (!this?.options?.length) {
 			return [false, {}];

@@ -81,6 +81,8 @@ export type If<T extends boolean, A, B = null> = T extends true ? A : B extends 
 
 export type NulleableCoalising<A, B> = NonFalsy<A> extends never ? B : A;
 
+export type TupleOr<A, T> = ValueOf<A> extends never ? A : TupleOr<ArrayFirsElement<T>, Tail<T>>;
+
 export type PickPartial<T, K extends keyof T> = {
 	[P in keyof T]?: T[P] | undefined;
 } & {
