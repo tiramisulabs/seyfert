@@ -234,7 +234,7 @@ export class Formatter {
 	 * @param animated Whether the emoji is animated. Defaults to false.
 	 * @returns The formatted emoji.
 	 */
-	static emojiMention(emojiId: string, animated = false): string {
-		return `<${animated ? 'a' : ''}:${emojiId}>`;
+	static emojiMention(emojiId: string, name: string | null, animated = false): string {
+		return `<${animated ? 'a' : ''}:${name ?? '_'}:${emojiId}>`;
 	}
 }
