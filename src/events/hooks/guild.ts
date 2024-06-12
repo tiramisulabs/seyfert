@@ -57,7 +57,7 @@ export const GUILD_INTEGRATIONS_UPDATE = (_self: UsingClient, data: GatewayGuild
 };
 
 export const GUILD_MEMBER_ADD = (self: UsingClient, data: GatewayGuildMemberAddDispatchData) => {
-	return new GuildMember(self, data, data.user, data.guild_id);
+	return new GuildMember(self, data, data.user!, data.guild_id);
 };
 
 export const GUILD_MEMBER_REMOVE = (self: UsingClient, data: GatewayGuildMemberRemoveDispatchData) => {
