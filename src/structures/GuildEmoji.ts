@@ -37,7 +37,7 @@ export class GuildEmoji extends DiscordBase {
 	}
 
 	toString() {
-		return Formatter.emojiMention(this.id, this.animated);
+		return Formatter.emojiMention(this.id, this.name, this.animated);
 	}
 
 	toJSON() {
