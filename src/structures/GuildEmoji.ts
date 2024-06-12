@@ -1,7 +1,7 @@
 import type { APIEmoji, RESTPatchAPIChannelJSONBody, RESTPatchAPIGuildEmojiJSONBody } from 'discord-api-types/v10';
 import type { BaseCDNUrlOptions } from '../api';
 import type { UsingClient } from '../commands';
-import type { EmojiShorter, MethodContext, ObjectToLower } from '../common';
+import { Formatter, type EmojiShorter, type MethodContext, type ObjectToLower } from '../common';
 import { DiscordBase } from './extra/DiscordBase';
 
 export interface GuildEmoji extends DiscordBase, ObjectToLower<Omit<APIEmoji, 'id'>> {}
@@ -37,7 +37,7 @@ export class GuildEmoji extends DiscordBase {
 	}
 
 	toString() {
-		return `<${this.animated ? 'a' : ''}:${this.name}:${this.id}>`;
+		return Formatter.emojiMention(this.id, this.name, this.animated);
 	}
 
 	toJSON() {

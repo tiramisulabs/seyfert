@@ -20,7 +20,7 @@ import type {
 	RESTPutAPIGuildMemberJSONBody,
 } from 'discord-api-types/v10';
 import type { UsingClient } from '../commands';
-import type { MessageCreateBodyRequest, ObjectToLower, ToClass } from '../common';
+import { Formatter, type MessageCreateBodyRequest, type ObjectToLower, type ToClass } from '../common';
 import type { ImageOptions, MethodContext } from '../common/types/options';
 import type { GuildMemberResolvable } from '../common/types/resolvables';
 import { User } from './User';
@@ -73,7 +73,7 @@ export class BaseGuildMember extends DiscordBase {
 	}
 
 	toString() {
-		return `<@${this.id}>`;
+		return Formatter.userMention(this.id);
 	}
 
 	private patch(data: GuildMemberData) {
