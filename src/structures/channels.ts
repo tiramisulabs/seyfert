@@ -41,7 +41,7 @@ import type { GuildMember } from './GuildMember';
 import type { GuildRole } from './GuildRole';
 import { DiscordBase } from './extra/DiscordBase';
 import { channelLink } from './extra/functions';
-import { Collection, type RawFile } from '..';
+import { Collection, Formatter, type RawFile } from '..';
 
 export class BaseChannel<T extends ChannelType> extends DiscordBase<APIChannelBase<ChannelType>> {
 	declare type: T;
@@ -77,7 +77,7 @@ export class BaseChannel<T extends ChannelType> extends DiscordBase<APIChannelBa
 	}
 
 	toString() {
-		return `<#${this.id}>`;
+		return Formatter.channelMention(this.id);
 	}
 
 	isStage(): this is StageChannel {

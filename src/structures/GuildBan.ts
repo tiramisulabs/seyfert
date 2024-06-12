@@ -1,6 +1,6 @@
 import type { APIBan, RESTGetAPIGuildBansQuery } from 'discord-api-types/v10';
 import type { UsingClient } from '../commands';
-import type { MethodContext, ObjectToLower } from '../common';
+import { Formatter, type MethodContext, type ObjectToLower } from '../common';
 import { DiscordBase } from './extra/DiscordBase';
 import type { BanShorter } from '../common/shorters/bans';
 
@@ -32,7 +32,7 @@ export class GuildBan extends DiscordBase {
 	}
 
 	toString() {
-		return `<@${this.id}>`;
+		return Formatter.userMention(this.id);
 	}
 
 	static methods({ client, guildId }: MethodContext<{ guildId: string }>) {

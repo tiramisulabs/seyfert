@@ -200,4 +200,41 @@ export class Formatter {
 	static timestamp(timestamp: Date, style: TimestampStyle = TimestampStyle.RelativeTime): Timestamp {
 		return `<t:${Math.floor(timestamp.getTime() / 1000)}:${style}>`;
 	}
+
+	/**
+	 * Formats a user mention.
+	 * @param userId The ID of the user to mention.
+	 * @returns The formatted user mention.
+	 */
+	static userMention(userId: string): `<@${string}>` {
+		return `<@${userId}>`;
+	}
+
+	/**
+	 * Formats a role mention.
+	 * @param roleId The ID of the role to mention.
+	 * @returns The formatted role mention.
+	 */
+	static roleMention(roleId: string): `<@&${string}>` {
+		return `<@&${roleId}>`;
+	}
+
+	/**
+	 * Formats a channel mention.
+	 * @param channelId The ID of the channel to mention.
+	 * @returns The formatted channel mention.
+	 */
+	static channelMention(channelId: string): `<#${string}>` {
+		return `<#${channelId}>`;
+	}
+
+	/**
+	 * Formats an emoji.
+	 * @param emojiId The ID of the emoji.
+	 * @param animated Whether the emoji is animated. Defaults to false.
+	 * @returns The formatted emoji.
+	 */
+	static emojiMention(emojiId: string, name: string | null, animated = false): string {
+		return `<${animated ? 'a' : ''}:${name ?? '_'}:${emojiId}>`;
+	}
 }
