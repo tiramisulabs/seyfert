@@ -30,26 +30,25 @@ export class EventHandler extends BaseHandler {
 		const discordEvents = Object.keys(RawEvents).map(x => ReplaceRegex.camel(x.toLowerCase())) as ClientNameEvents[];
 		const paths = await this.loadFilesK<{ file: ClientEvent }>(await this.getFiles(eventsDir));
 
-		let file;
-		let index = 0;
-		for (const i of paths.flatMap(x => this.onFile(x.file))) {
-			file = paths[index++];
-			if (!i) continue;
-			const instance = this.callback(i);
-			if (!instance) continue;
-			if (typeof instance?.run !== 'function') {
-				this.logger.warn(
-					file.path.split(process.cwd()).slice(1).join(process.cwd()),
-					'Missing run function, use `export default {...}` syntax',
-				);
-				continue;
+		for (const { events, file } of paths.map(x => ({ events: this.onFile(x.file), file: x }))) {
+			if (!events) continue;
+			for (const i of events) {
+				const instance = this.callback(i);
+				if (!instance) continue;
+				if (typeof instance?.run !== 'function') {
+					this.logger.warn(
+						file.path.split(process.cwd()).slice(1).join(process.cwd()),
+						'Missing run function, use `export default {...}` syntax',
+					);
+					continue;
+				}
+				instance.__filePath = file.path;
+				this.values[
+					discordEvents.includes(instance.data.name)
+						? (ReplaceRegex.snake(instance.data.name).toUpperCase() as GatewayEvents)
+						: (instance.data.name as CustomEventsKeys)
+				] = instance as EventValue;
 			}
-			instance.__filePath = file.path;
-			this.values[
-				discordEvents.includes(instance.data.name)
-					? (ReplaceRegex.snake(instance.data.name).toUpperCase() as GatewayEvents)
-					: (instance.data.name as CustomEventsKeys)
-			] = instance as EventValue;
 		}
 	}
 

@@ -170,77 +170,71 @@ export class CommandHandler extends BaseHandler {
 	}
 
 	async load(commandsDir: string, client: UsingClient) {
-		const result =
-			// instances?.map(x => {
-			// 	const i = new x();
-			// 	return { name: i.name, file: x, path: i.__filePath ?? '*' };
-			// }) ??
-			await this.loadFilesK<FileLoaded<null>>(await this.getFiles(commandsDir));
+		const result = await this.loadFilesK<FileLoaded<null>>(await this.getFiles(commandsDir));
 		this.client.logger.info(result);
 		this.values = [];
 
-		let file;
-		let index = 0;
+		for (const { commands, file } of result.map(x => ({ commands: this.onFile(x.file), file: x }))) {
+			if (!commands) continue;
+			for (const command of commands) {
+				let commandInstance;
+				try {
+					commandInstance = this.onCommand(command);
+					if (!commandInstance) continue;
+				} catch (e) {
+					if (e instanceof Error && e.message.includes('is not a constructor')) {
+						this.logger.warn(
+							`${file.path
+								.split(process.cwd())
+								.slice(1)
+								.join(process.cwd())} doesn't export the class by \`export default <Command>\``,
+						);
+					} else this.logger.warn(e, command);
+					continue;
+				}
+				if (commandInstance instanceof SubCommand) continue;
 
-		for (const command of result.flatMap(x => this.onFile(x.file))) {
-			file = result[index++];
-			if (!command) continue;
-			let commandInstance;
-			try {
-				commandInstance = this.onCommand(command);
-				if (!commandInstance) continue;
-			} catch (e) {
-				if (e instanceof Error && e.message.includes('is not a constructor')) {
-					this.logger.warn(
-						`${file.path
-							.split(process.cwd())
-							.slice(1)
-							.join(process.cwd())} doesn't export the class by \`export default <Command>\``,
-					);
-				} else this.logger.warn(e, command);
-				continue;
-			}
-			if (commandInstance instanceof SubCommand) continue;
-
-			commandInstance.__filePath = file.path;
-			commandInstance.props ??= client.options.commands?.defaults?.props ?? {};
-			const isAvailableCommand = this.stablishCommandDefaults(commandInstance);
-			if (isAvailableCommand) {
-				commandInstance = isAvailableCommand;
-				if (commandInstance.__autoload) {
-					//@AutoLoad
-					const options = await this.getFiles(dirname(file.path));
-					for (const option of options) {
-						if (command.name === basename(option)) {
-							continue;
-						}
-						try {
-							const fileSubCommands = this.onFile(result.find(x => x.path === option)!.file);
-							if (!fileSubCommands) {
-								this.logger.warn(`SubCommand returned (${fileSubCommands}) ignoring.`);
+				commandInstance.__filePath = file.path;
+				commandInstance.props ??= client.options.commands?.defaults?.props ?? {};
+				const isAvailableCommand = this.stablishCommandDefaults(commandInstance);
+				if (isAvailableCommand) {
+					commandInstance = isAvailableCommand;
+					if (commandInstance.__autoload) {
+						//@AutoLoad
+						const options = await this.getFiles(dirname(file.path));
+						for (const option of options) {
+							if (file.name === basename(option)) {
 								continue;
 							}
-							for (const fileSubCommand of fileSubCommands) {
-								const subCommand = this.onSubCommand(fileSubCommand as HandleableSubCommand);
-								if (subCommand && subCommand instanceof SubCommand) {
-									subCommand.__filePath = option;
-									commandInstance.options.push(subCommand);
-								} else {
-									this.logger.warn(subCommand ? 'SubCommand expected' : 'Invalid SubCommand', subCommand);
+							try {
+								const fileSubCommands = this.onFile(result.find(x => x.path === option)!.file);
+								if (!fileSubCommands) {
+									this.logger.warn(`SubCommand returned (${fileSubCommands}) ignoring.`);
+									continue;
 								}
+								for (const fileSubCommand of fileSubCommands) {
+									const subCommand = this.onSubCommand(fileSubCommand as HandleableSubCommand);
+									if (subCommand && subCommand instanceof SubCommand) {
+										subCommand.__filePath = option;
+										commandInstance.options.push(subCommand);
+									} else {
+										console.log({ fileSubCommand }, result.find(x => x.path === option)!.file, option);
+										this.logger.warn(subCommand ? 'SubCommand expected' : 'Invalid SubCommand', subCommand);
+									}
+								}
+							} catch {
+								//pass
 							}
-						} catch {
-							//pass
 						}
 					}
+					for (const option of commandInstance.options ?? []) {
+						if (option instanceof SubCommand) this.stablishSubCommandDefaults(commandInstance, option);
+					}
 				}
-				for (const option of commandInstance.options ?? []) {
-					if (option instanceof SubCommand) this.stablishSubCommandDefaults(commandInstance, option);
-				}
+				this.stablishContextCommandDefaults(commandInstance);
+				this.values.push(commandInstance);
+				this.parseLocales(commandInstance);
 			}
-			this.stablishContextCommandDefaults(commandInstance);
-			this.values.push(commandInstance);
-			this.parseLocales(commandInstance);
 		}
 
 		return this.values;
@@ -442,7 +436,6 @@ export class CommandHandler extends BaseHandler {
 	}
 
 	onFile(file: FileLoaded): HandleableCommand[] | undefined {
-		this.client.logger.info(file);
 		return file.default ? [file.default] : undefined;
 	}
 

@@ -154,7 +154,7 @@ export class ComponentHandler extends BaseHandler {
 		this.deleteValue(id, 'messageDelete');
 	}
 
-	stablishDefaults(component: ModalCommand | ComponentCommand) {
+	stablishDefaults(component: ComponentCommands) {
 		component.props ??= this.client.options.commands?.defaults?.props ?? {};
 		const is = component instanceof ModalCommand ? 'modals' : 'components';
 		component.onInternalError ??= this.client.options?.[is]?.defaults?.onInternalError;
@@ -164,34 +164,31 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	async load(componentsDir: string) {
-		const paths = await this.loadFilesK<{ file: FileLoaded<new () => ComponentCommands> }>(
-			await this.getFiles(componentsDir),
-		);
+		const paths = await this.loadFilesK<FileLoaded<new () => ComponentCommands>>(await this.getFiles(componentsDir));
 
-		let file;
-		let index = 0;
-		for (const value of paths.flatMap(x => this.onFile(x.file.file))) {
-			file = paths[index++];
-			if (!value) continue;
-			let component;
-			try {
-				component = this.callback(value);
-				if (!component) continue;
-			} catch (e) {
-				if (e instanceof Error && e.message.includes('is not a constructor')) {
-					this.logger.warn(
-						`${file.path
-							.split(process.cwd())
-							.slice(1)
-							.join(process.cwd())} doesn't export the class by \`export default <ComponentCommand>\``,
-					);
-				} else this.logger.warn(e, value);
-				continue;
+		for (const { components, file } of paths.map(x => ({ components: this.onFile(x.file), file: x }))) {
+			if (!components) continue;
+			for (const value of components) {
+				let component;
+				try {
+					component = this.callback(value);
+					if (!component) continue;
+				} catch (e) {
+					if (e instanceof Error && e.message.includes('is not a constructor')) {
+						this.logger.warn(
+							`${file.path
+								.split(process.cwd())
+								.slice(1)
+								.join(process.cwd())} doesn't export the class by \`export default <ComponentCommand>\``,
+						);
+					} else this.logger.warn(e, value);
+					continue;
+				}
+				if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) continue;
+				this.stablishDefaults(component);
+				component.__filePath = file.path;
+				this.commands.push(component);
 			}
-			if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) continue;
-			this.stablishDefaults(component);
-			component.__filePath = file.path;
-			this.commands.push(component);
 		}
 	}
 
@@ -228,7 +225,7 @@ export class ComponentHandler extends BaseHandler {
 		}
 	}
 
-	async execute(i: ComponentCommand | ModalCommand, context: ComponentContext | ModalContext) {
+	async execute(i: ComponentCommands, context: ComponentContext | ModalContext) {
 		try {
 			const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
 				context,
