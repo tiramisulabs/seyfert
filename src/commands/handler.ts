@@ -218,7 +218,6 @@ export class CommandHandler extends BaseHandler {
 										subCommand.__filePath = option;
 										commandInstance.options.push(subCommand);
 									} else {
-										console.log({ fileSubCommand }, result.find(x => x.path === option)!.file, option);
 										this.logger.warn(subCommand ? 'SubCommand expected' : 'Invalid SubCommand', subCommand);
 									}
 								}
