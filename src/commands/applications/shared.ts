@@ -17,6 +17,7 @@ export interface ExtraProps {}
 export interface UsingClient extends BaseClient {}
 export type ParseClient<T extends BaseClient> = T;
 export interface InternalOptions {}
+export interface CustomStructures {}
 
 export type MiddlewareContext<T = any, C = any> = (context: {
 	context: C;

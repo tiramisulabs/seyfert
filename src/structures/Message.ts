@@ -18,7 +18,8 @@ import { User } from './User';
 import type { MessageWebhookMethodEditParams, MessageWebhookMethodWriteParams } from './Webhook';
 import { DiscordBase } from './extra/DiscordBase';
 import { messageLink } from './extra/functions';
-import { Embed, Poll } from '..';
+import { Embed } from '..';
+import { type PollStructure, Transformers } from '../client/transformers';
 
 export type MessageData = APIMessage | GatewayMessageCreateDispatchData;
 
@@ -30,7 +31,7 @@ export interface BaseMessage
 	author: User;
 	member?: GuildMember;
 	components: MessageActionRowComponent<ActionRowMessageComponents>[];
-	poll?: Poll;
+	poll?: PollStructure;
 	mentions: {
 		roles: string[];
 		channels: APIChannelMention[];
@@ -108,7 +109,7 @@ export class BaseMessage extends DiscordBase {
 		}
 
 		if (data.poll) {
-			this.poll = new Poll(this.client, data.poll, this.channelId, this.id);
+			this.poll = Transformers.Poll(this.client, data.poll, this.channelId, this.id);
 		}
 	}
 }
