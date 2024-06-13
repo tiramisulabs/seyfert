@@ -511,7 +511,7 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 	async runOptions(command: Command | SubCommand, context: CommandContext, resolver: InstanceType<HR>) {
 		const [erroredOptions, result] = await command.__runOptions(context, resolver);
 		if (erroredOptions) {
-			command.onOptionsError?.(context, result);
+			await command.onOptionsError?.(context, result);
 			return false;
 		}
 		return true;
