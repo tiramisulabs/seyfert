@@ -49,6 +49,7 @@ import type {
 import type { ComponentCommand, ComponentContext, ModalCommand, ModalContext } from '../components';
 import { promises } from 'node:fs';
 import { BanShorter } from '../common/shorters/bans';
+import { HandleCommand } from '../commands/handle';
 
 export class BaseClient {
 	rest!: ApiHandler;
@@ -77,6 +78,7 @@ export class BaseClient {
 	langs? = new LangsHandler(this.logger);
 	commands? = new CommandHandler(this.logger, this);
 	components? = new ComponentHandler(this.logger, this);
+	handleCommand!: HandleCommand;
 
 	private _applicationId?: string;
 	private _botId?: string;
@@ -181,7 +183,7 @@ export class BaseClient {
 		return new Router(this.rest).createProxy();
 	}
 
-	setServices({ rest, cache, langs, middlewares, handlers }: ServicesOptions) {
+	setServices({ rest, cache, langs, middlewares, handlers, handleCommand }: ServicesOptions) {
 		if (rest) {
 			this.rest = rest;
 		}
@@ -230,6 +232,8 @@ export class BaseClient {
 			if (langs.default) this.langs!.defaultLang = langs.default;
 			if (langs.aliases) this.langs!.aliases = Object.entries(langs.aliases);
 		}
+
+		if (handleCommand) this.handleCommand = new handleCommand(this);
 	}
 
 	protected async execute(..._options: unknown[]) {
@@ -272,6 +276,8 @@ export class BaseClient {
 		} else {
 			this.cache = new Cache(0, new MemoryAdapter(), [], this);
 		}
+
+		if (!this.handleCommand) this.handleCommand = new HandleCommand(this);
 	}
 
 	protected async onPacket(..._packet: unknown[]) {
@@ -480,4 +486,5 @@ export interface ServicesOptions {
 		commands?: CommandHandler;
 		langs?: LangsHandler | LangsHandler['callback'];
 	};
+	handleCommand?: typeof HandleCommand;
 }

@@ -1,29 +1,6 @@
-import {
-	type APIApplicationCommandInteractionDataOption,
-	GatewayIntentBits,
-	type GatewayMessageCreateDispatchData,
-	type GatewayDispatchPayload,
-	type GatewayPresenceUpdateData,
-} from 'discord-api-types/v10';
-import type {
-	Command,
-	CommandContext,
-	ContextOptionsResolved,
-	Message,
-	MessageCommandOptionErrors,
-	SubCommand,
-	UsingClient,
-} from '..';
-import {
-	type Awaitable,
-	type MakeRequired,
-	MergeOptions,
-	lazyLoadPackage,
-	type DeepPartial,
-	type If,
-	type WatcherPayload,
-	type WatcherSendToShard,
-} from '../common';
+import { GatewayIntentBits, type GatewayDispatchPayload, type GatewayPresenceUpdateData } from 'discord-api-types/v10';
+import type { CommandContext, Message } from '..';
+import { lazyLoadPackage, type DeepPartial, type If, type WatcherPayload, type WatcherSendToShard } from '../common';
 import { EventHandler } from '../events';
 import { ClientUser } from '../structures';
 import { ShardManager, properties, type ShardManagerOptions } from '../websocket';
@@ -31,8 +8,6 @@ import { MemberUpdateHandler } from '../websocket/discord/events/memberUpdate';
 import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdate';
 import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
-import { onInteractionCreate } from './oninteractioncreate';
-import { defaultArgsParser, defaultOptionsParser, onMessageCreate } from './onmessagecreate';
 import { Collectors } from './collectors';
 
 let parentPort: import('node:worker_threads').MessagePort;
@@ -42,7 +17,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 	gateway!: ShardManager;
 	me!: If<Ready, ClientUser>;
 	declare options: Omit<ClientOptions, 'commands'> & {
-		commands: MakeRequired<NonNullable<ClientOptions['commands']>, 'argsParser' | 'optionsParser'>;
+		commands: NonNullable<ClientOptions['commands']>;
 	};
 	memberUpdateHandler = new MemberUpdateHandler();
 	presenceUpdateHandler = new PresenceUpdateHandler();
@@ -51,15 +26,6 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 
 	constructor(options?: ClientOptions) {
 		super(options);
-		this.options = MergeOptions(
-			{
-				commands: {
-					argsParser: options?.commands?.argsParser ?? defaultArgsParser,
-					optionsParser: options?.commands?.optionsParser ?? defaultOptionsParser,
-				},
-			} satisfies ClientOptions,
-			this.options,
-		);
 	}
 
 	setServices({
@@ -198,10 +164,10 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
 				switch (packet.t) {
 					case 'INTERACTION_CREATE':
-						await onInteractionCreate(this, packet.d, shardId);
+						await this.handleCommand.interaction(packet.d, shardId);
 						break;
 					case 'MESSAGE_CREATE':
-						await onMessageCreate(this, packet.d, shardId);
+						await this.handleCommand.message(packet.d, shardId);
 						break;
 					case 'READY':
 						for (const g of packet.d.guilds) {
@@ -241,25 +207,11 @@ export interface ClientOptions extends BaseClientOptions {
 		properties?: Partial<ShardManagerOptions['properties']>;
 		compress?: ShardManagerOptions['compress'];
 	};
+	defaultPrefix?: string[];
 	commands?: BaseClientOptions['commands'] & {
-		prefix?: (message: Message) => Promise<string[]> | string[];
+		defaultPrefix?: string[];
 		deferReplyResponse?: (ctx: CommandContext) => Parameters<Message['write']>[0];
 		reply?: (ctx: CommandContext) => boolean;
-		argsParser?: (content: string, command: SubCommand | Command, message: Message) => Record<string, string>;
-		optionsParser?: (
-			self: UsingClient,
-			command: Command | SubCommand,
-			message: GatewayMessageCreateDispatchData,
-			args: Partial<Record<string, string>>,
-			resolved: MakeRequired<ContextOptionsResolved>,
-		) => Awaitable<{
-			errors: {
-				name: string;
-				error: string;
-				fullError: MessageCommandOptionErrors;
-			}[];
-			options: APIApplicationCommandInteractionDataOption[];
-		}>;
 	};
 	handlePayload?: ShardManagerOptions['handlePayload'];
 }

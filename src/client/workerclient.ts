@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { ApiHandler, Logger } from '..';
 import type { Cache } from '../cache';
 import { WorkerAdapter } from '../cache';
-import { LogLevels, MergeOptions, lazyLoadPackage, type DeepPartial, type When } from '../common';
+import { LogLevels, lazyLoadPackage, type DeepPartial, type When } from '../common';
 import { EventHandler } from '../events';
 import { ClientUser } from '../structures';
 import { Shard, properties, type ShardManagerOptions, type WorkerData } from '../websocket';
@@ -23,8 +23,7 @@ import type { ManagerMessages } from '../websocket/discord/workermanager';
 import type { BaseClientOptions, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import type { Client, ClientOptions } from './client';
-import { onInteractionCreate } from './oninteractioncreate';
-import { defaultArgsParser, defaultOptionsParser, onMessageCreate } from './onmessagecreate';
+
 import { Collectors } from './collectors';
 
 let workerData: WorkerData;
@@ -58,15 +57,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	constructor(options?: WorkerClientOptions) {
 		super(options);
-		this.options = MergeOptions(
-			{
-				commands: {
-					argsParser: defaultArgsParser,
-					optionsParser: defaultOptionsParser,
-				},
-			} satisfies Partial<WorkerClientOptions>,
-			this.options,
-		);
+
 		if (!process.env.SEYFERT_SPAWNING) {
 			throw new Error('WorkerClient cannot spawn without manager');
 		}
@@ -379,10 +370,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						this.debugger?.debug(`#${shardId} [${packet.d.user.username}](${this.botId}) is online...`);
 						break;
 					case 'INTERACTION_CREATE':
-						await onInteractionCreate(this, packet.d, shardId);
+						await this.handleCommand.interaction(packet.d, shardId);
 						break;
 					case 'MESSAGE_CREATE':
-						await onMessageCreate(this, packet.d, shardId);
+						await this.handleCommand.message(packet.d, shardId);
 						break;
 				}
 				break;

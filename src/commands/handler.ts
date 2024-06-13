@@ -175,13 +175,14 @@ export class CommandHandler extends BaseHandler {
 			// 	const i = new x();
 			// 	return { name: i.name, file: x, path: i.__filePath ?? '*' };
 			// }) ??
-			await this.loadFilesK<{ file: FileLoaded<null> }>(await this.getFiles(commandsDir));
-
+			await this.loadFilesK<FileLoaded<null>>(await this.getFiles(commandsDir));
+		this.client.logger.info(result);
 		this.values = [];
 
 		let file;
 		let index = 0;
-		for (const command of result.flatMap(x => this.onFile(x.file.file))) {
+
+		for (const command of result.flatMap(x => this.onFile(x.file))) {
 			file = result[index++];
 			if (!command) continue;
 			let commandInstance;
@@ -214,7 +215,7 @@ export class CommandHandler extends BaseHandler {
 							continue;
 						}
 						try {
-							const fileSubCommands = this.onFile(result.find(x => x.path === option)!.file.file);
+							const fileSubCommands = this.onFile(result.find(x => x.path === option)!.file);
 							if (!fileSubCommands) {
 								this.logger.warn(`SubCommand returned (${fileSubCommands}) ignoring.`);
 								continue;
@@ -441,6 +442,7 @@ export class CommandHandler extends BaseHandler {
 	}
 
 	onFile(file: FileLoaded): HandleableCommand[] | undefined {
+		this.client.logger.info(file);
 		return file.default ? [file.default] : undefined;
 	}
 
