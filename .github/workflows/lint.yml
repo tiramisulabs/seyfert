@@ -10,6 +10,9 @@ jobs:
     steps:
       - name: check out code
         uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: '${{ github.head_ref }}'
 
       - name: Install Node
         uses: actions/setup-node@v4
@@ -22,38 +25,21 @@ jobs:
           version: 8
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Run Biome
-        run: pnpm run lint
+        run: pnpm run check
         id: biome
 
       - name: Commit and Push changes
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .
-                    git commit -m "chore: apply formatting"
-          git fetch origin ${{ github.head_ref }}
-          git rebase origin/${{ github.head_ref }}
-          git push origin HEAD:${{ github.head_ref }} --force
+          git add -A
+          if ! git diff-index --quiet HEAD; then
+            git commit -m "chore: apply formatting"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-      - name: Checkout PR branch
-        if: failure()
-        uses: actions/checkout@v3
-        with:
-          ref: refs/pull/${{ github.event.number }}/merge
-
-      - name: Commit and Push PR changes
-        if: failure()
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .
-          git commit -m "chore: apply formatting"
-          git push origin HEAD:refs/pull/${{ github.event.number }}/head --force
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HUSKY: 0
