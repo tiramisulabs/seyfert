@@ -39,7 +39,7 @@ export class EmojiShorter extends BaseShorter {
 		const emoji = await this.client.proxy.guilds(guildId).emojis.post({
 			body: bodyResolved,
 		});
-    
+
 		await this.client.cache.emojis?.setIfNI('GuildEmojisAndStickers', emoji.id!, guildId, emoji);
 
 		return new GuildEmoji(this.client, emoji, guildId);

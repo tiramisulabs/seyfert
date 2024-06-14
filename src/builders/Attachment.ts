@@ -245,9 +245,7 @@ export async function resolveImage(image: ImageResolvable): Promise<string> {
 		} = image;
 		if (type && resolvable) return resolveBase64((await resolveAttachmentData(resolvable, type)).data as Buffer);
 		return throwError(
-			`The attachment type has been expressed as ${(
-				type ?? 'Attachment'
-			).toUpperCase()} but cannot be resolved as one.`,
+			`The attachment type has been expressed as ${(type ?? 'Attachment').toUpperCase()} but cannot be resolved as one.`,
 		);
 	}
 
