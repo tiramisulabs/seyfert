@@ -236,6 +236,7 @@ export class MessagesMethods extends DiscordBase {
 			delete: (messageId: string, reason?: string) => ctx.client.messages.delete(messageId, ctx.channelId, reason),
 			fetch: (messageId: string) => ctx.client.messages.fetch(messageId, ctx.channelId),
 			purge: (messages: string[], reason?: string) => ctx.client.messages.purge(messages, ctx.channelId, reason),
+			list: () => ctx.client.messages.list(ctx.channelId),
 		};
 	}
 
