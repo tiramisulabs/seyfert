@@ -26,7 +26,7 @@ export { ShardManager, WorkerManager } from './websocket/discord';
 export * from './structures';
 //
 export * from './client';
-//
+///
 
 export function throwError(msg: string): never {
 	throw new Error(msg);
