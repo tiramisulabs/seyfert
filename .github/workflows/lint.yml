@@ -46,7 +46,7 @@ jobs:
         continue-on-error: true
 
       - name: Checkout PR branch
-        if: failure()
+        if: ${{ failure() }}
         uses: actions/checkout@v3
         with:
           ref: refs/pull/${{ github.event.number }}/merge
@@ -55,7 +55,7 @@ jobs:
         run: git diff
 
       - name: Commit and Push PR changes
-        if: failure()
+        if: ${{ failure() }}
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
