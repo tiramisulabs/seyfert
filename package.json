@@ -11,7 +11,7 @@
 	"scripts": {
 		"build": "tsc --outDir ./lib",
 		"prepublishOnly": "npm run build",
-		"prepare": "npm run build && husky install",
+		"prepare": "npm run build && husky",
 		"lint": "biome lint --write ./src",
 		"format": "biome format --write ./src",
 		"check-h": "biome check --write ./src",
@@ -28,8 +28,7 @@
 	},
 	"lint-staged": {
 		"*.ts": [
-			"biome check --write",
-			"biome format --write"
+			"biome check --write"
 		]
 	},
 	"devDependencies": {
