@@ -171,7 +171,6 @@ export class CommandHandler extends BaseHandler {
 
 	async load(commandsDir: string, client: UsingClient) {
 		const result = await this.loadFilesK<FileLoaded<null>>(await this.getFiles(commandsDir));
-		this.client.logger.info(result);
 		this.values = [];
 
 		for (const { commands, file } of result.map(x => ({ commands: this.onFile(x.file), file: x }))) {

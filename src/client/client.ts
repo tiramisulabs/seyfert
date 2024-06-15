@@ -170,15 +170,16 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						await this.handleCommand.message(packet.d, shardId);
 						break;
 					case 'READY':
+						if (!this.__handleGuilds) this.__handleGuilds = new Set();
 						for (const g of packet.d.guilds) {
-							this.__handleGuilds?.add(g.id);
+							this.__handleGuilds.add(g.id);
 						}
 						this.botId = packet.d.user.id;
 						this.applicationId = packet.d.application.id;
 						this.me = new ClientUser(this, packet.d.user, packet.d.application) as never;
 						if (
 							!(
-								this.__handleGuilds?.size &&
+								this.__handleGuilds.size &&
 								(this.gateway.options.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds
 							)
 						) {
