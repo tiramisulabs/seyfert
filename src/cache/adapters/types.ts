@@ -7,17 +7,14 @@ export interface Adapter {
 	scan(query: string, keys: true): Awaitable<string[]>;
 	scan(query: string, keys?: boolean): Awaitable<(any | string)[]>;
 
-	get(keys: string[]): Awaitable<any[]>;
+	bulkGet(keys: string[]): Awaitable<any[]>;
 	get(keys: string): Awaitable<any | null>;
-	get(keys: string | string[]): Awaitable<any | null>;
 
-	set(keyValue: [string, any][]): Awaitable<void>;
+	bulkSet(keyValue: [string, any][]): Awaitable<void>;
 	set(id: string, data: any): Awaitable<void>;
-	set(id: string | [string, any][], data?: any): Awaitable<void>;
 
-	patch(updateOnly: boolean, keyValue: [string, any][]): Awaitable<void>;
+	bulkPatch(updateOnly: boolean, keyValue: [string, any][]): Awaitable<void>;
 	patch(updateOnly: boolean, id: string, data: any): Awaitable<void>;
-	patch(updateOnly: boolean, id: string | [string, any][], data?: any): Awaitable<void>;
 
 	values(to: string): Awaitable<any[]>;
 
@@ -25,7 +22,8 @@ export interface Adapter {
 
 	count(to: string): Awaitable<number>;
 
-	remove(keys: string | string[]): Awaitable<void>;
+	bulkRemove(keys: string[]): Awaitable<void>;
+	remove(keys: string): Awaitable<void>;
 
 	flush(): Awaitable<void>;
 

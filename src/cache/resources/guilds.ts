@@ -29,7 +29,7 @@ export class Guilds extends BaseResource {
 	}
 
 	override async remove(id: string) {
-		await this.cache.adapter.remove(
+		await this.cache.adapter.bulkRemove(
 			(
 				await Promise.all([
 					this.cache.members?.keys(id) ?? [],
