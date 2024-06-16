@@ -11,17 +11,17 @@ import type {
 	GatewayMessageUpdateDispatchData,
 } from 'discord-api-types/v10';
 import { type MakeRequired, type PartialClass, toCamelCase, type ObjectToLower } from '../../common';
-import { Message } from '../../structures';
 import type { UsingClient } from '../../commands';
+import { type MessageStructure, Transformers } from '../../client/transformers';
 
 export const MESSAGE_CREATE = (self: UsingClient, data: GatewayMessageCreateDispatchData) => {
-	return new Message(self, data);
+	return Transformers.Message(self, data);
 };
 
 export const MESSAGE_DELETE = async (
 	self: UsingClient,
 	data: GatewayMessageDeleteDispatchData,
-): Promise<Message | ObjectToLower<GatewayMessageDeleteDispatchData>> => {
+): Promise<MessageStructure | ObjectToLower<GatewayMessageDeleteDispatchData>> => {
 	return (await self.cache.messages?.get(data.id)) ?? toCamelCase(data);
 };
 
@@ -57,7 +57,7 @@ export const MESSAGE_UPDATE = async (
 ): Promise<
 	[
 		message: MakeRequired<
-			PartialClass<Message>,
+			PartialClass<MessageStructure>, //sus
 			| 'id'
 			| 'channelId'
 			| 'createdAt'
@@ -71,14 +71,10 @@ export const MESSAGE_UPDATE = async (
 			| 'user'
 			| 'author'
 		>,
-		old: undefined | Message,
+		old: undefined | MessageStructure,
 	]
 > => {
-	return [new Message(self, data as APIMessage), await self.cache.messages?.get(data.id)];
-};
-
-export const MESSAGE_POLL_VOTE_ADD = (_: UsingClient, data: GatewayMessagePollVoteDispatchData) => {
-	return toCamelCase(data);
+	return [Transformers.Message(self, data as APIMessage), await self.cache.messages?.get(data.id)];
 };
 
 export const MESSAGE_POLL_VOTE_REMOVE = (_: UsingClient, data: GatewayMessagePollVoteDispatchData) => {

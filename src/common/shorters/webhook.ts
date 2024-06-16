@@ -7,19 +7,18 @@ import type {
 import { resolveFiles } from '../../builders';
 import {
 	MessagesMethods,
-	Webhook,
-	WebhookMessage,
 	type MessageWebhookMethodEditParams,
 	type MessageWebhookMethodWriteParams,
 } from '../../structures';
 import { BaseShorter } from './base';
+import { Transformers } from '../../client/transformers';
 
 export class WebhookShorter extends BaseShorter {
 	async create(channelId: string, body: RESTPostAPIChannelWebhookJSONBody) {
 		const webhook = await this.client.proxy.channels(channelId).webhooks.post({
 			body,
 		});
-		return new Webhook(this.client, webhook);
+		return Transformers.Webhook(this.client, webhook);
 	}
 	/**
 	 * Deletes a webhook.
@@ -50,12 +49,12 @@ export class WebhookShorter extends BaseShorter {
 			return this.client.proxy
 				.webhooks(webhookId)(options.token)
 				.patch({ body, reason: options.reason, auth: false })
-				.then(webhook => new Webhook(this.client, webhook));
+				.then(webhook => Transformers.Webhook(this.client, webhook));
 		}
 		return this.client.proxy
 			.webhooks(webhookId)
 			.patch({ body, reason: options.reason })
-			.then(webhook => new Webhook(this.client, webhook));
+			.then(webhook => Transformers.Webhook(this.client, webhook));
 	}
 
 	/**
@@ -71,7 +70,7 @@ export class WebhookShorter extends BaseShorter {
 		} else {
 			webhook = await this.client.proxy.webhooks(webhookId).get();
 		}
-		return new Webhook(this.client, webhook);
+		return Transformers.Webhook(this.client, webhook);
 	}
 
 	/**
@@ -92,7 +91,7 @@ export class WebhookShorter extends BaseShorter {
 		return this.client.proxy
 			.webhooks(webhookId)(token)
 			.post({ ...payload, files: parsedFiles, body: transformedBody })
-			.then(m => (m?.id ? new WebhookMessage(this.client, m, webhookId, token) : null));
+			.then(m => (m?.id ? Transformers.WebhookMessage(this.client, m, webhookId, token) : null));
 	}
 
 	/**
@@ -119,7 +118,7 @@ export class WebhookShorter extends BaseShorter {
 			.webhooks(webhookId)(token)
 			.messages(messageId)
 			.patch({ ...json, auth: false, files: parsedFiles, body: transformedBody })
-			.then(m => new WebhookMessage(this.client, m, webhookId, token));
+			.then(m => Transformers.WebhookMessage(this.client, m, webhookId, token));
 	}
 
 	/**
@@ -147,17 +146,17 @@ export class WebhookShorter extends BaseShorter {
 			.webhooks(webhookId)(token)
 			.messages(messageId)
 			.get({ auth: false, query: { threadId } });
-		return message ? new WebhookMessage(this.client, message, webhookId, token) : undefined;
+		return message ? Transformers.WebhookMessage(this.client, message, webhookId, token) : undefined;
 	}
 
 	async listFromGuild(guildId: string) {
 		const webhooks = await this.client.proxy.guilds(guildId).webhooks.get();
-		return webhooks.map(webhook => new Webhook(this.client, webhook));
+		return webhooks.map(webhook => Transformers.Webhook(this.client, webhook));
 	}
 
 	async listFromChannel(channelId: string) {
 		const webhooks = await this.client.proxy.channels(channelId).webhooks.get();
-		return webhooks.map(webhook => new Webhook(this.client, webhook));
+		return webhooks.map(webhook => Transformers.Webhook(this.client, webhook));
 	}
 }
 

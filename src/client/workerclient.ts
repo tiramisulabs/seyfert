@@ -5,7 +5,6 @@ import type { Cache } from '../cache';
 import { WorkerAdapter } from '../cache';
 import { LogLevels, lazyLoadPackage, type DeepPartial, type When } from '../common';
 import { EventHandler } from '../events';
-import { ClientUser } from '../structures';
 import { Shard, properties, type ShardManagerOptions, type WorkerData } from '../websocket';
 import type {
 	WorkerReady,
@@ -25,6 +24,7 @@ import { BaseClient } from './base';
 import type { Client, ClientOptions } from './client';
 
 import { Collectors } from './collectors';
+import { type ClientUserStructure, Transformers } from './transformers';
 
 let workerData: WorkerData;
 let manager: import('node:worker_threads').MessagePort;
@@ -48,7 +48,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	collectors = new Collectors();
 	events? = new EventHandler(this);
-	me!: When<Ready, ClientUser>;
+	me!: When<Ready, ClientUserStructure>;
 	promises = new Map<string, { resolve: (value: any) => void; timeout: NodeJS.Timeout }>();
 
 	shards = new Map<number, Shard>();
@@ -343,7 +343,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			}
 			default: {
-				await this.events?.execute(packet.t, packet, this, shardId);
+				await this.events?.execute(packet.t as never, packet, this, shardId);
 				switch (packet.t) {
 					case 'READY':
 						if (!this.__handleGuilds) this.__handleGuilds = new Set();
@@ -352,7 +352,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						}
 						this.botId = packet.d.user.id;
 						this.applicationId = packet.d.application.id;
-						this.me = new ClientUser(this, packet.d.user, packet.d.application) as never;
+						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
 						if (
 							!(
 								this.__handleGuilds.size && (workerData.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds

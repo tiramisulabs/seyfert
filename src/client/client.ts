@@ -2,20 +2,20 @@ import { GatewayIntentBits, type GatewayDispatchPayload, type GatewayPresenceUpd
 import type { CommandContext, Message } from '..';
 import { lazyLoadPackage, type DeepPartial, type If, type WatcherPayload, type WatcherSendToShard } from '../common';
 import { EventHandler } from '../events';
-import { ClientUser } from '../structures';
 import { ShardManager, properties, type ShardManagerOptions } from '../websocket';
 import { MemberUpdateHandler } from '../websocket/discord/events/memberUpdate';
 import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdate';
 import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import { Collectors } from './collectors';
+import { type ClientUserStructure, Transformers } from './transformers';
 
 let parentPort: import('node:worker_threads').MessagePort;
 
 export class Client<Ready extends boolean = boolean> extends BaseClient {
 	private __handleGuilds?: Set<string> = new Set();
 	gateway!: ShardManager;
-	me!: If<Ready, ClientUser>;
+	me!: If<Ready, ClientUserStructure>;
 	declare options: Omit<ClientOptions, 'commands'> & {
 		commands: NonNullable<ClientOptions['commands']>;
 	};
@@ -161,7 +161,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			}
 			//rest of the events
 			default: {
-				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
+				await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
 				switch (packet.t) {
 					case 'INTERACTION_CREATE':
 						await this.handleCommand.interaction(packet.d, shardId);
@@ -176,7 +176,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						}
 						this.botId = packet.d.user.id;
 						this.applicationId = packet.d.application.id;
-						this.me = new ClientUser(this, packet.d.user, packet.d.application) as never;
+						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
 						if (
 							!(
 								this.__handleGuilds.size &&

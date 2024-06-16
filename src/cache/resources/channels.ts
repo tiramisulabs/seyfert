@@ -13,6 +13,10 @@ export class Channels extends GuildRelatedResource {
 		return rest;
 	}
 
+	raw(id: string): ReturnCache<APIChannel | undefined> {
+		return super.get(id);
+	}
+
 	override get(id: string): ReturnCache<AllChannels | undefined> {
 		return fakePromise(super.get(id)).then(rawChannel =>
 			rawChannel ? channelFrom(rawChannel, this.client) : undefined,

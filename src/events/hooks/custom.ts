@@ -1,10 +1,10 @@
+import type { ClientUserStructure } from '../../client/transformers';
 import type { UsingClient } from '../../commands';
-import type { ClientUser } from '../../structures';
 
-export const BOT_READY = (_self: UsingClient, me: ClientUser) => {
+export const BOT_READY = (_self: UsingClient, me: ClientUserStructure) => {
 	return me;
 };
 
-export const WORKER_READY = (_self: UsingClient, me: ClientUser) => {
+export const WORKER_READY = (_self: UsingClient, me: ClientUserStructure) => {
 	return me;
 };

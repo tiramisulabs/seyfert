@@ -51,13 +51,18 @@ import type {
 	MessageWebhookCreateBodyRequest,
 	ModalCreateBodyRequest,
 } from '../common/types/write';
-import { InteractionGuildMember, type AllChannels } from './';
-import { GuildRole } from './GuildRole';
-import { Message, type WebhookMessage } from './Message';
-import { User } from './User';
+import type { AllChannels } from './';
 import channelFrom from './channels';
 import { DiscordBase } from './extra/DiscordBase';
 import { PermissionsBitField } from './extra/Permissions';
+import {
+	type GuildRoleStructure,
+	type InteractionGuildMemberStructure,
+	type MessageStructure,
+	Transformers,
+	type UserStructure,
+	type WebhookMessageStructure,
+} from '../client/transformers';
 
 export type ReplyInteractionBody =
 	| { type: InteractionResponseType.Modal; data: ModalCreateBodyRequest }
@@ -82,10 +87,10 @@ export class BaseInteraction<
 	FromGuild extends boolean = boolean,
 	Type extends APIInteraction = APIInteraction,
 > extends DiscordBase<Type> {
-	user: User;
-	member!: When<FromGuild, InteractionGuildMember, undefined>;
+	user: UserStructure;
+	member!: When<FromGuild, InteractionGuildMemberStructure, undefined>;
 	channel?: AllChannels;
-	message?: Message;
+	message?: MessageStructure;
 	replied?: Promise<boolean> | boolean;
 	appPermissions?: PermissionsBitField;
 
@@ -96,15 +101,15 @@ export class BaseInteraction<
 	) {
 		super(client, interaction);
 		if (interaction.member) {
-			this.member = new InteractionGuildMember(
+			this.member = Transformers.InteractionGuildMember(
 				client,
 				interaction.member,
-				interaction.member!.user,
+				interaction.member.user,
 				interaction.guild_id!,
 			) as never;
 		}
 		if (interaction.message) {
-			this.message = new Message(client, interaction.message);
+			this.message = Transformers.Message(client, interaction.message);
 		}
 		if (interaction.app_permissions) {
 			this.appPermissions = new PermissionsBitField(Number(interaction.app_permissions));
@@ -112,7 +117,7 @@ export class BaseInteraction<
 		if (interaction.channel) {
 			this.channel = channelFrom(interaction.channel, client);
 		}
-		this.user = this.member?.user ?? new User(client, interaction.user!);
+		this.user = this.member?.user ?? Transformers.User(client, interaction.user!);
 	}
 
 	static transformBodyRequest(
@@ -363,7 +368,7 @@ export class Interaction<
 	async write<FR extends boolean = false>(
 		body: InteractionCreateBodyRequest,
 		fetchReply?: FR,
-	): Promise<When<FR, WebhookMessage, void>> {
+	): Promise<When<FR, WebhookMessageStructure, void>> {
 		(await this.reply({
 			type: InteractionResponseType.ChannelMessageWithSource,
 			data: body,
@@ -382,7 +387,7 @@ export class Interaction<
 	async editOrReply<FR extends boolean = false>(
 		body: InteractionCreateBodyRequest,
 		fetchReply?: FR,
-	): Promise<When<FR, WebhookMessage, void>>;
+	): Promise<When<FR, WebhookMessageStructure, void>>;
 	async editOrReply<FR extends true = true>(body: InteractionMessageUpdateBodyRequest, fetchReply?: FR) {
 		if (await this.replied) {
 			const { content, embeds, allowed_mentions, components, files, attachments } = body;
@@ -444,7 +449,7 @@ export class ComponentInteraction<
 	declare channelId: string;
 	declare channel: AllChannels;
 	declare type: InteractionType.MessageComponent;
-	declare message: Message;
+	declare message: MessageStructure;
 
 	update(data: ComponentInteractionMessageUpdate) {
 		return this.reply({
@@ -536,9 +541,9 @@ export class ChannelSelectMenuInteraction extends SelectMenuInteraction {
 }
 
 export class MentionableSelectMenuInteraction extends SelectMenuInteraction {
-	roles: GuildRole[];
-	members: InteractionGuildMember[];
-	users: User[];
+	roles: GuildRoleStructure[];
+	members: InteractionGuildMemberStructure[];
+	users: UserStructure[];
 	constructor(
 		client: UsingClient,
 		interaction: APIMessageComponentSelectMenuInteraction,
@@ -547,25 +552,24 @@ export class MentionableSelectMenuInteraction extends SelectMenuInteraction {
 		super(client, interaction);
 		const resolved = (interaction.data as APIMessageMentionableSelectInteractionData).resolved;
 		this.roles = resolved.roles
-			? this.values.map(x => new GuildRole(this.client, resolved.roles![x], this.guildId!))
+			? this.values.map(x => Transformers.GuildRole(this.client, resolved.roles![x], this.guildId!))
 			: [];
 		this.members = resolved.members
-			? this.values.map(
-					x =>
-						new InteractionGuildMember(
-							this.client,
-							resolved.members![x],
-							this.users!.find(u => u.id === x)!,
-							this.guildId!,
-						),
+			? this.values.map(x =>
+					Transformers.InteractionGuildMember(
+						this.client,
+						resolved.members![x],
+						resolved.users![this.values!.find(u => u === x)!]!,
+						this.guildId!,
+					),
 				)
 			: [];
-		this.users = resolved.users ? this.values.map(x => new User(this.client, resolved.users![x])) : [];
+		this.users = resolved.users ? this.values.map(x => Transformers.User(this.client, resolved.users![x])) : [];
 	}
 }
 
 export class RoleSelectMenuInteraction extends SelectMenuInteraction {
-	roles: GuildRole[];
+	roles: GuildRoleStructure[];
 	constructor(
 		client: UsingClient,
 		interaction: APIMessageComponentSelectMenuInteraction,
@@ -573,13 +577,13 @@ export class RoleSelectMenuInteraction extends SelectMenuInteraction {
 	) {
 		super(client, interaction);
 		const resolved = (interaction.data as APIMessageRoleSelectInteractionData).resolved;
-		this.roles = this.values.map(x => new GuildRole(this.client, resolved.roles[x], this.guildId!));
+		this.roles = this.values.map(x => Transformers.GuildRole(this.client, resolved.roles[x], this.guildId!));
 	}
 }
 
 export class UserSelectMenuInteraction extends SelectMenuInteraction {
-	members: InteractionGuildMember[];
-	users: User[];
+	members: InteractionGuildMemberStructure[];
+	users: UserStructure[];
 	constructor(
 		client: UsingClient,
 		interaction: APIMessageComponentSelectMenuInteraction,
@@ -587,16 +591,15 @@ export class UserSelectMenuInteraction extends SelectMenuInteraction {
 	) {
 		super(client, interaction);
 		const resolved = (interaction.data as APIMessageUserSelectInteractionData).resolved;
-		this.users = this.values.map(x => new User(this.client, resolved.users[x]));
+		this.users = this.values.map(x => Transformers.User(this.client, resolved.users[x]));
 		this.members = resolved.members
-			? this.values.map(
-					x =>
-						new InteractionGuildMember(
-							this.client,
-							resolved.members![x],
-							this.users!.find(u => u.id === x)!,
-							this.guildId!,
-						),
+			? this.values.map(x =>
+					Transformers.InteractionGuildMember(
+						this.client,
+						resolved.members![x],
+						resolved.users[this.values!.find(u => u === x)!]!,
+						this.guildId!,
+					),
 				)
 			: [];
 	}

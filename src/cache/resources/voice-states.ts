@@ -1,8 +1,8 @@
 import type { GatewayVoiceState } from 'discord-api-types/v10';
 import type { ReturnCache } from '../..';
 import { fakePromise } from '../../common';
-import { VoiceState } from '../../structures';
 import { GuildBasedResource } from './default/guild-based';
+import { Transformers, type VoiceStateStructure } from '../../client/transformers';
 
 export class VoiceStates extends GuildBasedResource {
 	namespace = 'voice_state';
@@ -17,21 +17,25 @@ export class VoiceStates extends GuildBasedResource {
 		return rest;
 	}
 
-	override get(memberId: string, guildId: string): ReturnCache<VoiceState | undefined> {
+	override get(memberId: string, guildId: string): ReturnCache<VoiceStateStructure | undefined> {
 		return fakePromise(super.get(memberId, guildId)).then(state =>
-			state ? new VoiceState(this.client, state) : undefined,
+			state ? Transformers.VoiceState(this.client, state) : undefined,
 		);
 	}
 
-	override bulk(ids: string[], guild: string): ReturnCache<VoiceState[]> {
+	override bulk(ids: string[], guild: string): ReturnCache<VoiceStateStructure[]> {
 		return fakePromise(super.bulk(ids, guild)).then(
 			states =>
-				states.map(state => (state ? new VoiceState(this.client, state) : undefined)).filter(y => !!y) as VoiceState[],
+				states
+					.map(state => (state ? Transformers.VoiceState(this.client, state) : undefined))
+					.filter(y => !!y) as VoiceStateStructure[],
 		);
 	}
 
-	override values(guildId: string): ReturnCache<VoiceState[]> {
-		return fakePromise(super.values(guildId)).then(states => states.map(state => new VoiceState(this.client, state)));
+	override values(guildId: string): ReturnCache<VoiceStateStructure[]> {
+		return fakePromise(super.values(guildId)).then(states =>
+			states.map(state => Transformers.VoiceState(this.client, state)),
+		);
 	}
 }
 

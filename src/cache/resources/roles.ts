@@ -1,8 +1,8 @@
 import type { APIRole } from 'discord-api-types/v10';
 import type { ReturnCache } from '../..';
 import { fakePromise } from '../../common';
-import { GuildRole } from '../../structures';
 import { GuildRelatedResource } from './default/guild-related';
+import { type GuildRoleStructure, Transformers } from '../../client/transformers';
 
 export class Roles extends GuildRelatedResource {
 	namespace = 'role';
@@ -12,21 +12,29 @@ export class Roles extends GuildRelatedResource {
 		return true;
 	}
 
-	override get(id: string): ReturnCache<GuildRole | undefined> {
+	raw(id: string): ReturnCache<APIRole | undefined> {
+		return super.get(id);
+	}
+
+	override get(id: string): ReturnCache<GuildRoleStructure | undefined> {
 		return fakePromise(super.get(id)).then(rawRole =>
-			rawRole ? new GuildRole(this.client, rawRole, rawRole.guild_id) : undefined,
+			rawRole ? Transformers.GuildRole(this.client, rawRole, rawRole.guild_id) : undefined,
 		);
 	}
 
-	override bulk(ids: string[]): ReturnCache<GuildRole[]> {
+	override bulk(ids: string[]): ReturnCache<GuildRoleStructure[]> {
 		return fakePromise(super.bulk(ids)).then(roles =>
-			roles.map(rawRole => new GuildRole(this.client, rawRole, rawRole.guild_id)),
+			roles.map(rawRole => Transformers.GuildRole(this.client, rawRole, rawRole.guild_id)),
 		);
 	}
 
-	override values(guild: string): ReturnCache<GuildRole[]> {
+	override values(guild: string): ReturnCache<GuildRoleStructure[]> {
 		return fakePromise(super.values(guild)).then(roles =>
-			roles.map(rawRole => new GuildRole(this.client, rawRole, rawRole.guild_id)),
+			roles.map(rawRole => Transformers.GuildRole(this.client, rawRole, rawRole.guild_id)),
 		);
+	}
+
+	valuesRaw(guild: string): ReturnCache<APIRole[]> {
+		return super.values(guild);
 	}
 }

@@ -7,10 +7,10 @@ import type {
 	RESTPostAPIChannelThreadsJSONBody,
 	RESTPostAPIGuildForumThreadsJSONBody,
 } from 'discord-api-types/v10';
-import type { ThreadChannel } from '../../structures';
 import channelFrom from '../../structures/channels';
 import { BaseShorter } from './base';
 import type { MakeRequired, When } from '../types/util';
+import type { ThreadChannelStructure } from '../../client/transformers';
 
 export class ThreadShorter extends BaseShorter {
 	/**
@@ -29,7 +29,7 @@ export class ThreadShorter extends BaseShorter {
 				.channels(channelId)
 				.threads.post({ body, reason })
 				// When testing this, discord returns the thread object, but in discord api types it does not.
-				.then(thread => channelFrom(thread, this.client) as ThreadChannel)
+				.then(thread => channelFrom(thread, this.client) as ThreadChannelStructure)
 		);
 	}
 
@@ -44,7 +44,7 @@ export class ThreadShorter extends BaseShorter {
 			.channels(channelId)
 			.messages(messageId)
 			.threads.post({ body, reason })
-			.then(thread => channelFrom(thread, this.client) as ThreadChannel);
+			.then(thread => channelFrom(thread, this.client) as ThreadChannelStructure);
 	}
 
 	async join(threadId: string) {
@@ -56,7 +56,7 @@ export class ThreadShorter extends BaseShorter {
 	}
 
 	async lock(threadId: string, locked = true, reason?: string) {
-		return this.edit(threadId, { locked }, reason).then(x => channelFrom(x, this.client) as ThreadChannel);
+		return this.edit(threadId, { locked }, reason).then(x => channelFrom(x, this.client) as ThreadChannelStructure);
 	}
 
 	async edit(threadId: string, body: RESTPatchAPIChannelJSONBody, reason?: string) {
@@ -98,7 +98,7 @@ export class ThreadShorter extends BaseShorter {
 		const data = await this.client.proxy.channels(channelId).threads.archived[type].get({ query });
 
 		return {
-			threads: data.threads.map(thread => channelFrom(thread, this.client) as ThreadChannel),
+			threads: data.threads.map(thread => channelFrom(thread, this.client) as ThreadChannelStructure),
 			members: data.members as GetAPIChannelThreadMemberResult[],
 			hasMore: data.has_more,
 		};
@@ -107,7 +107,7 @@ export class ThreadShorter extends BaseShorter {
 	async listJoinedArchivedPrivate(channelId: string, query?: RESTGetAPIChannelThreadsArchivedQuery) {
 		const data = await this.client.proxy.channels(channelId).users('@me').threads.archived.private.get({ query });
 		return {
-			threads: data.threads.map(thread => channelFrom(thread, this.client) as ThreadChannel),
+			threads: data.threads.map(thread => channelFrom(thread, this.client) as ThreadChannelStructure),
 			members: data.members as GetAPIChannelThreadMemberResult[],
 			hasMore: data.has_more,
 		};

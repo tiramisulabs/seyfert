@@ -6,17 +6,17 @@ import type {
 import type { RawFile, UsingClient } from '..';
 import type { Attachment, AttachmentBuilder } from '../builders';
 import type { MethodContext, ObjectToLower } from '../common';
-import { User } from './User';
 import { DiscordBase } from './extra/DiscordBase';
+import { Transformers, type UserStructure } from '../client/transformers';
 
 export interface Sticker extends DiscordBase, ObjectToLower<Omit<APISticker, 'user'>> {}
 
 export class Sticker extends DiscordBase {
-	user?: User;
+	user?: UserStructure;
 	constructor(client: UsingClient, data: APISticker) {
 		super(client, data);
 		if (data.user) {
-			this.user = new User(this.client, data.user);
+			this.user = Transformers.User(this.client, data.user);
 		}
 	}
 
