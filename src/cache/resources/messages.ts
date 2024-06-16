@@ -53,7 +53,7 @@ export class Messages extends GuildRelatedResource {
 			const hashes: (string | undefined)[] = this.cache.users
 				? messages.map(x => (x.user_id ? this.cache.users!.hashId(x.user_id) : undefined))
 				: [];
-			return fakePromise(this.cache.adapter.get(hashes.filter(Boolean) as string[]) as APIUser[]).then(users => {
+			return fakePromise(this.cache.adapter.bulkGet(hashes.filter(Boolean) as string[]) as APIUser[]).then(users => {
 				return messages
 					.map(message => {
 						const user = users.find(user => user.id === message.user_id);

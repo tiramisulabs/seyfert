@@ -20,13 +20,7 @@ export class MemoryAdapter implements Adapter {
 		return values;
 	}
 
-	get(keys: string): any;
-	get(keys: string[]): any[];
-	get(keys: string | string[]) {
-		if (!Array.isArray(keys)) {
-			const data = this.storage.get(keys);
-			return data ? JSON.parse(data) : null;
-		}
+	bulkGet(keys: string[]) {
 		return keys
 			.map(x => {
 				const data = this.storage.get(x);
@@ -35,42 +29,43 @@ export class MemoryAdapter implements Adapter {
 			.filter(x => x);
 	}
 
-	set(keys: string, data: any): void;
-	set(keys: [string, any][]): void;
-	set(keys: string | [string, any][], data?: any): void {
-		if (Array.isArray(keys)) {
-			for (const [key, value] of keys) {
-				this.storage.set(key, JSON.stringify(value));
-			}
-		} else {
-			this.storage.set(keys, JSON.stringify(data));
+	get(keys: string) {
+		const data = this.storage.get(keys);
+		return data ? JSON.parse(data) : null;
+	}
+
+	bulkSet(keys: [string, any][]) {
+		for (const [key, value] of keys) {
+			this.storage.set(key, JSON.stringify(value));
 		}
 	}
 
-	patch(updateOnly: boolean, keys: string, data: any): void;
-	patch(updateOnly: boolean, keys: [string, any][]): void;
-	patch(updateOnly: boolean, keys: string | [string, any][], data?: any): void {
-		if (Array.isArray(keys)) {
-			for (const [key, value] of keys) {
-				const oldData = this.get(key);
-				if (updateOnly && !oldData) {
-					continue;
-				}
-				this.storage.set(
-					key,
-					Array.isArray(value) ? JSON.stringify(value) : JSON.stringify({ ...(oldData ?? {}), ...value }),
-				);
-			}
-		} else {
-			const oldData = this.get(keys);
+	set(key: string, data: any) {
+		this.storage.set(key, JSON.stringify(data));
+	}
+
+	bulkPatch(updateOnly: boolean, keys: [string, any][]) {
+		for (const [key, value] of keys) {
+			const oldData = this.get(key);
 			if (updateOnly && !oldData) {
-				return;
+				continue;
 			}
 			this.storage.set(
-				keys,
-				Array.isArray(data) ? JSON.stringify(data) : JSON.stringify({ ...(oldData ?? {}), ...data }),
+				key,
+				Array.isArray(value) ? JSON.stringify(value) : JSON.stringify({ ...(oldData ?? {}), ...value }),
 			);
 		}
+	}
+
+	patch(updateOnly: boolean, keys: string, data: any) {
+		const oldData = this.get(keys);
+		if (updateOnly && !oldData) {
+			return;
+		}
+		this.storage.set(
+			keys,
+			Array.isArray(data) ? JSON.stringify(data) : JSON.stringify({ ...(oldData ?? {}), ...data }),
+		);
 	}
 
 	values(to: string) {
@@ -96,12 +91,14 @@ export class MemoryAdapter implements Adapter {
 		return this.getToRelationship(to).length;
 	}
 
-	remove(keys: string): void;
-	remove(keys: string[]): void;
-	remove(keys: string | string[]) {
-		for (const i of Array.isArray(keys) ? keys : [keys]) {
+	bulkRemove(keys: string[]) {
+		for (const i of keys) {
 			this.storage.delete(i);
 		}
+	}
+
+	remove(key: string) {
+		this.storage.delete(key);
 	}
 
 	flush(): void {
