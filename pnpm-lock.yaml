@@ -21,7 +21,7 @@ importers:
         specifier: ^6.0.4
         version: 6.0.4
       ws:
-        specifier: ^8.17.1
+        specifier: ^8.17.0
         version: 8.17.1
     optionalDependencies:
       ioredis:
