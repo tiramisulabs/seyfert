@@ -19,12 +19,12 @@ export interface LimitedMemoryAdapterOptions {
 
 	channel?: ResourceLimitedMemoryAdapter;
 	emoji?: ResourceLimitedMemoryAdapter;
-	overwrite?: ResourceLimitedMemoryAdapter;
 	presence?: ResourceLimitedMemoryAdapter;
 	role?: ResourceLimitedMemoryAdapter;
 	stage_instance?: ResourceLimitedMemoryAdapter;
 	sticker?: ResourceLimitedMemoryAdapter;
 	thread?: ResourceLimitedMemoryAdapter;
+	overwrite?: ResourceLimitedMemoryAdapter;
 	message?: ResourceLimitedMemoryAdapter;
 }
 
