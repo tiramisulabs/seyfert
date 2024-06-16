@@ -9,18 +9,23 @@ export interface ResourceLimitedMemoryAdapter {
 
 export interface LimitedMemoryAdapterOptions {
 	default?: ResourceLimitedMemoryAdapter;
+
 	guild?: ResourceLimitedMemoryAdapter;
 	user?: ResourceLimitedMemoryAdapter;
+
+	ban?: ResourceLimitedMemoryAdapter;
 	member?: ResourceLimitedMemoryAdapter;
 	voice_state?: ResourceLimitedMemoryAdapter;
+
 	channel?: ResourceLimitedMemoryAdapter;
 	emoji?: ResourceLimitedMemoryAdapter;
-	overwrite?: ResourceLimitedMemoryAdapter;
 	presence?: ResourceLimitedMemoryAdapter;
 	role?: ResourceLimitedMemoryAdapter;
 	stage_instance?: ResourceLimitedMemoryAdapter;
 	sticker?: ResourceLimitedMemoryAdapter;
 	thread?: ResourceLimitedMemoryAdapter;
+	overwrite?: ResourceLimitedMemoryAdapter;
+	message?: ResourceLimitedMemoryAdapter;
 }
 
 export class LimitedMemoryAdapter implements Adapter {
@@ -95,6 +100,7 @@ export class LimitedMemoryAdapter implements Adapter {
 								case 'user':
 									self.removeToRelationship(namespace, k.split('.')[1]);
 									break;
+								case 'ban':
 								case 'member':
 								case 'voice_state':
 									{
