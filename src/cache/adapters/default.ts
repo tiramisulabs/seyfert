@@ -1,4 +1,3 @@
-import type { Awaitable } from '../../common';
 import type { Adapter } from './types';
 
 export class MemoryAdapter implements Adapter {
@@ -35,7 +34,7 @@ export class MemoryAdapter implements Adapter {
 		return data ? JSON.parse(data) : null;
 	}
 
-	bulkSet(keys: [string, any][]): Awaitable<void> {
+	bulkSet(keys: [string, any][]) {
 		for (const [key, value] of keys) {
 			this.storage.set(key, JSON.stringify(value));
 		}
@@ -45,7 +44,7 @@ export class MemoryAdapter implements Adapter {
 		this.storage.set(key, JSON.stringify(data));
 	}
 
-	bulkPatch(updateOnly: boolean, keys: [string, any][]): Awaitable<void> {
+	bulkPatch(updateOnly: boolean, keys: [string, any][]) {
 		for (const [key, value] of keys) {
 			const oldData = this.get(key);
 			if (updateOnly && !oldData) {
@@ -92,7 +91,7 @@ export class MemoryAdapter implements Adapter {
 		return this.getToRelationship(to).length;
 	}
 
-	bulkRemove(keys: string[]): Awaitable<void> {
+	bulkRemove(keys: string[]) {
 		for (const i of keys) {
 			this.storage.delete(i);
 		}
