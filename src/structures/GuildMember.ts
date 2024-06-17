@@ -23,8 +23,8 @@ import type { UsingClient } from '../commands';
 import { Formatter, type MessageCreateBodyRequest, type ObjectToLower, type ToClass } from '../common';
 import type { ImageOptions, MethodContext } from '../common/types/options';
 import type { GuildMemberResolvable } from '../common/types/resolvables';
-import { User } from './User';
 import { PermissionsBitField } from './extra/Permissions';
+import { Transformers, type UserStructure } from '../client/transformers';
 
 export interface BaseGuildMember extends DiscordBase, ObjectToLower<Omit<APIGuildMember, 'user' | 'roles'>> {}
 export class BaseGuildMember extends DiscordBase {
@@ -127,17 +127,17 @@ export interface GuildMember extends ObjectToLower<Omit<APIGuildMember, 'user' |
  * @link https://discord.com/developers/docs/resources/guild#guild-member-object
  */
 export class GuildMember extends BaseGuildMember {
-	user: User;
+	user: UserStructure;
 	private __me?: GuildMember;
 	constructor(
 		client: UsingClient,
 		data: GuildMemberData,
-		user: APIUser | User,
+		user: APIUser,
 		/** the choosen guild id */
 		readonly guildId: string,
 	) {
 		super(client, data, user.id, guildId);
-		this.user = user instanceof User ? user : new User(client, user);
+		this.user = Transformers.User(client, user);
 	}
 
 	get tag() {
@@ -242,7 +242,7 @@ export class InteractionGuildMember extends (GuildMember as unknown as ToClass<
 	constructor(
 		client: UsingClient,
 		data: APIInteractionDataResolvedGuildMember,
-		user: APIUser | User,
+		user: APIUser,
 		/** the choosen guild id */
 		guildId: string,
 	) {

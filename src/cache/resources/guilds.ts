@@ -1,8 +1,8 @@
 import type { APIGuild } from 'discord-api-types/v10';
 import type { Cache, ReturnCache } from '..';
 import { fakePromise } from '../../common';
-import { Guild } from '../../structures';
 import { BaseResource } from './default/base';
+import { type GuildStructure, Transformers } from '../../client/transformers';
 
 export class Guilds extends BaseResource {
 	namespace = 'guild';
@@ -12,19 +12,25 @@ export class Guilds extends BaseResource {
 		return true;
 	}
 
-	override get(id: string): ReturnCache<Guild<'cached'> | undefined> {
-		return fakePromise(super.get(id)).then(guild => (guild ? new Guild<'cached'>(this.client, guild) : undefined));
+	raw(id: string): ReturnCache<APIGuild | undefined> {
+		return super.get(id);
 	}
 
-	override bulk(ids: string[]): ReturnCache<Guild<'cached'>[]> {
-		return fakePromise(super.bulk(ids) as APIGuild[]).then(guilds =>
-			guilds.map(x => new Guild<'cached'>(this.client, x)),
+	override get(id: string): ReturnCache<GuildStructure<'cached'> | undefined> {
+		return fakePromise(super.get(id)).then(guild =>
+			guild ? Transformers.Guild<'cached'>(this.client, guild) : undefined,
 		);
 	}
 
-	override values(): ReturnCache<Guild<'cached'>[]> {
+	override bulk(ids: string[]): ReturnCache<GuildStructure<'cached'>[]> {
+		return fakePromise(super.bulk(ids) as APIGuild[]).then(guilds =>
+			guilds.map(x => Transformers.Guild<'cached'>(this.client, x)),
+		);
+	}
+
+	override values(): ReturnCache<GuildStructure<'cached'>[]> {
 		return fakePromise(super.values() as APIGuild[]).then(guilds =>
-			guilds.map(x => new Guild<'cached'>(this.client, x)),
+			guilds.map(x => Transformers.Guild<'cached'>(this.client, x)),
 		);
 	}
 

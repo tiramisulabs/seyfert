@@ -1,8 +1,8 @@
 import type { RESTGetAPIChannelMessageReactionUsersQuery } from 'discord-api-types/v10';
-import { User } from '../../structures';
 import { encodeEmoji, resolveEmoji } from '../../structures/extra/functions';
 import type { EmojiResolvable } from '../types/resolvables';
 import { BaseShorter } from './base';
+import { Transformers, type UserStructure } from '../../client/transformers';
 
 export class ReactionShorter extends BaseShorter {
 	async add(messageId: string, channelId: string, emoji: EmojiResolvable): Promise<void> {
@@ -30,7 +30,7 @@ export class ReactionShorter extends BaseShorter {
 		channelId: string,
 		emoji: EmojiResolvable,
 		query?: RESTGetAPIChannelMessageReactionUsersQuery,
-	): Promise<User[]> {
+	): Promise<UserStructure[]> {
 		const rawEmoji = await resolveEmoji(emoji, this.client.cache);
 
 		if (!rawEmoji) {
@@ -42,7 +42,7 @@ export class ReactionShorter extends BaseShorter {
 			.messages(messageId)
 			.reactions(encodeEmoji(rawEmoji))
 			.get({ query })
-			.then(u => u.map(user => new User(this.client, user)));
+			.then(u => u.map(user => Transformers.User(this.client, user)));
 	}
 
 	async purge(messageId: string, channelId: string, emoji?: EmojiResolvable): Promise<void> {

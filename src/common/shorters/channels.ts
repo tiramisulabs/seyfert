@@ -1,15 +1,17 @@
 import {
+	type APIChannel,
 	PermissionFlagsBits,
 	type RESTGetAPIChannelMessagesQuery,
 	type RESTPatchAPIChannelJSONBody,
 	type RESTPostAPIChannelThreadsJSONBody,
 	type RESTPostAPIGuildForumThreadsJSONBody,
 } from 'discord-api-types/v10';
-import { BaseChannel, Message, type GuildMember, type GuildRole } from '../../structures';
+import { BaseChannel, type GuildRole, type GuildMember } from '../../structures';
 import channelFrom, { type AllChannels } from '../../structures/channels';
 import { PermissionsBitField } from '../../structures/extra/Permissions';
 import { BaseShorter } from './base';
 import { MergeOptions } from '../it/utils';
+import { type MessageStructure, Transformers } from '../../client/transformers';
 
 export class ChannelShorter extends BaseShorter {
 	/**
@@ -19,15 +21,19 @@ export class ChannelShorter extends BaseShorter {
 	 * @returns A Promise that resolves to the fetched channel.
 	 */
 	async fetch(id: string, force?: boolean): Promise<AllChannels> {
+		return channelFrom(await this.raw(id, force), this.client);
+	}
+
+	async raw(id: string, force?: boolean): Promise<APIChannel> {
 		let channel;
 		if (!force) {
-			channel = await this.client.cache.channels?.get(id);
+			channel = await this.client.cache.channels?.raw(id);
 			if (channel) return channel;
 		}
 
 		channel = await this.client.proxy.channels(id).get();
 		await this.client.cache.channels?.patch(id, undefined, channel);
-		return channelFrom(channel, this.client);
+		return channel;
 	}
 
 	/**
@@ -77,7 +83,7 @@ export class ChannelShorter extends BaseShorter {
 		await this.client.proxy.channels(id).typing.post();
 	}
 
-	async pins(channelId: string): Promise<Message[]> {
+	async pins(channelId: string): Promise<MessageStructure[]> {
 		const messages = await this.client.proxy.channels(channelId).pins.get();
 		await this.client.cache.messages?.patch(
 			messages.map(x => {
@@ -85,7 +91,7 @@ export class ChannelShorter extends BaseShorter {
 			}) satisfies [string, any][],
 			channelId,
 		);
-		return messages.map(message => new Message(this.client, message));
+		return messages.map(message => Transformers.Message(this.client, message));
 	}
 
 	/**
@@ -194,7 +200,7 @@ export class ChannelShorter extends BaseShorter {
 			}) satisfies [string, any][],
 			channelId,
 		);
-		return result.map(message => new Message(this.client, message));
+		return result.map(message => Transformers.Message(this.client, message));
 	}
 
 	setVoiceStatus(channelId: string, status: string | null = null) {

@@ -8,11 +8,11 @@ import {
 	type APIApplicationCommandInteractionDataOption,
 	ApplicationCommandOptionType,
 	ChannelType,
+	type APIInteractionDataResolvedChannel,
 } from 'discord-api-types/v10';
 import {
 	Command,
 	type ContextOptionsResolved,
-	OptionResolver,
 	type UsingClient,
 	type CommandAutocompleteOption,
 	type ContextMenuCommand,
@@ -38,13 +38,16 @@ import {
 	type MessageCommandInteraction,
 	type UserCommandInteraction,
 	type __InternalReplyFunction,
-	Message,
-	User,
 } from '../structures';
 import type { PermissionsBitField } from '../structures/extra/Permissions';
 import { ComponentContext, ModalContext } from '../components';
 import type { Client } from '../client';
 import type { Awaitable, MakeRequired } from '../common';
+import { type MessageStructure, Transformers, type OptionResolverStructure } from '../client/transformers';
+
+export type CommandOptionWithType = CommandOption & {
+	type: ApplicationCommandOptionType;
+};
 
 export interface CommandFromContent {
 	command?: Command | SubCommand;
@@ -52,22 +55,12 @@ export interface CommandFromContent {
 	fullCommandName: string;
 }
 
-export interface CustomResolver {}
-
-export type HandleResolver<C = CustomResolver, D = typeof OptionResolver> = keyof C extends never ? D : C;
-
-export class HandleCommand<HR extends HandleResolver = HandleResolver> {
-	optionsResolver: HR;
-	constructor(
-		public client: UsingClient,
-		optionsResolver?: HR,
-	) {
-		this.optionsResolver = (optionsResolver ?? OptionResolver) as HR;
-	}
+export class HandleCommand {
+	constructor(public client: UsingClient) {}
 
 	async autocomplete(
 		interaction: AutocompleteInteraction,
-		optionsResolver: InstanceType<HR>,
+		optionsResolver: OptionResolverStructure,
 		command?: CommandAutocompleteOption,
 	) {
 		// idc, is a YOU problem
@@ -142,7 +135,7 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 	async chatInput(
 		command: Command | SubCommand,
 		interaction: ChatInputCommandInteraction,
-		resolver: InstanceType<HR>,
+		resolver: OptionResolverStructure,
 		context: CommandContext,
 	) {
 		if (command.botPermissions && interaction.appPermissions) {
@@ -265,13 +258,13 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 	async message(rawMessage: GatewayMessageCreateDispatchData, shardId: number) {
 		const self = this.client as unknown as Client;
 		if (!self.options.commands?.defaultPrefix) return;
-		const message = new Message(this.client, rawMessage);
+		const message = Transformers.Message(this.client, rawMessage);
 		const prefixes = (await this.getPrefix(message)).sort((a, b) => b.length - a.length);
-		const prefix = prefixes.find(x => message.content.startsWith(x));
+		const prefix = prefixes.find(x => rawMessage.content.startsWith(x));
 
-		if (!(prefix !== undefined && message.content.startsWith(prefix))) return;
+		if (!(prefix !== undefined && rawMessage.content.startsWith(prefix))) return;
 
-		const content = message.content.slice(prefix.length).trimStart();
+		const content = rawMessage.content.slice(prefix.length).trimStart();
 
 		const { fullCommandName, command, parent } = this.getCommandFromContent(
 			content
@@ -283,9 +276,9 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 		if (!command) return;
 		if (!command.run) return self.logger.warn(`${fullCommandName} command does not have 'run' callback`);
 
-		if (!(command.contexts.includes(InteractionContextType.BotDM) || message.guildId)) return;
-		if (!command.contexts.includes(InteractionContextType.Guild) && message.guildId) return;
-		if (command.guildId && !command.guildId?.includes(message.guildId!)) return;
+		if (!(command.contexts.includes(InteractionContextType.BotDM) || rawMessage.guild_id)) return;
+		if (!command.contexts.includes(InteractionContextType.Guild) && rawMessage.guild_id) return;
+		if (command.guildId && !command.guildId?.includes(rawMessage.guild_id!)) return;
 
 		const resolved: MakeRequired<ContextOptionsResolved> = {
 			channels: {},
@@ -302,7 +295,7 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 
 		const args = this.argsParser(newContent.slice(1), command, message);
 		const { options, errors } = await this.argsOptionsParser(command, rawMessage, args, resolved);
-		const optionsResolver = this.makeResolver(self, options, parent as Command, message.guildId, resolved);
+		const optionsResolver = this.makeResolver(self, options, parent as Command, rawMessage.guild_id, resolved);
 		const context = new CommandContext(self, message, optionsResolver, shardId, command);
 		//@ts-expect-error
 		const extendContext = self.options?.context?.(message) ?? {};
@@ -326,16 +319,17 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 					),
 				);
 			}
-			if (command.defaultMemberPermissions && message.guildId) {
-				const memberPermissions = await self.members.permissions(message.guildId, message.author.id);
+			if (command.defaultMemberPermissions && rawMessage.guild_id) {
+				const memberPermissions = await self.members.permissions(rawMessage.guild_id, rawMessage.author.id);
 				const permissions = this.checkPermissions(memberPermissions, command.defaultMemberPermissions);
-				if (permissions && (await message.guild())!.ownerId !== message.author.id) {
+				const guild = await this.client.guilds.raw(rawMessage.guild_id);
+				if (permissions && guild.owner_id !== rawMessage.author.id) {
 					return command.onPermissionsFail?.(context, memberPermissions.keys(permissions));
 				}
 			}
 
-			if (command.botPermissions && message.guildId) {
-				const meMember = await self.cache.members?.get(self.botId, message.guildId);
+			if (command.botPermissions && rawMessage.guild_id) {
+				const meMember = await self.cache.members?.get(self.botId, rawMessage.guild_id);
 				if (!meMember) return; //enable member cache and "Guilds" intent, lol
 				const appPermissions = await meMember.fetchPermissions();
 				const permissions = this.checkPermissions(appPermissions, command.botPermissions);
@@ -364,11 +358,11 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 		}
 	}
 
-	getPrefix(_message: Message): Awaitable<string[]> {
-		return (this.client as unknown as Client).options.commands.defaultPrefix!;
+	getPrefix(_message: MessageStructure): Awaitable<string[]> {
+		return (this.client as unknown as Client).options.commands.defaultPrefix ?? [];
 	}
 
-	argsParser(content: string, _command: SubCommand | Command, _message: Message): Record<string, string> {
+	argsParser(content: string, _command: SubCommand | Command, _message: MessageStructure): Record<string, string> {
 		const args: Record<string, string> = {};
 		for (const i of content.match(/-(.*?)(?=\s-|$)/gs) ?? []) {
 			args[i.slice(1).split(' ')[0]] = i.split(' ').slice(1).join(' ');
@@ -419,9 +413,9 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 			parent,
 		};
 	}
-	makeResolver<T extends unknown[] = []>(...args: [...ConstructorParameters<typeof OptionResolver>, ...T]) {
-		// @ts-expect-error
-		return new this.optionsResolver(...args) as InstanceType<HR>;
+
+	makeResolver(...args: Parameters<(typeof Transformers)['OptionResolver']>) {
+		return Transformers.OptionResolver(...args);
 	}
 
 	getMessageCommand(rawParentName: string) {
@@ -451,6 +445,22 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 			return app.keys(permissions);
 		}
 		return false;
+	}
+
+	async fetchChannel(option: CommandOptionWithType, id: string) {
+		return option.required ? await this.client.channels.raw(id) : undefined;
+	}
+
+	async fetchUser(option: CommandOptionWithType, id: string) {
+		return option.required ? await this.client.users.raw(id) : undefined;
+	}
+
+	async fetchMember(option: CommandOptionWithType, id: string, guildId: string) {
+		return option.required ? await this.client.members.raw(guildId, id) : undefined;
+	}
+
+	async fetchRole(option: CommandOptionWithType, id: string, guildId?: string) {
+		return option.required && guildId ? (await this.client.roles.listRaw(guildId)).find(x => x.id === id) : undefined;
 	}
 
 	async runGlobalMiddlewares(
@@ -508,7 +518,7 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 		return { command, interaction, context };
 	}
 
-	async runOptions(command: Command | SubCommand, context: CommandContext, resolver: InstanceType<HR>) {
+	async runOptions(command: Command | SubCommand, context: CommandContext, resolver: OptionResolverStructure) {
 		const [erroredOptions, result] = await command.__runOptions(context, resolver);
 		if (erroredOptions) {
 			await command.onOptionsError?.(context, result);
@@ -546,26 +556,24 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 							const rawId =
 								message.content.match(/(?<=<#)[0-9]{17,19}(?=>)/g)?.find(x => args[i.name]?.includes(x)) ||
 								args[i.name]?.match(/[0-9]{17,19}/g)?.[0];
-							if (rawId) {
-								const channel =
-									(await this.client.cache.channels?.get(rawId)) ??
-									(i.required ? await this.client.channels.fetch(rawId) : undefined);
-								if (channel) {
-									if ('channel_types' in i) {
-										if (!(i as SeyfertChannelOption).channel_types!.includes(channel.type)) {
-											errors.push({
-												name: i.name,
-												error: `The entered channel type is not one of ${(i as SeyfertChannelOption)
-													.channel_types!.map(t => ChannelType[t])
-													.join(', ')}`,
-												fullError: ['CHANNEL_TYPES', (i as SeyfertChannelOption).channel_types!],
-											});
-											break;
-										}
+							if (!rawId) continue;
+							const channel = (await this.client.cache.channels?.raw(rawId)) ?? (await this.fetchChannel(i, rawId));
+							if (channel) {
+								if ('channel_types' in i) {
+									if (!(i as SeyfertChannelOption).channel_types!.includes(channel.type)) {
+										errors.push({
+											name: i.name,
+											error: `The entered channel type is not one of ${(i as SeyfertChannelOption)
+												.channel_types!.map(t => ChannelType[t])
+												.join(', ')}`,
+											fullError: ['CHANNEL_TYPES', (i as SeyfertChannelOption).channel_types!],
+										});
+										break;
 									}
-									value = rawId;
-									resolved.channels[rawId] = channel;
 								}
+								value = rawId;
+								//discord funny memoentnt!!!!!!!!
+								resolved.channels[rawId] = channel as APIInteractionDataResolvedChannel;
 							}
 						}
 						break;
@@ -577,10 +585,7 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 									const rawId = match.slice(3);
 									if (rawId) {
 										const role =
-											(await this.client.cache.roles?.get(rawId)) ??
-											(i.required
-												? (await this.client.roles.list(message.guild_id!)).find(x => x.id === rawId)
-												: undefined);
+											(await this.client.cache.roles?.raw(rawId)) ?? (await this.fetchRole(i, rawId, message.guild_id));
 										if (role) {
 											value = rawId;
 											resolved.roles[rawId] = role;
@@ -605,17 +610,12 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 						{
 							const rawId =
 								message.mention_roles.find(x => args[i.name]?.includes(x)) || args[i.name]?.match(/[0-9]{17,19}/g)?.[0];
-							if (rawId) {
-								const role =
-									(await this.client.cache.roles?.get(rawId)) ??
-									(i.required
-										? (await this.client.roles.list(message.guild_id!)).find(x => x.id === rawId)
-										: undefined);
-
-								if (role) {
-									value = rawId;
-									resolved.roles[rawId] = role;
-								}
+							if (!rawId) continue;
+							const role =
+								(await this.client.cache.roles?.raw(rawId)) ?? (await this.fetchRole(i, rawId, message.guild_id));
+							if (role) {
+								value = rawId;
+								resolved.roles[rawId] = role;
 							}
 						}
 						break;
@@ -624,27 +624,20 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 							const rawId =
 								message.mentions.find(x => args[i.name]?.includes(x.id))?.id ||
 								args[i.name]?.match(/[0-9]{17,19}/g)?.[0];
-							if (rawId) {
-								const raw =
-									message.mentions.find(x => args[i.name]?.includes(x.id)) ??
-									(await this.client.cache.users?.get(rawId)) ??
-									(i.required ? await this.client.users.fetch(rawId) : undefined);
-								if (raw) {
-									value = raw.id;
-									if (raw instanceof User) {
-										resolved.users[raw.id] = raw;
-										if (message.guild_id) {
-											const member =
-												message.mentions.find(x => args[i.name]?.includes(x.id))?.member ??
-												(await this.client.cache.members?.get(rawId, message.guild_id)) ??
-												(i.required ? await this.client.members.fetch(rawId, message.guild_id) : undefined);
-											if (member) resolved.members[raw.id] = member;
-										}
-									} else {
-										const { member, ...user } = raw;
-										resolved.users[user.id] = user;
-										if (member) resolved.members[user.id] = member;
-									}
+							if (!rawId) continue;
+							const raw =
+								message.mentions.find(x => args[i.name]?.includes(x.id)) ??
+								(await this.client.cache.users?.raw(rawId)) ??
+								(await this.fetchUser(i, rawId));
+							if (raw) {
+								value = raw.id;
+								resolved.users[raw.id] = raw;
+								if (message.guild_id) {
+									const member =
+										message.mentions.find(x => args[i.name]?.includes(x.id))?.member ??
+										(await this.client.cache.members?.raw(rawId, message.guild_id)) ??
+										(await this.fetchMember(i, rawId, message.guild_id));
+									if (member) resolved.members[raw.id] = member;
 								}
 							}
 						}

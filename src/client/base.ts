@@ -41,7 +41,6 @@ import { LangsHandler } from '../langs/handler';
 import type {
 	ChatInputCommandInteraction,
 	ComponentInteraction,
-	Message,
 	MessageCommandInteraction,
 	ModalSubmitInteraction,
 	UserCommandInteraction,
@@ -50,6 +49,7 @@ import type { ComponentCommand, ComponentContext, ModalCommand, ModalContext } f
 import { promises } from 'node:fs';
 import { BanShorter } from '../common/shorters/bans';
 import { HandleCommand } from '../commands/handle';
+import type { MessageStructure } from './transformers';
 
 export class BaseClient {
 	rest!: ApiHandler;
@@ -386,7 +386,7 @@ export interface BaseClientOptions {
 			| MessageCommandInteraction<boolean>
 			| ComponentInteraction
 			| ModalSubmitInteraction
-			| When<InferWithPrefix, Message, never>,
+			| When<InferWithPrefix, MessageStructure, never>,
 	) => {};
 	globalMiddlewares?: readonly (keyof RegisteredMiddlewares)[];
 	commands?: {

@@ -86,8 +86,8 @@ export class EventHandler extends BaseHandler {
 		}
 
 		await Promise.all([
-			this.runEvent(args[0].t, args[1], args[0].d, args[2]),
-			this.client.collectors.run(args[0].t, args[0].d),
+			this.runEvent(args[0].t as never, args[1], args[0].d, args[2]),
+			this.client.collectors.run(args[0].t as never, args[0].d as never),
 		]);
 	}
 

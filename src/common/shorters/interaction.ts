@@ -1,4 +1,5 @@
-import { BaseInteraction, WebhookMessage, resolveFiles, type ReplyInteractionBody, Modal } from '../..';
+import { BaseInteraction, resolveFiles, type ReplyInteractionBody, Modal } from '../..';
+import { Transformers } from '../../client/transformers';
 import type { InteractionMessageUpdateBodyRequest, MessageWebhookCreateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
 
@@ -42,7 +43,7 @@ export class InteractionShorter extends BaseShorter {
 				body: BaseInteraction.transformBody(data, parsedFiles, this.client),
 				files: parsedFiles,
 			});
-		return new WebhookMessage(this.client, apiMessage, this.client.applicationId, token);
+		return Transformers.WebhookMessage(this.client, apiMessage, this.client.applicationId, token);
 	}
 
 	editOriginal(token: string, body: InteractionMessageUpdateBodyRequest) {
@@ -69,6 +70,6 @@ export class InteractionShorter extends BaseShorter {
 				body: BaseInteraction.transformBody(body, parsedFiles, this.client),
 				files: parsedFiles,
 			});
-		return new WebhookMessage(this.client, apiMessage, this.client.applicationId, token);
+		return Transformers.WebhookMessage(this.client, apiMessage, this.client.applicationId, token);
 	}
 }

@@ -5,8 +5,8 @@ import type {
 	GatewayAutoModerationRuleUpdateDispatchData,
 } from 'discord-api-types/v10';
 import { toCamelCase } from '../../common';
-import { AutoModerationRule } from '../../structures';
 import type { UsingClient } from '../../commands';
+import { Transformers } from '../../client/transformers';
 
 export const AUTO_MODERATION_ACTION_EXECUTION = (
 	_self: UsingClient,
@@ -16,13 +16,13 @@ export const AUTO_MODERATION_ACTION_EXECUTION = (
 };
 
 export const AUTO_MODERATION_RULE_CREATE = (self: UsingClient, data: GatewayAutoModerationRuleCreateDispatchData) => {
-	return new AutoModerationRule(self, data);
+	return Transformers.AutoModerationRule(self, data);
 };
 
 export const AUTO_MODERATION_RULE_DELETE = (self: UsingClient, data: GatewayAutoModerationRuleDeleteDispatchData) => {
-	return new AutoModerationRule(self, data);
+	return Transformers.AutoModerationRule(self, data);
 };
 
 export const AUTO_MODERATION_RULE_UPDATE = (self: UsingClient, data: GatewayAutoModerationRuleUpdateDispatchData) => {
-	return new AutoModerationRule(self, data);
+	return Transformers.AutoModerationRule(self, data);
 };

@@ -1,8 +1,8 @@
 import type { APISticker } from 'discord-api-types/v10';
 import type { ReturnCache } from '../..';
 import { fakePromise } from '../../common';
-import { Sticker } from '../../structures';
 import { GuildRelatedResource } from './default/guild-related';
+import { type StickerStructure, Transformers } from '../../client/transformers';
 
 export class Stickers extends GuildRelatedResource {
 	namespace = 'sticker';
@@ -12,21 +12,21 @@ export class Stickers extends GuildRelatedResource {
 		return true;
 	}
 
-	override get(id: string): ReturnCache<Sticker | undefined> {
+	override get(id: string): ReturnCache<StickerStructure | undefined> {
 		return fakePromise(super.get(id)).then(rawSticker =>
-			rawSticker ? new Sticker(this.client, rawSticker) : undefined,
+			rawSticker ? Transformers.Sticker(this.client, rawSticker) : undefined,
 		);
 	}
 
-	override bulk(ids: string[]): ReturnCache<Sticker[]> {
+	override bulk(ids: string[]): ReturnCache<StickerStructure[]> {
 		return fakePromise(super.bulk(ids) as APISticker[]).then(emojis =>
-			emojis.map(rawSticker => new Sticker(this.client, rawSticker)),
+			emojis.map(rawSticker => Transformers.Sticker(this.client, rawSticker)),
 		);
 	}
 
-	override values(guild: string): ReturnCache<Sticker[]> {
+	override values(guild: string): ReturnCache<StickerStructure[]> {
 		return fakePromise(super.values(guild) as APISticker[]).then(emojis =>
-			emojis.map(rawSticker => new Sticker(this.client, rawSticker)),
+			emojis.map(rawSticker => Transformers.Sticker(this.client, rawSticker)),
 		);
 	}
 }
