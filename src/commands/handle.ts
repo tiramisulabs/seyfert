@@ -13,7 +13,6 @@ import {
 import {
 	Command,
 	type ContextOptionsResolved,
-	OptionResolver,
 	type UsingClient,
 	type CommandAutocompleteOption,
 	type ContextMenuCommand,
@@ -44,7 +43,11 @@ import type { PermissionsBitField } from '../structures/extra/Permissions';
 import { ComponentContext, ModalContext } from '../components';
 import type { Client } from '../client';
 import type { Awaitable, MakeRequired } from '../common';
-import { type MessageStructure, Transformers } from '../client/transformers';
+import { type MessageStructure, Transformers, type OptionResolverStructure } from '../client/transformers';
+
+export type CommandOptionWithType = CommandOption & {
+	type: ApplicationCommandOptionType;
+};
 
 export interface CommandFromContent {
 	command?: Command | SubCommand;
@@ -52,22 +55,12 @@ export interface CommandFromContent {
 	fullCommandName: string;
 }
 
-export interface CustomResolver {}
-
-export type HandleResolver<C = CustomResolver, D = typeof OptionResolver> = keyof C extends never ? D : C;
-
-export class HandleCommand<HR extends HandleResolver = HandleResolver> {
-	optionsResolver: HR;
-	constructor(
-		public client: UsingClient,
-		optionsResolver?: HR,
-	) {
-		this.optionsResolver = (optionsResolver ?? OptionResolver) as HR;
-	}
+export class HandleCommand {
+	constructor(public client: UsingClient) {}
 
 	async autocomplete(
 		interaction: AutocompleteInteraction,
-		optionsResolver: InstanceType<HR>,
+		optionsResolver: OptionResolverStructure,
 		command?: CommandAutocompleteOption,
 	) {
 		// idc, is a YOU problem
@@ -142,7 +135,7 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 	async chatInput(
 		command: Command | SubCommand,
 		interaction: ChatInputCommandInteraction,
-		resolver: InstanceType<HR>,
+		resolver: OptionResolverStructure,
 		context: CommandContext,
 	) {
 		if (command.botPermissions && interaction.appPermissions) {
@@ -420,9 +413,9 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 			parent,
 		};
 	}
-	makeResolver<T extends unknown[] = []>(...args: [...ConstructorParameters<typeof OptionResolver>, ...T]) {
-		// @ts-expect-error
-		return new this.optionsResolver(...args) as InstanceType<HR>;
+
+	makeResolver(...args: Parameters<(typeof Transformers)['OptionResolver']>) {
+		return Transformers.OptionResolver(...args);
 	}
 
 	getMessageCommand(rawParentName: string) {
@@ -452,6 +445,22 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 			return app.keys(permissions);
 		}
 		return false;
+	}
+
+	async fetchChannel(option: CommandOptionWithType, id: string) {
+		return option.required ? await this.client.channels.raw(id) : undefined;
+	}
+
+	async fetchUser(option: CommandOptionWithType, id: string) {
+		return option.required ? await this.client.users.raw(id) : undefined;
+	}
+
+	async fetchMember(option: CommandOptionWithType, id: string, guildId: string) {
+		return option.required ? await this.client.members.raw(guildId, id) : undefined;
+	}
+
+	async fetchRole(option: CommandOptionWithType, id: string, guildId?: string) {
+		return option.required && guildId ? (await this.client.roles.listRaw(guildId)).find(x => x.id === id) : undefined;
 	}
 
 	async runGlobalMiddlewares(
@@ -509,7 +518,7 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 		return { command, interaction, context };
 	}
 
-	async runOptions(command: Command | SubCommand, context: CommandContext, resolver: InstanceType<HR>) {
+	async runOptions(command: Command | SubCommand, context: CommandContext, resolver: OptionResolverStructure) {
 		const [erroredOptions, result] = await command.__runOptions(context, resolver);
 		if (erroredOptions) {
 			await command.onOptionsError?.(context, result);
@@ -547,27 +556,24 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 							const rawId =
 								message.content.match(/(?<=<#)[0-9]{17,19}(?=>)/g)?.find(x => args[i.name]?.includes(x)) ||
 								args[i.name]?.match(/[0-9]{17,19}/g)?.[0];
-							if (rawId) {
-								const channel =
-									(await this.client.cache.channels?.raw(rawId)) ??
-									(i.required ? await this.client.channels.raw(rawId) : undefined);
-								if (channel) {
-									if ('channel_types' in i) {
-										if (!(i as SeyfertChannelOption).channel_types!.includes(channel.type)) {
-											errors.push({
-												name: i.name,
-												error: `The entered channel type is not one of ${(i as SeyfertChannelOption)
-													.channel_types!.map(t => ChannelType[t])
-													.join(', ')}`,
-												fullError: ['CHANNEL_TYPES', (i as SeyfertChannelOption).channel_types!],
-											});
-											break;
-										}
+							if (!rawId) continue;
+							const channel = (await this.client.cache.channels?.raw(rawId)) ?? (await this.fetchChannel(i, rawId));
+							if (channel) {
+								if ('channel_types' in i) {
+									if (!(i as SeyfertChannelOption).channel_types!.includes(channel.type)) {
+										errors.push({
+											name: i.name,
+											error: `The entered channel type is not one of ${(i as SeyfertChannelOption)
+												.channel_types!.map(t => ChannelType[t])
+												.join(', ')}`,
+											fullError: ['CHANNEL_TYPES', (i as SeyfertChannelOption).channel_types!],
+										});
+										break;
 									}
-									value = rawId;
-									//discord funny memoentnt!!!!!!!!
-									resolved.channels[rawId] = channel as APIInteractionDataResolvedChannel;
 								}
+								value = rawId;
+								//discord funny memoentnt!!!!!!!!
+								resolved.channels[rawId] = channel as APIInteractionDataResolvedChannel;
 							}
 						}
 						break;
@@ -579,10 +585,7 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 									const rawId = match.slice(3);
 									if (rawId) {
 										const role =
-											(await this.client.cache.roles?.raw(rawId)) ??
-											(i.required
-												? (await this.client.roles.listRaw(message.guild_id!)).find(x => x.id === rawId)
-												: undefined);
+											(await this.client.cache.roles?.raw(rawId)) ?? (await this.fetchRole(i, rawId, message.guild_id));
 										if (role) {
 											value = rawId;
 											resolved.roles[rawId] = role;
@@ -607,17 +610,12 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 						{
 							const rawId =
 								message.mention_roles.find(x => args[i.name]?.includes(x)) || args[i.name]?.match(/[0-9]{17,19}/g)?.[0];
-							if (rawId) {
-								const role =
-									(await this.client.cache.roles?.raw(rawId)) ??
-									(i.required
-										? (await this.client.roles.listRaw(message.guild_id!)).find(x => x.id === rawId)
-										: undefined);
-
-								if (role) {
-									value = rawId;
-									resolved.roles[rawId] = role;
-								}
+							if (!rawId) continue;
+							const role =
+								(await this.client.cache.roles?.raw(rawId)) ?? (await this.fetchRole(i, rawId, message.guild_id));
+							if (role) {
+								value = rawId;
+								resolved.roles[rawId] = role;
 							}
 						}
 						break;
@@ -626,21 +624,20 @@ export class HandleCommand<HR extends HandleResolver = HandleResolver> {
 							const rawId =
 								message.mentions.find(x => args[i.name]?.includes(x.id))?.id ||
 								args[i.name]?.match(/[0-9]{17,19}/g)?.[0];
-							if (rawId) {
-								const raw =
-									message.mentions.find(x => args[i.name]?.includes(x.id)) ??
-									(await this.client.cache.users?.raw(rawId)) ??
-									(i.required ? await this.client.users.raw(rawId) : undefined);
-								if (raw) {
-									value = raw.id;
-									resolved.users[raw.id] = raw;
-									if (message.guild_id) {
-										const member =
-											message.mentions.find(x => args[i.name]?.includes(x.id))?.member ??
-											(await this.client.cache.members?.raw(rawId, message.guild_id)) ??
-											(i.required ? await this.client.members.raw(rawId, message.guild_id) : undefined);
-										if (member) resolved.members[raw.id] = member;
-									}
+							if (!rawId) continue;
+							const raw =
+								message.mentions.find(x => args[i.name]?.includes(x.id)) ??
+								(await this.client.cache.users?.raw(rawId)) ??
+								(await this.fetchUser(i, rawId));
+							if (raw) {
+								value = raw.id;
+								resolved.users[raw.id] = raw;
+								if (message.guild_id) {
+									const member =
+										message.mentions.find(x => args[i.name]?.includes(x.id))?.member ??
+										(await this.client.cache.members?.raw(rawId, message.guild_id)) ??
+										(await this.fetchMember(i, rawId, message.guild_id));
+									if (member) resolved.members[raw.id] = member;
 								}
 							}
 						}

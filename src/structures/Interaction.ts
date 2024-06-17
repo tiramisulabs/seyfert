@@ -40,7 +40,7 @@ import {
 import { mix } from 'ts-mixer';
 import type { RawFile } from '../api';
 import { ActionRow, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
-import { OptionResolver, type ContextOptionsResolved, type UsingClient } from '../commands';
+import type { ContextOptionsResolved, UsingClient } from '../commands';
 import type { ObjectToLower, OmitInsert, ToClass, When } from '../common';
 import type {
 	ComponentInteractionMessageUpdate,
@@ -62,6 +62,7 @@ import {
 	Transformers,
 	type UserStructure,
 	type WebhookMessageStructure,
+	type OptionResolverStructure,
 } from '../client/transformers';
 
 export type ReplyInteractionBody =
@@ -320,17 +321,17 @@ export class AutocompleteInteraction<FromGuild extends boolean = boolean> extend
 > {
 	declare type: InteractionType.ApplicationCommandAutocomplete;
 	declare data: ObjectToLower<APIApplicationCommandAutocompleteInteraction['data']>;
-	options: OptionResolver;
+	options: OptionResolverStructure;
 	constructor(
 		client: UsingClient,
 		interaction: APIApplicationCommandAutocompleteInteraction,
-		resolver?: OptionResolver,
+		resolver?: OptionResolverStructure,
 		protected __reply?: __InternalReplyFunction,
 	) {
 		super(client, interaction);
 		this.options =
 			resolver ??
-			new OptionResolver(
+			Transformers.OptionResolver(
 				client,
 				interaction.data.options,
 				undefined,

@@ -1,5 +1,5 @@
 import type { ChannelType } from 'discord-api-types/v10';
-import type { CustomStructures } from '../commands';
+import { type CustomStructures, OptionResolver } from '../commands';
 import {
 	AnonymousGuild,
 	AutoModerationRule,
@@ -62,6 +62,7 @@ export type StickerStructure = InferCustomStructure<Sticker, 'Sticker'>;
 export type UserStructure = InferCustomStructure<User, 'User'>;
 export type VoiceStateStructure = InferCustomStructure<VoiceState, 'VoiceState'>;
 export type WebhookStructure = InferCustomStructure<Webhook, 'Webhook'>;
+export type OptionResolverStructure = InferCustomStructure<OptionResolver, 'OptionResolver'>;
 
 export class Transformers {
 	static AnonymousGuild(...args: ConstructorParameters<typeof AnonymousGuild>): AnonymousGuildStructure {
@@ -182,6 +183,10 @@ export class Transformers {
 
 	static Webhook(...args: ConstructorParameters<typeof Webhook>): WebhookStructure {
 		return new Webhook(...args);
+	}
+
+	static OptionResolver(...args: ConstructorParameters<typeof OptionResolver>): OptionResolverStructure {
+		return new OptionResolver(...args);
 	}
 }
 

@@ -32,8 +32,12 @@ import type {
 	UsingClient,
 } from './shared';
 import { inspect } from 'node:util';
-import type { HandleResolver } from '../handle';
-import type { GuildRoleStructure, InteractionGuildMemberStructure, UserStructure } from '../../client/transformers';
+import type {
+	GuildRoleStructure,
+	InteractionGuildMemberStructure,
+	OptionResolverStructure,
+	UserStructure,
+} from '../../client/transformers';
 
 export interface ReturnOptionsTypes {
 	1: never; // subcommand
@@ -145,7 +149,7 @@ export class BaseCommand {
 	/** @internal */
 	async __runOptions(
 		ctx: CommandContext<{}, never>,
-		resolver: InstanceType<HandleResolver>,
+		resolver: OptionResolverStructure,
 	): Promise<[boolean, OnOptionsReturnObject]> {
 		if (!this?.options?.length) {
 			return [false, {}];

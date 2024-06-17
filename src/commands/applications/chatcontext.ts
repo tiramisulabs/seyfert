@@ -6,7 +6,6 @@ import type { InteractionCreateBodyRequest, InteractionMessageUpdateBodyRequest 
 import { ChatInputCommandInteraction } from '../../structures';
 import { BaseContext } from '../basecontext';
 import type { RegisteredMiddlewares } from '../decorators';
-import type { OptionResolver } from '../optionresolver';
 import type { Command, ContextOptions, OptionsRecord, SubCommand } from './chat';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
 import type {
@@ -14,6 +13,7 @@ import type {
 	GuildStructure,
 	InteractionGuildMemberStructure,
 	MessageStructure,
+	OptionResolverStructure,
 	WebhookMessageStructure,
 } from '../../client/transformers';
 
@@ -32,7 +32,7 @@ export class CommandContext<
 	constructor(
 		readonly client: UsingClient,
 		data: ChatInputCommandInteraction | MessageStructure,
-		readonly resolver: OptionResolver,
+		readonly resolver: OptionResolverStructure,
 		readonly shardId: number,
 		readonly command: Command | SubCommand,
 	) {
