@@ -41,7 +41,7 @@ import {
 } from '../structures';
 import type { PermissionsBitField } from '../structures/extra/Permissions';
 import { ComponentContext, ModalContext } from '../components';
-import type { Client } from '../client';
+import type { Client, WorkerClient } from '../client';
 import type { Awaitable, MakeRequired } from '../common';
 import { type MessageStructure, Transformers, type OptionResolverStructure } from '../client/transformers';
 
@@ -125,7 +125,7 @@ export class HandleCommand {
 			}
 		} catch (error) {
 			try {
-				await command.onInternalError(this.client, error);
+				await command.onInternalError(this.client, command, error);
 			} catch {
 				// pass
 			}
@@ -256,10 +256,13 @@ export class HandleCommand {
 	}
 
 	async message(rawMessage: GatewayMessageCreateDispatchData, shardId: number) {
-		const self = this.client as unknown as Client;
+		const self = this.client as Client | WorkerClient;
 		if (!self.options.commands?.defaultPrefix) return;
 		const message = Transformers.Message(this.client, rawMessage);
 		const prefixes = (await this.getPrefix(message)).sort((a, b) => b.length - a.length);
+
+		prefixes.push(...self.options.commands.defaultPrefix);
+
 		const prefix = prefixes.find(x => rawMessage.content.startsWith(x));
 
 		if (!(prefix !== undefined && rawMessage.content.startsWith(prefix))) return;
@@ -393,7 +396,7 @@ export class HandleCommand {
 		const rawParentName = commandRaw[0];
 		const rawGroupName = commandRaw.length === 3 ? commandRaw[1] : undefined;
 		const rawSubcommandName = rawGroupName ? commandRaw[2] : commandRaw[1];
-		const parent = this.getMessageCommand(rawParentName);
+		const parent = this.getParentMessageCommand(rawParentName);
 		const fullCommandName = `${rawParentName}${
 			rawGroupName ? ` ${rawGroupName} ${rawSubcommandName}` : `${rawSubcommandName ? ` ${rawSubcommandName}` : ''}`
 		}`;
@@ -437,7 +440,7 @@ export class HandleCommand {
 		return Transformers.OptionResolver(...args);
 	}
 
-	getMessageCommand(rawParentName: string) {
+	getParentMessageCommand(rawParentName: string) {
 		return this.client.commands!.values.find(
 			x =>
 				(!('ignore' in x) || x.ignore !== IgnoreCommand.Message) &&
@@ -448,14 +451,13 @@ export class HandleCommand {
 	getCommand<T extends Command | ContextMenuCommand>(data: {
 		guild_id?: string;
 		name: string;
-	}): T {
-		// @ts-expect-error
-		return this.client.commands?.values.find(command => {
+	}): T | undefined {
+		return this.client.commands!.values.find(command => {
 			if (data.guild_id) {
 				return command.guildId?.includes(data.guild_id) && command.name === data.name;
 			}
 			return command.name === data.name;
-		});
+		}) as T;
 	}
 
 	checkPermissions(app: PermissionsBitField, bot: bigint) {
@@ -466,60 +468,72 @@ export class HandleCommand {
 		return false;
 	}
 
-	async fetchChannel(option: CommandOptionWithType, id: string) {
-		return option.required ? await this.client.channels.raw(id) : undefined;
+	async fetchChannel(_option: CommandOptionWithType, id: string) {
+		return await this.client.channels.raw(id);
 	}
 
-	async fetchUser(option: CommandOptionWithType, id: string) {
-		return option.required ? await this.client.users.raw(id) : undefined;
+	async fetchUser(_option: CommandOptionWithType, id: string) {
+		return await this.client.users.raw(id);
 	}
 
-	async fetchMember(option: CommandOptionWithType, id: string, guildId: string) {
-		return option.required ? await this.client.members.raw(guildId, id) : undefined;
+	async fetchMember(_option: CommandOptionWithType, id: string, guildId: string) {
+		return await this.client.members.raw(guildId, id);
 	}
 
-	async fetchRole(option: CommandOptionWithType, id: string, guildId?: string) {
-		return option.required && guildId ? (await this.client.roles.listRaw(guildId)).find(x => x.id === id) : undefined;
+	async fetchRole(_option: CommandOptionWithType, id: string, guildId?: string) {
+		return guildId ? (await this.client.roles.listRaw(guildId)).find(x => x.id === id) : undefined;
 	}
 
 	async runGlobalMiddlewares(
 		command: Command | ContextMenuCommand | SubCommand,
 		context: CommandContext<{}, never> | MenuCommandContext<any>,
 	) {
-		const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
-			context,
-			(this.client.options?.globalMiddlewares ?? []) as keyof RegisteredMiddlewares,
-			true,
-		);
-		if (resultRunGlobalMiddlewares.pass) {
-			return true;
+		try {
+			const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
+				context,
+				(this.client.options?.globalMiddlewares ?? []) as keyof RegisteredMiddlewares,
+				true,
+			);
+			if (resultRunGlobalMiddlewares.pass) {
+				return false;
+			}
+			if ('error' in resultRunGlobalMiddlewares) {
+				await command.onMiddlewaresError?.(context as never, resultRunGlobalMiddlewares.error ?? 'Unknown error');
+				return;
+			}
+			return resultRunGlobalMiddlewares;
+		} catch (e) {
+			try {
+				await command.onInternalError?.(this.client, command as never, e);
+			} catch {}
 		}
-		if ('error' in resultRunGlobalMiddlewares) {
-			// @ts-expect-error
-			await command.onMiddlewaresError(context, resultRunGlobalMiddlewares.error ?? 'Unknown error');
-			return;
-		}
-		return resultRunGlobalMiddlewares;
+		return false;
 	}
 
 	async runMiddlewares(
 		command: Command | ContextMenuCommand | SubCommand,
 		context: CommandContext<{}, never> | MenuCommandContext<any>,
 	) {
-		const resultRunMiddlewares = await BaseCommand.__runMiddlewares(
-			context,
-			command.middlewares as keyof RegisteredMiddlewares,
-			false,
-		);
-		if (resultRunMiddlewares.pass) {
-			return false;
+		try {
+			const resultRunMiddlewares = await BaseCommand.__runMiddlewares(
+				context,
+				command.middlewares as keyof RegisteredMiddlewares,
+				false,
+			);
+			if (resultRunMiddlewares.pass) {
+				return false;
+			}
+			if ('error' in resultRunMiddlewares) {
+				await command.onMiddlewaresError?.(context as never, resultRunMiddlewares.error ?? 'Unknown error');
+				return;
+			}
+			return resultRunMiddlewares;
+		} catch (e) {
+			try {
+				await command.onInternalError?.(this.client, command as never, e);
+			} catch {}
 		}
-		if ('error' in resultRunMiddlewares) {
-			// @ts-expect-error
-			await command.onMiddlewaresError(context, resultRunMiddlewares.error ?? 'Unknown error');
-			return;
-		}
-		return resultRunMiddlewares;
+		return false;
 	}
 
 	makeMenuCommand(body: APIApplicationCommandInteraction, shardId: number, __reply?: __InternalReplyFunction) {
@@ -529,7 +543,7 @@ export class HandleCommand {
 			| MessageCommandInteraction;
 		// idc, is a YOU problem
 		if (!command?.run)
-			return this.client.logger.warn(`${command.name ?? 'Unknown'} command does not have 'run' callback`);
+			return this.client.logger.warn(`${command?.name ?? 'Unknown'} command does not have 'run' callback`);
 		const context = new MenuCommandContext(this.client, interaction, shardId, command);
 		const extendContext = this.client.options?.context?.(interaction) ?? {};
 		Object.assign(context, extendContext);
@@ -540,7 +554,13 @@ export class HandleCommand {
 	async runOptions(command: Command | SubCommand, context: CommandContext, resolver: OptionResolverStructure) {
 		const [erroredOptions, result] = await command.__runOptions(context, resolver);
 		if (erroredOptions) {
-			await command.onOptionsError?.(context, result);
+			try {
+				await command.onOptionsError?.(context, result);
+			} catch (e) {
+				try {
+					await command.onInternalError?.(this.client, command, e);
+				} catch {}
+			}
 			return false;
 		}
 		return true;

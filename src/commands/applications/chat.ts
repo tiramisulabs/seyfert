@@ -17,7 +17,7 @@ import type {
 	SeyfertStringOption,
 } from '../..';
 import type { Attachment } from '../../builders';
-import { magicImport, type FlatObjectKeys } from '../../common';
+import { type Awaitable, magicImport, type FlatObjectKeys } from '../../common';
 import type { AllChannels, AutocompleteInteraction } from '../../structures';
 import type { Groups, RegisteredMiddlewares } from '../decorators';
 import type { CommandContext } from './chatcontext';
@@ -63,7 +63,7 @@ type Wrap<N extends ApplicationCommandOptionType> = N extends
 				data: { context: CommandContext; value: ReturnOptionsTypes[N] },
 				ok: OKFunction<any>,
 				fail: StopFunction,
-			): void;
+			): Awaitable<void>;
 		} & {
 			description: string;
 			description_localizations?: APIApplicationCommandBasicOption['description_localizations'];
