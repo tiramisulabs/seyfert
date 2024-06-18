@@ -380,6 +380,7 @@ export class CommandHandler extends BaseHandler {
 		commandInstance.onAfterRun ??= this.client.options.commands?.defaults?.onAfterRun;
 		//@ts-expect-error magic.
 		commandInstance.onBotPermissionsFail ??= this.client.options.commands?.defaults?.onBotPermissionsFail;
+		//@ts-expect-error magic.
 		commandInstance.onInternalError ??= this.client.options.commands?.defaults?.onInternalError;
 		//@ts-expect-error magic.
 		commandInstance.onMiddlewaresError ??= this.client.options.commands?.defaults?.onMiddlewaresError;
@@ -407,6 +408,7 @@ export class CommandHandler extends BaseHandler {
 			option.onOptionsError?.bind(option) ??
 			commandInstance.onOptionsError?.bind(commandInstance) ??
 			this.client.options.commands?.defaults?.onOptionsError;
+		//@ts-expect-error magic.
 		option.onInternalError =
 			option.onInternalError?.bind(option) ??
 			commandInstance.onInternalError?.bind(commandInstance) ??
