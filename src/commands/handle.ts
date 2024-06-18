@@ -469,15 +469,15 @@ export class HandleCommand {
 	}
 
 	async fetchChannel(_option: CommandOptionWithType, id: string) {
-		return await this.client.channels.raw(id);
+		return this.client.channels.raw(id);
 	}
 
 	async fetchUser(_option: CommandOptionWithType, id: string) {
-		return await this.client.users.raw(id);
+		return this.client.users.raw(id);
 	}
 
 	async fetchMember(_option: CommandOptionWithType, id: string, guildId: string) {
-		return await this.client.members.raw(guildId, id);
+		return this.client.members.raw(guildId, id);
 	}
 
 	async fetchRole(_option: CommandOptionWithType, id: string, guildId?: string) {
