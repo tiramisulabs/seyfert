@@ -266,7 +266,11 @@ export class HandleCommand {
 
 		const content = rawMessage.content.slice(prefix.length).trimStart();
 
-		const { fullCommandName, command, parent, argsContent } = this.resolveCommandFromContent(content, prefix, message);
+		const { fullCommandName, command, parent, argsContent } = this.resolveCommandFromContent(
+			content,
+			prefix,
+			rawMessage,
+		);
 
 		if (!command || argsContent === undefined) return;
 		if (!command.run) return self.logger.warn(`${fullCommandName} command does not have 'run' callback`);
@@ -363,7 +367,7 @@ export class HandleCommand {
 	resolveCommandFromContent(
 		content: string,
 		_prefix: string,
-		_message: MessageStructure,
+		_message: GatewayMessageCreateDispatchData,
 	): CommandFromContent & { argsContent?: string } {
 		const result = this.getCommandFromContent(
 			content
