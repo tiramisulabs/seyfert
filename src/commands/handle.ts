@@ -266,14 +266,9 @@ export class HandleCommand {
 
 		const content = rawMessage.content.slice(prefix.length).trimStart();
 
-		const { fullCommandName, command, parent } = this.getCommandFromContent(
-			content
-				.split(' ')
-				.filter(x => x)
-				.slice(0, 3),
-		);
+		const { fullCommandName, command, parent, argsContent } = this.resolveCommandFromContent(content, prefix, message);
 
-		if (!command) return;
+		if (!command || argsContent === undefined) return;
 		if (!command.run) return self.logger.warn(`${fullCommandName} command does not have 'run' callback`);
 
 		if (!(command.contexts.includes(InteractionContextType.BotDM) || rawMessage.guild_id)) return;
@@ -288,12 +283,7 @@ export class HandleCommand {
 			attachments: {},
 		};
 
-		let newContent = content;
-		for (const i of fullCommandName.split(' ')) {
-			newContent = newContent.slice(newContent.indexOf(i) + i.length);
-		}
-
-		const args = this.argsParser(newContent.slice(1), command, message);
+		const args = this.argsParser(argsContent, command, message);
 		const { options, errors } = await this.argsOptionsParser(command, rawMessage, args, resolved);
 		const optionsResolver = this.makeResolver(self, options, parent as Command, rawMessage.guild_id, resolved);
 		const context = new CommandContext(self, message, optionsResolver, shardId, command);
@@ -368,6 +358,31 @@ export class HandleCommand {
 			args[i.slice(1).split(' ')[0]] = i.split(' ').slice(1).join(' ');
 		}
 		return args;
+	}
+
+	resolveCommandFromContent(
+		content: string,
+		_prefix: string,
+		_message: MessageStructure,
+	): CommandFromContent & { argsContent?: string } {
+		const result = this.getCommandFromContent(
+			content
+				.split(' ')
+				.filter(x => x)
+				.slice(0, 3),
+		);
+
+		if (!result.command) return result;
+
+		let newContent = content;
+		for (const i of result.fullCommandName.split(' ')) {
+			newContent = newContent.slice(newContent.indexOf(i) + i.length);
+		}
+
+		return {
+			...result,
+			argsContent: newContent.slice(1),
+		};
 	}
 
 	getCommandFromContent(commandRaw: string[]): CommandFromContent {
