@@ -139,7 +139,10 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	protected async onPacket(shardId: number, packet: GatewayDispatchPayload) {
-		await this.events?.runEvent('RAW', this, packet, shardId);
+		Promise.allSettled([
+			this.events?.runEvent('RAW', this, packet, shardId, false),
+			this.collectors.run('RAW', packet),
+		]); //ignore promise
 		switch (packet.t) {
 			//// Cases where we must obtain the old data before updating
 			case 'GUILD_MEMBER_UPDATE':
@@ -149,7 +152,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
 				break;
 			case 'PRESENCE_UPDATE':
-				if (!this.presenceUpdateHandler.check(packet.d as any)) {
+				if (!this.presenceUpdateHandler.check(packet.d)) {
 					return;
 				}
 				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);

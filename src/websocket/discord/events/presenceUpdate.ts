@@ -1,22 +1,15 @@
-import type { APIUser, GatewayActivity, GatewayPresenceUpdateDispatchData } from 'discord-api-types/v10';
-
-type FixedGatewayPresenceUpdateDispatchData =
-	| (Omit<GatewayPresenceUpdateDispatchData, 'user'> & { user_id: string; user: undefined })
-	| (Omit<GatewayPresenceUpdateDispatchData, 'user'> & {
-			user: Partial<APIUser> & Pick<APIUser, 'id'>;
-			user_id: undefined;
-	  });
+import type { GatewayActivity, GatewayPresenceUpdateDispatchData } from 'discord-api-types/v10';
 
 export class PresenceUpdateHandler {
-	presenceUpdate = new Map<string, { timeout: NodeJS.Timeout; presence: FixedGatewayPresenceUpdateDispatchData }>();
+	presenceUpdate = new Map<string, { timeout: NodeJS.Timeout; presence: GatewayPresenceUpdateDispatchData }>();
 
-	check(presence: FixedGatewayPresenceUpdateDispatchData) {
-		if (!this.presenceUpdate.has(presence.user?.id ?? presence.user_id!)) {
+	check(presence: GatewayPresenceUpdateDispatchData) {
+		if (!this.presenceUpdate.has(presence.user.id)) {
 			this.setPresence(presence);
 			return true;
 		}
 
-		const data = this.presenceUpdate.get(presence.user?.id ?? presence.user_id!)!;
+		const data = this.presenceUpdate.get(presence.user.id)!;
 
 		if (this.presenceEquals(data.presence, presence)) {
 			return false;
@@ -29,19 +22,16 @@ export class PresenceUpdateHandler {
 		return true;
 	}
 
-	setPresence(presence: FixedGatewayPresenceUpdateDispatchData) {
-		this.presenceUpdate.set(presence.user?.id ?? presence.user_id!, {
+	setPresence(presence: GatewayPresenceUpdateDispatchData) {
+		this.presenceUpdate.set(presence.user.id, {
 			presence,
 			timeout: setTimeout(() => {
-				this.presenceUpdate.delete(presence.user?.id ?? presence.user_id!);
+				this.presenceUpdate.delete(presence.user.id);
 			}, 1.5e3),
 		});
 	}
 
-	presenceEquals(
-		oldPresence: FixedGatewayPresenceUpdateDispatchData,
-		newPresence: FixedGatewayPresenceUpdateDispatchData,
-	) {
+	presenceEquals(oldPresence: GatewayPresenceUpdateDispatchData, newPresence: GatewayPresenceUpdateDispatchData) {
 		return (
 			newPresence &&
 			oldPresence.status === newPresence.status &&
