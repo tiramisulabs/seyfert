@@ -1,6 +1,6 @@
 import { type APIMessageActionRowComponent, ButtonStyle, ComponentType } from 'discord-api-types/v10';
 import { BaseComponent } from './BaseComponent';
-import { ButtonComponent, LinkButtonComponent } from './ButtonComponent';
+import { ButtonComponent, LinkButtonComponent, SKUButtonComponent } from './ButtonComponent';
 import { ChannelSelectMenuComponent } from './ChannelSelectMenuComponent';
 import { MentionableSelectMenuComponent } from './MentionableSelectMenuComponent';
 import { RoleSelectMenuComponent } from './RoleSelectMenuComponent';
@@ -11,6 +11,7 @@ import { UserSelectMenuComponent } from './UserSelectMenuComponent';
 export type MessageComponents =
 	| ButtonComponent
 	| LinkButtonComponent
+	| SKUButtonComponent
 	| RoleSelectMenuComponent
 	| UserSelectMenuComponent
 	| StringSelectMenuComponent
@@ -38,6 +39,9 @@ export function componentFactory(
 		case ComponentType.Button:
 			if (component.style === ButtonStyle.Link) {
 				return new LinkButtonComponent(component);
+			}
+			if (component.style === ButtonStyle.Premium) {
+				return new SKUButtonComponent(component);
 			}
 			return new ButtonComponent(component);
 		case ComponentType.ChannelSelect:
