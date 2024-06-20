@@ -91,24 +91,28 @@ export class EventHandler extends BaseHandler {
 		]);
 	}
 
-	async runEvent(name: GatewayEvents, client: Client | WorkerClient, packet: any, shardId: number) {
+	async runEvent(name: GatewayEvents, client: Client | WorkerClient, packet: any, shardId: number, runCache = true) {
 		const Event = this.values[name];
 		if (!Event) {
-			return this.client.cache.onPacket({
-				t: name,
-				d: packet,
-			} as GatewayDispatchPayload);
+			return runCache
+				? this.client.cache.onPacket({
+						t: name,
+						d: packet,
+					} as GatewayDispatchPayload)
+				: undefined;
 		}
 		try {
 			if (Event.data.once && Event.fired) {
-				return this.client.cache.onPacket({
-					t: name,
-					d: packet,
-				} as GatewayDispatchPayload);
+				return runCache
+					? this.client.cache.onPacket({
+							t: name,
+							d: packet,
+						} as GatewayDispatchPayload)
+					: undefined;
 			}
 			Event.fired = true;
 			const hook = await RawEvents[name]?.(client, packet as never);
-			if (name !== 'RAW')
+			if (runCache)
 				await this.client.cache.onPacket({
 					t: name,
 					d: packet,

@@ -324,7 +324,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	protected async onPacket(packet: GatewayDispatchPayload, shardId: number) {
-		await this.events?.execute('RAW', packet, this as WorkerClient<true>, shardId);
+		Promise.allSettled([
+			this.events?.runEvent('RAW', this, packet, shardId, false),
+			this.collectors.run('RAW', packet),
+		]); //ignore promise
 		switch (packet.t) {
 			case 'GUILD_CREATE': {
 				if (this.__handleGuilds?.has(packet.d.id)) {
