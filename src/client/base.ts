@@ -7,8 +7,9 @@ import type {
 	CommandContext,
 	ContextMenuCommand,
 	ExtraProps,
-	OnOptionsReturnObject,
+	MenuCommandContext,
 	RegisteredMiddlewares,
+	SubCommand,
 	UsingClient,
 } from '../commands';
 import { IgnoreCommand, type InferWithPrefix, type MiddlewareContext } from '../commands/applications/shared';
@@ -104,30 +105,30 @@ export class BaseClient {
 			{
 				commands: {
 					defaults: {
-						onRunError(context: CommandContext<any>, error: unknown): any {
+						onRunError(context, error): any {
 							context.client.logger.fatal(`${context.command.name}.<onRunError>`, context.author.id, error);
 						},
-						onOptionsError(context: CommandContext<{}, never>, metadata: OnOptionsReturnObject): any {
+						onOptionsError(context, metadata): any {
 							context.client.logger.fatal(`${context.command.name}.<onOptionsError>`, context.author.id, metadata);
 						},
-						onMiddlewaresError(context: CommandContext<{}, never>, error: string): any {
+						onMiddlewaresError(context, error: string): any {
 							context.client.logger.fatal(`${context.command.name}.<onMiddlewaresError>`, context.author.id, error);
 						},
-						onBotPermissionsFail(context: CommandContext<{}, never>, permissions: PermissionStrings): any {
+						onBotPermissionsFail(context, permissions): any {
 							context.client.logger.fatal(
 								`${context.command.name}.<onBotPermissionsFail>`,
 								context.author.id,
 								permissions,
 							);
 						},
-						onPermissionsFail(context: CommandContext<{}, never>, permissions: PermissionStrings): any {
+						onPermissionsFail(context, permissions): any {
 							context.client.logger.fatal(
 								`${context.command.name}.<onPermissionsFail>`,
 								context.author.id,
 								permissions,
 							);
 						},
-						onInternalError(client: UsingClient, command: Command, error?: unknown): any {
+						onInternalError(client: UsingClient, command, error?: unknown): any {
 							client.logger.fatal(`${command.name}.<onInternalError>`, error);
 						},
 					},
@@ -391,13 +392,20 @@ export interface BaseClientOptions {
 	globalMiddlewares?: readonly (keyof RegisteredMiddlewares)[];
 	commands?: {
 		defaults?: {
-			onRunError?: Command['onRunError'] | ContextMenuCommand['onRunError'];
+			onRunError?: (context: MenuCommandContext<any, never> | CommandContext, error: unknown) => unknown;
 			onPermissionsFail?: Command['onPermissionsFail'];
-			onBotPermissionsFail?: Command['onBotPermissionsFail'] | ContextMenuCommand['onBotPermissionsFail'];
-			onInternalError?: Command['onInternalError'] | ContextMenuCommand['onInternalError'];
-			onMiddlewaresError?: Command['onMiddlewaresError'] | ContextMenuCommand['onMiddlewaresError'];
+			onBotPermissionsFail?: (
+				context: MenuCommandContext<any, never> | CommandContext,
+				permissions: PermissionStrings,
+			) => unknown;
+			onInternalError?: (
+				client: UsingClient,
+				command: Command | SubCommand | ContextMenuCommand,
+				error?: unknown,
+			) => unknown;
+			onMiddlewaresError?: (context: CommandContext | MenuCommandContext<any, never>, error: string) => unknown;
 			onOptionsError?: Command['onOptionsError'];
-			onAfterRun?: Command['onAfterRun'] | ContextMenuCommand['onAfterRun'];
+			onAfterRun?: (context: CommandContext | MenuCommandContext<any, never>, error: unknown) => unknown;
 			props?: ExtraProps;
 		};
 	};

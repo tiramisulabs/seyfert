@@ -1,26 +1,22 @@
 import {
-	type APIButtonComponentWithCustomId,
-	type APIButtonComponentWithURL,
 	type APIMessageComponentEmoji,
 	type ButtonStyle,
 	ComponentType,
+	type APIButtonComponent,
 } from 'discord-api-types/v10';
-import { throwError } from '..';
-import type { EmojiResolvable, When } from '../common';
+import type { EmojiResolvable } from '../common';
 import { resolvePartialEmoji } from '../structures/extra/functions';
-
-export type ButtonStylesForID = Exclude<ButtonStyle, ButtonStyle.Link>;
 
 /**
  * Represents a button component.
  * @template Type - The type of the button component.
  */
-export class Button<Type extends boolean = boolean> {
+export class Button {
 	/**
 	 * Creates a new Button instance.
 	 * @param data - The initial data for the button.
 	 */
-	constructor(public data: Partial<When<Type, APIButtonComponentWithCustomId, APIButtonComponentWithURL>> = {}) {
+	constructor(public data: Partial<APIButtonComponent> = {}) {
 		this.data.type = ComponentType.Button;
 	}
 
@@ -30,8 +26,7 @@ export class Button<Type extends boolean = boolean> {
 	 * @returns The modified Button instance.
 	 */
 	setCustomId(id: string) {
-		// @ts-expect-error
-		this.data.custom_id = id;
+		(this.data as Extract<APIButtonComponent, { custom_id?: string }>).custom_id = id;
 		return this;
 	}
 
@@ -41,8 +36,7 @@ export class Button<Type extends boolean = boolean> {
 	 * @returns The modified Button instance.
 	 */
 	setURL(url: string) {
-		// @ts-expect-error
-		this.data.url = url;
+		(this.data as Extract<APIButtonComponent, { url?: string }>).url = url;
 		return this;
 	}
 
@@ -52,7 +46,7 @@ export class Button<Type extends boolean = boolean> {
 	 * @returns The modified Button instance.
 	 */
 	setLabel(label: string) {
-		this.data.label = label;
+		(this.data as Extract<APIButtonComponent, { label?: string }>).label = label;
 		return this;
 	}
 
@@ -63,8 +57,9 @@ export class Button<Type extends boolean = boolean> {
 	 */
 	setEmoji(emoji: EmojiResolvable) {
 		const resolve = resolvePartialEmoji(emoji);
-		if (!resolve) return throwError('Invalid Emoji');
-		this.data.emoji = resolve as APIMessageComponentEmoji;
+		if (!resolve) throw new Error('Invalid Emoji');
+		(this.data as Extract<APIButtonComponent, { emoji?: APIMessageComponentEmoji }>).emoji =
+			resolve as APIMessageComponentEmoji;
 		return this;
 	}
 
@@ -83,11 +78,16 @@ export class Button<Type extends boolean = boolean> {
 		return this;
 	}
 
+	setSKUId(skuId: string) {
+		(this.data as Extract<APIButtonComponent, { sku_id?: string }>).sku_id = skuId;
+		return this;
+	}
+
 	/**
 	 * Converts the Button instance to its JSON representation.
 	 * @returns The JSON representation of the Button instance.
 	 */
 	toJSON() {
-		return { ...this.data } as When<Type, APIButtonComponentWithCustomId, APIButtonComponentWithURL>;
+		return { ...this.data } as Partial<APIButtonComponent>;
 	}
 }
