@@ -1,6 +1,13 @@
 import { GatewayIntentBits, type GatewayDispatchPayload, type GatewayPresenceUpdateData } from 'discord-api-types/v10';
 import type { CommandContext, Message } from '..';
-import { lazyLoadPackage, type DeepPartial, type If, type WatcherPayload, type WatcherSendToShard } from '../common';
+import {
+	type Awaitable,
+	lazyLoadPackage,
+	type DeepPartial,
+	type If,
+	type WatcherPayload,
+	type WatcherSendToShard,
+} from '../common';
 import { EventHandler } from '../events';
 import { ShardManager, properties, type ShardManagerOptions } from '../websocket';
 import { MemberUpdateHandler } from '../websocket/discord/events/memberUpdate';
@@ -8,7 +15,7 @@ import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdat
 import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import { Collectors } from './collectors';
-import { type ClientUserStructure, Transformers } from './transformers';
+import { type ClientUserStructure, Transformers, type MessageStructure } from './transformers';
 
 let parentPort: import('node:worker_threads').MessagePort;
 
@@ -208,9 +215,8 @@ export interface ClientOptions extends BaseClientOptions {
 		properties?: Partial<ShardManagerOptions['properties']>;
 		compress?: ShardManagerOptions['compress'];
 	};
-	defaultPrefix?: string[];
 	commands?: BaseClientOptions['commands'] & {
-		defaultPrefix?: string[];
+		prefix?: (message: MessageStructure) => Awaitable<string[]>;
 		deferReplyResponse?: (ctx: CommandContext) => Parameters<Message['write']>[0];
 		reply?: (ctx: CommandContext) => boolean;
 	};

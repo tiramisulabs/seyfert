@@ -357,7 +357,6 @@ export class CommandHandler extends BaseHandler {
 
 	stablishContextCommandDefaults(commandInstance: InstanceType<HandleableCommand>): ContextMenuCommand | false {
 		if (!(commandInstance instanceof ContextMenuCommand)) return false;
-		//@ts-expect-error magic.
 		commandInstance.onAfterRun ??= this.client.options.commands?.defaults?.onAfterRun;
 		//@ts-expect-error magic.
 		commandInstance.onBotPermissionsFail ??= this.client.options.commands?.defaults?.onBotPermissionsFail;
@@ -376,17 +375,12 @@ export class CommandHandler extends BaseHandler {
 		commandInstance: InstanceType<HandleableCommand>,
 	): OmitInsert<Command, 'options', { options: NonNullable<Command['options']> }> | false {
 		if (!(commandInstance instanceof Command)) return false;
-		//@ts-expect-error magic.
 		commandInstance.onAfterRun ??= this.client.options.commands?.defaults?.onAfterRun;
-		//@ts-expect-error magic.
 		commandInstance.onBotPermissionsFail ??= this.client.options.commands?.defaults?.onBotPermissionsFail;
-		//@ts-expect-error magic.
 		commandInstance.onInternalError ??= this.client.options.commands?.defaults?.onInternalError;
-		//@ts-expect-error magic.
 		commandInstance.onMiddlewaresError ??= this.client.options.commands?.defaults?.onMiddlewaresError;
 		commandInstance.onOptionsError ??= this.client.options.commands?.defaults?.onOptionsError;
 		commandInstance.onPermissionsFail ??= this.client.options.commands?.defaults?.onPermissionsFail;
-		//@ts-expect-error magic.
 		commandInstance.onRunError ??= this.client.options.commands?.defaults?.onRunError;
 		commandInstance.options ??= [];
 		return commandInstance as any;
@@ -394,12 +388,10 @@ export class CommandHandler extends BaseHandler {
 
 	stablishSubCommandDefaults(commandInstance: Command, option: SubCommand): SubCommand {
 		option.middlewares = (commandInstance.middlewares ?? []).concat(option.middlewares ?? []);
-		//@ts-expect-error magic.
 		option.onMiddlewaresError =
 			option.onMiddlewaresError?.bind(option) ??
 			commandInstance.onMiddlewaresError?.bind(commandInstance) ??
 			this.client.options.commands?.defaults?.onMiddlewaresError;
-		//@ts-expect-error magic.
 		option.onRunError =
 			option.onRunError?.bind(option) ??
 			commandInstance.onRunError?.bind(commandInstance) ??
@@ -408,17 +400,14 @@ export class CommandHandler extends BaseHandler {
 			option.onOptionsError?.bind(option) ??
 			commandInstance.onOptionsError?.bind(commandInstance) ??
 			this.client.options.commands?.defaults?.onOptionsError;
-		//@ts-expect-error magic.
 		option.onInternalError =
 			option.onInternalError?.bind(option) ??
 			commandInstance.onInternalError?.bind(commandInstance) ??
 			this.client.options.commands?.defaults?.onInternalError;
-		//@ts-expect-error magic.
 		option.onAfterRun =
 			option.onAfterRun?.bind(option) ??
 			commandInstance.onAfterRun?.bind(commandInstance) ??
 			this.client.options.commands?.defaults?.onAfterRun;
-		//@ts-expect-error magic.
 		option.onBotPermissionsFail =
 			option.onBotPermissionsFail?.bind(option) ??
 			commandInstance.onBotPermissionsFail?.bind(commandInstance) ??

@@ -42,7 +42,7 @@ import {
 import type { PermissionsBitField } from '../structures/extra/Permissions';
 import { ComponentContext, ModalContext } from '../components';
 import type { Client, WorkerClient } from '../client';
-import type { Awaitable, MakeRequired } from '../common';
+import type { MakeRequired } from '../common';
 import { type MessageStructure, Transformers, type OptionResolverStructure } from '../client/transformers';
 
 export type CommandOptionWithType = CommandOption & {
@@ -257,12 +257,9 @@ export class HandleCommand {
 
 	async message(rawMessage: GatewayMessageCreateDispatchData, shardId: number) {
 		const self = this.client as Client | WorkerClient;
-		if (!self.options.commands?.defaultPrefix) return;
+		if (!self.options.commands?.prefix) return;
 		const message = Transformers.Message(this.client, rawMessage);
-		const prefixes = (await this.getPrefix(message)).sort((a, b) => b.length - a.length);
-
-		prefixes.push(...self.options.commands.defaultPrefix);
-
+		const prefixes = (await self.options.commands.prefix(message)).sort((a, b) => b.length - a.length);
 		const prefix = prefixes.find(x => rawMessage.content.startsWith(x));
 
 		if (!(prefix !== undefined && rawMessage.content.startsWith(prefix))) return;
@@ -353,10 +350,6 @@ export class HandleCommand {
 				await command.onInternalError?.(this.client, command, error);
 			} catch {}
 		}
-	}
-
-	getPrefix(_message: MessageStructure): Awaitable<string[]> {
-		return (this.client as unknown as Client).options.commands.defaultPrefix ?? [];
 	}
 
 	argsParser(content: string, _command: SubCommand | Command, _message: MessageStructure): Record<string, string> {
