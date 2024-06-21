@@ -8,23 +8,26 @@ import {
 	type APIUser,
 	ApplicationCommandOptionType,
 } from 'discord-api-types/v10';
-import { Attachment, GuildMember } from '..';
+import { Attachment } from '..';
 import type { MakeRequired } from '../common';
 import type { AllChannels } from '../structures';
-import { GuildRole, InteractionGuildMember, User } from '../structures';
 import channelFrom from '../structures/channels';
 import type { Command, CommandAutocompleteOption, CommandOption, SubCommand } from './applications/chat';
 import type { UsingClient } from './applications/shared';
+import {
+	type GuildMemberStructure,
+	type GuildRoleStructure,
+	type InteractionGuildMemberStructure,
+	Transformers,
+	type UserStructure,
+} from '../client/transformers';
 
 export type ContextOptionsResolved = {
-	members?: Record<
-		string,
-		APIGuildMember | Omit<APIGuildMember, 'user'> | APIInteractionGuildMember | GuildMember | InteractionGuildMember
-	>;
-	users?: Record<string, APIUser | User>;
-	roles?: Record<string, APIRole | GuildRole>;
-	channels?: Record<string, APIInteractionDataResolvedChannel | AllChannels>;
-	attachments?: Record<string, APIAttachment | Attachment>;
+	members?: Record<string, APIGuildMember | Omit<APIGuildMember, 'user'> | APIInteractionGuildMember>;
+	users?: Record<string, APIUser>;
+	roles?: Record<string, APIRole>;
+	channels?: Record<string, APIInteractionDataResolvedChannel>;
+	attachments?: Record<string, APIAttachment>;
 };
 
 export class OptionResolver {
@@ -164,18 +167,16 @@ export class OptionResolver {
 			const value = resolve.value as string;
 			const user = resolved.users?.[value];
 			if (user) {
-				resolve.user = user instanceof User ? user : new User(this.client, user);
+				resolve.user = Transformers.User(this.client, user);
 			}
 
 			const member = resolved.members?.[value];
 
 			if (member) {
 				resolve.member =
-					member instanceof GuildMember || member instanceof InteractionGuildMember
-						? member
-						: 'permissions' in member
-							? new InteractionGuildMember(this.client, member, user!, this.guildId!)
-							: new GuildMember(this.client, member, user!, this.guildId!);
+					'permissions' in member
+						? Transformers.InteractionGuildMember(this.client, member, user!, this.guildId!)
+						: Transformers.GuildMember(this.client, member, user!, this.guildId!);
 			}
 
 			const channel = resolved.channels?.[value];
@@ -185,7 +186,7 @@ export class OptionResolver {
 
 			const role = resolved.roles?.[value];
 			if (role) {
-				resolve.role = role instanceof GuildRole ? role : new GuildRole(this.client, role, this.guildId!);
+				resolve.role = Transformers.GuildRole(this.client, role, this.guildId!);
 			}
 
 			const attachment = resolved.attachments?.[value];
@@ -203,11 +204,11 @@ export interface OptionResolved {
 	type: ApplicationCommandOptionType;
 	value?: string | number | boolean;
 	options?: OptionResolved[];
-	user?: User;
-	member?: GuildMember | InteractionGuildMember;
+	user?: UserStructure;
+	member?: GuildMemberStructure | InteractionGuildMemberStructure;
 	attachment?: Attachment;
 	channel?: AllChannels;
-	role?: GuildRole;
+	role?: GuildRoleStructure;
 	focused?: boolean;
 }
 

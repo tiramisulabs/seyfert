@@ -64,10 +64,10 @@ export abstract class ContextMenuCommand {
 	onBotPermissionsFail(context: MenuCommandContext<any, never>, permissions: PermissionStrings): any {
 		context.client.logger.fatal(`${this.name}.<onBotPermissionsFail>`, context.author.id, permissions);
 	}
-	onPermissionsFail(context: MenuCommandContext<any, never>, permissions: PermissionStrings): any {
-		context.client.logger.fatal(`${this.name}.<onPermissionsFail>`, context.author.id, permissions);
-	}
-	onInternalError(client: UsingClient, error?: unknown): any {
-		client.logger.fatal(error);
+	// onPermissionsFail(context: MenuCommandContext<any, never>, permissions: PermissionStrings): any {
+	// 	context.client.logger.fatal(`${this.name}.<onPermissionsFail>`, context.author.id, permissions);
+	// }
+	onInternalError(client: UsingClient, command: ContextMenuCommand, error?: unknown): any {
+		client.logger.fatal(command.name, error);
 	}
 }

@@ -1,23 +1,7 @@
-import {
-	type APIApplicationCommandInteractionDataOption,
-	GatewayIntentBits,
-	type GatewayMessageCreateDispatchData,
-	type GatewayDispatchPayload,
-	type GatewayPresenceUpdateData,
-} from 'discord-api-types/v10';
-import type {
-	Command,
-	CommandContext,
-	ContextOptionsResolved,
-	Message,
-	MessageCommandOptionErrors,
-	SubCommand,
-	UsingClient,
-} from '..';
+import { GatewayIntentBits, type GatewayDispatchPayload, type GatewayPresenceUpdateData } from 'discord-api-types/v10';
+import type { CommandContext, Message } from '..';
 import {
 	type Awaitable,
-	type MakeRequired,
-	MergeOptions,
 	lazyLoadPackage,
 	type DeepPartial,
 	type If,
@@ -25,24 +9,22 @@ import {
 	type WatcherSendToShard,
 } from '../common';
 import { EventHandler } from '../events';
-import { ClientUser } from '../structures';
 import { ShardManager, properties, type ShardManagerOptions } from '../websocket';
 import { MemberUpdateHandler } from '../websocket/discord/events/memberUpdate';
 import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdate';
 import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
-import { onInteractionCreate } from './oninteractioncreate';
-import { defaultArgsParser, defaultOptionsParser, onMessageCreate } from './onmessagecreate';
 import { Collectors } from './collectors';
+import { type ClientUserStructure, Transformers, type MessageStructure } from './transformers';
 
 let parentPort: import('node:worker_threads').MessagePort;
 
 export class Client<Ready extends boolean = boolean> extends BaseClient {
 	private __handleGuilds?: Set<string> = new Set();
 	gateway!: ShardManager;
-	me!: If<Ready, ClientUser>;
+	me!: If<Ready, ClientUserStructure>;
 	declare options: Omit<ClientOptions, 'commands'> & {
-		commands: MakeRequired<NonNullable<ClientOptions['commands']>, 'argsParser' | 'optionsParser'>;
+		commands: NonNullable<ClientOptions['commands']>;
 	};
 	memberUpdateHandler = new MemberUpdateHandler();
 	presenceUpdateHandler = new PresenceUpdateHandler();
@@ -51,15 +33,6 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 
 	constructor(options?: ClientOptions) {
 		super(options);
-		this.options = MergeOptions(
-			{
-				commands: {
-					argsParser: options?.commands?.argsParser ?? defaultArgsParser,
-					optionsParser: options?.commands?.optionsParser ?? defaultOptionsParser,
-				},
-			} satisfies ClientOptions,
-			this.options,
-		);
 	}
 
 	setServices({
@@ -86,9 +59,6 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				this.events = undefined;
 			} else if (typeof rest.handlers.events === 'function') {
 				this.events = new EventHandler(this);
-				this.events.setHandlers({
-					callback: rest.handlers.events,
-				});
 			} else {
 				this.events = rest.handlers.events;
 			}
@@ -169,7 +139,10 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	protected async onPacket(shardId: number, packet: GatewayDispatchPayload) {
-		await this.events?.runEvent('RAW', this, packet, shardId);
+		Promise.allSettled([
+			this.events?.runEvent('RAW', this, packet, shardId, false),
+			this.collectors.run('RAW', packet),
+		]); //ignore promise
 		switch (packet.t) {
 			//// Cases where we must obtain the old data before updating
 			case 'GUILD_MEMBER_UPDATE':
@@ -179,7 +152,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
 				break;
 			case 'PRESENCE_UPDATE':
-				if (!this.presenceUpdateHandler.check(packet.d as any)) {
+				if (!this.presenceUpdateHandler.check(packet.d)) {
 					return;
 				}
 				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
@@ -198,24 +171,25 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			}
 			//rest of the events
 			default: {
-				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
+				await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
 				switch (packet.t) {
 					case 'INTERACTION_CREATE':
-						await onInteractionCreate(this, packet.d, shardId);
+						await this.handleCommand.interaction(packet.d, shardId);
 						break;
 					case 'MESSAGE_CREATE':
-						await onMessageCreate(this, packet.d, shardId);
+						await this.handleCommand.message(packet.d, shardId);
 						break;
 					case 'READY':
+						if (!this.__handleGuilds) this.__handleGuilds = new Set();
 						for (const g of packet.d.guilds) {
-							this.__handleGuilds?.add(g.id);
+							this.__handleGuilds.add(g.id);
 						}
 						this.botId = packet.d.user.id;
 						this.applicationId = packet.d.application.id;
-						this.me = new ClientUser(this, packet.d.user, packet.d.application) as never;
+						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
 						if (
 							!(
-								this.__handleGuilds?.size &&
+								this.__handleGuilds.size &&
 								(this.gateway.options.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds
 							)
 						) {
@@ -245,24 +219,9 @@ export interface ClientOptions extends BaseClientOptions {
 		compress?: ShardManagerOptions['compress'];
 	};
 	commands?: BaseClientOptions['commands'] & {
-		prefix?: (message: Message) => Promise<string[]> | string[];
+		prefix?: (message: MessageStructure) => Awaitable<string[]>;
 		deferReplyResponse?: (ctx: CommandContext) => Parameters<Message['write']>[0];
 		reply?: (ctx: CommandContext) => boolean;
-		argsParser?: (content: string, command: SubCommand | Command, message: Message) => Record<string, string>;
-		optionsParser?: (
-			self: UsingClient,
-			command: Command | SubCommand,
-			message: GatewayMessageCreateDispatchData,
-			args: Partial<Record<string, string>>,
-			resolved: MakeRequired<ContextOptionsResolved>,
-		) => Awaitable<{
-			errors: {
-				name: string;
-				error: string;
-				fullError: MessageCommandOptionErrors;
-			}[];
-			options: APIApplicationCommandInteractionDataOption[];
-		}>;
 	};
 	handlePayload?: ShardManagerOptions['handlePayload'];
 }

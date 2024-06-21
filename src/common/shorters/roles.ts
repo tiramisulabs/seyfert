@@ -4,8 +4,8 @@ import type {
 	RESTPatchAPIGuildRolePositionsJSONBody,
 	RESTPostAPIGuildRoleJSONBody,
 } from 'discord-api-types/v10';
-import { GuildRole } from '../../structures';
 import { BaseShorter } from './base';
+import { Transformers } from '../../client/transformers';
 
 export class RoleShorter extends BaseShorter {
 	/**
@@ -18,7 +18,7 @@ export class RoleShorter extends BaseShorter {
 	async create(guildId: string, body: RESTPostAPIGuildRoleJSONBody, reason?: string) {
 		const res = await this.client.proxy.guilds(guildId).roles.post({ body, reason });
 		await this.client.cache.roles?.setIfNI('Guilds', res.id, guildId, res);
-		return new GuildRole(this.client, res, guildId);
+		return Transformers.GuildRole(this.client, res, guildId);
 	}
 
 	/**
@@ -28,9 +28,14 @@ export class RoleShorter extends BaseShorter {
 	 * @returns A Promise that resolves to an array of roles.
 	 */
 	async list(guildId: string, force = false) {
+		const roles = await this.listRaw(guildId, force);
+		return roles.map(r => Transformers.GuildRole(this.client, r, guildId));
+	}
+
+	async listRaw(guildId: string, force = false) {
 		let roles: APIRole[] = [];
 		if (!force) {
-			const cachedRoles = (await this.client.cache.roles?.values(guildId)) ?? [];
+			const cachedRoles = (await this.client.cache.roles?.valuesRaw(guildId)) ?? [];
 			if (cachedRoles.length) {
 				return cachedRoles;
 			}
@@ -40,7 +45,7 @@ export class RoleShorter extends BaseShorter {
 			roles.map<[string, APIRole]>(r => [r.id, r]),
 			guildId,
 		);
-		return roles.map(r => new GuildRole(this.client, r, guildId));
+		return roles;
 	}
 
 	/**
@@ -54,7 +59,7 @@ export class RoleShorter extends BaseShorter {
 	async edit(guildId: string, roleId: string, body: RESTPatchAPIGuildRoleJSONBody, reason?: string) {
 		const res = await this.client.proxy.guilds(guildId).roles(roleId).patch({ body, reason });
 		await this.client.cache.roles?.setIfNI('Guilds', roleId, guildId, res);
-		return new GuildRole(this.client, res, guildId);
+		return Transformers.GuildRole(this.client, res, guildId);
 	}
 
 	/**
@@ -67,7 +72,7 @@ export class RoleShorter extends BaseShorter {
 	async delete(guildId: string, roleId: string, reason?: string) {
 		const res = await this.client.proxy.guilds(guildId).roles(roleId).delete({ reason });
 		this.client.cache.roles?.removeIfNI('Guilds', roleId, guildId);
-		return new GuildRole(this.client, res, guildId);
+		return Transformers.GuildRole(this.client, res, guildId);
 	}
 
 	/**
@@ -86,6 +91,6 @@ export class RoleShorter extends BaseShorter {
 				guildId,
 			);
 		}
-		return roles.map(x => new GuildRole(this.client, x, guildId));
+		return roles.map(x => Transformers.GuildRole(this.client, x, guildId));
 	}
 }

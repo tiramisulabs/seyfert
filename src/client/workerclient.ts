@@ -3,9 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { ApiHandler, Logger } from '..';
 import type { Cache } from '../cache';
 import { WorkerAdapter } from '../cache';
-import { LogLevels, MergeOptions, lazyLoadPackage, type DeepPartial, type When } from '../common';
+import { LogLevels, lazyLoadPackage, type DeepPartial, type When } from '../common';
 import { EventHandler } from '../events';
-import { ClientUser } from '../structures';
 import { Shard, properties, type ShardManagerOptions, type WorkerData } from '../websocket';
 import type {
 	WorkerReady,
@@ -23,9 +22,9 @@ import type { ManagerMessages } from '../websocket/discord/workermanager';
 import type { BaseClientOptions, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import type { Client, ClientOptions } from './client';
-import { onInteractionCreate } from './oninteractioncreate';
-import { defaultArgsParser, defaultOptionsParser, onMessageCreate } from './onmessagecreate';
+
 import { Collectors } from './collectors';
+import { type ClientUserStructure, Transformers } from './transformers';
 
 let workerData: WorkerData;
 let manager: import('node:worker_threads').MessagePort;
@@ -49,7 +48,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	collectors = new Collectors();
 	events? = new EventHandler(this);
-	me!: When<Ready, ClientUser>;
+	me!: When<Ready, ClientUserStructure>;
 	promises = new Map<string, { resolve: (value: any) => void; timeout: NodeJS.Timeout }>();
 
 	shards = new Map<number, Shard>();
@@ -58,15 +57,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	constructor(options?: WorkerClientOptions) {
 		super(options);
-		this.options = MergeOptions(
-			{
-				commands: {
-					argsParser: defaultArgsParser,
-					optionsParser: defaultOptionsParser,
-				},
-			} satisfies Partial<WorkerClientOptions>,
-			this.options,
-		);
+
 		if (!process.env.SEYFERT_SPAWNING) {
 			throw new Error('WorkerClient cannot spawn without manager');
 		}
@@ -129,9 +120,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				this.events = undefined;
 			} else if (typeof rest.handlers.events === 'function') {
 				this.events = new EventHandler(this);
-				this.events.setHandlers({
-					callback: rest.handlers.events,
-				});
 			} else {
 				this.events = rest.handlers.events;
 			}
@@ -336,7 +324,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	protected async onPacket(packet: GatewayDispatchPayload, shardId: number) {
-		await this.events?.execute('RAW', packet, this as WorkerClient<true>, shardId);
+		Promise.allSettled([
+			this.events?.runEvent('RAW', this, packet, shardId, false),
+			this.collectors.run('RAW', packet),
+		]); //ignore promise
 		switch (packet.t) {
 			case 'GUILD_CREATE': {
 				if (this.__handleGuilds?.has(packet.d.id)) {
@@ -355,19 +346,19 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			}
 			default: {
-				await this.events?.execute(packet.t, packet, this, shardId);
+				await this.events?.execute(packet.t as never, packet, this, shardId);
 				switch (packet.t) {
 					case 'READY':
+						if (!this.__handleGuilds) this.__handleGuilds = new Set();
 						for (const g of packet.d.guilds) {
-							this.__handleGuilds?.add(g.id);
+							this.__handleGuilds.add(g.id);
 						}
 						this.botId = packet.d.user.id;
 						this.applicationId = packet.d.application.id;
-						this.me = new ClientUser(this, packet.d.user, packet.d.application) as never;
+						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
 						if (
 							!(
-								this.__handleGuilds?.size &&
-								(workerData.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds
+								this.__handleGuilds.size && (workerData.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds
 							)
 						) {
 							if ([...this.shards.values()].every(shard => shard.data.session_id)) {
@@ -382,10 +373,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						this.debugger?.debug(`#${shardId} [${packet.d.user.username}](${this.botId}) is online...`);
 						break;
 					case 'INTERACTION_CREATE':
-						await onInteractionCreate(this, packet.d, shardId);
+						await this.handleCommand.interaction(packet.d, shardId);
 						break;
 					case 'MESSAGE_CREATE':
-						await onMessageCreate(this, packet.d, shardId);
+						await this.handleCommand.message(packet.d, shardId);
 						break;
 				}
 				break;

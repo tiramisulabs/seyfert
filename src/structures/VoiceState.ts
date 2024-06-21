@@ -1,5 +1,6 @@
-import { GuildMember, type UsingClient } from '../';
+import type { UsingClient } from '../';
 import type { VoiceStateResource } from '../cache/resources/voice-states';
+import { type GuildMemberStructure, Transformers } from '../client/transformers';
 import type { ObjectToLower } from '../common';
 import type { GatewayVoiceState } from '../types';
 import { Base } from './extra/Base';
@@ -7,12 +8,13 @@ import { Base } from './extra/Base';
 export interface VoiceState extends Base, ObjectToLower<Omit<VoiceStateResource, 'member'>> {}
 
 export class VoiceState extends Base {
-	protected withMember?: GuildMember;
+	protected withMember?: GuildMemberStructure;
 	constructor(client: UsingClient, data: GatewayVoiceState) {
 		super(client);
 		const { member, ...rest } = data;
 		this.__patchThis(rest);
-		if (member?.user && data.guild_id) this.withMember = new GuildMember(client, member, member.user, data.guild_id);
+		if (member?.user && data.guild_id)
+			this.withMember = Transformers.GuildMember(client, member, member.user, data.guild_id);
 	}
 
 	isMuted() {

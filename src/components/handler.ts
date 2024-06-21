@@ -1,6 +1,7 @@
 import type { ComponentCallback, ListenerOptions, ModalSubmitCallback } from '../builders/types';
 import { LimitedCollection } from '../collection';
 import { BaseCommand, type RegisteredMiddlewares, type UsingClient } from '../commands';
+import type { FileLoaded } from '../commands/handler';
 import { BaseHandler, magicImport, type Logger, type OnFailCallback } from '../common';
 import type { ComponentInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from '../structures';
 import { ComponentCommand, InteractionCommandType } from './componentcommand';
@@ -17,12 +18,15 @@ type COMPONENTS = {
 	__run: (customId: string | string[] | RegExp, callback: ComponentCallback) => any;
 };
 
+export type CollectorInteraction = ComponentInteraction | StringSelectMenuInteraction;
+export type ComponentCommands = ComponentCommand | ModalCommand;
+
 export class ComponentHandler extends BaseHandler {
 	onFail: OnFailCallback = err => this.logger.warn('<Client>.components.onFail', err);
 	readonly values = new Map<string, COMPONENTS>();
 	// 10 minutes timeout, because discord dont send an event when the user cancel the modal
 	readonly modals = new LimitedCollection<string, ModalSubmitCallback>({ expire: 60e3 * 10 });
-	readonly commands: (ComponentCommand | ModalCommand)[] = [];
+	readonly commands: ComponentCommands[] = [];
 	protected filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
 
 	constructor(
@@ -36,9 +40,10 @@ export class ComponentHandler extends BaseHandler {
 		messageId: string,
 		options: ListenerOptions = {},
 	): {
-		run<
-			T extends ComponentInteraction | StringSelectMenuInteraction = ComponentInteraction | StringSelectMenuInteraction,
-		>(customId: string | string[] | RegExp, callback: ComponentCallback<T>): any;
+		run<T extends CollectorInteraction = CollectorInteraction>(
+			customId: string | string[] | RegExp,
+			callback: ComponentCallback<T>,
+		): any;
 		stop(reason?: string): any;
 	} {
 		this.values.set(messageId, {
@@ -149,38 +154,41 @@ export class ComponentHandler extends BaseHandler {
 		this.deleteValue(id, 'messageDelete');
 	}
 
-	async load(componentsDir: string, instances?: { new (): ModalCommand | ComponentCommand }[]) {
-		const paths =
-			instances?.map(x => {
-				const i = new x();
-				return { file: x, path: i.__filePath ?? '*' };
-			}) ?? (await this.loadFilesK<{ new (): ModalCommand | ComponentCommand }>(await this.getFiles(componentsDir)));
+	stablishDefaults(component: ComponentCommands) {
+		component.props ??= this.client.options.commands?.defaults?.props ?? {};
+		const is = component instanceof ModalCommand ? 'modals' : 'components';
+		component.onInternalError ??= this.client.options?.[is]?.defaults?.onInternalError;
+		component.onMiddlewaresError ??= this.client.options?.[is]?.defaults?.onMiddlewaresError;
+		component.onRunError ??= this.client.options?.[is]?.defaults?.onRunError;
+		component.onAfterRun ??= this.client.options?.[is]?.defaults?.onAfterRun;
+	}
 
-		for (const value of paths) {
-			let component;
-			try {
-				component = this.callback(value.file);
-				if (!component) continue;
-			} catch (e) {
-				if (e instanceof Error && e.message.includes('is not a constructor')) {
-					this.logger.warn(
-						`${value.path
-							.split(process.cwd())
-							.slice(1)
-							.join(process.cwd())} doesn't export the class by \`export default <ComponentCommand>\``,
-					);
-				} else this.logger.warn(e, value);
-				continue;
+	async load(componentsDir: string) {
+		const paths = await this.loadFilesK<FileLoaded<new () => ComponentCommands>>(await this.getFiles(componentsDir));
+
+		for (const { components, file } of paths.map(x => ({ components: this.onFile(x.file), file: x }))) {
+			if (!components) continue;
+			for (const value of components) {
+				let component;
+				try {
+					component = this.callback(value);
+					if (!component) continue;
+				} catch (e) {
+					if (e instanceof Error && e.message.includes('is not a constructor')) {
+						this.logger.warn(
+							`${file.path
+								.split(process.cwd())
+								.slice(1)
+								.join(process.cwd())} doesn't export the class by \`export default <ComponentCommand>\``,
+						);
+					} else this.logger.warn(e, value);
+					continue;
+				}
+				if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) continue;
+				this.stablishDefaults(component);
+				component.__filePath = file.path;
+				this.commands.push(component);
 			}
-			if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) continue;
-			component.props ??= this.client.options.commands?.defaults?.props ?? {};
-			const is = component instanceof ModalCommand ? 'modals' : 'components';
-			component.onInternalError ??= this.client.options?.[is]?.defaults?.onInternalError;
-			component.onMiddlewaresError ??= this.client.options?.[is]?.defaults?.onMiddlewaresError;
-			component.onRunError ??= this.client.options?.[is]?.defaults?.onRunError;
-			component.onAfterRun ??= this.client.options?.[is]?.defaults?.onAfterRun;
-			component.__filePath = value.path;
-			this.commands.push(component);
 		}
 	}
 
@@ -217,6 +225,45 @@ export class ComponentHandler extends BaseHandler {
 		}
 	}
 
+	async execute(i: ComponentCommands, context: ComponentContext | ModalContext) {
+		try {
+			const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
+				context,
+				(context.client.options?.globalMiddlewares ?? []) as keyof RegisteredMiddlewares,
+				true,
+			);
+			if (resultRunGlobalMiddlewares.pass) {
+				return;
+			}
+			if ('error' in resultRunGlobalMiddlewares) {
+				return i.onMiddlewaresError?.(context as never, resultRunGlobalMiddlewares.error ?? 'Unknown error');
+			}
+
+			const resultRunMiddlewares = await BaseCommand.__runMiddlewares(context, i.middlewares, false);
+			if (resultRunMiddlewares.pass) {
+				return;
+			}
+			if ('error' in resultRunMiddlewares) {
+				return i.onMiddlewaresError?.(context as never, resultRunMiddlewares.error ?? 'Unknown error');
+			}
+
+			try {
+				await i.run(context as never);
+				await i.onAfterRun?.(context as never, undefined);
+			} catch (error) {
+				await i.onRunError?.(context as never, error);
+				await i.onAfterRun?.(context as never, error);
+			}
+		} catch (error) {
+			try {
+				await i.onInternalError?.(this.client, error);
+			} catch (e) {
+				// supress error
+				this.logger.error(e);
+			}
+		}
+	}
+
 	async executeComponent(context: ComponentContext) {
 		for (const i of this.commands) {
 			try {
@@ -226,42 +273,7 @@ export class ComponentHandler extends BaseHandler {
 					(await i.filter(context))
 				) {
 					context.command = i;
-					try {
-						const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
-							context,
-							(context.client.options?.globalMiddlewares ?? []) as keyof RegisteredMiddlewares,
-							true,
-						);
-						if (resultRunGlobalMiddlewares.pass) {
-							return;
-						}
-						if ('error' in resultRunGlobalMiddlewares) {
-							return i.onMiddlewaresError?.(context, resultRunGlobalMiddlewares.error ?? 'Unknown error');
-						}
-
-						const resultRunMiddlewares = await BaseCommand.__runMiddlewares(context, i.middlewares, false);
-						if (resultRunMiddlewares.pass) {
-							return;
-						}
-						if ('error' in resultRunMiddlewares) {
-							return i.onMiddlewaresError?.(context, resultRunMiddlewares.error ?? 'Unknown error');
-						}
-
-						try {
-							await i.run(context);
-							await i.onAfterRun?.(context, undefined);
-						} catch (error) {
-							await i.onRunError?.(context, error);
-							await i.onAfterRun?.(context, error);
-						}
-					} catch (error) {
-						try {
-							await i.onInternalError?.(this.client, error);
-						} catch {
-							// supress error
-						}
-					}
-					break;
+					await this.execute(i, context);
 				}
 			} catch (e) {
 				await this.onFail(e);
@@ -274,42 +286,7 @@ export class ComponentHandler extends BaseHandler {
 			try {
 				if (i.type === InteractionCommandType.MODAL && (await i.filter(context))) {
 					context.command = i;
-					try {
-						const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
-							context,
-							(context.client.options?.globalMiddlewares ?? []) as keyof RegisteredMiddlewares,
-							true,
-						);
-						if (resultRunGlobalMiddlewares.pass) {
-							return;
-						}
-						if ('error' in resultRunGlobalMiddlewares) {
-							return i.onMiddlewaresError?.(context, resultRunGlobalMiddlewares.error ?? 'Unknown error');
-						}
-
-						const resultRunMiddlewares = await BaseCommand.__runMiddlewares(context, i.middlewares, false);
-						if (resultRunMiddlewares.pass) {
-							return;
-						}
-						if ('error' in resultRunMiddlewares) {
-							return i.onMiddlewaresError?.(context, resultRunMiddlewares.error ?? 'Unknown error');
-						}
-
-						try {
-							await i.run(context);
-							await i.onAfterRun?.(context, undefined);
-						} catch (error) {
-							await i.onRunError?.(context, error);
-							await i.onAfterRun?.(context, error);
-						}
-					} catch (error) {
-						try {
-							await i.onInternalError?.(this.client, error);
-						} catch {
-							// supress error
-						}
-					}
-					break;
+					await this.execute(i, context);
 				}
 			} catch (e) {
 				await this.onFail(e);
@@ -317,9 +294,11 @@ export class ComponentHandler extends BaseHandler {
 		}
 	}
 
-	setHandlers({ callback }: { callback: ComponentHandler['callback'] }) {
-		this.callback = callback;
+	onFile(file: FileLoaded<new () => ComponentCommands>): (new () => ComponentCommands)[] | undefined {
+		return file.default ? [file.default] : undefined;
 	}
 
-	callback = (file: { new (): ModalCommand | ComponentCommand }): ModalCommand | ComponentCommand | false => new file();
+	callback(file: { new (): ComponentCommands }): ComponentCommands | false {
+		return new file();
+	}
 }

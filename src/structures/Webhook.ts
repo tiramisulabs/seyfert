@@ -17,9 +17,8 @@ import type {
 	MethodContext,
 	ObjectToLower,
 } from '../common';
-import { AnonymousGuild } from './AnonymousGuild';
-import { User } from './User';
 import { DiscordBase } from './extra/DiscordBase';
+import { type AnonymousGuildStructure, Transformers, type UserStructure } from '../client/transformers';
 
 export interface Webhook extends DiscordBase, ObjectToLower<Omit<APIWebhook, 'user' | 'source_guild'>> {}
 
@@ -28,9 +27,9 @@ export interface Webhook extends DiscordBase, ObjectToLower<Omit<APIWebhook, 'us
  */
 export class Webhook extends DiscordBase {
 	/** The user associated with the webhook, if applicable. */
-	user?: User;
+	user?: UserStructure;
 	/** The source guild of the webhook, if applicable. */
-	sourceGuild?: Partial<AnonymousGuild>;
+	sourceGuild?: Partial<AnonymousGuildStructure>;
 	/** Methods related to interacting with messages through the webhook. */
 	messages!: ReturnType<typeof Webhook.messages>;
 	/**
@@ -42,11 +41,11 @@ export class Webhook extends DiscordBase {
 		super(client, data);
 
 		if (data.user) {
-			this.user = new User(this.client, data.user);
+			this.user = Transformers.User(this.client, data.user);
 		}
 
 		if (data.source_guild) {
-			this.sourceGuild = new AnonymousGuild(this.client, data.source_guild);
+			this.sourceGuild = Transformers.AnonymousGuild(this.client, data.source_guild);
 		}
 
 		Object.assign(this, {

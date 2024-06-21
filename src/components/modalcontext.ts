@@ -1,14 +1,5 @@
 import { MessageFlags } from 'discord-api-types/v10';
-import type {
-	AllChannels,
-	Guild,
-	GuildMember,
-	Message,
-	ModalCommand,
-	ModalSubmitInteraction,
-	ReturnCache,
-	WebhookMessage,
-} from '..';
+import type { AllChannels, ModalCommand, ModalSubmitInteraction, ReturnCache } from '..';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, RegisteredMiddlewares, UsingClient } from '../commands';
 import { BaseContext } from '../commands/basecontext';
 import type {
@@ -18,6 +9,12 @@ import type {
 	UnionToTuple,
 	When,
 } from '../common';
+import type {
+	GuildMemberStructure,
+	GuildStructure,
+	MessageStructure,
+	WebhookMessageStructure,
+} from '../client/transformers';
 
 export interface ModalContext extends BaseContext, ExtendContext {}
 
@@ -90,7 +87,7 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	editOrReply<FR extends boolean = false>(
 		body: InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest,
 		fetchReply?: FR,
-	): Promise<When<FR, WebhookMessage | Message, void | WebhookMessage | Message>> {
+	): Promise<When<FR, WebhookMessageStructure | MessageStructure, void | WebhookMessageStructure | MessageStructure>> {
 		return this.interaction.editOrReply(body as InteractionCreateBodyRequest, fetchReply);
 	}
 
@@ -125,8 +122,8 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	 * @param mode - The mode to fetch the member.
 	 * @returns A promise that resolves to the bot member.
 	 */
-	me(mode?: 'rest' | 'flow'): Promise<GuildMember>;
-	me(mode?: 'cache'): ReturnCache<GuildMember | undefined>;
+	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
+	me(mode?: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
 	me(mode: 'cache' | 'rest' | 'flow' = 'cache') {
 		if (!this.guildId)
 			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
@@ -143,8 +140,8 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	 * @param mode - The mode to fetch the guild.
 	 * @returns A promise that resolves to the guild.
 	 */
-	guild(mode?: 'rest' | 'flow'): Promise<Guild<'cached' | 'api'> | undefined>;
-	guild(mode?: 'cache'): ReturnCache<Guild<'cached'> | undefined>;
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
+	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 	guild(mode: 'cache' | 'rest' | 'flow' = 'cache') {
 		if (!this.guildId)
 			return (

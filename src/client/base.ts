@@ -5,9 +5,11 @@ import { Cache, MemoryAdapter } from '../cache';
 import type {
 	Command,
 	CommandContext,
+	ContextMenuCommand,
 	ExtraProps,
-	OnOptionsReturnObject,
+	MenuCommandContext,
 	RegisteredMiddlewares,
+	SubCommand,
 	UsingClient,
 } from '../commands';
 import { IgnoreCommand, type InferWithPrefix, type MiddlewareContext } from '../commands/applications/shared';
@@ -40,7 +42,6 @@ import { LangsHandler } from '../langs/handler';
 import type {
 	ChatInputCommandInteraction,
 	ComponentInteraction,
-	Message,
 	MessageCommandInteraction,
 	ModalSubmitInteraction,
 	UserCommandInteraction,
@@ -48,6 +49,8 @@ import type {
 import type { ComponentCommand, ComponentContext, ModalCommand, ModalContext } from '../components';
 import { promises } from 'node:fs';
 import { BanShorter } from '../common/shorters/bans';
+import { HandleCommand } from '../commands/handle';
+import type { MessageStructure } from './transformers';
 
 export class BaseClient {
 	rest!: ApiHandler;
@@ -76,6 +79,7 @@ export class BaseClient {
 	langs? = new LangsHandler(this.logger);
 	commands? = new CommandHandler(this.logger, this);
 	components? = new ComponentHandler(this.logger, this);
+	handleCommand!: HandleCommand;
 
 	private _applicationId?: string;
 	private _botId?: string;
@@ -101,30 +105,30 @@ export class BaseClient {
 			{
 				commands: {
 					defaults: {
-						onRunError(context: CommandContext<any>, error: unknown): any {
+						onRunError(context, error): any {
 							context.client.logger.fatal(`${context.command.name}.<onRunError>`, context.author.id, error);
 						},
-						onOptionsError(context: CommandContext<{}, never>, metadata: OnOptionsReturnObject): any {
+						onOptionsError(context, metadata): any {
 							context.client.logger.fatal(`${context.command.name}.<onOptionsError>`, context.author.id, metadata);
 						},
-						onMiddlewaresError(context: CommandContext<{}, never>, error: string): any {
+						onMiddlewaresError(context, error: string): any {
 							context.client.logger.fatal(`${context.command.name}.<onMiddlewaresError>`, context.author.id, error);
 						},
-						onBotPermissionsFail(context: CommandContext<{}, never>, permissions: PermissionStrings): any {
+						onBotPermissionsFail(context, permissions): any {
 							context.client.logger.fatal(
 								`${context.command.name}.<onBotPermissionsFail>`,
 								context.author.id,
 								permissions,
 							);
 						},
-						onPermissionsFail(context: CommandContext<{}, never>, permissions: PermissionStrings): any {
+						onPermissionsFail(context, permissions): any {
 							context.client.logger.fatal(
 								`${context.command.name}.<onPermissionsFail>`,
 								context.author.id,
 								permissions,
 							);
 						},
-						onInternalError(client: UsingClient, command: Command, error?: unknown): any {
+						onInternalError(client: UsingClient, command, error?: unknown): any {
 							client.logger.fatal(`${command.name}.<onInternalError>`, error);
 						},
 					},
@@ -180,7 +184,7 @@ export class BaseClient {
 		return new Router(this.rest).createProxy();
 	}
 
-	setServices({ rest, cache, langs, middlewares, handlers }: ServicesOptions) {
+	setServices({ rest, cache, langs, middlewares, handlers, handleCommand }: ServicesOptions) {
 		if (rest) {
 			this.rest = rest;
 		}
@@ -201,9 +205,6 @@ export class BaseClient {
 					this.components = undefined;
 				} else if (typeof handlers.components === 'function') {
 					this.components ??= new ComponentHandler(this.logger, this);
-					this.components.setHandlers({
-						callback: handlers.components,
-					});
 				} else {
 					this.components = handlers.components;
 				}
@@ -213,7 +214,6 @@ export class BaseClient {
 					this.commands = undefined;
 				} else if (typeof handlers.commands === 'object') {
 					this.commands ??= new CommandHandler(this.logger, this);
-					this.commands.setHandlers(handlers.commands);
 				} else {
 					this.commands = handlers.commands;
 				}
@@ -233,6 +233,8 @@ export class BaseClient {
 			if (langs.default) this.langs!.defaultLang = langs.default;
 			if (langs.aliases) this.langs!.aliases = Object.entries(langs.aliases);
 		}
+
+		if (handleCommand) this.handleCommand = new handleCommand(this);
 	}
 
 	protected async execute(..._options: unknown[]) {
@@ -275,6 +277,8 @@ export class BaseClient {
 		} else {
 			this.cache = new Cache(0, new MemoryAdapter(), [], this);
 		}
+
+		if (!this.handleCommand) this.handleCommand = new HandleCommand(this);
 	}
 
 	protected async onPacket(..._packet: unknown[]) {
@@ -383,18 +387,25 @@ export interface BaseClientOptions {
 			| MessageCommandInteraction<boolean>
 			| ComponentInteraction
 			| ModalSubmitInteraction
-			| When<InferWithPrefix, Message, never>,
+			| When<InferWithPrefix, MessageStructure, never>,
 	) => {};
 	globalMiddlewares?: readonly (keyof RegisteredMiddlewares)[];
 	commands?: {
 		defaults?: {
-			onRunError?: Command['onRunError'];
+			onRunError?: (context: MenuCommandContext<any, never> | CommandContext, error: unknown) => unknown;
 			onPermissionsFail?: Command['onPermissionsFail'];
-			onBotPermissionsFail?: Command['onBotPermissionsFail'];
-			onInternalError?: Command['onInternalError'];
-			onMiddlewaresError?: Command['onMiddlewaresError'];
+			onBotPermissionsFail?: (
+				context: MenuCommandContext<any, never> | CommandContext,
+				permissions: PermissionStrings,
+			) => unknown;
+			onInternalError?: (
+				client: UsingClient,
+				command: Command | SubCommand | ContextMenuCommand,
+				error?: unknown,
+			) => unknown;
+			onMiddlewaresError?: (context: CommandContext | MenuCommandContext<any, never>, error: string) => unknown;
 			onOptionsError?: Command['onOptionsError'];
-			onAfterRun?: Command['onAfterRun'];
+			onAfterRun?: (context: CommandContext | MenuCommandContext<any, never>, error: unknown) => unknown;
 			props?: ExtraProps;
 		};
 	};
@@ -480,7 +491,8 @@ export interface ServicesOptions {
 	middlewares?: Record<string, MiddlewareContext>;
 	handlers?: {
 		components?: ComponentHandler | ComponentHandler['callback'];
-		commands?: CommandHandler | Parameters<CommandHandler['setHandlers']>[0];
+		commands?: CommandHandler;
 		langs?: LangsHandler | LangsHandler['callback'];
 	};
+	handleCommand?: typeof HandleCommand;
 }

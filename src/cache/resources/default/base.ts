@@ -48,7 +48,7 @@ export class BaseResource<T = any> {
 	}
 
 	bulk(ids: string[]): ReturnCache<T[]> {
-		return fakePromise(this.adapter.get(ids.map(id => this.hashId(id)))).then(x => x.filter(y => y));
+		return fakePromise(this.adapter.bulkGet(ids.map(id => this.hashId(id)))).then(x => x.filter(y => y));
 	}
 
 	set(id: string, data: any) {

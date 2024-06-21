@@ -235,7 +235,7 @@ export class WorkerManager extends Map<
 							}
 							break;
 						case 'PRESENCE_UPDATE':
-							if (!this.presenceUpdateHandler.check(message.payload.d as any)) {
+							if (!this.presenceUpdateHandler.check(message.payload.d)) {
 								return;
 							}
 							break;

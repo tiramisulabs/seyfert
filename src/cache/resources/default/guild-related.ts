@@ -54,7 +54,7 @@ export class GuildRelatedResource<T = any> {
 	}
 
 	bulk(ids: string[]): ReturnCache<(T & { guild_id: string })[]> {
-		return fakePromise(this.adapter.get(ids.map(x => this.hashId(x)))).then(x => x.filter(y => y));
+		return fakePromise(this.adapter.bulkGet(ids.map(x => this.hashId(x)))).then(x => x.filter(y => y));
 	}
 
 	set(__keys: string, guild: string, data: any): ReturnCache<void>;
@@ -72,7 +72,7 @@ export class GuildRelatedResource<T = any> {
 			),
 		).then(
 			() =>
-				this.adapter.set(
+				this.adapter.bulkSet(
 					keys.map(([key, value]) => {
 						return [this.hashId(key), this.parse(value, key, guild)] as const;
 					}),
@@ -96,7 +96,7 @@ export class GuildRelatedResource<T = any> {
 				),
 			).then(
 				() =>
-					this.adapter.patch(
+					this.adapter.bulkPatch(
 						false,
 						keys.map(([key, value]) => {
 							return [this.hashId(key), this.parse(value, key, guild)] as const;
@@ -105,7 +105,7 @@ export class GuildRelatedResource<T = any> {
 			);
 		}
 		return fakePromise(
-			this.adapter.patch(
+			this.adapter.bulkPatch(
 				true,
 				keys.map(([key, value]) => {
 					return [this.hashId(key), value];
@@ -117,7 +117,7 @@ export class GuildRelatedResource<T = any> {
 	remove(id: string | string[], guild: string) {
 		const ids = Array.isArray(id) ? id : [id];
 		return fakePromise(this.removeToRelationship(ids, guild)).then(() =>
-			this.adapter.remove(ids.map(x => this.hashId(x))),
+			this.adapter.bulkRemove(ids.map(x => this.hashId(x))),
 		);
 	}
 
@@ -133,7 +133,7 @@ export class GuildRelatedResource<T = any> {
 		return guild === '*'
 			? (fakePromise(this.adapter.scan(this.hashId(guild))).then(x => x) as (T & { guild_id: string })[])
 			: (fakePromise(this.adapter.getToRelationship(this.hashId(guild))).then(keys =>
-					this.adapter.get(keys.map(x => `${this.namespace}.${x}`)),
+					this.adapter.bulkGet(keys.map(x => `${this.namespace}.${x}`)),
 				) as (T & { guild_id: string })[]);
 	}
 

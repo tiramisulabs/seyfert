@@ -27,12 +27,16 @@ export type WorkerSendCacheRequest = CreateWorkerMessage<
 		nonce: string;
 		method:
 			| 'scan'
+			| 'bulkGet'
 			| 'get'
+			| 'bulkSet'
 			| 'set'
+			| 'bulkPatch'
 			| 'patch'
 			| 'values'
 			| 'keys'
 			| 'count'
+			| 'bulkRemove'
 			| 'remove'
 			| 'flush'
 			| 'contains'

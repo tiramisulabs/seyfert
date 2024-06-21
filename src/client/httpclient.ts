@@ -11,7 +11,6 @@ import { isBufferLike } from '../api/utils/utils';
 import { MergeOptions, isCloudfareWorker, type DeepPartial } from '../common';
 import type { BaseClientOptions, InternalRuntimeConfigHTTP, StartOptions } from './base';
 import { BaseClient } from './base';
-import { onInteractionCreate } from './oninteractioncreate';
 
 let UWS: typeof import('uWebSockets.js') | undefined;
 let nacl: typeof import('tweetnacl') | undefined;
@@ -164,10 +163,11 @@ export class HttpClient extends BaseClient {
 			default:
 				return new Promise<Response>(r => {
 					if (isCloudfareWorker())
-						return onInteractionCreate(this, rawBody, -1)
+						return this.handleCommand
+							.interaction(rawBody, -1)
 							.then(() => r(new Response()))
 							.catch(() => r(new Response()));
-					return onInteractionCreate(this, rawBody, -1, async ({ body, files }) => {
+					return this.handleCommand.interaction(rawBody, -1, async ({ body, files }) => {
 						let response: FormData | APIInteractionResponse;
 						const headers: { 'Content-Type'?: string } = {};
 
@@ -224,7 +224,7 @@ export class HttpClient extends BaseClient {
 						.end(JSON.stringify({ type: InteractionResponseType.Pong }));
 					break;
 				default:
-					await onInteractionCreate(this, rawBody, -1, async ({ body, files }) => {
+					await this.handleCommand.interaction(rawBody, -1, async ({ body, files }) => {
 						res.cork(() => {
 							let response: FormData | APIInteractionResponse;
 							const headers: { 'Content-Type'?: string } = {};

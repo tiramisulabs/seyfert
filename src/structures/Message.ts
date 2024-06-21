@@ -13,12 +13,16 @@ import type { EmojiResolvable } from '../common/types/resolvables';
 import type { MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../common/types/write';
 import type { ActionRowMessageComponents } from '../components';
 import { MessageActionRowComponent } from '../components/ActionRow';
-import { GuildMember } from './GuildMember';
-import { User } from './User';
 import type { MessageWebhookMethodEditParams, MessageWebhookMethodWriteParams } from './Webhook';
 import { DiscordBase } from './extra/DiscordBase';
 import { messageLink } from './extra/functions';
-import { Embed, Poll } from '..';
+import { Embed } from '..';
+import {
+	type PollStructure,
+	Transformers,
+	type GuildMemberStructure,
+	type UserStructure,
+} from '../client/transformers';
 
 export type MessageData = APIMessage | GatewayMessageCreateDispatchData;
 
@@ -27,14 +31,14 @@ export interface BaseMessage
 		ObjectToLower<Omit<MessageData, 'timestamp' | 'author' | 'mentions' | 'components' | 'poll' | 'embeds'>> {
 	timestamp?: number;
 	guildId?: string;
-	author: User;
-	member?: GuildMember;
+	author: UserStructure;
+	member?: GuildMemberStructure;
 	components: MessageActionRowComponent<ActionRowMessageComponents>[];
-	poll?: Poll;
+	poll?: PollStructure;
 	mentions: {
 		roles: string[];
 		channels: APIChannelMention[];
-		users: (GuildMember | User)[];
+		users: (GuildMemberStructure | UserStructure)[];
 	};
 }
 export class BaseMessage extends DiscordBase {
@@ -83,32 +87,31 @@ export class BaseMessage extends DiscordBase {
 		}
 
 		if ('author' in data && data.author) {
-			this.author = new User(this.client, data.author);
+			this.author = Transformers.User(this.client, data.author);
 		}
 
 		if ('member' in data && data.member) {
-			this.member = new GuildMember(this.client, data.member, this.author, this.guildId!);
+			this.member = Transformers.GuildMember(this.client, data.member, data.author, this.guildId!);
 		}
 
 		if (data.mentions?.length) {
 			this.mentions.users = this.guildId
-				? data.mentions.map(
-						m =>
-							new GuildMember(
-								this.client,
-								{
-									...(m as APIUser & { member?: Omit<APIGuildMember, 'user'> }).member!,
-									user: m,
-								},
-								m,
-								this.guildId!,
-							),
+				? data.mentions.map(m =>
+						Transformers.GuildMember(
+							this.client,
+							{
+								...(m as APIUser & { member?: Omit<APIGuildMember, 'user'> }).member!,
+								user: m,
+							},
+							m,
+							this.guildId!,
+						),
 					)
-				: data.mentions.map(u => new User(this.client, u));
+				: data.mentions.map(u => Transformers.User(this.client, u));
 		}
 
 		if (data.poll) {
-			this.poll = new Poll(this.client, data.poll, this.channelId, this.id);
+			this.poll = Transformers.Poll(this.client, data.poll, this.channelId, this.id);
 		}
 	}
 }
