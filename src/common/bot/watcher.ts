@@ -119,7 +119,7 @@ export class Watcher extends ShardManager {
 	}
 }
 
-export interface WatcherOptions extends Omit<ShardManagerOptions, 'handlePayload' | 'info' | 'token' | 'intents'> {
+export interface WatcherOptions extends Omit<ShardManager['options'], 'handlePayload' | 'info' | 'token' | 'intents'> {
 	filePath: string;
 	transpileCommand: string;
 	srcPath: string;

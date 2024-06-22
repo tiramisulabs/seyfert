@@ -3,7 +3,7 @@ import { GatewayCloseCodes, GatewayDispatchEvents, GatewayOpcodes } from 'discor
 import { inflateSync } from 'node:zlib';
 import type WS from 'ws';
 import { WebSocket, type CloseEvent, type ErrorEvent } from 'ws';
-import type { Logger } from '../../common';
+import { type MakeRequired, MergeOptions, type Logger } from '../../common';
 import { properties } from '../constants';
 import { DynamicBucket } from '../structures';
 import { ConnectTimeout } from '../structures/timeout';
@@ -35,14 +35,19 @@ export class Shard {
 	bucket: DynamicBucket;
 	offlineSendQueue: ((_?: unknown) => void)[] = [];
 
+	options: MakeRequired<ShardOptions, 'properties' | 'ratelimitOptions'>;
+
 	constructor(
 		public id: number,
-		public options: ShardOptions,
+		options: ShardOptions,
 	) {
-		this.options.ratelimitOptions ??= {
-			rateLimitResetInterval: 60_000,
-			maxRequestsPerRateLimitTick: 120,
-		};
+		this.options = MergeOptions<Shard['options']>(options, {
+			properties,
+			ratelimitOptions: {
+				rateLimitResetInterval: 60_000,
+				maxRequestsPerRateLimitTick: 120,
+			},
+		} as ShardOptions);
 
 		if (options.debugger) this.debugger = options.debugger;
 
@@ -130,7 +135,7 @@ export class Shard {
 			d: {
 				token: `Bot ${this.options.token}`,
 				compress: this.options.compress,
-				properties: this.options.properties ?? properties,
+				properties: this.options.properties,
 				shard: [this.id, this.options.info.shards],
 				intents: this.options.intents,
 				presence: this.options.presence,
@@ -264,6 +269,7 @@ export class Shard {
 
 		switch (close.code) {
 			case ShardSocketCloseCodes.Shutdown:
+				//Force disconnect, ignore
 				break;
 			case 1000:
 			case 1001:
