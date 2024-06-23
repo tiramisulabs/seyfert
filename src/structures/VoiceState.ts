@@ -48,6 +48,21 @@ export class VoiceState extends Base {
 		});
 	}
 
+	async setSuppress(suppress = !this.suppress) {
+		return this.client.proxy.guilds(this.guildId)['voice-states']['@me'].patch({
+			body: { suppress },
+		});
+	}
+
+	async requestSpeak(date: string | Date = new Date()) {
+		if (typeof date === 'string') date = new Date(date);
+		date = date.toISOString();
+
+		return this.client.proxy.guilds(this.guildId)['voice-states']['@me'].patch({
+			body: { request_to_speak_timestamp: date },
+		});
+	}
+
 	async disconnect(reason?: string) {
 		return this.setChannel(null, reason);
 	}
