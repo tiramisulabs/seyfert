@@ -223,7 +223,6 @@ export class BaseClient {
 					this.langs = undefined;
 				} else if (typeof handlers.langs === 'function') {
 					this.langs ??= new LangsHandler(this.logger);
-					this.langs.setHandlers({ callback: handlers.langs });
 				} else {
 					this.langs = handlers.langs;
 				}
@@ -492,7 +491,7 @@ export interface ServicesOptions {
 	handlers?: {
 		components?: ComponentHandler | ComponentHandler['callback'];
 		commands?: CommandHandler;
-		langs?: LangsHandler | LangsHandler['callback'];
+		langs?: LangsHandler;
 	};
 	handleCommand?: typeof HandleCommand;
 }
