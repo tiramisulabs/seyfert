@@ -22,7 +22,7 @@ export class VoiceState extends Base {
 	}
 
 	async member(force?: boolean) {
-		return (this.withMember ??= await this.client.members.fetch(this.guildId, this.userId, force));
+		return (this.withMember = await this.client.members.fetch(this.guildId, this.userId, force));
 	}
 
 	async user(force?: boolean) {
@@ -49,15 +49,15 @@ export class VoiceState extends Base {
 	}
 
 	async setSuppress(suppress = !this.suppress) {
-		this.suppress = suppress;
-		return this.client.proxy.guilds(this.guildId)['voice-states']['@me'].patch({
+		await this.client.proxy.guilds(this.guildId)['voice-states']['@me'].patch({
 			body: { suppress },
 		});
+		this.suppress = suppress;
 	}
 
 	async requestSpeak(date: string | Date = new Date()) {
 		if (typeof date === 'string') date = new Date(date);
-		if (Number.isNaN(date)) Promise.reject('Invalid date');
+		if (Number.isNaN(date)) return Promise.reject('Invalid date');
 		date = date.toISOString();
 
 		return this.client.proxy.guilds(this.guildId)['voice-states']['@me'].patch({
