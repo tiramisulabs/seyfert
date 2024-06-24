@@ -4,7 +4,7 @@ import { fakePromise } from '../../common';
 import { GuildRelatedResource } from './default/guild-related';
 import { type StickerStructure, Transformers } from '../../client/transformers';
 
-export class Stickers extends GuildRelatedResource {
+export class Stickers extends GuildRelatedResource<any, APISticker> {
 	namespace = 'sticker';
 
 	//@ts-expect-error

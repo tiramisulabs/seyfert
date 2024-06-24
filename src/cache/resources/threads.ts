@@ -4,7 +4,7 @@ import { fakePromise } from '../../common';
 import { GuildRelatedResource } from './default/guild-related';
 import { type ThreadChannelStructure, Transformers } from '../../client/transformers';
 
-export class Threads extends GuildRelatedResource {
+export class Threads extends GuildRelatedResource<any, APIThreadChannel> {
 	namespace = 'thread';
 
 	//@ts-expect-error

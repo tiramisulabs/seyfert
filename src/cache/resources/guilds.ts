@@ -1,10 +1,10 @@
-import type { APIGuild } from 'discord-api-types/v10';
+import type { APIGuild, GatewayGuildCreateDispatchData } from 'discord-api-types/v10';
 import type { Cache, ReturnCache } from '..';
 import { fakePromise } from '../../common';
 import { BaseResource } from './default/base';
 import { type GuildStructure, Transformers } from '../../client/transformers';
 
-export class Guilds extends BaseResource {
+export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispatchData> {
 	namespace = 'guild';
 
 	//@ts-expect-error
@@ -35,21 +35,33 @@ export class Guilds extends BaseResource {
 	}
 
 	override async remove(id: string) {
+		const keysChannels = this.cache.channels?.keys(id) ?? [];
 		await this.cache.adapter.bulkRemove(
 			(
 				await Promise.all([
 					this.cache.members?.keys(id) ?? [],
 					this.cache.roles?.keys(id) ?? [],
-					this.cache.channels?.keys(id) ?? [],
+					keysChannels,
 					this.cache.emojis?.keys(id) ?? [],
 					this.cache.stickers?.keys(id) ?? [],
 					this.cache.voiceStates?.keys(id) ?? [],
 					this.cache.presences?.keys(id) ?? [],
 					this.cache.threads?.keys(id) ?? [],
 					this.cache.stageInstances?.keys(id) ?? [],
+					this.cache.bans?.keys(id) ?? [],
 				])
 			).flat(),
 		);
+
+		if (this.cache.messages && this.cache.channels) {
+			const keysMessages: string[] = [];
+			for (const i of keysChannels) {
+				const channelId = i.slice(this.cache.channels.namespace.length + 1);
+				const messages = await this.cache.messages.keys(channelId);
+				keysMessages.push(...messages);
+			}
+			if (keysMessages.length) await this.cache.adapter.bulkRemove(keysMessages);
+		}
 
 		await this.cache.adapter.removeRelationship(
 			[

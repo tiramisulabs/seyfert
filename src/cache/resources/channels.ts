@@ -5,7 +5,7 @@ import channelFrom from '../../structures/channels';
 import type { ReturnCache } from '../index';
 import { GuildRelatedResource } from './default/guild-related';
 
-export class Channels extends GuildRelatedResource {
+export class Channels extends GuildRelatedResource<any, APIChannel> {
 	namespace = 'channel';
 
 	parse(data: APIChannel, id: string, guild_id: string) {

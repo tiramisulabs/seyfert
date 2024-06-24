@@ -4,7 +4,7 @@ import type { UsingClient } from '../../../commands';
 import { fakePromise } from '../../../common';
 import type { Cache, ReturnCache } from '../../index';
 
-export class GuildRelatedResource<T = any> {
+export class GuildRelatedResource<T = any, S = any> {
 	client!: BaseClient;
 	namespace = 'base';
 
@@ -43,7 +43,7 @@ export class GuildRelatedResource<T = any> {
 		}
 	}
 
-	setIfNI(intent: keyof typeof GatewayIntentBits, id: string, guildId: string, data: any) {
+	setIfNI(intent: keyof typeof GatewayIntentBits, id: string, guildId: string, data: S) {
 		if (!this.cache.hasIntent(intent)) {
 			return this.set(id, guildId, data);
 		}
@@ -57,13 +57,12 @@ export class GuildRelatedResource<T = any> {
 		return fakePromise(this.adapter.bulkGet(ids.map(x => this.hashId(x)))).then(x => x.filter(y => y));
 	}
 
-	set(__keys: string, guild: string, data: any): ReturnCache<void>;
-	set(__keys: [string, any][], guild: string): ReturnCache<void>;
-	set(__keys: string | [string, any][], guild: string, data?: any): ReturnCache<void> {
-		const keys = (Array.isArray(__keys) ? __keys : [[__keys, data]]).filter(x => this.filter(x[1], x[0], guild)) as [
-			string,
-			any,
-		][];
+	set(__keys: string, guild: string, data: S): ReturnCache<void>;
+	set(__keys: [string, S][], guild: string): ReturnCache<void>;
+	set(__keys: string | [string, S][], guild: string, data?: S): ReturnCache<void> {
+		const keys = (Array.isArray(__keys) ? __keys : [[__keys, data]]).filter(x =>
+			this.filter(x[1], x[0] as string, guild),
+		) as [string, any][];
 
 		return fakePromise(
 			this.addToRelationship(
@@ -137,12 +136,14 @@ export class GuildRelatedResource<T = any> {
 				) as (T & { guild_id: string })[]);
 	}
 
-	count(to: string) {
-		return to === '*' ? fakePromise(this.keys(to)).then(x => x.length) : this.adapter.count(this.hashId(to));
+	count(to: string): ReturnCache<number> {
+		return to === '*'
+			? fakePromise(this.keys(to)).then(x => x.length)
+			: (this.adapter.count(this.hashId(to)) as number);
 	}
 
-	contains(id: string, guild: string) {
-		return this.adapter.contains(this.hashId(guild), id);
+	contains(id: string, guild: string): ReturnCache<boolean> {
+		return this.adapter.contains(this.hashId(guild), id) as boolean;
 	}
 
 	getToRelationship(guild: string) {
@@ -162,6 +163,6 @@ export class GuildRelatedResource<T = any> {
 	}
 
 	hashId(id: string) {
-		return `${this.namespace}.${id}`;
+		return id.startsWith(this.namespace) ? id : `${this.namespace}.${id}`;
 	}
 }

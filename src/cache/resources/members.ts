@@ -3,7 +3,7 @@ import type { ReturnCache } from '../..';
 import { fakePromise } from '../../common';
 import { GuildBasedResource } from './default/guild-based';
 import { type GuildMemberStructure, Transformers } from '../../client/transformers';
-export class Members extends GuildBasedResource {
+export class Members extends GuildBasedResource<any, APIGuildMember> {
 	namespace = 'member';
 
 	//@ts-expect-error

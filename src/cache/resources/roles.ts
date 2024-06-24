@@ -4,7 +4,7 @@ import { fakePromise } from '../../common';
 import { GuildRelatedResource } from './default/guild-related';
 import { type GuildRoleStructure, Transformers } from '../../client/transformers';
 
-export class Roles extends GuildRelatedResource {
+export class Roles extends GuildRelatedResource<any, APIRole> {
 	namespace = 'role';
 
 	//@ts-expect-error

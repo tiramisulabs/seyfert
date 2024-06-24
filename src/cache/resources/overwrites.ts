@@ -4,7 +4,7 @@ import { fakePromise } from '../../common/it/utils';
 import { PermissionsBitField } from '../../structures/extra/Permissions';
 import { GuildRelatedResource } from './default/guild-related';
 
-export class Overwrites extends GuildRelatedResource {
+export class Overwrites extends GuildRelatedResource<any, APIOverwrite[]> {
 	namespace = 'overwrite';
 
 	//@ts-expect-error
@@ -17,6 +17,10 @@ export class Overwrites extends GuildRelatedResource {
 			x.guild_id = guild_id;
 		});
 		return data;
+	}
+
+	raw(id: string): ReturnCache<(APIOverwrite & { guild_id: string })[]> {
+		return super.get(id);
 	}
 
 	override get(

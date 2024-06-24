@@ -4,7 +4,7 @@ import { fakePromise } from '../../common';
 import { BaseResource } from './default/base';
 import { Transformers, type UserStructure } from '../../client/transformers';
 
-export class Users extends BaseResource {
+export class Users extends BaseResource<any, APIUser> {
 	namespace = 'user';
 
 	//@ts-expect-error

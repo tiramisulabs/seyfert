@@ -12,6 +12,7 @@ import { PermissionsBitField } from '../../structures/extra/Permissions';
 import { BaseShorter } from './base';
 import { MergeOptions } from '../it/utils';
 import { type MessageStructure, Transformers } from '../../client/transformers';
+import type { MakeRequired } from '../types/util';
 
 export class ChannelShorter extends BaseShorter {
 	/**
@@ -61,14 +62,14 @@ export class ChannelShorter extends BaseShorter {
 		body: RESTPatchAPIChannelJSONBody,
 		optional: ChannelShorterOptionalParams = { guildId: '@me' },
 	): Promise<AllChannels> {
-		const options = MergeOptions<ChannelShorterOptionalParams>({ guildId: '@me' }, optional);
+		const options = MergeOptions<MakeRequired<ChannelShorterOptionalParams, 'guildId'>>({ guildId: '@me' }, optional);
 		const res = await this.client.proxy.channels(id).patch({ body, reason: options.reason });
 		await this.client.cache.channels?.setIfNI(BaseChannel.__intent__(options.guildId!), res.id, options.guildId!, res);
-		if (body.permission_overwrites && 'permission_overwrites' in res)
+		if (body.permission_overwrites && 'permission_overwrites' in res && res.permission_overwrites)
 			await this.client.cache.overwrites?.setIfNI(
-				BaseChannel.__intent__(options.guildId!),
+				BaseChannel.__intent__(options.guildId),
 				res.id,
-				options.guildId!,
+				options.guildId,
 				res.permission_overwrites,
 			);
 		return channelFrom(res, this.client);

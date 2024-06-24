@@ -4,7 +4,7 @@ import { fakePromise } from '../../common';
 import { GuildBasedResource } from './default/guild-based';
 import { Transformers, type VoiceStateStructure } from '../../client/transformers';
 
-export class VoiceStates extends GuildBasedResource {
+export class VoiceStates extends GuildBasedResource<any, GatewayVoiceState> {
 	namespace = 'voice_state';
 
 	//@ts-expect-error

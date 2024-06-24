@@ -1,9 +1,9 @@
-import type { APIBan } from 'discord-api-types/v10';
+import type { APIBan, GatewayGuildBanModifyDispatchData } from 'discord-api-types/v10';
 import type { ReturnCache } from '../..';
 import { fakePromise } from '../../common';
 import { GuildBasedResource } from './default/guild-based';
 import { type GuildBanStructure, Transformers } from '../../client/transformers';
-export class Bans extends GuildBasedResource {
+export class Bans extends GuildBasedResource<any, GatewayGuildBanModifyDispatchData | APIBan> {
 	namespace = 'ban';
 
 	//@ts-expect-error

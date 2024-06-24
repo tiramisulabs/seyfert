@@ -4,7 +4,7 @@ import { fakePromise } from '../../common';
 import { GuildRelatedResource } from './default/guild-related';
 import { type GuildEmojiStructure, Transformers } from '../../client/transformers';
 
-export class Emojis extends GuildRelatedResource {
+export class Emojis extends GuildRelatedResource<any, APIEmoji> {
 	namespace = 'emoji';
 
 	//@ts-expect-error
