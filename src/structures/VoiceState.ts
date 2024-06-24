@@ -60,9 +60,10 @@ export class VoiceState extends Base {
 		if (Number.isNaN(date)) return Promise.reject('Invalid date');
 		date = date.toISOString();
 
-		return this.client.proxy.guilds(this.guildId)['voice-states']['@me'].patch({
+		await this.client.proxy.guilds(this.guildId)['voice-states']['@me'].patch({
 			body: { request_to_speak_timestamp: date },
 		});
+		this.requestToSpeakTimestamp = date;
 	}
 
 	async disconnect(reason?: string) {
