@@ -365,8 +365,8 @@ export class BaseClient {
 		const seyfertConfig = (BaseClient._seyfertConfig ||
 			(await this.options.getRC?.()) ||
 			(await Promise.any(
-				['seyfert.config.js', 'seyfert.config.mjs', 'seyfert.config.ts'].map(file =>
-					magicImport(join(process.cwd(), file)).then(x => x.default ?? x),
+				['.js', '.mjs', '.cjs', '.ts', '.mts', '.cts'].map(ext =>
+					magicImport(join(process.cwd(), `seyfert.config${ext}`)).then(x => x.default ?? x),
 				),
 			))) as T;
 
