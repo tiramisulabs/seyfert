@@ -364,7 +364,11 @@ export class BaseClient {
 	>() {
 		const seyfertConfig = (BaseClient._seyfertConfig ||
 			(await this.options.getRC?.()) ||
-			(await magicImport(join(process.cwd(), 'seyfert.config.js')).then(x => x.default ?? x))) as T;
+			(await Promise.any(
+				['seyfert.config.js', 'seyfert.config.mjs', 'seyfert.config.ts'].map(file =>
+					magicImport(join(process.cwd(), file)).then(x => x.default ?? x),
+				),
+			))) as T;
 
 		const { locations, debug, ...env } = seyfertConfig;
 
