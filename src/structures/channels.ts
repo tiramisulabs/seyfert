@@ -280,23 +280,27 @@ export class MessagesMethods extends DiscordBase {
 		self: UsingClient,
 	) {
 		const poll = (body as MessageCreateBodyRequest).poll;
-		return {
+		const allow = {
 			allowed_mentions: self.options?.allowedMentions,
 			...body,
 			components: body.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)) ?? undefined,
 			embeds: body.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)) ?? undefined,
-			attachments:
-				'attachments' in body
-					? body.attachments?.map((x, i) => ({
-							id: i,
-							...resolveAttachment(x),
-						})) ?? undefined
-					: (files?.map((x, id) => ({
-							id,
-							filename: x.name,
-						})) as RESTAPIAttachment[]),
 			poll: poll ? (poll instanceof PollBuilder ? poll.toJSON() : poll) : undefined,
-		} as T;
+		};
+
+		if ('attachment' in body) {
+			allow.attachments =
+				body.attachments?.map((x, i) => ({
+					id: i,
+					...resolveAttachment(x),
+				})) ?? undefined;
+		} else if (files?.length) {
+			allow.attachments = files?.map((x, id) => ({
+				id,
+				filename: x.name,
+			})) as RESTAPIAttachment[];
+		}
+		return allow as unknown as T;
 	}
 }
 

@@ -133,26 +133,10 @@ export class BaseInteraction<
 				return body;
 			case InteractionResponseType.ChannelMessageWithSource:
 			case InteractionResponseType.UpdateMessage: {
-				const poll = (body as InteractionCreateBodyRequest).poll;
 				return {
 					type: body.type,
 					//@ts-ignore
-					data: {
-						//@ts-ignore
-						allowed_mentions: self.options?.allowedMentions,
-						...(body.data ?? {}),
-						//@ts-ignore
-						components: body.data?.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)),
-						embeds: body.data?.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)),
-						attachments:
-							body.data && 'attachments' in body.data
-								? body.data.attachments?.map((x, i) => ({ id: i, ...resolveAttachment(x) }))
-								: (files?.map((x, id) => ({
-										id,
-										filename: x.name,
-									})) as RESTAPIAttachment[]),
-						poll: poll ? (poll instanceof PollBuilder ? poll.toJSON() : poll) : undefined,
-					},
+					data: BaseInteraction.transformBodyRequest(body.data ?? {}, files, self),
 				};
 			}
 			case InteractionResponseType.Modal:
@@ -188,20 +172,28 @@ export class BaseInteraction<
 	) {
 		const poll = (body as MessageWebhookCreateBodyRequest).poll;
 
-		return {
+		const allow = {
 			allowed_mentions: self.options?.allowedMentions,
-			attachments:
-				'attachments' in body
-					? body.attachments?.map((x, i) => ({ id: i, ...resolveAttachment(x) }))
-					: (files?.map((x, id) => ({
-							id,
-							filename: x.name,
-						})) as RESTAPIAttachment[]),
+
 			...body,
 			components: body.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)),
 			embeds: body?.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)),
 			poll: poll ? (poll instanceof PollBuilder ? poll.toJSON() : poll) : undefined,
-		} as T;
+		};
+
+		if ('attachment' in body) {
+			allow.attachments =
+				body.attachments?.map((x, i) => ({
+					id: i,
+					...resolveAttachment(x),
+				})) ?? undefined;
+		} else if (files?.length) {
+			allow.attachments = files?.map((x, id) => ({
+				id,
+				filename: x.name,
+			})) as RESTAPIAttachment[];
+		}
+		return allow as unknown as T;
 	}
 
 	private async matchReplied(body: ReplyInteractionBody) {
