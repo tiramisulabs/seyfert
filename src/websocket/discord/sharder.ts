@@ -17,7 +17,7 @@ import {
 import { ShardManagerDefaults } from '../constants';
 import { DynamicBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';
-import { Shard } from './shard.js';
+import { Shard } from './shard';
 import type { ShardManagerOptions, WorkerData } from './shared';
 
 let parentPort: import('node:worker_threads').MessagePort;
