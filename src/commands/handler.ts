@@ -8,6 +8,7 @@ import {
 	type APIApplicationCommandSubcommandOption,
 	type APIApplicationCommandSubcommandGroupOption,
 	type APIApplicationCommandChannelOption,
+	type LocalizationMap,
 } from 'discord-api-types/v10';
 import { basename, dirname } from 'node:path';
 import type { Logger, MakeRequired, NulleableCoalising, OmitInsert } from '../common';
@@ -48,12 +49,33 @@ export class CommandHandler extends BaseHandler {
 		}
 	}
 
+	protected shouldUploadLocales(locales?: LocalizationMap | null, cachedLocales?: LocalizationMap | null) {
+		if (!locales && !cachedLocales) return false;
+		if (!locales && cachedLocales) return true;
+		if (locales && !cachedLocales) return true;
+		if (locales && cachedLocales) {
+			const localesEntries = Object.entries(locales);
+			const cachedLocalesEntries = Object.entries(cachedLocales);
+			if (localesEntries.length !== cachedLocalesEntries.length) return true;
+
+			for (const [key, value] of localesEntries) {
+				const cached = cachedLocalesEntries.find(x => x[0] === key);
+				if (!cached) return true;
+				if (value !== cached[1]) return true;
+			}
+		}
+		return false;
+	}
+
 	protected shouldUploadOption(option: APIApplicationCommandOption, cached: APIApplicationCommandOption) {
 		if (option.description !== cached.description) return true;
 		if (option.type !== cached.type) return true;
 		if (option.required !== cached.required) return true;
 		if (option.name !== cached.name) return true;
 		//TODO: locales
+
+		if (this.shouldUploadLocales(option.name_localizations, cached.name_localizations)) return true;
+		if (this.shouldUploadLocales(option.description_localizations, cached.description_localizations)) return true;
 
 		switch (option.type) {
 			case ApplicationCommandOptionType.String:
@@ -108,24 +130,34 @@ export class CommandHandler extends BaseHandler {
 		return false;
 	}
 
-	async shouldUpload(file: string) {
+	async shouldUpload(file: string, guildId?: string) {
+		const values = this.values.filter(x => {
+			if (!guildId) return !x.guildId;
+			return x.guildId?.includes(guildId);
+		});
 		if (
 			!(await promises.access(file).then(
 				() => true,
 				() => false,
 			))
 		) {
-			await promises.writeFile(file, JSON.stringify(this.values.map(x => x.toJSON())));
+			await promises.writeFile(file, JSON.stringify(values.map(x => x.toJSON())));
 			return true;
 		}
 
-		const cachedCommands: (ReturnType<Command['toJSON']> | ReturnType<ContextMenuCommand['toJSON']>)[] = JSON.parse(
-			(await promises.readFile(file)).toString(),
-		);
+		const cachedCommands = (
+			JSON.parse((await promises.readFile(file)).toString()) as (
+				| ReturnType<Command['toJSON']>
+				| ReturnType<ContextMenuCommand['toJSON']>
+			)[]
+		).filter(x => {
+			if (!guildId) return !x.guild_id;
+			return x.guild_id?.includes(guildId);
+		});
 
-		if (cachedCommands.length !== this.values.length) return true;
+		if (cachedCommands.length !== values.length) return true;
 
-		for (const command of this.values.map(x => x.toJSON())) {
+		for (const command of values.map(x => x.toJSON())) {
 			const cached = cachedCommands.find(x => {
 				if (x.name !== command.name) return false;
 				if (command.guild_id) return command.guild_id.every(id => x.guild_id?.includes(id));
@@ -140,7 +172,8 @@ export class CommandHandler extends BaseHandler {
 			if (!!('options' in cached) !== !!('options' in command)) return true;
 			if (!!cached.contexts !== !!command.contexts) return true;
 			if (!!cached.integration_types !== !!command.integration_types) return true;
-			//TODO: locales
+			if (this.shouldUploadLocales(command.name_localizations, cached.name_localizations)) return true;
+			if (this.shouldUploadLocales(command.description_localizations, cached.description_localizations)) return true;
 
 			if ('contexts' in command && 'contexts' in cached) {
 				if (command.contexts.length !== cached.contexts.length) return true;

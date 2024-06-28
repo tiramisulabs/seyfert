@@ -284,11 +284,27 @@ export class BaseClient {
 		throw new Error('Function not implemented');
 	}
 
-	private shouldUploadCommands(cachePath: string) {
-		return this.commands!.shouldUpload(cachePath).then(async should => {
-			if (should) await promises.writeFile(cachePath, JSON.stringify(this.commands!.values.map(x => x.toJSON())));
+	private shouldUploadCommands(cachePath: string, guildId?: string) {
+		return this.commands!.shouldUpload(cachePath, guildId).then(should => {
+			this.logger.debug(
+				should
+					? `[${guildId ?? 'global'}] Change(s) detected, uploading commands`
+					: `[${guildId ?? 'global'}] commands seems to be up to date`,
+			);
 			return should;
 		});
+	}
+
+	private syncCachePath(cachePath: string) {
+		this.logger.debug('Syncing commands cache');
+		return promises.writeFile(
+			cachePath,
+			JSON.stringify(
+				this.commands!.values.filter(cmd => !('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash).map(x =>
+					x.toJSON(),
+				),
+			),
+		);
 	}
 
 	async uploadCommands({ applicationId, cachePath }: { applicationId?: string; cachePath?: string } = {}) {
@@ -298,18 +314,12 @@ export class BaseClient {
 		const commands = this.commands!.values;
 		const filter = filterSplit(commands, command => !command.guildId);
 
-		if (!cachePath || (cachePath && (await this.shouldUploadCommands(cachePath))))
-			await this.proxy
-				.applications(applicationId)
-				.commands.put({
-					body: filter.expect
-						.filter(cmd => !('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash)
-						.map(x => x.toJSON()),
-				})
-				.catch(async e => {
-					if (cachePath) await promises.unlink(cachePath);
-					throw e;
-				});
+		if (!cachePath || (await this.shouldUploadCommands(cachePath)))
+			await this.proxy.applications(applicationId).commands.put({
+				body: filter.expect
+					.filter(cmd => !('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash)
+					.map(x => x.toJSON()),
+			});
 
 		const guilds = new Set<string>();
 
@@ -319,16 +329,22 @@ export class BaseClient {
 			}
 		}
 
-		for (const guild of guilds) {
-			await this.proxy
-				.applications(applicationId)
-				.guilds(guild)
-				.commands.put({
-					body: filter.never
-						.filter(cmd => cmd.guildId?.includes(guild) && (!('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash))
-						.map(x => x.toJSON()),
-				});
+		for (const guildId of guilds) {
+			if (!cachePath || (await this.shouldUploadCommands(cachePath, guildId))) {
+				await this.proxy
+					.applications(applicationId)
+					.guilds(guildId)
+					.commands.put({
+						body: filter.never
+							.filter(
+								cmd => cmd.guildId?.includes(guildId) && (!('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash),
+							)
+							.map(x => x.toJSON()),
+					});
+			}
 		}
+
+		if (cachePath) await this.syncCachePath(cachePath);
 	}
 
 	async loadCommands(dir?: string) {
@@ -363,7 +379,7 @@ export class BaseClient {
 		T extends InternalRuntimeConfigHTTP | InternalRuntimeConfig = InternalRuntimeConfigHTTP | InternalRuntimeConfig,
 	>() {
 		const seyfertConfig = (BaseClient._seyfertConfig ||
-			(await this.options.getRC?.()) ||
+			(await this.options?.getRC?.()) ||
 			(await Promise.any(
 				['.js', '.mjs', '.cjs', '.ts', '.mts', '.cts'].map(ext =>
 					magicImport(join(process.cwd(), `seyfert.config${ext}`)).then(x => x.default ?? x),
