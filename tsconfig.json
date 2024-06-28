@@ -1,38 +1,38 @@
-{
-	"compilerOptions": {
-		"module": "CommonJS",
-		"target": "ESNext",
-		"lib": [
-			"ESNext",
-			"WebWorker"
-		],
-		"moduleResolution": "node",
-		"declaration": true,
-		"sourceMap": false,
-		"strict": true,
-		"esModuleInterop": true,
-		"experimentalDecorators": true,
-		"emitDecoratorMetadata": true,
-		"preserveConstEnums": true,
-		/* Type Checking */
-		"noImplicitAny": true,
-		"strictNullChecks": true,
-		"strictFunctionTypes": true,
-		"noImplicitThis": true,
-		"noUnusedLocals": true,
-		"noUnusedParameters": true,
-		"noImplicitReturns": true,
-		"noFallthroughCasesInSwitch": true,
-		"skipLibCheck": false,
-		"noErrorTruncation": true,
-		"outDir": "./lib",
-		"stripInternal": true,
-	},
-	"exclude": [
-		"**/lib",
-		"**/__test__"
-	],
-	"include": [
-		"src"
-	]
-}
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM
+DOOM

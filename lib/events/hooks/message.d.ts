@@ -1,0 +1,172 @@
+import type { GatewayMessageCreateDispatchData, GatewayMessageDeleteBulkDispatchData, GatewayMessageDeleteDispatchData, GatewayMessagePollVoteDispatchData, GatewayMessageReactionAddDispatchData, GatewayMessageReactionRemoveAllDispatchData, GatewayMessageReactionRemoveDispatchData, GatewayMessageReactionRemoveEmojiDispatchData, GatewayMessageUpdateDispatchData } from 'discord-api-types/v10';
+import { type MakeRequired, type PartialClass, type ObjectToLower } from '../../common';
+import type { UsingClient } from '../../commands';
+import { type MessageStructure } from '../../client/transformers';
+export declare const MESSAGE_CREATE: (self: UsingClient, data: GatewayMessageCreateDispatchData) => import("../..").Message;
+export declare const MESSAGE_DELETE: (self: UsingClient, data: GatewayMessageDeleteDispatchData) => Promise<MessageStructure | ObjectToLower<GatewayMessageDeleteDispatchData>>;
+export declare const MESSAGE_DELETE_BULK: (self: UsingClient, data: GatewayMessageDeleteBulkDispatchData) => Promise<{
+    messages: import("../..").ReturnCache<import("../..").Message | undefined>[];
+    ids: import("discord-api-types/globals").Snowflake[];
+    channel_id: import("discord-api-types/globals").Snowflake;
+    guild_id?: import("discord-api-types/globals").Snowflake;
+}>;
+export declare const MESSAGE_REACTION_ADD: (_self: UsingClient, data: GatewayMessageReactionAddDispatchData) => {
+    emoji: {
+        roles?: string[] | undefined;
+        user?: {
+            id: string;
+            username: string;
+            discriminator: string;
+            globalName: string | null;
+            avatar: string | null;
+            bot?: boolean | undefined;
+            system?: boolean | undefined;
+            mfaEnabled?: boolean | undefined;
+            banner?: string | null | undefined;
+            accentColor?: number | null | undefined;
+            locale?: string | undefined;
+            verified?: boolean | undefined;
+            email?: string | null | undefined;
+            flags?: import("discord-api-types/v10").UserFlags | undefined;
+            premiumType?: import("discord-api-types/v10").UserPremiumType | undefined;
+            publicFlags?: import("discord-api-types/v10").UserFlags | undefined;
+            avatarDecoration?: string | null | undefined;
+            avatarDecorationData?: import("discord-api-types/v10").APIAvatarDecorationData | null | undefined;
+        } | undefined;
+        requireColons?: boolean | undefined;
+        managed?: boolean | undefined;
+        available?: boolean | undefined;
+        id: string | null;
+        name: string | null;
+        animated?: boolean | undefined;
+    };
+    type: import("discord-api-types/v10").ReactionType;
+    guildId?: string | undefined;
+    channelId: string;
+    messageId: string;
+    member?: {
+        user: {
+            id: string;
+            username: string;
+            discriminator: string;
+            globalName: string | null;
+            avatar: string | null;
+            bot?: boolean | undefined;
+            system?: boolean | undefined;
+            mfaEnabled?: boolean | undefined;
+            banner?: string | null | undefined;
+            accentColor?: number | null | undefined;
+            locale?: string | undefined;
+            verified?: boolean | undefined;
+            email?: string | null | undefined;
+            flags?: import("discord-api-types/v10").UserFlags | undefined;
+            premiumType?: import("discord-api-types/v10").UserPremiumType | undefined;
+            publicFlags?: import("discord-api-types/v10").UserFlags | undefined;
+            avatarDecoration?: string | null | undefined;
+            avatarDecorationData?: {
+                asset: string;
+                skuId: string;
+            } | null | undefined;
+        };
+        nick?: string | null | undefined;
+        avatar?: string | null | undefined;
+        roles: string[];
+        joinedAt: string;
+        premiumSince?: string | null | undefined;
+        deaf: boolean;
+        mute: boolean;
+        flags: import("discord-api-types/v10").GuildMemberFlags;
+        pending?: boolean | undefined;
+        communicationDisabledUntil?: string | null | undefined;
+        avatarDecorationData?: import("discord-api-types/v10").APIAvatarDecorationData | null | undefined;
+    } | undefined;
+    userId: string;
+    burstColors: string[];
+    messageAuthorId?: string | undefined;
+    burst: boolean;
+};
+export declare const MESSAGE_REACTION_REMOVE: (_self: UsingClient, data: GatewayMessageReactionRemoveDispatchData) => {
+    emoji: {
+        roles?: string[] | undefined;
+        user?: {
+            id: string;
+            username: string;
+            discriminator: string;
+            globalName: string | null;
+            avatar: string | null;
+            bot?: boolean | undefined;
+            system?: boolean | undefined;
+            mfaEnabled?: boolean | undefined;
+            banner?: string | null | undefined;
+            accentColor?: number | null | undefined;
+            locale?: string | undefined;
+            verified?: boolean | undefined;
+            email?: string | null | undefined;
+            flags?: import("discord-api-types/v10").UserFlags | undefined;
+            premiumType?: import("discord-api-types/v10").UserPremiumType | undefined;
+            publicFlags?: import("discord-api-types/v10").UserFlags | undefined;
+            avatarDecoration?: string | null | undefined;
+            avatarDecorationData?: import("discord-api-types/v10").APIAvatarDecorationData | null | undefined;
+        } | undefined;
+        requireColons?: boolean | undefined;
+        managed?: boolean | undefined;
+        available?: boolean | undefined;
+        id: string | null;
+        name: string | null;
+        animated?: boolean | undefined;
+    };
+    type: import("discord-api-types/v10").ReactionType;
+    guildId?: string | undefined;
+    channelId: string;
+    messageId: string;
+    userId: string;
+    burst: boolean;
+};
+export declare const MESSAGE_REACTION_REMOVE_ALL: (_self: UsingClient, data: GatewayMessageReactionRemoveAllDispatchData) => {
+    channelId: string;
+    messageId: string;
+    guildId?: string | undefined;
+};
+export declare const MESSAGE_REACTION_REMOVE_EMOJI: (_self: UsingClient, data: GatewayMessageReactionRemoveEmojiDispatchData) => {
+    emoji: {
+        roles?: string[] | undefined;
+        user?: {
+            id: string;
+            username: string;
+            discriminator: string;
+            globalName: string | null;
+            avatar: string | null;
+            bot?: boolean | undefined;
+            system?: boolean | undefined;
+            mfaEnabled?: boolean | undefined;
+            banner?: string | null | undefined;
+            accentColor?: number | null | undefined;
+            locale?: string | undefined;
+            verified?: boolean | undefined;
+            email?: string | null | undefined;
+            flags?: import("discord-api-types/v10").UserFlags | undefined;
+            premiumType?: import("discord-api-types/v10").UserPremiumType | undefined;
+            publicFlags?: import("discord-api-types/v10").UserFlags | undefined;
+            avatarDecoration?: string | null | undefined;
+            avatarDecorationData?: import("discord-api-types/v10").APIAvatarDecorationData | null | undefined;
+        } | undefined;
+        requireColons?: boolean | undefined;
+        managed?: boolean | undefined;
+        available?: boolean | undefined;
+        id: string | null;
+        name: string | null;
+        animated?: boolean | undefined;
+    };
+    channelId: string;
+    messageId: string;
+    guildId?: string | undefined;
+};
+export declare const MESSAGE_UPDATE: (self: UsingClient, data: GatewayMessageUpdateDispatchData) => Promise<[message: MakeRequired<PartialClass<MessageStructure>, //sus
+"id" | "channelId" | "createdAt" | "createdTimestamp" | "rest" | "cache" | "api" | "client" | "mentions" | "url" | "user" | "author">, old: undefined | MessageStructure]>;
+export declare const MESSAGE_POLL_VOTE_REMOVE: (_: UsingClient, data: GatewayMessagePollVoteDispatchData) => {
+    userId: string;
+    channelId: string;
+    messageId: string;
+    guildId?: string | undefined;
+    answerId: number;
+};

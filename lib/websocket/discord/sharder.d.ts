@@ -1,0 +1,30 @@
+import { type GatewaySendPayload, type GatewayUpdatePresence, type GatewayVoiceStateUpdate } from 'discord-api-types/v10';
+import { Logger, type MakeRequired, type ObjectToLower } from '../../common';
+import { ShardManagerDefaults } from '../constants';
+import { ConnectQueue } from '../structures/timeout';
+import { Shard } from './shard';
+import type { ShardManagerOptions } from './shared';
+export declare class ShardManager extends Map<number, Shard> {
+    connectQueue: ConnectQueue;
+    options: MakeRequired<ShardManagerOptions, keyof typeof ShardManagerDefaults>;
+    debugger?: Logger;
+    constructor(options: ShardManagerOptions);
+    get totalShards(): number;
+    get shardStart(): number;
+    get shardEnd(): number;
+    get remaining(): number;
+    get concurrency(): number;
+    get latency(): number;
+    calculateShardId(guildId: string): number;
+    spawn(shardId: number): Shard;
+    spawnShards(): Promise<void>;
+    spawnBuckets(): Shard[][];
+    forceIdentify(shardId: number): Promise<void>;
+    disconnect(shardId: number): Promise<void> | undefined;
+    disconnectAll(): Promise<unknown>;
+    setShardPresence(shardId: number, payload: GatewayUpdatePresence['d']): void;
+    setPresence(payload: GatewayUpdatePresence['d']): Promise<void>;
+    joinVoice(guild_id: string, channel_id: string, options: ObjectToLower<Pick<GatewayVoiceStateUpdate['d'], 'self_deaf' | 'self_mute'>>): void;
+    leaveVoice(guild_id: string): void;
+    send<T extends GatewaySendPayload>(shardId: number, payload: T): void;
+}

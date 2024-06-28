@@ -1,0 +1,13 @@
+import { type APIActionRowComponent, type APIActionRowComponentTypes } from 'discord-api-types/v10';
+import { ActionRow } from './ActionRow';
+import type { BuilderComponents } from './types';
+export * from './ActionRow';
+export * from './Attachment';
+export * from './Base';
+export * from './Button';
+export * from './Embed';
+export * from './Modal';
+export * from './SelectMenu';
+export * from './Poll';
+export * from './types';
+export declare function fromComponent(data: BuilderComponents | APIActionRowComponentTypes | APIActionRowComponent<APIActionRowComponentTypes> | ActionRow<BuilderComponents>): BuilderComponents | ActionRow<BuilderComponents>;
