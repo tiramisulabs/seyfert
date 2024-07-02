@@ -12,20 +12,24 @@ export class Roles extends GuildRelatedResource<any, APIRole> {
 		return true;
 	}
 
-	raw(id: string): ReturnCache<APIRole | undefined> {
-		return super.get(id);
-	}
-
 	override get(id: string): ReturnCache<GuildRoleStructure | undefined> {
 		return fakePromise(super.get(id)).then(rawRole =>
 			rawRole ? Transformers.GuildRole(this.client, rawRole, rawRole.guild_id) : undefined,
 		);
 	}
 
+	raw(id: string): ReturnCache<APIRole | undefined> {
+		return super.get(id);
+	}
+
 	override bulk(ids: string[]): ReturnCache<GuildRoleStructure[]> {
 		return fakePromise(super.bulk(ids)).then(roles =>
 			roles.map(rawRole => Transformers.GuildRole(this.client, rawRole, rawRole.guild_id)),
 		);
+	}
+
+	bulkRaw(ids: string[]): ReturnCache<APIRole[]> {
+		return super.bulk(ids);
 	}
 
 	override values(guild: string): ReturnCache<GuildRoleStructure[]> {

@@ -5,6 +5,8 @@ import {
 	type RESTPatchAPIChannelJSONBody,
 	type RESTPostAPIChannelThreadsJSONBody,
 	type RESTPostAPIGuildForumThreadsJSONBody,
+	type ChannelType,
+	type APIGuildChannel,
 } from 'discord-api-types/v10';
 import { BaseChannel, type GuildRole, type GuildMember } from '../../structures';
 import channelFrom, { type AllChannels } from '../../structures/channels';
@@ -29,7 +31,11 @@ export class ChannelShorter extends BaseShorter {
 		let channel;
 		if (!force) {
 			channel = await this.client.cache.channels?.raw(id);
-			if (channel) return channel;
+			const overwrites = await this.client.cache.overwrites?.raw(id);
+			if (channel) {
+				if (overwrites) (channel as APIGuildChannel<ChannelType>).permission_overwrites = overwrites;
+				return channel as APIChannel;
+			}
 		}
 
 		channel = await this.client.proxy.channels(id).get();

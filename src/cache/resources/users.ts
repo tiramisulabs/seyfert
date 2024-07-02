@@ -12,12 +12,12 @@ export class Users extends BaseResource<any, APIUser> {
 		return true;
 	}
 
-	raw(id: string): ReturnCache<APIUser | undefined> {
-		return super.get(id);
-	}
-
 	override get(id: string): ReturnCache<UserStructure | undefined> {
 		return fakePromise(super.get(id)).then(rawUser => (rawUser ? Transformers.User(this.client, rawUser) : undefined));
+	}
+
+	raw(id: string): ReturnCache<APIUser | undefined> {
+		return super.get(id);
 	}
 
 	override bulk(ids: string[]): ReturnCache<UserStructure[]> {

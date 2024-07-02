@@ -13,14 +13,14 @@ export class Channels extends GuildRelatedResource<any, APIChannel> {
 		return rest;
 	}
 
-	raw(id: string): ReturnCache<APIChannel | undefined> {
-		return super.get(id);
-	}
-
 	override get(id: string): ReturnCache<AllChannels | undefined> {
 		return fakePromise(super.get(id)).then(rawChannel =>
 			rawChannel ? channelFrom(rawChannel, this.client) : undefined,
 		);
+	}
+
+	raw(id: string): ReturnCache<Omit<APIChannel, 'permission_overwrites'> | undefined> {
+		return super.get(id);
 	}
 
 	override bulk(ids: string[]): ReturnCache<ReturnType<typeof channelFrom>[]> {
@@ -29,9 +29,17 @@ export class Channels extends GuildRelatedResource<any, APIChannel> {
 		);
 	}
 
+	bulkRaw(ids: string[]): ReturnCache<Omit<APIChannel, 'permission_overwrites'>[]> {
+		return fakePromise(super.bulk(ids)).then(channels => channels.map(rawChannel => rawChannel));
+	}
+
 	override values(guild: string): ReturnCache<ReturnType<typeof channelFrom>[]> {
 		return fakePromise(super.values(guild)).then(channels =>
 			channels.map(rawChannel => channelFrom(rawChannel, this.client)),
 		);
+	}
+
+	valuesRaw(guild: string): ReturnCache<Omit<APIChannel, 'permission_overwrites'>[]> {
+		return fakePromise(super.values(guild)).then(channels => channels.map(rawChannel => rawChannel));
 	}
 }

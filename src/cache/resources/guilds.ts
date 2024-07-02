@@ -12,14 +12,14 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 		return true;
 	}
 
-	raw(id: string): ReturnCache<APIGuild | undefined> {
-		return super.get(id);
-	}
-
 	override get(id: string): ReturnCache<GuildStructure<'cached'> | undefined> {
 		return fakePromise(super.get(id)).then(guild =>
 			guild ? Transformers.Guild<'cached'>(this.client, guild) : undefined,
 		);
+	}
+
+	raw(id: string): ReturnCache<APIGuild | undefined> {
+		return super.get(id);
 	}
 
 	override bulk(ids: string[]): ReturnCache<GuildStructure<'cached'>[]> {
@@ -28,10 +28,18 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 		);
 	}
 
+	bulkRaw(ids: string[]): ReturnCache<APIGuild[]> {
+		return super.bulk(ids);
+	}
+
 	override values(): ReturnCache<GuildStructure<'cached'>[]> {
 		return fakePromise(super.values() as APIGuild[]).then(guilds =>
 			guilds.map(x => Transformers.Guild<'cached'>(this.client, x)),
 		);
+	}
+
+	valuesRaw(): ReturnCache<APIGuild[]> {
+		return super.values();
 	}
 
 	override async remove(id: string) {

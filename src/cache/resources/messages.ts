@@ -31,6 +31,10 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 		});
 	}
 
+	raw(id: string): ReturnCache<APIMessageResource | undefined> {
+		return super.get(id);
+	}
+
 	override bulk(ids: string[]): ReturnCache<MessageStructure[]> {
 		return fakePromise(super.bulk(ids) as APIMessageResource[]).then(
 			messages =>
@@ -46,6 +50,10 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 					})
 					.filter(Boolean) as MessageStructure[],
 		);
+	}
+
+	bulkRaw(ids: string[]): ReturnCache<APIMessageResource[]> {
+		return super.bulk(ids);
 	}
 
 	override values(channel: string): ReturnCache<MessageStructure[]> {
@@ -64,9 +72,13 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 		});
 	}
 
+	valuesRaw(channel: string): ReturnCache<APIMessageResource[]> {
+		return super.values(channel);
+	}
+
 	keys(channel: string) {
 		return super.keys(channel);
 	}
 }
 
-export type APIMessageResource = Omit<APIMessage, 'author'> & { user_id?: string };
+export type APIMessageResource = Omit<APIMessage, 'author' | 'member'> & { user_id?: string };
