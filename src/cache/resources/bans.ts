@@ -38,13 +38,7 @@ export class Bans extends GuildBasedResource<any, GatewayGuildBanModifyDispatchD
 	}
 
 	bulkRaw(ids: string[], guild: string): ReturnCache<Omit<GatewayGuildBanModifyDispatchData | APIBan, 'user'>[]> {
-		return fakePromise(super.bulk(ids, guild)).then(bans =>
-			bans
-				.map(rawBan => {
-					return rawBan;
-				})
-				.filter(Boolean),
-		);
+		return super.bulk(ids, guild);
 	}
 
 	override values(guild: string): ReturnCache<GuildBanStructure[]> {
@@ -59,12 +53,6 @@ export class Bans extends GuildBasedResource<any, GatewayGuildBanModifyDispatchD
 	}
 
 	valuesRaw(guild: string): ReturnCache<Omit<GatewayGuildBanModifyDispatchData | APIBan, 'user'>[]> {
-		return fakePromise(super.values(guild)).then(bans =>
-			bans
-				.map(rawBan => {
-					return rawBan;
-				})
-				.filter(Boolean),
-		);
+		return super.values(guild);
 	}
 }

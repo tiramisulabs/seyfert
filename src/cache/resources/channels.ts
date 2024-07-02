@@ -30,7 +30,7 @@ export class Channels extends GuildRelatedResource<any, APIChannel> {
 	}
 
 	bulkRaw(ids: string[]): ReturnCache<Omit<APIChannel, 'permission_overwrites'>[]> {
-		return fakePromise(super.bulk(ids)).then(channels => channels.map(rawChannel => rawChannel));
+		return super.bulk(ids);
 	}
 
 	override values(guild: string): ReturnCache<ReturnType<typeof channelFrom>[]> {
@@ -40,6 +40,6 @@ export class Channels extends GuildRelatedResource<any, APIChannel> {
 	}
 
 	valuesRaw(guild: string): ReturnCache<Omit<APIChannel, 'permission_overwrites'>[]> {
-		return fakePromise(super.values(guild)).then(channels => channels.map(rawChannel => rawChannel));
+		return super.values(guild);
 	}
 }
