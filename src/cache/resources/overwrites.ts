@@ -19,7 +19,7 @@ export class Overwrites extends GuildRelatedResource<any, APIOverwrite[]> {
 		return data;
 	}
 
-	raw(id: string): ReturnCache<(APIOverwrite & { guild_id: string })[]> {
+	raw(id: string): ReturnCache<(APIOverwrite & { guild_id: string })[] | undefined> {
 		return super.get(id);
 	}
 
@@ -59,6 +59,10 @@ export class Overwrites extends GuildRelatedResource<any, APIOverwrite[]> {
 		);
 	}
 
+	valuesRaw(guild: string): ReturnCache<(APIOverwrite & { guild_id: string })[][]> {
+		return super.values(guild);
+	}
+
 	override bulk(
 		ids: string[],
 	): ReturnCache<{ type: number; id: string; deny: PermissionsBitField; allow: PermissionsBitField }[][]> {
@@ -73,5 +77,9 @@ export class Overwrites extends GuildRelatedResource<any, APIOverwrite[]> {
 				})),
 			),
 		);
+	}
+
+	bulkRaw(ids: string[]): ReturnCache<(APIOverwrite & { guild_id: string })[][]> {
+		return super.bulk(ids);
 	}
 }

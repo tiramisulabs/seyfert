@@ -22,6 +22,10 @@ export class Bans extends GuildBasedResource<any, GatewayGuildBanModifyDispatchD
 		);
 	}
 
+	raw(id: string, guild: string): ReturnCache<Omit<GatewayGuildBanModifyDispatchData | APIBan, 'user'> | undefined> {
+		return super.get(id, guild);
+	}
+
 	override bulk(ids: string[], guild: string): ReturnCache<GuildBanStructure[]> {
 		return fakePromise(super.bulk(ids, guild)).then(
 			bans =>
@@ -33,6 +37,16 @@ export class Bans extends GuildBasedResource<any, GatewayGuildBanModifyDispatchD
 		);
 	}
 
+	bulkRaw(ids: string[], guild: string): ReturnCache<Omit<GatewayGuildBanModifyDispatchData | APIBan, 'user'>[]> {
+		return fakePromise(super.bulk(ids, guild)).then(bans =>
+			bans
+				.map(rawBan => {
+					return rawBan;
+				})
+				.filter(Boolean),
+		);
+	}
+
 	override values(guild: string): ReturnCache<GuildBanStructure[]> {
 		return fakePromise(super.values(guild)).then(
 			bans =>
@@ -41,6 +55,16 @@ export class Bans extends GuildBasedResource<any, GatewayGuildBanModifyDispatchD
 						return rawBan ? Transformers.GuildBan(this.client, rawBan, guild) : undefined;
 					})
 					.filter(Boolean) as GuildBanStructure[],
+		);
+	}
+
+	valuesRaw(guild: string): ReturnCache<Omit<GatewayGuildBanModifyDispatchData | APIBan, 'user'>[]> {
+		return fakePromise(super.values(guild)).then(bans =>
+			bans
+				.map(rawBan => {
+					return rawBan;
+				})
+				.filter(Boolean),
 		);
 	}
 }

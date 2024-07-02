@@ -16,6 +16,14 @@ export class Members extends GuildBasedResource<any, APIGuildMember> {
 		return rest;
 	}
 
+	override get(id: string, guild: string): ReturnCache<GuildMemberStructure | undefined> {
+		return fakePromise(super.get(id, guild)).then(rawMember =>
+			fakePromise(this.client.cache.users?.raw(id)).then(user =>
+				rawMember && user ? Transformers.GuildMember(this.client, rawMember, user, guild) : undefined,
+			),
+		);
+	}
+
 	raw(id: string, guild: string): ReturnCache<APIGuildMember | undefined> {
 		return fakePromise(super.get(id, guild) as Omit<APIGuildMember, 'user'>).then(rawMember => {
 			return fakePromise(this.client.cache.users?.raw(id)).then(user =>
@@ -27,14 +35,6 @@ export class Members extends GuildBasedResource<any, APIGuildMember> {
 					: undefined,
 			);
 		});
-	}
-
-	override get(id: string, guild: string): ReturnCache<GuildMemberStructure | undefined> {
-		return fakePromise(super.get(id, guild)).then(rawMember =>
-			fakePromise(this.client.cache.users?.raw(id)).then(user =>
-				rawMember && user ? Transformers.GuildMember(this.client, rawMember, user, guild) : undefined,
-			),
-		);
 	}
 
 	override bulk(ids: string[], guild: string): ReturnCache<GuildMemberStructure[]> {
@@ -51,6 +51,10 @@ export class Members extends GuildBasedResource<any, APIGuildMember> {
 		);
 	}
 
+	bulkRaw(ids: string[], guild: string): ReturnCache<Omit<APIGuildMember, 'user'>[]> {
+		return super.bulk(ids, guild);
+	}
+
 	override values(guild: string): ReturnCache<GuildMemberStructure[]> {
 		return fakePromise(super.values(guild)).then(members =>
 			fakePromise(this.client.cache.users?.valuesRaw()).then(
@@ -63,6 +67,10 @@ export class Members extends GuildBasedResource<any, APIGuildMember> {
 						.filter(Boolean) as GuildMemberStructure[],
 			),
 		);
+	}
+
+	valuesRaw(guild: string): ReturnCache<Omit<APIGuildMember, 'user'>[]> {
+		return super.values(guild);
 	}
 
 	override async set(memberId: string, guildId: string, data: any): Promise<void>;

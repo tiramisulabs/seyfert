@@ -461,20 +461,28 @@ export class HandleCommand {
 		return false;
 	}
 
-	async fetchChannel(_option: CommandOptionWithType, id: string) {
-		return this.client.channels.raw(id);
+	async fetchChannel(_option: CommandOptionWithType, query: string) {
+		const id = query.match(/[0-9]{17,19}/g)?.[0];
+		if (id) return this.client.channels.raw(id);
+		return null;
 	}
 
-	async fetchUser(_option: CommandOptionWithType, id: string) {
-		return this.client.users.raw(id);
+	async fetchUser(_option: CommandOptionWithType, query: string) {
+		const id = query.match(/[0-9]{17,19}/g)?.[0];
+		if (id) return this.client.users.raw(id);
+		return null;
 	}
 
-	async fetchMember(_option: CommandOptionWithType, id: string, guildId: string) {
-		return this.client.members.raw(guildId, id);
+	async fetchMember(_option: CommandOptionWithType, query: string, guildId: string) {
+		const id = query.match(/[0-9]{17,19}/g)?.[0];
+		if (id) return this.client.members.raw(guildId, id);
+		return null;
 	}
 
-	async fetchRole(_option: CommandOptionWithType, id: string, guildId?: string) {
-		return guildId ? (await this.client.roles.listRaw(guildId)).find(x => x.id === id) : undefined;
+	async fetchRole(_option: CommandOptionWithType, query: string, guildId?: string) {
+		const id = query.match(/[0-9]{17,19}/g)?.[0];
+		if (id && guildId) return (await this.client.roles.listRaw(guildId)).find(x => x.id === id);
+		return null;
 	}
 
 	async runGlobalMiddlewares(
@@ -585,11 +593,12 @@ export class HandleCommand {
 						break;
 					case ApplicationCommandOptionType.Channel:
 						{
-							const rawId =
+							const rawQuery =
 								message.content.match(/(?<=<#)[0-9]{17,19}(?=>)/g)?.find(x => args[i.name]?.includes(x)) ||
-								args[i.name]?.match(/[0-9]{17,19}/g)?.[0];
-							if (!rawId) continue;
-							const channel = (await this.client.cache.channels?.raw(rawId)) ?? (await this.fetchChannel(i, rawId));
+								args[i.name];
+							if (!rawQuery) continue;
+							const channel =
+								(await this.client.cache.channels?.raw(rawQuery)) ?? (await this.fetchChannel(i, rawQuery));
 							if (channel) {
 								if ('channel_types' in i) {
 									if (!(i as SeyfertChannelOption).channel_types!.includes(channel.type)) {
@@ -603,15 +612,15 @@ export class HandleCommand {
 										break;
 									}
 								}
-								value = rawId;
+								value = channel.id;
 								//discord funny memoentnt!!!!!!!!
-								resolved.channels[rawId] = channel as APIInteractionDataResolvedChannel;
+								resolved.channels[channel.id] = channel as APIInteractionDataResolvedChannel;
 							}
 						}
 						break;
 					case ApplicationCommandOptionType.Mentionable:
 						{
-							const matches = message.content.match(/<@[0-9]{17,19}(?=>)|<@&[0-9]{17,19}(?=>)/g) ?? [];
+							const matches = args[i.name]?.match(/<@[0-9]{17,19}(?=>)|<@&[0-9]{17,19}(?=>)/g) ?? [];
 							for (const match of matches) {
 								if (match.includes('&')) {
 									const rawId = match.slice(3);
@@ -640,36 +649,33 @@ export class HandleCommand {
 						break;
 					case ApplicationCommandOptionType.Role:
 						{
-							const rawId =
-								message.mention_roles.find(x => args[i.name]?.includes(x)) || args[i.name]?.match(/[0-9]{17,19}/g)?.[0];
-							if (!rawId) continue;
+							const rawQuery = message.mention_roles.find(x => args[i.name]?.includes(x)) || args[i.name];
+							if (!rawQuery) continue;
 							const role =
-								(await this.client.cache.roles?.raw(rawId)) ?? (await this.fetchRole(i, rawId, message.guild_id));
+								(await this.client.cache.roles?.raw(rawQuery)) ?? (await this.fetchRole(i, rawQuery, message.guild_id));
 							if (role) {
-								value = rawId;
-								resolved.roles[rawId] = role;
+								value = role.id;
+								resolved.roles[role.id] = role;
 							}
 						}
 						break;
 					case ApplicationCommandOptionType.User:
 						{
-							const rawId =
-								message.mentions.find(x => args[i.name]?.includes(x.id))?.id ||
-								args[i.name]?.match(/[0-9]{17,19}/g)?.[0];
-							if (!rawId) continue;
+							const rawQuery = message.mentions.find(x => args[i.name]?.includes(x.id))?.id || args[i.name];
+							if (!rawQuery) continue;
 							const raw =
 								message.mentions.find(x => args[i.name]?.includes(x.id)) ??
-								(await this.client.cache.users?.raw(rawId)) ??
-								(await this.fetchUser(i, rawId));
+								(await this.client.cache.users?.raw(rawQuery)) ??
+								(await this.fetchUser(i, rawQuery));
 							if (raw) {
 								value = raw.id;
 								resolved.users[raw.id] = raw;
 								if (message.guild_id) {
 									const member =
 										message.mentions.find(x => args[i.name]?.includes(x.id))?.member ??
-										(await this.client.cache.members?.raw(rawId, message.guild_id)) ??
-										(await this.fetchMember(i, rawId, message.guild_id));
-									if (member) resolved.members[raw.id] = member;
+										(await this.client.cache.members?.raw(value, message.guild_id)) ??
+										(await this.fetchMember(i, value, message.guild_id));
+									if (member) resolved.members[value] = member;
 								}
 							}
 						}

@@ -23,6 +23,10 @@ export class VoiceStates extends GuildBasedResource<any, GatewayVoiceState> {
 		);
 	}
 
+	raw(memberId: string, guildId: string): ReturnCache<GatewayVoiceState | undefined> {
+		return super.get(memberId, guildId);
+	}
+
 	override bulk(ids: string[], guild: string): ReturnCache<VoiceStateStructure[]> {
 		return fakePromise(super.bulk(ids, guild)).then(
 			states =>
@@ -32,10 +36,18 @@ export class VoiceStates extends GuildBasedResource<any, GatewayVoiceState> {
 		);
 	}
 
+	bulkRaw(ids: string[], guild: string): ReturnCache<GatewayVoiceState[]> {
+		return super.bulk(ids, guild);
+	}
+
 	override values(guildId: string): ReturnCache<VoiceStateStructure[]> {
 		return fakePromise(super.values(guildId)).then(states =>
 			states.map(state => Transformers.VoiceState(this.client, state)),
 		);
+	}
+
+	valuesRaw(guildId: string): ReturnCache<GatewayVoiceState[]> {
+		return super.values(guildId);
 	}
 }
 
