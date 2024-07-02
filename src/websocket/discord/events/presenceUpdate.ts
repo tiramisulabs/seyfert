@@ -33,7 +33,6 @@ export class PresenceUpdateHandler {
 
 	presenceEquals(oldPresence: GatewayPresenceUpdateDispatchData, newPresence: GatewayPresenceUpdateDispatchData) {
 		return (
-			newPresence &&
 			oldPresence.status === newPresence.status &&
 			oldPresence.activities?.length === newPresence.activities?.length &&
 			oldPresence.activities?.every((activity, index) =>
