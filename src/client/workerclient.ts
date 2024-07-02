@@ -25,6 +25,8 @@ import type { Client, ClientOptions } from './client';
 
 import { Collectors } from './collectors';
 import { type ClientUserStructure, Transformers } from './transformers';
+import { MemberUpdateHandler } from '../websocket/discord/events/memberUpdate';
+import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdate';
 
 let workerData: WorkerData;
 let manager: import('node:worker_threads').MessagePort;
@@ -37,15 +39,16 @@ try {
 		token: process.env.SEYFERT_WORKER_TOKEN!,
 		workerId: Number.parseInt(process.env.SEYFERT_WORKER_WORKERID!),
 		workerProxy: process.env.SEYFERT_WORKER_WORKERPROXY === 'true',
+		totalShards: Number(process.env.SEYFERT_WORKER_TOTALSHARDS),
+		mode: process.env.SEYFERT_WORKER_MODE,
 	} as WorkerData;
 } catch {}
 
 export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	private __handleGuilds?: Set<string> = new Set();
-	logger = new Logger({
-		name: `[Worker #${workerData.workerId}]`,
-	});
 
+	memberUpdateHandler = new MemberUpdateHandler();
+	presenceUpdateHandler = new PresenceUpdateHandler();
 	collectors = new Collectors();
 	events? = new EventHandler(this);
 	me!: When<Ready, ClientUserStructure>;
@@ -57,41 +60,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	constructor(options?: WorkerClientOptions) {
 		super(options);
-
-		if (!process.env.SEYFERT_SPAWNING) {
-			throw new Error('WorkerClient cannot spawn without manager');
-		}
-		this.postMessage({
-			type: 'WORKER_START',
-			workerId: workerData.workerId,
-		} satisfies WorkerStart);
-
-		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
-		if (worker_threads?.parentPort) {
-			manager = worker_threads?.parentPort;
-		}
-		(manager ?? process).on('message', (data: ManagerMessages) => this.handleManagerMessages(data));
-
-		this.setServices({
-			cache: {
-				adapter: new WorkerAdapter(workerData),
-				disabledCache: options?.disabledCache,
-			},
-		});
-		if (workerData.debug) {
-			this.debugger = new Logger({
-				name: `[Worker #${workerData.workerId}]`,
-				logLevel: LogLevels.Debug,
-			});
-		}
-		if (workerData.workerProxy) {
-			this.setServices({
-				rest: new ApiHandler({
-					token: workerData.token,
-					workerProxy: true,
-					debug: workerData.debug,
-				}),
-			});
+		if (options?.postMessage) {
+			this.postMessage = options.postMessage;
 		}
 	}
 
@@ -126,7 +96,54 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		}
 	}
 
+	setWorkerData(data: WorkerData) {
+		workerData = data;
+	}
+
 	async start(options: Omit<DeepPartial<StartOptions>, 'httpConnection' | 'token' | 'connection'> = {}) {
+		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
+
+		if (worker_threads?.parentPort) {
+			manager = worker_threads?.parentPort;
+		}
+
+		if (workerData.mode !== 'custom')
+			(manager ?? process).on('message', (data: ManagerMessages) => this.handleManagerMessages(data));
+
+		this.logger = new Logger({
+			name: `[Worker #${workerData.workerId}]`,
+		});
+
+		const adapter = new WorkerAdapter(workerData);
+		if (this.options.postMessage) {
+			adapter.postMessage = this.options.postMessage;
+		}
+		this.setServices({
+			cache: {
+				adapter,
+				disabledCache: this.options.disabledCache,
+			},
+		});
+
+		if (workerData.debug) {
+			this.debugger = new Logger({
+				name: `[Worker #${workerData.workerId}]`,
+				logLevel: LogLevels.Debug,
+			});
+		}
+		if (workerData.workerProxy) {
+			this.setServices({
+				rest: new ApiHandler({
+					token: workerData.token,
+					workerProxy: true,
+					debug: workerData.debug,
+				}),
+			});
+		}
+		this.postMessage({
+			type: 'WORKER_START',
+			workerId: workerData.workerId,
+		} satisfies WorkerStart);
 		await super.start(options);
 		await this.loadEvents(options.eventsDir);
 		this.cache.intents = workerData.intents;
@@ -140,12 +157,12 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		}
 	}
 
-	postMessage(body: any) {
+	postMessage(body: unknown): unknown {
 		if (manager) return manager.postMessage(body);
 		return process.send!(body);
 	}
 
-	protected async handleManagerMessages(data: ManagerMessages) {
+	async handleManagerMessages(data: ManagerMessages) {
 		switch (data.type) {
 			case 'CACHE_RESULT':
 				if (this.cache.adapter instanceof WorkerAdapter && this.cache.adapter.promises.has(data.nonce)) {
@@ -329,6 +346,23 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			this.collectors.run('RAW', packet),
 		]); //ignore promise
 		switch (packet.t) {
+			//// Cases where we must obtain the old data before updating
+			case 'GUILD_MEMBER_UPDATE':
+				{
+					if (!this.memberUpdateHandler.check(packet.d)) {
+						return;
+					}
+					await this.events?.execute(packet.t, packet, this as WorkerClient<true>, shardId);
+				}
+				break;
+			case 'PRESENCE_UPDATE':
+				{
+					if (!this.presenceUpdateHandler.check(packet.d)) {
+						return;
+					}
+					await this.events?.execute(packet.t, packet, this as WorkerClient<true>, shardId);
+				}
+				break;
 			case 'GUILD_CREATE': {
 				if (this.__handleGuilds?.has(packet.d.id)) {
 					this.__handleGuilds.delete(packet.d.id);
@@ -348,6 +382,12 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			default: {
 				await this.events?.execute(packet.t as never, packet, this, shardId);
 				switch (packet.t) {
+					case 'INTERACTION_CREATE':
+						await this.handleCommand.interaction(packet.d, shardId);
+						break;
+					case 'MESSAGE_CREATE':
+						await this.handleCommand.message(packet.d, shardId);
+						break;
 					case 'READY':
 						if (!this.__handleGuilds) this.__handleGuilds = new Set();
 						for (const g of packet.d.guilds) {
@@ -370,13 +410,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							}
 							delete this.__handleGuilds;
 						}
-						this.debugger?.debug(`#${shardId} [${packet.d.user.username}](${this.botId}) is online...`);
-						break;
-					case 'INTERACTION_CREATE':
-						await this.handleCommand.interaction(packet.d, shardId);
-						break;
-					case 'MESSAGE_CREATE':
-						await this.handleCommand.message(packet.d, shardId);
+						this.debugger?.debug(`#${shardId}[${packet.d.user.username}](${this.botId}) is online...`);
 						break;
 				}
 				break;
@@ -395,8 +429,9 @@ export function generateShardInfo(shard: Shard): WorkerShardInfo {
 }
 
 interface WorkerClientOptions extends BaseClientOptions {
-	disabledCache: Cache['disabledCache'];
+	disabledCache?: Cache['disabledCache'];
 	commands?: NonNullable<Client['options']>['commands'];
 	handlePayload?: ShardManagerOptions['handlePayload'];
 	gateway?: ClientOptions['gateway'];
+	postMessage?: (body: unknown) => unknown;
 }

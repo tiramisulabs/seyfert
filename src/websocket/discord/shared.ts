@@ -4,7 +4,7 @@ import type {
 	GatewayIntentBits,
 	GatewayPresenceUpdateData,
 } from 'discord-api-types/v10';
-import type { Logger } from '../../common';
+import type { Awaitable, DeepPartial, Logger } from '../../common';
 import type { IdentifyProperties } from '../constants';
 
 export interface ShardManagerOptions extends ShardDetails {
@@ -38,8 +38,15 @@ export interface ShardManagerOptions extends ShardDetails {
 	compress?: boolean;
 }
 
-export interface WorkerManagerOptions extends Omit<ShardManagerOptions, 'handlePayload'> {
-	mode: 'threads' | 'clusters';
+export interface CustomManagerAdapter {
+	postMessage(workerId: number, body: unknown): Awaitable<unknown>;
+	spawn(workerData: WorkerData, env: Record<string, any>): Awaitable<unknown>;
+}
+
+export interface WorkerManagerOptions extends Omit<ShardManagerOptions, 'handlePayload' | 'properties'> {
+	mode: 'threads' | 'clusters' | 'custom';
+
+	adapter?: CustomManagerAdapter;
 
 	workers?: number;
 
@@ -53,6 +60,8 @@ export interface WorkerManagerOptions extends Omit<ShardManagerOptions, 'handleP
 	path: string;
 
 	handlePayload(shardId: number, workerId: number, packet: GatewayDispatchPayload): unknown;
+
+	properties?: DeepPartial<NonNullable<ShardManagerOptions['properties']>>;
 }
 
 export interface ShardData {
@@ -117,6 +126,8 @@ export interface WorkerData {
 	token: string;
 	path: string;
 	shards: number[];
+	totalShards: number;
+	mode: 'custom' | 'clusters' | 'threads';
 	workerId: number;
 	debug: boolean;
 	workerProxy: boolean;
