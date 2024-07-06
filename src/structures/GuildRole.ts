@@ -5,7 +5,7 @@ import type {
 	RESTPostAPIGuildRoleJSONBody,
 } from 'discord-api-types/v10';
 import type { UsingClient } from '../commands';
-import { Formatter, type MethodContext, type ObjectToLower } from '../common';
+import { Formatter, type ImageOptions, type MethodContext, type ObjectToLower } from '../common';
 import { DiscordBase } from './extra/DiscordBase';
 import { PermissionsBitField } from './extra/Permissions';
 
@@ -33,6 +33,12 @@ export class GuildRole extends DiscordBase {
 
 	delete(reason?: string) {
 		return this.client.roles.delete(this.guildId, this.id, reason);
+	}
+
+	iconURL(options?: ImageOptions) {
+		if (!this.icon) return null;
+
+		return this.rest.cdn['role-icons'](this.id).get(this.icon, options);
 	}
 
 	toString() {
