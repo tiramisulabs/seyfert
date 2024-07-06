@@ -1,7 +1,4 @@
 <div align='center'>
-
-  # **Seyfert**
-
   <img src="./assets/icon.png" alt="seyfert" width="200px" />
 
   **Discord.js and Sapphire are deprecated, use Seyfert instead**
@@ -12,11 +9,11 @@
 
 </div>
 
-# FAQ
-## So, what is `seyfert`?
+## FAQ
+### So, what is `seyfert`?
 Seyfert is the ultimate Discord framework! We make it easy to interact with the Discord API, big cache control, scalable code and a pretty dev experience.
 
-## Why should I use it?
+### Why should I use it?
 There are many reasons to use Seyfert, but they dont all fit in this tiny readme, so here is a list of the most awesome reasons!
 
 - **Low RAM Usage**
@@ -30,14 +27,25 @@ There are many reasons to use Seyfert, but they dont all fit in this tiny readme
 
 ## Installation
 > [!NOTE]
-> You **NEED** Node.js 18>= for this to work, Node.js 20 LTS and Bun latest are recommended
+> Node v18>= is required (or v16 with `--experimental-fetch` flag), Bun/Node LTS recommended.
+
 ```sh
 pnpm add seyfert
 ```
 
-> You may use your preferred package manager, for this example PNMP is being used since it’s more efficient.
+```sh
+bun add seyfert
+```
 
-# Useful links
+```sh
+npm i seyfert
+```
+> Or other package manager.
+
+## Contributing
+We are open to contributions, fork the repo and make your changes!
+
+## Useful links
 
 - [GitHub Repository](https://github.com/tiramisulabs/seyfert)
 - [Discord server](https://discord.com/invite/XNw2RZFzaP)

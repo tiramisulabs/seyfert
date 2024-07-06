@@ -15,7 +15,7 @@ export class WorkerAdapter implements Adapter {
 		if (worker_threads?.parentPort) parentPort = worker_threads.parentPort;
 	}
 
-	postMessage(body: any) {
+	postMessage(body: any): unknown {
 		if (parentPort) return parentPort.postMessage(body);
 		return process.send!(body);
 	}
@@ -45,12 +45,24 @@ export class WorkerAdapter implements Adapter {
 		return this.send('scan', ...rest);
 	}
 
+	bulkGet(...rest: any[]) {
+		return this.send('bulkGet', ...rest);
+	}
+
 	get(...rest: any[]) {
 		return this.send('get', ...rest);
 	}
 
+	bulkSet(...rest: any[]) {
+		return this.send('bulkSet', ...rest);
+	}
+
 	set(...rest: any[]) {
 		return this.send('set', ...rest);
+	}
+
+	bulkPatch(...rest: any[]) {
+		return this.send('bulkPatch', ...rest);
 	}
 
 	patch(...rest: any[]) {
@@ -67,6 +79,10 @@ export class WorkerAdapter implements Adapter {
 
 	count(...rest: any[]) {
 		return this.send('count', ...rest);
+	}
+
+	bulkRemove(...rest: any[]) {
+		return this.send('bulkRemove', ...rest);
 	}
 
 	remove(...rest: any[]) {

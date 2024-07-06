@@ -3,7 +3,7 @@ import type { UsingClient } from '../../../commands';
 import { fakePromise } from '../../../common';
 import type { Cache, ReturnCache } from '../../index';
 
-export class BaseResource<T = any> {
+export class BaseResource<T = any, S = any> {
 	client!: UsingClient;
 	namespace = 'base';
 
@@ -37,7 +37,7 @@ export class BaseResource<T = any> {
 		return;
 	}
 
-	setIfNI(intent: keyof typeof GatewayIntentBits, id: string, data: any) {
+	setIfNI(intent: keyof typeof GatewayIntentBits, id: string, data: S) {
 		if (!this.cache.hasIntent(intent)) {
 			return this.set(id, data);
 		}
@@ -48,15 +48,15 @@ export class BaseResource<T = any> {
 	}
 
 	bulk(ids: string[]): ReturnCache<T[]> {
-		return fakePromise(this.adapter.get(ids.map(id => this.hashId(id)))).then(x => x.filter(y => y));
+		return fakePromise(this.adapter.bulkGet(ids.map(id => this.hashId(id)))).then(x => x.filter(y => y));
 	}
 
-	set(id: string, data: any) {
+	set(id: string, data: S) {
 		if (!this.filter(data, id)) return;
 		return fakePromise(this.addToRelationship(id)).then(() => this.adapter.set(this.hashId(id), data));
 	}
 
-	patch(id: string, data: any) {
+	patch(id: string, data: S) {
 		if (!this.filter(data, id)) return;
 		return fakePromise(this.addToRelationship(id)).then(() => this.adapter.patch(false, this.hashId(id), data));
 	}
@@ -73,12 +73,12 @@ export class BaseResource<T = any> {
 		return this.adapter.values(this.namespace) as T[];
 	}
 
-	count() {
-		return this.adapter.count(this.namespace);
+	count(): ReturnCache<number> {
+		return this.adapter.count(this.namespace) as number;
 	}
 
-	contains(id: string) {
-		return this.adapter.contains(this.namespace, id);
+	contains(id: string): ReturnCache<boolean> {
+		return this.adapter.contains(this.namespace, id) as boolean;
 	}
 
 	getToRelationship() {
@@ -94,6 +94,6 @@ export class BaseResource<T = any> {
 	}
 
 	hashId(id: string) {
-		return `${this.namespace}.${id}`;
+		return id.startsWith(this.namespace) ? id : `${this.namespace}.${id}`;
 	}
 }

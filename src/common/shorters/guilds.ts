@@ -12,17 +12,10 @@ import type {
 } from 'discord-api-types/v10';
 import { toSnakeCase, type ObjectToLower } from '..';
 import { resolveFiles } from '../../builders';
-import {
-	AnonymousGuild,
-	AutoModerationRule,
-	BaseChannel,
-	Guild,
-	GuildMember,
-	Sticker,
-	type CreateStickerBodyRequest,
-} from '../../structures';
+import { BaseChannel, GuildMember, type CreateStickerBodyRequest } from '../../structures';
 import channelFrom from '../../structures/channels';
 import { BaseShorter } from './base';
+import { type GuildStructure, Transformers } from '../../client/transformers';
 
 export class GuildShorter extends BaseShorter {
 	/**
@@ -30,10 +23,10 @@ export class GuildShorter extends BaseShorter {
 	 * @param body The data for creating the guild.
 	 * @returns A Promise that resolves to the created guild.
 	 */
-	async create(body: RESTPostAPIGuildsJSONBody): Promise<Guild<'api'>> {
+	async create(body: RESTPostAPIGuildsJSONBody): Promise<GuildStructure<'api'>> {
 		const guild = await this.client.proxy.guilds.post({ body });
 		await this.client.cache.guilds?.setIfNI('Guilds', guild.id, guild);
-		return new Guild<'api'>(this.client, guild);
+		return Transformers.Guild<'api'>(this.client, guild);
 	}
 
 	/**
@@ -43,14 +36,18 @@ export class GuildShorter extends BaseShorter {
 	 * @returns A Promise that resolves to the fetched guild.
 	 */
 	async fetch(id: string, force = false) {
+		return Transformers.Guild<'api'>(this.client, await this.raw(id, force));
+	}
+
+	async raw(id: string, force = false) {
 		if (!force) {
-			const guild = await this.client.cache.guilds?.get(id);
+			const guild = await this.client.cache.guilds?.raw(id);
 			if (guild) return guild;
 		}
 
 		const data = await this.client.proxy.guilds(id).get();
 		await this.client.cache.guilds?.patch(id, data);
-		return (await this.client.cache.guilds?.get(id)) ?? new Guild<'api'>(this.client, data);
+		return (await this.client.cache.guilds?.raw(id)) ?? data;
 	}
 
 	/**
@@ -72,17 +69,17 @@ export class GuildShorter extends BaseShorter {
 		return this.client.proxy
 			.users('@me')
 			.guilds.get({ query })
-			.then(guilds => guilds.map(guild => new AnonymousGuild(this.client, { ...guild, splash: null })));
+			.then(guilds => guilds.map(guild => Transformers.AnonymousGuild(this.client, { ...guild, splash: null })));
 	}
 
 	async fetchSelf(id: string, force = false) {
 		if (!force) {
-			const self = await this.client.cache.members?.get(this.client.botId, id);
-			if (self) return self;
+			const self = await this.client.cache.members?.raw(this.client.botId, id);
+			if (self?.user) return new GuildMember(this.client, self, self.user, id);
 		}
 		const self = await this.client.proxy.guilds(id).members(this.client.botId).get();
-		await this.client.cache.members?.patch(self.user!.id, id, self);
-		return new GuildMember(this.client, self, self.user!, id);
+		await this.client.cache.members?.patch(self.user.id, id, self);
+		return new GuildMember(this.client, self, self.user, id);
 	}
 
 	leave(id: string) {
@@ -211,7 +208,7 @@ export class GuildShorter extends BaseShorter {
 				this.client.proxy
 					.guilds(guildId)
 					['auto-moderation'].rules.get()
-					.then(rules => rules.map(rule => new AutoModerationRule(this.client, rule))),
+					.then(rules => rules.map(rule => Transformers.AutoModerationRule(this.client, rule))),
 
 			/**
 			 * Creates a new auto-moderation rule in the guild.
@@ -223,7 +220,7 @@ export class GuildShorter extends BaseShorter {
 				this.client.proxy
 					.guilds(guildId)
 					['auto-moderation'].rules.post({ body })
-					.then(rule => new AutoModerationRule(this.client, rule)),
+					.then(rule => Transformers.AutoModerationRule(this.client, rule)),
 
 			/**
 			 * Deletes an auto-moderation rule from the guild.
@@ -247,7 +244,7 @@ export class GuildShorter extends BaseShorter {
 					.guilds(guildId)
 					['auto-moderation'].rules(ruleId)
 					.get()
-					.then(rule => new AutoModerationRule(this.client, rule));
+					.then(rule => Transformers.AutoModerationRule(this.client, rule));
 			},
 
 			/**
@@ -268,7 +265,7 @@ export class GuildShorter extends BaseShorter {
 					.guilds(guildId)
 					['auto-moderation'].rules(ruleId)
 					.patch({ body: toSnakeCase(body), reason })
-					.then(rule => new AutoModerationRule(this.client, rule));
+					.then(rule => Transformers.AutoModerationRule(this.client, rule));
 			},
 		};
 	}
@@ -289,7 +286,7 @@ export class GuildShorter extends BaseShorter {
 					stickers.map(st => [st.id, st] as any),
 					guildId,
 				);
-				return stickers.map(st => new Sticker(this.client, st));
+				return stickers.map(st => Transformers.Sticker(this.client, st));
 			},
 
 			/**
@@ -305,7 +302,7 @@ export class GuildShorter extends BaseShorter {
 					.guilds(guildId)
 					.stickers.post({ reason, body: json, files: [{ ...fileResolve[0], key: 'file' }], appendToFormData: true });
 				await this.client.cache.stickers?.setIfNI('GuildEmojisAndStickers', sticker.id, guildId, sticker);
-				return new Sticker(this.client, sticker);
+				return Transformers.Sticker(this.client, sticker);
 			},
 
 			/**
@@ -319,7 +316,7 @@ export class GuildShorter extends BaseShorter {
 			edit: async (guildId: string, stickerId: string, body: RESTPatchAPIGuildStickerJSONBody, reason?: string) => {
 				const sticker = await this.client.proxy.guilds(guildId).stickers(stickerId).patch({ body, reason });
 				await this.client.cache.stickers?.setIfNI('GuildEmojisAndStickers', stickerId, guildId, sticker);
-				return new Sticker(this.client, sticker);
+				return Transformers.Sticker(this.client, sticker);
 			},
 
 			/**
@@ -337,7 +334,7 @@ export class GuildShorter extends BaseShorter {
 				}
 				sticker = await this.client.proxy.guilds(guildId).stickers(stickerId).get();
 				await this.client.cache.stickers?.patch(stickerId, guildId, sticker);
-				return new Sticker(this.client, sticker);
+				return Transformers.Sticker(this.client, sticker);
 			},
 
 			/**

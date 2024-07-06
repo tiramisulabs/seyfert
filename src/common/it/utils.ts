@@ -40,7 +40,7 @@ export function delay<T>(time: number, result?: T): Promise<T> {
  * @param o The value to check.
  * @returns `true` if the value is an object, otherwise `false`.
  */
-export function isObject(o: any): boolean {
+export function isObject(o: any): o is Record<string, unknown> {
 	return o && typeof o === 'object' && !Array.isArray(o);
 }
 
@@ -130,7 +130,7 @@ export class BaseHandler {
 	 * @param paths The paths of the files to load.
 	 * @returns A Promise that resolves to an array of loaded files.
 	 */
-	protected async loadFiles<T extends NonNullable<unknown>>(paths: string[]): Promise<T[]> {
+	protected loadFiles<T extends NonNullable<unknown>>(paths: string[]): Promise<T[]> {
 		return Promise.all(paths.map(path => magicImport(path).then(file => file.default ?? file)));
 	}
 
@@ -139,13 +139,13 @@ export class BaseHandler {
 	 * @param paths The paths of the files to load.
 	 * @returns A Promise that resolves to an array of objects containing name, file, and path.
 	 */
-	protected async loadFilesK<T>(paths: string[]): Promise<{ name: string; file: T; path: string }[]> {
+	protected loadFilesK<T>(paths: string[]): Promise<{ name: string; file: T; path: string }[]> {
 		return Promise.all(
 			paths.map(path =>
 				magicImport(path).then(file => {
 					return {
 						name: basename(path),
-						file: file.default ?? file,
+						file,
 						path,
 					};
 				}),

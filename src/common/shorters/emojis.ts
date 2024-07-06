@@ -1,9 +1,9 @@
 import type { APIEmoji, RESTPatchAPIGuildEmojiJSONBody, RESTPostAPIGuildEmojiJSONBody } from 'discord-api-types/v10';
-import { GuildEmoji } from '../..';
 import { resolveImage } from '../../builders';
 import type { ImageResolvable } from '../types/resolvables';
 import type { OmitInsert } from '../types/util';
 import { BaseShorter } from './base';
+import { Transformers } from '../../client/transformers';
 
 export class EmojiShorter extends BaseShorter {
 	/**
@@ -25,7 +25,7 @@ export class EmojiShorter extends BaseShorter {
 			emojis.map<[string, APIEmoji]>(x => [x.id!, x]),
 			guildId,
 		);
-		return emojis.map(m => new GuildEmoji(this.client, m, guildId));
+		return emojis.map(m => Transformers.GuildEmoji(this.client, m, guildId));
 	}
 
 	/**
@@ -39,10 +39,10 @@ export class EmojiShorter extends BaseShorter {
 		const emoji = await this.client.proxy.guilds(guildId).emojis.post({
 			body: bodyResolved,
 		});
-    
+
 		await this.client.cache.emojis?.setIfNI('GuildEmojisAndStickers', emoji.id!, guildId, emoji);
 
-		return new GuildEmoji(this.client, emoji, guildId);
+		return Transformers.GuildEmoji(this.client, emoji, guildId);
 	}
 
 	/**
@@ -59,7 +59,7 @@ export class EmojiShorter extends BaseShorter {
 			if (emoji) return emoji;
 		}
 		emoji = await this.client.proxy.guilds(guildId).emojis(emojiId).get();
-		return new GuildEmoji(this.client, emoji, guildId);
+		return Transformers.GuildEmoji(this.client, emoji, guildId);
 	}
 
 	/**
@@ -84,6 +84,6 @@ export class EmojiShorter extends BaseShorter {
 	async edit(guildId: string, emojiId: string, body: RESTPatchAPIGuildEmojiJSONBody, reason?: string) {
 		const emoji = await this.client.proxy.guilds(guildId).emojis(emojiId).patch({ body, reason });
 		await this.client.cache.emojis?.setIfNI('GuildEmojisAndStickers', emoji.id!, guildId, emoji);
-		return new GuildEmoji(this.client, emoji, guildId);
+		return Transformers.GuildEmoji(this.client, emoji, guildId);
 	}
 }

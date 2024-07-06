@@ -7,15 +7,15 @@ import type {
 	GatewayThreadUpdateDispatchData,
 } from 'discord-api-types/v10';
 import { toCamelCase } from '../../common';
-import { ThreadChannel } from '../../structures';
 import type { UsingClient } from '../../commands';
+import { type ThreadChannelStructure, Transformers } from '../../client/transformers';
 
 export const THREAD_CREATE = (self: UsingClient, data: GatewayThreadCreateDispatchData) => {
-	return new ThreadChannel(self, data);
+	return Transformers.ThreadChannel(self, data);
 };
 
 export const THREAD_DELETE = (self: UsingClient, data: GatewayThreadDeleteDispatchData) => {
-	return new ThreadChannel(self, data);
+	return Transformers.ThreadChannel(self, data);
 };
 
 export const THREAD_LIST_SYNC = (_self: UsingClient, data: GatewayThreadListSyncDispatchData) => {
@@ -33,6 +33,6 @@ export const THREAD_MEMBERS_UPDATE = (_self: UsingClient, data: GatewayThreadMem
 export const THREAD_UPDATE = async (
 	self: UsingClient,
 	data: GatewayThreadUpdateDispatchData,
-): Promise<[thread: ThreadChannel, old?: ThreadChannel]> => {
-	return [new ThreadChannel(self, data), await self.cache.threads?.get(data.id)];
+): Promise<[thread: ThreadChannelStructure, old?: ThreadChannelStructure]> => {
+	return [Transformers.ThreadChannel(self, data), await self.cache.threads?.get(data.id)];
 };

@@ -7,6 +7,7 @@ import {
 import {
 	LogLevels,
 	Logger,
+	type MakeRequired,
 	MergeOptions,
 	lazyLoadPackage,
 	toSnakeCase,
@@ -16,7 +17,7 @@ import {
 import { ShardManagerDefaults } from '../constants';
 import { DynamicBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';
-import { Shard } from './shard.js';
+import { Shard } from './shard';
 import type { ShardManagerOptions, WorkerData } from './shared';
 
 let parentPort: import('node:worker_threads').MessagePort;
@@ -24,13 +25,18 @@ let workerData: WorkerData;
 
 export class ShardManager extends Map<number, Shard> {
 	connectQueue: ConnectQueue;
-	options: ShardManagerOptions;
+	options: MakeRequired<ShardManagerOptions, keyof typeof ShardManagerDefaults>;
 	debugger?: Logger;
 
 	constructor(options: ShardManagerOptions) {
 		super();
-		options.totalShards ??= options.info.shards;
-		this.options = MergeOptions<Required<ShardManagerOptions>>(ShardManagerDefaults, options);
+		this.options = MergeOptions<ShardManager['options']>(
+			ShardManagerDefaults,
+			{
+				totalShards: options.info.shards,
+			} as ShardManagerOptions,
+			options,
+		);
 		this.connectQueue = new ConnectQueue(5.5e3, this.concurrency);
 
 		if (this.options.debug) {

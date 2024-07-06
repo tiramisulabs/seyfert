@@ -1,6 +1,7 @@
 import type { Locale, LocaleString } from 'discord-api-types/v10';
 import { BaseHandler } from '../common';
 import { LangRouter } from './router';
+import type { FileLoaded } from '../commands/handler';
 
 export class LangsHandler extends BaseHandler {
 	values: Partial<Record<string, any>> = {};
@@ -40,14 +41,12 @@ export class LangsHandler extends BaseHandler {
 		const files = instances ?? (await this.loadFilesK<Record<string, any>>(await this.getFiles(dir)));
 		for (const i of files) {
 			const locale = i.name.split('.').slice(0, -1).join('.') || i.name;
-			const result = this.callback(locale, i.file);
+			const result = this.onFile(locale, i.file);
 			if (result) this.values[locale] = result;
 		}
 	}
 
-	setHandlers({ callback }: { callback: LangsHandler['callback'] }) {
-		this.callback = callback;
+	onFile(_locale: string, file: FileLoaded<Record<string, any>>): Record<string, any> | false {
+		return file.default ?? false;
 	}
-
-	callback = (_locale: string, file: Record<string, any>): Record<string, any> | false => file;
 }

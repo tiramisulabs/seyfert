@@ -24,7 +24,6 @@ import {
 	type RESTPostAPIGuildForumThreadsJSONBody,
 	type SortOrderType,
 	type ThreadAutoArchiveDuration,
-	type RESTGetAPIChannelMessagesQuery,
 } from 'discord-api-types/v10';
 import { mix } from 'ts-mixer';
 import { ActionRow, Embed, PollBuilder, resolveAttachment } from '../builders';
@@ -43,6 +42,22 @@ import type { GuildRole } from './GuildRole';
 import { DiscordBase } from './extra/DiscordBase';
 import { channelLink } from './extra/functions';
 import { Collection, Formatter, type RawFile } from '..';
+import {
+	type BaseChannelStructure,
+	type BaseGuildChannelStructure,
+	type CategoryChannelStructure,
+	type DMChannelStructure,
+	type DirectoryChannelStructure,
+	type ForumChannelStructure,
+	type GuildMemberStructure,
+	type MediaChannelStructure,
+	type NewsChannelStructure,
+	type StageChannelStructure,
+	type TextGuildChannelStructure,
+	type ThreadChannelStructure,
+	Transformers,
+	type VoiceChannelStructure,
+} from '../client/transformers';
 
 export class BaseChannel<T extends ChannelType> extends DiscordBase<APIChannelBase<ChannelType>> {
 	declare type: T;
@@ -237,7 +252,6 @@ export class MessagesMethods extends DiscordBase {
 			delete: (messageId: string, reason?: string) => ctx.client.messages.delete(messageId, ctx.channelId, reason),
 			fetch: (messageId: string) => ctx.client.messages.fetch(messageId, ctx.channelId),
 			purge: (messages: string[], reason?: string) => ctx.client.messages.purge(messages, ctx.channelId, reason),
-			list: (query: RESTGetAPIChannelMessagesQuery) => ctx.client.messages.list(ctx.channelId, query),
 		};
 	}
 
@@ -266,23 +280,27 @@ export class MessagesMethods extends DiscordBase {
 		self: UsingClient,
 	) {
 		const poll = (body as MessageCreateBodyRequest).poll;
-		return {
+		const allow = {
 			allowed_mentions: self.options?.allowedMentions,
 			...body,
 			components: body.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)) ?? undefined,
 			embeds: body.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)) ?? undefined,
-			attachments:
-				'attachments' in body
-					? body.attachments?.map((x, i) => ({
-							id: i,
-							...resolveAttachment(x),
-						})) ?? undefined
-					: (files?.map((x, id) => ({
-							id,
-							filename: x.name,
-						})) as RESTAPIAttachment[]),
 			poll: poll ? (poll instanceof PollBuilder ? poll.toJSON() : poll) : undefined,
-		} as T;
+		};
+
+		if ('attachment' in body) {
+			allow.attachments =
+				body.attachments?.map((x, i) => ({
+					id: i,
+					...resolveAttachment(x),
+				})) ?? undefined;
+		} else if (files?.length) {
+			allow.attachments = files?.map((x, id) => ({
+				id,
+				filename: x.name,
+			})) as RESTAPIAttachment[];
+		}
+		return allow as unknown as T;
 	}
 }
 
@@ -295,32 +313,32 @@ export class TextBaseGuildChannel extends BaseGuildChannel {}
 export default function channelFrom(data: APIChannelBase<ChannelType>, client: UsingClient): AllChannels {
 	switch (data.type) {
 		case ChannelType.GuildStageVoice:
-			return new StageChannel(client, data);
+			return Transformers.StageChannel(client, data);
 		case ChannelType.GuildMedia:
-			return new MediaChannel(client, data);
+			return Transformers.MediaChannel(client, data);
 		case ChannelType.DM:
-			return new DMChannel(client, data);
+			return Transformers.DMChannel(client, data);
 		case ChannelType.GuildForum:
-			return new ForumChannel(client, data);
+			return Transformers.ForumChannel(client, data);
 		case ChannelType.AnnouncementThread:
 		case ChannelType.PrivateThread:
 		case ChannelType.PublicThread:
-			return new ThreadChannel(client, data);
+			return Transformers.ThreadChannel(client, data);
 		case ChannelType.GuildDirectory:
-			return new DirectoryChannel(client, data);
+			return Transformers.DirectoryChannel(client, data);
 		case ChannelType.GuildVoice:
-			return new VoiceChannel(client, data);
+			return Transformers.VoiceChannel(client, data);
 		case ChannelType.GuildText:
-			return new TextGuildChannel(client, data as APIGuildChannel<ChannelType>);
+			return Transformers.TextGuildChannel(client, data as APIGuildChannel<ChannelType>);
 		case ChannelType.GuildCategory:
-			return new CategoryChannel(client, data);
+			return Transformers.CategoryChannel(client, data);
 		case ChannelType.GuildAnnouncement:
-			return new NewsChannel(client, data);
+			return Transformers.NewsChannel(client, data);
 		default:
 			if ('guild_id' in data) {
-				return new BaseGuildChannel(client, data as APIGuildChannel<ChannelType>);
+				return Transformers.BaseGuildChannel(client, data as APIGuildChannel<ChannelType>);
 			}
-			return new BaseChannel(client, data);
+			return Transformers.BaseChannel(client, data);
 	}
 }
 
@@ -391,7 +409,7 @@ export class VoiceChannelMethods extends DiscordBase {
 	}
 
 	public async members(force?: boolean) {
-		const collection = new Collection<string, GuildMember>();
+		const collection = new Collection<string, GuildMemberStructure>();
 
 		const states = await this.states();
 
@@ -573,30 +591,39 @@ export class NewsChannel extends BaseChannel<ChannelType.GuildAnnouncement> {
 export class DirectoryChannel extends BaseChannel<ChannelType.GuildDirectory> {}
 
 export type AllGuildChannels =
-	| TextGuildChannel
-	| VoiceChannel
-	| MediaChannel
-	| ForumChannel
-	| ThreadChannel
-	| CategoryChannel
-	| NewsChannel
-	| DirectoryChannel
-	| StageChannel;
+	| TextGuildChannelStructure
+	| VoiceChannelStructure
+	| MediaChannelStructure
+	| ForumChannelStructure
+	| ThreadChannelStructure
+	| CategoryChannelStructure
+	| NewsChannelStructure
+	| DirectoryChannelStructure
+	| StageChannelStructure;
 
-export type AllTextableChannels = TextGuildChannel | VoiceChannel | DMChannel | NewsChannel | ThreadChannel;
-export type AllGuildTextableChannels = TextGuildChannel | VoiceChannel | NewsChannel | ThreadChannel;
-export type AllGuildVoiceChannels = VoiceChannel | StageChannel;
+export type AllTextableChannels =
+	| TextGuildChannelStructure
+	| VoiceChannelStructure
+	| DMChannelStructure
+	| NewsChannelStructure
+	| ThreadChannelStructure;
+export type AllGuildTextableChannels =
+	| TextGuildChannelStructure
+	| VoiceChannelStructure
+	| NewsChannelStructure
+	| ThreadChannelStructure;
+export type AllGuildVoiceChannels = VoiceChannelStructure | StageChannelStructure;
 
 export type AllChannels =
-	| BaseChannel<ChannelType>
-	| BaseGuildChannel
-	| TextGuildChannel
-	| DMChannel
-	| VoiceChannel
-	| MediaChannel
-	| ForumChannel
-	| ThreadChannel
-	| CategoryChannel
-	| NewsChannel
-	| DirectoryChannel
-	| StageChannel;
+	| BaseChannelStructure
+	| BaseGuildChannelStructure
+	| TextGuildChannelStructure
+	| DMChannelStructure
+	| VoiceChannelStructure
+	| MediaChannelStructure
+	| ForumChannelStructure
+	| ThreadChannelStructure
+	| CategoryChannelStructure
+	| NewsChannelStructure
+	| DirectoryChannelStructure
+	| StageChannelStructure;

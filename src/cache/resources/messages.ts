@@ -2,9 +2,9 @@ import type { APIMessage, APIUser } from 'discord-api-types/v10';
 import { GuildRelatedResource } from './default/guild-related';
 import type { MessageData, ReturnCache } from '../..';
 import { fakePromise } from '../../common';
-import { Message } from '../../structures';
+import { type MessageStructure, Transformers } from '../../client/transformers';
 
-export class Messages extends GuildRelatedResource {
+export class Messages extends GuildRelatedResource<any, APIMessage> {
 	namespace = 'message';
 
 	//@ts-expect-error
@@ -19,19 +19,23 @@ export class Messages extends GuildRelatedResource {
 		return rest;
 	}
 
-	override get(id: string): ReturnCache<Message | undefined> {
+	override get(id: string): ReturnCache<MessageStructure | undefined> {
 		return fakePromise(super.get(id) as APIMessageResource | undefined).then(rawMessage => {
 			return this.cache.users && rawMessage?.user_id
 				? fakePromise(this.cache.adapter.get(this.cache.users.hashId(rawMessage.user_id)) as APIUser | undefined).then(
 						user => {
-							return user ? new Message(this.client, { ...rawMessage!, author: user }) : undefined;
+							return user ? Transformers.Message(this.client, { ...rawMessage!, author: user }) : undefined;
 						},
 					)
 				: undefined;
 		});
 	}
 
-	override bulk(ids: string[]): ReturnCache<Message[]> {
+	raw(id: string): ReturnCache<APIMessageResource | undefined> {
+		return super.get(id);
+	}
+
+	override bulk(ids: string[]): ReturnCache<MessageStructure[]> {
 		return fakePromise(super.bulk(ids) as APIMessageResource[]).then(
 			messages =>
 				messages
@@ -40,29 +44,41 @@ export class Messages extends GuildRelatedResource {
 							? fakePromise(
 									this.cache.adapter.get(this.cache.users.hashId(rawMessage.user_id)) as APIUser | undefined,
 								).then(user => {
-									return user ? new Message(this.client, { ...rawMessage!, author: user }) : undefined;
+									return user ? Transformers.Message(this.client, { ...rawMessage!, author: user }) : undefined;
 								})
 							: undefined;
 					})
-					.filter(Boolean) as Message[],
+					.filter(Boolean) as MessageStructure[],
 		);
 	}
 
-	override values(guild: string): ReturnCache<Message[]> {
-		return fakePromise(super.values(guild) as APIMessageResource[]).then(messages => {
+	bulkRaw(ids: string[]): ReturnCache<APIMessageResource[]> {
+		return super.bulk(ids);
+	}
+
+	override values(channel: string): ReturnCache<MessageStructure[]> {
+		return fakePromise(super.values(channel) as APIMessageResource[]).then(messages => {
 			const hashes: (string | undefined)[] = this.cache.users
 				? messages.map(x => (x.user_id ? this.cache.users!.hashId(x.user_id) : undefined))
 				: [];
-			return fakePromise(this.cache.adapter.get(hashes.filter(Boolean) as string[]) as APIUser[]).then(users => {
+			return fakePromise(this.cache.adapter.bulkGet(hashes.filter(Boolean) as string[]) as APIUser[]).then(users => {
 				return messages
 					.map(message => {
 						const user = users.find(user => user.id === message.user_id);
-						return user ? new Message(this.client, { ...message, author: user }) : undefined;
+						return user ? Transformers.Message(this.client, { ...message, author: user }) : undefined;
 					})
-					.filter(Boolean) as Message[];
+					.filter(Boolean) as MessageStructure[];
 			});
 		});
 	}
+
+	valuesRaw(channel: string): ReturnCache<APIMessageResource[]> {
+		return super.values(channel);
+	}
+
+	keys(channel: string) {
+		return super.keys(channel);
+	}
 }
 
-export type APIMessageResource = Omit<APIMessage, 'author'> & { user_id?: string };
+export type APIMessageResource = Omit<APIMessage, 'author' | 'member'> & { user_id?: string };

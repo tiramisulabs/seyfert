@@ -33,6 +33,7 @@ export class MemberUpdateHandler {
 
 	membersEquals(old: GatewayGuildMemberUpdateDispatchData, member: GatewayGuildMemberUpdateDispatchData) {
 		return (
+			old.guild_id === member.guild_id &&
 			old.joined_at === member.joined_at &&
 			old.nick === member.nick &&
 			old.avatar === member.avatar &&

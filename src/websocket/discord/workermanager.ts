@@ -5,25 +5,21 @@ import { ApiHandler, Logger, Router } from '../..';
 import { MemoryAdapter, type Adapter } from '../../cache';
 import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
 import { MergeOptions, lazyLoadPackage, type MakePartial } from '../../common';
-import { WorkerManagerDefaults } from '../constants';
+import { WorkerManagerDefaults, properties } from '../constants';
 import { DynamicBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';
-import { MemberUpdateHandler } from './events/memberUpdate';
-import { PresenceUpdateHandler } from './events/presenceUpdate';
 import type { ShardOptions, WorkerData, WorkerManagerOptions } from './shared';
-import type { WorkerInfo, WorkerMessage, WorkerShardInfo, WorkerStart } from './worker';
+import type { WorkerInfo, WorkerMessage, WorkerShardInfo } from './worker';
 
 export class WorkerManager extends Map<
 	number,
-	(ClusterWorker | import('node:worker_threads').Worker) & { ready?: boolean }
+	(ClusterWorker | import('node:worker_threads').Worker | { ready: boolean }) & { ready?: boolean }
 > {
-	options!: Required<WorkerManagerOptions>;
+	options!: MakePartial<Required<WorkerManagerOptions>, 'adapter'>;
 	debugger?: Logger;
 	connectQueue!: ConnectQueue;
 	cacheAdapter: Adapter;
 	promises = new Map<string, { resolve: (value: any) => void; timeout: NodeJS.Timeout }>();
-	memberUpdateHandler = new MemberUpdateHandler();
-	presenceUpdateHandler = new PresenceUpdateHandler();
 	rest!: ApiHandler;
 	constructor(options: MakePartial<WorkerManagerOptions, 'token' | 'intents' | 'info' | 'handlePayload'>) {
 		super();
@@ -128,10 +124,16 @@ export class WorkerManager extends Map<
 			case 'threads':
 				(worker as import('worker_threads').Worker).postMessage(body);
 				break;
+			case 'custom':
+				this.options.adapter!.postMessage(id, body);
+				break;
 		}
 	}
 
 	async prepareWorkers(shards: number[][]) {
+		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
+		if (!worker_threads) throw new Error('Cannot prepare workers without worker_threads.');
+
 		for (let i = 0; i < shards.length; i++) {
 			let worker = this.get(i);
 			if (!worker) {
@@ -143,23 +145,11 @@ export class WorkerManager extends Map<
 					intents: this.options.intents,
 					workerId: i,
 					workerProxy: this.options.workerProxy,
+					totalShards: this.totalShards,
+					mode: this.options.mode,
 				});
 				this.set(i, worker);
 			}
-			const listener = (message: WorkerStart) => {
-				if (message.type !== 'WORKER_START') return;
-				worker!.removeListener('message', listener);
-				this.postMessage(i, {
-					type: 'SPAWN_SHARDS',
-					compress: this.options.compress ?? false,
-					info: {
-						...this.options.info,
-						shards: this.totalShards,
-					},
-					properties: this.options.properties,
-				} satisfies ManagerSpawnShards);
-			};
-			worker.on('message', listener);
 		}
 	}
 
@@ -188,12 +178,17 @@ export class WorkerManager extends Map<
 				worker.on('message', data => this.handleWorkerMessage(data));
 				return worker;
 			}
+			case 'custom':
+				this.options.adapter!.spawn(workerData, env);
+				return {
+					ready: false,
+				};
 		}
 	}
 
 	spawn(workerId: number, shardId: number) {
 		this.connectQueue.push(() => {
-			const worker = this.get(workerId);
+			const worker = this.has(workerId);
 			if (!worker) {
 				this.debugger?.fatal("Trying spawn with worker doesn't exist");
 				return;
@@ -208,12 +203,28 @@ export class WorkerManager extends Map<
 
 	async handleWorkerMessage(message: WorkerMessage) {
 		switch (message.type) {
+			case 'WORKER_START':
+				{
+					this.postMessage(message.workerId, {
+						type: 'SPAWN_SHARDS',
+						compress: this.options.compress ?? false,
+						info: {
+							...this.options.info,
+							shards: this.totalShards,
+						},
+						properties: {
+							...properties,
+							...this.options.properties,
+						},
+					} satisfies ManagerSpawnShards);
+				}
+				break;
 			case 'CONNECT_QUEUE':
 				this.spawn(message.workerId, message.shardId);
 				break;
 			case 'CACHE_REQUEST':
 				{
-					const worker = this.get(message.workerId);
+					const worker = this.has(message.workerId);
 					if (!worker) {
 						throw new Error('Invalid request from unavailable worker');
 					}
@@ -227,21 +238,7 @@ export class WorkerManager extends Map<
 				}
 				break;
 			case 'RECEIVE_PAYLOAD':
-				{
-					switch (message.payload.t) {
-						case 'GUILD_MEMBER_UPDATE':
-							if (!this.memberUpdateHandler.check(message.payload.d)) {
-								return;
-							}
-							break;
-						case 'PRESENCE_UPDATE':
-							if (!this.presenceUpdateHandler.check(message.payload.d as any)) {
-								return;
-							}
-							break;
-					}
-					this.options.handlePayload(message.shardId, message.workerId, message.payload);
-				}
+				await this.options.handlePayload(message.shardId, message.workerId, message.payload);
 				break;
 			case 'RESULT_PAYLOAD':
 				{
@@ -353,7 +350,7 @@ export class WorkerManager extends Map<
 
 	async send(data: GatewaySendPayload, shardId: number) {
 		const workerId = this.calculateWorkerId(shardId);
-		const worker = this.get(workerId);
+		const worker = this.has(workerId);
 
 		if (!worker) {
 			throw new Error(`Worker #${workerId} doesnt exist`);
@@ -373,7 +370,7 @@ export class WorkerManager extends Map<
 
 	async getShardInfo(shardId: number) {
 		const workerId = this.calculateWorkerId(shardId);
-		const worker = this.get(workerId);
+		const worker = this.has(workerId);
 
 		if (!worker) {
 			throw new Error(`Worker #${workerId} doesnt exist`);
@@ -387,7 +384,7 @@ export class WorkerManager extends Map<
 	}
 
 	async getWorkerInfo(workerId: number) {
-		const worker = this.get(workerId);
+		const worker = this.has(workerId);
 
 		if (!worker) {
 			throw new Error(`Worker #${workerId} doesnt exist`);

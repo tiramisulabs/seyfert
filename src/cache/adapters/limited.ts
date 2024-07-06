@@ -9,18 +9,23 @@ export interface ResourceLimitedMemoryAdapter {
 
 export interface LimitedMemoryAdapterOptions {
 	default?: ResourceLimitedMemoryAdapter;
+
 	guild?: ResourceLimitedMemoryAdapter;
 	user?: ResourceLimitedMemoryAdapter;
+
+	ban?: ResourceLimitedMemoryAdapter;
 	member?: ResourceLimitedMemoryAdapter;
 	voice_state?: ResourceLimitedMemoryAdapter;
+
 	channel?: ResourceLimitedMemoryAdapter;
 	emoji?: ResourceLimitedMemoryAdapter;
-	overwrite?: ResourceLimitedMemoryAdapter;
 	presence?: ResourceLimitedMemoryAdapter;
 	role?: ResourceLimitedMemoryAdapter;
 	stage_instance?: ResourceLimitedMemoryAdapter;
 	sticker?: ResourceLimitedMemoryAdapter;
 	thread?: ResourceLimitedMemoryAdapter;
+	overwrite?: ResourceLimitedMemoryAdapter;
+	message?: ResourceLimitedMemoryAdapter;
 }
 
 export class LimitedMemoryAdapter implements Adapter {
@@ -58,13 +63,7 @@ export class LimitedMemoryAdapter implements Adapter {
 		return values;
 	}
 
-	get(keys: string): any;
-	get(keys: string[]): any[];
-	get(keys: string | string[]) {
-		if (!Array.isArray(keys)) {
-			const data = [...this.storage.values()].find(x => x.has(keys))?.get(keys);
-			return data ? JSON.parse(data) : null;
-		}
+	bulkGet(keys: string[]) {
 		const iterator = [...this.storage.values()];
 		return keys
 			.map(key => {
@@ -72,6 +71,11 @@ export class LimitedMemoryAdapter implements Adapter {
 				return data ? JSON.parse(data) : null;
 			})
 			.filter(x => x);
+	}
+
+	get(keys: string) {
+		const data = [...this.storage.values()].find(x => x.has(keys))?.get(keys);
+		return data ? JSON.parse(data) : null;
 	}
 
 	private __set(key: string, data: any) {
@@ -96,6 +100,7 @@ export class LimitedMemoryAdapter implements Adapter {
 								case 'user':
 									self.removeToRelationship(namespace, k.split('.')[1]);
 									break;
+								case 'ban':
 								case 'member':
 								case 'voice_state':
 									{
@@ -124,36 +129,32 @@ export class LimitedMemoryAdapter implements Adapter {
 		this.storage.get(namespace)!.set(key, JSON.stringify(data));
 	}
 
-	set(keys: string, data: any): void;
-	set(keys: [string, any][]): void;
-	set(keys: string | [string, any][], data?: any): void {
-		if (Array.isArray(keys)) {
-			for (const [key, value] of keys) {
-				this.__set(key, value);
-			}
-		} else {
-			this.__set(keys, data);
+	bulkSet(keys: [string, any][]) {
+		for (const [key, value] of keys) {
+			this.__set(key, value);
 		}
 	}
 
-	patch(updateOnly: boolean, keys: string, data: any): void;
-	patch(updateOnly: boolean, keys: [string, any][]): void;
-	patch(updateOnly: boolean, keys: string | [string, any][], data?: any): void {
-		if (Array.isArray(keys)) {
-			for (const [key, value] of keys) {
-				const oldData = this.get(key);
-				if (updateOnly && !oldData) {
-					continue;
-				}
-				this.__set(key, Array.isArray(value) ? value : { ...(oldData ?? {}), ...value });
-			}
-		} else {
-			const oldData = this.get(keys);
+	set(keys: string, data: any) {
+		this.__set(keys, data);
+	}
+
+	bulkPatch(updateOnly: boolean, keys: [string, any][]) {
+		for (const [key, value] of keys) {
+			const oldData = this.get(key);
 			if (updateOnly && !oldData) {
-				return;
+				continue;
 			}
-			this.__set(keys, Array.isArray(data) ? data : { ...(oldData ?? {}), ...data });
+			this.__set(key, Array.isArray(value) ? value : { ...(oldData ?? {}), ...value });
 		}
+	}
+
+	patch(updateOnly: boolean, keys: string, data: any) {
+		const oldData = this.get(keys);
+		if (updateOnly && !oldData) {
+			return;
+		}
+		this.__set(keys, Array.isArray(data) ? data : { ...(oldData ?? {}), ...data });
 	}
 
 	values(to: string) {
@@ -179,12 +180,14 @@ export class LimitedMemoryAdapter implements Adapter {
 		return this.getToRelationship(to).length;
 	}
 
-	remove(keys: string): void;
-	remove(keys: string[]): void;
-	remove(keys: string | string[]) {
-		for (const i of Array.isArray(keys) ? keys : [keys]) {
+	bulkRemove(keys: string[]) {
+		for (const i of keys) {
 			this.storage.get(i.split('.')[0])?.delete(i);
 		}
+	}
+
+	remove(key: string) {
+		this.storage.get(key.split('.')[0])?.delete(key);
 	}
 
 	flush(): void {

@@ -2,9 +2,9 @@ import type { GatewayDispatchPayload, GatewaySendPayload } from 'discord-api-typ
 import { execSync } from 'node:child_process';
 import { ApiHandler, Router } from '../../api';
 import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
-import { ShardManager, type ShardManagerOptions } from '../../websocket';
+import { ShardManager, type ShardManagerDefaults, type ShardManagerOptions } from '../../websocket';
 import { Logger } from '../it/logger';
-import type { MakeRequired } from '../types/util';
+import type { MakePartial, MakeRequired } from '../types/util';
 import { lazyLoadPackage } from '../it/utils';
 
 /**
@@ -17,7 +17,7 @@ export class Watcher extends ShardManager {
 	});
 	rest?: ApiHandler;
 
-	declare options: MakeRequired<WatcherOptions, 'intents' | 'token' | 'handlePayload' | 'info'>;
+	declare options: MakeRequired<WatcherOptions, 'token' | 'info' | keyof typeof ShardManagerDefaults>;
 
 	/**
 	 * Initializes a new instance of the Watcher class.
@@ -119,7 +119,19 @@ export class Watcher extends ShardManager {
 	}
 }
 
-export interface WatcherOptions extends Omit<ShardManagerOptions, 'handlePayload' | 'info' | 'token' | 'intents'> {
+export interface WatcherOptions
+	extends MakePartial<
+		Omit<ShardManager['options'], 'handlePayload' | 'info' | 'token' | 'intents'>,
+		| 'compress'
+		| 'presence'
+		| 'properties'
+		| 'shardEnd'
+		| 'shardStart'
+		| 'spawnShardDelay'
+		| 'totalShards'
+		| 'url'
+		| 'version'
+	> {
 	filePath: string;
 	transpileCommand: string;
 	srcPath: string;

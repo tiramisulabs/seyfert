@@ -17,10 +17,9 @@ import type {
 	SeyfertStringOption,
 } from '../..';
 import type { Attachment } from '../../builders';
-import { magicImport, type FlatObjectKeys } from '../../common';
-import type { AllChannels, AutocompleteInteraction, GuildRole, InteractionGuildMember, User } from '../../structures';
+import { type Awaitable, magicImport, type FlatObjectKeys } from '../../common';
+import type { AllChannels, AutocompleteInteraction } from '../../structures';
 import type { Groups, RegisteredMiddlewares } from '../decorators';
-import type { OptionResolver } from '../optionresolver';
 import type { CommandContext } from './chatcontext';
 import type {
 	DefaultLocale,
@@ -33,6 +32,12 @@ import type {
 	UsingClient,
 } from './shared';
 import { inspect } from 'node:util';
+import type {
+	GuildRoleStructure,
+	InteractionGuildMemberStructure,
+	OptionResolverStructure,
+	UserStructure,
+} from '../../client/transformers';
 
 export interface ReturnOptionsTypes {
 	1: never; // subcommand
@@ -40,10 +45,10 @@ export interface ReturnOptionsTypes {
 	3: string;
 	4: number; // integer
 	5: boolean;
-	6: InteractionGuildMember | User;
+	6: InteractionGuildMemberStructure | UserStructure;
 	7: AllChannels;
-	8: GuildRole;
-	9: GuildRole | AllChannels | User;
+	8: GuildRoleStructure;
+	9: GuildRoleStructure | AllChannels | UserStructure;
 	10: number; // number
 	11: Attachment;
 }
@@ -58,7 +63,7 @@ type Wrap<N extends ApplicationCommandOptionType> = N extends
 				data: { context: CommandContext; value: ReturnOptionsTypes[N] },
 				ok: OKFunction<any>,
 				fail: StopFunction,
-			): void;
+			): Awaitable<void>;
 		} & {
 			description: string;
 			description_localizations?: APIApplicationCommandBasicOption['description_localizations'];
@@ -144,7 +149,7 @@ export class BaseCommand {
 	/** @internal */
 	async __runOptions(
 		ctx: CommandContext<{}, never>,
-		resolver: OptionResolver,
+		resolver: OptionResolverStructure,
 	): Promise<[boolean, OnOptionsReturnObject]> {
 		if (!this?.options?.length) {
 			return [false, {}];

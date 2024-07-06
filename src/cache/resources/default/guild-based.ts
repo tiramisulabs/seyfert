@@ -3,7 +3,7 @@ import type { UsingClient } from '../../../commands';
 import { fakePromise } from '../../../common';
 import type { Cache, ReturnCache } from '../../index';
 
-export class GuildBasedResource<T = any> {
+export class GuildBasedResource<T = any, S = any> {
 	client!: UsingClient;
 	namespace = 'base';
 
@@ -43,7 +43,7 @@ export class GuildBasedResource<T = any> {
 		return;
 	}
 
-	setIfNI(intent: keyof typeof GatewayIntentBits, id: string, guildId: string, data: any) {
+	setIfNI(intent: keyof typeof GatewayIntentBits, id: string, guildId: string, data: S) {
 		if (!this.cache.hasIntent(intent)) {
 			return this.set(id, guildId, data);
 		}
@@ -54,16 +54,15 @@ export class GuildBasedResource<T = any> {
 	}
 
 	bulk(ids: string[], guild: string): ReturnCache<(T & { guild_id: string })[]> {
-		return fakePromise(this.adapter.get(ids.map(id => this.hashGuildId(guild, id)))).then(x => x.filter(y => y));
+		return fakePromise(this.adapter.bulkGet(ids.map(id => this.hashGuildId(guild, id)))).then(x => x.filter(y => y));
 	}
 
-	set(__keys: string, guild: string, data: any): ReturnCache<void>;
-	set(__keys: [string, any][], guild: string): ReturnCache<void>;
-	set(__keys: string | [string, any][], guild: string, data?: any): ReturnCache<void> {
-		const keys = (Array.isArray(__keys) ? __keys : [[__keys, data]]).filter(x => this.filter(x[1], x[0], guild)) as [
-			string,
-			any,
-		][];
+	set(__keys: string, guild: string, data: S): ReturnCache<void>;
+	set(__keys: [string, S][], guild: string): ReturnCache<void>;
+	set(__keys: string | [string, S][], guild: string, data?: S): ReturnCache<void> {
+		const keys = (Array.isArray(__keys) ? __keys : [[__keys, data]]).filter(x =>
+			this.filter(x[1], x[0] as string, guild),
+		) as [string, any][];
 
 		return fakePromise(
 			this.addToRelationship(
@@ -71,7 +70,7 @@ export class GuildBasedResource<T = any> {
 				guild,
 			),
 		).then(() =>
-			this.adapter.set(
+			this.adapter.bulkSet(
 				keys.map(([key, value]) => {
 					return [this.hashGuildId(guild, key), this.parse(value, key, guild)] as const;
 				}),
@@ -79,7 +78,7 @@ export class GuildBasedResource<T = any> {
 		) as void;
 	}
 
-	patch(__keys: string, guild: string, data: any): ReturnCache<void>;
+	patch(__keys: string, guild: string, data: S): ReturnCache<void>;
 	patch(__keys: [string, any][], guild: string): ReturnCache<void>;
 	patch(__keys: string | [string, any][], guild: string, data?: any): ReturnCache<void> {
 		const keys = (Array.isArray(__keys) ? __keys : [[__keys, data]]).filter(x => this.filter(x[1], x[0], guild)) as [
@@ -87,14 +86,14 @@ export class GuildBasedResource<T = any> {
 			any,
 		][];
 
-		return fakePromise(this.adapter.get(keys.map(([key]) => this.hashGuildId(guild, key)))).then(oldDatas =>
+		return fakePromise(this.adapter.bulkGet(keys.map(([key]) => this.hashGuildId(guild, key)))).then(oldDatas =>
 			fakePromise(
 				this.addToRelationship(
 					keys.map(x => x[0]),
 					guild,
 				),
 			).then(() =>
-				this.adapter.set(
+				this.adapter.bulkSet(
 					keys.map(([key, value]) => {
 						const oldData = oldDatas.find(x => x.id === key) ?? {};
 						return [this.hashGuildId(guild, key), this.parse({ ...oldData, ...value }, key, guild)];
@@ -107,7 +106,7 @@ export class GuildBasedResource<T = any> {
 	remove(id: string | string[], guild: string) {
 		const ids = Array.isArray(id) ? id : [id];
 		return fakePromise(this.removeToRelationship(ids, guild)).then(() =>
-			this.adapter.remove(ids.map(x => this.hashGuildId(guild, x))),
+			this.adapter.bulkRemove(ids.map(x => this.hashGuildId(guild, x))),
 		);
 	}
 
@@ -144,10 +143,10 @@ export class GuildBasedResource<T = any> {
 	}
 
 	hashId(id: string) {
-		return `${this.namespace}.${id}`;
+		return id.startsWith(this.namespace) ? id : `${this.namespace}.${id}`;
 	}
 
 	hashGuildId(guild: string, id: string) {
-		return `${this.namespace}.${guild}.${id}`;
+		return id.startsWith(this.namespace) ? id : `${this.namespace}.${guild}.${id}`;
 	}
 }

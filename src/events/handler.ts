@@ -9,6 +9,7 @@ import { BaseHandler, ReplaceRegex, magicImport, type MakeRequired, type SnakeCa
 import type { ClientEvents } from '../events/hooks';
 import * as RawEvents from '../events/hooks';
 import type { ClientEvent, CustomEvents, CustomEventsKeys, ClientNameEvents } from './event';
+import type { FileLoaded } from '../commands/handler';
 
 export type EventValue = MakeRequired<ClientEvent, '__filePath'> & { fired?: boolean };
 
@@ -25,25 +26,29 @@ export class EventHandler extends BaseHandler {
 
 	values: Partial<Record<GatewayEvents | CustomEventsKeys, EventValue>> = {};
 
-	async load(eventsDir: string, instances?: { file: ClientEvent; path: string }[]) {
+	async load(eventsDir: string) {
 		const discordEvents = Object.keys(RawEvents).map(x => ReplaceRegex.camel(x.toLowerCase())) as ClientNameEvents[];
+		const paths = await this.loadFilesK<{ file: ClientEvent }>(await this.getFiles(eventsDir));
 
-		for (const i of instances ?? (await this.loadFilesK<ClientEvent>(await this.getFiles(eventsDir)))) {
-			const instance = this.callback(i.file);
-			if (!instance) continue;
-			if (typeof instance?.run !== 'function') {
-				this.logger.warn(
-					i.path.split(process.cwd()).slice(1).join(process.cwd()),
-					'Missing run function, use `export default {...}` syntax',
-				);
-				continue;
+		for (const { events, file } of paths.map(x => ({ events: this.onFile(x.file), file: x }))) {
+			if (!events) continue;
+			for (const i of events) {
+				const instance = this.callback(i);
+				if (!instance) continue;
+				if (typeof instance?.run !== 'function') {
+					this.logger.warn(
+						file.path.split(process.cwd()).slice(1).join(process.cwd()),
+						'Missing run function, use `export default {...}` syntax',
+					);
+					continue;
+				}
+				instance.__filePath = file.path;
+				this.values[
+					discordEvents.includes(instance.data.name)
+						? (ReplaceRegex.snake(instance.data.name).toUpperCase() as GatewayEvents)
+						: (instance.data.name as CustomEventsKeys)
+				] = instance as EventValue;
 			}
-			instance.__filePath = i.path;
-			this.values[
-				discordEvents.includes(instance.data.name)
-					? (ReplaceRegex.snake(instance.data.name).toUpperCase() as GatewayEvents)
-					: (instance.data.name as CustomEventsKeys)
-			] = instance as EventValue;
 		}
 	}
 
@@ -53,7 +58,7 @@ export class EventHandler extends BaseHandler {
 				{
 					const { d: data } = args[0] as GatewayMessageCreateDispatch;
 					if (args[1].components?.values.has(data.interaction_metadata?.id ?? data.id)) {
-						args[1].components.values.get(data.interaction_metadata?.id ?? data.id)!.messageId = data.id;
+						args[1].components.values.get(data.interaction_metadata!.id ?? data.id)!.messageId = data.id;
 					}
 				}
 				break;
@@ -81,29 +86,33 @@ export class EventHandler extends BaseHandler {
 		}
 
 		await Promise.all([
-			this.runEvent(args[0].t, args[1], args[0].d, args[2]),
-			this.client.collectors.run(args[0].t, args[0].d),
+			this.runEvent(args[0].t as never, args[1], args[0].d, args[2]),
+			this.client.collectors.run(args[0].t as never, args[0].d as never),
 		]);
 	}
 
-	async runEvent(name: GatewayEvents, client: Client | WorkerClient, packet: any, shardId: number) {
+	async runEvent(name: GatewayEvents, client: Client | WorkerClient, packet: any, shardId: number, runCache = true) {
 		const Event = this.values[name];
 		if (!Event) {
-			return this.client.cache.onPacket({
-				t: name,
-				d: packet,
-			} as GatewayDispatchPayload);
+			return runCache
+				? this.client.cache.onPacket({
+						t: name,
+						d: packet,
+					} as GatewayDispatchPayload)
+				: undefined;
 		}
 		try {
 			if (Event.data.once && Event.fired) {
-				return this.client.cache.onPacket({
-					t: name,
-					d: packet,
-				} as GatewayDispatchPayload);
+				return runCache
+					? this.client.cache.onPacket({
+							t: name,
+							d: packet,
+						} as GatewayDispatchPayload)
+					: undefined;
 			}
 			Event.fired = true;
 			const hook = await RawEvents[name]?.(client, packet as never);
-			if (name !== 'RAW')
+			if (runCache)
 				await this.client.cache.onPacket({
 					t: name,
 					d: packet,
@@ -153,8 +162,8 @@ export class EventHandler extends BaseHandler {
 		}
 	}
 
-	setHandlers({ callback }: { callback: EventHandler['callback'] }) {
-		this.callback = callback;
+	onFile(file: FileLoaded<ClientEvent>): ClientEvent[] | undefined {
+		return file.default ? [file.default] : undefined;
 	}
 
 	callback = (file: ClientEvent): ClientEvent | false => file;

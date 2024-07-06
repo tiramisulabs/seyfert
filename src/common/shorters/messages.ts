@@ -5,11 +5,12 @@ import type {
 	RESTPostAPIChannelMessagesThreadsJSONBody,
 } from 'discord-api-types/v10';
 import { resolveFiles } from '../../builders';
-import { Message, MessagesMethods, User } from '../../structures';
+import { MessagesMethods } from '../../structures';
 
 import type { MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
 import type { ValidAnswerId } from '../../api/Routes/channels';
+import { Transformers } from '../../client/transformers';
 
 export class MessageShorter extends BaseShorter {
 	async write(channelId: string, { files, ...body }: MessageCreateBodyRequest) {
@@ -28,7 +29,7 @@ export class MessageShorter extends BaseShorter {
 			})
 			.then(async message => {
 				await this.client.cache.messages?.setIfNI('GuildMessages', message.id, message.channel_id, message);
-				return new Message(this.client, message);
+				return Transformers.Message(this.client, message);
 			});
 	}
 
@@ -43,7 +44,7 @@ export class MessageShorter extends BaseShorter {
 			})
 			.then(async message => {
 				await this.client.cache.messages?.setIfNI('GuildMessages', message.id, message.channel_id, message);
-				return new Message(this.client, message);
+				return Transformers.Message(this.client, message);
 			});
 	}
 
@@ -54,7 +55,7 @@ export class MessageShorter extends BaseShorter {
 			.crosspost.post({ reason })
 			.then(async m => {
 				await this.client.cache.messages?.setIfNI('GuildMessages', m.id, m.channel_id, m);
-				return new Message(this.client, m);
+				return Transformers.Message(this.client, m);
 			});
 	}
 
@@ -76,7 +77,7 @@ export class MessageShorter extends BaseShorter {
 			.get()
 			.then(async x => {
 				await this.client.cache.messages?.set(x.id, x.channel_id, x);
-				return new Message(this.client, x);
+				return Transformers.Message(this.client, x);
 			});
 	}
 
@@ -104,7 +105,7 @@ export class MessageShorter extends BaseShorter {
 			.channels(channelId)
 			.polls(messageId)
 			.expire.post()
-			.then(message => new Message(this.client, message));
+			.then(message => Transformers.Message(this.client, message));
 	}
 
 	getAnswerVoters(channelId: string, messageId: string, answerId: ValidAnswerId) {
@@ -113,6 +114,6 @@ export class MessageShorter extends BaseShorter {
 			.polls(messageId)
 			.answers(answerId)
 			.get()
-			.then(data => data.users.map(user => new User(this.client, user)));
+			.then(data => data.users.map(user => Transformers.User(this.client, user)));
 	}
 }

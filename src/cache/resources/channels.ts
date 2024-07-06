@@ -5,7 +5,7 @@ import channelFrom from '../../structures/channels';
 import type { ReturnCache } from '../index';
 import { GuildRelatedResource } from './default/guild-related';
 
-export class Channels extends GuildRelatedResource {
+export class Channels extends GuildRelatedResource<any, APIChannel> {
 	namespace = 'channel';
 
 	parse(data: APIChannel, id: string, guild_id: string) {
@@ -19,15 +19,27 @@ export class Channels extends GuildRelatedResource {
 		);
 	}
 
+	raw(id: string): ReturnCache<Omit<APIChannel, 'permission_overwrites'> | undefined> {
+		return super.get(id);
+	}
+
 	override bulk(ids: string[]): ReturnCache<ReturnType<typeof channelFrom>[]> {
 		return fakePromise(super.bulk(ids)).then(channels =>
 			channels.map(rawChannel => channelFrom(rawChannel, this.client)),
 		);
 	}
 
+	bulkRaw(ids: string[]): ReturnCache<Omit<APIChannel, 'permission_overwrites'>[]> {
+		return super.bulk(ids);
+	}
+
 	override values(guild: string): ReturnCache<ReturnType<typeof channelFrom>[]> {
 		return fakePromise(super.values(guild)).then(channels =>
 			channels.map(rawChannel => channelFrom(rawChannel, this.client)),
 		);
+	}
+
+	valuesRaw(guild: string): ReturnCache<Omit<APIChannel, 'permission_overwrites'>[]> {
+		return super.values(guild);
 	}
 }

@@ -1,10 +1,10 @@
-import type { APIGuild } from 'discord-api-types/v10';
+import type { APIGuild, GatewayGuildCreateDispatchData } from 'discord-api-types/v10';
 import type { Cache, ReturnCache } from '..';
 import { fakePromise } from '../../common';
-import { Guild } from '../../structures';
 import { BaseResource } from './default/base';
+import { type GuildStructure, Transformers } from '../../client/transformers';
 
-export class Guilds extends BaseResource {
+export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispatchData> {
 	namespace = 'guild';
 
 	//@ts-expect-error
@@ -12,38 +12,64 @@ export class Guilds extends BaseResource {
 		return true;
 	}
 
-	override get(id: string): ReturnCache<Guild<'cached'> | undefined> {
-		return fakePromise(super.get(id)).then(guild => (guild ? new Guild<'cached'>(this.client, guild) : undefined));
+	override get(id: string): ReturnCache<GuildStructure<'cached'> | undefined> {
+		return fakePromise(super.get(id)).then(guild =>
+			guild ? Transformers.Guild<'cached'>(this.client, guild) : undefined,
+		);
 	}
 
-	override bulk(ids: string[]): ReturnCache<Guild<'cached'>[]> {
+	raw(id: string): ReturnCache<APIGuild | undefined> {
+		return super.get(id);
+	}
+
+	override bulk(ids: string[]): ReturnCache<GuildStructure<'cached'>[]> {
 		return fakePromise(super.bulk(ids) as APIGuild[]).then(guilds =>
-			guilds.map(x => new Guild<'cached'>(this.client, x)),
+			guilds.map(x => Transformers.Guild<'cached'>(this.client, x)),
 		);
 	}
 
-	override values(): ReturnCache<Guild<'cached'>[]> {
+	bulkRaw(ids: string[]): ReturnCache<APIGuild[]> {
+		return super.bulk(ids);
+	}
+
+	override values(): ReturnCache<GuildStructure<'cached'>[]> {
 		return fakePromise(super.values() as APIGuild[]).then(guilds =>
-			guilds.map(x => new Guild<'cached'>(this.client, x)),
+			guilds.map(x => Transformers.Guild<'cached'>(this.client, x)),
 		);
+	}
+
+	valuesRaw(): ReturnCache<APIGuild[]> {
+		return super.values();
 	}
 
 	override async remove(id: string) {
-		await this.cache.adapter.remove(
+		const keysChannels = this.cache.channels?.keys(id) ?? [];
+		await this.cache.adapter.bulkRemove(
 			(
 				await Promise.all([
 					this.cache.members?.keys(id) ?? [],
 					this.cache.roles?.keys(id) ?? [],
-					this.cache.channels?.keys(id) ?? [],
+					keysChannels,
 					this.cache.emojis?.keys(id) ?? [],
 					this.cache.stickers?.keys(id) ?? [],
 					this.cache.voiceStates?.keys(id) ?? [],
 					this.cache.presences?.keys(id) ?? [],
 					this.cache.threads?.keys(id) ?? [],
 					this.cache.stageInstances?.keys(id) ?? [],
+					this.cache.bans?.keys(id) ?? [],
 				])
 			).flat(),
 		);
+
+		if (this.cache.messages && this.cache.channels) {
+			const keysMessages: string[] = [];
+			for (const i of keysChannels) {
+				const channelId = i.slice(this.cache.channels.namespace.length + 1);
+				const messages = await this.cache.messages.keys(channelId);
+				keysMessages.push(...messages);
+			}
+			if (keysMessages.length) await this.cache.adapter.bulkRemove(keysMessages);
+		}
 
 		await this.cache.adapter.removeRelationship(
 			[

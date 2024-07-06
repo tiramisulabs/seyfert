@@ -31,7 +31,7 @@ export class RedisAdapter implements Adapter {
 	private __scanSets(query: string, returnKeys: true): Promise<string[]>;
 	private __scanSets(query: string, returnKeys = false) {
 		const match = this.buildKey(query);
-		return new Promise<string[]>((r, j) => {
+		return new Promise<string[] | any[]>((r, j) => {
 			const stream = this.client.scanStream({
 				match,
 				type: 'set',
@@ -39,7 +39,7 @@ export class RedisAdapter implements Adapter {
 			const keys: string[] = [];
 			stream
 				.on('data', resultKeys => keys.push(...resultKeys))
-				.on('end', () => (returnKeys ? r(keys.map(x => this.buildKey(x))) : r(this.get(keys))))
+				.on('end', () => (returnKeys ? r(keys.map(x => this.buildKey(x))) : r(this.bulkGet(keys))))
 				.on('error', err => j(err));
 		});
 	}
@@ -48,7 +48,7 @@ export class RedisAdapter implements Adapter {
 	scan(query: string, returnKeys: true): Promise<string[]>;
 	scan(query: string, returnKeys = false) {
 		const match = this.buildKey(query);
-		return new Promise<string[]>((r, j) => {
+		return new Promise<string[] | any[]>((r, j) => {
 			const stream = this.client.scanStream({
 				match,
 				// omit relationships
@@ -57,22 +57,12 @@ export class RedisAdapter implements Adapter {
 			const keys: string[] = [];
 			stream
 				.on('data', resultKeys => keys.push(...resultKeys))
-				.on('end', () => (returnKeys ? r(keys.map(x => this.buildKey(x))) : r(this.get(keys))))
+				.on('end', () => (returnKeys ? r(keys.map(x => this.buildKey(x))) : r(this.bulkGet(keys))))
 				.on('error', err => j(err));
 		});
 	}
 
-	async get(keys: string[]): Promise<any[]>;
-	async get(keys: string): Promise<any>;
-	async get(keys: string | string[]) {
-		if (!Array.isArray(keys)) {
-			const value = await this.client.hgetall(this.buildKey(keys));
-			if (value) {
-				return toNormal(value);
-			}
-			return;
-		}
-
+	async bulkGet(keys: string[]) {
 		const pipeline = this.client.pipeline();
 
 		for (const key of keys) {
@@ -82,46 +72,31 @@ export class RedisAdapter implements Adapter {
 		return (await pipeline.exec())?.filter(x => !!x[1]).map(x => toNormal(x[1] as Record<string, any>)) ?? [];
 	}
 
-	async set(id: [string, any][]): Promise<void>;
-	async set(id: string, data: any): Promise<void>;
-	async set(id: string | [string, any][], data?: any): Promise<void> {
-		if (!Array.isArray(id)) {
-			await this.client.hset(this.buildKey(id), toDb(data));
-			return;
+	async get(keys: string): Promise<any> {
+		const value = await this.client.hgetall(this.buildKey(keys));
+		if (value) {
+			return toNormal(value);
 		}
+	}
 
+	async bulkSet(data: [string, any][]) {
 		const pipeline = this.client.pipeline();
 
-		for (const [k, v] of id) {
+		for (const [k, v] of data) {
 			pipeline.hset(this.buildKey(k), toDb(v));
 		}
 
 		await pipeline.exec();
 	}
 
-	async patch(updateOnly: boolean, id: [string, any][]): Promise<void>;
-	async patch(updateOnly: boolean, id: string, data: any): Promise<void>;
-	async patch(updateOnly: boolean, id: string | [string, any][], data?: any): Promise<void> {
-		if (!Array.isArray(id)) {
-			if (updateOnly) {
-				await this.client.eval(
-					`if redis.call('exists',KEYS[1]) == 1 then redis.call('hset', KEYS[1], ${Array.from(
-						{ length: Object.keys(data).length * 2 },
-						(_, i) => `ARGV[${i + 1}]`,
-					)}) end`,
-					1,
-					this.buildKey(id),
-					...Object.entries(toDb(data)).flat(),
-				);
-			} else {
-				await this.client.hset(this.buildKey(id), toDb(data));
-			}
-			return;
-		}
+	async set(id: string, data: any) {
+		await this.client.hset(this.buildKey(id), toDb(data));
+	}
 
+	async bulkPatch(updateOnly: boolean, data: [string, any][]) {
 		const pipeline = this.client.pipeline();
 
-		for (const [k, v] of id) {
+		for (const [k, v] of data) {
 			if (updateOnly) {
 				pipeline.eval(
 					`if redis.call('exists',KEYS[1]) == 1 then redis.call('hset', KEYS[1], ${Array.from(
@@ -140,11 +115,27 @@ export class RedisAdapter implements Adapter {
 		await pipeline.exec();
 	}
 
+	async patch(updateOnly: boolean, id: string, data: any): Promise<void> {
+		if (updateOnly) {
+			await this.client.eval(
+				`if redis.call('exists',KEYS[1]) == 1 then redis.call('hset', KEYS[1], ${Array.from(
+					{ length: Object.keys(data).length * 2 },
+					(_, i) => `ARGV[${i + 1}]`,
+				)}) end`,
+				1,
+				this.buildKey(id),
+				...Object.entries(toDb(data)).flat(),
+			);
+		} else {
+			await this.client.hset(this.buildKey(id), toDb(data));
+		}
+	}
+
 	async values(to: string): Promise<any[]> {
 		const array: unknown[] = [];
 		const data = await this.keys(to);
 		if (data.length) {
-			const items = await this.get(data);
+			const items = await this.bulkGet(data);
 			for (const item of items) {
 				if (item) {
 					array.push(item);
@@ -164,13 +155,12 @@ export class RedisAdapter implements Adapter {
 		return this.client.scard(`${this.buildKey(to)}:set`);
 	}
 
-	async remove(keys: string | string[]): Promise<void> {
-		if (!Array.isArray(keys)) {
-			await this.client.del(this.buildKey(keys));
-			return;
-		}
-
+	async bulkRemove(keys: string[]) {
 		await this.client.del(...keys.map(x => this.buildKey(x)));
+	}
+
+	async remove(keys: string): Promise<void> {
+		await this.client.del(this.buildKey(keys));
 	}
 
 	async flush(): Promise<void> {
@@ -179,7 +169,7 @@ export class RedisAdapter implements Adapter {
 			this.__scanSets(this.buildKey('*'), true),
 		]).then(x => x.flat());
 		if (!keys.length) return;
-		await this.remove(keys);
+		await this.bulkRemove(keys);
 	}
 
 	async contains(to: string, keys: string): Promise<boolean> {

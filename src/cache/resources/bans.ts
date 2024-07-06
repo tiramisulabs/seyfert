@@ -1,9 +1,9 @@
-import type { APIBan } from 'discord-api-types/v10';
+import type { APIBan, GatewayGuildBanModifyDispatchData } from 'discord-api-types/v10';
 import type { ReturnCache } from '../..';
 import { fakePromise } from '../../common';
 import { GuildBasedResource } from './default/guild-based';
-import { GuildBan } from '../../structures/GuildBan';
-export class Bans extends GuildBasedResource {
+import { type GuildBanStructure, Transformers } from '../../client/transformers';
+export class Bans extends GuildBasedResource<any, GatewayGuildBanModifyDispatchData | APIBan> {
 	namespace = 'ban';
 
 	//@ts-expect-error
@@ -16,31 +16,43 @@ export class Bans extends GuildBasedResource {
 		return rest;
 	}
 
-	override get(id: string, guild: string): ReturnCache<GuildBan | undefined> {
+	override get(id: string, guild: string): ReturnCache<GuildBanStructure | undefined> {
 		return fakePromise(super.get(id, guild)).then(rawBan =>
-			rawBan ? new GuildBan(this.client, rawBan, guild) : undefined,
+			rawBan ? Transformers.GuildBan(this.client, rawBan, guild) : undefined,
 		);
 	}
 
-	override bulk(ids: string[], guild: string): ReturnCache<GuildBan[]> {
+	raw(id: string, guild: string): ReturnCache<Omit<GatewayGuildBanModifyDispatchData | APIBan, 'user'> | undefined> {
+		return super.get(id, guild);
+	}
+
+	override bulk(ids: string[], guild: string): ReturnCache<GuildBanStructure[]> {
 		return fakePromise(super.bulk(ids, guild)).then(
 			bans =>
 				bans
 					.map(rawBan => {
-						return rawBan ? new GuildBan(this.client, rawBan, guild) : undefined;
+						return rawBan ? Transformers.GuildBan(this.client, rawBan, guild) : undefined;
 					})
-					.filter(Boolean) as GuildBan[],
+					.filter(Boolean) as GuildBanStructure[],
 		);
 	}
 
-	override values(guild: string): ReturnCache<GuildBan[]> {
+	bulkRaw(ids: string[], guild: string): ReturnCache<Omit<GatewayGuildBanModifyDispatchData | APIBan, 'user'>[]> {
+		return super.bulk(ids, guild);
+	}
+
+	override values(guild: string): ReturnCache<GuildBanStructure[]> {
 		return fakePromise(super.values(guild)).then(
 			bans =>
 				bans
 					.map(rawBan => {
-						return rawBan ? new GuildBan(this.client, rawBan, guild) : undefined;
+						return rawBan ? Transformers.GuildBan(this.client, rawBan, guild) : undefined;
 					})
-					.filter(Boolean) as GuildBan[],
+					.filter(Boolean) as GuildBanStructure[],
 		);
+	}
+
+	valuesRaw(guild: string): ReturnCache<Omit<GatewayGuildBanModifyDispatchData | APIBan, 'user'>[]> {
+		return super.values(guild);
 	}
 }

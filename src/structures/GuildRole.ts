@@ -35,14 +35,14 @@ export class GuildRole extends DiscordBase {
 		return this.client.roles.delete(this.guildId, this.id, reason);
 	}
 
+	toString() {
+		return Formatter.roleMention(this.id);
+	}
+
 	iconURL(options?: ImageOptions) {
 		if (!this.icon) return null;
 
 		return this.rest.cdn['role-icons'](this.id).get(this.icon, options);
-	}
-
-	toString() {
-		return Formatter.roleMention(this.id);
 	}
 
 	static methods(ctx: MethodContext<{ guildId: string }>) {

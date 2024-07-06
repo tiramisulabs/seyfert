@@ -1,10 +1,10 @@
 import type { APIThreadChannel } from 'discord-api-types/v10';
 import type { ReturnCache } from '../..';
 import { fakePromise } from '../../common';
-import { ThreadChannel } from '../../structures';
 import { GuildRelatedResource } from './default/guild-related';
+import { type ThreadChannelStructure, Transformers } from '../../client/transformers';
 
-export class Threads extends GuildRelatedResource {
+export class Threads extends GuildRelatedResource<any, APIThreadChannel> {
 	namespace = 'thread';
 
 	//@ts-expect-error
@@ -12,21 +12,33 @@ export class Threads extends GuildRelatedResource {
 		return true;
 	}
 
-	override get(id: string): ReturnCache<ThreadChannel | undefined> {
+	override get(id: string): ReturnCache<ThreadChannelStructure | undefined> {
 		return fakePromise(super.get(id)).then(rawThread =>
-			rawThread ? new ThreadChannel(this.client, rawThread) : undefined,
+			rawThread ? Transformers.ThreadChannel(this.client, rawThread) : undefined,
 		);
 	}
 
-	override bulk(ids: string[]): ReturnCache<ThreadChannel[]> {
+	raw(id: string): ReturnCache<APIThreadChannel | undefined> {
+		return super.get(id);
+	}
+
+	override bulk(ids: string[]): ReturnCache<ThreadChannelStructure[]> {
 		return fakePromise(super.bulk(ids) as APIThreadChannel[]).then(threads =>
-			threads.map(rawThread => new ThreadChannel(this.client, rawThread)),
+			threads.map(rawThread => Transformers.ThreadChannel(this.client, rawThread)),
 		);
 	}
 
-	override values(guild: string): ReturnCache<ThreadChannel[]> {
+	bulkRaw(ids: string[]): ReturnCache<APIThreadChannel[]> {
+		return super.bulk(ids);
+	}
+
+	override values(guild: string): ReturnCache<ThreadChannelStructure[]> {
 		return fakePromise(super.values(guild) as APIThreadChannel[]).then(threads =>
-			threads.map(rawThread => new ThreadChannel(this.client, rawThread)),
+			threads.map(rawThread => Transformers.ThreadChannel(this.client, rawThread)),
 		);
+	}
+
+	valuesRaw(guild: string): ReturnCache<APIThreadChannel[]> {
+		return super.values(guild);
 	}
 }

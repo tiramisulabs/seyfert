@@ -1,5 +1,5 @@
 import { type APIMessage, ApplicationCommandType, MessageFlags } from 'discord-api-types/v10';
-import type { ContextMenuCommand, ReturnCache, WebhookMessage } from '../..';
+import type { ContextMenuCommand, ReturnCache } from '../..';
 import {
 	toSnakeCase,
 	type InteractionCreateBodyRequest,
@@ -8,20 +8,20 @@ import {
 	type UnionToTuple,
 	type When,
 } from '../../common';
-import {
-	Message,
-	User,
-	type AllChannels,
-	type Guild,
-	type GuildMember,
-	type MessageCommandInteraction,
-	type UserCommandInteraction,
-} from '../../structures';
+import type { AllChannels, MessageCommandInteraction, UserCommandInteraction } from '../../structures';
 import { BaseContext } from '../basecontext';
 import type { RegisteredMiddlewares } from '../decorators';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
+import {
+	type GuildMemberStructure,
+	type GuildStructure,
+	type MessageStructure,
+	Transformers,
+	type UserStructure,
+	type WebhookMessageStructure,
+} from '../../client/transformers';
 
-export type InteractionTarget<T> = T extends MessageCommandInteraction ? Message : User;
+export type InteractionTarget<T> = T extends MessageCommandInteraction ? MessageStructure : UserStructure;
 
 export interface MenuCommandContext<
 	T extends MessageCommandInteraction | UserCommandInteraction,
@@ -50,11 +50,11 @@ export class MenuCommandContext<
 		switch (this.interaction.data.type) {
 			case ApplicationCommandType.Message: {
 				const data = this.interaction.data.resolved.messages[this.interaction.data.targetId as Lowercase<string>];
-				return new Message(this.client, toSnakeCase(data) as APIMessage) as never;
+				return Transformers.Message(this.client, toSnakeCase(data) as APIMessage) as never;
 			}
 			case ApplicationCommandType.User: {
 				const data = this.interaction.data.resolved.users[this.interaction.data.targetId as Lowercase<string>];
-				return new User(this.client, toSnakeCase(data)) as never;
+				return Transformers.User(this.client, toSnakeCase(data)) as never;
 			}
 		}
 	}
@@ -70,7 +70,7 @@ export class MenuCommandContext<
 	write<FR extends boolean = false>(
 		body: InteractionCreateBodyRequest,
 		fetchReply?: FR,
-	): Promise<When<FR, WebhookMessage, void | WebhookMessage>> {
+	): Promise<When<FR, WebhookMessageStructure, void | WebhookMessageStructure>> {
 		return this.interaction.write(body, fetchReply);
 	}
 
@@ -93,7 +93,7 @@ export class MenuCommandContext<
 	editOrReply<FR extends boolean = false>(
 		body: InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest,
 		fetchReply?: FR,
-	): Promise<When<FR, WebhookMessage | Message, void | WebhookMessage | Message>> {
+	): Promise<When<FR, WebhookMessageStructure | MessageStructure, void | WebhookMessageStructure | MessageStructure>> {
 		return this.interaction.editOrReply(body as InteractionCreateBodyRequest, fetchReply);
 	}
 
@@ -109,8 +109,8 @@ export class MenuCommandContext<
 		return this.client.channels.fetch(this.channelId, mode === 'rest');
 	}
 
-	me(mode?: 'rest' | 'flow'): Promise<GuildMember>;
-	me(mode?: 'cache'): ReturnCache<GuildMember | undefined>;
+	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
+	me(mode?: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
 	me(mode: 'cache' | 'rest' | 'flow' = 'cache') {
 		if (!this.guildId)
 			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
@@ -122,8 +122,8 @@ export class MenuCommandContext<
 		}
 	}
 
-	guild(mode?: 'rest' | 'flow'): Promise<Guild<'cached' | 'api'> | undefined>;
-	guild(mode?: 'cache'): ReturnCache<Guild<'cached'> | undefined>;
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
+	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 	guild(mode: 'cache' | 'rest' | 'flow' = 'cache') {
 		if (!this.guildId)
 			return (
@@ -158,10 +158,10 @@ export class MenuCommandContext<
 	}
 
 	isMenuUser(): this is MenuCommandContext<UserCommandInteraction> {
-		return this.target instanceof User;
+		return this.interaction.data.type === ApplicationCommandType.User;
 	}
 
 	isMenuMessage(): this is MenuCommandContext<MessageCommandInteraction> {
-		return this.target instanceof Message;
+		return this.interaction.data.type === ApplicationCommandType.Message;
 	}
 }
