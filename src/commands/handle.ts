@@ -575,10 +575,10 @@ export class HandleCommand {
 	) {
 		const options: APIApplicationCommandInteractionDataOption[] = [];
 		const errors: { name: string; error: string; fullError: MessageCommandOptionErrors }[] = [];
+		let indexAttachment = -1;
 		for (const i of (command.options ?? []) as (CommandOption & { type: ApplicationCommandOptionType })[]) {
 			try {
 				let value: string | boolean | number | undefined;
-				let indexAttachment = -1;
 				switch (i.type) {
 					case ApplicationCommandOptionType.Attachment:
 						if (message.attachments[++indexAttachment]) {
