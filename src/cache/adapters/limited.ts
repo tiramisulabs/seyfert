@@ -93,8 +93,8 @@ export class LimitedMemoryAdapter implements Adapter {
 					resetOnDemand: true,
 					onDelete(k) {
 						const relationshipNamespace = key.split('.')[0];
-						const relation = self.relationships.get(relationshipNamespace);
-						if (relation) {
+						const existsRelation = self.relationships.has(relationshipNamespace);
+						if (existsRelation) {
 							switch (relationshipNamespace) {
 								case 'guild':
 								case 'user':
@@ -182,12 +182,47 @@ export class LimitedMemoryAdapter implements Adapter {
 
 	bulkRemove(keys: string[]) {
 		for (const i of keys) {
-			this.storage.get(i.split('.')[0])?.delete(i);
+			this.remove(i);
 		}
 	}
 
 	remove(key: string) {
-		this.storage.get(key.split('.')[0])?.delete(key);
+		const keySplit = key.split('.');
+		const parentNamespace = keySplit.at(0)!;
+		switch (parentNamespace) {
+			case 'ban':
+			case 'member':
+			case 'voice_state':
+				{
+					this.storage
+						.get(`${parentNamespace}.${keySplit.at(1)}`)
+						?.delete(`${parentNamespace}.${keySplit.at(1)}.${keySplit.at(2)}`);
+				}
+				break;
+			case 'user':
+			case 'guild':
+				this.storage.get(parentNamespace)?.delete(`${parentNamespace}.${keySplit.at(1)}`);
+				break;
+			case 'channel':
+			case 'emoji':
+			case 'presence':
+			case 'role':
+			case 'stage_instance':
+			case 'sticker':
+			case 'thread':
+			case 'overwrite':
+			case 'message':
+				for (const keyStorage of this.storage.keys()) {
+					if (keyStorage.startsWith(parentNamespace)) {
+						const storage = this.storage.get(keyStorage)!;
+						if (storage.has(key)) {
+							storage.delete(key);
+							break;
+						}
+					}
+				}
+				break;
+		}
 	}
 
 	flush(): void {
@@ -207,7 +242,7 @@ export class LimitedMemoryAdapter implements Adapter {
 		if (!relation.has(subrelationKey)) {
 			relation.set(subrelationKey, []);
 		}
-		return relation!.get(subrelationKey)!;
+		return relation.get(subrelationKey)!;
 	}
 
 	bulkAddToRelationShip(data: Record<string, string[]>) {
