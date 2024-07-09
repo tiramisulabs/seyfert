@@ -5,6 +5,7 @@ import type {
 	RESTPatchAPIAutoModerationRuleJSONBody,
 	RESTPatchAPIChannelJSONBody,
 	RESTPatchAPIGuildChannelPositionsJSONBody,
+	RESTPatchAPIGuildJSONBody,
 	RESTPatchAPIGuildStickerJSONBody,
 	RESTPostAPIAutoModerationRuleJSONBody,
 	RESTPostAPIGuildChannelJSONBody,
@@ -12,7 +13,7 @@ import type {
 } from 'discord-api-types/v10';
 import { toSnakeCase, type ObjectToLower } from '..';
 import { resolveFiles } from '../../builders';
-import { BaseChannel, GuildMember, type CreateStickerBodyRequest } from '../../structures';
+import { BaseChannel, Guild, GuildMember, type CreateStickerBodyRequest } from '../../structures';
 import channelFrom from '../../structures/channels';
 import { BaseShorter } from './base';
 import { type GuildStructure, Transformers } from '../../client/transformers';
@@ -65,6 +66,13 @@ export class GuildShorter extends BaseShorter {
 		return this.client.proxy.guilds(id).widget.get({ query });
 	}
 
+	async edit(guildId: string, body: RESTPatchAPIGuildJSONBody, reason?: string) {
+		const guild = await this.client.proxy.guilds(guildId).patch({ body, reason });
+
+		if (!this.client.cache.hasGuildsIntent) await this.client.cache.guilds?.patch(guildId, guild);
+		return new Guild(this.client, guild);
+	}
+
 	list(query?: RESTGetAPICurrentUserGuildsQuery) {
 		return this.client.proxy
 			.users('@me')
@@ -110,7 +118,7 @@ export class GuildShorter extends BaseShorter {
 					}
 				}
 				channels = await this.client.proxy.guilds(guildId).channels.get();
-				await this.client.cache.channels?.set(
+				await this.client.cache.channels?.patch(
 					channels.map<[string, APIChannel]>(x => [x.id, x]),
 					guildId,
 				);
