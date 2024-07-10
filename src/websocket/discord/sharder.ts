@@ -10,8 +10,6 @@ import {
 	type MakeRequired,
 	MergeOptions,
 	lazyLoadPackage,
-	toSnakeCase,
-	type ObjectToLower,
 	type WatcherSendToShard,
 } from '../../common';
 import { ShardManagerDefaults } from '../constants';
@@ -176,7 +174,7 @@ export class ShardManager extends Map<number, Shard> {
 	joinVoice(
 		guild_id: string,
 		channel_id: string,
-		options: ObjectToLower<Pick<GatewayVoiceStateUpdate['d'], 'self_deaf' | 'self_mute'>>,
+		options: Pick<GatewayVoiceStateUpdate['d'], 'self_deaf' | 'self_mute'>,
 	) {
 		const shardId = this.calculateShardId(guild_id);
 		this.debugger?.info(`Shard #${shardId} join voice ${channel_id} in ${guild_id}`);
@@ -186,7 +184,7 @@ export class ShardManager extends Map<number, Shard> {
 			d: {
 				guild_id,
 				channel_id,
-				...toSnakeCase(options),
+				...options,
 			},
 		});
 	}
