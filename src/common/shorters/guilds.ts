@@ -11,7 +11,6 @@ import type {
 	RESTPostAPIGuildChannelJSONBody,
 	RESTPostAPIGuildsJSONBody,
 } from 'discord-api-types/v10';
-import { toSnakeCase, type ObjectToLower } from '..';
 import { resolveFiles } from '../../builders';
 import { BaseChannel, Guild, GuildMember, type CreateStickerBodyRequest } from '../../structures';
 import channelFrom from '../../structures/channels';
@@ -118,7 +117,7 @@ export class GuildShorter extends BaseShorter {
 					}
 				}
 				channels = await this.client.proxy.guilds(guildId).channels.get();
-				await this.client.cache.channels?.patch(
+				await this.client.cache.channels?.set(
 					channels.map<[string, APIChannel]>(x => [x.id, x]),
 					guildId,
 				);
@@ -263,16 +262,11 @@ export class GuildShorter extends BaseShorter {
 			 * @param reason The reason for editing the rule.
 			 * @returns A Promise that resolves to the edited auto-moderation rule.
 			 */
-			edit: (
-				guildId: string,
-				ruleId: string,
-				body: ObjectToLower<RESTPatchAPIAutoModerationRuleJSONBody>,
-				reason?: string,
-			) => {
+			edit: (guildId: string, ruleId: string, body: RESTPatchAPIAutoModerationRuleJSONBody, reason?: string) => {
 				return this.client.proxy
 					.guilds(guildId)
 					['auto-moderation'].rules(ruleId)
-					.patch({ body: toSnakeCase(body), reason })
+					.patch({ body, reason })
 					.then(rule => Transformers.AutoModerationRule(this.client, rule));
 			},
 		};

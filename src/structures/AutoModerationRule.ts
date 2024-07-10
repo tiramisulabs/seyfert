@@ -4,7 +4,7 @@ import type {
 	RESTPostAPIAutoModerationRuleJSONBody,
 } from 'discord-api-types/v10';
 import type { UsingClient } from '../commands';
-import { toCamelCase, type MethodContext, type ObjectToLower } from '../common';
+import type { MethodContext, ObjectToLower } from '../common';
 import { DiscordBase } from './extra/DiscordBase';
 
 export interface AutoModerationRule extends ObjectToLower<APIAutoModerationRule> {}
@@ -26,7 +26,7 @@ export class AutoModerationRule extends DiscordBase<APIAutoModerationRule> {
 		return this.client.guilds.moderation.fetch(this.guildId, this.id);
 	}
 
-	edit(body: ObjectToLower<RESTPatchAPIAutoModerationRuleJSONBody>, reason?: string) {
+	edit(body: RESTPatchAPIAutoModerationRuleJSONBody, reason?: string) {
 		return this.client.guilds.moderation.edit(this.guildId, this.id, body, reason);
 	}
 
@@ -41,7 +41,7 @@ export class AutoModerationRule extends DiscordBase<APIAutoModerationRule> {
 			delete: (ruleId: string, reason?: string) => client.guilds.moderation.delete(guildId, ruleId, reason),
 			fetch: (ruleId: string) => client.guilds.moderation.fetch(guildId, ruleId),
 			edit: (ruleId: string, body: RESTPatchAPIAutoModerationRuleJSONBody, reason?: string) =>
-				client.guilds.moderation.edit(guildId, ruleId, toCamelCase(body), reason),
+				client.guilds.moderation.edit(guildId, ruleId, body, reason),
 		};
 	}
 }
