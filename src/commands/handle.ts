@@ -500,7 +500,7 @@ export class HandleCommand {
 			}
 			if ('error' in resultRunGlobalMiddlewares) {
 				await command.onMiddlewaresError?.(context as never, resultRunGlobalMiddlewares.error ?? 'Unknown error');
-				return;
+				return false;
 			}
 			return resultRunGlobalMiddlewares;
 		} catch (e) {
@@ -526,7 +526,7 @@ export class HandleCommand {
 			}
 			if ('error' in resultRunMiddlewares) {
 				await command.onMiddlewaresError?.(context as never, resultRunMiddlewares.error ?? 'Unknown error');
-				return;
+				return false;
 			}
 			return resultRunMiddlewares;
 		} catch (e) {
