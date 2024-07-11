@@ -1,4 +1,9 @@
-import type { APIGuild, APIPartialGuild, GatewayGuildCreateDispatchData } from 'discord-api-types/v10';
+import type {
+	APIGuild,
+	APIPartialGuild,
+	GatewayGuildCreateDispatchData,
+	RESTPatchAPIGuildJSONBody,
+} from 'discord-api-types/v10';
 import type { UsingClient } from '../commands';
 import type { ObjectToLower, StructPropState, StructStates, ToClass } from '../common/types/util';
 import { AutoModerationRule } from './AutoModerationRule';
@@ -77,6 +82,10 @@ export class Guild<State extends StructStates = 'api'> extends (BaseGuild as unk
 	channels = BaseChannel.allMethods({ client: this.client, guildId: this.id });
 	emojis = GuildEmoji.methods({ client: this.client, guildId: this.id });
 	bans = GuildBan.methods({ client: this.client, guildId: this.id });
+
+	edit(body: RESTPatchAPIGuildJSONBody, reason?: string) {
+		return this.client.guilds.edit(this.id, body, reason);
+	}
 }
 
 /** Maximun custom guild emojis per level */
