@@ -111,7 +111,7 @@ export interface ApplicationRoutes {
 				delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIApplicationEmojiResult>;
 			};
 			get(
-				args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIApplicationEmojisQuery>,
+				args?: RestArguments<ProxyRequestMethod.Get, Pick<RESTGetAPIApplicationEmojiResult, 'id'>>,
 			): Promise<RESTGetAPIApplicationEmojisResult>;
 			post(
 				args?: RestArguments<ProxyRequestMethod.Post, RESTPostAPIApplicationEmojiJSONBody>,
@@ -119,5 +119,3 @@ export interface ApplicationRoutes {
 		};
 	};
 }
-
-export type RESTGetAPIApplicationEmojisQuery = Pick<RESTGetAPIApplicationEmojiResult, 'id'>;
