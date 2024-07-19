@@ -23,6 +23,13 @@ import type {
 	RESTPutAPIApplicationRoleConnectionMetadataJSONBody,
 	RESTPutAPIApplicationRoleConnectionMetadataResult,
 	RESTPutAPIGuildApplicationCommandsPermissionsResult,
+	RESTGetAPIApplicationEmojiResult,
+	RESTGetAPIApplicationEmojisResult,
+	RESTPostAPIApplicationEmojiJSONBody,
+	RESTPatchAPIApplicationEmojiJSONBody,
+	RESTPostAPIApplicationEmojiResult,
+	RESTPatchAPIApplicationEmojiResult,
+	RESTDeleteAPIApplicationEmojiResult,
 } from 'discord-api-types/v10';
 import type { ProxyRequestMethod } from '../Router';
 import type { RestArguments } from '../api';
@@ -92,6 +99,23 @@ export interface ApplicationRoutes {
 					args: RestArguments<ProxyRequestMethod.Put, RESTPutAPIApplicationRoleConnectionMetadataJSONBody>,
 				): Promise<RESTPutAPIApplicationRoleConnectionMetadataResult>;
 			};
+		};
+		emojis: {
+			(
+				id: string,
+			): {
+				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIApplicationEmojiResult>;
+				patch(
+					args?: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIApplicationEmojiJSONBody>,
+				): Promise<RESTPatchAPIApplicationEmojiResult>;
+				delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIApplicationEmojiResult>;
+			};
+			get(
+				args?: RestArguments<ProxyRequestMethod.Get, Pick<RESTGetAPIApplicationEmojiResult, 'id'>>,
+			): Promise<RESTGetAPIApplicationEmojisResult>;
+			post(
+				args?: RestArguments<ProxyRequestMethod.Post, RESTPostAPIApplicationEmojiJSONBody>,
+			): Promise<RESTPostAPIApplicationEmojiResult>;
 		};
 	};
 }
