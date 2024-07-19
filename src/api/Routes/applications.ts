@@ -97,16 +97,21 @@ export interface ApplicationRoutes {
 			};
 		};
 		emojis: {
+			(
+				id: string,
+			): {
+				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIApplicationEmojiResult>;
+				patch(
+					args?: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIApplicationEmojiJSONBody>,
+				): Promise<RESTPatchAPIApplicationEmojiJSONBody>;
+				delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<never>;
+			};
 			get(
 				args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIApplicationEmojisQuery>,
 			): Promise<RESTGetAPIApplicationEmojiResult>;
 			post(
 				args?: RestArguments<ProxyRequestMethod.Post, RESTPostAPIApplicationEmojiJSONBody>,
 			): Promise<RESTPostAPIApplicationEmojiJSONBody>;
-			patch(
-				args?: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIApplicationEmojiJSONBody>,
-			): Promise<RESTPatchAPIApplicationEmojiJSONBody>;
-			delete(args?: RestArguments<ProxyRequestMethod.Delete, RESTGetAPIApplicationEmojisQuery>): Promise<never>;
 		};
 	};
 }
