@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       discord-api-types:
-        specifier: ^0.37.92
-        version: 0.37.92
+        specifier: github:tiramisulabs/discord-api-types
+        version: https://codeload.github.com/tiramisulabs/discord-api-types/tar.gz/fb7d551a671718f4e1b7b4010574c0f3a4d0a858
       magic-bytes.js:
         specifier: ^1.10.0
         version: 1.10.0
@@ -362,8 +362,9 @@ packages:
     resolution: {integrity: sha512-HVQE3AAb/pxF8fQAoiqpvg9i3evqug3hoiwakOyZAwJm+6vZehbkYXZ0l4JxS+I3QxM97v5aaRNhj8v5oBhekw==}
     engines: {node: '>=0.10'}
 
-  discord-api-types@0.37.92:
-    resolution: {integrity: sha512-7xnedbQRLRef/O+4jKPyIFwl6YqoyihOG3OSneiRmVJMBk30ph2YuZGcHjeX1Kk/a3yQWeyCKe4RZJB3iECcxg==}
+  discord-api-types@https://codeload.github.com/tiramisulabs/discord-api-types/tar.gz/fb7d551a671718f4e1b7b4010574c0f3a4d0a858:
+    resolution: {tarball: https://codeload.github.com/tiramisulabs/discord-api-types/tar.gz/fb7d551a671718f4e1b7b4010574c0f3a4d0a858}
+    version: 0.37.92
 
   dot-prop@5.3.0:
     resolution: {integrity: sha512-QM8q3zDe58hqUqjraQOmzZ1LIH9SWQJTlEKCH4kJ2oQvLZk7RbQXvtDM2XEq3fwkV9CCvvH4LA0AV+ogFsBM2Q==}
@@ -1184,7 +1185,7 @@ snapshots:
   denque@2.1.0:
     optional: true
 
-  discord-api-types@0.37.92: {}
+  discord-api-types@https://codeload.github.com/tiramisulabs/discord-api-types/tar.gz/fb7d551a671718f4e1b7b4010574c0f3a4d0a858: {}
 
   dot-prop@5.3.0:
     dependencies:

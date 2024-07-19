@@ -23,9 +23,13 @@ import type {
 	RESTPutAPIApplicationRoleConnectionMetadataJSONBody,
 	RESTPutAPIApplicationRoleConnectionMetadataResult,
 	RESTPutAPIGuildApplicationCommandsPermissionsResult,
-	APIEmoji,
-	RESTPostAPIGuildEmojiJSONBody,
-	RESTPatchAPIGuildEmojiJSONBody,
+	RESTGetAPIApplicationEmojiResult,
+	RESTGetAPIApplicationEmojisResult,
+	RESTPostAPIApplicationEmojiJSONBody,
+	RESTPatchAPIApplicationEmojiJSONBody,
+	RESTPostAPIApplicationEmojiResult,
+	RESTPatchAPIApplicationEmojiResult,
+	RESTDeleteAPIApplicationEmojiResult,
 } from 'discord-api-types/v10';
 import type { ProxyRequestMethod } from '../Router';
 import type { RestArguments } from '../api';
@@ -103,49 +107,17 @@ export interface ApplicationRoutes {
 				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIApplicationEmojiResult>;
 				patch(
 					args?: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIApplicationEmojiJSONBody>,
-				): Promise<RESTPatchAPIApplicationEmojiJSONBody>;
-				delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<never>;
+				): Promise<RESTPatchAPIApplicationEmojiResult>;
+				delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIApplicationEmojiResult>;
 			};
 			get(
 				args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIApplicationEmojisQuery>,
-			): Promise<RESTGetAPIApplicationEmojiResult>;
+			): Promise<RESTGetAPIApplicationEmojisResult>;
 			post(
 				args?: RestArguments<ProxyRequestMethod.Post, RESTPostAPIApplicationEmojiJSONBody>,
-			): Promise<RESTPostAPIApplicationEmojiJSONBody>;
+			): Promise<RESTPostAPIApplicationEmojiResult>;
 		};
 	};
 }
-
-/**
- * https://discord.com/developers/docs/resources/emoji#list-application-emojis
- */
-export interface RESTGetAPIApplicationEmojisResult {
-	items: APIEmoji[];
-}
-
-/**
- * https://discord.com/developers/docs/resources/emoji#get-application-emoji
- */
-export type RESTGetAPIApplicationEmojiResult = APIEmoji;
-
-/**
- * https://discord.com/developers/docs/resources/emoji#create-application-emoji-json-params
- */
-export type RESTPostAPIApplicationEmojiJSONBody = Pick<RESTPostAPIGuildEmojiJSONBody, 'image' | 'name'>;
-
-/**
- * https://discord.com/developers/docs/resources/emoji#create-application-emoji
- */
-export type RESTPostAPIApplicationEmojiResult = APIEmoji;
-
-/**
- * https://discord.com/developers/docs/resources/emoji#modify-application-emoji
- */
-export type RESTPatchAPIApplicationEmojiJSONBody = Pick<RESTPatchAPIGuildEmojiJSONBody, 'name'>;
-
-/**
- * https://discord.com/developers/docs/resources/emoji#modify-application-emoji
- */
-export type RESTPatchAPIApplicationEmojiResult = APIEmoji;
 
 export type RESTGetAPIApplicationEmojisQuery = Pick<RESTGetAPIApplicationEmojiResult, 'id'>;
