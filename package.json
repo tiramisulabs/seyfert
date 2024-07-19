@@ -6,7 +6,8 @@
 	"module": "./lib/index.js",
 	"types": "./lib/index.d.ts",
 	"files": [
-		"lib/**"
+		"lib/**",
+		"deps/**"
 	],
 	"scripts": {
 		"build": "tsc --outDir ./lib",
@@ -21,7 +22,7 @@
 	"license": "Apache-2.0",
 	"dependencies": {
 		"discord-api-types": "github:tiramisulabs/discord-api-types",
-		"magic-bytes.js": "^1.10.0",
+		"magic-bytes": "file:deps/magic-bytes",
 		"ts-mixer": "^6.0.4",
 		"ws": "^8.18.0"
 	},

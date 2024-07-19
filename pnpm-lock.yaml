@@ -11,9 +11,9 @@ importers:
       discord-api-types:
         specifier: github:tiramisulabs/discord-api-types
         version: https://codeload.github.com/tiramisulabs/discord-api-types/tar.gz/fb7d551a671718f4e1b7b4010574c0f3a4d0a858
-      magic-bytes.js:
-        specifier: ^1.10.0
-        version: 1.10.0
+      magic-bytes:
+        specifier: file:deps/magic-bytes
+        version: file:deps/magic-bytes
       ts-mixer:
         specifier: ^6.0.4
         version: 6.0.4
@@ -594,8 +594,9 @@ packages:
     resolution: {integrity: sha512-niTvB4gqvtof056rRIrTZvjNYE4rCUzO6X/X+kYjd7WFxXeJ0NwEFnRxX6ehkvv3jTwrXnNdtAak5XYZuIyPFw==}
     engines: {node: '>=18'}
 
-  magic-bytes.js@1.10.0:
-    resolution: {integrity: sha512-/k20Lg2q8LE5xiaaSkMXk4sfvI+9EGEykFS4b0CHHGWqDYU0bGUFSwchNOMA56D7TCs9GwVTkqe9als1/ns8UQ==}
+  magic-bytes@file:deps/magic-bytes:
+    resolution: {directory: deps/magic-bytes, type: directory}
+    hasBin: true
 
   meow@12.1.1:
     resolution: {integrity: sha512-BhXM0Au22RwUneMPwSCnyhTOizdWoIEPU9sp0Aqa1PnDMR5Wv2FGXYDjuzJEIX+Eo2Rb8xuYe5jrnm5QowQFkw==}
@@ -1400,7 +1401,7 @@ snapshots:
       strip-ansi: 7.1.0
       wrap-ansi: 9.0.0
 
-  magic-bytes.js@1.10.0: {}
+  magic-bytes@file:deps/magic-bytes: {}
 
   meow@12.1.1: {}
 
