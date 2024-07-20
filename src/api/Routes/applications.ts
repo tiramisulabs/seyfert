@@ -31,6 +31,7 @@ import type {
 	RESTPatchAPIApplicationEmojiResult,
 	RESTDeleteAPIApplicationEmojiResult,
 } from '../../types';
+
 import type { ProxyRequestMethod } from '../Router';
 import type { RestArguments } from '../api';
 
