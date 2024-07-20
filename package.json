@@ -5,7 +5,10 @@
 	"main": "./lib/index.js",
 	"module": "./lib/index.js",
 	"types": "./lib/index.d.ts",
-	"files": ["lib/**", "deps/**"],
+	"files": [
+		"lib/**",
+		"deps/**"
+	],
 	"scripts": {
 		"build": "tsc --outDir ./lib",
 		"prepublishOnly": "build",
@@ -18,12 +21,14 @@
 	"author": "MARCROCK22",
 	"license": "Apache-2.0",
 	"dependencies": {
-		"magic-bytes": "file:deps/magic-bytes",
+		"magic-bytes": "file:deps\\magic-bytes",
 		"ts-mixer": "^6.0.4",
 		"ws": "^8.18.0"
 	},
 	"lint-staged": {
-		"*.ts": ["biome check --write"]
+		"*.ts": [
+			"biome check --write"
+		]
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.8.3",
@@ -49,7 +54,13 @@
 	"bugs": {
 		"url": "https://github.com/tiramisulabs/seyfert"
 	},
-	"keywords": ["api", "discord", "bots", "typescript", "botdev"],
+	"keywords": [
+		"api",
+		"discord",
+		"bots",
+		"typescript",
+		"botdev"
+	],
 	"publishConfig": {
 		"access": "public"
 	},

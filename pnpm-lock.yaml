@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       magic-bytes:
-        specifier: file:deps/magic-bytes
+        specifier: file:deps\magic-bytes
         version: file:deps/magic-bytes
       ts-mixer:
         specifier: ^6.0.4
