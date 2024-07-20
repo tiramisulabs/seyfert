@@ -9,21 +9,27 @@ export type GuildMemberData =
 
 import type {
 	APIGuildMember,
-	APIInteractionDataResolvedGuildMember,
-	APIUser,
-	GatewayGuildMemberAddDispatchData,
 	GatewayGuildMemberUpdateDispatchData,
-	RESTGetAPIGuildMembersQuery,
-	RESTGetAPIGuildMembersSearchQuery,
-	RESTPatchAPIGuildMemberJSONBody,
+	GatewayGuildMemberAddDispatchData,
+	APIInteractionDataResolvedGuildMember,
 	RESTPutAPIGuildBanJSONBody,
+	RESTPatchAPIGuildMemberJSONBody,
+	RESTGetAPIGuildMembersSearchQuery,
 	RESTPutAPIGuildMemberJSONBody,
-} from 'discord-api-types/v10';
+	RESTGetAPIGuildMembersQuery,
+	APIUser,
+} from '../types';
 import type { UsingClient } from '../commands';
-import { Formatter, type MessageCreateBodyRequest, type ObjectToLower, type ToClass } from '../common';
-import type { ImageOptions, MethodContext } from '../common/types/options';
-import type { GuildMemberResolvable } from '../common/types/resolvables';
 import { PermissionsBitField } from './extra/Permissions';
+import {
+	Formatter,
+	type MessageCreateBodyRequest,
+	type ObjectToLower,
+	type ToClass,
+	type ImageOptions,
+	type MethodContext,
+	type GuildMemberResolvable,
+} from '../common';
 import { Transformers, type UserStructure } from '../client/transformers';
 
 export interface BaseGuildMember extends DiscordBase, ObjectToLower<Omit<APIGuildMember, 'user' | 'roles'>> {}

@@ -4,7 +4,7 @@ import {
 	InteractionContextType,
 	PermissionFlagsBits,
 	type LocaleString,
-} from 'discord-api-types/v10';
+} from '../types';
 import type { FlatObjectKeys, PermissionStrings } from '../common';
 import type { CommandOption, OptionsRecord, SubCommand } from './applications/chat';
 import type { DefaultLocale, ExtraProps, IgnoreCommand, MiddlewareContext } from './applications/shared';

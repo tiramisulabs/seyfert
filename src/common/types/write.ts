@@ -10,7 +10,7 @@ import type {
 	RESTPatchAPIWebhookWithTokenMessageJSONBody,
 	RESTPostAPIChannelMessageJSONBody,
 	RESTPostAPIWebhookWithTokenJSONBody,
-} from 'discord-api-types/v10';
+} from '../../types';
 import type { RawFile } from '../../api';
 import type {
 	ActionRow,

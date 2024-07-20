@@ -1,12 +1,12 @@
-import { FormattingPatterns } from 'discord-api-types/globals';
-import type {
-	APIGuildMember,
-	RESTGetAPIGuildMembersQuery,
-	RESTGetAPIGuildMembersSearchQuery,
-	RESTPatchAPIGuildMemberJSONBody,
-	RESTPutAPIGuildBanJSONBody,
-	RESTPutAPIGuildMemberJSONBody,
-} from 'discord-api-types/v10';
+import {
+	type APIGuildMember,
+	type RESTGetAPIGuildMembersQuery,
+	type RESTGetAPIGuildMembersSearchQuery,
+	type RESTPatchAPIGuildMemberJSONBody,
+	type RESTPutAPIGuildBanJSONBody,
+	type RESTPutAPIGuildMemberJSONBody,
+	FormattingPatterns,
+} from '../../types';
 import { PermissionsBitField } from '../../structures/extra/Permissions';
 import type { GuildMemberResolvable } from '../types/resolvables';
 import { BaseShorter } from './base';

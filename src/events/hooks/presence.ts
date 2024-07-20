@@ -1,4 +1,4 @@
-import type { GatewayPresenceUpdateDispatchData } from 'discord-api-types/v10';
+import type { GatewayPresenceUpdateDispatchData } from '../../types';
 import type { UsingClient } from '../../commands';
 import { toCamelCase } from '../../common';
 

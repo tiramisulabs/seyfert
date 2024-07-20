@@ -1,7 +1,7 @@
-import type { APIEmoji, RESTPatchAPIChannelJSONBody, RESTPatchAPIGuildEmojiJSONBody } from 'discord-api-types/v10';
 import type { BaseCDNUrlOptions } from '../api';
 import type { UsingClient } from '../commands';
 import { Formatter, type EmojiShorter, type MethodContext, type ObjectToLower } from '../common';
+import type { APIEmoji, RESTPatchAPIChannelJSONBody, RESTPatchAPIGuildEmojiJSONBody } from '../types';
 import { DiscordBase } from './extra/DiscordBase';
 
 export interface GuildEmoji extends DiscordBase, ObjectToLower<Omit<APIEmoji, 'id'>> {}

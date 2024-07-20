@@ -1,4 +1,4 @@
-import type { RESTDeleteAPIInviteResult, RESTGetAPIInviteQuery, RESTGetAPIInviteResult } from 'discord-api-types/v10';
+import type { RESTDeleteAPIInviteResult, RESTGetAPIInviteQuery, RESTGetAPIInviteResult } from '../../types';
 import type { ProxyRequestMethod } from '../Router';
 import type { RestArguments } from '../api';
 

@@ -1,4 +1,4 @@
-import type { GatewayTypingStartDispatchData } from 'discord-api-types/v10';
+import type { GatewayTypingStartDispatchData } from '../../types';
 import { toCamelCase } from '../../common';
 import type { UsingClient } from '../../commands';
 import { Transformers } from '../../client/transformers';

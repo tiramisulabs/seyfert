@@ -1,4 +1,4 @@
-import type { GatewayDispatchPayload } from 'discord-api-types/v10';
+import type { GatewayDispatchPayload } from '../../types';
 import type { ShardManagerOptions, WorkerManagerOptions } from '../discord';
 
 const COMPRESS = false;

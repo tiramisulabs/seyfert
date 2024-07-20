@@ -3,7 +3,7 @@ import type {
 	GatewayChannelDeleteDispatchData,
 	GatewayChannelPinsUpdateDispatchData,
 	GatewayChannelUpdateDispatchData,
-} from 'discord-api-types/v10';
+} from '../../types';
 
 import { toCamelCase } from '../../common';
 import type { AllChannels } from '../../structures';

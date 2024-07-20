@@ -5,7 +5,7 @@ import type {
 	APIMessage,
 	APIUser,
 	GatewayMessageCreateDispatchData,
-} from 'discord-api-types/v10';
+} from '../types';
 import type { ListenerOptions } from '../builders';
 import type { UsingClient } from '../commands';
 import { toCamelCase, type ObjectToLower } from '../common';

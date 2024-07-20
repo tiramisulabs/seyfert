@@ -1,4 +1,4 @@
-import type { GatewayUserUpdateDispatchData } from 'discord-api-types/v10';
+import type { GatewayUserUpdateDispatchData } from '../../types';
 import type { UsingClient } from '../../commands';
 import { Transformers, type UserStructure } from '../../client/transformers';
 

@@ -1,13 +1,11 @@
-import {
-	type APIChannel,
-	PermissionFlagsBits,
-	type RESTGetAPIChannelMessagesQuery,
-	type RESTPatchAPIChannelJSONBody,
-	type RESTPostAPIChannelThreadsJSONBody,
-	type RESTPostAPIGuildForumThreadsJSONBody,
-	type ChannelType,
-	type APIGuildChannel,
-} from 'discord-api-types/v10';
+import type {
+	APIChannel,
+	RESTGetAPIChannelMessagesQuery,
+	RESTPatchAPIChannelJSONBody,
+	RESTPostAPIChannelThreadsJSONBody,
+	RESTPostAPIGuildForumThreadsJSONBody,
+	APIGuildChannel,
+} from '../../types';
 import { BaseChannel, type GuildRole, type GuildMember } from '../../structures';
 import channelFrom, { type AllChannels } from '../../structures/channels';
 import { PermissionsBitField } from '../../structures/extra/Permissions';
@@ -15,6 +13,7 @@ import { BaseShorter } from './base';
 import { MergeOptions } from '../it/utils';
 import { type MessageStructure, Transformers } from '../../client/transformers';
 import type { MakeRequired } from '../types/util';
+import { type ChannelType, PermissionFlagsBits } from '../../types';
 
 export class ChannelShorter extends BaseShorter {
 	/**

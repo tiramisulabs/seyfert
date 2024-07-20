@@ -17,6 +17,10 @@ import { VoiceStates } from './resources/voice-states';
 import { Bans } from './resources/bans';
 
 import {
+	ChannelType,
+	GatewayIntentBits,
+	GuildMemberFlags,
+	OverwriteType,
 	type APIChannel,
 	type APIEmoji,
 	type APIGuildMember,
@@ -24,12 +28,8 @@ import {
 	type APISticker,
 	type APITextChannel,
 	type APIUser,
-	ChannelType,
-	GatewayIntentBits,
-	GuildMemberFlags,
-	OverwriteType,
 	type GatewayDispatchPayload,
-} from 'discord-api-types/v10';
+} from '../types';
 import type { InternalOptions, UsingClient } from '../commands';
 import { Overwrites } from './resources/overwrites';
 import { Messages } from './resources/messages';

@@ -1,4 +1,4 @@
-import type { GatewayPresenceUpdateData, GatewaySendPayload } from 'discord-api-types/v10';
+import type { GatewayPresenceUpdateData, GatewaySendPayload } from '../../types';
 import cluster, { type Worker as ClusterWorker } from 'node:cluster';
 import { randomUUID } from 'node:crypto';
 import { ApiHandler, Logger, Router } from '../..';

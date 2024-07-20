@@ -1,4 +1,4 @@
-import type { APIGuild, GatewayGuildCreateDispatchData } from 'discord-api-types/v10';
+import type { APIGuild, GatewayGuildCreateDispatchData } from '../../types';
 import type { Cache, ReturnCache } from '..';
 import { fakePromise } from '../../common';
 import { BaseResource } from './default/base';

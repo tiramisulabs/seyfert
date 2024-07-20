@@ -10,7 +10,7 @@ import type {
 	RESTPostAPIAutoModerationRuleJSONBody,
 	RESTPostAPIGuildChannelJSONBody,
 	RESTPostAPIGuildsJSONBody,
-} from 'discord-api-types/v10';
+} from '../../types';
 import { resolveFiles } from '../../builders';
 import { BaseChannel, Guild, GuildMember, type CreateStickerBodyRequest } from '../../structures';
 import channelFrom from '../../structures/channels';

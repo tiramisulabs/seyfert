@@ -28,7 +28,8 @@
 				"noDefaultExport": "off",
 				"noNamespaceImport": "off",
 				"useSingleCaseStatement": "off",
-				"useBlockStatements": "off"
+				"useBlockStatements": "off",
+				"useEnumInitializers": "off"
 			},
 			"correctness": {
 				"noUnusedVariables": "off",

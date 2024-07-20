@@ -1,4 +1,4 @@
-import type { GatewayActivity, GatewayPresenceUpdateDispatchData } from 'discord-api-types/v10';
+import type { GatewayActivity, GatewayPresenceUpdateDispatchData } from '../../../types';
 
 export class PresenceUpdateHandler {
 	presenceUpdate = new Map<string, { timeout: NodeJS.Timeout; presence: GatewayPresenceUpdateDispatchData }>();

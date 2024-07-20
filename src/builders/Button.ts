@@ -1,9 +1,4 @@
-import {
-	type APIMessageComponentEmoji,
-	type ButtonStyle,
-	ComponentType,
-	type APIButtonComponent,
-} from 'discord-api-types/v10';
+import { type APIMessageComponentEmoji, type ButtonStyle, ComponentType, type APIButtonComponent } from '../types';
 import type { EmojiResolvable } from '../common';
 import { resolvePartialEmoji } from '../structures/extra/functions';
 

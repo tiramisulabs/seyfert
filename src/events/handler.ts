@@ -3,7 +3,7 @@ import type {
 	GatewayMessageCreateDispatch,
 	GatewayMessageDeleteBulkDispatch,
 	GatewayMessageDeleteDispatch,
-} from 'discord-api-types/v10';
+} from '../types';
 import type { Client, WorkerClient } from '../client';
 import { BaseHandler, ReplaceRegex, magicImport, type MakeRequired, type SnakeCase } from '../common';
 import type { ClientEvents } from '../events/hooks';

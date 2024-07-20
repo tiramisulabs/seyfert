@@ -1,4 +1,4 @@
-import type { GatewayPresenceUpdate } from 'discord-api-types/v10';
+import type { GatewayPresenceUpdate } from '../../types';
 import { GuildRelatedResource } from './default/guild-related';
 
 export class Presences extends GuildRelatedResource<PresenceResource, GatewayPresenceUpdate> {

@@ -1,5 +1,3 @@
-import type { GatewayReceivePayload, GatewaySendPayload } from 'discord-api-types/v10';
-import { GatewayCloseCodes, GatewayDispatchEvents, GatewayOpcodes } from 'discord-api-types/v10';
 import { inflateSync } from 'node:zlib';
 import type WS from 'ws';
 import { WebSocket, type CloseEvent, type ErrorEvent } from 'ws';
@@ -10,6 +8,13 @@ import { ConnectTimeout } from '../structures/timeout';
 import { BaseSocket } from './basesocket';
 import type { ShardData, ShardOptions } from './shared';
 import { ShardSocketCloseCodes } from './shared';
+import {
+	type GatewaySendPayload,
+	type GatewayReceivePayload,
+	GatewayCloseCodes,
+	GatewayDispatchEvents,
+	GatewayOpcodes,
+} from '../../types';
 
 export interface ShardHeart {
 	interval: number;

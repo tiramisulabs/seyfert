@@ -1,4 +1,4 @@
-import type { GatewayDispatchPayload, GatewaySendPayload } from 'discord-api-types/v10';
+import type { GatewayDispatchPayload, GatewaySendPayload } from '../../types';
 import { execSync } from 'node:child_process';
 import { ApiHandler, Router } from '../../api';
 import { BaseClient, type InternalRuntimeConfig } from '../../client/base';

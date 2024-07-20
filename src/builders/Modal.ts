@@ -4,7 +4,7 @@ import {
 	type APITextInputComponent,
 	ComponentType,
 	type TextInputStyle,
-} from 'discord-api-types/v10';
+} from '../types';
 import type { RestOrArray } from '../common';
 import type { ActionRow } from './ActionRow';
 import { BaseComponentBuilder, type OptionValuesLength } from './Base';

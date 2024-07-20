@@ -1,4 +1,4 @@
-import type { APIMessage, APIUser } from 'discord-api-types/v10';
+import type { APIMessage, APIUser } from '../../types';
 import { GuildRelatedResource } from './default/guild-related';
 import type { MessageData, ReturnCache } from '../..';
 import { fakePromise } from '../../common';

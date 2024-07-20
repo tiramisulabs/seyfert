@@ -1,5 +1,5 @@
-import type { GatewayDispatchPayload } from 'discord-api-types/v10';
 import type { ApiRequestOptions, HttpMethods } from '../..';
+import type { GatewayDispatchPayload } from '../../types';
 
 export interface WorkerShardInfo {
 	open: boolean;

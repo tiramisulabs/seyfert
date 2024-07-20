@@ -1,8 +1,4 @@
-import type {
-	APISticker,
-	RESTPatchAPIGuildStickerJSONBody,
-	RESTPostAPIGuildStickerFormDataBody,
-} from 'discord-api-types/v10';
+import type { APISticker, RESTPatchAPIGuildStickerJSONBody, RESTPostAPIGuildStickerFormDataBody } from '../types';
 import type { RawFile, UsingClient } from '..';
 import type { Attachment, AttachmentBuilder } from '../builders';
 import type { MethodContext, ObjectToLower } from '../common';

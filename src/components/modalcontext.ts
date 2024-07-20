@@ -1,4 +1,4 @@
-import { MessageFlags } from 'discord-api-types/v10';
+import { MessageFlags } from '../types';
 import type { AllChannels, ModalCommand, ModalSubmitInteraction, ReturnCache } from '..';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, RegisteredMiddlewares, UsingClient } from '../commands';
 import { BaseContext } from '../commands/basecontext';

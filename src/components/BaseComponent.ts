@@ -9,7 +9,7 @@ import {
 	type APITextInputComponent,
 	type APIUserSelectComponent,
 	ComponentType,
-} from 'discord-api-types/v10';
+} from '../types';
 import { fromComponent } from '../builders';
 
 export class BaseComponent<T extends ComponentType> {

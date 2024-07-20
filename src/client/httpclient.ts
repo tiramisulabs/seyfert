@@ -1,9 +1,4 @@
-import {
-	type APIInteractionResponse,
-	InteractionResponseType,
-	InteractionType,
-	type APIInteraction,
-} from 'discord-api-types/v10';
+import { type APIInteractionResponse, InteractionResponseType, InteractionType, type APIInteraction } from '../types';
 import { getMimetypeFromBytes } from 'magic-bytes';
 import type { HttpRequest, HttpResponse } from 'uWebSockets.js';
 import { OverwrittenMimeTypes } from '../api';

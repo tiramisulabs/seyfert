@@ -1,4 +1,4 @@
-import { type APIPollMedia, PollLayoutType, type RESTAPIPollCreate } from 'discord-api-types/v10';
+import { type APIPollMedia, PollLayoutType, type RESTAPIPollCreate } from '../types';
 import type { DeepPartial, EmojiResolvable, RestOrArray } from '../common';
 import { throwError } from '..';
 import { resolvePartialEmoji } from '../structures/extra/functions';
