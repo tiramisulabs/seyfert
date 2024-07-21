@@ -115,9 +115,9 @@ export class HttpClient extends BaseClient {
 		const body = (await req.json()) as APIInteraction;
 		if (
 			nacl!.sign.detached.verify(
-				Buffer.from(timestamp + JSON.stringify(body)),
-				Buffer.from(ed25519, 'hex'),
-				this.publicKeyHex,
+				new Uint8Array(Buffer.from(timestamp + JSON.stringify(body))),
+				new Uint8Array(Buffer.from(ed25519, 'hex')),
+				new Uint8Array(this.publicKeyHex),
 			)
 		) {
 			return body;
@@ -132,9 +132,9 @@ export class HttpClient extends BaseClient {
 		const body = await HttpClient.readJson<APIInteraction>(res);
 		if (
 			nacl!.sign.detached.verify(
-				Buffer.from(timestamp + JSON.stringify(body)),
-				Buffer.from(ed25519, 'hex'),
-				this.publicKeyHex,
+				new Uint8Array(Buffer.from(timestamp + JSON.stringify(body))),
+				new Uint8Array(Buffer.from(ed25519, 'hex')),
+				new Uint8Array(this.publicKeyHex),
 			)
 		) {
 			return body;
@@ -179,7 +179,7 @@ export class HttpClient extends BaseClient {
 									let contentType = file.contentType;
 
 									if (!contentType) {
-										const [parsedType] = filetypeinfo(file.data);
+										const [parsedType] = filetypeinfo(Uint8Array.from(file.data));
 
 										if (parsedType) {
 											contentType =
@@ -237,7 +237,7 @@ export class HttpClient extends BaseClient {
 										let contentType = file.contentType;
 
 										if (!contentType) {
-											const [parsedType] = filetypeinfo(file.data);
+											const [parsedType] = filetypeinfo(Uint8Array.from(file.data));
 
 											if (parsedType) {
 												contentType =
