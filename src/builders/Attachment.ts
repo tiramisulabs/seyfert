@@ -211,7 +211,7 @@ export async function resolveAttachmentData(
 			if (typeof data[Symbol.asyncIterator] === 'function') {
 				const buffers = [];
 				for await (const resource of data as unknown as AsyncIterable<ArrayBuffer>) buffers.push(Buffer.from(resource));
-				return { data: Buffer.concat(buffers) };
+				return { data: Buffer.concat(buffers.map(buffer => Uint8Array.from(buffer))) };
 			}
 			return throwError(
 				`The attachment type has been expressed as ${type.toUpperCase()} but cannot be resolved as one.`,
