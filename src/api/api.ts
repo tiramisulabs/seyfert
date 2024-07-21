@@ -353,7 +353,7 @@ export class ApiHandler {
 					let contentType = file.contentType;
 
 					if (!contentType) {
-						const [parsedType] = filetypeinfo(file.data);
+						const [parsedType] = filetypeinfo(Uint8Array.from(file.data));
 
 						if (parsedType) {
 							contentType =
