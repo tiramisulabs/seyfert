@@ -627,6 +627,10 @@ export interface APIMessage {
 	 */
 	poll?: APIPoll;
 	/**
+	 * The message associated with the message_reference. This is a minimal subset of fields in a message (e.g. author is excluded.)
+	 */
+	message_snapshots?: APIMessageSnapshot[];
+	/**
 	 * The call associated with the message
 	 */
 	call?: APIMessageCall;
@@ -698,6 +702,20 @@ export interface APIMessageActivity {
 }
 
 /**
+ * https://discord.com/developers/docs/resources/channel#message-reference-types
+ */
+export enum MessageReferenceType {
+	/**
+	 * A standard reference used by replies
+	 */
+	Default = 0,
+	/**
+	 * Reference used to point to a message at a point in time
+	 */
+	Forward = 1,
+}
+
+/**
  * https://discord.com/developers/docs/resources/channel#message-reference-object-message-reference-structure
  */
 export interface APIMessageReference {
@@ -713,7 +731,38 @@ export interface APIMessageReference {
 	 * ID of the originating message's guild
 	 */
 	guild_id?: Snowflake;
+	/**
+	 * Type of reference
+	 */
+	type?: MessageReferenceType;
 }
+
+/**
+ * https://discord.com/developers/docs/resources/channel#message-snapshot-object
+ */
+export interface APIMessageSnapshot {
+	/**
+	 * Subset of the message object fields
+	 */
+	message: APIMessageSnapshotFields;
+	/**
+	 * Id of the origin message's guild
+	 */
+	guild_id?: Snowflake;
+}
+
+export type APIMessageSnapshotFields = Pick<
+	APIMessage,
+	| 'attachments'
+	| 'content'
+	| 'edited_timestamp'
+	| 'embeds'
+	| 'flags'
+	| 'mention_roles'
+	| 'mentions'
+	| 'timestamp'
+	| 'type'
+>;
 
 /**
  * https://discord.com/developers/docs/resources/channel#message-object-message-activity-types
