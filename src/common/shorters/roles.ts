@@ -3,7 +3,7 @@ import type {
 	RESTPatchAPIGuildRoleJSONBody,
 	RESTPatchAPIGuildRolePositionsJSONBody,
 	RESTPostAPIGuildRoleJSONBody,
-} from 'discord-api-types/v10';
+} from '../../types';
 import { BaseShorter } from './base';
 import { Transformers } from '../../client/transformers';
 

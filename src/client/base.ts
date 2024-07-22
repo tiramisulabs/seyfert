@@ -35,7 +35,7 @@ import {
 	type MakeRequired,
 } from '../common';
 
-import type { LocaleString, RESTPostAPIChannelMessageJSONBody } from 'discord-api-types/rest/v10';
+import type { LocaleString, RESTPostAPIChannelMessageJSONBody } from '../types';
 import type { Awaitable, DeepPartial, IntentStrings, OmitInsert, PermissionStrings, When } from '../common/types/util';
 import { ComponentHandler } from '../components/handler';
 import { LangsHandler } from '../langs/handler';

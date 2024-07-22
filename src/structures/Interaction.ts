@@ -36,7 +36,7 @@ import {
 	type MessageFlags,
 	type RESTPostAPIInteractionCallbackJSONBody,
 	type RESTAPIAttachment,
-} from 'discord-api-types/v10';
+} from '../types';
 import { mix } from 'ts-mixer';
 import type { RawFile } from '../api';
 import { ActionRow, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';

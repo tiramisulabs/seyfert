@@ -1,4 +1,4 @@
-import type { APIUser, GatewayGuildMemberUpdateDispatchData } from 'discord-api-types/v10';
+import type { APIUser, GatewayGuildMemberUpdateDispatchData } from '../../../types';
 
 export class MemberUpdateHandler {
 	guildMemberUpdate = new Map<string, { timeout: NodeJS.Timeout; member: GatewayGuildMemberUpdateDispatchData }>();

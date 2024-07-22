@@ -20,7 +20,7 @@ import type {
 	GatewayGuildScheduledEventUserRemoveDispatchData,
 	GatewayGuildStickersUpdateDispatchData,
 	GatewayGuildUpdateDispatchData,
-} from 'discord-api-types/v10';
+} from '../../types';
 import { toCamelCase } from '../../common';
 import type { UsingClient } from '../../commands';
 import {

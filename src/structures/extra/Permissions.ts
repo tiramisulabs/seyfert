@@ -1,5 +1,5 @@
-import { PermissionFlagsBits } from 'discord-api-types/v10';
 import type { PermissionStrings } from '../../common';
+import { PermissionFlagsBits } from '../../types';
 import { BitField, type BitFieldResolvable } from './BitField';
 
 export class PermissionsBitField extends BitField<typeof PermissionFlagsBits> {

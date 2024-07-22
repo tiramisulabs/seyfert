@@ -1,10 +1,10 @@
+import type { UsingClient } from '../commands';
+import type { MethodContext, ObjectToLower } from '../common';
 import type {
 	APIAutoModerationRule,
 	RESTPatchAPIAutoModerationRuleJSONBody,
 	RESTPostAPIAutoModerationRuleJSONBody,
-} from 'discord-api-types/v10';
-import type { UsingClient } from '../commands';
-import type { MethodContext, ObjectToLower } from '../common';
+} from '../types';
 import { DiscordBase } from './extra/DiscordBase';
 
 export interface AutoModerationRule extends ObjectToLower<APIAutoModerationRule> {}

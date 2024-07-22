@@ -1,4 +1,4 @@
-import type { APIEmoji, RESTPatchAPIGuildEmojiJSONBody, RESTPostAPIGuildEmojiJSONBody } from 'discord-api-types/v10';
+import type { APIEmoji, RESTPatchAPIGuildEmojiJSONBody, RESTPostAPIGuildEmojiJSONBody } from '../../types';
 import { resolveImage } from '../../builders';
 import type { ImageResolvable } from '../types/resolvables';
 import type { OmitInsert } from '../types/util';

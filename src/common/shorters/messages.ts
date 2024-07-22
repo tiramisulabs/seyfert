@@ -2,7 +2,7 @@ import type {
 	RESTPatchAPIChannelMessageJSONBody,
 	RESTPostAPIChannelMessageJSONBody,
 	RESTPostAPIChannelMessagesThreadsJSONBody,
-} from 'discord-api-types/v10';
+} from '../../types';
 import { resolveFiles } from '../../builders';
 import { MessagesMethods } from '../../structures';
 

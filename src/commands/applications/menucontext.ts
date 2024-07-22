@@ -1,4 +1,4 @@
-import { type APIMessage, ApplicationCommandType, MessageFlags } from 'discord-api-types/v10';
+import { type APIMessage, ApplicationCommandType, MessageFlags } from '../../types';
 import type { ContextMenuCommand, ReturnCache } from '../..';
 import {
 	toSnakeCase,

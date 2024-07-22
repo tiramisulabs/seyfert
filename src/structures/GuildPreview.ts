@@ -1,5 +1,5 @@
-import type { APIGuildPreview, APIPartialGuild } from 'discord-api-types/v10';
 import type { UsingClient } from '../commands';
+import type { APIGuildPreview, APIPartialGuild } from '../types';
 import { AnonymousGuild } from './AnonymousGuild';
 
 /**

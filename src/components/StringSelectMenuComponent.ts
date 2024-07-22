@@ -1,4 +1,4 @@
-import type { ComponentType } from 'discord-api-types/v10';
+import type { ComponentType } from '../types';
 import { BaseSelectMenuComponent } from './BaseSelectMenuComponent';
 
 export class StringSelectMenuComponent extends BaseSelectMenuComponent<ComponentType.StringSelect> {

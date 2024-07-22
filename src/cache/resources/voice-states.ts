@@ -1,4 +1,4 @@
-import type { GatewayVoiceState } from 'discord-api-types/v10';
+import type { GatewayVoiceState } from '../../types';
 import type { ReturnCache } from '../..';
 import { fakePromise } from '../../common';
 import { GuildBasedResource } from './default/guild-based';

@@ -1,4 +1,4 @@
-import type { Snowflake } from 'discord-api-types/v10';
+import type { Snowflake } from '../../types';
 
 /**
  * Calculates the default avatar index for a given user id.

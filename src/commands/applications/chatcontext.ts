@@ -1,4 +1,4 @@
-import { MessageFlags } from 'discord-api-types/v10';
+import { MessageFlags } from '../../types';
 import type { AllChannels, InferWithPrefix, Message, ReturnCache } from '../..';
 import type { Client, WorkerClient } from '../../client';
 import type { If, UnionToTuple, When } from '../../common';

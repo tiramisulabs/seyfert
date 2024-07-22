@@ -3,7 +3,7 @@ import type {
 	ApplicationIntegrationType,
 	InteractionContextType,
 	LocaleString,
-} from 'discord-api-types/v10';
+} from '../../types';
 import { magicImport, type PermissionStrings } from '../../common';
 import type { RegisteredMiddlewares } from '../decorators';
 import type { MenuCommandContext } from './menucontext';

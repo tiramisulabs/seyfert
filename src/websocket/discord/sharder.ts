@@ -1,10 +1,4 @@
 import {
-	GatewayOpcodes,
-	type GatewaySendPayload,
-	type GatewayUpdatePresence,
-	type GatewayVoiceStateUpdate,
-} from 'discord-api-types/v10';
-import {
 	LogLevels,
 	Logger,
 	type MakeRequired,
@@ -12,6 +6,12 @@ import {
 	lazyLoadPackage,
 	type WatcherSendToShard,
 } from '../../common';
+import {
+	type GatewayUpdatePresence,
+	type GatewayVoiceStateUpdate,
+	type GatewaySendPayload,
+	GatewayOpcodes,
+} from '../../types';
 import { ShardManagerDefaults } from '../constants';
 import { DynamicBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';

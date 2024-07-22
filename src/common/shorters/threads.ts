@@ -6,7 +6,7 @@ import type {
 	RESTPostAPIChannelMessagesThreadsJSONBody,
 	RESTPostAPIChannelThreadsJSONBody,
 	RESTPostAPIGuildForumThreadsJSONBody,
-} from 'discord-api-types/v10';
+} from '../../types';
 import channelFrom from '../../structures/channels';
 import { BaseShorter } from './base';
 import type { MakeRequired, When } from '../types/util';

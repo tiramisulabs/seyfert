@@ -1,4 +1,4 @@
-import type { GatewayWebhooksUpdateDispatchData } from 'discord-api-types/v10';
+import type { GatewayWebhooksUpdateDispatchData } from '../../types';
 import { toCamelCase } from '../../common';
 import type { UsingClient } from '../../commands';
 

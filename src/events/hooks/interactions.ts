@@ -1,4 +1,4 @@
-import type { GatewayInteractionCreateDispatchData } from 'discord-api-types/v10';
+import type { GatewayInteractionCreateDispatchData } from '../../types';
 import { BaseInteraction } from '../../structures';
 import type { UsingClient } from '../../commands';
 

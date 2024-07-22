@@ -1,4 +1,4 @@
-import { GatewayIntentBits, type GatewayDispatchPayload, type GatewayPresenceUpdateData } from 'discord-api-types/v10';
+import { type GatewayDispatchPayload, type GatewayPresenceUpdateData, GatewayIntentBits } from '../types';
 import type { CommandContext, Message } from '..';
 import {
 	type Awaitable,

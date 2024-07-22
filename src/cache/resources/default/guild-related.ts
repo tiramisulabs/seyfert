@@ -1,7 +1,7 @@
-import type { GatewayIntentBits } from 'discord-api-types/v10';
 import type { BaseClient } from '../../../client/base';
 import type { UsingClient } from '../../../commands';
 import { fakePromise } from '../../../common';
+import type { GatewayIntentBits } from '../../../types';
 import type { Cache, ReturnCache } from '../../index';
 
 export class GuildRelatedResource<T = any, S = any> {

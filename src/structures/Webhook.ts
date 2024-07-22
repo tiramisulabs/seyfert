@@ -7,7 +7,7 @@ import type {
 	RESTPatchAPIWebhookJSONBody,
 	RESTPatchAPIWebhookWithTokenJSONBody,
 	RESTPostAPIWebhookWithTokenQuery,
-} from 'discord-api-types/v10';
+} from '../types';
 import type { UsingClient } from '../commands';
 import type {
 	ImageOptions,

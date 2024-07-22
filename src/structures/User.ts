@@ -1,7 +1,7 @@
-import type { APIUser } from 'discord-api-types/v10';
 import { calculateUserDefaultAvatarIndex } from '../api';
 import { Formatter, type MessageCreateBodyRequest, type ObjectToLower } from '../common';
 import type { ImageOptions } from '../common/types/options';
+import type { APIUser } from '../types';
 import { DiscordBase } from './extra/DiscordBase';
 
 export interface User extends ObjectToLower<APIUser> {}

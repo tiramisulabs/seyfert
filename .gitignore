@@ -2,3 +2,5 @@ node_modules
 lib/
 dist/
 __test__
+package-lock.json
+

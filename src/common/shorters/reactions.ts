@@ -1,4 +1,4 @@
-import type { RESTGetAPIChannelMessageReactionUsersQuery } from 'discord-api-types/v10';
+import type { RESTGetAPIChannelMessageReactionUsersQuery } from '../../types';
 import { encodeEmoji, resolveEmoji } from '../../structures/extra/functions';
 import type { EmojiResolvable } from '../types/resolvables';
 import { BaseShorter } from './base';

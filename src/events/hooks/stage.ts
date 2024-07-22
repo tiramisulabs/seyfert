@@ -2,7 +2,7 @@ import type {
 	GatewayStageInstanceCreateDispatchData,
 	GatewayStageInstanceDeleteDispatchData,
 	GatewayStageInstanceUpdateDispatchData,
-} from 'discord-api-types/v10';
+} from '../../types';
 import type { UsingClient } from '../../commands';
 import { type ObjectToLower, toCamelCase } from '../../common';
 import type { StageInstances } from '../../cache/resources/stage-instances';

@@ -7,9 +7,9 @@ import {
 	InteractionContextType,
 	type APIApplicationCommandInteractionDataOption,
 	ApplicationCommandOptionType,
-	ChannelType,
 	type APIInteractionDataResolvedChannel,
-} from 'discord-api-types/v10';
+	ChannelType,
+} from '../types';
 import {
 	Command,
 	type ContextOptionsResolved,

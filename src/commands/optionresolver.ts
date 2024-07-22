@@ -7,7 +7,7 @@ import {
 	type APIRole,
 	type APIUser,
 	ApplicationCommandOptionType,
-} from 'discord-api-types/v10';
+} from '../types';
 import { Attachment } from '..';
 import type { MakeRequired } from '../common';
 import type { AllChannels } from '../structures';

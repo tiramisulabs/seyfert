@@ -1,4 +1,4 @@
-import type { APIEntitlement } from 'discord-api-types/v10';
+import type { APIEntitlement } from '../../types';
 import { toCamelCase } from '../../common';
 import type { UsingClient } from '../../commands';
 

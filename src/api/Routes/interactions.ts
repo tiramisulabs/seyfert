@@ -1,4 +1,4 @@
-import type { RESTPostAPIInteractionCallbackJSONBody } from 'discord-api-types/v10';
+import type { RESTPostAPIInteractionCallbackJSONBody } from '../../types';
 import type { ProxyRequestMethod } from '../Router';
 import type { RestArguments } from '../api';
 
