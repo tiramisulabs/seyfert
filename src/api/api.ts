@@ -1,4 +1,4 @@
-import { getMimetypeFromBytes } from 'magic-bytes';
+import { filetypemime } from 'magic-bytes.js';
 import { randomUUID } from 'node:crypto';
 import { Logger, delay, lazyLoadPackage } from '../common';
 import { snowflakeToTimestamp } from '../structures/extra/functions';
@@ -353,11 +353,10 @@ export class ApiHandler {
 					let contentType = file.contentType;
 
 					if (!contentType) {
-						const mime = getMimetypeFromBytes(Buffer.from(file.data));
+						const mime = filetypemime(Buffer.from(file.data))[0];
 
-						if (mime && mime !== 'unknown') {
-							contentType = OverwrittenMimeTypes[mime as keyof typeof OverwrittenMimeTypes] ?? mime;
-						} else contentType = 'application/octet-stream';
+						contentType =
+							OverwrittenMimeTypes[mime as keyof typeof OverwrittenMimeTypes] ?? mime ?? 'application/octet-stream';
 					}
 
 					formData.append(fileKey, new Blob([file.data], { type: contentType }), file.name);

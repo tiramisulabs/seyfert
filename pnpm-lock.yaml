@@ -8,9 +8,9 @@ importers:
 
   .:
     dependencies:
-      magic-bytes:
-        specifier: file:deps\magic-bytes
-        version: file:deps/magic-bytes
+      magic-bytes.js:
+        specifier: ^1.10.0
+        version: 1.10.0
       ts-mixer:
         specifier: ^6.0.4
         version: 6.0.4
@@ -587,9 +587,8 @@ packages:
     resolution: {integrity: sha512-niTvB4gqvtof056rRIrTZvjNYE4rCUzO6X/X+kYjd7WFxXeJ0NwEFnRxX6ehkvv3jTwrXnNdtAak5XYZuIyPFw==}
     engines: {node: '>=18'}
 
-  magic-bytes@file:deps/magic-bytes:
-    resolution: {directory: deps/magic-bytes, type: directory}
-    hasBin: true
+  magic-bytes.js@1.10.0:
+    resolution: {integrity: sha512-/k20Lg2q8LE5xiaaSkMXk4sfvI+9EGEykFS4b0CHHGWqDYU0bGUFSwchNOMA56D7TCs9GwVTkqe9als1/ns8UQ==}
 
   meow@12.1.1:
     resolution: {integrity: sha512-BhXM0Au22RwUneMPwSCnyhTOizdWoIEPU9sp0Aqa1PnDMR5Wv2FGXYDjuzJEIX+Eo2Rb8xuYe5jrnm5QowQFkw==}
@@ -1392,7 +1391,7 @@ snapshots:
       strip-ansi: 7.1.0
       wrap-ansi: 9.0.0
 
-  magic-bytes@file:deps/magic-bytes: {}
+  magic-bytes.js@1.10.0: {}
 
   meow@12.1.1: {}
 

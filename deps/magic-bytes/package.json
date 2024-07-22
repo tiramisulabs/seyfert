@@ -1,7 +1,0 @@
-{
-	"name": "magic-bytes",
-	"version": "0.0.1",
-	"main": "index.node",
-	"types": "index.d.ts",
-	"bin": "./index.node"
-}

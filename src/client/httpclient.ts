@@ -1,5 +1,5 @@
 import { type APIInteractionResponse, InteractionResponseType, InteractionType, type APIInteraction } from '../types';
-import { getMimetypeFromBytes } from 'magic-bytes';
+import { filetypemime } from 'magic-bytes.js';
 import type { HttpRequest, HttpResponse } from 'uWebSockets.js';
 import { OverwrittenMimeTypes } from '../api';
 import { isBufferLike } from '../api/utils/utils';
@@ -174,11 +174,12 @@ export class HttpClient extends BaseClient {
 									let contentType = file.contentType;
 
 									if (!contentType) {
-										const mime = getMimetypeFromBytes(Buffer.from(file.data));
+										const mime = filetypemime(Buffer.from(file.data))[0];
 
-										if (mime && mime !== 'unknown') {
-											contentType = OverwrittenMimeTypes[mime as keyof typeof OverwrittenMimeTypes] ?? mime;
-										} else contentType = 'application/octet-stream';
+										contentType =
+											OverwrittenMimeTypes[mime as keyof typeof OverwrittenMimeTypes] ??
+											mime ??
+											'application/octet-stream';
 									}
 									response.append(fileKey, new Blob([file.data], { type: contentType }), file.name);
 								} else {
@@ -229,11 +230,12 @@ export class HttpClient extends BaseClient {
 										let contentType = file.contentType;
 
 										if (!contentType) {
-											const mime = getMimetypeFromBytes(Buffer.from(file.data));
+											const mime = filetypemime(Buffer.from(file.data))[0];
 
-											if (mime && mime !== 'unknown') {
-												contentType = OverwrittenMimeTypes[mime as keyof typeof OverwrittenMimeTypes] ?? mime;
-											} else contentType = 'application/octet-stream';
+											contentType =
+												OverwrittenMimeTypes[mime as keyof typeof OverwrittenMimeTypes] ??
+												mime ??
+												'application/octet-stream';
 										}
 										response.append(fileKey, new Blob([file.data], { type: contentType }), file.name);
 									} else {
