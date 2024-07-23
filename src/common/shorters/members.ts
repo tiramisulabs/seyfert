@@ -11,7 +11,6 @@ import { PermissionsBitField } from '../../structures/extra/Permissions';
 import type { GuildMemberResolvable } from '../types/resolvables';
 import { BaseShorter } from './base';
 import { Transformers } from '../../client/transformers';
-import { GuildMember } from '../../structures';
 
 export class MemberShorter extends BaseShorter {
 	/**
@@ -32,17 +31,13 @@ export class MemberShorter extends BaseShorter {
 			return this.search(guildId, { query: resolve, limit: 1 }).then(x => x[0]);
 		}
 
-		if (!('id' in resolve))
-			resolve = new GuildMember(this.client, resolve as APIGuildMember, (resolve as APIGuildMember).user!, guildId);
-
 		const id = 'id' in resolve ? resolve.id : resolve.user?.id;
 
 		if (id) {
 			return this.client.members.fetch(guildId, id);
 		}
 
-		const displayName =
-			'displayName' in resolve ? resolve.displayName : resolve.nick ?? resolve.globalName ?? resolve.username;
+		const displayName = 'displayName' in resolve ? resolve.displayName : resolve.nick ?? resolve.user?.username;
 
 		return displayName ? this.search(guildId, { query: displayName, limit: 1 }).then(x => x[0]) : undefined;
 	}
