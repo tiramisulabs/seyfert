@@ -82,6 +82,10 @@ export class BaseGuildMember extends DiscordBase {
 		return Formatter.userMention(this.id);
 	}
 
+	hasTimeout() {
+		return this.client.members.hasTimeout(this);
+	}
+
 	private patch(data: GuildMemberData) {
 		if ('joined_at' in data && data.joined_at) {
 			this.joinedTimestamp = Date.parse(data.joined_at);
