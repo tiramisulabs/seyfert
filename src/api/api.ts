@@ -420,7 +420,7 @@ export class ApiHandler {
 	}
 }
 
-export type RequestOptions = Pick<ApiRequestOptions, 'reason' | 'auth' | 'appendToFormData'>;
+export type RequestOptions = Pick<ApiRequestOptions, 'reason' | 'auth' | 'appendToFormData' | 'token'>;
 export type RequestObject<
 	M extends ProxyRequestMethod,
 	B = Record<string, any>,
