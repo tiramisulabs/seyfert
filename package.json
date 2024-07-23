@@ -5,16 +5,14 @@
 	"main": "./lib/index.js",
 	"module": "./lib/index.js",
 	"types": "./lib/index.d.ts",
-	"files": [
-		"lib/**",
-		"deps/**"
-	],
+	"files": ["lib/**", "deps/**"],
 	"scripts": {
-		"build": "tsc --outDir ./lib",
+		"build": "npm run clean && tsc --outDir ./lib",
 		"prepublishOnly": "npm run build",
 		"prepare": "npm run build && husky",
 		"lint": "biome lint --write ./src",
 		"format": "biome format --write ./src",
+		"clean": "rimraf ./lib",
 		"check-h": "biome check --write ./src",
 		"check": "biome check --write --no-errors-on-unmatched ./src"
 	},
@@ -22,13 +20,10 @@
 	"license": "Apache-2.0",
 	"dependencies": {
 		"magic-bytes.js": "^1.10.0",
-		"ts-mixer": "^6.0.4",
 		"ws": "^8.18.0"
 	},
 	"lint-staged": {
-		"*.ts": [
-			"biome check --write"
-		]
+		"*.ts": ["biome check --write"]
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.8.3",
@@ -38,6 +33,7 @@
 		"@types/ws": "^8.5.11",
 		"husky": "^9.1.1",
 		"lint-staged": "^15.2.7",
+		"rimraf": "5.0.9",
 		"typescript": "^5.5.3"
 	},
 	"optionalDependencies": {
@@ -54,13 +50,7 @@
 	"bugs": {
 		"url": "https://github.com/tiramisulabs/seyfert"
 	},
-	"keywords": [
-		"api",
-		"discord",
-		"bots",
-		"typescript",
-		"botdev"
-	],
+	"keywords": ["api", "discord", "bots", "typescript", "botdev"],
 	"publishConfig": {
 		"access": "public"
 	},
