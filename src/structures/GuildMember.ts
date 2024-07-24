@@ -86,7 +86,7 @@ export class BaseGuildMember extends DiscordBase {
 		return this.client.members.timeout(this.guildId, this.id, time, reason);
 	}
 
-	hasTimeout(): false | number {
+	get hasTimeout(): false | number {
 		return this.client.members.hasTimeout(this);
 	}
 
