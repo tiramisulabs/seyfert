@@ -231,12 +231,17 @@ export class MemberShorter extends BaseShorter {
 	 * @param guildId The ID of the guild.
 	 * @param memberId The ID of the member to timeout.
 	 * @param time The time in seconds to timeout the member for.
-	 * @returns
+	 * @param reason The reason for the timeout.
 	 */
-	timeout(guildId: string, memberId: string, time: number) {
-		return this.edit(guildId, memberId, {
-			communication_disabled_until: new Date(Date.now() + time * 1000).toISOString(),
-		});
+	timeout(guildId: string, memberId: string, time: number | null, reason?: string) {
+		return this.edit(
+			guildId,
+			memberId,
+			{
+				communication_disabled_until: time ? new Date(Date.now() + time * 1000).toISOString() : null,
+			},
+			reason,
+		);
 	}
 
 	/**

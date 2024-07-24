@@ -82,6 +82,10 @@ export class BaseGuildMember extends DiscordBase {
 		return Formatter.userMention(this.id);
 	}
 
+	timeout(time: null | number, reason?: string) {
+		return this.client.members.timeout(this.guildId, this.id, time, reason);
+	}
+
 	hasTimeout(): false | number {
 		return this.client.members.hasTimeout(this);
 	}
