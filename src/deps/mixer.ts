@@ -36,14 +36,9 @@ export function Mixin<T, C extends TypeClass[]>(...args: C): C[number] & T {
 						MixedClass.prototype[descriptorK] = descriptor.value;
 						continue;
 					}
-					if (descriptor.get) {
+					if (descriptor.get || descriptor.set) {
 						Object.defineProperty(MixedClass.prototype, descriptorK, {
 							get: descriptor.get,
-						});
-						continue;
-					}
-					if (descriptor.set) {
-						Object.defineProperty(MixedClass.prototype, descriptorK, {
 							set: descriptor.set,
 						});
 					}
