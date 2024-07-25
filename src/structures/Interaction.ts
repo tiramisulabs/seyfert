@@ -37,12 +37,15 @@ import {
 	type RESTPostAPIInteractionCallbackJSONBody,
 	type RESTAPIAttachment,
 } from '../types';
-import { mix } from 'ts-mixer';
+
 import type { RawFile } from '../api';
 import { ActionRow, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
 import type { ContextOptionsResolved, UsingClient } from '../commands';
-import type { ObjectToLower, OmitInsert, ToClass, When } from '../common';
 import type {
+	ObjectToLower,
+	OmitInsert,
+	ToClass,
+	When,
 	ComponentInteractionMessageUpdate,
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
@@ -50,7 +53,7 @@ import type {
 	MessageUpdateBodyRequest,
 	MessageWebhookCreateBodyRequest,
 	ModalCreateBodyRequest,
-} from '../common/types/write';
+} from '../common';
 import type { AllChannels } from './';
 import channelFrom from './channels';
 import { DiscordBase } from './extra/DiscordBase';
@@ -64,6 +67,7 @@ import {
 	type WebhookMessageStructure,
 	type OptionResolverStructure,
 } from '../client/transformers';
+import { mix } from '../deps/mixer';
 
 export type ReplyInteractionBody =
 	| { type: InteractionResponseType.Modal; data: ModalCreateBodyRequest }

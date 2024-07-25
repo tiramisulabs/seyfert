@@ -30,12 +30,16 @@ export class MemberShorter extends BaseShorter {
 			}
 			return this.search(guildId, { query: resolve, limit: 1 }).then(x => x[0]);
 		}
-		if (resolve.id) {
-			return this.client.members.fetch(guildId, resolve.id);
+
+		const id = 'id' in resolve ? resolve.id : resolve.user?.id;
+
+		if (id) {
+			return this.client.members.fetch(guildId, id);
 		}
-		return resolve.displayName
-			? this.search(guildId, { query: resolve.displayName, limit: 1 }).then(x => x[0])
-			: undefined;
+
+		const displayName = 'displayName' in resolve ? resolve.displayName : resolve.nick ?? resolve.user?.username;
+
+		return displayName ? this.search(guildId, { query: displayName, limit: 1 }).then(x => x[0]) : undefined;
 	}
 
 	/**
@@ -220,5 +224,40 @@ export class MemberShorter extends BaseShorter {
 
 	voice(guildId: string, memberId: string) {
 		return this.client.cache.voiceStates?.get(memberId, guildId);
+	}
+
+	/**
+	 * Timeouts a member from the guild.
+	 * @param guildId The ID of the guild.
+	 * @param memberId The ID of the member to timeout.
+	 * @param time The time in seconds to timeout the member for.
+	 * @param reason The reason for the timeout.
+	 */
+	timeout(guildId: string, memberId: string, time: number | null, reason?: string) {
+		return this.edit(
+			guildId,
+			memberId,
+			{
+				communication_disabled_until: time ? new Date(Date.now() + time * 1000).toISOString() : null,
+			},
+			reason,
+		);
+	}
+
+	/**
+	 * Checks if a member has a timeout.
+	 * @param member The member to check.
+	 * @returns The time left until the timeout expires, in milliseconds, or false if the member does not have a timeout.
+	 */
+	hasTimeout(member: Exclude<GuildMemberResolvable, string>): false | number {
+		// @ts-expect-error
+		const timeout = member.communication_disabled_until ?? member.communicationDisabledUntil;
+
+		if (!timeout) return false;
+
+		const parsed = Date.parse(timeout);
+		const now = Date.now();
+		if (parsed > now) return parsed - now;
+		return false;
 	}
 }

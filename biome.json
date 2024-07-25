@@ -83,7 +83,14 @@
 	},
 	"files": {
 		"ignoreUnknown": true,
-		"ignore": ["node_modules/", "build", "lib", "__test__"]
+		"ignore": [
+			"node_modules/",
+			"build",
+			"lib",
+			"__test__",
+			"package.json",
+			"tsconfig.json"
+		]
 	},
 	"organizeImports": {
 		"enabled": false

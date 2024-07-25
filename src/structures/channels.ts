@@ -25,7 +25,6 @@ import {
 	ChannelType,
 	VideoQualityMode,
 } from '../types';
-import { mix } from 'ts-mixer';
 import { ActionRow, Embed, PollBuilder, resolveAttachment } from '../builders';
 import type { UsingClient } from '../commands';
 import type {
@@ -58,6 +57,7 @@ import {
 	Transformers,
 	type VoiceChannelStructure,
 } from '../client/transformers';
+import { mix } from '../deps/mixer';
 
 export class BaseChannel<T extends ChannelType> extends DiscordBase<APIChannelBase<ChannelType>> {
 	declare type: T;
