@@ -15,6 +15,7 @@ import type {
 import { IgnoreCommand, type InferWithPrefix, type MiddlewareContext } from '../commands/applications/shared';
 import { CommandHandler } from '../commands/handler';
 import {
+	ApplicationShorter,
 	ChannelShorter,
 	EmojiShorter,
 	GuildShorter,
@@ -56,6 +57,7 @@ export class BaseClient {
 	rest!: ApiHandler;
 	cache!: Cache;
 
+	applications = new ApplicationShorter(this);
 	users = new UsersShorter(this);
 	channels = new ChannelShorter(this);
 	guilds = new GuildShorter(this);
