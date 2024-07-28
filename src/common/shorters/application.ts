@@ -1,12 +1,12 @@
 import { Entitlement } from '../../structures/Entitlement';
-import type { RESTPostAPIEntitlementBody } from '../../types';
+import type { APIEntitlement, RESTGetAPIEntitlementsQuery, RESTPostAPIEntitlementBody } from '../../types';
 import { BaseShorter } from './base';
 
 export class ApplicationShorter extends BaseShorter {
-	async listEntitlements(applicationId: string) {
+	async listEntitlements(applicationId: string, query?: RESTGetAPIEntitlementsQuery) {
 		return this.client.proxy
 			.applications(applicationId)
-			.entitlements.get()
+			.entitlements.get({ query })
 			.then(et => et.map(e => new Entitlement(this.client, e)));
 	}
 
@@ -18,7 +18,7 @@ export class ApplicationShorter extends BaseShorter {
 		return this.client.proxy
 			.applications(applicationId)
 			.entitlements.post({ body })
-			.then(et => new Entitlement(this.client, et as any));
+			.then(et => new Entitlement(this.client, et as APIEntitlement));
 	}
 
 	async deleteTestEntitlement(applicationId: string, entitlementId: string) {
