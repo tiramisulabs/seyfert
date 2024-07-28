@@ -163,6 +163,23 @@ export class ComponentHandler extends BaseHandler {
 		component.onAfterRun ??= this.client.options?.[is]?.defaults?.onAfterRun;
 	}
 
+	set(instances: ComponentCommands[]) {
+		for (const i of instances) {
+			let component;
+			try {
+				// @ts-expect-error
+				component = this.callback(i);
+				if (!component) continue;
+			} catch (e) {
+				this.logger.warn(e, i);
+				continue;
+			}
+			this.stablishDefaults(component);
+
+			this.commands.push(component);
+		}
+	}
+
 	async load(componentsDir: string) {
 		const paths = await this.loadFilesK<FileLoaded<new () => ComponentCommands>>(await this.getFiles(componentsDir));
 

@@ -202,6 +202,30 @@ export class CommandHandler extends BaseHandler {
 		return false;
 	}
 
+	set(commands: SeteableCommand[]) {
+		this.values ??= [];
+		for (const command of commands) {
+			let commandInstance;
+			try {
+				commandInstance = this.onCommand(command) as Command;
+				if (!commandInstance) continue;
+			} catch (e) {
+				this.logger.warn(`${command.name} ins't a resolvable command`);
+				this.logger.error(e);
+				continue;
+			}
+			commandInstance.props = this.client.options.commands?.defaults?.props ?? {};
+			const isCommand = this.stablishCommandDefaults(commandInstance);
+			if (isCommand) {
+				for (const option of commandInstance.options ?? []) {
+					if (option instanceof SubCommand) this.stablishSubCommandDefaults(commandInstance, option);
+				}
+			} else this.stablishContextCommandDefaults(commandInstance);
+			this.parseLocales(commandInstance);
+			this.values.push(commandInstance);
+		}
+	}
+
 	async load(commandsDir: string, client: UsingClient) {
 		const result = await this.loadFilesK<FileLoaded<null>>(await this.getFiles(commandsDir));
 		this.values = [];
@@ -475,4 +499,5 @@ export type FileLoaded<T = null> = {
 } & Record<string, NulleableCoalising<T, HandleableCommand>>;
 
 export type HandleableCommand = new () => Command | SubCommand | ContextMenuCommand;
+export type SeteableCommand = new () => Extract<InstanceType<HandleableCommand>, SubCommand>;
 export type HandleableSubCommand = new () => SubCommand;
