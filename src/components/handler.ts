@@ -2,7 +2,7 @@ import type { ComponentCallback, ListenerOptions, ModalSubmitCallback } from '..
 import { LimitedCollection } from '../collection';
 import { BaseCommand, type RegisteredMiddlewares, type UsingClient } from '../commands';
 import type { FileLoaded } from '../commands/handler';
-import { BaseHandler, magicImport, type Logger, type OnFailCallback } from '../common';
+import { BaseHandler, isCloudfareWorker, magicImport, type Logger, type OnFailCallback } from '../common';
 import type { ComponentInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from '../structures';
 import { ComponentCommand, InteractionCommandType } from './componentcommand';
 import type { ComponentContext } from './componentcontext';
@@ -163,6 +163,22 @@ export class ComponentHandler extends BaseHandler {
 		component.onAfterRun ??= this.client.options?.[is]?.defaults?.onAfterRun;
 	}
 
+	set(instances: (new () => ComponentCommands)[]) {
+		for (const i of instances) {
+			let component;
+			try {
+				component = this.callback(i);
+				if (!component) continue;
+			} catch (e) {
+				this.logger.warn(e, i);
+				continue;
+			}
+			this.stablishDefaults(component);
+
+			this.commands.push(component);
+		}
+	}
+
 	async load(componentsDir: string) {
 		const paths = await this.loadFilesK<FileLoaded<new () => ComponentCommands>>(await this.getFiles(componentsDir));
 
@@ -194,6 +210,9 @@ export class ComponentHandler extends BaseHandler {
 
 	async reload(path: string) {
 		if (!this.client.components) return;
+		if (isCloudfareWorker()) {
+			throw new Error('Reload in cloudfare worker is not supported');
+		}
 		const component = this.client.components.commands.find(
 			x =>
 				x.__filePath?.endsWith(`${path}.js`) ||

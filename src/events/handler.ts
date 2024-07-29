@@ -5,7 +5,14 @@ import type {
 	GatewayMessageDeleteDispatch,
 } from '../types';
 import type { Client, WorkerClient } from '../client';
-import { BaseHandler, ReplaceRegex, magicImport, type MakeRequired, type SnakeCase } from '../common';
+import {
+	BaseHandler,
+	ReplaceRegex,
+	isCloudfareWorker,
+	magicImport,
+	type MakeRequired,
+	type SnakeCase,
+} from '../common';
 import type { ClientEvents } from '../events/hooks';
 import * as RawEvents from '../events/hooks';
 import type { ClientEvent, CustomEvents, CustomEventsKeys, ClientNameEvents } from './event';
@@ -26,8 +33,25 @@ export class EventHandler extends BaseHandler {
 
 	values: Partial<Record<GatewayEvents | CustomEventsKeys, EventValue>> = {};
 
+	discordEvents = Object.keys(RawEvents).map(x => ReplaceRegex.camel(x.toLowerCase())) as ClientNameEvents[];
+
+	set(events: ClientEvent[]) {
+		for (const event of events) {
+			const instance = this.callback(event);
+			if (!instance) continue;
+			if (typeof instance?.run !== 'function') {
+				this.logger.warn('Missing event run function');
+				continue;
+			}
+			this.values[
+				this.discordEvents.includes(instance.data.name)
+					? (ReplaceRegex.snake(instance.data.name).toUpperCase() as GatewayEvents)
+					: (instance.data.name as CustomEventsKeys)
+			] = instance as EventValue;
+		}
+	}
+
 	async load(eventsDir: string) {
-		const discordEvents = Object.keys(RawEvents).map(x => ReplaceRegex.camel(x.toLowerCase())) as ClientNameEvents[];
 		const paths = await this.loadFilesK<{ file: ClientEvent }>(await this.getFiles(eventsDir));
 
 		for (const { events, file } of paths.map(x => ({ events: this.onFile(x.file), file: x }))) {
@@ -44,7 +68,7 @@ export class EventHandler extends BaseHandler {
 				}
 				instance.__filePath = file.path;
 				this.values[
-					discordEvents.includes(instance.data.name)
+					this.discordEvents.includes(instance.data.name)
 						? (ReplaceRegex.snake(instance.data.name).toUpperCase() as GatewayEvents)
 						: (instance.data.name as CustomEventsKeys)
 				] = instance as EventValue;
@@ -141,6 +165,9 @@ export class EventHandler extends BaseHandler {
 	}
 
 	async reload(name: GatewayEvents | CustomEventsKeys) {
+		if (isCloudfareWorker()) {
+			throw new Error('Reload in cloudfare worker is not supported');
+		}
 		const event = this.values[name];
 		if (!event?.__filePath) return null;
 		delete require.cache[event.__filePath];

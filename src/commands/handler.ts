@@ -12,7 +12,7 @@ import {
 } from '../types';
 import { basename, dirname } from 'node:path';
 import type { Logger, MakeRequired, NulleableCoalising, OmitInsert } from '../common';
-import { BaseHandler } from '../common';
+import { BaseHandler, isCloudfareWorker } from '../common';
 import { Command, type CommandOption, SubCommand } from './applications/chat';
 import { ContextMenuCommand } from './applications/menu';
 import type { UsingClient } from './applications/shared';
@@ -31,6 +31,9 @@ export class CommandHandler extends BaseHandler {
 	}
 
 	async reload(resolve: string | Command) {
+		if (isCloudfareWorker()) {
+			throw new Error('Reload in cloudfare worker is not supported');
+		}
 		if (typeof resolve === 'string') {
 			return this.values.find(x => x.name === resolve)?.reload();
 		}
@@ -200,6 +203,30 @@ export class CommandHandler extends BaseHandler {
 		}
 
 		return false;
+	}
+
+	set(commands: SeteableCommand[]) {
+		this.values ??= [];
+		for (const command of commands) {
+			let commandInstance;
+			try {
+				commandInstance = this.onCommand(command) as Command;
+				if (!commandInstance) continue;
+			} catch (e) {
+				this.logger.warn(`${command.name} ins't a resolvable command`);
+				this.logger.error(e);
+				continue;
+			}
+			commandInstance.props = this.client.options.commands?.defaults?.props ?? {};
+			const isCommand = this.stablishCommandDefaults(commandInstance);
+			if (isCommand) {
+				for (const option of commandInstance.options ?? []) {
+					if (option instanceof SubCommand) this.stablishSubCommandDefaults(commandInstance, option);
+				}
+			} else this.stablishContextCommandDefaults(commandInstance);
+			this.parseLocales(commandInstance);
+			this.values.push(commandInstance);
+		}
 	}
 
 	async load(commandsDir: string, client: UsingClient) {
@@ -475,4 +502,5 @@ export type FileLoaded<T = null> = {
 } & Record<string, NulleableCoalising<T, HandleableCommand>>;
 
 export type HandleableCommand = new () => Command | SubCommand | ContextMenuCommand;
+export type SeteableCommand = new () => Extract<InstanceType<HandleableCommand>, SubCommand>;
 export type HandleableSubCommand = new () => SubCommand;
