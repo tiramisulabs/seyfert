@@ -163,11 +163,10 @@ export class ComponentHandler extends BaseHandler {
 		component.onAfterRun ??= this.client.options?.[is]?.defaults?.onAfterRun;
 	}
 
-	set(instances: ComponentCommands[]) {
+	set(instances: (new () => ComponentCommands)[]) {
 		for (const i of instances) {
 			let component;
 			try {
-				// @ts-expect-error
 				component = this.callback(i);
 				if (!component) continue;
 			} catch (e) {
