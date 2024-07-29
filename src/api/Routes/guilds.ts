@@ -112,7 +112,7 @@ import type {
 	RESTPutAPIGuildMemberResult,
 	RESTPutAPIGuildMemberRoleResult,
 	RESTPutAPIGuildTemplateSyncResult,
-} from 'discord-api-types/v10';
+} from '../../types';
 import type { Identify, OmitInsert } from '../../common';
 import type { ProxyRequestMethod } from '../Router';
 import type { RestArguments } from '../api';

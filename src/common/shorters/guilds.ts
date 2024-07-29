@@ -5,14 +5,14 @@ import type {
 	RESTPatchAPIAutoModerationRuleJSONBody,
 	RESTPatchAPIChannelJSONBody,
 	RESTPatchAPIGuildChannelPositionsJSONBody,
+	RESTPatchAPIGuildJSONBody,
 	RESTPatchAPIGuildStickerJSONBody,
 	RESTPostAPIAutoModerationRuleJSONBody,
 	RESTPostAPIGuildChannelJSONBody,
 	RESTPostAPIGuildsJSONBody,
-} from 'discord-api-types/v10';
-import { toSnakeCase, type ObjectToLower } from '..';
+} from '../../types';
 import { resolveFiles } from '../../builders';
-import { BaseChannel, GuildMember, type CreateStickerBodyRequest } from '../../structures';
+import { BaseChannel, Guild, GuildMember, type CreateStickerBodyRequest } from '../../structures';
 import channelFrom from '../../structures/channels';
 import { BaseShorter } from './base';
 import { type GuildStructure, Transformers } from '../../client/transformers';
@@ -63,6 +63,13 @@ export class GuildShorter extends BaseShorter {
 		}
 
 		return this.client.proxy.guilds(id).widget.get({ query });
+	}
+
+	async edit(guildId: string, body: RESTPatchAPIGuildJSONBody, reason?: string) {
+		const guild = await this.client.proxy.guilds(guildId).patch({ body, reason });
+
+		if (!this.client.cache.hasGuildsIntent) await this.client.cache.guilds?.patch(guildId, guild);
+		return new Guild(this.client, guild);
 	}
 
 	list(query?: RESTGetAPICurrentUserGuildsQuery) {
@@ -255,16 +262,11 @@ export class GuildShorter extends BaseShorter {
 			 * @param reason The reason for editing the rule.
 			 * @returns A Promise that resolves to the edited auto-moderation rule.
 			 */
-			edit: (
-				guildId: string,
-				ruleId: string,
-				body: ObjectToLower<RESTPatchAPIAutoModerationRuleJSONBody>,
-				reason?: string,
-			) => {
+			edit: (guildId: string, ruleId: string, body: RESTPatchAPIAutoModerationRuleJSONBody, reason?: string) => {
 				return this.client.proxy
 					.guilds(guildId)
 					['auto-moderation'].rules(ruleId)
-					.patch({ body: toSnakeCase(body), reason })
+					.patch({ body, reason })
 					.then(rule => Transformers.AutoModerationRule(this.client, rule));
 			},
 		};

@@ -5,43 +5,39 @@
 	"main": "./lib/index.js",
 	"module": "./lib/index.js",
 	"types": "./lib/index.d.ts",
-	"files": [
-		"lib/**"
-	],
+	"files": ["lib/**", "deps/**"],
 	"scripts": {
-		"build": "tsc --outDir ./lib",
+		"build": "npm run clean && tsc --outDir ./lib",
 		"prepublishOnly": "npm run build",
 		"prepare": "npm run build && husky",
 		"lint": "biome lint --write ./src",
 		"format": "biome format --write ./src",
+		"clean": "rimraf ./lib",
 		"check-h": "biome check --write ./src",
 		"check": "biome check --write --no-errors-on-unmatched ./src"
 	},
 	"author": "MARCROCK22",
 	"license": "Apache-2.0",
 	"dependencies": {
-		"chokidar": "^3.6.0",
-		"discord-api-types": "^0.37.90",
 		"magic-bytes.js": "^1.10.0",
-		"ts-mixer": "^6.0.4",
-		"ws": "^8.17.1"
+		"ws": "^8.18.0"
 	},
 	"lint-staged": {
-		"*.ts": [
-			"biome check --write"
-		]
+		"*.ts": ["biome check --write"]
 	},
 	"devDependencies": {
-		"@biomejs/biome": "1.8.1",
+		"@biomejs/biome": "1.8.3",
 		"@commitlint/cli": "^19.3.0",
 		"@commitlint/config-conventional": "^19.2.2",
-		"@types/node": "^20.14.7",
-		"@types/ws": "^8.5.10",
-		"husky": "^9.0.11",
+		"@types/node": "^20.14.11",
+		"@types/ws": "^8.5.11",
+		"husky": "^9.1.1",
 		"lint-staged": "^15.2.7",
-		"typescript": "^5.5.2"
+		"rimraf": "5.0.9",
+		"typescript": "^5.5.3"
 	},
 	"optionalDependencies": {
+		"chokidar": "^3.6.0",
 		"ioredis": "^5.4.1",
 		"tweetnacl": "^1.0.3",
 		"uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.42.0"
@@ -54,20 +50,24 @@
 	"bugs": {
 		"url": "https://github.com/tiramisulabs/seyfert"
 	},
-	"keywords": [
-		"api",
-		"discord",
-		"bots",
-		"typescript",
-		"botdev"
-	],
+	"keywords": ["api", "discord", "bots", "typescript", "botdev"],
 	"publishConfig": {
 		"access": "public"
 	},
-	"contributors": [
+	"maintainers": [
 		{
 			"name": "socram03",
 			"url": "https://github.com/socram03"
+		}
+	],
+	"contributors": [
+		{
+			"name": "Free 公園",
+			"url": "https://github.com/FreeAoi"
+		},
+		{
+			"name": "David",
+			"url": "https://github.com/Drylozu"
 		}
 	]
 }

@@ -1,4 +1,4 @@
-import type { RESTGetAPIVoiceRegionsResult } from 'discord-api-types/v10';
+import type { RESTGetAPIVoiceRegionsResult } from '../../types';
 import type { ProxyRequestMethod } from '../Router';
 import type { RestArguments } from '../api';
 

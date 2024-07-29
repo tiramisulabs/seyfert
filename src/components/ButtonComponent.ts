@@ -4,7 +4,7 @@ import type {
 	APIButtonComponentWithURL,
 	ButtonStyle,
 	ComponentType,
-} from 'discord-api-types/v10';
+} from '../types';
 import { Button } from '../builders';
 import { BaseComponent } from './BaseComponent';
 

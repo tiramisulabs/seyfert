@@ -1,7 +1,7 @@
-import type { Locale, LocaleString } from 'discord-api-types/v10';
 import { BaseHandler } from '../common';
 import { LangRouter } from './router';
 import type { FileLoaded } from '../commands/handler';
+import type { LocaleString, Locale } from '../types';
 
 export class LangsHandler extends BaseHandler {
 	values: Partial<Record<string, any>> = {};

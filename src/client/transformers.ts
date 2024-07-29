@@ -1,4 +1,4 @@
-import type { ChannelType } from 'discord-api-types/v10';
+import type { ChannelType } from '../types';
 import { type CustomStructures, OptionResolver } from '../commands';
 import {
 	AnonymousGuild,
@@ -30,7 +30,7 @@ import {
 	Webhook,
 	WebhookMessage,
 } from '../structures';
-import type { StructStates } from '../common/types/util';
+import type { StructStates } from '../common/';
 import { GuildBan } from '../structures/GuildBan';
 
 export type PollStructure = InferCustomStructure<Poll, 'Poll'>;

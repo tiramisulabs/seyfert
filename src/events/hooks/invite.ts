@@ -1,4 +1,4 @@
-import type { GatewayInviteCreateDispatchData, GatewayInviteDeleteDispatchData } from 'discord-api-types/v10';
+import type { GatewayInviteCreateDispatchData, GatewayInviteDeleteDispatchData } from '../../types';
 import type { UsingClient } from '../../commands';
 import { toCamelCase } from '../../common';
 

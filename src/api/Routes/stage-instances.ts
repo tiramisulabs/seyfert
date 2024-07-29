@@ -5,7 +5,7 @@ import type {
 	RESTPatchAPIStageInstanceResult,
 	RESTPostAPIStageInstanceJSONBody,
 	RESTPostAPIStageInstanceResult,
-} from 'discord-api-types/v10';
+} from '../../types';
 import type { ProxyRequestMethod } from '../Router';
 import type { RestArguments } from '../api';
 

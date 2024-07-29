@@ -1,4 +1,4 @@
-import type { APIAttachment, RESTAPIAttachment } from 'discord-api-types/v10';
+import type { APIAttachment, RESTAPIAttachment } from '../types';
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { type UsingClient, throwError, type RawFile } from '..';

@@ -9,7 +9,7 @@ import {
 	type APIApplicationCommandSubcommandGroupOption,
 	type APIApplicationCommandChannelOption,
 	type LocalizationMap,
-} from 'discord-api-types/v10';
+} from '../types';
 import { basename, dirname } from 'node:path';
 import type { Logger, MakeRequired, NulleableCoalising, OmitInsert } from '../common';
 import { BaseHandler } from '../common';
@@ -50,7 +50,7 @@ export class CommandHandler extends BaseHandler {
 	}
 
 	protected shouldUploadLocales(locales?: LocalizationMap | null, cachedLocales?: LocalizationMap | null) {
-		if (!locales && !cachedLocales) return false;
+		if (!(locales || cachedLocales)) return false;
 		if (!locales && cachedLocales) return true;
 		if (locales && !cachedLocales) return true;
 		if (locales && cachedLocales) {

@@ -1,4 +1,4 @@
-import type { APIPoll } from 'discord-api-types/v10';
+import type { APIPoll } from '../types';
 import { toCamelCase, type ObjectToLower } from '../common';
 import { Base } from './extra/Base';
 import type { UsingClient } from '../commands';

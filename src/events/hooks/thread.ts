@@ -5,7 +5,7 @@ import type {
 	GatewayThreadMemberUpdateDispatchData,
 	GatewayThreadMembersUpdateDispatchData,
 	GatewayThreadUpdateDispatchData,
-} from 'discord-api-types/v10';
+} from '../../types';
 import { toCamelCase } from '../../common';
 import type { UsingClient } from '../../commands';
 import { type ThreadChannelStructure, Transformers } from '../../client/transformers';

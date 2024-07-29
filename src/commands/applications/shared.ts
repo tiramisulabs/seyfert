@@ -1,6 +1,6 @@
-import type { ChannelType } from 'discord-api-types/v10';
 import type { BaseClient } from '../../client/base';
 import type { IsStrictlyUndefined } from '../../common';
+import type { ChannelType } from '../../types';
 import type { RegisteredMiddlewares } from '../decorators';
 
 export type OKFunction<T> = (value: T) => void;

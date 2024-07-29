@@ -7,9 +7,9 @@ import {
 	InteractionContextType,
 	type APIApplicationCommandInteractionDataOption,
 	ApplicationCommandOptionType,
-	ChannelType,
 	type APIInteractionDataResolvedChannel,
-} from 'discord-api-types/v10';
+	ChannelType,
+} from '../types';
 import {
 	Command,
 	type ContextOptionsResolved,
@@ -500,7 +500,7 @@ export class HandleCommand {
 			}
 			if ('error' in resultRunGlobalMiddlewares) {
 				await command.onMiddlewaresError?.(context as never, resultRunGlobalMiddlewares.error ?? 'Unknown error');
-				return;
+				return false;
 			}
 			return resultRunGlobalMiddlewares;
 		} catch (e) {
@@ -526,7 +526,7 @@ export class HandleCommand {
 			}
 			if ('error' in resultRunMiddlewares) {
 				await command.onMiddlewaresError?.(context as never, resultRunMiddlewares.error ?? 'Unknown error');
-				return;
+				return false;
 			}
 			return resultRunMiddlewares;
 		} catch (e) {
@@ -575,10 +575,10 @@ export class HandleCommand {
 	) {
 		const options: APIApplicationCommandInteractionDataOption[] = [];
 		const errors: { name: string; error: string; fullError: MessageCommandOptionErrors }[] = [];
+		let indexAttachment = -1;
 		for (const i of (command.options ?? []) as (CommandOption & { type: ApplicationCommandOptionType })[]) {
 			try {
 				let value: string | boolean | number | undefined;
-				let indexAttachment = -1;
 				switch (i.type) {
 					case ApplicationCommandOptionType.Attachment:
 						if (message.attachments[++indexAttachment]) {

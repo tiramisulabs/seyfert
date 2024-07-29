@@ -3,7 +3,7 @@ import type {
 	GatewayDispatchPayload,
 	GatewayIntentBits,
 	GatewayPresenceUpdateData,
-} from 'discord-api-types/v10';
+} from '../../types';
 import type { Awaitable, DeepPartial, Logger } from '../../common';
 import type { IdentifyProperties } from '../constants';
 

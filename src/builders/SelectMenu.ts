@@ -11,7 +11,7 @@ import {
 	type ChannelType,
 	ComponentType,
 	SelectMenuDefaultValueType,
-} from 'discord-api-types/v10';
+} from '../types';
 import { throwError } from '..';
 import type { EmojiResolvable, RestOrArray, ToClass } from '../common';
 import type {

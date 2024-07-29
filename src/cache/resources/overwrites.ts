@@ -1,4 +1,4 @@
-import type { APIOverwrite } from 'discord-api-types/v10';
+import type { APIOverwrite } from '../../types';
 import type { ReturnCache } from '../..';
 import { fakePromise } from '../../common/it/utils';
 import { PermissionsBitField } from '../../structures/extra/Permissions';

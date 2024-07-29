@@ -1,8 +1,4 @@
-import {
-	ApplicationCommandOptionType,
-	type APIApplicationCommandOptionChoice,
-	type ChannelType,
-} from 'discord-api-types/v10';
+import { ApplicationCommandOptionType, type APIApplicationCommandOptionChoice, type ChannelType } from '../../types';
 import type {
 	AutocompleteCallback,
 	MenuCommandContext,

@@ -1,4 +1,4 @@
-import { GatewayIntentBits, type GatewayDispatchPayload, type GatewaySendPayload } from 'discord-api-types/v10';
+import { type GatewayDispatchPayload, type GatewaySendPayload, GatewayIntentBits } from '../types';
 import { randomUUID } from 'node:crypto';
 import { ApiHandler, Logger } from '..';
 import type { Cache } from '../cache';

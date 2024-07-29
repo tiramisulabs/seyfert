@@ -1,4 +1,4 @@
-import type { APIChannel } from 'discord-api-types/v10';
+import type { APIChannel } from '../../types';
 import { fakePromise } from '../../common';
 import type { AllChannels } from '../../structures';
 import channelFrom from '../../structures/channels';

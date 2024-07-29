@@ -36,13 +36,16 @@ import {
 	type MessageFlags,
 	type RESTPostAPIInteractionCallbackJSONBody,
 	type RESTAPIAttachment,
-} from 'discord-api-types/v10';
-import { mix } from 'ts-mixer';
+} from '../types';
+
 import type { RawFile } from '../api';
 import { ActionRow, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
 import type { ContextOptionsResolved, UsingClient } from '../commands';
-import type { ObjectToLower, OmitInsert, ToClass, When } from '../common';
 import type {
+	ObjectToLower,
+	OmitInsert,
+	ToClass,
+	When,
 	ComponentInteractionMessageUpdate,
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
@@ -50,7 +53,7 @@ import type {
 	MessageUpdateBodyRequest,
 	MessageWebhookCreateBodyRequest,
 	ModalCreateBodyRequest,
-} from '../common/types/write';
+} from '../common';
 import type { AllChannels } from './';
 import channelFrom from './channels';
 import { DiscordBase } from './extra/DiscordBase';
@@ -64,6 +67,8 @@ import {
 	type WebhookMessageStructure,
 	type OptionResolverStructure,
 } from '../client/transformers';
+import { mix } from '../deps/mixer';
+import { Entitlement } from './Entitlement';
 
 export type ReplyInteractionBody =
 	| { type: InteractionResponseType.Modal; data: ModalCreateBodyRequest }
@@ -119,6 +124,8 @@ export class BaseInteraction<
 			this.channel = channelFrom(interaction.channel, client);
 		}
 		this.user = this.member?.user ?? Transformers.User(client, interaction.user!);
+
+		this.entitlements = interaction.entitlements.map(e => new Entitlement(this.client, e));
 	}
 
 	static transformBodyRequest(

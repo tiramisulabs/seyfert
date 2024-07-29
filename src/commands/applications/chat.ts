@@ -7,7 +7,7 @@ import {
 	type APIApplicationCommandOption,
 	type APIApplicationCommandSubcommandGroupOption,
 	type LocaleString,
-} from 'discord-api-types/v10';
+} from '../../types';
 import type {
 	ComponentContext,
 	MenuCommandContext,

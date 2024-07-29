@@ -1,4 +1,4 @@
-import type { APIEmbed, APIEmbedAuthor, APIEmbedField, APIEmbedFooter } from 'discord-api-types/v10';
+import type { APIEmbed, APIEmbedAuthor, APIEmbedField, APIEmbedFooter } from '../types';
 import { resolveColor, toSnakeCase, type ColorResolvable, type ObjectToLower, type RestOrArray } from '../common';
 
 /**

@@ -1,4 +1,4 @@
-import type { RESTGetAPIStickerResult, RESTGetNitroStickerPacksResult } from 'discord-api-types/v10';
+import type { RESTGetAPIStickerResult, RESTGetNitroStickerPacksResult } from '../../types';
 import type { ProxyRequestMethod } from '../Router';
 import type { RestArguments } from '../api';
 

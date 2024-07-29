@@ -1,4 +1,4 @@
-import type { RESTGetAPIGatewayBotResult, RESTGetAPIGatewayResult } from 'discord-api-types/v10';
+import type { RESTGetAPIGatewayBotResult, RESTGetAPIGatewayResult } from '../../types';
 import type { ProxyRequestMethod } from '../Router';
 import type { RestArguments } from '../api';
 

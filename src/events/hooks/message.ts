@@ -9,7 +9,7 @@ import type {
 	GatewayMessageReactionRemoveDispatchData,
 	GatewayMessageReactionRemoveEmojiDispatchData,
 	GatewayMessageUpdateDispatchData,
-} from 'discord-api-types/v10';
+} from '../../types';
 import { type MakeRequired, type PartialClass, toCamelCase, type ObjectToLower } from '../../common';
 import type { UsingClient } from '../../commands';
 import { type MessageStructure, Transformers } from '../../client/transformers';

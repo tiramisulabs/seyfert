@@ -1,9 +1,8 @@
 import type {
-	RESTGetAPIChannelMessagesQuery,
 	RESTPatchAPIChannelMessageJSONBody,
 	RESTPostAPIChannelMessageJSONBody,
 	RESTPostAPIChannelMessagesThreadsJSONBody,
-} from 'discord-api-types/v10';
+} from '../../types';
 import { resolveFiles } from '../../builders';
 import { MessagesMethods } from '../../structures';
 
@@ -79,10 +78,6 @@ export class MessageShorter extends BaseShorter {
 				await this.client.cache.messages?.set(x.id, x.channel_id, x);
 				return Transformers.Message(this.client, x);
 			});
-	}
-
-	list(channelId: string, query?: RESTGetAPIChannelMessagesQuery) {
-		return this.client.proxy.channels(channelId).messages.get({ query });
 	}
 
 	purge(messages: string[], channelId: string, reason?: string) {

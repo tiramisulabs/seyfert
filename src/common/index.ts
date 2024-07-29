@@ -16,6 +16,7 @@ export * from './shorters/users';
 export * from './shorters/threads';
 export * from './shorters/webhook';
 export * from './shorters/interaction';
+export * from './shorters/application';
 //
 export * from './types/options';
 export * from './types/resolvables';

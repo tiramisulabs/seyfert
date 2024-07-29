@@ -15,6 +15,7 @@ import type {
 import { IgnoreCommand, type InferWithPrefix, type MiddlewareContext } from '../commands/applications/shared';
 import { CommandHandler } from '../commands/handler';
 import {
+	ApplicationShorter,
 	ChannelShorter,
 	EmojiShorter,
 	GuildShorter,
@@ -35,7 +36,7 @@ import {
 	type MakeRequired,
 } from '../common';
 
-import type { LocaleString, RESTPostAPIChannelMessageJSONBody } from 'discord-api-types/rest/v10';
+import type { LocaleString, RESTPostAPIChannelMessageJSONBody } from '../types';
 import type { Awaitable, DeepPartial, IntentStrings, OmitInsert, PermissionStrings, When } from '../common/types/util';
 import { ComponentHandler } from '../components/handler';
 import { LangsHandler } from '../langs/handler';
@@ -56,6 +57,7 @@ export class BaseClient {
 	rest!: ApiHandler;
 	cache!: Cache;
 
+	applications = new ApplicationShorter(this);
 	users = new UsersShorter(this);
 	channels = new ChannelShorter(this);
 	guilds = new GuildShorter(this);

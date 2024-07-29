@@ -1,5 +1,5 @@
-import type { GatewayReadyDispatchData, RESTPatchAPICurrentUserJSONBody } from 'discord-api-types/v10';
 import type { UsingClient } from '../commands';
+import type { GatewayReadyDispatchData, RESTPatchAPICurrentUserJSONBody } from '../types';
 import { User } from './User';
 
 export class ClientUser extends User {

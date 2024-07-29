@@ -1,4 +1,4 @@
-import type { GatewayDispatchPayload, GatewayReadyDispatchData, GatewayResumedDispatch } from 'discord-api-types/v10';
+import type { GatewayDispatchPayload, GatewayReadyDispatchData, GatewayResumedDispatch } from '../../types';
 import type { UsingClient } from '../../commands';
 import { Transformers } from '../../client/transformers';
 

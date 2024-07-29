@@ -1,8 +1,4 @@
-import type {
-	APITemplate,
-	RESTPatchAPIGuildTemplateJSONBody,
-	RESTPostAPIGuildTemplatesJSONBody,
-} from 'discord-api-types/v10';
+import type { APITemplate, RESTPatchAPIGuildTemplateJSONBody, RESTPostAPIGuildTemplatesJSONBody } from '../types';
 import type { UsingClient } from '../commands';
 import type { MethodContext, ObjectToLower } from '../common';
 import { Base } from './extra/Base';

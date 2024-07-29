@@ -1,4 +1,4 @@
-import type { GatewayApplicationCommandPermissionsUpdateDispatchData } from 'discord-api-types/v10';
+import type { GatewayApplicationCommandPermissionsUpdateDispatchData } from '../../types';
 import { toCamelCase } from '../../common';
 import type { UsingClient } from '../../commands';
 

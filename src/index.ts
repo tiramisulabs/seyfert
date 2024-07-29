@@ -1,4 +1,4 @@
-import { GatewayIntentBits } from 'discord-api-types/gateway/v10';
+import { GatewayIntentBits } from './types';
 import {
 	BaseClient,
 	type BaseClientOptions,
@@ -69,7 +69,8 @@ export const config = {
 					? typeof data.intents === 'number'
 						? data.intents
 						: data.intents?.reduce<number>(
-								(pr, acc) => pr | (typeof acc === 'number' ? acc : GatewayIntentBits[acc]),
+								(pr, acc) =>
+									pr | (typeof acc === 'number' ? acc : GatewayIntentBits[acc as keyof typeof GatewayIntentBits]),
 								0,
 							) ?? 0
 					: 0,

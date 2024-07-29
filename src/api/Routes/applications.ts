@@ -23,7 +23,20 @@ import type {
 	RESTPutAPIApplicationRoleConnectionMetadataJSONBody,
 	RESTPutAPIApplicationRoleConnectionMetadataResult,
 	RESTPutAPIGuildApplicationCommandsPermissionsResult,
-} from 'discord-api-types/v10';
+	RESTGetAPIApplicationEmojiResult,
+	RESTGetAPIApplicationEmojisResult,
+	RESTPostAPIApplicationEmojiJSONBody,
+	RESTPatchAPIApplicationEmojiJSONBody,
+	RESTPostAPIApplicationEmojiResult,
+	RESTPatchAPIApplicationEmojiResult,
+	RESTDeleteAPIApplicationEmojiResult,
+	RESTGetAPIEntitlementsResult,
+	RESTGetAPIEntitlementsQuery,
+	RESTPostAPIEntitlementBody,
+	RESTPostAPIEntitlementResult,
+	RESTGetAPISKUsResult,
+} from '../../types';
+
 import type { ProxyRequestMethod } from '../Router';
 import type { RestArguments } from '../api';
 
@@ -92,6 +105,43 @@ export interface ApplicationRoutes {
 					args: RestArguments<ProxyRequestMethod.Put, RESTPutAPIApplicationRoleConnectionMetadataJSONBody>,
 				): Promise<RESTPutAPIApplicationRoleConnectionMetadataResult>;
 			};
+		};
+		emojis: {
+			(
+				id: string,
+			): {
+				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIApplicationEmojiResult>;
+				patch(
+					args?: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIApplicationEmojiJSONBody>,
+				): Promise<RESTPatchAPIApplicationEmojiResult>;
+				delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIApplicationEmojiResult>;
+			};
+			get(
+				args?: RestArguments<ProxyRequestMethod.Get, Pick<RESTGetAPIApplicationEmojiResult, 'id'>>,
+			): Promise<RESTGetAPIApplicationEmojisResult>;
+			post(
+				args?: RestArguments<ProxyRequestMethod.Post, RESTPostAPIApplicationEmojiJSONBody>,
+			): Promise<RESTPostAPIApplicationEmojiResult>;
+		};
+		entitlements: {
+			get(
+				args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIEntitlementsQuery>,
+			): Promise<RESTGetAPIEntitlementsResult>;
+			post(
+				args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIEntitlementBody>,
+			): Promise<RESTPostAPIEntitlementResult>;
+
+			(
+				id: string,
+			): {
+				delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<never>;
+				consume: {
+					post(args?: RestArguments<ProxyRequestMethod.Post>): Promise<never>;
+				};
+			};
+		};
+		skus: {
+			get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPISKUsResult>;
 		};
 	};
 }

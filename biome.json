@@ -28,7 +28,8 @@
 				"noDefaultExport": "off",
 				"noNamespaceImport": "off",
 				"useSingleCaseStatement": "off",
-				"useBlockStatements": "off"
+				"useBlockStatements": "off",
+				"useEnumInitializers": "off"
 			},
 			"correctness": {
 				"noUnusedVariables": "off",
@@ -82,7 +83,14 @@
 	},
 	"files": {
 		"ignoreUnknown": true,
-		"ignore": ["node_modules/", "build", "lib", "__test__"]
+		"ignore": [
+			"node_modules/",
+			"build",
+			"lib",
+			"__test__",
+			"package.json",
+			"tsconfig.json"
+		]
 	},
 	"organizeImports": {
 		"enabled": false

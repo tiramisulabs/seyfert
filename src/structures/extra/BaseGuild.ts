@@ -1,6 +1,6 @@
-import { type APIPartialGuild, GuildFeature } from 'discord-api-types/v10';
 import type { ObjectToLower } from '../../common';
 import type { ImageOptions } from '../../common/types/options';
+import { type APIPartialGuild, GuildFeature } from '../../types';
 import { DiscordBase } from './DiscordBase';
 
 export interface BaseGuild extends ObjectToLower<APIPartialGuild> {}
