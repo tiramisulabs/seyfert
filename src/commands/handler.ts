@@ -12,7 +12,7 @@ import {
 } from '../types';
 import { basename, dirname } from 'node:path';
 import type { Logger, MakeRequired, NulleableCoalising, OmitInsert } from '../common';
-import { BaseHandler } from '../common';
+import { BaseHandler, isCloudfareWorker } from '../common';
 import { Command, type CommandOption, SubCommand } from './applications/chat';
 import { ContextMenuCommand } from './applications/menu';
 import type { UsingClient } from './applications/shared';
@@ -31,6 +31,9 @@ export class CommandHandler extends BaseHandler {
 	}
 
 	async reload(resolve: string | Command) {
+		if (isCloudfareWorker()) {
+			throw new Error('Reload in cloudfare worker is not supported');
+		}
 		if (typeof resolve === 'string') {
 			return this.values.find(x => x.name === resolve)?.reload();
 		}

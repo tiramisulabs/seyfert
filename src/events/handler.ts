@@ -5,7 +5,14 @@ import type {
 	GatewayMessageDeleteDispatch,
 } from '../types';
 import type { Client, WorkerClient } from '../client';
-import { BaseHandler, ReplaceRegex, magicImport, type MakeRequired, type SnakeCase } from '../common';
+import {
+	BaseHandler,
+	ReplaceRegex,
+	isCloudfareWorker,
+	magicImport,
+	type MakeRequired,
+	type SnakeCase,
+} from '../common';
 import type { ClientEvents } from '../events/hooks';
 import * as RawEvents from '../events/hooks';
 import type { ClientEvent, CustomEvents, CustomEventsKeys, ClientNameEvents } from './event';
@@ -158,6 +165,9 @@ export class EventHandler extends BaseHandler {
 	}
 
 	async reload(name: GatewayEvents | CustomEventsKeys) {
+		if (isCloudfareWorker()) {
+			throw new Error('Reload in cloudfare worker is not supported');
+		}
 		const event = this.values[name];
 		if (!event?.__filePath) return null;
 		delete require.cache[event.__filePath];
