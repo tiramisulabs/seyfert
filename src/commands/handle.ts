@@ -313,22 +313,23 @@ export class HandleCommand {
 					),
 				);
 			}
-			if (command.defaultMemberPermissions && rawMessage.guild_id) {
-				const memberPermissions = await self.members.permissions(rawMessage.guild_id, rawMessage.author.id);
-				const permissions = this.checkPermissions(memberPermissions, command.defaultMemberPermissions);
-				const guild = await this.client.guilds.raw(rawMessage.guild_id);
-				if (permissions && guild.owner_id !== rawMessage.author.id) {
-					return command.onPermissionsFail?.(context, memberPermissions.keys(permissions));
-				}
-			}
 
-			if (command.botPermissions && rawMessage.guild_id) {
-				const meMember = await self.cache.members?.get(self.botId, rawMessage.guild_id);
-				if (!meMember) return; //enable member cache and "Guilds" intent, lol
-				const appPermissions = await meMember.fetchPermissions();
-				const permissions = this.checkPermissions(appPermissions, command.botPermissions);
-				if (!appPermissions.has('Administrator') && permissions) {
-					return command.onBotPermissionsFail?.(context, permissions);
+			if (rawMessage.guild_id) {
+				if (command.defaultMemberPermissions) {
+					const memberPermissions = await self.members.permissions(rawMessage.guild_id, rawMessage.author.id);
+					const permissions = this.checkPermissions(memberPermissions, command.defaultMemberPermissions);
+					const guild = await this.client.guilds.raw(rawMessage.guild_id);
+					if (permissions && guild.owner_id !== rawMessage.author.id) {
+						return command.onPermissionsFail?.(context, memberPermissions.keys(permissions));
+					}
+				}
+
+				if (command.botPermissions) {
+					const appPermissions = await self.members.permissions(rawMessage.guild_id, self.botId);
+					const permissions = this.checkPermissions(appPermissions, command.botPermissions);
+					if (!appPermissions.has('Administrator') && permissions) {
+						return command.onBotPermissionsFail?.(context, permissions);
+					}
 				}
 			}
 

@@ -61,7 +61,7 @@ export abstract class ContextMenuCommand {
 	onMiddlewaresError(context: MenuCommandContext<any, never>, error: string): any {
 		context.client.logger.fatal(`${this.name}.<onMiddlewaresError>`, context.author.id, error);
 	}
-	onBotPermissionsFail(context: MenuCommandContext<any, never>, permissions: PermissionStrings): any {
+	onBotPermissionsFail(context: MenuCommandContext<any, never>, permissions?: PermissionStrings): any {
 		context.client.logger.fatal(`${this.name}.<onBotPermissionsFail>`, context.author.id, permissions);
 	}
 	// onPermissionsFail(context: MenuCommandContext<any, never>, permissions: PermissionStrings): any {
