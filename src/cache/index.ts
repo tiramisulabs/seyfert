@@ -645,6 +645,7 @@ export class Cache {
 		}
 		function createMember(name: string): APIGuildMember {
 			return {
+				banner: null,
 				avatar: 'xdxd',
 				deaf: !false,
 				flags: GuildMemberFlags.StartedHomeActions,

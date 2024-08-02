@@ -1,26 +1,58 @@
 import { randomUUID } from 'node:crypto';
-import NodeWebSocket from 'ws';
+import { SeyfertWebSocket } from './socket/custom';
 
 export class BaseSocket {
-	private internal: NodeWebSocket | WebSocket;
+	private internal: SeyfertWebSocket | WebSocket;
+
+	ping?: () => Promise<number>;
 
 	constructor(kind: 'ws' | 'bun', url: string) {
-		this.internal = kind === 'ws' ? new NodeWebSocket(url) : new WebSocket(url);
+		this.internal = kind === 'ws' ? new SeyfertWebSocket(url) : new WebSocket(url);
+
+		if (kind === 'ws') {
+			const ws = this.internal as SeyfertWebSocket;
+			this.ping = ws.waitPing.bind(ws);
+			ws.onpong = data => {
+				const promise = ws.__promises.get(data);
+				if (data) {
+					ws.__promises.delete(data);
+					promise?.resolve();
+				}
+			};
+		} else {
+			const ws = this.internal as WebSocket;
+			this.ping = () => {
+				return new Promise<number>(res => {
+					const nonce = randomUUID();
+					const start = performance.now();
+					const listener = (data: Buffer) => {
+						if (data.toString() !== nonce) return;
+						//@ts-expect-error bun support
+						ws.removeListener('pong', listener);
+						res(performance.now() - start);
+					};
+					//@ts-expect-error bun support
+					ws.on('pong', listener);
+					//@ts-expect-error bun support
+					ws.ping(nonce);
+				});
+			};
+		}
 	}
 
-	set onopen(callback: NodeWebSocket['onopen']) {
+	set onopen(callback: SeyfertWebSocket['onopen']) {
 		this.internal.onopen = callback;
 	}
 
-	set onmessage(callback: NodeWebSocket['onmessage']) {
+	set onmessage(callback: SeyfertWebSocket['onmessage']) {
 		this.internal.onmessage = callback;
 	}
 
-	set onclose(callback: NodeWebSocket['onclose']) {
+	set onclose(callback: SeyfertWebSocket['onclose']) {
 		this.internal.onclose = callback;
 	}
 
-	set onerror(callback: NodeWebSocket['onerror']) {
+	set onerror(callback: SeyfertWebSocket['onerror']) {
 		this.internal.onerror = callback;
 	}
 
@@ -28,24 +60,8 @@ export class BaseSocket {
 		return this.internal.send(data);
 	}
 
-	close(...args: Parameters<NodeWebSocket['close']>) {
-		// @ts-expect-error
+	close(...args: Parameters<SeyfertWebSocket['close']>) {
 		return this.internal.close(...args);
-	}
-
-	async ping() {
-		if (!('ping' in this.internal)) throw new Error('Unexpected: Method ping not implemented');
-		return new Promise<number>(res => {
-			const nonce = randomUUID();
-			const start = performance.now();
-			const listener = (data: Buffer) => {
-				if (data.toString() !== nonce) return;
-				(this.internal as NodeWebSocket).removeListener('pong', listener);
-				res(performance.now() - start);
-			};
-			(this.internal as NodeWebSocket).on('pong', listener);
-			(this.internal as NodeWebSocket).ping(nonce);
-		});
 	}
 
 	get readyState() {

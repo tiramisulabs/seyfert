@@ -55,6 +55,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	promises = new Map<string, { resolve: (value: any) => void; timeout: NodeJS.Timeout }>();
 
 	shards = new Map<number, Shard>();
+	private __setServicesCache?: boolean;
 
 	declare options: WorkerClientOptions;
 
@@ -85,6 +86,9 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		};
 	}) {
 		super.setServices(rest);
+		if (rest.cache) {
+			this.__setServicesCache = true;
+		}
 		if (rest.handlers && 'events' in rest.handlers) {
 			if (!rest.handlers.events) {
 				this.events = undefined;
@@ -114,16 +118,26 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			name: `[Worker #${workerData.workerId}]`,
 		});
 
-		const adapter = new WorkerAdapter(workerData);
-		if (this.options.postMessage) {
-			adapter.postMessage = this.options.postMessage;
+		if (this.__setServicesCache) {
+			this.setServices({
+				cache: {
+					disabledCache: this.options.disabledCache,
+				},
+			});
+		} else {
+			const adapter = new WorkerAdapter(workerData);
+			if (this.options.postMessage) {
+				adapter.postMessage = this.options.postMessage;
+			}
+			this.setServices({
+				cache: {
+					adapter,
+					disabledCache: this.options.disabledCache,
+				},
+			});
 		}
-		this.setServices({
-			cache: {
-				adapter,
-				disabledCache: this.options.disabledCache,
-			},
-		});
+
+		delete this.__setServicesCache;
 
 		if (workerData.debug) {
 			this.debugger = new Logger({
@@ -394,10 +408,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						for (const g of packet.d.guilds) {
 							this.__handleGuilds?.add(g.id);
 						}
-						await this.events?.execute(packet.t as never, packet, this, shardId);
 						this.botId = packet.d.user.id;
 						this.applicationId = packet.d.application.id;
 						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
+						await this.events?.execute(packet.t as never, packet, this, shardId);
 						if (
 							!(
 								this.__handleGuilds?.size &&

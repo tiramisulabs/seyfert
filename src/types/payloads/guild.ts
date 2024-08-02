@@ -674,6 +674,12 @@ export interface APIGuildMember {
 	 * See https://discord.com/developers/docs/resources/user#avatar-decoration-data-object
 	 */
 	avatar_decoration_data?: APIAvatarDecorationData | null;
+	/**
+	 * The data for the member's guild banner
+	 *
+	 * See https://github.com/discord/discord-api-docs/discussions/4217
+	 */
+	banner: null | string;
 }
 
 /**

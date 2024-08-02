@@ -1,6 +1,4 @@
 import { inflateSync } from 'node:zlib';
-import type WS from 'ws';
-import { WebSocket, type CloseEvent, type ErrorEvent } from 'ws';
 import { type MakeRequired, MergeOptions, type Logger } from '../../common';
 import { properties } from '../constants';
 import { DynamicBucket } from '../structures';
@@ -67,7 +65,7 @@ export class Shard {
 	}
 
 	get isOpen() {
-		return this.websocket?.readyState === WebSocket.OPEN;
+		return this.websocket?.readyState === 1 /*WebSocket.open*/;
 	}
 
 	get gatewayURL() {
@@ -86,6 +84,7 @@ export class Shard {
 
 	ping() {
 		if (!this.websocket) return Promise.resolve(Number.POSITIVE_INFINITY);
+		//@ts-expect-error
 		return this.websocket.ping();
 	}
 
@@ -102,9 +101,11 @@ export class Shard {
 		// biome-ignore lint/correctness/noUndeclaredVariables: /\ bun lol
 		this.websocket = new BaseSocket(typeof Bun === 'undefined' ? 'ws' : 'bun', this.currentGatewayURL);
 
-		this.websocket!.onmessage = (event: WS.MessageEvent) => this.handleMessage(event);
+		this.websocket!.onmessage = ({ data }: { data: string }) => {
+			this.handleMessage(data);
+		};
 
-		this.websocket!.onclose = (event: WS.CloseEvent) => this.handleClosed(event);
+		this.websocket!.onclose = (event: { code: number; reason: string }) => this.handleClosed(event);
 
 		this.websocket!.onerror = (event: ErrorEvent) => this.debugger?.error(event);
 
@@ -264,12 +265,11 @@ export class Shard {
 		}
 	}
 
-	protected async handleClosed(close: CloseEvent) {
+	protected async handleClosed(close: { code: number; reason: string }) {
 		clearInterval(this.heart.nodeInterval);
 		this.debugger?.warn(
-			`[Shard #${this.id}] ${ShardSocketCloseCodes[close.code] ?? GatewayCloseCodes[close.code] ?? close.code} (${
-				close.code
-			})`,
+			`[Shard #${this.id}] ${ShardSocketCloseCodes[close.code] ?? GatewayCloseCodes[close.code] ?? close.code} (${close.code})`,
+			close.reason,
 		);
 
 		switch (close.code) {
@@ -309,14 +309,14 @@ export class Shard {
 	}
 
 	async close(code: number, reason: string) {
-		if (this.websocket?.readyState !== WebSocket.OPEN) {
+		if (!this.isOpen) {
 			return this.debugger?.warn(`[Shard #${this.id}] Is not open`);
 		}
 		this.debugger?.warn(`[Shard #${this.id}] Called close`);
 		this.websocket?.close(code, reason);
 	}
 
-	protected handleMessage({ data }: WS.MessageEvent) {
+	protected handleMessage(data: string | Buffer) {
 		if (data instanceof Buffer) {
 			data = inflateSync(data);
 		}

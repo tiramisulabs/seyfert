@@ -195,14 +195,20 @@ export class GuildMember extends BaseGuildMember {
 	avatarURL(options?: ImageOptions & { exclude?: false }): string;
 	avatarURL(options?: ImageOptions & { exclude?: boolean }): string | null {
 		if (!this.avatar) {
-			return options?.exclude ? null : this.user.avatarURL();
+			return options?.exclude ? null : this.user.avatarURL(options);
 		}
 
 		return this.rest.cdn.guilds(this.guildId).users(this.id).avatars(this.avatar).get(options);
 	}
 
-	bannerURL(options?: ImageOptions) {
-		return this.user.bannerURL(options);
+	bannerURL(options: ImageOptions & { exclude: true }): string | undefined | null;
+	bannerURL(options?: ImageOptions & { exclude?: false }): string | undefined;
+	bannerURL(options?: ImageOptions & { exclude?: boolean }): string | undefined | null {
+		if (!this.banner) {
+			return options?.exclude ? null : this.user.bannerURL(options);
+		}
+
+		return this.rest.cdn.guilds(this.guildId).users(this.id).banners(this.banner).get(options);
 	}
 
 	async fetchPermissions(force = false) {
