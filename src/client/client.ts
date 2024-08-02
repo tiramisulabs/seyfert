@@ -185,10 +185,10 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						for (const g of packet.d.guilds) {
 							this.__handleGuilds?.add(g.id);
 						}
-						await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
 						this.botId = packet.d.user.id;
 						this.applicationId = packet.d.application.id;
 						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
+						await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
 						if (
 							!(
 								this.__handleGuilds?.size &&
