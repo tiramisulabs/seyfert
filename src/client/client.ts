@@ -159,11 +159,11 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			case 'GUILD_CREATE': {
 				if (this.__handleGuilds?.has(packet.d.id)) {
-					this.__handleGuilds.delete(packet.d.id);
-					if (!this.__handleGuilds.size && [...this.gateway.values()].every(shard => shard.data.session_id)) {
+					this.__handleGuilds?.delete(packet.d.id);
+					if (!this.__handleGuilds?.size && [...this.gateway.values()].every(shard => shard.data.session_id)) {
 						await this.events?.runEvent('BOT_READY', this, this.me, -1);
 					}
-					if (!this.__handleGuilds.size) delete this.__handleGuilds;
+					if (!this.__handleGuilds?.size) delete this.__handleGuilds;
 					return this.cache.onPacket(packet);
 				}
 				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
@@ -183,7 +183,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 					case 'READY':
 						if (!this.__handleGuilds) this.__handleGuilds = new Set();
 						for (const g of packet.d.guilds) {
-							this.__handleGuilds.add(g.id);
+							this.__handleGuilds?.add(g.id);
 						}
 						await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
 						this.botId = packet.d.user.id;
@@ -191,7 +191,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
 						if (
 							!(
-								this.__handleGuilds.size &&
+								this.__handleGuilds?.size &&
 								(this.gateway.options.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds
 							)
 						) {
