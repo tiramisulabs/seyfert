@@ -365,15 +365,15 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			case 'GUILD_CREATE': {
 				if (this.__handleGuilds?.has(packet.d.id)) {
-					this.__handleGuilds.delete(packet.d.id);
-					if (!this.__handleGuilds.size && [...this.shards.values()].every(shard => shard.data.session_id)) {
+					this.__handleGuilds?.delete(packet.d.id);
+					if (!this.__handleGuilds?.size && [...this.shards.values()].every(shard => shard.data.session_id)) {
 						this.postMessage({
 							type: 'WORKER_READY',
 							workerId: this.workerId,
 						} as WorkerReady);
 						await this.events?.runEvent('WORKER_READY', this, this.me, -1);
 					}
-					if (!this.__handleGuilds.size) delete this.__handleGuilds;
+					if (!this.__handleGuilds?.size) delete this.__handleGuilds;
 					return this.cache.onPacket(packet);
 				}
 				await this.events?.execute(packet.t, packet, this, shardId);
@@ -392,7 +392,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					case 'READY':
 						if (!this.__handleGuilds) this.__handleGuilds = new Set();
 						for (const g of packet.d.guilds) {
-							this.__handleGuilds.add(g.id);
+							this.__handleGuilds?.add(g.id);
 						}
 						await this.events?.execute(packet.t as never, packet, this, shardId);
 						this.botId = packet.d.user.id;
@@ -400,7 +400,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
 						if (
 							!(
-								this.__handleGuilds.size && (workerData.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds
+								this.__handleGuilds?.size &&
+								(workerData.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds
 							)
 						) {
 							if ([...this.shards.values()].every(shard => shard.data.session_id)) {
