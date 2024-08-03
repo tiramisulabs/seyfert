@@ -17,7 +17,7 @@ export class VoiceState extends Base {
 			this.withMember = Transformers.GuildMember(client, member, member.user, data.guild_id);
 	}
 
-	isMuted() {
+	get isMuted() {
 		return this.mute || this.selfMute;
 	}
 
@@ -25,7 +25,7 @@ export class VoiceState extends Base {
 		return (this.withMember = await this.client.members.fetch(this.guildId, this.userId, force));
 	}
 
-	async user(force?: boolean) {
+	user(force?: boolean) {
 		return this.client.users.fetch(this.userId, force);
 	}
 
@@ -35,17 +35,15 @@ export class VoiceState extends Base {
 	}
 
 	async setMute(mute = !this.mute, reason?: string) {
-		return this.client.members.edit(this.guildId, this.userId, { mute }, reason).then(member => {
-			this.mute = mute;
-			return member;
-		});
+		const member = await this.client.members.edit(this.guildId, this.userId, { mute }, reason);
+		this.mute = mute;
+		return member;
 	}
 
 	async setDeaf(deaf = !this.deaf, reason?: string) {
-		return this.client.members.edit(this.guildId, this.userId, { deaf }, reason).then(member => {
-			this.deaf = deaf;
-			return member;
-		});
+		const member = await this.client.members.edit(this.guildId, this.userId, { deaf }, reason);
+		this.deaf = deaf;
+		return member;
 	}
 
 	async setSuppress(suppress = !this.suppress) {
@@ -66,14 +64,13 @@ export class VoiceState extends Base {
 		this.requestToSpeakTimestamp = date;
 	}
 
-	async disconnect(reason?: string) {
+	disconnect(reason?: string) {
 		return this.setChannel(null, reason);
 	}
 
 	async setChannel(channel_id: null | string, reason?: string) {
-		return this.client.members.edit(this.guildId, this.userId, { channel_id }, reason).then(member => {
-			this.channelId = channel_id;
-			return member;
-		});
+		const member = await this.client.members.edit(this.guildId, this.userId, { channel_id }, reason);
+		this.channelId = channel_id;
+		return member;
 	}
 }

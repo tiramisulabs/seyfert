@@ -15,7 +15,7 @@ export class GuildTemplate extends Base {
 		return this.client.guilds.fetch(this.sourceGuildId, force);
 	}
 
-	async fetch() {
+	fetch() {
 		return this.client.templates.fetch(this.sourceGuildId);
 	}
 

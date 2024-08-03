@@ -4,10 +4,9 @@ import { Base } from './extra/Base';
 import type { UsingClient } from '../commands';
 import type { ValidAnswerId } from '../api/Routes/channels';
 
-export interface Poll extends ObjectToLower<Omit<APIPoll, 'expiry'>> {}
+export interface Poll extends ObjectToLower<APIPoll> {}
 
 export class Poll extends Base {
-	expiry: number;
 	constructor(
 		client: UsingClient,
 		data: APIPoll,
@@ -15,9 +14,17 @@ export class Poll extends Base {
 		readonly messageId: string,
 	) {
 		super(client);
-		this.expiry = Date.parse(data.expiry);
 		Object.assign(this, toCamelCase(data));
 	}
+
+	get expiryTimestamp() {
+		return Date.parse(this.expiry);
+	}
+
+	get expiryAt() {
+		return new Date(this.expiry);
+	}
+
 	end() {
 		return this.client.messages.endPoll(this.channelId, this.messageId);
 	}

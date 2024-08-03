@@ -411,7 +411,7 @@ export class Interaction<
 		return this.client.interactions.deleteResponse(this.id, this.token, messageId);
 	}
 
-	async followup(body: MessageWebhookCreateBodyRequest) {
+	followup(body: MessageWebhookCreateBodyRequest) {
 		return this.client.interactions.followup(this.token, body);
 	}
 }

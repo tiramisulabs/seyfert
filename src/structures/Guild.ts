@@ -61,10 +61,10 @@ export class Guild<State extends StructStates = 'api'> extends (BaseGuild as unk
 		}
 	}
 
-	fetchOwner(force = false) {
+	async fetchOwner(force = false) {
 		// For no reason, discord has some guilds without owner... 🤓
 		if (!this.ownerId) {
-			return Promise.resolve(null);
+			return null;
 		}
 		return this.members.fetch(this.ownerId, force);
 	}

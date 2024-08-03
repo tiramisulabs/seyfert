@@ -15,7 +15,7 @@ export class GuildEmoji extends DiscordBase {
 		super(client, { ...data, id: data.id! });
 	}
 
-	guild(force = false) {
+	async guild(force = false) {
 		if (!this.guildId) return;
 		return this.client.guilds.fetch(this.guildId, force);
 	}

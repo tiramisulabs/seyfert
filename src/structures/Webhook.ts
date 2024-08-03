@@ -58,7 +58,7 @@ export class Webhook extends DiscordBase {
 	 * @param force Whether to force fetching the guild even if it's already cached.
 	 * @returns A promise that resolves to the guild associated with the webhook, or undefined if not applicable.
 	 */
-	guild(force = false) {
+	async guild(force = false) {
 		if (!this.sourceGuild?.id) return;
 		return this.client.guilds.fetch(this.sourceGuild.id, force);
 	}
@@ -90,7 +90,7 @@ export class Webhook extends DiscordBase {
 	 * Fetches the webhook data from the Discord API.
 	 * @returns A promise that resolves to the fetched webhook data.
 	 */
-	async fetch() {
+	fetch() {
 		return this.client.webhooks.fetch(this.id, this.token);
 	}
 
@@ -100,7 +100,7 @@ export class Webhook extends DiscordBase {
 	 * @param reason The reason for editing the webhook.
 	 * @returns A promise that resolves when the webhook is successfully edited.
 	 */
-	async edit(body: RESTPatchAPIWebhookJSONBody | RESTPatchAPIWebhookWithTokenJSONBody, reason?: string) {
+	edit(body: RESTPatchAPIWebhookJSONBody | RESTPatchAPIWebhookWithTokenJSONBody, reason?: string) {
 		return this.client.webhooks.edit(this.id, body, { reason, token: this.token });
 	}
 

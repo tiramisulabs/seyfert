@@ -16,22 +16,22 @@ export class Sticker extends DiscordBase {
 		}
 	}
 
-	guild(force = false) {
+	async guild(force = false) {
 		if (!this.guildId) return;
 		return this.client.guilds.fetch(this.id, force);
 	}
 
-	edit(body: RESTPatchAPIGuildStickerJSONBody, reason?: string) {
+	async edit(body: RESTPatchAPIGuildStickerJSONBody, reason?: string) {
 		if (!this.guildId) return;
 		return this.client.guilds.stickers.edit(this.guildId, this.id, body, reason);
 	}
 
-	fetch(force = false) {
+	async fetch(force = false) {
 		if (!this.guildId) return;
 		return this.client.guilds.stickers.fetch(this.guildId, this.id, force);
 	}
 
-	delete(reason?: string) {
+	async delete(reason?: string) {
 		if (!this.guildId) return;
 		return this.client.guilds.stickers.delete(this.guildId, this.id, reason);
 	}
