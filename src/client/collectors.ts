@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import type { Awaitable, CamelCase } from '../common';
 import type { CallbackEventHandler, CustomEventsKeys, GatewayEvents } from '../events';
 import { error } from 'node:console';
+import * as RawEvents from '../events/hooks';
+import type { UsingClient } from '../commands';
 
 export type AllClientEvents = CustomEventsKeys | GatewayEvents;
 export type ParseClientEventName<T extends AllClientEvents> = T extends CustomEventsKeys ? T : CamelCase<T>;
@@ -98,10 +100,13 @@ export class Collectors {
 	/**@internal */
 	async run<T extends AllClientEvents>(
 		name: T,
-		data: Awaited<Parameters<CallbackEventHandler[ParseClientEventName<T>]>[0]>,
+		raw: Awaited<Parameters<CallbackEventHandler[ParseClientEventName<T>]>[0]>,
+		client: UsingClient,
 	) {
 		const collectors = this.values.get(name);
 		if (!collectors) return;
+
+		const data = RawEvents[name]?.(client, raw as never) ?? raw;
 
 		for (const i of collectors) {
 			if (await i.options.filter(data as never)) {
