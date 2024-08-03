@@ -671,6 +671,7 @@ export class Cache {
 		for (const user of users) {
 			await this.users.set(user.id, user);
 		}
+		let count = 0;
 		if ((await this.users.values()).length !== users.length)
 			throw new Error('users.values() is not of the expected size.');
 		if ((await this.users.count()) !== users.length) throw new Error('users.count() is not of the expected amount');
@@ -685,10 +686,18 @@ export class Cache {
 				throw new Error(
 					`users.raw(${user.id}).id is not of the expected value!!!!!! (cache (${cache.id})) (expected value: (${user.id}))`,
 				);
+			await this.users.remove(user.id);
+			if ((await this.users.count()) !== users.length - ++count)
+				throw new Error(`users.count() should be ${users.length - count}!! please check your remove method`);
 		}
+
 		this.__logger__!.info('the user cache seems to be alright.');
 		this.__logger__!.debug('Flushing adapter to clear users cache.');
+
 		await this.adapter.flush();
+
+		// unexpected error message
+		if ((await this.users.count()) !== 0) throw new Error('users.count() should be 0!! please check your flush method');
 
 		const guildMembers: Record<string, APIGuildMember[]> = {
 			'852531635252494346': [
@@ -709,6 +718,7 @@ export class Cache {
 				createMember("yuzu's member"),
 			],
 		};
+
 		for (const guildId in guildMembers) {
 			const members = guildMembers[guildId];
 			for (const member of members) {
@@ -739,6 +749,29 @@ export class Cache {
 			throw new Error('members.values(*) is not of the expected size');
 		if ((await this.members.count('*')) !== Object.values(guildMembers).flat().length)
 			throw new Error('the global amount of members.count(*) is not the expected amount');
+
+		count = 0;
+		for (const guildId in guildMembers) {
+			const members = guildMembers[guildId];
+			for (const member of members) {
+				await this.members.remove(member.user.id, guildId);
+				if ((await this.members.count(guildId)) !== members.length - ++count)
+					throw new Error(
+						`members.count(${guildId}) should be ${members.length - count}!! please check your remove method`,
+					);
+			}
+			count = 0;
+		}
+
+		await this.adapter.flush();
+
+		// unexpected error message
+		if ((await this.users.count()) !== 0)
+			throw new Error('users.count() should be zero!! please check your flush method');
+		// unexpected error message
+		if ((await this.members.count('*')) !== 0)
+			throw new Error("members.count('*') should be zero!! please check your flush method");
+
 		this.__logger__!.info('the member cache seems to be alright.');
 	}
 
@@ -794,6 +827,7 @@ export class Cache {
 				createChannel("yuzu's channel"),
 			],
 		};
+
 		for (const guildId in guildChannels) {
 			const channels = guildChannels[guildId];
 			for (const channel of channels) {
@@ -824,6 +858,24 @@ export class Cache {
 			throw new Error('channels.values(*) is not of the expected size');
 		if ((await this.channels.count('*')) !== Object.values(guildChannels).flat().length)
 			throw new Error('channels.count(*) is not of the expected amount');
+
+		let count = 0;
+		for (const guildId in guildChannels) {
+			const channels = guildChannels[guildId];
+			for (const channel of channels) {
+				await this.channels.remove(channel.id, guildId);
+				if ((await this.channels.count(guildId)) !== channels.length - ++count)
+					throw new Error(
+						`channels.count(${guildId}) should be ${channels.length - count}!! please check your remove method`,
+					);
+			}
+			count = 0;
+		}
+
+		// unexpected error message
+		if ((await this.channels.count('*')) !== 0)
+			throw new Error(`channels.count('*') should be zero!! please check your remove method`);
+
 		this.__logger__!.info('the channel cache seems to be alright');
 
 		const guildOverwrites: Record<string, ReturnType<typeof createOverwrites>[]> = {
@@ -877,6 +929,25 @@ export class Cache {
 				}
 			}
 		}
+
+		count = 0;
+
+		for (const guildId in guildOverwrites) {
+			const bulkOverwrites = guildOverwrites[guildId];
+			for (const overwrites of bulkOverwrites) {
+				await this.overwrites.remove(overwrites[0].channel_id, guildId);
+				if ((await this.overwrites.count(guildId)) !== bulkOverwrites.length - ++count)
+					throw new Error(
+						`overwrites.count(${guildId}) should be ${overwrites.length - count}!! please check your remove method`,
+					);
+			}
+			count = 0;
+		}
+
+		// unexpected error message
+		if ((await this.overwrites.count('*')) !== 0)
+			throw new Error(`overwrites.count('*') should be zero!! please check your remove method`);
+
 		this.__logger__!.info('the overwrites cache seems to be alright.');
 	}
 }
