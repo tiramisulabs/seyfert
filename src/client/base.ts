@@ -120,7 +120,7 @@ export class BaseClient {
 							context.client.logger.fatal(
 								`${context.command.name}.<onBotPermissionsFail>`,
 								context.author.id,
-								`permissions ${permissions?.length ? permissions : 'Not found'}`,
+								permissions,
 							);
 						},
 						onPermissionsFail(context, permissions): any {
@@ -427,7 +427,7 @@ export interface BaseClientOptions {
 
 			onBotPermissionsFail?: (
 				context: MenuCommandContext<any, never> | CommandContext,
-				permissions?: PermissionStrings,
+				permissions: PermissionStrings,
 			) => unknown;
 			onInternalError?: (
 				client: UsingClient,

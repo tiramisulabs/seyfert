@@ -459,7 +459,7 @@ export class HandleCommand {
 		if (!app.has('Administrator') && permissions.length) {
 			return app.keys(permissions);
 		}
-		return false;
+		return;
 	}
 
 	async fetchChannel(_option: CommandOptionWithType, query: string) {
