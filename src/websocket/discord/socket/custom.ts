@@ -1,7 +1,6 @@
 import { randomBytes, createHash, randomUUID } from 'node:crypto';
 import { request } from 'node:https';
 import type { Socket } from 'node:net';
-import { inflateSync } from 'node:zlib';
 
 export class SeyfertWebSocket {
 	socket?: Socket = undefined;
@@ -23,7 +22,7 @@ export class SeyfertWebSocket {
 	) {
 		const urlParts = new URL(url);
 		this.hostname = urlParts.hostname || '';
-		this.path = `${urlParts.pathname}${urlParts.search || ''}&encoding=json`;
+		this.path = `${urlParts.pathname}${urlParts.search || ''}`;
 		this.connect();
 	}
 
@@ -121,7 +120,10 @@ export class SeyfertWebSocket {
 				break;
 			// binary
 			case 0x2:
-				this.onmessage({ data: inflateSync(body, { info: true }).buffer.toString() });
+				{
+					if (body[1] === 80) body = body.subarray(6);
+					this.onmessage({ data: body });
+				}
 				break;
 			// pong
 			case 0x9:
@@ -175,7 +177,7 @@ export class SeyfertWebSocket {
 
 	onopen() {}
 
-	onmessage(_payload: { data: string }) {}
+	onmessage(_payload: { data: string | Buffer }) {}
 
 	onclose(_close: { code: number; reason: string }) {}
 

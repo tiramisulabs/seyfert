@@ -101,7 +101,7 @@ export class Shard {
 		// biome-ignore lint/correctness/noUndeclaredVariables: /\ bun lol
 		this.websocket = new BaseSocket(typeof Bun === 'undefined' ? 'ws' : 'bun', this.currentGatewayURL);
 
-		this.websocket!.onmessage = ({ data }: { data: string }) => {
+		this.websocket!.onmessage = ({ data }: { data: string | Buffer }) => {
 			this.handleMessage(data);
 		};
 
