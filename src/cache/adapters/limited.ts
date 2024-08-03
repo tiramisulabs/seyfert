@@ -7,7 +7,7 @@ export interface ResourceLimitedMemoryAdapter {
 	limit?: number;
 }
 
-export interface LimitedMemoryAdapterOptions {
+export interface LimitedMemoryAdapterOptions<T> {
 	default?: ResourceLimitedMemoryAdapter;
 
 	guild?: ResourceLimitedMemoryAdapter;
@@ -26,24 +26,33 @@ export interface LimitedMemoryAdapterOptions {
 	thread?: ResourceLimitedMemoryAdapter;
 	overwrite?: ResourceLimitedMemoryAdapter;
 	message?: ResourceLimitedMemoryAdapter;
+
+	encode(data: any): T;
+	decode(data: T): unknown;
 }
 
-export class LimitedMemoryAdapter implements Adapter {
+export class LimitedMemoryAdapter<T> implements Adapter {
 	isAsync = false;
 
-	readonly storage = new Map<string, LimitedCollection<string, string>>();
+	readonly storage = new Map<string, LimitedCollection<string, T>>();
 	readonly relationships = new Map<string, Map<string, string[]>>();
 
-	options: MakeRequired<LimitedMemoryAdapterOptions, 'default'>;
+	options: MakeRequired<LimitedMemoryAdapterOptions<T>, 'default'>;
 
-	constructor(options: LimitedMemoryAdapterOptions) {
+	constructor(options: LimitedMemoryAdapterOptions<T>) {
 		this.options = MergeOptions(
 			{
 				default: {
 					expire: undefined,
 					limit: Number.POSITIVE_INFINITY,
 				},
-			} satisfies LimitedMemoryAdapterOptions,
+				encode(data) {
+					return JSON.stringify(data) as T;
+				},
+				decode(data) {
+					return JSON.parse(data as string);
+				},
+			} satisfies LimitedMemoryAdapterOptions<T>,
 			options,
 		);
 	}
@@ -56,7 +65,7 @@ export class LimitedMemoryAdapter implements Adapter {
 		for (const iterator of [...this.storage.values()].flatMap(x => x.entries()))
 			for (const [key, value] of iterator) {
 				if (key.split('.').every((value, i) => (sq[i] === '*' ? !!value : sq[i] === value))) {
-					values.push(keys ? key : JSON.parse(value.value));
+					values.push(keys ? key : this.options.decode(value.value));
 				}
 			}
 
@@ -68,14 +77,14 @@ export class LimitedMemoryAdapter implements Adapter {
 		return keys
 			.map(key => {
 				const data = iterator.find(x => x.has(key))?.get(key);
-				return data ? JSON.parse(data) : null;
+				return data ? this.options.decode(data) : null;
 			})
 			.filter(x => x);
 	}
 
 	get(keys: string) {
 		const data = [...this.storage.values()].find(x => x.has(keys))?.get(keys);
-		return data ? JSON.parse(data) : null;
+		return data ? this.options.decode(data) : null;
 	}
 
 	private __set(key: string, data: any) {
@@ -87,9 +96,11 @@ export class LimitedMemoryAdapter implements Adapter {
 				namespace,
 				new LimitedCollection({
 					expire:
-						this.options[key.split('.')[0] as keyof LimitedMemoryAdapterOptions]?.expire ?? this.options.default.expire,
+						this.options[key.split('.')[0] as Exclude<keyof LimitedMemoryAdapterOptions<T>, 'decode' | 'encode'>]
+							?.expire ?? this.options.default.expire,
 					limit:
-						this.options[key.split('.')[0] as keyof LimitedMemoryAdapterOptions]?.limit ?? this.options.default.limit,
+						this.options[key.split('.')[0] as Exclude<keyof LimitedMemoryAdapterOptions<T>, 'decode' | 'encode'>]
+							?.limit ?? this.options.default.limit,
 					resetOnDemand: true,
 					onDelete(k) {
 						const relationshipNamespace = key.split('.')[0];
@@ -126,7 +137,7 @@ export class LimitedMemoryAdapter implements Adapter {
 			);
 		}
 
-		this.storage.get(namespace)!.set(key, JSON.stringify(data));
+		this.storage.get(namespace)!.set(key, this.options.encode(data));
 	}
 
 	bulkSet(keys: [string, any][]) {
