@@ -1,7 +1,7 @@
 import { randomBytes, createHash, randomUUID } from 'node:crypto';
 import { request } from 'node:https';
 import type { Socket } from 'node:net';
-import { createInflate, inflateSync } from 'node:zlib';
+import { inflateSync } from 'node:zlib';
 
 export class SeyfertWebSocket {
 	socket?: Socket = undefined;
@@ -9,7 +9,6 @@ export class SeyfertWebSocket {
 	path: string;
 	__stored: Buffer[] = [];
 	__opcode = 0;
-	__body: Buffer[] = [];
 	__promises = new Map<
 		string,
 		{
@@ -17,7 +16,6 @@ export class SeyfertWebSocket {
 			reject: (reason?: any) => void;
 		}
 	>();
-	__zlib?: ReturnType<typeof createInflate>;
 
 	constructor(
 		url: string,
@@ -26,9 +24,6 @@ export class SeyfertWebSocket {
 		const urlParts = new URL(url);
 		this.hostname = urlParts.hostname || '';
 		this.path = `${urlParts.pathname}${urlParts.search || ''}&encoding=json`;
-		if (compress) {
-			this.__zlib = createInflate();
-		}
 		this.connect();
 	}
 

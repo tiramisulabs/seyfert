@@ -14,7 +14,7 @@ export class BaseSocket {
 			this.ping = ws.waitPing.bind(ws);
 			ws.onpong = data => {
 				const promise = ws.__promises.get(data);
-				if (data) {
+				if (promise) {
 					ws.__promises.delete(data);
 					promise?.resolve();
 				}
