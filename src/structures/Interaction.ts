@@ -143,7 +143,7 @@ export class BaseInteraction<
 				return {
 					type: body.type,
 					//@ts-ignore
-					data: BaseInteraction.transformBodyRequest(body.data ?? {}, files, self),
+					data: BaseInteraction.transformBody(body.data ?? {}, files, self),
 				};
 			}
 			case InteractionResponseType.Modal:
@@ -179,28 +179,27 @@ export class BaseInteraction<
 	) {
 		const poll = (body as MessageWebhookCreateBodyRequest).poll;
 
-		const allow = {
+		const payload = {
 			allowed_mentions: self.options?.allowedMentions,
-
 			...body,
 			components: body.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)),
 			embeds: body?.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)),
 			poll: poll ? (poll instanceof PollBuilder ? poll.toJSON() : poll) : undefined,
 		};
 
-		if ('attachment' in body) {
-			allow.attachments =
+		if ('attachments' in body) {
+			payload.attachments =
 				body.attachments?.map((x, i) => ({
 					id: i,
 					...resolveAttachment(x),
 				})) ?? undefined;
 		} else if (files?.length) {
-			allow.attachments = files?.map((x, id) => ({
+			payload.attachments = files?.map((x, id) => ({
 				id,
 				filename: x.name,
 			})) as RESTAPIAttachment[];
 		}
-		return allow as unknown as T;
+		return payload as T;
 	}
 
 	private async matchReplied(body: ReplyInteractionBody) {
