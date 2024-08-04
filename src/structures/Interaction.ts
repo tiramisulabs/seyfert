@@ -237,6 +237,50 @@ export class BaseInteraction<
 		});
 	}
 
+	isButton(): this is ButtonInteraction {
+		return false;
+	}
+
+	isChannelSelectMenu(): this is ChannelSelectMenuInteraction {
+		return false;
+	}
+
+	isRoleSelectMenu(): this is RoleSelectMenuInteraction {
+		return false;
+	}
+
+	isMentionableSelectMenu(): this is MentionableSelectMenuInteraction {
+		return false;
+	}
+
+	isUserSelectMenu(): this is UserSelectMenuInteraction {
+		return false;
+	}
+
+	isStringSelectMenu(): this is StringSelectMenuInteraction {
+		return false;
+	}
+
+	isChatInput(): this is ChatInputCommandInteraction {
+		return false;
+	}
+
+	isUser(): this is UserCommandInteraction {
+		return false;
+	}
+
+	isMessage(): this is MessageCommandInteraction {
+		return false;
+	}
+
+	isAutocomplete(): this is AutocompleteInteraction {
+		return false;
+	}
+
+	isModal(): this is ModalSubmitInteraction {
+		return false;
+	}
+
 	static from(client: UsingClient, gateway: GatewayInteractionCreateDispatchData, __reply?: __InternalReplyFunction) {
 		switch (gateway.type) {
 			case InteractionType.ApplicationCommandAutocomplete:
@@ -346,6 +390,10 @@ export class AutocompleteInteraction<FromGuild extends boolean = boolean> extend
 		return super.reply({ data: { choices }, type: InteractionResponseType.ApplicationCommandAutocompleteResult });
 	}
 
+	isAutocomplete(): this is AutocompleteInteraction {
+		return true;
+	}
+
 	/** @intenal */
 	async reply(..._args: unknown[]) {
 		throw new Error('Cannot use reply in this interaction');
@@ -420,7 +468,7 @@ export class ApplicationCommandInteraction<
 	FromGuild extends boolean = boolean,
 	Type extends APIApplicationCommandInteraction = APIApplicationCommandInteraction,
 > extends Interaction<FromGuild, Type> {
-	type = ApplicationCommandType.ChatInput;
+	type!: ApplicationCommandType;
 	respond(
 		data:
 			| APIInteractionResponseChannelMessageWithSource
@@ -470,34 +518,14 @@ export class ComponentInteraction<
 	get componentType() {
 		return this.data.componentType;
 	}
-
-	isButton(): this is ButtonInteraction {
-		return this.data.componentType === ComponentType.Button;
-	}
-
-	isChannelSelectMenu(): this is ChannelSelectMenuInteraction {
-		return this.componentType === ComponentType.ChannelSelect;
-	}
-
-	isRoleSelectMenu(): this is RoleSelectMenuInteraction {
-		return this.componentType === ComponentType.RoleSelect;
-	}
-
-	isMentionableSelectMenu(): this is MentionableSelectMenuInteraction {
-		return this.componentType === ComponentType.MentionableSelect;
-	}
-
-	isUserSelectMenu(): this is UserSelectMenuInteraction {
-		return this.componentType === ComponentType.UserSelect;
-	}
-
-	isStringSelectMenu(): this is StringSelectMenuInteraction {
-		return this.componentType === ComponentType.StringSelect;
-	}
 }
 
 export class ButtonInteraction extends ComponentInteraction {
 	declare data: ObjectToLower<APIMessageButtonInteractionData>;
+
+	isButton(): this is ButtonInteraction {
+		return true;
+	}
 }
 
 export class SelectMenuInteraction extends ComponentInteraction {
@@ -519,11 +547,15 @@ export class SelectMenuInteraction extends ComponentInteraction {
 export class StringSelectMenuInteraction<
 	T extends any[] = string[],
 > extends (SelectMenuInteraction as unknown as ToClass<
-	Omit<SelectMenuInteraction, 'data'>,
+	Omit<SelectMenuInteraction, 'data' | 'isStringSelectMenu'>,
 	StringSelectMenuInteraction
 >) {
 	declare data: OmitInsert<ObjectToLower<APIMessageStringSelectInteractionData>, 'values', { values: T }>;
 	declare values: T;
+
+	isStringSelectMenu(): this is StringSelectMenuInteraction {
+		return true;
+	}
 }
 
 export class ChannelSelectMenuInteraction extends SelectMenuInteraction {
@@ -536,6 +568,10 @@ export class ChannelSelectMenuInteraction extends SelectMenuInteraction {
 		super(client, interaction);
 		const resolved = (interaction.data as APIMessageChannelSelectInteractionData).resolved;
 		this.channels = this.values.map(x => channelFrom(resolved.channels[x], this.client));
+	}
+
+	isChannelSelectMenu(): this is ChannelSelectMenuInteraction {
+		return true;
 	}
 }
 
@@ -565,6 +601,10 @@ export class MentionableSelectMenuInteraction extends SelectMenuInteraction {
 			: [];
 		this.users = resolved.users ? this.values.map(x => Transformers.User(this.client, resolved.users![x])) : [];
 	}
+
+	isMentionableSelectMenu(): this is MentionableSelectMenuInteraction {
+		return true;
+	}
 }
 
 export class RoleSelectMenuInteraction extends SelectMenuInteraction {
@@ -577,6 +617,10 @@ export class RoleSelectMenuInteraction extends SelectMenuInteraction {
 		super(client, interaction);
 		const resolved = (interaction.data as APIMessageRoleSelectInteractionData).resolved;
 		this.roles = this.values.map(x => Transformers.GuildRole(this.client, resolved.roles[x], this.guildId!));
+	}
+
+	isRoleSelectMenu(): this is RoleSelectMenuInteraction {
+		return true;
 	}
 }
 
@@ -602,6 +646,10 @@ export class UserSelectMenuInteraction extends SelectMenuInteraction {
 				)
 			: [];
 	}
+
+	isUserSelectMenu(): this is UserSelectMenuInteraction {
+		return true;
+	}
 }
 
 export class ChatInputCommandInteraction<FromGuild extends boolean = boolean> extends ApplicationCommandInteraction<
@@ -609,6 +657,10 @@ export class ChatInputCommandInteraction<FromGuild extends boolean = boolean> ex
 	APIChatInputApplicationCommandInteraction
 > {
 	declare data: ObjectToLower<APIChatInputApplicationCommandInteractionData>;
+
+	isChatInput(): this is ChatInputCommandInteraction {
+		return true;
+	}
 }
 
 export class UserCommandInteraction<FromGuild extends boolean = boolean> extends ApplicationCommandInteraction<
@@ -617,6 +669,10 @@ export class UserCommandInteraction<FromGuild extends boolean = boolean> extends
 > {
 	declare type: ApplicationCommandType.User;
 	declare data: ObjectToLower<APIUserApplicationCommandInteractionData>;
+
+	isUser(): this is UserCommandInteraction {
+		return true;
+	}
 }
 
 export class MessageCommandInteraction<FromGuild extends boolean = boolean> extends ApplicationCommandInteraction<
@@ -625,6 +681,10 @@ export class MessageCommandInteraction<FromGuild extends boolean = boolean> exte
 > {
 	declare type: ApplicationCommandType.Message;
 	declare data: ObjectToLower<APIMessageApplicationCommandInteractionData>;
+
+	isMessage(): this is MessageCommandInteraction {
+		return true;
+	}
 }
 
 export interface ModalSubmitInteraction<FromGuild extends boolean = boolean>
@@ -653,5 +713,9 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 		}
 		if (!value && required) throw new Error(`${customId} component doesn't have a value`);
 		return value;
+	}
+
+	isModal(): this is ModalSubmitInteraction {
+		return true;
 	}
 }
