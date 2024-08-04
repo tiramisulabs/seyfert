@@ -141,7 +141,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 	protected async onPacket(shardId: number, packet: GatewayDispatchPayload) {
 		Promise.allSettled([
 			this.events?.runEvent('RAW', this, packet, shardId, false),
-			this.collectors.run('RAW', packet),
+			this.collectors.run('RAW', packet, this),
 		]); //ignore promise
 		switch (packet.t) {
 			//// Cases where we must obtain the old data before updating

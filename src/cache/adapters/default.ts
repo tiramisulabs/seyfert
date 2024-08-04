@@ -1,10 +1,26 @@
 import type { Adapter } from './types';
 
-export class MemoryAdapter implements Adapter {
+export interface MemoryAdapterOptions<T> {
+	encode(data: any): T;
+	decode(data: T): unknown;
+}
+
+export class MemoryAdapter<T> implements Adapter {
 	isAsync = false;
 
-	readonly storage = new Map<string, string>();
+	readonly storage = new Map<string, T>();
 	readonly relationships = new Map<string, string[]>();
+
+	constructor(
+		public options: MemoryAdapterOptions<T> = {
+			encode(data) {
+				return JSON.stringify(data) as T;
+			},
+			decode(data) {
+				return JSON.parse(data as string);
+			},
+		},
+	) {}
 
 	scan(query: string, keys?: false): any[];
 	scan(query: string, keys: true): string[];
@@ -13,7 +29,7 @@ export class MemoryAdapter implements Adapter {
 		const sq = query.split('.');
 		for (const [key, value] of this.storage.entries()) {
 			if (key.split('.').every((value, i) => (sq[i] === '*' ? !!value : sq[i] === value))) {
-				values.push(keys ? key : JSON.parse(value));
+				values.push(keys ? key : this.options.decode(value));
 			}
 		}
 
@@ -24,24 +40,24 @@ export class MemoryAdapter implements Adapter {
 		return keys
 			.map(x => {
 				const data = this.storage.get(x);
-				return data ? JSON.parse(data) : null;
+				return data ? this.options.decode(data) : null;
 			})
 			.filter(x => x);
 	}
 
 	get(keys: string) {
 		const data = this.storage.get(keys);
-		return data ? JSON.parse(data) : null;
+		return data ? this.options.decode(data) : null;
 	}
 
 	bulkSet(keys: [string, any][]) {
 		for (const [key, value] of keys) {
-			this.storage.set(key, JSON.stringify(value));
+			this.storage.set(key, this.options.encode(value));
 		}
 	}
 
 	set(key: string, data: any) {
-		this.storage.set(key, JSON.stringify(data));
+		this.storage.set(key, this.options.encode(data));
 	}
 
 	bulkPatch(updateOnly: boolean, keys: [string, any][]) {
@@ -52,7 +68,7 @@ export class MemoryAdapter implements Adapter {
 			}
 			this.storage.set(
 				key,
-				Array.isArray(value) ? JSON.stringify(value) : JSON.stringify({ ...(oldData ?? {}), ...value }),
+				Array.isArray(value) ? this.options.encode(value) : this.options.encode({ ...(oldData ?? {}), ...value }),
 			);
 		}
 	}
@@ -64,7 +80,7 @@ export class MemoryAdapter implements Adapter {
 		}
 		this.storage.set(
 			keys,
-			Array.isArray(data) ? JSON.stringify(data) : JSON.stringify({ ...(oldData ?? {}), ...data }),
+			Array.isArray(data) ? this.options.encode(data) : this.options.encode({ ...(oldData ?? {}), ...data }),
 		);
 	}
 

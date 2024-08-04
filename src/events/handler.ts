@@ -111,7 +111,7 @@ export class EventHandler extends BaseHandler {
 
 		await Promise.all([
 			this.runEvent(args[0].t as never, args[1], args[0].d, args[2]),
-			this.client.collectors.run(args[0].t as never, args[0].d as never),
+			this.client.collectors.run(args[0].t as never, args[0].d as never, this.client),
 		]);
 	}
 
@@ -150,15 +150,15 @@ export class EventHandler extends BaseHandler {
 	async runCustom<T extends CustomEventsKeys>(name: T, ...args: Parameters<CustomEvents[T]>) {
 		const Event = this.values[name];
 		if (!Event) {
-			return this.client.collectors.run(name, args as never);
+			return this.client.collectors.run(name, args as never, this.client);
 		}
 		try {
 			if (Event.data.once && Event.fired) {
-				return this.client.collectors.run(name, args as never);
+				return this.client.collectors.run(name, args as never, this.client);
 			}
 			Event.fired = true;
 			this.logger.debug(`executed a custom event [${name}]`, Event.data.once ? 'once' : '');
-			await Promise.all([Event.run(args, this.client), this.client.collectors.run(name, args as never)]);
+			await Promise.all([Event.run(args, this.client), this.client.collectors.run(name, args as never, this.client)]);
 		} catch (e) {
 			await this.onFail(name, e);
 		}
