@@ -1,4 +1,4 @@
-import type { Snowflake, ChannelType, VideoQualityMode, OverwriteType } from '..';
+import type { Snowflake, ChannelType, VideoQualityMode, OverwriteType, Permissions } from '..';
 
 import type {
 	APIChannel,
