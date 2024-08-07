@@ -1,7 +1,8 @@
 import { LimitedCollection } from '../..';
-import { MergeOptions, type MakeRequired } from '../../common';
+import type { MakeRequired } from '../../common';
 import type { Adapter } from './types';
-//TODO: optimizar esto
+
+// TODO: Optimise this adapter
 export interface ResourceLimitedMemoryAdapter {
 	expire?: number;
 	limit?: number;
@@ -37,25 +38,20 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	readonly storage = new Map<string, LimitedCollection<string, T>>();
 	readonly relationships = new Map<string, Map<string, string[]>>();
 
-	options: MakeRequired<LimitedMemoryAdapterOptions<T>, 'default'>;
-
-	constructor(options: LimitedMemoryAdapterOptions<T>) {
-		this.options = MergeOptions(
-			{
-				default: {
-					expire: undefined,
-					limit: Number.POSITIVE_INFINITY,
-				},
-				encode(data) {
-					return JSON.stringify(data) as T;
-				},
-				decode(data) {
-					return JSON.parse(data as string);
-				},
-			} satisfies LimitedMemoryAdapterOptions<T>,
-			options,
-		);
-	}
+	constructor(
+		public options: MakeRequired<LimitedMemoryAdapterOptions<T>, 'default'> = {
+			default: {
+				expire: undefined, // todo make default coherent expiry
+				limit: Number.POSITIVE_INFINITY,
+			},
+			encode(data) {
+				return JSON.stringify(data) as T;
+			},
+			decode(data) {
+				return JSON.parse(data as string);
+			},
+		},
+	) {}
 
 	scan(query: string, keys?: false): any[];
 	scan(query: string, keys: true): string[];
@@ -97,10 +93,10 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 				new LimitedCollection({
 					expire:
 						this.options[key.split('.')[0] as Exclude<keyof LimitedMemoryAdapterOptions<T>, 'decode' | 'encode'>]
-							?.expire ?? this.options.default.expire,
+							?.expire ?? this.options.default?.expire,
 					limit:
 						this.options[key.split('.')[0] as Exclude<keyof LimitedMemoryAdapterOptions<T>, 'decode' | 'encode'>]
-							?.limit ?? this.options.default.limit,
+							?.limit ?? this.options.default?.limit,
 					resetOnDemand: true,
 					onDelete(k) {
 						const relationshipNamespace = key.split('.')[0];
