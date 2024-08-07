@@ -124,7 +124,7 @@ export type GatewayDispatchPayload =
 	| GatewayTypingStartDispatch
 	| GatewayUserUpdateDispatch
 	| GatewayVoiceServerUpdateDispatch
-	| GatewayVoiceStateUpdateDispatchh
+	| GatewayVoiceStateUpdateDispatch
 	| GatewayWebhooksUpdateDispatch;
 
 // #region Dispatch Payloads
@@ -1509,7 +1509,7 @@ export type GatewayUserUpdateDispatchData = APIUser;
 /**
  * https://discord.com/developers/docs/topics/gateway-events#voice-state-update
  */
-export type GatewayVoiceStateUpdateDispatchh = DataPayload<
+export type GatewayVoiceStateUpdateDispatch = DataPayload<
 	GatewayDispatchEvents.VoiceStateUpdate,
 	GatewayVoiceStateUpdateDispatchData
 >;
