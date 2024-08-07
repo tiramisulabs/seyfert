@@ -8,7 +8,7 @@ import type { APIGuildMember } from './guild';
 /**
  * https://discord.com/developers/docs/resources/voice#voice-state-object
  */
-export interface GatewayVoiceState {
+export interface APIVoiceState {
 	/**
 	 * The guild id this voice state is for
 	 */

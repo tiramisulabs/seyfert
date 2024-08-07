@@ -1,14 +1,14 @@
-import type { GatewayVoiceState } from '../../types';
+import type { APIVoiceState } from '../../types';
 import type { ReturnCache } from '../..';
 import { fakePromise } from '../../common';
 import { GuildBasedResource } from './default/guild-based';
 import { Transformers, type VoiceStateStructure } from '../../client/transformers';
 
-export class VoiceStates extends GuildBasedResource<any, GatewayVoiceState> {
+export class VoiceStates extends GuildBasedResource<any, APIVoiceState> {
 	namespace = 'voice_state';
 
 	//@ts-expect-error
-	filter(data: GatewayVoiceState, id: string, guild_id: string) {
+	filter(data: APIVoiceState, id: string, guild_id: string) {
 		return true;
 	}
 
@@ -23,7 +23,7 @@ export class VoiceStates extends GuildBasedResource<any, GatewayVoiceState> {
 		);
 	}
 
-	raw(memberId: string, guildId: string): ReturnCache<GatewayVoiceState | undefined> {
+	raw(memberId: string, guildId: string): ReturnCache<APIVoiceState | undefined> {
 		return super.get(memberId, guildId);
 	}
 
@@ -36,7 +36,7 @@ export class VoiceStates extends GuildBasedResource<any, GatewayVoiceState> {
 		);
 	}
 
-	bulkRaw(ids: string[], guild: string): ReturnCache<GatewayVoiceState[]> {
+	bulkRaw(ids: string[], guild: string): ReturnCache<APIVoiceState[]> {
 		return super.bulk(ids, guild);
 	}
 
@@ -46,9 +46,9 @@ export class VoiceStates extends GuildBasedResource<any, GatewayVoiceState> {
 		);
 	}
 
-	valuesRaw(guildId: string): ReturnCache<GatewayVoiceState[]> {
+	valuesRaw(guildId: string): ReturnCache<APIVoiceState[]> {
 		return super.values(guildId);
 	}
 }
 
-export type VoiceStateResource = Omit<GatewayVoiceState, 'member'> & { guild_id: string };
+export type VoiceStateResource = Omit<APIVoiceState, 'member'> & { guild_id: string };

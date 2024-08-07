@@ -46,7 +46,7 @@ import type {
 	GatewayPresenceUpdateDispatchData,
 	GatewayTypingStartDispatchData,
 	GatewayUserUpdateDispatchData,
-	GatewayVoiceStateUpdateData,
+	APIVoiceStateUpdateData,
 	GatewayVoiceServerUpdateDispatchData,
 	GatewayWebhooksUpdateDispatchData,
 	GatewayInteractionCreateDispatchData,
@@ -141,7 +141,7 @@ export interface Events {
 	[GatewayDispatchEvents.PresenceUpdate]: GatewayPresenceUpdateDispatchData;
 	[GatewayDispatchEvents.TypingStart]: GatewayTypingStartDispatchData;
 	[GatewayDispatchEvents.UserUpdate]: GatewayUserUpdateDispatchData;
-	[GatewayDispatchEvents.VoiceStateUpdate]: GatewayVoiceStateUpdateData;
+	[GatewayDispatchEvents.VoiceStateUpdate]: APIVoiceStateUpdateData;
 	[GatewayDispatchEvents.VoiceServerUpdate]: GatewayVoiceServerUpdateDispatchData;
 	[GatewayDispatchEvents.WebhooksUpdate]: GatewayWebhooksUpdateDispatchData;
 	[GatewayDispatchEvents.InteractionCreate]: GatewayInteractionCreateDispatchData;

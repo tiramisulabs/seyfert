@@ -15,6 +15,7 @@ import type {
 	RESTGetAPIAuditLogResult,
 	RESTGetAPIAutoModerationRuleResult,
 	RESTGetAPIAutoModerationRulesResult,
+	RESTGetAPICurrentUserVoiceState,
 	RESTGetAPIGuildBanResult,
 	RESTGetAPIGuildBansQuery,
 	RESTGetAPIGuildBansResult,
@@ -53,6 +54,7 @@ import type {
 	RESTGetAPIGuildWidgetJSONResult,
 	RESTGetAPIGuildWidgetSettingsResult,
 	RESTGetAPITemplateResult,
+	RESTGetAPIUserVoiceState,
 	RESTPatchAPIAutoModerationRuleJSONBody,
 	RESTPatchAPIAutoModerationRuleResult,
 	RESTPatchAPICurrentGuildMemberJSONBody,
@@ -313,13 +315,15 @@ export interface GuildRoutes {
 					patch(
 						args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIGuildVoiceStateCurrentMemberJSONBody>,
 					): Promise<RESTPatchAPIGuildVoiceStateCurrentMemberResult>;
+					get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPICurrentUserVoiceState>;
 				};
 				(
-					id: string,
+					userId: string,
 				): {
 					patch(
 						args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIGuildVoiceStateUserJSONBody>,
 					): Promise<RESTPatchAPIGuildVoiceStateUserResult>;
+					get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIUserVoiceState>;
 				};
 			};
 			stickers: {

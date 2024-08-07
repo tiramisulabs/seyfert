@@ -681,6 +681,8 @@ export enum MessageType {
 	GuildIncidentAlertModeDisabled,
 	GuildIncidentReportRaid,
 	GuildIncidentReportFalseAlarm,
+	PurchaseNotification = 44,
+	PollResult = 46,
 }
 
 /**

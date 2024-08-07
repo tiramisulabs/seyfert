@@ -2,14 +2,14 @@ import type { UsingClient } from '../';
 import type { VoiceStateResource } from '../cache/resources/voice-states';
 import { type GuildMemberStructure, Transformers } from '../client/transformers';
 import type { ObjectToLower } from '../common';
-import type { GatewayVoiceState } from '../types';
+import type { APIVoiceState } from '../types';
 import { Base } from './extra/Base';
 
 export interface VoiceState extends Base, ObjectToLower<Omit<VoiceStateResource, 'member'>> {}
 
 export class VoiceState extends Base {
 	protected withMember?: GuildMemberStructure;
-	constructor(client: UsingClient, data: GatewayVoiceState) {
+	constructor(client: UsingClient, data: APIVoiceState) {
 		super(client);
 		const { member, ...rest } = data;
 		this.__patchThis(rest);
@@ -66,6 +66,11 @@ export class VoiceState extends Base {
 
 	disconnect(reason?: string) {
 		return this.setChannel(null, reason);
+	}
+
+	async fetch(force = false) {
+		const member = this.withMember ?? (await this.member(force));
+		return this.client.members.voice(this.guildId, member.id, force);
 	}
 
 	async setChannel(channel_id: null | string, reason?: string) {
