@@ -11,7 +11,7 @@ import { PermissionsBitField } from '../../structures/extra/Permissions';
 import type { GuildMemberResolvable } from '../types/resolvables';
 import { BaseShorter } from './base';
 import { Transformers } from '../../client/transformers';
-import { VoiceState } from '../../structures';
+import type { VoiceState } from '../../structures';
 
 export class MemberShorter extends BaseShorter {
 	/**
@@ -232,8 +232,8 @@ export class MemberShorter extends BaseShorter {
 		}
 
 		const state = await this.client.proxy.guilds(guildId)['voice-states'](memberId).get();
-		await this.client.cache.voiceStates?.setIfNI('GuildVoiceStates', memberId, guildId, state);
-		return new VoiceState(this.client, state);
+		await this.client.cache.voiceStates?.set(memberId, guildId, state);
+		return Transformers.VoiceState(this.client, state);
 	}
 
 	/**
@@ -271,7 +271,3 @@ export class MemberShorter extends BaseShorter {
 		return false;
 	}
 }
-
-const me = '@me' as const;
-
-export type MemberOrMe = `#${string}` | typeof me;

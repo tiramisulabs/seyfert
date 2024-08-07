@@ -55,7 +55,7 @@ export type GatewaySendPayload =
 	| GatewayRequestGuildMembers
 	| GatewayResume
 	| GatewayUpdatePresence
-	| APIVoiceStateUpdate;
+	| GatewayVoiceStateUpdate;
 
 export type GatewayReceivePayload =
 	| GatewayDispatchPayload
@@ -124,7 +124,7 @@ export type GatewayDispatchPayload =
 	| GatewayTypingStartDispatch
 	| GatewayUserUpdateDispatch
 	| GatewayVoiceServerUpdateDispatch
-	| APIVoiceStateUpdateDispatch
+	| GatewayVoiceStateUpdateDispatchh
 	| GatewayWebhooksUpdateDispatch;
 
 // #region Dispatch Payloads
@@ -1509,15 +1509,15 @@ export type GatewayUserUpdateDispatchData = APIUser;
 /**
  * https://discord.com/developers/docs/topics/gateway-events#voice-state-update
  */
-export type APIVoiceStateUpdateDispatch = DataPayload<
+export type GatewayVoiceStateUpdateDispatchh = DataPayload<
 	GatewayDispatchEvents.VoiceStateUpdate,
-	APIVoiceStateUpdateDispatchData
+	GatewayVoiceStateUpdateDispatchData
 >;
 
 /**
  * https://discord.com/developers/docs/topics/gateway-events#voice-state-update
  */
-export type APIVoiceStateUpdateDispatchData = APIVoiceState;
+export type GatewayVoiceStateUpdateDispatchData = APIVoiceState;
 
 /**
  * https://discord.com/developers/docs/topics/gateway-events#voice-server-update
@@ -1800,15 +1800,15 @@ export type GatewayRequestGuildMembersData =
 /**
  * https://discord.com/developers/docs/topics/gateway-events#update-voice-state
  */
-export interface APIVoiceStateUpdate {
+export interface GatewayVoiceStateUpdate {
 	op: GatewayOpcodes.VoiceStateUpdate;
-	d: APIVoiceStateUpdateData;
+	d: GatewayVoiceStateUpdateData;
 }
 
 /**
  * https://discord.com/developers/docs/topics/gateway-events#update-voice-state
  */
-export interface APIVoiceStateUpdateData {
+export interface GatewayVoiceStateUpdateData {
 	/**
 	 * ID of the guild
 	 */

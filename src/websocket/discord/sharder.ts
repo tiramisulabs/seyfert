@@ -8,7 +8,7 @@ import {
 } from '../../common';
 import {
 	type GatewayUpdatePresence,
-	type APIVoiceStateUpdate,
+	type GatewayVoiceStateUpdate,
 	type GatewaySendPayload,
 	GatewayOpcodes,
 } from '../../types';
@@ -171,11 +171,15 @@ export class ShardManager extends Map<number, Shard> {
 		});
 	}
 
-	joinVoice(guild_id: string, channel_id: string, options: Pick<APIVoiceStateUpdate['d'], 'self_deaf' | 'self_mute'>) {
+	joinVoice(
+		guild_id: string,
+		channel_id: string,
+		options: Pick<GatewayVoiceStateUpdate['d'], 'self_deaf' | 'self_mute'>,
+	) {
 		const shardId = this.calculateShardId(guild_id);
 		this.debugger?.info(`Shard #${shardId} join voice ${channel_id} in ${guild_id}`);
 
-		return this.send<APIVoiceStateUpdate>(shardId, {
+		return this.send<GatewayVoiceStateUpdate>(shardId, {
 			op: GatewayOpcodes.VoiceStateUpdate,
 			d: {
 				guild_id,
@@ -189,7 +193,7 @@ export class ShardManager extends Map<number, Shard> {
 		const shardId = this.calculateShardId(guild_id);
 		this.debugger?.info(`Shard #${shardId} leave voice in ${guild_id}`);
 
-		return this.send<APIVoiceStateUpdate>(shardId, {
+		return this.send<GatewayVoiceStateUpdate>(shardId, {
 			op: GatewayOpcodes.VoiceStateUpdate,
 			d: {
 				guild_id,
