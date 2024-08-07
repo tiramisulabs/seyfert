@@ -27,8 +27,8 @@ export interface LimitedMemoryAdapterOptions<T> {
 	overwrite?: ResourceLimitedMemoryAdapter;
 	message?: ResourceLimitedMemoryAdapter;
 
-	encode(data: any): T;
-	decode(data: T): unknown;
+	encode?(data: any): T;
+	decode?(data: T): unknown;
 }
 
 export class LimitedMemoryAdapter<T> implements Adapter {
@@ -37,9 +37,9 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	readonly storage = new Map<string, LimitedCollection<string, T>>();
 	readonly relationships = new Map<string, Map<string, string[]>>();
 
-	options: MakeRequired<LimitedMemoryAdapterOptions<T>, 'default'>;
+	options: MakeRequired<LimitedMemoryAdapterOptions<T>, 'default' | 'encode' | 'decode'>;
 
-	constructor(options: LimitedMemoryAdapterOptions<T>) {
+	constructor(options?: LimitedMemoryAdapterOptions<T>) {
 		this.options = MergeOptions(
 			{
 				default: {
