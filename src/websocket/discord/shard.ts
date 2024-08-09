@@ -25,7 +25,7 @@ export interface ShardHeart {
 export class Shard {
 	debugger?: Logger;
 	data: Partial<ShardData> | ShardData = {
-		resumeSeq: null,
+		resume_seq: null,
 	};
 
 	websocket: BaseSocket | null = null;
@@ -95,18 +95,20 @@ export class Shard {
 			return;
 		}
 
+		clearTimeout(this.heart.nodeInterval);
+
 		this.debugger?.debug(`[Shard #${this.id}] Connecting to ${this.currentGatewayURL}`);
 
 		// @ts-expect-error @types/bun cause erros in compile
 		// biome-ignore lint/correctness/noUndeclaredVariables: /\ bun lol
 		this.websocket = new BaseSocket(typeof Bun === 'undefined' ? 'ws' : 'bun', this.currentGatewayURL);
-
+		//@ts-expect-error
 		this.websocket!.onmessage = ({ data }: { data: string | Buffer }) => {
 			this.handleMessage(data);
 		};
 
 		this.websocket!.onclose = (event: { code: number; reason: string }) => this.handleClosed(event);
-
+		//@ts-expect-error
 		this.websocket!.onerror = (event: ErrorEvent) => this.debugger?.error(event);
 
 		this.websocket!.onopen = () => {
@@ -150,14 +152,14 @@ export class Shard {
 	}
 
 	get resumable() {
-		return !!(this.data.resume_gateway_url && this.data.session_id && this.data.resumeSeq !== null);
+		return !!(this.data.resume_gateway_url && this.data.session_id && this.data.resume_seq !== null);
 	}
 
 	async resume() {
 		await this.send(true, {
 			op: GatewayOpcodes.Resume,
 			d: {
-				seq: this.data.resumeSeq!,
+				seq: this.data.resume_seq!,
 				session_id: this.data.session_id!,
 				token: `Bot ${this.options.token}`,
 			},
@@ -181,7 +183,7 @@ export class Shard {
 		this.websocket!.send(
 			JSON.stringify({
 				op: GatewayOpcodes.Heartbeat,
-				d: this.data.resumeSeq ?? null,
+				d: this.data.resume_seq ?? null,
 			}),
 		);
 	}
@@ -199,10 +201,10 @@ export class Shard {
 
 	async onpacket(packet: GatewayReceivePayload) {
 		if (packet.s !== null) {
-			this.data.resumeSeq = packet.s;
+			this.data.resume_seq = packet.s;
 		}
 
-		this.debugger?.debug(`[Shard #${this.id}]`, packet.t ? packet.t : GatewayOpcodes[packet.op], this.data.resumeSeq);
+		this.debugger?.debug(`[Shard #${this.id}]`, packet.t ? packet.t : GatewayOpcodes[packet.op], this.data.resume_seq);
 
 		switch (packet.op) {
 			case GatewayOpcodes.Hello:
@@ -237,7 +239,7 @@ export class Shard {
 					}
 					await this.resume();
 				} else {
-					this.data.resumeSeq = 0;
+					this.data.resume_seq = 0;
 					this.data.session_id = undefined;
 					await this.identify();
 				}
@@ -277,17 +279,22 @@ export class Shard {
 				//Force disconnect, ignore
 				break;
 			case 1000:
+			case GatewayCloseCodes.UnknownOpcode:
+			case GatewayCloseCodes.InvalidSeq:
+			case GatewayCloseCodes.SessionTimedOut:
+				this.data.resume_seq = 0;
+				this.data.session_id = undefined;
+				this.data.resume_gateway_url = undefined;
+				await this.reconnect();
+				break;
 			case 1001:
 			case 1006:
 			case ShardSocketCloseCodes.ZombiedConnection:
 			case GatewayCloseCodes.UnknownError:
-			case GatewayCloseCodes.UnknownOpcode:
 			case GatewayCloseCodes.DecodeError:
 			case GatewayCloseCodes.NotAuthenticated:
 			case GatewayCloseCodes.AlreadyAuthenticated:
-			case GatewayCloseCodes.InvalidSeq:
 			case GatewayCloseCodes.RateLimited:
-			case GatewayCloseCodes.SessionTimedOut:
 				this.debugger?.info(`[Shard #${this.id}] Trying to reconnect`);
 				await this.reconnect();
 				break;

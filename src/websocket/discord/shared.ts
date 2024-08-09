@@ -66,7 +66,7 @@ export interface WorkerManagerOptions extends Omit<ShardManagerOptions, 'handleP
 
 export interface ShardData {
 	/** resume seq to resume connections */
-	resumeSeq: number | null;
+	resume_seq: number | null;
 
 	/**
 	 * resume_gateway_url is the url to resume the connection

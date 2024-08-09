@@ -15,6 +15,10 @@ export class SeyfertWebSocket {
 			reject: (reason?: any) => void;
 		}
 	>();
+	__lastError: null | {
+		code: number;
+		reason: string;
+	} = null;
 
 	constructor(
 		url: string,
@@ -53,6 +57,10 @@ export class SeyfertWebSocket {
 
 			socket.on('readable', () => {
 				this.handleReadable();
+			});
+
+			socket.on('close', () => {
+				this.handleClose();
 			});
 
 			socket.on('error', err => {
@@ -135,13 +143,19 @@ export class SeyfertWebSocket {
 				break;
 			// close
 			case 0x8:
-				{
-					const code = body.readUInt16BE(0);
-					const reason = body.subarray(2).toString();
-					this.onclose({ code, reason });
-				}
+				this.__lastError = {
+					code: body.readUInt16BE(0),
+					reason: body.subarray(2).toString(),
+				};
+				this.socket?.destroy();
 				break;
 		}
+	}
+
+	handleClose() {
+		if (!this.__lastError) return this.connect();
+		this.onclose(this.__lastError);
+		this.__lastError = null;
 	}
 
 	send(data: string) {

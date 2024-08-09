@@ -22,7 +22,8 @@
 	"author": "MARCROCK22",
 	"license": "Apache-2.0",
 	"dependencies": {
-		"magic-bytes.js": "^1.10.0"
+		"magic-bytes.js": "^1.10.0",
+		"ws": "^8.18.0"
 	},
 	"lint-staged": {
 		"*.ts": [
@@ -34,6 +35,7 @@
 		"@commitlint/cli": "^19.3.0",
 		"@commitlint/config-conventional": "^19.2.2",
 		"@types/node": "^20.14.11",
+		"@types/ws": "^8.5.12",
 		"husky": "^9.1.1",
 		"lint-staged": "^15.2.7",
 		"rimraf": "5.0.9",
