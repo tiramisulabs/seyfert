@@ -6,6 +6,7 @@ export class SeyfertWebSocket {
 	socket?: Socket = undefined;
 	hostname: string;
 	path: string;
+	lastError: null | { code: number; reason: string } = null;
 	__stored: Buffer[] = [];
 	__opcode = 0;
 	__promises = new Map<
@@ -58,6 +59,8 @@ export class SeyfertWebSocket {
 			socket.on('error', err => {
 				this.onerror(err);
 			});
+
+			socket.on('close', () => this.handleClose());
 			this.onopen();
 		});
 
@@ -135,13 +138,15 @@ export class SeyfertWebSocket {
 				break;
 			// close
 			case 0x8:
-				{
-					const code = body.readUInt16BE(0);
-					const reason = body.subarray(2).toString();
-					this.onclose({ code, reason });
-				}
+				this.lastError = { code: body.readUInt16BE(0), reason: body.subarray(2).toString() };
 				break;
 		}
+	}
+
+	handleClose() {
+		if (!this.lastError) return this.connect();
+		this.onclose(this.lastError);
+		this.lastError = null;
 	}
 
 	send(data: string) {
@@ -271,6 +276,7 @@ export class SeyfertWebSocket {
 			// Buffer to read
 			let block;
 			while ((block = readable.buffer[blockIndex++])) {
+				// biome-ignore lint/style/useForOf: index needed
 				for (let i = 0; i < block.length; i++) {
 					if (++bitIndex > start) {
 						value *= 256; // shift 8 bits (1 byte) `*= 256 is faster than <<= 8`
@@ -286,6 +292,7 @@ export class SeyfertWebSocket {
 			// readable.buffer is kinda a LinkedList
 			let head: ReadableHeadData | undefined = readable.buffer.head;
 			while (head) {
+				// biome-ignore lint/style/useForOf: index needed
 				for (let i = 0; i < head.data.length; i++) {
 					if (++bitIndex > start) {
 						value *= 256; // shift 8 bits (1 byte) `*= 256 is faster than <<= 8`
