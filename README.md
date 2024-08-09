@@ -1,7 +1,7 @@
 <div align='center'>
   <img src="./assets/icon.png" alt="seyfert" width="200px" />
 
-  **Discord.js and Sapphire are deprecated, use Seyfert instead**
+  **Seyfert is a brand-new Discord framework to take the bot development to a next level**
 
   [![License](https://img.shields.io/npm/l/seyfert?style=flat-square&logo=apache&color=white)](https://github.com/tiramisulabs/seyfert/blob/main/LICENSE)
   [![Version](https://img.shields.io/npm/v/seyfert?color=%23ff0000&logo=npm&style=flat-square)](https://www.npmjs.com/package/seyfert)
