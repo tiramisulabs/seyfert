@@ -214,4 +214,4 @@ export class ChannelShorter extends BaseShorter {
 	}
 }
 
-export type ChannelShorterOptionalParams = Partial<{ guildId: string; reason: string }>;
+export type ChannelShorterOptionalParams = Partial<{ guildId: (string & {}) | '@me'; reason: string }>;

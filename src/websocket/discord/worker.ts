@@ -45,7 +45,7 @@ export type WorkerSendCacheRequest = CreateWorkerMessage<
 			| 'addToRelationship'
 			| 'removeRelationship'
 			| 'removeToRelationship';
-		args: any[];
+		args: unknown[];
 	}
 >;
 export type WorkerSendShardInfo = CreateWorkerMessage<'SHARD_INFO', WorkerShardInfo & { nonce: string }>;
@@ -61,21 +61,15 @@ export type WorkerSendApiRequest = CreateWorkerMessage<
 		nonce: string;
 	}
 >;
-export type WorkerExecuteEval = CreateWorkerMessage<
-	'EXECUTE_EVAL',
-	{
-		func: string;
-		nonce: string;
-		toWorkerId: number;
-	}
->;
+
 export type WorkerSendEvalResponse = CreateWorkerMessage<
 	'EVAL_RESPONSE',
 	{
-		response: any;
+		response: unknown;
 		nonce: string;
 	}
 >;
+
 export type WorkerSendEval = CreateWorkerMessage<
 	'EVAL',
 	{
@@ -94,7 +88,6 @@ export type WorkerMessage =
 	| WorkerSendInfo
 	| WorkerReady
 	| WorkerSendApiRequest
-	| WorkerExecuteEval
 	| WorkerSendEvalResponse
 	| WorkerSendEval
 	| WorkerStart;

@@ -19,11 +19,9 @@ export class SeyfertWebSocket {
 		code: number;
 		reason: string;
 	} = null;
+	__closeCalled?: boolean;
 
-	constructor(
-		url: string,
-		public compress = true,
-	) {
+	constructor(url: string) {
 		const urlParts = new URL(url);
 		this.hostname = urlParts.hostname || '';
 		this.path = `${urlParts.pathname}${urlParts.search || ''}`;
@@ -55,18 +53,17 @@ export class SeyfertWebSocket {
 			}
 			this.socket = socket;
 
-			socket.on('readable', () => {
-				this.handleReadable();
-			});
+			socket.on('readable', this.handleReadable.bind(this));
 
-			socket.on('close', () => {
-				this.handleClose();
-			});
+			socket.on('close', this.handleClose.bind(this));
 
-			socket.on('error', err => {
-				this.onerror(err);
-			});
+			socket.on('error', err => this.onerror(err));
+
 			this.onopen();
+		});
+
+		req.on('close', () => {
+			req.removeAllListeners();
 		});
 
 		req.end();
@@ -74,12 +71,12 @@ export class SeyfertWebSocket {
 
 	handleReadable() {
 		// Keep reading until no data, this is useful when two payloads merges.
-		while (this.socket?.readableLength) {
+		while (this.socket!.readableLength > 0) {
 			// Read length without consuming the buffer
 			let length = this.readBytes(1, 1) & 127;
 			const slice = length === 126 ? 4 : length === 127 ? 10 : 2;
 			// Check if frame/data is complete
-			if (this.socket.readableLength < slice) return; // Wait to next cycle if not
+			if (this.socket!.readableLength < slice) return; // Wait to next cycle if not
 			if (length > 125) {
 				// https://datatracker.ietf.org/doc/html/rfc6455#section-5.2
 				// If length is 126/127, read extended payload length instead
@@ -87,7 +84,7 @@ export class SeyfertWebSocket {
 				length = this.readBytes(2, slice - 2);
 			}
 			// Read the frame, ignore data next to it, leave it to next `while` cycle
-			const frame = this.socket.read(slice + length) as Buffer | null;
+			const frame = this.socket!.read(slice + length) as Buffer | null;
 			if (!frame) return;
 			// Get fin (0 | 1)
 			const fin = frame[0] >> 7;
@@ -147,12 +144,15 @@ export class SeyfertWebSocket {
 					code: body.readUInt16BE(0),
 					reason: body.subarray(2).toString(),
 				};
-				this.socket?.destroy();
 				break;
 		}
 	}
 
 	handleClose() {
+		this.socket?.removeAllListeners();
+		this.socket?.destroy();
+		this.socket = undefined;
+		if (this.__closeCalled) return;
 		if (!this.__lastError) return this.connect();
 		this.onclose(this.__lastError);
 		this.__lastError = null;
@@ -198,6 +198,7 @@ export class SeyfertWebSocket {
 	onerror(_err: unknown) {}
 
 	close(code: number, reason: string) {
+		this.__closeCalled = true;
 		// alloc payload length
 		const buffer = Buffer.alloc(2 + Buffer.byteLength(reason));
 		// gateway close code
@@ -285,6 +286,7 @@ export class SeyfertWebSocket {
 			// Buffer to read
 			let block;
 			while ((block = readable.buffer[blockIndex++])) {
+				// biome-ignore lint/style/useForOf: why we use biome
 				for (let i = 0; i < block.length; i++) {
 					if (++bitIndex > start) {
 						value *= 256; // shift 8 bits (1 byte) `*= 256 is faster than <<= 8`
@@ -300,6 +302,7 @@ export class SeyfertWebSocket {
 			// readable.buffer is kinda a LinkedList
 			let head: ReadableHeadData | undefined = readable.buffer.head;
 			while (head) {
+				// biome-ignore lint/style/useForOf: why we use biome
 				for (let i = 0; i < head.data.length; i++) {
 					if (++bitIndex > start) {
 						value *= 256; // shift 8 bits (1 byte) `*= 256 is faster than <<= 8`

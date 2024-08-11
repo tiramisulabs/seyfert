@@ -102,13 +102,13 @@ export class Shard {
 		// @ts-expect-error @types/bun cause erros in compile
 		// biome-ignore lint/correctness/noUndeclaredVariables: /\ bun lol
 		this.websocket = new BaseSocket(typeof Bun === 'undefined' ? 'ws' : 'bun', this.currentGatewayURL);
-		//@ts-expect-error
+
 		this.websocket!.onmessage = ({ data }: { data: string | Buffer }) => {
 			this.handleMessage(data);
 		};
 
 		this.websocket!.onclose = (event: { code: number; reason: string }) => this.handleClosed(event);
-		//@ts-expect-error
+
 		this.websocket!.onerror = (event: ErrorEvent) => this.debugger?.error(event);
 
 		this.websocket!.onopen = () => {

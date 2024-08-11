@@ -224,7 +224,7 @@ export class MemberShorter extends BaseShorter {
 
 	async voice(guildId: string, memberId: '@me', force?: boolean): Promise<VoiceStateStructure>;
 	async voice(guildId: string, memberId: string, force?: boolean): Promise<VoiceStateStructure>;
-	async voice(guildId: string, memberId: string | '@me', force = false) {
+	async voice(guildId: string, memberId: (string & {}) | '@me', force = false) {
 		if (!force) {
 			const state = await this.client.cache.voiceStates?.get(memberId, guildId);
 			if (state) return state;

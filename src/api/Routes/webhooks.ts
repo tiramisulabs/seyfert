@@ -65,7 +65,7 @@ export interface WebhookRoutes {
 					>,
 				): Promise<RESTPostAPIWebhookWithTokenGitHubResult | RESTPostAPIWebhookWithTokenGitHubWaitResult>;
 			};
-			messages: (id: string | '@original') => {
+			messages: (id: (string & {}) | '@original') => {
 				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIWebhookWithTokenMessageResult>;
 				patch(
 					args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIWebhookWithTokenMessageJSONBody>,
