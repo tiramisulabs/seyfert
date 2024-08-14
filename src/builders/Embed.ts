@@ -83,6 +83,28 @@ export class Embed {
 	}
 
 	/**
+	 * Removes a field from the embed.
+	 * @param index - The index of the field to remove.
+	 * @param count - The number of fields to remove.
+	 * @param fields - The fields to remove.
+	 * @returns The updated Embed instance.
+	 * @example
+	 * - to remove a fast field by index:
+	 * ```ts
+	 * embed.spliceFields(0, 1);
+	 * ```
+	 * @example
+	 * - to remove a last field by index:
+	 * ```ts
+	 * embed.spliceFields(-1, 1);
+	 * ```
+	 */
+	spliceFields(index: number, count: number, ...fields: APIEmbedField[]): this {
+		this.data.fields!.splice(index, count, ...fields);
+		return this;
+	}
+	
+	/**
 	 * Sets the footer of the embed.
 	 * @param footer - The footer information.
 	 * @returns The updated Embed instance.
