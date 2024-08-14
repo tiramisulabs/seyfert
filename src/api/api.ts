@@ -1,4 +1,3 @@
-import { filetypemime } from 'magic-bytes.js';
 import { randomUUID } from 'node:crypto';
 import { Logger, delay, lazyLoadPackage } from '../common';
 import { snowflakeToTimestamp } from '../structures/extra/functions';
@@ -8,7 +7,6 @@ import { CDNRouter, type ProxyRequestMethod } from './Router';
 import { Bucket } from './bucket';
 import {
 	DefaultUserAgent,
-	OverwrittenMimeTypes,
 	type ApiHandlerInternalOptions,
 	type ApiHandlerOptions,
 	type ApiRequestOptions,
@@ -350,15 +348,7 @@ export class ApiHandler {
 				const fileKey = file.key ?? `files[${index}]`;
 
 				if (isBufferLike(file.data)) {
-					let contentType = file.contentType;
-
-					if (!contentType) {
-						const mime = filetypemime(Buffer.from(file.data))[0];
-
-						contentType =
-							OverwrittenMimeTypes[mime as keyof typeof OverwrittenMimeTypes] ?? mime ?? 'application/octet-stream';
-					}
-
+					const contentType = file.contentType;
 					formData.append(fileKey, new Blob([file.data], { type: contentType }), file.name);
 				} else {
 					formData.append(fileKey, new Blob([`${file.data}`], { type: file.contentType }), file.name);

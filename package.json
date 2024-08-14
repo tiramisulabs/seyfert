@@ -10,20 +10,16 @@
 		"deps/**"
 	],
 	"scripts": {
-		"build": "npm run clean && tsc --outDir ./lib",
+		"build": "tsc --outDir ./lib",
 		"prepublishOnly": "npm run build",
 		"prepare": "npm run build && husky",
 		"lint": "biome lint --write ./src",
 		"format": "biome format --write ./src",
-		"clean": "rimraf ./lib",
 		"check-h": "biome check --write ./src",
 		"check": "biome check --write --no-errors-on-unmatched ./src"
 	},
 	"author": "MARCROCK22",
 	"license": "Apache-2.0",
-	"dependencies": {
-		"magic-bytes.js": "^1.10.0"
-	},
 	"lint-staged": {
 		"*.ts": [
 			"biome check --write"
@@ -36,7 +32,6 @@
 		"@types/node": "^20.14.11",
 		"husky": "^9.1.1",
 		"lint-staged": "^15.2.7",
-		"rimraf": "5.0.9",
 		"typescript": "^5.5.3"
 	},
 	"optionalDependencies": {

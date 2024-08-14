@@ -1,7 +1,5 @@
 import { type APIInteractionResponse, InteractionResponseType, InteractionType, type APIInteraction } from '../types';
-import { filetypemime } from 'magic-bytes.js';
 import type { HttpRequest, HttpResponse } from 'uWebSockets.js';
-import { OverwrittenMimeTypes } from '../api';
 import { isBufferLike } from '../api/utils/utils';
 import { MergeOptions, isCloudfareWorker, type DeepPartial } from '../common';
 import type { BaseClientOptions, InternalRuntimeConfigHTTP, StartOptions } from './base';
@@ -171,16 +169,7 @@ export class HttpClient extends BaseClient {
 							for (const [index, file] of files.entries()) {
 								const fileKey = file.key ?? `files[${index}]`;
 								if (isBufferLike(file.data)) {
-									let contentType = file.contentType;
-
-									if (!contentType) {
-										const mime = filetypemime(Buffer.from(file.data))[0];
-
-										contentType =
-											OverwrittenMimeTypes[mime as keyof typeof OverwrittenMimeTypes] ??
-											mime ??
-											'application/octet-stream';
-									}
+									const contentType = file.contentType;
 									response.append(fileKey, new Blob([file.data], { type: contentType }), file.name);
 								} else {
 									response.append(fileKey, new Blob([`${file.data}`], { type: file.contentType }), file.name);
@@ -227,16 +216,7 @@ export class HttpClient extends BaseClient {
 								for (const [index, file] of files.entries()) {
 									const fileKey = file.key ?? `files[${index}]`;
 									if (isBufferLike(file.data)) {
-										let contentType = file.contentType;
-
-										if (!contentType) {
-											const mime = filetypemime(Buffer.from(file.data))[0];
-
-											contentType =
-												OverwrittenMimeTypes[mime as keyof typeof OverwrittenMimeTypes] ??
-												mime ??
-												'application/octet-stream';
-										}
+										const contentType = file.contentType;
 										response.append(fileKey, new Blob([file.data], { type: contentType }), file.name);
 									} else {
 										response.append(fileKey, new Blob([`${file.data}`], { type: file.contentType }), file.name);
