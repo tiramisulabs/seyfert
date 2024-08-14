@@ -1,7 +1,7 @@
 import type { APIAttachment, RESTAPIAttachment } from '../types';
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
-import { type UsingClient, throwError, type RawFile } from '..';
+import type { UsingClient, RawFile } from '..';
 import type { ImageResolvable, ObjectToLower } from '../common';
 import { Base } from '../structures/extra/Base';
 import { promises } from 'node:fs';
@@ -183,14 +183,14 @@ export async function resolveAttachmentData(
 }> {
 	if (data instanceof AttachmentBuilder) {
 		if (!data.data.resolvable)
-			return throwError('The attachment type has been expressed as attachment but cannot be resolved as one.');
+			throw new Error('The attachment type has been expressed as attachment but cannot be resolved as one.');
 		return { data: data.data.resolvable! };
 	}
 
 	switch (type) {
 		case 'url': {
 			if (!/^https?:\/\//.test(data as string))
-				return throwError(
+				throw new Error(
 					`The attachment type has been expressed as ${type.toUpperCase()} but cannot be resolved as one.`,
 				);
 			const res = await fetch(data as string);
@@ -200,7 +200,7 @@ export async function resolveAttachmentData(
 			const file = path.resolve(data as string);
 			const stats = await promises.stat(file);
 			if (!stats.isFile())
-				return throwError(
+				throw new Error(
 					`The attachment type has been expressed as ${type.toUpperCase()} but cannot be resolved as one.`,
 				);
 			return { data: await promises.readFile(file) };
@@ -213,12 +213,10 @@ export async function resolveAttachmentData(
 				for await (const resource of data as unknown as AsyncIterable<ArrayBuffer>) buffers.push(Buffer.from(resource));
 				return { data: Buffer.concat(buffers) };
 			}
-			return throwError(
-				`The attachment type has been expressed as ${type.toUpperCase()} but cannot be resolved as one.`,
-			);
+			throw new Error(`The attachment type has been expressed as ${type.toUpperCase()} but cannot be resolved as one.`);
 		}
 		default: {
-			return throwError(`The attachment type has been expressed as ${type} but cannot be resolved as one.`);
+			throw new Error(`The attachment type has been expressed as ${type} but cannot be resolved as one.`);
 		}
 	}
 }
@@ -244,7 +242,7 @@ export async function resolveImage(image: ImageResolvable): Promise<string> {
 			data: { type, resolvable },
 		} = image;
 		if (type && resolvable) return resolveBase64((await resolveAttachmentData(resolvable, type)).data as Buffer);
-		return throwError(
+		throw new Error(
 			`The attachment type has been expressed as ${(type ?? 'Attachment').toUpperCase()} but cannot be resolved as one.`,
 		);
 	}

@@ -12,7 +12,6 @@ import {
 	ComponentType,
 	SelectMenuDefaultValueType,
 } from '../types';
-import { throwError } from '..';
 import type { EmojiResolvable, RestOrArray, ToClass } from '../common';
 import type {
 	ChannelSelectMenuInteraction,
@@ -368,7 +367,7 @@ export class StringSelectOption {
 	 */
 	setEmoji(emoji: EmojiResolvable) {
 		const resolve = resolvePartialEmoji(emoji);
-		if (!resolve) return throwError('Invalid Emoji');
+		if (!resolve) throw new Error('Invalid Emoji');
 		this.data.emoji = resolve as APIMessageComponentEmoji;
 		return this;
 	}

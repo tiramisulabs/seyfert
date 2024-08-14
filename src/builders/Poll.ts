@@ -1,6 +1,5 @@
 import { type APIPollMedia, PollLayoutType, type RESTAPIPollCreate } from '../types';
 import type { DeepPartial, EmojiResolvable, RestOrArray } from '../common';
-import { throwError } from '..';
 import { resolvePartialEmoji } from '../structures/extra/functions';
 
 export class PollBuilder {
@@ -45,7 +44,7 @@ export class PollBuilder {
 	private resolvedPollMedia(data: PollMedia) {
 		if (!data.emoji) return { text: data.text };
 		const resolve = resolvePartialEmoji(data.emoji);
-		if (!resolve) return throwError('Invalid Emoji');
+		if (!resolve) throw new Error('Invalid Emoji');
 		return { text: data.text, emoji: resolve };
 	}
 }

@@ -28,10 +28,6 @@ export * from './structures';
 export * from './client';
 ///
 
-export function throwError(msg: string): never {
-	throw new Error(msg);
-}
-
 /**
  * Creates an event with the specified data and run function.
  *
