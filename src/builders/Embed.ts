@@ -101,12 +101,12 @@ export class Embed {
 	 */
 	spliceFields(index: number, count: number, ...fields: APIEmbedField[]): this {
 		if (this.data.fields) {
-			this.data.fields.splice(index, count,...fields);
+			this.data.fields.splice(index, count, ...fields);
 		}
 
 		return this;
 	}
-	
+
 	/**
 	 * Sets the footer of the embed.
 	 * @param footer - The footer information.
