@@ -100,7 +100,10 @@ export class Embed {
 	 * ```
 	 */
 	spliceFields(index: number, count: number, ...fields: APIEmbedField[]): this {
-		this.data.fields!.splice(index, count, ...fields);
+		if (this.data.fields) {
+			this.data.fields.splice(index, count,...fields);
+		}
+
 		return this;
 	}
 	
