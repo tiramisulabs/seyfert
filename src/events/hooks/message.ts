@@ -1,5 +1,4 @@
 import type {
-	APIMessage,
 	GatewayMessageCreateDispatchData,
 	GatewayMessageDeleteBulkDispatchData,
 	GatewayMessageDeleteDispatchData,
@@ -10,7 +9,7 @@ import type {
 	GatewayMessageReactionRemoveEmojiDispatchData,
 	GatewayMessageUpdateDispatchData,
 } from '../../types';
-import { type MakeRequired, type PartialClass, toCamelCase, type ObjectToLower } from '../../common';
+import { type OmitInsert, toCamelCase, type ObjectToLower } from '../../common';
 import type { UsingClient } from '../../commands';
 import { type MessageStructure, Transformers } from '../../client/transformers';
 
@@ -54,27 +53,8 @@ export const MESSAGE_REACTION_REMOVE_EMOJI = (
 export const MESSAGE_UPDATE = async (
 	self: UsingClient,
 	data: GatewayMessageUpdateDispatchData,
-): Promise<
-	[
-		message: MakeRequired<
-			PartialClass<MessageStructure>, //sus
-			| 'id'
-			| 'channelId'
-			| 'createdAt'
-			| 'createdTimestamp'
-			| 'rest'
-			| 'cache'
-			| 'api'
-			| 'client'
-			| 'mentions'
-			| 'url'
-			| 'user'
-			| 'author'
-		>,
-		old: undefined | MessageStructure,
-	]
-> => {
-	return [Transformers.Message(self, data as APIMessage), await self.cache.messages?.get(data.id)];
+): Promise<[message: OmitInsert<MessageStructure, 'tts', { tts: false }>, old: undefined | MessageStructure]> => {
+	return [Transformers.Message(self, data) as any, await self.cache.messages?.get(data.id)];
 };
 
 export const MESSAGE_POLL_VOTE_REMOVE = (_: UsingClient, data: GatewayMessagePollVoteDispatchData) => {
