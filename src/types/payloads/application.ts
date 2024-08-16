@@ -110,7 +110,6 @@ export interface APIApplication {
 	approximate_guild_count?: number;
 	/**
 	 * Approximate count of users that have installed the app
-
 	 */
 	approximate_user_install_count?: number;
 	/**
