@@ -51,7 +51,7 @@ export class BaseGuildMember extends DiscordBase {
 	}
 
 	guild(force = false) {
-		return this.client.guilds.fetch(this.id, force);
+		return this.client.guilds.fetch(this.guildId, force);
 	}
 
 	fetch(force = false) {

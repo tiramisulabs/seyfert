@@ -18,7 +18,7 @@ export class Sticker extends DiscordBase {
 
 	async guild(force = false) {
 		if (!this.guildId) return;
-		return this.client.guilds.fetch(this.id, force);
+		return this.client.guilds.fetch(this.guildId, force);
 	}
 
 	async edit(body: RESTPatchAPIGuildStickerJSONBody, reason?: string) {
