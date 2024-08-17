@@ -261,7 +261,7 @@ export class SeyfertWebSocket {
 	 * @returns
 	 */
 
-	private readBytes(start: number, bits: number) {
+	private readBytes(start: number, bits: number): number {
 		// @ts-expect-error this is private, thanks nodejs
 		const readable = this.socket._readableState as
 			| {
@@ -286,7 +286,6 @@ export class SeyfertWebSocket {
 			// Buffer to read
 			let block;
 			while ((block = readable.buffer[blockIndex++])) {
-				// biome-ignore lint/style/useForOf: why we use biome
 				for (let i = 0; i < block.length; i++) {
 					if (++bitIndex > start) {
 						value *= 256; // shift 8 bits (1 byte) `*= 256 is faster than <<= 8`
@@ -302,7 +301,6 @@ export class SeyfertWebSocket {
 			// readable.buffer is kinda a LinkedList
 			let head: ReadableHeadData | undefined = readable.buffer.head;
 			while (head) {
-				// biome-ignore lint/style/useForOf: why we use biome
 				for (let i = 0; i < head.data.length; i++) {
 					if (++bitIndex > start) {
 						value *= 256; // shift 8 bits (1 byte) `*= 256 is faster than <<= 8`
@@ -317,7 +315,8 @@ export class SeyfertWebSocket {
 				head = head.next;
 			}
 		}
-		throw new Error('Unexpected error, not enough bytes');
+		console.log(readable, 'Unexpected error, not enough bytes');
+		return 0;
 	}
 }
 

@@ -310,7 +310,7 @@ export interface TextBaseGuildChannel
 @mix(MessagesMethods)
 export class TextBaseGuildChannel extends BaseGuildChannel {}
 
-export default function channelFrom(data: APIChannelBase<ChannelType>, client: UsingClient): AllChannels {
+export function channelFrom(data: APIChannelBase<ChannelType>, client: UsingClient): AllChannels {
 	switch (data.type) {
 		case ChannelType.GuildStageVoice:
 			return Transformers.StageChannel(client, data);

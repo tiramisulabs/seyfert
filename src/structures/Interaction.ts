@@ -54,8 +54,7 @@ import type {
 	MessageWebhookCreateBodyRequest,
 	ModalCreateBodyRequest,
 } from '../common';
-import type { AllChannels } from './';
-import channelFrom from './channels';
+import { channelFrom, type AllChannels } from './';
 import { DiscordBase } from './extra/DiscordBase';
 import { PermissionsBitField } from './extra/Permissions';
 import {
@@ -78,7 +77,6 @@ export type ReplyInteractionBody =
 	  }
 	| Exclude<RESTPostAPIInteractionCallbackJSONBody, APIInteractionResponsePong>;
 
-/** @internal */
 export type __InternalReplyFunction = (_: { body: APIInteractionResponse; files?: RawFile[] }) => Promise<any>;
 
 export interface BaseInteraction
