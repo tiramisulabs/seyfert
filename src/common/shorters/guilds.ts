@@ -12,8 +12,7 @@ import type {
 	RESTPostAPIGuildsJSONBody,
 } from '../../types';
 import { resolveFiles } from '../../builders';
-import { BaseChannel, Guild, GuildMember, type CreateStickerBodyRequest } from '../../structures';
-import channelFrom from '../../structures/channels';
+import { BaseChannel, channelFrom, Guild, GuildMember, type CreateStickerBodyRequest } from '../../structures';
 import { BaseShorter } from './base';
 import { type GuildStructure, Transformers } from '../../client/transformers';
 

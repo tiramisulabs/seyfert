@@ -161,17 +161,14 @@ export class BaseCommand {
 				const option = this.options!.find(x => x.name === i.name) as __CommandOption;
 				const value =
 					resolver.getHoisted(i.name)?.value !== undefined
-						? await new Promise(
-								// biome-ignore lint/suspicious/noAsyncPromiseExecutor: yes
-								async (res, rej) => {
-									try {
-										(await option.value?.({ context: ctx, value: resolver.getValue(i.name) } as never, res, rej)) ||
-											res(resolver.getValue(i.name));
-									} catch (e) {
-										rej(e);
-									}
-								},
-							)
+						? await new Promise(async (res, rej) => {
+								try {
+									(await option.value?.({ context: ctx, value: resolver.getValue(i.name) } as never, res, rej)) ||
+										res(resolver.getValue(i.name));
+								} catch (e) {
+									rej(e);
+								}
+							})
 						: undefined;
 				if (value === undefined) {
 					if (option.required) {
@@ -226,8 +223,6 @@ export class BaseCommand {
 				if (!running) {
 					return;
 				}
-				// biome-ignore lint/style/noArguments: yes
-				// biome-ignore lint/correctness/noUndeclaredVariables: xd
 				if (arguments.length) {
 					// @ts-expect-error
 					context[global ? 'globalMetadata' : 'metadata'][middlewares[index]] = obj;

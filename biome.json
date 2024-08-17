@@ -4,17 +4,21 @@
 		"enabled": true,
 		"rules": {
 			"all": true,
+			"security": {
+				"noGlobalEval": "off"
+			},
 			"suspicious": {
 				"noExplicitAny": "off",
 				"noAssignInExpressions": "off",
 				"noUnsafeDeclarationMerging": "off",
-				"noRedeclare": "off",
 				"noEmptyInterface": "off",
 				"noConfusingVoidType": "off",
 				"noImplicitAnyLet": "off",
 				"noEmptyBlockStatements": "off",
 				"useAwait": "off",
-				"noConsoleLog": "off"
+				"noConsoleLog": "off",
+				"noAsyncPromiseExecutor": "off",
+				"noThenProperty": "off"
 			},
 			"style": {
 				"noNonNullAssertion": "off",
@@ -25,11 +29,12 @@
 				"useNamingConvention": "off",
 				"noParameterProperties": "off",
 				"useFilenamingConvention": "off",
-				"noDefaultExport": "off",
 				"noNamespaceImport": "off",
 				"useSingleCaseStatement": "off",
 				"useBlockStatements": "off",
-				"useEnumInitializers": "off"
+				"useEnumInitializers": "off",
+				"noArguments": "off",
+				"useForOf": "off"
 			},
 			"correctness": {
 				"noUnusedVariables": "off",
@@ -43,9 +48,7 @@
 				"noBannedTypes": "off",
 				"noForEach": "off",
 				"noUselessConstructor": "off",
-				"noThisInStatic": "off",
 				"noExcessiveCognitiveComplexity": "off",
-				"noVoid": "off",
 				"noStaticOnlyClass": "off"
 			},
 			"a11y": {

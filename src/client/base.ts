@@ -282,7 +282,7 @@ export class BaseClient {
 		if (!this.handleCommand) this.handleCommand = new HandleCommand(this);
 	}
 
-	protected async onPacket(..._packet: unknown[]) {
+	protected async onPacket(..._packet: unknown[]): Promise<any> {
 		throw new Error('Function not implemented');
 	}
 
@@ -471,7 +471,6 @@ export interface StartOptions {
 	httpConnection: {
 		publicKey: string;
 		port: number;
-		useUWS: boolean;
 	};
 	token: string;
 }

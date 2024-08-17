@@ -7,10 +7,10 @@ import type {
 	RESTPostAPIChannelThreadsJSONBody,
 	RESTPostAPIGuildForumThreadsJSONBody,
 } from '../../types';
-import channelFrom from '../../structures/channels';
 import { BaseShorter } from './base';
 import type { MakeRequired, When } from '../types/util';
 import type { ThreadChannelStructure } from '../../client/transformers';
+import { channelFrom } from '../../structures';
 
 export class ThreadShorter extends BaseShorter {
 	/**

@@ -1,7 +1,6 @@
 import type { APIChannel } from '../../types';
 import { fakePromise } from '../../common';
-import type { AllChannels } from '../../structures';
-import channelFrom from '../../structures/channels';
+import { channelFrom, type AllChannels } from '../../structures';
 import type { ReturnCache } from '../index';
 import { GuildRelatedResource } from './default/guild-related';
 

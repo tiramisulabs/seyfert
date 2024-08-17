@@ -6,8 +6,7 @@ import type {
 	RESTPostAPIGuildForumThreadsJSONBody,
 	APIGuildChannel,
 } from '../../types';
-import { BaseChannel, type GuildRole, type GuildMember } from '../../structures';
-import channelFrom, { type AllChannels } from '../../structures/channels';
+import { BaseChannel, type GuildRole, type GuildMember, type AllChannels, channelFrom } from '../../structures';
 import { PermissionsBitField } from '../../structures/extra/Permissions';
 import { BaseShorter } from './base';
 import { MergeOptions } from '../it/utils';

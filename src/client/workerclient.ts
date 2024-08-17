@@ -298,7 +298,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				{
 					let result;
 					try {
-						// biome-ignore lint/security/noGlobalEval: yes
 						result = await eval(`
 					(${data.func})(this)
 					`);

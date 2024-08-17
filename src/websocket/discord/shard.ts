@@ -103,15 +103,15 @@ export class Shard {
 		// biome-ignore lint/correctness/noUndeclaredVariables: /\ bun lol
 		this.websocket = new BaseSocket(typeof Bun === 'undefined' ? 'ws' : 'bun', this.currentGatewayURL);
 
-		this.websocket!.onmessage = ({ data }: { data: string | Buffer }) => {
+		this.websocket.onmessage = ({ data }: { data: string | Buffer }) => {
 			this.handleMessage(data);
 		};
 
-		this.websocket!.onclose = (event: { code: number; reason: string }) => this.handleClosed(event);
+		this.websocket.onclose = (event: { code: number; reason: string }) => this.handleClosed(event);
 
-		this.websocket!.onerror = (event: ErrorEvent) => this.debugger?.error(event);
+		this.websocket.onerror = (event: ErrorEvent) => this.debugger?.error(event);
 
-		this.websocket!.onopen = () => {
+		this.websocket.onopen = () => {
 			this.heart.ack = true;
 		};
 	}

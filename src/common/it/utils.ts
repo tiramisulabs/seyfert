@@ -247,7 +247,6 @@ export async function magicImport(path: string) {
 	try {
 		return require(path);
 	} catch {
-		// biome-ignore lint/security/noGlobalEval: modules import broke
 		return eval('((path) => import(`file:///${path}?update=${Date.now()}`))')(path.split('\\').join('\\\\'));
 	}
 }
@@ -261,7 +260,6 @@ export function fakePromise<T = unknown | Promise<unknown>>(
 } {
 	if (value instanceof Promise) return value as any;
 	return {
-		// biome-ignore lint/suspicious/noThenProperty: magic
 		then: callback => callback(value as Awaited<T>),
 	};
 }

@@ -23,7 +23,7 @@
 		"noUnusedParameters": true,
 		"noImplicitReturns": true,
 		"noFallthroughCasesInSwitch": true,
-		"skipLibCheck": false,
+		"skipLibCheck": true,
 		"noErrorTruncation": true,
 		"outDir": "./lib",
 		"stripInternal": true,

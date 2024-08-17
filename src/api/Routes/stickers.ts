@@ -1,4 +1,4 @@
-import type { RESTGetAPIStickerResult, RESTGetNitroStickerPacksResult } from '../../types';
+import type { RESTGetAPIStickerResult, RESTGetStickerPacksResult } from '../../types';
 import type { ProxyRequestMethod } from '../Router';
 import type { RestArguments } from '../api';
 
@@ -7,6 +7,6 @@ export interface StickerRoutes {
 		get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIStickerResult>;
 	};
 	'sticker-packs': {
-		get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetNitroStickerPacksResult>;
+		get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetStickerPacksResult>;
 	};
 }
