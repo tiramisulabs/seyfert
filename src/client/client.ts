@@ -190,7 +190,6 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						this.botId = packet.d.user.id;
 						this.applicationId = packet.d.application.id;
 						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
-						await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
 						if (
 							!(
 								this.__handleGuilds?.size &&
@@ -203,6 +202,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 							delete this.__handleGuilds;
 						}
 						this.debugger?.debug(`#${shardId}[${packet.d.user.username}](${this.botId}) is online...`);
+						await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
 						break;
 					default:
 						await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
