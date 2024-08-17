@@ -8,10 +8,8 @@ import {
 	type APIUser,
 	ApplicationCommandOptionType,
 } from '../types';
-import { Attachment } from '..';
 import type { MakeRequired } from '../common';
-import type { AllChannels } from '../structures';
-import channelFrom from '../structures/channels';
+import { channelFrom, type AllChannels } from '../structures';
 import type { Command, CommandAutocompleteOption, CommandOption, SubCommand } from './applications/chat';
 import type { UsingClient } from './applications/shared';
 import {
@@ -21,6 +19,7 @@ import {
 	Transformers,
 	type UserStructure,
 } from '../client/transformers';
+import { Attachment } from '../builders';
 
 export type ContextOptionsResolved = {
 	members?: Record<string, APIGuildMember | Omit<APIGuildMember, 'user'> | APIInteractionGuildMember>;

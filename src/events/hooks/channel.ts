@@ -6,8 +6,7 @@ import type {
 } from '../../types';
 
 import { toCamelCase } from '../../common';
-import type { AllChannels } from '../../structures';
-import channelFrom from '../../structures/channels';
+import { channelFrom, type AllChannels } from '../../structures';
 import type { UsingClient } from '../../commands';
 
 export const CHANNEL_CREATE = (self: UsingClient, data: GatewayChannelCreateDispatchData) => {

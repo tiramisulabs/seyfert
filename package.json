@@ -1,76 +1,73 @@
 {
-  "name": "seyfert",
-  "version": "1.5.0",
-  "description": "The most advanced framework for discord bots",
-  "main": "./lib/index.js",
-  "module": "./lib/index.js",
-  "types": "./lib/index.d.ts",
-  "files": [
-    "lib/**"
-  ],
-  "scripts": {
-    "build": "tsc --outDir ./lib",
-    "prepublishOnly": "npm run build",
-    "prepare": "npm run build && husky",
-    "lint": "biome lint --write ./src",
-    "format": "biome format --write ./src",
-    "check-h": "biome check --write ./src",
-    "check": "biome check --write --no-errors-on-unmatched ./src"
-  },
-  "author": "MARCROCK22",
-  "license": "Apache-2.0",
-  "lint-staged": {
-    "*.ts": [
-      "biome check --write"
-    ]
-  },
-  "devDependencies": {
-    "@biomejs/biome": "1.8.3",
-    "@commitlint/cli": "^19.4.0",
-    "@commitlint/config-conventional": "^19.2.2",
-    "husky": "^9.1.4",
-    "lint-staged": "^15.2.9",
-    "typescript": "^5.5.4"
-  },
-  "optionalDependencies": {
-    "chokidar": "^3.6.0",
-    "ioredis": "^5.4.1"
-  },
-  "homepage": "https://seyfert.dev",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/tiramisulabs/seyfert.git"
-  },
-  "bugs": {
-    "url": "https://github.com/tiramisulabs/seyfert"
-  },
-  "keywords": [
-    "api",
-    "discord",
-    "bots",
-    "typescript",
-    "botdev"
-  ],
-  "publishConfig": {
-    "access": "public"
-  },
-  "maintainers": [
-    {
-      "name": "socram03",
-      "url": "https://github.com/socram03"
-    }
-  ],
-  "contributors": [
-    {
-      "name": "Free 公園",
-      "url": "https://github.com/FreeAoi"
-    },
-    {
-      "name": "David",
-      "url": "https://github.com/Drylozu"
-    }
-  ],
-  "trustedDependencies": [
-    "@biomejs/biome"
-  ]
+	"name": "seyfert",
+	"version": "1.5.0",
+	"description": "The most advanced framework for discord bots",
+	"main": "./lib/index.js",
+	"module": "./lib/index.js",
+	"types": "./lib/index.d.ts",
+	"files": [
+		"lib/**"
+	],
+	"scripts": {
+		"build": "tsc --outDir ./lib",
+		"prepublishOnly": "npm run build",
+		"prepare": "npm run build && husky",
+		"lint": "biome lint --write ./src",
+		"format": "biome format --write ./src",
+		"check-h": "biome check --write ./src",
+		"check": "biome check --write --no-errors-on-unmatched ./src"
+	},
+	"author": "MARCROCK22",
+	"license": "Apache-2.0",
+	"lint-staged": {
+		"*.ts": [
+			"biome check --write"
+		]
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.8.3",
+		"@commitlint/cli": "^19.4.0",
+		"@commitlint/config-conventional": "^19.2.2",
+		"husky": "^9.1.4",
+		"lint-staged": "^15.2.9",
+		"typescript": "^5.5.4"
+	},
+	"optionalDependencies": {
+		"chokidar": "^3.6.0",
+		"ioredis": "^5.4.1"
+	},
+	"homepage": "https://seyfert.dev",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/tiramisulabs/seyfert.git"
+	},
+	"bugs": {
+		"url": "https://github.com/tiramisulabs/seyfert"
+	},
+	"keywords": [
+		"api",
+		"discord",
+		"bots",
+		"typescript",
+		"botdev"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"maintainers": [
+		{
+			"name": "socram03",
+			"url": "https://github.com/socram03"
+		}
+	],
+	"contributors": [
+		{
+			"name": "Free 公園",
+			"url": "https://github.com/FreeAoi"
+		},
+		{
+			"name": "David",
+			"url": "https://github.com/Drylozu"
+		}
+	]
 }
