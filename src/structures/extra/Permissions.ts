@@ -6,6 +6,11 @@ export class PermissionsBitField extends BitField<typeof PermissionFlagsBits> {
 	Flags = PermissionFlagsBits;
 	static All = Object.values(PermissionFlagsBits).reduce((acc, value) => acc | value, 0n);
 
+	constructor(bitfields?: BitFieldResolvable<typeof PermissionFlagsBits>) {
+		super();
+		if (bitfields) this.bit = this.resolve(bitfields);
+	}
+
 	declare keys: (bits?: BitFieldResolvable<typeof PermissionFlagsBits>[]) => PermissionStrings;
 
 	has(...bits: BitFieldResolvable<typeof PermissionFlagsBits>[]) {

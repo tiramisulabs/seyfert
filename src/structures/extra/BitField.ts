@@ -4,10 +4,10 @@ export class BitField<T extends object> {
 	static None = 0n;
 	Flags: Record<string, bigint> = {};
 
-	private bit: bigint;
+	protected bit: bigint = BitField.None;
 
 	constructor(bitfields?: BitFieldResolvable<T>) {
-		this.bit = this.resolve(bitfields);
+		if (bitfields) this.bit = this.resolve(bitfields);
 	}
 
 	set bits(bits: BitFieldResolvable<T>) {
