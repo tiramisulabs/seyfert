@@ -22,6 +22,8 @@ export class MemoryAdapter<T> implements Adapter {
 		},
 	) {}
 
+	start() {}
+
 	scan(query: string, keys?: false): any[];
 	scan(query: string, keys: true): string[];
 	scan(query: string, keys = false) {

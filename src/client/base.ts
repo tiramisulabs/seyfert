@@ -260,7 +260,7 @@ export class BaseClient {
 		await this.loadCommands(options.commandsDir);
 		await this.loadComponents(options.componentsDir);
 
-		const { token: tokenRC } = await this.getRC();
+		const { token: tokenRC, debug } = await this.getRC();
 		const token = options?.token ?? tokenRC;
 
 		if (!this.rest) {
@@ -269,17 +269,21 @@ export class BaseClient {
 				token,
 				baseUrl: 'api/v10',
 				domain: 'https://discord.com',
-				debug: (await this.getRC()).debug,
+				debug,
 			});
 		}
 
 		if (this.cache) {
 			this.cache.__setClient(this);
 		} else {
-			this.cache = new Cache(0, new MemoryAdapter(), [], this);
+			this.cache = new Cache(0, new MemoryAdapter(), {}, this);
 		}
 
 		if (!this.handleCommand) this.handleCommand = new HandleCommand(this);
+
+		// The reason of this method is so for adapters that need to connect somewhere, have time to connect.
+		// Or maybe clear cache?
+		await this.cache.adapter.start();
 	}
 
 	protected async onPacket(..._packet: unknown[]): Promise<any> {

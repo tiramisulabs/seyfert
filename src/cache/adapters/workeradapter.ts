@@ -15,6 +15,8 @@ export class WorkerAdapter implements Adapter {
 		if (worker_threads?.parentPort) parentPort = worker_threads.parentPort;
 	}
 
+	start() {}
+
 	postMessage(body: any): unknown {
 		if (parentPort) return parentPort.postMessage(body);
 		return process.send!(body);
