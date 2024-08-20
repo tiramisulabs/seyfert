@@ -175,7 +175,7 @@ export class Cache {
 			this.bans = new Bans(this, client);
 		}
 
-		if (!this.disabledCache.onPacket) delete this.onPacket;
+		if (this.disabledCache.onPacket) delete this.onPacket;
 	}
 
 	/** @internal */
