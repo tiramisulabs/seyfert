@@ -128,54 +128,54 @@ export class Cache {
 		client?: UsingClient,
 	) {
 		// non-guild based
-		if (this.disabledCache.users) {
+		if (!this.disabledCache.users) {
 			this.users = new Users(this, client);
 		}
-		if (this.disabledCache.guilds) {
+		if (!this.disabledCache.guilds) {
 			this.guilds = new Guilds(this, client);
 		}
 
 		// guild related
-		if (this.disabledCache.members) {
+		if (!this.disabledCache.members) {
 			this.members = new Members(this, client);
 		}
-		if (this.disabledCache.voiceStates) {
+		if (!this.disabledCache.voiceStates) {
 			this.voiceStates = new VoiceStates(this, client);
 		}
 
 		// guild based
-		if (this.disabledCache.roles) {
+		if (!this.disabledCache.roles) {
 			this.roles = new Roles(this, client);
 		}
-		if (this.disabledCache.overwrites) {
+		if (!this.disabledCache.overwrites) {
 			this.overwrites = new Overwrites(this, client);
 		}
-		if (this.disabledCache.channels) {
+		if (!this.disabledCache.channels) {
 			this.channels = new Channels(this, client);
 		}
-		if (this.disabledCache.emojis) {
+		if (!this.disabledCache.emojis) {
 			this.emojis = new Emojis(this, client);
 		}
-		if (this.disabledCache.stickers) {
+		if (!this.disabledCache.stickers) {
 			this.stickers = new Stickers(this, client);
 		}
-		if (this.disabledCache.presences) {
+		if (!this.disabledCache.presences) {
 			this.presences = new Presences(this, client);
 		}
-		if (this.disabledCache.threads) {
+		if (!this.disabledCache.threads) {
 			this.threads = new Threads(this, client);
 		}
-		if (this.disabledCache.stageInstances) {
+		if (!this.disabledCache.stageInstances) {
 			this.stageInstances = new StageInstances(this, client);
 		}
-		if (this.disabledCache.messages) {
+		if (!this.disabledCache.messages) {
 			this.messages = new Messages(this, client);
 		}
-		if (this.disabledCache.bans) {
+		if (!this.disabledCache.bans) {
 			this.bans = new Bans(this, client);
 		}
 
-		if (this.disabledCache.onPacket) delete this.onPacket;
+		if (!this.disabledCache.onPacket) delete this.onPacket;
 	}
 
 	/** @internal */
