@@ -381,7 +381,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					this.__handleGuilds?.delete(packet.d.id);
 					if (!this.__handleGuilds?.size && [...this.shards.values()].every(shard => shard.data.session_id)) {
 						delete this.__handleGuilds;
-						await this.cache.onPacket(packet);
+						await this.cache.onPacket?.(packet);
 						this.postMessage({
 							type: 'WORKER_READY',
 							workerId: this.workerId,
@@ -389,7 +389,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						return this.events?.runEvent('WORKER_READY', this, this.me, -1);
 					}
 					if (!this.__handleGuilds?.size) delete this.__handleGuilds;
-					return this.cache.onPacket(packet);
+					return this.cache.onPacket?.(packet);
 				}
 				await this.events?.execute(packet.t, packet, this, shardId);
 				break;

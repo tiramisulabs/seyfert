@@ -3,6 +3,8 @@ import type { Awaitable } from '../../common';
 export interface Adapter {
 	isAsync: boolean;
 
+	start(): Awaitable<void>;
+
 	scan(query: string, keys?: false): Awaitable<any[]>;
 	scan(query: string, keys: true): Awaitable<string[]>;
 	scan(query: string, keys?: boolean): Awaitable<(any | string)[]>;

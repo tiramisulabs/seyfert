@@ -56,6 +56,9 @@ export type GuildRelated =
 // ClientBased
 export type NonGuildBased = 'users' | 'guilds';
 
+// ClientBased
+export type SeyfertBased = 'onPacket';
+
 type ReturnManagers = {
 	[K in NonGuildBased | GuildBased | GuildRelated]: NonNullable<Awaited<ReturnType<NonNullable<Cache[K]>['get']>>>;
 };
@@ -91,6 +94,10 @@ export type CachedEvents =
 	| 'STAGE_INSTANCE_UPDATE'
 	| 'STAGE_INSTANCE_DELETE';
 
+export type DisabledCache = {
+	[P in NonGuildBased | GuildBased | GuildRelated | SeyfertBased]?: boolean;
+};
+
 export class Cache {
 	// non-guild based
 	users?: Users;
@@ -117,56 +124,58 @@ export class Cache {
 	constructor(
 		public intents: number,
 		public adapter: Adapter,
-		readonly disabledCache: (NonGuildBased | GuildBased | GuildRelated)[] = [],
+		readonly disabledCache: DisabledCache = {},
 		client?: UsingClient,
 	) {
 		// non-guild based
-		if (!this.disabledCache.includes('users')) {
+		if (this.disabledCache.users) {
 			this.users = new Users(this, client);
 		}
-		if (!this.disabledCache.includes('guilds')) {
+		if (this.disabledCache.guilds) {
 			this.guilds = new Guilds(this, client);
 		}
 
 		// guild related
-		if (!this.disabledCache.includes('members')) {
+		if (this.disabledCache.members) {
 			this.members = new Members(this, client);
 		}
-		if (!this.disabledCache.includes('voiceStates')) {
+		if (this.disabledCache.voiceStates) {
 			this.voiceStates = new VoiceStates(this, client);
 		}
 
 		// guild based
-		if (!this.disabledCache.includes('roles')) {
+		if (this.disabledCache.roles) {
 			this.roles = new Roles(this, client);
 		}
-		if (!this.disabledCache.includes('overwrites')) {
+		if (this.disabledCache.overwrites) {
 			this.overwrites = new Overwrites(this, client);
 		}
-		if (!this.disabledCache.includes('channels')) {
+		if (this.disabledCache.channels) {
 			this.channels = new Channels(this, client);
 		}
-		if (!this.disabledCache.includes('emojis')) {
+		if (this.disabledCache.emojis) {
 			this.emojis = new Emojis(this, client);
 		}
-		if (!this.disabledCache.includes('stickers')) {
+		if (this.disabledCache.stickers) {
 			this.stickers = new Stickers(this, client);
 		}
-		if (!this.disabledCache.includes('presences')) {
+		if (this.disabledCache.presences) {
 			this.presences = new Presences(this, client);
 		}
-		if (!this.disabledCache.includes('threads')) {
+		if (this.disabledCache.threads) {
 			this.threads = new Threads(this, client);
 		}
-		if (!this.disabledCache.includes('stageInstances')) {
+		if (this.disabledCache.stageInstances) {
 			this.stageInstances = new StageInstances(this, client);
 		}
-		if (!this.disabledCache.includes('messages')) {
+		if (this.disabledCache.messages) {
 			this.messages = new Messages(this, client);
 		}
-		if (!this.disabledCache.includes('bans')) {
+		if (this.disabledCache.bans) {
 			this.bans = new Bans(this, client);
 		}
+
+		if (this.disabledCache.onPacket) delete this.onPacket;
 	}
 
 	/** @internal */
@@ -492,7 +501,7 @@ export class Cache {
 		await this.adapter.bulkSet(allData);
 	}
 
-	async onPacket(event: GatewayDispatchPayload) {
+	async onPacket?(event: GatewayDispatchPayload) {
 		switch (event.t) {
 			case 'READY':
 				await this.users?.set(event.d.user.id, event.d.user);
