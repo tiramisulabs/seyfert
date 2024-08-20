@@ -60,7 +60,8 @@ export type TypeClass<InstanceType = {}, StaticType = {}> = (abstract new (
 export const mix =
 	(...ingredients: TypeClass[]) =>
 	(decoratedClass: any) => {
-		const mixedClass = Mixin(...ingredients.concat([decoratedClass]));
+		ingredients.unshift(decoratedClass);
+		const mixedClass = Mixin(...ingredients);
 
 		Object.defineProperty(mixedClass, 'name', {
 			value: decoratedClass.name,
