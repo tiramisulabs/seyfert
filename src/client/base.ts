@@ -100,7 +100,7 @@ export class BaseClient {
 	options: BaseClientOptions;
 
 	/**@internal */
-	static _seyfertConfig?: InternalRuntimeConfigHTTP | InternalRuntimeConfig;
+	static _seyfertCfWorkerConfig?: InternalRuntimeConfigHTTP | InternalRuntimeConfig;
 
 	constructor(options?: BaseClientOptions) {
 		this.options = MergeOptions(
@@ -384,7 +384,7 @@ export class BaseClient {
 	async getRC<
 		T extends InternalRuntimeConfigHTTP | InternalRuntimeConfig = InternalRuntimeConfigHTTP | InternalRuntimeConfig,
 	>() {
-		const seyfertConfig = (BaseClient._seyfertConfig ||
+		const seyfertConfig = (BaseClient._seyfertCfWorkerConfig ||
 			(await this.options?.getRC?.()) ||
 			(await Promise.any(
 				['.js', '.mjs', '.cjs', '.ts', '.mts', '.cts'].map(ext =>
@@ -406,8 +406,6 @@ export class BaseClient {
 			base: join(process.cwd(), locations.base),
 			output: join(process.cwd(), locations.output),
 		};
-
-		BaseClient._seyfertConfig = seyfertConfig;
 
 		return obj;
 	}
