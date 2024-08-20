@@ -315,7 +315,6 @@ export class SeyfertWebSocket {
 				head = head.next;
 			}
 		}
-		console.log(readable, 'Unexpected error, not enough bytes');
 		return 0;
 	}
 }
