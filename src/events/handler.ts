@@ -7,6 +7,7 @@ import type {
 import type { Client, WorkerClient } from '../client';
 import {
 	BaseHandler,
+	type CamelCase,
 	ReplaceRegex,
 	isCloudfareWorker,
 	magicImport,
@@ -15,12 +16,21 @@ import {
 } from '../common';
 import type { ClientEvents } from '../events/hooks';
 import * as RawEvents from '../events/hooks';
-import type { ClientEvent, CustomEvents, CustomEventsKeys, ClientNameEvents } from './event';
+import type { ClientEvent, CustomEvents, CustomEventsKeys, ClientNameEvents, EventContext } from './event';
 import type { FileLoaded } from '../commands/handler';
 
 export type EventValue = MakeRequired<ClientEvent, '__filePath'> & { fired?: boolean };
-
 export type GatewayEvents = Uppercase<SnakeCase<keyof ClientEvents>>;
+
+type ResolveEventParams<T extends CustomEventsKeys | GatewayEvents> = T extends CustomEventsKeys
+	? Parameters<CustomEvents[T]>
+	: EventContext<{ data: { name: CamelCase<T> } }>;
+
+export type EventValues = {
+	[K in CustomEventsKeys | GatewayEvents]: Omit<EventValue, 'run'> & {
+		run(...args: ResolveEventParams<K>): any;
+	};
+};
 
 export class EventHandler extends BaseHandler {
 	constructor(protected client: Client | WorkerClient) {
@@ -31,7 +41,7 @@ export class EventHandler extends BaseHandler {
 		this.logger.warn('<Client>.events.onFail', err, event);
 	protected filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
 
-	values: Partial<Record<GatewayEvents | CustomEventsKeys, EventValue>> = {};
+	values: Partial<EventValues> = {};
 
 	discordEvents = Object.keys(RawEvents).map(x => ReplaceRegex.camel(x.toLowerCase())) as ClientNameEvents[];
 
@@ -147,18 +157,26 @@ export class EventHandler extends BaseHandler {
 		}
 	}
 
-	async runCustom<T extends CustomEventsKeys>(name: T, ...args: Parameters<CustomEvents[T]>) {
+	async runCustom<T extends CustomEventsKeys>(name: T, ...args: EventValues[T]) {
 		const Event = this.values[name];
 		if (!Event) {
-			return this.client.collectors.run(name, args as never, this.client);
+			// @ts-expect-error working with non-existent types is hard
+			return this.client.collectors.run(name, ...args, this.client);
 		}
 		try {
 			if (Event.data.once && Event.fired) {
-				return this.client.collectors.run(name, args as never, this.client);
+				// @ts-expect-error working with non-existent types is hard
+				return this.client.collectors.run(name, ...args, this.client);
 			}
 			Event.fired = true;
 			this.logger.debug(`executed a custom event [${name}]`, Event.data.once ? 'once' : '');
-			await Promise.all([Event.run(args, this.client), this.client.collectors.run(name, args as never, this.client)]);
+
+			await Promise.all([
+				// @ts-expect-error working with non-existent types is hard
+				Event.run(...args, this.client),
+				// @ts-expect-error working with non-existent types is hard
+				this.client.collectors.run(name, ...args, this.client),
+			]);
 		} catch (e) {
 			await this.onFail(name, e);
 		}
