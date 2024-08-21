@@ -367,6 +367,7 @@ export enum GatewayDispatchEvents {
 	ThreadUpdate = 'THREAD_UPDATE',
 	TypingStart = 'TYPING_START',
 	UserUpdate = 'USER_UPDATE',
+	VoiceChannelEffectSend = 'VOICE_CHANNEL_EFFECT_SEND',
 	VoiceServerUpdate = 'VOICE_SERVER_UPDATE',
 	VoiceStateUpdate = 'VOICE_STATE_UPDATE',
 	WebhooksUpdate = 'WEBHOOKS_UPDATE',
@@ -834,4 +835,14 @@ export enum GuildMemberFlags {
 export enum OverwriteType {
 	Role,
 	Member,
+}
+
+/**
+ * https://discord.com/developers/docs/topics/gateway-events#voice-channel-effect-send-animation-types
+ */
+export enum AnimationTypes {
+	/** A fun animation, sent by a Nitro subscriber */
+	PREMIUM = 0,
+	/** The standard animation */
+	BASIC,
 }

@@ -58,6 +58,7 @@ import type {
 	APIChannel,
 	APIAutoModerationRule,
 	APIEntitlement,
+	GatewayVoiceChannelEffectSendDispachData,
 } from '../types';
 import { GatewayDispatchEvents } from '../types';
 
@@ -141,6 +142,7 @@ export interface Events {
 	[GatewayDispatchEvents.PresenceUpdate]: GatewayPresenceUpdateDispatchData;
 	[GatewayDispatchEvents.TypingStart]: GatewayTypingStartDispatchData;
 	[GatewayDispatchEvents.UserUpdate]: GatewayUserUpdateDispatchData;
+	[GatewayDispatchEvents.VoiceChannelEffectSend]: GatewayVoiceChannelEffectSendDispachData;
 	[GatewayDispatchEvents.VoiceStateUpdate]: GatewayVoiceStateUpdateData;
 	[GatewayDispatchEvents.VoiceServerUpdate]: GatewayVoiceServerUpdateDispatchData;
 	[GatewayDispatchEvents.WebhooksUpdate]: GatewayWebhooksUpdateDispatchData;
