@@ -19,17 +19,12 @@
 	},
 	"author": "MARCROCK22",
 	"license": "Apache-2.0",
-	"lint-staged": {
-		"*.ts": [
-			"biome check --write"
-		]
-	},
 	"devDependencies": {
 		"@biomejs/biome": "1.8.3",
 		"@commitlint/cli": "^19.4.0",
 		"@commitlint/config-conventional": "^19.2.2",
-		"@types/node": "^22.4.1",
-		"husky": "^9.1.4",
+		"@types/node": "^22.5.0",
+		"husky": "^9.1.5",
 		"lint-staged": "^15.2.9",
 		"typescript": "^5.5.4"
 	},
