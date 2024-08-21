@@ -32,9 +32,10 @@ import type {
 	AutoModerationRuleTriggerType,
 	APIAuditLogEntry,
 	APIEntitlement,
+	APIPartialEmoji,
 } from './payloads/index';
 import type { ReactionType } from './rest/index';
-import type { Nullable } from './utils';
+import type { AnimationTypes, Nullable } from './utils';
 
 /**
  * https://discord.com/developers/docs/topics/gateway#connecting-gateway-url-query-string-params
@@ -1495,6 +1496,47 @@ export type GatewayUserUpdateDispatch = DataPayload<GatewayDispatchEvents.UserUp
  * https://discord.com/developers/docs/topics/gateway-events#user-update
  */
 export type GatewayUserUpdateDispatchData = APIUser;
+
+/**
+ * https://discord.com/developers/docs/topics/gateway-events#voice-channel-effect-send
+ */
+export type GatewayVoiceChannelEffectSendDispach = DataPayload<
+	GatewayDispatchEvents.VoiceChannelEffectSend,
+	GatewayVoiceChannelEffectSendDispachData
+>;
+
+/**
+ * https://discord.com/developers/docs/topics/gateway-events#voice-channel-effect-send-voice-channel-effect-send-event-fields
+ */
+export type GatewayVoiceChannelEffectSendDispachData =
+	| GatewayVoiceChannelEffectSendSoundboard
+	| GatewayVoiceChannelEffectSendReaction;
+
+export type _GatewayVoiceChannelEffectSendDispachData = {
+	/**	ID of the channel the effect was sent in */
+	channel_id: string;
+	/** ID of the guild the effect was sent in */
+	guild_id: string;
+	/** ID of the user who sent the effect */
+	user_id: string;
+	/** The emoji sent, for emoji reaction and soundboard effects */
+	emoji?: APIPartialEmoji | null;
+	/** The type of emoji animation, for emoji reaction and soundboard effects */
+	animation_type?: AnimationTypes | null;
+	/** The ID of the emoji animation, for emoji reaction and soundboard effects */
+	animation_id?: number;
+	/** The ID of the soundboard sound, for soundboard effects */
+	sound_id: string | number;
+	/** The volume of the soundboard sound, from 0 to 1, for soundboard effects */
+	sound_volume?: number;
+};
+
+export type GatewayVoiceChannelEffectSendReaction = Omit<
+	_GatewayVoiceChannelEffectSendDispachData,
+	'sound_id' | 'sound_volume'
+>;
+
+export type GatewayVoiceChannelEffectSendSoundboard = _GatewayVoiceChannelEffectSendDispachData;
 
 /**
  * https://discord.com/developers/docs/topics/gateway-events#voice-state-update
