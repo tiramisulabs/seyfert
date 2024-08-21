@@ -1,4 +1,8 @@
-import type { GatewayVoiceServerUpdateDispatchData, GatewayVoiceStateUpdateDispatchData } from '../../types';
+import type {
+	GatewayVoiceChannelEffectSendDispachData,
+	GatewayVoiceServerUpdateDispatchData,
+	GatewayVoiceStateUpdateDispatchData,
+} from '../../types';
 import { toCamelCase } from '../../common';
 import type { UsingClient } from '../../commands';
 import { Transformers, type VoiceStateStructure } from '../../client/transformers';
@@ -13,4 +17,8 @@ export const VOICE_STATE_UPDATE = async (
 ): Promise<[state: VoiceStateStructure] | [state: VoiceStateStructure, old?: VoiceStateStructure]> => {
 	if (!data.guild_id) return [Transformers.VoiceState(self, data)];
 	return [Transformers.VoiceState(self, data), await self.cache.voiceStates?.get(data.user_id, data.guild_id)];
+};
+
+export const VOICE_CHANNEL_EFFECT_SEND = (_self: UsingClient, data: GatewayVoiceChannelEffectSendDispachData) => {
+	return toCamelCase(data);
 };
