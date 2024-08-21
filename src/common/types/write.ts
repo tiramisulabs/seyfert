@@ -7,6 +7,7 @@ import type {
 	APIModalInteractionResponse,
 	RESTAPIPollCreate,
 	RESTPatchAPIChannelMessageJSONBody,
+	RESTPatchAPIInteractionOriginalResponseJSONBody,
 	RESTPatchAPIWebhookWithTokenMessageJSONBody,
 	RESTPostAPIChannelMessageJSONBody,
 	RESTPostAPIWebhookWithTokenJSONBody,
@@ -59,9 +60,9 @@ export type MessageWebhookUpdateBodyRequest = OmitInsert<
 >;
 
 export type InteractionMessageUpdateBodyRequest = OmitInsert<
-	RESTPatchAPIWebhookWithTokenMessageJSONBody,
-	'components' | 'embeds',
-	ResolverProps
+	RESTPatchAPIInteractionOriginalResponseJSONBody,
+	'components' | 'embeds' | 'poll',
+	ResolverProps & Pick<SendResolverProps, 'poll'>
 >;
 
 export type ComponentInteractionMessageUpdate = OmitInsert<
