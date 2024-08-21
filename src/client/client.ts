@@ -157,6 +157,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				}
 				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
 				break;
+			case 'GUILD_DELETE':
 			case 'GUILD_CREATE': {
 				if (this.__handleGuilds?.has(packet.d.id)) {
 					this.__handleGuilds?.delete(packet.d.id);
