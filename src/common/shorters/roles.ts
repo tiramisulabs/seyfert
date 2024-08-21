@@ -21,6 +21,22 @@ export class RoleShorter extends BaseShorter {
 		return Transformers.GuildRole(this.client, res, guildId);
 	}
 
+	async fetch(guildId: string, roleId: string, force = false) {
+		const role = await this.raw(guildId, roleId, force);
+		return Transformers.GuildRole(this.client, role, guildId);
+	}
+
+	async raw(guildId: string, roleId: string, force = false) {
+		let role: APIRole | undefined;
+		if (!force) {
+			role = await this.client.cache.roles?.raw(roleId);
+			if (role) return role;
+		}
+		role = await this.client.proxy.guilds(guildId).roles(roleId).get();
+		await this.client.cache.roles?.set(roleId, guildId, role);
+		return role;
+	}
+
 	/**
 	 * Retrieves a list of roles in the guild.
 	 * @param guildId The ID of the guild.

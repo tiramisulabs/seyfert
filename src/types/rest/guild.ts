@@ -638,6 +638,11 @@ export interface RESTPostAPIGuildBulkBanResult {
 export type RESTGetAPIGuildRolesResult = APIRole[];
 
 /**
+ * https://discord.com/developers/docs/resources/guild#get-guild-role
+ */
+export type RESTGetAPIGuildRoleResult = APIRole;
+
+/**
  * https://discord.com/developers/docs/resources/guild#create-guild-role
  */
 export interface RESTPostAPIGuildRoleJSONBody {

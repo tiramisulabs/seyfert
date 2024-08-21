@@ -34,6 +34,7 @@ import type {
 	RESTGetAPIGuildPruneCountResult,
 	RESTGetAPIGuildQuery,
 	RESTGetAPIGuildResult,
+	RESTGetAPIGuildRoleResult,
 	RESTGetAPIGuildRolesResult,
 	RESTGetAPIGuildScheduledEventQuery,
 	RESTGetAPIGuildScheduledEventResult,
@@ -219,6 +220,7 @@ export interface GuildRoutes {
 				(
 					id: string,
 				): {
+					get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildRoleResult>;
 					patch(
 						args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIGuildRoleJSONBody>,
 					): Promise<RESTPatchAPIGuildRoleResult>;

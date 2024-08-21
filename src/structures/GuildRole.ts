@@ -27,6 +27,10 @@ export class GuildRole extends DiscordBase {
 		return this.client.guilds.fetch(this.guildId, force);
 	}
 
+	fetch(force = false) {
+		return this.client.roles.fetch(this.guildId, this.id, force);
+	}
+
 	edit(body: RESTPatchAPIGuildRoleJSONBody, reason?: string) {
 		return this.client.roles.create(this.guildId, body, reason);
 	}
