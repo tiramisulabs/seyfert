@@ -18,17 +18,32 @@ import type { ClientEvents } from '../events/hooks';
 import * as RawEvents from '../events/hooks';
 import type { ClientEvent, CustomEvents, CustomEventsKeys, ClientNameEvents, EventContext } from './event';
 import type { FileLoaded } from '../commands/handler';
+import type { UsingClient } from '../commands';
 
 export type EventValue = MakeRequired<ClientEvent, '__filePath'> & { fired?: boolean };
 export type GatewayEvents = Uppercase<SnakeCase<keyof ClientEvents>>;
 
-type ResolveEventParams<T extends CustomEventsKeys | GatewayEvents> = T extends CustomEventsKeys
-	? Parameters<CustomEvents[T]>
-	: EventContext<{ data: { name: CamelCase<T> } }>;
+export type ResolveEventParams<T extends ClientNameEvents | CustomEventsKeys | GatewayEvents> =
+	T extends CustomEventsKeys
+		? [...Parameters<CustomEvents[T]>, UsingClient]
+		: T extends GatewayEvents
+			? EventContext<{ data: { name: CamelCase<T> } }>
+			: T extends ClientNameEvents
+				? EventContext<{ data: { name: T } }>
+				: never;
+
+export type ResolveEventRunParams<T extends ClientNameEvents | CustomEventsKeys | GatewayEvents> =
+	T extends CustomEventsKeys
+		? Parameters<CustomEvents[T]>
+		: T extends GatewayEvents
+			? EventContext<{ data: { name: CamelCase<T> } }>
+			: T extends ClientNameEvents
+				? EventContext<{ data: { name: T } }>
+				: never;
 
 export type EventValues = {
 	[K in CustomEventsKeys | GatewayEvents]: Omit<EventValue, 'run'> & {
-		run(...args: ResolveEventParams<K>): any;
+		run(...args: ResolveEventRunParams<K>): any;
 	};
 };
 
@@ -157,16 +172,16 @@ export class EventHandler extends BaseHandler {
 		}
 	}
 
-	async runCustom<T extends CustomEventsKeys>(name: T, ...args: EventValues[T]) {
+	async runCustom<T extends CustomEventsKeys>(name: T, ...args: ResolveEventRunParams<T>) {
 		const Event = this.values[name];
 		if (!Event) {
 			// @ts-expect-error working with non-existent types is hard
-			return this.client.collectors.run(name, ...args, this.client);
+			return this.client.collectors.run(name, args, this.client);
 		}
 		try {
 			if (Event.data.once && Event.fired) {
 				// @ts-expect-error working with non-existent types is hard
-				return this.client.collectors.run(name, ...args, this.client);
+				return this.client.collectors.run(name, args, this.client);
 			}
 			Event.fired = true;
 			this.logger.debug(`executed a custom event [${name}]`, Event.data.once ? 'once' : '');
@@ -175,7 +190,7 @@ export class EventHandler extends BaseHandler {
 				// @ts-expect-error working with non-existent types is hard
 				Event.run(...args, this.client),
 				// @ts-expect-error working with non-existent types is hard
-				this.client.collectors.run(name, ...args, this.client),
+				this.client.collectors.run(name, args, this.client),
 			]);
 		} catch (e) {
 			await this.onFail(name, e);
