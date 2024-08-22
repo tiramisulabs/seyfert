@@ -21,7 +21,7 @@ import type {
 	StringSelectMenuInteraction,
 	UserSelectMenuInteraction,
 } from '../structures';
-import { resolvePartialEmoji } from '../structures/extra/functions';
+import { resolvePartialEmoji } from '../common/it/utils';
 import { BaseComponentBuilder, type OptionValuesLength } from './Base';
 
 export type BuilderSelectMenus =

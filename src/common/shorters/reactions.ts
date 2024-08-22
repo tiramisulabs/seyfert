@@ -1,5 +1,5 @@
 import type { RESTGetAPIChannelMessageReactionUsersQuery } from '../../types';
-import { encodeEmoji, resolveEmoji } from '../../structures/extra/functions';
+import { encodeEmoji, resolveEmoji } from '../../common/it/utils';
 import type { EmojiResolvable } from '../types/resolvables';
 import { BaseShorter } from './base';
 import { Transformers, type UserStructure } from '../../client/transformers';

@@ -15,7 +15,7 @@ import type { ActionRowMessageComponents } from '../components';
 import { MessageActionRowComponent } from '../components/ActionRow';
 import type { MessageWebhookMethodEditParams, MessageWebhookMethodWriteParams } from './Webhook';
 import { DiscordBase } from './extra/DiscordBase';
-import { messageLink } from './extra/functions';
+import { Formatter } from '../common/it/formatter';
 import { Embed } from '..';
 import {
 	type PollStructure,
@@ -65,7 +65,7 @@ export class BaseMessage extends DiscordBase {
 	}
 
 	get url() {
-		return messageLink(this.channelId, this.id, this.guildId);
+		return Formatter.messageLink(this.guildId!, this.channelId, this.id);
 	}
 
 	guild(force = false) {
