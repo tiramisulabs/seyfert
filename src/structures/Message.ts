@@ -15,7 +15,7 @@ import type { ActionRowMessageComponents } from '../components';
 import { MessageActionRowComponent } from '../components/ActionRow';
 import type { MessageWebhookMethodEditParams, MessageWebhookMethodWriteParams } from './Webhook';
 import { DiscordBase } from './extra/DiscordBase';
-import { Formatter } from '../common/it/formatter';
+import { Formatter } from '../common';
 import { Embed } from '..';
 import {
 	type PollStructure,
