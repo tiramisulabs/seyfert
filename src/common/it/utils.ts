@@ -1,6 +1,15 @@
 import { promises } from 'node:fs';
 import { basename, join } from 'node:path';
-import { DiscordEpoch, EmbedColors, type EmojiResolvable, type TypeArray, type ColorResolvable, type Logger, type ObjectToLower, type ObjectToSnake } from '..';
+import {
+	DiscordEpoch,
+	EmbedColors,
+	type EmojiResolvable,
+	type TypeArray,
+	type ColorResolvable,
+	type Logger,
+	type ObjectToLower,
+	type ObjectToSnake,
+} from '..';
 import { type APIPartialEmoji, FormattingPatterns } from '../../types';
 import type { Cache } from '../..';
 
@@ -281,7 +290,7 @@ export function isCloudfareWorker() {
 }
 
 /**
- * 
+ *
  * Convert a timestamp to a snowflake.
  * @param id The timestamp to convert.
  * @returns The snowflake.
