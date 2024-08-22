@@ -1,6 +1,17 @@
 import { promises } from 'node:fs';
 import { basename, join } from 'node:path';
-import { EmbedColors, type ColorResolvable, type Logger, type ObjectToLower, type ObjectToSnake } from '..';
+import {
+	DiscordEpoch,
+	EmbedColors,
+	type EmojiResolvable,
+	type TypeArray,
+	type ColorResolvable,
+	type Logger,
+	type ObjectToLower,
+	type ObjectToSnake,
+} from '..';
+import { type APIPartialEmoji, FormattingPatterns } from '../../types';
+import type { Cache } from '../..';
 
 /**
  * Resolves the color to a numeric representation.
@@ -276,4 +287,65 @@ export function lazyLoadPackage<T>(mod: string): T | undefined {
 export function isCloudfareWorker() {
 	//@ts-expect-error
 	return process.platform === 'browser';
+}
+
+/**
+ *
+ * Convert a timestamp to a snowflake.
+ * @param id The timestamp to convert.
+ * @returns The snowflake.
+ */
+export function snowflakeToTimestamp(id: string): bigint {
+	return (BigInt(id) >> 22n) + DiscordEpoch;
+}
+
+export function resolvePartialEmoji(emoji: EmojiResolvable): APIPartialEmoji | undefined {
+	if (typeof emoji === 'string') {
+		const groups: Partial<APIPartialEmoji> | undefined = emoji.match(FormattingPatterns.Emoji)?.groups;
+		if (groups) {
+			return { animated: !!groups.animated, name: groups.name!, id: groups.id! };
+		}
+		if (emoji.includes('%')) {
+			emoji = encodeURIComponent(emoji);
+		}
+		if (!(emoji.includes(':') || emoji.match(/\d{17,20}/g))) {
+			return { name: emoji, id: null };
+		}
+		return;
+	}
+
+	if (!(emoji.id && emoji.name)) return;
+	return { id: emoji.id, name: emoji.name, animated: !!emoji.animated };
+}
+
+export async function resolveEmoji(emoji: EmojiResolvable, cache: Cache): Promise<APIPartialEmoji | undefined> {
+	const partial = resolvePartialEmoji(emoji);
+	if (partial) return partial;
+
+	if (typeof emoji === 'string') {
+		if (!emoji.match(/\d{17,20}/g)) return;
+		const fromCache = await cache.emojis?.get(emoji);
+		return fromCache && { animated: fromCache.animated, id: fromCache.id, name: fromCache.name };
+	}
+
+	const fromCache = await cache.emojis?.get(emoji.id!);
+	if (fromCache) return { animated: fromCache.animated, id: fromCache.id, name: fromCache.name };
+	return;
+}
+
+export function encodeEmoji(rawEmoji: APIPartialEmoji) {
+	return rawEmoji.id ? `${rawEmoji.name}:${rawEmoji.id}` : `${rawEmoji.name}`;
+}
+
+export function hasProps<T extends Record<any, any>>(target: T, props: TypeArray<keyof T>): boolean {
+	if (Array.isArray(props)) {
+		return props.every(x => hasProps(target, x));
+	}
+	if (!((props as T[number]) in target)) {
+		return false;
+	}
+	if (typeof target[props] === 'string' && !target[props as T[number]].length) {
+		return false;
+	}
+	return true;
 }
