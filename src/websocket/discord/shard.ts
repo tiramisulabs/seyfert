@@ -1,5 +1,5 @@
 import { inflateSync } from 'node:zlib';
-import { type MakeRequired, MergeOptions, type Logger } from '../../common';
+import { Logger, LogLevels, type MakeRequired, MergeOptions } from '../../common';
 import { properties } from '../constants';
 import { DynamicBucket } from '../structures';
 import { ConnectTimeout } from '../structures/timeout';
@@ -23,7 +23,7 @@ export interface ShardHeart {
 }
 
 export class Shard {
-	debugger?: Logger;
+	logger: Logger;
 	data: Partial<ShardData> | ShardData = {
 		resume_seq: null,
 	};
@@ -52,7 +52,12 @@ export class Shard {
 			},
 		} as ShardOptions);
 
-		if (options.debugger) this.debugger = options.debugger;
+		this.logger = new Logger({
+			name: `[Shard #${id}]`,
+			logLevel: LogLevels.Info,
+		});
+
+		if (options.debugger) this.logger.level = LogLevels.Debug;
 
 		const safe = this.calculateSafeRequests();
 		this.bucket = new DynamicBucket({ refillInterval: 6e4, limit: safe, debugger: options.debugger });
@@ -91,13 +96,13 @@ export class Shard {
 	async connect() {
 		await this.connectTimeout.wait();
 		if (this.isOpen) {
-			this.debugger?.debug(`[Shard #${this.id}] attempted to connect while open`);
+			this.logger.debug(`[Shard #${this.id}] attempted to connect while open`);
 			return;
 		}
 
 		clearTimeout(this.heart.nodeInterval);
 
-		this.debugger?.debug(`[Shard #${this.id}] Connecting to ${this.currentGatewayURL}`);
+		this.logger.debug(`[Shard #${this.id}] Connecting to ${this.currentGatewayURL}`);
 
 		// @ts-expect-error @types/bun cause erros in compile
 		// biome-ignore lint/correctness/noUndeclaredVariables: /\ bun lol
@@ -109,7 +114,7 @@ export class Shard {
 
 		this.websocket.onclose = (event: { code: number; reason: string }) => this.handleClosed(event);
 
-		this.websocket.onerror = (event: ErrorEvent) => this.debugger?.error(event);
+		this.websocket.onerror = (event: ErrorEvent) => this.logger.error(event);
 
 		this.websocket.onopen = () => {
 			this.heart.ack = true;
@@ -117,7 +122,7 @@ export class Shard {
 	}
 
 	async send<T extends GatewaySendPayload = GatewaySendPayload>(force: boolean, message: T) {
-		this.debugger?.info(
+		this.logger.info(
 			`[Shard #${this.id}] Sending: ${GatewayOpcodes[message.op]} ${JSON.stringify(
 				message.d,
 				(_, value) => {
@@ -167,7 +172,7 @@ export class Shard {
 	}
 
 	async heartbeat(requested: boolean) {
-		this.debugger?.debug(
+		this.logger.debug(
 			`[Shard #${this.id}] Sending ${requested ? '' : 'un'}requested heartbeat (Ack=${this.heart.ack})`,
 		);
 		if (!requested) {
@@ -189,12 +194,12 @@ export class Shard {
 	}
 
 	async disconnect() {
-		this.debugger?.info(`[Shard #${this.id}] Disconnecting`);
+		this.logger.info(`[Shard #${this.id}] Disconnecting`);
 		await this.close(ShardSocketCloseCodes.Shutdown, 'Shard down request');
 	}
 
 	async reconnect() {
-		this.debugger?.info(`[Shard #${this.id}] Reconnecting`);
+		this.logger.info(`[Shard #${this.id}] Reconnecting`);
 		await this.disconnect();
 		await this.connect();
 	}
@@ -204,7 +209,7 @@ export class Shard {
 			this.data.resume_seq = packet.s;
 		}
 
-		this.debugger?.debug(`[Shard #${this.id}]`, packet.t ? packet.t : GatewayOpcodes[packet.op], this.data.resume_seq);
+		this.logger.debug(`[Shard #${this.id}]`, packet.t ? packet.t : GatewayOpcodes[packet.op], this.data.resume_seq);
 
 		switch (packet.op) {
 			case GatewayOpcodes.Hello:
@@ -235,7 +240,7 @@ export class Shard {
 			case GatewayOpcodes.InvalidSession:
 				if (packet.d) {
 					if (!this.resumable) {
-						return this.debugger?.fatal(`[Shard #${this.id}] This is a completely unexpected error message.`);
+						return this.logger.fatal(`[Shard #${this.id}] This is a completely unexpected error message.`);
 					}
 					await this.resume();
 				} else {
@@ -269,7 +274,7 @@ export class Shard {
 
 	protected async handleClosed(close: { code: number; reason: string }) {
 		clearInterval(this.heart.nodeInterval);
-		this.debugger?.warn(
+		this.logger.warn(
 			`[Shard #${this.id}] ${ShardSocketCloseCodes[close.code] ?? GatewayCloseCodes[close.code] ?? close.code} (${close.code})`,
 			close.reason,
 		);
@@ -295,7 +300,7 @@ export class Shard {
 			case GatewayCloseCodes.NotAuthenticated:
 			case GatewayCloseCodes.AlreadyAuthenticated:
 			case GatewayCloseCodes.RateLimited:
-				this.debugger?.info(`[Shard #${this.id}] Trying to reconnect`);
+				this.logger.info(`[Shard #${this.id}] Trying to reconnect`);
 				await this.reconnect();
 				break;
 
@@ -305,11 +310,11 @@ export class Shard {
 			case GatewayCloseCodes.InvalidIntents:
 			case GatewayCloseCodes.InvalidShard:
 			case GatewayCloseCodes.ShardingRequired:
-				this.debugger?.fatal(`[Shard #${this.id}] cannot reconnect`);
+				this.logger.fatal(`[Shard #${this.id}] cannot reconnect`);
 				break;
 
 			default:
-				this.debugger?.warn(`[Shard #${this.id}] Unknown close code, trying to reconnect anyways`);
+				this.logger.warn(`[Shard #${this.id}] Unknown close code, trying to reconnect anyways`);
 				await this.reconnect();
 				break;
 		}
@@ -317,17 +322,24 @@ export class Shard {
 
 	async close(code: number, reason: string) {
 		if (!this.isOpen) {
-			return this.debugger?.warn(`[Shard #${this.id}] Is not open`);
+			return this.logger.warn(`[Shard #${this.id}] Is not open`);
 		}
-		this.debugger?.warn(`[Shard #${this.id}] Called close`);
+		this.logger.warn(`[Shard #${this.id}] Called close`);
 		this.websocket?.close(code, reason);
 	}
 
 	protected handleMessage(data: string | Buffer) {
-		if (data instanceof Buffer) {
-			data = inflateSync(data);
+		let packet;
+		try {
+			if (data instanceof Buffer) {
+				data = inflateSync(data);
+			}
+			packet = JSON.parse(data as string);
+		} catch (e) {
+			this.logger.error(e);
+			return;
 		}
-		return this.onpacket(JSON.parse(data as string));
+		return this.onpacket(packet);
 	}
 
 	checkOffline(force: boolean) {
