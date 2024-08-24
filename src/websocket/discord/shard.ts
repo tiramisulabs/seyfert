@@ -96,13 +96,13 @@ export class Shard {
 	async connect() {
 		await this.connectTimeout.wait();
 		if (this.isOpen) {
-			this.logger.debug(`[Shard #${this.id}] attempted to connect while open`);
+			this.logger.debug(`attempted to connect while open`);
 			return;
 		}
 
 		clearTimeout(this.heart.nodeInterval);
 
-		this.logger.debug(`[Shard #${this.id}] Connecting to ${this.currentGatewayURL}`);
+		this.logger.debug(`Connecting to ${this.currentGatewayURL}`);
 
 		// @ts-expect-error @types/bun cause erros in compile
 		// biome-ignore lint/correctness/noUndeclaredVariables: /\ bun lol
@@ -123,7 +123,7 @@ export class Shard {
 
 	async send<T extends GatewaySendPayload = GatewaySendPayload>(force: boolean, message: T) {
 		this.logger.info(
-			`[Shard #${this.id}] Sending: ${GatewayOpcodes[message.op]} ${JSON.stringify(
+			`Sending: ${GatewayOpcodes[message.op]} ${JSON.stringify(
 				message.d,
 				(_, value) => {
 					if (typeof value === 'string')
@@ -173,7 +173,7 @@ export class Shard {
 
 	async heartbeat(requested: boolean) {
 		this.logger.debug(
-			`[Shard #${this.id}] Sending ${requested ? '' : 'un'}requested heartbeat (Ack=${this.heart.ack})`,
+			`Sending ${requested ? '' : 'un'}requested heartbeat (Ack=${this.heart.ack})`,
 		);
 		if (!requested) {
 			if (!this.heart.ack) {
@@ -194,12 +194,12 @@ export class Shard {
 	}
 
 	async disconnect() {
-		this.logger.info(`[Shard #${this.id}] Disconnecting`);
+		this.logger.info(`Disconnecting`);
 		await this.close(ShardSocketCloseCodes.Shutdown, 'Shard down request');
 	}
 
 	async reconnect() {
-		this.logger.info(`[Shard #${this.id}] Reconnecting`);
+		this.logger.info(`Reconnecting`);
 		await this.disconnect();
 		await this.connect();
 	}
@@ -209,7 +209,7 @@ export class Shard {
 			this.data.resume_seq = packet.s;
 		}
 
-		this.logger.debug(`[Shard #${this.id}]`, packet.t ? packet.t : GatewayOpcodes[packet.op], this.data.resume_seq);
+		this.logger.debug(packet.t ? packet.t : GatewayOpcodes[packet.op], this.data.resume_seq);
 
 		switch (packet.op) {
 			case GatewayOpcodes.Hello:
@@ -240,7 +240,7 @@ export class Shard {
 			case GatewayOpcodes.InvalidSession:
 				if (packet.d) {
 					if (!this.resumable) {
-						return this.logger.fatal(`[Shard #${this.id}] This is a completely unexpected error message.`);
+						return this.logger.fatal(`This is a completely unexpected error message.`);
 					}
 					await this.resume();
 				} else {
@@ -275,7 +275,7 @@ export class Shard {
 	protected async handleClosed(close: { code: number; reason: string }) {
 		clearInterval(this.heart.nodeInterval);
 		this.logger.warn(
-			`[Shard #${this.id}] ${ShardSocketCloseCodes[close.code] ?? GatewayCloseCodes[close.code] ?? close.code} (${close.code})`,
+			`${ShardSocketCloseCodes[close.code] ?? GatewayCloseCodes[close.code] ?? close.code} (${close.code})`,
 			close.reason,
 		);
 
@@ -300,7 +300,7 @@ export class Shard {
 			case GatewayCloseCodes.NotAuthenticated:
 			case GatewayCloseCodes.AlreadyAuthenticated:
 			case GatewayCloseCodes.RateLimited:
-				this.logger.info(`[Shard #${this.id}] Trying to reconnect`);
+				this.logger.info(`Trying to reconnect`);
 				await this.reconnect();
 				break;
 
@@ -310,11 +310,11 @@ export class Shard {
 			case GatewayCloseCodes.InvalidIntents:
 			case GatewayCloseCodes.InvalidShard:
 			case GatewayCloseCodes.ShardingRequired:
-				this.logger.fatal(`[Shard #${this.id}] cannot reconnect`);
+				this.logger.fatal(`cannot reconnect`);
 				break;
 
 			default:
-				this.logger.warn(`[Shard #${this.id}] Unknown close code, trying to reconnect anyways`);
+				this.logger.warn(`Unknown close code, trying to reconnect anyways`);
 				await this.reconnect();
 				break;
 		}
@@ -322,9 +322,9 @@ export class Shard {
 
 	async close(code: number, reason: string) {
 		if (!this.isOpen) {
-			return this.logger.warn(`[Shard #${this.id}] Is not open`);
+			return this.logger.warn(`Is not open`);
 		}
-		this.logger.warn(`[Shard #${this.id}] Called close`);
+		this.logger.warn(`Called close`);
 		this.websocket?.close(code, reason);
 	}
 
