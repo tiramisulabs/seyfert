@@ -5,6 +5,7 @@ import {
 	MergeOptions,
 	lazyLoadPackage,
 	type WatcherSendToShard,
+	calculateShardId,
 } from '../../common';
 import {
 	type GatewayUpdatePresence,
@@ -81,7 +82,7 @@ export class ShardManager extends Map<number, Shard> {
 	}
 
 	calculateShardId(guildId: string) {
-		return Number((BigInt(guildId) >> 22n) % BigInt(this.options.info.shards ?? 1));
+		return calculateShardId(guildId, this.totalShards);
 	}
 
 	spawn(shardId: number) {

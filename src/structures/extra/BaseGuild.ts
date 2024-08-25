@@ -1,6 +1,8 @@
-import type { ObjectToLower } from '../../common';
+import type { WorkerClient } from '../..';
+import { calculateShardId, type ObjectToLower } from '../../common';
 import type { ImageOptions } from '../../common/types/options';
 import { type APIPartialGuild, GuildFeature } from '../../types';
+import type { ShardManager } from '../../websocket';
 import { DiscordBase } from './DiscordBase';
 
 export interface BaseGuild extends ObjectToLower<APIPartialGuild> {}
@@ -69,6 +71,35 @@ export class BaseGuild extends DiscordBase<APIPartialGuild> {
 			return;
 		}
 		return this.rest.cdn.banners(this.id).get(this.banner, options);
+	}
+
+	/**
+	 * Shard ID of the guild.
+	 * @returns Shard ID or -1 if the client is not gateway based.
+	 */
+	get shardId() {
+		if ('gateway' in this.client) {
+			return (this.client.gateway as ShardManager).calculateShardId(this.id) as never;
+		}
+		if ('shards' in this.client) {
+			return calculateShardId(this.id, (this.client as WorkerClient).workerData.totalShards);
+		}
+		return -1;
+	}
+
+	/**
+	 * Shard of the guild.
+	 * @returns Shard or undefined, if the client is not gateway based always undefined.
+	 */
+	get shard() {
+		if ('gateway' in this.client) {
+			return (this.client.gateway as ShardManager).get(this.shardId!) as never;
+		}
+
+		if ('shards' in this.client) {
+			return (this.client as WorkerClient).shards.get(this.shardId!);
+		}
+		return undefined;
 	}
 
 	toString(): string {
