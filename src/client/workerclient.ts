@@ -104,6 +104,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		workerData = data;
 	}
 
+	get workerData() {
+		return workerData;
+	}
+
 	async start(options: Omit<DeepPartial<StartOptions>, 'httpConnection' | 'token' | 'connection'> = {}) {
 		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
 

@@ -28,45 +28,57 @@ export class SeyfertWebSocket {
 		this.connect();
 	}
 
-	private connect() {
-		const key = randomBytes(16).toString('base64');
-		const req = request({
-			//discord gateway hostname
-			hostname: this.hostname,
-			path: this.path,
-			headers: {
-				Connection: 'Upgrade',
-				Upgrade: 'websocket',
-				'Sec-WebSocket-Key': key,
-				'Sec-WebSocket-Version': '13',
-			},
+	private connect(retries = 0) {
+		return new Promise<void>((resolve, rej) => {
+			const key = randomBytes(16).toString('base64');
+			const req = request({
+				//discord gateway hostname
+				hostname: this.hostname,
+				path: this.path,
+				headers: {
+					Connection: 'Upgrade',
+					Upgrade: 'websocket',
+					'Sec-WebSocket-Key': key,
+					'Sec-WebSocket-Version': '13',
+				},
+			});
+
+			req.on('upgrade', (res, socket) => {
+				const hash = createHash('sha1').update(`${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`).digest('base64');
+				const accept = res.headers['sec-websocket-accept'];
+				if (accept !== hash) {
+					socket.end(() => {
+						rej(new Error('Invalid sec-websocket-accept header'));
+					});
+					return;
+				}
+				this.socket = socket;
+
+				socket.on('readable', this.handleReadable.bind(this));
+
+				socket.on('close', this.handleClose.bind(this));
+
+				socket.on('error', err => this.onerror(err));
+				resolve();
+				this.onopen();
+			});
+
+			req.on('close', () => {
+				req.removeAllListeners();
+			});
+
+			req.on('error', e => {
+				if (retries < 5) {
+					setTimeout(() => {
+						resolve(this.connect(retries + 1));
+					}, 500);
+				} else {
+					rej(e);
+				}
+			});
+
+			req.end();
 		});
-
-		req.on('upgrade', (res, socket) => {
-			const hash = createHash('sha1').update(`${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`).digest('base64');
-			const accept = res.headers['sec-websocket-accept'];
-			if (accept !== hash) {
-				socket.end(() => {
-					this.onerror(new Error('Invalid sec-websocket-accept header'));
-				});
-				return;
-			}
-			this.socket = socket;
-
-			socket.on('readable', this.handleReadable.bind(this));
-
-			socket.on('close', this.handleClose.bind(this));
-
-			socket.on('error', err => this.onerror(err));
-
-			this.onopen();
-		});
-
-		req.on('close', () => {
-			req.removeAllListeners();
-		});
-
-		req.end();
 	}
 
 	handleReadable() {
@@ -148,7 +160,7 @@ export class SeyfertWebSocket {
 		}
 	}
 
-	handleClose() {
+	async handleClose() {
 		this.socket?.removeAllListeners();
 		this.socket?.destroy();
 		this.socket = undefined;

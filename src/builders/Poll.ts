@@ -1,6 +1,5 @@
 import { type APIPollMedia, PollLayoutType, type RESTAPIPollCreate } from '../types';
-import type { DeepPartial, EmojiResolvable, RestOrArray } from '../common';
-import { resolvePartialEmoji } from '../structures/extra/functions';
+import { resolvePartialEmoji, type DeepPartial, type EmojiResolvable, type RestOrArray } from '../common';
 
 export class PollBuilder {
 	constructor(public data: DeepPartial<RESTAPIPollCreate> = {}) {

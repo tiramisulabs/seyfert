@@ -39,7 +39,6 @@ import type {
 import type { GuildMember } from './GuildMember';
 import type { GuildRole } from './GuildRole';
 import { DiscordBase } from './extra/DiscordBase';
-import { channelLink } from './extra/functions';
 import { Collection, Formatter, type RawFile } from '..';
 import {
 	type BaseChannelStructure,
@@ -74,7 +73,7 @@ export class BaseChannel<T extends ChannelType> extends DiscordBase<APIChannelBa
 
 	/** The URL to the channel */
 	get url() {
-		return channelLink(this.id);
+		return Formatter.channelLink(this.id);
 	}
 
 	fetch(force = false) {
@@ -210,7 +209,7 @@ export class BaseGuildChannel extends BaseChannel<ChannelType> {
 	}
 
 	get url() {
-		return channelLink(this.id, this.guildId);
+		return Formatter.channelLink(this.id, this.guildId);
 	}
 
 	setPosition(position: number, reason?: string) {
