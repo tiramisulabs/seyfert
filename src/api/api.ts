@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Logger, delay, lazyLoadPackage } from '../common';
-import { snowflakeToTimestamp } from '../structures/extra/functions';
+import { Logger, delay, lazyLoadPackage, snowflakeToTimestamp } from '../common';
 import type { WorkerData } from '../websocket';
 import type { WorkerSendApiRequest } from '../websocket/discord/worker';
 import { CDNRouter, type ProxyRequestMethod } from './Router';
