@@ -95,9 +95,11 @@ export class SeyfertWebSocket {
 				// Equivalent to readUint32BE
 				length = this.readBytes(2, slice - 2);
 			}
+			const payloadLength = slice + length;
 			// Read the frame, ignore data next to it, leave it to next `while` cycle
-			const frame = this.socket!.read(slice + length) as Buffer | null;
-			if (!frame) return;
+			const frame = this.socket!.read(payloadLength) as Buffer | null;
+			// unfinished object when socket closes while reading the data
+			if (!frame || frame.length !== payloadLength) return;
 			// Get fin (0 | 1)
 			const fin = frame[0] >> 7;
 			// Read opcode (continuation, text, binary, close, ping, pong)
