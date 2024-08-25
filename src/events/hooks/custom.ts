@@ -8,3 +8,7 @@ export const BOT_READY = (_self: UsingClient, me: ClientUserStructure) => {
 export const WORKER_READY = (_self: UsingClient, me: ClientUserStructure) => {
 	return me;
 };
+
+export const WORKER_SHARDS_CONNECTED = (_self: UsingClient, me: ClientUserStructure) => {
+	return me;
+};
