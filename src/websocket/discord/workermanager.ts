@@ -446,7 +446,7 @@ export class WorkerManager extends Map<
 		const spaces = this.prepareSpaces();
 		await this.prepareWorkers(spaces);
 		// Start workers queue
-		return this.workerQueue.shift()!();
+		return this.workerQueue.shift()?.();
 	}
 }
 
