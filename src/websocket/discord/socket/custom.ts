@@ -177,8 +177,7 @@ export class SeyfertWebSocket {
 	}
 
 	private _write(buffer: Buffer, opcode: number) {
-		if (!this.socket?.writable)
-			return;
+		if (!this.socket?.writable) return;
 		const length = buffer.length;
 		let frame;
 		// Kinda same logic as above, but client-side
@@ -201,17 +200,17 @@ export class SeyfertWebSocket {
 		this.socket?.write(frame);
 	}
 
-	onping(_data: string) { }
+	onping(_data: string) {}
 
-	onpong(_data: string) { }
+	onpong(_data: string) {}
 
-	onopen() { }
+	onopen() {}
 
-	onmessage(_payload: { data: string | Buffer }) { }
+	onmessage(_payload: { data: string | Buffer }) {}
 
-	onclose(_close: { code: number; reason: string }) { }
+	onclose(_close: { code: number; reason: string }) {}
 
-	onerror(_err: unknown) { }
+	onerror(_err: unknown) {}
 
 	close(code: number, reason: string) {
 		this.__closeCalled = true;
@@ -281,14 +280,14 @@ export class SeyfertWebSocket {
 		// @ts-expect-error this is private, thanks nodejs
 		const readable = this.socket._readableState as
 			| {
-				bufferIndex: number;
-				buffer: Buffer[];
-			}
+					bufferIndex: number;
+					buffer: Buffer[];
+			  }
 			| {
-				buffer: {
-					head: ReadableHeadData;
-				};
-			};
+					buffer: {
+						head: ReadableHeadData;
+					};
+			  };
 		// Num of bit read
 		let bitIndex = 0;
 		// Num of bit read counting since start
