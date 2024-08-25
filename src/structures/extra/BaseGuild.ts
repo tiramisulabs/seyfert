@@ -1,4 +1,5 @@
-import type { ObjectToLower } from '../../common';
+import type { WorkerClient } from '../..';
+import { calculateShardId, type ObjectToLower } from '../../common';
 import type { ImageOptions } from '../../common/types/options';
 import { type APIPartialGuild, GuildFeature } from '../../types';
 import type { ShardManager } from '../../websocket';
@@ -80,6 +81,9 @@ export class BaseGuild extends DiscordBase<APIPartialGuild> {
 		if ('gateway' in this.client) {
 			return (this.client.gateway as ShardManager).calculateShardId(this.id) as never;
 		}
+		if ('shards' in this.client) {
+			return calculateShardId(this.id, (this.client as WorkerClient).workerData.totalShards);
+		}
 		return -1;
 	}
 
@@ -90,6 +94,10 @@ export class BaseGuild extends DiscordBase<APIPartialGuild> {
 	get shard() {
 		if ('gateway' in this.client) {
 			return (this.client.gateway as ShardManager).get(this.shardId!) as never;
+		}
+
+		if ('shards' in this.client) {
+			return (this.client as WorkerClient).shards.get(this.shardId!);
 		}
 		return undefined;
 	}

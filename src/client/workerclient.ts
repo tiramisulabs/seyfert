@@ -55,6 +55,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	promises = new Map<string, { resolve: (value: any) => void; timeout: NodeJS.Timeout }>();
 
 	shards = new Map<number, Shard>();
+	workerData: WorkerData;
 	private __setServicesCache?: boolean;
 
 	declare options: WorkerClientOptions;
@@ -64,6 +65,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		if (options?.postMessage) {
 			this.postMessage = options.postMessage;
 		}
+		this.workerData = workerData;
 	}
 
 	get workerId() {
@@ -101,6 +103,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	setWorkerData(data: WorkerData) {
+		this.workerData = data;
 		workerData = data;
 	}
 
