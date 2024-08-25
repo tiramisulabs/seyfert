@@ -237,4 +237,14 @@ export class Formatter {
 	static emojiMention(emojiId: string, name: string | null, animated = false): string {
 		return `<${animated ? 'a' : ''}:${name ?? '_'}:${emojiId}>`;
 	}
+
+	/**
+	 * Formats a channel link.
+	 * @param channelId The ID of the channel.
+	 * @param guildId The ID of the guild. Defaults to '@me'.
+	 * @returns The formatted channel link.
+	 */
+	static channelLink(channelId: string, guildId?: string) {
+		return `https://discord.com/channels/${guildId ?? '@me'}/${channelId}`;
+	}
 }
