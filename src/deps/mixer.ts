@@ -22,6 +22,7 @@ function getDescriptors(c: TypeClass) {
  * @returns The mixed class.
  */
 export function Mixin<T, C extends TypeClass[]>(...args: C): C[number] & T {
+	const ignoreOverwriteToString = Object.keys(Object.getOwnPropertyDescriptors(args[0].prototype)).includes('toString');
 	function MixedClass(...constructorArgs: any[]) {
 		for (const i of args) {
 			const descriptors = getDescriptors(i);
@@ -31,9 +32,13 @@ export function Mixin<T, C extends TypeClass[]>(...args: C): C[number] & T {
 
 				for (const descriptorK in j) {
 					if (descriptorK === 'constructor') continue;
-					if (descriptorK in MixedClass.prototype) continue;
+					if (descriptorK in MixedClass.prototype && descriptorK !== 'toString') continue;
 					const descriptor = j[descriptorK];
 					if (descriptor.value) {
+						if (descriptorK === 'toString' && ignoreOverwriteToString) {
+							MixedClass.prototype[descriptorK] = args[0].prototype.toString;
+							continue;
+						}
 						MixedClass.prototype[descriptorK] = descriptor.value;
 						continue;
 					}
