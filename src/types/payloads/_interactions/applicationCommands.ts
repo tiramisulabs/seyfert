@@ -5,6 +5,7 @@ import type {
 	APIChatInputApplicationCommandGuildInteraction,
 	APIChatInputApplicationCommandInteraction,
 	APIChatInputApplicationCommandInteractionData,
+	APIEntryPointCommandInteraction,
 } from './_applicationCommands/chatInput';
 import type {
 	APIContextMenuDMInteraction,
@@ -12,6 +13,7 @@ import type {
 	APIContextMenuInteraction,
 	APIContextMenuInteractionData,
 } from './_applicationCommands/contextMenu';
+import type { APIBaseApplicationCommandInteractionData } from './_applicationCommands/internals';
 import type { APIBaseInteraction } from './base';
 import type { InteractionType } from './responses';
 
@@ -179,11 +181,19 @@ export enum InteractionContextType {
 }
 
 /**
+ * Documentation goes brrrrrr
+ * @unstable
+ */
+export interface APIEntryPointInteractionData
+	extends Omit<APIBaseApplicationCommandInteractionData<ApplicationCommandType.PrimaryEntryPoint>, 'guild_id'> {}
+
+/**
  * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-interaction-data
  */
 export type APIApplicationCommandInteractionData =
 	| APIChatInputApplicationCommandInteractionData
-	| APIContextMenuInteractionData;
+	| APIContextMenuInteractionData
+	| APIEntryPointInteractionData;
 
 /**
  * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object
@@ -200,7 +210,10 @@ export type APIApplicationCommandInteractionWrapper<Data extends APIApplicationC
 /**
  * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object
  */
-export type APIApplicationCommandInteraction = APIChatInputApplicationCommandInteraction | APIContextMenuInteraction;
+export type APIApplicationCommandInteraction =
+	| APIChatInputApplicationCommandInteraction
+	| APIContextMenuInteraction
+	| APIEntryPointCommandInteraction;
 
 /**
  * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object

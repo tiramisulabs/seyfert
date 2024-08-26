@@ -36,6 +36,7 @@ import {
 	type MessageFlags,
 	type RESTPostAPIInteractionCallbackJSONBody,
 	type RESTAPIAttachment,
+	type APIEntryPointCommandInteraction,
 } from '../types';
 
 import type { RawFile } from '../api';
@@ -279,6 +280,10 @@ export class BaseInteraction<
 		return false;
 	}
 
+	isEntryPoint(): this is EntryPointInteraction {
+		return false;
+	}
+
 	static from(client: UsingClient, gateway: GatewayInteractionCreateDispatchData, __reply?: __InternalReplyFunction) {
 		switch (gateway.type) {
 			case InteractionType.ApplicationCommandAutocomplete:
@@ -296,6 +301,8 @@ export class BaseInteraction<
 						return new UserCommandInteraction(client, gateway as APIUserApplicationCommandInteraction, __reply);
 					case ApplicationCommandType.Message:
 						return new MessageCommandInteraction(client, gateway as APIMessageApplicationCommandInteraction, __reply);
+					case ApplicationCommandType.PrimaryEntryPoint:
+						return new EntryPointInteraction(client, gateway as APIEntryPointCommandInteraction, __reply);
 				}
 			// biome-ignore lint/suspicious/noFallthroughSwitchClause: bad interaction  between biome and ts-server
 			case InteractionType.MessageComponent:
@@ -345,6 +352,7 @@ export type AllInteractions =
 	| ComponentInteraction
 	| SelectMenuInteraction
 	| ModalSubmitInteraction
+	| EntryPointInteraction
 	| BaseInteraction;
 
 export interface AutocompleteInteraction
@@ -477,6 +485,14 @@ export class ApplicationCommandInteraction<
 		return this.reply(data);
 	}
 }
+
+/**
+ * Seyfert don't support activities, so this interaction is blank
+ */
+export class EntryPointInteraction<FromGuild extends boolean = boolean> extends ApplicationCommandInteraction<
+	FromGuild,
+	APIEntryPointCommandInteraction
+> {}
 
 export interface ComponentInteraction
 	extends ObjectToLower<
