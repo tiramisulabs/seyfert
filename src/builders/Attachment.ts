@@ -131,7 +131,7 @@ export function resolveAttachment(
 		return { filename: data.name, description: data.description };
 	}
 
-	return { filename: resolve.name, description: resolve.description };
+	return { filename: 'name' in resolve ? resolve.name : resolve.filename, description: resolve.description };
 }
 
 /**
