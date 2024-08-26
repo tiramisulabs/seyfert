@@ -2,6 +2,8 @@ import type {
 	APIApplicationCommand,
 	APIApplicationCommandPermission,
 	APIGuildApplicationCommandPermissions,
+	APIInteractionCallbackLaunchActivity,
+	APIInteractionCallbackMessage,
 	APIInteractionResponse,
 	APIInteractionResponseCallbackData,
 	ApplicationCommandType,
@@ -83,7 +85,7 @@ export interface RESTPostAPIContextMenuApplicationCommandsJSONBody extends RESTP
 export interface RESTPostAPIEntryPointApplicationCommandsJSONBody extends RESTPostAPIBaseApplicationCommandsJSONBody {
 	type: ApplicationCommandType.PrimaryEntryPoint;
 	description: string;
-	handle: EntryPointCommandHandlerType;
+	handler: EntryPointCommandHandlerType;
 }
 
 /**
@@ -91,7 +93,8 @@ export interface RESTPostAPIEntryPointApplicationCommandsJSONBody extends RESTPo
  */
 export type RESTPostAPIApplicationCommandsJSONBody =
 	| RESTPostAPIChatInputApplicationCommandsJSONBody
-	| RESTPostAPIContextMenuApplicationCommandsJSONBody;
+	| RESTPostAPIContextMenuApplicationCommandsJSONBody
+	| RESTPostAPIEntryPointApplicationCommandsJSONBody;
 
 /**
  * https://discord.com/developers/docs/interactions/application-commands#create-global-application-command
@@ -179,6 +182,11 @@ export type RESTPutAPIApplicationGuildCommandsResult = RESTAPIApplicationGuildCo
  * https://discord.com/developers/docs/interactions/receiving-and-responding#create-interaction-response
  */
 export type RESTPostAPIInteractionCallbackJSONBody = APIInteractionResponse;
+
+/**
+ * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback
+ */
+export type RESTPostAPIInteractionCallbackResult = APIInteractionCallbackLaunchActivity | APIInteractionCallbackMessage;
 
 /**
  * https://discord.com/developers/docs/interactions/receiving-and-responding#create-interaction-response

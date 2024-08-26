@@ -1,3 +1,4 @@
+import type { MakeRequired } from '../../../common';
 import type { RESTPostAPIWebhookWithTokenJSONBody } from '../../index';
 import type { APIActionRowComponent, APIModalActionRowComponent } from '../channel';
 import type { MessageFlags } from '../index';
@@ -137,3 +138,71 @@ export interface APIModalInteractionResponseCallbackData {
 	 */
 	components: APIActionRowComponent<APIModalActionRowComponent>[];
 }
+
+/**
+ * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback-interaction-callback-object
+ */
+export interface InteractionCallbackData<T extends InteractionType = InteractionType> {
+	id: string;
+	type: T;
+	/**
+	 * Instance ID of the Activity if one was launched or joined
+	 */
+	activity_instance_id?: string;
+	/**
+	 * ID of the message that was created by the interaction
+	 */
+	response_message_id?: string;
+	/**
+	 * Whether or not the message is in a loading state
+	 */
+	response_message_loading?: boolean;
+	/**
+	 * Whether or not the response message was ephemeral
+	 */
+	response_message_ephemeral?: boolean;
+}
+
+/**
+ * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback-interaction-callback-resource-object
+ */
+export interface InteractionCallbackResourceActivity {
+	/**
+	 * 	Instance ID of the Activity if one was launched or joined.
+	 */
+	id: string;
+}
+
+/**
+ * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback-interaction-callback-activity-instance-resource
+ */
+export interface InteractionCallbackResource<T extends InteractionResponseType = InteractionResponseType> {
+	type: T;
+	/**
+	 * 	Represents the Activity launched by this interaction.
+	 */
+	activity_instance?: InteractionCallbackResourceActivity;
+	/**
+	 * Message created by the interaction.
+	 */
+	message?: Omit<RESTPostAPIWebhookWithTokenJSONBody, 'avatar_url' | 'username'> & { flags?: MessageFlags };
+}
+
+/**
+ * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback-interaction-callback-response-object
+ */
+export interface InteractionCallbackResponse {
+	interaction: InteractionCallbackData;
+	resource?: InteractionCallbackResource;
+}
+
+/**
+ * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback-interaction-callback-response-object
+ */
+export type APIInteractionCallbackLaunchActivity = InteractionCallbackResponse & {
+	resource?: Omit<MakeRequired<InteractionCallbackResource, 'activity_instance'>, 'message'>;
+};
+
+export type APIInteractionCallbackMessage = InteractionCallbackResponse & {
+	resource?: Omit<MakeRequired<InteractionCallbackResource, 'message'>, 'activity_instance'>;
+};
