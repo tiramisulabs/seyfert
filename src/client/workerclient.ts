@@ -1,7 +1,6 @@
 import { type GatewayDispatchPayload, type GatewaySendPayload, GatewayIntentBits } from '../types';
 import { randomUUID } from 'node:crypto';
 import { ApiHandler, Logger } from '..';
-import type { Cache } from '../cache';
 import { WorkerAdapter } from '../cache';
 import { LogLevels, lazyLoadPackage, type DeepPartial, type When } from '../common';
 import { EventHandler } from '../events';
@@ -126,7 +125,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		if (this.__setServicesCache) {
 			this.setServices({
 				cache: {
-					disabledCache: this.options.disabledCache,
+					disabledCache: this.cache.disabledCache,
 				},
 			});
 		} else {
@@ -137,7 +136,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			this.setServices({
 				cache: {
 					adapter,
-					disabledCache: this.options.disabledCache,
+					disabledCache: this.cache.disabledCache,
 				},
 			});
 		}
@@ -242,7 +241,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 								},
 								async handlePayload(shardId, payload) {
 									await handlePayload?.(shardId, payload);
-									await onPacket?.(payload, shardId);
+									await onPacket(payload, shardId);
 									if (sendPayloadToParent)
 										self.postMessage({
 											workerId: workerData.workerId,
@@ -389,7 +388,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					this.__handleGuilds?.delete(packet.d.id);
 					if (!this.__handleGuilds?.size && [...this.shards.values()].every(shard => shard.data.session_id)) {
 						delete this.__handleGuilds;
-						await this.cache.onPacket?.(packet);
+						await this.cache.onPacket(packet);
 						this.postMessage({
 							type: 'WORKER_READY',
 							workerId: this.workerId,
@@ -397,7 +396,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						return this.events?.runEvent('WORKER_READY', this, this.me, -1);
 					}
 					if (!this.__handleGuilds?.size) delete this.__handleGuilds;
-					return this.cache.onPacket?.(packet);
+					return this.cache.onPacket(packet);
 				}
 				await this.events?.execute(packet.t, packet, this, shardId);
 				break;
@@ -465,7 +464,6 @@ export function generateShardInfo(shard: Shard): WorkerShardInfo {
 }
 
 interface WorkerClientOptions extends BaseClientOptions {
-	disabledCache?: Cache['disabledCache'];
 	commands?: NonNullable<Client['options']>['commands'];
 	handlePayload?: ShardManagerOptions['handlePayload'];
 	gateway?: ClientOptions['gateway'];

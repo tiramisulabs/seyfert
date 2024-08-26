@@ -175,7 +175,10 @@ export class Cache {
 			this.bans = new Bans(this, client);
 		}
 
-		if (this.disabledCache.onPacket) delete this.onPacket;
+		if (this.disabledCache.onPacket) {
+			//@ts-expect-error
+			this.onPacket = () => {};
+		}
 	}
 
 	/** @internal */
@@ -501,7 +504,7 @@ export class Cache {
 		await this.adapter.bulkSet(allData);
 	}
 
-	async onPacket?(event: GatewayDispatchPayload) {
+	async onPacket(event: GatewayDispatchPayload) {
 		switch (event.t) {
 			case 'READY':
 				await this.users?.set(event.d.user.id, event.d.user);

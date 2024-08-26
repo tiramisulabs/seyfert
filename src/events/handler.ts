@@ -144,7 +144,7 @@ export class EventHandler extends BaseHandler {
 		const Event = this.values[name];
 		if (!Event) {
 			return runCache
-				? this.client.cache.onPacket?.({
+				? this.client.cache.onPacket({
 						t: name,
 						d: packet,
 					} as GatewayDispatchPayload)
@@ -153,7 +153,7 @@ export class EventHandler extends BaseHandler {
 		try {
 			if (Event.data.once && Event.fired) {
 				return runCache
-					? this.client.cache.onPacket?.({
+					? this.client.cache.onPacket({
 							t: name,
 							d: packet,
 						} as GatewayDispatchPayload)
@@ -162,7 +162,7 @@ export class EventHandler extends BaseHandler {
 			Event.fired = true;
 			const hook = await RawEvents[name]?.(client, packet as never);
 			if (runCache)
-				await this.client.cache.onPacket?.({
+				await this.client.cache.onPacket({
 					t: name,
 					d: packet,
 				} as GatewayDispatchPayload);
