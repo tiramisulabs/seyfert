@@ -102,6 +102,10 @@ export enum InteractionResponseType {
 	 * @deprecated See https://discord.com/developers/docs/change-log#premium-apps-new-premium-button-style-deep-linking-url-schemes
 	 */
 	PremiumRequired,
+	/**
+	 * Launch the Activity associated with the app. Only available for apps with Activities enabled
+	 */
+	LaunchActivity = 14,
 }
 
 /**

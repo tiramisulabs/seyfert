@@ -22,6 +22,7 @@ import type {
 	ThreadChannelType,
 	APIThreadMember,
 	APIThreadList,
+	APIAttachment,
 } from '../payloads';
 import type { AddUndefinedToPossiblyUndefinedPropertiesOfInterface, StrictPartial } from '../utils';
 import type { RESTAPIPollCreate } from './poll';
@@ -248,22 +249,11 @@ export type APIMessageReferenceSend = AddUndefinedToPossiblyUndefinedPropertiesO
 	};
 
 /**
- * https://discord.com/developers/docs/resources/channel#attachment-object
+ * https://discord.com/developers/docs/resources/message#attachment-object
  */
-export interface RESTAPIAttachment {
-	/**
-	 * Attachment id or a number that matches `n` in `files[n]`
-	 */
-	id: Snowflake | number;
-	/**
-	 * Name of the file
-	 */
-	filename?: string | undefined;
-	/**
-	 * Description of the file
-	 */
-	description?: string | undefined;
-}
+export type RESTAPIAttachment = Partial<
+	Pick<APIAttachment, 'description' | 'duration_secs' | 'filename' | 'title' | 'waveform'>
+>;
 
 /**
  * https://discord.com/developers/docs/resources/channel#create-message
@@ -444,7 +434,7 @@ export interface RESTPatchAPIChannelMessageJSONBody {
 	 *
 	 * Starting with API v10, the `attachments` array must contain all attachments that should be present after edit, including **retained and new** attachments provided in the request body.
 	 *
-	 * See https://discord.com/developers/docs/resources/channel#attachment-object
+	 * See https://discord.com/developers/docs/resources/message#attachment-object
 	 */
 	attachments?: RESTAPIAttachment[] | undefined;
 	/**
