@@ -39,6 +39,7 @@ import {
 	type APIEntryPointCommandInteraction,
 	type InteractionCallbackData,
 	type InteractionCallbackResourceActivity,
+	type RESTPostAPIInteractionCallbackResult,
 } from '../types';
 
 import type { RawFile } from '../api';
@@ -175,6 +176,7 @@ export class BaseInteraction<
 
 	static transformBody<T>(
 		body:
+			| InteractionCreateBodyRequest
 			| InteractionMessageUpdateBodyRequest
 			| MessageUpdateBodyRequest
 			| MessageCreateBodyRequest
@@ -199,9 +201,9 @@ export class BaseInteraction<
 					...resolveAttachment(x),
 				})) ?? undefined;
 		} else if (files?.length) {
-			payload.attachments = files?.map((x, id) => ({
+			payload.attachments = files?.map(({ filename }, id) => ({
 				id,
-				filename: x.name,
+				filename,
 			})) as RESTAPIAttachment[];
 		}
 		return payload as T;
@@ -499,37 +501,40 @@ export class EntryPointInteraction<FromGuild extends boolean = boolean> extends 
 	FromGuild,
 	APIEntryPointCommandInteraction
 > {
-	async withReponse(body: InteractionCreateBodyRequest | { type: InteractionResponseType.LaunchActivity }) {
-		if ('type' in body) {
-			const response = await this.client.proxy
-				.interactions(this.id)(this.token)
-				.callback.post({
-					body,
-					query: { with_response: true },
-				});
+	async withReponse(data?: InteractionCreateBodyRequest) {
+		let body = { type: InteractionResponseType.LaunchActivity } as const;
 
-			const result: EntryPointWithResponseResult = {
-				//@ts-expect-error
-				resource: {
-					type: response!.resource?.type!,
-				},
-				interaction: toCamelCase(response!.interaction),
-			};
-			if (response?.resource?.message) {
-				// @ts-expect-error
-				result.resource!.message = Transformers.WebhookMessage(
-					this.client,
-					response.resource.message as any,
-					this.id,
-					this.token,
-				);
-			} else {
-				// @ts-expect-error
-				result.resource!.activityInstance = response!.resource?.activity_instance!;
-			}
-			return result;
+		if (data) {
+			let { files, ...rest } = data;
+			files = files ? await resolveFiles(files) : undefined;
+			body = BaseInteraction.transformBody(rest, files, this.client);
 		}
-		return this.write(body);
+		const response = (await this.client.proxy
+			.interactions(this.id)(this.token)
+			.callback.post({
+				body,
+				query: { with_response: true },
+			})) as RESTPostAPIInteractionCallbackResult;
+
+		const result: Partial<EntryPointWithResponseResult> = {
+			interaction: toCamelCase(response.interaction),
+		};
+
+		if (response.resource) {
+			if (response.resource.type !== InteractionResponseType.LaunchActivity) {
+				result.resource = {
+					type: response.resource.type,
+					message: Transformers.WebhookMessage(this.client, response.resource.message as any, this.id, this.token),
+				};
+			} else {
+				result.resource = {
+					type: response.resource.type,
+					activityInstance: response.resource.activity_instance!,
+				};
+			}
+		}
+
+		return result as EntryPointWithResponseResult;
 	}
 
 	isEntryPoint(): this is EntryPointInteraction {

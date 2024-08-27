@@ -28,9 +28,9 @@ export class HttpClient extends BaseClient {
 					for (const [index, file] of files.entries()) {
 						const fileKey = file.key ?? `files[${index}]`;
 						if (isBufferLike(file.data)) {
-							response.append(fileKey, new Blob([file.data], { type: file.contentType }), file.name);
+							response.append(fileKey, new Blob([file.data], { type: file.contentType }), file.filename);
 						} else {
-							response.append(fileKey, new Blob([`${file.data}`], { type: file.contentType }), file.name);
+							response.append(fileKey, new Blob([`${file.data}`], { type: file.contentType }), file.filename);
 						}
 					}
 					if (body) {
