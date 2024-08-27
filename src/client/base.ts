@@ -321,6 +321,11 @@ export class BaseClient {
 		const commands = this.commands!.values;
 		const filter = filterSplit(commands, command => !command.guildId);
 
+		if (this.commands?.entryPoint) {
+			// @ts-expect-error
+			filter.expect.push(this.commands.entryPoint);
+		}
+
 		if (!cachePath || (await this.shouldUploadCommands(cachePath)))
 			await this.proxy.applications(applicationId).commands.put({
 				body: filter.expect
@@ -342,7 +347,6 @@ export class BaseClient {
 					.applications(applicationId)
 					.guilds(guildId)
 					.commands.put({
-						// @ts-expect-error this is for EntryCommands, but it's fine
 						body: filter.never
 							.filter(
 								cmd => cmd.guildId?.includes(guildId) && (!('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash),
