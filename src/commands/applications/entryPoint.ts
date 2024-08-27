@@ -22,7 +22,6 @@ export abstract class EntryPointCommand {
 	integrationTypes: ApplicationIntegrationType[] = [];
 	contexts: InteractionContextType[] = [];
 	description!: string;
-	guildId!: never;
 	botPermissions?: bigint;
 	dm?: boolean;
 	handler!: EntryPointCommandHandlerType;

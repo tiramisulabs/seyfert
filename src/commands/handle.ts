@@ -246,17 +246,13 @@ export class HandleCommand {
 						break;
 					}
 					case ApplicationCommandType.PrimaryEntryPoint: {
-						const parentCommand = this.getCommand<EntryPointCommand>(body.data);
-						if (!parentCommand) {
-							return this.client.logger.debug(`${body.data.name} command does not exist`);
-						}
+						const command = this.client.commands?.entryPoint;
+						if (!command?.run) return;
 						const interaction = BaseInteraction.from(this.client, body, __reply) as EntryPointInteraction;
-						if (!parentCommand?.run)
-							return this.client.logger.warn(`${parentCommand.name} command does not have 'run' callback`);
-						const context = new EntryPointContext(this.client, interaction, shardId, parentCommand);
+						const context = new EntryPointContext(this.client, interaction, shardId, command);
 						const extendContext = this.client.options?.context?.(interaction) ?? {};
 						Object.assign(context, extendContext);
-						await this.entryPoint(parentCommand, interaction, context);
+						await this.entryPoint(command, interaction, context);
 						break;
 					}
 					case ApplicationCommandType.ChatInput: {
