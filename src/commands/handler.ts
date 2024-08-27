@@ -17,9 +17,10 @@ import { Command, type CommandOption, SubCommand } from './applications/chat';
 import { ContextMenuCommand } from './applications/menu';
 import type { UsingClient } from './applications/shared';
 import { promises } from 'node:fs';
+import type { EntryPointCommand } from './applications/entrypoint';
 
 export class CommandHandler extends BaseHandler {
-	values: (Command | ContextMenuCommand)[] = [];
+	values: (Command | ContextMenuCommand | EntryPointCommand)[] = [];
 
 	protected filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
 

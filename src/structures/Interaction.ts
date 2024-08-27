@@ -492,7 +492,11 @@ export class ApplicationCommandInteraction<
 export class EntryPointInteraction<FromGuild extends boolean = boolean> extends ApplicationCommandInteraction<
 	FromGuild,
 	APIEntryPointCommandInteraction
-> {}
+> {
+	isEntryPoint(): this is EntryPointInteraction {
+		return true;
+	}
+}
 
 export interface ComponentInteraction
 	extends ObjectToLower<

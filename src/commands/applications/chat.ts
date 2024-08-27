@@ -10,6 +10,7 @@ import {
 } from '../../types';
 import type {
 	ComponentContext,
+	EntryPointContext,
 	MenuCommandContext,
 	ModalContext,
 	PermissionStrings,
@@ -201,7 +202,7 @@ export class BaseCommand {
 
 	/** @internal */
 	static __runMiddlewares(
-		context: CommandContext<{}, never> | ComponentContext | MenuCommandContext<any> | ModalContext,
+		context: CommandContext<{}, never> | ComponentContext | MenuCommandContext<any> | ModalContext | EntryPointContext,
 		middlewares: (keyof RegisteredMiddlewares)[],
 		global: boolean,
 	): Promise<{ error?: string; pass?: boolean }> {

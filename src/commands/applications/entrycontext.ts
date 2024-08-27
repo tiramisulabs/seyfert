@@ -7,7 +7,7 @@ import type {
 	UnionToTuple,
 	When,
 } from '../../common';
-import type { AllChannels, MessageCommandInteraction, UserCommandInteraction } from '../../structures';
+import type { AllChannels, EntryPointInteraction } from '../../structures';
 import { BaseContext } from '../basecontext';
 import type { RegisteredMiddlewares } from '../decorators';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
@@ -15,26 +15,16 @@ import type {
 	GuildMemberStructure,
 	GuildStructure,
 	MessageStructure,
-	UserStructure,
 	WebhookMessageStructure,
 } from '../../client/transformers';
-import type { EntryPointCommand } from './entryPoint';
+import type { EntryPointCommand } from './entrypoint';
 
-export type InteractionTarget<T> = T extends MessageCommandInteraction ? MessageStructure : UserStructure;
+export interface EntryPointContext<M extends keyof RegisteredMiddlewares = never> extends BaseContext, ExtendContext {}
 
-export interface EntryPointContext<
-	T extends MessageCommandInteraction | UserCommandInteraction,
-	M extends keyof RegisteredMiddlewares = never,
-> extends BaseContext,
-		ExtendContext {}
-
-export class EntryPointContext<
-	T extends MessageCommandInteraction | UserCommandInteraction,
-	M extends keyof RegisteredMiddlewares = never,
-> extends BaseContext {
+export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> extends BaseContext {
 	constructor(
 		readonly client: UsingClient,
-		readonly interaction: T,
+		readonly interaction: EntryPointInteraction,
 		readonly shardId: number,
 		readonly command: EntryPointCommand,
 	) {

@@ -43,6 +43,7 @@ import { LangsHandler } from '../langs/handler';
 import type {
 	ChatInputCommandInteraction,
 	ComponentInteraction,
+	EntryPointInteraction,
 	MessageCommandInteraction,
 	ModalSubmitInteraction,
 	UserCommandInteraction,
@@ -341,6 +342,7 @@ export class BaseClient {
 					.applications(applicationId)
 					.guilds(guildId)
 					.commands.put({
+						// @ts-expect-error this is for EntryCommands, but it's fine
 						body: filter.never
 							.filter(
 								cmd => cmd.guildId?.includes(guildId) && (!('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash),
@@ -419,6 +421,7 @@ export interface BaseClientOptions {
 			| MessageCommandInteraction<boolean>
 			| ComponentInteraction
 			| ModalSubmitInteraction
+			| EntryPointInteraction<boolean>
 			| When<InferWithPrefix, MessageStructure, never>,
 	) => {};
 	globalMiddlewares?: readonly (keyof RegisteredMiddlewares)[];

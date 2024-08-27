@@ -7,7 +7,7 @@ export interface InteractionRoutes {
 		callback: {
 			post(
 				args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIInteractionCallbackJSONBody>,
-			): Promise<RESTPostAPIInteractionCallbackResult>;
+			): Promise<RESTPostAPIInteractionCallbackResult | undefined>;
 		};
 	};
 }
