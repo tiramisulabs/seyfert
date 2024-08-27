@@ -26,6 +26,7 @@ export type APIInteractionResponse =
 	| APIInteractionResponsePong
 	| APIInteractionResponseUpdateMessage
 	| APIModalInteractionResponse
+	| APIInteractionResponseLaunchActivity
 	| APIPremiumRequiredInteractionResponse;
 
 export interface APIInteractionResponsePong {
@@ -63,6 +64,10 @@ export interface APIInteractionResponseDeferredMessageUpdate {
 export interface APIInteractionResponseUpdateMessage {
 	type: InteractionResponseType.UpdateMessage;
 	data?: APIInteractionResponseCallbackData;
+}
+
+export interface APIInteractionResponseLaunchActivity {
+	type: InteractionResponseType.LaunchActivity;
 }
 
 /**
@@ -106,7 +111,7 @@ export enum InteractionResponseType {
 	/**
 	 * Launch the Activity associated with the app. Only available for apps with Activities enabled
 	 */
-	LaunchActivity = 14,
+	LaunchActivity = 12,
 }
 
 /**

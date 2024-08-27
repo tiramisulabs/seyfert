@@ -184,6 +184,16 @@ export type RESTPutAPIApplicationGuildCommandsResult = RESTAPIApplicationGuildCo
 export type RESTPostAPIInteractionCallbackJSONBody = APIInteractionResponse;
 
 /**
+ * https://discord.com/developers/docs/interactions/receiving-and-responding#create-interaction-response-query-string-params
+ */
+export type RESTPostAPIInteractionCallbackQuery = {
+	/**
+	 * Whether to include a RESTPostAPIInteractionCallbackResult as the response instead of a 204.
+	 */
+	with_response?: boolean;
+};
+
+/**
  * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback
  */
 export type RESTPostAPIInteractionCallbackResult = APIInteractionCallbackLaunchActivity | APIInteractionCallbackMessage;

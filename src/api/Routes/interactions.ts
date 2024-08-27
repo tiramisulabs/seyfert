@@ -1,4 +1,8 @@
-import type { RESTPostAPIInteractionCallbackJSONBody, RESTPostAPIInteractionCallbackResult } from '../../types';
+import type {
+	RESTPostAPIInteractionCallbackJSONBody,
+	RESTPostAPIInteractionCallbackQuery,
+	RESTPostAPIInteractionCallbackResult,
+} from '../../types';
 import type { ProxyRequestMethod } from '../Router';
 import type { RestArguments } from '../api';
 
@@ -6,7 +10,11 @@ export interface InteractionRoutes {
 	interactions: (id: string) => (token: string) => {
 		callback: {
 			post(
-				args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIInteractionCallbackJSONBody>,
+				args: RestArguments<
+					ProxyRequestMethod.Post,
+					RESTPostAPIInteractionCallbackJSONBody,
+					RESTPostAPIInteractionCallbackQuery
+				>,
 			): Promise<RESTPostAPIInteractionCallbackResult | undefined>;
 		};
 	};

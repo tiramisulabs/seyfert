@@ -37,23 +37,26 @@ import {
 	type RESTPostAPIInteractionCallbackJSONBody,
 	type RESTAPIAttachment,
 	type APIEntryPointCommandInteraction,
+	type InteractionCallbackData,
+	type InteractionCallbackResourceActivity,
 } from '../types';
 
 import type { RawFile } from '../api';
 import { ActionRow, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
 import type { ContextOptionsResolved, UsingClient } from '../commands';
-import type {
-	ObjectToLower,
-	OmitInsert,
-	ToClass,
-	When,
-	ComponentInteractionMessageUpdate,
-	InteractionCreateBodyRequest,
-	InteractionMessageUpdateBodyRequest,
-	MessageCreateBodyRequest,
-	MessageUpdateBodyRequest,
-	MessageWebhookCreateBodyRequest,
-	ModalCreateBodyRequest,
+import {
+	type ObjectToLower,
+	type OmitInsert,
+	type ToClass,
+	type When,
+	type ComponentInteractionMessageUpdate,
+	type InteractionCreateBodyRequest,
+	type InteractionMessageUpdateBodyRequest,
+	type MessageCreateBodyRequest,
+	type MessageUpdateBodyRequest,
+	type MessageWebhookCreateBodyRequest,
+	type ModalCreateBodyRequest,
+	toCamelCase,
 } from '../common';
 import { channelFrom, type AllChannels } from './';
 import { DiscordBase } from './extra/DiscordBase';
@@ -76,6 +79,7 @@ export type ReplyInteractionBody =
 			type: InteractionResponseType.ChannelMessageWithSource | InteractionResponseType.UpdateMessage;
 			data: InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest | ComponentInteractionMessageUpdate;
 	  }
+	| { type: InteractionResponseType.LaunchActivity }
 	| Exclude<RESTPostAPIInteractionCallbackJSONBody, APIInteractionResponsePong>;
 
 export type __InternalReplyFunction = (_: { body: APIInteractionResponse; files?: RawFile[] }) => Promise<any>;
@@ -162,6 +166,8 @@ export class BaseInteraction<
 										: [],
 								},
 				};
+			case InteractionResponseType.LaunchActivity:
+				return body;
 			default:
 				return body;
 		}
@@ -493,9 +499,52 @@ export class EntryPointInteraction<FromGuild extends boolean = boolean> extends 
 	FromGuild,
 	APIEntryPointCommandInteraction
 > {
+	async withReponse(body: InteractionCreateBodyRequest | { type: InteractionResponseType.LaunchActivity }) {
+		if ('type' in body) {
+			const response = await this.client.proxy
+				.interactions(this.id)(this.token)
+				.callback.post({
+					body,
+					query: { with_response: true },
+				});
+
+			const result: EntryPointWithResponseResult = {
+				//@ts-expect-error
+				resource: {
+					type: response!.resource?.type!,
+				},
+				interaction: toCamelCase(response!.interaction),
+			};
+			if (response?.resource?.message) {
+				// @ts-expect-error
+				result.resource!.message = Transformers.WebhookMessage(
+					this.client,
+					response.resource.message as any,
+					this.id,
+					this.token,
+				);
+			} else {
+				// @ts-expect-error
+				result.resource!.activityInstance = response!.resource?.activity_instance!;
+			}
+			return result;
+		}
+		return this.write(body);
+	}
+
 	isEntryPoint(): this is EntryPointInteraction {
 		return true;
 	}
+}
+
+export interface EntryPointWithResponseResult {
+	interaction: ObjectToLower<InteractionCallbackData>;
+	resource?:
+		| { type: InteractionResponseType.LaunchActivity; activityInstance: InteractionCallbackResourceActivity }
+		| {
+				type: Exclude<InteractionResponseType, InteractionResponseType.LaunchActivity>;
+				message: WebhookMessageStructure;
+		  };
 }
 
 export interface ComponentInteraction
