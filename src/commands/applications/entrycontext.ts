@@ -17,7 +17,7 @@ import type {
 	MessageStructure,
 	WebhookMessageStructure,
 } from '../../client/transformers';
-import type { EntryPointCommand } from './entrypoint';
+import type { EntryPointCommand } from './entryPoint';
 
 export interface EntryPointContext<M extends keyof RegisteredMiddlewares = never> extends BaseContext, ExtendContext {}
 

@@ -17,7 +17,7 @@ import { Command, type CommandOption, SubCommand } from './applications/chat';
 import { ContextMenuCommand } from './applications/menu';
 import type { UsingClient } from './applications/shared';
 import { promises } from 'node:fs';
-import type { EntryPointCommand } from './applications/entrypoint';
+import type { EntryPointCommand } from '.';
 
 export class CommandHandler extends BaseHandler {
 	values: (Command | ContextMenuCommand | EntryPointCommand)[] = [];
