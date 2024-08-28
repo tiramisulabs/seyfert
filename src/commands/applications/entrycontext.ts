@@ -79,7 +79,7 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 	channel(mode?: 'rest' | 'flow'): Promise<AllChannels>;
 	channel(mode?: 'cache'): ReturnCache<AllChannels>;
 	channel(mode: 'cache' | 'rest' | 'flow' = 'cache') {
-		if (this.interaction?.channel && mode === 'cache')
+		if (this.interaction.channel && mode === 'cache')
 			return this.client.cache.adapter.isAsync ? Promise.resolve(this.interaction.channel) : this.interaction.channel;
 		return this.client.channels.fetch(this.channelId, mode === 'rest');
 	}

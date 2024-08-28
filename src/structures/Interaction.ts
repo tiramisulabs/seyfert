@@ -39,7 +39,6 @@ import {
 	type APIEntryPointCommandInteraction,
 	type InteractionCallbackData,
 	type InteractionCallbackResourceActivity,
-	type RESTPostAPIInteractionCallbackResult,
 } from '../types';
 
 import type { RawFile } from '../api';
@@ -509,12 +508,12 @@ export class EntryPointInteraction<FromGuild extends boolean = boolean> extends 
 			files = files ? await resolveFiles(files) : undefined;
 			body = BaseInteraction.transformBody(rest, files, this.client);
 		}
-		const response = (await this.client.proxy
+		const response = await this.client.proxy
 			.interactions(this.id)(this.token)
 			.callback.post({
 				body,
 				query: { with_response: true },
-			})) as RESTPostAPIInteractionCallbackResult;
+			});
 
 		const result: Partial<EntryPointWithResponseResult> = {
 			interaction: toCamelCase(response.interaction),

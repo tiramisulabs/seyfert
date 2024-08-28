@@ -13,6 +13,20 @@ export interface InteractionRoutes {
 				args: RestArguments<
 					ProxyRequestMethod.Post,
 					RESTPostAPIInteractionCallbackJSONBody,
+					Omit<RESTPostAPIInteractionCallbackQuery, 'with_response'> & { with_response: true }
+				>,
+			): Promise<RESTPostAPIInteractionCallbackResult>;
+			post(
+				args: RestArguments<
+					ProxyRequestMethod.Post,
+					RESTPostAPIInteractionCallbackJSONBody,
+					Omit<RESTPostAPIInteractionCallbackQuery, 'with_response'> & { with_response: false }
+				>,
+			): Promise<undefined>;
+			post(
+				args: RestArguments<
+					ProxyRequestMethod.Post,
+					RESTPostAPIInteractionCallbackJSONBody,
 					RESTPostAPIInteractionCallbackQuery
 				>,
 			): Promise<RESTPostAPIInteractionCallbackResult | undefined>;

@@ -96,14 +96,17 @@ export function MergeOptions<T>(defaults: any, ...options: any[]): T {
  * @param func The predicate function used to test elements of the array.
  * @returns An object containing two arrays: one with elements that passed the test and one with elements that did not.
  */
-export function filterSplit<Element, Predicate extends (value: Element) => boolean>(arr: Element[], func: Predicate) {
+export function filterSplit<Element, Never = Element>(
+	arr: (Element | Never)[],
+	func: (value: Element | Never) => boolean,
+) {
 	const expect: Element[] = [];
-	const never: Element[] = [];
+	const never: Never[] = [];
 
 	for (const element of arr) {
 		const test = func(element);
-		if (test) expect.push(element);
-		else never.push(element);
+		if (test) expect.push(element as Element);
+		else never.push(element as Never);
 	}
 
 	return { expect, never };

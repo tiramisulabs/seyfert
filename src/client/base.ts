@@ -6,6 +6,7 @@ import type {
 	Command,
 	CommandContext,
 	ContextMenuCommand,
+	EntryPointCommand,
 	ExtraProps,
 	MenuCommandContext,
 	RegisteredMiddlewares,
@@ -319,10 +320,12 @@ export class BaseClient {
 		BaseClient.assertString(applicationId, 'applicationId is not a string');
 
 		const commands = this.commands!.values;
-		const filter = filterSplit(commands, command => !command.guildId);
+		const filter = filterSplit<
+			Omit<Command | ContextMenuCommand, 'guildId'> | EntryPointCommand,
+			MakeRequired<Command | ContextMenuCommand, 'guildId'>
+		>(commands, command => ('guildId' in command ? !command.guildId : true));
 
 		if (this.commands?.entryPoint) {
-			// @ts-expect-error
 			filter.expect.push(this.commands.entryPoint);
 		}
 
@@ -336,7 +339,7 @@ export class BaseClient {
 		const guilds = new Set<string>();
 
 		for (const command of filter.never) {
-			for (const guild_id of command.guildId!) {
+			for (const guild_id of command.guildId) {
 				guilds.add(guild_id);
 			}
 		}
@@ -349,7 +352,7 @@ export class BaseClient {
 					.commands.put({
 						body: filter.never
 							.filter(
-								cmd => cmd.guildId?.includes(guildId) && (!('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash),
+								cmd => cmd.guildId.includes(guildId) && (!('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash),
 							)
 							.map(x => x.toJSON()),
 					});
