@@ -59,6 +59,8 @@ import type {
 	APIAutoModerationRule,
 	APIEntitlement,
 	GatewayVoiceChannelEffectSendDispachData,
+	APISubscription,
+	GatewayEntitlementCreateDispatchData,
 } from '../types';
 import { GatewayDispatchEvents } from '../types';
 
@@ -147,6 +149,7 @@ export interface Events {
 	[GatewayDispatchEvents.VoiceServerUpdate]: GatewayVoiceServerUpdateDispatchData;
 	[GatewayDispatchEvents.WebhooksUpdate]: GatewayWebhooksUpdateDispatchData;
 	[GatewayDispatchEvents.InteractionCreate]: GatewayInteractionCreateDispatchData;
+	[GatewayDispatchEvents.EntitlementCreate]: GatewayEntitlementCreateDispatchData;
 }
 
 export type StageSameEvents = RestToKeys<
@@ -210,11 +213,15 @@ export type AutoModetaractionRuleEvents = RestToKeys<
 >;
 
 export type EntitlementEvents = RestToKeys<
+	[APIEntitlement, GatewayDispatchEvents.EntitlementDelete, GatewayDispatchEvents.EntitlementUpdate]
+>;
+
+export type SubscriptionEvents = RestToKeys<
 	[
-		APIEntitlement,
-		GatewayDispatchEvents.EntitlementCreate,
-		GatewayDispatchEvents.EntitlementDelete,
-		GatewayDispatchEvents.EntitlementUpdate,
+		APISubscription,
+		GatewayDispatchEvents.SubscriptionCreate,
+		GatewayDispatchEvents.SubscriptionDelete,
+		GatewayDispatchEvents.SubscriptionUpdate,
 	]
 >;
 
@@ -226,6 +233,7 @@ export type NormalizeEvents = Events &
 	IntegrationSameEvents &
 	EntitlementEvents &
 	PollVoteSameEvents &
-	StageSameEvents & { RAW: GatewayDispatchEvents };
+	StageSameEvents &
+	SubscriptionEvents & { RAW: GatewayDispatchEvents };
 
 export type GatewayEvents = { [x in keyof NormalizeEvents]: NormalizeEvents[x] };

@@ -57,7 +57,6 @@ export interface ApplicationRoutes {
 					get(
 						args?: RestArguments<ProxyRequestMethod.Get>,
 					): Promise<RESTGetAPIGuildApplicationCommandsPermissionsResult>;
-					// put(args?: RestArguments<ProxyRequestMethod.Put, RESTPutAPIGuildApplicationCommandsPermissionsJSONBody>): Promise<RESTPutAPIGuildApplicationCommandsPermissionsResult>
 				};
 				(
 					id: string,
