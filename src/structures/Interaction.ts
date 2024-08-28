@@ -36,23 +36,28 @@ import {
 	type MessageFlags,
 	type RESTPostAPIInteractionCallbackJSONBody,
 	type RESTAPIAttachment,
+	type APIEntryPointCommandInteraction,
+	type InteractionCallbackData,
+	type InteractionCallbackResourceActivity,
+	type RESTPostAPIInteractionCallbackResult,
 } from '../types';
 
 import type { RawFile } from '../api';
 import { ActionRow, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
 import type { ContextOptionsResolved, UsingClient } from '../commands';
-import type {
-	ObjectToLower,
-	OmitInsert,
-	ToClass,
-	When,
-	ComponentInteractionMessageUpdate,
-	InteractionCreateBodyRequest,
-	InteractionMessageUpdateBodyRequest,
-	MessageCreateBodyRequest,
-	MessageUpdateBodyRequest,
-	MessageWebhookCreateBodyRequest,
-	ModalCreateBodyRequest,
+import {
+	type ObjectToLower,
+	type OmitInsert,
+	type ToClass,
+	type When,
+	type ComponentInteractionMessageUpdate,
+	type InteractionCreateBodyRequest,
+	type InteractionMessageUpdateBodyRequest,
+	type MessageCreateBodyRequest,
+	type MessageUpdateBodyRequest,
+	type MessageWebhookCreateBodyRequest,
+	type ModalCreateBodyRequest,
+	toCamelCase,
 } from '../common';
 import { channelFrom, type AllChannels } from './';
 import { DiscordBase } from './extra/DiscordBase';
@@ -75,6 +80,7 @@ export type ReplyInteractionBody =
 			type: InteractionResponseType.ChannelMessageWithSource | InteractionResponseType.UpdateMessage;
 			data: InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest | ComponentInteractionMessageUpdate;
 	  }
+	| { type: InteractionResponseType.LaunchActivity }
 	| Exclude<RESTPostAPIInteractionCallbackJSONBody, APIInteractionResponsePong>;
 
 export type __InternalReplyFunction = (_: { body: APIInteractionResponse; files?: RawFile[] }) => Promise<any>;
@@ -161,6 +167,8 @@ export class BaseInteraction<
 										: [],
 								},
 				};
+			case InteractionResponseType.LaunchActivity:
+				return body;
 			default:
 				return body;
 		}
@@ -168,6 +176,7 @@ export class BaseInteraction<
 
 	static transformBody<T>(
 		body:
+			| InteractionCreateBodyRequest
 			| InteractionMessageUpdateBodyRequest
 			| MessageUpdateBodyRequest
 			| MessageCreateBodyRequest
@@ -192,9 +201,9 @@ export class BaseInteraction<
 					...resolveAttachment(x),
 				})) ?? undefined;
 		} else if (files?.length) {
-			payload.attachments = files?.map((x, id) => ({
+			payload.attachments = files?.map(({ filename }, id) => ({
 				id,
-				filename: x.name,
+				filename,
 			})) as RESTAPIAttachment[];
 		}
 		return payload as T;
@@ -279,6 +288,10 @@ export class BaseInteraction<
 		return false;
 	}
 
+	isEntryPoint(): this is EntryPointInteraction {
+		return false;
+	}
+
 	static from(client: UsingClient, gateway: GatewayInteractionCreateDispatchData, __reply?: __InternalReplyFunction) {
 		switch (gateway.type) {
 			case InteractionType.ApplicationCommandAutocomplete:
@@ -296,6 +309,8 @@ export class BaseInteraction<
 						return new UserCommandInteraction(client, gateway as APIUserApplicationCommandInteraction, __reply);
 					case ApplicationCommandType.Message:
 						return new MessageCommandInteraction(client, gateway as APIMessageApplicationCommandInteraction, __reply);
+					case ApplicationCommandType.PrimaryEntryPoint:
+						return new EntryPointInteraction(client, gateway as APIEntryPointCommandInteraction, __reply);
 				}
 			// biome-ignore lint/suspicious/noFallthroughSwitchClause: bad interaction  between biome and ts-server
 			case InteractionType.MessageComponent:
@@ -345,6 +360,7 @@ export type AllInteractions =
 	| ComponentInteraction
 	| SelectMenuInteraction
 	| ModalSubmitInteraction
+	| EntryPointInteraction
 	| BaseInteraction;
 
 export interface AutocompleteInteraction
@@ -476,6 +492,64 @@ export class ApplicationCommandInteraction<
 	) {
 		return this.reply(data);
 	}
+}
+
+/**
+ * Seyfert don't support activities, so this interaction is blank
+ */
+export class EntryPointInteraction<FromGuild extends boolean = boolean> extends ApplicationCommandInteraction<
+	FromGuild,
+	APIEntryPointCommandInteraction
+> {
+	async withReponse(data?: InteractionCreateBodyRequest) {
+		let body = { type: InteractionResponseType.LaunchActivity } as const;
+
+		if (data) {
+			let { files, ...rest } = data;
+			files = files ? await resolveFiles(files) : undefined;
+			body = BaseInteraction.transformBody(rest, files, this.client);
+		}
+		const response = (await this.client.proxy
+			.interactions(this.id)(this.token)
+			.callback.post({
+				body,
+				query: { with_response: true },
+			})) as RESTPostAPIInteractionCallbackResult;
+
+		const result: Partial<EntryPointWithResponseResult> = {
+			interaction: toCamelCase(response.interaction),
+		};
+
+		if (response.resource) {
+			if (response.resource.type !== InteractionResponseType.LaunchActivity) {
+				result.resource = {
+					type: response.resource.type,
+					message: Transformers.WebhookMessage(this.client, response.resource.message as any, this.id, this.token),
+				};
+			} else {
+				result.resource = {
+					type: response.resource.type,
+					activityInstance: response.resource.activity_instance!,
+				};
+			}
+		}
+
+		return result as EntryPointWithResponseResult;
+	}
+
+	isEntryPoint(): this is EntryPointInteraction {
+		return true;
+	}
+}
+
+export interface EntryPointWithResponseResult {
+	interaction: ObjectToLower<InteractionCallbackData>;
+	resource?:
+		| { type: InteractionResponseType.LaunchActivity; activityInstance: InteractionCallbackResourceActivity }
+		| {
+				type: Exclude<InteractionResponseType, InteractionResponseType.LaunchActivity>;
+				message: WebhookMessageStructure;
+		  };
 }
 
 export interface ComponentInteraction

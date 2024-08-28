@@ -43,6 +43,7 @@ import { LangsHandler } from '../langs/handler';
 import type {
 	ChatInputCommandInteraction,
 	ComponentInteraction,
+	EntryPointInteraction,
 	MessageCommandInteraction,
 	ModalSubmitInteraction,
 	UserCommandInteraction,
@@ -320,6 +321,11 @@ export class BaseClient {
 		const commands = this.commands!.values;
 		const filter = filterSplit(commands, command => !command.guildId);
 
+		if (this.commands?.entryPoint) {
+			// @ts-expect-error
+			filter.expect.push(this.commands.entryPoint);
+		}
+
 		if (!cachePath || (await this.shouldUploadCommands(cachePath)))
 			await this.proxy.applications(applicationId).commands.put({
 				body: filter.expect
@@ -419,6 +425,7 @@ export interface BaseClientOptions {
 			| MessageCommandInteraction<boolean>
 			| ComponentInteraction
 			| ModalSubmitInteraction
+			| EntryPointInteraction<boolean>
 			| When<InferWithPrefix, MessageStructure, never>,
 	) => {};
 	globalMiddlewares?: readonly (keyof RegisteredMiddlewares)[];

@@ -294,9 +294,9 @@ export class MessagesMethods extends DiscordBase {
 					...resolveAttachment(x),
 				})) ?? undefined;
 		} else if (files?.length) {
-			payload.attachments = files?.map((x, id) => ({
+			payload.attachments = files?.map(({ filename }, id) => ({
 				id,
-				filename: x.name,
+				filename,
 			})) as RESTAPIAttachment[];
 		}
 		return payload as T;

@@ -2,9 +2,12 @@ import type {
 	APIApplicationCommand,
 	APIApplicationCommandPermission,
 	APIGuildApplicationCommandPermissions,
+	APIInteractionCallbackLaunchActivity,
+	APIInteractionCallbackMessage,
 	APIInteractionResponse,
 	APIInteractionResponseCallbackData,
 	ApplicationCommandType,
+	EntryPointCommandHandlerType,
 } from '../payloads';
 import type { AddUndefinedToPossiblyUndefinedPropertiesOfInterface, NonNullableFields, StrictPartial } from '../utils';
 import type {
@@ -53,6 +56,7 @@ type RESTPostAPIBaseApplicationCommandsJSONBody = AddUndefinedToPossiblyUndefine
 		| 'name_localized'
 		| 'type'
 		| 'version'
+		| 'handler'
 	> &
 		Partial<
 			NonNullableFields<Pick<APIApplicationCommand, 'contexts'>> &
@@ -78,9 +82,19 @@ export interface RESTPostAPIContextMenuApplicationCommandsJSONBody extends RESTP
 /**
  * https://discord.com/developers/docs/interactions/application-commands#create-global-application-command
  */
+export interface RESTPostAPIEntryPointApplicationCommandsJSONBody extends RESTPostAPIBaseApplicationCommandsJSONBody {
+	type: ApplicationCommandType.PrimaryEntryPoint;
+	description: string;
+	handler: EntryPointCommandHandlerType;
+}
+
+/**
+ * https://discord.com/developers/docs/interactions/application-commands#create-global-application-command
+ */
 export type RESTPostAPIApplicationCommandsJSONBody =
 	| RESTPostAPIChatInputApplicationCommandsJSONBody
-	| RESTPostAPIContextMenuApplicationCommandsJSONBody;
+	| RESTPostAPIContextMenuApplicationCommandsJSONBody
+	| RESTPostAPIEntryPointApplicationCommandsJSONBody;
 
 /**
  * https://discord.com/developers/docs/interactions/application-commands#create-global-application-command
@@ -112,15 +126,17 @@ export type RESTPutAPIApplicationCommandsResult = APIApplicationCommand[];
  */
 export type RESTGetAPIApplicationGuildCommandsQuery = RESTGetAPIApplicationCommandsQuery;
 
-/**
- * https://discord.com/developers/docs/interactions/application-commands#get-guild-application-commands
- */
-export type RESTGetAPIApplicationGuildCommandsResult = Omit<APIApplicationCommand, 'dm_permission'>[];
+export type RESTAPIApplicationGuildCommand = Omit<APIApplicationCommand, 'dm_permission' | 'handler'>;
 
 /**
  * https://discord.com/developers/docs/interactions/application-commands#get-guild-application-commands
  */
-export type RESTGetAPIApplicationGuildCommandResult = Omit<APIApplicationCommand, 'dm_permission'>;
+export type RESTGetAPIApplicationGuildCommandsResult = RESTAPIApplicationGuildCommand[];
+
+/**
+ * https://discord.com/developers/docs/interactions/application-commands#get-guild-application-commands
+ */
+export type RESTGetAPIApplicationGuildCommandResult = RESTAPIApplicationGuildCommand;
 
 /**
  * https://discord.com/developers/docs/interactions/application-commands#create-guild-application-command
@@ -132,7 +148,7 @@ export type RESTPostAPIApplicationGuildCommandsJSONBody =
 /**
  * https://discord.com/developers/docs/interactions/application-commands#create-guild-application-command
  */
-export type RESTPostAPIApplicationGuildCommandsResult = Omit<APIApplicationCommand, 'dm_permission'>;
+export type RESTPostAPIApplicationGuildCommandsResult = RESTAPIApplicationGuildCommand;
 
 /**
  * https://discord.com/developers/docs/interactions/application-commands#edit-guild-application-command
@@ -145,7 +161,7 @@ export type RESTPatchAPIApplicationGuildCommandJSONBody = StrictPartial<
 /**
  * https://discord.com/developers/docs/interactions/application-commands#edit-guild-application-command
  */
-export type RESTPatchAPIApplicationGuildCommandResult = Omit<APIApplicationCommand, 'dm_permission'>;
+export type RESTPatchAPIApplicationGuildCommandResult = RESTAPIApplicationGuildCommand;
 
 /**
  * https://discord.com/developers/docs/interactions/application-commands#bulk-overwrite-guild-application-commands
@@ -160,12 +176,27 @@ export type RESTPutAPIApplicationGuildCommandsJSONBody = (
 /**
  * https://discord.com/developers/docs/interactions/application-commands#bulk-overwrite-guild-application-commands
  */
-export type RESTPutAPIApplicationGuildCommandsResult = Omit<APIApplicationCommand, 'dm_permission'>[];
+export type RESTPutAPIApplicationGuildCommandsResult = RESTAPIApplicationGuildCommand[];
 
 /**
  * https://discord.com/developers/docs/interactions/receiving-and-responding#create-interaction-response
  */
 export type RESTPostAPIInteractionCallbackJSONBody = APIInteractionResponse;
+
+/**
+ * https://discord.com/developers/docs/interactions/receiving-and-responding#create-interaction-response-query-string-params
+ */
+export type RESTPostAPIInteractionCallbackQuery = {
+	/**
+	 * Whether to include a RESTPostAPIInteractionCallbackResult as the response instead of a 204.
+	 */
+	with_response?: boolean;
+};
+
+/**
+ * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback
+ */
+export type RESTPostAPIInteractionCallbackResult = APIInteractionCallbackLaunchActivity | APIInteractionCallbackMessage;
 
 /**
  * https://discord.com/developers/docs/interactions/receiving-and-responding#create-interaction-response

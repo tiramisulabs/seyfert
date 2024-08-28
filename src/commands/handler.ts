@@ -17,9 +17,11 @@ import { Command, type CommandOption, SubCommand } from './applications/chat';
 import { ContextMenuCommand } from './applications/menu';
 import type { UsingClient } from './applications/shared';
 import { promises } from 'node:fs';
+import type { EntryPointCommand } from '.';
 
 export class CommandHandler extends BaseHandler {
 	values: (Command | ContextMenuCommand)[] = [];
+	entryPoint: EntryPointCommand | null = null;
 
 	protected filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
 
@@ -290,15 +292,17 @@ export class CommandHandler extends BaseHandler {
 					}
 				}
 				this.stablishContextCommandDefaults(commandInstance);
-				this.values.push(commandInstance);
 				this.parseLocales(commandInstance);
+				if ('handler' in commandInstance) {
+					this.entryPoint = commandInstance as EntryPointCommand;
+				} else this.values.push(commandInstance);
 			}
 		}
 
 		return this.values;
 	}
 
-	parseLocales(command: Command | SubCommand | ContextMenuCommand) {
+	parseLocales(command: InstanceType<HandleableCommand>) {
 		this.parseGlobalLocales(command);
 		if (command instanceof ContextMenuCommand) {
 			this.parseContextMenuLocales(command);
@@ -322,7 +326,7 @@ export class CommandHandler extends BaseHandler {
 		return command;
 	}
 
-	parseGlobalLocales(command: Command | SubCommand | ContextMenuCommand) {
+	parseGlobalLocales(command: InstanceType<HandleableCommand>) {
 		if (command.__t) {
 			command.name_localizations = {};
 			command.description_localizations = {};
@@ -488,7 +492,7 @@ export class CommandHandler extends BaseHandler {
 		return file.default ? [file.default] : undefined;
 	}
 
-	onCommand(file: HandleableCommand): Command | SubCommand | ContextMenuCommand | false {
+	onCommand(file: HandleableCommand): InstanceType<HandleableCommand> | false {
 		return new file();
 	}
 
@@ -501,6 +505,6 @@ export type FileLoaded<T = null> = {
 	default?: NulleableCoalising<T, HandleableCommand>;
 } & Record<string, NulleableCoalising<T, HandleableCommand>>;
 
-export type HandleableCommand = new () => Command | SubCommand | ContextMenuCommand;
+export type HandleableCommand = new () => Command | SubCommand | ContextMenuCommand | EntryPointCommand;
 export type SeteableCommand = new () => Extract<InstanceType<HandleableCommand>, SubCommand>;
 export type HandleableSubCommand = new () => SubCommand;

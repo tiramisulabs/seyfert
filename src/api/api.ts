@@ -347,9 +347,9 @@ export class ApiHandler {
 				const fileKey = file.key ?? `files[${index}]`;
 
 				if (isBufferLike(file.data)) {
-					formData.append(fileKey, new Blob([file.data], { type: file.contentType }), file.name);
+					formData.append(fileKey, new Blob([file.data], { type: file.contentType }), file.filename);
 				} else {
-					formData.append(fileKey, new Blob([`${file.data}`], { type: file.contentType }), file.name);
+					formData.append(fileKey, new Blob([`${file.data}`], { type: file.contentType }), file.filename);
 				}
 			}
 
