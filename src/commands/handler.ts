@@ -293,9 +293,9 @@ export class CommandHandler extends BaseHandler {
 				}
 				this.stablishContextCommandDefaults(commandInstance);
 				this.parseLocales(commandInstance);
-				if ('handler' in commandInstance) {
+				if ('handler' in commandInstance && commandInstance.handler) {
 					this.entryPoint = commandInstance as EntryPointCommand;
-				} else this.values.push(commandInstance);
+				} else this.values.push(commandInstance as Command);
 			}
 		}
 
