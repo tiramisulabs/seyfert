@@ -74,7 +74,7 @@ export class OptionResolver {
 	}
 
 	getAutocomplete() {
-		return (this.getCommand()?.options as CommandOption[]).find(
+		return (this.getCommand()?.options as CommandOption[] | undefined)?.find(
 			option => option.name === this.hoistedOptions.find(x => x.focused)?.name,
 		) as CommandAutocompleteOption | undefined;
 	}
