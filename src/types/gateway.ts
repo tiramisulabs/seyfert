@@ -33,6 +33,7 @@ import type {
 	APIAuditLogEntry,
 	APIEntitlement,
 	APIPartialEmoji,
+	APISubscription,
 } from './payloads/index';
 import type { ReactionType } from './rest/index';
 import type { AnimationTypes, Nullable } from './utils';
@@ -479,7 +480,9 @@ export type GatewayEntitlementModifyDispatch = DataPayload<
 /**
  * https://discord.com/developers/docs/topics/gateway-events#entitlement-create
  */
-export type GatewayEntitlementCreateDispatchData = GatewayEntitlementModifyDispatchData;
+export type GatewayEntitlementCreateDispatchData = Omit<GatewayEntitlementModifyDispatchData, 'ends_at'> & {
+	ends_at: null;
+};
 
 /**
  * https://discord.com/developers/docs/topics/gateway-events#entitlement-create
@@ -1337,6 +1340,36 @@ export type GatewayStageInstanceUpdateDispatch = DataPayload<
  * https://discord.com/developers/docs/topics/gateway-events#stage-instance-update
  */
 export type GatewayStageInstanceUpdateDispatchData = APIStageInstance;
+
+/**
+ * https://canary.discord.com/developers/docs/topics/gateway-events#subscription-create
+ */
+export type GatewaySubscriptionCreateDispatch = DataPayload<
+	GatewayDispatchEvents.SubscriptionCreate,
+	GatewaySubscriptionCreateDispatchData
+>;
+
+export type GatewaySubscriptionCreateDispatchData = APISubscription;
+
+/**
+ * https://canary.discord.com/developers/docs/topics/gateway-events#subscription-update
+ */
+export type GatewaySubscriptionUpdateDispatch = DataPayload<
+	GatewayDispatchEvents.SubscriptionUpdate,
+	GatewaySubscriptionUpdateDispatchData
+>;
+
+export type GatewaySubscriptionUpdateDispatchData = APISubscription;
+
+/**
+ * https://canary.discord.com/developers/docs/topics/gateway-events#subscription-delete
+ */
+export type GatewaySubscriptionDeleteDispatch = DataPayload<
+	GatewayDispatchEvents.SubscriptionDelete,
+	GatewaySubscriptionDeleteDispatchData
+>;
+
+export type GatewaySubscriptionDeleteDispatchData = APISubscription;
 
 /**
  * https://discord.com/developers/docs/topics/gateway-events#thread-list-sync
