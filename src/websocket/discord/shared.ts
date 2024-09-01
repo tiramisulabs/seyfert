@@ -8,6 +8,7 @@ import type { Awaitable, DeepPartial, Logger } from '../../common';
 import type { IdentifyProperties } from '../constants';
 
 export interface ShardManagerOptions extends ShardDetails {
+	getInfo(): Promise<APIGatewayBotInfo>;
 	/** Important data which is used by the manager to connect shards to the gateway. */
 	info: APIGatewayBotInfo;
 	/**
@@ -36,6 +37,22 @@ export interface ShardManagerOptions extends ShardDetails {
 	presence?: (shardId: number, workerId: number) => GatewayPresenceUpdateData;
 
 	compress?: boolean;
+	resharding?: {
+		interval: number;
+		percentage: number;
+		/**
+		 *
+		 * @param ids
+		 * @returns
+		 */
+		reloadGuilds: (ids: string[]) => unknown;
+		/**
+		 *
+		 * @param id
+		 * @returns true if deleted
+		 */
+		onGuild: (id: string) => boolean;
+	};
 }
 
 export interface CustomManagerAdapter {
@@ -51,7 +68,7 @@ export interface WorkerManagerOptions extends Omit<ShardManagerOptions, 'handleP
 	workers?: number;
 
 	/**
-	 * @default 32
+	 * @default 16
 	 */
 	shardsPerWorker?: number;
 

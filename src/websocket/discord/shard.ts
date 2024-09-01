@@ -322,10 +322,11 @@ export class Shard {
 	}
 
 	async close(code: number, reason: string) {
+		clearInterval(this.heart.nodeInterval);
 		if (!this.isOpen) {
 			return this.debugger?.warn(`[Shard #${this.id}] Is not open`);
 		}
-		this.debugger?.warn(`[Shard #${this.id}] Called close`);
+		this.debugger?.debug(`[Shard #${this.id}] Called close`);
 		this.websocket?.close(code, reason);
 	}
 
