@@ -231,26 +231,29 @@ export class ApiHandler {
 		url: `/${string}`,
 		request: ApiRequestOptions,
 		response: Response,
-		result: any,
+		result: string,
 		next: () => void,
 		reject: (err: unknown) => void,
 		now: number,
 	) {
-		const content = typeof request === 'object' ? `${JSON.stringify(request)} ` : '';
-		let retryAfter;
+		const content = `${JSON.stringify(request)} `;
+		let retryAfter =
+			Number(response.headers.get('x-ratelimit-reset-after') || response.headers.get('retry-after')) * 1000;
 
-		try {
-			retryAfter = JSON.parse(result).retry_after * 1000;
-		} catch (err) {
-			this.debugger?.warn(`Unexpected error: ${err}`);
-			reject(err);
-			return false;
+		if (Number.isNaN(retryAfter)) {
+			try {
+				retryAfter = JSON.parse(result).retry_after * 1000;
+			} catch (err) {
+				this.debugger?.warn(`Unexpected error: ${err}`);
+				reject(err);
+				return false;
+			}
 		}
 
 		this.debugger?.info(
 			`${
 				response.headers.get('x-ratelimit-global') ? 'Global' : 'Unexpected'
-			} 429: ${result}\n${content} ${now} ${route} ${response.status}: ${this.ratelimits.get(route)!.remaining}/${
+			} 429: ${result.slice(0, 256)}\n${content} ${now} ${route} ${response.status}: ${this.ratelimits.get(route)!.remaining}/${
 				this.ratelimits.get(route)!.limit
 			} left | Reset ${retryAfter} (${this.ratelimits.get(route)!.reset - now}ms left) | Scope ${response.headers.get(
 				'x-ratelimit-scope',
