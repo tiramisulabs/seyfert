@@ -66,6 +66,5 @@
 		"*.ts": [
 			"biome check --write"
 		]
-	},
-	"packageManager": "pnpm@9.0.0"
+	}
 }
