@@ -12,6 +12,7 @@ import {
 	type GatewayVoiceStateUpdate,
 	type GatewaySendPayload,
 	GatewayOpcodes,
+	type GatewayDispatchPayload,
 } from '../../types';
 import { ShardManagerDefaults } from '../constants';
 import { DynamicBucket } from '../structures';
@@ -26,6 +27,7 @@ export class ShardManager extends Map<number, Shard> {
 	connectQueue: ConnectQueue;
 	options: MakeRequired<ShardManagerOptions, keyof typeof ShardManagerDefaults>;
 	debugger?: Logger;
+	reshardInterval?: NodeJS.Timer;
 
 	constructor(options: ShardManagerOptions) {
 		super();
@@ -51,6 +53,72 @@ export class ShardManager extends Map<number, Shard> {
 			workerData = worker_threads.workerData;
 			if (worker_threads.parentPort) parentPort = worker_threads.parentPort;
 		}
+
+		if (this.options.resharding.interval <= 0) return;
+		setInterval(async () => {
+			this.debugger?.debug('Checking if reshard is needed');
+			const info = await this.options.getInfo();
+			if (info.shards <= this.totalShards) return this.debugger?.debug('Resharding not needed');
+			//https://github.com/discordeno/discordeno/blob/6a5f446c0651b9fad9f1550ff1857fe7a026426b/packages/gateway/src/manager.ts#L106C8-L106C94
+			const percentage = (info.shards / ((this.totalShards * 2500) / 1000)) * 100;
+			if (percentage < this.options.resharding.percentage)
+				return this.debugger?.debug(
+					`Percentage is not enough to reshard ${percentage}/${this.options.resharding.percentage}`,
+				);
+
+			this.debugger?.info('Starting resharding process');
+
+			this.connectQueue.concurrency = info.session_start_limit.max_concurrency;
+			this.options.totalShards = info.shards;
+			this.options.info.session_start_limit.max_concurrency = info.session_start_limit.max_concurrency;
+
+			let shardsConnected = 0;
+			let handlePayload = async (sharder: ShardManager, _: number, packet: GatewayDispatchPayload) => {
+				if (
+					(packet.t === 'GUILD_CREATE' || packet.t === 'GUILD_DELETE') &&
+					this.options.resharding.onGuild(packet.d.id)
+				) {
+					return;
+				}
+
+				if (packet.t !== 'READY') return;
+
+				this.options.resharding.reloadGuilds(packet.d.guilds.map(x => x.id));
+
+				if (++shardsConnected < info.shards) return; //waiting for last shard to connect
+
+				// dont listen more events when all shards are ready
+				handlePayload = async () => {};
+				await this.disconnectAll();
+				this.clear();
+
+				for (const [id, shard] of sharder) {
+					shard.options.handlePayload = (shardId, packet) => {
+						return this.options.handlePayload(shardId, packet);
+					};
+					this.set(id, shard);
+				}
+
+				sharder.clear();
+			};
+
+			const resharder = new ShardManager({
+				...this.options,
+				resharding: {
+					interval: 0,
+					percentage: 0,
+					reloadGuilds() {},
+					onGuild() {
+						return true;
+					},
+				},
+				handlePayload: (shardId, packet): unknown => {
+					return handlePayload(resharder, shardId, packet);
+				},
+			});
+
+			await resharder.spawnShards();
+		}, this.options.resharding.interval);
 	}
 
 	get totalShards() {
