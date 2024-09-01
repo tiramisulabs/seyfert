@@ -27,7 +27,6 @@ export class ShardManager extends Map<number, Shard> {
 	connectQueue: ConnectQueue;
 	options: MakeRequired<ShardManagerOptions, keyof typeof ShardManagerDefaults>;
 	debugger?: Logger;
-	reshardInterval?: NodeJS.Timer;
 
 	constructor(options: ShardManagerOptions) {
 		super();
