@@ -20,9 +20,6 @@ jobs:
           version: 9
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: pnpm build
-
-      - run: pnpx pkg-pr-new publish
+      - run: pnpx pkg-pr-new publish './src'
