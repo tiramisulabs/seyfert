@@ -22,4 +22,4 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - run: pnpx pkg-pr-new publish './src'
+      - run: pnpx pkg-pr-new publish
