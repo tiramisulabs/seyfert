@@ -5,8 +5,8 @@ const COMPRESS = false;
 
 const properties = {
 	os: process.platform,
-	browser: 'Seyfert (https://seyfert.dev, v2.0.0)',
-	device: 'Seyfert (https://seyfert.dev, v2.0.0)',
+	browser: 'Seyfert',
+	device: 'Seyfert',
 };
 
 const ShardManagerDefaults: Partial<ShardManagerOptions> = {

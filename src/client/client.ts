@@ -200,9 +200,9 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
 						await this.handleCommand.message(packet.d, shardId);
 						break;
-					case 'READY':
-						if (!this.__handleGuilds) this.__handleGuilds = [];
-						this.__handleGuilds = this.__handleGuilds.concat(packet.d.guilds.map(x => x.id));
+					case 'READY': {
+						const ids = packet.d.guilds.map(x => x.id);
+						this.__handleGuilds = this.__handleGuilds?.concat(ids) ?? ids;
 						this.botId = packet.d.user.id;
 						this.applicationId = packet.d.application.id;
 						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
@@ -220,6 +220,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						this.debugger?.debug(`#${shardId}[${packet.d.user.username}](${this.botId}) is online...`);
 						await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
 						break;
+					}
 					default:
 						await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
 						break;
