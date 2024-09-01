@@ -26,7 +26,7 @@ export interface ShardManagerOptions extends ShardDetails {
 	/**
 	 * The payload handlers for messages on the shard.
 	 */
-	handlePayload(shardId: number, packet: GatewayDispatchPayload): Awaitable<unknown>;
+	handlePayload(shardId: number, packet: GatewayDispatchPayload): unknown;
 	/**
 	 * wheter to send debug information to the console
 	 */
