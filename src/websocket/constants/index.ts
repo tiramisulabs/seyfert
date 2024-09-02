@@ -1,3 +1,4 @@
+import type { DeepPartial } from '../../common';
 import type { GatewayDispatchPayload } from '../../types';
 import type { ShardManagerOptions, WorkerManagerOptions } from '../discord';
 
@@ -9,7 +10,7 @@ const properties = {
 	device: 'Seyfert',
 };
 
-const ShardManagerDefaults: Partial<ShardManagerOptions> = {
+const ShardManagerDefaults: DeepPartial<ShardManagerOptions> = {
 	totalShards: 1,
 	spawnShardDelay: 5300,
 	debug: false,
@@ -32,7 +33,7 @@ const ShardManagerDefaults: Partial<ShardManagerOptions> = {
 	},
 };
 
-const WorkerManagerDefaults: Partial<WorkerManagerOptions> = {
+const WorkerManagerDefaults: DeepPartial<WorkerManagerOptions> = {
 	...ShardManagerDefaults,
 	shardsPerWorker: 16,
 	handlePayload: (_shardId: number, _workerId: number, _packet: GatewayDispatchPayload): void => {},

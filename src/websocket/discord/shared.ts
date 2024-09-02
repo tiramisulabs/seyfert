@@ -8,7 +8,6 @@ import type { Awaitable, DeepPartial, Logger } from '../../common';
 import type { IdentifyProperties } from '../constants';
 
 export interface ShardManagerOptions extends ShardDetails {
-	getInfo(): Promise<APIGatewayBotInfo>;
 	/** Important data which is used by the manager to connect shards to the gateway. */
 	info: APIGatewayBotInfo;
 	/**
@@ -38,6 +37,10 @@ export interface ShardManagerOptions extends ShardDetails {
 
 	compress?: boolean;
 	resharding?: {
+		/**
+		 * @returns the gateway connection info
+		 */
+		getInfo(): Promise<APIGatewayBotInfo>;
 		interval: number;
 		percentage: number;
 		/**

@@ -14,6 +14,8 @@ export interface WatcherOptions
 		| 'totalShards'
 		| 'url'
 		| 'version'
+		| 'resharding'
+		| 'debug'
 	> {
 	filePath: string;
 	transpileCommand: string;

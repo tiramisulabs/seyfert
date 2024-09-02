@@ -56,7 +56,7 @@ export class ShardManager extends Map<number, Shard> {
 		if (this.options.resharding.interval <= 0) return;
 		setInterval(async () => {
 			this.debugger?.debug('Checking if reshard is needed');
-			const info = await this.options.getInfo();
+			const info = await this.options.resharding.getInfo();
 			if (info.shards <= this.totalShards) return this.debugger?.debug('Resharding not needed');
 			//https://github.com/discordeno/discordeno/blob/6a5f446c0651b9fad9f1550ff1857fe7a026426b/packages/gateway/src/manager.ts#L106C8-L106C94
 			const percentage = (info.shards / ((this.totalShards * 2500) / 1000)) * 100;
@@ -104,6 +104,8 @@ export class ShardManager extends Map<number, Shard> {
 			const resharder = new ShardManager({
 				...this.options,
 				resharding: {
+					// getInfo mock, we don't need it
+					getInfo: () => ({}) as any,
 					interval: 0,
 					percentage: 0,
 					reloadGuilds() {},
