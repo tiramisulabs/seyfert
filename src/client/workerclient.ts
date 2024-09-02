@@ -1,7 +1,6 @@
 import { type GatewayDispatchPayload, type GatewaySendPayload, GatewayIntentBits } from '../types';
 import { randomUUID } from 'node:crypto';
 import { ApiHandler, Logger } from '..';
-import type { Cache } from '../cache';
 import { WorkerAdapter } from '../cache';
 import { LogLevels, lazyLoadPackage, type DeepPartial, type When } from '../common';
 import { EventHandler } from '../events';
@@ -16,6 +15,7 @@ import type {
 	WorkerSendResultPayload,
 	WorkerSendShardInfo,
 	WorkerShardInfo,
+	WorkerShardsConnected,
 	WorkerStart,
 } from '../websocket/discord/worker';
 import type { ManagerMessages } from '../websocket/discord/workermanager';
@@ -125,7 +125,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		if (this.__setServicesCache) {
 			this.setServices({
 				cache: {
-					disabledCache: this.options.disabledCache,
+					disabledCache: this.cache.disabledCache,
 				},
 			});
 		} else {
@@ -136,7 +136,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			this.setServices({
 				cache: {
 					adapter,
-					disabledCache: this.options.disabledCache,
+					disabledCache: this.cache.disabledCache,
 				},
 			});
 		}
@@ -225,6 +225,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					const onPacket = this.onPacket.bind(this);
 					const handlePayload = this.options?.handlePayload?.bind(this);
 					const self = this;
+					const { sendPayloadToParent } = this.options;
 					for (const id of workerData.shards) {
 						let shard = this.shards.get(id);
 						if (!shard) {
@@ -240,13 +241,14 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 								},
 								async handlePayload(shardId, payload) {
 									await handlePayload?.(shardId, payload);
-									await onPacket?.(payload, shardId);
-									self.postMessage({
-										workerId: workerData.workerId,
-										shardId,
-										type: 'RECEIVE_PAYLOAD',
-										payload,
-									} satisfies WorkerReceivePayload);
+									await onPacket(payload, shardId);
+									if (sendPayloadToParent)
+										self.postMessage({
+											workerId: workerData.workerId,
+											shardId,
+											type: 'RECEIVE_PAYLOAD',
+											payload,
+										} satisfies WorkerReceivePayload);
 								},
 							});
 							this.shards.set(id, shard);
@@ -386,7 +388,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					this.__handleGuilds?.delete(packet.d.id);
 					if (!this.__handleGuilds?.size && [...this.shards.values()].every(shard => shard.data.session_id)) {
 						delete this.__handleGuilds;
-						await this.cache.onPacket?.(packet);
+						await this.cache.onPacket(packet);
 						this.postMessage({
 							type: 'WORKER_READY',
 							workerId: this.workerId,
@@ -394,7 +396,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						return this.events?.runEvent('WORKER_READY', this, this.me, -1);
 					}
 					if (!this.__handleGuilds?.size) delete this.__handleGuilds;
-					return this.cache.onPacket?.(packet);
+					return this.cache.onPacket(packet);
 				}
 				await this.events?.execute(packet.t, packet, this, shardId);
 				break;
@@ -418,6 +420,13 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						this.applicationId = packet.d.application.id;
 						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
 						await this.events?.execute(packet.t as never, packet, this, shardId);
+						if ([...this.shards.values()].every(shard => shard.data.session_id)) {
+							this.postMessage({
+								type: 'WORKER_SHARDS_CONNECTED',
+								workerId: this.workerId,
+							} as WorkerShardsConnected);
+							await this.events?.runEvent('WORKER_SHARDS_CONNECTED', this, this.me, -1);
+						}
 						if (
 							!(
 								this.__handleGuilds?.size &&
@@ -455,9 +464,10 @@ export function generateShardInfo(shard: Shard): WorkerShardInfo {
 }
 
 interface WorkerClientOptions extends BaseClientOptions {
-	disabledCache?: Cache['disabledCache'];
 	commands?: NonNullable<Client['options']>['commands'];
 	handlePayload?: ShardManagerOptions['handlePayload'];
 	gateway?: ClientOptions['gateway'];
 	postMessage?: (body: unknown) => unknown;
+	/** can have perfomance issues in big bots if the client sends every event, specially in startup (false by default) */
+	sendPayloadToParent?: boolean;
 }

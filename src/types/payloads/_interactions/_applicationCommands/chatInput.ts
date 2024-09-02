@@ -1,5 +1,9 @@
 import type { APIInteractionDataResolved } from '../../index';
-import type { APIApplicationCommandInteractionWrapper, ApplicationCommandType } from '../applicationCommands';
+import type {
+	APIApplicationCommandInteractionWrapper,
+	APIEntryPointInteractionData,
+	ApplicationCommandType,
+} from '../applicationCommands';
 import type { APIDMInteractionWrapper, APIGuildInteractionWrapper } from '../base';
 import type {
 	APIApplicationCommandAttachmentOption,
@@ -128,3 +132,9 @@ export type APIChatInputApplicationCommandDMInteraction =
  */
 export type APIChatInputApplicationCommandGuildInteraction =
 	APIGuildInteractionWrapper<APIChatInputApplicationCommandInteraction>;
+
+/**
+ * Documentation goes brrrrrr
+ * @unstable
+ */
+export type APIEntryPointCommandInteraction = APIApplicationCommandInteractionWrapper<APIEntryPointInteractionData>;

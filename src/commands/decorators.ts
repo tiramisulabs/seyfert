@@ -1,6 +1,7 @@
 import {
 	ApplicationCommandType,
 	ApplicationIntegrationType,
+	type EntryPointCommandHandlerType,
 	InteractionContextType,
 	PermissionFlagsBits,
 	type LocaleString,
@@ -11,36 +12,28 @@ import type { DefaultLocale, ExtraProps, IgnoreCommand, MiddlewareContext } from
 
 export interface RegisteredMiddlewares {}
 
-type DeclareOptions =
-	| {
-			name: string;
-			description: string;
-			botPermissions?: PermissionStrings | bigint;
-			defaultMemberPermissions?: PermissionStrings | bigint;
-			guildId?: string[];
-			nsfw?: boolean;
-			integrationTypes?: (keyof typeof ApplicationIntegrationType)[];
-			contexts?: (keyof typeof InteractionContextType)[];
-			ignore?: IgnoreCommand;
-			aliases?: string[];
-			props?: ExtraProps;
-	  }
-	| (Omit<
-			{
-				name: string;
-				description: string;
-				botPermissions?: PermissionStrings | bigint;
-				defaultMemberPermissions?: PermissionStrings | bigint;
-				guildId?: string[];
-				nsfw?: boolean;
-				integrationTypes?: (keyof typeof ApplicationIntegrationType)[];
-				contexts?: (keyof typeof InteractionContextType)[];
-				props?: ExtraProps;
-			},
-			'type' | 'description'
-	  > & {
+export type CommandDeclareOptions =
+	| DecoratorDeclareOptions
+	| (Omit<DecoratorDeclareOptions, 'description'> & {
 			type: ApplicationCommandType.User | ApplicationCommandType.Message;
+	  })
+	| (Omit<DecoratorDeclareOptions, 'ignore' | 'aliases' | 'guildId'> & {
+			type: ApplicationCommandType.PrimaryEntryPoint;
+			handler: EntryPointCommandHandlerType;
 	  });
+export interface DecoratorDeclareOptions {
+	name: string;
+	description: string;
+	botPermissions?: PermissionStrings | bigint;
+	defaultMemberPermissions?: PermissionStrings | bigint;
+	guildId?: string[];
+	nsfw?: boolean;
+	integrationTypes?: (keyof typeof ApplicationIntegrationType)[];
+	contexts?: (keyof typeof InteractionContextType)[];
+	ignore?: IgnoreCommand;
+	aliases?: string[];
+	props?: ExtraProps;
+}
 
 export function Locales({
 	name: names,
@@ -154,7 +147,7 @@ export function Middlewares(cbs: readonly (keyof RegisteredMiddlewares)[]) {
 		};
 }
 
-export function Declare(declare: DeclareOptions) {
+export function Declare(declare: CommandDeclareOptions) {
 	return <T extends { new (...args: any[]): {} }>(target: T) =>
 		class extends target {
 			name = declare.name;
@@ -177,6 +170,7 @@ export function Declare(declare: DeclareOptions) {
 			guildId?: string[];
 			ignore?: IgnoreCommand;
 			aliases?: string[];
+			handler?: EntryPointCommandHandlerType;
 			constructor(...args: any[]) {
 				super(...args);
 				if ('description' in declare) this.description = declare.description;
@@ -184,6 +178,7 @@ export function Declare(declare: DeclareOptions) {
 				if ('guildId' in declare) this.guildId = declare.guildId;
 				if ('ignore' in declare) this.ignore = declare.ignore;
 				if ('aliases' in declare) this.aliases = declare.aliases;
+				if ('handler' in declare) this.handler = declare.handler;
 				// check if all properties are valid
 			}
 		};

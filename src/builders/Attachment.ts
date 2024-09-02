@@ -17,7 +17,7 @@ export type AttachmentResolvable =
 	| Attachment;
 export type AttachmentDataType = keyof AttachmentResolvableMap;
 export interface AttachmentData {
-	name: string;
+	filename: string;
 	description: string;
 	resolvable: AttachmentResolvable;
 	type: AttachmentDataType;
@@ -40,7 +40,7 @@ export class AttachmentBuilder {
 	 * @param data - The partial attachment data.
 	 */
 	constructor(
-		public data: Partial<AttachmentData> = { name: `${randomBytes?.(8)?.toString('base64url') || 'default'}.jpg` },
+		public data: Partial<AttachmentData> = { filename: `${randomBytes?.(8)?.toString('base64url') || 'default'}.jpg` },
 	) {}
 
 	/**
@@ -51,7 +51,7 @@ export class AttachmentBuilder {
 	 * attachment.setName('example.jpg');
 	 */
 	setName(name: string): this {
-		this.data.name = name;
+		this.data.filename = name;
 		return this;
 	}
 
@@ -93,10 +93,10 @@ export class AttachmentBuilder {
 	setSpoiler(spoiler: boolean): this {
 		if (spoiler === this.spoiler) return this;
 		if (!spoiler) {
-			this.data.name = this.data.name!.slice('SPOILER_'.length);
+			this.data.filename = this.data.filename!.slice('SPOILER_'.length);
 			return this;
 		}
-		this.data.name = `SPOILER_${this.data.name}`;
+		this.data.filename = `SPOILER_${this.data.filename}`;
 		return this;
 	}
 
@@ -104,7 +104,7 @@ export class AttachmentBuilder {
 	 * Gets whether the attachment is a spoiler.
 	 */
 	get spoiler(): boolean {
-		return this.data.name?.startsWith('SPOILER_') ?? false;
+		return this.data.filename?.startsWith('SPOILER_') ?? false;
 	}
 
 	/**
@@ -127,11 +127,11 @@ export function resolveAttachment(
 	if ('id' in resolve) return resolve;
 
 	if (resolve instanceof AttachmentBuilder) {
-		const data = resolve.toJSON();
-		return { filename: data.name, description: data.description };
+		const { filename, description } = resolve.toJSON();
+		return { filename, description };
 	}
 
-	return { filename: resolve.name, description: resolve.description };
+	return { filename: resolve.filename, description: resolve.description };
 }
 
 /**
@@ -143,9 +143,9 @@ export async function resolveFiles(resources: (AttachmentBuilder | RawFile | Att
 	const data = await Promise.all(
 		resources.map(async (resource, i) => {
 			if (resource instanceof AttachmentBuilder) {
-				const { type, resolvable, name } = resource.toJSON();
+				const { type, resolvable, filename } = resource.toJSON();
 				const resolve = await resolveAttachmentData(resolvable, type);
-				return { ...resolve, key: `files[${i}]`, name } as RawFile;
+				return { ...resolve, key: `files[${i}]`, filename } as RawFile;
 			}
 			if (resource instanceof Attachment) {
 				const resolve = await resolveAttachmentData(resource.url, 'url');
@@ -153,14 +153,14 @@ export async function resolveFiles(resources: (AttachmentBuilder | RawFile | Att
 					data: resolve.data,
 					contentType: resolve.contentType,
 					key: `files[${i}]`,
-					name: resource.filename,
+					filename: resource.filename,
 				} as RawFile;
 			}
 			return {
 				data: resource.data,
 				contentType: resource.contentType,
 				key: `files[${i}]`,
-				name: resource.name,
+				filename: resource.filename,
 			} as RawFile;
 		}),
 	);

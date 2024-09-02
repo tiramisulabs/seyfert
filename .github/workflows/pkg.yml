@@ -1,17 +1,10 @@
-name: Transpile code
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+name: Publish Any Commit
+on: [push, pull_request]
 
 jobs:
   build:
-    name: Transpile code
     runs-on: ubuntu-latest
+
     steps:
       - name: check out code
         uses: actions/checkout@v4
@@ -28,3 +21,5 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - run: pnpx pkg-pr-new publish

@@ -28,6 +28,8 @@ import {
 	type SeyfertIntegerOption,
 	type SeyfertNumberOption,
 	type SeyfertStringOption,
+	EntryPointContext,
+	type EntryPointCommand,
 } from '.';
 import {
 	AutocompleteInteraction,
@@ -38,6 +40,7 @@ import {
 	type MessageCommandInteraction,
 	type UserCommandInteraction,
 	type __InternalReplyFunction,
+	type EntryPointInteraction,
 } from '../structures';
 import type { PermissionsBitField } from '../structures/extra/Permissions';
 import { ComponentContext, ModalContext } from '../components';
@@ -108,6 +111,34 @@ export class HandleCommand {
 		if (command.botPermissions && interaction.appPermissions) {
 			const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
 			if (permissions) return command.onBotPermissionsFail(context, permissions);
+		}
+
+		const resultGlobal = await this.runGlobalMiddlewares(command, context);
+		if (typeof resultGlobal === 'boolean') return;
+		const resultMiddle = await this.runMiddlewares(command, context);
+		if (typeof resultMiddle === 'boolean') return;
+
+		try {
+			try {
+				await command.run!(context);
+				await command.onAfterRun?.(context, undefined);
+			} catch (error) {
+				await command.onRunError(context, error);
+				await command.onAfterRun?.(context, error);
+			}
+		} catch (error) {
+			try {
+				await command.onInternalError(this.client, command, error);
+			} catch {
+				// pass
+			}
+		}
+	}
+
+	async entryPoint(command: EntryPointCommand, interaction: EntryPointInteraction, context: EntryPointContext) {
+		if (command.botPermissions && interaction.appPermissions) {
+			const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
+			if (permissions) return command.onBotPermissionsFail?.(context, permissions);
 		}
 
 		const resultGlobal = await this.runGlobalMiddlewares(command, context);
@@ -212,6 +243,16 @@ export class HandleCommand {
 						if (!data) return;
 						// @ts-expect-error
 						this.contextMenuUser(data.command, data.interaction, data.context);
+						break;
+					}
+					case ApplicationCommandType.PrimaryEntryPoint: {
+						const command = this.client.commands?.entryPoint;
+						if (!command?.run) return;
+						const interaction = BaseInteraction.from(this.client, body, __reply) as EntryPointInteraction;
+						const context = new EntryPointContext(this.client, interaction, shardId, command);
+						const extendContext = this.client.options?.context?.(interaction) ?? {};
+						Object.assign(context, extendContext);
+						await this.entryPoint(command, interaction, context);
 						break;
 					}
 					case ApplicationCommandType.ChatInput: {
@@ -442,7 +483,7 @@ export class HandleCommand {
 		);
 	}
 
-	getCommand<T extends Command | ContextMenuCommand>(data: {
+	getCommand<T extends Command | ContextMenuCommand | EntryPointCommand>(data: {
 		guild_id?: string;
 		name: string;
 	}): T | undefined {
@@ -487,8 +528,8 @@ export class HandleCommand {
 	}
 
 	async runGlobalMiddlewares(
-		command: Command | ContextMenuCommand | SubCommand,
-		context: CommandContext<{}, never> | MenuCommandContext<any>,
+		command: Command | ContextMenuCommand | SubCommand | EntryPointCommand,
+		context: CommandContext<{}, never> | MenuCommandContext<any> | EntryPointContext,
 	) {
 		try {
 			const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
@@ -513,8 +554,8 @@ export class HandleCommand {
 	}
 
 	async runMiddlewares(
-		command: Command | ContextMenuCommand | SubCommand,
-		context: CommandContext<{}, never> | MenuCommandContext<any>,
+		command: Command | ContextMenuCommand | SubCommand | EntryPointCommand,
+		context: CommandContext<{}, never> | MenuCommandContext<any> | EntryPointContext,
 	) {
 		try {
 			const resultRunMiddlewares = await BaseCommand.__runMiddlewares(

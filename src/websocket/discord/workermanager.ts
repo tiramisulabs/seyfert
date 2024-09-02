@@ -18,6 +18,7 @@ export class WorkerManager extends Map<
 	options!: MakePartial<Required<WorkerManagerOptions>, 'adapter'>;
 	debugger?: Logger;
 	connectQueue!: ConnectQueue;
+	workerQueue: (() => void)[] = [];
 	cacheAdapter: Adapter;
 	promises = new Map<string, { resolve: (value: any) => void; timeout: NodeJS.Timeout }>();
 	rest!: ApiHandler;
@@ -135,20 +136,22 @@ export class WorkerManager extends Map<
 		if (!worker_threads) throw new Error('Cannot prepare workers without worker_threads.');
 
 		for (let i = 0; i < shards.length; i++) {
-			let worker = this.get(i);
-			if (!worker) {
-				worker = this.createWorker({
-					path: this.options.path,
-					debug: this.options.debug,
-					token: this.options.token,
-					shards: shards[i],
-					intents: this.options.intents,
-					workerId: i,
-					workerProxy: this.options.workerProxy,
-					totalShards: this.totalShards,
-					mode: this.options.mode,
+			const workerExists = this.has(i);
+			if (!workerExists) {
+				this.workerQueue.push(() => {
+					const worker = this.createWorker({
+						path: this.options.path,
+						debug: this.options.debug,
+						token: this.options.token,
+						shards: shards[i],
+						intents: this.options.intents,
+						workerId: i,
+						workerProxy: this.options.workerProxy,
+						totalShards: this.totalShards,
+						mode: this.options.mode,
+					});
+					this.set(i, worker);
 				});
-				this.set(i, worker);
 			}
 		}
 	}
@@ -285,6 +288,17 @@ export class WorkerManager extends Map<
 						this.forEach(w => {
 							delete w.ready;
 						});
+					}
+				}
+				break;
+			case 'WORKER_SHARDS_CONNECTED':
+				{
+					const nextWorker = this.workerQueue.shift();
+					if (nextWorker) {
+						this.debugger?.info('Spawning next worker');
+						nextWorker();
+					} else {
+						this.debugger?.info('No more workers to spawn left');
 					}
 				}
 				break;
@@ -431,6 +445,8 @@ export class WorkerManager extends Map<
 
 		const spaces = this.prepareSpaces();
 		await this.prepareWorkers(spaces);
+		// Start workers queue
+		return this.workerQueue.shift()?.();
 	}
 }
 

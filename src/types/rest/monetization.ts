@@ -1,5 +1,5 @@
 import type { Snowflake } from '..';
-import type { APIEntitlement, APISKU } from '../payloads';
+import type { APIEntitlement, APISKU, APISubscription } from '../payloads';
 
 /**
  * https://discord.com/developers/docs/monetization/entitlements#list-entitlements
@@ -88,3 +88,27 @@ export type RESTGetAPISKUsResult = APISKU[];
  * https://discord.com/developers/docs/monetization/entitlements#consume-an-entitlement
  */
 export type RESTPostAPIEntitlementConsumeResult = never;
+
+/**
+ * https://canary.discord.com/developers/docs/resources/subscription#query-string-params
+ */
+export interface RESTGetAPISKUSubscriptionsQuery {
+	/** List subscriptions before this ID */
+	before?: string;
+	/** List subscriptions after this ID */
+	after?: string;
+	/** Number of results to return (1-100) */
+	limit?: number;
+	/** User ID for which to return subscriptions. Required except for OAuth queries. */
+	user_id?: string;
+}
+
+/**
+ * https://canary.discord.com/developers/docs/resources/subscription#list-sku-subscriptions
+ */
+export type RESTGetAPISKUSubscriptionsResult = APISubscription[];
+
+/**
+ * https://canary.discord.com/developers/docs/resources/subscription#get-sku-subscription
+ */
+export type RESTGetAPISKUSubscriptionResult = APISubscription;

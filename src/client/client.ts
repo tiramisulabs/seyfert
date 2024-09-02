@@ -20,7 +20,7 @@ import { type ClientUserStructure, Transformers, type MessageStructure } from '.
 let parentPort: import('node:worker_threads').MessagePort;
 
 export class Client<Ready extends boolean = boolean> extends BaseClient {
-	private __handleGuilds?: Set<string> = new Set();
+	private __handleGuilds?: string[];
 	gateway!: ShardManager;
 	me!: If<Ready, ClientUserStructure>;
 	declare options: Omit<ClientOptions, 'commands'> & {
@@ -111,6 +111,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			this.gateway = new ShardManager({
 				token,
 				info: await this.proxy.gateway.bot.get(),
+				getInfo: () => this.proxy.gateway.bot.get(),
 				intents,
 				handlePayload: async (shardId, packet) => {
 					await this.options?.handlePayload?.(shardId, packet);
@@ -126,6 +127,22 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 					...this.options?.gateway?.properties,
 				},
 				compress: this.options?.gateway?.compress,
+				resharding: {
+					interval: this.options?.resharding?.interval ?? 0,
+					percentage: this.options?.resharding?.percentage ?? 0,
+					reloadGuilds: ids => {
+						this.__handleGuilds = this.__handleGuilds?.concat(ids) ?? ids;
+					},
+					onGuild: id => {
+						if (this.__handleGuilds) {
+							const index = this.__handleGuilds.indexOf(id);
+							if (index === -1) return false;
+							this.__handleGuilds.splice(index, 1);
+							return true;
+						}
+						return false;
+					},
+				},
 			});
 		}
 
@@ -159,15 +176,15 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			case 'GUILD_DELETE':
 			case 'GUILD_CREATE': {
-				if (this.__handleGuilds?.has(packet.d.id)) {
-					this.__handleGuilds?.delete(packet.d.id);
-					if (!this.__handleGuilds?.size && [...this.gateway.values()].every(shard => shard.data.session_id)) {
+				if (this.__handleGuilds?.includes(packet.d.id)) {
+					this.__handleGuilds?.splice(this.__handleGuilds!.indexOf(packet.d.id), 1);
+					if (!this.__handleGuilds?.length && [...this.gateway.values()].every(shard => shard.data.session_id)) {
 						delete this.__handleGuilds;
-						await this.cache.onPacket?.(packet);
+						await this.cache.onPacket(packet);
 						return this.events?.runEvent('BOT_READY', this, this.me, -1);
 					}
-					if (!this.__handleGuilds?.size) delete this.__handleGuilds;
-					return this.cache.onPacket?.(packet);
+					if (!this.__handleGuilds?.length) delete this.__handleGuilds;
+					return this.cache.onPacket(packet);
 				}
 				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
 				break;
@@ -183,17 +200,15 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
 						await this.handleCommand.message(packet.d, shardId);
 						break;
-					case 'READY':
-						if (!this.__handleGuilds) this.__handleGuilds = new Set();
-						for (const g of packet.d.guilds) {
-							this.__handleGuilds?.add(g.id);
-						}
+					case 'READY': {
+						const ids = packet.d.guilds.map(x => x.id);
+						this.__handleGuilds = this.__handleGuilds?.concat(ids) ?? ids;
 						this.botId = packet.d.user.id;
 						this.applicationId = packet.d.application.id;
 						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
 						if (
 							!(
-								this.__handleGuilds?.size &&
+								this.__handleGuilds?.length &&
 								(this.gateway.options.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds
 							)
 						) {
@@ -205,6 +220,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						this.debugger?.debug(`#${shardId}[${packet.d.user.username}](${this.botId}) is online...`);
 						await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
 						break;
+					}
 					default:
 						await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
 						break;
@@ -232,4 +248,8 @@ export interface ClientOptions extends BaseClientOptions {
 		reply?: (ctx: CommandContext) => boolean;
 	};
 	handlePayload?: ShardManagerOptions['handlePayload'];
+	resharding?: {
+		interval: number;
+		percentage: number;
+	};
 }

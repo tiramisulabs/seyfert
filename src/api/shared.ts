@@ -24,7 +24,7 @@ export interface RawFile {
 	contentType?: string;
 	data: Buffer | Uint8Array | boolean | number | string;
 	key?: string;
-	name: string;
+	filename: string;
 }
 
 export interface ApiRequestOptions {

@@ -18,7 +18,7 @@
 		"check": "biome check --write --no-errors-on-unmatched ./src"
 	},
 	"author": "MARCROCK22",
-	"license": "Apache-2.0",
+	"license": "MIT",
 	"devDependencies": {
 		"@biomejs/biome": "1.8.3",
 		"@commitlint/cli": "^19.4.0",
@@ -61,5 +61,10 @@
 			"name": "David",
 			"url": "https://github.com/Drylozu"
 		}
-	]
+	],
+	"lint-staged": {
+		"*.ts": [
+			"biome check --write"
+		]
+	}
 }
