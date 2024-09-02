@@ -116,6 +116,9 @@ export class ShardManager extends Map<number, Shard> {
 				},
 			});
 
+			// share ratelimit
+			resharder.connectQueue = this.connectQueue;
+
 			await resharder.spawnShards();
 		}, this.options.resharding.interval);
 	}
