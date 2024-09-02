@@ -764,6 +764,9 @@ export type APIMessageSnapshotFields = Pick<
 	| 'mentions'
 	| 'timestamp'
 	| 'type'
+	| 'sticker_items'
+	| 'components'
+	| 'stickers'
 >;
 
 /**
