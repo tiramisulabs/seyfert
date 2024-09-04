@@ -111,7 +111,6 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			this.gateway = new ShardManager({
 				token,
 				info: await this.proxy.gateway.bot.get(),
-				getInfo: () => this.proxy.gateway.bot.get(),
 				intents,
 				handlePayload: async (shardId, packet) => {
 					await this.options?.handlePayload?.(shardId, packet);
@@ -128,6 +127,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				},
 				compress: this.options?.gateway?.compress,
 				resharding: {
+					getInfo: () => this.proxy.gateway.bot.get(),
 					interval: this.options?.resharding?.interval ?? 0,
 					percentage: this.options?.resharding?.percentage ?? 0,
 					reloadGuilds: ids => {
