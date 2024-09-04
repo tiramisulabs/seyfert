@@ -450,8 +450,8 @@ export class Interaction<
 	): Promise<When<FR, WebhookMessageStructure, void>>;
 	async editOrReply<FR extends true = true>(body: InteractionMessageUpdateBodyRequest, fetchReply?: FR) {
 		if (await this.replied) {
-			const { content, embeds, allowed_mentions, components, files, attachments } = body;
-			return this.editResponse({ content, embeds, allowed_mentions, components, files, attachments });
+			const { content, embeds, allowed_mentions, components, files, attachments, poll } = body;
+			return this.editResponse({ content, embeds, allowed_mentions, components, files, attachments, poll });
 		}
 		return this.write(body as InteractionCreateBodyRequest, fetchReply);
 	}
