@@ -206,9 +206,6 @@ export class InMessageEmbed {
 		return this.data.title;
 	}
 
-	/**
-	 * @deprecated
-	 */
 	get type() {
 		return this.data.type;
 	}

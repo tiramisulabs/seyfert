@@ -1079,8 +1079,6 @@ export interface APIEmbed {
 	/**
 	 * Type of embed (always "rich" for webhook embeds)
 	 *
-	 * @deprecated *Embed types should be considered deprecated and might be removed in a future API version*
-	 *
 	 * See https://discord.com/developers/docs/resources/channel#embed-object-embed-types
 	 */
 	type?: EmbedType;
@@ -1149,9 +1147,49 @@ export interface APIEmbed {
 }
 
 /**
+ * https://discord.com/developers/docs/resources/message#embed-fields-by-embed-type-poll-result-embed-fields
+ */
+export interface PollResultEmbedField<T extends string, V extends string = string> {
+	name: T;
+	value: V;
+	inline: false;
+}
+
+/**
+ * https://discord.com/developers/docs/resources/message#embed-fields-by-embed-type-poll-result-embed-fields
+ */
+export type PollResultEmbedFields = [
+	/**	question text from the original poll */
+	PollResultEmbedField<'poll_question_text'>,
+	/** number of votes for the answer(s) with the most votes */
+	PollResultEmbedField<'victor_answer_votes', `${number}`>,
+	/** total number of votes in the poll */
+	PollResultEmbedField<'total_votes', `${number}`>,
+	/** id for the winning answer */
+	PollResultEmbedField<'victor_answer_id', `${number}`> | undefined,
+	/** text for the winning answer */
+	PollResultEmbedField<'victor_answer_text'> | undefined,
+	/**	id for an emoji associated with the winning answer */
+	PollResultEmbedField<'victor_answer_emoji_id'> | undefined,
+	/**	name for an emoji associated with the winning answer */
+	PollResultEmbedField<'victor_answer_emoji_name'> | undefined,
+	/** if an emoji associated with the winning answer is animated */
+	PollResultEmbedField<'victor_answer_emoji_animated', `${boolean}`> | undefined,
+];
+
+export type APIEmbedPollResult = {
+	type: EmbedType.PollResult;
+	fields: PollResultEmbedFields;
+	/**
+	 * @unstable This field is not officially documented by Discord.
+	 * Current observations indicate a consistent value of 0 for all embeds.
+	 */
+	content_scan_version: number;
+};
+
+/**
  * https://discord.com/developers/docs/resources/channel#embed-object-embed-types
  *
- * @deprecated *Embed types should be considered deprecated and might be removed in a future API version*
  */
 export enum EmbedType {
 	/**
@@ -1178,6 +1216,11 @@ export enum EmbedType {
 	 * Link embed
 	 */
 	Link = 'link',
+	/**
+	 * Poll result embed
+	 * https://discord.com/developers/docs/resources/message#embed-fields-by-embed-type-poll-result-embed-fields
+	 */
+	PollResult = 'poll_result',
 	/**
 	 * Auto moderation alert embed
 	 *
