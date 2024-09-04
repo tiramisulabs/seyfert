@@ -54,14 +54,14 @@ export type MessageWebhookCreateBodyRequest = OmitInsert<
 
 export type MessageWebhookUpdateBodyRequest = OmitInsert<
 	RESTPatchAPIWebhookWithTokenMessageJSONBody,
-	'components' | 'embeds',
+	'components' | 'embeds' | 'poll',
 	ResolverProps
 >;
 
 export type InteractionMessageUpdateBodyRequest = OmitInsert<
 	RESTPatchAPIWebhookWithTokenMessageJSONBody,
-	'components' | 'embeds',
-	ResolverProps
+	'components' | 'embeds' | 'poll',
+	SendResolverProps
 >;
 
 export type ComponentInteractionMessageUpdate = OmitInsert<
