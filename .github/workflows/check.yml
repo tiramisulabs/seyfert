@@ -1,6 +1,7 @@
 name: Build, Lint, Format & Publish
 on:
   push:
+  pull_request:
 
 jobs:
   linter:
@@ -44,4 +45,4 @@ jobs:
 
       - name: Publish in pkg.pr.new
         run: pnpx pkg-pr-new publish
-        if: github.event.pull_request.head.repo.full_name == github.repository
+        if: github.repository == 'tiramisulabs/seyfert'
