@@ -1,6 +1,7 @@
 name: Build, Lint, Format & Publish
 on:
   push:
+  pull_request:
 
 jobs:
   linter:
