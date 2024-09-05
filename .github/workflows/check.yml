@@ -44,7 +44,5 @@ jobs:
           HUSKY: 0
 
       - name: Publish in pkg.pr.new
-        run: |
-          echo "github.event.pull_request.head.repo.full_name: ${{ github.event.pull_request.head.repo.full_name }}"
-          echo "github.repository: ${{ github.repository }}"
-        # if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+        run: pnpx pkg-pr-new publish
+        if: github.repository == 'tiramisulabs/seyfert'
