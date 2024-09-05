@@ -45,4 +45,4 @@ jobs:
 
       - name: Publish in pkg.pr.new
         run: pnpx pkg-pr-new publish
-        if: github.event.pull_request.head.repo.full_name == github.repository
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
