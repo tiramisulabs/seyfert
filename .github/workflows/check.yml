@@ -1,4 +1,4 @@
-name: Biome Check
+name: Build, Lint, Format & Publish
 on:
   push:
 
@@ -42,3 +42,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HUSKY: 0
 
+      - name: Publish in pkg.pr.new
+        run: pnpx pkg-pr-new publish
+        if: github.event.pull_request.head.repo.full_name == github.repository
