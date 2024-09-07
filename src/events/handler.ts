@@ -54,7 +54,7 @@ export class EventHandler extends BaseHandler {
 
 	onFail = (event: GatewayEvents | CustomEventsKeys, err: unknown) =>
 		this.logger.warn('<Client>.events.onFail', err, event);
-	protected filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
+	filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
 
 	values: Partial<EventValues> = {};
 

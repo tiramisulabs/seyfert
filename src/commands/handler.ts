@@ -23,7 +23,7 @@ export class CommandHandler extends BaseHandler {
 	values: (Command | ContextMenuCommand)[] = [];
 	entryPoint: EntryPointCommand | null = null;
 
-	protected filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
+	filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
 
 	constructor(
 		protected logger: Logger,

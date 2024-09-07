@@ -6,7 +6,7 @@ import type { LocaleString, Locale } from '../types';
 export class LangsHandler extends BaseHandler {
 	values: Partial<Record<string, any>> = {};
 	private __paths: Partial<Record<string, string>> = {};
-	protected filter = (path: string) =>
+	filter = (path: string) =>
 		path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts')) || path.endsWith('.json');
 	defaultLang?: string;
 	aliases: [string, LocaleString[]][] = [];

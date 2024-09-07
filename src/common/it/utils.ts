@@ -127,7 +127,7 @@ export class BaseHandler {
 	 * @param path The path to filter.
 	 * @returns `true` if the path passes the filter, otherwise `false`.
 	 */
-	protected filter = (path: string) => !!path;
+	filter = (path: string) => !!path;
 
 	/**
 	 * Recursively retrieves all files in a directory.
