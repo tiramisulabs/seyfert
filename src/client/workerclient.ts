@@ -78,25 +78,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		return acc / this.shards.size;
 	}
 
-	setServices({
-		...rest
-	}: ServicesOptions & {
-		handlers?: ServicesOptions['handlers'] & {
-			events?: EventHandler['callback'];
-		};
-	}) {
+	setServices(rest: ServicesOptions) {
 		super.setServices(rest);
 		if (rest.cache) {
 			this.__setServicesCache = true;
-		}
-		if (rest.handlers && 'events' in rest.handlers) {
-			if (!rest.handlers.events) {
-				this.events = undefined;
-			} else if (typeof rest.handlers.events === 'function') {
-				this.events = new EventHandler(this);
-			} else {
-				this.events = rest.handlers.events;
-			}
 		}
 	}
 

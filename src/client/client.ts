@@ -40,9 +40,6 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 		...rest
 	}: ServicesOptions & {
 		gateway?: ShardManager;
-		handlers?: ServicesOptions['handlers'] & {
-			events?: EventHandler['callback'];
-		};
 	}) {
 		super.setServices(rest);
 		if (gateway) {
@@ -53,15 +50,6 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				return oldFn(shardId, packet);
 			};
 			this.gateway = gateway;
-		}
-		if (rest.handlers && 'events' in rest.handlers) {
-			if (!rest.handlers.events) {
-				this.events = undefined;
-			} else if (typeof rest.handlers.events === 'function') {
-				this.events = new EventHandler(this);
-			} else {
-				this.events = rest.handlers.events;
-			}
 		}
 	}
 

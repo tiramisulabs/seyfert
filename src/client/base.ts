@@ -188,7 +188,7 @@ export class BaseClient {
 		return new Router(this.rest).createProxy();
 	}
 
-	setServices({ rest, cache, langs, middlewares, handlers, handleCommand }: ServicesOptions) {
+	setServices({ rest, cache, langs, middlewares, handleCommand }: ServicesOptions) {
 		if (rest) {
 			this.rest = rest;
 		}
@@ -233,35 +233,6 @@ export class BaseClient {
 		}
 		if (middlewares) {
 			this.middlewares = middlewares;
-		}
-		if (handlers) {
-			if ('components' in handlers) {
-				if (!handlers.components) {
-					this.components = undefined;
-				} else if (typeof handlers.components === 'function') {
-					this.components ??= new ComponentHandler(this.logger, this);
-				} else {
-					this.components = handlers.components;
-				}
-			}
-			if ('commands' in handlers) {
-				if (!handlers.commands) {
-					this.commands = undefined;
-				} else if (typeof handlers.commands === 'object') {
-					this.commands ??= new CommandHandler(this.logger, this);
-				} else {
-					this.commands = handlers.commands;
-				}
-			}
-			if ('langs' in handlers) {
-				if (!handlers.langs) {
-					this.langs = undefined;
-				} else if (typeof handlers.langs === 'function') {
-					this.langs ??= new LangsHandler(this.logger);
-				} else {
-					this.langs = handlers.langs;
-				}
-			}
 		}
 		if (langs) {
 			if (langs.default) this.langs!.defaultLang = langs.default;
@@ -565,10 +536,5 @@ export interface ServicesOptions {
 		aliases?: Record<string, LocaleString[]>;
 	};
 	middlewares?: Record<string, MiddlewareContext>;
-	handlers?: {
-		components?: ComponentHandler | ComponentHandler['callback'];
-		commands?: CommandHandler;
-		langs?: LangsHandler;
-	};
 	handleCommand?: typeof HandleCommand;
 }
