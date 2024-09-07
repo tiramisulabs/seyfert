@@ -193,12 +193,41 @@ export class BaseClient {
 			this.rest = rest;
 		}
 		if (cache) {
+			const caches: (keyof Cache['disabledCache'])[] = [
+				'bans',
+				'channels',
+				'emojis',
+				'guilds',
+				'members',
+				'messages',
+				'onPacket',
+				'overwrites',
+				'presences',
+				'roles',
+				'stageInstances',
+				'stickers',
+				'threads',
+				'users',
+				'voiceStates',
+			];
+			let disabledCache: Partial<Record<keyof Cache['disabledCache'], boolean>> = this.cache?.disabledCache ?? {};
+
+			if (typeof cache.disabledCache === 'boolean') {
+				for (const i of caches) {
+					disabledCache[i] = cache.disabledCache;
+				}
+			} else if (typeof cache.disabledCache === 'function') {
+				for (const i of caches) {
+					disabledCache[i] = cache.disabledCache(i);
+				}
+			} else if (typeof cache.disabledCache === 'object') {
+				disabledCache = cache.disabledCache;
+			}
+
 			this.cache = new Cache(
 				this.cache?.intents ?? 0,
 				cache?.adapter ?? this.cache?.adapter ?? new MemoryAdapter(),
-				(typeof cache.disabledCache === 'boolean' ? { onPacket: cache.disabledCache } : cache.disabledCache) ??
-					this.cache?.disabledCache ??
-					[],
+				disabledCache,
 				this,
 			);
 		}
@@ -527,7 +556,10 @@ export type RuntimeConfig = OmitInsert<
 
 export interface ServicesOptions {
 	rest?: ApiHandler;
-	cache?: { adapter?: Adapter; disabledCache?: true | Cache['disabledCache'] };
+	cache?: {
+		adapter?: Adapter;
+		disabledCache?: boolean | Cache['disabledCache'] | ((cacheType: keyof Cache['disabledCache']) => boolean);
+	};
 	langs?: {
 		default?: string;
 		aliases?: Record<string, LocaleString[]>;

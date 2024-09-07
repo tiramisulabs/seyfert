@@ -16,6 +16,9 @@ export interface ExtendContext {}
 export interface ExtraProps {}
 export interface UsingClient extends BaseClient {}
 export type ParseClient<T extends BaseClient> = T;
+export type ParseGlobalMiddlewares<T extends Record<string, MiddlewareContext>> = {
+	[K in keyof T]: MetadataMiddleware<T[K]>;
+};
 export interface InternalOptions {}
 export interface CustomStructures {}
 
