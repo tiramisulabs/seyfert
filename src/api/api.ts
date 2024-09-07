@@ -206,7 +206,7 @@ export class ApiHandler {
 			}
 		}
 		if (response.status) {
-			return new Error(errMessage ?? response.statusText);
+			return new Error(errMessage || response.statusText);
 		}
 		return new Error('Unknown error');
 	}
