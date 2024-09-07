@@ -33,6 +33,9 @@ import {
 import type { InternalOptions, UsingClient } from '../commands';
 import { Overwrites } from './resources/overwrites';
 import { Messages } from './resources/messages';
+export { BaseResource } from './resources/default/base';
+export { GuildRelatedResource } from './resources/default/guild-related';
+export { GuildBasedResource } from './resources/default/guild-based';
 
 export type InferAsyncCache = InternalOptions extends { asyncCache: infer P } ? P : false;
 export type ReturnCache<T> = If<InferAsyncCache, Promise<T>, T>;

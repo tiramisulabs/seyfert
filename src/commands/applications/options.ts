@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType, type APIApplicationCommandOptionChoice, type ChannelType } from '../../types';
 import type {
 	AutocompleteCallback,
+	EntryPointContext,
 	MenuCommandContext,
 	OnAutocompleteErrorCallback,
 	ReturnOptionsTypes,
@@ -82,17 +83,13 @@ export function createAttachmentOption<T extends SeyfertAttachmentOption = Seyfe
 	return { ...data, type: ApplicationCommandOptionType.Attachment } as const;
 }
 
-export function createMiddleware<
-	T = any,
-	C extends
-		| CommandContext
-		| MenuCommandContext<MessageCommandInteraction<boolean> | UserCommandInteraction<boolean>>
-		| ComponentContext
-		| ModalContext =
-		| CommandContext
-		| MenuCommandContext<MessageCommandInteraction<boolean> | UserCommandInteraction<boolean>>
-		| ComponentContext
-		| ModalContext,
->(data: MiddlewareContext<T, C>) {
+export type AnyContext =
+	| CommandContext
+	| MenuCommandContext<MessageCommandInteraction<boolean> | UserCommandInteraction<boolean>>
+	| ComponentContext
+	| ModalContext
+	| EntryPointContext;
+
+export function createMiddleware<T = any, C extends AnyContext = AnyContext>(data: MiddlewareContext<T, C>) {
 	return data;
 }
