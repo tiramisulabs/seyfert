@@ -161,7 +161,7 @@ export class ApiHandler {
 			}
 
 			if (result.length > 0) {
-				if (response.headers.get('content-type') === 'application/json') {
+				if (response.headers.get('content-type')?.includes('application/json')) {
 					try {
 						result = JSON.parse(result);
 					} catch (err) {
