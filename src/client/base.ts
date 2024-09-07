@@ -210,7 +210,7 @@ export class BaseClient {
 				'users',
 				'voiceStates',
 			];
-			let disabledCache: Partial<Record<keyof Cache['disabledCache'], boolean>> = this.cache.disabledCache ?? {};
+			let disabledCache: Partial<Record<keyof Cache['disabledCache'], boolean>> = this.cache?.disabledCache ?? {};
 
 			if (typeof cache.disabledCache === 'boolean') {
 				for (const i of caches) {
