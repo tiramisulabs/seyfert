@@ -1,6 +1,6 @@
 {
 	"name": "seyfert",
-	"version": "2.0.0",
+	"version": "2.1.0",
 	"description": "The most advanced framework for discord bots",
 	"main": "./lib/index.js",
 	"module": "./lib/index.js",
