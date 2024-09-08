@@ -180,7 +180,7 @@ export class MemberShorter extends BaseShorter {
 	 * @param id The ID of the role to add.
 	 */
 	addRole(guildId: string, memberId: string, id: string) {
-		this.client.proxy.guilds(guildId).members(memberId).roles(id).put({});
+		return this.client.proxy.guilds(guildId).members(memberId).roles(id).put({});
 	}
 	/**
 	 * Removes a role from a guild member.

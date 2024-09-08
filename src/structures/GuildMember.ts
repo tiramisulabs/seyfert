@@ -129,6 +129,8 @@ export class BaseGuildMember extends DiscordBase {
 			edit: (id: string, body: RESTPatchAPIGuildMemberJSONBody, reason?: string) =>
 				client.members.edit(guildId, id, body, reason),
 			add: (id: string, body: RESTPutAPIGuildMemberJSONBody) => client.members.add(guildId, id, body),
+			addRole: (memberId: string, id: string) => client.members.addRole(guildId, memberId, id),
+			removeRole: (memberId: string, id: string) => client.members.removeRole(guildId, memberId, id),
 			fetch: (memberId: string, force = false) => client.members.fetch(guildId, memberId, force),
 			list: (query?: RESTGetAPIGuildMembersQuery, force = false) => client.members.list(guildId, query, force),
 		};
