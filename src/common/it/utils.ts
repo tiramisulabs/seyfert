@@ -291,7 +291,7 @@ export function lazyLoadPackage<T>(mod: string): T | undefined {
 	try {
 		return require(mod);
 	} catch (e) {
-		console.log(`Cannot import ${mod}`);
+		console.log(`Cannot import ${mod}`, e);
 		return;
 	}
 }

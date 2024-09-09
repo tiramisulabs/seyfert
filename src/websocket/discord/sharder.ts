@@ -52,8 +52,82 @@ export class ShardManager extends Map<number, Shard> {
 			workerData = worker_threads.workerData;
 			if (worker_threads.parentPort) parentPort = worker_threads.parentPort;
 		}
+	}
 
+	get totalShards() {
+		return this.options.totalShards ?? this.options.info.shards;
+	}
+
+	get shardStart() {
+		return this.options.shardStart ?? 0;
+	}
+
+	get shardEnd() {
+		return this.options.shardEnd ?? this.totalShards;
+	}
+
+	get remaining() {
+		return this.options.info.session_start_limit.remaining;
+	}
+
+	get concurrency() {
+		return this.options.info.session_start_limit.max_concurrency;
+	}
+
+	get latency() {
+		let acc = 0;
+
+		this.forEach(s => (acc += s.latency));
+
+		return acc / this.size;
+	}
+
+	calculateShardId(guildId: string) {
+		return calculateShardId(guildId, this.totalShards);
+	}
+
+	spawn(shardId: number) {
+		this.debugger?.info(`Spawn shard ${shardId}`);
+		let shard = this.get(shardId);
+
+		shard ??= new Shard(shardId, {
+			token: this.options.token,
+			intents: this.options.intents,
+			info: { ...this.options.info, shards: this.totalShards },
+			handlePayload: this.options.handlePayload,
+			properties: this.options.properties,
+			debugger: this.debugger,
+			compress: this.options.compress ?? false,
+			presence: this.options.presence?.(shardId, -1),
+		});
+
+		this.set(shardId, shard);
+
+		return shard;
+	}
+
+	async spawnShards(): Promise<void> {
+		const buckets = this.spawnBuckets();
+
+		this.debugger?.info('Spawn shards');
+		for (const bucket of buckets) {
+			for (const shard of bucket) {
+				if (!shard) {
+					break;
+				}
+				this.debugger?.info(`${shard.id} add to connect queue`);
+				this.connectQueue.push(shard.connect.bind(shard));
+			}
+		}
+		await this.startResharder();
+	}
+
+	async startResharder() {
 		if (this.options.resharding.interval <= 0) return;
+		if (this.shardStart !== 0 || this.shardEnd !== this.totalShards)
+			return this.debugger?.debug('Cannot start resharder');
+
+		this.debugger?.debug('Resharder enabled');
 		setInterval(async () => {
 			this.debugger?.debug('Checking if reshard is needed');
 			const info = await this.options.resharding.getInfo();
@@ -123,73 +197,6 @@ export class ShardManager extends Map<number, Shard> {
 
 			await resharder.spawnShards();
 		}, this.options.resharding.interval);
-	}
-
-	get totalShards() {
-		return this.options.totalShards ?? this.options.info.shards;
-	}
-
-	get shardStart() {
-		return this.options.shardStart ?? 0;
-	}
-
-	get shardEnd() {
-		return this.options.shardEnd ?? this.totalShards;
-	}
-
-	get remaining() {
-		return this.options.info.session_start_limit.remaining;
-	}
-
-	get concurrency() {
-		return this.options.info.session_start_limit.max_concurrency;
-	}
-
-	get latency() {
-		let acc = 0;
-
-		this.forEach(s => (acc += s.latency));
-
-		return acc / this.size;
-	}
-
-	calculateShardId(guildId: string) {
-		return calculateShardId(guildId, this.totalShards);
-	}
-
-	spawn(shardId: number) {
-		this.debugger?.info(`Spawn shard ${shardId}`);
-		let shard = this.get(shardId);
-
-		shard ??= new Shard(shardId, {
-			token: this.options.token,
-			intents: this.options.intents,
-			info: { ...this.options.info, shards: this.totalShards },
-			handlePayload: this.options.handlePayload,
-			properties: this.options.properties,
-			debugger: this.debugger,
-			compress: this.options.compress ?? false,
-			presence: this.options.presence?.(shardId, -1),
-		});
-
-		this.set(shardId, shard);
-
-		return shard;
-	}
-
-	async spawnShards(): Promise<void> {
-		const buckets = this.spawnBuckets();
-
-		this.debugger?.info('Spawn shards');
-		for (const bucket of buckets) {
-			for (const shard of bucket) {
-				if (!shard) {
-					break;
-				}
-				this.debugger?.info(`${shard.id} add to connect queue`);
-				this.connectQueue.push(shard.connect.bind(shard));
-			}
-		}
 	}
 
 	/*

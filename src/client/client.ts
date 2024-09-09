@@ -116,8 +116,8 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				compress: this.options?.gateway?.compress,
 				resharding: {
 					getInfo: () => this.proxy.gateway.bot.get(),
-					interval: this.options?.resharding?.interval ?? 0,
-					percentage: this.options?.resharding?.percentage ?? 0,
+					interval: this.options?.resharding?.interval as number,
+					percentage: this.options?.resharding?.percentage as number,
 					reloadGuilds: ids => {
 						this.__handleGuilds = this.__handleGuilds?.concat(ids) ?? ids;
 					},
