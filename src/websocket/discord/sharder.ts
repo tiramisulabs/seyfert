@@ -19,6 +19,7 @@ import { DynamicBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';
 import { Shard } from './shard';
 import type { ShardManagerOptions, WorkerData } from './shared';
+import type { MakeDeepPartial } from '../../common/types/util';
 
 let parentPort: import('node:worker_threads').MessagePort;
 let workerData: WorkerData;
@@ -28,7 +29,7 @@ export class ShardManager extends Map<number, Shard> {
 	options: MakeRequired<ShardManagerOptions, keyof typeof ShardManagerDefaults>;
 	debugger?: Logger;
 
-	constructor(options: ShardManagerOptions) {
+	constructor(options: MakeDeepPartial<ShardManagerOptions, 'resharding'>) {
 		super();
 		this.options = MergeOptions<ShardManager['options']>(
 			ShardManagerDefaults,

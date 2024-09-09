@@ -16,12 +16,18 @@ export type StringToNumber<T extends string> = T extends `${infer N extends numb
 
 export type MakePartial<T, K extends keyof T> = Omit<T, K> & { [P in K]?: T[P] };
 
+export type MakeDeepPartial<T, K extends keyof T> = Omit<T, K> & {
+	[P in K]?: DeepPartial<T[P]>;
+};
+
 export type DeepPartial<T> = {
-	[K in keyof T]?: T[K] extends Record<any, any>
-		? DeepPartial<T[K]>
-		: T[K] extends (infer I)[]
-			? DeepPartial<I>[]
-			: Partial<T[K]>;
+	[K in keyof T]?: T[K] extends (...args: any[]) => any
+		? T[K]
+		: T[K] extends Record<any, any>
+			? DeepPartial<T[K]>
+			: T[K] extends (infer I)[]
+				? DeepPartial<I>[]
+				: Partial<T[K]>;
 };
 
 export type OmitInsert<T, K extends keyof T, I> = I extends [] ? Omit<T, K> & I[number] : Omit<T, K> & I;
