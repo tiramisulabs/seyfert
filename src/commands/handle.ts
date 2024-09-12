@@ -644,13 +644,14 @@ export class HandleCommand {
 							if (channel) {
 								if ('channel_types' in i) {
 									if (!(i as SeyfertChannelOption).channel_types!.includes(channel.type)) {
-										errors.push({
-											name: i.name,
-											error: `The entered channel type is not one of ${(i as SeyfertChannelOption)
-												.channel_types!.map(t => ChannelType[t])
-												.join(', ')}`,
-											fullError: ['CHANNEL_TYPES', (i as SeyfertChannelOption).channel_types!],
-										});
+										if (i.required)
+											errors.push({
+												name: i.name,
+												error: `The entered channel type is not one of ${(i as SeyfertChannelOption)
+													.channel_types!.map(t => ChannelType[t])
+													.join(', ')}`,
+												fullError: ['CHANNEL_TYPES', (i as SeyfertChannelOption).channel_types!],
+											});
 										break;
 									}
 								}
@@ -730,22 +731,24 @@ export class HandleCommand {
 							if (option.min_length) {
 								if (value.length < option.min_length) {
 									value = undefined;
-									errors.push({
-										name: i.name,
-										error: `The entered string has less than ${option.min_length} characters. The minimum required is ${option.min_length} characters.`,
-										fullError: ['STRING_MIN_LENGTH', option.min_length],
-									});
+									if (i.required)
+										errors.push({
+											name: i.name,
+											error: `The entered string has less than ${option.min_length} characters. The minimum required is ${option.min_length} characters.`,
+											fullError: ['STRING_MIN_LENGTH', option.min_length],
+										});
 									break;
 								}
 							}
 							if (option.max_length) {
 								if (value.length > option.max_length) {
 									value = undefined;
-									errors.push({
-										name: i.name,
-										error: `The entered string has more than ${option.max_length} characters. The maximum required is ${option.max_length} characters.`,
-										fullError: ['STRING_MAX_LENGTH', option.max_length],
-									});
+									if (i.required)
+										errors.push({
+											name: i.name,
+											error: `The entered string has more than ${option.max_length} characters. The maximum required is ${option.max_length} characters.`,
+											fullError: ['STRING_MAX_LENGTH', option.max_length],
+										});
 									break;
 								}
 							}
@@ -753,13 +756,14 @@ export class HandleCommand {
 								const choice = option.choices.find(x => x.name === value);
 								if (!choice) {
 									value = undefined;
-									errors.push({
-										name: i.name,
-										error: `The entered choice is invalid. Please choose one of the following options: ${option.choices
-											.map(x => x.name)
-											.join(', ')}.`,
-										fullError: ['STRING_INVALID_CHOICE', option.choices],
-									});
+									if (i.required)
+										errors.push({
+											name: i.name,
+											error: `The entered choice is invalid. Please choose one of the following options: ${option.choices
+												.map(x => x.name)
+												.join(', ')}.`,
+											fullError: ['STRING_INVALID_CHOICE', option.choices],
+										});
 									break;
 								}
 								value = choice.value;
@@ -778,32 +782,35 @@ export class HandleCommand {
 								}
 								if (Number.isNaN(value)) {
 									value = undefined;
-									errors.push({
-										name: i.name,
-										error: 'The entered choice is an invalid number.',
-										fullError: ['NUMBER_NAN', args[i.name]],
-									});
+									if (i.required)
+										errors.push({
+											name: i.name,
+											error: 'The entered choice is an invalid number.',
+											fullError: ['NUMBER_NAN', args[i.name]],
+										});
 									break;
 								}
 								if (option.min_value) {
 									if (value < option.min_value) {
 										value = undefined;
-										errors.push({
-											name: i.name,
-											error: `The entered number is less than ${option.min_value}. The minimum allowed is ${option.min_value}`,
-											fullError: ['NUMBER_MIN_VALUE', option.min_value],
-										});
+										if (i.required)
+											errors.push({
+												name: i.name,
+												error: `The entered number is less than ${option.min_value}. The minimum allowed is ${option.min_value}`,
+												fullError: ['NUMBER_MIN_VALUE', option.min_value],
+											});
 										break;
 									}
 								}
 								if (option.max_value) {
 									if (value > option.max_value) {
 										value = undefined;
-										errors.push({
-											name: i.name,
-											error: `The entered number is greater than ${option.max_value}. The maximum allowed is ${option.max_value}`,
-											fullError: ['NUMBER_MAX_VALUE', option.max_value],
-										});
+										if (i.required)
+											errors.push({
+												name: i.name,
+												error: `The entered number is greater than ${option.max_value}. The maximum allowed is ${option.max_value}`,
+												fullError: ['NUMBER_MAX_VALUE', option.max_value],
+											});
 										break;
 									}
 								}
@@ -812,13 +819,14 @@ export class HandleCommand {
 							const choice = option.choices.find(x => x.name === args[i.name]);
 							if (!choice) {
 								value = undefined;
-								errors.push({
-									name: i.name,
-									error: `The entered choice is invalid. Please choose one of the following options: ${option.choices
-										.map(x => x.name)
-										.join(', ')}.`,
-									fullError: ['NUMBER_INVALID_CHOICE', option.choices],
-								});
+								if (i.required)
+									errors.push({
+										name: i.name,
+										error: `The entered choice is invalid. Please choose one of the following options: ${option.choices
+											.map(x => x.name)
+											.join(', ')}.`,
+										fullError: ['NUMBER_INVALID_CHOICE', option.choices],
+									});
 								break;
 							}
 							value = choice.value;
