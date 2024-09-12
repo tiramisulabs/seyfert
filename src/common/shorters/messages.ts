@@ -13,7 +13,7 @@ import { Transformers } from '../../client/transformers';
 
 export class MessageShorter extends BaseShorter {
 	async write(channelId: string, { files, ...body }: MessageCreateBodyRequest) {
-		const parsedFiles = files ? await resolveFiles(files) : [];
+		const parsedFiles = files ? await resolveFiles(files) : undefined;
 
 		const transformedBody = MessagesMethods.transformMessageBody<RESTPostAPIChannelMessageJSONBody>(
 			body,
@@ -33,7 +33,7 @@ export class MessageShorter extends BaseShorter {
 	}
 
 	async edit(messageId: string, channelId: string, { files, ...body }: MessageUpdateBodyRequest) {
-		const parsedFiles = files ? await resolveFiles(files) : [];
+		const parsedFiles = files ? await resolveFiles(files) : undefined;
 		return this.client.proxy
 			.channels(channelId)
 			.messages(messageId)

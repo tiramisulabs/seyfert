@@ -343,7 +343,7 @@ export class ApiHandler {
 		if (options.request.query) {
 			finalUrl += `?${new URLSearchParams(options.request.query)}`;
 		}
-		if (options.request.files) {
+		if (options.request.files?.length) {
 			const formData = new FormData();
 
 			for (const [index, file] of options.request.files.entries()) {
