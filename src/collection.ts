@@ -259,7 +259,7 @@ export class LimitedCollection<K, V> {
 		if (this.size > this.options.limit) {
 			const iter = this.data.keys();
 			while (this.size > this.options.limit) {
-				const keyValue = iter.next().value;
+				const keyValue = iter.next().value!;
 				this.delete(keyValue);
 			}
 		}

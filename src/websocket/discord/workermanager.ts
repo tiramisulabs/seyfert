@@ -283,7 +283,7 @@ export class WorkerManager extends Map<
 				{
 					this.get(message.workerId)!.ready = true;
 					if ([...this.values()].every(w => w.ready)) {
-						this.postMessage(this.keys().next().value, {
+						this.postMessage(this.keys().next().value!, {
 							type: 'BOT_READY',
 						} satisfies ManagerSendBotReady);
 						this.forEach(w => {

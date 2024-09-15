@@ -143,9 +143,9 @@ export class BaseInteraction<
 				return body;
 			case InteractionResponseType.ChannelMessageWithSource:
 			case InteractionResponseType.UpdateMessage: {
+				//@ts-ignore
 				return {
 					type: body.type,
-					//@ts-ignore
 					data: BaseInteraction.transformBody(body.data ?? {}, files, self),
 				};
 			}
