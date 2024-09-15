@@ -18,7 +18,7 @@ export const LangRouter = (userLocale: string, defaultLang: string, langs: Parti
 						return value;
 					}
 					return (locale?: string) => {
-						let result;
+						let result: unknown;
 						try {
 							result = getValue(locale ?? userLocale);
 						} catch {

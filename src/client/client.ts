@@ -1,21 +1,21 @@
-import { type GatewayDispatchPayload, type GatewayPresenceUpdateData, GatewayIntentBits } from '../types';
 import type { CommandContext, Message } from '..';
 import {
 	type Awaitable,
-	lazyLoadPackage,
 	type DeepPartial,
 	type If,
 	type WatcherPayload,
 	type WatcherSendToShard,
+	lazyLoadPackage,
 } from '../common';
 import { EventHandler } from '../events';
-import { ShardManager, properties, type ShardManagerOptions } from '../websocket';
+import { type GatewayDispatchPayload, GatewayIntentBits, type GatewayPresenceUpdateData } from '../types';
+import { ShardManager, type ShardManagerOptions, properties } from '../websocket';
 import { MemberUpdateHandler } from '../websocket/discord/events/memberUpdate';
 import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdate';
 import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import { Collectors } from './collectors';
-import { type ClientUserStructure, Transformers, type MessageStructure } from './transformers';
+import { type ClientUserStructure, type MessageStructure, Transformers } from './transformers';
 
 let parentPort: import('node:worker_threads').MessagePort;
 
@@ -149,18 +149,22 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			this.collectors.run('RAW', packet, this),
 		]); //ignore promise
 		switch (packet.t) {
-			//// Cases where we must obtain the old data before updating
+			// Cases where we must obtain the old data before updating
 			case 'GUILD_MEMBER_UPDATE':
-				if (!this.memberUpdateHandler.check(packet.d)) {
-					return;
+				{
+					if (!this.memberUpdateHandler.check(packet.d)) {
+						return;
+					}
+					await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
 				}
-				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
 				break;
 			case 'PRESENCE_UPDATE':
-				if (!this.presenceUpdateHandler.check(packet.d)) {
-					return;
+				{
+					if (!this.presenceUpdateHandler.check(packet.d)) {
+						return;
+					}
+					await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
 				}
-				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
 				break;
 			case 'GUILD_DELETE':
 			case 'GUILD_CREATE': {
@@ -181,12 +185,16 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			default: {
 				switch (packet.t) {
 					case 'INTERACTION_CREATE':
-						await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
-						await this.handleCommand.interaction(packet.d, shardId);
+						{
+							await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
+							await this.handleCommand.interaction(packet.d, shardId);
+						}
 						break;
 					case 'MESSAGE_CREATE':
-						await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
-						await this.handleCommand.message(packet.d, shardId);
+						{
+							await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
+							await this.handleCommand.message(packet.d, shardId);
+						}
 						break;
 					case 'READY': {
 						const ids = packet.d.guilds.map(x => x.id);

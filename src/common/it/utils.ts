@@ -1,17 +1,17 @@
 import { promises } from 'node:fs';
 import { basename, join } from 'node:path';
 import {
+	type ColorResolvable,
 	DiscordEpoch,
 	EmbedColors,
 	type EmojiResolvable,
-	type TypeArray,
-	type ColorResolvable,
 	type Logger,
 	type ObjectToLower,
 	type ObjectToSnake,
+	type TypeArray,
 } from '..';
-import { type APIPartialEmoji, FormattingPatterns } from '../../types';
 import type { Cache } from '../../cache';
+import { type APIPartialEmoji, FormattingPatterns } from '../../types';
 
 /**
  * Calculates the shard ID for a guild based on its ID.
@@ -29,11 +29,12 @@ export function calculateShardId(guildId: string, shards?: number) {
  */
 export function resolveColor(color: ColorResolvable): number {
 	switch (typeof color) {
-		case 'string':
+		case 'string': {
 			if (color === 'Random') return Math.floor(Math.random() * (0xffffff + 1));
 			if (color.startsWith('#')) return Number.parseInt(color.slice(1), 16);
 			if (color in EmbedColors) return EmbedColors[color as keyof typeof EmbedColors];
 			return EmbedColors.Default;
+		}
 		case 'number':
 			return color;
 		case 'object':
@@ -82,7 +83,7 @@ export function MergeOptions<T>(defaults: any, ...options: any[]): T {
 			...Object.fromEntries(
 				Object.entries(defaults).map(([key, value]) => [
 					key,
-					isObject(value) ? MergeOptions(value, option?.[key] || {}) : option?.[key] ?? value,
+					isObject(value) ? MergeOptions(value, option?.[key] || {}) : (option?.[key] ?? value),
 				]),
 			),
 		},
@@ -195,7 +196,7 @@ export function toSnakeCase<Obj extends Record<string, any>>(target: Obj): Objec
 			case 'undefined':
 				result[ReplaceRegex.snake(key)] = value;
 				break;
-			case 'object':
+			case 'object': {
 				if (Array.isArray(value)) {
 					result[ReplaceRegex.snake(key)] = value.map(prop =>
 						typeof prop === 'object' && prop ? toSnakeCase(prop) : prop,
@@ -212,6 +213,7 @@ export function toSnakeCase<Obj extends Record<string, any>>(target: Obj): Objec
 				}
 				result[ReplaceRegex.snake(key)] = toSnakeCase(value);
 				break;
+			}
 		}
 	}
 	return result as ObjectToSnake<Obj>;
@@ -235,7 +237,7 @@ export function toCamelCase<Obj extends Record<string, any>>(target: Obj): Objec
 			case 'undefined':
 				result[ReplaceRegex.camel(key)] = value;
 				break;
-			case 'object':
+			case 'object': {
 				if (Array.isArray(value)) {
 					result[ReplaceRegex.camel(key)] = value.map(prop =>
 						typeof prop === 'object' && prop ? toCamelCase(prop) : prop,
@@ -252,6 +254,7 @@ export function toCamelCase<Obj extends Record<string, any>>(target: Obj): Objec
 				}
 				result[ReplaceRegex.camel(key)] = toCamelCase(value);
 				break;
+			}
 		}
 	}
 	return result as ObjectToLower<Obj>;
@@ -291,6 +294,8 @@ export function lazyLoadPackage<T>(mod: string): T | undefined {
 	try {
 		return require(mod);
 	} catch (e) {
+		// biome-ignore lint/suspicious/noConsoleLog:
+		// biome-ignore lint/suspicious/noConsole:
 		console.log(`Cannot import ${mod}`, e);
 		return;
 	}

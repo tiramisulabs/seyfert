@@ -5,10 +5,10 @@ import type { WorkerSendApiRequest } from '../websocket/discord/worker';
 import { CDNRouter, type ProxyRequestMethod } from './Router';
 import { Bucket } from './bucket';
 import {
-	DefaultUserAgent,
 	type ApiHandlerInternalOptions,
 	type ApiHandlerOptions,
 	type ApiRequestOptions,
+	DefaultUserAgent,
 	type HttpMethods,
 	type RawFile,
 	type RequestHeaders,
@@ -54,7 +54,7 @@ export class ApiHandler {
 
 	globalUnblock() {
 		this.globalBlock = false;
-		let cb;
+		let cb: (() => void) | undefined;
 		while ((cb = this.readyQueue.shift())) {
 			cb();
 		}
@@ -105,7 +105,7 @@ export class ApiHandler {
 				request: { ...request, auth },
 			});
 
-			let response;
+			let response: Response;
 
 			try {
 				const url = `${this.options.domain}/${this.options.baseUrl}${finalUrl}`;

@@ -63,61 +63,61 @@ type Timestamp = `<t:${number}:${TimestampStyle}>`;
 /**
  * Represents a formatter utility for formatting content.
  */
-export class Formatter {
+export const Formatter = {
 	/**
 	 * Formats a code block.
 	 * @param content The content of the code block.
 	 * @param language The language of the code block. Defaults to 'txt'.
 	 * @returns The formatted code block.
 	 */
-	static codeBlock(content: string, language = 'txt'): string {
+	codeBlock(content: string, language = 'txt'): string {
 		return `\`\`\`${language}\n${content}\n\`\`\``;
-	}
+	},
 
 	/**
 	 * Formats content into inline code.
 	 * @param content The content to format.
 	 * @returns The formatted content.
 	 */
-	static inlineCode(content: string): `\`${string}\`` {
+	inlineCode(content: string): `\`${string}\`` {
 		return `\`${content}\``;
-	}
+	},
 
 	/**
 	 * Formats content into bold text.
 	 * @param content The content to format.
 	 * @returns The formatted content.
 	 */
-	static bold(content: string): `**${string}**` {
+	bold(content: string): `**${string}**` {
 		return `**${content}**`;
-	}
+	},
 
 	/**
 	 * Formats content into italic text.
 	 * @param content The content to format.
 	 * @returns The formatted content.
 	 */
-	static italic(content: string): `*${string}*` {
+	italic(content: string): `*${string}*` {
 		return `*${content}*`;
-	}
+	},
 
 	/**
 	 * Formats content into underlined text.
 	 * @param content The content to format.
 	 * @returns The formatted content.
 	 */
-	static underline(content: string): `__${string}__` {
+	underline(content: string): `__${string}__` {
 		return `__${content}__`;
-	}
+	},
 
 	/**
 	 * Formats content into strikethrough text.
 	 * @param content The content to format.
 	 * @returns The formatted content.
 	 */
-	static strikeThrough(content: string): `~~${string}~~` {
+	strikeThrough(content: string): `~~${string}~~` {
 		return `~~${content}~~`;
-	}
+	},
 
 	/**
 	 * Formats content into a hyperlink.
@@ -125,36 +125,36 @@ export class Formatter {
 	 * @param url The URL to hyperlink to.
 	 * @returns The formatted content.
 	 */
-	static hyperlink(content: string, url: string): `[${string}](${string})` {
+	hyperlink(content: string, url: string): `[${string}](${string})` {
 		return `[${content}](${url})`;
-	}
+	},
 
 	/**
 	 * Formats content into a spoiler.
 	 * @param content The content to format.
 	 * @returns The formatted content.
 	 */
-	static spoiler(content: string): `||${string}||` {
+	spoiler(content: string): `||${string}||` {
 		return `||${content}||`;
-	}
+	},
 
 	/**
 	 * Formats content into a quote.
 	 * @param content The content to format.
 	 * @returns The formatted content.
 	 */
-	static blockQuote(content: string): string {
+	blockQuote(content: string): string {
 		return `>>> ${content}`;
-	}
+	},
 
 	/**
 	 * Formats content into a quote.
 	 * @param content The content to format.
 	 * @returns The formatted content.
 	 */
-	static quote(content: string): string {
+	quote(content: string): string {
 		return `> ${content}`;
-	}
+	},
 
 	/**
 	 * Formats a message link.
@@ -163,9 +163,9 @@ export class Formatter {
 	 * @param messageId The ID of the message.
 	 * @returns The formatted message link.
 	 */
-	static messageLink(guildId: string, channelId: string, messageId: string): MessageLink {
+	messageLink(guildId: string, channelId: string, messageId: string): MessageLink {
 		return `https://discord.com/channels/${guildId}/${channelId}/${messageId}`;
-	}
+	},
 
 	/**
 	 * Formats a header.
@@ -173,9 +173,9 @@ export class Formatter {
 	 * @param level The level of the header. Defaults to 1.
 	 * @returns The formatted header.
 	 */
-	static header(content: string, level: HeadingLevel = HeadingLevel.H1): string {
+	header(content: string, level: HeadingLevel = HeadingLevel.H1): string {
 		return `${'#'.repeat(level)} ${content}`;
-	}
+	},
 
 	/**
 	 * Formats a list.
@@ -183,13 +183,13 @@ export class Formatter {
 	 * @param ordered Whether the list is ordered. Defaults to false.
 	 * @returns The formatted list.
 	 */
-	static list(items: string[], ordered = false): string {
+	list(items: string[], ordered = false): string {
 		return items
 			.map((item, index) => {
 				return (ordered ? `${index + 1}. ` : '- ') + item;
 			})
 			.join('\n');
-	}
+	},
 
 	/**
 	 * Formats the given timestamp into discord unix timestamp format.
@@ -197,36 +197,36 @@ export class Formatter {
 	 * @param style The style of the timestamp. Defaults to 't'.
 	 * @returns The formatted timestamp.
 	 */
-	static timestamp(timestamp: Date, style: TimestampStyle = TimestampStyle.RelativeTime): Timestamp {
+	timestamp(timestamp: Date, style: TimestampStyle = TimestampStyle.RelativeTime): Timestamp {
 		return `<t:${Math.floor(timestamp.getTime() / 1000)}:${style}>`;
-	}
+	},
 
 	/**
 	 * Formats a user mention.
 	 * @param userId The ID of the user to mention.
 	 * @returns The formatted user mention.
 	 */
-	static userMention(userId: string): `<@${string}>` {
+	userMention(userId: string): `<@${string}>` {
 		return `<@${userId}>`;
-	}
+	},
 
 	/**
 	 * Formats a role mention.
 	 * @param roleId The ID of the role to mention.
 	 * @returns The formatted role mention.
 	 */
-	static roleMention(roleId: string): `<@&${string}>` {
+	roleMention(roleId: string): `<@&${string}>` {
 		return `<@&${roleId}>`;
-	}
+	},
 
 	/**
 	 * Formats a channel mention.
 	 * @param channelId The ID of the channel to mention.
 	 * @returns The formatted channel mention.
 	 */
-	static channelMention(channelId: string): `<#${string}>` {
+	channelMention(channelId: string): `<#${string}>` {
 		return `<#${channelId}>`;
-	}
+	},
 
 	/**
 	 * Formats an emoji.
@@ -234,9 +234,9 @@ export class Formatter {
 	 * @param animated Whether the emoji is animated. Defaults to false.
 	 * @returns The formatted emoji.
 	 */
-	static emojiMention(emojiId: string, name: string | null, animated = false): string {
+	emojiMention(emojiId: string, name: string | null, animated = false): string {
 		return `<${animated ? 'a' : ''}:${name ?? '_'}:${emojiId}>`;
-	}
+	},
 
 	/**
 	 * Formats a channel link.
@@ -244,7 +244,7 @@ export class Formatter {
 	 * @param guildId The ID of the guild. Defaults to '@me'.
 	 * @returns The formatted channel link.
 	 */
-	static channelLink(channelId: string, guildId?: string) {
+	channelLink(channelId: string, guildId?: string) {
 		return `https://discord.com/channels/${guildId ?? '@me'}/${channelId}`;
-	}
-}
+	},
+};

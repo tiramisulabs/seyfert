@@ -1,18 +1,20 @@
+import type { Channels } from '../../cache/resources/channels';
+import type { Overwrites } from '../../cache/resources/overwrites';
+import { type MessageStructure, Transformers } from '../../client/transformers';
+import { type AllChannels, BaseChannel, type GuildMember, type GuildRole, channelFrom } from '../../structures';
+import { PermissionsBitField } from '../../structures/extra/Permissions';
 import type {
 	APIChannel,
+	APIGuildChannel,
 	RESTGetAPIChannelMessagesQuery,
 	RESTPatchAPIChannelJSONBody,
 	RESTPostAPIChannelThreadsJSONBody,
 	RESTPostAPIGuildForumThreadsJSONBody,
-	APIGuildChannel,
 } from '../../types';
-import { BaseChannel, type GuildRole, type GuildMember, type AllChannels, channelFrom } from '../../structures';
-import { PermissionsBitField } from '../../structures/extra/Permissions';
-import { BaseShorter } from './base';
-import { MergeOptions } from '../it/utils';
-import { type MessageStructure, Transformers } from '../../client/transformers';
-import type { MakeRequired } from '../types/util';
 import { type ChannelType, PermissionFlagsBits } from '../../types';
+import { MergeOptions } from '../it/utils';
+import type { MakeRequired } from '../types/util';
+import { BaseShorter } from './base';
 
 export class ChannelShorter extends BaseShorter {
 	/**
@@ -26,7 +28,7 @@ export class ChannelShorter extends BaseShorter {
 	}
 
 	async raw(id: string, force?: boolean): Promise<APIChannel> {
-		let channel;
+		let channel: APIChannel | ReturnType<Channels['raw']>;
 		if (!force) {
 			channel = await this.client.cache.channels?.raw(id);
 			const overwrites = await this.client.cache.overwrites?.raw(id);
@@ -38,7 +40,7 @@ export class ChannelShorter extends BaseShorter {
 
 		channel = await this.client.proxy.channels(id).get();
 		await this.client.cache.channels?.patch(id, undefined, channel);
-		return channel;
+		return channel as APIChannel;
 	}
 
 	/**
@@ -155,9 +157,9 @@ export class ChannelShorter extends BaseShorter {
 	}
 
 	async overwritesFor(channelId: string, member: GuildMember) {
-		const roleOverwrites = [];
-		let memberOverwrites;
-		let everyoneOverwrites;
+		const roleOverwrites: ReturnType<Overwrites['get']> = [];
+		let memberOverwrites: NonNullable<ReturnType<Overwrites['get']>>[number] | undefined;
+		let everyoneOverwrites: NonNullable<ReturnType<Overwrites['get']>>[number] | undefined;
 
 		const channelOverwrites = (await this.client.cache.overwrites?.get(channelId)) ?? [];
 

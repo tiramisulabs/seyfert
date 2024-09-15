@@ -296,7 +296,6 @@ export enum ConnectionService {
 	 * @deprecated This is the old name for {@apilink ConnectionService#X}
 	 */
 
-	// biome-ignore lint/correctness/noUndeclaredVariables: biome bug lol
 	Twitter = X,
 	Xbox = 'xbox',
 	YouTube = 'youtube',

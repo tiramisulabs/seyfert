@@ -3,23 +3,23 @@ import {
 	Logger,
 	type MakeRequired,
 	MergeOptions,
-	lazyLoadPackage,
 	type WatcherSendToShard,
 	calculateShardId,
+	lazyLoadPackage,
 } from '../../common';
+import type { MakeDeepPartial } from '../../common/types/util';
 import {
+	type GatewayDispatchPayload,
+	GatewayOpcodes,
+	type GatewaySendPayload,
 	type GatewayUpdatePresence,
 	type GatewayVoiceStateUpdate,
-	type GatewaySendPayload,
-	GatewayOpcodes,
-	type GatewayDispatchPayload,
 } from '../../types';
 import { ShardManagerDefaults } from '../constants';
 import { DynamicBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';
 import { Shard } from './shard';
 import type { ShardManagerOptions, WorkerData } from './shared';
-import type { MakeDeepPartial } from '../../common/types/util';
 
 let parentPort: import('node:worker_threads').MessagePort;
 let workerData: WorkerData;
@@ -162,7 +162,9 @@ export class ShardManager extends Map<number, Shard> {
 				if (++shardsConnected < info.shards) return; //waiting for last shard to connect
 
 				// dont listen more events when all shards are ready
-				handlePayload = async () => {};
+				handlePayload = async () => {
+					//
+				};
 				await this.disconnectAll();
 				this.clear();
 
@@ -183,7 +185,9 @@ export class ShardManager extends Map<number, Shard> {
 					getInfo: () => ({}) as any,
 					interval: 0,
 					percentage: 0,
-					reloadGuilds() {},
+					reloadGuilds() {
+						//
+					},
 					onGuild() {
 						return true;
 					},

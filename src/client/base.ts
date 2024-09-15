@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { ApiHandler, Router, type APIRoutes } from '../api';
+import { type APIRoutes, ApiHandler, Router } from '../api';
 import type { Adapter } from '../cache';
 import { Cache, MemoryAdapter } from '../cache';
 import type {
@@ -23,6 +23,7 @@ import {
 	InteractionShorter,
 	LogLevels,
 	Logger,
+	type MakeRequired,
 	MemberShorter,
 	MergeOptions,
 	MessageShorter,
@@ -34,11 +35,13 @@ import {
 	WebhookShorter,
 	filterSplit,
 	magicImport,
-	type MakeRequired,
 } from '../common';
 
-import type { LocaleString, RESTPostAPIChannelMessageJSONBody } from '../types';
+import { promises } from 'node:fs';
+import { HandleCommand } from '../commands/handle';
+import { BanShorter } from '../common/shorters/bans';
 import type { Awaitable, DeepPartial, IntentStrings, OmitInsert, PermissionStrings, When } from '../common/types/util';
+import type { ComponentCommand, ComponentContext, ModalCommand, ModalContext } from '../components';
 import { ComponentHandler } from '../components/handler';
 import { LangsHandler } from '../langs/handler';
 import type {
@@ -49,10 +52,7 @@ import type {
 	ModalSubmitInteraction,
 	UserCommandInteraction,
 } from '../structures';
-import type { ComponentCommand, ComponentContext, ModalCommand, ModalContext } from '../components';
-import { promises } from 'node:fs';
-import { BanShorter } from '../common/shorters/bans';
-import { HandleCommand } from '../commands/handle';
+import type { LocaleString, RESTPostAPIChannelMessageJSONBody } from '../types';
 import type { MessageStructure } from './transformers';
 
 export class BaseClient {
@@ -396,18 +396,16 @@ export class BaseClient {
 	>() {
 		const seyfertConfig = (BaseClient._seyfertCfWorkerConfig ||
 			(await this.options?.getRC?.()) ||
-			(
-				await Promise.any(
-					['.js', '.mjs', '.cjs', '.ts', '.mts', '.cts'].map(ext =>
-						magicImport(join(process.cwd(), `seyfert.config${ext}`)).then(x => x.default ?? x),
-					),
-				)
+			(await Promise.any(
+				['.js', '.mjs', '.cjs', '.ts', '.mts', '.cts'].map(ext =>
+					magicImport(join(process.cwd(), `seyfert.config${ext}`)).then(x => x.default ?? x),
+				),
 			).catch((e: AggregateError) => {
 				if (e.errors.every((err: Error) => err.stack?.includes('ERR_MODULE_NOT_FOUND'))) {
 					throw new Error('No seyfert.config file found');
 				}
 				throw e.errors.find((err: Error) => !err.stack?.includes('ERR_MODULE_NOT_FOUND')) ?? e.errors[0];
-			})) as T;
+			}))) as T;
 
 		const { locations, debug, ...env } = seyfertConfig;
 
@@ -438,7 +436,7 @@ export interface BaseClientOptions {
 			| ModalSubmitInteraction
 			| EntryPointInteraction<boolean>
 			| When<InferWithPrefix, MessageStructure, never>,
-	) => {};
+	) => object;
 	globalMiddlewares?: readonly (keyof RegisteredMiddlewares)[];
 	commands?: {
 		defaults?: {

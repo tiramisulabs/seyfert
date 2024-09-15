@@ -57,7 +57,7 @@ export function Mixin<T, C extends TypeClass[]>(...args: C): C[number] & T {
 }
 
 // https://github.com/tannerntannern/ts-mixer
-export type TypeClass<InstanceType = {}, StaticType = {}> = (abstract new (
+export type TypeClass<InstanceType = object, StaticType = object> = (abstract new (
 	...args: any[]
 ) => InstanceType) &
 	StaticType;

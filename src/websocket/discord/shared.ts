@@ -1,10 +1,10 @@
+import type { Awaitable, DeepPartial, Logger } from '../../common';
 import type {
 	APIGatewayBotInfo,
 	GatewayDispatchPayload,
 	GatewayIntentBits,
 	GatewayPresenceUpdateData,
 } from '../../types';
-import type { Awaitable, DeepPartial, Logger } from '../../common';
 import type { IdentifyProperties } from '../constants';
 
 export interface ShardManagerOptions extends ShardDetails {
@@ -79,7 +79,7 @@ export interface WorkerManagerOptions extends Omit<ShardManagerOptions, 'handleP
 
 	path: string;
 
-	handlePayload(shardId: number, workerId: number, packet: GatewayDispatchPayload): unknown;
+	handlePayload?(shardId: number, workerId: number, packet: GatewayDispatchPayload): any;
 
 	properties?: DeepPartial<NonNullable<ShardManagerOptions['properties']>>;
 }

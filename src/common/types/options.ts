@@ -4,6 +4,6 @@ import type { UsingClient } from '../../commands';
 
 export type ImageOptions = CDNUrlOptions;
 
-export type MethodContext<T = {}> = Identify<{ client: UsingClient } & T>;
+export type MethodContext<T = object> = Identify<{ client: UsingClient } & T>;
 
-export type MessageWebhookPayload<Body, Extra = {}> = Identify<{ body: Body } & Extra>;
+export type MessageWebhookPayload<Body, Extra = object> = Identify<{ body: Body } & Extra>;

@@ -36,7 +36,7 @@ export function componentFactory(
 	component: APIMessageActionRowComponent,
 ): ActionRowMessageComponents | BaseComponent<ActionRowMessageComponents['type']> {
 	switch (component.type) {
-		case ComponentType.Button:
+		case ComponentType.Button: {
 			if (component.style === ButtonStyle.Link) {
 				return new LinkButtonComponent(component);
 			}
@@ -44,6 +44,7 @@ export function componentFactory(
 				return new SKUButtonComponent(component);
 			}
 			return new ButtonComponent(component);
+		}
 		case ComponentType.ChannelSelect:
 			return new ChannelSelectMenuComponent(component);
 		case ComponentType.RoleSelect:

@@ -1,4 +1,4 @@
-import { randomBytes, createHash, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { request } from 'node:https';
 import type { Socket } from 'node:net';
 
@@ -179,7 +179,7 @@ export class SeyfertWebSocket {
 	private _write(buffer: Buffer, opcode: number) {
 		if (!this.socket?.writable) return;
 		const length = buffer.length;
-		let frame;
+		let frame: Buffer;
 		// Kinda same logic as above, but client-side
 		if (length < 126) {
 			frame = Buffer.allocUnsafe(6 + length);
@@ -200,17 +200,29 @@ export class SeyfertWebSocket {
 		this.socket?.write(frame);
 	}
 
-	onping(_data: string) {}
+	onping(_data: string) {
+		//
+	}
 
-	onpong(_data: string) {}
+	onpong(_data: string) {
+		//
+	}
 
-	onopen() {}
+	onopen() {
+		//
+	}
 
-	onmessage(_payload: { data: string | Buffer }) {}
+	onmessage(_payload: { data: string | Buffer }) {
+		//
+	}
 
-	onclose(_close: { code: number; reason: string }) {}
+	onclose(_close: { code: number; reason: string }) {
+		//
+	}
 
-	onerror(_err: unknown) {}
+	onerror(_err: unknown) {
+		//
+	}
 
 	close(code: number, reason: string) {
 		this.__closeCalled = true;
@@ -299,7 +311,7 @@ export class SeyfertWebSocket {
 			// actual index of the buffer to read
 			let blockIndex = readable.bufferIndex;
 			// Buffer to read
-			let block;
+			let block: Buffer | undefined;
 			while ((block = readable.buffer[blockIndex++])) {
 				for (let i = 0; i < block.length; i++) {
 					if (++bitIndex > start) {

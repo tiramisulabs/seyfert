@@ -6,6 +6,7 @@ import {
 	type APIChatInputApplicationCommandInteraction,
 	type APIChatInputApplicationCommandInteractionData,
 	type APICommandAutocompleteInteractionResponseCallbackData,
+	type APIEntryPointCommandInteraction,
 	type APIInteraction,
 	type APIInteractionResponse,
 	type APIInteractionResponseChannelMessageWithSource,
@@ -31,24 +32,28 @@ import {
 	ApplicationCommandType,
 	ComponentType,
 	type GatewayInteractionCreateDispatchData,
+	type InteractionCallbackData,
+	type InteractionCallbackResourceActivity,
 	InteractionResponseType,
 	InteractionType,
 	type MessageFlags,
-	type RESTPostAPIInteractionCallbackJSONBody,
 	type RESTAPIAttachment,
-	type APIEntryPointCommandInteraction,
-	type InteractionCallbackData,
-	type InteractionCallbackResourceActivity,
+	type RESTPostAPIInteractionCallbackJSONBody,
 } from '../types';
 
 import type { RawFile } from '../api';
 import { ActionRow, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
+import {
+	type GuildRoleStructure,
+	type InteractionGuildMemberStructure,
+	type MessageStructure,
+	type OptionResolverStructure,
+	Transformers,
+	type UserStructure,
+	type WebhookMessageStructure,
+} from '../client/transformers';
 import type { ContextOptionsResolved, UsingClient } from '../commands';
 import {
-	type ObjectToLower,
-	type OmitInsert,
-	type ToClass,
-	type When,
 	type ComponentInteractionMessageUpdate,
 	type InteractionCreateBodyRequest,
 	type InteractionMessageUpdateBodyRequest,
@@ -56,22 +61,17 @@ import {
 	type MessageUpdateBodyRequest,
 	type MessageWebhookCreateBodyRequest,
 	type ModalCreateBodyRequest,
+	type ObjectToLower,
+	type OmitInsert,
+	type ToClass,
+	type When,
 	toCamelCase,
 } from '../common';
-import { channelFrom, type AllChannels } from './';
+import { mix } from '../deps/mixer';
+import { type AllChannels, channelFrom } from './';
+import { Entitlement } from './Entitlement';
 import { DiscordBase } from './extra/DiscordBase';
 import { PermissionsBitField } from './extra/Permissions';
-import {
-	type GuildRoleStructure,
-	type InteractionGuildMemberStructure,
-	type MessageStructure,
-	Transformers,
-	type UserStructure,
-	type WebhookMessageStructure,
-	type OptionResolverStructure,
-} from '../client/transformers';
-import { mix } from '../deps/mixer';
-import { Entitlement } from './Entitlement';
 
 export type ReplyInteractionBody =
 	| { type: InteractionResponseType.Modal; data: ModalCreateBodyRequest }
@@ -774,7 +774,7 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 	getInputValue(customId: string, required: true): string;
 	getInputValue(customId: string, required?: false): string | undefined;
 	getInputValue(customId: string, required?: boolean): string | undefined {
-		let value;
+		let value: string | undefined;
 		for (const { components } of this.components) {
 			const get = components.find(x => x.customId === customId);
 			if (get) {

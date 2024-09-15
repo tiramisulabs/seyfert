@@ -10,7 +10,7 @@ export interface WorkerShardInfo {
 
 export type WorkerInfo = { shards: WorkerShardInfo[] };
 
-type CreateWorkerMessage<T extends string, D extends object = {}> = {
+type CreateWorkerMessage<T extends string, D extends object = object> = {
 	type: T;
 	workerId: number;
 } & D;

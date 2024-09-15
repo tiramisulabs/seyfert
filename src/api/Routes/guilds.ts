@@ -1,3 +1,4 @@
+import type { Identify, OmitInsert } from '../../common';
 import type {
 	APIThreadChannel,
 	RESTDeleteAPIAutoModerationRuleResult,
@@ -116,7 +117,6 @@ import type {
 	RESTPutAPIGuildMemberRoleResult,
 	RESTPutAPIGuildTemplateSyncResult,
 } from '../../types';
-import type { Identify, OmitInsert } from '../../common';
 import type { ProxyRequestMethod } from '../Router';
 import type { RestArguments } from '../api';
 import type { RawFile } from '../shared';
@@ -334,7 +334,7 @@ export interface GuildRoutes {
 					args: RestArguments<
 						ProxyRequestMethod.Post,
 						Omit<RESTPostAPIGuildStickerFormDataBody, 'file'>,
-						{},
+						object,
 						OmitInsert<RawFile, 'key', { key: 'file' }>[]
 					>,
 				): Promise<RESTPostAPIGuildStickerResult>;

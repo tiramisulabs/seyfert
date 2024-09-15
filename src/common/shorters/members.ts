@@ -1,16 +1,16 @@
+import { type GuildMemberStructure, Transformers, type VoiceStateStructure } from '../../client/transformers';
+import { PermissionsBitField } from '../../structures/extra/Permissions';
 import {
 	type APIGuildMember,
+	FormattingPatterns,
 	type RESTGetAPIGuildMembersQuery,
 	type RESTGetAPIGuildMembersSearchQuery,
 	type RESTPatchAPIGuildMemberJSONBody,
 	type RESTPutAPIGuildBanJSONBody,
 	type RESTPutAPIGuildMemberJSONBody,
-	FormattingPatterns,
 } from '../../types';
-import { PermissionsBitField } from '../../structures/extra/Permissions';
 import type { GuildMemberResolvable } from '../types/resolvables';
 import { BaseShorter } from './base';
-import { Transformers, type VoiceStateStructure } from '../../client/transformers';
 
 export class MemberShorter extends BaseShorter {
 	/**
@@ -37,7 +37,7 @@ export class MemberShorter extends BaseShorter {
 			return this.client.members.fetch(guildId, id);
 		}
 
-		const displayName = 'displayName' in resolve ? resolve.displayName : resolve.nick ?? resolve.user?.username;
+		const displayName = 'displayName' in resolve ? resolve.displayName : (resolve.nick ?? resolve.user?.username);
 
 		return displayName ? this.search(guildId, { query: displayName, limit: 1 }).then(x => x[0]) : undefined;
 	}
@@ -142,7 +142,7 @@ export class MemberShorter extends BaseShorter {
 	}
 
 	async raw(guildId: string, memberId: string, force = false) {
-		let member;
+		let member: APIGuildMember | undefined;
 		if (!force) {
 			member = await this.client.cache.members?.raw(memberId, guildId);
 			if (member) return member;
@@ -161,7 +161,7 @@ export class MemberShorter extends BaseShorter {
 	 * @returns A Promise that resolves to an array of listed members.
 	 */
 	async list(guildId: string, query?: RESTGetAPIGuildMembersQuery, force = false) {
-		let members;
+		let members: APIGuildMember[] | GuildMemberStructure[];
 		if (!force) {
 			members = (await this.client.cache.members?.values(guildId)) ?? [];
 			if (members.length) return members;

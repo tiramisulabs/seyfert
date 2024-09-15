@@ -1,23 +1,23 @@
-import {
-	type APIApplicationCommandOption,
-	Locale,
-	type LocaleString,
-	ApplicationCommandOptionType,
-	type APIApplicationCommandIntegerOption,
-	type APIApplicationCommandStringOption,
-	type APIApplicationCommandSubcommandOption,
-	type APIApplicationCommandSubcommandGroupOption,
-	type APIApplicationCommandChannelOption,
-	type LocalizationMap,
-} from '../types';
+import { promises } from 'node:fs';
 import { basename, dirname } from 'node:path';
+import type { EntryPointCommand } from '.';
 import type { Logger, MakeRequired, NulleableCoalising, OmitInsert } from '../common';
 import { BaseHandler, isCloudfareWorker } from '../common';
+import {
+	type APIApplicationCommandChannelOption,
+	type APIApplicationCommandIntegerOption,
+	type APIApplicationCommandOption,
+	type APIApplicationCommandStringOption,
+	type APIApplicationCommandSubcommandGroupOption,
+	type APIApplicationCommandSubcommandOption,
+	ApplicationCommandOptionType,
+	Locale,
+	type LocaleString,
+	type LocalizationMap,
+} from '../types';
 import { Command, type CommandOption, SubCommand } from './applications/chat';
 import { ContextMenuCommand } from './applications/menu';
 import type { UsingClient } from './applications/shared';
-import { promises } from 'node:fs';
-import type { EntryPointCommand } from '.';
 
 export class CommandHandler extends BaseHandler {
 	values: (Command | ContextMenuCommand)[] = [];
@@ -97,26 +97,29 @@ export class CommandHandler extends BaseHandler {
 						return option.channel_types.some(ct => !cached.channel_types!.includes(ct));
 					}
 				}
-				return;
+				break;
 			case ApplicationCommandOptionType.Subcommand:
 			case ApplicationCommandOptionType.SubcommandGroup:
-				if (
-					option.options?.length !==
-					(cached as APIApplicationCommandSubcommandOption | APIApplicationCommandSubcommandGroupOption).options?.length
-				) {
-					return true;
-				}
-				if (
-					option.options &&
-					(cached as APIApplicationCommandSubcommandOption | APIApplicationCommandSubcommandGroupOption).options
-				)
-					for (const i of option.options) {
-						const cachedOption = (
-							cached as APIApplicationCommandSubcommandOption | APIApplicationCommandSubcommandGroupOption
-						).options!.find(x => x.name === i.name);
-						if (!cachedOption) return true;
-						if (this.shouldUploadOption(i, cachedOption)) return true;
+				{
+					if (
+						option.options?.length !==
+						(cached as APIApplicationCommandSubcommandOption | APIApplicationCommandSubcommandGroupOption).options
+							?.length
+					) {
+						return true;
 					}
+					if (
+						option.options &&
+						(cached as APIApplicationCommandSubcommandOption | APIApplicationCommandSubcommandGroupOption).options
+					)
+						for (const i of option.options) {
+							const cachedOption = (
+								cached as APIApplicationCommandSubcommandOption | APIApplicationCommandSubcommandGroupOption
+							).options!.find(x => x.name === i.name);
+							if (!cachedOption) return true;
+							if (this.shouldUploadOption(i, cachedOption)) return true;
+						}
+				}
 				break;
 			case ApplicationCommandOptionType.Integer:
 			case ApplicationCommandOptionType.Number:
@@ -210,7 +213,7 @@ export class CommandHandler extends BaseHandler {
 	set(commands: SeteableCommand[]) {
 		this.values ??= [];
 		for (const command of commands) {
-			let commandInstance;
+			let commandInstance: Command | undefined;
 			try {
 				commandInstance = this.onCommand(command) as Command;
 				if (!commandInstance) continue;
@@ -238,7 +241,7 @@ export class CommandHandler extends BaseHandler {
 		for (const { commands, file } of result.map(x => ({ commands: this.onFile(x.file), file: x }))) {
 			if (!commands) continue;
 			for (const command of commands) {
-				let commandInstance;
+				let commandInstance: ReturnType<typeof this.onCommand>;
 				try {
 					commandInstance = this.onCommand(command);
 					if (!commandInstance) continue;
@@ -277,7 +280,7 @@ export class CommandHandler extends BaseHandler {
 									const subCommand = this.onSubCommand(fileSubCommand as HandleableSubCommand);
 									if (subCommand && subCommand instanceof SubCommand) {
 										subCommand.__filePath = option;
-										commandInstance.options.push(subCommand);
+										commandInstance.options!.push(subCommand);
 									} else {
 										this.logger.warn(subCommand ? 'SubCommand expected' : 'Invalid SubCommand', subCommand);
 									}

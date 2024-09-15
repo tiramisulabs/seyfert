@@ -1,3 +1,4 @@
+import { type GuildBanStructure, Transformers } from '../../client/transformers';
 import type {
 	APIBan,
 	RESTGetAPIGuildBansQuery,
@@ -5,7 +6,6 @@ import type {
 	RESTPutAPIGuildBanJSONBody,
 } from '../../types';
 import { BaseShorter } from './base';
-import { Transformers } from '../../client/transformers';
 
 export class BanShorter extends BaseShorter {
 	/**
@@ -50,7 +50,7 @@ export class BanShorter extends BaseShorter {
 	 * @returns A Promise that resolves to the fetched ban.
 	 */
 	async fetch(guildId: string, userId: string, force = false) {
-		let ban;
+		let ban: APIBan | GuildBanStructure | undefined;
 		if (!force) {
 			ban = await this.client.cache.bans?.get(userId, guildId);
 			if (ban) return ban;
@@ -69,7 +69,7 @@ export class BanShorter extends BaseShorter {
 	 * @returns A Promise that resolves to an array of listed bans.
 	 */
 	async list(guildId: string, query?: RESTGetAPIGuildBansQuery, force = false) {
-		let bans;
+		let bans: APIBan[] | GuildBanStructure[];
 		if (!force) {
 			bans = (await this.client.cache.bans?.values(guildId)) ?? [];
 			if (bans.length) return bans;

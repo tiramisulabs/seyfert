@@ -1,52 +1,52 @@
 import {
-	type APIApplicationCommandInteraction,
-	ApplicationCommandType,
-	InteractionType,
-	type APIInteraction,
-	type GatewayMessageCreateDispatchData,
-	InteractionContextType,
-	type APIApplicationCommandInteractionDataOption,
-	ApplicationCommandOptionType,
-	type APIInteractionDataResolvedChannel,
-	ChannelType,
-} from '../types';
-import {
-	Command,
-	type ContextOptionsResolved,
-	type UsingClient,
-	type CommandAutocompleteOption,
-	type ContextMenuCommand,
-	MenuCommandContext,
 	BaseCommand,
+	Command,
+	type CommandAutocompleteOption,
 	CommandContext,
-	type RegisteredMiddlewares,
-	SubCommand,
-	IgnoreCommand,
 	type CommandOption,
+	type ContextMenuCommand,
+	type ContextOptionsResolved,
+	type EntryPointCommand,
+	EntryPointContext,
+	IgnoreCommand,
+	MenuCommandContext,
 	type MessageCommandOptionErrors,
+	type RegisteredMiddlewares,
 	type SeyfertChannelOption,
 	type SeyfertIntegerOption,
 	type SeyfertNumberOption,
 	type SeyfertStringOption,
-	EntryPointContext,
-	type EntryPointCommand,
+	SubCommand,
+	type UsingClient,
 } from '.';
+import type { Client, WorkerClient } from '../client';
+import { type MessageStructure, type OptionResolverStructure, Transformers } from '../client/transformers';
+import type { MakeRequired } from '../common';
+import { ComponentContext, ModalContext } from '../components';
 import {
 	AutocompleteInteraction,
 	BaseInteraction,
-	type ComponentInteraction,
-	type ModalSubmitInteraction,
 	type ChatInputCommandInteraction,
+	type ComponentInteraction,
+	type EntryPointInteraction,
 	type MessageCommandInteraction,
+	type ModalSubmitInteraction,
 	type UserCommandInteraction,
 	type __InternalReplyFunction,
-	type EntryPointInteraction,
 } from '../structures';
 import type { PermissionsBitField } from '../structures/extra/Permissions';
-import { ComponentContext, ModalContext } from '../components';
-import type { Client, WorkerClient } from '../client';
-import type { MakeRequired } from '../common';
-import { type MessageStructure, Transformers, type OptionResolverStructure } from '../client/transformers';
+import {
+	type APIApplicationCommandInteraction,
+	type APIApplicationCommandInteractionDataOption,
+	type APIInteraction,
+	type APIInteractionDataResolvedChannel,
+	ApplicationCommandOptionType,
+	ApplicationCommandType,
+	ChannelType,
+	type GatewayMessageCreateDispatchData,
+	InteractionContextType,
+	InteractionType,
+} from '../types';
 
 export type CommandOptionWithType = CommandOption & {
 	type: ApplicationCommandOptionType;
@@ -390,7 +390,9 @@ export class HandleCommand {
 		} catch (error) {
 			try {
 				await command.onInternalError?.(this.client, command, error);
-			} catch {}
+			} catch {
+				// http 418
+			}
 		}
 	}
 
@@ -529,7 +531,7 @@ export class HandleCommand {
 
 	async runGlobalMiddlewares(
 		command: Command | ContextMenuCommand | SubCommand | EntryPointCommand,
-		context: CommandContext<{}, never> | MenuCommandContext<any> | EntryPointContext,
+		context: CommandContext<never, never> | MenuCommandContext<any> | EntryPointContext,
 	) {
 		try {
 			const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
@@ -548,14 +550,16 @@ export class HandleCommand {
 		} catch (e) {
 			try {
 				await command.onInternalError?.(this.client, command as never, e);
-			} catch {}
+			} catch {
+				// http 418
+			}
 		}
 		return false;
 	}
 
 	async runMiddlewares(
 		command: Command | ContextMenuCommand | SubCommand | EntryPointCommand,
-		context: CommandContext<{}, never> | MenuCommandContext<any> | EntryPointContext,
+		context: CommandContext<never, never> | MenuCommandContext<any> | EntryPointContext,
 	) {
 		try {
 			const resultRunMiddlewares = await BaseCommand.__runMiddlewares(
@@ -574,7 +578,9 @@ export class HandleCommand {
 		} catch (e) {
 			try {
 				await command.onInternalError?.(this.client, command as never, e);
-			} catch {}
+			} catch {
+				// http 418
+			}
 		}
 		return false;
 	}
@@ -602,7 +608,9 @@ export class HandleCommand {
 			} catch (e) {
 				try {
 					await command.onInternalError?.(this.client, command, e);
-				} catch {}
+				} catch {
+					// http 418
+				}
 			}
 			return false;
 		}

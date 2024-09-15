@@ -2,7 +2,7 @@ import type { ComponentCallback, ListenerOptions, ModalSubmitCallback } from '..
 import { LimitedCollection } from '../collection';
 import { BaseCommand, type RegisteredMiddlewares, type UsingClient } from '../commands';
 import type { FileLoaded } from '../commands/handler';
-import { BaseHandler, isCloudfareWorker, magicImport, type Logger, type OnFailCallback } from '../common';
+import { BaseHandler, type Logger, type OnFailCallback, isCloudfareWorker, magicImport } from '../common';
 import type { ComponentInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from '../structures';
 import { ComponentCommand, InteractionCommandType } from './componentcommand';
 import type { ComponentContext } from './componentcontext';
@@ -165,7 +165,7 @@ export class ComponentHandler extends BaseHandler {
 
 	set(instances: (new () => ComponentCommands)[]) {
 		for (const i of instances) {
-			let component;
+			let component: ReturnType<typeof this.callback>;
 			try {
 				component = this.callback(i);
 				if (!component) continue;
@@ -185,7 +185,7 @@ export class ComponentHandler extends BaseHandler {
 		for (const { components, file } of paths.map(x => ({ components: this.onFile(x.file), file: x }))) {
 			if (!components) continue;
 			for (const value of components) {
-				let component;
+				let component: ReturnType<typeof this.callback>;
 				try {
 					component = this.callback(value);
 					if (!component) continue;

@@ -1,13 +1,4 @@
-import {
-	ApplicationCommandOptionType,
-	ApplicationCommandType,
-	type ApplicationIntegrationType,
-	type InteractionContextType,
-	type APIApplicationCommandBasicOption,
-	type APIApplicationCommandOption,
-	type APIApplicationCommandSubcommandGroupOption,
-	type LocaleString,
-} from '../../types';
+import { inspect } from 'node:util';
 import type {
 	ComponentContext,
 	EntryPointContext,
@@ -18,8 +9,24 @@ import type {
 	SeyfertStringOption,
 } from '../..';
 import type { Attachment } from '../../builders';
-import { type Awaitable, magicImport, type FlatObjectKeys } from '../../common';
+import type {
+	GuildRoleStructure,
+	InteractionGuildMemberStructure,
+	OptionResolverStructure,
+	UserStructure,
+} from '../../client/transformers';
+import { type Awaitable, type FlatObjectKeys, magicImport } from '../../common';
 import type { AllChannels, AutocompleteInteraction } from '../../structures';
+import {
+	type APIApplicationCommandBasicOption,
+	type APIApplicationCommandOption,
+	type APIApplicationCommandSubcommandGroupOption,
+	ApplicationCommandOptionType,
+	ApplicationCommandType,
+	type ApplicationIntegrationType,
+	type InteractionContextType,
+	type LocaleString,
+} from '../../types';
 import type { Groups, RegisteredMiddlewares } from '../decorators';
 import type { CommandContext } from './chatcontext';
 import type {
@@ -32,13 +39,6 @@ import type {
 	StopFunction,
 	UsingClient,
 } from './shared';
-import { inspect } from 'node:util';
-import type {
-	GuildRoleStructure,
-	InteractionGuildMemberStructure,
-	OptionResolverStructure,
-	UserStructure,
-} from '../../client/transformers';
 
 export interface ReturnOptionsTypes {
 	1: never; // subcommand
@@ -149,7 +149,7 @@ export class BaseCommand {
 
 	/** @internal */
 	async __runOptions(
-		ctx: CommandContext<{}, never>,
+		ctx: CommandContext<never, never>,
 		resolver: OptionResolverStructure,
 	): Promise<[boolean, OnOptionsReturnObject]> {
 		if (!this?.options?.length) {
@@ -202,7 +202,12 @@ export class BaseCommand {
 
 	/** @internal */
 	static __runMiddlewares(
-		context: CommandContext<{}, never> | ComponentContext | MenuCommandContext<any> | ModalContext | EntryPointContext,
+		context:
+			| CommandContext<never, never>
+			| ComponentContext
+			| MenuCommandContext<any>
+			| ModalContext
+			| EntryPointContext,
 		middlewares: (keyof RegisteredMiddlewares)[],
 		global: boolean,
 	): Promise<{ error?: string; pass?: boolean }> {
@@ -220,13 +225,12 @@ export class BaseCommand {
 				running = false;
 				return res({ pass: true });
 			};
-			function next(obj: any) {
+			function next(...args: unknown[]) {
 				if (!running) {
 					return;
 				}
-				if (arguments.length) {
-					// @ts-expect-error
-					context[global ? 'globalMetadata' : 'metadata'][middlewares[index]] = obj;
+				if (args.length) {
+					context[global ? 'globalMetadata' : 'metadata'][middlewares[index]] = args[0] as never;
 				}
 				if (++index >= middlewares.length) {
 					running = false;
@@ -246,12 +250,12 @@ export class BaseCommand {
 	}
 
 	/** @internal */
-	__runMiddlewares(context: CommandContext<{}, never>) {
+	__runMiddlewares(context: CommandContext<never, never>) {
 		return BaseCommand.__runMiddlewares(context, this.middlewares as (keyof RegisteredMiddlewares)[], false);
 	}
 
 	/** @internal */
-	__runGlobalMiddlewares(context: CommandContext<{}, never>) {
+	__runGlobalMiddlewares(context: CommandContext<never, never>) {
 		return BaseCommand.__runMiddlewares(
 			context,
 			(context.client.options?.globalMiddlewares ?? []) as (keyof RegisteredMiddlewares)[],

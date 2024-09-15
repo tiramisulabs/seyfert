@@ -1,45 +1,5 @@
-import {
-	type APIChannelBase,
-	type RESTPatchAPIChannelJSONBody,
-	type RESTPostAPIGuildChannelJSONBody,
-	type RESTPatchAPIGuildChannelPositionsJSONBody,
-	type APIGuildChannel,
-	type RESTGetAPIChannelMessageReactionUsersQuery,
-	type RESTAPIAttachment,
-	type APITextChannel,
-	type APIGuildForumTag,
-	type ThreadAutoArchiveDuration,
-	type APIGuildForumDefaultReactionEmoji,
-	type SortOrderType,
-	type RESTPostAPIGuildForumThreadsJSONBody,
-	type RESTPostAPIChannelWebhookJSONBody,
-	type APIDMChannel,
-	type APIGuildVoiceChannel,
-	type APIGuildStageVoiceChannel,
-	type APIGuildMediaChannel,
-	type APIGuildForumChannel,
-	type APIThreadChannel,
-	ChannelFlags,
-	type APIGuildCategoryChannel,
-	type APINewsChannel,
-	ChannelType,
-	VideoQualityMode,
-} from '../types';
-import { ActionRow, Embed, PollBuilder, resolveAttachment } from '../builders';
-import type { UsingClient } from '../commands';
-import type {
-	EmojiResolvable,
-	MessageCreateBodyRequest,
-	MessageUpdateBodyRequest,
-	MethodContext,
-	ObjectToLower,
-	StringToNumber,
-	ToClass,
-} from '../common';
-import type { GuildMember } from './GuildMember';
-import type { GuildRole } from './GuildRole';
-import { DiscordBase } from './extra/DiscordBase';
 import { Collection, Formatter, type RawFile } from '..';
+import { ActionRow, Embed, PollBuilder, resolveAttachment } from '../builders';
 import {
 	type BaseChannelStructure,
 	type BaseGuildChannelStructure,
@@ -56,7 +16,47 @@ import {
 	Transformers,
 	type VoiceChannelStructure,
 } from '../client/transformers';
+import type { UsingClient } from '../commands';
+import type {
+	EmojiResolvable,
+	MessageCreateBodyRequest,
+	MessageUpdateBodyRequest,
+	MethodContext,
+	ObjectToLower,
+	StringToNumber,
+	ToClass,
+} from '../common';
 import { mix } from '../deps/mixer';
+import {
+	type APIChannelBase,
+	type APIDMChannel,
+	type APIGuildCategoryChannel,
+	type APIGuildChannel,
+	type APIGuildForumChannel,
+	type APIGuildForumDefaultReactionEmoji,
+	type APIGuildForumTag,
+	type APIGuildMediaChannel,
+	type APIGuildStageVoiceChannel,
+	type APIGuildVoiceChannel,
+	type APINewsChannel,
+	type APITextChannel,
+	type APIThreadChannel,
+	ChannelFlags,
+	ChannelType,
+	type RESTAPIAttachment,
+	type RESTGetAPIChannelMessageReactionUsersQuery,
+	type RESTPatchAPIChannelJSONBody,
+	type RESTPatchAPIGuildChannelPositionsJSONBody,
+	type RESTPostAPIChannelWebhookJSONBody,
+	type RESTPostAPIGuildChannelJSONBody,
+	type RESTPostAPIGuildForumThreadsJSONBody,
+	type SortOrderType,
+	type ThreadAutoArchiveDuration,
+	VideoQualityMode,
+} from '../types';
+import type { GuildMember } from './GuildMember';
+import type { GuildRole } from './GuildRole';
+import { DiscordBase } from './extra/DiscordBase';
 
 export class BaseChannel<T extends ChannelType> extends DiscordBase<APIChannelBase<ChannelType>> {
 	declare type: T;
@@ -189,7 +189,7 @@ export class BaseGuildChannel extends BaseChannel<ChannelType> {
 
 	permissionOverwrites = {
 		fetch: () => this.client.cache.overwrites?.get(this.id),
-		values: () => (this.guildId ? this.client.cache.overwrites?.values(this.guildId) ?? [] : []),
+		values: () => (this.guildId ? (this.client.cache.overwrites?.values(this.guildId) ?? []) : []),
 	};
 
 	memberPermissions(member: GuildMember, checkAdmin = true) {
@@ -333,11 +333,12 @@ export function channelFrom(data: APIChannelBase<ChannelType>, client: UsingClie
 			return Transformers.CategoryChannel(client, data);
 		case ChannelType.GuildAnnouncement:
 			return Transformers.NewsChannel(client, data);
-		default:
+		default: {
 			if ('guild_id' in data) {
 				return Transformers.BaseGuildChannel(client, data as APIGuildChannel<ChannelType>);
 			}
 			return Transformers.BaseChannel(client, data);
+		}
 	}
 }
 

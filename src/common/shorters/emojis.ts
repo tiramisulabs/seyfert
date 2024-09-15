@@ -1,9 +1,9 @@
-import type { APIEmoji, RESTPatchAPIGuildEmojiJSONBody, RESTPostAPIGuildEmojiJSONBody } from '../../types';
 import { resolveImage } from '../../builders';
+import { type GuildEmojiStructure, Transformers } from '../../client/transformers';
+import type { APIEmoji, RESTPatchAPIGuildEmojiJSONBody, RESTPostAPIGuildEmojiJSONBody } from '../../types';
 import type { ImageResolvable } from '../types/resolvables';
 import type { OmitInsert } from '../types/util';
 import { BaseShorter } from './base';
-import { Transformers } from '../../client/transformers';
 
 export class EmojiShorter extends BaseShorter {
 	/**
@@ -13,7 +13,7 @@ export class EmojiShorter extends BaseShorter {
 	 * @returns A Promise that resolves to an array of emojis.
 	 */
 	async list(guildId: string, force = false) {
-		let emojis;
+		let emojis: APIEmoji[] | GuildEmojiStructure[];
 		if (!force) {
 			emojis = (await this.client.cache.emojis?.values(guildId)) ?? [];
 			if (emojis.length) {
@@ -53,7 +53,7 @@ export class EmojiShorter extends BaseShorter {
 	 * @returns A Promise that resolves to the fetched emoji.
 	 */
 	async fetch(guildId: string, emojiId: string, force = false) {
-		let emoji;
+		let emoji: APIEmoji | GuildEmojiStructure | undefined;
 		if (!force) {
 			emoji = await this.client.cache.emojis?.get(emojiId);
 			if (emoji) return emoji;

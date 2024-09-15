@@ -1,10 +1,11 @@
-import { Logger, type If } from '../common';
+import { type If, Logger } from '../common';
 
 import type { Adapter } from './adapters';
 
 import { Guilds } from './resources/guilds';
 import { Users } from './resources/users';
 
+import { Bans } from './resources/bans';
 import { Channels } from './resources/channels';
 import { Emojis } from './resources/emojis';
 import { Members } from './resources/members';
@@ -14,13 +15,9 @@ import { StageInstances } from './resources/stage-instances';
 import { Stickers } from './resources/stickers';
 import { Threads } from './resources/threads';
 import { VoiceStates } from './resources/voice-states';
-import { Bans } from './resources/bans';
 
+import type { InternalOptions, UsingClient } from '../commands';
 import {
-	ChannelType,
-	GatewayIntentBits,
-	GuildMemberFlags,
-	OverwriteType,
 	type APIChannel,
 	type APIEmoji,
 	type APIGuildMember,
@@ -28,11 +25,14 @@ import {
 	type APISticker,
 	type APITextChannel,
 	type APIUser,
+	ChannelType,
 	type GatewayDispatchPayload,
+	GatewayIntentBits,
+	GuildMemberFlags,
+	OverwriteType,
 } from '../types';
-import type { InternalOptions, UsingClient } from '../commands';
-import { Overwrites } from './resources/overwrites';
 import { Messages } from './resources/messages';
+import { Overwrites } from './resources/overwrites';
 export { BaseResource } from './resources/default/base';
 export { GuildRelatedResource } from './resources/default/guild-related';
 export { GuildBasedResource } from './resources/default/guild-based';
@@ -180,7 +180,9 @@ export class Cache {
 
 		if (this.disabledCache.onPacket) {
 			//@ts-expect-error
-			this.onPacket = () => {};
+			this.onPacket = () => {
+				// disable cache
+			};
 		}
 	}
 
@@ -525,15 +527,17 @@ export class Cache {
 				break;
 			case 'CHANNEL_CREATE':
 			case 'CHANNEL_UPDATE':
-				if ('guild_id' in event.d) {
-					await this.channels?.set(event.d.id, event.d.guild_id!, event.d);
-					if (event.d.permission_overwrites?.length)
-						await this.overwrites?.set(event.d.id, event.d.guild_id!, event.d.permission_overwrites);
-					break;
-				}
-				if (event.d.type === ChannelType.DM) {
-					await this.channels?.set(event.d.recipients![0]?.id, '@me', event.d);
-					break;
+				{
+					if ('guild_id' in event.d) {
+						await this.channels?.set(event.d.id, event.d.guild_id!, event.d);
+						if (event.d.permission_overwrites?.length)
+							await this.overwrites?.set(event.d.id, event.d.guild_id!, event.d.permission_overwrites);
+						break;
+					}
+					if (event.d.type === ChannelType.DM) {
+						await this.channels?.set(event.d.recipients![0]?.id, '@me', event.d);
+						break;
+					}
 				}
 				break;
 			case 'CHANNEL_DELETE':
@@ -553,18 +557,22 @@ export class Cache {
 				await this.bans?.remove(event.d.user.id, event.d.guild_id);
 				break;
 			case 'GUILD_EMOJIS_UPDATE':
-				await this.emojis?.remove(await this.emojis?.keys(event.d.guild_id), event.d.guild_id);
-				await this.emojis?.set(
-					event.d.emojis.map(x => [x.id!, x] as [string, APIEmoji]),
-					event.d.guild_id,
-				);
+				{
+					await this.emojis?.remove(await this.emojis?.keys(event.d.guild_id), event.d.guild_id);
+					await this.emojis?.set(
+						event.d.emojis.map(x => [x.id!, x] as [string, APIEmoji]),
+						event.d.guild_id,
+					);
+				}
 				break;
 			case 'GUILD_STICKERS_UPDATE':
-				await this.stickers?.remove(await this.stickers?.keys(event.d.guild_id), event.d.guild_id);
-				await this.stickers?.set(
-					event.d.stickers.map(x => [x.id, x] as [string, APISticker]),
-					event.d.guild_id,
-				);
+				{
+					await this.stickers?.remove(await this.stickers?.keys(event.d.guild_id), event.d.guild_id);
+					await this.stickers?.set(
+						event.d.stickers.map(x => [x.id, x] as [string, APISticker]),
+						event.d.guild_id,
+					);
+				}
 				break;
 			case 'GUILD_MEMBER_ADD':
 			case 'GUILD_MEMBER_UPDATE':
@@ -593,14 +601,16 @@ export class Cache {
 				break;
 
 			case 'VOICE_STATE_UPDATE':
-				if (!event.d.guild_id) {
-					return;
-				}
+				{
+					if (!event.d.guild_id) {
+						return;
+					}
 
-				if (event.d.channel_id != null) {
-					await this.voiceStates?.set(event.d.user_id, event.d.guild_id, event.d);
-				} else {
-					await this.voiceStates?.remove(event.d.user_id, event.d.guild_id);
+					if (event.d.channel_id != null) {
+						await this.voiceStates?.set(event.d.user_id, event.d.guild_id, event.d);
+					} else {
+						await this.voiceStates?.remove(event.d.user_id, event.d.guild_id);
+					}
 				}
 				break;
 			case 'STAGE_INSTANCE_CREATE':

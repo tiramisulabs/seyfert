@@ -293,7 +293,6 @@ export enum GatewayIntentBits {
 	 * @deprecated This is the old name for {@apilink GatewayIntentBits#GuildModeration}
 	 */
 
-	// biome-ignore lint/correctness/noUndeclaredVariables: no reason lmao
 	GuildBans = GuildModeration,
 	GuildEmojisAndStickers = 1 << 3,
 	GuildIntegrations = 1 << 4,

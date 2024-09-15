@@ -1,10 +1,10 @@
-import type { GatewayPresenceUpdateData, GatewaySendPayload } from '../../types';
 import cluster, { type Worker as ClusterWorker } from 'node:cluster';
 import { randomUUID } from 'node:crypto';
 import { ApiHandler, Logger, Router } from '../..';
-import { MemoryAdapter, type Adapter } from '../../cache';
+import { type Adapter, MemoryAdapter } from '../../cache';
 import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
-import { MergeOptions, lazyLoadPackage, type MakePartial } from '../../common';
+import { type MakePartial, MergeOptions, lazyLoadPackage } from '../../common';
+import type { GatewayPresenceUpdateData, GatewaySendPayload } from '../../types';
 import { WorkerManagerDefaults, properties } from '../constants';
 import { DynamicBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';
@@ -181,11 +181,12 @@ export class WorkerManager extends Map<
 				worker.on('message', data => this.handleWorkerMessage(data));
 				return worker;
 			}
-			case 'custom':
+			case 'custom': {
 				this.options.adapter!.spawn(workerData, env);
 				return {
 					ready: false,
 				};
+			}
 		}
 	}
 
@@ -450,7 +451,7 @@ export class WorkerManager extends Map<
 	}
 }
 
-type CreateManagerMessage<T extends string, D extends object = {}> = { type: T } & D;
+type CreateManagerMessage<T extends string, D extends object = object> = { type: T } & D;
 
 export type ManagerAllowConnect = CreateManagerMessage<
 	'ALLOW_CONNECT',

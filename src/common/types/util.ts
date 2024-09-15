@@ -211,7 +211,7 @@ export type Clean<T> = DropT<T, never>;
 
 export type PartialAvoid<U, T> = Identify<KeepT<T, U> & Partial<T>>;
 
-// eslint-disable-next-line @typescript-eslint/ban-types
+//biome-ignore lint/complexity/noBannedTypes:
 export type PartialClass<T> = PartialAvoid<Function, T>;
 
 export type AtLeastOne<

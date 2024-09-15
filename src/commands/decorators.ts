@@ -1,12 +1,12 @@
+import type { FlatObjectKeys, PermissionStrings } from '../common';
 import {
 	ApplicationCommandType,
 	ApplicationIntegrationType,
 	type EntryPointCommandHandlerType,
 	InteractionContextType,
-	PermissionFlagsBits,
 	type LocaleString,
+	PermissionFlagsBits,
 } from '../types';
-import type { FlatObjectKeys, PermissionStrings } from '../common';
 import type { CommandOption, OptionsRecord, SubCommand } from './applications/chat';
 import type { DefaultLocale, ExtraProps, IgnoreCommand, MiddlewareContext } from './applications/shared';
 
@@ -42,7 +42,7 @@ export function Locales({
 	name?: [language: LocaleString, value: string][];
 	description?: [language: LocaleString, value: string][];
 }) {
-	return <T extends { new (...args: any[]): {} }>(target: T) =>
+	return <T extends { new (...args: any[]): object }>(target: T) =>
 		class extends target {
 			name_localizations = names ? Object.fromEntries(names) : undefined;
 			description_localizations = descriptions ? Object.fromEntries(descriptions) : undefined;
@@ -50,7 +50,7 @@ export function Locales({
 }
 
 export function LocalesT(name?: FlatObjectKeys<DefaultLocale>, description?: FlatObjectKeys<DefaultLocale>) {
-	return <T extends { new (...args: any[]): {} }>(target: T) =>
+	return <T extends { new (...args: any[]): object }>(target: T) =>
 		class extends target {
 			__t = { name, description };
 		};
@@ -67,7 +67,7 @@ export function GroupsT(
 		}
 	>,
 ) {
-	return <T extends { new (...args: any[]): {} }>(target: T) =>
+	return <T extends { new (...args: any[]): object }>(target: T) =>
 		class extends target {
 			__tGroups = groups;
 			groupsAliases: Record<string, string> = {};
@@ -93,7 +93,7 @@ export function Groups(
 		}
 	>,
 ) {
-	return <T extends { new (...args: any[]): {} }>(target: T) =>
+	return <T extends { new (...args: any[]): object }>(target: T) =>
 		class extends target {
 			groups = groups;
 			groupsAliases: Record<string, string> = {};
@@ -109,14 +109,14 @@ export function Groups(
 }
 
 export function Group(groupName: string) {
-	return <T extends { new (...args: any[]): {} }>(target: T) =>
+	return <T extends { new (...args: any[]): object }>(target: T) =>
 		class extends target {
 			group = groupName;
 		};
 }
 
 export function Options(options: (new () => SubCommand)[] | OptionsRecord) {
-	return <T extends { new (...args: any[]): {} }>(target: T) =>
+	return <T extends { new (...args: any[]): object }>(target: T) =>
 		class extends target {
 			options: SubCommand[] | CommandOption[] = Array.isArray(options)
 				? options.map(x => new x())
@@ -130,7 +130,7 @@ export function Options(options: (new () => SubCommand)[] | OptionsRecord) {
 }
 
 export function AutoLoad() {
-	return <T extends { new (...args: any[]): {} }>(target: T) =>
+	return <T extends { new (...args: any[]): object }>(target: T) =>
 		class extends target {
 			__autoload = true;
 		};
@@ -141,14 +141,14 @@ export type ParseMiddlewares<T extends Record<string, MiddlewareContext>> = {
 };
 
 export function Middlewares(cbs: readonly (keyof RegisteredMiddlewares)[]) {
-	return <T extends { new (...args: any[]): {} }>(target: T) =>
+	return <T extends { new (...args: any[]): object }>(target: T) =>
 		class extends target {
 			middlewares = cbs;
 		};
 }
 
 export function Declare(declare: CommandDeclareOptions) {
-	return <T extends { new (...args: any[]): {} }>(target: T) =>
+	return <T extends { new (...args: any[]): object }>(target: T) =>
 		class extends target {
 			name = declare.name;
 			nsfw = declare.nsfw;

@@ -1,4 +1,3 @@
-import { GatewayIntentBits } from './types';
 import {
 	BaseClient,
 	type BaseClientOptions,
@@ -7,8 +6,9 @@ import {
 	type RuntimeConfig,
 	type RuntimeConfigHTTP,
 } from './client/base';
-import type { CustomEventsKeys, ClientNameEvents, ResolveEventParams } from './events';
 import { isCloudfareWorker } from './common';
+import type { ClientNameEvents, CustomEventsKeys, ResolveEventParams } from './events';
+import { GatewayIntentBits } from './types';
 export { Logger, PermissionStrings, Formatter } from './common';
 //
 export { Collection, LimitedCollection } from './collection';
@@ -64,11 +64,11 @@ export const config = {
 				'intents' in data
 					? typeof data.intents === 'number'
 						? data.intents
-						: data.intents?.reduce<number>(
+						: (data.intents?.reduce<number>(
 								(pr, acc) =>
 									pr | (typeof acc === 'number' ? acc : GatewayIntentBits[acc as keyof typeof GatewayIntentBits]),
 								0,
-							) ?? 0
+							) ?? 0)
 					: 0,
 		} as InternalRuntimeConfig;
 	},

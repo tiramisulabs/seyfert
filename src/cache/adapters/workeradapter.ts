@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
+import { lazyLoadPackage } from '../../common';
 import type { WorkerData } from '../../websocket';
 import type { WorkerSendCacheRequest } from '../../websocket/discord/worker';
 import type { Adapter } from './types';
-import { lazyLoadPackage } from '../../common';
 
 let parentPort: import('node:worker_threads').MessagePort;
 
@@ -15,7 +15,9 @@ export class WorkerAdapter implements Adapter {
 		if (worker_threads?.parentPort) parentPort = worker_threads.parentPort;
 	}
 
-	start() {}
+	start() {
+		//
+	}
 
 	postMessage(body: any): unknown {
 		if (parentPort) return parentPort.postMessage(body);

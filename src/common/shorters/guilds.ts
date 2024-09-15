@@ -1,5 +1,10 @@
+import { resolveFiles } from '../../builders';
+import type { Channels } from '../../cache/resources/channels';
+import { type GuildStructure, type StickerStructure, Transformers } from '../../client/transformers';
+import { BaseChannel, type CreateStickerBodyRequest, Guild, GuildMember, channelFrom } from '../../structures';
 import type {
 	APIChannel,
+	APISticker,
 	GuildWidgetStyle,
 	RESTGetAPICurrentUserGuildsQuery,
 	RESTPatchAPIAutoModerationRuleJSONBody,
@@ -11,10 +16,7 @@ import type {
 	RESTPostAPIGuildChannelJSONBody,
 	RESTPostAPIGuildsJSONBody,
 } from '../../types';
-import { resolveFiles } from '../../builders';
-import { BaseChannel, channelFrom, Guild, GuildMember, type CreateStickerBodyRequest } from '../../structures';
 import { BaseShorter } from './base';
-import { type GuildStructure, Transformers } from '../../client/transformers';
 
 export class GuildShorter extends BaseShorter {
 	/**
@@ -108,7 +110,7 @@ export class GuildShorter extends BaseShorter {
 			 * @returns A Promise that resolves to an array of channels.
 			 */
 			list: async (guildId: string, force = false) => {
-				let channels;
+				let channels: ReturnType<Channels['values']> | APIChannel[];
 				if (!force) {
 					channels = (await this.client.cache.channels?.values(guildId)) ?? [];
 					if (channels.length) {
@@ -131,7 +133,7 @@ export class GuildShorter extends BaseShorter {
 			 * @returns A Promise that resolves to the fetched channel.
 			 */
 			fetch: async (guildId: string, channelId: string, force?: boolean) => {
-				let channel;
+				let channel: APIChannel | ReturnType<Channels['get']>;
 				if (!force) {
 					channel = await this.client.cache.channels?.get(channelId);
 					if (channel) return channel;
@@ -328,7 +330,7 @@ export class GuildShorter extends BaseShorter {
 			 * @returns A Promise that resolves to the fetched sticker.
 			 */
 			fetch: async (guildId: string, stickerId: string, force = false) => {
-				let sticker;
+				let sticker: APISticker | StickerStructure | undefined;
 				if (!force) {
 					sticker = await this.client.cache.stickers?.get(stickerId);
 					if (sticker) return sticker;

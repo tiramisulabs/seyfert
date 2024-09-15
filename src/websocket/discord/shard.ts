@@ -1,18 +1,19 @@
 import { inflateSync } from 'node:zlib';
-import { Logger, LogLevels, type MakeRequired, MergeOptions } from '../../common';
+import { LogLevels, Logger, type MakeRequired, MergeOptions } from '../../common';
+import {
+	GatewayCloseCodes,
+	GatewayDispatchEvents,
+	type GatewayDispatchPayload,
+	GatewayOpcodes,
+	type GatewayReceivePayload,
+	type GatewaySendPayload,
+} from '../../types';
 import { properties } from '../constants';
 import { DynamicBucket } from '../structures';
 import { ConnectTimeout } from '../structures/timeout';
 import { BaseSocket } from './basesocket';
 import type { ShardData, ShardOptions } from './shared';
 import { ShardSocketCloseCodes } from './shared';
-import {
-	type GatewaySendPayload,
-	type GatewayReceivePayload,
-	GatewayCloseCodes,
-	GatewayDispatchEvents,
-	GatewayOpcodes,
-} from '../../types';
 
 export interface ShardHeart {
 	interval: number;
@@ -229,8 +230,10 @@ export class Shard {
 				}
 				break;
 			case GatewayOpcodes.HeartbeatAck:
-				this.heart.ack = true;
-				this.heart.lastAck = Date.now();
+				{
+					this.heart.ack = true;
+					this.heart.lastAck = Date.now();
+				}
 				break;
 			case GatewayOpcodes.Heartbeat:
 				this.heartbeat(true);
@@ -254,8 +257,10 @@ export class Shard {
 				{
 					switch (packet.t) {
 						case GatewayDispatchEvents.Resumed:
-							this.offlineSendQueue.map((resolve: () => any) => resolve());
-							this.options.handlePayload(this.id, packet);
+							{
+								this.offlineSendQueue.map((resolve: () => any) => resolve());
+								this.options.handlePayload(this.id, packet);
+							}
 							break;
 						case GatewayDispatchEvents.Ready: {
 							this.data.resume_gateway_url = packet.d.resume_gateway_url;
@@ -288,10 +293,12 @@ export class Shard {
 			case GatewayCloseCodes.UnknownOpcode:
 			case GatewayCloseCodes.InvalidSeq:
 			case GatewayCloseCodes.SessionTimedOut:
-				this.data.resume_seq = 0;
-				this.data.session_id = undefined;
-				this.data.resume_gateway_url = undefined;
-				await this.reconnect();
+				{
+					this.data.resume_seq = 0;
+					this.data.session_id = undefined;
+					this.data.resume_gateway_url = undefined;
+					await this.reconnect();
+				}
 				break;
 			case 1001:
 			case 1006:
@@ -301,8 +308,10 @@ export class Shard {
 			case GatewayCloseCodes.NotAuthenticated:
 			case GatewayCloseCodes.AlreadyAuthenticated:
 			case GatewayCloseCodes.RateLimited:
-				this.logger.info('Trying to reconnect');
-				await this.reconnect();
+				{
+					this.logger.info('Trying to reconnect');
+					await this.reconnect();
+				}
 				break;
 
 			case GatewayCloseCodes.AuthenticationFailed:
@@ -315,8 +324,10 @@ export class Shard {
 				break;
 
 			default:
-				this.logger.warn('Unknown close code, trying to reconnect anyways');
-				await this.reconnect();
+				{
+					this.logger.warn('Unknown close code, trying to reconnect anyways');
+					await this.reconnect();
+				}
 				break;
 		}
 	}
@@ -331,7 +342,7 @@ export class Shard {
 	}
 
 	protected handleMessage(data: string | Buffer) {
-		let packet;
+		let packet: GatewayDispatchPayload;
 		try {
 			if (data instanceof Buffer) {
 				data = inflateSync(data);

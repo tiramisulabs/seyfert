@@ -1,17 +1,18 @@
+import { resolveFiles } from '../../builders';
+import { Transformers } from '../../client/transformers';
+import {
+	type MessageWebhookMethodEditParams,
+	type MessageWebhookMethodWriteParams,
+	MessagesMethods,
+} from '../../structures';
 import type {
+	APIWebhook,
 	RESTPatchAPIWebhookJSONBody,
 	RESTPatchAPIWebhookWithTokenJSONBody,
 	RESTPostAPIChannelWebhookJSONBody,
 	RESTPostAPIWebhookWithTokenJSONBody,
 } from '../../types';
-import { resolveFiles } from '../../builders';
-import {
-	MessagesMethods,
-	type MessageWebhookMethodEditParams,
-	type MessageWebhookMethodWriteParams,
-} from '../../structures';
 import { BaseShorter } from './base';
-import { Transformers } from '../../client/transformers';
 
 export class WebhookShorter extends BaseShorter {
 	async create(channelId: string, body: RESTPostAPIChannelWebhookJSONBody) {
@@ -64,7 +65,7 @@ export class WebhookShorter extends BaseShorter {
 	 * @returns A Promise that resolves to the fetched webhook.
 	 */
 	async fetch(webhookId: string, token?: string) {
-		let webhook;
+		let webhook: APIWebhook;
 		if (token) {
 			webhook = await this.client.proxy.webhooks(webhookId)(token).get({ auth: false });
 		} else {

@@ -1,4 +1,3 @@
-import { ApplicationCommandOptionType, type APIApplicationCommandOptionChoice, type ChannelType } from '../../types';
 import type {
 	AutocompleteCallback,
 	EntryPointContext,
@@ -7,13 +6,14 @@ import type {
 	ReturnOptionsTypes,
 	__TypesWrapper,
 } from '..';
-import type { MessageCommandInteraction, UserCommandInteraction } from '../../structures';
-import type { CommandContext } from './chatcontext';
-import type { MiddlewareContext } from './shared';
 import type { ModalContext } from '../../components';
 import type { ComponentContext } from '../../components/componentcontext';
+import type { MessageCommandInteraction, UserCommandInteraction } from '../../structures';
+import { type APIApplicationCommandOptionChoice, ApplicationCommandOptionType, type ChannelType } from '../../types';
+import type { CommandContext } from './chatcontext';
+import type { MiddlewareContext } from './shared';
 
-export type SeyfertBasicOption<T extends keyof __TypesWrapper, D = {}> = __TypesWrapper[T] & D;
+export type SeyfertBasicOption<T extends keyof __TypesWrapper, D = object> = __TypesWrapper[T] & D;
 
 export type SeyfertStringOption = SeyfertBasicOption<'String'> & {
 	autocomplete?: AutocompleteCallback;

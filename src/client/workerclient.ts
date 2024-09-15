@@ -1,10 +1,10 @@
-import { type GatewayDispatchPayload, type GatewaySendPayload, GatewayIntentBits } from '../types';
 import { randomUUID } from 'node:crypto';
 import { ApiHandler, Logger } from '..';
 import { WorkerAdapter } from '../cache';
-import { LogLevels, lazyLoadPackage, type DeepPartial, type When } from '../common';
+import { type DeepPartial, LogLevels, type When, lazyLoadPackage } from '../common';
 import { EventHandler } from '../events';
-import { Shard, properties, type ShardManagerOptions, type WorkerData } from '../websocket';
+import { type GatewayDispatchPayload, GatewayIntentBits, type GatewaySendPayload } from '../types';
+import { Shard, type ShardManagerOptions, type WorkerData, properties } from '../websocket';
 import type {
 	WorkerReady,
 	WorkerReceivePayload,
@@ -23,10 +23,10 @@ import type { BaseClientOptions, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import type { Client, ClientOptions } from './client';
 
-import { Collectors } from './collectors';
-import { type ClientUserStructure, Transformers } from './transformers';
 import { MemberUpdateHandler } from '../websocket/discord/events/memberUpdate';
 import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdate';
+import { Collectors } from './collectors';
+import { type ClientUserStructure, Transformers } from './transformers';
 
 let workerData: WorkerData;
 let manager: import('node:worker_threads').MessagePort;
@@ -42,7 +42,9 @@ try {
 		totalShards: Number(process.env.SEYFERT_WORKER_TOTALSHARDS),
 		mode: process.env.SEYFERT_WORKER_MODE,
 	} as WorkerData;
-} catch {}
+} catch {
+	//
+}
 
 export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	private __handleGuilds?: Set<string> = new Set();
@@ -287,7 +289,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			case 'EXECUTE_EVAL':
 				{
-					let result;
+					let result: unknown;
 					try {
 						result = await eval(`
 					(${data.func})(this)
@@ -332,7 +334,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		});
 	}
 
-	tellWorker(workerId: number, func: (_: this) => {}) {
+	tellWorker(workerId: number, func: (_: this) => any) {
 		const nonce = this.generateNonce();
 		this.postMessage({
 			type: 'EVAL',
@@ -389,45 +391,51 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			default: {
 				switch (packet.t) {
 					case 'INTERACTION_CREATE':
-						await this.events?.execute(packet.t as never, packet, this, shardId);
-						await this.handleCommand.interaction(packet.d, shardId);
+						{
+							await this.events?.execute(packet.t as never, packet, this, shardId);
+							await this.handleCommand.interaction(packet.d, shardId);
+						}
 						break;
 					case 'MESSAGE_CREATE':
-						await this.events?.execute(packet.t as never, packet, this, shardId);
-						await this.handleCommand.message(packet.d, shardId);
+						{
+							await this.events?.execute(packet.t as never, packet, this, shardId);
+							await this.handleCommand.message(packet.d, shardId);
+						}
 						break;
 					case 'READY':
-						if (!this.__handleGuilds) this.__handleGuilds = new Set();
-						for (const g of packet.d.guilds) {
-							this.__handleGuilds?.add(g.id);
-						}
-						this.botId = packet.d.user.id;
-						this.applicationId = packet.d.application.id;
-						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
-						await this.events?.execute(packet.t as never, packet, this, shardId);
-						if ([...this.shards.values()].every(shard => shard.data.session_id)) {
-							this.postMessage({
-								type: 'WORKER_SHARDS_CONNECTED',
-								workerId: this.workerId,
-							} as WorkerShardsConnected);
-							await this.events?.runEvent('WORKER_SHARDS_CONNECTED', this, this.me, -1);
-						}
-						if (
-							!(
-								this.__handleGuilds?.size &&
-								(workerData.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds
-							)
-						) {
+						{
+							if (!this.__handleGuilds) this.__handleGuilds = new Set();
+							for (const g of packet.d.guilds) {
+								this.__handleGuilds?.add(g.id);
+							}
+							this.botId = packet.d.user.id;
+							this.applicationId = packet.d.application.id;
+							this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
+							await this.events?.execute(packet.t as never, packet, this, shardId);
 							if ([...this.shards.values()].every(shard => shard.data.session_id)) {
 								this.postMessage({
-									type: 'WORKER_READY',
+									type: 'WORKER_SHARDS_CONNECTED',
 									workerId: this.workerId,
-								} as WorkerReady);
-								await this.events?.runEvent('WORKER_READY', this, this.me, -1);
+								} as WorkerShardsConnected);
+								await this.events?.runEvent('WORKER_SHARDS_CONNECTED', this, this.me, -1);
 							}
-							delete this.__handleGuilds;
+							if (
+								!(
+									this.__handleGuilds?.size &&
+									(workerData.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds
+								)
+							) {
+								if ([...this.shards.values()].every(shard => shard.data.session_id)) {
+									this.postMessage({
+										type: 'WORKER_READY',
+										workerId: this.workerId,
+									} as WorkerReady);
+									await this.events?.runEvent('WORKER_READY', this, this.me, -1);
+								}
+								delete this.__handleGuilds;
+							}
+							this.debugger?.debug(`#${shardId}[${packet.d.user.username}](${this.botId}) is online...`);
 						}
-						this.debugger?.debug(`#${shardId}[${packet.d.user.username}](${this.botId}) is online...`);
 						break;
 					default:
 						await this.events?.execute(packet.t as never, packet, this, shardId);

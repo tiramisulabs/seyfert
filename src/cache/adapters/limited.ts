@@ -1,5 +1,5 @@
 import { LimitedCollection } from '../..';
-import { MergeOptions, type MakeRequired } from '../../common';
+import { type MakeRequired, MergeOptions } from '../../common';
 import type { Adapter } from './types';
 //TODO: optimizar esto
 export interface ResourceLimitedMemoryAdapter {
@@ -57,12 +57,14 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 		);
 	}
 
-	start() {}
+	start() {
+		//
+	}
 
 	scan(query: string, keys?: false): any[];
 	scan(query: string, keys: true): string[];
 	scan(query: string, keys = false) {
-		const values = [];
+		const values: (string | unknown)[] = [];
 		const sq = query.split('.');
 		for (const iterator of [...this.storage.values()].flatMap(x => x.entries()))
 			for (const [key, value] of iterator) {

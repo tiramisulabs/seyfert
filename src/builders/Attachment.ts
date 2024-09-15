@@ -1,10 +1,10 @@
-import type { APIAttachment, RESTAPIAttachment } from '../types';
 import { randomBytes } from 'node:crypto';
+import { promises } from 'node:fs';
 import path from 'node:path';
-import type { UsingClient, RawFile } from '..';
+import type { RawFile, UsingClient } from '..';
 import type { ImageResolvable, ObjectToLower } from '../common';
 import { Base } from '../structures/extra/Base';
-import { promises } from 'node:fs';
+import type { APIAttachment, RESTAPIAttachment } from '../types';
 
 export interface AttachmentResolvableMap {
 	url: string;
@@ -209,7 +209,7 @@ export async function resolveAttachmentData(
 			if (Buffer.isBuffer(data)) return { data };
 			// @ts-expect-error
 			if (typeof data[Symbol.asyncIterator] === 'function') {
-				const buffers = [];
+				const buffers: Buffer[] = [];
 				for await (const resource of data as unknown as AsyncIterable<ArrayBuffer>) buffers.push(Buffer.from(resource));
 				return { data: Buffer.concat(buffers) };
 			}

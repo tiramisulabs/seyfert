@@ -1,8 +1,30 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.8.1/schema.json",
+	"$schema": "https://biomejs.dev/schemas/1.9.0/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true,
+		"defaultBranch": "main"
+	},
+	"files": {
+		"ignoreUnknown": true,
+		"ignore": ["node_modules/", "build", "lib", "__test__", "package.json", "tsconfig.json", ".vscode"]
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab",
+		"indentWidth": 2,
+		"lineWidth": 120,
+		"lineEnding": "crlf",
+		"formatWithErrors": true
+	},
+	"organizeImports": {
+		"enabled": true
+	},
 	"linter": {
 		"enabled": true,
 		"rules": {
+			"recommended": false,
 			"all": true,
 			"security": {
 				"noGlobalEval": "off"
@@ -10,92 +32,52 @@
 			"suspicious": {
 				"noExplicitAny": "off",
 				"noAssignInExpressions": "off",
+				"useAwait": "off",
+				"noConfusingVoidType": "off",
+				"noAsyncPromiseExecutor": "off",
 				"noUnsafeDeclarationMerging": "off",
 				"noEmptyInterface": "off",
-				"noConfusingVoidType": "off",
-				"noImplicitAnyLet": "off",
-				"noEmptyBlockStatements": "off",
-				"useAwait": "off",
-				"noConsoleLog": "off",
-				"noAsyncPromiseExecutor": "off",
 				"noThenProperty": "off"
 			},
-			"style": {
-				"noNonNullAssertion": "off",
-				"noParameterAssign": "off",
-				"useExportType": "error",
-				"useImportType": "error",
-				"useNodejsImportProtocol": "error",
-				"useNamingConvention": "off",
-				"noParameterProperties": "off",
-				"useFilenamingConvention": "off",
-				"noNamespaceImport": "off",
-				"useSingleCaseStatement": "off",
-				"useBlockStatements": "off",
-				"useEnumInitializers": "off",
-				"noArguments": "off",
-				"useForOf": "off"
-			},
 			"correctness": {
-				"noUnusedVariables": "off",
-				"noNodejsModules": "off"
+				"noNodejsModules": "off",
+				"useImportExtensions": "off",
+				"noUnusedFunctionParameters": "off",
+				"noUnusedVariables": "off"
 			},
-			"nursery": {
-				"useImportRestrictions": "off"
+			"style": {
+				"noDefaultExport": "off",
+				"useBlockStatements": "off",
+				"noParameterProperties": "off",
+				"useNamingConvention": "off",
+				"noNonNullAssertion": "off",
+				"useForOf": "off",
+				"useDefaultSwitchClause": "off",
+				"noParameterAssign": "off",
+				"useFilenamingConvention": "off",
+				"useEnumInitializers": "off",
+				"useExplicitLengthCheck": "off",
+				"noNamespaceImport": "off"
 			},
 			"complexity": {
-				"noUselessLoneBlockStatements": "warn",
-				"noBannedTypes": "off",
 				"noForEach": "off",
-				"noUselessConstructor": "off",
 				"noExcessiveCognitiveComplexity": "off",
-				"noStaticOnlyClass": "off"
-			},
-			"a11y": {
-				"all": false
+				"noUselessConstructor": "off"
 			},
 			"performance": {
-				"noDelete": "off",
 				"noBarrelFile": "off",
-				"noReExportAll": "off"
+				"noDelete": "off",
+				"noReExportAll": "off",
+				"useTopLevelRegex": "off"
 			}
 		}
-	},
-	"json": {
-		"formatter": {
-			"enabled": true,
-			"indentWidth": 2,
-			"lineWidth": 80
-		}
-	},
-	"formatter": {
-		"enabled": true,
-		"indentWidth": 2,
-		"indentStyle": "tab",
-		"lineWidth": 120,
-		"lineEnding": "crlf",
-		"formatWithErrors": true
 	},
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "single",
+			"semicolons": "always",
 			"arrowParentheses": "asNeeded",
-			"bracketSameLine": true,
-			"semicolons": "always"
+			"bracketSameLine": true
 		}
-	},
-	"files": {
-		"ignoreUnknown": true,
-		"ignore": [
-			"node_modules/",
-			"build",
-			"lib",
-			"__test__",
-			"package.json",
-			"tsconfig.json"
-		]
-	},
-	"organizeImports": {
-		"enabled": false
 	}
 }

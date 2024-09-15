@@ -60,11 +60,12 @@ export class BitField<T extends object> {
 				return this.resolve(this.Flags[bits]);
 			case 'bigint':
 				return bits;
-			case 'object':
+			case 'object': {
 				if (!Array.isArray(bits)) {
 					throw new TypeError(`Cannot resolve permission: ${bits}`);
 				}
 				return bits.map(x => this.resolve(x)).reduce((acc, cur) => acc | cur, BitField.None);
+			}
 			default:
 				throw new TypeError(`Cannot resolve permission: ${typeof bits === 'symbol' ? String(bits) : (bits as any)}`);
 		}

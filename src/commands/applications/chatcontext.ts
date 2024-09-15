@@ -1,13 +1,5 @@
-import { MessageFlags } from '../../types';
 import type { AllChannels, InferWithPrefix, Message, ReturnCache } from '../..';
 import type { Client, WorkerClient } from '../../client';
-import type { If, UnionToTuple, When } from '../../common';
-import type { InteractionCreateBodyRequest, InteractionMessageUpdateBodyRequest } from '../../common/types/write';
-import { ChatInputCommandInteraction } from '../../structures';
-import { BaseContext } from '../basecontext';
-import type { RegisteredMiddlewares } from '../decorators';
-import type { Command, ContextOptions, OptionsRecord, SubCommand } from './chat';
-import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
 import type {
 	GuildMemberStructure,
 	GuildStructure,
@@ -16,13 +8,21 @@ import type {
 	OptionResolverStructure,
 	WebhookMessageStructure,
 } from '../../client/transformers';
+import type { If, UnionToTuple, When } from '../../common';
+import type { InteractionCreateBodyRequest, InteractionMessageUpdateBodyRequest } from '../../common/types/write';
+import { ChatInputCommandInteraction } from '../../structures';
+import { MessageFlags } from '../../types';
+import { BaseContext } from '../basecontext';
+import type { RegisteredMiddlewares } from '../decorators';
+import type { Command, ContextOptions, OptionsRecord, SubCommand } from './chat';
+import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
 
-export interface CommandContext<T extends OptionsRecord = {}, M extends keyof RegisteredMiddlewares = never>
+export interface CommandContext<T extends OptionsRecord = never, M extends keyof RegisteredMiddlewares = never>
 	extends BaseContext,
 		ExtendContext {}
 
 export class CommandContext<
-	T extends OptionsRecord = {},
+	T extends OptionsRecord = never,
 	M extends keyof RegisteredMiddlewares = never,
 > extends BaseContext {
 	message!: If<InferWithPrefix, MessageStructure | undefined, undefined>;
