@@ -20,13 +20,13 @@
 	"author": "MARCROCK22",
 	"license": "MIT",
 	"devDependencies": {
-		"@biomejs/biome": "1.8.3",
-		"@commitlint/cli": "^19.4.0",
-		"@commitlint/config-conventional": "^19.2.2",
-		"@types/node": "^22.5.0",
-		"husky": "^9.1.5",
-		"lint-staged": "^15.2.9",
-		"typescript": "^5.5.4"
+		"@biomejs/biome": "1.9.1",
+		"@commitlint/cli": "^19.5.0",
+		"@commitlint/config-conventional": "^19.5.0",
+		"@types/node": "^22.5.5",
+		"husky": "^9.1.6",
+		"lint-staged": "^15.2.10",
+		"typescript": "^5.6.2"
 	},
 	"homepage": "https://seyfert.dev",
 	"repository": {
