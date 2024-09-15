@@ -149,7 +149,7 @@ export class BaseCommand {
 
 	/** @internal */
 	async __runOptions(
-		ctx: CommandContext<never, never>,
+		ctx: CommandContext<{}, never>,
 		resolver: OptionResolverStructure,
 	): Promise<[boolean, OnOptionsReturnObject]> {
 		if (!this?.options?.length) {
@@ -202,12 +202,7 @@ export class BaseCommand {
 
 	/** @internal */
 	static __runMiddlewares(
-		context:
-			| CommandContext<never, never>
-			| ComponentContext
-			| MenuCommandContext<any>
-			| ModalContext
-			| EntryPointContext,
+		context: CommandContext<{}, never> | ComponentContext | MenuCommandContext<any> | ModalContext | EntryPointContext,
 		middlewares: (keyof RegisteredMiddlewares)[],
 		global: boolean,
 	): Promise<{ error?: string; pass?: boolean }> {
@@ -250,12 +245,12 @@ export class BaseCommand {
 	}
 
 	/** @internal */
-	__runMiddlewares(context: CommandContext<never, never>) {
+	__runMiddlewares(context: CommandContext<{}, never>) {
 		return BaseCommand.__runMiddlewares(context, this.middlewares as (keyof RegisteredMiddlewares)[], false);
 	}
 
 	/** @internal */
-	__runGlobalMiddlewares(context: CommandContext<never, never>) {
+	__runGlobalMiddlewares(context: CommandContext<{}, never>) {
 		return BaseCommand.__runMiddlewares(
 			context,
 			(context.client.options?.globalMiddlewares ?? []) as (keyof RegisteredMiddlewares)[],

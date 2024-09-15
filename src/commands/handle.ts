@@ -531,7 +531,7 @@ export class HandleCommand {
 
 	async runGlobalMiddlewares(
 		command: Command | ContextMenuCommand | SubCommand | EntryPointCommand,
-		context: CommandContext<never, never> | MenuCommandContext<any> | EntryPointContext,
+		context: CommandContext<{}, never> | MenuCommandContext<any> | EntryPointContext,
 	) {
 		try {
 			const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
@@ -559,7 +559,7 @@ export class HandleCommand {
 
 	async runMiddlewares(
 		command: Command | ContextMenuCommand | SubCommand | EntryPointCommand,
-		context: CommandContext<never, never> | MenuCommandContext<any> | EntryPointContext,
+		context: CommandContext<{}, never> | MenuCommandContext<any> | EntryPointContext,
 	) {
 		try {
 			const resultRunMiddlewares = await BaseCommand.__runMiddlewares(
