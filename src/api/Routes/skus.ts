@@ -1,10 +1,10 @@
 import type {
-	RESTGetAPISKUSubscriptionsResult,
-	RESTGetAPISKUSubscriptionsQuery,
 	RESTGetAPISKUSubscriptionResult,
+	RESTGetAPISKUSubscriptionsQuery,
+	RESTGetAPISKUSubscriptionsResult,
 } from '../../types';
-import type { RestArguments } from '../api';
 import type { ProxyRequestMethod } from '../Router';
+import type { RestArguments } from '../api';
 
 export interface SKuRoutes {
 	skus(id: string): {

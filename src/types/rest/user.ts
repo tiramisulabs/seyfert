@@ -1,11 +1,11 @@
 import type { Snowflake } from '..';
 import type {
-	APIUser,
-	APIGuildMember,
-	GuildFeature,
+	APIApplicationRoleConnection,
 	APIChannel,
 	APIConnection,
-	APIApplicationRoleConnection,
+	APIGuildMember,
+	APIUser,
+	GuildFeature,
 } from '../payloads';
 
 /**

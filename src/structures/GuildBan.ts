@@ -1,8 +1,8 @@
 import type { UsingClient } from '../commands';
 import { Formatter, type MethodContext, type ObjectToLower } from '../common';
-import { DiscordBase } from './extra/DiscordBase';
 import type { BanShorter } from '../common/shorters/bans';
 import type { APIBan, RESTGetAPIGuildBansQuery } from '../types';
+import { DiscordBase } from './extra/DiscordBase';
 
 export interface GuildBan extends DiscordBase, ObjectToLower<Omit<APIBan, 'id'>> {}
 

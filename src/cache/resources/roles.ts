@@ -1,8 +1,8 @@
-import type { APIRole } from '../../types';
 import type { ReturnCache } from '../..';
-import { fakePromise } from '../../common';
-import { GuildRelatedResource } from './default/guild-related';
 import { type GuildRoleStructure, Transformers } from '../../client/transformers';
+import { fakePromise } from '../../common';
+import type { APIRole } from '../../types';
+import { GuildRelatedResource } from './default/guild-related';
 
 export class Roles extends GuildRelatedResource<any, APIRole> {
 	namespace = 'role';

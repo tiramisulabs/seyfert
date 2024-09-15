@@ -1,17 +1,4 @@
-import { type APIMessage, ApplicationCommandType, MessageFlags } from '../../types';
 import type { ContextMenuCommand, ReturnCache } from '../..';
-import {
-	toSnakeCase,
-	type InteractionCreateBodyRequest,
-	type InteractionMessageUpdateBodyRequest,
-	type ModalCreateBodyRequest,
-	type UnionToTuple,
-	type When,
-} from '../../common';
-import type { AllChannels, MessageCommandInteraction, UserCommandInteraction } from '../../structures';
-import { BaseContext } from '../basecontext';
-import type { RegisteredMiddlewares } from '../decorators';
-import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
 import {
 	type GuildMemberStructure,
 	type GuildStructure,
@@ -20,6 +7,19 @@ import {
 	type UserStructure,
 	type WebhookMessageStructure,
 } from '../../client/transformers';
+import {
+	type InteractionCreateBodyRequest,
+	type InteractionMessageUpdateBodyRequest,
+	type ModalCreateBodyRequest,
+	type UnionToTuple,
+	type When,
+	toSnakeCase,
+} from '../../common';
+import type { AllChannels, MessageCommandInteraction, UserCommandInteraction } from '../../structures';
+import { type APIMessage, ApplicationCommandType, MessageFlags } from '../../types';
+import { BaseContext } from '../basecontext';
+import type { RegisteredMiddlewares } from '../decorators';
+import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
 
 export type InteractionTarget<T> = T extends MessageCommandInteraction ? MessageStructure : UserStructure;
 

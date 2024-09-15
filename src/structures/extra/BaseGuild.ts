@@ -1,5 +1,5 @@
 import type { WorkerClient } from '../..';
-import { calculateShardId, type ObjectToLower } from '../../common';
+import { type ObjectToLower, calculateShardId } from '../../common';
 import type { ImageOptions } from '../../common/types/options';
 import { type APIPartialGuild, GuildFeature } from '../../types';
 import type { ShardManager } from '../../websocket';

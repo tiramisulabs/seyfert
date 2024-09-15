@@ -1,12 +1,12 @@
+import { Transformers } from '../../client/transformers';
+import type { UsingClient } from '../../commands';
+import { toCamelCase } from '../../common';
 import type {
 	GatewayAutoModerationActionExecutionDispatchData,
 	GatewayAutoModerationRuleCreateDispatchData,
 	GatewayAutoModerationRuleDeleteDispatchData,
 	GatewayAutoModerationRuleUpdateDispatchData,
 } from '../../types';
-import { toCamelCase } from '../../common';
-import type { UsingClient } from '../../commands';
-import { Transformers } from '../../client/transformers';
 
 export const AUTO_MODERATION_ACTION_EXECUTION = (
 	_self: UsingClient,

@@ -1,8 +1,8 @@
-import type { APISticker } from '../../types';
 import type { ReturnCache } from '../..';
-import { fakePromise } from '../../common';
-import { GuildRelatedResource } from './default/guild-related';
 import { type StickerStructure, Transformers } from '../../client/transformers';
+import { fakePromise } from '../../common';
+import type { APISticker } from '../../types';
+import { GuildRelatedResource } from './default/guild-related';
 
 export class Stickers extends GuildRelatedResource<any, APISticker> {
 	namespace = 'sticker';

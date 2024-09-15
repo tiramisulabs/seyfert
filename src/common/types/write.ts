@@ -1,3 +1,13 @@
+import type { RawFile } from '../../api';
+import type {
+	ActionRow,
+	Attachment,
+	AttachmentBuilder,
+	BuilderComponents,
+	Embed,
+	Modal,
+	PollBuilder,
+} from '../../builders';
 import type {
 	APIActionRowComponent,
 	APIEmbed,
@@ -11,16 +21,6 @@ import type {
 	RESTPostAPIChannelMessageJSONBody,
 	RESTPostAPIWebhookWithTokenJSONBody,
 } from '../../types';
-import type { RawFile } from '../../api';
-import type {
-	ActionRow,
-	Attachment,
-	AttachmentBuilder,
-	BuilderComponents,
-	Embed,
-	Modal,
-	PollBuilder,
-} from '../../builders';
 
 import type { OmitInsert } from './util';
 

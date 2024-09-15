@@ -1,24 +1,24 @@
+import type { Client, WorkerClient } from '../client';
+import type { UsingClient } from '../commands';
+import type { FileLoaded } from '../commands/handler';
+import {
+	BaseHandler,
+	type CamelCase,
+	type MakeRequired,
+	ReplaceRegex,
+	type SnakeCase,
+	isCloudfareWorker,
+	magicImport,
+} from '../common';
+import type { ClientEvents } from '../events/hooks';
+import * as RawEvents from '../events/hooks';
 import type {
 	GatewayDispatchPayload,
 	GatewayMessageCreateDispatch,
 	GatewayMessageDeleteBulkDispatch,
 	GatewayMessageDeleteDispatch,
 } from '../types';
-import type { Client, WorkerClient } from '../client';
-import {
-	BaseHandler,
-	type CamelCase,
-	ReplaceRegex,
-	isCloudfareWorker,
-	magicImport,
-	type MakeRequired,
-	type SnakeCase,
-} from '../common';
-import type { ClientEvents } from '../events/hooks';
-import * as RawEvents from '../events/hooks';
-import type { ClientEvent, CustomEvents, CustomEventsKeys, ClientNameEvents, EventContext } from './event';
-import type { FileLoaded } from '../commands/handler';
-import type { UsingClient } from '../commands';
+import type { ClientEvent, ClientNameEvents, CustomEvents, CustomEventsKeys, EventContext } from './event';
 
 export type EventValue = MakeRequired<ClientEvent, '__filePath'> & { fired?: boolean };
 export type GatewayEvents = Uppercase<SnakeCase<keyof ClientEvents>>;

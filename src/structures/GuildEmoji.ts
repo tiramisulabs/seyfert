@@ -1,6 +1,6 @@
 import type { BaseCDNUrlOptions } from '../api';
 import type { UsingClient } from '../commands';
-import { Formatter, type EmojiShorter, type MethodContext, type ObjectToLower } from '../common';
+import { type EmojiShorter, Formatter, type MethodContext, type ObjectToLower } from '../common';
 import type { APIEmoji, RESTPatchAPIChannelJSONBody, RESTPatchAPIGuildEmojiJSONBody } from '../types';
 import { DiscordBase } from './extra/DiscordBase';
 

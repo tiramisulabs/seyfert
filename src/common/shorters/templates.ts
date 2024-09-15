@@ -1,6 +1,6 @@
+import { Transformers } from '../../client/transformers';
 import type { RESTPatchAPIGuildTemplateJSONBody, RESTPostAPIGuildTemplatesJSONBody } from '../../types';
 import { BaseShorter } from './base';
-import { Transformers } from '../../client/transformers';
 
 export class TemplateShorter extends BaseShorter {
 	fetch(code: string) {

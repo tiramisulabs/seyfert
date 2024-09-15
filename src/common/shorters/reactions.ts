@@ -1,8 +1,8 @@
-import type { RESTGetAPIChannelMessageReactionUsersQuery } from '../../types';
+import { Transformers, type UserStructure } from '../../client/transformers';
 import { encodeEmoji, resolveEmoji } from '../../common/it/utils';
+import type { RESTGetAPIChannelMessageReactionUsersQuery } from '../../types';
 import type { EmojiResolvable } from '../types/resolvables';
 import { BaseShorter } from './base';
-import { Transformers, type UserStructure } from '../../client/transformers';
 
 export class ReactionShorter extends BaseShorter {
 	async add(messageId: string, channelId: string, emoji: EmojiResolvable): Promise<void> {

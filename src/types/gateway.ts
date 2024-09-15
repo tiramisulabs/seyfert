@@ -1,39 +1,39 @@
 // https://github.com/discordjs/discord-api-types/blob/main/gateway/v10.ts
 
-import type { Snowflake, ChannelType, GatewayDispatchEvents, GatewayOpcodes } from './index';
+import type { ChannelType, GatewayDispatchEvents, GatewayOpcodes, Snowflake } from './index';
 import type { GatewayPresenceUpdate } from './payloads/gateway';
 import type {
 	APIApplication,
 	APIApplicationCommandPermission,
-	APIAutoModerationRule,
+	APIAuditLogEntry,
 	APIAutoModerationAction,
+	APIAutoModerationRule,
 	APIChannel,
 	APIEmoji,
+	APIEntitlement,
 	APIGuild,
 	APIGuildIntegration,
 	APIGuildMember,
 	APIGuildScheduledEvent,
 	APIInteraction,
 	APIMessage,
+	APIPartialEmoji,
 	APIRole,
 	APIStageInstance,
 	APISticker,
+	APISubscription,
 	APIThreadChannel,
 	APIThreadMember,
 	APIUnavailableGuild,
 	APIUser,
+	APIVoiceState,
+	AutoModerationRuleTriggerType,
 	GatewayActivity,
+	InviteTargetType,
+	PresenceUpdateStatus,
 	GatewayPresenceUpdate as RawGatewayPresenceUpdate,
 	GatewayThreadListSync as RawGatewayThreadListSync,
 	GatewayThreadMembersUpdate as RawGatewayThreadMembersUpdate,
-	APIVoiceState,
-	InviteTargetType,
-	PresenceUpdateStatus,
-	AutoModerationRuleTriggerType,
-	APIAuditLogEntry,
-	APIEntitlement,
-	APIPartialEmoji,
-	APISubscription,
 } from './payloads/index';
 import type { ReactionType } from './rest/index';
 import type { AnimationTypes, Nullable } from './utils';

@@ -1,7 +1,7 @@
-import { BaseHandler, isCloudfareWorker, magicImport } from '../common';
-import { LangRouter } from './router';
 import type { FileLoaded } from '../commands/handler';
-import type { LocaleString, Locale } from '../types';
+import { BaseHandler, isCloudfareWorker, magicImport } from '../common';
+import type { Locale, LocaleString } from '../types';
+import { LangRouter } from './router';
 
 export class LangsHandler extends BaseHandler {
 	values: Partial<Record<string, any>> = {};

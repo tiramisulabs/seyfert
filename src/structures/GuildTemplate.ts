@@ -1,6 +1,6 @@
-import type { APITemplate, RESTPatchAPIGuildTemplateJSONBody, RESTPostAPIGuildTemplatesJSONBody } from '../types';
 import type { UsingClient } from '../commands';
 import type { MethodContext, ObjectToLower } from '../common';
+import type { APITemplate, RESTPatchAPIGuildTemplateJSONBody, RESTPostAPIGuildTemplatesJSONBody } from '../types';
 import { Base } from './extra/Base';
 
 export interface GuildTemplate extends Base, ObjectToLower<APITemplate> {}

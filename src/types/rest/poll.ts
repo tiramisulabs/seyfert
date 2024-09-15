@@ -1,4 +1,4 @@
-import type { Snowflake, APIMessage, APIPoll, APIPollAnswer, APIUser } from '../index';
+import type { APIMessage, APIPoll, APIPollAnswer, APIUser, Snowflake } from '../index';
 
 /**
  * https://discord.com/developers/docs/resources/poll#get-answer-voters

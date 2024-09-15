@@ -1,5 +1,10 @@
-import { MessageFlags } from '../types';
 import type { AllChannels, ModalCommand, ModalSubmitInteraction, ReturnCache } from '..';
+import type {
+	GuildMemberStructure,
+	GuildStructure,
+	MessageStructure,
+	WebhookMessageStructure,
+} from '../client/transformers';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, RegisteredMiddlewares, UsingClient } from '../commands';
 import { BaseContext } from '../commands/basecontext';
 import type {
@@ -9,12 +14,7 @@ import type {
 	UnionToTuple,
 	When,
 } from '../common';
-import type {
-	GuildMemberStructure,
-	GuildStructure,
-	MessageStructure,
-	WebhookMessageStructure,
-} from '../client/transformers';
+import { MessageFlags } from '../types';
 
 export interface ModalContext extends BaseContext, ExtendContext {}
 

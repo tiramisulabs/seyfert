@@ -1,8 +1,8 @@
-import type { APIUser } from '../../types';
 import type { ReturnCache } from '../..';
-import { fakePromise } from '../../common';
-import { BaseResource } from './default/base';
 import { Transformers, type UserStructure } from '../../client/transformers';
+import { fakePromise } from '../../common';
+import type { APIUser } from '../../types';
+import { BaseResource } from './default/base';
 
 export class Users extends BaseResource<any, APIUser> {
 	namespace = 'user';

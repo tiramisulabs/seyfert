@@ -1,11 +1,11 @@
+import { Transformers } from '../../client/transformers';
+import type { UsingClient } from '../../commands';
+import { toCamelCase } from '../../common';
 import type {
 	GatewayIntegrationCreateDispatchData,
 	GatewayIntegrationDeleteDispatchData,
 	GatewayIntegrationUpdateDispatchData,
 } from '../../types';
-import { toCamelCase } from '../../common';
-import type { UsingClient } from '../../commands';
-import { Transformers } from '../../client/transformers';
 
 export const INTEGRATION_CREATE = (self: UsingClient, data: GatewayIntegrationCreateDispatchData) => {
 	return data.user

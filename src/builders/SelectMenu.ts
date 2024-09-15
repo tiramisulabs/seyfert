@@ -1,3 +1,13 @@
+import type { EmojiResolvable, RestOrArray, ToClass } from '../common';
+import { resolvePartialEmoji } from '../common/it/utils';
+import type {
+	ChannelSelectMenuInteraction,
+	ComponentInteraction,
+	MentionableSelectMenuInteraction,
+	RoleSelectMenuInteraction,
+	StringSelectMenuInteraction,
+	UserSelectMenuInteraction,
+} from '../structures';
 import {
 	type APIChannelSelectComponent,
 	type APIMentionableSelectComponent,
@@ -12,16 +22,6 @@ import {
 	ComponentType,
 	SelectMenuDefaultValueType,
 } from '../types';
-import type { EmojiResolvable, RestOrArray, ToClass } from '../common';
-import type {
-	ChannelSelectMenuInteraction,
-	ComponentInteraction,
-	MentionableSelectMenuInteraction,
-	RoleSelectMenuInteraction,
-	StringSelectMenuInteraction,
-	UserSelectMenuInteraction,
-} from '../structures';
-import { resolvePartialEmoji } from '../common/it/utils';
 import { BaseComponentBuilder, type OptionValuesLength } from './Base';
 
 export type BuilderSelectMenus =

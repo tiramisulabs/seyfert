@@ -1,5 +1,5 @@
 import type { Snowflake } from '..';
-import type { AuditLogEvent, APIAuditLog } from '../payloads';
+import type { APIAuditLog, AuditLogEvent } from '../payloads';
 
 /**
  * https://discord.com/developers/docs/resources/audit-log#get-guild-audit-log

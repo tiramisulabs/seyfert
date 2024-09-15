@@ -1,8 +1,8 @@
-import type { APIBan, GatewayGuildBanModifyDispatchData } from '../../types';
 import type { ReturnCache } from '../..';
-import { fakePromise } from '../../common';
-import { GuildBasedResource } from './default/guild-based';
 import { type GuildBanStructure, Transformers } from '../../client/transformers';
+import { fakePromise } from '../../common';
+import type { APIBan, GatewayGuildBanModifyDispatchData } from '../../types';
+import { GuildBasedResource } from './default/guild-based';
 export class Bans extends GuildBasedResource<any, GatewayGuildBanModifyDispatchData | APIBan> {
 	namespace = 'ban';
 

@@ -1,3 +1,11 @@
+import {
+	type GuildMemberStructure,
+	type GuildRoleStructure,
+	type GuildStructure,
+	Transformers,
+} from '../../client/transformers';
+import type { UsingClient } from '../../commands';
+import { toCamelCase } from '../../common';
 import type {
 	GatewayGuildAuditLogEntryCreateDispatchData,
 	GatewayGuildBanAddDispatchData,
@@ -21,14 +29,6 @@ import type {
 	GatewayGuildStickersUpdateDispatchData,
 	GatewayGuildUpdateDispatchData,
 } from '../../types';
-import { toCamelCase } from '../../common';
-import type { UsingClient } from '../../commands';
-import {
-	type GuildMemberStructure,
-	type GuildRoleStructure,
-	type GuildStructure,
-	Transformers,
-} from '../../client/transformers';
 
 export const GUILD_AUDIT_LOG_ENTRY_CREATE = (_self: UsingClient, data: GatewayGuildAuditLogEntryCreateDispatchData) => {
 	return toCamelCase(data);

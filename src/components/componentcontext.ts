@@ -1,4 +1,3 @@
-import { ComponentType, MessageFlags } from '../types';
 import type {
 	AllChannels,
 	ButtonInteraction,
@@ -10,6 +9,12 @@ import type {
 	StringSelectMenuInteraction,
 	UserSelectMenuInteraction,
 } from '..';
+import type {
+	GuildMemberStructure,
+	GuildStructure,
+	MessageStructure,
+	WebhookMessageStructure,
+} from '../client/transformers';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, RegisteredMiddlewares, UsingClient } from '../commands';
 import { BaseContext } from '../commands/basecontext';
 import type {
@@ -20,12 +25,7 @@ import type {
 	UnionToTuple,
 	When,
 } from '../common';
-import type {
-	GuildMemberStructure,
-	GuildStructure,
-	MessageStructure,
-	WebhookMessageStructure,
-} from '../client/transformers';
+import { ComponentType, MessageFlags } from '../types';
 
 export interface ComponentContext<
 	Type extends keyof ContextComponentCommandInteractionMap = keyof ContextComponentCommandInteractionMap,

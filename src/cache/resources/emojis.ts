@@ -1,8 +1,8 @@
-import type { APIEmoji } from '../../types';
 import type { ReturnCache } from '../..';
-import { fakePromise } from '../../common';
-import { GuildRelatedResource } from './default/guild-related';
 import { type GuildEmojiStructure, Transformers } from '../../client/transformers';
+import { fakePromise } from '../../common';
+import type { APIEmoji } from '../../types';
+import { GuildRelatedResource } from './default/guild-related';
 
 export class Emojis extends GuildRelatedResource<any, APIEmoji> {
 	namespace = 'emoji';

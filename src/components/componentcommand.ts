@@ -1,6 +1,6 @@
-import { ComponentType } from '../types';
-import type { ContextComponentCommandInteractionMap, ComponentContext } from './componentcontext';
 import type { ExtraProps, RegisteredMiddlewares, UsingClient } from '../commands';
+import { ComponentType } from '../types';
+import type { ComponentContext, ContextComponentCommandInteractionMap } from './componentcontext';
 
 export const InteractionCommandType = {
 	COMPONENT: 0,

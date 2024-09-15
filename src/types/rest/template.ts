@@ -1,4 +1,4 @@
-import type { APITemplate, APIGuild } from '../payloads';
+import type { APIGuild, APITemplate } from '../payloads';
 import type { StrictPartial } from '../utils';
 
 /**

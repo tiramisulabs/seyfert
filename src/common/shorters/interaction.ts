@@ -1,4 +1,4 @@
-import { BaseInteraction, resolveFiles, type ReplyInteractionBody, Modal } from '../..';
+import { BaseInteraction, Modal, type ReplyInteractionBody, resolveFiles } from '../..';
 import { Transformers } from '../../client/transformers';
 import type { InteractionMessageUpdateBodyRequest, MessageWebhookCreateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';

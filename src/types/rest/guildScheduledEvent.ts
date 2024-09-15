@@ -1,11 +1,11 @@
 import type { Snowflake } from '..';
 import type {
 	APIGuildScheduledEvent,
-	GuildScheduledEventPrivacyLevel,
-	GuildScheduledEventEntityType,
 	APIGuildScheduledEventEntityMetadata,
-	GuildScheduledEventStatus,
 	APIGuildScheduledEventUser,
+	GuildScheduledEventEntityType,
+	GuildScheduledEventPrivacyLevel,
+	GuildScheduledEventStatus,
 } from '../payloads';
 import type { StrictPartial } from '../utils';
 

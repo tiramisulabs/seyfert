@@ -1,6 +1,6 @@
-import type { GatewayDispatchPayload, GatewayReadyDispatchData, GatewayResumedDispatch } from '../../types';
-import type { UsingClient } from '../../commands';
 import { Transformers } from '../../client/transformers';
+import type { UsingClient } from '../../commands';
+import type { GatewayDispatchPayload, GatewayReadyDispatchData, GatewayResumedDispatch } from '../../types';
 
 export const READY = (self: UsingClient, data: GatewayReadyDispatchData) => {
 	return Transformers.ClientUser(self, data.user, data.application);

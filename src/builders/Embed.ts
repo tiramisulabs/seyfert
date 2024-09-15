@@ -1,5 +1,5 @@
+import { type ColorResolvable, type ObjectToLower, type RestOrArray, resolveColor, toSnakeCase } from '../common';
 import type { APIEmbed, APIEmbedAuthor, APIEmbedField, APIEmbedFooter } from '../types';
-import { resolveColor, toSnakeCase, type ColorResolvable, type ObjectToLower, type RestOrArray } from '../common';
 
 /**
  * Represents a message embed.

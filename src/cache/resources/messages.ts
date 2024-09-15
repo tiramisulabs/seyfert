@@ -1,8 +1,8 @@
+import type { MessageData, ReturnCache } from '../..';
+import { type MessageStructure, Transformers } from '../../client/transformers';
+import { fakePromise } from '../../common';
 import type { APIMessage, APIUser } from '../../types';
 import { GuildRelatedResource } from './default/guild-related';
-import type { MessageData, ReturnCache } from '../..';
-import { fakePromise } from '../../common';
-import { type MessageStructure, Transformers } from '../../client/transformers';
 
 export class Messages extends GuildRelatedResource<any, APIMessage> {
 	namespace = 'message';

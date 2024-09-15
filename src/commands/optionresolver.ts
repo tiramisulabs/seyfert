@@ -1,3 +1,13 @@
+import { Attachment } from '../builders';
+import {
+	type GuildMemberStructure,
+	type GuildRoleStructure,
+	type InteractionGuildMemberStructure,
+	Transformers,
+	type UserStructure,
+} from '../client/transformers';
+import type { MakeRequired } from '../common';
+import { type AllChannels, channelFrom } from '../structures';
 import {
 	type APIApplicationCommandInteractionDataOption,
 	type APIAttachment,
@@ -8,18 +18,8 @@ import {
 	type APIUser,
 	ApplicationCommandOptionType,
 } from '../types';
-import type { MakeRequired } from '../common';
-import { channelFrom, type AllChannels } from '../structures';
 import type { Command, CommandAutocompleteOption, CommandOption, SubCommand } from './applications/chat';
 import type { UsingClient } from './applications/shared';
-import {
-	type GuildMemberStructure,
-	type GuildRoleStructure,
-	type InteractionGuildMemberStructure,
-	Transformers,
-	type UserStructure,
-} from '../client/transformers';
-import { Attachment } from '../builders';
 
 export type ContextOptionsResolved = {
 	members?: Record<string, APIGuildMember | Omit<APIGuildMember, 'user'> | APIInteractionGuildMember>;

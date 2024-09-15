@@ -1,8 +1,8 @@
-import type { APIPoll } from '../types';
-import { toCamelCase, type ObjectToLower } from '../common';
-import { Base } from './extra/Base';
-import type { UsingClient } from '../commands';
 import type { ValidAnswerId } from '../api/Routes/channels';
+import type { UsingClient } from '../commands';
+import { type ObjectToLower, toCamelCase } from '../common';
+import type { APIPoll } from '../types';
+import { Base } from './extra/Base';
 
 export interface Poll extends ObjectToLower<APIPoll> {}
 

@@ -1,3 +1,4 @@
+import { Button } from '../builders';
 import type {
 	APIButtonComponentWithCustomId,
 	APIButtonComponentWithSKUId,
@@ -5,7 +6,6 @@ import type {
 	ButtonStyle,
 	ComponentType,
 } from '../types';
-import { Button } from '../builders';
 import { BaseComponent } from './BaseComponent';
 
 export class LinkButtonComponent extends BaseComponent<ComponentType.Button> {

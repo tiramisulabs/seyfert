@@ -1,8 +1,8 @@
-import type { APIGuildMember } from '../../types';
 import type { ReturnCache } from '../..';
-import { fakePromise } from '../../common';
-import { GuildBasedResource } from './default/guild-based';
 import { type GuildMemberStructure, Transformers } from '../../client/transformers';
+import { fakePromise } from '../../common';
+import type { APIGuildMember } from '../../types';
+import { GuildBasedResource } from './default/guild-based';
 export class Members extends GuildBasedResource<any, APIGuildMember> {
 	namespace = 'member';
 

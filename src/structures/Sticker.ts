@@ -1,9 +1,9 @@
-import type { APISticker, RESTPatchAPIGuildStickerJSONBody, RESTPostAPIGuildStickerFormDataBody } from '../types';
 import type { RawFile, UsingClient } from '..';
 import type { Attachment, AttachmentBuilder } from '../builders';
-import type { MethodContext, ObjectToLower } from '../common';
-import { DiscordBase } from './extra/DiscordBase';
 import { Transformers, type UserStructure } from '../client/transformers';
+import type { MethodContext, ObjectToLower } from '../common';
+import type { APISticker, RESTPatchAPIGuildStickerJSONBody, RESTPostAPIGuildStickerFormDataBody } from '../types';
+import { DiscordBase } from './extra/DiscordBase';
 
 export interface Sticker extends DiscordBase, ObjectToLower<Omit<APISticker, 'user'>> {}
 

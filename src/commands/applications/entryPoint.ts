@@ -1,8 +1,8 @@
-import { magicImport, type PermissionStrings } from '../../common';
+import { type PermissionStrings, magicImport } from '../../common';
 import {
 	ApplicationCommandType,
-	type EntryPointCommandHandlerType,
 	type ApplicationIntegrationType,
+	type EntryPointCommandHandlerType,
 	type InteractionContextType,
 	type LocaleString,
 } from '../../types';

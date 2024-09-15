@@ -1,8 +1,8 @@
-import type { APIVoiceState } from '../../types';
 import type { ReturnCache } from '../..';
-import { fakePromise } from '../../common';
-import { GuildBasedResource } from './default/guild-based';
 import { Transformers, type VoiceStateStructure } from '../../client/transformers';
+import { fakePromise } from '../../common';
+import type { APIVoiceState } from '../../types';
+import { GuildBasedResource } from './default/guild-based';
 
 export class VoiceStates extends GuildBasedResource<any, APIVoiceState> {
 	namespace = 'voice_state';

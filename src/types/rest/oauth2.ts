@@ -1,5 +1,5 @@
 import type { Snowflake } from '..';
-import type { APIApplication, OAuth2Scopes, APIUser, APIGuild, APIWebhook } from '../payloads';
+import type { APIApplication, APIGuild, APIUser, APIWebhook, OAuth2Scopes } from '../payloads';
 
 /**
  * https://discord.com/developers/docs/topics/oauth2#get-current-bot-application-information

@@ -1,3 +1,4 @@
+import type { RestOrArray } from '../common';
 import {
 	type APIActionRowComponent,
 	type APIModalInteractionResponseCallbackData,
@@ -5,7 +6,6 @@ import {
 	ComponentType,
 	type TextInputStyle,
 } from '../types';
-import type { RestOrArray } from '../common';
 import type { ActionRow } from './ActionRow';
 import { BaseComponentBuilder, type OptionValuesLength } from './Base';
 import { fromComponent } from './index';

@@ -1,3 +1,4 @@
+import { fromComponent } from '../builders';
 import {
 	type APIActionRowComponent,
 	type APIActionRowComponentTypes,
@@ -10,7 +11,6 @@ import {
 	type APIUserSelectComponent,
 	ComponentType,
 } from '../types';
-import { fromComponent } from '../builders';
 
 export class BaseComponent<T extends ComponentType> {
 	constructor(public data: APIComponentsMap[T]) {}

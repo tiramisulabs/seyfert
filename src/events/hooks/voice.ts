@@ -1,11 +1,11 @@
+import { Transformers, type VoiceStateStructure } from '../../client/transformers';
+import type { UsingClient } from '../../commands';
+import { toCamelCase } from '../../common';
 import type {
 	GatewayVoiceChannelEffectSendDispachData,
 	GatewayVoiceServerUpdateDispatchData,
 	GatewayVoiceStateUpdateDispatchData,
 } from '../../types';
-import { toCamelCase } from '../../common';
-import type { UsingClient } from '../../commands';
-import { Transformers, type VoiceStateStructure } from '../../client/transformers';
 
 export const VOICE_SERVER_UPDATE = (_self: UsingClient, data: GatewayVoiceServerUpdateDispatchData) => {
 	return toCamelCase(data);

@@ -1,3 +1,6 @@
+import { type MessageStructure, Transformers } from '../../client/transformers';
+import type { UsingClient } from '../../commands';
+import { type ObjectToLower, type OmitInsert, toCamelCase } from '../../common';
 import type {
 	GatewayMessageCreateDispatchData,
 	GatewayMessageDeleteBulkDispatchData,
@@ -9,9 +12,6 @@ import type {
 	GatewayMessageReactionRemoveEmojiDispatchData,
 	GatewayMessageUpdateDispatchData,
 } from '../../types';
-import { type OmitInsert, toCamelCase, type ObjectToLower } from '../../common';
-import type { UsingClient } from '../../commands';
-import { type MessageStructure, Transformers } from '../../client/transformers';
 
 export const MESSAGE_CREATE = (self: UsingClient, data: GatewayMessageCreateDispatchData) => {
 	return Transformers.Message(self, data);

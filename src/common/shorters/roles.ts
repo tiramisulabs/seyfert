@@ -1,3 +1,4 @@
+import { Transformers } from '../../client/transformers';
 import type {
 	APIRole,
 	RESTPatchAPIGuildRoleJSONBody,
@@ -5,7 +6,6 @@ import type {
 	RESTPostAPIGuildRoleJSONBody,
 } from '../../types';
 import { BaseShorter } from './base';
-import { Transformers } from '../../client/transformers';
 
 export class RoleShorter extends BaseShorter {
 	/**

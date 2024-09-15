@@ -1,5 +1,10 @@
-import { MessageFlags } from '../../types';
 import type { ReturnCache } from '../..';
+import type {
+	GuildMemberStructure,
+	GuildStructure,
+	MessageStructure,
+	WebhookMessageStructure,
+} from '../../client/transformers';
 import type {
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
@@ -8,16 +13,11 @@ import type {
 	When,
 } from '../../common';
 import type { AllChannels, EntryPointInteraction } from '../../structures';
+import { MessageFlags } from '../../types';
 import { BaseContext } from '../basecontext';
 import type { RegisteredMiddlewares } from '../decorators';
-import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
-import type {
-	GuildMemberStructure,
-	GuildStructure,
-	MessageStructure,
-	WebhookMessageStructure,
-} from '../../client/transformers';
 import type { EntryPointCommand } from './entryPoint';
+import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
 
 export interface EntryPointContext<M extends keyof RegisteredMiddlewares = never> extends BaseContext, ExtendContext {}
 

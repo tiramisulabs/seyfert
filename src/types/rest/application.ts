@@ -1,6 +1,6 @@
-import type { APIApplicationRoleConnectionMetadata, APIApplication, APIEmoji } from '../payloads';
-import type { StrictPartial, Nullable } from '../utils';
-import type { RESTPostAPIGuildEmojiJSONBody, RESTPatchAPIGuildEmojiJSONBody } from './emoji';
+import type { APIApplication, APIApplicationRoleConnectionMetadata, APIEmoji } from '../payloads';
+import type { Nullable, StrictPartial } from '../utils';
+import type { RESTPatchAPIGuildEmojiJSONBody, RESTPostAPIGuildEmojiJSONBody } from './emoji';
 
 /**
  * https://discord.com/developers/docs/resources/application-role-connection-metadata#get-application-role-connection-metadata-records

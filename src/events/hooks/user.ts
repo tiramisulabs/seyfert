@@ -1,6 +1,6 @@
-import type { GatewayUserUpdateDispatchData } from '../../types';
-import type { UsingClient } from '../../commands';
 import { Transformers, type UserStructure } from '../../client/transformers';
+import type { UsingClient } from '../../commands';
+import type { GatewayUserUpdateDispatchData } from '../../types';
 
 export const USER_UPDATE = async (
 	self: UsingClient,

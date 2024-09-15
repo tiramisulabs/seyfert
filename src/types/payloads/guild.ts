@@ -2,7 +2,7 @@
  * Types extracted from https://discord.com/developers/docs/resources/guild
  */
 
-import type { Permissions, Snowflake, GuildMemberFlags } from '../index';
+import type { GuildMemberFlags, Permissions, Snowflake } from '../index';
 import type { APIEmoji, APIPartialEmoji } from './emoji';
 import type { PresenceUpdateReceiveStatus } from './gateway';
 import type { OAuth2Scopes } from './oauth2';

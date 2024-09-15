@@ -1,4 +1,4 @@
-import type { InteractionContextType, ApplicationIntegrationType } from '..';
+import type { ApplicationIntegrationType, InteractionContextType } from '..';
 import type { ChannelType, Snowflake } from '../..';
 
 import type { LocaleString } from '../../rest';

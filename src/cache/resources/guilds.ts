@@ -1,8 +1,8 @@
-import type { APIGuild, GatewayGuildCreateDispatchData } from '../../types';
 import type { Cache, ReturnCache } from '..';
-import { fakePromise } from '../../common';
-import { BaseResource } from './default/base';
 import { type GuildStructure, Transformers } from '../../client/transformers';
+import { fakePromise } from '../../common';
+import type { APIGuild, GatewayGuildCreateDispatchData } from '../../types';
+import { BaseResource } from './default/base';
 
 export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispatchData> {
 	namespace = 'guild';

@@ -1,10 +1,10 @@
+import type { RestOrArray } from '../common/types/util';
 import {
-	ComponentType,
 	type APIActionRowComponent,
 	type APIActionRowComponentTypes,
 	type APIMessageActionRowComponent,
+	ComponentType,
 } from '../types';
-import type { RestOrArray } from '../common/types/util';
 import { BaseComponentBuilder } from './Base';
 import { fromComponent } from './index';
 import type { BuilderComponents, FixedComponents } from './types';

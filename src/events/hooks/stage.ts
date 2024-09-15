@@ -1,11 +1,11 @@
+import type { StageInstances } from '../../cache/resources/stage-instances';
+import type { UsingClient } from '../../commands';
+import { type ObjectToLower, toCamelCase } from '../../common';
 import type {
 	GatewayStageInstanceCreateDispatchData,
 	GatewayStageInstanceDeleteDispatchData,
 	GatewayStageInstanceUpdateDispatchData,
 } from '../../types';
-import type { UsingClient } from '../../commands';
-import { type ObjectToLower, toCamelCase } from '../../common';
-import type { StageInstances } from '../../cache/resources/stage-instances';
 
 export const STAGE_INSTANCE_CREATE = (_self: UsingClient, data: GatewayStageInstanceCreateDispatchData) => {
 	return toCamelCase(data);

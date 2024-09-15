@@ -1,6 +1,6 @@
-import type { GatewayInviteCreateDispatchData, GatewayInviteDeleteDispatchData } from '../../types';
 import type { UsingClient } from '../../commands';
 import { toCamelCase } from '../../common';
+import type { GatewayInviteCreateDispatchData, GatewayInviteDeleteDispatchData } from '../../types';
 
 export const INVITE_CREATE = (_self: UsingClient, data: GatewayInviteCreateDispatchData) => {
 	return toCamelCase(data);

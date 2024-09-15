@@ -1,6 +1,6 @@
 import type { UsingClient } from '../../commands';
-import { Base } from './Base';
 import { snowflakeToTimestamp } from '../../common/it/utils';
+import { Base } from './Base';
 
 export class DiscordBase<Data extends Record<string, any> = { id: string }> extends Base {
 	id: string;

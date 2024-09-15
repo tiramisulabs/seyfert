@@ -1,3 +1,13 @@
+import { type AnonymousGuildStructure, Transformers, type UserStructure } from '../client/transformers';
+import type { UsingClient } from '../commands';
+import type {
+	ImageOptions,
+	MessageWebhookCreateBodyRequest,
+	MessageWebhookPayload,
+	MessageWebhookUpdateBodyRequest,
+	MethodContext,
+	ObjectToLower,
+} from '../common';
 /**
  * Represents a Discord webhook.
  */
@@ -8,17 +18,7 @@ import type {
 	RESTPatchAPIWebhookWithTokenJSONBody,
 	RESTPostAPIWebhookWithTokenQuery,
 } from '../types';
-import type { UsingClient } from '../commands';
-import type {
-	ImageOptions,
-	MessageWebhookCreateBodyRequest,
-	MessageWebhookPayload,
-	MessageWebhookUpdateBodyRequest,
-	MethodContext,
-	ObjectToLower,
-} from '../common';
 import { DiscordBase } from './extra/DiscordBase';
-import { type AnonymousGuildStructure, Transformers, type UserStructure } from '../client/transformers';
 
 export interface Webhook extends DiscordBase, ObjectToLower<Omit<APIWebhook, 'user' | 'source_guild'>> {}
 

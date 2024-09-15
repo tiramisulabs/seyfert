@@ -2,7 +2,7 @@
  * Types extracted from https://discord.com/developers/docs/resources/channel
  */
 
-import type { Permissions, Snowflake, ChannelType, OverwriteType, VideoQualityMode } from '../index';
+import type { ChannelType, OverwriteType, Permissions, Snowflake, VideoQualityMode } from '../index';
 import type { APIApplication } from './application';
 import type { APIPartialEmoji } from './emoji';
 import type { APIGuildMember } from './guild';

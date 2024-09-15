@@ -7,30 +7,30 @@ export type GuildMemberData =
 	| GatewayGuildMemberAddDispatchData
 	| APIInteractionDataResolvedGuildMember;
 
-import type {
-	APIGuildMember,
-	GatewayGuildMemberUpdateDispatchData,
-	GatewayGuildMemberAddDispatchData,
-	APIInteractionDataResolvedGuildMember,
-	RESTPutAPIGuildBanJSONBody,
-	RESTPatchAPIGuildMemberJSONBody,
-	RESTGetAPIGuildMembersSearchQuery,
-	RESTPutAPIGuildMemberJSONBody,
-	RESTGetAPIGuildMembersQuery,
-	APIUser,
-} from '../types';
+import { Transformers, type UserStructure } from '../client/transformers';
 import type { UsingClient } from '../commands';
-import { PermissionsBitField } from './extra/Permissions';
 import {
 	Formatter,
+	type GuildMemberResolvable,
+	type ImageOptions,
 	type MessageCreateBodyRequest,
+	type MethodContext,
 	type ObjectToLower,
 	type ToClass,
-	type ImageOptions,
-	type MethodContext,
-	type GuildMemberResolvable,
 } from '../common';
-import { Transformers, type UserStructure } from '../client/transformers';
+import type {
+	APIGuildMember,
+	APIInteractionDataResolvedGuildMember,
+	APIUser,
+	GatewayGuildMemberAddDispatchData,
+	GatewayGuildMemberUpdateDispatchData,
+	RESTGetAPIGuildMembersQuery,
+	RESTGetAPIGuildMembersSearchQuery,
+	RESTPatchAPIGuildMemberJSONBody,
+	RESTPutAPIGuildBanJSONBody,
+	RESTPutAPIGuildMemberJSONBody,
+} from '../types';
+import { PermissionsBitField } from './extra/Permissions';
 
 export interface BaseGuildMember extends DiscordBase, ObjectToLower<Omit<APIGuildMember, 'user' | 'roles'>> {}
 export class BaseGuildMember extends DiscordBase {

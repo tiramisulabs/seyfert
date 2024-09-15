@@ -1,7 +1,7 @@
-import type { GatewayTypingStartDispatchData } from '../../types';
-import { toCamelCase } from '../../common';
-import type { UsingClient } from '../../commands';
 import { Transformers } from '../../client/transformers';
+import type { UsingClient } from '../../commands';
+import { toCamelCase } from '../../common';
+import type { GatewayTypingStartDispatchData } from '../../types';
 
 export const TYPING_START = (self: UsingClient, data: GatewayTypingStartDispatchData) => {
 	return data.member

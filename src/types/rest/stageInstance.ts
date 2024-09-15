@@ -1,5 +1,5 @@
 import type { Snowflake } from '..';
-import type { StageInstancePrivacyLevel, APIStageInstance } from '../payloads';
+import type { APIStageInstance, StageInstancePrivacyLevel } from '../payloads';
 
 /**
  * https://discord.com/developers/docs/resources/stage-instance#create-stage-instance

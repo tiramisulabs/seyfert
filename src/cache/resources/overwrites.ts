@@ -1,7 +1,7 @@
-import type { APIOverwrite } from '../../types';
 import type { ReturnCache } from '../..';
 import { fakePromise } from '../../common/it/utils';
 import { PermissionsBitField } from '../../structures/extra/Permissions';
+import type { APIOverwrite } from '../../types';
 import { GuildRelatedResource } from './default/guild-related';
 
 export class Overwrites extends GuildRelatedResource<any, APIOverwrite[]> {

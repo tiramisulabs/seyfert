@@ -1,10 +1,10 @@
+import { type PermissionStrings, magicImport } from '../../common';
 import type {
 	ApplicationCommandType,
 	ApplicationIntegrationType,
 	InteractionContextType,
 	LocaleString,
 } from '../../types';
-import { magicImport, type PermissionStrings } from '../../common';
 import type { RegisteredMiddlewares } from '../decorators';
 import type { MenuCommandContext } from './menucontext';
 import type { ExtraProps, UsingClient } from './shared';

@@ -1,9 +1,9 @@
+import { error } from 'node:console';
 import { randomUUID } from 'node:crypto';
+import type { UsingClient } from '../commands';
 import type { Awaitable, CamelCase } from '../common';
 import type { CallbackEventHandler, CustomEventsKeys, GatewayEvents } from '../events';
-import { error } from 'node:console';
 import * as RawEvents from '../events/hooks';
-import type { UsingClient } from '../commands';
 
 export type AllClientEvents = CustomEventsKeys | GatewayEvents;
 export type ParseClientEventName<T extends AllClientEvents> = T extends CustomEventsKeys ? T : CamelCase<T>;

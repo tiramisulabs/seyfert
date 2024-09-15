@@ -1,3 +1,5 @@
+import type { ThreadChannelStructure } from '../../client/transformers';
+import { channelFrom } from '../../structures';
 import type {
 	APIThreadMember,
 	RESTGetAPIChannelThreadMembersQuery,
@@ -7,10 +9,8 @@ import type {
 	RESTPostAPIChannelThreadsJSONBody,
 	RESTPostAPIGuildForumThreadsJSONBody,
 } from '../../types';
-import { BaseShorter } from './base';
 import type { MakeRequired, When } from '../types/util';
-import type { ThreadChannelStructure } from '../../client/transformers';
-import { channelFrom } from '../../structures';
+import { BaseShorter } from './base';
 
 export class ThreadShorter extends BaseShorter {
 	/**

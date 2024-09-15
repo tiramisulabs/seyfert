@@ -1,6 +1,6 @@
-import type { APIInteractionResponse, APIInteraction } from '../types';
 import { isBufferLike } from '../api/utils/utils';
 import type { DeepPartial } from '../common';
+import type { APIInteraction, APIInteractionResponse } from '../types';
 import type { BaseClientOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 

@@ -1,15 +1,15 @@
+import { resolveFiles } from '../../builders';
+import { MessagesMethods } from '../../structures';
 import type {
 	RESTPatchAPIChannelMessageJSONBody,
 	RESTPostAPIChannelMessageJSONBody,
 	RESTPostAPIChannelMessagesThreadsJSONBody,
 } from '../../types';
-import { resolveFiles } from '../../builders';
-import { MessagesMethods } from '../../structures';
 
-import type { MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../types/write';
-import { BaseShorter } from './base';
 import type { ValidAnswerId } from '../../api/Routes/channels';
 import { Transformers } from '../../client/transformers';
+import type { MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../types/write';
+import { BaseShorter } from './base';
 
 export class MessageShorter extends BaseShorter {
 	async write(channelId: string, { files, ...body }: MessageCreateBodyRequest) {
