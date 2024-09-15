@@ -369,5 +369,5 @@ export abstract class SubCommand extends BaseCommand {
 		};
 	}
 
-	abstract run(context: CommandContext<any>): any;
+	abstract run(context: CommandContext): any;
 }

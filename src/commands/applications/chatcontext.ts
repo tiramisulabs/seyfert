@@ -17,12 +17,12 @@ import type { RegisteredMiddlewares } from '../decorators';
 import type { Command, ContextOptions, OptionsRecord, SubCommand } from './chat';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
 
-export interface CommandContext<T extends OptionsRecord = never, M extends keyof RegisteredMiddlewares = never>
+export interface CommandContext<T extends OptionsRecord = {}, M extends keyof RegisteredMiddlewares = never>
 	extends BaseContext,
 		ExtendContext {}
 
 export class CommandContext<
-	T extends OptionsRecord = never,
+	T extends OptionsRecord = {},
 	M extends keyof RegisteredMiddlewares = never,
 > extends BaseContext {
 	message!: If<InferWithPrefix, MessageStructure | undefined, undefined>;
