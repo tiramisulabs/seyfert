@@ -3,6 +3,7 @@ import type { VoiceStateResource } from '../cache/resources/voice-states';
 import { type GuildMemberStructure, Transformers } from '../client/transformers';
 import type { ObjectToLower } from '../common';
 import type { APIVoiceState } from '../types';
+import type { AllGuildVoiceChannels } from './channels';
 import { Base } from './extra/Base';
 
 export interface VoiceState extends Base, ObjectToLower<Omit<VoiceStateResource, 'member'>> {}
@@ -29,9 +30,9 @@ export class VoiceState extends Base {
 		return this.client.users.fetch(this.userId, force);
 	}
 
-	async channel(force?: boolean) {
+	channel(force?: boolean) {
 		if (!this.channelId) return;
-		return this.client.channels.fetch(this.channelId, force);
+		return this.client.channels.fetch(this.channelId, force) as Promise<AllGuildVoiceChannels>;
 	}
 
 	async setMute(mute = !this.mute, reason?: string) {
