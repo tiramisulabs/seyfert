@@ -109,7 +109,11 @@ export class HandleCommand {
 		context: MenuCommandContext<UserCommandInteraction>,
 	) {
 		if (command.botPermissions && interaction.appPermissions) {
-			const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
+			const permissions = this.checkPermissions(
+				interaction.appPermissions,
+				command.botPermissions,
+				!context.guildId || interaction.appPermissions.has('Administrator'),
+			);
 			if (permissions) return command.onBotPermissionsFail(context, permissions);
 		}
 
@@ -137,8 +141,12 @@ export class HandleCommand {
 
 	async entryPoint(command: EntryPointCommand, interaction: EntryPointInteraction, context: EntryPointContext) {
 		if (command.botPermissions && interaction.appPermissions) {
-			const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
-			if (permissions) return command.onBotPermissionsFail?.(context, permissions);
+			const permissions = this.checkPermissions(
+				interaction.appPermissions,
+				command.botPermissions,
+				!context.guildId || interaction.appPermissions.has('Administrator'),
+			);
+			if (permissions) return command.onBotPermissionsFail(context, permissions);
 		}
 
 		const resultGlobal = await this.runGlobalMiddlewares(command, context);
@@ -170,7 +178,11 @@ export class HandleCommand {
 		context: CommandContext,
 	) {
 		if (command.botPermissions && interaction.appPermissions) {
-			const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
+			const permissions = this.checkPermissions(
+				interaction.appPermissions,
+				command.botPermissions,
+				!context.guildId || interaction.appPermissions.has('Administrator'),
+			);
 			if (permissions) return command.onBotPermissionsFail?.(context, permissions);
 		}
 		if (!(await this.runOptions(command, context, resolver))) return;
@@ -234,8 +246,13 @@ export class HandleCommand {
 					case ApplicationCommandType.Message: {
 						const data = this.makeMenuCommand(body, shardId, __reply);
 						if (!data) return;
-						// @ts-expect-error
-						this.contextMenuMessage(data.command, data.interaction, data.context);
+
+						this.contextMenuMessage(
+							data.command,
+							// @ts-expect-error
+							data.interaction,
+							data.context,
+						);
 						break;
 					}
 					case ApplicationCommandType.User: {
@@ -358,7 +375,11 @@ export class HandleCommand {
 			if (rawMessage.guild_id) {
 				if (command.defaultMemberPermissions) {
 					const memberPermissions = await self.members.permissions(rawMessage.guild_id, rawMessage.author.id);
-					const permissions = this.checkPermissions(memberPermissions, command.defaultMemberPermissions);
+					const permissions = this.checkPermissions(
+						memberPermissions,
+						command.defaultMemberPermissions,
+						memberPermissions.has('Administrator'),
+					);
 					const guild = await this.client.guilds.raw(rawMessage.guild_id);
 					if (permissions && guild.owner_id !== rawMessage.author.id) {
 						return command.onPermissionsFail?.(context, memberPermissions.keys(permissions));
@@ -367,8 +388,12 @@ export class HandleCommand {
 
 				if (command.botPermissions) {
 					const appPermissions = await self.members.permissions(rawMessage.guild_id, self.botId);
-					const permissions = this.checkPermissions(appPermissions, command.botPermissions);
-					if (!appPermissions.has('Administrator') && permissions) {
+					const permissions = this.checkPermissions(
+						appPermissions,
+						command.botPermissions,
+						appPermissions.has('Administrator'),
+					);
+					if (permissions) {
 						return command.onBotPermissionsFail?.(context, permissions);
 					}
 				}
@@ -497,9 +522,10 @@ export class HandleCommand {
 		}) as T;
 	}
 
-	checkPermissions(app: PermissionsBitField, bot: bigint) {
+	checkPermissions(app: PermissionsBitField, bot: bigint, bypass = false) {
+		if (bypass) return;
 		const permissions = app.missings(...app.values([bot]));
-		if (!app.has('Administrator') && permissions.length) {
+		if (permissions.length) {
 			return app.keys(permissions);
 		}
 		return;
@@ -624,9 +650,15 @@ export class HandleCommand {
 		resolved: MakeRequired<ContextOptionsResolved>,
 	) {
 		const options: APIApplicationCommandInteractionDataOption[] = [];
-		const errors: { name: string; error: string; fullError: MessageCommandOptionErrors }[] = [];
+		const errors: {
+			name: string;
+			error: string;
+			fullError: MessageCommandOptionErrors;
+		}[] = [];
 		let indexAttachment = -1;
-		for (const i of (command.options ?? []) as (CommandOption & { type: ApplicationCommandOptionType })[]) {
+		for (const i of (command.options ?? []) as (CommandOption & {
+			type: ApplicationCommandOptionType;
+		})[]) {
 			try {
 				let value: string | boolean | number | undefined;
 				switch (i.type) {
