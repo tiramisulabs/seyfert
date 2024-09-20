@@ -503,7 +503,8 @@ export class HandleCommand {
 	}
 
 	checkPermissions(app: PermissionsBitField, bot: bigint) {
-		if (!app.has('Administrator')) return;
+		if (app.has('Administrator')) return;
+
 		const permissions = app.missings(...app.values([bot]));
 		if (permissions.length) {
 			return app.keys(permissions);
