@@ -14,10 +14,10 @@ export class MemoryAdapter<T> implements Adapter {
 	constructor(
 		public options: MemoryAdapterOptions<T> = {
 			encode(data) {
-				return JSON.stringify(data) as T;
+				return data;
 			},
 			decode(data) {
-				return JSON.parse(data as string);
+				return data;
 			},
 		},
 	) {}

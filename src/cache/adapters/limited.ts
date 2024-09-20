@@ -47,10 +47,10 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 					limit: Number.POSITIVE_INFINITY,
 				},
 				encode(data) {
-					return JSON.stringify(data) as T;
+					return data;
 				},
 				decode(data) {
-					return JSON.parse(data as string);
+					return data;
 				},
 			} satisfies LimitedMemoryAdapterOptions<T>,
 			options,
@@ -111,10 +111,6 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 						const existsRelation = self.relationships.has(relationshipNamespace);
 						if (existsRelation) {
 							switch (relationshipNamespace) {
-								case 'guild':
-								case 'user':
-									self.removeToRelationship(namespace, k.split('.')[1]);
-									break;
 								case 'ban':
 								case 'member':
 								case 'voice_state':
@@ -132,6 +128,11 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 								case 'thread':
 								case 'overwrite':
 								case 'message':
+									self.removeToRelationship(namespace, k.split('.')[1]);
+									break;
+								// case 'guild':
+								// case 'user':
+								default:
 									self.removeToRelationship(namespace, k.split('.')[1]);
 									break;
 							}
@@ -214,10 +215,6 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 						?.delete(`${parentNamespace}.${keySplit.at(1)}.${keySplit.at(2)}`);
 				}
 				break;
-			case 'user':
-			case 'guild':
-				this.storage.get(parentNamespace)?.delete(`${parentNamespace}.${keySplit.at(1)}`);
-				break;
 			case 'channel':
 			case 'emoji':
 			case 'presence':
@@ -236,6 +233,11 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 						}
 					}
 				}
+				break;
+			// case 'user':
+			// case 'guild':
+			default:
+				this.storage.get(parentNamespace)?.delete(`${parentNamespace}.${keySplit.at(1)}`);
 				break;
 		}
 	}
