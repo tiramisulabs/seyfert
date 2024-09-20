@@ -108,12 +108,8 @@ export class HandleCommand {
 		interaction: UserCommandInteraction,
 		context: MenuCommandContext<UserCommandInteraction>,
 	) {
-		if (command.botPermissions && interaction.appPermissions) {
-			const permissions = this.checkPermissions(
-				interaction.appPermissions,
-				command.botPermissions,
-				!context.guildId || interaction.appPermissions.has('Administrator'),
-			);
+		if (context.guildId && command.botPermissions && interaction.appPermissions) {
+			const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
 			if (permissions) return command.onBotPermissionsFail(context, permissions);
 		}
 
@@ -140,12 +136,8 @@ export class HandleCommand {
 	}
 
 	async entryPoint(command: EntryPointCommand, interaction: EntryPointInteraction, context: EntryPointContext) {
-		if (command.botPermissions && interaction.appPermissions) {
-			const permissions = this.checkPermissions(
-				interaction.appPermissions,
-				command.botPermissions,
-				!context.guildId || interaction.appPermissions.has('Administrator'),
-			);
+		if (context.guildId && command.botPermissions && interaction.appPermissions) {
+			const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
 			if (permissions) return command.onBotPermissionsFail(context, permissions);
 		}
 
@@ -177,12 +169,8 @@ export class HandleCommand {
 		resolver: OptionResolverStructure,
 		context: CommandContext,
 	) {
-		if (command.botPermissions && interaction.appPermissions) {
-			const permissions = this.checkPermissions(
-				interaction.appPermissions,
-				command.botPermissions,
-				!context.guildId || interaction.appPermissions.has('Administrator'),
-			);
+		if (context.guildId && command.botPermissions && interaction.appPermissions) {
+			const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
 			if (permissions) return command.onBotPermissionsFail?.(context, permissions);
 		}
 		if (!(await this.runOptions(command, context, resolver))) return;
@@ -375,11 +363,7 @@ export class HandleCommand {
 			if (rawMessage.guild_id) {
 				if (command.defaultMemberPermissions) {
 					const memberPermissions = await self.members.permissions(rawMessage.guild_id, rawMessage.author.id);
-					const permissions = this.checkPermissions(
-						memberPermissions,
-						command.defaultMemberPermissions,
-						memberPermissions.has('Administrator'),
-					);
+					const permissions = this.checkPermissions(memberPermissions, command.defaultMemberPermissions);
 					const guild = await this.client.guilds.raw(rawMessage.guild_id);
 					if (permissions && guild.owner_id !== rawMessage.author.id) {
 						return command.onPermissionsFail?.(context, memberPermissions.keys(permissions));
@@ -388,11 +372,7 @@ export class HandleCommand {
 
 				if (command.botPermissions) {
 					const appPermissions = await self.members.permissions(rawMessage.guild_id, self.botId);
-					const permissions = this.checkPermissions(
-						appPermissions,
-						command.botPermissions,
-						appPermissions.has('Administrator'),
-					);
+					const permissions = this.checkPermissions(appPermissions, command.botPermissions);
 					if (permissions) {
 						return command.onBotPermissionsFail?.(context, permissions);
 					}
@@ -522,10 +502,9 @@ export class HandleCommand {
 		}) as T;
 	}
 
-	checkPermissions(app: PermissionsBitField, bot: bigint, bypass = false) {
-		if (bypass) return;
+	checkPermissions(app: PermissionsBitField, bot: bigint) {
 		const permissions = app.missings(...app.values([bot]));
-		if (permissions.length) {
+		if (!app.has('Administrator') && permissions.length) {
 			return app.keys(permissions);
 		}
 		return;
