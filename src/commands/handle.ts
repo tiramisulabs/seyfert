@@ -510,27 +510,27 @@ export class HandleCommand {
 		return;
 	}
 
-	async fetchChannel(_option: CommandOptionWithType, query: string) {
+	fetchChannel(_option: CommandOptionWithType, query: string) {
 		const id = query.match(/[0-9]{17,19}/g)?.[0];
 		if (id) return this.client.channels.raw(id);
 		return null;
 	}
 
-	async fetchUser(_option: CommandOptionWithType, query: string) {
+	fetchUser(_option: CommandOptionWithType, query: string) {
 		const id = query.match(/[0-9]{17,19}/g)?.[0];
 		if (id) return this.client.users.raw(id);
 		return null;
 	}
 
-	async fetchMember(_option: CommandOptionWithType, query: string, guildId: string) {
+	fetchMember(_option: CommandOptionWithType, query: string, guildId: string) {
 		const id = query.match(/[0-9]{17,19}/g)?.[0];
 		if (id) return this.client.members.raw(guildId, id);
 		return null;
 	}
 
-	async fetchRole(_option: CommandOptionWithType, query: string, guildId?: string) {
+	fetchRole(_option: CommandOptionWithType, query: string, guildId?: string) {
 		const id = query.match(/[0-9]{17,19}/g)?.[0];
-		if (id && guildId) return (await this.client.roles.listRaw(guildId)).find(x => x.id === id);
+		if (id && guildId) return this.client.roles.raw(guildId, id);
 		return null;
 	}
 
