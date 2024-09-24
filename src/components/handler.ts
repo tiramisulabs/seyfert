@@ -12,7 +12,10 @@ import type { ModalContext } from './modalcontext';
 type COMPONENTS = {
 	components: { match: string | string[] | RegExp; callback: ComponentCallback }[];
 	options?: ListenerOptions;
-	messageId?: string;
+	messageId: string;
+	threadId: string | undefined;
+	channelId: string | undefined;
+	guildId: string | undefined;
 	idle?: NodeJS.Timeout;
 	timeout?: NodeJS.Timeout;
 	__run: (customId: string | string[] | RegExp, callback: ComponentCallback) => any;
@@ -20,11 +23,18 @@ type COMPONENTS = {
 
 export type CollectorInteraction = ComponentInteraction | StringSelectMenuInteraction;
 export type ComponentCommands = ComponentCommand | ModalCommand;
+export interface CreateComponentCollectorResult {
+	run<T extends CollectorInteraction = CollectorInteraction>(
+		customId: string | string[] | RegExp,
+		callback: ComponentCallback<T>,
+	): any;
+	stop(reason?: string): any;
+}
 
 export class ComponentHandler extends BaseHandler {
 	onFail: OnFailCallback = err => this.logger.warn('<Client>.components.onFail', err);
 	readonly values = new Map<string, COMPONENTS>();
-	// 10 minutes timeout, because discord dont send an event when the user cancel the modal
+	// 10 minutes of timeout by default, because discord doesnt send an event when the user cancels the modal
 	readonly modals = new LimitedCollection<string, ModalSubmitCallback>({ expire: 60e3 * 10 });
 	readonly commands: ComponentCommands[] = [];
 	filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
@@ -38,23 +48,24 @@ export class ComponentHandler extends BaseHandler {
 
 	createComponentCollector(
 		messageId: string,
+		channelId: string | undefined,
+		threadId: string | undefined,
+		guildId: string | undefined,
 		options: ListenerOptions = {},
-	): {
-		run<T extends CollectorInteraction = CollectorInteraction>(
-			customId: string | string[] | RegExp,
-			callback: ComponentCallback<T>,
-		): any;
-		stop(reason?: string): any;
-	} {
+	): CreateComponentCollectorResult {
 		this.values.set(messageId, {
-			components: [],
+			messageId,
+			threadId,
+			channelId,
+			guildId,
 			options,
+			components: [],
 			idle:
 				options.idle && options.idle > 0
 					? setTimeout(() => {
 							this.deleteValue(messageId);
 							options.onStop?.('idle', () => {
-								this.createComponentCollector(messageId, options);
+								this.createComponentCollector(messageId, channelId, threadId, guildId, options);
 							});
 						}, options.idle)
 					: undefined,
@@ -63,7 +74,7 @@ export class ComponentHandler extends BaseHandler {
 					? setTimeout(() => {
 							this.deleteValue(messageId);
 							options.onStop?.('timeout', () => {
-								this.createComponentCollector(messageId, options);
+								this.createComponentCollector(messageId, channelId, threadId, guildId, options);
 							});
 						}, options.timeout)
 					: undefined,
@@ -83,7 +94,7 @@ export class ComponentHandler extends BaseHandler {
 			stop: (reason?: string) => {
 				this.deleteValue(messageId);
 				options.onStop?.(reason, () => {
-					this.createComponentCollector(messageId, options);
+					this.createComponentCollector(messageId, channelId, threadId, guildId, options);
 				});
 			},
 		};
@@ -148,10 +159,6 @@ export class ComponentHandler extends BaseHandler {
 			clearTimeout(component.idle);
 			this.values.delete(id);
 		}
-	}
-
-	onMessageDelete(id: string) {
-		this.deleteValue(id, 'messageDelete');
 	}
 
 	stablishDefaults(component: ComponentCommands) {

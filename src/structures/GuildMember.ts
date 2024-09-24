@@ -121,8 +121,7 @@ export class BaseGuildMember extends DiscordBase {
 		return {
 			resolve: (resolve: GuildMemberResolvable) => client.members.resolve(guildId, resolve),
 			search: (query?: RESTGetAPIGuildMembersSearchQuery) => client.members.search(guildId, query),
-			unban: (id: string, body?: RESTPutAPIGuildBanJSONBody, reason?: string) =>
-				client.members.unban(guildId, id, body, reason),
+			unban: (id: string, reason?: string) => client.members.unban(guildId, id, reason),
 			ban: (id: string, body?: RESTPutAPIGuildBanJSONBody, reason?: string) =>
 				client.members.ban(guildId, id, body, reason),
 			kick: (id: string, reason?: string) => client.members.kick(guildId, id, reason),

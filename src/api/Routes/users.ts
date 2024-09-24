@@ -14,51 +14,42 @@ import type {
 	RESTPutAPICurrentUserApplicationRoleConnectionJSONBody,
 	RESTPutAPICurrentUserApplicationRoleConnectionResult,
 } from '../../types';
-import type { ProxyRequestMethod } from '../Router';
-import type { RestArguments } from '../api';
+import type { RestArguments, RestArgumentsNoBody } from '../api';
 
 export interface UserRoutes {
 	users: {
 		(
 			id: string,
 		): {
-			get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIUserResult>;
+			get(args?: RestArgumentsNoBody): Promise<RESTGetAPIUserResult>;
 		};
 		(
 			id: '@me',
 		): {
-			get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPICurrentUserResult>;
-			patch(
-				args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPICurrentUserJSONBody>,
-			): Promise<RESTPatchAPICurrentUserResult>;
+			get(args?: RestArgumentsNoBody): Promise<RESTGetAPICurrentUserResult>;
+			patch(args: RestArguments<RESTPatchAPICurrentUserJSONBody>): Promise<RESTPatchAPICurrentUserResult>;
 			guilds: {
-				get(
-					args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPICurrentUserGuildsQuery>,
-				): Promise<RESTGetAPICurrentUserGuildsResult>;
+				get(args?: RestArgumentsNoBody<RESTGetAPICurrentUserGuildsQuery>): Promise<RESTGetAPICurrentUserGuildsResult>;
 				(
 					id: string,
 				): {
 					member: {
-						get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetCurrentUserGuildMemberResult>;
+						get(args?: RestArgumentsNoBody): Promise<RESTGetCurrentUserGuildMemberResult>;
 					};
-					delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIGuildResult>;
+					delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIGuildResult>;
 				};
 			};
 			channels: {
-				post(
-					args: RestArguments<ProxyRequestMethod.Post, RESTPostAPICurrentUserCreateDMChannelJSONBody>,
-				): Promise<APIDMChannel>;
+				post(args: RestArguments<RESTPostAPICurrentUserCreateDMChannelJSONBody>): Promise<APIDMChannel>;
 			};
 			connections: {
-				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPICurrentUserConnectionsResult>;
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPICurrentUserConnectionsResult>;
 			};
 			applications(applicationId: string): {
 				'role-connection': {
-					get(
-						args?: RestArguments<ProxyRequestMethod.Get>,
-					): Promise<RESTGetAPICurrentUserApplicationRoleConnectionResult>;
+					get(args?: RestArgumentsNoBody): Promise<RESTGetAPICurrentUserApplicationRoleConnectionResult>;
 					put(
-						args: RestArguments<ProxyRequestMethod.Put, RESTPutAPICurrentUserApplicationRoleConnectionJSONBody>,
+						args: RestArguments<RESTPutAPICurrentUserApplicationRoleConnectionJSONBody>,
 					): Promise<RESTPutAPICurrentUserApplicationRoleConnectionResult>;
 				};
 			};

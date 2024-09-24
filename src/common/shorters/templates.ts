@@ -28,7 +28,7 @@ export class TemplateShorter extends BaseShorter {
 		return this.client.proxy
 			.guilds(guildId)
 			.templates(code)
-			.put({})
+			.put()
 			.then(template => Transformers.GuildTemplate(this.client, template));
 	}
 

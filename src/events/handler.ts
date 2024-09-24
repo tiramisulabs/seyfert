@@ -13,10 +13,12 @@ import {
 import type { ClientEvents } from '../events/hooks';
 import * as RawEvents from '../events/hooks';
 import type {
+	GatewayChannelDeleteDispatch,
 	GatewayDispatchPayload,
-	GatewayMessageCreateDispatch,
+	GatewayGuildDeleteDispatch,
 	GatewayMessageDeleteBulkDispatch,
 	GatewayMessageDeleteDispatch,
+	GatewayThreadDeleteDispatch,
 } from '../types';
 import type { ClientEvent, ClientNameEvents, CustomEvents, CustomEventsKeys, EventContext } from './event';
 
@@ -103,33 +105,52 @@ export class EventHandler extends BaseHandler {
 
 	async execute(name: GatewayEvents, ...args: [GatewayDispatchPayload, Client<true> | WorkerClient<true>, number]) {
 		switch (name) {
-			case 'MESSAGE_CREATE':
-				{
-					const { d: data } = args[0] as GatewayMessageCreateDispatch;
-					if (args[1].components?.values.has(data.interaction_metadata?.id ?? data.id)) {
-						args[1].components.values.get(data.interaction_metadata!.id ?? data.id)!.messageId = data.id;
-					}
-				}
-				break;
 			case 'MESSAGE_DELETE':
 				{
 					const { d: data } = args[0] as GatewayMessageDeleteDispatch;
 					const value = [...(args[1].components?.values ?? [])].find(x => x[1].messageId === data.id);
 					if (value) {
-						args[1].components!.onMessageDelete(value[0]);
+						args[1].components!.deleteValue(value[0], 'messageDelete');
 					}
 				}
 				break;
 			case 'MESSAGE_DELETE_BULK':
 				{
-					const { d: data } = args[0] as GatewayMessageDeleteBulkDispatch;
+					const { d: payload } = args[0] as GatewayMessageDeleteBulkDispatch;
 					const values = [...(args[1].components?.values ?? [])];
-					data.ids.forEach(id => {
-						const value = values.find(x => x[1].messageId === id);
-						if (value) {
-							args[1].components!.onMessageDelete(value[0]);
-						}
+					const value = values.find(x => {
+						return payload.ids.includes(x[0]);
 					});
+					if (value) {
+						args[1].components!.deleteValue(value[0], 'messageDelete');
+					}
+				}
+				break;
+			case 'GUILD_DELETE':
+				{
+					const { d: payload } = args[0] as GatewayGuildDeleteDispatch;
+					// ignore unavailable guilds?
+					if (payload.unavailable) break;
+					const values = [...(args[1].components?.values ?? [])];
+					const value = values.find(x => {
+						return payload.id === x[1].guildId;
+					});
+					if (value) {
+						args[1].components!.deleteValue(value[0], 'guildDelete');
+					}
+				}
+				break;
+			case 'THREAD_DELETE':
+			case 'CHANNEL_DELETE':
+				{
+					const { d: payload } = args[0] as GatewayChannelDeleteDispatch | GatewayThreadDeleteDispatch;
+					const values = [...(args[1].components?.values ?? [])];
+					const value = values.find(x => {
+						return payload.id === x[1].channelId || payload.id === x[1].threadId;
+					});
+					if (value) {
+						args[1].components!.deleteValue(value[0], 'channelDelete');
+					}
 				}
 				break;
 		}
@@ -166,7 +187,7 @@ export class EventHandler extends BaseHandler {
 					t: name,
 					d: packet,
 				} as GatewayDispatchPayload);
-			await Event.run(hook, client, shardId);
+			await (Event.run as any)(hook, client, shardId);
 		} catch (e) {
 			await this.onFail(name, e);
 		}

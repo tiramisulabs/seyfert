@@ -56,22 +56,19 @@ import type {
 	RESTPutAPIChannelRecipientResult,
 	RESTPutAPIChannelThreadMembersResult,
 } from '../../types';
-import type { ProxyRequestMethod } from '../Router';
-import type { RestArguments } from '../api';
+import type { RestArguments, RestArgumentsNoBody } from '../api';
 
 export interface ChannelRoutes {
 	channels(id: string): {
-		get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIChannelResult>;
-		patch(
-			args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIChannelJSONBody>,
-		): Promise<RESTPatchAPIChannelResult>;
-		delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIChannelResult>;
+		get(args?: RestArgumentsNoBody): Promise<RESTGetAPIChannelResult>;
+		patch(args: RestArguments<RESTPatchAPIChannelJSONBody>): Promise<RESTPatchAPIChannelResult>;
+		delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIChannelResult>;
 		users: (id: '@me') => {
 			threads: {
 				archived: {
 					private: {
 						get(
-							args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIChannelThreadsArchivedQuery>,
+							args?: RestArgumentsNoBody<RESTGetAPIChannelThreadsArchivedQuery>,
 						): Promise<RESTGetAPIChannelUsersThreadsArchivedResult>;
 					};
 				};
@@ -79,154 +76,127 @@ export interface ChannelRoutes {
 		};
 		'thread-members': {
 			get(
-				args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIChannelThreadMembersQuery>,
+				args?: RestArgumentsNoBody<RESTGetAPIChannelThreadMembersQuery>,
 			): Promise<RESTGetAPIChannelThreadMembersResult>;
 			(
 				id: '@me',
 			): {
-				put(args?: RestArguments<ProxyRequestMethod.Put>): Promise<RESTPutAPIChannelThreadMembersResult>;
-				delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIChannelThreadMembersResult>;
+				put(args?: RestArgumentsNoBody): Promise<RESTPutAPIChannelThreadMembersResult>;
+				delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIChannelThreadMembersResult>;
 			};
 			(
 				id: string,
 			): {
 				get(
-					args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIChannelThreadMemberQuery>,
+					args?: RestArgumentsNoBody<RESTGetAPIChannelThreadMemberQuery>,
 				): Promise<RESTGetAPIChannelThreadMemberResult>;
-				put(args?: RestArguments<ProxyRequestMethod.Put>): Promise<RESTPutAPIChannelThreadMembersResult>;
-				delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIChannelThreadMembersResult>;
+				put(args?: RestArgumentsNoBody): Promise<RESTPutAPIChannelThreadMembersResult>;
+				delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIChannelThreadMembersResult>;
 			};
 		};
 		threads: {
 			post(
-				args: RestArguments<
-					ProxyRequestMethod.Post,
-					RESTPostAPIChannelThreadsJSONBody | RESTPostAPIGuildForumThreadsJSONBody
-				>,
+				args: RestArguments<RESTPostAPIChannelThreadsJSONBody | RESTPostAPIGuildForumThreadsJSONBody>,
 			): Promise<RESTPostAPIChannelThreadsResult>;
 			archived: {
 				public: {
 					get(
-						args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIChannelThreadsArchivedQuery>,
+						args?: RestArgumentsNoBody<RESTGetAPIChannelThreadsArchivedQuery>,
 					): Promise<RESTGetAPIChannelThreadsArchivedPublicResult>;
 				};
 				private: {
 					get(
-						args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIChannelThreadsArchivedQuery>,
+						args?: RestArgumentsNoBody<RESTGetAPIChannelThreadsArchivedQuery>,
 					): Promise<RESTGetAPIChannelThreadsArchivedPrivateResult>;
 				};
 			};
 		};
 		recipients: (id: string) => {
-			put(
-				args?: RestArguments<ProxyRequestMethod.Put, RESTPutAPIChannelRecipientJSONBody>,
-			): Promise<RESTPutAPIChannelRecipientResult>;
-			delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIChannelRecipientResult>;
+			put(args?: RestArguments<RESTPutAPIChannelRecipientJSONBody>): Promise<RESTPutAPIChannelRecipientResult>;
+			delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIChannelRecipientResult>;
 		};
 		pins: {
-			get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIChannelPinsResult>;
+			get(args?: RestArgumentsNoBody): Promise<RESTGetAPIChannelPinsResult>;
 			(
 				id: string,
 			): {
-				put(args?: RestArguments<ProxyRequestMethod.Put>): Promise<RESTPutAPIChannelPinResult>;
-				delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIChannelPinResult>;
+				put(args?: RestArgumentsNoBody): Promise<RESTPutAPIChannelPinResult>;
+				delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIChannelPinResult>;
 			};
 		};
 		followers: {
-			post(
-				args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIChannelFollowersJSONBody>,
-			): Promise<RESTPostAPIChannelFollowersResult>;
+			post(args: RestArguments<RESTPostAPIChannelFollowersJSONBody>): Promise<RESTPostAPIChannelFollowersResult>;
 		};
 		permissions: (id: string) => {
-			put(
-				args?: RestArguments<ProxyRequestMethod.Put, RESTPutAPIChannelPermissionJSONBody>,
-			): Promise<RESTPutAPIChannelPermissionResult>;
-			delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIChannelPermissionResult>;
+			put(args?: RestArguments<RESTPutAPIChannelPermissionJSONBody>): Promise<RESTPutAPIChannelPermissionResult>;
+			delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIChannelPermissionResult>;
 		};
 		invites: {
-			get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIChannelInvitesResult>;
-			post(
-				args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIChannelInviteJSONBody>,
-			): Promise<RESTPostAPIChannelInviteResult>;
+			get(args?: RestArgumentsNoBody): Promise<RESTGetAPIChannelInvitesResult>;
+			post(args: RestArguments<RESTPostAPIChannelInviteJSONBody>): Promise<RESTPostAPIChannelInviteResult>;
 		};
 		messages: {
-			get(
-				args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIChannelMessagesQuery>,
-			): Promise<RESTGetAPIChannelMessagesResult>;
-			post(
-				args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIChannelMessageJSONBody>,
-			): Promise<RESTPostAPIChannelMessageResult>;
+			get(args?: RestArgumentsNoBody<RESTGetAPIChannelMessagesQuery>): Promise<RESTGetAPIChannelMessagesResult>;
+			post(args: RestArguments<RESTPostAPIChannelMessageJSONBody>): Promise<RESTPostAPIChannelMessageResult>;
 			'bulk-delete': {
 				post(
-					args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIChannelMessagesBulkDeleteJSONBody>,
+					args: RestArguments<RESTPostAPIChannelMessagesBulkDeleteJSONBody>,
 				): Promise<RESTPostAPIChannelMessagesBulkDeleteResult>;
 			};
 			(
 				id: string,
 			): {
-				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIChannelMessageResult>;
-				patch(
-					args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIChannelMessageJSONBody>,
-				): Promise<RESTPatchAPIChannelMessageResult>;
-				delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIChannelMessageResult>;
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIChannelMessageResult>;
+				patch(args: RestArguments<RESTPatchAPIChannelMessageJSONBody>): Promise<RESTPatchAPIChannelMessageResult>;
+				delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIChannelMessageResult>;
 				threads: {
 					post(
-						args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIChannelMessagesThreadsJSONBody>,
+						args: RestArguments<RESTPostAPIChannelMessagesThreadsJSONBody>,
 					): Promise<RESTPostAPIChannelMessagesThreadsResult>;
 				};
 				crosspost: {
-					post(args: RestArguments<ProxyRequestMethod.Post>): Promise<RESTPostAPIChannelMessageCrosspostResult>;
+					post(args: RestArgumentsNoBody): Promise<RESTPostAPIChannelMessageCrosspostResult>;
 				};
 				reactions: {
-					delete(
-						args?: RestArguments<ProxyRequestMethod.Delete>,
-					): Promise<RESTDeleteAPIChannelAllMessageReactionsResult>;
+					delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIChannelAllMessageReactionsResult>;
 					(
 						emoji: string,
 					): {
 						get(
-							args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIChannelMessageReactionUsersQuery>,
+							args?: RestArgumentsNoBody<RESTGetAPIChannelMessageReactionUsersQuery>,
 						): Promise<RESTGetAPIChannelMessageReactionUsersResult>;
-						delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIChannelMessageReactionResult>;
+						delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIChannelMessageReactionResult>;
 						(
 							id: '@me',
 						): {
-							put(args?: RestArguments<ProxyRequestMethod.Put>): Promise<RESTPutAPIChannelMessageReactionResult>;
-							delete(
-								args?: RestArguments<ProxyRequestMethod.Delete>,
-							): Promise<RESTDeleteAPIChannelMessageReactionResult>;
+							put(args?: RestArgumentsNoBody): Promise<RESTPutAPIChannelMessageReactionResult>;
+							delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIChannelMessageReactionResult>;
 						};
 						(
 							id: string,
 						): {
-							delete(
-								args?: RestArguments<ProxyRequestMethod.Delete>,
-							): Promise<RESTDeleteAPIChannelMessageReactionResult>;
+							delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIChannelMessageReactionResult>;
 						};
 					};
 				};
 			};
 		};
 		typing: {
-			post(args?: RestArguments<ProxyRequestMethod.Post>): Promise<RESTPostAPIChannelTypingResult>;
+			post(args?: RestArgumentsNoBody): Promise<RESTPostAPIChannelTypingResult>;
 		};
 		webhooks: {
-			get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildWebhooksResult>;
-			post(
-				args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIChannelWebhookJSONBody>,
-			): Promise<RESTPostAPIChannelWebhookResult>;
+			get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildWebhooksResult>;
+			post(args: RestArguments<RESTPostAPIChannelWebhookJSONBody>): Promise<RESTPostAPIChannelWebhookResult>;
 		};
 		'voice-status': {
-			put(args: RestArguments<ProxyRequestMethod.Put, { status: string | null }>): Promise<never>;
+			put(args: RestArguments<{ status: string | null }>): Promise<never>;
 		};
 		polls(messageId: string): {
 			answers(id: ValidAnswerId): {
-				get(
-					args?: RestArguments<ProxyRequestMethod.Get, never, RESTGetAPIPollAnswerVotersQuery>,
-				): Promise<RESTGetAPIPollAnswerVotersResult>;
+				get(args?: RestArgumentsNoBody<RESTGetAPIPollAnswerVotersQuery>): Promise<RESTGetAPIPollAnswerVotersResult>;
 			};
 			expire: {
-				post(args?: RestArguments<ProxyRequestMethod.Post>): Promise<RESTPostAPIPollExpireResult>;
+				post(args?: RestArgumentsNoBody): Promise<RESTPostAPIPollExpireResult>;
 			};
 		};
 	};

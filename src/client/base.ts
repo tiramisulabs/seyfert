@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { type APIRoutes, ApiHandler, Router } from '../api';
+import { ApiHandler } from '../api';
 import type { Adapter } from '../cache';
 import { Cache, MemoryAdapter } from '../cache';
 import type {
@@ -57,7 +57,6 @@ import type { MessageStructure } from './transformers';
 
 export class BaseClient {
 	rest!: ApiHandler;
-	proxy!: APIRoutes;
 	cache!: Cache;
 
 	applications = new ApplicationShorter(this);
@@ -169,6 +168,10 @@ export class BaseClient {
 		);
 	}
 
+	get proxy() {
+		return this.rest.proxy;
+	}
+
 	set botId(id: string) {
 		this._botId = id;
 	}
@@ -188,7 +191,6 @@ export class BaseClient {
 	setServices({ rest, cache, langs, middlewares, handleCommand }: ServicesOptions) {
 		if (rest) {
 			this.rest = rest;
-			this.proxy = new Router(this.rest).createProxy();
 		}
 		if (cache) {
 			const caches: (keyof Cache['disabledCache'])[] = [
@@ -204,7 +206,6 @@ export class BaseClient {
 				'roles',
 				'stageInstances',
 				'stickers',
-				'threads',
 				'users',
 				'voiceStates',
 			];
@@ -273,7 +274,6 @@ export class BaseClient {
 				domain: 'https://discord.com',
 				debug,
 			});
-			this.proxy = new Router(this.rest).createProxy();
 		}
 
 		if (this.cache) {

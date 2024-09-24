@@ -13,7 +13,6 @@ import { Presences } from './resources/presence';
 import { Roles } from './resources/roles';
 import { StageInstances } from './resources/stage-instances';
 import { Stickers } from './resources/stickers';
-import { Threads } from './resources/threads';
 import { VoiceStates } from './resources/voice-states';
 
 import type { InternalOptions, UsingClient } from '../commands';
@@ -47,7 +46,6 @@ export type GuildBased = 'members' | 'voiceStates';
 export type GuildRelated =
 	| 'emojis'
 	| 'roles'
-	| 'threads'
 	| 'channels'
 	| 'stickers'
 	| 'presences'
@@ -114,7 +112,6 @@ export class Cache {
 	overwrites?: Overwrites;
 	roles?: Roles;
 	emojis?: Emojis;
-	threads?: Threads;
 	channels?: Channels;
 	stickers?: Stickers;
 	presences?: Presences;
@@ -165,9 +162,6 @@ export class Cache {
 		if (!this.disabledCache.presences) {
 			this.presences = new Presences(this, client);
 		}
-		if (!this.disabledCache.threads) {
-			this.threads = new Threads(this, client);
-		}
 		if (!this.disabledCache.stageInstances) {
 			this.stageInstances = new StageInstances(this, client);
 		}
@@ -200,7 +194,6 @@ export class Cache {
 		this.emojis?.__setClient(client);
 		this.stickers?.__setClient(client);
 		this.presences?.__setClient(client);
-		this.threads?.__setClient(client);
 		this.stageInstances?.__setClient(client);
 		this.messages?.__setClient(client);
 		this.bans?.__setClient(client);
@@ -282,7 +275,6 @@ export class Cache {
 					}
 					break;
 				case 'roles':
-				case 'threads':
 				case 'stickers':
 				case 'channels':
 				case 'presences':
@@ -352,7 +344,6 @@ export class Cache {
 		for (const [type, data, id, guildId] of keys) {
 			switch (type) {
 				case 'roles':
-				case 'threads':
 				case 'stickers':
 				case 'channels':
 				case 'presences':
@@ -373,6 +364,16 @@ export class Cache {
 						relationshipsData[hashId].push(id);
 						if (type !== 'overwrites') {
 							data.guild_id = guildId;
+						}
+						if (
+							this.channels &&
+							type === 'channels' &&
+							[ChannelType.PublicThread, ChannelType.PrivateThread].includes(data.type) &&
+							'parent_id' in data
+						) {
+							const relationShip = this.channels.threads.buildKey(data.parent_id);
+							if (!relationshipsData[relationShip]) relationshipsData[relationShip] = [];
+							relationshipsData[relationShip].push(data.id);
 						}
 						allData.push([this[type]!.hashId(id), this[type]!.parse(data, id, guildId!)]);
 					}
@@ -444,7 +445,6 @@ export class Cache {
 		for (const [type, data, id, guildId] of keys) {
 			switch (type) {
 				case 'roles':
-				case 'threads':
 				case 'stickers':
 				case 'channels':
 				case 'presences':
@@ -464,6 +464,16 @@ export class Cache {
 						relationshipsData[hashId].push(id);
 						if (type !== 'overwrites') {
 							data.guild_id = guildId;
+						}
+						if (
+							this.channels &&
+							type === 'channels' &&
+							[ChannelType.PublicThread, ChannelType.PrivateThread].includes(data.type) &&
+							'parent_id' in data
+						) {
+							const relationShip = this.channels.threads.buildKey(data.parent_id);
+							if (!relationshipsData[relationShip]) relationshipsData[relationShip] = [];
+							relationshipsData[relationShip].push(data.id);
 						}
 						allData.push([this[type]!.hashId(id), this[type]!.parse(data, id, guildId!)]);
 					}
@@ -589,11 +599,11 @@ export class Cache {
 
 			case 'THREAD_CREATE':
 			case 'THREAD_UPDATE':
-				if (event.d.guild_id) await this.threads?.set(event.d.id, event.d.guild_id, event.d);
+				if (event.d.guild_id) await this.channels?.set(event.d.id, event.d.guild_id, event.d);
 				break;
 
 			case 'THREAD_DELETE':
-				await this.threads?.remove(event.d.id, event.d.guild_id);
+				await this.channels?.remove(event.d.id, event.d.guild_id);
 				break;
 
 			case 'USER_UPDATE':

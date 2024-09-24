@@ -4,7 +4,7 @@ import type { InteractionMessageUpdateBodyRequest, MessageWebhookCreateBodyReque
 import { BaseShorter } from './base';
 
 export class InteractionShorter extends BaseShorter {
-	async reply(id: string, token: string, body: ReplyInteractionBody) {
+	async reply(id: string, token: string, body: ReplyInteractionBody, withResponse = false) {
 		//@ts-expect-error
 		const { files, ...rest } = body.data ?? {};
 		//@ts-expect-error
@@ -22,6 +22,7 @@ export class InteractionShorter extends BaseShorter {
 					this.client,
 				),
 				files: parsedFiles,
+				query: { with_response: withResponse },
 			});
 	}
 
@@ -50,16 +51,16 @@ export class InteractionShorter extends BaseShorter {
 		return this.editMessage(token, '@original', body);
 	}
 
-	deleteResponse(interactionId: string, token: string, messageId: string) {
+	deleteResponse(token: string, messageId: string) {
 		return this.client.proxy
 			.webhooks(this.client.applicationId)(token)
 			.messages(messageId)
 			.delete()
-			.then(() => this.client.components?.onMessageDelete(messageId === '@original' ? interactionId : messageId));
+			.then(() => this.client.components?.deleteValue(messageId, 'messageDelete'));
 	}
 
-	deleteOriginal(interactionId: string, token: string) {
-		return this.deleteResponse(interactionId, token, '@original');
+	deleteOriginal(token: string) {
+		return this.deleteResponse(token, '@original');
 	}
 
 	async followup(token: string, { files, ...body }: MessageWebhookCreateBodyRequest) {

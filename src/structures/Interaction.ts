@@ -39,6 +39,7 @@ import {
 	type MessageFlags,
 	type RESTAPIAttachment,
 	type RESTPostAPIInteractionCallbackJSONBody,
+	type RESTPostAPIInteractionCallbackResult,
 } from '../types';
 
 import type { RawFile } from '../api';
@@ -100,7 +101,7 @@ export class BaseInteraction<
 	member!: When<FromGuild, InteractionGuildMemberStructure, undefined>;
 	channel?: AllChannels;
 	message?: MessageStructure;
-	replied?: Promise<boolean> | boolean;
+	replied?: Promise<boolean | RESTPostAPIInteractionCallbackResult | undefined> | boolean;
 	appPermissions?: PermissionsBitField;
 
 	constructor(
@@ -208,39 +209,54 @@ export class BaseInteraction<
 		return payload as T;
 	}
 
-	private async matchReplied(body: ReplyInteractionBody) {
+	private async matchReplied(body: ReplyInteractionBody, withResponse = false) {
 		if (this.__reply) {
 			//@ts-expect-error
 			const { files, ...rest } = body.data ?? {};
 			//@ts-expect-error
 			const data = body.data instanceof Modal ? body.data : rest;
 			const parsedFiles = files ? await resolveFiles(files) : undefined;
-			return (this.replied = this.__reply({
+			await (this.replied = this.__reply({
 				body: BaseInteraction.transformBodyRequest({ data, type: body.type }, parsedFiles, this.client),
 				files: parsedFiles,
 			}).then(() => (this.replied = true)));
+			return;
 		}
-		return (this.replied = this.client.interactions.reply(this.id, this.token, body).then(() => (this.replied = true)));
+		const result = await (this.replied = this.client.interactions.reply(this.id, this.token, body, withResponse));
+		this.replied = true;
+		return result?.resource?.message
+			? Transformers.WebhookMessage(this.client, result.resource.message as any, this.id, this.token)
+			: undefined;
 	}
 
-	async reply(body: ReplyInteractionBody) {
+	async reply<WR extends boolean = false>(
+		body: ReplyInteractionBody,
+		withResponse?: WR,
+	): Promise<When<WR, WebhookMessageStructure, undefined>> {
 		if (this.replied) {
 			throw new Error('Interaction already replied');
 		}
-		await this.matchReplied(body);
+		const result = await this.matchReplied(body, withResponse);
 		// @ts-expect-error
 		if (body.data instanceof Modal && body.data.__exec)
 			// @ts-expect-error
 			this.client.components.modals.set(this.user.id, (body.data as Modal).__exec);
+		return result as never;
 	}
 
-	deferReply(flags?: MessageFlags) {
-		return this.reply({
-			type: InteractionResponseType.DeferredChannelMessageWithSource,
-			data: {
-				flags,
+	deferReply<WR extends boolean = false>(
+		flags?: MessageFlags,
+		withResponse = false,
+	): Promise<When<WR, WebhookMessageStructure, undefined>> {
+		return this.reply(
+			{
+				type: InteractionResponseType.DeferredChannelMessageWithSource,
+				data: {
+					flags,
+				},
 			},
-		});
+			withResponse,
+		) as never;
 	}
 
 	isButton(): this is ButtonInteraction {
@@ -408,7 +424,7 @@ export class AutocompleteInteraction<FromGuild extends boolean = boolean> extend
 	}
 
 	/** @intenal */
-	async reply(..._args: unknown[]) {
+	async reply(..._args: unknown[]): Promise<any> {
 		throw new Error('Cannot use reply in this interaction');
 	}
 }
@@ -427,14 +443,15 @@ export class Interaction<
 
 	async write<FR extends boolean = false>(
 		body: InteractionCreateBodyRequest,
-		fetchReply?: FR,
+		withResponse?: FR,
 	): Promise<When<FR, WebhookMessageStructure, void>> {
-		(await this.reply({
-			type: InteractionResponseType.ChannelMessageWithSource,
-			data: body,
-		})) as never;
-		if (fetchReply) return this.fetchResponse() as never;
-		return undefined as never;
+		return this.reply(
+			{
+				type: InteractionResponseType.ChannelMessageWithSource,
+				data: body,
+			},
+			withResponse,
+		) as never;
 	}
 
 	modal(body: ModalCreateBodyRequest) {
@@ -469,7 +486,7 @@ export class Interaction<
 	}
 
 	deleteMessage(messageId: string) {
-		return this.client.interactions.deleteResponse(this.id, this.token, messageId);
+		return this.client.interactions.deleteResponse(this.token, messageId);
 	}
 
 	followup(body: MessageWebhookCreateBodyRequest) {

@@ -44,6 +44,7 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 
 	override async remove(id: string) {
 		const keysChannels = this.cache.channels?.keys(id) ?? [];
+		await Promise.all(keysChannels.map(x => this.cache.channels?.threads.delete(x)));
 		await this.cache.adapter.bulkRemove(
 			(
 				await Promise.all([
@@ -54,7 +55,6 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 					this.cache.stickers?.keys(id) ?? [],
 					this.cache.voiceStates?.keys(id) ?? [],
 					this.cache.presences?.keys(id) ?? [],
-					this.cache.threads?.keys(id) ?? [],
 					this.cache.stageInstances?.keys(id) ?? [],
 					this.cache.bans?.keys(id) ?? [],
 				])
@@ -80,7 +80,6 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 				this.cache.stickers?.hashId(id),
 				this.cache.voiceStates?.hashId(id),
 				this.cache.presences?.hashId(id),
-				this.cache.threads?.hashId(id),
 				this.cache.stageInstances?.hashId(id),
 			].filter(Boolean) as string[],
 		);
@@ -109,6 +108,10 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 				bulkData.push(['overwrites', channel.permission_overwrites, channel.id, id]);
 		}
 
+		for (const thread of data.threads ?? []) {
+			bulkData.push(['channels', thread, thread.id, id]);
+		}
+
 		for (const emoji of data.emojis ?? []) {
 			bulkData.push(['emojis', emoji, emoji.id, id]);
 		}
@@ -123,10 +126,6 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 
 		for (const presence of data.presences ?? []) {
 			bulkData.push(['presences', presence, presence.user.id, id]);
-		}
-
-		for (const thread of data.threads ?? []) {
-			bulkData.push(['threads', thread, thread.id, id]);
 		}
 
 		for (const instance of data.stage_instances ?? []) {
@@ -170,12 +169,13 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 
 		for (const channel of data.channels ?? []) {
 			bulkData.push(['channels', channel, channel.id, id]);
-		}
-
-		for (const channel of data.channels ?? []) {
 			if (channel.permission_overwrites?.length) {
 				bulkData.push(['overwrites', channel.permission_overwrites, channel.id, id]);
 			}
+		}
+
+		for (const thread of data.threads ?? []) {
+			bulkData.push(['channels', thread, thread.id, id]);
 		}
 
 		for (const emoji of data.emojis ?? []) {
@@ -192,10 +192,6 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 
 		for (const presence of data.presences ?? []) {
 			bulkData.push(['presences', presence, presence.user.id, id]);
-		}
-
-		for (const thread of data.threads ?? []) {
-			bulkData.push(['threads', thread, thread.id, id]);
 		}
 
 		for (const instance of data.stage_instances ?? []) {

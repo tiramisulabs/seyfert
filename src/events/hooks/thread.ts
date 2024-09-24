@@ -34,5 +34,5 @@ export const THREAD_UPDATE = async (
 	self: UsingClient,
 	data: GatewayThreadUpdateDispatchData,
 ): Promise<[thread: ThreadChannelStructure, old?: ThreadChannelStructure]> => {
-	return [Transformers.ThreadChannel(self, data), await self.cache.threads?.get(data.id)];
+	return [Transformers.ThreadChannel(self, data), (await self.cache.channels?.get(data.id)) as ThreadChannelStructure];
 };

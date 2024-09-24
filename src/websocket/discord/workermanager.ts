@@ -1,6 +1,6 @@
 import cluster, { type Worker as ClusterWorker } from 'node:cluster';
 import { randomUUID } from 'node:crypto';
-import { ApiHandler, Logger, Router } from '../..';
+import { ApiHandler, Logger } from '../..';
 import { type Adapter, MemoryAdapter } from '../../cache';
 import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
 import { type MakePartial, MergeOptions, lazyLoadPackage } from '../../common';
@@ -424,7 +424,7 @@ export class WorkerManager extends Map<
 			domain: 'https://discord.com',
 			debug: this.options.debug,
 		});
-		this.options.info ??= await new Router(this.rest).createProxy().gateway.bot.get();
+		this.options.info ??= await this.rest.proxy.gateway.bot.get();
 		this.options.shardEnd ??= this.options.totalShards ?? this.options.info.shards;
 		this.options.totalShards ??= this.options.shardEnd;
 		this.options = MergeOptions<Required<WorkerManagerOptions>>(WorkerManagerDefaults, this.options);

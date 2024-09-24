@@ -3,16 +3,13 @@ import type {
 	RESTGetAPISKUSubscriptionsQuery,
 	RESTGetAPISKUSubscriptionsResult,
 } from '../../types';
-import type { ProxyRequestMethod } from '../Router';
-import type { RestArguments } from '../api';
+import type { RestArguments, RestArgumentsNoBody } from '../api';
 
 export interface SKuRoutes {
 	skus(id: string): {
-		get: (
-			args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPISKUSubscriptionsQuery>,
-		) => Promise<RESTGetAPISKUSubscriptionsResult>;
+		get: (args?: RestArguments<RESTGetAPISKUSubscriptionsQuery>) => Promise<RESTGetAPISKUSubscriptionsResult>;
 		subscriptions(id: string): {
-			get: (args?: RestArguments<ProxyRequestMethod.Get>) => Promise<RESTGetAPISKUSubscriptionResult>;
+			get: (args?: RestArgumentsNoBody) => Promise<RESTGetAPISKUSubscriptionResult>;
 		};
 	};
 }

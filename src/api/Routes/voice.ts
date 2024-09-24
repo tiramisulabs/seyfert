@@ -1,11 +1,10 @@
 import type { RESTGetAPIVoiceRegionsResult } from '../../types';
-import type { ProxyRequestMethod } from '../Router';
-import type { RestArguments } from '../api';
+import type { RestArgumentsNoBody } from '../api';
 
 export interface VoiceRoutes {
 	voice: {
 		region: {
-			get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIVoiceRegionsResult>;
+			get(args?: RestArgumentsNoBody): Promise<RESTGetAPIVoiceRegionsResult>;
 		};
 	};
 }
