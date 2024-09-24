@@ -582,7 +582,7 @@ export interface GatewayGuildCreateDispatchData extends APIGuild {
 	 *
 	 * See https://discord.com/developers/docs/resources/channel#channel-object
 	 */
-	threads: APIChannel[];
+	threads: APIThreadChannel[];
 	/**
 	 * Presences of the members in the guild, will only include non-offline members if the size is greater than `large_threshold`
 	 *
