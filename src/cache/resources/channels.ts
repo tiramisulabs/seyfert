@@ -1,4 +1,3 @@
-import type { UsingClient } from '../../commands';
 import { fakePromise } from '../../common';
 import { type AllChannels, channelFrom } from '../../structures';
 import type { APIChannel } from '../../types';
@@ -7,10 +6,6 @@ import { GuildRelatedResource } from './default/guild-related';
 
 export class Channels extends GuildRelatedResource<any, APIChannel> {
 	namespace = 'channel';
-
-	__setClient(client: UsingClient): void {
-		super.__setClient(client);
-	}
 
 	parse(data: APIChannel, id: string, guild_id: string) {
 		const { permission_overwrites, ...rest } = super.parse(data, id, guild_id);
