@@ -364,8 +364,8 @@ export class Shard {
 
 	calculateSafeRequests(): number {
 		const safeRequests =
-			this.options.ratelimitOptions!.maxRequestsPerRateLimitTick -
-			Math.ceil(this.options.ratelimitOptions!.rateLimitResetInterval / this.heart.interval) * 2;
+			this.options.ratelimitOptions.maxRequestsPerRateLimitTick -
+			Math.ceil(this.options.ratelimitOptions.rateLimitResetInterval / this.heart.interval) * 2;
 
 		if (safeRequests < 0) {
 			return 0;

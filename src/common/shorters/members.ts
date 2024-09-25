@@ -56,7 +56,7 @@ export class MemberShorter extends BaseShorter {
 			members.map(x => [x.user.id, x] as [string, APIGuildMember]),
 			guildId,
 		);
-		return members.map(m => Transformers.GuildMember(this.client, m, m.user!, guildId));
+		return members.map(m => Transformers.GuildMember(this.client, m, m.user, guildId));
 	}
 
 	/**
@@ -103,7 +103,7 @@ export class MemberShorter extends BaseShorter {
 	async edit(guildId: string, memberId: string, body: RESTPatchAPIGuildMemberJSONBody, reason?: string) {
 		const member = await this.client.proxy.guilds(guildId).members(memberId).patch({ body, reason });
 		await this.client.cache.members?.setIfNI('GuildMembers', memberId, guildId, member);
-		return Transformers.GuildMember(this.client, member, member.user!, guildId);
+		return Transformers.GuildMember(this.client, member, member.user, guildId);
 	}
 
 	/**
@@ -123,9 +123,9 @@ export class MemberShorter extends BaseShorter {
 			return;
 		}
 
-		await this.client.cache.members?.setIfNI('GuildMembers', member.user!.id, guildId, member);
+		await this.client.cache.members?.setIfNI('GuildMembers', member.user.id, guildId, member);
 
-		return Transformers.GuildMember(this.client, member, member.user!, guildId);
+		return Transformers.GuildMember(this.client, member, member.user, guildId);
 	}
 
 	/**
@@ -168,8 +168,8 @@ export class MemberShorter extends BaseShorter {
 		members = await this.client.proxy.guilds(guildId).members.get({
 			query,
 		});
-		await this.client.cache.members?.set(members.map(x => [x.user!.id, x]) as [string, APIGuildMember][], guildId);
-		return members.map(m => Transformers.GuildMember(this.client, m, m.user!, guildId));
+		await this.client.cache.members?.set(members.map(x => [x.user.id, x]) as [string, APIGuildMember][], guildId);
+		return members.map(m => Transformers.GuildMember(this.client, m, m.user, guildId));
 	}
 
 	/**

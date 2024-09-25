@@ -234,8 +234,9 @@ export class BaseClient {
 			this.middlewares = middlewares;
 		}
 		if (langs) {
-			if (langs.default) this.langs!.defaultLang = langs.default;
-			if (langs.aliases) this.langs!.aliases = Object.entries(langs.aliases);
+			this.langs ??= new LangsHandler(this.logger);
+			if (langs.default) this.langs.defaultLang = langs.default;
+			if (langs.aliases) this.langs.aliases = Object.entries(langs.aliases);
 		}
 
 		if (handleCommand) this.handleCommand = new handleCommand(this);

@@ -226,7 +226,7 @@ export class ComponentHandler extends BaseHandler {
 		);
 		if (!component?.__filePath) return null;
 		delete require.cache[component.__filePath];
-		const index = this.client.components.commands.findIndex(x => x.__filePath === component.__filePath!);
+		const index = this.client.components.commands.findIndex(x => x.__filePath === component.__filePath);
 		if (index === -1) return null;
 		this.client.components.commands.splice(index, 1);
 		const imported = await magicImport(component.__filePath).then(x => x.default ?? x);

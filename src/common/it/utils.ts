@@ -345,8 +345,10 @@ export async function resolveEmoji(emoji: EmojiResolvable, cache: Cache): Promis
 		return fromCache && { animated: fromCache.animated, id: fromCache.id, name: fromCache.name };
 	}
 
-	const fromCache = await cache.emojis?.get(emoji.id!);
-	if (fromCache) return { animated: fromCache.animated, id: fromCache.id, name: fromCache.name };
+	if (emoji.id) {
+		const fromCache = await cache.emojis?.get(emoji.id);
+		if (fromCache) return { animated: fromCache.animated, id: fromCache.id, name: fromCache.name };
+	}
 	return;
 }
 

@@ -24,7 +24,7 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 			return this.cache.users && rawMessage?.user_id
 				? fakePromise(this.cache.adapter.get(this.cache.users.hashId(rawMessage.user_id)) as APIUser | undefined).then(
 						user => {
-							return user ? Transformers.Message(this.client, { ...rawMessage!, author: user }) : undefined;
+							return user ? Transformers.Message(this.client, { ...rawMessage, author: user }) : undefined;
 						},
 					)
 				: undefined;
@@ -44,7 +44,7 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 							? fakePromise(
 									this.cache.adapter.get(this.cache.users.hashId(rawMessage.user_id)) as APIUser | undefined,
 								).then(user => {
-									return user ? Transformers.Message(this.client, { ...rawMessage!, author: user }) : undefined;
+									return user ? Transformers.Message(this.client, { ...rawMessage, author: user }) : undefined;
 								})
 							: undefined;
 					})
@@ -59,7 +59,7 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 	override values(channel: string): ReturnCache<MessageStructure[]> {
 		return fakePromise(super.values(channel) as APIMessageResource[]).then(messages => {
 			const hashes: (string | undefined)[] = this.cache.users
-				? messages.map(x => (x.user_id ? this.cache.users!.hashId(x.user_id) : undefined))
+				? messages.map(x => (x.user_id ? this.cache.users?.hashId(x.user_id) : undefined))
 				: [];
 			return fakePromise(this.cache.adapter.bulkGet(hashes.filter(Boolean) as string[]) as APIUser[]).then(users => {
 				return messages

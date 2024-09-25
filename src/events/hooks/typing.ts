@@ -7,7 +7,7 @@ export const TYPING_START = (self: UsingClient, data: GatewayTypingStartDispatch
 	return data.member
 		? {
 				...toCamelCase(data),
-				member: Transformers.GuildMember(self, data.member, data.member.user!, data.guild_id!),
+				member: Transformers.GuildMember(self, data.member, data.member.user, data.guild_id!),
 			}
 		: toCamelCase(data);
 };

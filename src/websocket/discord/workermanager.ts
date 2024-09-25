@@ -15,7 +15,7 @@ export class WorkerManager extends Map<
 	number,
 	(ClusterWorker | import('node:worker_threads').Worker | { ready: boolean }) & { ready?: boolean }
 > {
-	options!: MakePartial<Required<WorkerManagerOptions>, 'adapter'>;
+	options: MakePartial<Required<WorkerManagerOptions>, 'adapter'>;
 	debugger?: Logger;
 	connectQueue!: ConnectQueue;
 	workerQueue: (() => void)[] = [];

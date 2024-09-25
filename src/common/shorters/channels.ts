@@ -50,9 +50,9 @@ export class ChannelShorter extends BaseShorter {
 	 * @returns A Promise that resolves to the deleted channel.
 	 */
 	async delete(id: string, optional: ChannelShorterOptionalParams = { guildId: '@me' }): Promise<AllChannels> {
-		const options = MergeOptions<ChannelShorterOptionalParams>({ guildId: '@me' }, optional);
+		const options = MergeOptions<MakeRequired<ChannelShorterOptionalParams, 'guildId'>>({ guildId: '@me' }, optional);
 		const res = await this.client.proxy.channels(id).delete({ reason: options.reason });
-		await this.client.cache.channels?.removeIfNI(BaseChannel.__intent__(options.guildId!), res.id, options.guildId!);
+		await this.client.cache.channels?.removeIfNI(BaseChannel.__intent__(options.guildId), res.id, options.guildId);
 		return channelFrom(res, this.client);
 	}
 
@@ -70,7 +70,7 @@ export class ChannelShorter extends BaseShorter {
 	): Promise<AllChannels> {
 		const options = MergeOptions<MakeRequired<ChannelShorterOptionalParams, 'guildId'>>({ guildId: '@me' }, optional);
 		const res = await this.client.proxy.channels(id).patch({ body, reason: options.reason });
-		await this.client.cache.channels?.setIfNI(BaseChannel.__intent__(options.guildId!), res.id, options.guildId!, res);
+		await this.client.cache.channels?.setIfNI(BaseChannel.__intent__(options.guildId), res.id, options.guildId, res);
 		if (body.permission_overwrites && 'permission_overwrites' in res && res.permission_overwrites)
 			await this.client.cache.overwrites?.setIfNI(
 				BaseChannel.__intent__(options.guildId),

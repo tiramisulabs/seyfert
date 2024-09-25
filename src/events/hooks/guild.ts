@@ -62,7 +62,7 @@ export const GUILD_INTEGRATIONS_UPDATE = (_self: UsingClient, data: GatewayGuild
 };
 
 export const GUILD_MEMBER_ADD = (self: UsingClient, data: GatewayGuildMemberAddDispatchData) => {
-	return Transformers.GuildMember(self, data, data.user!, data.guild_id);
+	return Transformers.GuildMember(self, data, data.user, data.guild_id);
 };
 
 export const GUILD_MEMBER_REMOVE = (self: UsingClient, data: GatewayGuildMemberRemoveDispatchData) => {
@@ -72,7 +72,7 @@ export const GUILD_MEMBER_REMOVE = (self: UsingClient, data: GatewayGuildMemberR
 export const GUILD_MEMBERS_CHUNK = (self: UsingClient, data: GatewayGuildMembersChunkDispatchData) => {
 	return {
 		...toCamelCase(data),
-		members: data.members.map(x => Transformers.GuildMember(self, x, x.user!, data.guild_id)),
+		members: data.members.map(x => Transformers.GuildMember(self, x, x.user, data.guild_id)),
 	};
 };
 
