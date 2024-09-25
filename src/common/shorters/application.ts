@@ -1,4 +1,4 @@
-import { Entitlement } from '../../structures/Entitlement';
+import { Transformers } from '../../client';
 import type {
 	APIEntitlement,
 	RESTGetAPIEntitlementsQuery,
@@ -46,7 +46,7 @@ export class ApplicationShorter extends BaseShorter {
 		return this.client.proxy
 			.applications(applicationId)
 			.entitlements.get({ query })
-			.then(et => et.map(e => new Entitlement(this.client, e)));
+			.then(et => et.map(e => Transformers.Entitlement(this.client, e)));
 	}
 
 	/**
@@ -67,7 +67,7 @@ export class ApplicationShorter extends BaseShorter {
 		return this.client.proxy
 			.applications(applicationId)
 			.entitlements.post({ body })
-			.then(et => new Entitlement(this.client, et as APIEntitlement));
+			.then(et => Transformers.Entitlement(this.client, et as APIEntitlement));
 	}
 
 	/**

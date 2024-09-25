@@ -45,6 +45,7 @@ import {
 import type { RawFile } from '../api';
 import { ActionRow, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
 import {
+	type EntitlementStructure,
 	type GuildRoleStructure,
 	type InteractionGuildMemberStructure,
 	type MessageStructure,
@@ -70,7 +71,6 @@ import {
 } from '../common';
 import { mix } from '../deps/mixer';
 import { type AllChannels, channelFrom } from './';
-import { Entitlement } from './Entitlement';
 import { DiscordBase } from './extra/DiscordBase';
 import { PermissionsBitField } from './extra/Permissions';
 
@@ -103,6 +103,7 @@ export class BaseInteraction<
 	message?: MessageStructure;
 	replied?: Promise<boolean | RESTPostAPIInteractionCallbackResult | undefined> | boolean;
 	appPermissions?: PermissionsBitField;
+	entitlements: EntitlementStructure[];
 
 	constructor(
 		readonly client: UsingClient,
@@ -129,7 +130,7 @@ export class BaseInteraction<
 		}
 		this.user = this.member?.user ?? Transformers.User(client, interaction.user!);
 
-		this.entitlements = interaction.entitlements.map(e => new Entitlement(this.client, e));
+		this.entitlements = interaction.entitlements.map(e => Transformers.Entitlement(this.client, e));
 	}
 
 	static transformBodyRequest(
@@ -393,6 +394,7 @@ export class AutocompleteInteraction<FromGuild extends boolean = boolean> extend
 	declare type: InteractionType.ApplicationCommandAutocomplete;
 	declare data: ObjectToLower<APIApplicationCommandAutocompleteInteraction['data']>;
 	options: OptionResolverStructure;
+	declare entitlements: EntitlementStructure[];
 	constructor(
 		client: UsingClient,
 		interaction: APIApplicationCommandAutocompleteInteraction,
@@ -585,6 +587,7 @@ export class ComponentInteraction<
 	declare channel: AllChannels;
 	declare type: InteractionType.MessageComponent;
 	declare message: MessageStructure;
+	declare entitlements: EntitlementStructure[];
 
 	update(data: ComponentInteractionMessageUpdate) {
 		return this.reply({
