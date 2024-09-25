@@ -44,7 +44,6 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 
 	override async remove(id: string) {
 		const keysChannels = this.cache.channels?.keys(id) ?? [];
-		await Promise.all(keysChannels.map(x => this.cache.channels?.threads.delete(x)));
 		await this.cache.adapter.bulkRemove(
 			(
 				await Promise.all([

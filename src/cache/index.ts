@@ -365,16 +365,6 @@ export class Cache {
 						if (type !== 'overwrites') {
 							data.guild_id = guildId;
 						}
-						if (
-							this.channels &&
-							type === 'channels' &&
-							[ChannelType.PublicThread, ChannelType.PrivateThread].includes(data.type) &&
-							'parent_id' in data
-						) {
-							const relationShip = this.channels.threads.buildKey(data.parent_id);
-							if (!relationshipsData[relationShip]) relationshipsData[relationShip] = [];
-							relationshipsData[relationShip].push(data.id);
-						}
 						allData.push([this[type]!.hashId(id), this[type]!.parse(data, id, guildId!)]);
 					}
 					break;
@@ -464,16 +454,6 @@ export class Cache {
 						relationshipsData[hashId].push(id);
 						if (type !== 'overwrites') {
 							data.guild_id = guildId;
-						}
-						if (
-							this.channels &&
-							type === 'channels' &&
-							[ChannelType.PublicThread, ChannelType.PrivateThread].includes(data.type) &&
-							'parent_id' in data
-						) {
-							const relationShip = this.channels.threads.buildKey(data.parent_id);
-							if (!relationshipsData[relationShip]) relationshipsData[relationShip] = [];
-							relationshipsData[relationShip].push(data.id);
 						}
 						allData.push([this[type]!.hashId(id), this[type]!.parse(data, id, guildId!)]);
 					}

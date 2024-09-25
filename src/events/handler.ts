@@ -12,13 +12,15 @@ import {
 } from '../common';
 import type { ClientEvents } from '../events/hooks';
 import * as RawEvents from '../events/hooks';
-import type {
-	GatewayChannelDeleteDispatch,
-	GatewayDispatchPayload,
-	GatewayGuildDeleteDispatch,
-	GatewayMessageDeleteBulkDispatch,
-	GatewayMessageDeleteDispatch,
-	GatewayThreadDeleteDispatch,
+import {
+	type APIThreadChannel,
+	ChannelType,
+	type GatewayChannelDeleteDispatch,
+	type GatewayDispatchPayload,
+	type GatewayGuildDeleteDispatch,
+	type GatewayMessageDeleteBulkDispatch,
+	type GatewayMessageDeleteDispatch,
+	type GatewayThreadDeleteDispatch,
 } from '../types';
 import type { ClientEvent, ClientNameEvents, CustomEvents, CustomEventsKeys, EventContext } from './event';
 
@@ -107,49 +109,75 @@ export class EventHandler extends BaseHandler {
 		switch (name) {
 			case 'MESSAGE_DELETE':
 				{
+					if (!args[1].components?.values.size) break;
 					const { d: data } = args[0] as GatewayMessageDeleteDispatch;
-					const value = [...(args[1].components?.values ?? [])].find(x => x[1].messageId === data.id);
+					const value = args[1].components.values.get(data.id);
 					if (value) {
-						args[1].components!.deleteValue(value[0], 'messageDelete');
+						args[1].components.deleteValue(value.messageId, 'messageDelete');
 					}
 				}
 				break;
 			case 'MESSAGE_DELETE_BULK':
 				{
+					if (!args[1].components?.values.size) break;
 					const { d: payload } = args[0] as GatewayMessageDeleteBulkDispatch;
-					const values = [...(args[1].components?.values ?? [])];
-					const value = values.find(x => {
-						return payload.ids.includes(x[0]);
-					});
-					if (value) {
-						args[1].components!.deleteValue(value[0], 'messageDelete');
+					for (const id of payload.ids) {
+						const value = args[1].components.values.get(id);
+						if (value) {
+							args[1].components.deleteValue(value.messageId, 'messageDelete');
+						}
 					}
 				}
 				break;
 			case 'GUILD_DELETE':
 				{
+					if (!args[1].components?.values.size) break;
 					const { d: payload } = args[0] as GatewayGuildDeleteDispatch;
 					// ignore unavailable guilds?
 					if (payload.unavailable) break;
-					const values = [...(args[1].components?.values ?? [])];
-					const value = values.find(x => {
-						return payload.id === x[1].guildId;
-					});
-					if (value) {
-						args[1].components!.deleteValue(value[0], 'guildDelete');
+					for (const [messageId, value] of args[1].components.values) {
+						if (value.guildId === payload.id) args[1].components.deleteValue(messageId, 'guildDelete');
+					}
+				}
+				break;
+			case 'CHANNEL_DELETE':
+				{
+					if (!args[1].components?.values.size) break;
+					const { d: payload } = args[0] as GatewayChannelDeleteDispatch;
+
+					if (payload.type === ChannelType.DM || payload.type === ChannelType.GroupDM) {
+						for (const value of args[1].components.values) {
+							if (payload.id === value[1].channelId) args[1].components.deleteValue(value[0], 'channelDelete');
+						}
+					} else {
+						if (!payload.guild_id) break;
+						// this is why we dont recommend to use collectors, use ComponentCommand instead
+						const channels = await args[1].cache.channels?.valuesRaw(payload.guild_id);
+						const threads = channels
+							?.filter(
+								x =>
+									[ChannelType.PublicThread, ChannelType.PrivateThread, ChannelType.AnnouncementThread].includes(
+										x.type,
+									) && (x as APIThreadChannel).parent_id === payload.id,
+							)
+							.map(x => x.id);
+						for (const value of args[1].components.values) {
+							const channelId = value[1].channelId;
+							if (payload.id === channelId || threads?.includes(channelId)) {
+								args[1].components.deleteValue(value[0], 'channelDelete');
+							}
+						}
 					}
 				}
 				break;
 			case 'THREAD_DELETE':
-			case 'CHANNEL_DELETE':
 				{
-					const { d: payload } = args[0] as GatewayChannelDeleteDispatch | GatewayThreadDeleteDispatch;
-					const values = [...(args[1].components?.values ?? [])];
-					const value = values.find(x => {
-						return payload.id === x[1].channelId || payload.id === x[1].threadId;
-					});
-					if (value) {
-						args[1].components!.deleteValue(value[0], 'channelDelete');
+					if (!args[1].components?.values.size) break;
+					const { d: payload } = args[0] as GatewayThreadDeleteDispatch;
+					for (const value of args[1].components.values) {
+						if (value[1].channelId === payload.id) {
+							args[1].components.deleteValue(value[0], 'channelDelete');
+						}
 					}
 				}
 				break;

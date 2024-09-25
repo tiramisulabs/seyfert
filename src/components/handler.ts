@@ -13,8 +13,7 @@ type COMPONENTS = {
 	components: { match: string | string[] | RegExp; callback: ComponentCallback }[];
 	options?: ListenerOptions;
 	messageId: string;
-	threadId: string | undefined;
-	channelId: string | undefined;
+	channelId: string;
 	guildId: string | undefined;
 	idle?: NodeJS.Timeout;
 	timeout?: NodeJS.Timeout;
@@ -48,14 +47,12 @@ export class ComponentHandler extends BaseHandler {
 
 	createComponentCollector(
 		messageId: string,
-		channelId: string | undefined,
-		threadId: string | undefined,
+		channelId: string,
 		guildId: string | undefined,
 		options: ListenerOptions = {},
 	): CreateComponentCollectorResult {
 		this.values.set(messageId, {
 			messageId,
-			threadId,
 			channelId,
 			guildId,
 			options,
@@ -65,7 +62,7 @@ export class ComponentHandler extends BaseHandler {
 					? setTimeout(() => {
 							this.deleteValue(messageId);
 							options.onStop?.('idle', () => {
-								this.createComponentCollector(messageId, channelId, threadId, guildId, options);
+								this.createComponentCollector(messageId, channelId, guildId, options);
 							});
 						}, options.idle)
 					: undefined,
@@ -74,7 +71,7 @@ export class ComponentHandler extends BaseHandler {
 					? setTimeout(() => {
 							this.deleteValue(messageId);
 							options.onStop?.('timeout', () => {
-								this.createComponentCollector(messageId, channelId, threadId, guildId, options);
+								this.createComponentCollector(messageId, channelId, guildId, options);
 							});
 						}, options.timeout)
 					: undefined,
@@ -94,7 +91,7 @@ export class ComponentHandler extends BaseHandler {
 			stop: (reason?: string) => {
 				this.deleteValue(messageId);
 				options.onStop?.(reason, () => {
-					this.createComponentCollector(messageId, channelId, threadId, guildId, options);
+					this.createComponentCollector(messageId, channelId, guildId, options);
 				});
 			},
 		};

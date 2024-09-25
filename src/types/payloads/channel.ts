@@ -573,7 +573,7 @@ export interface APIMessage {
 	/**
 	 * Sent if a thread was started from this message
 	 */
-	thread?: APIChannel;
+	thread?: APIThreadChannel;
 	/**
 	 * Sent if the message contains components like buttons, action rows, or other interactive components
 	 *
