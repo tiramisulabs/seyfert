@@ -1,6 +1,7 @@
 import type { ThreadChannelStructure } from '../../client/transformers';
 import { channelFrom } from '../../structures';
 import type {
+	APIThreadChannel,
 	APIThreadMember,
 	RESTGetAPIChannelThreadMembersQuery,
 	RESTGetAPIChannelThreadsArchivedQuery,
@@ -29,7 +30,15 @@ export class ThreadShorter extends BaseShorter {
 				.channels(channelId)
 				.threads.post({ body, reason })
 				// When testing this, discord returns the thread object, but in discord api types it does not.
-				.then(thread => channelFrom(thread, this.client) as ThreadChannelStructure)
+				.then(async thread => {
+					await this.client.cache.channels?.setIfNI(
+						'Guilds',
+						thread.id,
+						(thread as APIThreadChannel).guild_id!,
+						thread,
+					);
+					return channelFrom(thread, this.client) as ThreadChannelStructure;
+				})
 		);
 	}
 
@@ -44,30 +53,33 @@ export class ThreadShorter extends BaseShorter {
 			.channels(channelId)
 			.messages(messageId)
 			.threads.post({ body, reason })
-			.then(thread => channelFrom(thread, this.client) as ThreadChannelStructure);
+			.then(async thread => {
+				await this.client.cache.channels?.setIfNI('Guilds', thread.id, (thread as APIThreadChannel).guild_id!, thread);
+				return channelFrom(thread, this.client) as ThreadChannelStructure;
+			});
 	}
 
-	async join(threadId: string) {
+	join(threadId: string) {
 		return this.client.proxy.channels(threadId)['thread-members']('@me').put();
 	}
 
-	async leave(threadId: string) {
+	leave(threadId: string) {
 		return this.client.proxy.channels(threadId)['thread-members']('@me').delete();
 	}
 
-	async lock(threadId: string, locked = true, reason?: string) {
+	lock(threadId: string, locked = true, reason?: string) {
 		return this.edit(threadId, { locked }, reason).then(x => channelFrom(x, this.client) as ThreadChannelStructure);
 	}
 
-	async edit(threadId: string, body: RESTPatchAPIChannelJSONBody, reason?: string) {
+	edit(threadId: string, body: RESTPatchAPIChannelJSONBody, reason?: string) {
 		return this.client.channels.edit(threadId, body, { reason });
 	}
 
-	async removeMember(threadId: string, memberId: string) {
+	removeMember(threadId: string, memberId: string) {
 		return this.client.proxy.channels(threadId)['thread-members'](memberId).delete();
 	}
 
-	async fetchMember<WithMember extends boolean = false>(
+	fetchMember<WithMember extends boolean = false>(
 		threadId: string,
 		memberId: string,
 		with_member: WithMember,
@@ -79,11 +91,11 @@ export class ThreadShorter extends BaseShorter {
 		}) as never;
 	}
 
-	async addMember(threadId: string, memberId: string) {
+	addMember(threadId: string, memberId: string) {
 		return this.client.proxy.channels(threadId)['thread-members'](memberId).put();
 	}
 
-	async listMembers<T extends RESTGetAPIChannelThreadMembersQuery = RESTGetAPIChannelThreadMembersQuery>(
+	listMembers<T extends RESTGetAPIChannelThreadMembersQuery = RESTGetAPIChannelThreadMembersQuery>(
 		threadId: string,
 		query?: T,
 	): Promise<InferWithMemberOnList<T>> {
