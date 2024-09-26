@@ -49,7 +49,7 @@ export interface WebhookRoutes {
 				): Promise<RESTPostAPIWebhookWithTokenGitHubResult | RESTPostAPIWebhookWithTokenGitHubWaitResult>;
 			};
 			messages: (id: string) => {
-				get(args?: RestArgumentsNoBody<{ thread_id?: string }>): Promise<RESTGetAPIWebhookWithTokenMessageResult>;
+				get(args?: RestArgumentsNoBody<{ thread_id: string }>): Promise<RESTGetAPIWebhookWithTokenMessageResult>;
 				patch(
 					args: RestArguments<RESTPatchAPIWebhookWithTokenMessageJSONBody>,
 				): Promise<RESTPatchAPIWebhookWithTokenMessageResult>;

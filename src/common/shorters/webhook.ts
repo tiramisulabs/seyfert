@@ -146,7 +146,7 @@ export class WebhookShorter extends BaseShorter {
 		const message = await this.client.proxy
 			.webhooks(webhookId)(token)
 			.messages(messageId)
-			.get({ auth: false, query: { thread_id: threadId } });
+			.get({ auth: false, query: threadId ? { thread_id: threadId } : undefined });
 		return message ? Transformers.WebhookMessage(this.client, message, webhookId, token) : undefined;
 	}
 
