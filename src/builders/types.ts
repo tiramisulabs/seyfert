@@ -28,5 +28,6 @@ export interface ListenerOptions {
 	timeout?: number;
 	idle?: number;
 	filter?: ComponentFilterCallback;
+	onPass?: ComponentFilterCallback;
 	onStop?: ComponentStopCallback;
 }

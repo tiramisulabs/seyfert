@@ -106,7 +106,7 @@ export class ComponentHandler extends BaseHandler {
 		});
 		if (!component) return;
 		if (row.options?.filter) {
-			if (!(await row.options.filter(interaction))) return;
+			if (!(await row.options.filter(interaction))) return row.options.onPass?.(interaction);
 		}
 		row.idle?.refresh();
 		await component.callback(
