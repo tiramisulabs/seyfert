@@ -12,8 +12,8 @@ export type ComponentCallback<
 > = (interaction: T, stop: ComponentStopCallback, refresh: ComponentRefreshCallback) => any;
 export type ComponentFilterCallback<T = ComponentInteraction> = (interaction: T) => any;
 export type ComponentStopCallback = (
-	reason?: 'messageDelete' | 'channelDelete' | 'guildDelete' | (string & {}),
-	refresh?: ComponentRefreshCallback,
+	reason: 'messageDelete' | 'channelDelete' | 'guildDelete' | (string & {}) | undefined,
+	refresh: ComponentRefreshCallback,
 ) => any;
 export type ComponentRefreshCallback = () => any;
 export type ModalSubmitCallback<T = ModalSubmitInteraction> = (interaction: T) => any;

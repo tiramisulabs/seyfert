@@ -112,7 +112,9 @@ export class ComponentHandler extends BaseHandler {
 		await component.callback(
 			interaction,
 			reason => {
-				row.options?.onStop?.(reason ?? 'stop');
+				row.options?.onStop?.(reason ?? 'stop', () => {
+					this.createComponentCollector(row.messageId, row.channelId, row.guildId, row.options);
+				});
 				this.deleteValue(id);
 			},
 			() => {
@@ -151,7 +153,9 @@ export class ComponentHandler extends BaseHandler {
 	deleteValue(id: string, reason?: string) {
 		const component = this.values.get(id);
 		if (component) {
-			if (reason !== undefined) component.options?.onStop?.(reason);
+			component.options?.onStop?.(reason, () => {
+				this.createComponentCollector(component.messageId, component.channelId, component.guildId, component.options);
+			});
 			clearTimeout(component.timeout);
 			clearTimeout(component.idle);
 			this.values.delete(id);
