@@ -35,6 +35,7 @@ import type {
 	GatewayThreadListSync as RawGatewayThreadListSync,
 	GatewayThreadMembersUpdate as RawGatewayThreadMembersUpdate,
 } from './payloads/index';
+import type { APISoundBoard } from './payloads/soundboard';
 import type { ReactionType } from './rest/index';
 import type { AnimationTypes, Nullable } from './utils';
 
@@ -968,6 +969,40 @@ export interface GatewayGuildScheduledEventUserRemoveDispatchData {
 	guild_id: Snowflake;
 }
 
+export type GatewayGuildSoundboardSoundCreateDispatchData = APISoundBoard;
+
+export type GatewayGuildSoundboardSoundCreateDispatch = DataPayload<
+	GatewayDispatchEvents.GuildSoundboardSoundCreate,
+	GatewayGuildSoundboardSoundCreateDispatchData
+>;
+
+export type GatewayGuildSoundboardSoundUpdateDispatchData = APISoundBoard;
+
+export type GatewayGuildSoundboardSoundUpdateDispatch = DataPayload<
+	GatewayDispatchEvents.GuildSoundboardSoundUpdate,
+	GatewayGuildSoundboardSoundUpdateDispatchData
+>;
+
+export type GatewayGuildSoundboardSoundDeleteDispatchData = APISoundBoard;
+
+export type GatewayGuildSoundboardSoundDeleteDispatch = DataPayload<
+	GatewayDispatchEvents.GuildSoundboardSoundDelete,
+	GatewayGuildSoundboardSoundDeleteDispatchData
+>;
+
+export type GatewayGuildSoundboardSoundsUpdateDispatchData = APISoundBoard;
+
+export type GatewayGuildSoundboardSoundsUpdateDispatch = DataPayload<
+	GatewayDispatchEvents.GuildSoundboardSoundsUpdate,
+	GatewayGuildSoundboardSoundsUpdateDispatchData
+>;
+
+export interface GatewaySoundboardSoundsDispatchData {
+	/** The guild's soundboard sounds */
+	soundboard_sounds: APISoundBoard[];
+	/** ID of the guild */
+	guild_id: string;
+}
 /**
  * https://discord.com/developers/docs/topics/gateway-events#integration-create
  */
@@ -1862,6 +1897,21 @@ export type GatewayRequestGuildMembersData =
 	| GatewayRequestGuildMembersDataWithQuery
 	| GatewayRequestGuildMembersDataWithUserIds;
 
+/**
+ * https://discord.com/developers/docs/topics/gateway-events#request-soundboard-sounds
+ */
+export interface GatewayRequestSoundboardSounds {
+	op: GatewayOpcodes.RequestSoundboardSounds;
+	d: GatewayRequestSoundboardSoundsData;
+}
+
+/**
+ * https://discord.com/developers/docs/topics/gateway-events#request-soundboard-sounds-request-soundboard-sounds-structure
+ */
+export interface GatewayRequestSoundboardSoundsData {
+	/** IDs of the guilds to get soundboard sounds for */
+	guild_ids: string[];
+}
 /**
  * https://discord.com/developers/docs/topics/gateway-events#update-voice-state
  */
