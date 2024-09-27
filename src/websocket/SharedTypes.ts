@@ -29,6 +29,8 @@ import type {
 	GatewayGuildRoleDeleteDispatchData,
 	GatewayGuildRoleUpdateDispatchData,
 	GatewayGuildScheduledEventUserRemoveDispatchData,
+	GatewayGuildSoundboardSoundDeleteDispatchData,
+	GatewayGuildSoundboardSoundsUpdateDispatchData,
 	GatewayGuildStickersUpdateDispatchData,
 	GatewayIntegrationCreateDispatchData,
 	GatewayIntegrationDeleteDispatchData,
@@ -49,6 +51,7 @@ import type {
 	GatewayReadyDispatchData,
 	GatewayRequestGuildMembersDataWithQuery,
 	GatewayRequestGuildMembersDataWithUserIds,
+	GatewaySoundboardSoundsDispatchData,
 	GatewayThreadCreateDispatchData,
 	GatewayThreadDeleteDispatchData,
 	GatewayThreadListSyncDispatchData,
@@ -63,6 +66,7 @@ import type {
 	PresenceUpdateStatus,
 } from '../types';
 import { GatewayDispatchEvents } from '../types';
+import type { APISoundBoard } from '../types/payloads/soundboard';
 
 /** https://discord.com/developers/docs/topics/gateway-events#update-presence */
 export interface StatusUpdate {
@@ -123,6 +127,9 @@ export interface Events {
 	[GatewayDispatchEvents.GuildEmojisUpdate]: GatewayGuildEmojisUpdateDispatchData;
 	[GatewayDispatchEvents.GuildStickersUpdate]: GatewayGuildStickersUpdateDispatchData;
 	[GatewayDispatchEvents.GuildIntegrationsUpdate]: GatewayGuildIntegrationsUpdateDispatchData;
+	[GatewayDispatchEvents.GuildSoundboardSoundsUpdate]: GatewayGuildSoundboardSoundsUpdateDispatchData;
+	[GatewayDispatchEvents.GuildSoundboardSoundDelete]: GatewayGuildSoundboardSoundDeleteDispatchData;
+	[GatewayDispatchEvents.SoundboardSounds]: GatewaySoundboardSoundsDispatchData;
 	[GatewayDispatchEvents.GuildMemberAdd]: GatewayGuildMemberAddDispatchData;
 	[GatewayDispatchEvents.GuildMemberRemove]: GatewayGuildMemberRemoveDispatchData;
 	[GatewayDispatchEvents.GuildMemberUpdate]: GatewayGuildMemberUpdateDispatchData;
@@ -225,6 +232,10 @@ export type SubscriptionEvents = RestToKeys<
 	]
 >;
 
+export type SoundboardSoundsEvents = RestToKeys<
+	[APISoundBoard, GatewayDispatchEvents.GuildSoundboardSoundCreate, GatewayDispatchEvents.GuildSoundboardSoundUpdate]
+>;
+
 export type NormalizeEvents = Events &
 	AutoModetaractionRuleEvents &
 	ChannelSameEvents &
@@ -234,6 +245,9 @@ export type NormalizeEvents = Events &
 	EntitlementEvents &
 	PollVoteSameEvents &
 	StageSameEvents &
-	SubscriptionEvents & { RAW: GatewayDispatchEvents };
+	SubscriptionEvents &
+	SoundboardSoundsEvents & {
+		RAW: GatewayDispatchEvents;
+	};
 
 export type GatewayEvents = { [x in keyof NormalizeEvents]: NormalizeEvents[x] };

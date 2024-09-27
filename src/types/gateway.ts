@@ -990,7 +990,7 @@ export type GatewayGuildSoundboardSoundDeleteDispatch = DataPayload<
 	GatewayGuildSoundboardSoundDeleteDispatchData
 >;
 
-export type GatewayGuildSoundboardSoundsUpdateDispatchData = APISoundBoard;
+export type GatewayGuildSoundboardSoundsUpdateDispatchData = APISoundBoard[];
 
 export type GatewayGuildSoundboardSoundsUpdateDispatch = DataPayload<
 	GatewayDispatchEvents.GuildSoundboardSoundsUpdate,
