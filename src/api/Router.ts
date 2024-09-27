@@ -77,7 +77,7 @@ export function parseCDNURL(route: string, options: CDNUrlOptions = {}) {
 
 	options.extension ||= route.includes('soundboard') ? 'ogg' : 'png';
 
-	const url = new URL(`${route}.${options.extension || 'png'}`);
+	const url = new URL(`${route}.${options.extension}`);
 
 	if (options.size) url.searchParams.set('size', `${options.size}`);
 
