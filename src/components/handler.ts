@@ -12,7 +12,9 @@ import type { ModalContext } from './modalcontext';
 type COMPONENTS = {
 	components: { match: string | string[] | RegExp; callback: ComponentCallback }[];
 	options?: ListenerOptions;
-	messageId?: string;
+	messageId: string;
+	channelId: string;
+	guildId: string | undefined;
 	idle?: NodeJS.Timeout;
 	timeout?: NodeJS.Timeout;
 	__run: (customId: string | string[] | RegExp, callback: ComponentCallback) => any;
@@ -20,11 +22,18 @@ type COMPONENTS = {
 
 export type CollectorInteraction = ComponentInteraction | StringSelectMenuInteraction;
 export type ComponentCommands = ComponentCommand | ModalCommand;
+export interface CreateComponentCollectorResult {
+	run<T extends CollectorInteraction = CollectorInteraction>(
+		customId: string | string[] | RegExp,
+		callback: ComponentCallback<T>,
+	): any;
+	stop(reason?: string): any;
+}
 
 export class ComponentHandler extends BaseHandler {
 	onFail: OnFailCallback = err => this.logger.warn('<Client>.components.onFail', err);
 	readonly values = new Map<string, COMPONENTS>();
-	// 10 minutes timeout, because discord dont send an event when the user cancel the modal
+	// 10 minutes of timeout by default, because discord doesnt send an event when the user cancels the modal
 	readonly modals = new LimitedCollection<string, ModalSubmitCallback>({ expire: 60e3 * 10 });
 	readonly commands: ComponentCommands[] = [];
 	filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
@@ -38,23 +47,22 @@ export class ComponentHandler extends BaseHandler {
 
 	createComponentCollector(
 		messageId: string,
+		channelId: string,
+		guildId: string | undefined,
 		options: ListenerOptions = {},
-	): {
-		run<T extends CollectorInteraction = CollectorInteraction>(
-			customId: string | string[] | RegExp,
-			callback: ComponentCallback<T>,
-		): any;
-		stop(reason?: string): any;
-	} {
+	): CreateComponentCollectorResult {
 		this.values.set(messageId, {
-			components: [],
+			messageId,
+			channelId,
+			guildId,
 			options,
+			components: [],
 			idle:
 				options.idle && options.idle > 0
 					? setTimeout(() => {
 							this.deleteValue(messageId);
 							options.onStop?.('idle', () => {
-								this.createComponentCollector(messageId, options);
+								this.createComponentCollector(messageId, channelId, guildId, options);
 							});
 						}, options.idle)
 					: undefined,
@@ -63,7 +71,7 @@ export class ComponentHandler extends BaseHandler {
 					? setTimeout(() => {
 							this.deleteValue(messageId);
 							options.onStop?.('timeout', () => {
-								this.createComponentCollector(messageId, options);
+								this.createComponentCollector(messageId, channelId, guildId, options);
 							});
 						}, options.timeout)
 					: undefined,
@@ -83,7 +91,7 @@ export class ComponentHandler extends BaseHandler {
 			stop: (reason?: string) => {
 				this.deleteValue(messageId);
 				options.onStop?.(reason, () => {
-					this.createComponentCollector(messageId, options);
+					this.createComponentCollector(messageId, channelId, guildId, options);
 				});
 			},
 		};
@@ -98,13 +106,15 @@ export class ComponentHandler extends BaseHandler {
 		});
 		if (!component) return;
 		if (row.options?.filter) {
-			if (!(await row.options.filter(interaction))) return;
+			if (!(await row.options.filter(interaction))) return row.options.onPass?.(interaction);
 		}
 		row.idle?.refresh();
 		await component.callback(
 			interaction,
 			reason => {
-				row.options?.onStop?.(reason ?? 'stop');
+				row.options?.onStop?.(reason ?? 'stop', () => {
+					this.createComponentCollector(row.messageId, row.channelId, row.guildId, row.options);
+				});
 				this.deleteValue(id);
 			},
 			() => {
@@ -143,15 +153,13 @@ export class ComponentHandler extends BaseHandler {
 	deleteValue(id: string, reason?: string) {
 		const component = this.values.get(id);
 		if (component) {
-			if (reason !== undefined) component.options?.onStop?.(reason);
+			component.options?.onStop?.(reason, () => {
+				this.createComponentCollector(component.messageId, component.channelId, component.guildId, component.options);
+			});
 			clearTimeout(component.timeout);
 			clearTimeout(component.idle);
 			this.values.delete(id);
 		}
-	}
-
-	onMessageDelete(id: string) {
-		this.deleteValue(id, 'messageDelete');
 	}
 
 	stablishDefaults(component: ComponentCommands) {
@@ -222,7 +230,7 @@ export class ComponentHandler extends BaseHandler {
 		);
 		if (!component?.__filePath) return null;
 		delete require.cache[component.__filePath];
-		const index = this.client.components.commands.findIndex(x => x.__filePath === component.__filePath!);
+		const index = this.client.components.commands.findIndex(x => x.__filePath === component.__filePath);
 		if (index === -1) return null;
 		this.client.components.commands.splice(index, 1);
 		const imported = await magicImport(component.__filePath).then(x => x.default ?? x);

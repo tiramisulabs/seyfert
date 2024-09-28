@@ -58,12 +58,7 @@ export class GuildShorter extends BaseShorter {
 	 * @returns The generated widget URL.
 	 */
 	widgetURL(id: string, style?: GuildWidgetStyle) {
-		const query = new URLSearchParams();
-		if (style) {
-			query.append('style', style);
-		}
-
-		return this.client.proxy.guilds(id).widget.get({ query });
+		return this.client.proxy.guilds(id).widget.get({ query: { style } });
 	}
 
 	async edit(guildId: string, body: RESTPatchAPIGuildJSONBody, reason?: string) {

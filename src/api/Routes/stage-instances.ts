@@ -6,22 +6,17 @@ import type {
 	RESTPostAPIStageInstanceJSONBody,
 	RESTPostAPIStageInstanceResult,
 } from '../../types';
-import type { ProxyRequestMethod } from '../Router';
-import type { RestArguments } from '../api';
+import type { RestArguments, RestArgumentsNoBody } from '../api';
 
 export interface StageInstanceRoutes {
 	'stage-instances': {
-		post(
-			args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIStageInstanceJSONBody>,
-		): Promise<RESTPostAPIStageInstanceResult>;
+		post(args: RestArguments<RESTPostAPIStageInstanceJSONBody>): Promise<RESTPostAPIStageInstanceResult>;
 		(
 			id: string,
 		): {
-			get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIStageInstanceResult>;
-			patch(
-				args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIStageInstanceJSONBody>,
-			): Promise<RESTPatchAPIStageInstanceResult>;
-			delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIStageInstanceResult>;
+			get(args?: RestArgumentsNoBody): Promise<RESTGetAPIStageInstanceResult>;
+			patch(args: RestArguments<RESTPatchAPIStageInstanceJSONBody>): Promise<RESTPatchAPIStageInstanceResult>;
+			delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIStageInstanceResult>;
 		};
 	};
 }

@@ -30,7 +30,9 @@
 	},
 	"exclude": [
 		"**/lib",
-		"**/__test__"
+		"**/__test__",
+		"**/node_modules",
+		 "**/.*/"
 	],
 	"include": [
 		"src"

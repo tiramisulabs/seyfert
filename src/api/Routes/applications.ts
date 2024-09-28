@@ -36,72 +36,60 @@ import type {
 	RESTPutAPIApplicationRoleConnectionMetadataResult,
 	RESTPutAPIGuildApplicationCommandsPermissionsResult,
 } from '../../types';
-
-import type { ProxyRequestMethod } from '../Router';
-import type { RestArguments } from '../api';
+import type { RestArguments, RestArgumentsNoBody } from '../api';
 
 export interface ApplicationRoutes {
 	applications: (id: string) => {
 		guilds: (id: string) => {
 			commands: {
 				get(
-					args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIApplicationGuildCommandsQuery>,
+					args?: RestArgumentsNoBody<RESTGetAPIApplicationGuildCommandsQuery>,
 				): Promise<RESTGetAPIApplicationGuildCommandsResult>;
 				post(
-					args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIApplicationGuildCommandsJSONBody>,
+					args: RestArguments<RESTPostAPIApplicationGuildCommandsJSONBody>,
 				): Promise<RESTPostAPIApplicationGuildCommandsResult>;
 				put(
-					args?: RestArguments<ProxyRequestMethod.Put, RESTPutAPIApplicationGuildCommandsJSONBody>,
+					args?: RestArguments<RESTPutAPIApplicationGuildCommandsJSONBody>,
 				): Promise<RESTPutAPIApplicationGuildCommandsResult>;
 				permissions: {
-					get(
-						args?: RestArguments<ProxyRequestMethod.Get>,
-					): Promise<RESTGetAPIGuildApplicationCommandsPermissionsResult>;
+					get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildApplicationCommandsPermissionsResult>;
 				};
 				(
 					id: string,
 				): {
-					get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIApplicationGuildCommandResult>;
+					get(args?: RestArgumentsNoBody): Promise<RESTGetAPIApplicationGuildCommandResult>;
 					patch(
-						args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIApplicationGuildCommandJSONBody>,
+						args: RestArguments<RESTPatchAPIApplicationGuildCommandJSONBody>,
 					): Promise<RESTPatchAPIApplicationGuildCommandResult>;
-					delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<never>;
+					delete(args?: RestArgumentsNoBody): Promise<never>;
 					permissions: {
-						get(
-							args?: RestArguments<ProxyRequestMethod.Get>,
-						): Promise<RESTGetAPIGuildApplicationCommandsPermissionsResult>;
+						get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildApplicationCommandsPermissionsResult>;
 						put(
-							args?: RestArguments<ProxyRequestMethod.Put, RESTPutAPIApplicationCommandPermissionsJSONBody>,
+							args?: RestArguments<RESTPutAPIApplicationCommandPermissionsJSONBody>,
 						): Promise<RESTPutAPIGuildApplicationCommandsPermissionsResult>;
 					};
 				};
 			};
 		};
 		commands: {
-			get(
-				args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIApplicationCommandsQuery>,
-			): Promise<RESTGetAPIApplicationCommandsResult>;
-			post(
-				args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIApplicationCommandsJSONBody>,
-			): Promise<RESTPostAPIApplicationCommandsResult>;
-			put(
-				args?: RestArguments<ProxyRequestMethod.Put, RESTPutAPIApplicationCommandsJSONBody>,
-			): Promise<RESTPutAPIApplicationCommandsResult>;
+			get(args?: RestArgumentsNoBody<RESTGetAPIApplicationCommandsQuery>): Promise<RESTGetAPIApplicationCommandsResult>;
+			post(args: RestArguments<RESTPostAPIApplicationCommandsJSONBody>): Promise<RESTPostAPIApplicationCommandsResult>;
+			put(args?: RestArguments<RESTPutAPIApplicationCommandsJSONBody>): Promise<RESTPutAPIApplicationCommandsResult>;
 			(
 				id: string,
 			): {
-				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIApplicationCommandResult>;
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIApplicationCommandResult>;
 				patch(
-					args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIApplicationCommandJSONBody>,
+					args: RestArguments<RESTPatchAPIApplicationCommandJSONBody>,
 				): Promise<RESTPatchAPIApplicationCommandResult>;
-				delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<never>;
+				delete(args?: RestArgumentsNoBody): Promise<never>;
 			};
 		};
 		'role-connections': {
 			metadata: {
-				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIApplicationRoleConnectionMetadataResult>;
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIApplicationRoleConnectionMetadataResult>;
 				put(
-					args: RestArguments<ProxyRequestMethod.Put, RESTPutAPIApplicationRoleConnectionMetadataJSONBody>,
+					args: RestArguments<RESTPutAPIApplicationRoleConnectionMetadataJSONBody>,
 				): Promise<RESTPutAPIApplicationRoleConnectionMetadataResult>;
 			};
 		};
@@ -109,38 +97,29 @@ export interface ApplicationRoutes {
 			(
 				id: string,
 			): {
-				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIApplicationEmojiResult>;
-				patch(
-					args?: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIApplicationEmojiJSONBody>,
-				): Promise<RESTPatchAPIApplicationEmojiResult>;
-				delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIApplicationEmojiResult>;
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIApplicationEmojiResult>;
+				patch(args?: RestArguments<RESTPatchAPIApplicationEmojiJSONBody>): Promise<RESTPatchAPIApplicationEmojiResult>;
+				delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIApplicationEmojiResult>;
 			};
 			get(
-				args?: RestArguments<ProxyRequestMethod.Get, Pick<RESTGetAPIApplicationEmojiResult, 'id'>>,
+				args?: RestArgumentsNoBody<Pick<RESTGetAPIApplicationEmojiResult, 'id'>>,
 			): Promise<RESTGetAPIApplicationEmojisResult>;
-			post(
-				args?: RestArguments<ProxyRequestMethod.Post, RESTPostAPIApplicationEmojiJSONBody>,
-			): Promise<RESTPostAPIApplicationEmojiResult>;
+			post(args?: RestArguments<RESTPostAPIApplicationEmojiJSONBody>): Promise<RESTPostAPIApplicationEmojiResult>;
 		};
 		entitlements: {
-			get(
-				args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIEntitlementsQuery>,
-			): Promise<RESTGetAPIEntitlementsResult>;
-			post(
-				args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIEntitlementBody>,
-			): Promise<RESTPostAPIEntitlementResult>;
-
+			get(args?: RestArgumentsNoBody<RESTGetAPIEntitlementsQuery>): Promise<RESTGetAPIEntitlementsResult>;
+			post(args: RestArguments<RESTPostAPIEntitlementBody>): Promise<RESTPostAPIEntitlementResult>;
 			(
 				id: string,
 			): {
-				delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<never>;
+				delete(args?: RestArgumentsNoBody): Promise<never>;
 				consume: {
-					post(args?: RestArguments<ProxyRequestMethod.Post>): Promise<never>;
+					post(args?: RestArgumentsNoBody): Promise<never>;
 				};
 			};
 		};
 		skus: {
-			get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPISKUsResult>;
+			get(args?: RestArgumentsNoBody): Promise<RESTGetAPISKUsResult>;
 		};
 	};
 }

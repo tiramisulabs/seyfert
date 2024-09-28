@@ -67,18 +67,18 @@ export class MenuCommandContext<
 		return this.command.name;
 	}
 
-	write<FR extends boolean = false>(
+	write<WR extends boolean = false>(
 		body: InteractionCreateBodyRequest,
-		fetchReply?: FR,
-	): Promise<When<FR, WebhookMessageStructure, void | WebhookMessageStructure>> {
-		return this.interaction.write(body, fetchReply);
+		withResponse?: WR,
+	): Promise<When<WR, WebhookMessageStructure, void | WebhookMessageStructure>> {
+		return this.interaction.write(body, withResponse);
 	}
 
 	modal(body: ModalCreateBodyRequest) {
 		return this.interaction.modal(body);
 	}
 
-	deferReply(ephemeral = false) {
+	deferReply<WR extends boolean = false>(ephemeral = false): Promise<When<WR, WebhookMessageStructure, undefined>> {
 		return this.interaction.deferReply(ephemeral ? MessageFlags.Ephemeral : undefined);
 	}
 
@@ -90,11 +90,11 @@ export class MenuCommandContext<
 		return this.interaction.deleteResponse();
 	}
 
-	editOrReply<FR extends boolean = false>(
+	editOrReply<WR extends boolean = false>(
 		body: InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest,
-		fetchReply?: FR,
-	): Promise<When<FR, WebhookMessageStructure | MessageStructure, void | WebhookMessageStructure | MessageStructure>> {
-		return this.interaction.editOrReply(body as InteractionCreateBodyRequest, fetchReply);
+		withResponse?: WR,
+	): Promise<When<WR, WebhookMessageStructure | MessageStructure, void | WebhookMessageStructure | MessageStructure>> {
+		return this.interaction.editOrReply(body as InteractionCreateBodyRequest, withResponse);
 	}
 
 	fetchResponse() {

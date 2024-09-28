@@ -1,8 +1,9 @@
-import { randomUUID } from 'node:crypto';
+import { type UUID, randomUUID } from 'node:crypto';
 import { Logger, delay, lazyLoadPackage, snowflakeToTimestamp } from '../common';
 import type { WorkerData } from '../websocket';
 import type { WorkerSendApiRequest } from '../websocket/discord/worker';
-import { CDNRouter, type ProxyRequestMethod } from './Router';
+import { CDNRouter, Router } from './Router';
+import type { APIRoutes } from './Routes';
 import { Bucket } from './bucket';
 import {
 	type ApiHandlerInternalOptions,
@@ -18,13 +19,18 @@ import { isBufferLike } from './utils/utils';
 let parentPort: import('node:worker_threads').MessagePort;
 let workerData: WorkerData;
 
+export interface ApiHandler {
+	/* @internal */
+	_proxy_?: APIRoutes;
+	debugger?: Logger;
+}
+
 export class ApiHandler {
 	options: ApiHandlerInternalOptions;
 	globalBlock = false;
 	ratelimits = new Map<string, Bucket>();
 	readyQueue: (() => void)[] = [];
 	cdn = CDNRouter.createProxy();
-	debugger?: Logger;
 	workerPromises?: Map<string, { resolve: (value: any) => any; reject: (error: any) => any }>;
 
 	constructor(options: ApiHandlerOptions) {
@@ -52,6 +58,10 @@ export class ApiHandler {
 		}
 	}
 
+	get proxy() {
+		return (this._proxy_ ??= new Router(this).createProxy());
+	}
+
 	globalUnblock() {
 		this.globalBlock = false;
 		let cb: (() => void) | undefined;
@@ -60,13 +70,13 @@ export class ApiHandler {
 		}
 	}
 
-	#randomUUID(): string {
+	#randomUUID(): UUID {
 		const uuid = randomUUID();
 		if (this.workerPromises!.has(uuid)) return this.#randomUUID();
 		return uuid;
 	}
 
-	async request<T = any>(
+	async request<T = unknown>(
 		method: HttpMethods,
 		url: `/${string}`,
 		{ auth = true, ...request }: ApiRequestOptions = {},
@@ -412,28 +422,25 @@ export class ApiHandler {
 }
 
 export type RequestOptions = Pick<ApiRequestOptions, 'reason' | 'auth' | 'appendToFormData' | 'token'>;
-export type RequestObject<
-	M extends ProxyRequestMethod,
-	B = Record<string, any>,
-	Q = Record<string, any>,
-	F extends RawFile[] = RawFile[],
-> = {
-	query?: Q;
-} & RequestOptions &
-	(M extends `${ProxyRequestMethod.Get}`
-		? unknown
-		: {
-				body?: B;
-				files?: F;
-			});
 
 export type RestArguments<
-	M extends ProxyRequestMethod,
-	B = any,
-	Q extends never | Record<string, any> = any,
+	B extends Record<string, any> | undefined,
+	Q extends never | Record<string, any> = never,
 	F extends RawFile[] = RawFile[],
-> = M extends ProxyRequestMethod.Get
-	? Q extends never
-		? RequestObject<M, never, B, never>
-		: never
-	: RequestObject<M, B, Q, F>;
+> = (
+	| {
+			body: B;
+			files?: F;
+	  }
+	| (Q extends never | undefined
+			? {}
+			: {
+					query?: Q;
+				})
+) &
+	RequestOptions;
+
+export type RestArgumentsNoBody<Q extends never | Record<string, any> = never> = {
+	query?: Q;
+	files?: RawFile[];
+} & RequestOptions;

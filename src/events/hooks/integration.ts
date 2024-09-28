@@ -11,7 +11,7 @@ export const INTEGRATION_CREATE = (self: UsingClient, data: GatewayIntegrationCr
 	return data.user
 		? {
 				...toCamelCase(data),
-				user: Transformers.User(self, data.user!),
+				user: Transformers.User(self, data.user),
 			}
 		: toCamelCase(data);
 };
@@ -20,7 +20,7 @@ export const INTEGRATION_UPDATE = (self: UsingClient, data: GatewayIntegrationUp
 	return data.user
 		? {
 				...toCamelCase(data),
-				user: Transformers.User(self, data.user!),
+				user: Transformers.User(self, data.user),
 			}
 		: toCamelCase(data);
 };

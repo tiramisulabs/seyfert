@@ -57,7 +57,7 @@ export class BanShorter extends BaseShorter {
 		}
 
 		ban = await this.client.proxy.guilds(guildId).bans(userId).get();
-		await this.client.cache.members?.set(ban.user!.id, guildId, ban);
+		await this.client.cache.members?.set(ban.user.id, guildId, ban);
 		return Transformers.GuildBan(this.client, ban, guildId);
 	}
 
@@ -78,7 +78,7 @@ export class BanShorter extends BaseShorter {
 			query,
 		});
 		await this.client.cache.bans?.set(
-			bans.map<[string, APIBan]>(x => [x.user!.id, x]),
+			bans.map<[string, APIBan]>(x => [x.user.id, x]),
 			guildId,
 		);
 		return bans.map(m => Transformers.GuildBan(this.client, m, guildId));

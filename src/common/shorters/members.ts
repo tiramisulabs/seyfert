@@ -53,21 +53,20 @@ export class MemberShorter extends BaseShorter {
 			query,
 		});
 		await this.client.cache.members?.set(
-			members.map(x => [x.user!.id, x]),
+			members.map(x => [x.user.id, x] as [string, APIGuildMember]),
 			guildId,
 		);
-		return members.map(m => Transformers.GuildMember(this.client, m, m.user!, guildId));
+		return members.map(m => Transformers.GuildMember(this.client, m, m.user, guildId));
 	}
 
 	/**
 	 * Unbans a member from the guild.
 	 * @param guildId The ID of the guild.
 	 * @param memberId The ID of the member to unban.
-	 * @param body The request body for unbanning the member.
 	 * @param reason The reason for unbanning the member.
 	 */
-	async unban(guildId: string, memberId: string, body?: RESTPutAPIGuildBanJSONBody, reason?: string) {
-		await this.client.proxy.guilds(guildId).bans(memberId).delete({ reason, body });
+	async unban(guildId: string, memberId: string, reason?: string) {
+		await this.client.proxy.guilds(guildId).bans(memberId).delete({ reason });
 	}
 
 	/**
@@ -104,7 +103,7 @@ export class MemberShorter extends BaseShorter {
 	async edit(guildId: string, memberId: string, body: RESTPatchAPIGuildMemberJSONBody, reason?: string) {
 		const member = await this.client.proxy.guilds(guildId).members(memberId).patch({ body, reason });
 		await this.client.cache.members?.setIfNI('GuildMembers', memberId, guildId, member);
-		return Transformers.GuildMember(this.client, member, member.user!, guildId);
+		return Transformers.GuildMember(this.client, member, member.user, guildId);
 	}
 
 	/**
@@ -124,9 +123,9 @@ export class MemberShorter extends BaseShorter {
 			return;
 		}
 
-		await this.client.cache.members?.setIfNI('GuildMembers', member.user!.id, guildId, member);
+		await this.client.cache.members?.setIfNI('GuildMembers', member.user.id, guildId, member);
 
-		return Transformers.GuildMember(this.client, member, member.user!, guildId);
+		return Transformers.GuildMember(this.client, member, member.user, guildId);
 	}
 
 	/**
@@ -169,8 +168,8 @@ export class MemberShorter extends BaseShorter {
 		members = await this.client.proxy.guilds(guildId).members.get({
 			query,
 		});
-		await this.client.cache.members?.set(members.map(x => [x.user!.id, x]) as [string, APIGuildMember][], guildId);
-		return members.map(m => Transformers.GuildMember(this.client, m, m.user!, guildId));
+		await this.client.cache.members?.set(members.map(x => [x.user.id, x]) as [string, APIGuildMember][], guildId);
+		return members.map(m => Transformers.GuildMember(this.client, m, m.user, guildId));
 	}
 
 	/**
@@ -180,7 +179,7 @@ export class MemberShorter extends BaseShorter {
 	 * @param id The ID of the role to add.
 	 */
 	addRole(guildId: string, memberId: string, id: string) {
-		return this.client.proxy.guilds(guildId).members(memberId).roles(id).put({});
+		return this.client.proxy.guilds(guildId).members(memberId).roles(id).put();
 	}
 	/**
 	 * Removes a role from a guild member.

@@ -61,7 +61,7 @@ export class BaseMessage extends DiscordBase {
 	}
 
 	createComponentCollector(options?: ListenerOptions) {
-		return this.client.components!.createComponentCollector(this.id, options);
+		return this.client.components!.createComponentCollector(this.id, this.channelId, this.guildId, options);
 	}
 
 	get url() {
@@ -174,7 +174,7 @@ export class WebhookMessage extends BaseMessage {
 	}
 
 	fetch() {
-		return this.api.webhooks(this.webhookId)(this.webhookToken).get({ query: this.thread?.id });
+		return this.api.webhooks(this.webhookId)(this.webhookToken).get();
 	}
 
 	edit(body: EditMessageWebhook) {
