@@ -472,6 +472,10 @@ export enum GuildFeature {
 	 */
 	MemberVerificationGateEnabled = 'MEMBER_VERIFICATION_GATE_ENABLED',
 	/**
+	 * Guild has increased custom soundboard sound slots
+	 */
+	MoreSoundboard = 'MORE_SOUNDBOARD',
+	/**
 	 * Guild has enabled monetization
 	 *
 	 * @unstable This feature is no longer documented by Discord
@@ -514,6 +518,10 @@ export enum GuildFeature {
 	 * Guild has enabled role subscriptions
 	 */
 	RoleSubscriptionsEnabled = 'ROLE_SUBSCRIPTIONS_ENABLED',
+	/**
+	 * Guild has created soundboard sounds
+	 */
+	Soundboard = 'SOUNDBOARD',
 	/**
 	 * Guild has enabled ticketed events
 	 */

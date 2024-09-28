@@ -43,7 +43,7 @@ export interface RESTPostAPIGuildSoundboardSound {
 	emoji_name?: string | null;
 }
 
-export type RESTPostAPIGuildSounboardSoundResult = APISoundBoard;
+export type RESTPostAPIGuildSoundboardSoundResult = APISoundBoard;
 
 /**
  * https://discord.com/developers/docs/resources/soundboard#modify-guild-soundboard-sound
@@ -60,11 +60,11 @@ export interface RESTPatchAPIGuildSoundboardSound {
 	emoji_name?: string | null;
 }
 
-export type RESTPatchAPIGuildSounboardSoundResult = APISoundBoard;
+export type RESTPatchAPIGuildSoundboardSoundResult = APISoundBoard;
 
 /**
  * https://discord.com/developers/docs/resources/soundboard#delete-guild-soundboard-sound
  * This endpoint supports the X-Audit-Log-Reason header.
  * @fires GuildSoundboardSoundDelete
  */
-export type RESTDeleteAPIGuildSounboardSoundResult = never;
+export type RESTDeleteAPIGuildSoundboardSoundResult = never;

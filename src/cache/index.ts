@@ -224,8 +224,8 @@ export class Cache {
 		return this.hasIntent('GuildMembers');
 	}
 
-	get hasEmojisAndStickersIntent() {
-		return this.hasIntent('GuildEmojisAndStickers');
+	get hasGuildExpressionsIntent() {
+		return this.hasIntent('GuildExpressions');
 	}
 
 	get hasVoiceStatesIntent() {

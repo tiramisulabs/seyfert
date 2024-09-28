@@ -299,7 +299,7 @@ export class GuildShorter extends BaseShorter {
 				const sticker = await this.client.proxy
 					.guilds(guildId)
 					.stickers.post({ reason, body: json, files: [{ ...fileResolve[0], key: 'file' }], appendToFormData: true });
-				await this.client.cache.stickers?.setIfNI('GuildEmojisAndStickers', sticker.id, guildId, sticker);
+				await this.client.cache.stickers?.setIfNI('GuildExpressions', sticker.id, guildId, sticker);
 				return Transformers.Sticker(this.client, sticker);
 			},
 
@@ -313,7 +313,7 @@ export class GuildShorter extends BaseShorter {
 			 */
 			edit: async (guildId: string, stickerId: string, body: RESTPatchAPIGuildStickerJSONBody, reason?: string) => {
 				const sticker = await this.client.proxy.guilds(guildId).stickers(stickerId).patch({ body, reason });
-				await this.client.cache.stickers?.setIfNI('GuildEmojisAndStickers', stickerId, guildId, sticker);
+				await this.client.cache.stickers?.setIfNI('GuildExpressions', stickerId, guildId, sticker);
 				return Transformers.Sticker(this.client, sticker);
 			},
 
@@ -344,7 +344,7 @@ export class GuildShorter extends BaseShorter {
 			 */
 			delete: async (guildId: string, stickerId: string, reason?: string) => {
 				await this.client.proxy.guilds(guildId).stickers(stickerId).delete({ reason });
-				await this.client.cache.stickers?.removeIfNI('GuildEmojisAndStickers', stickerId, guildId);
+				await this.client.cache.stickers?.removeIfNI('GuildExpressions', stickerId, guildId);
 			},
 		};
 	}

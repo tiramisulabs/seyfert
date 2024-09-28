@@ -58,7 +58,8 @@ export type GatewaySendPayload =
 	| GatewayRequestGuildMembers
 	| GatewayResume
 	| GatewayUpdatePresence
-	| GatewayVoiceStateUpdate;
+	| GatewayVoiceStateUpdate
+	| GatewayRequestSoundboardSounds;
 
 export type GatewayReceivePayload =
 	| GatewayDispatchPayload
@@ -128,7 +129,12 @@ export type GatewayDispatchPayload =
 	| GatewayUserUpdateDispatch
 	| GatewayVoiceServerUpdateDispatch
 	| GatewayVoiceStateUpdateDispatch
-	| GatewayWebhooksUpdateDispatch;
+	| GatewayWebhooksUpdateDispatch
+	| GatewayGuildSoundboardSoundCreateDispatch
+	| GatewayGuildSoundboardSoundDeleteDispatch
+	| GatewayGuildSoundboardSoundUpdateDispatch
+	| GatewayGuildSoundboardSoundsUpdateDispatch
+	| GatewaySoundboardSoundsDispatch;
 
 // #region Dispatch Payloads
 
@@ -608,6 +614,14 @@ export interface GatewayGuildCreateDispatchData extends APIGuild {
 	 * https://discord.com/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-object
 	 */
 	guild_scheduled_events: APIGuildScheduledEvent[];
+	/**
+	 * Soundboard sounds in the guild
+	 *
+	 * **This field is only sent within the [GUILD_CREATE](https://discord.com/developers/docs/topics/gateway-events#guild-create) event**
+	 *
+	 * https://discord.com/developers/docs/resources/soundboard
+	 */
+	soundboard_sounds: APISoundBoard[];
 }
 
 /**
@@ -1008,6 +1022,12 @@ export interface GatewaySoundboardSoundsDispatchData {
 	/** ID of the guild */
 	guild_id: string;
 }
+
+export type GatewaySoundboardSoundsDispatch = DataPayload<
+	GatewayDispatchEvents.SoundboardSounds,
+	GatewaySoundboardSoundsDispatchData
+>;
+
 /**
  * https://discord.com/developers/docs/topics/gateway-events#integration-create
  */

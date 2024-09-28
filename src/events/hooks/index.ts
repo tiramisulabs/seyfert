@@ -16,6 +16,7 @@ export * from './typing';
 export * from './user';
 export * from './voice';
 export * from './webhook';
+export * from './soundboard';
 
 import type { CamelCase } from '../../common';
 import type * as RawEvents from './index';

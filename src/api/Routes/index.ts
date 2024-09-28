@@ -9,6 +9,7 @@ import type { StickerRoutes } from './stickers';
 import type { UserRoutes } from './users';
 import type { VoiceRoutes } from './voice';
 import type { WebhookRoutes } from './webhooks';
+export type { SoundboardRoutes } from './soundboard';
 
 export * from './cdn';
 

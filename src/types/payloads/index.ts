@@ -19,6 +19,7 @@ export * from './user';
 export * from './voice';
 export * from './webhook';
 export * from './monetization';
+export * from './soundboard';
 
 import type { LocaleString } from '../rest';
 

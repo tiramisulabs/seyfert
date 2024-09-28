@@ -296,9 +296,8 @@ export enum GatewayIntentBits {
 	/**
 	 * @deprecated This is the old name for {@apilink GatewayIntentBits#GuildModeration}
 	 */
-
 	GuildBans = GuildModeration,
-	GuildEmojisAndStickers = 1 << 3,
+	GuildExpressions = 1 << 3,
 	GuildIntegrations = 1 << 4,
 	GuildWebhooks = 1 << 5,
 	GuildInvites = 1 << 6,
