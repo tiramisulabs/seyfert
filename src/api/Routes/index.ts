@@ -12,14 +12,15 @@ import type { WebhookRoutes } from './webhooks';
 
 export * from './cdn';
 
-export type APIRoutes = ApplicationRoutes &
-	ChannelRoutes &
-	GatewayRoutes &
-	GuildRoutes &
-	InteractionRoutes &
-	InviteRoutes &
-	StageInstanceRoutes &
-	StickerRoutes &
-	UserRoutes &
-	VoiceRoutes &
-	WebhookRoutes;
+export interface APIRoutes
+	extends ApplicationRoutes,
+		ChannelRoutes,
+		GatewayRoutes,
+		GuildRoutes,
+		InteractionRoutes,
+		InviteRoutes,
+		StageInstanceRoutes,
+		StickerRoutes,
+		UserRoutes,
+		VoiceRoutes,
+		WebhookRoutes {}

@@ -93,11 +93,11 @@ export class BaseGuild extends DiscordBase<APIPartialGuild> {
 	 */
 	get shard() {
 		if ('gateway' in this.client) {
-			return (this.client.gateway as ShardManager).get(this.shardId!) as never;
+			return (this.client.gateway as ShardManager).get(this.shardId) as never;
 		}
 
 		if ('shards' in this.client) {
-			return (this.client as WorkerClient).shards.get(this.shardId!);
+			return (this.client as WorkerClient).shards.get(this.shardId);
 		}
 		return undefined;
 	}

@@ -11,7 +11,10 @@ export type ComponentCallback<
 	T extends ComponentInteraction | StringSelectMenuInteraction = ComponentInteraction | StringSelectMenuInteraction,
 > = (interaction: T, stop: ComponentStopCallback, refresh: ComponentRefreshCallback) => any;
 export type ComponentFilterCallback<T = ComponentInteraction> = (interaction: T) => any;
-export type ComponentStopCallback = (reason?: string, refresh?: ComponentRefreshCallback) => any;
+export type ComponentStopCallback = (
+	reason: 'messageDelete' | 'channelDelete' | 'guildDelete' | (string & {}) | undefined,
+	refresh: ComponentRefreshCallback,
+) => any;
 export type ComponentRefreshCallback = () => any;
 export type ModalSubmitCallback<T = ModalSubmitInteraction> = (interaction: T) => any;
 export type ButtonLink = Omit<Button, 'setCustomId'>;
@@ -25,5 +28,6 @@ export interface ListenerOptions {
 	timeout?: number;
 	idle?: number;
 	filter?: ComponentFilterCallback;
+	onPass?: ComponentFilterCallback;
 	onStop?: ComponentStopCallback;
 }

@@ -1,3 +1,4 @@
+export * from './client';
 import {
 	BaseClient,
 	type BaseClientOptions,
@@ -24,9 +25,6 @@ export * from './langs';
 export { ShardManager, WorkerManager } from './websocket/discord';
 //
 export * from './structures';
-//
-export * from './client';
-///
 
 /**
  * Creates an event with the specified data and run function.

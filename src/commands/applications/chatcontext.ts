@@ -60,28 +60,46 @@ export class CommandContext<
 		return this.resolver.fullCommandName;
 	}
 
-	async write<FR extends boolean = false>(
+	async write<WR extends boolean = false>(
 		body: InteractionCreateBodyRequest,
-		fetchReply?: FR,
-	): Promise<When<FR, WebhookMessageStructure | MessageStructure, void | WebhookMessageStructure | MessageStructure>> {
-		if (this.interaction) return this.interaction.write(body, fetchReply);
+		withResponse?: WR,
+	): Promise<
+		When<
+			WR,
+			WebhookMessageStructure | When<InferWithPrefix, MessageStructure, never>,
+			void | WebhookMessageStructure | When<InferWithPrefix, MessageStructure, never>
+		>
+	> {
+		if (this.interaction) return this.interaction.write(body, withResponse);
 		const options = (this.client as Client | WorkerClient).options?.commands;
 		return (this.messageResponse = await (this.message! as Message)[
 			!this.messageResponse && options?.reply?.(this) ? 'reply' : 'write'
-		](body));
+		](body)) as never;
 	}
 
-	async deferReply(ephemeral = false) {
-		if (this.interaction) return this.interaction.deferReply(ephemeral ? MessageFlags.Ephemeral : undefined);
+	async deferReply<WR extends boolean = false>(
+		ephemeral = false,
+		withResponse?: WR,
+	): Promise<
+		When<
+			WR,
+			WebhookMessageStructure | When<InferWithPrefix, MessageStructure, never>,
+			When<InferWithPrefix, MessageStructure, never> | undefined
+		>
+	> {
+		if (this.interaction)
+			return this.interaction.deferReply(ephemeral ? MessageFlags.Ephemeral : undefined, withResponse);
 		const options = (this.client as Client | WorkerClient).options?.commands;
 		return (this.messageResponse = await (this.message! as Message)[options?.reply?.(this) ? 'reply' : 'write'](
 			options?.deferReplyResponse?.(this) ?? { content: 'Thinking...' },
-		));
+		)) as never;
 	}
 
-	async editResponse(body: InteractionMessageUpdateBodyRequest) {
+	async editResponse(
+		body: InteractionMessageUpdateBodyRequest,
+	): Promise<When<InferWithPrefix, WebhookMessageStructure | MessageStructure, WebhookMessageStructure>> {
 		if (this.interaction) return this.interaction.editResponse(body);
-		return (this.messageResponse = await this.messageResponse!.edit(body));
+		return (this.messageResponse = await this.messageResponse!.edit(body)) as never;
 	}
 
 	deleteResponse() {
@@ -89,15 +107,21 @@ export class CommandContext<
 		return this.messageResponse!.delete();
 	}
 
-	editOrReply<FR extends boolean = false>(
+	editOrReply<WR extends boolean = false>(
 		body: InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest,
-		fetchReply?: FR,
-	): Promise<When<FR, WebhookMessageStructure | MessageStructure, void | WebhookMessageStructure | MessageStructure>> {
-		if (this.interaction) return this.interaction.editOrReply(body as InteractionCreateBodyRequest, fetchReply);
+		withResponse?: WR,
+	): Promise<
+		When<
+			WR,
+			WebhookMessageStructure | When<InferWithPrefix, MessageStructure, never>,
+			void | WebhookMessageStructure | When<InferWithPrefix, MessageStructure, never>
+		>
+	> {
+		if (this.interaction) return this.interaction.editOrReply(body as InteractionCreateBodyRequest, withResponse);
 		if (this.messageResponse) {
 			return this.editResponse(body);
 		}
-		return this.write(body as InteractionCreateBodyRequest, fetchReply);
+		return this.write(body as InteractionCreateBodyRequest, withResponse);
 	}
 
 	async fetchResponse(): Promise<

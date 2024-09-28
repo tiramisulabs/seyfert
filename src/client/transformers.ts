@@ -30,6 +30,7 @@ import {
 	Webhook,
 	WebhookMessage,
 } from '../structures';
+import { Entitlement } from '../structures/Entitlement';
 import { GuildBan } from '../structures/GuildBan';
 import type { ChannelType } from '../types';
 
@@ -63,6 +64,7 @@ export type UserStructure = InferCustomStructure<User, 'User'>;
 export type VoiceStateStructure = InferCustomStructure<VoiceState, 'VoiceState'>;
 export type WebhookStructure = InferCustomStructure<Webhook, 'Webhook'>;
 export type OptionResolverStructure = InferCustomStructure<OptionResolver, 'OptionResolver'>;
+export type EntitlementStructure = InferCustomStructure<Entitlement, 'Entitlement'>;
 
 export const Transformers = {
 	AnonymousGuild(...args: ConstructorParameters<typeof AnonymousGuild>): AnonymousGuildStructure {
@@ -156,6 +158,9 @@ export const Transformers = {
 	},
 	OptionResolver(...args: ConstructorParameters<typeof OptionResolver>): OptionResolverStructure {
 		return new OptionResolver(...args);
+	},
+	Entitlement(...args: ConstructorParameters<typeof Entitlement>): EntitlementStructure {
+		return new Entitlement(...args);
 	},
 };
 

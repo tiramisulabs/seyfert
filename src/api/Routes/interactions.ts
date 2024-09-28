@@ -1,9 +1,9 @@
+import type { OmitInsert } from '../../common';
 import type {
 	RESTPostAPIInteractionCallbackJSONBody,
 	RESTPostAPIInteractionCallbackQuery,
 	RESTPostAPIInteractionCallbackResult,
 } from '../../types';
-import type { ProxyRequestMethod } from '../Router';
 import type { RestArguments } from '../api';
 
 export interface InteractionRoutes {
@@ -11,24 +11,18 @@ export interface InteractionRoutes {
 		callback: {
 			post(
 				args: RestArguments<
-					ProxyRequestMethod.Post,
 					RESTPostAPIInteractionCallbackJSONBody,
-					Omit<RESTPostAPIInteractionCallbackQuery, 'with_response'> & { with_response: true }
+					OmitInsert<RESTPostAPIInteractionCallbackQuery, 'with_response', { with_response: true }>
 				>,
 			): Promise<RESTPostAPIInteractionCallbackResult>;
 			post(
 				args: RestArguments<
-					ProxyRequestMethod.Post,
 					RESTPostAPIInteractionCallbackJSONBody,
-					Omit<RESTPostAPIInteractionCallbackQuery, 'with_response'> & { with_response: false }
+					OmitInsert<RESTPostAPIInteractionCallbackQuery, 'with_response', { with_response: false }>
 				>,
 			): Promise<undefined>;
 			post(
-				args: RestArguments<
-					ProxyRequestMethod.Post,
-					RESTPostAPIInteractionCallbackJSONBody,
-					RESTPostAPIInteractionCallbackQuery
-				>,
+				args: RestArguments<RESTPostAPIInteractionCallbackJSONBody, RESTPostAPIInteractionCallbackQuery>,
 			): Promise<RESTPostAPIInteractionCallbackResult | undefined>;
 		};
 	};

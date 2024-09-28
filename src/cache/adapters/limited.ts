@@ -23,7 +23,6 @@ export interface LimitedMemoryAdapterOptions<T> {
 	role?: ResourceLimitedMemoryAdapter;
 	stage_instance?: ResourceLimitedMemoryAdapter;
 	sticker?: ResourceLimitedMemoryAdapter;
-	thread?: ResourceLimitedMemoryAdapter;
 	overwrite?: ResourceLimitedMemoryAdapter;
 	message?: ResourceLimitedMemoryAdapter;
 
@@ -125,7 +124,6 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 								case 'role':
 								case 'stage_instance':
 								case 'sticker':
-								case 'thread':
 								case 'overwrite':
 								case 'message':
 									self.removeToRelationship(namespace, k.split('.')[1]);
@@ -221,7 +219,6 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 			case 'role':
 			case 'stage_instance':
 			case 'sticker':
-			case 'thread':
 			case 'overwrite':
 			case 'message':
 				for (const keyStorage of this.storage.keys()) {

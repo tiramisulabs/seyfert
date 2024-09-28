@@ -22,55 +22,38 @@ import type {
 	RESTPostAPIWebhookWithTokenSlackWaitResult,
 	RESTPostAPIWebhookWithTokenWaitResult,
 } from '../../types';
-import type { ProxyRequestMethod } from '../Router';
-import type { RestArguments } from '../api';
+import type { RestArguments, RestArgumentsNoBody } from '../api';
 
 export interface WebhookRoutes {
 	webhooks(id: string): {
-		get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIWebhookResult>;
-		patch(
-			args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIWebhookJSONBody>,
-		): Promise<RESTPatchAPIWebhookResult>;
-		delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIWebhookResult>;
+		get(args?: RestArgumentsNoBody): Promise<RESTGetAPIWebhookResult>;
+		patch(args: RestArguments<RESTPatchAPIWebhookJSONBody>): Promise<RESTPatchAPIWebhookResult>;
+		delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIWebhookResult>;
 		(
 			token: string,
 		): {
-			get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIWebhookWithTokenResult>;
-			patch(
-				args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIWebhookWithTokenJSONBody>,
-			): Promise<RESTPatchAPIWebhookWithTokenResult>;
-			delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIWebhookWithTokenResult>;
+			get(args?: RestArgumentsNoBody): Promise<RESTGetAPIWebhookWithTokenResult>;
+			patch(args: RestArguments<RESTPatchAPIWebhookWithTokenJSONBody>): Promise<RESTPatchAPIWebhookWithTokenResult>;
+			delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIWebhookWithTokenResult>;
 			post(
-				args: RestArguments<
-					ProxyRequestMethod.Post,
-					RESTPostAPIWebhookWithTokenJSONBody,
-					RESTPostAPIWebhookWithTokenQuery
-				>,
+				args: RestArguments<RESTPostAPIWebhookWithTokenJSONBody, RESTPostAPIWebhookWithTokenQuery>,
 			): Promise<RESTPostAPIWebhookWithTokenResult | RESTPostAPIWebhookWithTokenWaitResult>;
 			slack: {
 				post(
-					args: RestArguments<
-						ProxyRequestMethod.Post,
-						RESTPostAPIWebhookWithTokenJSONBody,
-						RESTPostAPIWebhookWithTokenSlackQuery
-					>,
+					args: RestArguments<RESTPostAPIWebhookWithTokenJSONBody, RESTPostAPIWebhookWithTokenSlackQuery>,
 				): Promise<RESTPostAPIWebhookWithTokenSlackResult | RESTPostAPIWebhookWithTokenSlackWaitResult>;
 			};
 			github: {
 				post(
-					args: RestArguments<
-						ProxyRequestMethod.Post,
-						RESTPostAPIWebhookWithTokenJSONBody,
-						RESTPostAPIWebhookWithTokenGitHubQuery
-					>,
+					args: RestArguments<RESTPostAPIWebhookWithTokenJSONBody, RESTPostAPIWebhookWithTokenGitHubQuery>,
 				): Promise<RESTPostAPIWebhookWithTokenGitHubResult | RESTPostAPIWebhookWithTokenGitHubWaitResult>;
 			};
-			messages: (id: (string & {}) | '@original') => {
-				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIWebhookWithTokenMessageResult>;
+			messages: (id: string) => {
+				get(args?: RestArgumentsNoBody<{ thread_id: string }>): Promise<RESTGetAPIWebhookWithTokenMessageResult>;
 				patch(
-					args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIWebhookWithTokenMessageJSONBody>,
+					args: RestArguments<RESTPatchAPIWebhookWithTokenMessageJSONBody>,
 				): Promise<RESTPatchAPIWebhookWithTokenMessageResult>;
-				delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIWebhookWithTokenMessageResult>;
+				delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIWebhookWithTokenMessageResult>;
 			};
 		};
 	};

@@ -184,7 +184,7 @@ export async function resolveAttachmentData(
 	if (data instanceof AttachmentBuilder) {
 		if (!data.data.resolvable)
 			throw new Error('The attachment type has been expressed as attachment but cannot be resolved as one.');
-		return { data: data.data.resolvable! };
+		return { data: data.data.resolvable };
 	}
 
 	switch (type) {

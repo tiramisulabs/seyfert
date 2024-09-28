@@ -117,274 +117,233 @@ import type {
 	RESTPutAPIGuildMemberRoleResult,
 	RESTPutAPIGuildTemplateSyncResult,
 } from '../../types';
-import type { ProxyRequestMethod } from '../Router';
-import type { RestArguments } from '../api';
+import type { RestArguments, RestArgumentsNoBody } from '../api';
 import type { RawFile } from '../shared';
 
 export interface GuildRoutes {
 	guilds: {
-		post(args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIGuildsJSONBody>): Promise<RESTPostAPIGuildsResult>;
+		post(args: RestArguments<RESTPostAPIGuildsJSONBody>): Promise<RESTPostAPIGuildsResult>;
 		templates(code: string): {
-			get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPITemplateResult>;
-			post(
-				args: RestArguments<ProxyRequestMethod.Post, RESTPostAPITemplateCreateGuildJSONBody>,
-			): Promise<RESTPostAPITemplateCreateGuildResult>;
+			get(args?: RestArgumentsNoBody): Promise<RESTGetAPITemplateResult>;
+			post(args: RestArguments<RESTPostAPITemplateCreateGuildJSONBody>): Promise<RESTPostAPITemplateCreateGuildResult>;
 		};
 		(
 			id: string,
 		): {
-			get(args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIGuildQuery>): Promise<RESTGetAPIGuildResult>;
-			patch(args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIGuildJSONBody>): Promise<RESTPatchAPIGuildResult>;
-			delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIGuildResult>;
+			get(args?: RestArgumentsNoBody<RESTGetAPIGuildQuery>): Promise<RESTGetAPIGuildResult>;
+			patch(args: RestArguments<RESTPatchAPIGuildJSONBody>): Promise<RESTPatchAPIGuildResult>;
+			delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIGuildResult>;
 			webhooks: {
-				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildWebhooksResult>;
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildWebhooksResult>;
 			};
 			preview: {
-				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildPreviewResult>;
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildPreviewResult>;
 			};
 			'audit-logs': {
-				get(args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIAuditLogQuery>): Promise<RESTGetAPIAuditLogResult>;
+				get(args?: RestArgumentsNoBody<RESTGetAPIAuditLogQuery>): Promise<RESTGetAPIAuditLogResult>;
 			};
 			'auto-moderation': {
 				rules: {
-					get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIAutoModerationRulesResult>;
+					get(args?: RestArgumentsNoBody): Promise<RESTGetAPIAutoModerationRulesResult>;
 					post(
-						args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIAutoModerationRuleJSONBody>,
+						args: RestArguments<RESTPostAPIAutoModerationRuleJSONBody>,
 					): Promise<RESTPostAPIAutoModerationRuleResult>;
 					(
 						id: string,
 					): {
-						get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIAutoModerationRuleResult>;
+						get(args?: RestArgumentsNoBody): Promise<RESTGetAPIAutoModerationRuleResult>;
 						patch(
-							args: RestArguments<ProxyRequestMethod.Post, RESTPatchAPIAutoModerationRuleJSONBody>,
+							args: RestArguments<RESTPatchAPIAutoModerationRuleJSONBody>,
 						): Promise<RESTPatchAPIAutoModerationRuleResult>;
-						delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIAutoModerationRuleResult>;
+						delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIAutoModerationRuleResult>;
 					};
 				};
 			};
 			channels: {
-				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildChannelsResult>;
-				post(
-					args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIGuildChannelJSONBody>,
-				): Promise<RESTPostAPIGuildChannelResult>;
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildChannelsResult>;
+				post(args: RestArguments<RESTPostAPIGuildChannelJSONBody>): Promise<RESTPostAPIGuildChannelResult>;
 				patch(
-					args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIGuildChannelPositionsJSONBody>,
+					args: RestArguments<RESTPatchAPIGuildChannelPositionsJSONBody>,
 				): Promise<RESTPatchAPIGuildChannelPositionsResult>;
 			};
 			members: {
-				get(
-					args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIGuildMembersQuery>,
-				): Promise<RESTGetAPIGuildMembersResult>;
+				get(args?: RestArgumentsNoBody<RESTGetAPIGuildMembersQuery>): Promise<RESTGetAPIGuildMembersResult>;
 				search: {
 					get(
-						args: RestArguments<ProxyRequestMethod.Get, RESTGetAPIGuildMembersSearchQuery>,
+						args: RestArgumentsNoBody<RESTGetAPIGuildMembersSearchQuery>,
 					): Promise<RESTGetAPIGuildMembersSearchResult>;
 				};
 				'@me': {
-					patch(
-						args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPICurrentGuildMemberJSONBody>,
-					): Promise<RESTGetAPIGuildMemberResult>;
+					patch(args: RestArguments<RESTPatchAPICurrentGuildMemberJSONBody>): Promise<RESTGetAPIGuildMemberResult>;
 				};
 				(
 					id: string,
 				): {
-					get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildMemberResult>;
-					put(
-						args?: RestArguments<ProxyRequestMethod.Put, RESTPutAPIGuildMemberJSONBody>,
-					): Promise<RESTPutAPIGuildMemberResult>;
-					patch(
-						args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIGuildMemberJSONBody>,
-					): Promise<RESTPatchAPIGuildMemberResult>;
-					delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIGuildMemberResult>;
+					get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildMemberResult>;
+					put(args?: RestArguments<RESTPutAPIGuildMemberJSONBody>): Promise<RESTPutAPIGuildMemberResult>;
+					patch(args: RestArguments<RESTPatchAPIGuildMemberJSONBody>): Promise<RESTPatchAPIGuildMemberResult>;
+					delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIGuildMemberResult>;
 					roles(id: string): {
-						put(args?: RestArguments<ProxyRequestMethod.Put>): Promise<RESTPutAPIGuildMemberRoleResult>;
-						delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIGuildMemberRoleResult>;
+						put(args?: RestArgumentsNoBody): Promise<RESTPutAPIGuildMemberRoleResult>;
+						delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIGuildMemberRoleResult>;
 					};
 				};
 			};
 			threads: {
 				active: {
 					get(
-						args?: RestArguments<ProxyRequestMethod.Get>,
+						args?: RestArgumentsNoBody,
 					): Promise<Identify<RESTGetAPIGuildThreadsResult & { threads: Partial<APIThreadChannel> }>>;
 				};
 			};
 			roles: {
-				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildRolesResult>;
-				post(
-					args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIGuildRoleJSONBody>,
-				): Promise<RESTPostAPIGuildRoleResult>;
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildRolesResult>;
+				post(args: RestArguments<RESTPostAPIGuildRoleJSONBody>): Promise<RESTPostAPIGuildRoleResult>;
 				patch(
-					args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIGuildRolePositionsJSONBody>,
+					args: RestArguments<RESTPatchAPIGuildRolePositionsJSONBody>,
 				): Promise<RESTPatchAPIGuildRolePositionsResult>;
 				(
 					id: string,
 				): {
-					get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildRoleResult>;
-					patch(
-						args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIGuildRoleJSONBody>,
-					): Promise<RESTPatchAPIGuildRoleResult>;
-					delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIGuildRoleResult>;
+					get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildRoleResult>;
+					patch(args: RestArguments<RESTPatchAPIGuildRoleJSONBody>): Promise<RESTPatchAPIGuildRoleResult>;
+					delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIGuildRoleResult>;
 				};
 			};
 			bans: {
-				get(args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIGuildBansQuery>): Promise<RESTGetAPIGuildBansResult>;
+				get(args?: RestArgumentsNoBody<RESTGetAPIGuildBansQuery>): Promise<RESTGetAPIGuildBansResult>;
 				(
 					userId: string,
 				): {
-					get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildBanResult>;
-					put(
-						args?: RestArguments<ProxyRequestMethod.Put, RESTPutAPIGuildBanJSONBody>,
-					): Promise<RESTPutAPIGuildBanResult>;
-					delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIGuildBanResult>;
+					get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildBanResult>;
+					put(args?: RestArguments<RESTPutAPIGuildBanJSONBody | undefined>): Promise<RESTPutAPIGuildBanResult>;
+					delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIGuildBanResult>;
 				};
 			};
 			'bulk-bans': {
-				post(
-					args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIGuildBulkBanJSONBody>,
-				): Promise<RESTPostAPIGuildBulkBanResult>;
+				post(args: RestArguments<RESTPostAPIGuildBulkBanJSONBody>): Promise<RESTPostAPIGuildBulkBanResult>;
 			};
 			mfa: {
-				post(
-					args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIGuildsMFAJSONBody>,
-				): Promise<RESTPostAPIGuildsMFAResult>;
+				post(args: RestArguments<RESTPostAPIGuildsMFAJSONBody>): Promise<RESTPostAPIGuildsMFAResult>;
 			};
 			prune: {
-				get(
-					args: RestArguments<ProxyRequestMethod.Get, RESTGetAPIGuildPruneCountQuery>,
-				): Promise<RESTGetAPIGuildPruneCountResult>;
-				post(
-					args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIGuildPruneJSONBody>,
-				): Promise<RESTPostAPIGuildPruneResult>;
+				get(args: RestArgumentsNoBody<RESTGetAPIGuildPruneCountQuery>): Promise<RESTGetAPIGuildPruneCountResult>;
+				post(args: RestArguments<RESTPostAPIGuildPruneJSONBody>): Promise<RESTPostAPIGuildPruneResult>;
 			};
 			regions: {
-				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildVoiceRegionsResult>;
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildVoiceRegionsResult>;
 			};
 			invites: {
-				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildInvitesResult>;
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildInvitesResult>;
 			};
 			widget: {
-				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildWidgetSettingsResult>;
+				get(args?: RestArgumentsNoBody<{ style?: string }>): Promise<RESTGetAPIGuildWidgetSettingsResult>;
 				patch(
-					args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIGuildWidgetSettingsJSONBody>,
+					args: RestArguments<RESTPatchAPIGuildWidgetSettingsJSONBody>,
 				): Promise<RESTPatchAPIGuildWidgetSettingsResult>;
 			};
 			'widget.json': {
-				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildWidgetJSONResult>;
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildWidgetJSONResult>;
 			};
 			'widget.png': {
-				get(
-					args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIGuildWidgetImageQuery>,
-				): Promise<RESTGetAPIGuildWidgetImageResult>;
+				get(args?: RestArgumentsNoBody<RESTGetAPIGuildWidgetImageQuery>): Promise<RESTGetAPIGuildWidgetImageResult>;
 			};
 			integrations: {
-				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildIntegrationsResult>;
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildIntegrationsResult>;
 				(
 					id: string,
 				): {
-					delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIGuildIntegrationResult>;
+					delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIGuildIntegrationResult>;
 				};
 			};
 			'vanity-url': {
-				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildVanityUrlResult>;
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildVanityUrlResult>;
 			};
 			'welcome-screen': {
-				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildWelcomeScreenResult>;
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildWelcomeScreenResult>;
 				patch(
-					args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIGuildWelcomeScreenJSONBody>,
+					args: RestArguments<RESTPatchAPIGuildWelcomeScreenJSONBody>,
 				): Promise<RESTPatchAPIGuildWelcomeScreenResult>;
 			};
 			// onboarding: {
-			// 	get(args:RestArguments<ProxyRequestMethod.Get,boarding>);
+			// 	get(args:RestArgumentsNoBody<boarding>);
 			// }
 			emojis: {
-				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildEmojisResult>;
-				post(
-					args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIGuildEmojiJSONBody>,
-				): Promise<RESTPostAPIGuildEmojiResult>;
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildEmojisResult>;
+				post(args: RestArguments<RESTPostAPIGuildEmojiJSONBody>): Promise<RESTPostAPIGuildEmojiResult>;
 				(
 					id: string,
 				): {
-					get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildEmojiResult>;
-					patch(
-						args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIGuildEmojiJSONBody>,
-					): Promise<RESTPatchAPIGuildEmojiResult>;
-					delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIGuildEmojiResult>;
+					get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildEmojiResult>;
+					patch(args: RestArguments<RESTPatchAPIGuildEmojiJSONBody>): Promise<RESTPatchAPIGuildEmojiResult>;
+					delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIGuildEmojiResult>;
 				};
 			};
 			'voice-states': {
 				'@me': {
 					patch(
-						args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIGuildVoiceStateCurrentMemberJSONBody>,
+						args: RestArguments<RESTPatchAPIGuildVoiceStateCurrentMemberJSONBody>,
 					): Promise<RESTPatchAPIGuildVoiceStateCurrentMemberResult>;
-					get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPICurrentUserVoiceState>;
+					get(args?: RestArgumentsNoBody): Promise<RESTGetAPICurrentUserVoiceState>;
 				};
 				(
 					userId: string,
 				): {
 					patch(
-						args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIGuildVoiceStateUserJSONBody>,
+						args: RestArguments<RESTPatchAPIGuildVoiceStateUserJSONBody>,
 					): Promise<RESTPatchAPIGuildVoiceStateUserResult>;
-					get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIUserVoiceState>;
+					get(args?: RestArgumentsNoBody): Promise<RESTGetAPIUserVoiceState>;
 				};
 			};
 			stickers: {
-				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildStickersResult>;
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildStickersResult>;
 				post(
 					args: RestArguments<
-						ProxyRequestMethod.Post,
 						Omit<RESTPostAPIGuildStickerFormDataBody, 'file'>,
-						object,
 						OmitInsert<RawFile, 'key', { key: 'file' }>[]
 					>,
 				): Promise<RESTPostAPIGuildStickerResult>;
 				(
 					id: string,
 				): {
-					get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildStickerResult>;
-					patch(
-						args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIGuildStickerJSONBody>,
-					): Promise<RESTPatchAPIGuildStickerResult>;
-					delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIGuildStickerResult>;
+					get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildStickerResult>;
+					patch(args: RestArguments<RESTPatchAPIGuildStickerJSONBody>): Promise<RESTPatchAPIGuildStickerResult>;
+					delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIGuildStickerResult>;
 				};
 			};
 			'scheduled-events': {
 				get(
-					args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIGuildScheduledEventsQuery>,
+					args?: RestArgumentsNoBody<RESTGetAPIGuildScheduledEventsQuery>,
 				): Promise<RESTGetAPIGuildScheduledEventsResult>;
 				post(
-					args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIGuildScheduledEventJSONBody>,
+					args: RestArguments<RESTPostAPIGuildScheduledEventJSONBody>,
 				): Promise<RESTPostAPIGuildScheduledEventResult>;
 				(
 					id: string,
 				): {
 					get(
-						args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIGuildScheduledEventQuery>,
+						args?: RestArgumentsNoBody<RESTGetAPIGuildScheduledEventQuery>,
 					): Promise<RESTGetAPIGuildScheduledEventResult>;
 					patch(
-						args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIGuildScheduledEventJSONBody>,
+						args: RestArguments<RESTPatchAPIGuildScheduledEventJSONBody>,
 					): Promise<RESTPatchAPIGuildScheduledEventResult>;
-					delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIGuildScheduledEventResult>;
+					delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIGuildScheduledEventResult>;
 					users: {
 						get(
-							args?: RestArguments<ProxyRequestMethod.Get, RESTGetAPIGuildScheduledEventUsersQuery>,
+							args?: RestArgumentsNoBody<RESTGetAPIGuildScheduledEventUsersQuery>,
 						): Promise<RESTGetAPIGuildScheduledEventUsersResult>;
 					};
 				};
 			};
 			templates: {
-				get(args?: RestArguments<ProxyRequestMethod.Get>): Promise<RESTGetAPIGuildTemplatesResult>;
-				post(
-					args: RestArguments<ProxyRequestMethod.Post, RESTPostAPIGuildTemplatesJSONBody>,
-				): Promise<RESTPostAPIGuildTemplatesResult>;
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildTemplatesResult>;
+				post(args: RestArguments<RESTPostAPIGuildTemplatesJSONBody>): Promise<RESTPostAPIGuildTemplatesResult>;
 				(
 					code: string,
 				): {
-					put(args?: RestArguments<ProxyRequestMethod.Put>): Promise<RESTPutAPIGuildTemplateSyncResult>;
-					patch(
-						args: RestArguments<ProxyRequestMethod.Patch, RESTPatchAPIGuildTemplateJSONBody>,
-					): Promise<RESTPatchAPIGuildTemplateResult>;
-					delete(args?: RestArguments<ProxyRequestMethod.Delete>): Promise<RESTDeleteAPIGuildTemplateResult>;
+					put(args?: RestArgumentsNoBody): Promise<RESTPutAPIGuildTemplateSyncResult>;
+					patch(args: RestArguments<RESTPatchAPIGuildTemplateJSONBody>): Promise<RESTPatchAPIGuildTemplateResult>;
+					delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIGuildTemplateResult>;
 				};
 			};
 		};
