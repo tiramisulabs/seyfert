@@ -239,11 +239,6 @@ export class BaseInteraction<
 		}
 		const result = await this.matchReplied(body, withResponse);
 		// @ts-expect-error
-		if (body.data instanceof Modal && body.data.__exec)
-			// @ts-expect-error
-			this.client.components.modals.set(this.user.id, (body.data as Modal).__exec);
-
-		// @ts-expect-error
 		if (body.data instanceof Modal) {
 			// @ts-expect-error
 			if (body.data.__exec) this.client.components.modals.set(this.user.id, (body.data as Modal).__exec);
