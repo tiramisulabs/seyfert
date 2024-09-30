@@ -234,7 +234,10 @@ export class SeyfertWebSocket {
 		buffer.write(reason, 2);
 		// message, close opcode
 		this._write(buffer, 0x8);
+
 		this.socket?.end();
+
+		this.onclose({ code, reason });
 	}
 
 	pong(data: string) {
