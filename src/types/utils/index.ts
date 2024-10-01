@@ -197,6 +197,10 @@ export enum GatewayOpcodes {
 	 * Sent in response to receiving a heartbeat to acknowledge that it has been received
 	 */
 	HeartbeatAck = 11,
+	/**
+	 * Used to request soundboard sounds for a list of guilds. The server will send Soundboard Sounds events for each guild in response.
+	 */
+	RequestSoundboardSounds = 31,
 }
 
 /**
@@ -292,9 +296,8 @@ export enum GatewayIntentBits {
 	/**
 	 * @deprecated This is the old name for {@apilink GatewayIntentBits#GuildModeration}
 	 */
-
 	GuildBans = GuildModeration,
-	GuildEmojisAndStickers = 1 << 3,
+	GuildExpressions = 1 << 3,
 	GuildIntegrations = 1 << 4,
 	GuildWebhooks = 1 << 5,
 	GuildInvites = 1 << 6,
@@ -380,6 +383,11 @@ export enum GatewayDispatchEvents {
 	GuildScheduledEventDelete = 'GUILD_SCHEDULED_EVENT_DELETE',
 	GuildScheduledEventUserAdd = 'GUILD_SCHEDULED_EVENT_USER_ADD',
 	GuildScheduledEventUserRemove = 'GUILD_SCHEDULED_EVENT_USER_REMOVE',
+	GuildSoundboardSoundCreate = 'GUILD_SOUNDBOARD_SOUND_CREATE',
+	GuildSoundboardSoundUpdate = 'GUILD_SOUNDBOARD_SOUND_UPDATE',
+	GuildSoundboardSoundDelete = 'GUILD_SOUNDBOARD_SOUND_DELETE',
+	GuildSoundboardSoundsUpdate = 'GUILD_SOUNDBOARD_SOUNDS_UPDATE',
+	SoundboardSounds = 'SOUNDBOARD_SOUNDS',
 	AutoModerationRuleCreate = 'AUTO_MODERATION_RULE_CREATE',
 	AutoModerationRuleUpdate = 'AUTO_MODERATION_RULE_UPDATE',
 	AutoModerationRuleDelete = 'AUTO_MODERATION_RULE_DELETE',

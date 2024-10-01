@@ -1,6 +1,6 @@
 import { CDN_URL } from '../common';
 import type { APIRoutes, ApiHandler, CDNRoute } from './index';
-import type { HttpMethods, ImageExtension, ImageSize, StickerExtension } from './shared';
+import type { HttpMethods, ImageExtension, ImageSize, SoundExtension, StickerExtension } from './shared';
 
 export enum ProxyRequestMethod {
 	Delete = 'delete',
@@ -63,7 +63,7 @@ export const CDNRouter = {
 };
 
 export interface BaseCDNUrlOptions {
-	extension?: ImageExtension | StickerExtension | undefined;
+	extension?: ImageExtension | StickerExtension | SoundExtension;
 	size?: ImageSize;
 }
 
@@ -75,7 +75,9 @@ export function parseCDNURL(route: string, options: CDNUrlOptions = {}) {
 	if (options.forceStatic && route.includes('a_')) options.extension = 'png';
 	if (!options.extension && route.includes('a_')) options.extension = 'gif';
 
-	const url = new URL(`${route}.${options.extension || 'png'}`);
+	options.extension ||= route.includes('soundboard') ? 'ogg' : 'png';
+
+	const url = new URL(`${route}.${options.extension}`);
 
 	if (options.size) url.searchParams.set('size', `${options.size}`);
 

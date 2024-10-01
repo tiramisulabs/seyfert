@@ -35,6 +35,7 @@ import type {
 	GatewayThreadListSync as RawGatewayThreadListSync,
 	GatewayThreadMembersUpdate as RawGatewayThreadMembersUpdate,
 } from './payloads/index';
+import type { APISoundBoard } from './payloads/soundboard';
 import type { ReactionType } from './rest/index';
 import type { AnimationTypes, Nullable } from './utils';
 
@@ -57,7 +58,8 @@ export type GatewaySendPayload =
 	| GatewayRequestGuildMembers
 	| GatewayResume
 	| GatewayUpdatePresence
-	| GatewayVoiceStateUpdate;
+	| GatewayVoiceStateUpdate
+	| GatewayRequestSoundboardSounds;
 
 export type GatewayReceivePayload =
 	| GatewayDispatchPayload
@@ -127,7 +129,12 @@ export type GatewayDispatchPayload =
 	| GatewayUserUpdateDispatch
 	| GatewayVoiceServerUpdateDispatch
 	| GatewayVoiceStateUpdateDispatch
-	| GatewayWebhooksUpdateDispatch;
+	| GatewayWebhooksUpdateDispatch
+	| GatewayGuildSoundboardSoundCreateDispatch
+	| GatewayGuildSoundboardSoundDeleteDispatch
+	| GatewayGuildSoundboardSoundUpdateDispatch
+	| GatewayGuildSoundboardSoundsUpdateDispatch
+	| GatewaySoundboardSoundsDispatch;
 
 // #region Dispatch Payloads
 
@@ -607,6 +614,14 @@ export interface GatewayGuildCreateDispatchData extends APIGuild {
 	 * https://discord.com/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-object
 	 */
 	guild_scheduled_events: APIGuildScheduledEvent[];
+	/**
+	 * Soundboard sounds in the guild
+	 *
+	 * **This field is only sent within the [GUILD_CREATE](https://discord.com/developers/docs/topics/gateway-events#guild-create) event**
+	 *
+	 * https://discord.com/developers/docs/resources/soundboard
+	 */
+	soundboard_sounds: APISoundBoard[];
 }
 
 /**
@@ -967,6 +982,51 @@ export interface GatewayGuildScheduledEventUserRemoveDispatchData {
 	user_id: Snowflake;
 	guild_id: Snowflake;
 }
+
+export type GatewayGuildSoundboardSoundCreateDispatchData = APISoundBoard;
+
+export type GatewayGuildSoundboardSoundCreateDispatch = DataPayload<
+	GatewayDispatchEvents.GuildSoundboardSoundCreate,
+	GatewayGuildSoundboardSoundCreateDispatchData
+>;
+
+export type GatewayGuildSoundboardSoundUpdateDispatchData = APISoundBoard;
+
+export type GatewayGuildSoundboardSoundUpdateDispatch = DataPayload<
+	GatewayDispatchEvents.GuildSoundboardSoundUpdate,
+	GatewayGuildSoundboardSoundUpdateDispatchData
+>;
+
+export interface GatewayGuildSoundboardSoundDeleteDispatchData {
+	/** ID of the sound that was deleted */
+	sound_id: string;
+	/**	ID of the guild the sound was in */
+	guild_id: string;
+}
+
+export type GatewayGuildSoundboardSoundDeleteDispatch = DataPayload<
+	GatewayDispatchEvents.GuildSoundboardSoundDelete,
+	GatewayGuildSoundboardSoundDeleteDispatchData
+>;
+
+export type GatewayGuildSoundboardSoundsUpdateDispatchData = APISoundBoard[];
+
+export type GatewayGuildSoundboardSoundsUpdateDispatch = DataPayload<
+	GatewayDispatchEvents.GuildSoundboardSoundsUpdate,
+	GatewayGuildSoundboardSoundsUpdateDispatchData
+>;
+
+export interface GatewaySoundboardSoundsDispatchData {
+	/** The guild's soundboard sounds */
+	soundboard_sounds: APISoundBoard[];
+	/** ID of the guild */
+	guild_id: string;
+}
+
+export type GatewaySoundboardSoundsDispatch = DataPayload<
+	GatewayDispatchEvents.SoundboardSounds,
+	GatewaySoundboardSoundsDispatchData
+>;
 
 /**
  * https://discord.com/developers/docs/topics/gateway-events#integration-create
@@ -1862,6 +1922,21 @@ export type GatewayRequestGuildMembersData =
 	| GatewayRequestGuildMembersDataWithQuery
 	| GatewayRequestGuildMembersDataWithUserIds;
 
+/**
+ * https://discord.com/developers/docs/topics/gateway-events#request-soundboard-sounds
+ */
+export interface GatewayRequestSoundboardSounds {
+	op: GatewayOpcodes.RequestSoundboardSounds;
+	d: GatewayRequestSoundboardSoundsData;
+}
+
+/**
+ * https://discord.com/developers/docs/topics/gateway-events#request-soundboard-sounds-request-soundboard-sounds-structure
+ */
+export interface GatewayRequestSoundboardSoundsData {
+	/** IDs of the guilds to get soundboard sounds for */
+	guild_ids: string[];
+}
 /**
  * https://discord.com/developers/docs/topics/gateway-events#update-voice-state
  */

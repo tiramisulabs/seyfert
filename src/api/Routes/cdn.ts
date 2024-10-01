@@ -1,5 +1,5 @@
 import type { BaseCDNUrlOptions, CDNUrlOptions } from '../..';
-import type { StickerExtension } from '../shared';
+import type { SoundExtension, StickerExtension } from '../shared';
 
 export interface CDNRoute {
 	embed: {
@@ -66,6 +66,9 @@ export interface CDNRoute {
 	};
 	'guild-events'(id: string): {
 		get(cover: string, options?: BaseCDNUrlOptions): string;
+	};
+	'soundboard-sounds': {
+		get(id: string, options?: { extension: SoundExtension }): string;
 	};
 }
 

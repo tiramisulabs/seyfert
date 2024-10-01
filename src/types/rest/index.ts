@@ -19,6 +19,7 @@ export * from './user';
 export * from './voice';
 export * from './webhook';
 export * from './monetization';
+export * from './soundboard';
 
 export type DefaultUserAvatarAssets = 0 | 1 | 2 | 3 | 4 | 5;
 
