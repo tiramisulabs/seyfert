@@ -177,7 +177,7 @@ export class HandleCommand {
 
 			if (command.defaultMemberPermissions) {
 				const permissions = this.checkPermissions(interaction.member!.permissions, command.defaultMemberPermissions);
-				if (permissions) return command.onBotPermissionsFail?.(context, permissions);
+				if (permissions) return command.onPermissionsFail?.(context, permissions);
 			}
 		}
 
