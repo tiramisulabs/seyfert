@@ -169,10 +169,18 @@ export class HandleCommand {
 		resolver: OptionResolverStructure,
 		context: CommandContext,
 	) {
-		if (context.guildId && command.botPermissions && interaction.appPermissions) {
-			const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
-			if (permissions) return command.onBotPermissionsFail?.(context, permissions);
+		if (context.guildId && interaction.appPermissions) {
+			if (command.botPermissions) {
+				const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
+				if (permissions) return command.onBotPermissionsFail?.(context, permissions);
+			}
+
+			if (command.defaultMemberPermissions) {
+				const permissions = this.checkPermissions(interaction.member!.permissions, command.defaultMemberPermissions);
+				if (permissions) return command.onBotPermissionsFail?.(context, permissions);
+			}
 		}
+
 		if (!(await this.runOptions(command, context, resolver))) return;
 
 		const resultGlobal = await this.runGlobalMiddlewares(command, context);

@@ -3,6 +3,7 @@ import { basename, dirname } from 'node:path';
 import type { EntryPointCommand } from '.';
 import type { Logger, MakeRequired, NulleableCoalising, OmitInsert } from '../common';
 import { BaseHandler, isCloudfareWorker } from '../common';
+import { PermissionsBitField } from '../structures/extra/Permissions';
 import {
 	type APIApplicationCommandChannelOption,
 	type APIApplicationCommandIntegerOption,
@@ -483,8 +484,14 @@ export class CommandHandler extends BaseHandler {
 			option.onPermissionsFail?.bind(option) ??
 			commandInstance.onPermissionsFail?.bind(commandInstance) ??
 			this.client.options.commands?.defaults?.onPermissionsFail;
-		option.botPermissions ??= commandInstance.botPermissions;
-		option.defaultMemberPermissions ??= commandInstance.defaultMemberPermissions;
+		option.botPermissions = PermissionsBitField.add(
+			option.botPermissions ?? PermissionsBitField.None,
+			commandInstance.botPermissions,
+		);
+		option.defaultMemberPermissions ??= PermissionsBitField.add(
+			option.defaultMemberPermissions ?? PermissionsBitField.None,
+			commandInstance.defaultMemberPermissions,
+		);
 		option.contexts ??= commandInstance.contexts;
 		option.integrationTypes ??= commandInstance.integrationTypes;
 		option.props ??= commandInstance.props;
