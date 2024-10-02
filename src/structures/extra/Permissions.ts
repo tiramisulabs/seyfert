@@ -20,4 +20,13 @@ export class PermissionsBitField extends BitField<typeof PermissionFlagsBits> {
 	strictHas(...bits: BitFieldResolvable<typeof PermissionFlagsBits>[]) {
 		return super.has(...bits);
 	}
+
+	static resolve<T extends object = typeof PermissionFlagsBits>(bits: BitFieldResolvable<T>): bigint {
+		switch (typeof bits) {
+			case 'string':
+				return PermissionsBitField.resolve(PermissionFlagsBits[bits as keyof typeof PermissionFlagsBits]);
+			default:
+				return BitField.resolve(bits);
+		}
+	}
 }

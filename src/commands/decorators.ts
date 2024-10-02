@@ -1,11 +1,11 @@
 import type { FlatObjectKeys, PermissionStrings } from '../common';
+import { PermissionsBitField } from '../structures/extra/Permissions';
 import {
 	ApplicationCommandType,
 	ApplicationIntegrationType,
 	type EntryPointCommandHandlerType,
 	InteractionContextType,
 	type LocaleString,
-	PermissionFlagsBits,
 } from '../types';
 import type { CommandOption, OptionsRecord, SubCommand } from './applications/chat';
 import type { DefaultLocale, ExtraProps, IgnoreCommand, MiddlewareContext } from './applications/shared';
@@ -159,11 +159,11 @@ export function Declare(declare: CommandDeclareOptions) {
 			integrationTypes = declare.integrationTypes?.map(i => ApplicationIntegrationType[i]) ?? [
 				ApplicationIntegrationType.GuildInstall,
 			];
-			defaultMemberPermissions = Array.isArray(declare.defaultMemberPermissions)
-				? declare.defaultMemberPermissions?.reduce((acc, prev) => acc | PermissionFlagsBits[prev], BigInt(0))
+			defaultMemberPermissions = declare.defaultMemberPermissions
+				? PermissionsBitField.resolve(declare.defaultMemberPermissions)
 				: declare.defaultMemberPermissions;
-			botPermissions = Array.isArray(declare.botPermissions)
-				? declare.botPermissions?.reduce((acc, prev) => acc | PermissionFlagsBits[prev], BigInt(0))
+			botPermissions = declare.botPermissions
+				? PermissionsBitField.resolve(declare.botPermissions)
 				: declare.botPermissions;
 			description = '';
 			type: ApplicationCommandType = ApplicationCommandType.ChatInput;
