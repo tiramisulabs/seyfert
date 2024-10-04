@@ -99,6 +99,7 @@ export class CommandContext<
 		body: InteractionMessageUpdateBodyRequest,
 	): Promise<When<InferWithPrefix, WebhookMessageStructure | MessageStructure, WebhookMessageStructure>> {
 		if (this.interaction) return this.interaction.editResponse(body);
+		body.content ??= '';
 		return (this.messageResponse = await this.messageResponse!.edit(body)) as never;
 	}
 
