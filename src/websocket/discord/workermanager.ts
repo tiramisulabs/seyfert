@@ -192,8 +192,8 @@ export class WorkerManager extends Map<
 		if (!worker_threads) throw new Error('Cannot create worker without worker_threads.');
 		const env: Record<string, any> = {
 			SEYFERT_SPAWNING: 'true',
-			SEYFERT_WORKER_RESHARDING: 'true',
 		};
+		if (workerData.resharding) env.SEYFERT_WORKER_RESHARDING = 'true';
 		for (const i in workerData) {
 			env[`SEYFERT_WORKER_${i.toUpperCase()}`] = workerData[i as keyof WorkerData];
 		}
@@ -571,9 +571,6 @@ export class WorkerManager extends Map<
 			this._info = info;
 			this.connectQueue.concurrency = info.session_start_limit.max_concurrency;
 			this.options.info.session_start_limit.max_concurrency = info.session_start_limit.max_concurrency;
-
-			let shardsConnected = 0;
-			shardsConnected++;
 
 			const spaces = WorkerManager.prepareSpaces(
 				{
