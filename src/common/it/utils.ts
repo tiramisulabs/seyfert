@@ -11,7 +11,7 @@ import {
 	type TypeArray,
 } from '..';
 import type { Cache } from '../../cache';
-import { type APIPartialEmoji, FormattingPatterns } from '../../types';
+import { type APIPartialEmoji, FormattingPatterns, GatewayIntentBits } from '../../types';
 
 /**
  * Calculates the shard ID for a guild based on its ID.
@@ -367,4 +367,9 @@ export function hasProps<T extends Record<any, any>>(target: T, props: TypeArray
 		return false;
 	}
 	return true;
+}
+
+export function hasIntent(intents: number, target: keyof typeof GatewayIntentBits | GatewayIntentBits) {
+	const intent = typeof target === 'string' ? GatewayIntentBits[target] : target;
+	return (intents & intent) === intent;
 }

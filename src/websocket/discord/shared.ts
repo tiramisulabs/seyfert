@@ -43,18 +43,6 @@ export interface ShardManagerOptions extends ShardDetails {
 		getInfo(): Promise<APIGatewayBotInfo>;
 		interval: number;
 		percentage: number;
-		/**
-		 *
-		 * @param ids
-		 * @returns
-		 */
-		reloadGuilds: (ids: string[]) => unknown;
-		/**
-		 *
-		 * @param id
-		 * @returns true if deleted
-		 */
-		onGuild: (id: string) => boolean;
 	};
 }
 
@@ -152,4 +140,5 @@ export interface WorkerData {
 	debug: boolean;
 	workerProxy: boolean;
 	__USING_WATCHER__?: boolean;
+	resharding: boolean;
 }

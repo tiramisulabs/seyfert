@@ -1,5 +1,5 @@
 import { error } from 'node:console';
-import { randomUUID } from 'node:crypto';
+import { type UUID, randomUUID } from 'node:crypto';
 import type { UsingClient } from '../commands';
 import type { Awaitable, CamelCase } from '../common';
 import type { CallbackEventHandler, CustomEventsKeys, GatewayEvents } from '../events';
@@ -31,7 +31,7 @@ type RunData<T extends AllClientEvents> = {
 export class Collectors {
 	readonly values = new Map<AllClientEvents, RunData<any>[]>();
 
-	private generateRandomUUID(name: AllClientEvents) {
+	private generateRandomUUID(name: AllClientEvents): UUID | '*' {
 		const collectors = this.values.get(name);
 		if (!collectors) return '*';
 

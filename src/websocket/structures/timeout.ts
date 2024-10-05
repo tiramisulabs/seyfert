@@ -25,43 +25,42 @@ export class ConnectTimeout {
 }
 
 export class ConnectQueue {
-	readonly queue: { cb: (() => any) | undefined }[] = [];
+	private queue: ((() => unknown) | undefined)[] = [];
+	private remaining = 0;
 	protected interval?: NodeJS.Timeout = undefined;
 
 	constructor(
 		public intervalTime = 5000,
 		public concurrency = 1,
-	) {}
-
-	async push(callback: () => any) {
-		this.queue.push({ cb: callback });
-		if (this.queue.length === this.concurrency) {
-			for (let i = 0; i < this.concurrency; i++) {
-				await this.queue[i].cb?.();
-				this.queue[i].cb = undefined;
-			}
-			this.interval = setInterval(() => {
-				for (let i = 0; i < this.concurrency; i++) {
-					this.shift();
-				}
-			}, this.intervalTime);
-		}
+	) {
+		this.remaining = concurrency;
 	}
 
-	async shift(): Promise<any> {
-		const shift = this.queue.shift();
-		if (!shift) {
+	push(callback: () => unknown) {
+		if (this.remaining === 0) return this.queue.push(callback);
+		this.remaining--;
+		if (!this.interval) {
+			this.startInterval();
+		}
+
+		if (this.queue.length < this.concurrency) {
+			return callback();
+		}
+		return this.queue.push(callback);
+	}
+
+	startInterval() {
+		this.interval = setInterval(() => {
+			let cb: (() => void) | undefined;
+			while (this.queue.length && !(cb = this.queue.shift())) {
+				//
+			}
+			if (cb) return cb?.();
+			if (this.remaining < this.concurrency) return this.remaining++;
 			if (!this.queue.length) {
 				clearInterval(this.interval);
 				this.interval = undefined;
 			}
-			return;
-		}
-		if (!shift.cb) return this.shift();
-		await shift.cb?.();
-		if (!this.queue.length) {
-			clearInterval(this.interval);
-			this.interval = undefined;
-		}
+		}, this.intervalTime / this.concurrency);
 	}
 }

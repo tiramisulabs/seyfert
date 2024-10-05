@@ -4,7 +4,7 @@ import { SeyfertWebSocket } from './socket/custom';
 export class BaseSocket {
 	private internal: SeyfertWebSocket | WebSocket;
 
-	ping?: () => Promise<number>;
+	ping: () => Promise<number>;
 
 	constructor(kind: 'ws' | 'bun', url: string) {
 		this.internal = kind === 'ws' ? new SeyfertWebSocket(url) : new WebSocket(url);

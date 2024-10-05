@@ -7,7 +7,7 @@ import {
 	calculateShardId,
 	lazyLoadPackage,
 } from '../../common';
-import type { MakeDeepPartial } from '../../common/types/util';
+import type { DeepPartial, MakeDeepPartial } from '../../common/types/util';
 import {
 	type GatewayDispatchPayload,
 	GatewayOpcodes,
@@ -19,7 +19,7 @@ import { ShardManagerDefaults } from '../constants';
 import { DynamicBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';
 import { Shard } from './shard';
-import type { ShardManagerOptions, WorkerData } from './shared';
+import type { ShardData, ShardManagerOptions, WorkerData } from './shared';
 
 let parentPort: import('node:worker_threads').MessagePort;
 let workerData: WorkerData;
@@ -87,8 +87,8 @@ export class ShardManager extends Map<number, Shard> {
 		return calculateShardId(guildId, this.totalShards);
 	}
 
-	spawn(shardId: number) {
-		this.debugger?.info(`Spawn shard ${shardId}`);
+	create(shardId: number) {
+		this.debugger?.info(`Creating shard ${shardId}`);
 		let shard = this.get(shardId);
 
 		shard ??= new Shard(shardId, {
@@ -110,7 +110,7 @@ export class ShardManager extends Map<number, Shard> {
 	async spawnShards(): Promise<void> {
 		const buckets = this.spawnBuckets();
 
-		this.debugger?.info('Spawn shards');
+		this.debugger?.info('Spawning shards');
 		for (const bucket of buckets) {
 			for (const shard of bucket) {
 				if (!shard) {
@@ -143,31 +143,40 @@ export class ShardManager extends Map<number, Shard> {
 			this.debugger?.info('Starting resharding process');
 
 			this.connectQueue.concurrency = info.session_start_limit.max_concurrency;
-			this.options.totalShards = info.shards;
 			this.options.info.session_start_limit.max_concurrency = info.session_start_limit.max_concurrency;
 
+			//waiting for all shards to connect
 			let shardsConnected = 0;
+			const handleGuilds = new Set<string>();
+
 			let handlePayload = async (sharder: ShardManager, _: number, packet: GatewayDispatchPayload) => {
-				if (
-					(packet.t === 'GUILD_CREATE' || packet.t === 'GUILD_DELETE') &&
-					this.options.resharding.onGuild(packet.d.id)
-				) {
-					return;
+				if (packet.t === 'GUILD_CREATE' || packet.t === 'GUILD_DELETE') {
+					handleGuilds.delete(packet.d.id);
+					if (shardsConnected === info.shards && !handleGuilds.size) {
+						return cleanProcess(sharder);
+					}
 				}
 
 				if (packet.t !== 'READY') return;
 
-				this.options.resharding.reloadGuilds(packet.d.guilds.map(x => x.id));
+				for (const guild of packet.d.guilds) {
+					handleGuilds.add(guild.id);
+				}
 
-				if (++shardsConnected < info.shards) return; //waiting for last shard to connect
+				if (++shardsConnected < info.shards || handleGuilds.size) return;
 
+				cleanProcess(sharder);
 				// dont listen more events when all shards are ready
+			};
+
+			const cleanProcess = (sharder: ShardManager) => {
 				handlePayload = async () => {
 					//
 				};
-				await this.disconnectAll();
+				this.disconnectAll();
 				this.clear();
 
+				this.options.totalShards = this.options.shardEnd = info.shards;
 				for (const [id, shard] of sharder) {
 					shard.options.handlePayload = (shardId, packet) => {
 						return this.options.handlePayload(shardId, packet);
@@ -178,19 +187,18 @@ export class ShardManager extends Map<number, Shard> {
 				sharder.clear();
 			};
 
+			const options = MergeOptions<ShardManagerOptions>(this.options, {
+				totalShards: info.shards,
+				shardEnd: info.shards,
+			} satisfies DeepPartial<ShardManagerOptions>);
+
 			const resharder = new ShardManager({
-				...this.options,
+				...options,
 				resharding: {
 					// getInfo mock, we don't need it
 					getInfo: () => ({}) as any,
 					interval: 0,
 					percentage: 0,
-					reloadGuilds() {
-						//
-					},
-					onGuild() {
-						return true;
-					},
 				},
 				handlePayload: (shardId, packet): unknown => {
 					return handlePayload(resharder, shardId, packet);
@@ -214,7 +222,7 @@ export class ShardManager extends Map<number, Shard> {
 		chunks.forEach((arr: any[], index: number) => {
 			for (let i = 0; i < arr.length; i++) {
 				const id = i + (index > 0 ? index * this.concurrency : 0) + this.shardStart;
-				chunks[index][i] = this.spawn(id);
+				chunks[index][i] = this.create(id);
 			}
 		});
 		this.debugger?.info(`${chunks.length} buckets created`);
@@ -223,7 +231,7 @@ export class ShardManager extends Map<number, Shard> {
 
 	forceIdentify(shardId: number) {
 		this.debugger?.info(`Shard #${shardId} force identify`);
-		return this.spawn(shardId).identify();
+		return this.create(shardId).identify();
 	}
 
 	disconnect(shardId: number) {
@@ -233,10 +241,7 @@ export class ShardManager extends Map<number, Shard> {
 
 	disconnectAll() {
 		this.debugger?.info('Disconnect all shards');
-		return new Promise(resolve => {
-			this.forEach(shard => shard.disconnect());
-			resolve(null);
-		});
+		this.forEach(shard => shard.disconnect());
 	}
 
 	setShardPresence(shardId: number, payload: GatewayUpdatePresence['d']) {
@@ -247,13 +252,10 @@ export class ShardManager extends Map<number, Shard> {
 		});
 	}
 
-	setPresence(payload: GatewayUpdatePresence['d']): Promise<void> {
-		return new Promise(resolve => {
-			this.forEach(shard => {
-				this.setShardPresence(shard.id, payload);
-			}, this);
-			resolve();
-		});
+	setPresence(payload: GatewayUpdatePresence['d']) {
+		this.forEach(shard => {
+			this.setShardPresence(shard.id, payload);
+		}, this);
 	}
 
 	joinVoice(
@@ -276,7 +278,6 @@ export class ShardManager extends Map<number, Shard> {
 
 	leaveVoice(guild_id: string) {
 		const shardId = this.calculateShardId(guild_id);
-		this.debugger?.info(`Shard #${shardId} leave voice in ${guild_id}`);
 
 		return this.send<GatewayVoiceStateUpdate>(shardId, {
 			op: GatewayOpcodes.VoiceStateUpdate,
@@ -298,5 +299,12 @@ export class ShardManager extends Map<number, Shard> {
 			} satisfies WatcherSendToShard);
 		}
 		this.get(shardId)?.send(false, payload);
+	}
+
+	resume(shardId: number, shardData: MakeRequired<ShardData>) {
+		if (this.has(shardId)) throw new Error('Cannot override existing shard');
+		const shard = this.create(shardId);
+		shard.data = shardData;
+		return this.connectQueue.push(shard.connect.bind(shard));
 	}
 }

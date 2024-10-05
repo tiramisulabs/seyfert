@@ -91,7 +91,6 @@ export class Shard {
 
 	ping() {
 		if (!this.websocket) return Promise.resolve(Number.POSITIVE_INFINITY);
-		//@ts-expect-error
 		return this.websocket.ping();
 	}
 
@@ -313,7 +312,6 @@ export class Shard {
 					await this.reconnect();
 				}
 				break;
-
 			case GatewayCloseCodes.AuthenticationFailed:
 			case GatewayCloseCodes.DisallowedIntents:
 			case GatewayCloseCodes.InvalidAPIVersion:
@@ -322,7 +320,6 @@ export class Shard {
 			case GatewayCloseCodes.ShardingRequired:
 				this.logger.fatal('Cannot reconnect');
 				break;
-
 			default:
 				{
 					this.logger.warn('Unknown close code, trying to reconnect anyways');
