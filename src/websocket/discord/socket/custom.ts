@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { type UUID, createHash, randomBytes, randomUUID } from 'node:crypto';
 import { request } from 'node:https';
 import type { Socket } from 'node:net';
 
@@ -274,7 +274,7 @@ export class SeyfertWebSocket {
 			});
 	}
 
-	#randomUUID(): string {
+	#randomUUID(): UUID {
 		const id = randomUUID();
 		if (this.__promises.has(id)) return this.#randomUUID();
 		return id;

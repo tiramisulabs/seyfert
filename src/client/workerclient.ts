@@ -1,14 +1,18 @@
-import { randomUUID } from 'node:crypto';
+import { type UUID, randomUUID } from 'node:crypto';
 import { ApiHandler, Logger } from '..';
 import { WorkerAdapter } from '../cache';
-import { type DeepPartial, LogLevels, type When, lazyLoadPackage } from '../common';
+import { type DeepPartial, LogLevels, type When, hasIntent, lazyLoadPackage } from '../common';
 import { EventHandler } from '../events';
 import { type GatewayDispatchPayload, GatewayIntentBits, type GatewaySendPayload } from '../types';
 import { Shard, type ShardManagerOptions, type WorkerData, properties } from '../websocket';
 import type {
+	WorkerDisconnectedAllShardsResharding,
+	WorkerMessage,
 	WorkerReady,
+	WorkerReadyResharding,
 	WorkerReceivePayload,
 	WorkerRequestConnect,
+	WorkerRequestConnectResharding,
 	WorkerSendEval,
 	WorkerSendEvalResponse,
 	WorkerSendInfo,
@@ -17,6 +21,7 @@ import type {
 	WorkerShardInfo,
 	WorkerShardsConnected,
 	WorkerStart,
+	WorkerStartResharding,
 } from '../websocket/discord/worker';
 import type { ManagerMessages } from '../websocket/discord/workermanager';
 import type { BaseClientOptions, ServicesOptions, StartOptions } from './base';
@@ -41,6 +46,7 @@ try {
 		workerProxy: process.env.SEYFERT_WORKER_WORKERPROXY === 'true',
 		totalShards: Number(process.env.SEYFERT_WORKER_TOTALSHARDS),
 		mode: process.env.SEYFERT_WORKER_MODE,
+		resharding: process.env.SEYFERT_WORKER_RESHARDING === 'true',
 	} as WorkerData;
 } catch {
 	//
@@ -48,6 +54,7 @@ try {
 
 export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	private __handleGuilds?: Set<string> = new Set();
+	private __handleGuildsResharding?: Set<string>;
 
 	memberUpdateHandler = new MemberUpdateHandler();
 	presenceUpdateHandler = new PresenceUpdateHandler();
@@ -57,6 +64,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	promises = new Map<string, { resolve: (value: any) => void; timeout: NodeJS.Timeout }>();
 
 	shards = new Map<number, Shard>();
+	resharding = new Map<number, Shard>();
+	private _ready?: boolean;
 	private __setServicesCache?: boolean;
 
 	declare options: WorkerClientOptions;
@@ -146,9 +155,12 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			});
 		}
 		this.postMessage({
-			type: 'WORKER_START',
+			type: workerData.resharding ? 'WORKER_START_RESHARDING' : 'WORKER_START',
 			workerId: workerData.workerId,
-		} satisfies WorkerStart);
+		} satisfies WorkerStart | WorkerStartResharding);
+		if (workerData.resharding) {
+			this.__handleGuildsResharding = new Set<string>();
+		}
 		await super.start(options);
 		await this.loadEvents(options.eventsDir);
 		this.cache.intents = workerData.intents;
@@ -162,7 +174,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		}
 	}
 
-	postMessage(body: unknown): unknown {
+	postMessage(body: WorkerMessage): unknown {
 		if (manager) return manager.postMessage(body);
 		return process.send!(body);
 	}
@@ -196,6 +208,17 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					} satisfies WorkerSendResultPayload);
 				}
 				break;
+			case 'ALLOW_CONNECT_RESHARDING':
+				{
+					const shard = this.resharding.get(data.shardId);
+					if (!shard) {
+						this.logger.fatal('Worker trying reshard non-existent shard');
+						return;
+					}
+					shard.options.presence = data.presence;
+					await shard.connect();
+				}
+				break;
 			case 'ALLOW_CONNECT':
 				{
 					const shard = this.shards.get(data.shardId);
@@ -207,40 +230,100 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					await shard.connect();
 				}
 				break;
+			case 'SPAWN_SHARDS_RESHARDING':
+				{
+					let shardsConnected = 0;
+					const self = this;
+					for (const id of workerData.shards) {
+						const existsShard = this.resharding.has(id);
+						if (existsShard) {
+							this.logger.warn(`Trying to re-spawn existing shard #${id}`);
+							continue;
+						}
+
+						const shard = new Shard(id, {
+							token: workerData.token,
+							intents: workerData.intents,
+							info: data.info,
+							compress: data.compress,
+							debugger: this.debugger,
+							properties: {
+								...properties,
+								...this.options.gateway?.properties,
+							},
+							handlePayload(_, payload) {
+								if (payload.t === 'GUILD_CREATE' || payload.t === 'GUILD_DELETE') {
+									self.__handleGuildsResharding!.delete(payload.d.id);
+									if (!self.__handleGuildsResharding?.size && shardsConnected === workerData.shards.length) {
+										delete self.__handleGuildsResharding;
+										self.postMessage({
+											type: 'WORKER_READY_RESHARDING',
+											workerId: workerData.workerId,
+										} satisfies WorkerReadyResharding);
+									}
+								}
+
+								if (payload.t !== 'READY') return;
+								shardsConnected++;
+								for (const guild of payload.d.guilds) {
+									self.__handleGuildsResharding!.add(guild.id);
+								}
+								if (
+									shardsConnected === workerData.shards.length &&
+									!hasIntent(workerData.intents, GatewayIntentBits.Guilds)
+								) {
+									delete self.__handleGuildsResharding;
+									self.postMessage({
+										type: 'WORKER_READY_RESHARDING',
+										workerId: workerData.workerId,
+									} satisfies WorkerReadyResharding);
+								}
+							},
+						});
+						this.resharding.set(id, shard);
+						this.postMessage({
+							type: 'CONNECT_QUEUE_RESHARDING',
+							shardId: id,
+							workerId: workerData.workerId,
+						} satisfies WorkerRequestConnectResharding);
+					}
+				}
+				break;
 			case 'SPAWN_SHARDS':
 				{
 					const onPacket = this.onPacket.bind(this);
 					const handlePayload = this.options?.handlePayload?.bind(this);
 					const self = this;
-					const { sendPayloadToParent } = this.options;
 					for (const id of workerData.shards) {
-						let shard = this.shards.get(id);
-						if (!shard) {
-							shard = new Shard(id, {
-								token: workerData.token,
-								intents: workerData.intents,
-								info: data.info,
-								compress: data.compress,
-								debugger: this.debugger,
-								properties: {
-									...properties,
-									...this.options.gateway?.properties,
-								},
-								async handlePayload(shardId, payload) {
-									await handlePayload?.(shardId, payload);
-									await onPacket(payload, shardId);
-									if (sendPayloadToParent)
-										self.postMessage({
-											workerId: workerData.workerId,
-											shardId,
-											type: 'RECEIVE_PAYLOAD',
-											payload,
-										} satisfies WorkerReceivePayload);
-								},
-							});
-							this.shards.set(id, shard);
+						const existsShard = this.shards.has(id);
+						if (existsShard) {
+							this.logger.warn(`Trying to spawn existing shard #${id}`);
+							continue;
 						}
 
+						const shard = new Shard(id, {
+							token: workerData.token,
+							intents: workerData.intents,
+							info: data.info,
+							compress: data.compress,
+							debugger: this.debugger,
+							properties: {
+								...properties,
+								...this.options.gateway?.properties,
+							},
+							async handlePayload(shardId, payload) {
+								await handlePayload?.(shardId, payload);
+								await onPacket(payload, shardId);
+								if (self.options.sendPayloadToParent)
+									self.postMessage({
+										workerId: workerData.workerId,
+										shardId,
+										type: 'RECEIVE_PAYLOAD',
+										payload,
+									} satisfies WorkerReceivePayload);
+							},
+						});
+						this.shards.set(id, shard);
 						this.postMessage({
 							type: 'CONNECT_QUEUE',
 							shardId: id,
@@ -314,14 +397,47 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					evalResponse.resolve(data.response);
 				}
 				break;
+			case 'WORKER_ALREADY_EXISTS_RESHARDING':
+				{
+					this.__handleGuildsResharding = new Set<string>();
+					this.postMessage({
+						type: 'WORKER_START_RESHARDING',
+						workerId: workerData.workerId,
+					} satisfies WorkerStartResharding);
+				}
+				break;
+			case 'DISCONNECT_ALL_SHARDS_RESHARDING':
+				{
+					for (const i of this.shards.values()) {
+						await i.disconnect();
+					}
+					this.postMessage({
+						type: 'DISCONNECTED_ALL_SHARDS_RESHARDING',
+						workerId: workerData.workerId,
+					} satisfies WorkerDisconnectedAllShardsResharding);
+				}
+				break;
+			case 'CONNECT_ALL_SHARDS_RESHARDING':
+				{
+					this.shards.clear();
+					const handlePayload = this.options?.handlePayload?.bind(this);
+					for (const [id, shard] of this.resharding) {
+						this.shards.set(id, shard);
+						shard.options.handlePayload = async (shardId, packet) => {
+							await handlePayload?.(shardId, packet);
+							return this.onPacket(packet, shardId);
+						};
+					}
+					this.resharding.clear();
+				}
+				break;
 		}
 	}
 
-	private generateNonce(large = true): string {
+	private generateNonce(): UUID {
 		const uuid = randomUUID();
-		const nonce = large ? uuid : uuid.split('-')[0];
-		if (this.promises.has(nonce)) return this.generateNonce(large);
-		return nonce;
+		if (this.promises.has(uuid)) return this.generateNonce();
+		return uuid;
 	}
 
 	private generateSendPromise<T = unknown>(nonce: string, message = 'Timeout'): Promise<T> {
@@ -412,19 +528,15 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							this.applicationId = packet.d.application.id;
 							this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
 							await this.events?.execute(packet.t as never, packet, this, shardId);
-							if ([...this.shards.values()].every(shard => shard.data.session_id)) {
+							if (!this._ready && [...this.shards.values()].every(shard => shard.data.session_id)) {
+								this._ready = true;
 								this.postMessage({
 									type: 'WORKER_SHARDS_CONNECTED',
 									workerId: this.workerId,
 								} as WorkerShardsConnected);
 								await this.events?.runEvent('WORKER_SHARDS_CONNECTED', this, this.me, -1);
 							}
-							if (
-								!(
-									this.__handleGuilds?.size &&
-									(workerData.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds
-								)
-							) {
+							if (!hasIntent(workerData.intents, GatewayIntentBits.Guilds)) {
 								if ([...this.shards.values()].every(shard => shard.data.session_id)) {
 									this.postMessage({
 										type: 'WORKER_READY',

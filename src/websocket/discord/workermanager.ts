@@ -1,10 +1,10 @@
 import cluster, { type Worker as ClusterWorker } from 'node:cluster';
-import { randomUUID } from 'node:crypto';
+import { type UUID, randomUUID } from 'node:crypto';
 import { ApiHandler, Logger } from '../..';
 import { type Adapter, MemoryAdapter } from '../../cache';
 import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
 import { type MakePartial, MergeOptions, lazyLoadPackage } from '../../common';
-import type { GatewayPresenceUpdateData, GatewaySendPayload } from '../../types';
+import type { GatewayPresenceUpdateData, GatewaySendPayload, RESTGetAPIGatewayBotResult } from '../../types';
 import { WorkerManagerDefaults, properties } from '../constants';
 import { DynamicBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';
@@ -13,8 +13,38 @@ import type { WorkerInfo, WorkerMessage, WorkerShardInfo } from './worker';
 
 export class WorkerManager extends Map<
 	number,
-	(ClusterWorker | import('node:worker_threads').Worker | { ready: boolean }) & { ready?: boolean }
+	(ClusterWorker | import('node:worker_threads').Worker | { ready?: boolean }) & {
+		ready?: boolean;
+		disconnected?: boolean;
+		resharded?: boolean;
+	}
 > {
+	static prepareSpaces(
+		options: {
+			shardStart: number;
+			shardEnd: number;
+			shardsPerWorker: number;
+		},
+		logger?: Logger,
+	) {
+		logger?.info('Preparing buckets', options);
+
+		const chunks = DynamicBucket.chunk<number>(
+			new Array(options.shardEnd - options.shardStart),
+			options.shardsPerWorker,
+		);
+
+		chunks.forEach((shards, index) => {
+			for (let i = 0; i < shards.length; i++) {
+				const id = i + (index > 0 ? index * options.shardsPerWorker : 0) + options.shardStart;
+				chunks[index][i] = id;
+			}
+		});
+
+		logger?.info(`${chunks.length} buckets created`);
+		return chunks;
+	}
+
 	options: MakePartial<Required<WorkerManagerOptions>, 'adapter'>;
 	debugger?: Logger;
 	connectQueue!: ConnectQueue;
@@ -22,7 +52,14 @@ export class WorkerManager extends Map<
 	cacheAdapter: Adapter;
 	promises = new Map<string, { resolve: (value: any) => void; timeout: NodeJS.Timeout }>();
 	rest!: ApiHandler;
-	constructor(options: MakePartial<WorkerManagerOptions, 'token' | 'intents' | 'info' | 'handlePayload'>) {
+	reshardingWorkerQueue: (() => void)[] = [];
+	private _info?: RESTGetAPIGatewayBotResult;
+
+	constructor(
+		options: Omit<MakePartial<WorkerManagerOptions, 'token' | 'intents' | 'info' | 'handlePayload'>, 'resharding'> & {
+			resharding?: MakePartial<NonNullable<WorkerManagerOptions['resharding']>, 'getInfo'>;
+		},
+	) {
 		super();
 		this.options = options as WorkerManager['options'];
 		this.cacheAdapter = new MemoryAdapter();
@@ -68,9 +105,12 @@ export class WorkerManager extends Map<
 		return this.options.workers;
 	}
 
-	async syncLatency({ shardId, workerId }: { shardId?: number; workerId?: number }) {
+	async syncLatency({
+		shardId,
+		workerId,
+	}: { shardId: number; workerId?: number } | { shardId?: number; workerId: number }) {
 		if (typeof shardId !== 'number' && typeof workerId !== 'number') {
-			return;
+			throw new Error('Undefined workerId and shardId');
 		}
 
 		const id = workerId ?? this.calculateWorkerId(shardId!);
@@ -96,28 +136,9 @@ export class WorkerManager extends Map<
 		return workerId;
 	}
 
-	prepareSpaces() {
-		this.debugger?.info('Preparing buckets');
-
-		const chunks = DynamicBucket.chunk<number>(
-			new Array(this.shardEnd - this.shardStart),
-			this.options.shardsPerWorker,
-		);
-
-		chunks.forEach((shards, index) => {
-			for (let i = 0; i < shards.length; i++) {
-				const id = i + (index > 0 ? index * this.options.shardsPerWorker : 0) + this.shardStart;
-				chunks[index][i] = id;
-			}
-		});
-
-		this.debugger?.info(`${chunks.length} buckets created`);
-		return chunks;
-	}
-
-	postMessage(id: number, body: any) {
+	postMessage(id: number, body: ManagerMessages) {
 		const worker = this.get(id);
-		if (!worker) return this.debugger?.error(`Worker ${id} doesnt exists.`);
+		if (!worker) return this.debugger?.error(`Worker ${id} does not exists.`);
 		switch (this.options.mode) {
 			case 'clusters':
 				(worker as ClusterWorker).send(body);
@@ -131,14 +152,14 @@ export class WorkerManager extends Map<
 		}
 	}
 
-	async prepareWorkers(shards: number[][]) {
+	async prepareWorkers(shards: number[][], resharding = false) {
 		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
 		if (!worker_threads) throw new Error('Cannot prepare workers without worker_threads.');
 
 		for (let i = 0; i < shards.length; i++) {
 			const workerExists = this.has(i);
-			if (!workerExists) {
-				this.workerQueue.push(() => {
+			if (resharding || !workerExists) {
+				this[resharding ? 'reshardingWorkerQueue' : 'workerQueue'].push(() => {
 					const worker = this.createWorker({
 						path: this.options.path,
 						debug: this.options.debug,
@@ -147,8 +168,9 @@ export class WorkerManager extends Map<
 						intents: this.options.intents,
 						workerId: i,
 						workerProxy: this.options.workerProxy,
-						totalShards: this.totalShards,
+						totalShards: resharding ? this._info!.shards : this.totalShards,
 						mode: this.options.mode,
+						resharding,
 					});
 					this.set(i, worker);
 				});
@@ -157,10 +179,20 @@ export class WorkerManager extends Map<
 	}
 
 	createWorker(workerData: WorkerData) {
+		if (this.has(workerData.workerId)) {
+			if (workerData.resharding) {
+				this.postMessage(workerData.workerId, {
+					type: 'WORKER_ALREADY_EXISTS_RESHARDING',
+				} satisfies ManagerWorkerAlreadyExistsResharding);
+			}
+			const worker = this.get(workerData.workerId)!;
+			return worker;
+		}
 		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
 		if (!worker_threads) throw new Error('Cannot create worker without worker_threads.');
 		const env: Record<string, any> = {
 			SEYFERT_SPAWNING: 'true',
+			SEYFERT_WORKER_RESHARDING: 'true',
 		};
 		for (const i in workerData) {
 			env[`SEYFERT_WORKER_${i.toUpperCase()}`] = workerData[i as keyof WorkerData];
@@ -190,23 +222,80 @@ export class WorkerManager extends Map<
 		}
 	}
 
-	spawn(workerId: number, shardId: number) {
+	spawn(workerId: number, shardId: number, resharding = false) {
 		this.connectQueue.push(() => {
 			const worker = this.has(workerId);
 			if (!worker) {
-				this.debugger?.fatal("Trying spawn with worker doesn't exist");
+				this.debugger?.fatal(`Trying ${resharding ? 'reshard' : 'spawn'} with worker that doesn't exist`);
 				return;
 			}
 			this.postMessage(workerId, {
-				type: 'ALLOW_CONNECT',
+				type: resharding ? 'ALLOW_CONNECT_RESHARDING' : 'ALLOW_CONNECT',
 				shardId,
 				presence: this.options.presence?.(shardId, workerId),
-			} satisfies ManagerAllowConnect);
+			} satisfies ManagerAllowConnect | ManagerAllowConnectResharding);
 		});
 	}
 
 	async handleWorkerMessage(message: WorkerMessage) {
 		switch (message.type) {
+			case 'WORKER_READY_RESHARDING':
+				{
+					this.get(message.workerId)!.resharded = true;
+					if (!this.reshardingWorkerQueue.length && [...this.values()].every(w => w.resharded)) {
+						for (const [id] of this.entries()) {
+							this.postMessage(id, {
+								type: 'DISCONNECT_ALL_SHARDS_RESHARDING',
+							} satisfies DisconnectAllShardsResharding);
+						}
+						this.forEach(w => {
+							delete w.resharded;
+						});
+					} else {
+						const nextWorker = this.reshardingWorkerQueue.shift();
+						if (nextWorker) {
+							this.debugger?.info('Spawning next worker to reshard');
+							nextWorker();
+						} else {
+							this.debugger?.info('No more workers to reshard left');
+						}
+					}
+				}
+				break;
+			case 'DISCONNECTED_ALL_SHARDS_RESHARDING':
+				{
+					this.get(message.workerId)!.disconnected = true;
+					if ([...this.values()].every(w => w.disconnected)) {
+						this.options.totalShards = this._info!.shards;
+						this.options.shardEnd = this.options.totalShards = this._info!.shards;
+						delete this._info;
+						for (const [id] of this.entries()) {
+							this.postMessage(id, {
+								type: 'CONNECT_ALL_SHARDS_RESHARDING',
+							} satisfies ConnnectAllShardsResharding);
+						}
+						this.forEach(w => {
+							delete w.disconnected;
+						});
+					}
+				}
+				break;
+			case 'WORKER_START_RESHARDING':
+				{
+					this.postMessage(message.workerId, {
+						type: 'SPAWN_SHARDS_RESHARDING',
+						compress: this.options.compress ?? false,
+						info: {
+							...this.options.info,
+							shards: this._info!.shards,
+						},
+						properties: {
+							...properties,
+							...this.options.properties,
+						},
+					} satisfies ManagerSpawnShardsResharding);
+				}
+				break;
 			case 'WORKER_START':
 				{
 					this.postMessage(message.workerId, {
@@ -222,6 +311,10 @@ export class WorkerManager extends Map<
 						},
 					} satisfies ManagerSpawnShards);
 				}
+				break;
+
+			case 'CONNECT_QUEUE_RESHARDING':
+				this.spawn(message.workerId, message.shardId, true);
 				break;
 			case 'CONNECT_QUEUE':
 				this.spawn(message.workerId, message.shardId);
@@ -346,11 +439,10 @@ export class WorkerManager extends Map<
 		}
 	}
 
-	private generateNonce(large = true): string {
+	private generateNonce(): UUID {
 		const uuid = randomUUID();
-		const nonce = large ? uuid : uuid.split('-')[0];
-		if (this.promises.has(nonce)) return this.generateNonce(large);
-		return nonce;
+		if (this.promises.has(uuid)) return this.generateNonce();
+		return uuid;
 	}
 
 	private generateSendPromise<T = unknown>(nonce: string, message = 'Timeout'): Promise<T> {
@@ -391,7 +483,7 @@ export class WorkerManager extends Map<
 			throw new Error(`Worker #${workerId} doesnt exist`);
 		}
 
-		const nonce = this.generateNonce(false);
+		const nonce = this.generateNonce();
 
 		this.postMessage(workerId, { shardId, nonce, type: 'SHARD_INFO' } satisfies ManagerRequestShardInfo);
 
@@ -428,6 +520,7 @@ export class WorkerManager extends Map<
 		this.options.shardEnd ??= this.options.totalShards ?? this.options.info.shards;
 		this.options.totalShards ??= this.options.shardEnd;
 		this.options = MergeOptions<Required<WorkerManagerOptions>>(WorkerManagerDefaults, this.options);
+		this.options.resharding.getInfo ??= () => this.rest.proxy.gateway.bot.get();
 		this.options.workers ??= Math.ceil(this.options.totalShards / this.options.shardsPerWorker);
 		this.connectQueue = new ConnectQueue(5.5e3, this.concurrency);
 
@@ -444,10 +537,55 @@ export class WorkerManager extends Map<
 			);
 		}
 
-		const spaces = this.prepareSpaces();
+		const spaces = WorkerManager.prepareSpaces(
+			{
+				shardStart: this.shardStart,
+				shardEnd: this.shardEnd,
+				shardsPerWorker: this.shardsPerWorker,
+			},
+			this.debugger,
+		);
 		await this.prepareWorkers(spaces);
 		// Start workers queue
-		return this.workerQueue.shift()?.();
+		this.workerQueue.shift()!();
+		await this.startResharding();
+	}
+
+	async startResharding() {
+		if (this.options.resharding.interval <= 0) return;
+		if (this.shardStart !== 0 || this.shardEnd !== this.totalShards)
+			return this.debugger?.debug('Cannot start resharder');
+		setInterval(async () => {
+			this.debugger?.debug('Checking if reshard is needed');
+			const info = await this.options.resharding.getInfo();
+			if (info.shards <= this.totalShards) return this.debugger?.debug('Resharding not needed');
+			//https://github.com/discordeno/discordeno/blob/6a5f446c0651b9fad9f1550ff1857fe7a026426b/packages/gateway/src/manager.ts#L106C8-L106C94
+			const percentage = (info.shards / ((this.totalShards * 2500) / 1000)) * 100;
+			if (percentage < this.options.resharding.percentage)
+				return this.debugger?.debug(
+					`Percentage is not enough to reshard ${percentage}/${this.options.resharding.percentage}`,
+				);
+
+			this.debugger?.info('Starting resharding process');
+
+			this._info = info;
+			this.connectQueue.concurrency = info.session_start_limit.max_concurrency;
+			this.options.info.session_start_limit.max_concurrency = info.session_start_limit.max_concurrency;
+
+			let shardsConnected = 0;
+			shardsConnected++;
+
+			const spaces = WorkerManager.prepareSpaces(
+				{
+					shardsPerWorker: this.shardsPerWorker,
+					shardEnd: info.shards,
+					shardStart: 0,
+				},
+				this.debugger,
+			);
+			await this.prepareWorkers(spaces, true);
+			return this.reshardingWorkerQueue.shift()!();
+		}, this.options.resharding.interval);
 	}
 }
 
@@ -457,10 +595,21 @@ export type ManagerAllowConnect = CreateManagerMessage<
 	'ALLOW_CONNECT',
 	{ shardId: number; presence: GatewayPresenceUpdateData }
 >;
+export type ManagerAllowConnectResharding = CreateManagerMessage<
+	'ALLOW_CONNECT_RESHARDING',
+	{ shardId: number; presence: GatewayPresenceUpdateData }
+>;
+export type ManagerWorkerAlreadyExistsResharding = CreateManagerMessage<'WORKER_ALREADY_EXISTS_RESHARDING'>;
 export type ManagerSpawnShards = CreateManagerMessage<
 	'SPAWN_SHARDS',
 	Pick<ShardOptions, 'info' | 'properties' | 'compress'>
 >;
+export type ManagerSpawnShardsResharding = CreateManagerMessage<
+	'SPAWN_SHARDS_RESHARDING',
+	Pick<ShardOptions, 'info' | 'properties' | 'compress'>
+>;
+export type DisconnectAllShardsResharding = CreateManagerMessage<'DISCONNECT_ALL_SHARDS_RESHARDING'>;
+export type ConnnectAllShardsResharding = CreateManagerMessage<'CONNECT_ALL_SHARDS_RESHARDING'>;
 export type ManagerSendPayload = CreateManagerMessage<
 	'SEND_PAYLOAD',
 	GatewaySendPayload & { shardId: number; nonce: string }
@@ -503,4 +652,9 @@ export type ManagerMessages =
 	| ManagerSendBotReady
 	| ManagerSendApiResponse
 	| ManagerSendEvalResponse
-	| ManagerExecuteEval;
+	| ManagerExecuteEval
+	| ManagerWorkerAlreadyExistsResharding
+	| ManagerSpawnShardsResharding
+	| ManagerAllowConnectResharding
+	| DisconnectAllShardsResharding
+	| ConnnectAllShardsResharding;

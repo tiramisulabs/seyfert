@@ -16,6 +16,7 @@ type CreateWorkerMessage<T extends string, D extends object = object> = {
 } & D;
 
 export type WorkerRequestConnect = CreateWorkerMessage<'CONNECT_QUEUE', { shardId: number }>;
+export type WorkerRequestConnectResharding = CreateWorkerMessage<'CONNECT_QUEUE_RESHARDING', { shardId: number }>;
 export type WorkerReceivePayload = CreateWorkerMessage<
 	'RECEIVE_PAYLOAD',
 	{ shardId: number; payload: GatewayDispatchPayload }
@@ -51,8 +52,11 @@ export type WorkerSendCacheRequest = CreateWorkerMessage<
 export type WorkerSendShardInfo = CreateWorkerMessage<'SHARD_INFO', WorkerShardInfo & { nonce: string }>;
 export type WorkerSendInfo = CreateWorkerMessage<'WORKER_INFO', WorkerInfo & { nonce: string }>;
 export type WorkerReady = CreateWorkerMessage<'WORKER_READY'>;
+export type WorkerReadyResharding = CreateWorkerMessage<'WORKER_READY_RESHARDING'>;
 export type WorkerShardsConnected = CreateWorkerMessage<'WORKER_SHARDS_CONNECTED'>;
 export type WorkerStart = CreateWorkerMessage<'WORKER_START'>;
+export type WorkerStartResharding = CreateWorkerMessage<'WORKER_START_RESHARDING'>;
+export type WorkerDisconnectedAllShardsResharding = CreateWorkerMessage<'DISCONNECTED_ALL_SHARDS_RESHARDING'>;
 export type WorkerSendApiRequest = CreateWorkerMessage<
 	'WORKER_API_REQUEST',
 	{
@@ -92,4 +96,8 @@ export type WorkerMessage =
 	| WorkerSendApiRequest
 	| WorkerSendEvalResponse
 	| WorkerSendEval
-	| WorkerStart;
+	| WorkerStart
+	| WorkerStartResharding
+	| WorkerRequestConnectResharding
+	| WorkerReadyResharding
+	| WorkerDisconnectedAllShardsResharding;

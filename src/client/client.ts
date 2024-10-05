@@ -5,6 +5,7 @@ import {
 	type If,
 	type WatcherPayload,
 	type WatcherSendToShard,
+	hasIntent,
 	lazyLoadPackage,
 } from '../common';
 import { EventHandler } from '../events';
@@ -115,21 +116,9 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				},
 				compress: this.options?.gateway?.compress,
 				resharding: {
-					getInfo: () => this.proxy.gateway.bot.get(),
+					getInfo: this.options.resharding?.getInfo ?? (() => this.proxy.gateway.bot.get()),
 					interval: this.options?.resharding?.interval,
 					percentage: this.options?.resharding?.percentage,
-					reloadGuilds: ids => {
-						this.__handleGuilds = this.__handleGuilds?.concat(ids) ?? ids;
-					},
-					onGuild: id => {
-						if (this.__handleGuilds) {
-							const index = this.__handleGuilds.indexOf(id);
-							if (index === -1) return false;
-							this.__handleGuilds.splice(index, 1);
-							return true;
-						}
-						return false;
-					},
 				},
 			});
 		}
@@ -202,12 +191,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						this.botId = packet.d.user.id;
 						this.applicationId = packet.d.application.id;
 						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
-						if (
-							!(
-								this.__handleGuilds?.length &&
-								(this.gateway.options.intents & GatewayIntentBits.Guilds) === GatewayIntentBits.Guilds
-							)
-						) {
+						if (!hasIntent(this.gateway.options.intents, GatewayIntentBits.Guilds)) {
 							if ([...this.gateway.values()].every(shard => shard.data.session_id)) {
 								await this.events?.runEvent('BOT_READY', this, this.me, -1);
 							}
@@ -244,8 +228,7 @@ export interface ClientOptions extends BaseClientOptions {
 		reply?: (ctx: CommandContext) => boolean;
 	};
 	handlePayload?: ShardManagerOptions['handlePayload'];
-	resharding?: {
-		interval: number;
-		percentage: number;
+	resharding?: Omit<NonNullable<ShardManagerOptions['resharding']>, 'getInfo'> & {
+		getInfo?: NonNullable<ShardManagerOptions['resharding']>['getInfo'];
 	};
 }

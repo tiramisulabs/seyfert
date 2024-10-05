@@ -88,7 +88,7 @@ export class ApiHandler {
 					method,
 					url,
 					type: 'WORKER_API_REQUEST',
-					workerId: (workerData as WorkerData).workerId,
+					workerId: workerData.workerId,
 					nonce,
 					requestOptions: { auth, ...request },
 				} satisfies WorkerSendApiRequest,
@@ -184,7 +184,7 @@ export class ApiHandler {
 			}
 
 			next();
-			return resolve((result || undefined) as T);
+			return resolve(result || undefined);
 		};
 
 		return new Promise((resolve, reject) => {
@@ -215,10 +215,10 @@ export class ApiHandler {
 				errMessage += `${JSON.stringify(result.errors, null, 2)}\n`;
 			}
 		}
-		if (response.status) {
-			return new Error(errMessage || response.statusText);
+		if (errMessage.length) {
+			return new Error(errMessage);
 		}
-		return new Error('Unknown error');
+		return new Error(response.statusText);
 	}
 
 	async handle50X(method: HttpMethods, url: `/${string}`, request: ApiRequestOptions, next: () => void) {
@@ -318,7 +318,7 @@ export class ApiHandler {
 	}
 
 	setRatelimitsBucket(route: string, resp: Response) {
-		if (resp.headers.get('x-ratelimit-limit')) {
+		if (resp.headers.has('x-ratelimit-limit')) {
 			this.ratelimits.get(route)!.limit = +resp.headers.get('x-ratelimit-limit')!;
 		}
 
@@ -327,7 +327,7 @@ export class ApiHandler {
 
 		if (this.options.smartBucket) {
 			if (
-				resp.headers.get('x-ratelimit-reset-after') &&
+				resp.headers.has('x-ratelimit-reset-after') &&
 				!this.ratelimits.get(route)!.resetAfter &&
 				Number(resp.headers.get('x-ratelimit-limit')) === Number(resp.headers.get('x-ratelimit-remaining')) + 1
 			) {
