@@ -22,28 +22,41 @@ import { type APIPartialEmoji, FormattingPatterns, GatewayIntentBits } from '../
 export function calculateShardId(guildId: string, shards?: number) {
 	return Number((BigInt(guildId) >> 22n) % BigInt(shards ?? 1));
 }
+
+// It is used for resolve color for better performance
+const ColorLookup: { [key: string]: number } = {
+	Random: -1, // Special value for random color
+	...EmbedColors,
+};
+
 /**
  * Resolves the color to a numeric representation.
  * @param color The color to resolve.
  * @returns The numeric representation of the color.
  */
 export function resolveColor(color: ColorResolvable): number {
-	switch (typeof color) {
-		case 'string': {
-			if (color === 'Random') return Math.floor(Math.random() * (0xffffff + 1));
-			if (color.startsWith('#')) return Number.parseInt(color.slice(1), 16);
-			if (color in EmbedColors) return EmbedColors[color as keyof typeof EmbedColors];
-			return EmbedColors.Default;
-		}
-		case 'number':
-			return color;
-		case 'object':
-			if (Array.isArray(color)) return (color[0] << 16) + (color[1] << 8) + color[2];
-			break;
-		default:
-			return color;
+	if (typeof color === 'number') {
+		if (!Number.isInteger(color) && !(color >= 0)) throw new Error(`Invalid color: ${color}`);
+
+		return color;
 	}
-	return color;
+
+	if (typeof color === 'string') {
+		const lookupColor = ColorLookup[color];
+		if (lookupColor !== undefined) {
+			return lookupColor === -1 ? Math.floor(Math.random() * (0xffffff + 1)) : lookupColor;
+		}
+		if (color.startsWith('#')) {
+			return parseInt(color.slice(1), 16);
+		}
+		return EmbedColors.Default;
+	}
+
+	if (Array.isArray(color) && color.length >= 3) {
+		return (color[0] << 16) | (color[1] << 8) | color[2];
+	}
+
+	return EmbedColors.Default;
 }
 
 /**
@@ -320,7 +333,11 @@ export function resolvePartialEmoji(emoji: EmojiResolvable): APIPartialEmoji | u
 	if (typeof emoji === 'string') {
 		const groups: Partial<APIPartialEmoji> | undefined = emoji.match(FormattingPatterns.Emoji)?.groups;
 		if (groups) {
-			return { animated: !!groups.animated, name: groups.name!, id: groups.id! };
+			return {
+				animated: !!groups.animated,
+				name: groups.name!,
+				id: groups.id!,
+			};
 		}
 		if (emoji.includes('%')) {
 			emoji = encodeURIComponent(emoji);
@@ -342,12 +359,23 @@ export async function resolveEmoji(emoji: EmojiResolvable, cache: Cache): Promis
 	if (typeof emoji === 'string') {
 		if (!emoji.match(/\d{17,20}/g)) return;
 		const fromCache = await cache.emojis?.get(emoji);
-		return fromCache && { animated: fromCache.animated, id: fromCache.id, name: fromCache.name };
+		return (
+			fromCache && {
+				animated: fromCache.animated,
+				id: fromCache.id,
+				name: fromCache.name,
+			}
+		);
 	}
 
 	if (emoji.id) {
 		const fromCache = await cache.emojis?.get(emoji.id);
-		if (fromCache) return { animated: fromCache.animated, id: fromCache.id, name: fromCache.name };
+		if (fromCache)
+			return {
+				animated: fromCache.animated,
+				id: fromCache.id,
+				name: fromCache.name,
+			};
 	}
 	return;
 }
