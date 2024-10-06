@@ -74,13 +74,15 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	}
 
 	bulkGet(keys: string[]) {
-		const iterator = [...this.storage.values()];
-		return keys
-			.map(key => {
-				const data = iterator.find(x => x.has(key))?.get(key);
-				return data ? this.options.decode(data) : null;
+		const storageArray = Array.from(this.storage.values());
+		const keySet = new Set(keys);
+
+		return storageArray
+			.flatMap(storageEntry => {
+				const entries = Array.from(storageEntry.entries());
+				return entries.filter(([key]) => keySet.has(key)).map(([, value]) => this.options.decode(value as T));
 			})
-			.filter(x => x);
+			.filter(Boolean);
 	}
 
 	get(keys: string) {
