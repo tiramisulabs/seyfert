@@ -35,28 +35,24 @@ const ColorLookup: { [key: string]: number } = {
  * @returns The numeric representation of the color.
  */
 export function resolveColor(color: ColorResolvable): number {
-	if (typeof color === 'number') {
-		if (!Number.isInteger(color) && !(color >= 0)) throw new Error(`Invalid color: ${color}`);
+	const type = typeof color;
 
-		return color;
+	if (type === 'number') {
+		if (!Number.isInteger(color) || color as number < 0) throw new Error(`Invalid color: ${color}`);
+		return color as number;
 	}
 
-	if (typeof color === 'string') {
-		const lookupColor = ColorLookup[color];
+	if (type === 'string') {
+		const lookupColor = ColorLookup[color as keyof typeof EmbedColors];
 		if (lookupColor !== undefined) {
-			return lookupColor === -1 ? Math.floor(Math.random() * (0xffffff + 1)) : lookupColor;
+			return lookupColor === -1 ? Math.floor(Math.random() * 0xffffff) : lookupColor;
 		}
-		if (color.startsWith('#')) {
-			return parseInt(color.slice(1), 16);
-		}
-		return EmbedColors.Default;
+		return (color as string).startsWith('#') ? Number.parseInt((color as string).slice(1), 16) : EmbedColors.Default;
 	}
 
-	if (Array.isArray(color) && color.length >= 3) {
-		return (color[0] << 16) | (color[1] << 8) | color[2];
-	}
-
-	return EmbedColors.Default;
+	return Array.isArray(color) && color.length >= 3
+		? (color[0] << 16) | (color[1] << 8) | color[2]
+		: EmbedColors.Default;
 }
 
 /**
