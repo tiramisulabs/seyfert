@@ -63,16 +63,14 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	scan(query: string, keys?: false): any[];
 	scan(query: string, keys: true): string[];
 	scan(query: string, keys = false) {
-		const values: (string | unknown)[] = [];
 		const sq = query.split('.');
-		for (const iterator of [...this.storage.values()].flatMap(x => x.entries()))
-			for (const [key, value] of iterator) {
-				if (key.split('.').every((value, i) => (sq[i] === '*' ? !!value : sq[i] === value))) {
-					values.push(keys ? key : this.options.decode(value.value));
-				}
-			}
+		const isWildcard = sq.map(segment => segment === '*');
 
-		return values;
+		return [...this.storage.values()].flatMap(storageEntry =>
+			Array.from(storageEntry.entries())
+				.filter(([key]) => key.split('.').every((value, i) => isWildcard[i] || sq[i] === value))
+				.map(([key, value]) => (keys ? key : this.options.decode(value.value))),
+		);
 	}
 
 	bulkGet(keys: string[]) {
