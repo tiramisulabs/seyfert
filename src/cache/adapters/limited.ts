@@ -85,9 +85,14 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 			.filter(Boolean);
 	}
 
-	get(keys: string) {
-		const data = [...this.storage.values()].find(x => x.has(keys))?.get(keys);
-		return data ? this.options.decode(data) : null;
+	get(key: string) {
+		for (const storageEntry of this.storage.values()) {
+			if (storageEntry.has(key)) {
+				const data = storageEntry.get(key);
+				return data ? this.options.decode(data) : null;
+			}
+		}
+		return null;
 	}
 
 	private __set(key: string, data: any) {
