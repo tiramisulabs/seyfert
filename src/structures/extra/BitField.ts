@@ -18,21 +18,6 @@ export class BitField<T extends object> {
 		return this.bit;
 	}
 
-	add(...bits: (BitFieldResolvable<T> | undefined)[]): bigint {
-		for (const bit of bits) {
-			if (!bit) continue;
-			this.bit |= this.resolve(bit);
-		}
-		return this.bit;
-	}
-
-	remove(...bits: BitFieldResolvable<T>[]): bigint {
-		for (const bit of bits) {
-			this.bit &= ~this.resolve(bit);
-		}
-		return this.bit;
-	}
-
 	has(...bits: BitFieldResolvable<T>[]) {
 		const bitsResolved = bits.map(bit => this.resolve(bit));
 		return bitsResolved.every(bit => (this.bits & bit) === bit);
@@ -45,10 +30,6 @@ export class BitField<T extends object> {
 
 	equals(other: BitFieldResolvable<T>) {
 		return this.bits === this.resolve(other);
-	}
-
-	resolve(bits: BitFieldResolvable<T>): bigint {
-		return BitField.resolve<T>(bits);
 	}
 
 	keys(bits: BitFieldResolvable<T>[] = [this.bits]) {
@@ -73,27 +54,25 @@ export class BitField<T extends object> {
 		}, [] as bigint[]);
 	}
 
-	static add<T extends object>(base: BitFieldResolvable<T>, ...bits: (BitFieldResolvable<T> | undefined)[]) {
-		base = BitField.resolve(base);
-
+	add(...bits: (BitFieldResolvable<T> | undefined)[]) {
 		for (const bit of bits) {
 			if (!bit) continue;
-			base |= BitField.resolve(bit);
+			this.bits |= this.resolve(bit);
 		}
-		return base;
+		return this.bits;
 	}
 
-	static remove<T extends object>(base: BitFieldResolvable<T>, ...bits: BitFieldResolvable<T>[]): bigint {
-		base = BitField.resolve(base);
-
+	remove(...bits: BitFieldResolvable<T>[]): bigint {
 		for (const bit of bits) {
-			base &= ~BitField.resolve(bit);
+			this.bits &= ~this.resolve(bit);
 		}
-		return base;
+		return this.bits;
 	}
 
-	static resolve<T extends object>(bits: BitFieldResolvable<T>): bigint {
+	resolve(bits: BitFieldResolvable<T>): bigint {
 		switch (typeof bits) {
+			case 'string':
+				return this.resolve(this.Flags[bits]);
 			case 'number':
 				return BigInt(bits);
 			case 'bigint':
@@ -102,10 +81,12 @@ export class BitField<T extends object> {
 				if (!Array.isArray(bits)) {
 					throw new TypeError(`Cannot resolve permission: ${bits}`);
 				}
-				return bits.map(x => BitField.resolve(x)).reduce((acc, cur) => acc | cur, BitField.None);
+				return bits.map(x => this.resolve(x)).reduce((acc, cur) => acc | cur, BitField.None);
 			}
 			default:
-				throw new TypeError(`Cannot resolve permission: ${typeof bits === 'symbol' ? String(bits) : (bits as any)}`);
+				throw new TypeError(
+					`Cannot resolve permission: ${typeof bits === 'symbol' ? String(bits) : (bits as unknown)}`,
+				);
 		}
 	}
 }

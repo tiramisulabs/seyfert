@@ -484,11 +484,11 @@ export class CommandHandler extends BaseHandler {
 			option.onPermissionsFail?.bind(option) ??
 			commandInstance.onPermissionsFail?.bind(commandInstance) ??
 			this.client.options.commands?.defaults?.onPermissionsFail;
-		option.botPermissions = PermissionsBitField.add(
+		option.botPermissions = new PermissionsBitField().add(
 			option.botPermissions ?? PermissionsBitField.None,
 			commandInstance.botPermissions,
 		);
-		option.defaultMemberPermissions ??= PermissionsBitField.add(
+		option.defaultMemberPermissions ??= new PermissionsBitField().add(
 			option.defaultMemberPermissions ?? PermissionsBitField.None,
 			commandInstance.defaultMemberPermissions,
 		);
