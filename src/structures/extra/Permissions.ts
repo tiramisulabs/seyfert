@@ -8,7 +8,7 @@ export class PermissionsBitField extends BitField<typeof PermissionFlagsBits> {
 
 	constructor(bitfields?: BitFieldResolvable<typeof PermissionFlagsBits>) {
 		super();
-		if (bitfields) this.bit = this.resolve(bitfields);
+		if (bitfields) this.bit = PermissionsBitField.resolve(bitfields);
 	}
 
 	declare keys: (bits?: BitFieldResolvable<typeof PermissionFlagsBits>[]) => PermissionStrings;

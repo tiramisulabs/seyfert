@@ -48,12 +48,7 @@ export class BitField<T extends object> {
 	}
 
 	resolve(bits: BitFieldResolvable<T>): bigint {
-		switch (typeof bits) {
-			case 'string':
-				return BitField.resolve(this.Flags[bits]);
-			default:
-				return BitField.resolve<T>(bits);
-		}
+		return BitField.resolve<T>(bits);
 	}
 
 	keys(bits: BitFieldResolvable<T>[] = [this.bits]) {
