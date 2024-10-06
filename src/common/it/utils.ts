@@ -38,7 +38,7 @@ export function resolveColor(color: ColorResolvable): number {
 	const type = typeof color;
 
 	if (type === 'number') {
-		if (!Number.isInteger(color) || color as number < 0) throw new Error(`Invalid color: ${color}`);
+		if (!Number.isInteger(color) || (color as number) < 0) throw new Error(`Invalid color: ${color}`);
 		return color as number;
 	}
 
