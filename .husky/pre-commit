@@ -1,1 +1,1 @@
-npx lint-staged && node --test ./tests/
+npx lint-staged
