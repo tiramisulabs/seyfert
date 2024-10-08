@@ -1,10 +1,7 @@
-//@ts-check
 import { assert, describe, test } from 'vitest';
 import { BitField } from '../lib/structures/extra/BitField';
 import { PermissionsBitField } from '../lib/structures/extra/Permissions';
 import { PermissionFlagsBits } from '../lib/types';
-
-
 
 describe('PermissionsBitField', () => {
 	test('constructor', () => {

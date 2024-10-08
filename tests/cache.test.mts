@@ -1,4 +1,3 @@
-//@ts-check
 import { describe, test } from 'vitest';
 import { Client, LimitedMemoryAdapter, MemoryAdapter } from '../lib/index';
 
