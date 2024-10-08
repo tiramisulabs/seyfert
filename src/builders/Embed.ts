@@ -19,7 +19,7 @@ export class Embed {
 	 * const embed = new Embed({ title: 'Hello', description: 'This is an example embed' });
 	 */
 	constructor(data: Partial<APIEmbed> = {}) {
-		this.data = structuredClone(data);
+		this.data = { ...data };
 		if (!this.data.fields) this.data.fields = [];
 	}
 
