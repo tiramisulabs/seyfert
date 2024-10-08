@@ -11,14 +11,16 @@ import type { APIEmbed, APIEmbedAuthor, APIEmbedField, APIEmbedFooter } from '..
  * const embedJSON = embed.json();
  */
 export class Embed {
+	public data: Partial<APIEmbed>;
 	/**
 	 * Creates a new instance of Embed.
 	 * @param data - The initial data for the embed.
 	 * @example
 	 * const embed = new Embed({ title: 'Hello', description: 'This is an example embed' });
 	 */
-	constructor(public data: Partial<APIEmbed> = {}) {
-		if (!data.fields) this.data.fields = [];
+	constructor(data: Partial<APIEmbed> = {}) {
+		this.data = structuredClone(data);
+		if (!this.data.fields) this.data.fields = [];
 	}
 
 	/**
