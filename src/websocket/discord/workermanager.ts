@@ -101,10 +101,6 @@ export class WorkerManager extends Map<
 		return this.options.shardsPerWorker;
 	}
 
-	get workers() {
-		return this.options.workers;
-	}
-
 	async syncLatency({
 		shardId,
 		workerId,
@@ -130,7 +126,7 @@ export class WorkerManager extends Map<
 
 	calculateWorkerId(shardId: number) {
 		const workerId = Math.floor((shardId - this.shardStart) / this.shardsPerWorker);
-		if (workerId >= this.workers) {
+		if (workerId >= this.totalWorkers) {
 			throw new Error('Invalid shardId');
 		}
 		return workerId;
@@ -268,6 +264,7 @@ export class WorkerManager extends Map<
 					if ([...this.values()].every(w => w.disconnected)) {
 						this.options.totalShards = this._info!.shards;
 						this.options.shardEnd = this.options.totalShards = this._info!.shards;
+						this.options.workers = this.size;
 						delete this._info;
 						for (const [id] of this.entries()) {
 							this.postMessage(id, {
@@ -529,7 +526,7 @@ export class WorkerManager extends Map<
 				name: '[WorkerManager]',
 			});
 		}
-		if (this.totalShards / this.shardsPerWorker > this.workers) {
+		if (this.totalShards / this.shardsPerWorker > this.totalWorkers) {
 			throw new Error(
 				`Cannot create enough shards in the specified workers, minimum: ${Math.ceil(
 					this.totalShards / this.shardsPerWorker,
