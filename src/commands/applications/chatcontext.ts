@@ -22,6 +22,7 @@ export interface CommandContext<T extends OptionsRecord = {}, M extends keyof Re
 		ExtendContext {
 	/**@internal */
 	__edited?: true;
+	/**@internal */
 	__deferred?: true;
 }
 
