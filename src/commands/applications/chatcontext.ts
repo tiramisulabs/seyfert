@@ -19,7 +19,11 @@ import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from
 
 export interface CommandContext<T extends OptionsRecord = {}, M extends keyof RegisteredMiddlewares = never>
 	extends BaseContext,
-		ExtendContext {}
+		ExtendContext {
+	/**@internal */
+	__edited?: true;
+	__deferred?: true;
+}
 
 export class CommandContext<
 	T extends OptionsRecord = {},
@@ -89,6 +93,7 @@ export class CommandContext<
 	> {
 		if (this.interaction)
 			return this.interaction.deferReply(ephemeral ? MessageFlags.Ephemeral : undefined, withResponse);
+		this.__deferred = true;
 		const options = (this.client as Client | WorkerClient).options?.commands;
 		return (this.messageResponse = await (this.message! as Message)[options?.reply?.(this) ? 'reply' : 'write'](
 			options?.deferReplyResponse?.(this) ?? { content: 'Thinking...' },
@@ -99,7 +104,11 @@ export class CommandContext<
 		body: InteractionMessageUpdateBodyRequest,
 	): Promise<When<InferWithPrefix, WebhookMessageStructure | MessageStructure, WebhookMessageStructure>> {
 		if (this.interaction) return this.interaction.editResponse(body);
-		body.content ??= '';
+		if (this.__deferred && !this.__edited) {
+			this.__edited = true;
+			if (this.messageResponse?.content) body.content ??= '';
+			if (this.messageResponse?.embeds.length) body.embeds ??= [];
+		}
 		return (this.messageResponse = await this.messageResponse!.edit(body)) as never;
 	}
 
