@@ -5,6 +5,9 @@ import type {
 	MenuCommandContext,
 	ModalContext,
 	PermissionStrings,
+	SeyfertBaseChoiceableOption,
+	SeyfertBasicOption,
+	SeyfertChoice,
 	SeyfertNumberOption,
 	SeyfertStringOption,
 } from '../..';
@@ -15,7 +18,7 @@ import type {
 	OptionResolverStructure,
 	UserStructure,
 } from '../../client/transformers';
-import { type Awaitable, type FlatObjectKeys, magicImport } from '../../common';
+import { magicImport } from '../../common';
 import type { AllChannels, AutocompleteInteraction } from '../../structures';
 import {
 	type APIApplicationCommandBasicOption,
@@ -30,10 +33,8 @@ import {
 import type { Groups, RegisteredMiddlewares } from '../decorators';
 import type { CommandContext } from './chatcontext';
 import type {
-	DefaultLocale,
 	ExtraProps,
 	IgnoreCommand,
-	OKFunction,
 	OnOptionsReturnObject,
 	PassFunction,
 	StopFunction,
@@ -54,47 +55,22 @@ export interface ReturnOptionsTypes {
 	11: Attachment;
 }
 
-type Wrap<N extends ApplicationCommandOptionType> = N extends
-	| ApplicationCommandOptionType.Subcommand
-	| ApplicationCommandOptionType.SubcommandGroup
-	? never
-	: {
-			required?: boolean;
-			value?(
-				data: { context: CommandContext; value: ReturnOptionsTypes[N] },
-				ok: OKFunction<any>,
-				fail: StopFunction,
-			): Awaitable<void>;
-		} & {
-			description: string;
-			description_localizations?: APIApplicationCommandBasicOption['description_localizations'];
-			name_localizations?: APIApplicationCommandBasicOption['name_localizations'];
-			locales?: {
-				name?: FlatObjectKeys<DefaultLocale>;
-				description?: FlatObjectKeys<DefaultLocale>;
-			};
-		};
-
-export type __TypeWrapper<T extends ApplicationCommandOptionType> = Wrap<T>;
-
-export type __TypesWrapper = {
-	[P in keyof typeof ApplicationCommandOptionType]: `${(typeof ApplicationCommandOptionType)[P]}` extends `${infer D extends
-		number}`
-		? Wrap<D>
-		: never;
-};
-
 export type AutocompleteCallback = (interaction: AutocompleteInteraction) => any;
 export type OnAutocompleteErrorCallback = (interaction: AutocompleteInteraction, error: unknown) => any;
-export type CommandBaseOption = __TypesWrapper[keyof __TypesWrapper];
-export type CommandBaseAutocompleteOption = __TypesWrapper[keyof __TypesWrapper] & {
+export type CommandBaseOption =
+	| SeyfertBaseChoiceableOption<ApplicationCommandOptionType>
+	| SeyfertBasicOption<ApplicationCommandOptionType>;
+export type CommandBaseAutocompleteOption = (
+	| SeyfertBasicOption<ApplicationCommandOptionType>
+	| SeyfertBaseChoiceableOption<ApplicationCommandOptionType>
+) & {
 	autocomplete: AutocompleteCallback;
 	onAutocompleteError?: OnAutocompleteErrorCallback;
 };
 export type CommandAutocompleteOption = CommandBaseAutocompleteOption & { name: string };
-export type __CommandOption = CommandBaseOption; //| CommandBaseAutocompleteOption;
-export type CommandOption = __CommandOption & { name: string };
-export type OptionsRecord = Record<string, __CommandOption & { type: ApplicationCommandOptionType }>;
+export type CommandOptionWithoutName = CommandBaseOption;
+export type CommandOption = CommandOptionWithoutName & { name: string };
+export type OptionsRecord = Record<string, CommandOptionWithoutName & { type: ApplicationCommandOptionType }>;
 
 type KeysWithoutRequired<T extends OptionsRecord> = {
 	[K in keyof T]-?: T[K]['required'] extends true ? never : K;
@@ -104,16 +80,16 @@ type ContextOptionsAux<T extends OptionsRecord> = {
 	[K in Exclude<keyof T, KeysWithoutRequired<T>>]: T[K]['value'] extends (...args: any) => any
 		? Parameters<Parameters<T[K]['value']>[1]>[0]
 		: T[K] extends SeyfertStringOption | SeyfertNumberOption
-			? T[K]['choices'] extends NonNullable<SeyfertStringOption['choices'] | SeyfertNumberOption['choices']>
-				? T[K]['choices'][number]['value']
+			? NonNullable<T[K]['choices']> extends SeyfertChoice<string | number>[]
+				? NonNullable<T[K]['choices']>[number]['value']
 				: ReturnOptionsTypes[T[K]['type']]
 			: ReturnOptionsTypes[T[K]['type']];
 } & {
 	[K in KeysWithoutRequired<T>]?: T[K]['value'] extends (...args: any) => any
 		? Parameters<Parameters<T[K]['value']>[1]>[0]
 		: T[K] extends SeyfertStringOption | SeyfertNumberOption
-			? T[K]['choices'] extends NonNullable<SeyfertStringOption['choices'] | SeyfertNumberOption['choices']>
-				? T[K]['choices'][number]['value']
+			? NonNullable<T[K]['choices']> extends SeyfertChoice<string | number>[]
+				? NonNullable<T[K]['choices']>[number]['value']
 				: ReturnOptionsTypes[T[K]['type']]
 			: ReturnOptionsTypes[T[K]['type']];
 };
@@ -159,7 +135,7 @@ export class BaseCommand {
 		let errored = false;
 		for (const i of this.options ?? []) {
 			try {
-				const option = this.options!.find(x => x.name === i.name) as __CommandOption;
+				const option = this.options!.find(x => x.name === i.name) as CommandOptionWithoutName;
 				const value =
 					resolver.getHoisted(i.name)?.value !== undefined
 						? await new Promise(async (res, rej) => {
