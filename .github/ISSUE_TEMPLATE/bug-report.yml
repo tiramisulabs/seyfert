@@ -41,12 +41,12 @@ body:
     validations:
       required: true
   - type: input
-    id: node-version
+    id: runtime-version
     attributes:
-      label: Node.js version
+      label: What runtime and its version
       description: |
-        Which version of Node.js are you using? Run `node --version` in your project directory and paste the output.
-        If you are using TypeScript, please include its version (`npm list typescript`) as well.
+        Which version of the runtime are you using?
+        Please include its version (`tsc --version`) as well.
       placeholder: Node.js version 18.+ or LTS
     validations:
       required: true
@@ -75,7 +75,7 @@ body:
 
         Tip: you can select multiple items
       options:
-        - Not applicable (subpackage bug)
+        - Not applicable
         - No Intents
         - Guilds
         - GuildMembers

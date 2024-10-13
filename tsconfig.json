@@ -2,10 +2,6 @@
 	"compilerOptions": {
 		"module": "CommonJS",
 		"target": "ESNext",
-		"lib": [
-			"ESNext",
-			"WebWorker"
-		],
 		"moduleResolution": "node",
 		"declaration": true,
 		"sourceMap": false,
@@ -32,7 +28,7 @@
 		"**/lib",
 		"**/__test__",
 		"**/node_modules",
-		 "**/.*/"
+		"**/.*/"
 	],
 	"include": [
 		"src"
