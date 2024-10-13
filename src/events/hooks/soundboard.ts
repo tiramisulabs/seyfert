@@ -27,7 +27,12 @@ export const GUILD_SOUNDBOARD_SOUNDS_UPDATE = (
 	self: UsingClient,
 	data: GatewayGuildSoundboardSoundsUpdateDispatchData,
 ) => {
-	return data.map(d => (d.user ? { ...toCamelCase(d), user: Transformers.User(self, d.user) } : toCamelCase(d)));
+	return {
+		guildId: data.guild_id,
+		sounds: data.soundboard_sounds.map(d =>
+			d.user ? { ...toCamelCase(d), user: Transformers.User(self, d.user) } : toCamelCase(d),
+		),
+	};
 };
 
 export const GUILD_SOUNDBOARD_SOUND_DELETE = (_: UsingClient, data: GatewayGuildSoundboardSoundDeleteDispatchData) => {

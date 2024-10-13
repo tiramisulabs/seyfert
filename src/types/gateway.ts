@@ -1009,7 +1009,12 @@ export type GatewayGuildSoundboardSoundDeleteDispatch = DataPayload<
 	GatewayGuildSoundboardSoundDeleteDispatchData
 >;
 
-export type GatewayGuildSoundboardSoundsUpdateDispatchData = APISoundBoard[];
+export interface GatewayGuildSoundboardSoundsUpdateDispatchData {
+	/** The guild's soundboard sound */
+	soundboard_sounds: APISoundBoard[];
+	/** ID of the guild */
+	guild_id: string;
+}
 
 export type GatewayGuildSoundboardSoundsUpdateDispatch = DataPayload<
 	GatewayDispatchEvents.GuildSoundboardSoundsUpdate,
