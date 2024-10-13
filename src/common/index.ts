@@ -1,7 +1,7 @@
 export * from './it/constants';
 export * from './it/utils';
 export * from './it/colors';
-export * from './it/logger';
+export { CustomizeLoggerCallback, AssignFilenameCallback, LogLevels, Logger, LoggerOptions } from './it/logger';
 export * from './it/formatter';
 //
 export * from './shorters/channels';
