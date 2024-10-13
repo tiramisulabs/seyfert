@@ -18,8 +18,8 @@ import {
 import type { CommandContext } from './chatcontext';
 import type { DefaultLocale, MiddlewareContext, OKFunction, StopFunction } from './shared';
 
-export interface SeyfertBasicOption<T extends keyof ReturnOptionsTypes> {
-	required?: boolean;
+export interface SeyfertBasicOption<T extends keyof ReturnOptionsTypes, R = true | false> {
+	required?: R;
 	value?(
 		data: { context: CommandContext; value: ReturnOptionsTypes[T] },
 		ok: OKFunction<any>,
@@ -37,10 +37,12 @@ export interface SeyfertBasicOption<T extends keyof ReturnOptionsTypes> {
 export interface SeyfertBaseChoiceableOption<
 	T extends keyof ReturnOptionsTypes,
 	C = T extends ChoiceableTypes ? SeyfertChoice<ChoiceableValues[T]>[] : never,
+	R = true | false,
+	VC = never,
 > {
-	required?: boolean;
+	required?: R;
 	choices?: C;
-	value?: ValueCallback<T, C>;
+	value?: ValueCallback<T, C, VC>;
 	description: string;
 	description_localizations?: APIApplicationCommandBasicOption['description_localizations'];
 	name_localizations?: APIApplicationCommandBasicOption['name_localizations'];
@@ -68,6 +70,7 @@ export interface ChoiceableValues {
 export type ValueCallback<
 	T extends keyof ReturnOptionsTypes,
 	C = T extends ChoiceableTypes ? SeyfertChoice<ChoiceableValues[T]>[] : never,
+	I = any,
 > = (
 	data: {
 		context: CommandContext;
@@ -79,85 +82,107 @@ export type ValueCallback<
 				: ReturnOptionsTypes[T]
 			: ReturnOptionsTypes[T];
 	},
-	ok: OKFunction<any>,
+	ok: OKFunction<I>,
 	fail: StopFunction,
 ) => Awaitable<void>;
 
-export type SeyfertStringOption<T = SeyfertChoice<string>[]> = SeyfertBaseChoiceableOption<
+export type SeyfertStringOption<T = SeyfertChoice<string>[], R = boolean, VC = never> = SeyfertBaseChoiceableOption<
 	ApplicationCommandOptionType.String,
-	T
+	T,
+	R,
+	VC
 > & {
 	autocomplete?: AutocompleteCallback;
 	onAutocompleteError?: OnAutocompleteErrorCallback;
 	min_length?: number;
 	max_length?: number;
 };
-export type SeyfertIntegerOption<T = SeyfertChoice<number>[]> = SeyfertBaseChoiceableOption<
+export type SeyfertIntegerOption<T = SeyfertChoice<number>[], R = boolean, VC = never> = SeyfertBaseChoiceableOption<
 	ApplicationCommandOptionType.Integer,
-	T
+	T,
+	R,
+	VC
 > & {
 	autocomplete?: AutocompleteCallback;
 	onAutocompleteError?: OnAutocompleteErrorCallback;
 	min_value?: number;
 	max_value?: number;
 };
-export type SeyfertNumberOption<T = SeyfertChoice<number>[]> = SeyfertBaseChoiceableOption<
+export type SeyfertNumberOption<T = SeyfertChoice<number>[], R = boolean, VC = never> = SeyfertBaseChoiceableOption<
 	ApplicationCommandOptionType.Number,
-	T
+	T,
+	R,
+	VC
 > & {
 	autocomplete?: AutocompleteCallback;
 	onAutocompleteError?: OnAutocompleteErrorCallback;
 	min_value?: number;
 	max_value?: number;
 };
-export type SeyfertBooleanOption = SeyfertBasicOption<ApplicationCommandOptionType.Boolean>;
-export type SeyfertUserOption = SeyfertBasicOption<ApplicationCommandOptionType.User>;
-export type SeyfertChannelOption = SeyfertBasicOption<ApplicationCommandOptionType.Channel> & {
+export type SeyfertBooleanOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.Boolean, R>;
+export type SeyfertUserOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.User, R>;
+export type SeyfertChannelOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.Channel, R> & {
 	channel_types?: ChannelType[];
 };
-export type SeyfertRoleOption = SeyfertBasicOption<ApplicationCommandOptionType.Role>;
-export type SeyfertMentionableOption = SeyfertBasicOption<ApplicationCommandOptionType.Mentionable>;
-export type SeyfertAttachmentOption = SeyfertBasicOption<ApplicationCommandOptionType.Attachment>;
+export type SeyfertRoleOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.Role, R>;
+export type SeyfertMentionableOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.Mentionable, R>;
+export type SeyfertAttachmentOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.Attachment, R>;
 
-export function createStringOption<C extends SeyfertChoice<string>[] = SeyfertChoice<string>[]>(
-	data: SeyfertStringOption<C>,
-) {
+export function createStringOption<
+	R extends boolean,
+	C extends SeyfertChoice<string>[] = SeyfertChoice<string>[],
+	VC = never,
+>(data: SeyfertStringOption<C, R, VC>) {
 	return { ...data, type: ApplicationCommandOptionType.String } as const;
 }
 
-export function createIntegerOption<C extends SeyfertChoice<number>[] = SeyfertChoice<number>[]>(
-	data: SeyfertIntegerOption<C>,
-) {
+export function createIntegerOption<
+	R extends boolean,
+	C extends SeyfertChoice<number>[] = SeyfertChoice<number>[],
+	VC = never,
+>(data: SeyfertIntegerOption<C, R, VC>) {
 	return { ...data, type: ApplicationCommandOptionType.Integer } as const;
 }
 
-export function createNumberOption<C extends SeyfertChoice<number>[] = SeyfertChoice<number>[]>(
-	data: SeyfertNumberOption<C>,
-) {
+export function createNumberOption<
+	R extends boolean,
+	C extends SeyfertChoice<number>[] = SeyfertChoice<number>[],
+	VC = never,
+>(data: SeyfertNumberOption<C, R, VC>) {
 	return { ...data, type: ApplicationCommandOptionType.Number } as const;
 }
 
-export function createBooleanOption<T extends SeyfertBooleanOption = SeyfertBooleanOption>(data: T) {
+export function createBooleanOption<R extends boolean, T extends SeyfertBooleanOption<R> = SeyfertBooleanOption<R>>(
+	data: T,
+) {
 	return { ...data, type: ApplicationCommandOptionType.Boolean } as const;
 }
 
-export function createUserOption<T extends SeyfertUserOption = SeyfertUserOption>(data: T) {
+export function createUserOption<R extends boolean, T extends SeyfertUserOption<R> = SeyfertUserOption<R>>(data: T) {
 	return { ...data, type: ApplicationCommandOptionType.User } as const;
 }
 
-export function createChannelOption<T extends SeyfertChannelOption = SeyfertChannelOption>(data: T) {
+export function createChannelOption<R extends boolean, T extends SeyfertChannelOption<R> = SeyfertChannelOption<R>>(
+	data: T,
+) {
 	return { ...data, type: ApplicationCommandOptionType.Channel } as const;
 }
 
-export function createRoleOption<T extends SeyfertRoleOption = SeyfertRoleOption>(data: T) {
+export function createRoleOption<R extends boolean, T extends SeyfertRoleOption<R> = SeyfertRoleOption<R>>(data: T) {
 	return { ...data, type: ApplicationCommandOptionType.Role } as const;
 }
 
-export function createMentionableOption<T extends SeyfertMentionableOption = SeyfertMentionableOption>(data: T) {
+export function createMentionableOption<
+	R extends boolean,
+	T extends SeyfertMentionableOption<R> = SeyfertMentionableOption<R>,
+>(data: T) {
 	return { ...data, type: ApplicationCommandOptionType.Mentionable } as const;
 }
 
-export function createAttachmentOption<T extends SeyfertAttachmentOption = SeyfertAttachmentOption>(data: T) {
+export function createAttachmentOption<
+	R extends boolean,
+	T extends SeyfertAttachmentOption<R> = SeyfertAttachmentOption<R>,
+>(data: T) {
 	return { ...data, type: ApplicationCommandOptionType.Attachment } as const;
 }
 

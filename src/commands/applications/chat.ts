@@ -73,25 +73,33 @@ export type CommandOption = CommandOptionWithoutName & { name: string };
 export type OptionsRecord = Record<string, CommandOptionWithoutName & { type: ApplicationCommandOptionType }>;
 
 type KeysWithoutRequired<T extends OptionsRecord> = {
-	[K in keyof T]-?: T[K]['required'] extends true ? never : K;
+	[K in keyof T]-?: NonNullable<T[K]['required']> extends true ? never : K;
 }[keyof T];
 
+type ContextOptionsAuxInternal<
+	T extends CommandBaseOption & {
+		type: ApplicationCommandOptionType;
+	},
+> = T['value'] extends (...args: any) => any
+	? Parameters<Parameters<T['value']>[1]>[0]
+	: NonNullable<T['value']> extends (...args: any) => any
+		? Parameters<Parameters<NonNullable<T['value']>>[1]>[0] extends never
+			? T extends SeyfertStringOption | SeyfertNumberOption
+				? NonNullable<T['choices']> extends SeyfertChoice<string | number>[]
+					? NonNullable<T['choices']>[number]['value']
+					: ReturnOptionsTypes[T['type']]
+				: ReturnOptionsTypes[T['type']]
+			: Parameters<Parameters<NonNullable<T['value']>>[1]>[0]
+		: T extends SeyfertStringOption | SeyfertNumberOption
+			? NonNullable<T['choices']> extends SeyfertChoice<string | number>[]
+				? NonNullable<T['choices']>[number]['value']
+				: ReturnOptionsTypes[T['type']]
+			: ReturnOptionsTypes[T['type']];
+
 type ContextOptionsAux<T extends OptionsRecord> = {
-	[K in Exclude<keyof T, KeysWithoutRequired<T>>]: T[K]['value'] extends (...args: any) => any
-		? Parameters<Parameters<T[K]['value']>[1]>[0]
-		: T[K] extends SeyfertStringOption | SeyfertNumberOption
-			? NonNullable<T[K]['choices']> extends SeyfertChoice<string | number>[]
-				? NonNullable<T[K]['choices']>[number]['value']
-				: ReturnOptionsTypes[T[K]['type']]
-			: ReturnOptionsTypes[T[K]['type']];
+	[K in Exclude<keyof T, KeysWithoutRequired<T>>]: ContextOptionsAuxInternal<T[K]>;
 } & {
-	[K in KeysWithoutRequired<T>]?: T[K]['value'] extends (...args: any) => any
-		? Parameters<Parameters<T[K]['value']>[1]>[0]
-		: T[K] extends SeyfertStringOption | SeyfertNumberOption
-			? NonNullable<T[K]['choices']> extends SeyfertChoice<string | number>[]
-				? NonNullable<T[K]['choices']>[number]['value']
-				: ReturnOptionsTypes[T[K]['type']]
-			: ReturnOptionsTypes[T[K]['type']];
+	[K in KeysWithoutRequired<T>]?: ContextOptionsAuxInternal<T[K]>;
 };
 
 export type ContextOptions<T extends OptionsRecord> = ContextOptionsAux<T>;
