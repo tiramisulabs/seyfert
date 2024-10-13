@@ -1,0 +1,38 @@
+name: Publish beta version
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  publish_dev:
+    name: PublishDev
+    runs-on: ubuntu-latest
+    steps:
+      - name: check out code
+        uses: actions/checkout@v4
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Publish dev tag
+        id: publish
+        run: |
+          new_version=$(npm version prerelease --preid dev-${{github.run_id}} --no-git-tag-version)
+          echo "New version: $new_version"
+          npm config set //registry.npmjs.org/:_authToken ${NODE_AUTH_TOKEN}
+          npm publish --tag=dev
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        if: github.repository == 'tiramisulabs/seyfert'
