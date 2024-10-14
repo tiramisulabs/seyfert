@@ -8,6 +8,7 @@ import type {
 import type {
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
+	MakeRequired,
 	ModalCreateBodyRequest,
 	UnionToTuple,
 	When,
@@ -127,4 +128,10 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 	get member() {
 		return this.interaction.member;
 	}
+}
+
+export interface GuildEntryPointContext<M extends keyof RegisteredMiddlewares = never>
+	extends Omit<MakeRequired<EntryPointContext<M>, 'guildId'>, 'guild'> {
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
+	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 }

@@ -10,6 +10,7 @@ import {
 import {
 	type InteractionCreateBodyRequest,
 	type InteractionMessageUpdateBodyRequest,
+	type MakeRequired,
 	type ModalCreateBodyRequest,
 	type UnionToTuple,
 	type When,
@@ -164,4 +165,12 @@ export class MenuCommandContext<
 	isMenuMessage(): this is MenuCommandContext<MessageCommandInteraction> {
 		return this.interaction.data.type === ApplicationCommandType.Message;
 	}
+}
+
+export interface GuildMenuCommandContext<
+	T extends MessageCommandInteraction | UserCommandInteraction,
+	M extends keyof RegisteredMiddlewares = never,
+> extends Omit<MakeRequired<MenuCommandContext<T, M>, 'guildId'>, 'guild'> {
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
+	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 }

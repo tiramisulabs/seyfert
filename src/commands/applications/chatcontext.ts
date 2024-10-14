@@ -8,7 +8,7 @@ import type {
 	OptionResolverStructure,
 	WebhookMessageStructure,
 } from '../../client/transformers';
-import type { If, UnionToTuple, When } from '../../common';
+import type { If, MakeRequired, UnionToTuple, When } from '../../common';
 import type { InteractionCreateBodyRequest, InteractionMessageUpdateBodyRequest } from '../../common/types/write';
 import { ChatInputCommandInteraction } from '../../structures';
 import { MessageFlags } from '../../types';
@@ -218,4 +218,10 @@ export class CommandContext<
 	isChat(): this is CommandContext {
 		return true;
 	}
+}
+
+export interface GuildCommandContext<T extends OptionsRecord = {}, M extends keyof RegisteredMiddlewares = never>
+	extends Omit<MakeRequired<CommandContext<T, M>, 'guildId'>, 'guild'> {
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
+	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 }
