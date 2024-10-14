@@ -70,23 +70,31 @@ export class BitField<T extends object> {
 	}
 
 	resolve(...bits: BitFieldResolvable<T>[]): bigint {
-		switch (typeof bits) {
-			case 'string':
-				return this.resolve(this.Flags[bits]);
-			case 'number':
-				return BigInt(bits);
-			case 'bigint':
-				return bits;
-			case 'object': {
-				if (!Array.isArray(bits)) {
-					throw new TypeError(`Cannot resolve permission: ${bits}`);
+		let bitsResult = 0n;
+
+		for (const bit of bits) {
+			switch (typeof bit) {
+				case 'string':
+					bitsResult |= this.resolve(this.Flags[bit]);
+					break;
+				case 'number':
+					bitsResult |= BigInt(bit);
+					break;
+				case 'bigint':
+					bitsResult |= bit;
+					break;
+				case 'object': {
+					if (!Array.isArray(bit)) {
+						throw new TypeError(`Cannot resolve permission: ${bit}`);
+					}
+					bitsResult |= bits.reduce<bigint>((acc, val) => this.resolve(val) | acc, BitField.None);
+					break;
 				}
-				return bits.map(x => this.resolve(x)).reduce((acc, cur) => acc | cur, BitField.None);
+				default:
+					throw new TypeError(`Cannot resolve permission: ${typeof bit === 'symbol' ? String(bit) : (bit as unknown)}`);
 			}
-			default:
-				throw new TypeError(
-					`Cannot resolve permission: ${typeof bits === 'symbol' ? String(bits) : (bits as unknown)}`,
-				);
 		}
+
+		return bitsResult;
 	}
 }

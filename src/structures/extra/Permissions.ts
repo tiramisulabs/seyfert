@@ -22,25 +22,35 @@ export class PermissionsBitField extends BitField<typeof PermissionFlagsBits> {
 	}
 
 	resolve<T extends typeof PermissionFlagsBits>(...bits: BitFieldResolvable<T>[]): bigint {
-		return PermissionsBitField.resolve(...bits);
+		return bits.map(x => PermissionsBitField.resolve(x)).reduce((acc, cur) => acc | cur, BitField.None);
 	}
 
 	static resolve<T extends typeof PermissionFlagsBits>(...bits: BitFieldResolvable<T>[]): bigint {
-		switch (typeof bits) {
-			case 'string':
-				return PermissionsBitField.resolve(PermissionFlagsBits[bits as keyof typeof PermissionFlagsBits]);
-			case 'number':
-				return BigInt(bits);
-			case 'bigint':
-				return bits;
-			case 'object': {
-				if (!Array.isArray(bits)) {
-					throw new TypeError(`Cannot resolve permission: ${bits}`);
+		let bitsResult = 0n;
+
+		for (const bit of bits) {
+			switch (typeof bit) {
+				case 'string':
+					bitsResult |= PermissionsBitField.resolve(PermissionFlagsBits[bit as keyof typeof PermissionFlagsBits]);
+					break;
+				case 'number':
+					bitsResult |= BigInt(bit);
+					break;
+				case 'bigint':
+					bitsResult |= bit;
+					break;
+				case 'object': {
+					if (!Array.isArray(bit)) {
+						throw new TypeError(`Cannot resolve permission: ${bit}`);
+					}
+					bitsResult |= bit.reduce<bigint>((acc, val) => PermissionsBitField.resolve(val) | acc, BitField.None);
+					break;
 				}
-				return bits.map(x => PermissionsBitField.resolve(x)).reduce((acc, cur) => acc | cur, BitField.None);
+				default:
+					throw new TypeError(`Cannot resolve permission: ${typeof bit === 'symbol' ? String(bit) : (bit as any)}`);
 			}
-			default:
-				throw new TypeError(`Cannot resolve permission: ${typeof bits === 'symbol' ? String(bits) : (bits as any)}`);
 		}
+
+		return bitsResult;
 	}
 }
