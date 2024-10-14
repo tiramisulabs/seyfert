@@ -69,7 +69,7 @@ export class BitField<T extends object> {
 		return this.bits;
 	}
 
-	resolve(bits: BitFieldResolvable<T>): bigint {
+	resolve(...bits: BitFieldResolvable<T>[]): bigint {
 		switch (typeof bits) {
 			case 'string':
 				return this.resolve(this.Flags[bits]);

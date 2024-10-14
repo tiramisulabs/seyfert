@@ -21,6 +21,7 @@ import type {
 	ComponentInteractionMessageUpdate,
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
+	MakeRequired,
 	ModalCreateBodyRequest,
 	UnionToTuple,
 	When,
@@ -242,4 +243,10 @@ export interface ContextComponentCommandInteractionMap {
 	RoleSelect: RoleSelectMenuInteraction;
 	MentionableSelect: MentionableSelectMenuInteraction;
 	ChannelSelect: ChannelSelectMenuInteraction;
+}
+
+export interface GuildComponentContext<M extends keyof RegisteredMiddlewares = never>
+	extends Omit<MakeRequired<ComponentContext<M>, 'guildId'>, 'guild'> {
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
+	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 }

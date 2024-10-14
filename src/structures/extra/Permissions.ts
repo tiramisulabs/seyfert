@@ -21,11 +21,11 @@ export class PermissionsBitField extends BitField<typeof PermissionFlagsBits> {
 		return super.has(...bits);
 	}
 
-	resolve<T extends typeof PermissionFlagsBits>(bits: BitFieldResolvable<T>): bigint {
-		return PermissionsBitField.resolve(bits);
+	resolve<T extends typeof PermissionFlagsBits>(...bits: BitFieldResolvable<T>[]): bigint {
+		return PermissionsBitField.resolve(...bits);
 	}
 
-	static resolve<T extends typeof PermissionFlagsBits>(bits: BitFieldResolvable<T>): bigint {
+	static resolve<T extends typeof PermissionFlagsBits>(...bits: BitFieldResolvable<T>[]): bigint {
 		switch (typeof bits) {
 			case 'string':
 				return PermissionsBitField.resolve(PermissionFlagsBits[bits as keyof typeof PermissionFlagsBits]);

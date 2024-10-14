@@ -10,6 +10,7 @@ import { BaseContext } from '../commands/basecontext';
 import type {
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
+	MakeRequired,
 	ModalCreateBodyRequest,
 	UnionToTuple,
 	When,
@@ -186,4 +187,10 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	isModal(): this is ModalContext {
 		return true;
 	}
+}
+
+export interface GuildModalContext<M extends keyof RegisteredMiddlewares = never>
+	extends Omit<MakeRequired<ModalContext<M>, 'guildId'>, 'guild'> {
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
+	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 }

@@ -1,5 +1,5 @@
 import { type UUID, randomUUID } from 'node:crypto';
-import { Logger, delay, lazyLoadPackage, snowflakeToTimestamp } from '../common';
+import { type Awaitable, Logger, delay, lazyLoadPackage, snowflakeToTimestamp } from '../common';
 import type { WorkerData } from '../websocket';
 import type { WorkerSendApiRequest } from '../websocket/discord/worker';
 import { CDNRouter, Router } from './Router';
@@ -25,6 +25,8 @@ export interface ApiHandler {
 	debugger?: Logger;
 }
 
+export type OnRatelimitCallback = (response: Response, request: ApiRequestOptions) => Awaitable<any>;
+
 export class ApiHandler {
 	options: ApiHandlerInternalOptions;
 	globalBlock = false;
@@ -32,6 +34,7 @@ export class ApiHandler {
 	readyQueue: (() => void)[] = [];
 	cdn = CDNRouter.createProxy();
 	workerPromises?: Map<string, { resolve: (value: any) => any; reject: (error: any) => any }>;
+	onRatelimit?: OnRatelimitCallback;
 
 	constructor(options: ApiHandlerOptions) {
 		this.options = {
@@ -246,6 +249,8 @@ export class ApiHandler {
 		reject: (err: unknown) => void,
 		now: number,
 	) {
+		await this.onRatelimit?.(response, request);
+
 		const content = `${JSON.stringify(request)} `;
 		let retryAfter =
 			Number(response.headers.get('x-ratelimit-reset-after') || response.headers.get('retry-after')) * 1000;
