@@ -1,9 +1,9 @@
 import { type UUID, randomUUID } from 'node:crypto';
 import { ApiHandler, Logger } from '..';
 import { WorkerAdapter } from '../cache';
-import { type DeepPartial, LogLevels, type When, hasIntent, lazyLoadPackage } from '../common';
+import { type DeepPartial, LogLevels, type When, lazyLoadPackage } from '../common';
 import { EventHandler } from '../events';
-import { type GatewayDispatchPayload, GatewayIntentBits, type GatewaySendPayload } from '../types';
+import type { GatewayDispatchPayload, GatewaySendPayload } from '../types';
 import { Shard, type ShardManagerOptions, type WorkerData, properties } from '../websocket';
 import type {
 	WorkerDisconnectedAllShardsResharding,
@@ -53,8 +53,8 @@ try {
 }
 
 export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
-	private __handleGuilds?: Set<string> = new Set();
-	private __handleGuildsResharding?: Set<string>;
+	private __handleGuilds?: string[];
+	private __handleGuildsResharding?: string[];
 
 	memberUpdateHandler = new MemberUpdateHandler();
 	presenceUpdateHandler = new PresenceUpdateHandler();
@@ -159,7 +159,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			workerId: workerData.workerId,
 		} satisfies WorkerStart | WorkerStartResharding);
 		if (workerData.resharding) {
-			this.__handleGuildsResharding = new Set<string>();
+			this.__handleGuildsResharding = [];
 		}
 		await super.start(options);
 		await this.loadEvents(options.eventsDir);
@@ -253,25 +253,26 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							},
 							handlePayload(_, payload) {
 								if (payload.t === 'GUILD_CREATE' || payload.t === 'GUILD_DELETE') {
-									self.__handleGuildsResharding!.delete(payload.d.id);
-									if (!self.__handleGuildsResharding?.size && shardsConnected === workerData.shards.length) {
-										delete self.__handleGuildsResharding;
-										self.postMessage({
-											type: 'WORKER_READY_RESHARDING',
-											workerId: workerData.workerId,
-										} satisfies WorkerReadyResharding);
+									const indexOf = self.__handleGuildsResharding!.indexOf(payload.d.id);
+									if (indexOf !== -1) {
+										self.__handleGuildsResharding!.splice(indexOf, 1);
+										if (!self.__handleGuildsResharding?.length && shardsConnected === workerData.shards.length) {
+											delete self.__handleGuildsResharding;
+											self.postMessage({
+												type: 'WORKER_READY_RESHARDING',
+												workerId: workerData.workerId,
+											} satisfies WorkerReadyResharding);
+										}
 									}
 								}
 
 								if (payload.t !== 'READY') return;
 								shardsConnected++;
-								for (const guild of payload.d.guilds) {
-									self.__handleGuildsResharding!.add(guild.id);
-								}
-								if (
-									shardsConnected === workerData.shards.length &&
-									!hasIntent(workerData.intents, GatewayIntentBits.Guilds)
-								) {
+
+								const ids = payload.d.guilds.map(x => x.id);
+								self.__handleGuildsResharding = self.__handleGuildsResharding?.concat(ids) ?? ids;
+
+								if (shardsConnected === workerData.shards.length && !self.__handleGuildsResharding.length) {
 									delete self.__handleGuildsResharding;
 									self.postMessage({
 										type: 'WORKER_READY_RESHARDING',
@@ -399,7 +400,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			case 'WORKER_ALREADY_EXISTS_RESHARDING':
 				{
-					this.__handleGuildsResharding = new Set<string>();
+					this.__handleGuildsResharding = [];
 					this.postMessage({
 						type: 'WORKER_START_RESHARDING',
 						workerId: workerData.workerId,
@@ -487,9 +488,9 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			case 'GUILD_DELETE':
 			case 'GUILD_CREATE': {
-				if (this.__handleGuilds?.has(packet.d.id)) {
-					this.__handleGuilds?.delete(packet.d.id);
-					if (!this.__handleGuilds?.size && [...this.shards.values()].every(shard => shard.data.session_id)) {
+				if (this.__handleGuilds?.includes(packet.d.id)) {
+					this.__handleGuilds?.splice(this.__handleGuilds!.indexOf(packet.d.id), 1);
+					if (!this.__handleGuilds?.length && [...this.shards.values()].every(shard => shard.data.session_id)) {
 						delete this.__handleGuilds;
 						await this.cache.onPacket(packet);
 						this.postMessage({
@@ -498,7 +499,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						} as WorkerReady);
 						return this.events?.runEvent('WORKER_READY', this, this.me, -1);
 					}
-					if (!this.__handleGuilds?.size) delete this.__handleGuilds;
+					if (!this.__handleGuilds?.length) delete this.__handleGuilds;
 					return this.cache.onPacket(packet);
 				}
 				await this.events?.execute(packet.t, packet, this, shardId);
@@ -520,10 +521,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						break;
 					case 'READY':
 						{
-							if (!this.__handleGuilds) this.__handleGuilds = new Set();
-							for (const g of packet.d.guilds) {
-								this.__handleGuilds?.add(g.id);
-							}
+							const ids = packet.d.guilds.map(x => x.id);
+							this.__handleGuilds = this.__handleGuilds?.concat(ids) ?? ids;
 							this.botId = packet.d.user.id;
 							this.applicationId = packet.d.application.id;
 							this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
@@ -536,7 +535,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 								} as WorkerShardsConnected);
 								await this.events?.runEvent('WORKER_SHARDS_CONNECTED', this, this.me, -1);
 							}
-							if (!hasIntent(workerData.intents, GatewayIntentBits.Guilds)) {
+							if (!this.__handleGuilds.length) {
 								if ([...this.shards.values()].every(shard => shard.data.session_id)) {
 									this.postMessage({
 										type: 'WORKER_READY',
