@@ -5,11 +5,10 @@ import {
 	type If,
 	type WatcherPayload,
 	type WatcherSendToShard,
-	hasIntent,
 	lazyLoadPackage,
 } from '../common';
 import { EventHandler } from '../events';
-import { type GatewayDispatchPayload, GatewayIntentBits, type GatewayPresenceUpdateData } from '../types';
+import type { GatewayDispatchPayload, GatewayPresenceUpdateData } from '../types';
 import { ShardManager, type ShardManagerOptions, properties } from '../websocket';
 import { MemberUpdateHandler } from '../websocket/discord/events/memberUpdate';
 import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdate';
@@ -191,7 +190,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						this.botId = packet.d.user.id;
 						this.applicationId = packet.d.application.id;
 						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
-						if (!hasIntent(this.gateway.options.intents, GatewayIntentBits.Guilds)) {
+						if (!this.__handleGuilds.length) {
 							if ([...this.gateway.values()].every(shard => shard.data.session_id)) {
 								await this.events?.runEvent('BOT_READY', this, this.me, -1);
 							}
