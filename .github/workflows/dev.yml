@@ -9,6 +9,7 @@ jobs:
   publish_dev:
     name: PublishDev
     runs-on: ubuntu-latest
+    if: github.repository == 'tiramisulabs/seyfert'
     steps:
       - name: check out code
         uses: actions/checkout@v4
@@ -32,7 +33,6 @@ jobs:
           new_version=$(npm version prerelease --preid dev-${{github.run_id}} --no-git-tag-version)
           echo "New version: $new_version"
           npm config set //registry.npmjs.org/:_authToken ${NODE_AUTH_TOKEN}
-          npm publish --tag=dev
+          npm publish --provenance --tag=dev
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: github.repository == 'tiramisulabs/seyfert'
