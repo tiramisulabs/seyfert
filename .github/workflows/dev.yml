@@ -9,6 +9,8 @@ jobs:
   publish_dev:
     name: PublishDev
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     if: github.repository == 'tiramisulabs/seyfert'
     steps:
       - name: check out code
