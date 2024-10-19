@@ -9,22 +9,24 @@ import type { ComponentContext } from './componentcontext';
 import { ModalCommand } from './modalcommand';
 import type { ModalContext } from './modalcontext';
 
+type UserMatches = string | string[] | RegExp;
 type COMPONENTS = {
-	components: { match: string | string[] | RegExp; callback: ComponentCallback }[];
+	components: { match: MatchCallback; callback: ComponentCallback }[];
 	options?: ListenerOptions;
 	messageId: string;
 	channelId: string;
 	guildId: string | undefined;
 	idle?: NodeJS.Timeout;
 	timeout?: NodeJS.Timeout;
-	__run: (customId: string | string[] | RegExp, callback: ComponentCallback) => any;
+	__run: (customId: UserMatches, callback: ComponentCallback) => any;
 };
 
+export type MatchCallback = (str: string) => boolean;
 export type CollectorInteraction = ComponentInteraction | StringSelectMenuInteraction;
 export type ComponentCommands = ComponentCommand | ModalCommand;
 export interface CreateComponentCollectorResult {
 	run<T extends CollectorInteraction = CollectorInteraction>(
-		customId: string | string[] | RegExp,
+		customId: UserMatches,
 		callback: ComponentCallback<T>,
 	): any;
 	stop(reason?: string): any;
@@ -43,6 +45,12 @@ export class ComponentHandler extends BaseHandler {
 		protected client: UsingClient,
 	) {
 		super(logger);
+	}
+
+	private createMatchCallback(match: UserMatches): MatchCallback {
+		if (typeof match === 'string') return str => str === match;
+		if (Array.isArray(match)) return str => match.includes(str);
+		return str => match.test(str);
 	}
 
 	createComponentCollector(
@@ -79,7 +87,7 @@ export class ComponentHandler extends BaseHandler {
 				if (this.values.has(messageId)) {
 					this.values.get(messageId)!.components.push({
 						callback,
-						match: customId,
+						match: this.createMatchCallback(customId),
 					});
 				}
 			},
@@ -99,11 +107,7 @@ export class ComponentHandler extends BaseHandler {
 
 	async onComponent(id: string, interaction: ComponentInteraction) {
 		const row = this.values.get(id)!;
-		const component = row?.components?.find(x => {
-			if (typeof x.match === 'string') return x.match === interaction.customId;
-			if (Array.isArray(x.match)) return x.match.includes(interaction.customId);
-			return interaction.customId.match(x.match);
-		});
+		const component = row?.components?.find(x => x.match(interaction.customId));
 		if (!component) return;
 		if (row.options?.filter) {
 			if (!(await row.options.filter(interaction))) return row.options.onPass?.(interaction);
@@ -124,13 +128,7 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	hasComponent(id: string, customId: string) {
-		return (
-			this.values.get(id)?.components?.some(x => {
-				if (typeof x.match === 'string') return x.match === customId;
-				if (Array.isArray(x.match)) return x.match.includes(customId);
-				return customId.match(x.match);
-			}) ?? false
-		);
+		return this.values.get(id)?.components?.some(x => x.match(customId));
 	}
 
 	resetTimeouts(id: string) {

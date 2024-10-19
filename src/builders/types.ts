@@ -12,7 +12,7 @@ export type ComponentCallback<
 > = (interaction: T, stop: ComponentStopCallback, refresh: ComponentRefreshCallback) => any;
 export type ComponentFilterCallback<T = ComponentInteraction> = (interaction: T) => any;
 export type ComponentStopCallback = (
-	reason: 'messageDelete' | 'channelDelete' | 'guildDelete' | (string & {}) | undefined,
+	reason: 'messageDelete' | 'channelDelete' | 'guildDelete' | 'idle' | 'timeout' | (string & {}) | undefined,
 	refresh: ComponentRefreshCallback,
 ) => any;
 export type ComponentRefreshCallback = () => any;
