@@ -23,6 +23,10 @@
 		"noErrorTruncation": true,
 		"outDir": "./lib",
 		"stripInternal": true,
+		"strictBindCallApply": true,
+		"strictBuiltinIteratorReturn": true,
+		"strictPropertyInitialization": true,
+		"alwaysStrict": true,
 	},
 	"exclude": [
 		"**/lib",

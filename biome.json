@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.9.2/schema.json",
+	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -8,15 +8,7 @@
 	},
 	"files": {
 		"ignoreUnknown": true,
-		"ignore": [
-			"node_modules/",
-			"build",
-			"lib",
-			"__test__",
-			"package.json",
-			"tsconfig.json",
-			".vscode"
-		]
+		"ignore": ["node_modules/", "build", "lib", "__test__", "package.json", "tsconfig.json", ".vscode"]
 	},
 	"formatter": {
 		"enabled": true,

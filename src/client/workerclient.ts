@@ -13,11 +13,11 @@ import type {
 	WorkerReceivePayload,
 	WorkerRequestConnect,
 	WorkerRequestConnectResharding,
-	WorkerSendEval,
 	WorkerSendEvalResponse,
 	WorkerSendInfo,
 	WorkerSendResultPayload,
 	WorkerSendShardInfo,
+	WorkerSendToWorkerEval,
 	WorkerShardInfo,
 	WorkerShardsConnected,
 	WorkerStart,
@@ -38,16 +38,17 @@ let manager: import('node:worker_threads').MessagePort;
 try {
 	workerData = {
 		debug: process.env.SEYFERT_WORKER_DEBUG === 'true',
-		intents: Number.parseInt(process.env.SEYFERT_WORKER_INTENTS!),
+		intents: Number(process.env.SEYFERT_WORKER_INTENTS),
 		path: process.env.SEYFERT_WORKER_PATH!,
-		shards: process.env.SEYFERT_WORKER_SHARDS!.split(',').map(id => Number.parseInt(id)),
+		shards: process.env.SEYFERT_WORKER_SHARDS!.split(',').map(id => Number(id)),
 		token: process.env.SEYFERT_WORKER_TOKEN!,
-		workerId: Number.parseInt(process.env.SEYFERT_WORKER_WORKERID!),
+		workerId: Number(process.env.SEYFERT_WORKER_WORKERID),
 		workerProxy: process.env.SEYFERT_WORKER_WORKERPROXY === 'true',
 		totalShards: Number(process.env.SEYFERT_WORKER_TOTALSHARDS),
-		mode: process.env.SEYFERT_WORKER_MODE,
+		mode: process.env.SEYFERT_WORKER_MODE as 'custom' | 'threads' | 'clusters',
 		resharding: process.env.SEYFERT_WORKER_RESHARDING === 'true',
-	} as WorkerData;
+		totalWorkers: Number(process.env.SEYFERT_WORKER_TOTALWORKERS),
+	} satisfies WorkerData;
 } catch {
 	//
 }
@@ -372,6 +373,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				}
 				break;
 			case 'EXECUTE_EVAL':
+			case 'EXECUTE_EVAL_TO_WORKER':
 				{
 					let result: unknown;
 					try {
@@ -451,16 +453,24 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		});
 	}
 
-	tellWorker(workerId: number, func: (_: this) => any) {
+	tellWorker<R>(workerId: number, func: (_: this) => R) {
 		const nonce = this.generateNonce();
 		this.postMessage({
-			type: 'EVAL',
+			type: 'EVAL_TO_WORKER',
 			func: func.toString(),
 			toWorkerId: workerId,
 			workerId: workerData.workerId,
 			nonce,
-		} satisfies WorkerSendEval);
-		return this.generateSendPromise(nonce);
+		} satisfies WorkerSendToWorkerEval);
+		return this.generateSendPromise<R>(nonce);
+	}
+
+	tellWorkers<R>(func: (_: this) => R) {
+		const promises: Promise<R>[] = [];
+		for (let i = 0; i < workerData.totalWorkers; i++) {
+			promises.push(this.tellWorker(i, func));
+		}
+		return Promise.all(promises);
 	}
 
 	protected async onPacket(packet: GatewayDispatchPayload, shardId: number) {
@@ -564,6 +574,7 @@ export function generateShardInfo(shard: Shard): WorkerShardInfo {
 		shardId: shard.id,
 		latency: shard.latency,
 		resumable: shard.resumable,
+		workerId: workerData.workerId,
 	};
 }
 

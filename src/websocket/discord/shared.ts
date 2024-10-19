@@ -135,6 +135,7 @@ export interface WorkerData {
 	path: string;
 	shards: number[];
 	totalShards: number;
+	totalWorkers: number;
 	mode: 'custom' | 'clusters' | 'threads';
 	workerId: number;
 	debug: boolean;

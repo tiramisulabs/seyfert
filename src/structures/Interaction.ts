@@ -249,7 +249,7 @@ export class BaseInteraction<
 
 	deferReply<WR extends boolean = false>(
 		flags?: MessageFlags,
-		withResponse = false,
+		withResponse?: WR,
 	): Promise<When<WR, WebhookMessageStructure, undefined>> {
 		return this.reply(
 			{

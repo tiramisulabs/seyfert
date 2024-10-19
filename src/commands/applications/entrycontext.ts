@@ -54,8 +54,11 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 		return this.interaction.modal(body);
 	}
 
-	deferReply<WR extends boolean = false>(ephemeral = false): Promise<When<WR, WebhookMessageStructure, undefined>> {
-		return this.interaction.deferReply(ephemeral ? MessageFlags.Ephemeral : undefined);
+	deferReply<WR extends boolean = false>(
+		ephemeral = false,
+		withResponse?: WR,
+	): Promise<When<WR, WebhookMessageStructure, undefined>> {
+		return this.interaction.deferReply(ephemeral ? MessageFlags.Ephemeral : undefined, withResponse);
 	}
 
 	editResponse(body: InteractionMessageUpdateBodyRequest) {

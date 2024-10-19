@@ -1,6 +1,7 @@
 import cluster, { type Worker as ClusterWorker } from 'node:cluster';
 import { type UUID, randomUUID } from 'node:crypto';
-import { ApiHandler, Logger } from '../..';
+import type { Worker as WorkerThreadsWorker } from 'node:worker_threads';
+import { ApiHandler, Logger, type UsingClient, type WorkerClient } from '../..';
 import { type Adapter, MemoryAdapter } from '../../cache';
 import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
 import { type MakePartial, MergeOptions, lazyLoadPackage } from '../../common';
@@ -13,7 +14,7 @@ import type { WorkerInfo, WorkerMessage, WorkerShardInfo } from './worker';
 
 export class WorkerManager extends Map<
 	number,
-	(ClusterWorker | import('node:worker_threads').Worker | { ready?: boolean }) & {
+	(ClusterWorker | WorkerThreadsWorker | { ready?: boolean }) & {
 		ready?: boolean;
 		disconnected?: boolean;
 		resharded?: boolean;
@@ -148,7 +149,7 @@ export class WorkerManager extends Map<
 		}
 	}
 
-	async prepareWorkers(shards: number[][], resharding = false) {
+	prepareWorkers(shards: number[][], resharding = false) {
 		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
 		if (!worker_threads) throw new Error('Cannot prepare workers without worker_threads.');
 
@@ -167,6 +168,7 @@ export class WorkerManager extends Map<
 						totalShards: resharding ? this._info!.shards : this.totalShards,
 						mode: this.options.mode,
 						resharding,
+						totalWorkers: shards.length,
 					});
 					this.set(i, worker);
 				});
@@ -405,25 +407,25 @@ export class WorkerManager extends Map<
 				break;
 			case 'EVAL_RESPONSE':
 				{
-					const { nonce, type, ...data } = message;
+					const { nonce, response } = message;
 					const evalResponse = this.promises.get(nonce);
 					if (!evalResponse) {
 						return;
 					}
 					this.promises.delete(nonce);
 					clearTimeout(evalResponse.timeout);
-					evalResponse.resolve(data.response);
+					evalResponse.resolve(response);
 				}
 				break;
-			case 'EVAL':
+			case 'EVAL_TO_WORKER':
 				{
 					const nonce = this.generateNonce();
 					this.postMessage(message.toWorkerId, {
 						nonce,
 						func: message.func,
-						type: 'EXECUTE_EVAL',
+						type: 'EXECUTE_EVAL_TO_WORKER',
 						toWorkerId: message.toWorkerId,
-					} satisfies ManagerExecuteEval);
+					} satisfies ManagerExecuteEvalToWorker);
 					this.generateSendPromise(nonce, 'Eval timeout').then(val =>
 						this.postMessage(message.workerId, {
 							nonce: message.nonce,
@@ -499,6 +501,24 @@ export class WorkerManager extends Map<
 		this.postMessage(workerId, { nonce, type: 'WORKER_INFO' } satisfies ManagerRequestWorkerInfo);
 
 		return this.generateSendPromise<WorkerInfo>(nonce, 'Get worker info timeout');
+	}
+
+	tellWorker<R>(workerId: number, func: (_: WorkerClient & UsingClient) => R) {
+		const nonce = this.generateNonce();
+		this.postMessage(workerId, {
+			type: 'EXECUTE_EVAL',
+			func: func.toString(),
+			nonce,
+		} satisfies ManagerExecuteEval);
+		return this.generateSendPromise<R>(nonce);
+	}
+
+	tellWorkers<R>(func: (_: WorkerClient & UsingClient) => R) {
+		const promises: Promise<R>[] = [];
+		for (const i of this.keys()) {
+			promises.push(this.tellWorker(i, func));
+		}
+		return Promise.all(promises);
 	}
 
 	async start() {
@@ -620,14 +640,23 @@ export type ManagerSendApiResponse = CreateManagerMessage<
 		nonce: string;
 	}
 >;
-export type ManagerExecuteEval = CreateManagerMessage<
-	'EXECUTE_EVAL',
+export type ManagerExecuteEvalToWorker = CreateManagerMessage<
+	'EXECUTE_EVAL_TO_WORKER',
 	{
 		func: string;
 		nonce: string;
 		toWorkerId: number;
 	}
 >;
+
+export type ManagerExecuteEval = CreateManagerMessage<
+	'EXECUTE_EVAL',
+	{
+		func: string;
+		nonce: string;
+	}
+>;
+
 export type ManagerSendEvalResponse = CreateManagerMessage<
 	'EVAL_RESPONSE',
 	{
@@ -646,9 +675,10 @@ export type ManagerMessages =
 	| ManagerSendBotReady
 	| ManagerSendApiResponse
 	| ManagerSendEvalResponse
-	| ManagerExecuteEval
+	| ManagerExecuteEvalToWorker
 	| ManagerWorkerAlreadyExistsResharding
 	| ManagerSpawnShardsResharding
 	| ManagerAllowConnectResharding
 	| DisconnectAllShardsResharding
-	| ConnnectAllShardsResharding;
+	| ConnnectAllShardsResharding
+	| ManagerExecuteEval;

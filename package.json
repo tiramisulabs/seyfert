@@ -21,10 +21,10 @@
 	"author": "MARCROCK22",
 	"license": "MIT",
 	"devDependencies": {
-		"@biomejs/biome": "1.9.3",
+		"@biomejs/biome": "1.9.4",
 		"@commitlint/cli": "^19.5.0",
 		"@commitlint/config-conventional": "^19.5.0",
-		"@types/node": "^22.7.6",
+		"@types/node": "^22.7.7",
 		"husky": "^9.1.6",
 		"lint-staged": "^15.2.10",
 		"typescript": "^5.6.3",

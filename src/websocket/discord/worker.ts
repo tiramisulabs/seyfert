@@ -6,6 +6,7 @@ export interface WorkerShardInfo {
 	shardId: number;
 	latency: number;
 	resumable: boolean;
+	workerId: number;
 }
 
 export type WorkerInfo = { shards: WorkerShardInfo[] };
@@ -75,8 +76,8 @@ export type WorkerSendEvalResponse = CreateWorkerMessage<
 	}
 >;
 
-export type WorkerSendEval = CreateWorkerMessage<
-	'EVAL',
+export type WorkerSendToWorkerEval = CreateWorkerMessage<
+	'EVAL_TO_WORKER',
 	{
 		func: string;
 		nonce: string;
@@ -95,7 +96,7 @@ export type WorkerMessage =
 	| WorkerShardsConnected
 	| WorkerSendApiRequest
 	| WorkerSendEvalResponse
-	| WorkerSendEval
+	| WorkerSendToWorkerEval
 	| WorkerStart
 	| WorkerStartResharding
 	| WorkerRequestConnectResharding
