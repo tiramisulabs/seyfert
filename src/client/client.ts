@@ -5,6 +5,7 @@ import {
 	type If,
 	type WatcherPayload,
 	type WatcherSendToShard,
+	hasIntent,
 	lazyLoadPackage,
 } from '../common';
 import { EventHandler } from '../events';
@@ -186,11 +187,13 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						break;
 					case 'READY': {
 						const ids = packet.d.guilds.map(x => x.id);
-						this.__handleGuilds = this.__handleGuilds?.concat(ids) ?? ids;
+						if (hasIntent(this.gateway.options.intents, 'Guilds')) {
+							this.__handleGuilds = this.__handleGuilds?.concat(ids) ?? ids;
+						}
 						this.botId = packet.d.user.id;
 						this.applicationId = packet.d.application.id;
 						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
-						if (!this.__handleGuilds.length) {
+						if (!this.__handleGuilds?.length) {
 							if ([...this.gateway.values()].every(shard => shard.data.session_id)) {
 								await this.events?.runEvent('BOT_READY', this, this.me, -1);
 							}

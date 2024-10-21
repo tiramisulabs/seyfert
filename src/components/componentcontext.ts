@@ -89,6 +89,13 @@ export class ComponentContext<
 	}
 
 	/**
+	 * ACK an interaction and edit the original message later; the user does not see a loading state
+	 */
+	deferUpdate() {
+		return this.interaction.deferUpdate();
+	}
+
+	/**
 	 * Edits the response of the interaction.
 	 * @param body - The updated body of the response.
 	 */

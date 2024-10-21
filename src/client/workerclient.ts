@@ -1,7 +1,7 @@
 import { type UUID, randomUUID } from 'node:crypto';
 import { ApiHandler, Logger } from '..';
 import { WorkerAdapter } from '../cache';
-import { type DeepPartial, LogLevels, type When, lazyLoadPackage } from '../common';
+import { type DeepPartial, LogLevels, type When, hasIntent, lazyLoadPackage } from '../common';
 import { EventHandler } from '../events';
 import type { GatewayDispatchPayload, GatewaySendPayload } from '../types';
 import { Shard, type ShardManagerOptions, type WorkerData, properties } from '../websocket';
@@ -271,9 +271,11 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 								shardsConnected++;
 
 								const ids = payload.d.guilds.map(x => x.id);
-								self.__handleGuildsResharding = self.__handleGuildsResharding?.concat(ids) ?? ids;
+								if (hasIntent(workerData.intents, 'Guilds')) {
+									self.__handleGuildsResharding = self.__handleGuildsResharding?.concat(ids) ?? ids;
+								}
 
-								if (shardsConnected === workerData.shards.length && !self.__handleGuildsResharding.length) {
+								if (shardsConnected === workerData.shards.length && !self.__handleGuildsResharding?.length) {
 									delete self.__handleGuildsResharding;
 									self.postMessage({
 										type: 'WORKER_READY_RESHARDING',
@@ -532,7 +534,9 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					case 'READY':
 						{
 							const ids = packet.d.guilds.map(x => x.id);
-							this.__handleGuilds = this.__handleGuilds?.concat(ids) ?? ids;
+							if (hasIntent(this.workerData.intents, 'Guilds')) {
+								this.__handleGuilds = this.__handleGuilds?.concat(ids) ?? ids;
+							}
 							this.botId = packet.d.user.id;
 							this.applicationId = packet.d.application.id;
 							this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
@@ -545,7 +549,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 								} as WorkerShardsConnected);
 								await this.events?.runEvent('WORKER_SHARDS_CONNECTED', this, this.me, -1);
 							}
-							if (!this.__handleGuilds.length) {
+							if (!this.__handleGuilds!.length) {
 								if ([...this.shards.values()].every(shard => shard.data.session_id)) {
 									this.postMessage({
 										type: 'WORKER_READY',
