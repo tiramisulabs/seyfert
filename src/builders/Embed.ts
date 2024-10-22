@@ -31,7 +31,7 @@ export class Embed {
 	 * embed.setAuthor({ name: 'John Doe', iconURL: 'https://example.com/avatar.png' });
 	 */
 	setAuthor(author?: ObjectToLower<APIEmbedAuthor>): this {
-		this.data.author = author ? toSnakeCase(author) : undefined;
+		this.data.author = author && toSnakeCase(author);
 		return this;
 	}
 
