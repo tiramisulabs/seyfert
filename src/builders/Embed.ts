@@ -21,6 +21,8 @@ export class Embed {
 	constructor(data: Partial<APIEmbed> = {}) {
 		this.data = { ...data };
 		if (!this.data.fields) this.data.fields = [];
+		if (this.data.author) this.data.author = toSnakeCase(this.data.author);
+		if (this.data.footer) this.data.footer = toSnakeCase(this.data.footer);
 	}
 
 	/**
