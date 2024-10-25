@@ -168,7 +168,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	async loadEvents(dir?: string) {
-		dir ??= await this.getRC().then(x => x.events);
+		dir ??= await this.getRC().then(x => ('events' in x.locations ? x.locations.events : undefined));
 		if (dir && this.events) {
 			await this.events.load(dir);
 			this.logger.info('EventHandler loaded');
