@@ -15,6 +15,7 @@ import {
 	ApplicationCommandOptionType,
 	type ChannelType,
 } from '../../types';
+import type { LocalizationMap } from '../../types/payloads';
 import type { CommandContext } from './chatcontext';
 import type { DefaultLocale, MiddlewareContext, OKFunction, StopFunction } from './shared';
 
@@ -53,8 +54,15 @@ export interface SeyfertBaseChoiceableOption<
 }
 
 export type SeyfertChoice<T extends string | number> =
-	| { readonly name: string; readonly value: T }
-	| APIApplicationCommandOptionChoice<T>;
+	| {
+			readonly name: string;
+			readonly value: T;
+			name_localizations?: LocalizationMap | null;
+			locales?: FlatObjectKeys<DefaultLocale>;
+	  }
+	| (APIApplicationCommandOptionChoice<T> & {
+			locales?: FlatObjectKeys<DefaultLocale>;
+	  });
 
 export type ChoiceableTypes =
 	| ApplicationCommandOptionType.String

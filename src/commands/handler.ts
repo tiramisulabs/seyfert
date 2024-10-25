@@ -1,12 +1,13 @@
 import { promises } from 'node:fs';
 import { basename, dirname } from 'node:path';
 import type { EntryPointCommand } from '.';
-import type { Logger, MakeRequired, NulleableCoalising, OmitInsert } from '../common';
+import type { Logger, NulleableCoalising, OmitInsert } from '../common';
 import { BaseHandler, isCloudfareWorker } from '../common';
 import { PermissionsBitField } from '../structures/extra/Permissions';
 import {
 	type APIApplicationCommandChannelOption,
 	type APIApplicationCommandIntegerOption,
+	type APIApplicationCommandNumberOption,
 	type APIApplicationCommandOption,
 	type APIApplicationCommandStringOption,
 	type APIApplicationCommandSubcommandGroupOption,
@@ -59,18 +60,42 @@ export class CommandHandler extends BaseHandler {
 		if (!(locales || cachedLocales)) return false;
 		if (!locales && cachedLocales) return true;
 		if (locales && !cachedLocales) return true;
-		if (locales && cachedLocales) {
-			const localesEntries = Object.entries(locales);
-			const cachedLocalesEntries = Object.entries(cachedLocales);
-			if (localesEntries.length !== cachedLocalesEntries.length) return true;
+		if (!(locales && cachedLocales)) return true;
 
-			for (const [key, value] of localesEntries) {
-				const cached = cachedLocalesEntries.find(x => x[0] === key);
-				if (!cached) return true;
-				if (value !== cached[1]) return true;
-			}
+		const localesEntries = Object.entries(locales);
+		const cachedLocalesEntries = Object.entries(cachedLocales);
+		if (localesEntries.length !== cachedLocalesEntries.length) return true;
+
+		for (const [key, value] of localesEntries) {
+			const cached = cachedLocalesEntries.find(x => x[0] === key);
+			if (!cached) return true;
+			if (value !== cached[1]) return true;
 		}
+
 		return false;
+	}
+
+	protected shoudUploadChoices(option: APIApplicationCommandOption, cached: APIApplicationCommandOption) {
+		const optionChoiceable = option as
+			| APIApplicationCommandStringOption
+			| APIApplicationCommandIntegerOption
+			| APIApplicationCommandNumberOption;
+		const cachedChoiceable = cached as
+			| APIApplicationCommandStringOption
+			| APIApplicationCommandIntegerOption
+			| APIApplicationCommandNumberOption;
+
+		if (!(optionChoiceable.choices?.length && cachedChoiceable.choices?.length)) return false;
+		if (optionChoiceable.choices.length !== cachedChoiceable.choices.length) return true;
+
+		return !optionChoiceable.choices.every((choice, index) => {
+			const cachedChoice = cachedChoiceable.choices![index];
+			return (
+				choice.name === cachedChoice.name &&
+				choice.value === cachedChoice.value &&
+				!this.shouldUploadLocales(choice.name_localizations, cachedChoice.name_localizations)
+			);
+		});
 	}
 
 	protected shouldUploadOption(option: APIApplicationCommandOption, cached: APIApplicationCommandOption) {
@@ -87,7 +112,9 @@ export class CommandHandler extends BaseHandler {
 			case ApplicationCommandOptionType.String:
 				return (
 					option.min_length !== (cached as APIApplicationCommandStringOption).min_length ||
-					option.max_length !== (cached as APIApplicationCommandStringOption).max_length
+					option.max_length !== (cached as APIApplicationCommandStringOption).max_length ||
+					!!option.autocomplete !== !!(cached as APIApplicationCommandStringOption).autocomplete ||
+					this.shoudUploadChoices(option, cached)
 				);
 			case ApplicationCommandOptionType.Channel:
 				{
@@ -126,7 +153,9 @@ export class CommandHandler extends BaseHandler {
 			case ApplicationCommandOptionType.Number:
 				return (
 					option.min_value !== (cached as APIApplicationCommandIntegerOption).min_value ||
-					option.max_value !== (cached as APIApplicationCommandIntegerOption).max_value
+					option.max_value !== (cached as APIApplicationCommandIntegerOption).max_value ||
+					!!option.autocomplete !== !!(cached as APIApplicationCommandIntegerOption).autocomplete ||
+					this.shoudUploadChoices(option, cached)
 				);
 			case ApplicationCommandOptionType.Attachment:
 			case ApplicationCommandOptionType.Boolean:
@@ -279,7 +308,7 @@ export class CommandHandler extends BaseHandler {
 								}
 								for (const fileSubCommand of fileSubCommands) {
 									const subCommand = this.onSubCommand(fileSubCommand as HandleableSubCommand);
-									if (subCommand && subCommand instanceof SubCommand) {
+									if (subCommand instanceof SubCommand) {
 										subCommand.__filePath = option;
 										commandInstance.options!.push(subCommand);
 									} else {
@@ -313,15 +342,14 @@ export class CommandHandler extends BaseHandler {
 			return command;
 		}
 
-		if (command instanceof Command && command.__tGroups) {
+		if (command instanceof Command) {
 			this.parseCommandLocales(command);
 			for (const option of command.options ?? []) {
 				if (option instanceof SubCommand) {
 					this.parseSubCommandLocales(option);
 					continue;
 				}
-				// @ts-expect-error
-				if (option.locales) this.parseCommandOptionLocales(option);
+				this.parseCommandOptionLocales(option);
 			}
 		}
 		if (command instanceof SubCommand) {
@@ -332,8 +360,8 @@ export class CommandHandler extends BaseHandler {
 
 	parseGlobalLocales(command: InstanceType<HandleableCommand>) {
 		if (command.__t) {
-			command.name_localizations = {};
-			command.description_localizations = {};
+			command.name_localizations ??= {};
+			command.description_localizations ??= {};
 			for (const locale of Object.keys(this.client.langs!.values)) {
 				const locales = this.client.langs!.aliases.find(x => x[0] === locale)?.[1] ?? [];
 				if (Object.values<string>(Locale).includes(locale)) locales.push(locale as LocaleString);
@@ -355,31 +383,42 @@ export class CommandHandler extends BaseHandler {
 		}
 	}
 
-	parseCommandOptionLocales(option: MakeRequired<CommandOption, 'locales'>) {
-		option.name_localizations = {};
-		option.description_localizations = {};
+	parseCommandOptionLocales(option: CommandOption) {
+		option.name_localizations ??= {};
+		option.description_localizations ??= {};
 		for (const locale of Object.keys(this.client.langs!.values)) {
 			const locales = this.client.langs!.aliases.find(x => x[0] === locale)?.[1] ?? [];
 			if (Object.values<string>(Locale).includes(locale)) locales.push(locale as LocaleString);
 
-			if (option.locales.name) {
+			if (option.locales?.name) {
 				for (const i of locales) {
-					const valueName = this.client.langs!.getKey(locale, option.locales.name!);
+					const valueName = this.client.langs!.getKey(locale, option.locales.name);
 					if (valueName) option.name_localizations[i] = valueName;
 				}
 			}
 
-			if (option.locales.description) {
+			if (option.locales?.description) {
 				for (const i of locales) {
-					const valueKey = this.client.langs!.getKey(locale, option.locales.description!);
+					const valueKey = this.client.langs!.getKey(locale, option.locales.description);
 					if (valueKey) option.description_localizations[i] = valueKey;
+				}
+			}
+
+			if ('choices' in option && option.choices?.length) {
+				for (const c of option.choices) {
+					c.name_localizations ??= {};
+					if (!c.locales) continue;
+					for (const i of locales) {
+						const valueKey = this.client.langs!.getKey(locale, c.locales);
+						if (valueKey) c.name_localizations[i] = valueKey;
+					}
 				}
 			}
 		}
 	}
 
 	parseCommandLocales(command: Command) {
-		command.groups = {};
+		command.groups ??= {};
 		for (const locale of Object.keys(this.client.langs!.values)) {
 			const locales = this.client.langs!.aliases.find(x => x[0] === locale)?.[1] ?? [];
 			if (Object.values<string>(Locale).includes(locale)) locales.push(locale as LocaleString);
@@ -417,8 +456,7 @@ export class CommandHandler extends BaseHandler {
 
 	parseSubCommandLocales(command: SubCommand) {
 		for (const i of command.options ?? []) {
-			// @ts-expect-error
-			if (i.locales) this.parseCommandOptionLocales(i);
+			this.parseCommandOptionLocales(i);
 		}
 		return command;
 	}

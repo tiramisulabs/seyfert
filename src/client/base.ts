@@ -7,6 +7,8 @@ import type {
 	CommandContext,
 	ContextMenuCommand,
 	EntryPointCommand,
+	ExtendedRC,
+	ExtendedRCLocations,
 	ExtraProps,
 	MenuCommandContext,
 	RegisteredMiddlewares,
@@ -365,7 +367,7 @@ export class BaseClient {
 	}
 
 	async loadCommands(dir?: string) {
-		dir ??= await this.getRC().then(x => x.commands);
+		dir ??= await this.getRC().then(x => x.locations.commands);
 		if (dir && this.commands) {
 			await this.commands.load(dir, this);
 			this.logger.info('CommandHandler loaded');
@@ -373,7 +375,7 @@ export class BaseClient {
 	}
 
 	async loadComponents(dir?: string) {
-		dir ??= await this.getRC().then(x => x.components);
+		dir ??= await this.getRC().then(x => x.locations.components);
 		if (dir && this.components) {
 			await this.components.load(dir);
 			this.logger.info('ComponentHandler loaded');
@@ -381,7 +383,7 @@ export class BaseClient {
 	}
 
 	async loadLangs(dir?: string) {
-		dir ??= await this.getRC().then(x => x.langs);
+		dir ??= await this.getRC().then(x => x.locations.langs);
 		if (dir && this.langs) {
 			await this.langs.load(dir);
 			this.logger.info('LangsHandler loaded');
@@ -410,17 +412,22 @@ export class BaseClient {
 
 		const { locations, debug, ...env } = seyfertConfig;
 
+		const locationsFullPaths: MakeRequired<Partial<Record<keyof RC['locations'], string>>, 'base' | 'output'> = {
+			base: locations.base,
+			output: locations.output,
+		};
+
+		for (const i in locations) {
+			const key = i as keyof typeof locations;
+			const location = locations[i as keyof typeof locations];
+			if (!location || locationsFullPaths[key]) continue;
+			locationsFullPaths[key] = join(process.cwd(), locations.output, location);
+		}
+
 		const obj = {
 			debug: !!debug,
 			...env,
-			templates: locations.templates ? join(process.cwd(), locations.base, locations.templates) : undefined,
-			langs: locations.langs ? join(process.cwd(), locations.output, locations.langs) : undefined,
-			events:
-				'events' in locations && locations.events ? join(process.cwd(), locations.output, locations.events) : undefined,
-			components: locations.components ? join(process.cwd(), locations.output, locations.components) : undefined,
-			commands: locations.commands ? join(process.cwd(), locations.output, locations.commands) : undefined,
-			base: join(process.cwd(), locations.base),
-			output: join(process.cwd(), locations.output),
+			locations: locationsFullPaths,
 		};
 
 		return obj;
@@ -494,7 +501,7 @@ export interface StartOptions {
 	token: string;
 }
 
-interface RC extends Variables {
+interface RC extends ExtendedRC {
 	debug?: boolean;
 	locations: {
 		base: string;
@@ -504,10 +511,7 @@ interface RC extends Variables {
 		templates?: string;
 		events?: string;
 		components?: string;
-	};
-}
-
-export interface Variables {
+	} & ExtendedRCLocations;
 	token: string;
 	intents?: number;
 	applicationId?: string;

@@ -15,6 +15,8 @@ export interface DefaultLocale {}
 export interface ExtendContext {}
 export interface ExtraProps {}
 export interface UsingClient extends BaseClient {}
+export interface ExtendedRC {}
+export interface ExtendedRCLocations {}
 export type ParseClient<T extends BaseClient> = T;
 export type ParseGlobalMiddlewares<T extends Record<string, MiddlewareContext>> = {
 	[K in keyof T]: MetadataMiddleware<T[K]>;
