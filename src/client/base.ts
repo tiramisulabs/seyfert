@@ -420,7 +420,7 @@ export class BaseClient {
 		for (const i in locations) {
 			const key = i as keyof typeof locations;
 			const location = locations[i as keyof typeof locations];
-			if (!location || locationsFullPaths[key] || key === 'base' || key === 'output') continue;
+			if (!location || locationsFullPaths[key]) continue;
 			locationsFullPaths[key] = join(process.cwd(), locations.output, location);
 		}
 

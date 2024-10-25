@@ -549,7 +549,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 								} as WorkerShardsConnected);
 								await this.events?.runEvent('WORKER_SHARDS_CONNECTED', this, this.me, -1);
 							}
-							if (!this.__handleGuilds!.length) {
+							if (!this.__handleGuilds?.length) {
 								if ([...this.shards.values()].every(shard => shard.data.session_id)) {
 									this.postMessage({
 										type: 'WORKER_READY',
