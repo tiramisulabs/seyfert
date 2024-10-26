@@ -412,7 +412,7 @@ export class BaseClient {
 
 		const { locations, debug, ...env } = seyfertConfig;
 
-		const locationsFullPaths: MakeRequired<Partial<Record<keyof RC['locations'], string>>, 'base' | 'output'> = {
+		const locationsFullPaths: RC['locations'] = {
 			base: locations.base,
 			output: locations.output,
 		};
@@ -501,17 +501,19 @@ export interface StartOptions {
 	token: string;
 }
 
+interface RCLocations extends ExtendedRCLocations {
+	base: string;
+	output: string;
+	commands?: string;
+	langs?: string;
+	templates?: string;
+	events?: string;
+	components?: string;
+}
+
 interface RC extends ExtendedRC {
 	debug?: boolean;
-	locations: {
-		base: string;
-		output: string;
-		commands?: string;
-		langs?: string;
-		templates?: string;
-		events?: string;
-		components?: string;
-	} & ExtendedRCLocations;
+	locations: RCLocations;
 	token: string;
 	intents?: number;
 	applicationId?: string;
