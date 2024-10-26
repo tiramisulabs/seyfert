@@ -27,13 +27,12 @@ export class Bans extends GuildBasedResource<any, GatewayGuildBanModifyDispatchD
 	}
 
 	override bulk(ids: string[], guild: string): ReturnCache<GuildBanStructure[]> {
-		return fakePromise(super.bulk(ids, guild)).then(
-			bans =>
-				bans
-					.map(rawBan => {
-						return rawBan ? Transformers.GuildBan(this.client, rawBan, guild) : undefined;
-					})
-					.filter(Boolean) as GuildBanStructure[],
+		return fakePromise(super.bulk(ids, guild)).then(bans =>
+			bans
+				.map(rawBan => {
+					return rawBan ? Transformers.GuildBan(this.client, rawBan, guild) : undefined;
+				})
+				.filter(x => x !== undefined),
 		);
 	}
 
@@ -42,13 +41,12 @@ export class Bans extends GuildBasedResource<any, GatewayGuildBanModifyDispatchD
 	}
 
 	override values(guild: string): ReturnCache<GuildBanStructure[]> {
-		return fakePromise(super.values(guild)).then(
-			bans =>
-				bans
-					.map(rawBan => {
-						return rawBan ? Transformers.GuildBan(this.client, rawBan, guild) : undefined;
-					})
-					.filter(Boolean) as GuildBanStructure[],
+		return fakePromise(super.values(guild)).then(bans =>
+			bans
+				.map(rawBan => {
+					return rawBan ? Transformers.GuildBan(this.client, rawBan, guild) : undefined;
+				})
+				.filter(x => x !== undefined),
 		);
 	}
 

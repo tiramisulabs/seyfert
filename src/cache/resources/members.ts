@@ -39,14 +39,13 @@ export class Members extends GuildBasedResource<any, APIGuildMember> {
 
 	override bulk(ids: string[], guild: string): ReturnCache<GuildMemberStructure[]> {
 		return fakePromise(super.bulk(ids, guild)).then(members =>
-			fakePromise(this.client.cache.users?.bulkRaw(ids)).then(
-				users =>
-					members
-						.map(rawMember => {
-							const user = users?.find(x => x.id === rawMember.id);
-							return user ? Transformers.GuildMember(this.client, rawMember, user, guild) : undefined;
-						})
-						.filter(Boolean) as GuildMemberStructure[],
+			fakePromise(this.client.cache.users?.bulkRaw(ids)).then(users =>
+				members
+					.map(rawMember => {
+						const user = users?.find(x => x.id === rawMember.id);
+						return user ? Transformers.GuildMember(this.client, rawMember, user, guild) : undefined;
+					})
+					.filter(x => x !== undefined),
 			),
 		);
 	}
@@ -57,14 +56,13 @@ export class Members extends GuildBasedResource<any, APIGuildMember> {
 
 	override values(guild: string): ReturnCache<GuildMemberStructure[]> {
 		return fakePromise(super.values(guild)).then(members =>
-			fakePromise(this.client.cache.users?.valuesRaw()).then(
-				users =>
-					members
-						.map(rawMember => {
-							const user = users?.find(x => x.id === rawMember.id);
-							return user ? Transformers.GuildMember(this.client, rawMember, user, rawMember.guild_id) : undefined;
-						})
-						.filter(Boolean) as GuildMemberStructure[],
+			fakePromise(this.client.cache.users?.valuesRaw()).then(users =>
+				members
+					.map(rawMember => {
+						const user = users?.find(x => x.id === rawMember.id);
+						return user ? Transformers.GuildMember(this.client, rawMember, user, rawMember.guild_id) : undefined;
+					})
+					.filter(x => x !== undefined),
 			),
 		);
 	}

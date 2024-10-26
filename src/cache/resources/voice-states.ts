@@ -28,11 +28,10 @@ export class VoiceStates extends GuildBasedResource<any, APIVoiceState> {
 	}
 
 	override bulk(ids: string[], guild: string): ReturnCache<VoiceStateStructure[]> {
-		return fakePromise(super.bulk(ids, guild)).then(
-			states =>
-				states
-					.map(state => (state ? Transformers.VoiceState(this.client, state) : undefined))
-					.filter(y => !!y) as VoiceStateStructure[],
+		return fakePromise(super.bulk(ids, guild)).then(states =>
+			states
+				.map(state => (state ? Transformers.VoiceState(this.client, state) : undefined))
+				.filter(x => x !== undefined),
 		);
 	}
 

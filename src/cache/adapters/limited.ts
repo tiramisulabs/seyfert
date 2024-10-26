@@ -77,12 +77,10 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 		const storageArray = Array.from(this.storage.values());
 		const keySet = new Set(keys);
 
-		return storageArray
-			.flatMap(storageEntry => {
-				const entries = Array.from(storageEntry.entries());
-				return entries.filter(([key]) => keySet.has(key)).map(([, value]) => this.options.decode(value.value as T));
-			})
-			.filter(Boolean);
+		return storageArray.flatMap(storageEntry => {
+			const entries = Array.from(storageEntry.entries());
+			return entries.filter(([key]) => keySet.has(key)).map(([, value]) => this.options.decode(value.value as T));
+		});
 	}
 
 	get(key: string) {

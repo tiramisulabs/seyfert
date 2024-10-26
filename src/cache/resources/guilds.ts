@@ -80,7 +80,7 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 				this.cache.voiceStates?.hashId(id),
 				this.cache.presences?.hashId(id),
 				this.cache.stageInstances?.hashId(id),
-			].filter(Boolean) as string[],
+			].filter(x => x !== undefined),
 		);
 
 		await super.remove(id);
