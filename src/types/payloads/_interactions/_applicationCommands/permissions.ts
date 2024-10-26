@@ -53,7 +53,6 @@ export enum ApplicationCommandPermissionType {
  * https://discord.com/developers/docs/interactions/application-commands#application-command-permissions-object-application-command-permissions-constants
  */
 export const APIApplicationCommandPermissionsConstant = {
-	// eslint-disable-next-line unicorn/prefer-native-coercion-functions
 	Everyone: (guildId: bigint | string): Snowflake => String(guildId),
 	AllChannels: (guildId: bigint | string): Snowflake => String(BigInt(guildId) - 1n),
 };

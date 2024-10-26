@@ -98,7 +98,6 @@ export const FormattingPatterns = {
 	 * The `fullName` (possibly including `name`, `subcommandOrGroup` and `subcommand`) and `id` group properties are present on the `exec` result of this expression
 	 */
 	SlashCommand:
-		// eslint-disable-next-line unicorn/no-unsafe-regex
 		/<\/(?<fullName>(?<name>[-_\p{Letter}\p{Number}\p{sc=Deva}\p{sc=Thai}]{1,32})(?: (?<subcommandOrGroup>[-_\p{Letter}\p{Number}\p{sc=Deva}\p{sc=Thai}]{1,32}))?(?: (?<subcommand>[-_\p{Letter}\p{Number}\p{sc=Deva}\p{sc=Thai}]{1,32}))?):(?<id>\d{17,20})>/u,
 	/**
 	 * Regular expression for matching a custom emoji, either static or animated
@@ -123,7 +122,6 @@ export const FormattingPatterns = {
 	 *
 	 * The `timestamp` and `style` group properties are present on the `exec` result of this expression
 	 */
-	// eslint-disable-next-line prefer-named-capture-group
 	Timestamp: /<t:(?<timestamp>-?\d{1,13})(:(?<style>[DFRTdft]))?>/,
 	/**
 	 * Regular expression for matching strictly default styled timestamps
@@ -415,7 +413,6 @@ export const PermissionFlagsBits = {
 	/**
 	 * Allows kicking members
 	 */
-	// eslint-disable-next-line sonarjs/no-identical-expressions
 	KickMembers: 1n << 1n,
 	/**
 	 * Allows banning members
@@ -777,7 +774,6 @@ export enum ChannelType {
 	 *
 	 * @deprecated This is the old name for {@apilink ChannelType#AnnouncementThread}
 	 */
-	// eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
 	GuildNewsThread = 10,
 	/**
 	 * A temporary sub-channel within a Guild Text channel

@@ -93,6 +93,14 @@ export class BaseResource<T = any, S = any> {
 		return this.adapter.removeToRelationship(this.namespace, id);
 	}
 
+	flush() {
+		return fakePromise(this.adapter.keys(this.namespace)).then(keys => {
+			return fakePromise(this.adapter.bulkRemove(keys)).then(() => {
+				return this.adapter.removeRelationship(this.namespace);
+			});
+		});
+	}
+
 	hashId(id: string) {
 		return id.startsWith(this.namespace) ? id : `${this.namespace}.${id}`;
 	}

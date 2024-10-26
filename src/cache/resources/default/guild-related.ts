@@ -164,4 +164,12 @@ export class GuildRelatedResource<T = any, S = any> {
 	hashId(id: string) {
 		return id.startsWith(this.namespace) ? id : `${this.namespace}.${id}`;
 	}
+
+	flush(guild: string) {
+		return fakePromise(this.keys(guild)).then(keys => {
+			return fakePromise(this.adapter.bulkRemove(keys)).then(() => {
+				return this.removeRelationship(guild);
+			});
+		});
+	}
 }

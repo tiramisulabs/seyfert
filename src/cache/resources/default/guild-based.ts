@@ -149,4 +149,17 @@ export class GuildBasedResource<T = any, S = any> {
 	hashGuildId(guild: string, id: string) {
 		return id.startsWith(this.namespace) ? id : `${this.namespace}.${guild}.${id}`;
 	}
+
+	flush(guild: '*' | (string & {}) = '*') {
+		return fakePromise(this.keys(guild)).then(keys => {
+			return fakePromise(this.adapter.bulkRemove(keys)).then(() => {
+				const maybePromises: (unknown | Promise<unknown>)[] = [];
+				for (const i of keys) {
+					const guildId = i.split('.').at(-2)!;
+					maybePromises.push(this.removeRelationship(guildId));
+				}
+				return this.adapter.isAsync ? Promise.all(maybePromises) : maybePromises;
+			});
+		});
+	}
 }

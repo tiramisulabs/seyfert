@@ -22,7 +22,7 @@ export interface ApiHandlerInternalOptions extends MakeRequired<ApiHandlerOption
 
 export interface RawFile {
 	contentType?: string;
-	data: ArrayBuffer | Buffer | Uint8Array | boolean | number | string;
+	data: ArrayBuffer | Buffer | Uint8Array | Uint8ClampedArray | boolean | number | string;
 	key?: string;
 	filename: string;
 }

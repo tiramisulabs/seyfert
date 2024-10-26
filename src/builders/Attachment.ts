@@ -2,13 +2,14 @@ import { randomBytes } from 'node:crypto';
 import { promises } from 'node:fs';
 import path from 'node:path';
 import type { RawFile, UsingClient } from '..';
+import { isBufferLike } from '../api/utils/utils';
 import type { ImageResolvable, ObjectToLower } from '../common';
 import { Base } from '../structures/extra/Base';
 import type { APIAttachment, RESTAPIAttachment } from '../types';
 
 export interface AttachmentResolvableMap {
 	url: string;
-	buffer: Buffer | ArrayBuffer;
+	buffer: Buffer | ArrayBuffer | Uint8Array | Uint8ClampedArray;
 	path: string;
 }
 export type AttachmentResolvable =
@@ -206,7 +207,7 @@ export async function resolveAttachmentData(
 			return { data: await promises.readFile(file) };
 		}
 		case 'buffer': {
-			if (Buffer.isBuffer(data)) return { data };
+			if (isBufferLike(data)) return { data };
 			// @ts-expect-error
 			if (typeof data[Symbol.asyncIterator] === 'function') {
 				const buffers: Buffer[] = [];
