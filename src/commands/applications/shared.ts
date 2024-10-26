@@ -54,10 +54,11 @@ export type MessageCommandOptionErrors =
 	| ['STRING_MIN_LENGTH', min: number]
 	| ['STRING_MAX_LENGTH', max: number]
 	| ['STRING_INVALID_CHOICE', choices: readonly { name: string; value: string }[]]
-	| ['NUMBER_NAN', value: string | undefined]
+	| ['NUMBER_NAN', value: string]
 	| ['NUMBER_MIN_VALUE', min: number]
 	| ['NUMBER_MAX_VALUE', max: number]
 	| ['NUMBER_INVALID_CHOICE', choices: readonly { name: string; value: number }[]]
+	| ['NUMBER_OUT_OF_BOUNDS', value: number]
 	| ['OPTION_REQUIRED']
 	| ['UNKNOWN', error: unknown];
 

@@ -22,6 +22,7 @@ import {
 import type { Client, WorkerClient } from '../client';
 import { type MessageStructure, type OptionResolverStructure, Transformers } from '../client/transformers';
 import type { MakeRequired } from '../common';
+import { INTEGER_OPTION_VALUE_LIMIT } from '../common/it/constants';
 import { ComponentContext, ModalContext } from '../components';
 import {
 	AutocompleteInteraction,
@@ -635,7 +636,7 @@ export class HandleCommand {
 	async argsOptionsParser(
 		command: Command | SubCommand,
 		message: GatewayMessageCreateDispatchData,
-		args: Partial<Record<string, string>>,
+		args: Record<string, string>,
 		resolved: MakeRequired<ContextOptionsResolved>,
 	) {
 		const options: APIApplicationCommandInteractionDataOption[] = [];
@@ -649,6 +650,7 @@ export class HandleCommand {
 			type: ApplicationCommandOptionType;
 		})[]) {
 			try {
+				if (!args[i.name] && i.type !== ApplicationCommandOptionType.Attachment) continue;
 				let value: string | boolean | number | undefined;
 				switch (i.type) {
 					case ApplicationCommandOptionType.Attachment:
@@ -658,9 +660,7 @@ export class HandleCommand {
 						}
 						break;
 					case ApplicationCommandOptionType.Boolean:
-						if (args[i.name]) {
-							value = ['yes', 'y', 'true', 'treu'].includes(args[i.name]!.toLowerCase());
-						}
+						value = ['yes', 'y', 'true', 'treu'].includes(args[i.name].toLowerCase());
 						break;
 					case ApplicationCommandOptionType.Channel:
 						{
@@ -670,24 +670,22 @@ export class HandleCommand {
 							if (!rawQuery) continue;
 							const channel =
 								(await this.client.cache.channels?.raw(rawQuery)) ?? (await this.fetchChannel(i, rawQuery));
-							if (channel) {
-								if ('channel_types' in i) {
-									if (!(i as SeyfertChannelOption).channel_types!.includes(channel.type)) {
-										if (i.required)
-											errors.push({
-												name: i.name,
-												error: `The entered channel type is not one of ${(i as SeyfertChannelOption)
-													.channel_types!.map(t => ChannelType[t])
-													.join(', ')}`,
-												fullError: ['CHANNEL_TYPES', (i as SeyfertChannelOption).channel_types!],
-											});
-										break;
-									}
+							if (!channel) break;
+							if ('channel_types' in i) {
+								if (!(i as SeyfertChannelOption).channel_types!.includes(channel.type)) {
+									errors.push({
+										name: i.name,
+										error: `The entered channel type is not one of ${(i as SeyfertChannelOption)
+											.channel_types!.map(t => ChannelType[t])
+											.join(', ')}`,
+										fullError: ['CHANNEL_TYPES', (i as SeyfertChannelOption).channel_types!],
+									});
+									break;
 								}
-								value = channel.id;
-								//discord funny memoentnt!!!!!!!!
-								resolved.channels[channel.id] = channel as APIInteractionDataResolvedChannel;
 							}
+							value = channel.id;
+							//discord funny memoentnt!!!!!!!!
+							resolved.channels[channel.id] = channel as APIInteractionDataResolvedChannel;
 						}
 						break;
 					case ApplicationCommandOptionType.Mentionable:
@@ -754,114 +752,110 @@ export class HandleCommand {
 						break;
 					case ApplicationCommandOptionType.String:
 						{
-							value = args[i.name];
 							const option = i as SeyfertStringOption;
-							if (!value) break;
-							if (option.min_length) {
-								if (value.length < option.min_length) {
-									value = undefined;
-									if (i.required)
-										errors.push({
-											name: i.name,
-											error: `The entered string has less than ${option.min_length} characters. The minimum required is ${option.min_length} characters.`,
-											fullError: ['STRING_MIN_LENGTH', option.min_length],
-										});
-									break;
-								}
-							}
-							if (option.max_length) {
-								if (value.length > option.max_length) {
-									value = undefined;
-									if (i.required)
-										errors.push({
-											name: i.name,
-											error: `The entered string has more than ${option.max_length} characters. The maximum required is ${option.max_length} characters.`,
-											fullError: ['STRING_MAX_LENGTH', option.max_length],
-										});
-									break;
-								}
-							}
 							if (option.choices?.length) {
-								const choice = option.choices.find(x => x.name === value);
+								const choice = option.choices.find(x => x.name === args[i.name]);
 								if (!choice) {
-									value = undefined;
-									if (i.required)
-										errors.push({
-											name: i.name,
-											error: `The entered choice is invalid. Please choose one of the following options: ${option.choices
-												.map(x => x.name)
-												.join(', ')}.`,
-											fullError: ['STRING_INVALID_CHOICE', option.choices],
-										});
+									errors.push({
+										name: i.name,
+										error: `The entered choice is invalid. Please choose one of the following options: ${option.choices
+											.map(x => x.name)
+											.join(', ')}`,
+										fullError: ['STRING_INVALID_CHOICE', option.choices],
+									});
 									break;
 								}
 								value = choice.value;
+								break;
 							}
+							if (option.min_length !== undefined) {
+								if (args[i.name].length < option.min_length) {
+									errors.push({
+										name: i.name,
+										error: `The entered string has less than ${option.min_length} characters. The minimum required is ${option.min_length} characters`,
+										fullError: ['STRING_MIN_LENGTH', option.min_length],
+									});
+									break;
+								}
+							}
+							if (option.max_length !== undefined) {
+								if (args[i.name].length > option.max_length) {
+									errors.push({
+										name: i.name,
+										error: `The entered string has more than ${option.max_length} characters. The maximum required is ${option.max_length} characters`,
+										fullError: ['STRING_MAX_LENGTH', option.max_length],
+									});
+									break;
+								}
+							}
+							value = args[i.name];
 						}
 						break;
 					case ApplicationCommandOptionType.Number:
 					case ApplicationCommandOptionType.Integer:
 						{
 							const option = i as SeyfertNumberOption | SeyfertIntegerOption;
-							if (!option.choices?.length) {
-								value = Number(args[i.name]);
-								if (args[i.name] === undefined) {
-									value = undefined;
-									break;
-								}
-								if (Number.isNaN(value)) {
-									value = undefined;
-									if (i.required)
-										errors.push({
-											name: i.name,
-											error: 'The entered choice is an invalid number.',
-											fullError: ['NUMBER_NAN', args[i.name]],
-										});
-									break;
-								}
-								if (option.min_value) {
-									if (value < option.min_value) {
-										value = undefined;
-										if (i.required)
-											errors.push({
-												name: i.name,
-												error: `The entered number is less than ${option.min_value}. The minimum allowed is ${option.min_value}`,
-												fullError: ['NUMBER_MIN_VALUE', option.min_value],
-											});
-										break;
-									}
-								}
-								if (option.max_value) {
-									if (value > option.max_value) {
-										value = undefined;
-										if (i.required)
-											errors.push({
-												name: i.name,
-												error: `The entered number is greater than ${option.max_value}. The maximum allowed is ${option.max_value}`,
-												fullError: ['NUMBER_MAX_VALUE', option.max_value],
-											});
-										break;
-									}
-								}
-								break;
-							}
-							const choice = option.choices.find(x => x.name === args[i.name]);
-							if (!choice) {
-								value = undefined;
-								if (i.required)
+							if (option.choices?.length) {
+								const choice = option.choices.find(x => x.name === args[i.name]);
+								if (!choice) {
 									errors.push({
 										name: i.name,
 										error: `The entered choice is invalid. Please choose one of the following options: ${option.choices
 											.map(x => x.name)
-											.join(', ')}.`,
+											.join(', ')}`,
 										fullError: ['NUMBER_INVALID_CHOICE', option.choices],
 									});
+									break;
+								}
+								value = choice.value;
 								break;
 							}
-							value = choice.value;
+							value =
+								i.type === ApplicationCommandOptionType.Integer
+									? Math.trunc(Number(args[i.name]))
+									: Number(args[i.name]);
+							if (Number.isNaN(value)) {
+								value = undefined;
+								errors.push({
+									name: i.name,
+									error: 'The entered choice is an invalid number',
+									fullError: ['NUMBER_NAN', args[i.name]],
+								});
+								break;
+							}
+							if (value <= -INTEGER_OPTION_VALUE_LIMIT || value >= INTEGER_OPTION_VALUE_LIMIT) {
+								value = undefined;
+								errors.push({
+									name: i.name,
+									error: 'The entered number must be between -2^53 and 2^53',
+									fullError: ['NUMBER_OUT_OF_BOUNDS', INTEGER_OPTION_VALUE_LIMIT],
+								});
+								break;
+							}
+							if (option.min_value !== undefined) {
+								if (value < option.min_value) {
+									value = undefined;
+									errors.push({
+										name: i.name,
+										error: `The entered number is less than ${option.min_value}. The minimum allowed is ${option.min_value}`,
+										fullError: ['NUMBER_MIN_VALUE', option.min_value],
+									});
+									break;
+								}
+							}
+							if (option.max_value !== undefined) {
+								if (value > option.max_value) {
+									value = undefined;
+									errors.push({
+										name: i.name,
+										error: `The entered number is greater than ${option.max_value}. The maximum allowed is ${option.max_value}`,
+										fullError: ['NUMBER_MAX_VALUE', option.max_value],
+									});
+									break;
+								}
+								break;
+							}
 						}
-						break;
-					default:
 						break;
 				}
 				if (value !== undefined) {

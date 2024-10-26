@@ -38,3 +38,5 @@ export const DiscordEpoch = 1420070400000n;
 export const BASE_HOST = 'https://discord.com';
 export const BASE_URL = `${BASE_HOST}/api`;
 export const CDN_URL = 'https://cdn.discordapp.com';
+
+export const INTEGER_OPTION_VALUE_LIMIT = 2 ** 53;
