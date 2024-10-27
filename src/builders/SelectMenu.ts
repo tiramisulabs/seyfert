@@ -1,11 +1,10 @@
-import type { EmojiResolvable, RestOrArray, ToClass } from '../common';
+import type { EmojiResolvable, RestOrArray } from '../common';
 import { resolvePartialEmoji } from '../common/it/utils';
 import type {
 	ChannelSelectMenuInteraction,
 	ComponentInteraction,
 	MentionableSelectMenuInteraction,
 	RoleSelectMenuInteraction,
-	StringSelectMenuInteraction,
 	UserSelectMenuInteraction,
 } from '../structures';
 import {
@@ -53,9 +52,6 @@ function mappedDefault<T extends SelectMenuDefaultValueType>(
  * const selectMenu = new SelectMenu<APIUserSelectComponent, UserSelectMenuInteraction>();
  * selectMenu.setCustomId("user-select-menu");
  * selectMenu.setPlaceholder("Select a user");
- * selectMenu.run((interaction) => {
- *   // Handle select menu interaction
- * });
  */
 export class SelectMenu<
 	Select extends APISelectMenuComponent = APISelectMenuComponent,
@@ -273,14 +269,12 @@ export class ChannelSelectMenu extends SelectMenu<APIChannelSelectComponent, Cha
  *   { label: "Option 3", value: "option_3" },
  * ]);
  */
-export class StringSelectMenu extends (SelectMenu as unknown as ToClass<
-	Omit<SelectMenu<APIStringSelectComponent, StringSelectMenuInteraction>, 'data' | 'toJSON'>,
-	StringSelectMenu
->) {
+export class StringSelectMenu extends SelectMenu {
+	//@ts-expect-error
 	declare data: Omit<APIStringSelectComponent, 'options'> & { options: StringSelectOption[] };
 	constructor(data: Partial<APIStringSelectComponent> = {}) {
 		super({ ...data, type: ComponentType.StringSelect });
-		this.data.options = (data.options ?? []).map(x => new StringSelectOption(x));
+		this.data.options = data.options?.map(x => new StringSelectOption(x)) ?? [];
 	}
 
 	/**
@@ -307,7 +301,7 @@ export class StringSelectMenu extends (SelectMenu as unknown as ToClass<
 		const { options, ...raw } = this.data;
 		return {
 			...raw,
-			options: this.data.options.map(x => x.toJSON()),
+			options: options.map(x => x.toJSON()),
 		};
 	}
 }
