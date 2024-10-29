@@ -419,9 +419,10 @@ export class BaseClient {
 
 		for (const i in locations) {
 			const key = i as keyof typeof locations;
-			const location = locations[i as keyof typeof locations];
-			if (!location || locationsFullPaths[key]) continue;
-			locationsFullPaths[key] = join(process.cwd(), locations.output, location);
+			const location = locations[key];
+			if (key in locationsFullPaths) continue;
+			if (typeof location === 'string') locationsFullPaths[key] = join(process.cwd(), locations.output, location);
+			else locationsFullPaths[key] = location as any;
 		}
 
 		const obj = {

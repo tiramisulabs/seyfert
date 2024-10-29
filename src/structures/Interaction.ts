@@ -102,7 +102,7 @@ export class BaseInteraction<
 	channel?: AllChannels;
 	message?: MessageStructure;
 	replied?: Promise<boolean | RESTPostAPIInteractionCallbackResult | undefined> | boolean;
-	appPermissions?: PermissionsBitField;
+	appPermissions: PermissionsBitField;
 	entitlements: EntitlementStructure[];
 
 	constructor(
@@ -122,9 +122,7 @@ export class BaseInteraction<
 		if (interaction.message) {
 			this.message = Transformers.Message(client, interaction.message);
 		}
-		if (interaction.app_permissions) {
-			this.appPermissions = new PermissionsBitField(Number(interaction.app_permissions));
-		}
+		this.appPermissions = new PermissionsBitField(Number(interaction.app_permissions));
 		if (interaction.channel) {
 			this.channel = channelFrom(interaction.channel, client);
 		}

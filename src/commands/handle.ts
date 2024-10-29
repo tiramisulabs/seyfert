@@ -95,21 +95,12 @@ export class HandleCommand {
 		}
 	}
 
-	async contextMenuMessage(
+	async contextMenu(
 		command: ContextMenuCommand,
-		interaction: MessageCommandInteraction,
-		context: MenuCommandContext<MessageCommandInteraction>,
+		interaction: MessageCommandInteraction | UserCommandInteraction,
+		context: MenuCommandContext<MessageCommandInteraction | UserCommandInteraction>,
 	) {
-		// @ts-expect-error
-		return this.contextMenuUser(command, interaction, context);
-	}
-
-	async contextMenuUser(
-		command: ContextMenuCommand,
-		interaction: UserCommandInteraction,
-		context: MenuCommandContext<UserCommandInteraction>,
-	) {
-		if (context.guildId && command.botPermissions && interaction.appPermissions) {
+		if (context.guildId && command.botPermissions) {
 			const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
 			if (permissions) return command.onBotPermissionsFail(context, permissions);
 		}
@@ -136,8 +127,24 @@ export class HandleCommand {
 		}
 	}
 
+	contextMenuMessage(
+		command: ContextMenuCommand,
+		interaction: MessageCommandInteraction,
+		context: MenuCommandContext<MessageCommandInteraction>,
+	) {
+		return this.contextMenu(command, interaction, context);
+	}
+
+	contextMenuUser(
+		command: ContextMenuCommand,
+		interaction: UserCommandInteraction,
+		context: MenuCommandContext<UserCommandInteraction>,
+	) {
+		return this.contextMenu(command, interaction, context);
+	}
+
 	async entryPoint(command: EntryPointCommand, interaction: EntryPointInteraction, context: EntryPointContext) {
-		if (context.guildId && command.botPermissions && interaction.appPermissions) {
+		if (context.guildId && command.botPermissions) {
 			const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
 			if (permissions) return command.onBotPermissionsFail(context, permissions);
 		}
@@ -170,7 +177,7 @@ export class HandleCommand {
 		resolver: OptionResolverStructure,
 		context: CommandContext,
 	) {
-		if (context.guildId && interaction.appPermissions) {
+		if (context.guildId) {
 			if (command.botPermissions) {
 				const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
 				if (permissions) return command.onBotPermissionsFail?.(context, permissions);
@@ -243,20 +250,21 @@ export class HandleCommand {
 					case ApplicationCommandType.Message: {
 						const data = this.makeMenuCommand(body, shardId, __reply);
 						if (!data) return;
-
-						this.contextMenuMessage(
+						await this.contextMenuMessage(
 							data.command,
-							// @ts-expect-error
-							data.interaction,
-							data.context,
+							data.interaction as MessageCommandInteraction,
+							data.context as MenuCommandContext<MessageCommandInteraction>,
 						);
 						break;
 					}
 					case ApplicationCommandType.User: {
 						const data = this.makeMenuCommand(body, shardId, __reply);
 						if (!data) return;
-						// @ts-expect-error
-						this.contextMenuUser(data.command, data.interaction, data.context);
+						await this.contextMenuUser(
+							data.command,
+							data.interaction as UserCommandInteraction,
+							data.context as MenuCommandContext<UserCommandInteraction>,
+						);
 						break;
 					}
 					case ApplicationCommandType.PrimaryEntryPoint: {
@@ -278,10 +286,10 @@ export class HandleCommand {
 							body.guild_id,
 							body.data.resolved as ContextOptionsResolved,
 						);
-						const interaction = BaseInteraction.from(this.client, body, __reply) as ChatInputCommandInteraction;
 						const command = optionsResolver.getCommand();
 						if (!command?.run)
 							return this.client.logger.warn(`${optionsResolver.fullCommandName} command does not have 'run' callback`);
+						const interaction = BaseInteraction.from(this.client, body, __reply) as ChatInputCommandInteraction;
 						const context = new CommandContext(this.client, interaction, optionsResolver, shardId, command);
 						const extendContext = this.client.options?.context?.(interaction) ?? {};
 						Object.assign(context, extendContext);
