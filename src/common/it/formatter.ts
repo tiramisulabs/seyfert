@@ -1,3 +1,25 @@
+import type { BitFieldResolvable } from '../../structures/extra/BitField';
+import { PermissionsBitField } from '../../structures/extra/Permissions';
+import type { OAuth2Scopes, PermissionFlagsBits } from '../../types';
+
+/**
+ * Represents options for creating a OAuth2 uri
+ */
+export type OAuth2URLOptions = {
+	/**
+	 * Oauth2 scopes to be used.
+	 */
+	scopes: OAuth2Scopes[];
+	/**
+	 * Permissions to be granted to the application.
+	 */
+	permissions: BitFieldResolvable<typeof PermissionFlagsBits>;
+	/**
+	 * Whether guild select must be disabled in oauth2 interface.
+	 */
+	disableGuildSelect?: boolean;
+};
+
 /**
  * Represents heading levels.
  */
@@ -246,5 +268,31 @@ export const Formatter = {
 	 */
 	channelLink(channelId: string, guildId?: string) {
 		return `https://discord.com/channels/${guildId ?? '@me'}/${channelId}`;
+	},
+
+	/**
+	 * Forms a oauth2 invite link for the bot.
+	 * @param applicationId The ID of the application.
+	 * @param options Options for forming the invite link.
+	 * @param options.scopes Oauth2 scopes to be used.
+	 * @param options.disableGuildSelect Whether or not guild select must be disabled in oauth2 interface.
+	 * @param options.permissions Permissions to be granted to the application.
+	 */
+	generateOAuth2URL(
+		applicationId: string,
+		{ scopes, permissions, disableGuildSelect = false }: OAuth2URLOptions,
+	): string {
+		const queryOptions = new URLSearchParams({
+			client_id: applicationId,
+			scope: scopes.join(' '),
+			disable_guild_select: String(disableGuildSelect),
+		});
+
+		if (permissions) {
+			permissions = PermissionsBitField.resolve(permissions);
+			queryOptions.set('permissions', permissions.toString());
+		}
+
+		return `https://discord.com/oauth2/authorize?${queryOptions.toString()}`;
 	},
 };
