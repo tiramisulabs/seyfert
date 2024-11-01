@@ -1,4 +1,4 @@
-import type { Snowflake } from '..';
+import type { Permissions, Snowflake } from '..';
 import type {
 	APIApplicationRoleConnection,
 	APIChannel,
