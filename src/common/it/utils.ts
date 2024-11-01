@@ -280,9 +280,18 @@ export const ReplaceRegex = {
 
 export async function magicImport(path: string) {
 	try {
+		//@ts-expect-error
+		// biome-ignore lint/correctness/noUndeclaredVariables: <explanation>
+		if (typeof Deno !== 'undefined') throw new Error('http 418');
 		return require(path);
 	} catch {
-		return eval('((path) => import(`file:///${path}?update=${Date.now()}`))')(path.split('\\').join('\\\\'));
+		//@ts-expect-error
+		// biome-ignore lint/correctness/noUndeclaredVariables: <explanation>
+		if (typeof Bun === 'undefined')
+			return new Function('return ((path) => import(`file:///${path}?update=${Date.now()}`))')()(
+				path.split('\\').join('\\\\'),
+			);
+		throw new Error(`Cannot import ${path}`);
 	}
 }
 
