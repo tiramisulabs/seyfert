@@ -279,11 +279,12 @@ export const ReplaceRegex = {
 };
 
 export async function magicImport(path: string) {
-	try {
-		return require(path);
-	} catch {
-		return eval('((path) => import(`file:///${path}?update=${Date.now()}`))')(path.split('\\').join('\\\\'));
-	}
+	//@ts-expect-error
+	if (typeof require === 'undefined' || globalThis.Deno)
+		return new Function('return ((path) => import(`file:///${path}?update=${Date.now()}`))')()(
+			path.split('\\').join('\\\\'),
+		);
+	return require(path);
 }
 
 export type OnFailCallback = (error: unknown) => any;

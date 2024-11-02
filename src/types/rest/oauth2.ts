@@ -1,4 +1,4 @@
-import type { Snowflake } from '..';
+import type { Permissions, Snowflake } from '..';
 import type { APIApplication, APIGuild, APIUser, APIWebhook, OAuth2Scopes } from '../payloads';
 
 /**
