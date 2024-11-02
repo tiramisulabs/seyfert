@@ -279,12 +279,17 @@ export const ReplaceRegex = {
 };
 
 export async function magicImport(path: string) {
-	//@ts-expect-error
-	if (typeof require === 'undefined' || globalThis.Deno)
-		return new Function('return ((path) => import(`file:///${path}?update=${Date.now()}`))')()(
-			path.split('\\').join('\\\\'),
-		);
-	return require(path);
+	try {
+		if ('Deno' in globalThis) throw new Error('https://github.com/denoland/deno/issues/26136');
+		return require(path);
+	} catch (e: any) {
+		// (bun)dows moment
+		if (!('Bun' in globalThis) || e.message.includes('is unsupported. use "await import()" instead.'))
+			return new Function('path', 'return import(`file:///${path}?update=${Date.now()}`)')(
+				path.split('\\').join('\\\\'),
+			);
+		throw new Error(`Cannot import ${path}`, { cause: e });
+	}
 }
 
 export type OnFailCallback = (error: unknown) => any;
