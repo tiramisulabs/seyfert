@@ -48,9 +48,7 @@ export class VoiceState extends Base {
 	}
 
 	async setSuppress(suppress = !this.suppress) {
-		await this.client.proxy.guilds(this.guildId)['voice-states']['@me'].patch({
-			body: { suppress },
-		});
+		await this.client.voiceStates.setSuppress(this.guildId, suppress);
 		this.suppress = suppress;
 	}
 
@@ -58,10 +56,7 @@ export class VoiceState extends Base {
 		if (typeof date === 'string') date = new Date(date);
 		if (Number.isNaN(date)) return Promise.reject('Invalid date');
 		date = date.toISOString();
-
-		await this.client.proxy.guilds(this.guildId)['voice-states']['@me'].patch({
-			body: { request_to_speak_timestamp: date },
-		});
+		await this.client.voiceStates.requestSpeak(this.guildId, date);
 		this.requestToSpeakTimestamp = date;
 	}
 

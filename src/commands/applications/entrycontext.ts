@@ -1,17 +1,11 @@
 import type { ReturnCache } from '../..';
-import type {
-	GuildMemberStructure,
-	GuildStructure,
-	MessageStructure,
-	WebhookMessageStructure,
-} from '../../client/transformers';
+import type { GuildMemberStructure, GuildStructure } from '../../client/transformers';
 import type {
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
 	MakeRequired,
 	ModalCreateBodyRequest,
 	UnionToTuple,
-	When,
 } from '../../common';
 import type { AllChannels, EntryPointInteraction } from '../../structures';
 import { MessageFlags } from '../../types';
@@ -43,22 +37,16 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 		return this.command.name;
 	}
 
-	write<WR extends boolean = false>(
-		body: InteractionCreateBodyRequest,
-		withResponse?: WR,
-	): Promise<When<WR, WebhookMessageStructure, void | WebhookMessageStructure>> {
-		return this.interaction.write(body, withResponse);
+	write<WR extends boolean = false>(body: InteractionCreateBodyRequest, withResponse?: WR) {
+		return this.interaction.write<WR>(body, withResponse);
 	}
 
 	modal(body: ModalCreateBodyRequest) {
 		return this.interaction.modal(body);
 	}
 
-	deferReply<WR extends boolean = false>(
-		ephemeral = false,
-		withResponse?: WR,
-	): Promise<When<WR, WebhookMessageStructure, undefined>> {
-		return this.interaction.deferReply(ephemeral ? MessageFlags.Ephemeral : undefined, withResponse);
+	deferReply<WR extends boolean = false>(ephemeral = false, withResponse?: WR) {
+		return this.interaction.deferReply<WR>(ephemeral ? MessageFlags.Ephemeral : undefined, withResponse);
 	}
 
 	editResponse(body: InteractionMessageUpdateBodyRequest) {
@@ -72,8 +60,8 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 	editOrReply<WR extends boolean = false>(
 		body: InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest,
 		withResponse?: WR,
-	): Promise<When<WR, WebhookMessageStructure | MessageStructure, void | WebhookMessageStructure | MessageStructure>> {
-		return this.interaction.editOrReply(body as InteractionCreateBodyRequest, withResponse);
+	) {
+		return this.interaction.editOrReply<WR>(body as InteractionCreateBodyRequest, withResponse);
 	}
 
 	fetchResponse() {

@@ -5,7 +5,6 @@ import {
 	type MessageStructure,
 	Transformers,
 	type UserStructure,
-	type WebhookMessageStructure,
 } from '../../client/transformers';
 import {
 	type InteractionCreateBodyRequest,
@@ -13,7 +12,6 @@ import {
 	type MakeRequired,
 	type ModalCreateBodyRequest,
 	type UnionToTuple,
-	type When,
 	toSnakeCase,
 } from '../../common';
 import type { AllChannels, MessageCommandInteraction, UserCommandInteraction } from '../../structures';
@@ -68,22 +66,16 @@ export class MenuCommandContext<
 		return this.command.name;
 	}
 
-	write<WR extends boolean = false>(
-		body: InteractionCreateBodyRequest,
-		withResponse?: WR,
-	): Promise<When<WR, WebhookMessageStructure, void | WebhookMessageStructure>> {
-		return this.interaction.write(body, withResponse);
+	write<WR extends boolean = false>(body: InteractionCreateBodyRequest, withResponse?: WR) {
+		return this.interaction.write<WR>(body, withResponse);
 	}
 
 	modal(body: ModalCreateBodyRequest) {
 		return this.interaction.modal(body);
 	}
 
-	deferReply<WR extends boolean = false>(
-		ephemeral = false,
-		withResponse?: WR,
-	): Promise<When<WR, WebhookMessageStructure, undefined>> {
-		return this.interaction.deferReply(ephemeral ? MessageFlags.Ephemeral : undefined, withResponse);
+	deferReply<WR extends boolean = false>(ephemeral = false, withResponse?: WR) {
+		return this.interaction.deferReply<WR>(ephemeral ? MessageFlags.Ephemeral : undefined, withResponse);
 	}
 
 	editResponse(body: InteractionMessageUpdateBodyRequest) {
@@ -97,8 +89,8 @@ export class MenuCommandContext<
 	editOrReply<WR extends boolean = false>(
 		body: InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest,
 		withResponse?: WR,
-	): Promise<When<WR, WebhookMessageStructure | MessageStructure, void | WebhookMessageStructure | MessageStructure>> {
-		return this.interaction.editOrReply(body as InteractionCreateBodyRequest, withResponse);
+	) {
+		return this.interaction.editOrReply<WR>(body as InteractionCreateBodyRequest, withResponse);
 	}
 
 	fetchResponse() {

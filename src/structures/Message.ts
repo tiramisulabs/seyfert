@@ -173,8 +173,12 @@ export class WebhookMessage extends BaseMessage {
 		super(client, data);
 	}
 
+	fetchWebhook() {
+		return this.client.webhooks.fetch(this.webhookId, this.webhookToken);
+	}
+
 	fetch() {
-		return this.api.webhooks(this.webhookId)(this.webhookToken).get();
+		return this.client.webhooks.fetchMessage(this.webhookId, this.webhookToken, this.id, this.thread?.id);
 	}
 
 	edit(body: EditMessageWebhook) {

@@ -140,14 +140,14 @@ export class WebhookShorter extends BaseShorter {
 	 * @param token The token of the webhook.
 	 * @param messageId The ID of the message to fetch.
 	 * @param threadId The ID of the thread the message belongs to.
-	 * @returns A Promise that resolves to the fetched message, or undefined if not found.
+	 * @returns A Promise that resolves to the fetched message
 	 */
 	async fetchMessage(webhookId: string, token: string, messageId: string, threadId?: string) {
 		const message = await this.client.proxy
 			.webhooks(webhookId)(token)
 			.messages(messageId)
 			.get({ auth: false, query: threadId ? { thread_id: threadId } : undefined });
-		return message ? Transformers.WebhookMessage(this.client, message, webhookId, token) : undefined;
+		return Transformers.WebhookMessage(this.client, message, webhookId, token);
 	}
 
 	async listFromGuild(guildId: string) {
