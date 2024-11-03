@@ -42,6 +42,7 @@ import {
 import { promises } from 'node:fs';
 import { HandleCommand } from '../commands/handle';
 import { BanShorter } from '../common/shorters/bans';
+import { VoiceStateShorter } from '../common/shorters/voiceStates';
 import type { Awaitable, DeepPartial, IntentStrings, OmitInsert, PermissionStrings, When } from '../common/types/util';
 import type { ComponentCommand, ComponentContext, ModalCommand, ModalContext } from '../components';
 import { ComponentHandler } from '../components/handler';
@@ -75,6 +76,7 @@ export class BaseClient {
 	threads = new ThreadShorter(this);
 	bans = new BanShorter(this);
 	interactions = new InteractionShorter(this);
+	voiceStates = new VoiceStateShorter(this);
 
 	debugger?: Logger;
 

@@ -1,10 +1,5 @@
 import type { AllChannels, ModalCommand, ModalSubmitInteraction, ReturnCache } from '..';
-import type {
-	GuildMemberStructure,
-	GuildStructure,
-	MessageStructure,
-	WebhookMessageStructure,
-} from '../client/transformers';
+import type { GuildMemberStructure, GuildStructure } from '../client/transformers';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, RegisteredMiddlewares, UsingClient } from '../commands';
 import { BaseContext } from '../commands/basecontext';
 import type {
@@ -13,7 +8,6 @@ import type {
 	MakeRequired,
 	ModalCreateBodyRequest,
 	UnionToTuple,
-	When,
 } from '../common';
 import { MessageFlags } from '../types';
 
@@ -61,15 +55,15 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	 * @param fetchReply - Whether to fetch the reply or not.
 	 */
 	write<FR extends boolean = false>(body: InteractionCreateBodyRequest, fetchReply?: FR) {
-		return this.interaction.write(body, fetchReply);
+		return this.interaction.write<FR>(body, fetchReply);
 	}
 
 	/**
 	 * Defers the reply to the interaction.
 	 * @param ephemeral - Whether the reply should be ephemeral or not.
 	 */
-	deferReply(ephemeral = false) {
-		return this.interaction.deferReply(ephemeral ? MessageFlags.Ephemeral : undefined);
+	deferReply<FR extends boolean = false>(ephemeral = false, fetchReply?: FR) {
+		return this.interaction.deferReply<FR>(ephemeral ? MessageFlags.Ephemeral : undefined, fetchReply);
 	}
 
 	/**
@@ -88,8 +82,15 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	editOrReply<FR extends boolean = false>(
 		body: InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest,
 		fetchReply?: FR,
-	): Promise<When<FR, WebhookMessageStructure | MessageStructure, void | WebhookMessageStructure | MessageStructure>> {
-		return this.interaction.editOrReply(body as InteractionCreateBodyRequest, fetchReply);
+	) {
+		return this.interaction.editOrReply<FR>(body as InteractionCreateBodyRequest, fetchReply);
+	}
+
+	/**
+	 * @returns A Promise that resolves to the fetched message
+	 */
+	fetchResponse() {
+		return this.interaction.fetchResponse();
 	}
 
 	/**

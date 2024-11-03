@@ -136,11 +136,10 @@ export class CommandContext<
 	}
 
 	async fetchResponse(): Promise<
-		If<InferWithPrefix, WebhookMessageStructure | MessageStructure | undefined, WebhookMessageStructure | undefined>
+		If<InferWithPrefix, WebhookMessageStructure | MessageStructure, WebhookMessageStructure>
 	> {
 		if (this.interaction) return this.interaction.fetchResponse();
-		this.messageResponse = await this.messageResponse?.fetch();
-		return this.messageResponse as undefined;
+		return (this.messageResponse = (await this.messageResponse!.fetch()) as never);
 	}
 
 	channel(mode?: 'rest' | 'flow'): Promise<If<InferWithPrefix, AllChannels | undefined, AllChannels>>;
