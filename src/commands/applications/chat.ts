@@ -7,6 +7,7 @@ import type {
 	PermissionStrings,
 	SeyfertBaseChoiceableOption,
 	SeyfertBasicOption,
+	SeyfertChannelOption,
 	SeyfertChoice,
 	SeyfertNumberOption,
 	SeyfertStringOption,
@@ -37,6 +38,7 @@ import type {
 	IgnoreCommand,
 	OnOptionsReturnObject,
 	PassFunction,
+	SeyfertChannelMapAux,
 	StopFunction,
 	UsingClient,
 } from './shared';
@@ -90,11 +92,13 @@ type ContextOptionsAuxInternal<
 					: ReturnOptionsTypes[T['type']]
 				: ReturnOptionsTypes[T['type']]
 			: Parameters<Parameters<NonNullable<T['value']>>[1]>[0]
-		: T extends SeyfertStringOption | SeyfertNumberOption
-			? NonNullable<T['choices']> extends SeyfertChoice<string | number>[]
-				? NonNullable<T['choices']>[number]['value']
-				: ReturnOptionsTypes[T['type']]
-			: ReturnOptionsTypes[T['type']];
+		: T extends SeyfertChannelOption
+			? SeyfertChannelMapAux<NonNullable<T['channel_types']>[number]>
+			: T extends SeyfertStringOption | SeyfertNumberOption
+				? NonNullable<T['choices']> extends SeyfertChoice<string | number>[]
+					? NonNullable<T['choices']>[number]['value']
+					: ReturnOptionsTypes[T['type']]
+				: ReturnOptionsTypes[T['type']];
 
 type ContextOptionsAux<T extends OptionsRecord> = {
 	[K in Exclude<keyof T, KeysWithoutRequired<T>>]: ContextOptionsAuxInternal<T[K]>;

@@ -1,3 +1,14 @@
+import type {
+	CategoryChannelStructure,
+	DMChannelStructure,
+	DirectoryChannelStructure,
+	ForumChannelStructure,
+	MediaChannelStructure,
+	NewsChannelStructure,
+	TextGuildChannelStructure,
+	ThreadChannelStructure,
+	VoiceChannelStructure,
+} from '../../client';
 import type { BaseClient } from '../../client/base';
 import type { IsStrictlyUndefined } from '../../common';
 import type { ChannelType } from '../../types';
@@ -75,6 +86,23 @@ export type OnOptionsReturnObject = Record<
 			MessageCommandOptionErrors | undefined;
 	  }
 >;
+
+export interface SeyfertChannelMap {
+	0: TextGuildChannelStructure;
+	1: DMChannelStructure;
+	2: VoiceChannelStructure;
+	3: DMChannelStructure;
+	4: CategoryChannelStructure;
+	5: NewsChannelStructure;
+	10: ThreadChannelStructure;
+	11: ThreadChannelStructure;
+	12: ThreadChannelStructure;
+	14: DirectoryChannelStructure;
+	15: ForumChannelStructure;
+	16: MediaChannelStructure;
+}
+
+export type SeyfertChannelMapAux<T extends number> = T extends keyof SeyfertChannelMap ? SeyfertChannelMap[T] : never;
 
 export enum IgnoreCommand {
 	Slash = 0,
