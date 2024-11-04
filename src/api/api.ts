@@ -167,7 +167,7 @@ export class ApiHandler {
 						}
 					}
 				}
-				const parsedError = this.parseError(route, response, result);
+				const parsedError = this.parseError(method, route, response, result);
 				this.debugger?.warn(parsedError);
 				reject(parsedError);
 				return;
@@ -207,7 +207,7 @@ export class ApiHandler {
 		});
 	}
 
-	parseError(route: `/${string}`, response: Response, result: unknown) {
+	parseError(method: HttpMethods, route: `/${string}`, response: Response, result: unknown) {
 		let errMessage = '';
 		if (typeof result === 'object' && result) {
 			if ('message' in result) {
@@ -218,7 +218,7 @@ export class ApiHandler {
 				errMessage += `${JSON.stringify(result.errors, null, 2)}\n`;
 			}
 		}
-		errMessage += `    at [${response.status} ${response.statusText}] ${route}`;
+		errMessage += `    at [${response.status} ${response.statusText}] ${method} ${route}\n`;
 		return new Error(errMessage);
 	}
 
