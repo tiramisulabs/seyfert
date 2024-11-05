@@ -219,28 +219,32 @@ export class ComponentContext<
 		return true;
 	}
 
-	isButton(): this is ComponentContext<'Button'> {
+	isButton(): this is ComponentContext<'Button', M> {
 		return this.interaction.data.componentType === ComponentType.Button;
 	}
 
-	isChannelSelectMenu(): this is ComponentContext<'ChannelSelect'> {
+	isChannelSelectMenu(): this is ComponentContext<'ChannelSelect', M> {
 		return this.interaction.componentType === ComponentType.ChannelSelect;
 	}
 
-	isRoleSelectMenu(): this is ComponentContext<'RoleSelect'> {
+	isRoleSelectMenu(): this is ComponentContext<'RoleSelect', M> {
 		return this.interaction.componentType === ComponentType.RoleSelect;
 	}
 
-	isMentionableSelectMenu(): this is ComponentContext<'MentionableSelect'> {
+	isMentionableSelectMenu(): this is ComponentContext<'MentionableSelect', M> {
 		return this.interaction.componentType === ComponentType.MentionableSelect;
 	}
 
-	isUserSelectMenu(): this is ComponentContext<'UserSelect'> {
+	isUserSelectMenu(): this is ComponentContext<'UserSelect', M> {
 		return this.interaction.componentType === ComponentType.UserSelect;
 	}
 
-	isStringSelectMenu(): this is ComponentContext<'StringSelect'> {
+	isStringSelectMenu(): this is ComponentContext<'StringSelect', M> {
 		return this.interaction.componentType === ComponentType.StringSelect;
+	}
+
+	inGuild(): this is GuildComponentContext<Type, M> {
+		return !!this.guildId;
 	}
 }
 
@@ -253,8 +257,10 @@ export interface ContextComponentCommandInteractionMap {
 	ChannelSelect: ChannelSelectMenuInteraction;
 }
 
-export interface GuildComponentContext<M extends keyof RegisteredMiddlewares = never>
-	extends Omit<MakeRequired<ComponentContext<M>, 'guildId'>, 'guild'> {
+export interface GuildComponentContext<
+	Type extends keyof ContextComponentCommandInteractionMap,
+	M extends keyof RegisteredMiddlewares = never,
+> extends Omit<MakeRequired<ComponentContext<Type, M>, 'guildId'>, 'guild'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 }

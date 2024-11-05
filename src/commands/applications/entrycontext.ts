@@ -119,6 +119,14 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 	get member() {
 		return this.interaction.member;
 	}
+
+	isEntryPoint(): this is EntryPointContext<M> {
+		return true;
+	}
+
+	inGuild(): this is GuildEntryPointContext<M> {
+		return !!this.guildId;
+	}
 }
 
 export interface GuildEntryPointContext<M extends keyof RegisteredMiddlewares = never>
