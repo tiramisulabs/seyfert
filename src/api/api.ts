@@ -207,19 +207,33 @@ export class ApiHandler {
 		});
 	}
 
-	parseError(method: HttpMethods, route: `/${string}`, response: Response, result: unknown) {
+	parseError(method: HttpMethods, route: `/${string}`, response: Response, result: string | Record<string, any>) {
 		let errMessage = '';
-		if (typeof result === 'object' && result) {
-			if ('message' in result) {
-				errMessage += `${result.message}${'code' in result ? ` ${result.code}` : ''}\n`;
-			}
+		if (typeof result === 'object') {
+			errMessage += `${result.message ?? 'Unknown'} ${result.code ?? ''}\n[${response.status} ${response.statusText}] ${method} ${route}`;
 
-			if ('errors' in result && result) {
-				errMessage += `${JSON.stringify(result.errors, null, 2)}\n`;
+			if ('errors' in result) {
+				const errors = this.parseValidationError(result.errors);
+				errMessage += `\n${errors.join('\n') || JSON.stringify(result.errors, null, 2)}`;
+			}
+		} else {
+			errMessage = `[${response.status} ${response.statusText}] ${method} ${route}`;
+		}
+		return new Error(errMessage);
+	}
+
+	parseValidationError(data: Record<string, any>, path = '', errors: string[] = []) {
+		for (const key in data) {
+			if (key === '_errors') {
+				for (const error of data[key]) {
+					errors.push(`${path.slice(0, -1)} [${error.code}]: ${error.message}`);
+				}
+			} else if (typeof data[key] === 'object') {
+				this.parseValidationError(data[key], `${path}${key}.`, errors);
 			}
 		}
-		errMessage += `    at [${response.status} ${response.statusText}] ${method} ${route}\n`;
-		return new Error(errMessage);
+
+		return errors;
 	}
 
 	async handle50X(method: HttpMethods, url: `/${string}`, request: ApiRequestOptions, next: () => void) {
