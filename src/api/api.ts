@@ -167,7 +167,7 @@ export class ApiHandler {
 						}
 					}
 				}
-				const parsedError = this.parseError(response, result);
+				const parsedError = this.parseError(method, route, response, result);
 				this.debugger?.warn(parsedError);
 				reject(parsedError);
 				return;
@@ -207,7 +207,7 @@ export class ApiHandler {
 		});
 	}
 
-	parseError(response: Response, result: unknown) {
+	parseError(method: HttpMethods, route: `/${string}`, response: Response, result: unknown) {
 		let errMessage = '';
 		if (typeof result === 'object' && result) {
 			if ('message' in result) {
@@ -218,10 +218,8 @@ export class ApiHandler {
 				errMessage += `${JSON.stringify(result.errors, null, 2)}\n`;
 			}
 		}
-		if (errMessage.length) {
-			return new Error(errMessage);
-		}
-		return new Error(response.statusText);
+		errMessage += `    at [${response.status} ${response.statusText}] ${method} ${route}\n`;
+		return new Error(errMessage);
 	}
 
 	async handle50X(method: HttpMethods, url: `/${string}`, request: ApiRequestOptions, next: () => void) {
