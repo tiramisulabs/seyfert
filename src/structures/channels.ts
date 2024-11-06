@@ -58,7 +58,7 @@ import type { GuildMember } from './GuildMember';
 import type { GuildRole } from './GuildRole';
 import { DiscordBase } from './extra/DiscordBase';
 
-export class BaseChannel<T extends ChannelType> extends DiscordBase<APIChannelBase<ChannelType>> {
+export class BaseNoEditableChannel<T extends ChannelType> extends DiscordBase<APIChannelBase<ChannelType>> {
 	declare type: T;
 
 	constructor(client: UsingClient, data: APIChannelBase<ChannelType>) {
@@ -82,13 +82,6 @@ export class BaseChannel<T extends ChannelType> extends DiscordBase<APIChannelBa
 
 	delete(reason?: string) {
 		return this.client.channels.delete(this.id, { reason });
-	}
-
-	edit(body: RESTPatchAPIChannelJSONBody, reason?: string) {
-		return this.client.channels.edit(this.id, body, {
-			reason,
-			guildId: 'guildId' in this ? (this.guildId as string) : '@me',
-		});
 	}
 
 	toString() {
@@ -165,6 +158,15 @@ export class BaseChannel<T extends ChannelType> extends DiscordBase<APIChannelBa
 	}
 }
 
+export class BaseChannel<T extends ChannelType> extends BaseNoEditableChannel<T> {
+	edit(body: RESTPatchAPIChannelJSONBody, reason?: string) {
+		return this.client.channels.edit(this.id, body, {
+			reason,
+			guildId: 'guildId' in this ? (this.guildId as string) : '@me',
+		});
+	}
+}
+
 interface IChannelTypes {
 	GuildStageVoice: StageChannel;
 	GuildMedia: MediaChannel;
@@ -225,7 +227,7 @@ export class BaseGuildChannel extends BaseChannel<ChannelType> {
 	}
 }
 
-export interface MessagesMethods extends BaseChannel<ChannelType> {}
+export interface MessagesMethods extends BaseNoEditableChannel<ChannelType> {}
 export class MessagesMethods extends DiscordBase {
 	typing() {
 		return this.client.channels.typing(this.id);
@@ -467,12 +469,9 @@ export class TextGuildChannel extends BaseGuildChannel {
 	}
 }
 
-export interface DMChannel extends ObjectToLower<APIDMChannel>, Omit<MessagesMethods, 'edit'> {}
+export interface DMChannel extends ObjectToLower<APIDMChannel>, MessagesMethods {}
 @mix(MessagesMethods)
-export class DMChannel extends (BaseChannel<ChannelType.DM> as unknown as ToClass<
-	Omit<BaseChannel<ChannelType.DM>, 'edit'>,
-	DMChannel
->) {
+export class DMChannel extends BaseNoEditableChannel<ChannelType.DM> {
 	declare type: ChannelType.DM;
 }
 export interface VoiceChannel

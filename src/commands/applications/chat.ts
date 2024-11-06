@@ -8,8 +8,6 @@ import type {
 	SeyfertBaseChoiceableOption,
 	SeyfertBasicOption,
 	SeyfertChoice,
-	SeyfertNumberOption,
-	SeyfertStringOption,
 } from '../..';
 import type { Attachment } from '../../builders';
 import type {
@@ -37,6 +35,7 @@ import type {
 	IgnoreCommand,
 	OnOptionsReturnObject,
 	PassFunction,
+	SeyfertChannelMap,
 	StopFunction,
 	UsingClient,
 } from './shared';
@@ -84,17 +83,19 @@ type ContextOptionsAuxInternal<
 	? Parameters<Parameters<T['value']>[1]>[0]
 	: NonNullable<T['value']> extends (...args: any) => any
 		? Parameters<Parameters<NonNullable<T['value']>>[1]>[0] extends never
-			? T extends SeyfertStringOption | SeyfertNumberOption
-				? NonNullable<T['choices']> extends SeyfertChoice<string | number>[]
-					? NonNullable<T['choices']>[number]['value']
-					: ReturnOptionsTypes[T['type']]
-				: ReturnOptionsTypes[T['type']]
+			? T extends { channel_types?: infer C }
+				? C extends any[]
+					? C[number] extends keyof SeyfertChannelMap
+						? SeyfertChannelMap[C[number]]
+						: never
+					: never
+				: T extends { choices?: infer C }
+					? C extends SeyfertChoice<string>[]
+						? C[number]['value']
+						: never
+					: never
 			: Parameters<Parameters<NonNullable<T['value']>>[1]>[0]
-		: T extends SeyfertStringOption | SeyfertNumberOption
-			? NonNullable<T['choices']> extends SeyfertChoice<string | number>[]
-				? NonNullable<T['choices']>[number]['value']
-				: ReturnOptionsTypes[T['type']]
-			: ReturnOptionsTypes[T['type']];
+		: ReturnOptionsTypes[T['type']];
 
 type ContextOptionsAux<T extends OptionsRecord> = {
 	[K in Exclude<keyof T, KeysWithoutRequired<T>>]: ContextOptionsAuxInternal<T[K]>;
