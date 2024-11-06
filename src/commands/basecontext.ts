@@ -2,6 +2,7 @@ import type { ModalContext } from '../components';
 import type { ComponentContext, ContextComponentCommandInteractionMap } from '../components/componentcontext';
 import type { MessageCommandInteraction, UserCommandInteraction } from '../structures';
 import type { CommandContext } from './applications/chatcontext';
+import type { EntryPointContext } from './applications/entrycontext';
 import type { MenuCommandContext } from './applications/menucontext';
 import type { UsingClient } from './applications/shared';
 
@@ -60,6 +61,10 @@ export class BaseContext {
 	}
 
 	isStringSelectMenu(): this is ComponentContext<'StringSelect'> {
+		return false;
+	}
+
+	isEntryPoint(): this is EntryPointContext {
 		return false;
 	}
 }
