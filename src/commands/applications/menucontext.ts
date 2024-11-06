@@ -160,6 +160,10 @@ export class MenuCommandContext<
 	isMenuMessage(): this is MenuCommandContext<MessageCommandInteraction> {
 		return this.interaction.data.type === ApplicationCommandType.Message;
 	}
+
+	inGuild(): this is GuildMenuCommandContext<T, M> {
+		return !!this.guildId;
+	}
 }
 
 export interface GuildMenuCommandContext<

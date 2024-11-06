@@ -185,8 +185,12 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 		return this.interaction.member;
 	}
 
-	isModal(): this is ModalContext {
+	isModal(): this is ModalContext<M> {
 		return true;
+	}
+
+	inGuild(): this is GuildModalContext<M> {
+		return !!this.guildId;
 	}
 }
 

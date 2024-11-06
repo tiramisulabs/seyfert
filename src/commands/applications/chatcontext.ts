@@ -214,8 +214,12 @@ export class CommandContext<
 		return this.interaction?.member || ((this.message! as MessageStructure)?.member as any);
 	}
 
-	isChat(): this is CommandContext {
+	isChat(): this is CommandContext<T, M> {
 		return true;
+	}
+
+	inGuild(): this is GuildCommandContext<T, M> {
+		return !!this.guildId;
 	}
 }
 
