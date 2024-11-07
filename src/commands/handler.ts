@@ -19,7 +19,7 @@ import {
 } from '../types';
 import { Command, type CommandOption, SubCommand } from './applications/chat';
 import { ContextMenuCommand } from './applications/menu';
-import type { UsingClient } from './applications/shared';
+import { IgnoreCommand, type UsingClient } from './applications/shared';
 
 export class CommandHandler extends BaseHandler {
 	values: (Command | ContextMenuCommand)[] = [];
@@ -170,7 +170,9 @@ export class CommandHandler extends BaseHandler {
 
 	async shouldUpload(file: string, guildId?: string) {
 		const values = this.values.filter(x => {
+			if ('ignore' in x && x.ignore === IgnoreCommand.Slash) return false;
 			if (!guildId) return !x.guildId;
+
 			return x.guildId?.includes(guildId);
 		});
 		if (
