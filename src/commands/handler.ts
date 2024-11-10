@@ -466,16 +466,18 @@ export class CommandHandler extends BaseHandler {
 	stablishContextCommandDefaults(commandInstance: InstanceType<HandleableCommand>): ContextMenuCommand | false {
 		if (!(commandInstance instanceof ContextMenuCommand)) return false;
 		commandInstance.onAfterRun ??= this.client.options.commands?.defaults?.onAfterRun;
-		//@ts-expect-error magic.
-		commandInstance.onBotPermissionsFail ??= this.client.options.commands?.defaults?.onBotPermissionsFail;
-		//@ts-expect-error magic.
-		commandInstance.onInternalError ??= this.client.options.commands?.defaults?.onInternalError;
-		//@ts-expect-error magic.
-		commandInstance.onMiddlewaresError ??= this.client.options.commands?.defaults?.onMiddlewaresError;
-		//@ts-expect-error magic.
-		commandInstance.onPermissionsFail ??= this.client.options.commands?.defaults?.onPermissionsFail;
-		//@ts-expect-error magic.
-		commandInstance.onRunError ??= this.client.options.commands?.defaults?.onRunError;
+
+		if (this.client.options.commands?.defaults?.onBotPermissionsFail)
+			commandInstance.onBotPermissionsFail ??= this.client.options.commands?.defaults?.onBotPermissionsFail;
+
+		if (this.client.options.commands?.defaults?.onInternalError)
+			commandInstance.onInternalError ??= this.client.options.commands.defaults.onInternalError;
+
+		if (this.client.options.commands?.defaults?.onMiddlewaresError)
+			commandInstance.onMiddlewaresError ??= this.client.options.commands.defaults.onMiddlewaresError;
+
+		if (this.client.options.commands?.defaults?.onRunError)
+			commandInstance.onRunError ??= this.client.options.commands.defaults.onRunError;
 		return commandInstance;
 	}
 

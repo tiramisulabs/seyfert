@@ -224,21 +224,21 @@ export class EventHandler extends BaseHandler {
 	async runCustom<T extends CustomEventsKeys>(name: T, ...args: ResolveEventRunParams<T>) {
 		const Event = this.values[name];
 		if (!Event) {
-			// @ts-expect-error working with non-existent types is hard
+			// @ts-expect-error
 			return this.client.collectors.run(name, args, this.client);
 		}
 		try {
 			if (Event.data.once && Event.fired) {
-				// @ts-expect-error working with non-existent types is hard
+				// @ts-expect-error
 				return this.client.collectors.run(name, args, this.client);
 			}
 			Event.fired = true;
 			this.logger.debug(`executed a custom event [${name}]`, Event.data.once ? 'once' : '');
 
 			await Promise.all([
-				// @ts-expect-error working with non-existent types is hard
+				// @ts-expect-error
 				Event.run(...args, this.client),
-				// @ts-expect-error working with non-existent types is hard
+				// @ts-expect-error
 				this.client.collectors.run(name, args, this.client),
 			]);
 		} catch (e) {

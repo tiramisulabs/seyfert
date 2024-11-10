@@ -1,5 +1,5 @@
 import { type UUID, randomUUID } from 'node:crypto';
-import { type Awaitable, Logger, delay, lazyLoadPackage, snowflakeToTimestamp } from '../common';
+import { type Awaitable, BASE_HOST, Logger, delay, lazyLoadPackage, snowflakeToTimestamp } from '../common';
 import type { WorkerData } from '../websocket';
 import type { WorkerSendApiRequest } from '../websocket/discord/worker';
 import { CDNRouter, Router } from './Router';
@@ -39,16 +39,12 @@ export class ApiHandler {
 	constructor(options: ApiHandlerOptions) {
 		this.options = {
 			baseUrl: 'api/v10',
-			domain: 'https://discord.com',
+			domain: BASE_HOST,
 			type: 'Bot',
 			...options,
 			userAgent: DefaultUserAgent,
 		};
-		if (options.debug) {
-			this.debugger = new Logger({
-				name: '[API]',
-			});
-		}
+		if (options.debug) this.debug = true;
 
 		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
 
@@ -59,6 +55,14 @@ export class ApiHandler {
 			workerData = worker_threads.workerData;
 			if (worker_threads.parentPort) parentPort = worker_threads.parentPort;
 		}
+	}
+
+	set debug(active: boolean) {
+		this.debugger = active
+			? new Logger({
+					name: '[API]',
+				})
+			: undefined;
 	}
 
 	get proxy() {

@@ -140,6 +140,8 @@ export interface WorkerData {
 	workerId: number;
 	debug: boolean;
 	workerProxy: boolean;
+	info: APIGatewayBotInfo;
+	compress: boolean;
 	__USING_WATCHER__?: boolean;
 	resharding: boolean;
 }

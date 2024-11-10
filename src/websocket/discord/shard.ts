@@ -105,8 +105,8 @@ export class Shard {
 
 		this.debugger?.debug(`[Shard #${this.id}] Connecting to ${this.currentGatewayURL}`);
 
-		// @ts-expect-error @types/bun cause erros in compile
-		// biome-ignore lint/correctness/noUndeclaredVariables: /\ bun lol
+		// @ts-expect-error Use native websocket when using Bun
+		// biome-ignore lint/correctness/noUndeclaredVariables: /\
 		this.websocket = new BaseSocket(typeof Bun === 'undefined' ? 'ws' : 'bun', this.currentGatewayURL);
 
 		this.websocket.onmessage = ({ data }: { data: string | Buffer }) => {

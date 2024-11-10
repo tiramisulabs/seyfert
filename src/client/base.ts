@@ -59,8 +59,8 @@ import type { LocaleString, RESTPostAPIChannelMessageJSONBody } from '../types';
 import type { MessageStructure } from './transformers';
 
 export class BaseClient {
-	rest!: ApiHandler;
-	cache!: Cache;
+	rest = new ApiHandler({ token: 'INVALID' });
+	cache = new Cache(0, new MemoryAdapter());
 
 	applications = new ApplicationShorter(this);
 	users = new UsersShorter(this);
@@ -194,6 +194,7 @@ export class BaseClient {
 
 	setServices({ rest, cache, langs, middlewares, handleCommand }: ServicesOptions) {
 		if (rest) {
+			rest.onRatelimit ??= this.rest.onRatelimit?.bind(rest);
 			this.rest = rest;
 		}
 		if (cache) {
@@ -213,7 +214,7 @@ export class BaseClient {
 				'users',
 				'voiceStates',
 			];
-			let disabledCache: Partial<Record<keyof Cache['disabledCache'], boolean>> = this.cache?.disabledCache ?? {};
+			let disabledCache: Partial<Record<keyof Cache['disabledCache'], boolean>> = this.cache.disabledCache;
 
 			if (typeof cache.disabledCache === 'boolean') {
 				for (const i of caches) {
@@ -227,12 +228,7 @@ export class BaseClient {
 				disabledCache = cache.disabledCache;
 			}
 
-			this.cache = new Cache(
-				this.cache?.intents ?? 0,
-				cache?.adapter ?? this.cache?.adapter ?? new MemoryAdapter(),
-				disabledCache,
-				this,
-			);
+			this.cache = new Cache(this.cache.intents, cache.adapter ?? this.cache.adapter, disabledCache, this);
 		}
 		if (middlewares) {
 			this.middlewares = middlewares;
@@ -270,22 +266,12 @@ export class BaseClient {
 
 		const { token: tokenRC, debug } = await this.getRC();
 		const token = options?.token ?? tokenRC;
+		BaseClient.assertString(token, 'token is not a string');
 
-		if (!this.rest) {
-			BaseClient.assertString(token, 'token is not a string');
-			this.rest = new ApiHandler({
-				token,
-				baseUrl: 'api/v10',
-				domain: 'https://discord.com',
-				debug,
-			});
-		}
+		if (this.rest.options.token === 'INVALID') this.rest.options.token = token;
+		this.rest.debug = debug;
 
-		if (this.cache) {
-			this.cache.__setClient(this);
-		} else {
-			this.cache = new Cache(0, new MemoryAdapter(), {}, this);
-		}
+		this.cache.__setClient(this);
 
 		if (!this.handleCommand) this.handleCommand = new HandleCommand(this);
 
@@ -310,7 +296,6 @@ export class BaseClient {
 	}
 
 	private syncCachePath(cachePath: string) {
-		this.logger.debug('Syncing commands cache');
 		return promises.writeFile(
 			cachePath,
 			JSON.stringify(
