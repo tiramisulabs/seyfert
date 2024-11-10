@@ -1,6 +1,18 @@
+import type {
+	CategoryChannelStructure,
+	DMChannelStructure,
+	DirectoryChannelStructure,
+	ForumChannelStructure,
+	MediaChannelStructure,
+	NewsChannelStructure,
+	StageChannelStructure,
+	TextGuildChannelStructure,
+	ThreadChannelStructure,
+	VoiceChannelStructure,
+} from '../../client';
 import type { BaseClient } from '../../client/base';
 import type { IsStrictlyUndefined } from '../../common';
-import type { ChannelType } from '../../types';
+import { ChannelType } from '../../types';
 import type { RegisteredMiddlewares } from '../decorators';
 
 export type OKFunction<T> = (value: T) => void;
@@ -79,4 +91,20 @@ export type OnOptionsReturnObject = Record<
 export enum IgnoreCommand {
 	Slash = 0,
 	Message = 1,
+}
+
+export interface SeyfertChannelMap {
+	[ChannelType.GuildText]: TextGuildChannelStructure;
+	[ChannelType.DM]: DMChannelStructure;
+	[ChannelType.GuildVoice]: VoiceChannelStructure;
+	[ChannelType.GroupDM]: DMChannelStructure;
+	[ChannelType.GuildCategory]: CategoryChannelStructure;
+	[ChannelType.GuildAnnouncement]: NewsChannelStructure;
+	[ChannelType.AnnouncementThread]: ThreadChannelStructure;
+	[ChannelType.PublicThread]: ThreadChannelStructure;
+	[ChannelType.PrivateThread]: ThreadChannelStructure;
+	[ChannelType.GuildStageVoice]: StageChannelStructure;
+	[ChannelType.GuildDirectory]: DirectoryChannelStructure;
+	[ChannelType.GuildForum]: ForumChannelStructure;
+	[ChannelType.GuildMedia]: MediaChannelStructure;
 }
