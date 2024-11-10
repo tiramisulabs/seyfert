@@ -1,3 +1,4 @@
+import type { MakeRequired, OmitInsert } from '../../common';
 import type { APIGuild } from './guild';
 import type { ApplicationIntegrationType } from './interactions';
 import type { APIEntitlement } from './monetization';
@@ -48,6 +49,20 @@ export interface ApplicationAuthorizedEvent {
 	guild?: APIGuild;
 }
 
+export type ApplicationGuildAuthorizedEvent = MakeRequired<
+	OmitInsert<
+		ApplicationAuthorizedEvent,
+		'integration_type',
+		{ integration_type: ApplicationIntegrationType.GuildInstall }
+	>,
+	'guild'
+>;
+
+export type ApplicationUserAuthorizedEvent = OmitInsert<
+	ApplicationAuthorizedEvent,
+	'integration_type' | 'guild',
+	{ integration_type: ApplicationIntegrationType.UserInstall }
+>;
 /**
  * https://discord.com/developers/docs/events/webhook-events#webhook-types
  */
