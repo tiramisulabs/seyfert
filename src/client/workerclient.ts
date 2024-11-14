@@ -70,7 +70,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	shards = new Map<number, Shard>();
 	resharding = new Map<number, Shard>();
 	private _ready?: boolean;
-	private __setServicesCache?: boolean;
 
 	declare options: WorkerClientOptions;
 
@@ -95,8 +94,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	setServices(rest: ServicesOptions) {
 		super.setServices(rest);
-		if (rest.cache?.adapter) {
-			this.__setServicesCache = true;
+		if (this.options.postMessage && rest.cache?.adapter instanceof WorkerAdapter) {
+			rest.cache.adapter.postMessage = this.options.postMessage;
 		}
 	}
 
@@ -121,19 +120,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		this.logger = new Logger({
 			name: `[Worker #${workerData.workerId}]`,
 		});
-
-		if (this.__setServicesCache) delete this.__setServicesCache;
-		else {
-			const adapter = new WorkerAdapter(workerData);
-			if (this.options.postMessage) {
-				adapter.postMessage = this.options.postMessage;
-			}
-			this.setServices({
-				cache: {
-					adapter,
-				},
-			});
-		}
 
 		if (workerData.debug) {
 			this.debugger = new Logger({
