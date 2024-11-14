@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { ApiHandler } from '../api';
-import type { Adapter } from '../cache';
+import type { Adapter, DisabledCache } from '../cache';
 import { Cache, MemoryAdapter } from '../cache';
 import type {
 	Command,
@@ -60,7 +60,7 @@ import type { MessageStructure } from './transformers';
 
 export class BaseClient {
 	rest = new ApiHandler({ token: 'INVALID' });
-	cache = new Cache(0, new MemoryAdapter());
+	cache = new Cache(0, new MemoryAdapter(), {}, this);
 
 	applications = new ApplicationShorter(this);
 	users = new UsersShorter(this);
@@ -198,7 +198,7 @@ export class BaseClient {
 			this.rest = rest;
 		}
 		if (cache) {
-			const caches: (keyof Cache['disabledCache'])[] = [
+			const caches: (keyof DisabledCache)[] = [
 				'bans',
 				'channels',
 				'emojis',
@@ -214,7 +214,7 @@ export class BaseClient {
 				'users',
 				'voiceStates',
 			];
-			let disabledCache: Partial<Record<keyof Cache['disabledCache'], boolean>> = this.cache.disabledCache;
+			let disabledCache: Partial<Record<keyof DisabledCache, boolean>> = {};
 
 			if (typeof cache.disabledCache === 'boolean') {
 				for (const i of caches) {
@@ -228,7 +228,8 @@ export class BaseClient {
 				disabledCache = cache.disabledCache;
 			}
 
-			this.cache = new Cache(this.cache.intents, cache.adapter ?? this.cache.adapter, disabledCache, this);
+			if (cache.adapter) this.cache.adapter = cache.adapter;
+			if (cache.disabledCache) this.cache.buildCache(disabledCache, this);
 		}
 		if (middlewares) {
 			this.middlewares = middlewares;
@@ -270,8 +271,6 @@ export class BaseClient {
 
 		if (this.rest.options.token === 'INVALID') this.rest.options.token = token;
 		this.rest.debug = debug;
-
-		this.cache.__setClient(this);
 
 		if (!this.handleCommand) this.handleCommand = new HandleCommand(this);
 
@@ -528,7 +527,7 @@ export interface ServicesOptions {
 	rest?: ApiHandler;
 	cache?: {
 		adapter?: Adapter;
-		disabledCache?: boolean | Cache['disabledCache'] | ((cacheType: keyof Cache['disabledCache']) => boolean);
+		disabledCache?: boolean | DisabledCache | ((cacheType: keyof DisabledCache) => boolean);
 	};
 	langs?: {
 		default?: string;

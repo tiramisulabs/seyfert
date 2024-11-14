@@ -4,22 +4,12 @@ import type { GatewayIntentBits } from '../../../types';
 import type { Cache, ReturnCache } from '../../index';
 
 export class GuildBasedResource<T = any, S = any> {
-	client!: UsingClient;
 	namespace = 'base';
 
 	constructor(
 		protected cache: Cache,
-		client?: UsingClient,
-	) {
-		if (client) {
-			this.client = client;
-		}
-	}
-
-	/** @internal */
-	__setClient(client: UsingClient) {
-		this.client = client;
-	}
+		readonly client: UsingClient,
+	) {}
 
 	//@ts-expect-error
 	filter(data: any, id: string, guild_id: string) {
