@@ -130,7 +130,7 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 }
 
 export interface GuildEntryPointContext<M extends keyof RegisteredMiddlewares = never>
-	extends Omit<MakeRequired<EntryPointContext<M>, 'guildId'>, 'guild'> {
+	extends Omit<MakeRequired<EntryPointContext<M>, 'guildId' | 'member'>, 'guild'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 }

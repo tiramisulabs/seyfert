@@ -1,6 +1,6 @@
-import type { HttpClient } from './httpclient';
+import type { UsingClient } from '../commands';
 
 export interface HttpServerAdapter {
-	client: HttpClient;
+	client: UsingClient;
 	start?(path: `/${string}`): any;
 }

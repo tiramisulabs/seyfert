@@ -196,7 +196,7 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 }
 
 export interface GuildModalContext<M extends keyof RegisteredMiddlewares = never>
-	extends Omit<MakeRequired<ModalContext<M>, 'guildId'>, 'guild'> {
+	extends Omit<MakeRequired<ModalContext<M>, 'guildId' | 'member'>, 'guild'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 }
