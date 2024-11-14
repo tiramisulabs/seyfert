@@ -102,7 +102,7 @@ export class HandleCommand {
 	) {
 		if (context.guildId && command.botPermissions) {
 			const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
-			if (permissions) return command.onBotPermissionsFail(context, permissions);
+			if (permissions) return command.onBotPermissionsFail?.(context, permissions);
 		}
 
 		const resultGlobal = await this.runGlobalMiddlewares(command, context);
@@ -115,12 +115,12 @@ export class HandleCommand {
 				await command.run!(context);
 				await command.onAfterRun?.(context, undefined);
 			} catch (error) {
-				await command.onRunError(context, error);
+				await command.onRunError?.(context, error);
 				await command.onAfterRun?.(context, error);
 			}
 		} catch (error) {
 			try {
-				await command.onInternalError(this.client, command, error);
+				await command.onInternalError?.(this.client, command, error);
 			} catch {
 				// pass
 			}

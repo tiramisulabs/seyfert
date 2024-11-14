@@ -55,16 +55,8 @@ export abstract class ContextMenuCommand {
 
 	abstract run?(context: MenuCommandContext<any>): any;
 	onAfterRun?(context: MenuCommandContext<any>, error: unknown | undefined): any;
-	onRunError(context: MenuCommandContext<any, never>, error: unknown): any {
-		context.client.logger.fatal(`${this.name}.<onRunError>`, context.author.id, error);
-	}
-	onMiddlewaresError(context: MenuCommandContext<any, never>, error: string): any {
-		context.client.logger.fatal(`${this.name}.<onMiddlewaresError>`, context.author.id, error);
-	}
-	onBotPermissionsFail(context: MenuCommandContext<any, never>, permissions: PermissionStrings): any {
-		context.client.logger.fatal(`${this.name}.<onBotPermissionsFail>`, context.author.id, permissions);
-	}
-	onInternalError(client: UsingClient, command: ContextMenuCommand, error?: unknown): any {
-		client.logger.fatal(command.name, error);
-	}
+	onRunError?(context: MenuCommandContext<any, never>, error: unknown): any;
+	onMiddlewaresError?(context: MenuCommandContext<any, never>, error: string): any;
+	onBotPermissionsFail?(context: MenuCommandContext<any, never>, permissions: PermissionStrings): any;
+	onInternalError?(client: UsingClient, command: ContextMenuCommand, error?: unknown): any;
 }

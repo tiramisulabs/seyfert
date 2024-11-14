@@ -124,79 +124,37 @@ export class Cache {
 	constructor(
 		public intents: number,
 		public adapter: Adapter,
-		readonly disabledCache: DisabledCache = {},
-		client?: UsingClient,
+		disabledCache: DisabledCache,
+		client: UsingClient,
 	) {
-		// non-guild based
-		if (!this.disabledCache.users) {
-			this.users = new Users(this, client);
-		}
-		if (!this.disabledCache.guilds) {
-			this.guilds = new Guilds(this, client);
-		}
-
-		// guild related
-		if (!this.disabledCache.members) {
-			this.members = new Members(this, client);
-		}
-		if (!this.disabledCache.voiceStates) {
-			this.voiceStates = new VoiceStates(this, client);
-		}
-
-		// guild based
-		if (!this.disabledCache.roles) {
-			this.roles = new Roles(this, client);
-		}
-		if (!this.disabledCache.overwrites) {
-			this.overwrites = new Overwrites(this, client);
-		}
-		if (!this.disabledCache.channels) {
-			this.channels = new Channels(this, client);
-		}
-		if (!this.disabledCache.emojis) {
-			this.emojis = new Emojis(this, client);
-		}
-		if (!this.disabledCache.stickers) {
-			this.stickers = new Stickers(this, client);
-		}
-		if (!this.disabledCache.presences) {
-			this.presences = new Presences(this, client);
-		}
-		if (!this.disabledCache.stageInstances) {
-			this.stageInstances = new StageInstances(this, client);
-		}
-		if (!this.disabledCache.messages) {
-			this.messages = new Messages(this, client);
-		}
-		if (!this.disabledCache.bans) {
-			this.bans = new Bans(this, client);
-		}
-
-		if (this.disabledCache.onPacket) {
-			//@ts-expect-error
-			this.onPacket = () => {
-				// disable cache
-			};
-		}
+		this.buildCache(disabledCache, client);
 	}
 
-	/** @internal */
-	__setClient(client: UsingClient) {
-		this.users?.__setClient(client);
-		this.guilds?.__setClient(client);
+	buildCache(disabledCache: DisabledCache, client: UsingClient) {
+		// non-guild based
+		this.users = disabledCache.users ? undefined : new Users(this, client);
+		this.guilds = disabledCache.guilds ? undefined : new Guilds(this, client);
 
-		this.members?.__setClient(client);
-		this.voiceStates?.__setClient(client);
+		// guild related
+		this.members = disabledCache.members ? undefined : new Members(this, client);
+		this.voiceStates = disabledCache.voiceStates ? undefined : new VoiceStates(this, client);
 
-		this.roles?.__setClient(client);
-		this.overwrites?.__setClient(client);
-		this.channels?.__setClient(client);
-		this.emojis?.__setClient(client);
-		this.stickers?.__setClient(client);
-		this.presences?.__setClient(client);
-		this.stageInstances?.__setClient(client);
-		this.messages?.__setClient(client);
-		this.bans?.__setClient(client);
+		// guild based
+		this.roles = disabledCache.roles ? undefined : new Roles(this, client);
+		this.overwrites = disabledCache.overwrites ? undefined : new Overwrites(this, client);
+		this.channels = disabledCache.channels ? undefined : new Channels(this, client);
+		this.emojis = disabledCache.emojis ? undefined : new Emojis(this, client);
+		this.stickers = disabledCache.stickers ? undefined : new Stickers(this, client);
+		this.presences = disabledCache.presences ? undefined : new Presences(this, client);
+		this.stageInstances = disabledCache.stageInstances ? undefined : new StageInstances(this, client);
+		this.messages = disabledCache.messages ? undefined : new Messages(this, client);
+		this.bans = disabledCache.bans ? undefined : new Bans(this, client);
+
+		this.onPacket = disabledCache.onPacket
+			? ((() => {
+					//
+				}) as any as () => Promise<void>)
+			: this.onPacketDefault.bind(this);
 	}
 
 	flush(): ReturnCache<void> {
@@ -499,7 +457,11 @@ export class Cache {
 		await this.adapter.bulkSet(allData);
 	}
 
-	async onPacket(event: GatewayDispatchPayload) {
+	onPacket(event: GatewayDispatchPayload) {
+		return this.onPacketDefault(event);
+	}
+
+	protected async onPacketDefault(event: GatewayDispatchPayload) {
 		switch (event.t) {
 			case 'READY':
 				await this.users?.set(event.d.user.id, event.d.user);

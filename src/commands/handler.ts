@@ -467,17 +467,13 @@ export class CommandHandler extends BaseHandler {
 		if (!(commandInstance instanceof ContextMenuCommand)) return false;
 		commandInstance.onAfterRun ??= this.client.options.commands?.defaults?.onAfterRun;
 
-		if (this.client.options.commands?.defaults?.onBotPermissionsFail)
-			commandInstance.onBotPermissionsFail ??= this.client.options.commands?.defaults?.onBotPermissionsFail;
+		commandInstance.onBotPermissionsFail ??= this.client.options.commands?.defaults?.onBotPermissionsFail;
 
-		if (this.client.options.commands?.defaults?.onInternalError)
-			commandInstance.onInternalError ??= this.client.options.commands.defaults.onInternalError;
+		commandInstance.onInternalError ??= this.client.options.commands?.defaults?.onInternalError;
 
-		if (this.client.options.commands?.defaults?.onMiddlewaresError)
-			commandInstance.onMiddlewaresError ??= this.client.options.commands.defaults.onMiddlewaresError;
+		commandInstance.onMiddlewaresError ??= this.client.options.commands?.defaults?.onMiddlewaresError;
 
-		if (this.client.options.commands?.defaults?.onRunError)
-			commandInstance.onRunError ??= this.client.options.commands.defaults.onRunError;
+		commandInstance.onRunError ??= this.client.options.commands?.defaults?.onRunError;
 		return commandInstance;
 	}
 

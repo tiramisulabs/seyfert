@@ -95,7 +95,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	setServices(rest: ServicesOptions) {
 		super.setServices(rest);
-		if (rest.cache) {
+		if (rest.cache?.adapter) {
 			this.__setServicesCache = true;
 		}
 	}
@@ -122,13 +122,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			name: `[Worker #${workerData.workerId}]`,
 		});
 
-		if (this.__setServicesCache) {
-			this.setServices({
-				cache: {
-					disabledCache: this.cache.disabledCache,
-				},
-			});
-		} else {
+		if (this.__setServicesCache) delete this.__setServicesCache;
+		else {
 			const adapter = new WorkerAdapter(workerData);
 			if (this.options.postMessage) {
 				adapter.postMessage = this.options.postMessage;
@@ -136,12 +131,9 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			this.setServices({
 				cache: {
 					adapter,
-					disabledCache: this.cache.disabledCache,
 				},
 			});
 		}
-
-		delete this.__setServicesCache;
 
 		if (workerData.debug) {
 			this.debugger = new Logger({
