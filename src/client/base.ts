@@ -286,7 +286,7 @@ export class BaseClient {
 	 * @param rawBody body of interaction
 	 * @returns
 	 */
-	protected async onInteractionRequest(rawBody: APIInteraction): Promise<{
+	async onInteractionRequest(rawBody: APIInteraction): Promise<{
 		headers: { 'Content-Type'?: string };
 		response: APIInteractionResponse | FormData;
 	}> {
