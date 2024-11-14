@@ -24,7 +24,7 @@ import type {
 	WorkerStartResharding,
 } from '../websocket/discord/worker';
 import type { ManagerMessages, ManagerSpawnShards } from '../websocket/discord/workermanager';
-import type { BaseClientOptions, StartOptions } from './base';
+import type { BaseClientOptions, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import type { Client, ClientOptions } from './client';
 
@@ -90,6 +90,13 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		this.shards.forEach(s => (acc += s.latency));
 
 		return acc / this.shards.size;
+	}
+
+	setServices(rest: ServicesOptions) {
+		super.setServices(rest);
+		if (this.options.postMessage && rest.cache?.adapter instanceof WorkerAdapter) {
+			rest.cache.adapter.postMessage = this.options.postMessage;
+		}
 	}
 
 	setWorkerData(data: WorkerData) {
