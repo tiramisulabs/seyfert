@@ -40,6 +40,7 @@ import {
 } from '../common';
 
 import { promises } from 'node:fs';
+import { isBufferLike } from '../api/utils/utils';
 import { HandleCommand } from '../commands/handle';
 import { BanShorter } from '../common/shorters/bans';
 import { VoiceStateShorter } from '../common/shorters/voiceStates';
@@ -55,7 +56,7 @@ import type {
 	ModalSubmitInteraction,
 	UserCommandInteraction,
 } from '../structures';
-import type { LocaleString, RESTPostAPIChannelMessageJSONBody } from '../types';
+import type { APIInteraction, APIInteractionResponse, LocaleString, RESTPostAPIChannelMessageJSONBody } from '../types';
 import type { MessageStructure } from './transformers';
 
 export class BaseClient {
@@ -253,20 +254,17 @@ export class BaseClient {
 	}
 
 	async start(
-		options: Pick<DeepPartial<StartOptions>, 'langsDir' | 'commandsDir' | 'connection' | 'token' | 'componentsDir'> = {
-			token: undefined,
-			langsDir: undefined,
-			commandsDir: undefined,
-			connection: undefined,
-			componentsDir: undefined,
-		},
+		options: Pick<
+			DeepPartial<StartOptions>,
+			'langsDir' | 'commandsDir' | 'connection' | 'token' | 'componentsDir'
+		> = {},
 	) {
 		await this.loadLangs(options.langsDir);
 		await this.loadCommands(options.commandsDir);
 		await this.loadComponents(options.componentsDir);
 
 		const { token: tokenRC, debug } = await this.getRC();
-		const token = options?.token ?? tokenRC;
+		const token = options.token ?? tokenRC;
 		BaseClient.assertString(token, 'token is not a string');
 
 		if (this.rest.options.token === 'INVALID') this.rest.options.token = token;
@@ -283,15 +281,54 @@ export class BaseClient {
 		throw new Error('Function not implemented');
 	}
 
-	private shouldUploadCommands(cachePath: string, guildId?: string) {
-		return this.commands!.shouldUpload(cachePath, guildId).then(should => {
-			this.logger.debug(
-				should
-					? `[${guildId ?? 'global'}] Change(s) detected, uploading commands`
-					: `[${guildId ?? 'global'}] commands seems to be up to date`,
-			);
-			return should;
+	/**
+	 *
+	 * @param rawBody body of interaction
+	 * @returns
+	 */
+	protected async onInteractionRequest(rawBody: APIInteraction): Promise<{
+		headers: { 'Content-Type'?: string };
+		response: APIInteractionResponse | FormData;
+	}> {
+		return new Promise(async r => {
+			await this.handleCommand.interaction(rawBody, -1, async ({ body, files }) => {
+				let response: FormData | APIInteractionResponse;
+				const headers: { 'Content-Type'?: string } = {};
+
+				if (files) {
+					response = new FormData();
+					for (const [index, file] of files.entries()) {
+						const fileKey = file.key ?? `files[${index}]`;
+						if (isBufferLike(file.data)) {
+							response.append(fileKey, new Blob([file.data], { type: file.contentType }), file.filename);
+						} else {
+							response.append(fileKey, new Blob([`${file.data}`], { type: file.contentType }), file.filename);
+						}
+					}
+					if (body) {
+						response.append('payload_json', JSON.stringify(body));
+					}
+				} else {
+					response = body ?? {};
+					headers['Content-Type'] = 'application/json';
+				}
+
+				return r({
+					headers,
+					response,
+				});
+			});
 		});
+	}
+
+	private async shouldUploadCommands(cachePath: string, guildId?: string) {
+		const should = await this.commands!.shouldUpload(cachePath, guildId);
+		this.logger.debug(
+			should
+				? `[${guildId ?? 'global'}] Change(s) detected, uploading commands`
+				: `[${guildId ?? 'global'}] commands seems to be up to date`,
+		);
+		return should;
 	}
 
 	private syncCachePath(cachePath: string) {
@@ -431,7 +468,7 @@ export interface BaseClientOptions {
 			| ModalSubmitInteraction
 			| EntryPointInteraction<boolean>
 			| When<InferWithPrefix, MessageStructure, never>,
-	) => object;
+	) => Record<string, unknown>;
 	globalMiddlewares?: readonly (keyof RegisteredMiddlewares)[];
 	commands?: {
 		defaults?: {
@@ -516,7 +553,7 @@ export type RuntimeConfigHTTP = Omit<MakeRequired<RC, 'publicKey' | 'application
 	locations: Omit<RC['locations'], 'events'>;
 };
 
-export type InternalRuntimeConfig = Omit<MakeRequired<RC, 'intents'>, 'publicKey' | 'port'>;
+export type InternalRuntimeConfig = MakeRequired<RC, 'intents'>;
 export type RuntimeConfig = OmitInsert<
 	InternalRuntimeConfig,
 	'intents',

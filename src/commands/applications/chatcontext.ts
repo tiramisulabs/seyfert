@@ -224,7 +224,7 @@ export class CommandContext<
 }
 
 export interface GuildCommandContext<T extends OptionsRecord = {}, M extends keyof RegisteredMiddlewares = never>
-	extends Omit<MakeRequired<CommandContext<T, M>, 'guildId'>, 'guild'> {
+	extends Omit<MakeRequired<CommandContext<T, M>, 'guildId' | 'member'>, 'guild'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 }

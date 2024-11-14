@@ -169,7 +169,7 @@ export class MenuCommandContext<
 export interface GuildMenuCommandContext<
 	T extends MessageCommandInteraction | UserCommandInteraction,
 	M extends keyof RegisteredMiddlewares = never,
-> extends Omit<MakeRequired<MenuCommandContext<T, M>, 'guildId'>, 'guild'> {
+> extends Omit<MakeRequired<MenuCommandContext<T, M>, 'guildId' | 'member'>, 'guild'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 }
