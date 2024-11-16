@@ -54,7 +54,6 @@ export class ApiHandler {
 
 		if (worker_threads?.parentPort) {
 			this.sendMessage = async body => {
-				console;
 				worker_threads.parentPort!.postMessage(
 					body,
 					body.requestOptions.files
