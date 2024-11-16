@@ -1,4 +1,3 @@
-import { error } from 'node:console';
 import { type UUID, randomUUID } from 'node:crypto';
 import type { UsingClient } from '../commands';
 import type { Awaitable, CamelCase } from '../common';
@@ -90,7 +89,7 @@ export class Collectors {
 		try {
 			await collector.options.onStop?.(reason);
 		} catch (e) {
-			await collector.options.onStopError?.(reason, error);
+			await collector.options.onStopError?.(reason, e);
 		}
 	}
 

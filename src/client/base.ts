@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { ApiHandler } from '../api';
-import type { Adapter } from '../cache';
+import type { Adapter, DisabledCache } from '../cache';
 import { Cache, MemoryAdapter } from '../cache';
 import type {
 	Command,
@@ -40,8 +40,10 @@ import {
 } from '../common';
 
 import { promises } from 'node:fs';
+import { isBufferLike } from '../api/utils/utils';
 import { HandleCommand } from '../commands/handle';
 import { BanShorter } from '../common/shorters/bans';
+import { VoiceStateShorter } from '../common/shorters/voiceStates';
 import type { Awaitable, DeepPartial, IntentStrings, OmitInsert, PermissionStrings, When } from '../common/types/util';
 import type { ComponentCommand, ComponentContext, ModalCommand, ModalContext } from '../components';
 import { ComponentHandler } from '../components/handler';
@@ -54,12 +56,12 @@ import type {
 	ModalSubmitInteraction,
 	UserCommandInteraction,
 } from '../structures';
-import type { LocaleString, RESTPostAPIChannelMessageJSONBody } from '../types';
+import type { APIInteraction, APIInteractionResponse, LocaleString, RESTPostAPIChannelMessageJSONBody } from '../types';
 import type { MessageStructure } from './transformers';
 
 export class BaseClient {
-	rest!: ApiHandler;
-	cache!: Cache;
+	rest = new ApiHandler({ token: 'INVALID' });
+	cache = new Cache(0, new MemoryAdapter(), {}, this);
 
 	applications = new ApplicationShorter(this);
 	users = new UsersShorter(this);
@@ -75,6 +77,7 @@ export class BaseClient {
 	threads = new ThreadShorter(this);
 	bans = new BanShorter(this);
 	interactions = new InteractionShorter(this);
+	voiceStates = new VoiceStateShorter(this);
 
 	debugger?: Logger;
 
@@ -192,10 +195,11 @@ export class BaseClient {
 
 	setServices({ rest, cache, langs, middlewares, handleCommand }: ServicesOptions) {
 		if (rest) {
+			rest.onRatelimit ??= this.rest.onRatelimit?.bind(rest);
 			this.rest = rest;
 		}
 		if (cache) {
-			const caches: (keyof Cache['disabledCache'])[] = [
+			const caches: (keyof DisabledCache)[] = [
 				'bans',
 				'channels',
 				'emojis',
@@ -211,7 +215,7 @@ export class BaseClient {
 				'users',
 				'voiceStates',
 			];
-			let disabledCache: Partial<Record<keyof Cache['disabledCache'], boolean>> = this.cache?.disabledCache ?? {};
+			let disabledCache: Partial<Record<keyof DisabledCache, boolean>> = {};
 
 			if (typeof cache.disabledCache === 'boolean') {
 				for (const i of caches) {
@@ -225,12 +229,8 @@ export class BaseClient {
 				disabledCache = cache.disabledCache;
 			}
 
-			this.cache = new Cache(
-				this.cache?.intents ?? 0,
-				cache?.adapter ?? this.cache?.adapter ?? new MemoryAdapter(),
-				disabledCache,
-				this,
-			);
+			if (cache.adapter) this.cache.adapter = cache.adapter;
+			if (cache.disabledCache) this.cache.buildCache(disabledCache, this);
 		}
 		if (middlewares) {
 			this.middlewares = middlewares;
@@ -254,36 +254,21 @@ export class BaseClient {
 	}
 
 	async start(
-		options: Pick<DeepPartial<StartOptions>, 'langsDir' | 'commandsDir' | 'connection' | 'token' | 'componentsDir'> = {
-			token: undefined,
-			langsDir: undefined,
-			commandsDir: undefined,
-			connection: undefined,
-			componentsDir: undefined,
-		},
+		options: Pick<
+			DeepPartial<StartOptions>,
+			'langsDir' | 'commandsDir' | 'connection' | 'token' | 'componentsDir'
+		> = {},
 	) {
 		await this.loadLangs(options.langsDir);
 		await this.loadCommands(options.commandsDir);
 		await this.loadComponents(options.componentsDir);
 
 		const { token: tokenRC, debug } = await this.getRC();
-		const token = options?.token ?? tokenRC;
+		const token = options.token ?? tokenRC;
+		BaseClient.assertString(token, 'token is not a string');
 
-		if (!this.rest) {
-			BaseClient.assertString(token, 'token is not a string');
-			this.rest = new ApiHandler({
-				token,
-				baseUrl: 'api/v10',
-				domain: 'https://discord.com',
-				debug,
-			});
-		}
-
-		if (this.cache) {
-			this.cache.__setClient(this);
-		} else {
-			this.cache = new Cache(0, new MemoryAdapter(), {}, this);
-		}
+		if (this.rest.options.token === 'INVALID') this.rest.options.token = token;
+		this.rest.debug = debug;
 
 		if (!this.handleCommand) this.handleCommand = new HandleCommand(this);
 
@@ -296,19 +281,57 @@ export class BaseClient {
 		throw new Error('Function not implemented');
 	}
 
-	private shouldUploadCommands(cachePath: string, guildId?: string) {
-		return this.commands!.shouldUpload(cachePath, guildId).then(should => {
-			this.logger.debug(
-				should
-					? `[${guildId ?? 'global'}] Change(s) detected, uploading commands`
-					: `[${guildId ?? 'global'}] commands seems to be up to date`,
-			);
-			return should;
+	/**
+	 *
+	 * @param rawBody body of interaction
+	 * @returns
+	 */
+	async onInteractionRequest(rawBody: APIInteraction): Promise<{
+		headers: { 'Content-Type'?: string };
+		response: APIInteractionResponse | FormData;
+	}> {
+		return new Promise(async r => {
+			await this.handleCommand.interaction(rawBody, -1, async ({ body, files }) => {
+				let response: FormData | APIInteractionResponse;
+				const headers: { 'Content-Type'?: string } = {};
+
+				if (files) {
+					response = new FormData();
+					for (const [index, file] of files.entries()) {
+						const fileKey = file.key ?? `files[${index}]`;
+						if (isBufferLike(file.data)) {
+							response.append(fileKey, new Blob([file.data], { type: file.contentType }), file.filename);
+						} else {
+							response.append(fileKey, new Blob([`${file.data}`], { type: file.contentType }), file.filename);
+						}
+					}
+					if (body) {
+						response.append('payload_json', JSON.stringify(body));
+					}
+				} else {
+					response = body ?? {};
+					headers['Content-Type'] = 'application/json';
+				}
+
+				return r({
+					headers,
+					response,
+				});
+			});
 		});
 	}
 
+	private async shouldUploadCommands(cachePath: string, guildId?: string) {
+		const should = await this.commands!.shouldUpload(cachePath, guildId);
+		this.logger.debug(
+			should
+				? `[${guildId ?? 'global'}] Change(s) detected, uploading commands`
+				: `[${guildId ?? 'global'}] commands seems to be up to date`,
+		);
+		return should;
+	}
+
 	private syncCachePath(cachePath: string) {
-		this.logger.debug('Syncing commands cache');
 		return promises.writeFile(
 			cachePath,
 			JSON.stringify(
@@ -445,7 +468,7 @@ export interface BaseClientOptions {
 			| ModalSubmitInteraction
 			| EntryPointInteraction<boolean>
 			| When<InferWithPrefix, MessageStructure, never>,
-	) => object;
+	) => Record<string, unknown>;
 	globalMiddlewares?: readonly (keyof RegisteredMiddlewares)[];
 	commands?: {
 		defaults?: {
@@ -530,7 +553,7 @@ export type RuntimeConfigHTTP = Omit<MakeRequired<RC, 'publicKey' | 'application
 	locations: Omit<RC['locations'], 'events'>;
 };
 
-export type InternalRuntimeConfig = Omit<MakeRequired<RC, 'intents'>, 'publicKey' | 'port'>;
+export type InternalRuntimeConfig = MakeRequired<RC, 'intents'>;
 export type RuntimeConfig = OmitInsert<
 	InternalRuntimeConfig,
 	'intents',
@@ -541,7 +564,7 @@ export interface ServicesOptions {
 	rest?: ApiHandler;
 	cache?: {
 		adapter?: Adapter;
-		disabledCache?: boolean | Cache['disabledCache'] | ((cacheType: keyof Cache['disabledCache']) => boolean);
+		disabledCache?: boolean | DisabledCache | ((cacheType: keyof DisabledCache) => boolean);
 	};
 	langs?: {
 		default?: string;

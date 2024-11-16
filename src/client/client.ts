@@ -94,6 +94,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 		const { token: tokenRC, intents: intentsRC, debug: debugRC } = await this.getRC<InternalRuntimeConfig>();
 		const token = options?.token ?? tokenRC;
 		const intents = options?.connection?.intents ?? intentsRC;
+		this.cache.intents = intents;
 
 		if (!this.gateway) {
 			BaseClient.assertString(token, 'token is not a string');
@@ -123,8 +124,6 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			});
 		}
 
-		this.cache.intents = this.gateway.options.intents;
-
 		if (execute) {
 			await this.execute(options.connection);
 		} else {
@@ -138,7 +137,6 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			this.collectors.run('RAW', packet, this),
 		]); //ignore promise
 		switch (packet.t) {
-			// Cases where we must obtain the old data before updating
 			case 'GUILD_MEMBER_UPDATE':
 				{
 					if (!this.memberUpdateHandler.check(packet.d)) {

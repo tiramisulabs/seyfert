@@ -136,11 +136,10 @@ export class CommandContext<
 	}
 
 	async fetchResponse(): Promise<
-		If<InferWithPrefix, WebhookMessageStructure | MessageStructure | undefined, WebhookMessageStructure | undefined>
+		If<InferWithPrefix, WebhookMessageStructure | MessageStructure, WebhookMessageStructure>
 	> {
 		if (this.interaction) return this.interaction.fetchResponse();
-		this.messageResponse = await this.messageResponse?.fetch();
-		return this.messageResponse as undefined;
+		return (this.messageResponse = (await this.messageResponse!.fetch()) as never);
 	}
 
 	channel(mode?: 'rest' | 'flow'): Promise<If<InferWithPrefix, AllChannels | undefined, AllChannels>>;
@@ -215,13 +214,17 @@ export class CommandContext<
 		return this.interaction?.member || ((this.message! as MessageStructure)?.member as any);
 	}
 
-	isChat(): this is CommandContext {
+	isChat(): this is CommandContext<T, M> {
 		return true;
+	}
+
+	inGuild(): this is GuildCommandContext<T, M> {
+		return !!this.guildId;
 	}
 }
 
 export interface GuildCommandContext<T extends OptionsRecord = {}, M extends keyof RegisteredMiddlewares = never>
-	extends Omit<MakeRequired<CommandContext<T, M>, 'guildId'>, 'guild'> {
+	extends Omit<MakeRequired<CommandContext<T, M>, 'guildId' | 'member'>, 'guild'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 }

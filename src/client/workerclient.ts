@@ -1,7 +1,7 @@
 import { type UUID, randomUUID } from 'node:crypto';
 import { ApiHandler, Logger } from '..';
 import { WorkerAdapter } from '../cache';
-import { type DeepPartial, LogLevels, type When, hasIntent, lazyLoadPackage } from '../common';
+import { type DeepPartial, LogLevels, type MakeRequired, type When, hasIntent, lazyLoadPackage } from '../common';
 import { EventHandler } from '../events';
 import type { GatewayDispatchPayload, GatewaySendPayload } from '../types';
 import { Shard, type ShardManagerOptions, type WorkerData, properties } from '../websocket';
@@ -23,13 +23,14 @@ import type {
 	WorkerStart,
 	WorkerStartResharding,
 } from '../websocket/discord/worker';
-import type { ManagerMessages } from '../websocket/discord/workermanager';
+import type { ManagerMessages, ManagerSpawnShards } from '../websocket/discord/workermanager';
 import type { BaseClientOptions, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import type { Client, ClientOptions } from './client';
 
 import { MemberUpdateHandler } from '../websocket/discord/events/memberUpdate';
 import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdate';
+import type { ShardData } from '../websocket/discord/shared';
 import { Collectors } from './collectors';
 import { type ClientUserStructure, Transformers } from './transformers';
 
@@ -40,7 +41,7 @@ try {
 		debug: process.env.SEYFERT_WORKER_DEBUG === 'true',
 		intents: Number(process.env.SEYFERT_WORKER_INTENTS),
 		path: process.env.SEYFERT_WORKER_PATH!,
-		shards: process.env.SEYFERT_WORKER_SHARDS!.split(',').map(id => Number(id)),
+		shards: JSON.parse(process.env.SEYFERT_WORKER_SHARDS!),
 		token: process.env.SEYFERT_WORKER_TOKEN!,
 		workerId: Number(process.env.SEYFERT_WORKER_WORKERID),
 		workerProxy: process.env.SEYFERT_WORKER_WORKERPROXY === 'true',
@@ -48,6 +49,8 @@ try {
 		mode: process.env.SEYFERT_WORKER_MODE as 'custom' | 'threads' | 'clusters',
 		resharding: process.env.SEYFERT_WORKER_RESHARDING === 'true',
 		totalWorkers: Number(process.env.SEYFERT_WORKER_TOTALWORKERS),
+		info: JSON.parse(process.env.SEYFERT_WORKER_INFO!),
+		compress: process.env.SEYFERT_WORKER_COMPRESS === 'true',
 	} satisfies WorkerData;
 } catch {
 	//
@@ -67,7 +70,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	shards = new Map<number, Shard>();
 	resharding = new Map<number, Shard>();
 	private _ready?: boolean;
-	private __setServicesCache?: boolean;
 
 	declare options: WorkerClientOptions;
 
@@ -92,8 +94,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	setServices(rest: ServicesOptions) {
 		super.setServices(rest);
-		if (rest.cache) {
-			this.__setServicesCache = true;
+		if (this.options.postMessage && rest.cache?.adapter instanceof WorkerAdapter) {
+			rest.cache.adapter.postMessage = this.options.postMessage;
 		}
 	}
 
@@ -119,27 +121,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			name: `[Worker #${workerData.workerId}]`,
 		});
 
-		if (this.__setServicesCache) {
-			this.setServices({
-				cache: {
-					disabledCache: this.cache.disabledCache,
-				},
-			});
-		} else {
-			const adapter = new WorkerAdapter(workerData);
-			if (this.options.postMessage) {
-				adapter.postMessage = this.options.postMessage;
-			}
-			this.setServices({
-				cache: {
-					adapter,
-					disabledCache: this.cache.disabledCache,
-				},
-			});
-		}
-
-		delete this.__setServicesCache;
-
 		if (workerData.debug) {
 			this.debugger = new Logger({
 				name: `[Worker #${workerData.workerId}]`,
@@ -155,6 +136,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				}),
 			});
 		}
+		this.cache.intents = workerData.intents;
+		this.rest.workerData = workerData;
 		this.postMessage({
 			type: workerData.resharding ? 'WORKER_START_RESHARDING' : 'WORKER_START',
 			workerId: workerData.workerId,
@@ -164,7 +147,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		}
 		await super.start(options);
 		await this.loadEvents(options.eventsDir);
-		this.cache.intents = workerData.intents;
 	}
 
 	async loadEvents(dir?: string) {
@@ -295,9 +277,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			case 'SPAWN_SHARDS':
 				{
-					const onPacket = this.onPacket.bind(this);
-					const handlePayload = this.options?.handlePayload?.bind(this);
-					const self = this;
 					for (const id of workerData.shards) {
 						const existsShard = this.shards.has(id);
 						if (existsShard) {
@@ -305,28 +284,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							continue;
 						}
 
-						const shard = new Shard(id, {
-							token: workerData.token,
-							intents: workerData.intents,
-							info: data.info,
-							compress: data.compress,
-							debugger: this.debugger,
-							properties: {
-								...properties,
-								...this.options.gateway?.properties,
-							},
-							async handlePayload(shardId, payload) {
-								await handlePayload?.(shardId, payload);
-								await onPacket(payload, shardId);
-								if (self.options.sendPayloadToParent)
-									self.postMessage({
-										workerId: workerData.workerId,
-										shardId,
-										type: 'RECEIVE_PAYLOAD',
-										payload,
-									} satisfies WorkerReceivePayload);
-							},
-						});
+						const shard = this.createShard(id, data);
 						this.shards.set(id, shard);
 						this.postMessage({
 							type: 'CONNECT_QUEUE',
@@ -380,7 +338,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					let result: unknown;
 					try {
 						result = await eval(`
-					(${data.func})(this)
+					(${data.func})(this, ${data.vars})
 					`);
 					} catch (e) {
 						result = e;
@@ -455,7 +413,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		});
 	}
 
-	tellWorker<R>(workerId: number, func: (_: this) => R) {
+	tellWorker<R, V extends Record<string, unknown>>(workerId: number, func: (_: this, vars: V) => R, vars: V) {
 		const nonce = this.generateNonce();
 		this.postMessage({
 			type: 'EVAL_TO_WORKER',
@@ -463,16 +421,63 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			toWorkerId: workerId,
 			workerId: workerData.workerId,
 			nonce,
+			vars: JSON.stringify(vars),
 		} satisfies WorkerSendToWorkerEval);
 		return this.generateSendPromise<R>(nonce);
 	}
 
-	tellWorkers<R>(func: (_: this) => R) {
+	tellWorkers<R, V extends Record<string, unknown>>(func: (_: this, vars: V) => R, vars: V) {
 		const promises: Promise<R>[] = [];
 		for (let i = 0; i < workerData.totalWorkers; i++) {
-			promises.push(this.tellWorker(i, func));
+			promises.push(this.tellWorker(i, func, vars));
 		}
 		return Promise.all(promises);
+	}
+
+	createShard(id: number, data: Pick<ManagerSpawnShards, 'info' | 'compress'>) {
+		const onPacket = this.onPacket.bind(this);
+		const handlePayload = this.options?.handlePayload?.bind(this);
+		const self = this;
+		const shard = new Shard(id, {
+			token: workerData.token,
+			intents: workerData.intents,
+			info: data.info,
+			compress: data.compress,
+			debugger: this.debugger,
+			properties: {
+				...properties,
+				...this.options.gateway?.properties,
+			},
+			async handlePayload(shardId, payload) {
+				await handlePayload?.(shardId, payload);
+				await onPacket(payload, shardId);
+				if (self.options.sendPayloadToParent)
+					self.postMessage({
+						workerId: workerData.workerId,
+						shardId,
+						type: 'RECEIVE_PAYLOAD',
+						payload,
+					} satisfies WorkerReceivePayload);
+			},
+		});
+
+		return shard;
+	}
+
+	async resumeShard(shardId: number, shardData: MakeRequired<ShardData>) {
+		const exists = (await this.tellWorkers((r, vars) => r.shards.has(vars.shardId), { shardId })).some(x => x);
+		if (exists) throw new Error('Cannot override existing shard');
+		const shard = this.createShard(shardId, {
+			info: this.workerData.info,
+			compress: this.workerData.compress,
+		});
+		shard.data = shardData;
+		this.shards.set(shardId, shard);
+		return this.postMessage({
+			workerId: this.workerId,
+			shardId,
+			type: 'CONNECT_QUEUE',
+		});
 	}
 
 	protected async onPacket(packet: GatewayDispatchPayload, shardId: number) {
@@ -481,7 +486,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			this.collectors.run('RAW', packet, this),
 		]); //ignore promise
 		switch (packet.t) {
-			//// Cases where we must obtain the old data before updating
 			case 'GUILD_MEMBER_UPDATE':
 				{
 					if (!this.memberUpdateHandler.check(packet.d)) {

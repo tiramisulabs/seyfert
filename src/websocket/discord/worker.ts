@@ -81,6 +81,7 @@ export type WorkerSendToWorkerEval = CreateWorkerMessage<
 	{
 		func: string;
 		nonce: string;
+		vars: string;
 		toWorkerId: number;
 	}
 >;

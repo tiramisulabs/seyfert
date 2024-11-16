@@ -19,7 +19,7 @@ import {
 } from '../types';
 import { Command, type CommandOption, SubCommand } from './applications/chat';
 import { ContextMenuCommand } from './applications/menu';
-import type { UsingClient } from './applications/shared';
+import { IgnoreCommand, type UsingClient } from './applications/shared';
 
 export class CommandHandler extends BaseHandler {
 	values: (Command | ContextMenuCommand)[] = [];
@@ -170,7 +170,9 @@ export class CommandHandler extends BaseHandler {
 
 	async shouldUpload(file: string, guildId?: string) {
 		const values = this.values.filter(x => {
+			if ('ignore' in x && x.ignore === IgnoreCommand.Slash) return false;
 			if (!guildId) return !x.guildId;
+
 			return x.guildId?.includes(guildId);
 		});
 		if (
@@ -464,15 +466,13 @@ export class CommandHandler extends BaseHandler {
 	stablishContextCommandDefaults(commandInstance: InstanceType<HandleableCommand>): ContextMenuCommand | false {
 		if (!(commandInstance instanceof ContextMenuCommand)) return false;
 		commandInstance.onAfterRun ??= this.client.options.commands?.defaults?.onAfterRun;
-		//@ts-expect-error magic.
+
 		commandInstance.onBotPermissionsFail ??= this.client.options.commands?.defaults?.onBotPermissionsFail;
-		//@ts-expect-error magic.
+
 		commandInstance.onInternalError ??= this.client.options.commands?.defaults?.onInternalError;
-		//@ts-expect-error magic.
+
 		commandInstance.onMiddlewaresError ??= this.client.options.commands?.defaults?.onMiddlewaresError;
-		//@ts-expect-error magic.
-		commandInstance.onPermissionsFail ??= this.client.options.commands?.defaults?.onPermissionsFail;
-		//@ts-expect-error magic.
+
 		commandInstance.onRunError ??= this.client.options.commands?.defaults?.onRunError;
 		return commandInstance;
 	}

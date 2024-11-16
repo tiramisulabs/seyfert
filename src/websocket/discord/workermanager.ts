@@ -4,7 +4,7 @@ import type { Worker as WorkerThreadsWorker } from 'node:worker_threads';
 import { ApiHandler, Logger, type UsingClient, type WorkerClient } from '../..';
 import { type Adapter, MemoryAdapter } from '../../cache';
 import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
-import { type MakePartial, MergeOptions, lazyLoadPackage } from '../../common';
+import { BASE_HOST, type MakePartial, MergeOptions, lazyLoadPackage } from '../../common';
 import type { GatewayPresenceUpdateData, GatewaySendPayload, RESTGetAPIGatewayBotResult } from '../../types';
 import { WorkerManagerDefaults, properties } from '../constants';
 import { DynamicBucket } from '../structures';
@@ -169,6 +169,11 @@ export class WorkerManager extends Map<
 						mode: this.options.mode,
 						resharding,
 						totalWorkers: shards.length,
+						info: {
+							...this.options.info,
+							shards: this.totalShards,
+						},
+						compress: this.options.compress,
 					});
 					this.set(i, worker);
 				});
@@ -193,7 +198,8 @@ export class WorkerManager extends Map<
 		};
 		if (workerData.resharding) env.SEYFERT_WORKER_RESHARDING = 'true';
 		for (const i in workerData) {
-			env[`SEYFERT_WORKER_${i.toUpperCase()}`] = workerData[i as keyof WorkerData];
+			const data = workerData[i as keyof WorkerData];
+			env[`SEYFERT_WORKER_${i.toUpperCase()}`] = typeof data === 'object' && data ? JSON.stringify(data) : data;
 		}
 		switch (this.options.mode) {
 			case 'threads': {
@@ -397,6 +403,14 @@ export class WorkerManager extends Map<
 				break;
 			case 'WORKER_API_REQUEST':
 				{
+					if (this.options.mode === 'clusters' && message.requestOptions.files?.length) {
+						message.requestOptions.files.forEach(file => {
+							//@ts-expect-error
+							if (file.data.type === 'Buffer' && Array.isArray(file.data?.data))
+								//@ts-expect-error
+								file.data = new Uint8Array(file.data.data);
+						});
+					}
 					const response = await this.rest.request(message.method, message.url, message.requestOptions);
 					this.postMessage(message.workerId, {
 						nonce: message.nonce,
@@ -425,6 +439,7 @@ export class WorkerManager extends Map<
 						func: message.func,
 						type: 'EXECUTE_EVAL_TO_WORKER',
 						toWorkerId: message.toWorkerId,
+						vars: message.vars,
 					} satisfies ManagerExecuteEvalToWorker);
 					this.generateSendPromise(nonce, 'Eval timeout').then(val =>
 						this.postMessage(message.workerId, {
@@ -503,20 +518,25 @@ export class WorkerManager extends Map<
 		return this.generateSendPromise<WorkerInfo>(nonce, 'Get worker info timeout');
 	}
 
-	tellWorker<R>(workerId: number, func: (_: WorkerClient & UsingClient) => R) {
+	tellWorker<R, V extends Record<string, unknown>>(
+		workerId: number,
+		func: (_: WorkerClient & UsingClient, vars: V) => R,
+		vars: V,
+	) {
 		const nonce = this.generateNonce();
 		this.postMessage(workerId, {
 			type: 'EXECUTE_EVAL',
 			func: func.toString(),
 			nonce,
+			vars: JSON.stringify(vars),
 		} satisfies ManagerExecuteEval);
 		return this.generateSendPromise<R>(nonce);
 	}
 
-	tellWorkers<R>(func: (_: WorkerClient & UsingClient) => R) {
+	tellWorkers<R, V extends Record<string, unknown>>(func: (_: WorkerClient & UsingClient, vars: V) => R, vars: V) {
 		const promises: Promise<R>[] = [];
 		for (const i of this.keys()) {
-			promises.push(this.tellWorker(i, func));
+			promises.push(this.tellWorker(i, func, vars));
 		}
 		return Promise.all(promises);
 	}
@@ -530,7 +550,7 @@ export class WorkerManager extends Map<
 		this.rest ??= new ApiHandler({
 			token: this.options.token,
 			baseUrl: 'api/v10',
-			domain: 'https://discord.com',
+			domain: BASE_HOST,
 			debug: this.options.debug,
 		});
 		this.options.info ??= await this.rest.proxy.gateway.bot.get();
@@ -562,7 +582,7 @@ export class WorkerManager extends Map<
 			},
 			this.debugger,
 		);
-		await this.prepareWorkers(spaces);
+		this.prepareWorkers(spaces);
 		// Start workers queue
 		this.workerQueue.shift()!();
 		await this.startResharding();
@@ -645,6 +665,7 @@ export type ManagerExecuteEvalToWorker = CreateManagerMessage<
 	{
 		func: string;
 		nonce: string;
+		vars: string;
 		toWorkerId: number;
 	}
 >;
@@ -653,6 +674,7 @@ export type ManagerExecuteEval = CreateManagerMessage<
 	'EXECUTE_EVAL',
 	{
 		func: string;
+		vars: string;
 		nonce: string;
 	}
 >;

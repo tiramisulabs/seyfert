@@ -1,5 +1,6 @@
 import { type UUID, randomUUID } from 'node:crypto';
-import { type Awaitable, Logger, delay, lazyLoadPackage, snowflakeToTimestamp } from '../common';
+import { type Awaitable, BASE_HOST, Logger, delay, lazyLoadPackage, snowflakeToTimestamp } from '../common';
+import { toArrayBuffer, toBuffer } from '../common/it/utils';
 import type { WorkerData } from '../websocket';
 import type { WorkerSendApiRequest } from '../websocket/discord/worker';
 import { CDNRouter, Router } from './Router';
@@ -16,13 +17,12 @@ import {
 } from './shared';
 import { isBufferLike } from './utils/utils';
 
-let parentPort: import('node:worker_threads').MessagePort;
-let workerData: WorkerData;
-
 export interface ApiHandler {
 	/* @internal */
 	_proxy_?: APIRoutes;
 	debugger?: Logger;
+	/* @internal */
+	workerData?: WorkerData;
 }
 
 export type OnRatelimitCallback = (response: Response, request: ApiRequestOptions) => Awaitable<any>;
@@ -39,26 +39,51 @@ export class ApiHandler {
 	constructor(options: ApiHandlerOptions) {
 		this.options = {
 			baseUrl: 'api/v10',
-			domain: 'https://discord.com',
+			domain: BASE_HOST,
 			type: 'Bot',
 			...options,
 			userAgent: DefaultUserAgent,
 		};
-		if (options.debug) {
-			this.debugger = new Logger({
-				name: '[API]',
-			});
-		}
+		if (options.debug) this.debug = true;
 
 		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
 
-		if (options.workerProxy && !worker_threads?.parentPort) throw new Error('Cannot use workerProxy without a parent.');
+		if (options.workerProxy && !worker_threads?.parentPort && !process.send)
+			throw new Error('Cannot use workerProxy without a parent.');
 		if (options.workerProxy) this.workerPromises = new Map();
 
-		if (worker_threads) {
-			workerData = worker_threads.workerData;
-			if (worker_threads.parentPort) parentPort = worker_threads.parentPort;
+		if (worker_threads?.parentPort) {
+			this.sendMessage = async body => {
+				worker_threads.parentPort!.postMessage(
+					body,
+					body.requestOptions.files
+						?.filter(x => !['string', 'boolean', 'number'].includes(typeof x.data))
+						.map(x => (x.data instanceof Buffer ? toArrayBuffer(x.data) : (x.data as ArrayBuffer | Uint8Array))),
+				);
+			};
+		} else if (process.send) {
+			this.sendMessage = body => {
+				const data = {
+					...body,
+					requestOptions: {
+						...body.requestOptions,
+						files: body.requestOptions.files?.map(file => {
+							if (file.data instanceof ArrayBuffer) file.data = toBuffer(file.data);
+							return file;
+						}),
+					},
+				};
+				process.send!(data);
+			};
 		}
+	}
+
+	set debug(active: boolean) {
+		this.debugger = active
+			? new Logger({
+					name: '[API]',
+				})
+			: undefined;
 	}
 
 	get proxy() {
@@ -79,6 +104,17 @@ export class ApiHandler {
 		return uuid;
 	}
 
+	private sendMessage(_body: WorkerSendApiRequest) {
+		throw new Error('Function not implemented');
+	}
+
+	protected postMessage<T = unknown>(body: WorkerSendApiRequest) {
+		this.sendMessage(body);
+		return new Promise<T>((res, rej) => {
+			this.workerPromises!.set(body.nonce, { reject: rej, resolve: res });
+		});
+	}
+
 	async request<T = unknown>(
 		method: HttpMethods,
 		url: `/${string}`,
@@ -86,22 +122,13 @@ export class ApiHandler {
 	): Promise<T> {
 		if (this.options.workerProxy) {
 			const nonce = this.#randomUUID();
-			parentPort!.postMessage(
-				{
-					method,
-					url,
-					type: 'WORKER_API_REQUEST',
-					workerId: workerData.workerId,
-					nonce,
-					requestOptions: { auth, ...request },
-				} satisfies WorkerSendApiRequest,
-				request.files
-					?.filter(x => !['string', 'boolean', 'number'].includes(typeof x.data))
-					.map(x => x.data as Buffer | Uint8Array),
-			);
-
-			return new Promise<T>((res, rej) => {
-				this.workerPromises!.set(nonce, { reject: rej, resolve: res });
+			return this.postMessage<T>({
+				method,
+				url,
+				type: 'WORKER_API_REQUEST',
+				workerId: this.workerData!.workerId,
+				nonce,
+				requestOptions: { auth, ...request },
 			});
 		}
 		const route = request.route || this.routefy(url, method);
@@ -167,7 +194,7 @@ export class ApiHandler {
 						}
 					}
 				}
-				const parsedError = this.parseError(response, result);
+				const parsedError = this.parseError(method, route, response, result);
 				this.debugger?.warn(parsedError);
 				reject(parsedError);
 				return;
@@ -207,21 +234,33 @@ export class ApiHandler {
 		});
 	}
 
-	parseError(response: Response, result: unknown) {
+	parseError(method: HttpMethods, route: `/${string}`, response: Response, result: string | Record<string, any>) {
 		let errMessage = '';
-		if (typeof result === 'object' && result) {
-			if ('message' in result) {
-				errMessage += `${result.message}${'code' in result ? ` ${result.code}` : ''}\n`;
-			}
+		if (typeof result === 'object') {
+			errMessage += `${result.message ?? 'Unknown'} ${result.code ?? ''}\n[${response.status} ${response.statusText}] ${method} ${route}`;
 
-			if ('errors' in result && result) {
-				errMessage += `${JSON.stringify(result.errors, null, 2)}\n`;
+			if ('errors' in result) {
+				const errors = this.parseValidationError(result.errors);
+				errMessage += `\n${errors.join('\n') || JSON.stringify(result.errors, null, 2)}`;
+			}
+		} else {
+			errMessage = `[${response.status} ${response.statusText}] ${method} ${route}`;
+		}
+		return new Error(errMessage);
+	}
+
+	parseValidationError(data: Record<string, any>, path = '', errors: string[] = []) {
+		for (const key in data) {
+			if (key === '_errors') {
+				for (const error of data[key]) {
+					errors.push(`${path.slice(0, -1)} [${error.code}]: ${error.message}`);
+				}
+			} else if (typeof data[key] === 'object') {
+				this.parseValidationError(data[key], `${path}${key}.`, errors);
 			}
 		}
-		if (errMessage.length) {
-			return new Error(errMessage);
-		}
-		return new Error(response.statusText);
+
+		return errors;
 	}
 
 	async handle50X(method: HttpMethods, url: `/${string}`, request: ApiRequestOptions, next: () => void) {

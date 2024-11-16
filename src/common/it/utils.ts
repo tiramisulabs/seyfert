@@ -280,9 +280,15 @@ export const ReplaceRegex = {
 
 export async function magicImport(path: string) {
 	try {
+		if ('Deno' in globalThis) throw new Error('https://github.com/denoland/deno/issues/26136');
 		return require(path);
-	} catch {
-		return eval('((path) => import(`file:///${path}?update=${Date.now()}`))')(path.split('\\').join('\\\\'));
+	} catch (e: any) {
+		// (bun)dows moment
+		if (!('Bun' in globalThis) || e.message.includes('is unsupported. use "await import()" instead.'))
+			return new Function('path', 'return import(`file:///${path}?update=${Date.now()}`)')(
+				path.split('\\').join('\\\\'),
+			);
+		throw new Error(`Cannot import ${path}`, { cause: e });
 	}
 }
 
@@ -396,4 +402,22 @@ export function hasProps<T extends Record<any, any>>(target: T, props: TypeArray
 export function hasIntent(intents: number, target: keyof typeof GatewayIntentBits | GatewayIntentBits) {
 	const intent = typeof target === 'string' ? GatewayIntentBits[target] : target;
 	return (intents & intent) === intent;
+}
+
+export function toArrayBuffer(buffer: Buffer) {
+	const arrayBuffer = new ArrayBuffer(buffer.length);
+	const view = new Uint8Array(arrayBuffer);
+	for (let i = 0; i < buffer.length; ++i) {
+		view[i] = buffer[i];
+	}
+	return arrayBuffer;
+}
+
+export function toBuffer(arrayBuffer: ArrayBuffer) {
+	const buffer = Buffer.alloc(arrayBuffer.byteLength);
+	const view = new Uint8Array(arrayBuffer);
+	for (let i = 0; i < buffer.length; ++i) {
+		buffer[i] = view[i];
+	}
+	return buffer;
 }

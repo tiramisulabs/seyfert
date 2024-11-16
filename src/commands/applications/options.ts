@@ -13,11 +13,10 @@ import {
 	type APIApplicationCommandBasicOption,
 	type APIApplicationCommandOptionChoice,
 	ApplicationCommandOptionType,
-	type ChannelType,
 } from '../../types';
 import type { LocalizationMap } from '../../types/payloads';
 import type { CommandContext } from './chatcontext';
-import type { DefaultLocale, MiddlewareContext, OKFunction, StopFunction } from './shared';
+import type { DefaultLocale, MiddlewareContext, OKFunction, SeyfertChannelMap, StopFunction } from './shared';
 
 export interface SeyfertBasicOption<T extends keyof ReturnOptionsTypes, R = true | false> {
 	required?: R;
@@ -77,7 +76,7 @@ export interface ChoiceableValues {
 
 export type ValueCallback<
 	T extends keyof ReturnOptionsTypes,
-	C = T extends ChoiceableTypes ? SeyfertChoice<ChoiceableValues[T]>[] : never,
+	C = T extends ChoiceableTypes ? SeyfertChoice<ChoiceableValues[T]>[] : keyof SeyfertChannelMap,
 	I = any,
 > = (
 	data: {
@@ -86,9 +85,11 @@ export type ValueCallback<
 			? C extends SeyfertChoice<ChoiceableValues[T]>[]
 				? C[number]['value'] extends ReturnOptionsTypes[T]
 					? C[number]['value']
-					: ReturnOptionsTypes[T]
-				: ReturnOptionsTypes[T]
-			: ReturnOptionsTypes[T];
+					: never
+				: never
+			: C extends keyof SeyfertChannelMap
+				? SeyfertChannelMap[C]
+				: never;
 	},
 	ok: OKFunction<I>,
 	fail: StopFunction,
@@ -129,8 +130,17 @@ export type SeyfertNumberOption<T = SeyfertChoice<number>[], R = boolean, VC = n
 };
 export type SeyfertBooleanOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.Boolean, R>;
 export type SeyfertUserOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.User, R>;
-export type SeyfertChannelOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.Channel, R> & {
-	channel_types?: ChannelType[];
+export type SeyfertChannelOption<C = keyof SeyfertChannelMap, R = true | false, VC = never> = {
+	required?: R;
+	value?: ValueCallback<ApplicationCommandOptionType.Channel, C, VC>;
+	description: string;
+	description_localizations?: APIApplicationCommandBasicOption['description_localizations'];
+	name_localizations?: APIApplicationCommandBasicOption['name_localizations'];
+	locales?: {
+		name?: FlatObjectKeys<DefaultLocale>;
+		description?: FlatObjectKeys<DefaultLocale>;
+	};
+	channel_types?: C[];
 };
 export type SeyfertRoleOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.Role, R>;
 export type SeyfertMentionableOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.Mentionable, R>;
@@ -160,6 +170,14 @@ export function createNumberOption<
 	return { ...data, type: ApplicationCommandOptionType.Number } as const;
 }
 
+export function createChannelOption<
+	R extends boolean,
+	C extends keyof SeyfertChannelMap = keyof SeyfertChannelMap,
+	VC = never,
+>(data: SeyfertChannelOption<C, R, VC>) {
+	return { ...data, type: ApplicationCommandOptionType.Channel } as const;
+}
+
 export function createBooleanOption<R extends boolean, T extends SeyfertBooleanOption<R> = SeyfertBooleanOption<R>>(
 	data: T,
 ) {
@@ -168,12 +186,6 @@ export function createBooleanOption<R extends boolean, T extends SeyfertBooleanO
 
 export function createUserOption<R extends boolean, T extends SeyfertUserOption<R> = SeyfertUserOption<R>>(data: T) {
 	return { ...data, type: ApplicationCommandOptionType.User } as const;
-}
-
-export function createChannelOption<R extends boolean, T extends SeyfertChannelOption<R> = SeyfertChannelOption<R>>(
-	data: T,
-) {
-	return { ...data, type: ApplicationCommandOptionType.Channel } as const;
 }
 
 export function createRoleOption<R extends boolean, T extends SeyfertRoleOption<R> = SeyfertRoleOption<R>>(data: T) {
