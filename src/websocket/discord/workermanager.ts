@@ -403,6 +403,14 @@ export class WorkerManager extends Map<
 				break;
 			case 'WORKER_API_REQUEST':
 				{
+					if (this.options.mode === 'clusters' && message.requestOptions.files?.length) {
+						message.requestOptions.files.forEach(file => {
+							//@ts-expect-error
+							if (file.data.type === 'Buffer' && Array.isArray(file.data?.data))
+								//@ts-expect-error
+								file.data = new Uint8Array(file.data.data);
+						});
+					}
 					const response = await this.rest.request(message.method, message.url, message.requestOptions);
 					this.postMessage(message.workerId, {
 						nonce: message.nonce,

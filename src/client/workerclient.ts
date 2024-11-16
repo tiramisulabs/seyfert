@@ -137,6 +137,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			});
 		}
 		this.cache.intents = workerData.intents;
+		this.rest.workerData = workerData;
 		this.postMessage({
 			type: workerData.resharding ? 'WORKER_START_RESHARDING' : 'WORKER_START',
 			workerId: workerData.workerId,
