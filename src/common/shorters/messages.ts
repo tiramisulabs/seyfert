@@ -1,13 +1,14 @@
 import { resolveFiles } from '../../builders';
 import { MessagesMethods } from '../../structures';
 import type {
+	RESTGetAPIChannelMessagesQuery,
 	RESTPatchAPIChannelMessageJSONBody,
 	RESTPostAPIChannelMessageJSONBody,
 	RESTPostAPIChannelMessagesThreadsJSONBody,
 } from '../../types';
 
 import type { ValidAnswerId } from '../../api/Routes/channels';
-import { Transformers } from '../../client/transformers';
+import { Transformers } from '../../client';
 import type { MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
 
@@ -110,5 +111,12 @@ export class MessageShorter extends BaseShorter {
 			.answers(answerId)
 			.get()
 			.then(data => data.users.map(user => Transformers.User(this.client, user)));
+	}
+
+	list(channelId: string, fetchOptions: RESTGetAPIChannelMessagesQuery) {
+		return this.client.proxy
+			.channels(channelId)
+			.messages.get({ query: fetchOptions })
+			.then(messages => messages.map(message => Transformers.Message(this.client, message)));
 	}
 }

@@ -15,7 +15,7 @@ import {
 	type ThreadChannelStructure,
 	Transformers,
 	type VoiceChannelStructure,
-} from '../client/transformers';
+} from '../client';
 import type { UsingClient } from '../commands';
 import type {
 	EmojiResolvable,
@@ -45,6 +45,7 @@ import {
 	ChannelType,
 	type RESTAPIAttachment,
 	type RESTGetAPIChannelMessageReactionUsersQuery,
+	type RESTGetAPIChannelMessagesQuery,
 	type RESTPatchAPIChannelJSONBody,
 	type RESTPatchAPIGuildChannelPositionsJSONBody,
 	type RESTPostAPIChannelWebhookJSONBody,
@@ -253,6 +254,7 @@ export class MessagesMethods extends DiscordBase {
 			delete: (messageId: string, reason?: string) => ctx.client.messages.delete(messageId, ctx.channelId, reason),
 			fetch: (messageId: string) => ctx.client.messages.fetch(messageId, ctx.channelId),
 			purge: (messages: string[], reason?: string) => ctx.client.messages.purge(messages, ctx.channelId, reason),
+			list: (fetchOptions: RESTGetAPIChannelMessagesQuery) => ctx.client.messages.list(ctx.channelId, fetchOptions),
 		};
 	}
 
@@ -406,8 +408,7 @@ export class VoiceChannelMethods extends DiscordBase {
 		if (!this.guildId) return [];
 		const states = await this.cache.voiceStates?.values(this.guildId);
 		if (!states?.length) return [];
-		const filter = states.filter(state => state.channelId === this.id);
-		return filter;
+		return states.filter(state => state.channelId === this.id);
 	}
 
 	public async members(force?: boolean) {
