@@ -215,7 +215,7 @@ export class EventHandler extends BaseHandler {
 					t: name,
 					d: packet,
 				} as GatewayDispatchPayload);
-			await (Event.run as any)(hook, client, shardId);
+			await Event.run(hook, client, shardId);
 		} catch (e) {
 			await this.onFail(name, e);
 		}

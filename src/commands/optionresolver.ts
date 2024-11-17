@@ -180,7 +180,7 @@ export class OptionResolver {
 
 			const channel = resolved.channels?.[value];
 			if (channel) {
-				resolve.channel = 'fetch' in channel ? (channel as unknown as AllChannels) : channelFrom(channel, this.client);
+				resolve.channel = channelFrom(channel, this.client);
 			}
 
 			const role = resolved.roles?.[value];

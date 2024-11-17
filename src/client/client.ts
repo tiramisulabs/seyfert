@@ -3,6 +3,7 @@ import {
 	type Awaitable,
 	type DeepPartial,
 	type If,
+	type MakePartial,
 	type WatcherPayload,
 	type WatcherSendToShard,
 	hasIntent,
@@ -228,7 +229,5 @@ export interface ClientOptions extends BaseClientOptions {
 		reply?: (ctx: CommandContext) => boolean;
 	};
 	handlePayload?: ShardManagerOptions['handlePayload'];
-	resharding?: Omit<NonNullable<ShardManagerOptions['resharding']>, 'getInfo'> & {
-		getInfo?: NonNullable<ShardManagerOptions['resharding']>['getInfo'];
-	};
+	resharding?: MakePartial<NonNullable<ShardManagerOptions['resharding']>, 'getInfo'>;
 }
