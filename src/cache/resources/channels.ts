@@ -7,6 +7,11 @@ import { GuildRelatedResource } from './default/guild-related';
 export class Channels extends GuildRelatedResource<any, APIChannel> {
 	namespace = 'channel';
 
+	//@ts-expect-error
+	filter(data: APIChannel, id: string, guild_id: string) {
+		return true;
+	}
+
 	parse(data: APIChannel, id: string, guild_id: string) {
 		const { permission_overwrites, ...rest } = super.parse(data, id, guild_id);
 		return rest;
