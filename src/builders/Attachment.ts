@@ -123,7 +123,7 @@ export class AttachmentBuilder {
  * @returns The resolved REST API attachment.
  */
 export function resolveAttachment(
-	resolve: Attachment | AttachmentData | RESTAPIAttachment,
+	resolve: Attachment | AttachmentBuilder | AttachmentData | RESTAPIAttachment,
 ): Omit<RESTAPIAttachment, 'id'> {
 	if ('id' in resolve) return resolve;
 
