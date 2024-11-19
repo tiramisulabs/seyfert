@@ -48,6 +48,7 @@ import type {
 	RESTPostAPIChannelWebhookResult,
 	RESTPostAPIGuildForumThreadsJSONBody,
 	RESTPostAPIPollExpireResult,
+	RESTPostAPISendSoundboardSound,
 	RESTPutAPIChannelMessageReactionResult,
 	RESTPutAPIChannelPermissionJSONBody,
 	RESTPutAPIChannelPermissionResult,
@@ -198,6 +199,9 @@ export interface ChannelRoutes {
 			expire: {
 				post(args?: RestArgumentsNoBody): Promise<RESTPostAPIPollExpireResult>;
 			};
+		};
+		'send-soundboard-sound': {
+			post(args: RestArguments<RESTPostAPISendSoundboardSound>): Promise<never>;
 		};
 	};
 }

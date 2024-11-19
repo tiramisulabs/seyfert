@@ -43,6 +43,7 @@ import type {
 	RESTGetAPIGuildScheduledEventUsersResult,
 	RESTGetAPIGuildScheduledEventsQuery,
 	RESTGetAPIGuildScheduledEventsResult,
+	RESTGetAPIGuildSoundboardSoundsResult,
 	RESTGetAPIGuildStickerResult,
 	RESTGetAPIGuildStickersResult,
 	RESTGetAPIGuildTemplatesResult,
@@ -74,6 +75,8 @@ import type {
 	RESTPatchAPIGuildRoleResult,
 	RESTPatchAPIGuildScheduledEventJSONBody,
 	RESTPatchAPIGuildScheduledEventResult,
+	RESTPatchAPIGuildSoundboardSound,
+	RESTPatchAPIGuildSoundboardSoundResult,
 	RESTPatchAPIGuildStickerJSONBody,
 	RESTPatchAPIGuildStickerResult,
 	RESTPatchAPIGuildTemplateJSONBody,
@@ -100,6 +103,8 @@ import type {
 	RESTPostAPIGuildRoleResult,
 	RESTPostAPIGuildScheduledEventJSONBody,
 	RESTPostAPIGuildScheduledEventResult,
+	RESTPostAPIGuildSoundboardSound,
+	RESTPostAPIGuildSoundboardSoundResult,
 	RESTPostAPIGuildStickerFormDataBody,
 	RESTPostAPIGuildStickerResult,
 	RESTPostAPIGuildTemplatesJSONBody,
@@ -344,6 +349,19 @@ export interface GuildRoutes {
 					put(args?: RestArgumentsNoBody): Promise<RESTPutAPIGuildTemplateSyncResult>;
 					patch(args: RestArguments<RESTPatchAPIGuildTemplateJSONBody>): Promise<RESTPatchAPIGuildTemplateResult>;
 					delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIGuildTemplateResult>;
+				};
+			};
+			'soundboard-sounds': {
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildSoundboardSoundsResult>;
+				post(args: RestArguments<RESTPostAPIGuildSoundboardSound>): Promise<RESTPostAPIGuildSoundboardSoundResult>;
+				(
+					id: string,
+				): {
+					get(args?: RestArgumentsNoBody): Promise<RESTPostAPIGuildSoundboardSoundResult>;
+					patch(
+						args?: RestArguments<RESTPatchAPIGuildSoundboardSound>,
+					): Promise<RESTPatchAPIGuildSoundboardSoundResult>;
+					delete(args?: RestArgumentsNoBody): Promise<never>;
 				};
 			};
 		};

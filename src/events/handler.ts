@@ -215,7 +215,7 @@ export class EventHandler extends BaseHandler {
 					t: name,
 					d: packet,
 				} as GatewayDispatchPayload);
-			await Event.run(hook, client, shardId);
+			await (Event.run as any)(hook, client, shardId);
 		} catch (e) {
 			await this.onFail(name, e);
 		}
@@ -236,8 +236,7 @@ export class EventHandler extends BaseHandler {
 			this.logger.debug(`executed a custom event [${name}]`, Event.data.once ? 'once' : '');
 
 			await Promise.all([
-				// @ts-expect-error
-				Event.run(...args, this.client),
+				(Event.run as any)(...args, this.client),
 				// @ts-expect-error
 				this.client.collectors.run(name, args, this.client),
 			]);

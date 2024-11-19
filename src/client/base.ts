@@ -43,6 +43,7 @@ import { promises } from 'node:fs';
 import { isBufferLike } from '../api/utils/utils';
 import { HandleCommand } from '../commands/handle';
 import { BanShorter } from '../common/shorters/bans';
+import { SoundboardShorter } from '../common/shorters/soundboard';
 import { VoiceStateShorter } from '../common/shorters/voiceStates';
 import type { Awaitable, DeepPartial, IntentStrings, OmitInsert, PermissionStrings, When } from '../common/types/util';
 import type { ComponentCommand, ComponentContext, ModalCommand, ModalContext } from '../components';
@@ -78,6 +79,7 @@ export class BaseClient {
 	bans = new BanShorter(this);
 	interactions = new InteractionShorter(this);
 	voiceStates = new VoiceStateShorter(this);
+	soundboards = new SoundboardShorter(this);
 
 	debugger?: Logger;
 
