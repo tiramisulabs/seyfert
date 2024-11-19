@@ -43,14 +43,12 @@ export const CDNRouter = {
 		return new Proxy(noop, {
 			get: (_, key: string) => {
 				if (key === 'get') {
-					return (value: string | CDNUrlOptions | undefined, options?: CDNUrlOptions) => {
+					return (value: string | number | CDNUrlOptions | undefined, options?: CDNUrlOptions) => {
 						const lastRoute = `${CDN_URL}/${route.join('/')}`;
-						let routeResult = lastRoute;
 						if (typeof value === 'string' || typeof value === 'number') {
-							routeResult = `${lastRoute}${value ? `/${value}` : ''}`;
-							return parseCDNURL(routeResult, options);
+							return parseCDNURL(`${lastRoute}/${value}`, options);
 						}
-						return parseCDNURL(routeResult, value);
+						return parseCDNURL(lastRoute, value);
 					};
 				}
 				return this.createProxy([...route, key]);
