@@ -15,7 +15,7 @@
 		"lint": "biome lint --write ./src",
 		"format": "biome format --write ./src",
 		"check-h": "biome check --write ./src",
-		"check": "biome check --write --no-errors-on-unmatched ./src",
+		"check": "biome check --verbose --write --no-errors-on-unmatched ./src",
 		"test": "vitest run --config ./tests/vitest.config.mts ./tests/"
 	},
 	"author": "MARCROCK22",
