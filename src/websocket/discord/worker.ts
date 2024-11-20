@@ -1,4 +1,5 @@
-import type { ApiRequestOptions, HttpMethods } from '../..';
+import type { ApiRequestOptions, CustomWorkerClientEvents, HttpMethods } from '../..';
+import type { Identify } from '../../common';
 import type { GatewayDispatchPayload } from '../../types';
 
 export interface WorkerShardInfo {
@@ -86,7 +87,7 @@ export type WorkerSendToWorkerEval = CreateWorkerMessage<
 	}
 >;
 
-export type WorkerMessage =
+export type BaseWorkerMessage =
 	| WorkerRequestConnect
 	| WorkerReceivePayload
 	| WorkerSendResultPayload
@@ -103,3 +104,18 @@ export type WorkerMessage =
 	| WorkerRequestConnectResharding
 	| WorkerReadyResharding
 	| WorkerDisconnectedAllShardsResharding;
+
+export type CustomWorkerClientMessages = {
+	[K in keyof CustomWorkerClientEvents]: Identify<
+		{
+			type: K;
+			workerId: number;
+		} & Identify<CustomWorkerClientEvents[K] extends never ? {} : CustomWorkerClientEvents[K]>
+	>;
+};
+
+export type WorkerMessages =
+	| {
+			[K in BaseWorkerMessage['type']]: Identify<Extract<BaseWorkerMessage, { type: K }>>;
+	  }[BaseWorkerMessage['type']]
+	| CustomWorkerClientMessages[keyof CustomWorkerClientMessages];
