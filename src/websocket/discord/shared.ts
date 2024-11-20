@@ -6,6 +6,7 @@ import type {
 	GatewayPresenceUpdateData,
 } from '../../types';
 import type { IdentifyProperties } from '../constants';
+import type { WorkerMessages } from './worker';
 
 export interface ShardManagerOptions extends ShardDetails {
 	/** Important data which is used by the manager to connect shards to the gateway. */
@@ -68,6 +69,8 @@ export interface WorkerManagerOptions extends Omit<ShardManagerOptions, 'handleP
 	path: string;
 
 	handlePayload?(shardId: number, workerId: number, packet: GatewayDispatchPayload): any;
+
+	handleWorkerMessage?(message: WorkerMessages): any;
 
 	properties?: DeepPartial<NonNullable<ShardManagerOptions['properties']>>;
 }

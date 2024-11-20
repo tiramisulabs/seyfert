@@ -1,16 +1,16 @@
 import cluster, { type Worker as ClusterWorker } from 'node:cluster';
 import { type UUID, randomUUID } from 'node:crypto';
 import type { Worker as WorkerThreadsWorker } from 'node:worker_threads';
-import { ApiHandler, Logger, type UsingClient, type WorkerClient } from '../..';
+import { ApiHandler, type CustomWorkerManagerEvents, Logger, type UsingClient, type WorkerClient } from '../..';
 import { type Adapter, MemoryAdapter } from '../../cache';
 import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
-import { BASE_HOST, type MakePartial, MergeOptions, lazyLoadPackage } from '../../common';
+import { BASE_HOST, type Identify, type MakePartial, MergeOptions, lazyLoadPackage } from '../../common';
 import type { GatewayPresenceUpdateData, GatewaySendPayload, RESTGetAPIGatewayBotResult } from '../../types';
 import { WorkerManagerDefaults, properties } from '../constants';
 import { DynamicBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';
 import type { ShardOptions, WorkerData, WorkerManagerOptions } from './shared';
-import type { WorkerInfo, WorkerMessage, WorkerShardInfo } from './worker';
+import type { WorkerInfo, WorkerMessages, WorkerShardInfo } from './worker';
 
 export class WorkerManager extends Map<
 	number,
@@ -46,7 +46,7 @@ export class WorkerManager extends Map<
 		return chunks;
 	}
 
-	options: MakePartial<Required<WorkerManagerOptions>, 'adapter'>;
+	options: MakePartial<Required<WorkerManagerOptions>, 'adapter' | 'handleWorkerMessage' | 'handlePayload'>;
 	debugger?: Logger;
 	connectQueue!: ConnectQueue;
 	workerQueue: (() => void)[] = [];
@@ -57,13 +57,24 @@ export class WorkerManager extends Map<
 	private _info?: RESTGetAPIGatewayBotResult;
 
 	constructor(
-		options: Omit<MakePartial<WorkerManagerOptions, 'token' | 'intents' | 'info' | 'handlePayload'>, 'resharding'> & {
+		options: Omit<
+			MakePartial<WorkerManagerOptions, 'token' | 'intents' | 'info' | 'handlePayload' | 'handleWorkerMessage'>,
+			'resharding'
+		> & {
 			resharding?: MakePartial<NonNullable<WorkerManagerOptions['resharding']>, 'getInfo'>;
 		},
 	) {
 		super();
 		this.options = options as WorkerManager['options'];
 		this.cacheAdapter = new MemoryAdapter();
+
+		if (this.options.handleWorkerMessage) {
+			const oldFn = this.handleWorkerMessage.bind(this);
+			this.handleWorkerMessage = async message => {
+				await this.options.handleWorkerMessage!(message);
+				return oldFn(message);
+			};
+		}
 	}
 
 	setCache(adapter: Adapter) {
@@ -241,7 +252,7 @@ export class WorkerManager extends Map<
 		});
 	}
 
-	async handleWorkerMessage(message: WorkerMessage) {
+	async handleWorkerMessage(message: WorkerMessages) {
 		switch (message.type) {
 			case 'WORKER_READY_RESHARDING':
 				{
@@ -340,7 +351,7 @@ export class WorkerManager extends Map<
 				}
 				break;
 			case 'RECEIVE_PAYLOAD':
-				await this.options.handlePayload(message.shardId, message.workerId, message.payload);
+				await this.options.handlePayload?.(message.shardId, message.workerId, message.payload);
 				break;
 			case 'RESULT_PAYLOAD':
 				{
@@ -687,7 +698,7 @@ export type ManagerSendEvalResponse = CreateManagerMessage<
 	}
 >;
 
-export type ManagerMessages =
+export type BaseManagerMessages =
 	| ManagerAllowConnect
 	| ManagerSpawnShards
 	| ManagerSendPayload
@@ -704,3 +715,17 @@ export type ManagerMessages =
 	| DisconnectAllShardsResharding
 	| ConnnectAllShardsResharding
 	| ManagerExecuteEval;
+
+export type CustomManagerMessages = {
+	[K in keyof CustomWorkerManagerEvents]: Identify<
+		{
+			type: K;
+		} & Identify<CustomWorkerManagerEvents[K] extends never ? {} : CustomWorkerManagerEvents[K]>
+	>;
+};
+
+export type ManagerMessages =
+	| {
+			[K in BaseManagerMessages['type']]: Identify<Extract<BaseManagerMessages, { type: K }>>;
+	  }[BaseManagerMessages['type']]
+	| CustomManagerMessages[keyof CustomManagerMessages];

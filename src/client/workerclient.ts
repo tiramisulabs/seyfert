@@ -7,7 +7,7 @@ import type { GatewayDispatchPayload, GatewaySendPayload } from '../types';
 import { Shard, type ShardManagerOptions, type WorkerData, properties } from '../websocket';
 import type {
 	WorkerDisconnectedAllShardsResharding,
-	WorkerMessage,
+	WorkerMessages,
 	WorkerReady,
 	WorkerReadyResharding,
 	WorkerReceivePayload,
@@ -77,6 +77,14 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		super(options);
 		if (options?.postMessage) {
 			this.postMessage = options.postMessage;
+		}
+
+		if (this.options.handleManagerMessages) {
+			const oldFn = this.handleManagerMessages.bind(this);
+			this.handleManagerMessages = async message => {
+				await this.options.handleManagerMessages!(message);
+				return oldFn(message);
+			};
 		}
 	}
 
@@ -157,7 +165,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		}
 	}
 
-	postMessage(body: WorkerMessage): unknown {
+	postMessage(body: WorkerMessages): unknown {
 		if (manager) return manager.postMessage(body);
 		return process.send!(body);
 	}
@@ -593,4 +601,5 @@ interface WorkerClientOptions extends BaseClientOptions {
 	postMessage?: (body: unknown) => unknown;
 	/** can have perfomance issues in big bots if the client sends every event, specially in startup (false by default) */
 	sendPayloadToParent?: boolean;
+	handleManagerMessages?(message: ManagerMessages): any;
 }

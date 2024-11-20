@@ -27,6 +27,8 @@ export interface DefaultLocale {}
 export interface ExtendContext {}
 export interface ExtraProps {}
 export interface UsingClient extends BaseClient {}
+export interface CustomWorkerClientEvents {}
+export interface CustomWorkerManagerEvents {}
 export interface ExtendedRC {}
 export interface ExtendedRCLocations {}
 export type ParseClient<T extends BaseClient> = T;
