@@ -632,7 +632,6 @@ export class WorkerManager extends Map<
 			return this.reshardingWorkerQueue.shift()!();
 		}, this.options.resharding.interval);
 	}
-	xd!: CustomManagerMessages;
 }
 
 type CreateManagerMessage<T extends string, D extends object = object> = { type: T } & D;
