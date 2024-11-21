@@ -9,7 +9,7 @@ import type {
 import { DiscordBase } from './extra/DiscordBase';
 import { PermissionsBitField } from './extra/Permissions';
 
-export interface GuildRole extends DiscordBase, ObjectToLower<Omit<APIRole, 'permissions'>> { }
+export interface GuildRole extends DiscordBase, ObjectToLower<Omit<APIRole, 'permissions'>> {}
 
 export class GuildRole extends DiscordBase {
 	permissions: PermissionsBitField;
