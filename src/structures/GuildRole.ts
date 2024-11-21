@@ -9,7 +9,7 @@ import type {
 import { DiscordBase } from './extra/DiscordBase';
 import { PermissionsBitField } from './extra/Permissions';
 
-export interface GuildRole extends DiscordBase, ObjectToLower<Omit<APIRole, 'permissions'>> {}
+export interface GuildRole extends DiscordBase, ObjectToLower<Omit<APIRole, 'permissions'>> { }
 
 export class GuildRole extends DiscordBase {
 	permissions: PermissionsBitField;
@@ -31,8 +31,8 @@ export class GuildRole extends DiscordBase {
 		return this.client.roles.fetch(this.guildId, this.id, force);
 	}
 
-	edit(body: RESTPatchAPIGuildRoleJSONBody, reason?: string) {
-		return this.client.roles.create(this.guildId, body, reason);
+	edit(body: RESTPatchAPIGuildRoleJSONBody) {
+		return this.client.roles.edit(this.guildId, this.id, body);
 	}
 
 	delete(reason?: string) {
