@@ -26,8 +26,8 @@ export class BanShorter extends BaseShorter {
 	 * @param memberId The ID of the member to unban.
 	 * @param reason The reason for unbanning the member.
 	 */
-	async remove(guildId: string, memberId: string, reason?: string) {
-		await this.client.proxy.guilds(guildId).bans(memberId).delete({ reason });
+	remove(guildId: string, memberId: string, reason?: string) {
+		return this.client.proxy.guilds(guildId).bans(memberId).delete({ reason });
 	}
 
 	/**

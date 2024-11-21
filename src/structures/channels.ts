@@ -1,4 +1,4 @@
-import { Collection, Formatter, type RawFile } from '..';
+import { Collection, Formatter, type RawFile, type ReturnCache } from '..';
 import { ActionRow, Embed, PollBuilder, resolveAttachment } from '../builders';
 import {
 	type BaseChannelStructure,
@@ -15,16 +15,18 @@ import {
 	type ThreadChannelStructure,
 	Transformers,
 	type VoiceChannelStructure,
+	type VoiceStateStructure,
 } from '../client';
 import type { UsingClient } from '../commands';
-import type {
-	EmojiResolvable,
-	MessageCreateBodyRequest,
-	MessageUpdateBodyRequest,
-	MethodContext,
-	ObjectToLower,
-	StringToNumber,
-	ToClass,
+import {
+	type EmojiResolvable,
+	type MessageCreateBodyRequest,
+	type MessageUpdateBodyRequest,
+	type MethodContext,
+	type ObjectToLower,
+	type StringToNumber,
+	type ToClass,
+	fakePromise,
 } from '../common';
 import { mix } from '../deps/mixer';
 import {
@@ -376,7 +378,7 @@ export class ThreadOnlyMethods extends DiscordBase {
 		return this.edit({ default_thread_rate_limit_per_user: rate }, reason);
 	}
 
-	async thread(body: RESTPostAPIGuildForumThreadsJSONBody, reason?: string) {
+	thread(body: RESTPostAPIGuildForumThreadsJSONBody, reason?: string) {
 		return this.client.channels.thread(this.id, body, reason);
 	}
 }
@@ -404,11 +406,16 @@ export class VoiceChannelMethods extends DiscordBase {
 		return this.client.channels.setVoiceStatus(this.id, status);
 	}
 
-	async states() {
-		if (!this.guildId) return [];
-		const states = await this.cache.voiceStates?.values(this.guildId);
-		if (!states?.length) return [];
-		return states.filter(state => state.channelId === this.id);
+	states(): ReturnCache<VoiceStateStructure[]> {
+		if (!this.guildId) return this.cache.adapter.isAsync ? (Promise.resolve([]) as never) : [];
+		return fakePromise(
+			this.cache.voiceStates?.values(this.guildId) ??
+				(this.cache.adapter.isAsync
+					? (Promise.resolve([]) as Promise<VoiceStateStructure[]>)
+					: ([] as VoiceStateStructure[])),
+		).then(states => {
+			return states.filter(state => state.channelId === this.id);
+		});
 	}
 
 	public async members(force?: boolean) {
@@ -447,7 +454,7 @@ export class WebhookChannelMethods extends DiscordBase {
 	static channel(ctx: MethodContext<{ channelId: string }>) {
 		return {
 			list: () => ctx.client.webhooks.listFromChannel(ctx.channelId),
-			create: async (body: RESTPostAPIChannelWebhookJSONBody) => ctx.client.webhooks.create(ctx.channelId, body),
+			create: (body: RESTPostAPIChannelWebhookJSONBody) => ctx.client.webhooks.create(ctx.channelId, body),
 		};
 	}
 }

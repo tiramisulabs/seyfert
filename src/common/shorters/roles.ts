@@ -103,7 +103,7 @@ export class RoleShorter extends BaseShorter {
 		});
 		if (!this.client.cache.hasRolesIntent) {
 			await this.client.cache.roles?.set(
-				roles.map(x => [x.id, x]),
+				roles.map(x => [x.id, x] as [string, any]),
 				guildId,
 			);
 		}

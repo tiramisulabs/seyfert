@@ -86,8 +86,8 @@ export class ChannelShorter extends BaseShorter {
 	 * @param id The ID of the channel.
 	 * @returns A Promise that resolves when the typing indicator is successfully sent.
 	 */
-	async typing(id: string): Promise<void> {
-		await this.client.proxy.channels(id).typing.post();
+	typing(id: string): Promise<void> {
+		return this.client.proxy.channels(id).typing.post();
 	}
 
 	async pins(channelId: string): Promise<MessageStructure[]> {
@@ -129,7 +129,7 @@ export class ChannelShorter extends BaseShorter {
 	 * @param reason The reason for unpinning the message.
 	 * @returns A promise that resolves when the thread is succesfully created.
 	 */
-	async thread(
+	thread(
 		channelId: string,
 		body: RESTPostAPIChannelThreadsJSONBody | RESTPostAPIGuildForumThreadsJSONBody,
 		reason?: string,

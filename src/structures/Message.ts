@@ -68,12 +68,12 @@ export class BaseMessage extends DiscordBase {
 		return Formatter.messageLink(this.guildId!, this.channelId, this.id);
 	}
 
-	guild(force = false) {
+	async guild(force = false) {
 		if (!this.guildId) return;
 		return this.client.guilds.fetch(this.guildId, force);
 	}
 
-	async channel(force = false) {
+	channel(force = false) {
 		return this.client.channels.fetch(this.channelId, force);
 	}
 
