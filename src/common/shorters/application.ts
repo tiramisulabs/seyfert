@@ -13,7 +13,7 @@ export class ApplicationShorter extends BaseShorter {
 	 * @param applicationId The ID of the application.
 	 * @returns The emojis.
 	 */
-	async listEmojis(applicationId: string) {
+	listEmojis(applicationId: string) {
 		return this.client.proxy.applications(applicationId).emojis.get();
 	}
 	/**
@@ -22,7 +22,7 @@ export class ApplicationShorter extends BaseShorter {
 	 * @param emojiId The ID of the emoji.
 	 * @returns The emoji.
 	 */
-	async getEmoji(applicationId: string, emojiId: string) {
+	getEmoji(applicationId: string, emojiId: string) {
 		return this.client.proxy.applications(applicationId).emojis(emojiId).get();
 	}
 
@@ -33,7 +33,7 @@ export class ApplicationShorter extends BaseShorter {
 	 * @param body.image The [image data string](https://discord.com/developers/docs/reference#image-data) of the emoji.
 	 * @returns The created emoji.
 	 */
-	async createEmoji(applicationId: string, body: RESTPostAPIApplicationEmojiJSONBody) {
+	createEmoji(applicationId: string, body: RESTPostAPIApplicationEmojiJSONBody) {
 		return this.client.proxy.applications(applicationId).emojis.post({ body });
 	}
 
@@ -42,7 +42,7 @@ export class ApplicationShorter extends BaseShorter {
 	 * @param applicationId The ID of the application.
 	 * @param [query] The query parameters.
 	 */
-	async listEntitlements(applicationId: string, query?: RESTGetAPIEntitlementsQuery) {
+	listEntitlements(applicationId: string, query?: RESTGetAPIEntitlementsQuery) {
 		return this.client.proxy
 			.applications(applicationId)
 			.entitlements.get({ query })
@@ -54,7 +54,7 @@ export class ApplicationShorter extends BaseShorter {
 	 * @param applicationId The ID of the application.
 	 * @param entitlementId The ID of the entitlement.
 	 */
-	async consumeEntitlement(applicationId: string, entitlementId: string) {
+	consumeEntitlement(applicationId: string, entitlementId: string) {
 		return this.client.proxy.applications(applicationId).entitlements(entitlementId).consume.post();
 	}
 
@@ -63,7 +63,7 @@ export class ApplicationShorter extends BaseShorter {
 	 * @param applicationId The ID of the application.
 	 * @param body The body of the request.
 	 */
-	async createTestEntitlement(applicationId: string, body: RESTPostAPIEntitlementBody) {
+	createTestEntitlement(applicationId: string, body: RESTPostAPIEntitlementBody) {
 		return this.client.proxy
 			.applications(applicationId)
 			.entitlements.post({ body })
@@ -75,7 +75,7 @@ export class ApplicationShorter extends BaseShorter {
 	 * @param applicationId The ID of the application.
 	 * @param entitlementId The ID of the entitlement.
 	 */
-	async deleteTestEntitlement(applicationId: string, entitlementId: string) {
+	deleteTestEntitlement(applicationId: string, entitlementId: string) {
 		return this.client.proxy.applications(applicationId).entitlements(entitlementId).delete();
 	}
 
@@ -84,7 +84,7 @@ export class ApplicationShorter extends BaseShorter {
 	 * @param applicationId The ID of the application.
 	 * @returns The SKUs.
 	 */
-	async listSKUs(applicationId: string) {
+	listSKUs(applicationId: string) {
 		return this.client.proxy.applications(applicationId).skus.get();
 	}
 }

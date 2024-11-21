@@ -30,7 +30,7 @@ export class VoiceState extends Base {
 		return this.client.users.fetch(this.userId, force);
 	}
 
-	channel(force?: boolean) {
+	async channel(force?: boolean) {
 		if (!this.channelId) return;
 		return this.client.channels.fetch(this.channelId, force) as Promise<AllGuildVoiceChannels>;
 	}

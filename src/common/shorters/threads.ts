@@ -20,7 +20,7 @@ export class ThreadShorter extends BaseShorter {
 	 * @param reason The reason for unpinning the message.
 	 * @returns A promise that resolves when the thread is succesfully created.
 	 */
-	async create(
+	create(
 		channelId: string,
 		body: RESTPostAPIChannelThreadsJSONBody | RESTPostAPIGuildForumThreadsJSONBody,
 		reason?: string,
@@ -42,7 +42,7 @@ export class ThreadShorter extends BaseShorter {
 		);
 	}
 
-	async fromMessage(
+	fromMessage(
 		channelId: string,
 		messageId: string,
 		options: RESTPostAPIChannelMessagesThreadsJSONBody & { reason?: string },
