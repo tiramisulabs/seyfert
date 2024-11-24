@@ -90,7 +90,7 @@ type ContextOptionsAuxInternal<
 						: never
 					: never
 				: T extends { choices?: infer C }
-					? C extends SeyfertChoice<string>[]
+					? C extends SeyfertChoice<string | number>[]
 						? C[number]['value']
 						: never
 					: never
