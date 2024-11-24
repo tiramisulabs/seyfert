@@ -457,6 +457,7 @@ export class CommandHandler extends BaseHandler {
 	}
 
 	parseSubCommandLocales(command: SubCommand) {
+		this.parseGlobalLocales(command);
 		for (const i of command.options ?? []) {
 			this.parseCommandOptionLocales(i);
 		}
