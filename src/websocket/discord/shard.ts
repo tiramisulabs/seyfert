@@ -46,13 +46,16 @@ export class Shard {
 		public id: number,
 		options: ShardOptions,
 	) {
-		this.options = MergeOptions<Shard['options']>(options, {
-			properties,
-			ratelimitOptions: {
-				rateLimitResetInterval: 60_000,
-				maxRequestsPerRateLimitTick: 120,
-			},
-		} as ShardOptions);
+		this.options = MergeOptions<Shard['options']>(
+			{
+				properties,
+				ratelimitOptions: {
+					rateLimitResetInterval: 60_000,
+					maxRequestsPerRateLimitTick: 120,
+				},
+			} as ShardOptions,
+			options,
+		);
 
 		this.logger = new Logger({
 			name: `[Shard #${id}]`,

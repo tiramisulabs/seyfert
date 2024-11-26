@@ -15,3 +15,5 @@ export * from './VoiceState';
 export * from './Webhook';
 export * from './channels';
 export * from './Poll';
+export * from './GuildBan';
+export * from './Entitlement';

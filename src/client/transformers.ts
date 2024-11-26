@@ -9,8 +9,10 @@ import {
 	ClientUser,
 	DMChannel,
 	DirectoryChannel,
+	Entitlement,
 	ForumChannel,
 	Guild,
+	GuildBan,
 	GuildEmoji,
 	GuildMember,
 	GuildRole,
@@ -30,8 +32,6 @@ import {
 	Webhook,
 	WebhookMessage,
 } from '../structures';
-import { Entitlement } from '../structures/Entitlement';
-import { GuildBan } from '../structures/GuildBan';
 import type { ChannelType } from '../types';
 
 export type PollStructure = InferCustomStructure<Poll, 'Poll'>;
