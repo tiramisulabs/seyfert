@@ -55,13 +55,13 @@ export type CommandMetadata<T extends readonly (keyof RegisteredMiddlewares)[]> 
 ]
 	? first extends keyof RegisteredMiddlewares
 		? (MetadataMiddleware<RegisteredMiddlewares[first]> extends never
-				? never
+				? {}
 				: {
 						[key in first]: MetadataMiddleware<RegisteredMiddlewares[first]>;
 					}) &
 				(rest extends readonly (keyof RegisteredMiddlewares)[] ? CommandMetadata<rest> : never)
-		: never
-	: never;
+		: {}
+	: {};
 
 export type MessageCommandOptionErrors =
 	| ['CHANNEL_TYPES', type: ChannelType[]]
