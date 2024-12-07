@@ -28,7 +28,7 @@ export function Mixin<T, C extends TypeClass[]>(...args: C): C[number] & T {
 			const descriptors = getDescriptors(i);
 			for (const j of descriptors) {
 				// @ts-expect-error
-				Object.assign(this, new j.constructor.value(...constructorArgs));
+				Object.assign(this, { ...new j.constructor.value(...constructorArgs), ...this });
 
 				for (const descriptorK in j) {
 					if (descriptorK === 'constructor') continue;
