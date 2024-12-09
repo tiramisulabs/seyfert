@@ -1,5 +1,6 @@
 import { Collection, Formatter, type RawFile, type ReturnCache } from '..';
 import { ActionRow, Embed, PollBuilder, resolveAttachment } from '../builders';
+import type { Overwrites } from '../cache/resources/overwrites';
 import {
 	type BaseChannelStructure,
 	type BaseGuildChannelStructure,
@@ -162,11 +163,11 @@ export class BaseNoEditableChannel<T extends ChannelType> extends DiscordBase<AP
 }
 
 export class BaseChannel<T extends ChannelType> extends BaseNoEditableChannel<T> {
-	edit(body: RESTPatchAPIChannelJSONBody, reason?: string) {
+	edit(body: RESTPatchAPIChannelJSONBody, reason?: string): Promise<this> {
 		return this.client.channels.edit(this.id, body, {
 			reason,
 			guildId: 'guildId' in this ? (this.guildId as string) : '@me',
-		});
+		}) as Promise<this>;
 	}
 }
 
@@ -193,8 +194,16 @@ export class BaseGuildChannel extends BaseChannel<ChannelType> {
 	}
 
 	permissionOverwrites = {
-		fetch: () => this.client.cache.overwrites?.get(this.id),
-		values: () => (this.guildId ? (this.client.cache.overwrites?.values(this.guildId) ?? []) : []),
+		fetch: (): ReturnType<Overwrites['get']> =>
+			this.client.cache.overwrites?.get(this.id) ||
+			(this.client.cache.adapter.isAsync ? (Promise.resolve() as never) : undefined),
+		values: (): ReturnCache<ReturnType<Overwrites['values']>> =>
+			this.guildId
+				? this.client.cache.overwrites?.values(this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve([]) as never) : [])
+				: this.client.cache.adapter.isAsync
+					? (Promise.resolve([]) as never)
+					: [],
 	};
 
 	memberPermissions(member: GuildMember, checkAdmin = true) {
@@ -410,9 +419,7 @@ export class VoiceChannelMethods extends DiscordBase {
 		if (!this.guildId) return this.cache.adapter.isAsync ? (Promise.resolve([]) as never) : [];
 		return fakePromise(
 			this.cache.voiceStates?.values(this.guildId) ??
-				(this.cache.adapter.isAsync
-					? (Promise.resolve([]) as Promise<VoiceStateStructure[]>)
-					: ([] as VoiceStateStructure[])),
+				(this.cache.adapter.isAsync ? (Promise.resolve([]) as never) : []),
 		).then(states => {
 			return states.filter(state => state.channelId === this.id);
 		});
@@ -484,7 +491,7 @@ export class DMChannel extends BaseNoEditableChannel<ChannelType.DM> {
 }
 export interface VoiceChannel
 	extends ObjectToLower<Omit<APIGuildVoiceChannel, 'permission_overwrites'>>,
-		Omit<TextGuildChannel, 'type'>,
+		Omit<TextGuildChannel, 'type' | 'edit'>,
 		VoiceChannelMethods,
 		WebhookChannelMethods {}
 @mix(TextGuildChannel, WebhookChannelMethods, VoiceChannelMethods)
@@ -509,7 +516,7 @@ export class MediaChannel extends BaseChannel<ChannelType> {
 
 export interface ForumChannel
 	extends ObjectToLower<APIGuildForumChannel>,
-		Omit<ThreadOnlyMethods, 'type'>,
+		Omit<ThreadOnlyMethods, 'type' | 'edit'>,
 		WebhookChannelMethods {}
 @mix(ThreadOnlyMethods, WebhookChannelMethods)
 export class ForumChannel extends BaseChannel<ChannelType.GuildForum> {

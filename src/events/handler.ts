@@ -12,16 +12,7 @@ import {
 } from '../common';
 import type { ClientEvents } from '../events/hooks';
 import * as RawEvents from '../events/hooks';
-import {
-	type APIThreadChannel,
-	ChannelType,
-	type GatewayChannelDeleteDispatch,
-	type GatewayDispatchPayload,
-	type GatewayGuildDeleteDispatch,
-	type GatewayMessageDeleteBulkDispatch,
-	type GatewayMessageDeleteDispatch,
-	type GatewayThreadDeleteDispatch,
-} from '../types';
+import { type APIThreadChannel, ChannelType, type GatewayDispatchPayload } from '../types';
 import type { ClientEvent, ClientNameEvents, CustomEvents, CustomEventsKeys, EventContext } from './event';
 
 export type EventValue = MakeRequired<ClientEvent, '__filePath'> & { fired?: boolean };
@@ -105,66 +96,62 @@ export class EventHandler extends BaseHandler {
 		}
 	}
 
-	async execute(name: GatewayEvents, ...args: [GatewayDispatchPayload, Client<true> | WorkerClient<true>, number]) {
-		switch (name) {
+	async execute(raw: GatewayDispatchPayload, client: Client<true> | WorkerClient<true>, shardId: number) {
+		switch (raw.t) {
 			case 'MESSAGE_DELETE':
 				{
-					if (!args[1].components?.values.size) break;
-					const { d: data } = args[0] as GatewayMessageDeleteDispatch;
-					const value = args[1].components.values.get(data.id);
+					if (!client.components?.values.size) break;
+					const value = client.components.values.get(raw.d.id);
 					if (value) {
-						args[1].components.deleteValue(value.messageId, 'messageDelete');
+						client.components.deleteValue(value.messageId, 'messageDelete');
 					}
 				}
 				break;
 			case 'MESSAGE_DELETE_BULK':
 				{
-					if (!args[1].components?.values.size) break;
-					const { d: payload } = args[0] as GatewayMessageDeleteBulkDispatch;
-					for (const id of payload.ids) {
-						const value = args[1].components.values.get(id);
+					if (!client.components?.values.size) break;
+					for (const id of raw.d.ids) {
+						const value = client.components.values.get(id);
 						if (value) {
-							args[1].components.deleteValue(value.messageId, 'messageDelete');
+							client.components.deleteValue(value.messageId, 'messageDelete');
 						}
 					}
 				}
 				break;
 			case 'GUILD_DELETE':
 				{
-					if (!args[1].components?.values.size) break;
-					const { d: payload } = args[0] as GatewayGuildDeleteDispatch;
+					if (!client.components?.values.size) break;
 					// ignore unavailable guilds?
-					if (payload.unavailable) break;
-					for (const [messageId, value] of args[1].components.values) {
-						if (value.guildId === payload.id) args[1].components.deleteValue(messageId, 'guildDelete');
+					if (raw.d.unavailable) break;
+					for (const [messageId, value] of client.components.values) {
+						if (value.guildId === raw.d.id) client.components.deleteValue(messageId, 'guildDelete');
 					}
 				}
 				break;
 			case 'CHANNEL_DELETE':
 				{
-					if (!args[1].components?.values.size) break;
-					const { d: payload } = args[0] as GatewayChannelDeleteDispatch;
+					if (!client.components?.values.size) break;
 
-					if (payload.type === ChannelType.DM || payload.type === ChannelType.GroupDM) {
-						for (const value of args[1].components.values) {
-							if (payload.id === value[1].channelId) args[1].components.deleteValue(value[0], 'channelDelete');
+					if (raw.d.type === ChannelType.DM || raw.d.type === ChannelType.GroupDM) {
+						for (const value of client.components.values) {
+							if (raw.d.id === value[1].channelId) client.components.deleteValue(value[0], 'channelDelete');
 						}
 					} else {
-						if (!payload.guild_id) break;
+						if (!raw.d.guild_id) break;
 						// this is why we dont recommend to use collectors, use ComponentCommand instead
-						const channels = await args[1].cache.channels?.valuesRaw(payload.guild_id);
+						const channels = await client.cache.channels?.valuesRaw(raw.d.guild_id);
 						const threads = channels
 							?.filter(
 								x =>
 									[ChannelType.PublicThread, ChannelType.PrivateThread, ChannelType.AnnouncementThread].includes(
 										x.type,
-									) && (x as APIThreadChannel).parent_id === payload.id,
+									) && (x as APIThreadChannel).parent_id === raw.d.id,
 							)
 							.map(x => x.id);
-						for (const value of args[1].components.values) {
+						for (const value of client.components.values) {
 							const channelId = value[1].channelId;
-							if (payload.id === channelId || threads?.includes(channelId)) {
-								args[1].components.deleteValue(value[0], 'channelDelete');
+							if (raw.d.id === channelId || threads?.includes(channelId)) {
+								client.components.deleteValue(value[0], 'channelDelete');
 							}
 						}
 					}
@@ -172,11 +159,10 @@ export class EventHandler extends BaseHandler {
 				break;
 			case 'THREAD_DELETE':
 				{
-					if (!args[1].components?.values.size) break;
-					const { d: payload } = args[0] as GatewayThreadDeleteDispatch;
-					for (const value of args[1].components.values) {
-						if (value[1].channelId === payload.id) {
-							args[1].components.deleteValue(value[0], 'channelDelete');
+					if (!client.components?.values.size) break;
+					for (const value of client.components.values) {
+						if (value[1].channelId === raw.d.id) {
+							client.components.deleteValue(value[0], 'channelDelete');
 						}
 					}
 				}
@@ -184,12 +170,18 @@ export class EventHandler extends BaseHandler {
 		}
 
 		await Promise.all([
-			this.runEvent(args[0].t as never, args[1], args[0].d, args[2]),
-			this.client.collectors.run(args[0].t as never, args[0].d as never, this.client),
+			this.runEvent(raw.t as never, client, raw.d, shardId),
+			this.client.collectors.run(raw.t as never, raw.d as never, this.client),
 		]);
 	}
 
-	async runEvent(name: GatewayEvents, client: Client | WorkerClient, packet: any, shardId: number, runCache = true) {
+	async runEvent(
+		name: GatewayEvents,
+		client: Client | WorkerClient,
+		packet: unknown,
+		shardId: number,
+		runCache = true,
+	) {
 		const Event = this.values[name];
 		if (!Event) {
 			return runCache

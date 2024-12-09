@@ -143,7 +143,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 					if (!this.memberUpdateHandler.check(packet.d)) {
 						return;
 					}
-					await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
+					await this.events?.execute(packet, this as Client<true>, shardId);
 				}
 				break;
 			case 'PRESENCE_UPDATE':
@@ -151,7 +151,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 					if (!this.presenceUpdateHandler.check(packet.d)) {
 						return;
 					}
-					await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
+					await this.events?.execute(packet, this as Client<true>, shardId);
 				}
 				break;
 			case 'GUILD_DELETE':
@@ -166,7 +166,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 					if (!this.__handleGuilds?.length) delete this.__handleGuilds;
 					return this.cache.onPacket(packet);
 				}
-				await this.events?.execute(packet.t, packet, this as Client<true>, shardId);
+				await this.events?.execute(packet, this as Client<true>, shardId);
 				break;
 			}
 			//rest of the events
@@ -174,13 +174,13 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				switch (packet.t) {
 					case 'INTERACTION_CREATE':
 						{
-							await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
+							await this.events?.execute(packet, this as Client<true>, shardId);
 							await this.handleCommand.interaction(packet.d, shardId);
 						}
 						break;
 					case 'MESSAGE_CREATE':
 						{
-							await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
+							await this.events?.execute(packet, this as Client<true>, shardId);
 							await this.handleCommand.message(packet.d, shardId);
 						}
 						break;
@@ -199,11 +199,11 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 							delete this.__handleGuilds;
 						}
 						this.debugger?.debug(`#${shardId}[${packet.d.user.username}](${this.botId}) is online...`);
-						await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
+						await this.events?.execute(packet, this as Client<true>, shardId);
 						break;
 					}
 					default:
-						await this.events?.execute(packet.t as never, packet, this as Client<true>, shardId);
+						await this.events?.execute(packet, this as Client<true>, shardId);
 						break;
 				}
 				break;
