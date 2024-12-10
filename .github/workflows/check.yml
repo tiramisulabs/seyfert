@@ -46,6 +46,13 @@ jobs:
 
       - name: Test suites
         run: pnpm test
+  
+      - name: Run Bot
+        if: github.repository == 'tiramisulabs/seyfert'
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+        run: node ./tests/bot.js
+        
 
       - name: Publish in pkg.pr.new
         run: pnpx pkg-pr-new publish
