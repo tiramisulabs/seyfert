@@ -291,10 +291,6 @@ export enum GatewayIntentBits {
 	Guilds = 1 << 0,
 	GuildMembers = 1 << 1,
 	GuildModeration = 1 << 2,
-	/**
-	 * @deprecated This is the old name for {@apilink GatewayIntentBits#GuildModeration}
-	 */
-	GuildBans = GuildModeration,
 	GuildExpressions = 1 << 3,
 	GuildIntegrations = 1 << 4,
 	GuildWebhooks = 1 << 5,
@@ -313,6 +309,8 @@ export enum GatewayIntentBits {
 	AutoModerationExecution = 1 << 21,
 	GuildMessagePolls = 1 << 24,
 	DirectMessagePolls = 1 << 25,
+	NonPrivilaged = 53575421,
+	OnlyPrivilaged = 33026,
 }
 
 /**

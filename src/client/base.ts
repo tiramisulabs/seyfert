@@ -87,9 +87,9 @@ export class BaseClient {
 		name: '[Seyfert]',
 	});
 
-	langs? = new LangsHandler(this.logger);
-	commands? = new CommandHandler(this.logger, this);
-	components? = new ComponentHandler(this.logger, this);
+	langs = new LangsHandler(this.logger);
+	commands = new CommandHandler(this.logger, this);
+	components = new ComponentHandler(this.logger, this);
 	handleCommand!: HandleCommand;
 
 	private _applicationId?: string;
