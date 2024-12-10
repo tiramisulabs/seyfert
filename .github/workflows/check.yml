@@ -46,6 +46,14 @@ jobs:
 
       - name: Test suites
         run: pnpm test
+  
+      - name: Run Bot
+        id: bot-up
+        if: env.BOT_TOKEN != ''
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+        run: node ./tests/bot.js
+        
 
       - name: Publish in pkg.pr.new
         run: pnpx pkg-pr-new publish
