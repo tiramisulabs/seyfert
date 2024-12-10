@@ -238,7 +238,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							handlePayload(_, payload) {
 								if (payload.t === 'READY') {
 									shardsConnected++;
-								} else if (payload.t === 'GUILDS_READY') {
+								} else if (payload.t === 'GUILDS_READY' && shardsConnected === workerData.shards.length) {
 									self.postMessage({
 										type: 'WORKER_READY_RESHARDING',
 										workerId: workerData.workerId,
