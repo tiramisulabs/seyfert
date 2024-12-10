@@ -39,8 +39,9 @@ export class Shard {
 
 	bucket: DynamicBucket;
 	offlineSendQueue: ((_?: unknown) => void)[] = [];
-
+	pendingGuilds = new Set<string>();
 	options: MakeRequired<ShardOptions, 'properties' | 'ratelimitOptions'>;
+	isReady = false;
 
 	constructor(
 		public id: number,
@@ -175,13 +176,13 @@ export class Shard {
 		});
 	}
 
-	async heartbeat(requested: boolean) {
+	heartbeat(requested: boolean) {
 		this.debugger?.debug(
 			`[Shard #${this.id}] Sending ${requested ? '' : 'un'}requested heartbeat (Ack=${this.heart.ack})`,
 		);
 		if (!requested) {
 			if (!this.heart.ack) {
-				await this.close(ShardSocketCloseCodes.ZombiedConnection, 'Zombied connection');
+				this.close(ShardSocketCloseCodes.ZombiedConnection, 'Zombied connection');
 				return;
 			}
 			this.heart.ack = false;
@@ -197,18 +198,18 @@ export class Shard {
 		);
 	}
 
-	async disconnect() {
+	disconnect() {
 		this.debugger?.info(`[Shard #${this.id}] Disconnecting`);
-		await this.close(ShardSocketCloseCodes.Shutdown, 'Shard down request');
+		this.close(ShardSocketCloseCodes.Shutdown, 'Shard down request');
 	}
 
 	async reconnect() {
 		this.debugger?.info(`[Shard #${this.id}] Reconnecting`);
-		await this.disconnect();
+		this.disconnect();
 		await this.connect();
 	}
 
-	async onpacket(packet: GatewayReceivePayload) {
+	onpacket(packet: GatewayReceivePayload) {
 		if (packet.s !== null) {
 			this.data.resume_seq = packet.s;
 		}
@@ -216,21 +217,19 @@ export class Shard {
 		this.debugger?.debug(`[Shard #${this.id}]`, packet.t ? packet.t : GatewayOpcodes[packet.op], this.data.resume_seq);
 
 		switch (packet.op) {
-			case GatewayOpcodes.Hello:
-				{
-					clearInterval(this.heart.nodeInterval);
+			case GatewayOpcodes.Hello: {
+				clearInterval(this.heart.nodeInterval);
 
-					this.heart.interval = packet.d.heartbeat_interval;
+				this.heart.interval = packet.d.heartbeat_interval;
 
-					await this.heartbeat(false);
-					this.heart.nodeInterval = setInterval(() => this.heartbeat(false), this.heart.interval);
+				this.heartbeat(false);
+				this.heart.nodeInterval = setInterval(() => this.heartbeat(false), this.heart.interval);
 
-					if (this.resumable) {
-						return this.resume();
-					}
-					await this.identify();
+				if (this.resumable) {
+					return this.resume();
 				}
-				break;
+				return this.identify();
+			}
 			case GatewayOpcodes.HeartbeatAck:
 				{
 					this.heart.ack = true;
@@ -241,36 +240,65 @@ export class Shard {
 				this.heartbeat(true);
 				break;
 			case GatewayOpcodes.Reconnect:
-				await this.reconnect();
-				break;
-			case GatewayOpcodes.InvalidSession:
+				return this.reconnect();
+			case GatewayOpcodes.InvalidSession: {
 				if (packet.d) {
 					if (!this.resumable) {
 						return this.logger.fatal('This is a completely unexpected error message.');
 					}
-					await this.resume();
-				} else {
-					this.data.resume_seq = 0;
-					this.data.session_id = undefined;
-					await this.identify();
+					return this.resume();
 				}
-				break;
+				this.data.resume_seq = 0;
+				this.data.session_id = undefined;
+				return this.identify();
+			}
 			case GatewayOpcodes.Dispatch:
 				{
 					switch (packet.t) {
 						case GatewayDispatchEvents.Resumed:
 							{
-								this.offlineSendQueue.map((resolve: () => any) => resolve());
+								this.isReady = true;
+								this.offlineSendQueue.map(resolve => resolve());
 								this.options.handlePayload(this.id, packet);
 							}
 							break;
 						case GatewayDispatchEvents.Ready: {
+							for (let i = 0; i < packet.d.guilds.length; i++) {
+								this.pendingGuilds.add(packet.d.guilds.at(i)!.id);
+							}
+
 							this.data.resume_gateway_url = packet.d.resume_gateway_url;
 							this.data.session_id = packet.d.session_id;
-							this.offlineSendQueue.map((resolve: () => any) => resolve());
+							this.offlineSendQueue.map(resolve => resolve());
 							this.options.handlePayload(this.id, packet);
+
+							if (this.pendingGuilds.size === 0) {
+								this.isReady = true;
+								this.options.handlePayload(this.id, {
+									t: GatewayDispatchEvents.GuildsReady,
+									op: packet.op,
+									s: packet.s,
+								});
+							}
 							break;
 						}
+						case GatewayDispatchEvents.GuildCreate:
+						case GatewayDispatchEvents.GuildDelete:
+							if (this.pendingGuilds.delete(packet.d.id)) {
+								(packet as any).t = `RAW_${packet.t}`;
+								this.options.handlePayload(this.id, packet);
+								if (this.pendingGuilds.size === 0) {
+									this.isReady = true;
+									this.options.handlePayload(this.id, {
+										t: GatewayDispatchEvents.GuildsReady,
+										op: packet.op,
+										s: packet.s,
+									});
+								}
+							} else {
+								this.options.handlePayload(this.id, packet);
+							}
+							break;
 						default:
 							this.options.handlePayload(this.id, packet);
 							break;
@@ -281,6 +309,7 @@ export class Shard {
 	}
 
 	protected async handleClosed(close: { code: number; reason: string }) {
+		this.isReady = false;
 		clearInterval(this.heart.nodeInterval);
 		this.logger.warn(
 			`${ShardSocketCloseCodes[close.code] ?? GatewayCloseCodes[close.code] ?? close.code} (${close.code})`,
@@ -332,7 +361,7 @@ export class Shard {
 		}
 	}
 
-	async close(code: number, reason: string) {
+	close(code: number, reason: string) {
 		clearInterval(this.heart.nodeInterval);
 		if (!this.isOpen) {
 			return this.debugger?.warn(`[Shard #${this.id}] Is not open, reason:`, reason);

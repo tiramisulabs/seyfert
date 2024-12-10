@@ -468,9 +468,11 @@ export class Cache {
 				break;
 			case 'GUILD_CREATE':
 			case 'GUILD_UPDATE':
+			case 'RAW_GUILD_CREATE':
 				await this.guilds?.patch(event.d.id, { unavailable: false, ...event.d });
 				break;
 			case 'GUILD_DELETE':
+			case 'RAW_GUILD_DELETE':
 				if (event.d.unavailable) {
 					await this.guilds?.patch(event.d.id, event.d);
 				} else {
