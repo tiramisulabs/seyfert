@@ -31,7 +31,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 	memberUpdateHandler = new MemberUpdateHandler();
 	presenceUpdateHandler = new PresenceUpdateHandler();
 	collectors = new Collectors();
-	events? = new EventHandler(this);
+	events = new EventHandler(this);
 
 	constructor(options?: ClientOptions) {
 		super(options);
@@ -57,7 +57,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 
 	async loadEvents(dir?: string) {
 		dir ??= await this.getRC().then(x => ('events' in x.locations ? x.locations.events : undefined));
-		if (dir && this.events) {
+		if (dir) {
 			await this.events.load(dir);
 			this.logger.info('EventHandler loaded');
 		}

@@ -78,7 +78,7 @@ export class MemberShorter extends BaseShorter {
 	 */
 	async ban(guildId: string, memberId: string, body?: RESTPutAPIGuildBanJSONBody, reason?: string) {
 		await this.client.proxy.guilds(guildId).bans(memberId).put({ reason, body });
-		await this.client.cache.members?.removeIfNI('GuildBans', memberId, guildId);
+		await this.client.cache.members?.removeIfNI('GuildModeration', memberId, guildId);
 	}
 
 	/**
