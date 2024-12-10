@@ -16,7 +16,7 @@ export class BanShorter extends BaseShorter {
 	 */
 	async bulkCreate(guildId: string, body: RESTPostAPIGuildBulkBanJSONBody, reason?: string) {
 		const bans = await this.client.proxy.guilds(guildId)['bulk-bans'].post({ reason, body });
-		for (const id of bans.banned_users) this.client.cache.members?.removeIfNI('GuildBans', id, guildId);
+		for (const id of bans.banned_users) this.client.cache.members?.removeIfNI('GuildModeration', id, guildId);
 		return bans;
 	}
 
@@ -39,7 +39,7 @@ export class BanShorter extends BaseShorter {
 	 */
 	async create(guildId: string, memberId: string, body?: RESTPutAPIGuildBanJSONBody, reason?: string) {
 		await this.client.proxy.guilds(guildId).bans(memberId).put({ reason, body });
-		await this.client.cache.members?.removeIfNI('GuildBans', memberId, guildId);
+		await this.client.cache.members?.removeIfNI('GuildModeration', memberId, guildId);
 	}
 
 	/**

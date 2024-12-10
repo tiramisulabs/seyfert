@@ -33,8 +33,8 @@ import {
 import { Messages } from './resources/messages';
 import { Overwrites } from './resources/overwrites';
 export { BaseResource } from './resources/default/base';
-export { GuildRelatedResource } from './resources/default/guild-related';
 export { GuildBasedResource } from './resources/default/guild-based';
+export { GuildRelatedResource } from './resources/default/guild-related';
 
 export type InferAsyncCache = InternalOptions extends { asyncCache: infer P } ? P : false;
 export type ReturnCache<T> = If<InferAsyncCache, Promise<T>, T>;
@@ -199,7 +199,7 @@ export class Cache {
 	}
 
 	get hasBansIntent() {
-		return this.hasIntent('GuildBans');
+		return this.hasIntent('GuildModeration');
 	}
 
 	async bulkGet(
