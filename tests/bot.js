@@ -14,7 +14,6 @@ const client = new Client({
 				base: '',
 				output: '',
 			},
-			debug: true
 		};
 	},
 });

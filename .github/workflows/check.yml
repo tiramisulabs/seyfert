@@ -48,7 +48,8 @@ jobs:
         run: pnpm test
   
       - name: Run Bot
-        if: github.repository == 'tiramisulabs/seyfert'
+        id: bot-up
+        if: env.BOT_TOKEN != ''
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         run: node ./tests/bot.js
