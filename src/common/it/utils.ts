@@ -421,3 +421,9 @@ export function toBuffer(arrayBuffer: ArrayBuffer) {
 	}
 	return buffer;
 }
+
+export function assertString(value: unknown, message?: string): asserts value is string {
+	if (!(typeof value === 'string' && value !== '')) {
+		throw new Error(message ?? 'Value is not a string');
+	}
+}

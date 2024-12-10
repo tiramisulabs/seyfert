@@ -35,6 +35,7 @@ import {
 	ThreadShorter,
 	UsersShorter,
 	WebhookShorter,
+	assertString,
 	filterSplit,
 	magicImport,
 } from '../common';
@@ -95,12 +96,6 @@ export class BaseClient {
 	private _applicationId?: string;
 	private _botId?: string;
 	middlewares?: Record<string, MiddlewareContext>;
-
-	protected static assertString(value: unknown, message?: string): asserts value is string {
-		if (!(typeof value === 'string' && value !== '')) {
-			throw new Error(message ?? 'Value is not a string');
-		}
-	}
 
 	protected static getBotIdFromToken(token: string): string {
 		return Buffer.from(token.split('.')[0], 'base64').toString('ascii');
@@ -267,7 +262,7 @@ export class BaseClient {
 
 		const { token: tokenRC, debug } = await this.getRC();
 		const token = options.token ?? tokenRC;
-		BaseClient.assertString(token, 'token is not a string');
+		assertString(token, 'token is not a string');
 
 		if (this.rest.options.token === 'INVALID') this.rest.options.token = token;
 		this.rest.debug = debug;
@@ -324,7 +319,7 @@ export class BaseClient {
 	}
 
 	private async shouldUploadCommands(cachePath: string, guildId?: string) {
-		const should = await this.commands!.shouldUpload(cachePath, guildId);
+		const should = await this.commands.shouldUpload(cachePath, guildId);
 		this.logger.debug(
 			should
 				? `[${guildId ?? 'global'}] Change(s) detected, uploading commands`
@@ -337,24 +332,24 @@ export class BaseClient {
 		return promises.writeFile(
 			cachePath,
 			JSON.stringify(
-				this.commands!.values.filter(cmd => !('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash).map(x =>
-					x.toJSON(),
-				),
+				this.commands.values
+					.filter(cmd => !('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash)
+					.map(x => x.toJSON()),
 			),
 		);
 	}
 
 	async uploadCommands({ applicationId, cachePath }: { applicationId?: string; cachePath?: string } = {}) {
 		applicationId ??= await this.getRC().then(x => x.applicationId ?? this.applicationId);
-		BaseClient.assertString(applicationId, 'applicationId is not a string');
+		assertString(applicationId, 'applicationId is not a string');
 
-		const commands = this.commands!.values;
+		const commands = this.commands.values;
 		const filter = filterSplit<
 			Omit<Command | ContextMenuCommand, 'guildId'> | EntryPointCommand,
 			MakeRequired<Command | ContextMenuCommand, 'guildId'>
 		>(commands, command => ('guildId' in command ? !command.guildId : true));
 
-		if (this.commands?.entryPoint) {
+		if (this.commands.entryPoint) {
 			filter.expect.push(this.commands.entryPoint);
 		}
 
@@ -416,7 +411,7 @@ export class BaseClient {
 	}
 
 	t(locale: string) {
-		return this.langs!.get(locale);
+		return this.langs.get(locale);
 	}
 
 	async getRC<

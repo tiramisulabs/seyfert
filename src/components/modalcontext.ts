@@ -47,7 +47,7 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	 * Gets the language object for the interaction's locale.
 	 */
 	get t() {
-		return this.client.t(this.interaction?.locale ?? this.client.langs?.defaultLang ?? 'en-US');
+		return this.client.t(this.interaction?.locale ?? this.client.langs.defaultLang ?? 'en-US');
 	}
 
 	/**

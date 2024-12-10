@@ -240,7 +240,7 @@ export class BaseInteraction<
 		if (body.data instanceof Modal) {
 			// @ts-expect-error
 			if (body.data.__exec) this.client.components.modals.set(this.user.id, (body.data as Modal).__exec);
-			else if (this.client.components?.modals.has(this.user.id)) this.client.components.modals.delete(this.user.id);
+			else if (this.client.components.modals.has(this.user.id)) this.client.components.modals.delete(this.user.id);
 		}
 		return result as never;
 	}

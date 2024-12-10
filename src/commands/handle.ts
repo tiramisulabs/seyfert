@@ -217,7 +217,7 @@ export class HandleCommand {
 		const context = new ModalContext(this.client, interaction);
 		const extended = this.client.options?.context?.(interaction) ?? {};
 		Object.assign(context, extended);
-		await this.client.components?.executeModal(context);
+		await this.client.components.executeModal(context);
 	}
 
 	async messageComponent(interaction: ComponentInteraction) {
@@ -225,7 +225,7 @@ export class HandleCommand {
 		const context = new ComponentContext(this.client, interaction);
 		const extended = this.client.options?.context?.(interaction) ?? {};
 		Object.assign(context, extended);
-		await this.client.components?.executeComponent(context);
+		await this.client.components.executeComponent(context);
 	}
 
 	async interaction(body: APIInteraction, shardId: number, __reply?: __InternalReplyFunction) {
@@ -268,7 +268,7 @@ export class HandleCommand {
 						break;
 					}
 					case ApplicationCommandType.PrimaryEntryPoint: {
-						const command = this.client.commands?.entryPoint;
+						const command = this.client.commands.entryPoint;
 						if (!command?.run) return;
 						const interaction = BaseInteraction.from(this.client, body, __reply) as EntryPointInteraction;
 						const context = new EntryPointContext(this.client, interaction, shardId, command);
@@ -302,7 +302,7 @@ export class HandleCommand {
 			case InteractionType.ModalSubmit:
 				{
 					const interaction = BaseInteraction.from(this.client, body, __reply) as ModalSubmitInteraction;
-					if (this.client.components?.hasModal(interaction)) {
+					if (this.client.components.hasModal(interaction)) {
 						await this.client.components.onModalSubmit(interaction);
 					} else await this.modal(interaction);
 				}
@@ -310,7 +310,7 @@ export class HandleCommand {
 			case InteractionType.MessageComponent:
 				{
 					const interaction = BaseInteraction.from(this.client, body, __reply) as ComponentInteraction;
-					if (this.client.components?.hasComponent(body.message.id, interaction.customId)) {
+					if (this.client.components.hasComponent(body.message.id, interaction.customId)) {
 						await this.client.components.onComponent(body.message.id, interaction);
 					} else await this.messageComponent(interaction);
 				}
@@ -500,7 +500,7 @@ export class HandleCommand {
 	}
 
 	getParentMessageCommand(rawParentName: string) {
-		return this.client.commands!.values.find(
+		return this.client.commands.values.find(
 			x =>
 				(!('ignore' in x) || x.ignore !== IgnoreCommand.Message) &&
 				(x.name === rawParentName || ('aliases' in x ? x.aliases?.includes(rawParentName) : false)),
@@ -511,7 +511,7 @@ export class HandleCommand {
 		guild_id?: string;
 		name: string;
 	}): T | undefined {
-		return this.client.commands!.values.find(command => {
+		return this.client.commands.values.find(command => {
 			if (data.guild_id) {
 				return command.guildId?.includes(data.guild_id) && command.name === data.name;
 			}

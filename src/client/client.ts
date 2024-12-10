@@ -6,6 +6,7 @@ import {
 	type MakePartial,
 	type WatcherPayload,
 	type WatcherSendToShard,
+	assertString,
 	hasIntent,
 	lazyLoadPackage,
 } from '../common';
@@ -98,7 +99,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 		this.cache.intents = intents;
 
 		if (!this.gateway) {
-			BaseClient.assertString(token, 'token is not a string');
+			assertString(token, 'token is not a string');
 			this.gateway = new ShardManager({
 				token,
 				info: await this.proxy.gateway.bot.get(),
@@ -134,7 +135,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 
 	protected async onPacket(shardId: number, packet: GatewayDispatchPayload) {
 		Promise.allSettled([
-			this.events?.runEvent('RAW', this, packet, shardId, false),
+			this.events.runEvent('RAW', this, packet, shardId, false),
 			this.collectors.run('RAW', packet, this),
 		]); //ignore promise
 		switch (packet.t) {
@@ -143,7 +144,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 					if (!this.memberUpdateHandler.check(packet.d)) {
 						return;
 					}
-					await this.events?.execute(packet, this as Client<true>, shardId);
+					await this.events.execute(packet, this as Client<true>, shardId);
 				}
 				break;
 			case 'PRESENCE_UPDATE':
@@ -151,7 +152,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 					if (!this.presenceUpdateHandler.check(packet.d)) {
 						return;
 					}
-					await this.events?.execute(packet, this as Client<true>, shardId);
+					await this.events.execute(packet, this as Client<true>, shardId);
 				}
 				break;
 			case 'GUILD_DELETE':
@@ -161,12 +162,12 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 					if (!this.__handleGuilds?.length && [...this.gateway.values()].every(shard => shard.data.session_id)) {
 						delete this.__handleGuilds;
 						await this.cache.onPacket(packet);
-						return this.events?.runEvent('BOT_READY', this, this.me, -1);
+						return this.events.runEvent('BOT_READY', this, this.me, -1);
 					}
 					if (!this.__handleGuilds?.length) delete this.__handleGuilds;
 					return this.cache.onPacket(packet);
 				}
-				await this.events?.execute(packet, this as Client<true>, shardId);
+				await this.events.execute(packet, this as Client<true>, shardId);
 				break;
 			}
 			//rest of the events
@@ -174,13 +175,13 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				switch (packet.t) {
 					case 'INTERACTION_CREATE':
 						{
-							await this.events?.execute(packet, this as Client<true>, shardId);
+							await this.events.execute(packet, this as Client<true>, shardId);
 							await this.handleCommand.interaction(packet.d, shardId);
 						}
 						break;
 					case 'MESSAGE_CREATE':
 						{
-							await this.events?.execute(packet, this as Client<true>, shardId);
+							await this.events.execute(packet, this as Client<true>, shardId);
 							await this.handleCommand.message(packet.d, shardId);
 						}
 						break;
@@ -194,16 +195,16 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
 						if (!this.__handleGuilds?.length) {
 							if ([...this.gateway.values()].every(shard => shard.data.session_id)) {
-								await this.events?.runEvent('BOT_READY', this, this.me, -1);
+								await this.events.runEvent('BOT_READY', this, this.me, -1);
 							}
 							delete this.__handleGuilds;
 						}
 						this.debugger?.debug(`#${shardId}[${packet.d.user.username}](${this.botId}) is online...`);
-						await this.events?.execute(packet, this as Client<true>, shardId);
+						await this.events.execute(packet, this as Client<true>, shardId);
 						break;
 					}
 					default:
-						await this.events?.execute(packet, this as Client<true>, shardId);
+						await this.events.execute(packet, this as Client<true>, shardId);
 						break;
 				}
 				break;

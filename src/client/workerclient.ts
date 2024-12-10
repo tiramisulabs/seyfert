@@ -329,7 +329,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				}
 				break;
 			case 'BOT_READY':
-				await this.events?.runEvent('BOT_READY', this, this.me, -1);
+				await this.events.runEvent('BOT_READY', this, this.me, -1);
 				break;
 			case 'API_RESPONSE':
 				{
@@ -490,7 +490,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	protected async onPacket(packet: GatewayDispatchPayload, shardId: number) {
 		Promise.allSettled([
-			this.events?.runEvent('RAW', this, packet, shardId, false),
+			this.events.runEvent('RAW', this, packet, shardId, false),
 			this.collectors.run('RAW', packet, this),
 		]); //ignore promise
 		switch (packet.t) {
@@ -499,7 +499,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					if (!this.memberUpdateHandler.check(packet.d)) {
 						return;
 					}
-					await this.events?.execute(packet, this as WorkerClient<true>, shardId);
+					await this.events.execute(packet, this as WorkerClient<true>, shardId);
 				}
 				break;
 			case 'PRESENCE_UPDATE':
@@ -507,7 +507,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					if (!this.presenceUpdateHandler.check(packet.d)) {
 						return;
 					}
-					await this.events?.execute(packet, this as WorkerClient<true>, shardId);
+					await this.events.execute(packet, this as WorkerClient<true>, shardId);
 				}
 				break;
 			case 'GUILD_DELETE':
@@ -521,25 +521,25 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							type: 'WORKER_READY',
 							workerId: this.workerId,
 						} as WorkerReady);
-						return this.events?.runEvent('WORKER_READY', this, this.me, -1);
+						return this.events.runEvent('WORKER_READY', this, this.me, -1);
 					}
 					if (!this.__handleGuilds?.length) delete this.__handleGuilds;
 					return this.cache.onPacket(packet);
 				}
-				await this.events?.execute(packet, this, shardId);
+				await this.events.execute(packet, this, shardId);
 				break;
 			}
 			default: {
 				switch (packet.t) {
 					case 'INTERACTION_CREATE':
 						{
-							await this.events?.execute(packet, this, shardId);
+							await this.events.execute(packet, this, shardId);
 							await this.handleCommand.interaction(packet.d, shardId);
 						}
 						break;
 					case 'MESSAGE_CREATE':
 						{
-							await this.events?.execute(packet, this, shardId);
+							await this.events.execute(packet, this, shardId);
 							await this.handleCommand.message(packet.d, shardId);
 						}
 						break;
@@ -552,14 +552,14 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							this.botId = packet.d.user.id;
 							this.applicationId = packet.d.application.id;
 							this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
-							await this.events?.execute(packet, this, shardId);
+							await this.events.execute(packet, this, shardId);
 							if (!this._ready && [...this.shards.values()].every(shard => shard.data.session_id)) {
 								this._ready = true;
 								this.postMessage({
 									type: 'WORKER_SHARDS_CONNECTED',
 									workerId: this.workerId,
 								} as WorkerShardsConnected);
-								await this.events?.runEvent('WORKER_SHARDS_CONNECTED', this, this.me, -1);
+								await this.events.runEvent('WORKER_SHARDS_CONNECTED', this, this.me, -1);
 							}
 							if (!this.__handleGuilds?.length) {
 								if ([...this.shards.values()].every(shard => shard.data.session_id)) {
@@ -567,7 +567,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 										type: 'WORKER_READY',
 										workerId: this.workerId,
 									} as WorkerReady);
-									await this.events?.runEvent('WORKER_READY', this, this.me, -1);
+									await this.events.runEvent('WORKER_READY', this, this.me, -1);
 								}
 								delete this.__handleGuilds;
 							}
@@ -575,7 +575,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						}
 						break;
 					default:
-						await this.events?.execute(packet, this, shardId);
+						await this.events.execute(packet, this, shardId);
 						break;
 				}
 				break;

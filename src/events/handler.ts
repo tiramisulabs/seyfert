@@ -100,7 +100,7 @@ export class EventHandler extends BaseHandler {
 		switch (raw.t) {
 			case 'MESSAGE_DELETE':
 				{
-					if (!client.components?.values.size) break;
+					if (!client.components.values.size) break;
 					const value = client.components.values.get(raw.d.id);
 					if (value) {
 						client.components.deleteValue(value.messageId, 'messageDelete');
@@ -109,7 +109,7 @@ export class EventHandler extends BaseHandler {
 				break;
 			case 'MESSAGE_DELETE_BULK':
 				{
-					if (!client.components?.values.size) break;
+					if (!client.components.values.size) break;
 					for (const id of raw.d.ids) {
 						const value = client.components.values.get(id);
 						if (value) {
@@ -120,7 +120,7 @@ export class EventHandler extends BaseHandler {
 				break;
 			case 'GUILD_DELETE':
 				{
-					if (!client.components?.values.size) break;
+					if (!client.components.values.size) break;
 					// ignore unavailable guilds?
 					if (raw.d.unavailable) break;
 					for (const [messageId, value] of client.components.values) {
@@ -130,7 +130,7 @@ export class EventHandler extends BaseHandler {
 				break;
 			case 'CHANNEL_DELETE':
 				{
-					if (!client.components?.values.size) break;
+					if (!client.components.values.size) break;
 
 					if (raw.d.type === ChannelType.DM || raw.d.type === ChannelType.GroupDM) {
 						for (const value of client.components.values) {
@@ -159,7 +159,7 @@ export class EventHandler extends BaseHandler {
 				break;
 			case 'THREAD_DELETE':
 				{
-					if (!client.components?.values.size) break;
+					if (!client.components.values.size) break;
 					for (const value of client.components.values) {
 						if (value[1].channelId === raw.d.id) {
 							client.components.deleteValue(value[0], 'channelDelete');

@@ -58,7 +58,7 @@ export class CommandContext<
 	}
 
 	get t() {
-		return this.client.t(this.interaction?.locale ?? this.client.langs?.defaultLang ?? 'en-US');
+		return this.client.t(this.interaction?.locale ?? this.client.langs.defaultLang ?? 'en-US');
 	}
 
 	get fullCommandName() {

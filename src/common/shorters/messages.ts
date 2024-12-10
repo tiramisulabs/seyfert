@@ -66,7 +66,7 @@ export class MessageShorter extends BaseShorter {
 			.delete({ reason })
 			.then(async () => {
 				await this.client.cache.messages?.removeIfNI('GuildMessages', messageId, channelId);
-				this.client.components?.deleteValue(messageId, 'messageDelete');
+				this.client.components.deleteValue(messageId, 'messageDelete');
 			});
 	}
 

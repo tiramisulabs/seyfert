@@ -56,7 +56,7 @@ export class InteractionShorter extends BaseShorter {
 			.webhooks(this.client.applicationId)(token)
 			.messages(messageId)
 			.delete()
-			.then(() => this.client.components?.deleteValue(messageId, 'messageDelete'));
+			.then(() => this.client.components.deleteValue(messageId, 'messageDelete'));
 	}
 
 	deleteOriginal(token: string) {
