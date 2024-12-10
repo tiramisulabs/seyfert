@@ -1,11 +1,15 @@
 const { Client } = require('../lib')
 const { GatewayIntentBits } = require('../lib/types');
 
+const token = process.env.BOT_TOKEN;
+
+if (!token) process.exit(0);
+
 const client = new Client({
 	getRC: () => {
 		return {
 			intents: GatewayIntentBits.NonPrivilaged,
-			token: process.env.BOT_TOKEN,
+			token,
 			locations: {
 				base: '',
 				output: '',
