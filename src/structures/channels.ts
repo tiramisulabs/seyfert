@@ -400,9 +400,10 @@ export class ThreadOnlyMethods extends DiscordBase {
 	}
 }
 
-export interface VoiceChannelMethods extends BaseChannel<ChannelType> {}
-export class VoiceChannelMethods extends DiscordBase {
+export interface VoiceChannelMethods extends BaseChannel<ChannelType> {
 	guildId?: string;
+}
+export class VoiceChannelMethods extends DiscordBase {
 	setBitrate(bitrate: number | null, reason?: string) {
 		return this.edit({ bitrate }, reason);
 	}
