@@ -237,6 +237,14 @@ export class BaseGuildChannel extends BaseChannel<ChannelType> {
 	setParent(parent_id: string | null, reason?: string) {
 		return this.edit({ parent_id }, reason);
 	}
+
+	setRatelimitPerUser(rate_limit_per_user: number | null | undefined) {
+		return this.edit({ rate_limit_per_user });
+	}
+
+	setNsfw(nsfw = true, reason?: string) {
+		return this.edit({ nsfw }, reason);
+	}
 }
 
 export interface MessagesMethods extends BaseNoEditableChannel<ChannelType> {}
@@ -327,27 +335,27 @@ export class TextBaseGuildChannel extends BaseGuildChannel {}
 export function channelFrom(data: APIChannelBase<ChannelType>, client: UsingClient): AllChannels {
 	switch (data.type) {
 		case ChannelType.GuildStageVoice:
-			return Transformers.StageChannel(client, data);
+			return Transformers.StageChannel(client, data as APIGuildChannel<ChannelType>);
 		case ChannelType.GuildMedia:
-			return Transformers.MediaChannel(client, data);
+			return Transformers.MediaChannel(client, data as APIGuildChannel<ChannelType>);
 		case ChannelType.DM:
 			return Transformers.DMChannel(client, data);
 		case ChannelType.GuildForum:
-			return Transformers.ForumChannel(client, data);
+			return Transformers.ForumChannel(client, data as APIGuildChannel<ChannelType>);
 		case ChannelType.AnnouncementThread:
 		case ChannelType.PrivateThread:
 		case ChannelType.PublicThread:
 			return Transformers.ThreadChannel(client, data);
 		case ChannelType.GuildDirectory:
-			return Transformers.DirectoryChannel(client, data);
+			return Transformers.DirectoryChannel(client, data as APIGuildChannel<ChannelType>);
 		case ChannelType.GuildVoice:
-			return Transformers.VoiceChannel(client, data);
+			return Transformers.VoiceChannel(client, data as APIGuildChannel<ChannelType>);
 		case ChannelType.GuildText:
 			return Transformers.TextGuildChannel(client, data as APIGuildChannel<ChannelType>);
 		case ChannelType.GuildCategory:
 			return Transformers.CategoryChannel(client, data);
 		case ChannelType.GuildAnnouncement:
-			return Transformers.NewsChannel(client, data);
+			return Transformers.NewsChannel(client, data as APIGuildChannel<ChannelType>);
 		default: {
 			if ('guild_id' in data) {
 				return Transformers.BaseGuildChannel(client, data as APIGuildChannel<ChannelType>);
@@ -475,14 +483,6 @@ export interface TextGuildChannel
 @mix(TextBaseGuildChannel, WebhookChannelMethods)
 export class TextGuildChannel extends BaseGuildChannel {
 	declare type: ChannelType.GuildText;
-
-	setRatelimitPerUser(rate_limit_per_user: number | null | undefined) {
-		return this.edit({ rate_limit_per_user });
-	}
-
-	setNsfw(nsfw = true, reason?: string) {
-		return this.edit({ nsfw }, reason);
-	}
 }
 
 export interface DMChannel extends ObjectToLower<APIDMChannel>, MessagesMethods {}
@@ -492,35 +492,37 @@ export class DMChannel extends BaseNoEditableChannel<ChannelType.DM> {
 }
 export interface VoiceChannel
 	extends ObjectToLower<Omit<APIGuildVoiceChannel, 'permission_overwrites'>>,
-		Omit<TextGuildChannel, 'type' | 'edit'>,
+		Omit<TextGuildChannel, keyof BaseGuildChannel>,
 		VoiceChannelMethods,
 		WebhookChannelMethods {}
-@mix(TextGuildChannel, WebhookChannelMethods, VoiceChannelMethods)
-export class VoiceChannel extends BaseChannel<ChannelType.GuildVoice> {
+@mix(TextGuildChannel, VoiceChannelMethods)
+export class VoiceChannel extends BaseGuildChannel {
 	declare type: ChannelType.GuildVoice;
 }
 
 export interface StageChannel
-	extends ObjectToLower<Omit<APIGuildStageVoiceChannel, 'type'>>,
+	extends ObjectToLower<Omit<APIGuildStageVoiceChannel, 'type' | 'permission_overwrites'>>,
 		TopicableGuildChannel,
 		VoiceChannelMethods {}
 @mix(TopicableGuildChannel, VoiceChannelMethods)
-export class StageChannel extends BaseChannel<ChannelType> {
+export class StageChannel extends BaseGuildChannel {
 	declare type: ChannelType.GuildStageVoice;
 }
 
-export interface MediaChannel extends ObjectToLower<Omit<APIGuildMediaChannel, 'type'>>, ThreadOnlyMethods {}
+export interface MediaChannel
+	extends ObjectToLower<Omit<APIGuildMediaChannel, 'type' | 'permission_overwrites'>>,
+		ThreadOnlyMethods {}
 @mix(ThreadOnlyMethods)
-export class MediaChannel extends BaseChannel<ChannelType> {
+export class MediaChannel extends BaseGuildChannel {
 	declare type: ChannelType.GuildMedia;
 }
 
 export interface ForumChannel
-	extends ObjectToLower<APIGuildForumChannel>,
+	extends ObjectToLower<Omit<APIGuildForumChannel, 'permission_overwrites'>>,
 		Omit<ThreadOnlyMethods, 'type' | 'edit'>,
 		WebhookChannelMethods {}
 @mix(ThreadOnlyMethods, WebhookChannelMethods)
-export class ForumChannel extends BaseChannel<ChannelType.GuildForum> {
+export class ForumChannel extends BaseGuildChannel {
 	declare type: ChannelType.GuildForum;
 }
 
@@ -593,9 +595,12 @@ export class CategoryChannel extends (BaseGuildChannel as unknown as ToClass<
 	declare type: ChannelType.GuildCategory;
 }
 
-export interface NewsChannel extends ObjectToLower<APINewsChannel>, WebhookChannelMethods {}
-@mix(WebhookChannelMethods)
-export class NewsChannel extends BaseChannel<ChannelType.GuildAnnouncement> {
+export interface NewsChannel
+	extends ObjectToLower<Omit<APINewsChannel, 'permission_overwrites'>>,
+		WebhookChannelMethods,
+		Omit<TextGuildChannel, keyof BaseGuildChannel> {}
+@mix(TextGuildChannel, WebhookChannelMethods)
+export class NewsChannel extends BaseGuildChannel {
 	declare type: ChannelType.GuildAnnouncement;
 
 	addFollower(webhookChannelId: string, reason?: string) {
