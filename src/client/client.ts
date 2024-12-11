@@ -7,7 +7,6 @@ import {
 	type WatcherPayload,
 	type WatcherSendToShard,
 	assertString,
-	hasIntent,
 	lazyLoadPackage,
 } from '../common';
 import { EventHandler } from '../events';
@@ -23,7 +22,6 @@ import { type ClientUserStructure, type MessageStructure, Transformers } from '.
 let parentPort: import('node:worker_threads').MessagePort;
 
 export class Client<Ready extends boolean = boolean> extends BaseClient {
-	private __handleGuilds?: string[];
 	gateway!: ShardManager;
 	me!: If<Ready, ClientUserStructure>;
 	declare options: Omit<ClientOptions, 'commands'> & {
@@ -155,21 +153,6 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 					await this.events.execute(packet, this as Client<true>, shardId);
 				}
 				break;
-			case 'GUILD_DELETE':
-			case 'GUILD_CREATE': {
-				if (this.__handleGuilds?.includes(packet.d.id)) {
-					this.__handleGuilds?.splice(this.__handleGuilds!.indexOf(packet.d.id), 1);
-					if (!this.__handleGuilds?.length && [...this.gateway.values()].every(shard => shard.data.session_id)) {
-						delete this.__handleGuilds;
-						await this.cache.onPacket(packet);
-						return this.events.runEvent('BOT_READY', this, this.me, -1);
-					}
-					if (!this.__handleGuilds?.length) delete this.__handleGuilds;
-					return this.cache.onPacket(packet);
-				}
-				await this.events.execute(packet, this as Client<true>, shardId);
-				break;
-			}
 			//rest of the events
 			default: {
 				switch (packet.t) {
@@ -186,23 +169,21 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						}
 						break;
 					case 'READY': {
-						const ids = packet.d.guilds.map(x => x.id);
-						if (hasIntent(this.gateway.options.intents, 'Guilds')) {
-							this.__handleGuilds = this.__handleGuilds?.concat(ids) ?? ids;
-						}
 						this.botId = packet.d.user.id;
 						this.applicationId = packet.d.application.id;
 						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
-						if (!this.__handleGuilds?.length) {
-							if ([...this.gateway.values()].every(shard => shard.data.session_id)) {
-								await this.events.runEvent('BOT_READY', this, this.me, -1);
-							}
-							delete this.__handleGuilds;
-						}
 						this.debugger?.debug(`#${shardId}[${packet.d.user.username}](${this.botId}) is online...`);
 						await this.events.execute(packet, this as Client<true>, shardId);
 						break;
 					}
+					case 'GUILDS_READY':
+						{
+							await this.events.execute(packet, this as Client<true>, shardId);
+							if ([...this.gateway.values()].every(shard => shard.isReady)) {
+								await this.events.runEvent('BOT_READY', this, this.me, -1);
+							}
+						}
+						break;
 					default:
 						await this.events.execute(packet, this as Client<true>, shardId);
 						break;
