@@ -1,5 +1,5 @@
 import { inflateSync } from 'node:zlib';
-import { LogLevels, Logger, type MakeRequired, MergeOptions } from '../../common';
+import { LogLevels, Logger, type MakeRequired, MergeOptions, hasIntent } from '../../common';
 import {
 	GatewayCloseCodes,
 	GatewayDispatchEvents,
@@ -263,15 +263,16 @@ export class Shard {
 							}
 							break;
 						case GatewayDispatchEvents.Ready: {
-							for (let i = 0; i < packet.d.guilds.length; i++) {
-								this.pendingGuilds.add(packet.d.guilds.at(i)!.id);
+							if (hasIntent(this.options.intents, 'Guilds')) {
+								for (let i = 0; i < packet.d.guilds.length; i++) {
+									this.pendingGuilds.add(packet.d.guilds.at(i)!.id);
+								}
 							}
 
 							this.data.resume_gateway_url = packet.d.resume_gateway_url;
 							this.data.session_id = packet.d.session_id;
 							this.offlineSendQueue.map(resolve => resolve());
 							this.options.handlePayload(this.id, packet);
-
 							if (this.pendingGuilds.size === 0) {
 								this.isReady = true;
 								this.options.handlePayload(this.id, {
