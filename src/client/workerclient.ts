@@ -499,7 +499,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						this.botId = packet.d.user.id;
 						this.applicationId = packet.d.application.id;
 						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
-						if ([...this.shards.values()].every(shard => shard.isReady)) {
+						if ([...this.shards.values()].every(shard => shard.data.session_id)) {
 							this.postMessage({
 								type: 'WORKER_SHARDS_CONNECTED',
 								workerId: this.workerId,
