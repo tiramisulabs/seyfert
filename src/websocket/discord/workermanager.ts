@@ -28,7 +28,7 @@ export class WorkerManager extends Map<
 		},
 		logger?: Logger,
 	) {
-		logger?.info('Preparing buckets', options);
+		logger?.info('Preparing buckets');
 
 		const chunks = DynamicBucket.chunk<number>(
 			new Array(options.shardEnd - options.shardStart),
@@ -614,7 +614,7 @@ export class WorkerManager extends Map<
 					`Percentage is not enough to reshard ${percentage}/${this.options.resharding.percentage}`,
 				);
 
-			this.debugger?.info('Starting resharding process');
+			this.debugger?.info(`Starting resharding process to ${info.shards}`);
 
 			this._info = info;
 			this.connectQueue.concurrency = info.session_start_limit.max_concurrency;
