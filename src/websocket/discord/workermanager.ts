@@ -391,7 +391,7 @@ export class WorkerManager extends Map<
 			case 'WORKER_READY':
 				{
 					this.get(message.workerId)!.ready = true;
-					if ([...this.values()].every(w => w.ready)) {
+					if (this.size === this.totalWorkers && [...this.values()].every(w => w.ready)) {
 						this.postMessage(this.keys().next().value!, {
 							type: 'BOT_READY',
 						} satisfies ManagerSendBotReady);
