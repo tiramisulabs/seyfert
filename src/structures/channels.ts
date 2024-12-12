@@ -271,7 +271,7 @@ export class MessagesMethods extends DiscordBase {
 			crosspost: (messageId: string, reason?: string) =>
 				ctx.client.messages.crosspost(messageId, ctx.channelId, reason),
 			delete: (messageId: string, reason?: string) => ctx.client.messages.delete(messageId, ctx.channelId, reason),
-			fetch: (messageId: string) => ctx.client.messages.fetch(messageId, ctx.channelId),
+			fetch: (messageId: string, force = false) => ctx.client.messages.fetch(messageId, ctx.channelId, force),
 			purge: (messages: string[], reason?: string) => ctx.client.messages.purge(messages, ctx.channelId, reason),
 			list: (fetchOptions: RESTGetAPIChannelMessagesQuery) => ctx.client.messages.list(ctx.channelId, fetchOptions),
 		};

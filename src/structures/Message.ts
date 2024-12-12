@@ -125,8 +125,8 @@ export class Message extends BaseMessage {
 		super(client, data);
 	}
 
-	fetch() {
-		return this.client.messages.fetch(this.id, this.channelId);
+	fetch(force = false) {
+		return this.client.messages.fetch(this.id, this.channelId, force);
 	}
 
 	reply(body: Omit<MessageCreateBodyRequest, 'message_reference'>, fail = true) {

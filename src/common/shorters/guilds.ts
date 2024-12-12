@@ -131,7 +131,7 @@ export class GuildShorter extends BaseShorter {
 				let channel: APIChannel | ReturnType<Channels['get']>;
 				if (!force) {
 					channel = await this.client.cache.channels?.get(channelId);
-					if (channel) return channel;
+					if (channel) return channel as ReturnType<typeof channelFrom>;
 				}
 
 				channel = await this.client.proxy.channels(channelId).get();

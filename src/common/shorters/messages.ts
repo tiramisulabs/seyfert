@@ -70,7 +70,12 @@ export class MessageShorter extends BaseShorter {
 			});
 	}
 
-	fetch(messageId: string, channelId: string) {
+	async fetch(messageId: string, channelId: string, force = false) {
+		if (!force) {
+			const message = await this.client.cache.messages?.get(messageId);
+			if (message) return message;
+		}
+
 		return this.client.proxy
 			.channels(channelId)
 			.messages(messageId)
