@@ -34,6 +34,10 @@ pnpm add seyfert
 ```
 
 ```sh
+deno add npm:seyfert
+```
+
+```sh
 bun add seyfert
 ```
 
@@ -52,3 +56,5 @@ We are open to contributions, fork the repo and make your changes!
 - [npm - core](https://www.npmjs.com/package/seyfert)
 - [Website](https://seyfert.dev)
 - [Documentation](https://docs.seyfert.dev)
+
+![Seyfert star history](https://api.star-history.com/svg?repos=tiramisulabs/seyfert&type=Date)

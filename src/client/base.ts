@@ -134,7 +134,7 @@ export class BaseClient {
 								permissions,
 							);
 						},
-						onInternalError(client: UsingClient, command, error?: unknown): any {
+						onInternalError(client: UsingClient, command, error: unknown): any {
 							client.logger.fatal(`${command.name}.<onInternalError>`, error);
 						},
 					},
@@ -147,7 +147,7 @@ export class BaseClient {
 						onMiddlewaresError(context: ComponentContext, error: string): any {
 							context.client.logger.fatal('ComponentCommand.<onMiddlewaresError>', context.author.id, error);
 						},
-						onInternalError(client: UsingClient, error?: unknown): any {
+						onInternalError(client: UsingClient, error: unknown): any {
 							client.logger.fatal(error);
 						},
 					},
@@ -155,12 +155,12 @@ export class BaseClient {
 				modals: {
 					defaults: {
 						onRunError(context: ModalContext, error: unknown): any {
-							context.client.logger.fatal('ComponentCommand.<onRunError>', context.author.id, error);
+							context.client.logger.fatal('ModalCommand.<onRunError>', context.author.id, error);
 						},
 						onMiddlewaresError(context: ModalContext, error: string): any {
-							context.client.logger.fatal('ComponentCommand.<onMiddlewaresError>', context.author.id, error);
+							context.client.logger.fatal('ModalCommand.<onMiddlewaresError>', context.author.id, error);
 						},
-						onInternalError(client: UsingClient, error?: unknown): any {
+						onInternalError(client: UsingClient, error: unknown): any {
 							client.logger.fatal(error);
 						},
 					},
@@ -471,7 +471,6 @@ export interface BaseClientOptions {
 		defaults?: {
 			onRunError?: (context: MenuCommandContext<any, never> | CommandContext, error: unknown) => unknown;
 			onPermissionsFail?: Command['onPermissionsFail'];
-
 			onBotPermissionsFail?: (
 				context: MenuCommandContext<any, never> | CommandContext,
 				permissions: PermissionStrings,
@@ -503,9 +502,7 @@ export interface BaseClientOptions {
 			onAfterRun?: ModalCommand['onAfterRun'];
 		};
 	};
-	allowedMentions?: Omit<NonNullable<RESTPostAPIChannelMessageJSONBody['allowed_mentions']>, 'parse'> & {
-		parse?: ('everyone' | 'roles' | 'users')[]; //nice types, d-api
-	};
+	allowedMentions?: RESTPostAPIChannelMessageJSONBody['allowed_mentions'];
 	getRC?(): Awaitable<InternalRuntimeConfig | InternalRuntimeConfigHTTP>;
 }
 

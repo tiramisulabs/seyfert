@@ -3,6 +3,8 @@
         "biomejs.biome",
         "orta.vscode-twoslash-queries",
         "eamodio.gitlens",
-        "yoavbls.pretty-ts-errors"
+        "yoavbls.pretty-ts-errors",
+				"usernamehw.errorlens",
+				"better-ts-errors.better-ts-errors"
     ]
 }

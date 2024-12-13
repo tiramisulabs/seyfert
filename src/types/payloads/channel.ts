@@ -1500,7 +1500,7 @@ export interface APIAllowedMentions {
 	 *
 	 * See https://discord.com/developers/docs/resources/channel#allowed-mentions-object-allowed-mention-types
 	 */
-	parse?: AllowedMentionsTypes[];
+	parse?: `${AllowedMentionsTypes}`[];
 	/**
 	 * Array of role_ids to mention (Max size of 100)
 	 */

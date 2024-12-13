@@ -1,4 +1,4 @@
-const { Client } = require('../lib')
+const { Client } = require('../lib');
 const { GatewayIntentBits } = require('../lib/types');
 
 const token = process.env.BOT_TOKEN;
@@ -26,5 +26,5 @@ client.events.onFail = (event, err) => {
 client.start().then(() => {
 	setTimeout(() => {
 		process.exit(0);
-	}, 15_000 * client.gateway.totalShards)
+	}, 15_000 * client.gateway.totalShards);
 });
