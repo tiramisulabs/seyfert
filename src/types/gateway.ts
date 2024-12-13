@@ -1,5 +1,6 @@
 // https://github.com/discordjs/discord-api-types/blob/main/gateway/v10.ts
 
+import type { OmitInsert } from '../common';
 import type { ChannelType, GatewayDispatchEvents, GatewayOpcodes, Snowflake } from './index';
 import type { GatewayPresenceUpdate } from './payloads/gateway';
 import type {
@@ -81,7 +82,10 @@ export type GatewayDispatchPayload =
 	| GatewayGuildAuditLogEntryCreateDispatch
 	| GatewayGuildBanModifyDispatch
 	| GatewayGuildCreateDispatch
+	| GatewayRawGuildCreateDispatch
 	| GatewayGuildDeleteDispatch
+	| GatewayRawGuildDeleteDispatch
+	| GatewayGuildsReadyDispatch
 	| GatewayGuildEmojisUpdateDispatch
 	| GatewayGuildIntegrationsUpdateDispatch
 	| GatewayGuildMemberAddDispatch
@@ -531,6 +535,12 @@ export type GatewayGuildModifyDispatchData = APIGuild;
  */
 export type GatewayGuildCreateDispatch = DataPayload<GatewayDispatchEvents.GuildCreate, GatewayGuildCreateDispatchData>;
 
+export type GatewayRawGuildCreateDispatch = OmitInsert<
+	GatewayGuildCreateDispatch,
+	't',
+	{ t: GatewayDispatchEvents.RawGuildCreate }
+>;
+
 /**
  * https://discord.com/developers/docs/topics/gateway-events#guild-create
  * https://discord.com/developers/docs/topics/gateway-events#guild-create-guild-create-extra-fields
@@ -638,6 +648,18 @@ export type GatewayGuildUpdateDispatchData = GatewayGuildModifyDispatchData;
  * https://discord.com/developers/docs/topics/gateway-events#guild-delete
  */
 export type GatewayGuildDeleteDispatch = DataPayload<GatewayDispatchEvents.GuildDelete, GatewayGuildDeleteDispatchData>;
+
+export type GatewayRawGuildDeleteDispatch = OmitInsert<
+	GatewayGuildDeleteDispatch,
+	't',
+	{ t: GatewayDispatchEvents.RawGuildDelete }
+>;
+
+export type GatewayGuildsReadyDispatch = OmitInsert<
+	GatewayReadyDispatch,
+	't' | 'd',
+	{ t: GatewayDispatchEvents.GuildsReady; d?: never }
+>;
 
 /**
  * https://discord.com/developers/docs/topics/gateway-events#guild-delete
