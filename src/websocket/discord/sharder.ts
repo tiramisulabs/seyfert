@@ -147,36 +147,22 @@ export class ShardManager extends Map<number, Shard> {
 
 			//waiting for all shards to connect
 			let shardsConnected = 0;
-			const handleGuilds = new Set<string>();
 
-			let handlePayload = async (sharder: ShardManager, _: number, packet: GatewayDispatchPayload) => {
-				if (packet.t === 'GUILD_CREATE' || packet.t === 'GUILD_DELETE') {
-					handleGuilds.delete(packet.d.id);
-					if (shardsConnected === info.shards && !handleGuilds.size) {
-						return cleanProcess(sharder);
-					}
-				}
-
-				if (packet.t !== 'READY') return;
-
-				for (const guild of packet.d.guilds) {
-					handleGuilds.add(guild.id);
-				}
-
-				if (++shardsConnected < info.shards || handleGuilds.size) return;
-
+			let handlePayload = (sharder: ShardManager, _: number, packet: GatewayDispatchPayload) => {
+				if (packet.t !== 'GUILDS_READY') return;
+				if (++shardsConnected !== info.shards) return;
 				cleanProcess(sharder);
 				// dont listen more events when all shards are ready
 			};
 
 			const cleanProcess = (sharder: ShardManager) => {
-				handlePayload = async () => {
+				handlePayload = () => {
 					//
 				};
 				this.disconnectAll();
 				this.clear();
 
-				this.options.totalShards = this.options.shardEnd = info.shards;
+				this.options.totalShards = this.options.shardEnd = this.options.info.shards = info.shards;
 				for (const [id, shard] of sharder) {
 					shard.options.handlePayload = (shardId, packet) => {
 						return this.options.handlePayload(shardId, packet);

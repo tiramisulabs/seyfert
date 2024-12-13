@@ -282,7 +282,7 @@ export class WorkerManager extends Map<
 					this.get(message.workerId)!.disconnected = true;
 					if ([...this.values()].every(w => w.disconnected)) {
 						this.options.totalShards = this._info!.shards;
-						this.options.shardEnd = this.options.totalShards = this._info!.shards;
+						this.options.shardEnd = this.options.totalShards = this.options.info.shards = this._info!.shards;
 						this.options.workers = this.size;
 						delete this._info;
 						for (const [id] of this.entries()) {
@@ -628,7 +628,7 @@ export class WorkerManager extends Map<
 				},
 				this.debugger,
 			);
-			await this.prepareWorkers(spaces, true);
+			this.prepareWorkers(spaces, true);
 			return this.reshardingWorkerQueue.shift()!();
 		}, this.options.resharding.interval);
 	}
