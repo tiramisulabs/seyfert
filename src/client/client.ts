@@ -54,8 +54,16 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 		}
 	}
 
+	get latency() {
+		let acc = 0;
+
+		this.gateway.forEach(s => (acc += s.latency));
+
+		return acc / this.gateway.size;
+	}
+
 	async loadEvents(dir?: string) {
-		dir ??= await this.getRC().then(x => ('events' in x.locations ? x.locations.events : undefined));
+		dir ??= await this.getRC().then(x => x.locations.events);
 		if (dir) {
 			await this.events.load(dir);
 			this.logger.info('EventHandler loaded');
