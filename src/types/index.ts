@@ -35,7 +35,5 @@ export type Snowflake = string;
 
 /**
  * https://discord.com/developers/docs/topics/permissions
- *
- * @internal
  */
 export type Permissions = string;
