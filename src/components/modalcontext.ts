@@ -1,4 +1,4 @@
-import type { AllChannels, ModalCommand, ModalSubmitInteraction, ReturnCache } from '..';
+import type { AllChannels, Interaction, ModalCommand, ModalSubmitInteraction, ReturnCache } from '..';
 import type { GuildMemberStructure, GuildStructure } from '../client/transformers';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, RegisteredMiddlewares, UsingClient } from '../commands';
 import { BaseContext } from '../commands/basecontext';
@@ -101,7 +101,8 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 		return this.interaction.deleteResponse();
 	}
 
-	modal(body: ModalCreateBodyRequest) {
+	modal(body: ModalCreateBodyRequest): ReturnType<Interaction['modal']> {
+		//@ts-expect-error
 		return this.interaction.modal(body);
 	}
 
