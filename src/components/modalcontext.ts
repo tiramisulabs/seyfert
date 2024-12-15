@@ -1,4 +1,4 @@
-import type { AllChannels, ModalCommand, ModalSubmitInteraction, ReturnCache } from '..';
+import type { AllChannels, Interaction, ModalCommand, ModalSubmitInteraction, ReturnCache } from '..';
 import type { GuildMemberStructure, GuildStructure } from '../client/transformers';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, RegisteredMiddlewares, UsingClient } from '../commands';
 import { BaseContext } from '../commands/basecontext';
@@ -9,7 +9,6 @@ import type {
 	ModalCreateBodyRequest,
 	UnionToTuple,
 } from '../common';
-import type { Interaction } from '../structures/Interaction';
 import { MessageFlags } from '../types';
 
 export interface ModalContext extends BaseContext, ExtendContext {}

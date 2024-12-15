@@ -620,7 +620,7 @@ export class Cache {
 			name: '[CACHE]',
 		});
 		await this.adapter.flush();
-		// this method will only check the cache for `users`, `members` y `channels`
+		// this method will only check the cache for `users`, `members`, and `channels`
 		// likewise these have the three types of resources (GuildRelatedResource, GuildBasedResource, BaseResource)
 		// will also check `overwrites`, since the latter stores an array not as an object but as data.
 

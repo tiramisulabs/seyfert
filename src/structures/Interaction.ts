@@ -363,7 +363,7 @@ export class BaseInteraction<
 		}
 	}
 
-	fetchGuild(force = false) {
+	async fetchGuild(force = false) {
 		return this.guildId ? this.client.guilds.fetch(this.guildId, force) : undefined;
 	}
 }

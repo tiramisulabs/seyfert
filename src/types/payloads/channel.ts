@@ -2,6 +2,7 @@
  * Types extracted from https://discord.com/developers/docs/resources/channel
  */
 
+import type { PickRequired } from '../../common';
 import type { ChannelType, OverwriteType, Permissions, Snowflake, VideoQualityMode } from '../index';
 import type { APIApplication } from './application';
 import type { APIPartialEmoji } from './emoji';
@@ -209,7 +210,7 @@ export type ThreadChannelType = ChannelType.AnnouncementThread | ChannelType.Pri
 
 export interface APIThreadChannel
 	extends Omit<APITextBasedChannel<ThreadChannelType>, 'name'>,
-		APIGuildChannel<ThreadChannelType> {
+		PickRequired<APIGuildChannel<ThreadChannelType>, 'parent_id'> {
 	/**
 	 * The client users member for the thread, only included in select endpoints
 	 */

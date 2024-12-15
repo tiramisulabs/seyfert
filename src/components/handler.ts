@@ -58,28 +58,31 @@ export class ComponentHandler extends BaseHandler {
 		channelId: string,
 		guildId: string | undefined,
 		options: ListenerOptions = {},
+		components: COMPONENTS['components'] = [],
 	): CreateComponentCollectorResult {
 		this.values.set(messageId, {
 			messageId,
 			channelId,
 			guildId,
 			options,
-			components: [],
+			components,
 			idle:
 				options.idle && options.idle > 0
 					? setTimeout(() => {
-							this.deleteValue(messageId);
+							const old = this.clearValue(messageId);
+							if (!old) return;
 							options.onStop?.('idle', () => {
-								this.createComponentCollector(messageId, channelId, guildId, options);
+								this.createComponentCollector(messageId, channelId, guildId, options, old.components);
 							});
 						}, options.idle)
 					: undefined,
 			timeout:
 				options.timeout && options.timeout > 0
 					? setTimeout(() => {
-							this.deleteValue(messageId);
+							const old = this.clearValue(messageId);
+							if (!old) return;
 							options.onStop?.('timeout', () => {
-								this.createComponentCollector(messageId, channelId, guildId, options);
+								this.createComponentCollector(messageId, channelId, guildId, options, old.components);
 							});
 						}, options.timeout)
 					: undefined,
@@ -97,9 +100,10 @@ export class ComponentHandler extends BaseHandler {
 			//@ts-expect-error generic
 			run: this.values.get(messageId)!.__run,
 			stop: (reason?: string) => {
-				this.deleteValue(messageId);
+				const old = this.clearValue(messageId);
+				if (!old) return;
 				options.onStop?.(reason, () => {
-					this.createComponentCollector(messageId, channelId, guildId, options);
+					this.createComponentCollector(messageId, channelId, guildId, options, old.components);
 				});
 			},
 		};
@@ -116,10 +120,10 @@ export class ComponentHandler extends BaseHandler {
 		await component.callback(
 			interaction,
 			reason => {
+				this.clearValue(id);
 				row.options?.onStop?.(reason ?? 'stop', () => {
-					this.createComponentCollector(row.messageId, row.channelId, row.guildId, row.options);
+					this.createComponentCollector(row.messageId, row.channelId, row.guildId, row.options, row.components);
 				});
-				this.deleteValue(id);
 			},
 			() => {
 				this.resetTimeouts(id);
@@ -149,15 +153,26 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	deleteValue(id: string, reason?: string) {
+		const component = this.clearValue(id);
+		if (!component) return;
+		component.options?.onStop?.(reason, () => {
+			this.createComponentCollector(
+				component.messageId,
+				component.channelId,
+				component.guildId,
+				component.options,
+				component.components,
+			);
+		});
+	}
+
+	clearValue(id: string) {
 		const component = this.values.get(id);
-		if (component) {
-			component.options?.onStop?.(reason, () => {
-				this.createComponentCollector(component.messageId, component.channelId, component.guildId, component.options);
-			});
-			clearTimeout(component.timeout);
-			clearTimeout(component.idle);
-			this.values.delete(id);
-		}
+		if (!component) return;
+		clearTimeout(component.timeout);
+		clearTimeout(component.idle);
+		this.values.delete(id);
+		return component;
 	}
 
 	stablishDefaults(component: ComponentCommands) {

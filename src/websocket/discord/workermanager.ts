@@ -4,7 +4,7 @@ import type { Worker as WorkerThreadsWorker } from 'node:worker_threads';
 import { ApiHandler, type CustomWorkerManagerEvents, Logger, type UsingClient, type WorkerClient } from '../..';
 import { type Adapter, MemoryAdapter } from '../../cache';
 import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
-import { BASE_HOST, type Identify, type MakePartial, MergeOptions, lazyLoadPackage } from '../../common';
+import { BASE_HOST, type Identify, MergeOptions, type PickPartial, lazyLoadPackage } from '../../common';
 import type { GatewayPresenceUpdateData, GatewaySendPayload, RESTGetAPIGatewayBotResult } from '../../types';
 import { WorkerManagerDefaults, properties } from '../constants';
 import { DynamicBucket } from '../structures';
@@ -46,7 +46,7 @@ export class WorkerManager extends Map<
 		return chunks;
 	}
 
-	options: MakePartial<Required<WorkerManagerOptions>, 'adapter' | 'handleWorkerMessage' | 'handlePayload'>;
+	options: PickPartial<Required<WorkerManagerOptions>, 'adapter' | 'handleWorkerMessage' | 'handlePayload'>;
 	debugger?: Logger;
 	connectQueue!: ConnectQueue;
 	workerQueue: (() => void)[] = [];
@@ -58,10 +58,10 @@ export class WorkerManager extends Map<
 
 	constructor(
 		options: Omit<
-			MakePartial<WorkerManagerOptions, 'token' | 'intents' | 'info' | 'handlePayload' | 'handleWorkerMessage'>,
+			PickPartial<WorkerManagerOptions, 'token' | 'intents' | 'info' | 'handlePayload' | 'handleWorkerMessage'>,
 			'resharding'
 		> & {
-			resharding?: MakePartial<NonNullable<WorkerManagerOptions['resharding']>, 'getInfo'>;
+			resharding?: PickPartial<NonNullable<WorkerManagerOptions['resharding']>, 'getInfo'>;
 		},
 	) {
 		super();

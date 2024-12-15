@@ -14,7 +14,7 @@ export type ToClass<T, This> = new (
 
 export type StringToNumber<T extends string> = T extends `${infer N extends number}` ? N : never;
 
-export type MakePartial<T, K extends keyof T> = Omit<T, K> & { [P in K]?: T[P] };
+export type PickPartial<T, K extends keyof T> = Omit<T, K> & { [P in K]?: T[P] };
 
 export type MakeDeepPartial<T, K extends keyof T> = Omit<T, K> & {
 	[P in K]?: DeepPartial<T[P]>;
@@ -90,6 +90,7 @@ export type NulleableCoalising<A, B> = NonFalsy<A> extends never ? B : A;
 export type TupleOr<A, T> = ValueOf<A> extends never ? A : TupleOr<ArrayFirsElement<T>, Tail<T>>;
 
 export type MakeRequired<T, K extends keyof T = keyof T> = T & { [P in K]-?: NonFalsy<T[P]> };
+export type PickRequired<T, K extends keyof T> = Omit<T, K> & { [P in K]: NonFalsy<T[P]> };
 
 export type NonFalsy<T> = T extends false | 0 | '' | null | undefined | 0n ? never : T;
 
