@@ -1,9 +1,9 @@
 import type { GatewayDispatchPayload, GatewaySendPayload } from '../../types';
 import type { ShardManager, ShardManagerOptions } from '../../websocket';
-import type { MakePartial } from '../types/util';
+import type { PickPartial } from '../types/util';
 
 export interface WatcherOptions
-	extends MakePartial<
+	extends PickPartial<
 		Omit<ShardManager['options'], 'handlePayload' | 'info' | 'token' | 'intents'>,
 		| 'compress'
 		| 'presence'

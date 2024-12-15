@@ -14,8 +14,8 @@ export const THREAD_CREATE = (self: UsingClient, data: GatewayThreadCreateDispat
 	return Transformers.ThreadChannel(self, data);
 };
 
-export const THREAD_DELETE = (self: UsingClient, data: GatewayThreadDeleteDispatchData) => {
-	return Transformers.ThreadChannel(self, data);
+export const THREAD_DELETE = async (self: UsingClient, data: GatewayThreadDeleteDispatchData) => {
+	return (await self.cache.channels?.get(data.id)) ?? toCamelCase(data);
 };
 
 export const THREAD_LIST_SYNC = (_self: UsingClient, data: GatewayThreadListSyncDispatchData) => {

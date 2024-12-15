@@ -3,7 +3,23 @@
  * @param c The class to get the descriptors of.
  * @returns The descriptors of the class.
  */
-function getDescriptors(c: TypeClass) {
+function getDenoDescriptors(c: TypeClass) {
+	const protos = [c.prototype];
+
+	let v = c;
+	while ((v = Object.getPrototypeOf(v))) {
+		if (v.prototype) protos.push(v.prototype);
+	}
+
+	return protos.map(x => Object.getOwnPropertyDescriptors(x));
+}
+
+/**
+ * Gets the descriptors of a class.
+ * @param c The class to get the descriptors of.
+ * @returns The descriptors of the class.
+ */
+function getNodeDescriptors(c: TypeClass) {
 	let proto = c.prototype;
 	const result: Record<string, TypedPropertyDescriptor<unknown> | PropertyDescriptor>[] = [];
 	while (proto) {
@@ -14,6 +30,12 @@ function getDescriptors(c: TypeClass) {
 		proto = proto.__proto__;
 	}
 	return result;
+}
+
+function getDescriptors(c: TypeClass) {
+	//@ts-expect-error
+	// biome-ignore lint/correctness/noUndeclaredVariables: <explanation>
+	return typeof Deno === 'undefined' ? getNodeDescriptors(c) : getDenoDescriptors(c);
 }
 
 /**

@@ -68,7 +68,7 @@ export class ComponentHandler extends BaseHandler {
 			idle:
 				options.idle && options.idle > 0
 					? setTimeout(() => {
-							this.deleteValue(messageId);
+							this.clearValue(messageId);
 							options.onStop?.('idle', () => {
 								this.createComponentCollector(messageId, channelId, guildId, options);
 							});
@@ -77,7 +77,7 @@ export class ComponentHandler extends BaseHandler {
 			timeout:
 				options.timeout && options.timeout > 0
 					? setTimeout(() => {
-							this.deleteValue(messageId);
+							this.clearValue(messageId);
 							options.onStop?.('timeout', () => {
 								this.createComponentCollector(messageId, channelId, guildId, options);
 							});
@@ -97,7 +97,7 @@ export class ComponentHandler extends BaseHandler {
 			//@ts-expect-error generic
 			run: this.values.get(messageId)!.__run,
 			stop: (reason?: string) => {
-				this.deleteValue(messageId);
+				this.clearValue(messageId);
 				options.onStop?.(reason, () => {
 					this.createComponentCollector(messageId, channelId, guildId, options);
 				});
@@ -119,7 +119,7 @@ export class ComponentHandler extends BaseHandler {
 				row.options?.onStop?.(reason ?? 'stop', () => {
 					this.createComponentCollector(row.messageId, row.channelId, row.guildId, row.options);
 				});
-				this.deleteValue(id);
+				this.clearValue(id);
 			},
 			() => {
 				this.resetTimeouts(id);
@@ -149,15 +149,20 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	deleteValue(id: string, reason?: string) {
+		const component = this.clearValue(id);
+		if (!component) return;
+		component.options?.onStop?.(reason, () => {
+			this.createComponentCollector(component.messageId, component.channelId, component.guildId, component.options);
+		});
+	}
+
+	clearValue(id: string) {
 		const component = this.values.get(id);
-		if (component) {
-			component.options?.onStop?.(reason, () => {
-				this.createComponentCollector(component.messageId, component.channelId, component.guildId, component.options);
-			});
-			clearTimeout(component.timeout);
-			clearTimeout(component.idle);
-			this.values.delete(id);
-		}
+		if (!component) return;
+		clearTimeout(component.timeout);
+		clearTimeout(component.idle);
+		this.values.delete(id);
+		return component;
 	}
 
 	stablishDefaults(component: ComponentCommands) {

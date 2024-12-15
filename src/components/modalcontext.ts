@@ -9,7 +9,6 @@ import type {
 	ModalCreateBodyRequest,
 	UnionToTuple,
 } from '../common';
-import type { Interaction } from '../structures/Interaction';
 import { MessageFlags } from '../types';
 
 export interface ModalContext extends BaseContext, ExtendContext {}
@@ -102,8 +101,7 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 		return this.interaction.deleteResponse();
 	}
 
-	modal(body: ModalCreateBodyRequest): ReturnType<Interaction['modal']> {
-		//@ts-expect-error
+	modal(body: ModalCreateBodyRequest) {
 		return this.interaction.modal(body);
 	}
 

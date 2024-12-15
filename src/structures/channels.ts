@@ -288,6 +288,7 @@ export class MessagesMethods extends DiscordBase {
 				ctx.client.reactions.purge(messageId, ctx.channelId, emoji),
 		};
 	}
+
 	static pins(ctx: MethodContext<{ channelId: string }>) {
 		return {
 			fetch: () => ctx.client.channels.pins(ctx.channelId),
@@ -528,15 +529,16 @@ export class ForumChannel extends BaseGuildChannel {
 
 export interface ThreadChannel
 	extends ObjectToLower<Omit<APIThreadChannel, 'permission_overwrites'>>,
-		TextBaseGuildChannel {}
+		Omit<TextBaseGuildChannel, 'edit' | 'parentId'> {}
 @mix(TextBaseGuildChannel)
 export class ThreadChannel extends BaseChannel<
 	ChannelType.PublicThread | ChannelType.AnnouncementThread | ChannelType.PrivateThread
 > {
+	parentId!: string;
 	declare type: ChannelType.PublicThread | ChannelType.AnnouncementThread | ChannelType.PrivateThread;
 	webhooks = WebhookChannelMethods.channel({
 		client: this.client,
-		channelId: this.parentId!,
+		channelId: this.parentId,
 	});
 
 	async join() {

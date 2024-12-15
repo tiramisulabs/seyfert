@@ -25,7 +25,6 @@ import {
 	type APIMessageStringSelectInteractionData,
 	type APIMessageUserSelectInteractionData,
 	type APIModalSubmission,
-	type APIModalSubmitInteraction,
 	type APITextInputComponent,
 	type APIUserApplicationCommandInteraction,
 	type APIUserApplicationCommandInteractionData,
@@ -69,7 +68,6 @@ import {
 	type When,
 	toCamelCase,
 } from '../common';
-import { mix } from '../deps/mixer';
 import { type AllChannels, channelFrom } from './';
 import { DiscordBase } from './extra/DiscordBase';
 import { PermissionsBitField } from './extra/Permissions';
@@ -363,7 +361,7 @@ export class BaseInteraction<
 		}
 	}
 
-	fetchGuild(force = false) {
+	async fetchGuild(force = false) {
 		return this.guildId ? this.client.guilds.fetch(this.guildId, force) : undefined;
 	}
 }
@@ -778,10 +776,7 @@ export class MessageCommandInteraction<FromGuild extends boolean = boolean> exte
 	}
 }
 
-export interface ModalSubmitInteraction<FromGuild extends boolean = boolean>
-	extends Omit<Interaction<FromGuild, APIModalSubmitInteraction>, 'modal'> {}
-@mix(Interaction)
-export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends BaseInteraction<FromGuild> {
+export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends Interaction<FromGuild> {
 	declare data: ObjectToLower<APIModalSubmission>;
 	get customId() {
 		return this.data.customId;
