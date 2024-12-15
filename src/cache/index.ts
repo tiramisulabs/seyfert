@@ -198,7 +198,7 @@ export class Cache {
 		return this.hasIntent('DirectMessages');
 	}
 
-	get hasBansIntent() {
+	get hasModerationIntent() {
 		return this.hasIntent('GuildModeration');
 	}
 
@@ -575,10 +575,36 @@ export class Cache {
 				await this.stageInstances?.remove(event.d.id, event.d.guild_id);
 				break;
 			case 'MESSAGE_CREATE':
-				await this.messages?.set(event.d.id, event.d.channel_id, event.d);
+				{
+					if (this.messages !== undefined) {
+						const data: Parameters<Cache['bulkPatch']>[0] = [
+							['messages', event.d, event.d.id, event.d.channel_id],
+							['users', event.d.author, event.d.author.id],
+						];
+
+						if (event.d.guild_id) {
+							if (event.d.member) data.push(['members', event.d.member, event.d.author.id, event.d.guild_id]);
+						}
+
+						await this.bulkPatch(data);
+					}
+				}
 				break;
 			case 'MESSAGE_UPDATE':
-				await this.messages?.patch(event.d.id, event.d.channel_id, event.d);
+				{
+					if (this.messages !== undefined) {
+						const data: Parameters<Cache['bulkPatch']>[0] = [
+							['messages', event.d, event.d.id, event.d.channel_id],
+							['users', event.d.author, event.d.author.id],
+						];
+
+						if (event.d.guild_id) {
+							if (event.d.member) data.push(['members', event.d.member, event.d.author.id, event.d.guild_id]);
+						}
+
+						await this.bulkPatch(data);
+					}
+				}
 				break;
 			case 'MESSAGE_DELETE':
 				await this.messages?.remove(event.d.id, event.d.channel_id);
