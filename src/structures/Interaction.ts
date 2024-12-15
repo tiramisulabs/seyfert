@@ -783,6 +783,26 @@ export interface ModalSubmitInteraction<FromGuild extends boolean = boolean>
 @mix(Interaction)
 export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends BaseInteraction<FromGuild> {
 	declare data: ObjectToLower<APIModalSubmission>;
+
+	update<WR extends boolean = false>(data: ComponentInteractionMessageUpdate, withResponse?: WR) {
+		return this.reply(
+			{
+				type: InteractionResponseType.UpdateMessage,
+				data,
+			},
+			withResponse,
+		);
+	}
+
+	deferUpdate<WR extends boolean = false>(withResponse?: WR) {
+		return this.reply<WR>(
+			{
+				type: InteractionResponseType.DeferredMessageUpdate,
+			},
+			withResponse,
+		);
+	}
+
 	get customId() {
 		return this.data.customId;
 	}
