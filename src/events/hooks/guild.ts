@@ -65,8 +65,13 @@ export const GUILD_MEMBER_ADD = (self: UsingClient, data: GatewayGuildMemberAddD
 	return Transformers.GuildMember(self, data, data.user, data.guild_id);
 };
 
-export const GUILD_MEMBER_REMOVE = (self: UsingClient, data: GatewayGuildMemberRemoveDispatchData) => {
-	return { ...toCamelCase(data), user: Transformers.User(self, data.user) };
+export const GUILD_MEMBER_REMOVE = async (self: UsingClient, data: GatewayGuildMemberRemoveDispatchData) => {
+	return (
+		(await self.cache.members?.get(data.user.id, data.guild_id)) ?? {
+			...toCamelCase(data),
+			user: Transformers.User(self, data.user),
+		}
+	);
 };
 
 export const GUILD_MEMBERS_CHUNK = (self: UsingClient, data: GatewayGuildMembersChunkDispatchData) => {

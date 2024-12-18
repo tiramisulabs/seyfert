@@ -1,6 +1,6 @@
 import { type MessageStructure, Transformers } from '../../client/transformers';
 import type { UsingClient } from '../../commands';
-import { type ObjectToLower, type OmitInsert, toCamelCase } from '../../common';
+import { type ObjectToLower, type OmitInsert, fakePromise, toCamelCase } from '../../common';
 import type {
 	GatewayMessageCreateDispatchData,
 	GatewayMessageDeleteBulkDispatchData,
@@ -27,7 +27,7 @@ export const MESSAGE_DELETE = async (
 export const MESSAGE_DELETE_BULK = async (self: UsingClient, data: GatewayMessageDeleteBulkDispatchData) => {
 	return {
 		...data,
-		messages: await Promise.all(data.ids.map(id => self.cache.messages?.get(id))),
+		messages: await Promise.all(data.ids.map(id => fakePromise(self.cache.messages?.get(id)).then(x => x ?? id))),
 	};
 };
 
