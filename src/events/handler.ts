@@ -183,44 +183,28 @@ export class EventHandler extends BaseHandler {
 		runCache = true,
 	) {
 		const Event = this.values[name];
-		if (!Event) {
-			return runCache
-				? this.client.cache.onPacket({
-						t: name,
-						d: packet,
-					} as GatewayDispatchPayload)
-				: undefined;
-		}
 		try {
-			if (Event.data.once && Event.fired) {
-				return runCache
-					? this.client.cache.onPacket({
-							t: name,
-							d: packet,
-						} as GatewayDispatchPayload)
-					: undefined;
+			if (!Event || (Event.data.once && Event.fired)) {
+				return;
 			}
 			Event.fired = true;
 			const hook = await RawEvents[name]?.(client, packet as never);
+			await (Event.run as any)(hook, client, shardId);
+		} catch (e) {
+			await this.onFail(name, e);
+		} finally {
 			if (runCache)
 				await this.client.cache.onPacket({
 					t: name,
 					d: packet,
 				} as GatewayDispatchPayload);
-			await (Event.run as any)(hook, client, shardId);
-		} catch (e) {
-			await this.onFail(name, e);
 		}
 	}
 
 	async runCustom<T extends CustomEventsKeys>(name: T, ...args: ResolveEventRunParams<T>) {
 		const Event = this.values[name];
-		if (!Event) {
-			// @ts-expect-error
-			return this.client.collectors.run(name, args, this.client);
-		}
 		try {
-			if (Event.data.once && Event.fired) {
+			if (!Event || (Event.data.once && Event.fired)) {
 				// @ts-expect-error
 				return this.client.collectors.run(name, args, this.client);
 			}
