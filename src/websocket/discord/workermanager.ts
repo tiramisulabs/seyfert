@@ -46,7 +46,7 @@ export class WorkerManager extends Map<
 		return chunks;
 	}
 
-	options: PickPartial<Required<WorkerManagerOptions>, 'adapter' | 'handleWorkerMessage' | 'handlePayload'>;
+	options: PickPartial<Required<WorkerManagerOptions>, 'adapter' | 'handleWorkerMessage' | 'handlePayload' | 'getRC'>;
 	debugger?: Logger;
 	connectQueue!: ConnectQueue;
 	workerQueue: (() => void)[] = [];
@@ -553,9 +553,11 @@ export class WorkerManager extends Map<
 	}
 
 	async start() {
-		const rc = await BaseClient.prototype.getRC<InternalRuntimeConfig>();
+		const rc =
+			((await this.options.getRC?.()) as InternalRuntimeConfig | undefined) ??
+			(await BaseClient.prototype.getRC<InternalRuntimeConfig>());
 
-		this.options.debug ||= rc.debug;
+		this.options.debug ||= rc.debug ?? false;
 		this.options.intents ||= rc.intents ?? 0;
 		this.options.token ??= rc.token;
 		this.rest ??= new ApiHandler({

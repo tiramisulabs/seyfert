@@ -1,3 +1,4 @@
+import type { InternalRuntimeConfig, InternalRuntimeConfigHTTP } from '../../client/base';
 import type { Awaitable, DeepPartial, Logger } from '../../common';
 import type {
 	APIGatewayBotInfo,
@@ -73,6 +74,8 @@ export interface WorkerManagerOptions extends Omit<ShardManagerOptions, 'handleP
 	handleWorkerMessage?(message: WorkerMessages): any;
 
 	properties?: DeepPartial<NonNullable<ShardManagerOptions['properties']>>;
+
+	getRC?(): Awaitable<InternalRuntimeConfig | InternalRuntimeConfigHTTP>;
 }
 
 export interface ShardData {
