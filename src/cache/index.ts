@@ -320,7 +320,7 @@ export class Cache {
 							relationshipsData[hashId] = [];
 						}
 						relationshipsData[hashId].push(id);
-						if (type !== 'overwrites') {
+						if (type !== 'overwrites' && type !== 'messages') {
 							data.guild_id = guildId;
 						}
 						allData.push([this[type]!.hashId(id), this[type]!.parse(data, id, guildId!)]);
@@ -410,7 +410,7 @@ export class Cache {
 							relationshipsData[hashId] = [];
 						}
 						relationshipsData[hashId].push(id);
-						if (type !== 'overwrites') {
+						if (type !== 'overwrites' && type !== 'messages') {
 							data.guild_id = guildId;
 						}
 						allData.push([this[type]!.hashId(id), this[type]!.parse(data, id, guildId!)]);
