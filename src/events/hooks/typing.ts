@@ -1,9 +1,16 @@
-import { Transformers } from '../../client/transformers';
+import { type GuildMemberStructure, Transformers } from '../../client/transformers';
 import type { UsingClient } from '../../commands';
-import { toCamelCase } from '../../common';
+import { type ObjectToLower, toCamelCase } from '../../common';
 import type { GatewayTypingStartDispatchData } from '../../types';
 
-export const TYPING_START = (self: UsingClient, data: GatewayTypingStartDispatchData) => {
+export const TYPING_START = (
+	self: UsingClient,
+	data: GatewayTypingStartDispatchData,
+):
+	| (ObjectToLower<Omit<GatewayTypingStartDispatchData, 'member'>> & {
+			member: GuildMemberStructure;
+	  })
+	| ObjectToLower<Omit<GatewayTypingStartDispatchData, 'member'>> => {
 	return data.member
 		? {
 				...toCamelCase(data),

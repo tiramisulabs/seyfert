@@ -13,7 +13,7 @@ import type {
 	GatewayMessageUpdateDispatchData,
 } from '../../types';
 
-export const MESSAGE_CREATE = (self: UsingClient, data: GatewayMessageCreateDispatchData) => {
+export const MESSAGE_CREATE = (self: UsingClient, data: GatewayMessageCreateDispatchData): MessageStructure => {
 	return Transformers.Message(self, data);
 };
 
@@ -24,7 +24,10 @@ export const MESSAGE_DELETE = async (
 	return (await self.cache.messages?.get(data.id)) ?? toCamelCase(data);
 };
 
-export const MESSAGE_DELETE_BULK = async (self: UsingClient, data: GatewayMessageDeleteBulkDispatchData) => {
+export const MESSAGE_DELETE_BULK = async (
+	self: UsingClient,
+	data: GatewayMessageDeleteBulkDispatchData,
+): Promise<GatewayMessageDeleteBulkDispatchData & { messages: (MessageStructure | string)[] }> => {
 	return {
 		...data,
 		messages: await Promise.all(data.ids.map(id => fakePromise(self.cache.messages?.get(id)).then(x => x ?? id))),

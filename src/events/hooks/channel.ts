@@ -9,11 +9,11 @@ import type { UsingClient } from '../../commands';
 import { toCamelCase } from '../../common';
 import { type AllChannels, channelFrom } from '../../structures';
 
-export const CHANNEL_CREATE = (self: UsingClient, data: GatewayChannelCreateDispatchData) => {
+export const CHANNEL_CREATE = (self: UsingClient, data: GatewayChannelCreateDispatchData): AllChannels => {
 	return channelFrom(data, self);
 };
 
-export const CHANNEL_DELETE = (self: UsingClient, data: GatewayChannelDeleteDispatchData) => {
+export const CHANNEL_DELETE = (self: UsingClient, data: GatewayChannelDeleteDispatchData): AllChannels => {
 	return channelFrom(data, self);
 };
 

@@ -1,6 +1,6 @@
 import { type ThreadChannelStructure, Transformers } from '../../client/transformers';
 import type { UsingClient } from '../../commands';
-import { toCamelCase } from '../../common';
+import { type ObjectToLower, toCamelCase } from '../../common';
 import type {
 	GatewayThreadCreateDispatchData,
 	GatewayThreadDeleteDispatchData,
@@ -10,12 +10,15 @@ import type {
 	GatewayThreadUpdateDispatchData,
 } from '../../types';
 
-export const THREAD_CREATE = (self: UsingClient, data: GatewayThreadCreateDispatchData) => {
+export const THREAD_CREATE = (self: UsingClient, data: GatewayThreadCreateDispatchData): ThreadChannelStructure => {
 	return Transformers.ThreadChannel(self, data);
 };
 
-export const THREAD_DELETE = async (self: UsingClient, data: GatewayThreadDeleteDispatchData) => {
-	return (await self.cache.channels?.get(data.id)) ?? toCamelCase(data);
+export const THREAD_DELETE = async (
+	self: UsingClient,
+	data: GatewayThreadDeleteDispatchData,
+): Promise<ThreadChannelStructure | ObjectToLower<GatewayThreadDeleteDispatchData>> => {
+	return ((await self.cache.channels?.get(data.id)) as ThreadChannelStructure | undefined) ?? toCamelCase(data);
 };
 
 export const THREAD_LIST_SYNC = (_self: UsingClient, data: GatewayThreadListSyncDispatchData) => {

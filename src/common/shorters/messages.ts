@@ -8,12 +8,12 @@ import type {
 } from '../../types';
 
 import type { ValidAnswerId } from '../../api/Routes/channels';
-import { Transformers } from '../../client';
+import { type MessageStructure, type ThreadChannelStructure, Transformers, type UserStructure } from '../../client';
 import type { MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
 
 export class MessageShorter extends BaseShorter {
-	async write(channelId: string, { files, ...body }: MessageCreateBodyRequest) {
+	async write(channelId: string, { files, ...body }: MessageCreateBodyRequest): Promise<MessageStructure> {
 		const parsedFiles = files ? await resolveFiles(files) : undefined;
 
 		const transformedBody = MessagesMethods.transformMessageBody<RESTPostAPIChannelMessageJSONBody>(
@@ -33,7 +33,11 @@ export class MessageShorter extends BaseShorter {
 			});
 	}
 
-	async edit(messageId: string, channelId: string, { files, ...body }: MessageUpdateBodyRequest) {
+	async edit(
+		messageId: string,
+		channelId: string,
+		{ files, ...body }: MessageUpdateBodyRequest,
+	): Promise<MessageStructure> {
 		const parsedFiles = files ? await resolveFiles(files) : undefined;
 		return this.client.proxy
 			.channels(channelId)
@@ -48,7 +52,7 @@ export class MessageShorter extends BaseShorter {
 			});
 	}
 
-	crosspost(messageId: string, channelId: string, reason?: string) {
+	crosspost(messageId: string, channelId: string, reason?: string): Promise<MessageStructure> {
 		return this.client.proxy
 			.channels(channelId)
 			.messages(messageId)
@@ -70,7 +74,7 @@ export class MessageShorter extends BaseShorter {
 			});
 	}
 
-	async fetch(messageId: string, channelId: string, force = false) {
+	async fetch(messageId: string, channelId: string, force = false): Promise<MessageStructure> {
 		if (!force) {
 			const message = await this.client.cache.messages?.get(messageId);
 			if (message) return message;
@@ -97,11 +101,11 @@ export class MessageShorter extends BaseShorter {
 		channelId: string,
 		messageId: string,
 		options: RESTPostAPIChannelMessagesThreadsJSONBody & { reason?: string },
-	) {
+	): Promise<ThreadChannelStructure> {
 		return this.client.threads.fromMessage(channelId, messageId, options);
 	}
 
-	endPoll(channelId: string, messageId: string) {
+	endPoll(channelId: string, messageId: string): Promise<MessageStructure> {
 		return this.client.proxy
 			.channels(channelId)
 			.polls(messageId)
@@ -109,7 +113,7 @@ export class MessageShorter extends BaseShorter {
 			.then(message => Transformers.Message(this.client, message));
 	}
 
-	getAnswerVoters(channelId: string, messageId: string, answerId: ValidAnswerId) {
+	getAnswerVoters(channelId: string, messageId: string, answerId: ValidAnswerId): Promise<UserStructure[]> {
 		return this.client.proxy
 			.channels(channelId)
 			.polls(messageId)
@@ -118,7 +122,7 @@ export class MessageShorter extends BaseShorter {
 			.then(data => data.users.map(user => Transformers.User(this.client, user)));
 	}
 
-	list(channelId: string, fetchOptions: RESTGetAPIChannelMessagesQuery) {
+	list(channelId: string, fetchOptions: RESTGetAPIChannelMessagesQuery): Promise<MessageStructure[]> {
 		return this.client.proxy
 			.channels(channelId)
 			.messages.get({ query: fetchOptions })

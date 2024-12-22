@@ -1,4 +1,4 @@
-import type { UsingClient } from '../';
+import type { UserStructure, UsingClient, VoiceStateStructure } from '../';
 import type { VoiceStateResource } from '../cache/resources/voice-states';
 import { type GuildMemberStructure, Transformers } from '../client/transformers';
 import type { ObjectToLower } from '../common';
@@ -22,26 +22,26 @@ export class VoiceState extends Base {
 		return this.mute || this.selfMute;
 	}
 
-	async member(force?: boolean) {
+	async member(force?: boolean): Promise<GuildMemberStructure> {
 		return (this.withMember = await this.client.members.fetch(this.guildId, this.userId, force));
 	}
 
-	user(force?: boolean) {
+	user(force?: boolean): Promise<UserStructure> {
 		return this.client.users.fetch(this.userId, force);
 	}
 
-	async channel(force?: boolean) {
+	async channel(force?: boolean): Promise<AllGuildVoiceChannels | undefined> {
 		if (!this.channelId) return;
 		return this.client.channels.fetch(this.channelId, force) as Promise<AllGuildVoiceChannels>;
 	}
 
-	async setMute(mute = !this.mute, reason?: string) {
+	async setMute(mute = !this.mute, reason?: string): Promise<GuildMemberStructure> {
 		const member = await this.client.members.edit(this.guildId, this.userId, { mute }, reason);
 		this.mute = mute;
 		return member;
 	}
 
-	async setDeaf(deaf = !this.deaf, reason?: string) {
+	async setDeaf(deaf = !this.deaf, reason?: string): Promise<GuildMemberStructure> {
 		const member = await this.client.members.edit(this.guildId, this.userId, { deaf }, reason);
 		this.deaf = deaf;
 		return member;
@@ -60,16 +60,16 @@ export class VoiceState extends Base {
 		this.requestToSpeakTimestamp = date;
 	}
 
-	disconnect(reason?: string) {
+	disconnect(reason?: string): Promise<GuildMemberStructure> {
 		return this.setChannel(null, reason);
 	}
 
-	async fetch(force = false) {
+	async fetch(force = false): Promise<VoiceStateStructure> {
 		const member = this.withMember ?? (await this.member(force));
 		return this.client.members.voice(this.guildId, member.id, force);
 	}
 
-	async setChannel(channel_id: null | string, reason?: string) {
+	async setChannel(channel_id: null | string, reason?: string): Promise<GuildMemberStructure> {
 		const member = await this.client.members.edit(this.guildId, this.userId, { channel_id }, reason);
 		this.channelId = channel_id;
 		return member;

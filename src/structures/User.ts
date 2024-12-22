@@ -1,4 +1,5 @@
 import { calculateUserDefaultAvatarIndex } from '../api';
+import type { DMChannelStructure, MessageStructure, UserStructure } from '../client';
 import { Formatter, type MessageCreateBodyRequest, type ObjectToLower } from '../common';
 import type { ImageOptions } from '../common/types/options';
 import type { APIUser } from '../types';
@@ -18,18 +19,18 @@ export class User extends DiscordBase<APIUser> {
 	/**
 	 * Fetch user
 	 */
-	fetch(force = false) {
+	fetch(force = false): Promise<UserStructure> {
 		return this.client.users.fetch(this.id, force);
 	}
 
 	/**
 	 * Open a DM with the user
 	 */
-	dm(force = false) {
+	dm(force = false): Promise<DMChannelStructure> {
 		return this.client.users.createDM(this.id, force);
 	}
 
-	write(body: MessageCreateBodyRequest) {
+	write(body: MessageCreateBodyRequest): Promise<MessageStructure> {
 		return this.client.users.write(this.id, body);
 	}
 

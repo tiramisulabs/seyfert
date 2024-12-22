@@ -1,12 +1,16 @@
 import {
+	type GuildEmojiStructure,
 	type GuildMemberStructure,
 	type GuildRoleStructure,
 	type GuildStructure,
+	type StickerStructure,
 	Transformers,
+	type UserStructure,
 } from '../../client/transformers';
 import type { UsingClient } from '../../commands';
-import { toCamelCase } from '../../common';
+import { type ObjectToLower, toCamelCase } from '../../common';
 import type {
+	APIUnavailableGuild,
 	GatewayGuildAuditLogEntryCreateDispatchData,
 	GatewayGuildBanAddDispatchData,
 	GatewayGuildBanRemoveDispatchData,
@@ -34,23 +38,41 @@ export const GUILD_AUDIT_LOG_ENTRY_CREATE = (_self: UsingClient, data: GatewayGu
 	return toCamelCase(data);
 };
 
-export const GUILD_BAN_ADD = (self: UsingClient, data: GatewayGuildBanAddDispatchData) => {
+export const GUILD_BAN_ADD = (
+	self: UsingClient,
+	data: GatewayGuildBanAddDispatchData,
+): ObjectToLower<Omit<GatewayGuildBanAddDispatchData, 'user'>> & {
+	user: UserStructure;
+} => {
 	return { ...toCamelCase(data), user: Transformers.User(self, data.user) };
 };
 
-export const GUILD_BAN_REMOVE = (self: UsingClient, data: GatewayGuildBanRemoveDispatchData) => {
+export const GUILD_BAN_REMOVE = (
+	self: UsingClient,
+	data: GatewayGuildBanRemoveDispatchData,
+): ObjectToLower<Omit<GatewayGuildBanRemoveDispatchData, 'user'>> & {
+	user: UserStructure;
+} => {
 	return { ...toCamelCase(data), user: Transformers.User(self, data.user) };
 };
 
-export const GUILD_CREATE = (self: UsingClient, data: GatewayGuildCreateDispatchData) => {
+export const GUILD_CREATE = (self: UsingClient, data: GatewayGuildCreateDispatchData): GuildStructure<'create'> => {
 	return Transformers.Guild<'create'>(self, data);
 };
 
-export const GUILD_DELETE = async (self: UsingClient, data: GatewayGuildDeleteDispatchData) => {
+export const GUILD_DELETE = async (
+	self: UsingClient,
+	data: GatewayGuildDeleteDispatchData,
+): Promise<GuildStructure<'cached'> | APIUnavailableGuild> => {
 	return (await self.cache.guilds?.get(data.id)) ?? data;
 };
 
-export const GUILD_EMOJIS_UPDATE = (self: UsingClient, data: GatewayGuildEmojisUpdateDispatchData) => {
+export const GUILD_EMOJIS_UPDATE = (
+	self: UsingClient,
+	data: GatewayGuildEmojisUpdateDispatchData,
+): ObjectToLower<Omit<GatewayGuildEmojisUpdateDispatchData, 'emojis'>> & {
+	emojis: GuildEmojiStructure[];
+} => {
 	return {
 		...toCamelCase(data),
 		emojis: data.emojis.map(x => Transformers.GuildEmoji(self, x, data.guild_id)),
@@ -61,11 +83,20 @@ export const GUILD_INTEGRATIONS_UPDATE = (_self: UsingClient, data: GatewayGuild
 	return toCamelCase(data);
 };
 
-export const GUILD_MEMBER_ADD = (self: UsingClient, data: GatewayGuildMemberAddDispatchData) => {
+export const GUILD_MEMBER_ADD = (self: UsingClient, data: GatewayGuildMemberAddDispatchData): GuildMemberStructure => {
 	return Transformers.GuildMember(self, data, data.user, data.guild_id);
 };
 
-export const GUILD_MEMBER_REMOVE = async (self: UsingClient, data: GatewayGuildMemberRemoveDispatchData) => {
+export const GUILD_MEMBER_REMOVE = async (
+	self: UsingClient,
+	data: GatewayGuildMemberRemoveDispatchData,
+): Promise<
+	| GuildMemberStructure
+	| {
+			user: UserStructure;
+			guildId: string;
+	  }
+> => {
 	return (
 		(await self.cache.members?.get(data.user.id, data.guild_id)) ?? {
 			...toCamelCase(data),
@@ -74,7 +105,12 @@ export const GUILD_MEMBER_REMOVE = async (self: UsingClient, data: GatewayGuildM
 	);
 };
 
-export const GUILD_MEMBERS_CHUNK = (self: UsingClient, data: GatewayGuildMembersChunkDispatchData) => {
+export const GUILD_MEMBERS_CHUNK = (
+	self: UsingClient,
+	data: GatewayGuildMembersChunkDispatchData,
+): ObjectToLower<Omit<GatewayGuildMembersChunkDispatchData, 'members'>> & {
+	members: GuildMemberStructure[];
+} => {
 	return {
 		...toCamelCase(data),
 		members: data.members.map(x => Transformers.GuildMember(self, x, x.user, data.guild_id)),
@@ -124,11 +160,14 @@ export const GUILD_SCHEDULED_EVENT_USER_REMOVE = (
 	return toCamelCase(data);
 };
 
-export const GUILD_ROLE_CREATE = (self: UsingClient, data: GatewayGuildRoleCreateDispatchData) => {
+export const GUILD_ROLE_CREATE = (self: UsingClient, data: GatewayGuildRoleCreateDispatchData): GuildRoleStructure => {
 	return Transformers.GuildRole(self, data.role, data.guild_id);
 };
 
-export const GUILD_ROLE_DELETE = async (self: UsingClient, data: GatewayGuildRoleDeleteDispatchData) => {
+export const GUILD_ROLE_DELETE = async (
+	self: UsingClient,
+	data: GatewayGuildRoleDeleteDispatchData,
+): Promise<GuildRoleStructure | ObjectToLower<GatewayGuildRoleDeleteDispatchData>> => {
 	return (await self.cache.roles?.get(data.role_id)) || toCamelCase(data);
 };
 
@@ -139,7 +178,12 @@ export const GUILD_ROLE_UPDATE = async (
 	return [Transformers.GuildRole(self, data.role, data.guild_id), await self.cache.roles?.get(data.role.id)];
 };
 
-export const GUILD_STICKERS_UPDATE = (self: UsingClient, data: GatewayGuildStickersUpdateDispatchData) => {
+export const GUILD_STICKERS_UPDATE = (
+	self: UsingClient,
+	data: GatewayGuildStickersUpdateDispatchData,
+): ObjectToLower<Omit<GatewayGuildStickersUpdateDispatchData, 'stickers'>> & {
+	stickers: StickerStructure[];
+} => {
 	return {
 		...toCamelCase(data),
 		stickers: data.stickers.map(x => Transformers.Sticker(self, x)),

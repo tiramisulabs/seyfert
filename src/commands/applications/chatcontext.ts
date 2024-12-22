@@ -1,4 +1,4 @@
-import type { AllChannels, InferWithPrefix, Message, ReturnCache } from '../..';
+import type { ReturnCache } from '../..';
 import type { Client, WorkerClient } from '../../client';
 import type {
 	GuildMemberStructure,
@@ -6,16 +6,17 @@ import type {
 	InteractionGuildMemberStructure,
 	MessageStructure,
 	OptionResolverStructure,
+	UserStructure,
 	WebhookMessageStructure,
 } from '../../client/transformers';
 import type { If, MakeRequired, UnionToTuple, When } from '../../common';
 import type { InteractionCreateBodyRequest, InteractionMessageUpdateBodyRequest } from '../../common/types/write';
-import { ChatInputCommandInteraction } from '../../structures';
+import { type AllChannels, ChatInputCommandInteraction, type Message } from '../../structures';
 import { MessageFlags } from '../../types';
 import { BaseContext } from '../basecontext';
 import type { RegisteredMiddlewares } from '../decorators';
 import type { Command, ContextOptions, OptionsRecord, SubCommand } from './chat';
-import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
+import type { CommandMetadata, ExtendContext, GlobalMetadata, InferWithPrefix, UsingClient } from './shared';
 
 export interface CommandContext<T extends OptionsRecord = {}, M extends keyof RegisteredMiddlewares = never>
 	extends BaseContext,
@@ -202,7 +203,7 @@ export class CommandContext<
 		return this.interaction?.channelId || (this.message! as MessageStructure).channelId;
 	}
 
-	get author() {
+	get author(): UserStructure {
 		return this.interaction?.user || (this.message! as MessageStructure).author;
 	}
 

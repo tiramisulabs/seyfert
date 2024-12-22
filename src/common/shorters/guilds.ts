@@ -1,7 +1,14 @@
 import { resolveFiles } from '../../builders';
 import type { Channels } from '../../cache/resources/channels';
-import { type GuildStructure, type StickerStructure, Transformers } from '../../client/transformers';
-import { BaseChannel, type CreateStickerBodyRequest, Guild, GuildMember, channelFrom } from '../../structures';
+import {
+	type AnonymousGuildStructure,
+	type AutoModerationRuleStructure,
+	type GuildMemberStructure,
+	type GuildStructure,
+	type StickerStructure,
+	Transformers,
+} from '../../client/transformers';
+import { type AllChannels, BaseChannel, type CreateStickerBodyRequest, Guild, channelFrom } from '../../structures';
 import type {
 	APIChannel,
 	APISticker,
@@ -36,7 +43,7 @@ export class GuildShorter extends BaseShorter {
 	 * @param force Whether to force fetching the guild from the API even if it exists in the cache.
 	 * @returns A Promise that resolves to the fetched guild.
 	 */
-	async fetch(id: string, force = false) {
+	async fetch(id: string, force = false): Promise<GuildStructure<'api'>> {
 		return Transformers.Guild<'api'>(this.client, await this.raw(id, force));
 	}
 
@@ -68,21 +75,21 @@ export class GuildShorter extends BaseShorter {
 		return new Guild(this.client, guild);
 	}
 
-	list(query?: RESTGetAPICurrentUserGuildsQuery) {
+	list(query?: RESTGetAPICurrentUserGuildsQuery): Promise<AnonymousGuildStructure[]> {
 		return this.client.proxy
 			.users('@me')
 			.guilds.get({ query })
 			.then(guilds => guilds.map(guild => Transformers.AnonymousGuild(this.client, { ...guild, splash: null })));
 	}
 
-	async fetchSelf(id: string, force = false) {
+	async fetchSelf(id: string, force = false): Promise<GuildMemberStructure> {
 		if (!force) {
 			const self = await this.client.cache.members?.raw(this.client.botId, id);
-			if (self?.user) return new GuildMember(this.client, self, self.user, id);
+			if (self?.user) return Transformers.GuildMember(this.client, self, self.user, id);
 		}
 		const self = await this.client.proxy.guilds(id).members(this.client.botId).get();
 		await this.client.cache.members?.patch(self.user.id, id, self);
-		return new GuildMember(this.client, self, self.user, id);
+		return Transformers.GuildMember(this.client, self, self.user, id);
 	}
 
 	leave(id: string) {
@@ -104,7 +111,7 @@ export class GuildShorter extends BaseShorter {
 			 * @param force Whether to force fetching channels from the API even if they exist in the cache.
 			 * @returns A Promise that resolves to an array of channels.
 			 */
-			list: async (guildId: string, force = false) => {
+			list: async (guildId: string, force = false): Promise<AllChannels[]> => {
 				let channels: ReturnType<Channels['values']> | APIChannel[];
 				if (!force) {
 					channels = (await this.client.cache.channels?.values(guildId)) ?? [];
@@ -207,7 +214,7 @@ export class GuildShorter extends BaseShorter {
 			 * @param guildId The ID of the guild.
 			 * @returns A Promise that resolves to an array of auto-moderation rules.
 			 */
-			list: (guildId: string) =>
+			list: (guildId: string): Promise<AutoModerationRuleStructure[]> =>
 				this.client.proxy
 					.guilds(guildId)
 					['auto-moderation'].rules.get()
@@ -219,7 +226,7 @@ export class GuildShorter extends BaseShorter {
 			 * @param body The data for creating the auto-moderation rule.
 			 * @returns A Promise that resolves to the created auto-moderation rule.
 			 */
-			create: (guildId: string, body: RESTPostAPIAutoModerationRuleJSONBody) =>
+			create: (guildId: string, body: RESTPostAPIAutoModerationRuleJSONBody): Promise<AutoModerationRuleStructure> =>
 				this.client.proxy
 					.guilds(guildId)
 					['auto-moderation'].rules.post({ body })
@@ -242,7 +249,7 @@ export class GuildShorter extends BaseShorter {
 			 * @param ruleId The ID of the rule to fetch.
 			 * @returns A Promise that resolves to the fetched auto-moderation rule.
 			 */
-			fetch: (guildId: string, ruleId: string) => {
+			fetch: (guildId: string, ruleId: string): Promise<AutoModerationRuleStructure> => {
 				return this.client.proxy
 					.guilds(guildId)
 					['auto-moderation'].rules(ruleId)
@@ -258,7 +265,12 @@ export class GuildShorter extends BaseShorter {
 			 * @param reason The reason for editing the rule.
 			 * @returns A Promise that resolves to the edited auto-moderation rule.
 			 */
-			edit: (guildId: string, ruleId: string, body: RESTPatchAPIAutoModerationRuleJSONBody, reason?: string) => {
+			edit: (
+				guildId: string,
+				ruleId: string,
+				body: RESTPatchAPIAutoModerationRuleJSONBody,
+				reason?: string,
+			): Promise<AutoModerationRuleStructure> => {
 				return this.client.proxy
 					.guilds(guildId)
 					['auto-moderation'].rules(ruleId)
@@ -278,7 +290,7 @@ export class GuildShorter extends BaseShorter {
 			 * @param guildId The ID of the guild.
 			 * @returns A Promise that resolves to an array of stickers.
 			 */
-			list: async (guildId: string) => {
+			list: async (guildId: string): Promise<StickerStructure[]> => {
 				const stickers = await this.client.proxy.guilds(guildId).stickers.get();
 				await this.client.cache.stickers?.set(
 					stickers.map(st => [st.id, st] as any),
@@ -294,7 +306,11 @@ export class GuildShorter extends BaseShorter {
 			 * @param reason The reason for creating the sticker.
 			 * @returns A Promise that resolves to the created sticker.
 			 */
-			create: async (guildId: string, { file, ...json }: CreateStickerBodyRequest, reason?: string) => {
+			create: async (
+				guildId: string,
+				{ file, ...json }: CreateStickerBodyRequest,
+				reason?: string,
+			): Promise<StickerStructure> => {
 				const fileResolve = await resolveFiles([file]);
 				const sticker = await this.client.proxy
 					.guilds(guildId)
@@ -311,7 +327,12 @@ export class GuildShorter extends BaseShorter {
 			 * @param reason The reason for editing the sticker.
 			 * @returns A Promise that resolves to the edited sticker.
 			 */
-			edit: async (guildId: string, stickerId: string, body: RESTPatchAPIGuildStickerJSONBody, reason?: string) => {
+			edit: async (
+				guildId: string,
+				stickerId: string,
+				body: RESTPatchAPIGuildStickerJSONBody,
+				reason?: string,
+			): Promise<StickerStructure> => {
 				const sticker = await this.client.proxy.guilds(guildId).stickers(stickerId).patch({ body, reason });
 				await this.client.cache.stickers?.setIfNI('GuildExpressions', stickerId, guildId, sticker);
 				return Transformers.Sticker(this.client, sticker);
@@ -324,7 +345,7 @@ export class GuildShorter extends BaseShorter {
 			 * @param force Whether to force fetching the sticker from the API even if it exists in the cache.
 			 * @returns A Promise that resolves to the fetched sticker.
 			 */
-			fetch: async (guildId: string, stickerId: string, force = false) => {
+			fetch: async (guildId: string, stickerId: string, force = false): Promise<StickerStructure> => {
 				let sticker: APISticker | StickerStructure | undefined;
 				if (!force) {
 					sticker = await this.client.cache.stickers?.get(stickerId);

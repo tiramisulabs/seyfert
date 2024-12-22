@@ -1,4 +1,4 @@
-import type { RawFile, UsingClient } from '..';
+import type { GuildStructure, RawFile, StickerStructure, UsingClient } from '..';
 import type { Attachment, AttachmentBuilder } from '../builders';
 import { Transformers, type UserStructure } from '../client/transformers';
 import type { MethodContext, ObjectToLower } from '../common';
@@ -16,17 +16,17 @@ export class Sticker extends DiscordBase {
 		}
 	}
 
-	async guild(force = false) {
+	async guild(force = false): Promise<GuildStructure<'api'> | undefined> {
 		if (!this.guildId) return;
 		return this.client.guilds.fetch(this.guildId, force);
 	}
 
-	async edit(body: RESTPatchAPIGuildStickerJSONBody, reason?: string) {
+	async edit(body: RESTPatchAPIGuildStickerJSONBody, reason?: string): Promise<StickerStructure | undefined> {
 		if (!this.guildId) return;
 		return this.client.guilds.stickers.edit(this.guildId, this.id, body, reason);
 	}
 
-	async fetch(force = false) {
+	async fetch(force = false): Promise<StickerStructure | undefined> {
 		if (!this.guildId) return;
 		return this.client.guilds.stickers.fetch(this.guildId, this.id, force);
 	}
@@ -38,12 +38,13 @@ export class Sticker extends DiscordBase {
 
 	static methods({ client, guildId }: MethodContext<{ guildId: string }>) {
 		return {
-			list: () => client.guilds.stickers.list(guildId),
-			create: (payload: CreateStickerBodyRequest, reason?: string) =>
+			list: (): Promise<StickerStructure[]> => client.guilds.stickers.list(guildId),
+			create: (payload: CreateStickerBodyRequest, reason?: string): Promise<StickerStructure> =>
 				client.guilds.stickers.create(guildId, payload, reason),
-			edit: (stickerId: string, body: RESTPatchAPIGuildStickerJSONBody, reason?: string) =>
+			edit: (stickerId: string, body: RESTPatchAPIGuildStickerJSONBody, reason?: string): Promise<StickerStructure> =>
 				client.guilds.stickers.edit(guildId, stickerId, body, reason),
-			fetch: (stickerId: string, force = false) => client.guilds.stickers.fetch(guildId, stickerId, force),
+			fetch: (stickerId: string, force = false): Promise<StickerStructure> =>
+				client.guilds.stickers.fetch(guildId, stickerId, force),
 			delete: (stickerId: string, reason?: string) => client.guilds.stickers.delete(guildId, stickerId, reason),
 		};
 	}

@@ -1,4 +1,11 @@
-import { type AnonymousGuildStructure, Transformers, type UserStructure } from '../client/transformers';
+import {
+	type AnonymousGuildStructure,
+	type GuildStructure,
+	Transformers,
+	type UserStructure,
+	type WebhookMessageStructure,
+	type WebhookStructure,
+} from '../client/transformers';
 import type { UsingClient } from '../commands';
 import type {
 	ImageOptions,
@@ -18,6 +25,7 @@ import type {
 	RESTPatchAPIWebhookWithTokenJSONBody,
 	RESTPostAPIWebhookWithTokenQuery,
 } from '../types';
+import type { AllChannels } from './channels';
 import { DiscordBase } from './extra/DiscordBase';
 
 export interface Webhook extends DiscordBase, ObjectToLower<Omit<APIWebhook, 'user' | 'source_guild'>> {}
@@ -58,7 +66,7 @@ export class Webhook extends DiscordBase {
 	 * @param force Whether to force fetching the guild even if it's already cached.
 	 * @returns A promise that resolves to the guild associated with the webhook, or undefined if not applicable.
 	 */
-	async guild(force = false) {
+	async guild(force = false): Promise<GuildStructure<'api'> | undefined> {
 		if (!this.sourceGuild?.id) return;
 		return this.client.guilds.fetch(this.sourceGuild.id, force);
 	}
@@ -68,7 +76,7 @@ export class Webhook extends DiscordBase {
 	 * @param force Whether to force fetching the channel even if it's already cached.
 	 * @returns A promise that resolves to the channel associated with the webhook, or undefined if not applicable.
 	 */
-	async channel(force = false) {
+	async channel(force = false): Promise<AllChannels | undefined> {
 		if (!this.sourceChannel?.id) return;
 		return this.client.channels.fetch(this.sourceChannel.id, force);
 	}
@@ -90,7 +98,7 @@ export class Webhook extends DiscordBase {
 	 * Fetches the webhook data from the Discord API.
 	 * @returns A promise that resolves to the fetched webhook data.
 	 */
-	fetch() {
+	fetch(): Promise<WebhookStructure> {
 		return this.client.webhooks.fetch(this.id, this.token);
 	}
 
@@ -100,7 +108,10 @@ export class Webhook extends DiscordBase {
 	 * @param reason The reason for editing the webhook.
 	 * @returns A promise that resolves when the webhook is successfully edited.
 	 */
-	edit(body: RESTPatchAPIWebhookJSONBody | RESTPatchAPIWebhookWithTokenJSONBody, reason?: string) {
+	edit(
+		body: RESTPatchAPIWebhookJSONBody | RESTPatchAPIWebhookWithTokenJSONBody,
+		reason?: string,
+	): Promise<WebhookStructure> {
 		return this.client.webhooks.edit(this.id, body, { reason, token: this.token });
 	}
 
@@ -119,10 +130,11 @@ export class Webhook extends DiscordBase {
 	static messages({ client, webhookId, webhookToken }: MethodContext<{ webhookId: string; webhookToken: string }>) {
 		return {
 			/** Writes a message through the webhook. */
-			write: (payload: MessageWebhookMethodWriteParams) =>
+			write: (payload: MessageWebhookMethodWriteParams): Promise<WebhookMessageStructure | null> =>
 				client.webhooks.writeMessage(webhookId, webhookToken, payload),
 			/** Edits a message sent through the webhook. */
-			edit: (payload: MessageWebhookMethodEditParams) => client.webhooks.editMessage(webhookId, webhookToken, payload),
+			edit: (payload: MessageWebhookMethodEditParams): Promise<WebhookMessageStructure> =>
+				client.webhooks.editMessage(webhookId, webhookToken, payload),
 			/** Deletes a message sent through the webhook. */
 			delete: (messageId: string, reason?: string) =>
 				client.webhooks.deleteMessage(webhookId, webhookToken, messageId, reason),

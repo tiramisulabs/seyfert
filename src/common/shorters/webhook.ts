@@ -1,5 +1,5 @@
 import { resolveFiles } from '../../builders';
-import { Transformers } from '../../client/transformers';
+import { Transformers, type WebhookMessageStructure, type WebhookStructure } from '../../client/transformers';
 import {
 	type MessageWebhookMethodEditParams,
 	type MessageWebhookMethodWriteParams,
@@ -15,7 +15,7 @@ import type {
 import { BaseShorter } from './base';
 
 export class WebhookShorter extends BaseShorter {
-	async create(channelId: string, body: RESTPostAPIChannelWebhookJSONBody) {
+	async create(channelId: string, body: RESTPostAPIChannelWebhookJSONBody): Promise<WebhookStructure> {
 		const webhook = await this.client.proxy.channels(channelId).webhooks.post({
 			body,
 		});
@@ -45,7 +45,7 @@ export class WebhookShorter extends BaseShorter {
 		webhookId: string,
 		body: RESTPatchAPIWebhookWithTokenJSONBody | RESTPatchAPIWebhookJSONBody,
 		options: WebhookShorterOptionalParams,
-	) {
+	): Promise<WebhookStructure> {
 		if (options.token) {
 			return this.client.proxy
 				.webhooks(webhookId)(options.token)
@@ -64,7 +64,7 @@ export class WebhookShorter extends BaseShorter {
 	 * @param token The token of the webhook (optional).
 	 * @returns A Promise that resolves to the fetched webhook.
 	 */
-	async fetch(webhookId: string, token?: string) {
+	async fetch(webhookId: string, token?: string): Promise<WebhookStructure> {
 		let webhook: APIWebhook;
 		if (token) {
 			webhook = await this.client.proxy.webhooks(webhookId)(token).get({ auth: false });
@@ -81,7 +81,11 @@ export class WebhookShorter extends BaseShorter {
 	 * @param data The data for writing the message.
 	 * @returns A Promise that resolves to the written message.
 	 */
-	async writeMessage(webhookId: string, token: string, { body: data, ...payload }: MessageWebhookMethodWriteParams) {
+	async writeMessage(
+		webhookId: string,
+		token: string,
+		{ body: data, ...payload }: MessageWebhookMethodWriteParams,
+	): Promise<WebhookMessageStructure | null> {
 		const { files, ...body } = data;
 		const parsedFiles = files ? await resolveFiles(files) : undefined;
 		const transformedBody = MessagesMethods.transformMessageBody<RESTPostAPIWebhookWithTokenJSONBody>(
@@ -107,7 +111,7 @@ export class WebhookShorter extends BaseShorter {
 		webhookId: string,
 		token: string,
 		{ messageId, body: data, ...json }: MessageWebhookMethodEditParams,
-	) {
+	): Promise<WebhookMessageStructure> {
 		const { files, ...body } = data;
 		const parsedFiles = files ? await resolveFiles(files) : undefined;
 		const transformedBody = MessagesMethods.transformMessageBody<RESTPostAPIWebhookWithTokenJSONBody>(
@@ -142,7 +146,12 @@ export class WebhookShorter extends BaseShorter {
 	 * @param threadId The ID of the thread the message belongs to.
 	 * @returns A Promise that resolves to the fetched message
 	 */
-	async fetchMessage(webhookId: string, token: string, messageId: string, threadId?: string) {
+	async fetchMessage(
+		webhookId: string,
+		token: string,
+		messageId: string,
+		threadId?: string,
+	): Promise<WebhookMessageStructure> {
 		const message = await this.client.proxy
 			.webhooks(webhookId)(token)
 			.messages(messageId)
@@ -150,12 +159,12 @@ export class WebhookShorter extends BaseShorter {
 		return Transformers.WebhookMessage(this.client, message, webhookId, token);
 	}
 
-	async listFromGuild(guildId: string) {
+	async listFromGuild(guildId: string): Promise<WebhookStructure[]> {
 		const webhooks = await this.client.proxy.guilds(guildId).webhooks.get();
 		return webhooks.map(webhook => Transformers.Webhook(this.client, webhook));
 	}
 
-	async listFromChannel(channelId: string) {
+	async listFromChannel(channelId: string): Promise<WebhookStructure[]> {
 		const webhooks = await this.client.proxy.channels(channelId).webhooks.get();
 		return webhooks.map(webhook => Transformers.Webhook(this.client, webhook));
 	}

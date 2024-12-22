@@ -1,3 +1,4 @@
+import type { GuildBanStructure, GuildStructure } from '../client';
 import type { UsingClient } from '../commands';
 import { Formatter, type MethodContext, type ObjectToLower } from '../common';
 import type { BanShorter } from '../common/shorters/bans';
@@ -23,11 +24,11 @@ export class GuildBan extends DiscordBase {
 		return this.client.bans.remove(this.guildId, this.id, reason);
 	}
 
-	guild(force = false) {
+	guild(force = false): Promise<GuildStructure<'api'>> {
 		return this.client.guilds.fetch(this.guildId, force);
 	}
 
-	fetch(force = false) {
+	fetch(force = false): Promise<GuildBanStructure> {
 		return this.client.bans.fetch(this.guildId, this.id, force);
 	}
 
@@ -37,8 +38,9 @@ export class GuildBan extends DiscordBase {
 
 	static methods({ client, guildId }: MethodContext<{ guildId: string }>) {
 		return {
-			fetch: (userId: string, force = false) => client.bans.fetch(guildId, userId, force),
-			list: (query?: RESTGetAPIGuildBansQuery, force = false) => client.bans.list(guildId, query, force),
+			fetch: (userId: string, force = false): Promise<GuildBanStructure> => client.bans.fetch(guildId, userId, force),
+			list: (query?: RESTGetAPIGuildBansQuery, force = false): Promise<GuildBanStructure[]> =>
+				client.bans.list(guildId, query, force),
 			create: (memberId: string, body?: Parameters<BanShorter['create']>[2], reason?: string) =>
 				client.bans.create(guildId, memberId, body, reason),
 			remove: (memberId: string, reason?: string) => client.bans.remove(guildId, memberId, reason),

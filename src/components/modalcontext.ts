@@ -1,5 +1,11 @@
 import type { AllChannels, Interaction, ModalCommand, ModalSubmitInteraction, ReturnCache } from '..';
-import type { GuildMemberStructure, GuildStructure } from '../client/transformers';
+import type {
+	GuildMemberStructure,
+	GuildStructure,
+	InteractionGuildMemberStructure,
+	UserStructure,
+	WebhookMessageStructure,
+} from '../client/transformers';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, RegisteredMiddlewares, UsingClient } from '../commands';
 import { BaseContext } from '../commands/basecontext';
 import type {
@@ -8,6 +14,7 @@ import type {
 	MakeRequired,
 	ModalCreateBodyRequest,
 	UnionToTuple,
+	When,
 } from '../common';
 import { MessageFlags } from '../types';
 
@@ -54,7 +61,10 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	 * @param body - The body of the response.
 	 * @param fetchReply - Whether to fetch the reply or not.
 	 */
-	write<FR extends boolean = false>(body: InteractionCreateBodyRequest, fetchReply?: FR) {
+	write<FR extends boolean = false>(
+		body: InteractionCreateBodyRequest,
+		fetchReply?: FR,
+	): Promise<When<FR, WebhookMessageStructure, void>> {
 		return this.interaction.write<FR>(body, fetchReply);
 	}
 
@@ -62,7 +72,10 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	 * Defers the reply to the interaction.
 	 * @param ephemeral - Whether the reply should be ephemeral or not.
 	 */
-	deferReply<FR extends boolean = false>(ephemeral = false, fetchReply?: FR) {
+	deferReply<FR extends boolean = false>(
+		ephemeral = false,
+		fetchReply?: FR,
+	): Promise<When<FR, WebhookMessageStructure, undefined>> {
 		return this.interaction.deferReply<FR>(ephemeral ? MessageFlags.Ephemeral : undefined, fetchReply);
 	}
 
@@ -70,7 +83,7 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	 * Edits the response of the interaction.
 	 * @param body - The updated body of the response.
 	 */
-	editResponse(body: InteractionMessageUpdateBodyRequest) {
+	editResponse(body: InteractionMessageUpdateBodyRequest): Promise<WebhookMessageStructure> {
 		return this.interaction.editResponse(body);
 	}
 
@@ -82,14 +95,14 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	editOrReply<FR extends boolean = false>(
 		body: InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest,
 		fetchReply?: FR,
-	) {
+	): Promise<When<FR, WebhookMessageStructure, void>> {
 		return this.interaction.editOrReply<FR>(body as InteractionCreateBodyRequest, fetchReply);
 	}
 
 	/**
 	 * @returns A Promise that resolves to the fetched message
 	 */
-	fetchResponse() {
+	fetchResponse(): Promise<WebhookMessageStructure> {
 		return this.interaction.fetchResponse();
 	}
 
@@ -174,14 +187,14 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	/**
 	 * Gets the author of the interaction.
 	 */
-	get author() {
+	get author(): UserStructure {
 		return this.interaction.user;
 	}
 
 	/**
 	 * Gets the member of the interaction.
 	 */
-	get member() {
+	get member(): InteractionGuildMemberStructure | undefined {
 		return this.interaction.member;
 	}
 

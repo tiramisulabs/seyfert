@@ -1,4 +1,4 @@
-import { Transformers } from '../../client';
+import { type EntitlementStructure, Transformers } from '../../client';
 import type {
 	APIEntitlement,
 	RESTGetAPIEntitlementsQuery,
@@ -42,7 +42,7 @@ export class ApplicationShorter extends BaseShorter {
 	 * @param applicationId The ID of the application.
 	 * @param [query] The query parameters.
 	 */
-	listEntitlements(applicationId: string, query?: RESTGetAPIEntitlementsQuery) {
+	listEntitlements(applicationId: string, query?: RESTGetAPIEntitlementsQuery): Promise<EntitlementStructure[]> {
 		return this.client.proxy
 			.applications(applicationId)
 			.entitlements.get({ query })
@@ -63,7 +63,7 @@ export class ApplicationShorter extends BaseShorter {
 	 * @param applicationId The ID of the application.
 	 * @param body The body of the request.
 	 */
-	createTestEntitlement(applicationId: string, body: RESTPostAPIEntitlementBody) {
+	createTestEntitlement(applicationId: string, body: RESTPostAPIEntitlementBody): Promise<EntitlementStructure> {
 		return this.client.proxy
 			.applications(applicationId)
 			.entitlements.post({ body })

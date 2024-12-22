@@ -99,7 +99,19 @@ export class OptionResolver {
 		return this.hoistedOptions.find(x => x.name === name);
 	}
 
-	getValue(name: string) {
+	getValue(
+		name: string,
+	):
+		| AllChannels
+		| Attachment
+		| boolean
+		| number
+		| string
+		| UserStructure
+		| GuildMemberStructure
+		| InteractionGuildMemberStructure
+		| GuildRoleStructure
+		| undefined {
 		const option = this.getHoisted(name);
 		if (!option) {
 			return;

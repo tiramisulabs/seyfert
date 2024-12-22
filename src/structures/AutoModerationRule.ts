@@ -1,3 +1,4 @@
+import type { AutoModerationRuleStructure, GuildMemberStructure, GuildStructure } from '../client';
 import type { UsingClient } from '../commands';
 import type { MethodContext, ObjectToLower } from '../common';
 import type {
@@ -14,19 +15,19 @@ export class AutoModerationRule extends DiscordBase<APIAutoModerationRule> {
 		super(client, data);
 	}
 
-	fetchCreator(force = false) {
+	fetchCreator(force = false): Promise<GuildMemberStructure> {
 		return this.client.members.fetch(this.guildId, this.creatorId, force);
 	}
 
-	guild(force = false) {
+	guild(force = false): Promise<GuildStructure<'api'>> {
 		return this.client.guilds.fetch(this.guildId, force);
 	}
 
-	fetch() {
+	fetch(): Promise<AutoModerationRuleStructure> {
 		return this.client.guilds.moderation.fetch(this.guildId, this.id);
 	}
 
-	edit(body: RESTPatchAPIAutoModerationRuleJSONBody, reason?: string) {
+	edit(body: RESTPatchAPIAutoModerationRuleJSONBody, reason?: string): Promise<AutoModerationRuleStructure> {
 		return this.client.guilds.moderation.edit(this.guildId, this.id, body, reason);
 	}
 
@@ -36,12 +37,16 @@ export class AutoModerationRule extends DiscordBase<APIAutoModerationRule> {
 
 	static methods({ client, guildId }: MethodContext<{ guildId: string }>) {
 		return {
-			list: () => client.guilds.moderation.list(guildId),
-			create: (body: RESTPostAPIAutoModerationRuleJSONBody) => client.guilds.moderation.create(guildId, body),
+			list: (): Promise<AutoModerationRuleStructure[]> => client.guilds.moderation.list(guildId),
+			create: (body: RESTPostAPIAutoModerationRuleJSONBody): Promise<AutoModerationRuleStructure> =>
+				client.guilds.moderation.create(guildId, body),
 			delete: (ruleId: string, reason?: string) => client.guilds.moderation.delete(guildId, ruleId, reason),
-			fetch: (ruleId: string) => client.guilds.moderation.fetch(guildId, ruleId),
-			edit: (ruleId: string, body: RESTPatchAPIAutoModerationRuleJSONBody, reason?: string) =>
-				client.guilds.moderation.edit(guildId, ruleId, body, reason),
+			fetch: (ruleId: string): Promise<AutoModerationRuleStructure> => client.guilds.moderation.fetch(guildId, ruleId),
+			edit: (
+				ruleId: string,
+				body: RESTPatchAPIAutoModerationRuleJSONBody,
+				reason?: string,
+			): Promise<AutoModerationRuleStructure> => client.guilds.moderation.edit(guildId, ruleId, body, reason),
 		};
 	}
 }

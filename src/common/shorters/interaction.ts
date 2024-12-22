@@ -1,5 +1,5 @@
 import { BaseInteraction, Modal, type ReplyInteractionBody, resolveFiles } from '../..';
-import { Transformers } from '../../client/transformers';
+import { Transformers, type WebhookMessageStructure } from '../../client/transformers';
 import type { InteractionMessageUpdateBodyRequest, MessageWebhookCreateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
 
@@ -26,15 +26,19 @@ export class InteractionShorter extends BaseShorter {
 			});
 	}
 
-	fetchResponse(token: string, messageId: string) {
+	fetchResponse(token: string, messageId: string): Promise<WebhookMessageStructure> {
 		return this.client.webhooks.fetchMessage(this.client.applicationId, token, messageId);
 	}
 
-	fetchOriginal(token: string) {
+	fetchOriginal(token: string): Promise<WebhookMessageStructure> {
 		return this.fetchResponse(token, '@original');
 	}
 
-	async editMessage(token: string, messageId: string, body: InteractionMessageUpdateBodyRequest) {
+	async editMessage(
+		token: string,
+		messageId: string,
+		body: InteractionMessageUpdateBodyRequest,
+	): Promise<WebhookMessageStructure> {
 		const { files, ...data } = body;
 		const parsedFiles = files ? await resolveFiles(files) : undefined;
 		const apiMessage = await this.client.proxy
@@ -47,7 +51,7 @@ export class InteractionShorter extends BaseShorter {
 		return Transformers.WebhookMessage(this.client, apiMessage, this.client.applicationId, token);
 	}
 
-	editOriginal(token: string, body: InteractionMessageUpdateBodyRequest) {
+	editOriginal(token: string, body: InteractionMessageUpdateBodyRequest): Promise<WebhookMessageStructure> {
 		return this.editMessage(token, '@original', body);
 	}
 
@@ -63,7 +67,7 @@ export class InteractionShorter extends BaseShorter {
 		return this.deleteResponse(token, '@original');
 	}
 
-	async followup(token: string, { files, ...body }: MessageWebhookCreateBodyRequest) {
+	async followup(token: string, { files, ...body }: MessageWebhookCreateBodyRequest): Promise<WebhookMessageStructure> {
 		const parsedFiles = files ? await resolveFiles(files) : undefined;
 		const apiMessage = await this.client.proxy
 			.webhooks(this.client.applicationId)(token)

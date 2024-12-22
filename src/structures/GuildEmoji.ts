@@ -1,4 +1,5 @@
 import type { BaseCDNUrlOptions } from '../api';
+import type { GuildEmojiStructure, GuildStructure } from '../client';
 import type { UsingClient } from '../commands';
 import { type EmojiShorter, Formatter, type MethodContext, type ObjectToLower } from '../common';
 import type { APIEmoji, RESTPatchAPIChannelJSONBody, RESTPatchAPIGuildEmojiJSONBody } from '../types';
@@ -15,12 +16,12 @@ export class GuildEmoji extends DiscordBase {
 		super(client, { ...data, id: data.id! });
 	}
 
-	async guild(force = false) {
+	async guild(force = false): Promise<GuildStructure<'api'> | undefined> {
 		if (!this.guildId) return;
 		return this.client.guilds.fetch(this.guildId, force);
 	}
 
-	edit(body: RESTPatchAPIChannelJSONBody, reason?: string) {
+	edit(body: RESTPatchAPIChannelJSONBody, reason?: string): Promise<GuildEmojiStructure> {
 		return this.client.emojis.edit(this.guildId, this.id, body, reason);
 	}
 
@@ -28,7 +29,7 @@ export class GuildEmoji extends DiscordBase {
 		return this.client.emojis.delete(this.guildId, this.id, reason);
 	}
 
-	fetch(force = false) {
+	fetch(force = false): Promise<GuildEmojiStructure> {
 		return this.client.emojis.fetch(this.guildId, this.id, force);
 	}
 
@@ -50,11 +51,13 @@ export class GuildEmoji extends DiscordBase {
 
 	static methods({ client, guildId }: MethodContext<{ guildId: string }>) {
 		return {
-			edit: (emojiId: string, body: RESTPatchAPIGuildEmojiJSONBody, reason?: string) =>
+			edit: (emojiId: string, body: RESTPatchAPIGuildEmojiJSONBody, reason?: string): Promise<GuildEmojiStructure> =>
 				client.emojis.edit(guildId, emojiId, body, reason),
-			create: (body: Parameters<EmojiShorter['create']>[1]) => client.emojis.create(guildId, body),
-			fetch: (emojiId: string, force = false) => client.emojis.fetch(guildId, emojiId, force),
-			list: (force = false) => client.emojis.list(guildId, force),
+			create: (body: Parameters<EmojiShorter['create']>[1]): Promise<GuildEmojiStructure> =>
+				client.emojis.create(guildId, body),
+			fetch: (emojiId: string, force = false): Promise<GuildEmojiStructure> =>
+				client.emojis.fetch(guildId, emojiId, force),
+			list: (force = false): Promise<GuildEmojiStructure[]> => client.emojis.list(guildId, force),
 		};
 	}
 }

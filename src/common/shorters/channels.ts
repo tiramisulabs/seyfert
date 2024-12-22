@@ -1,6 +1,6 @@
 import type { Channels } from '../../cache/resources/channels';
 import type { Overwrites } from '../../cache/resources/overwrites';
-import { type MessageStructure, Transformers } from '../../client/transformers';
+import { type MessageStructure, type ThreadChannelStructure, Transformers } from '../../client/transformers';
 import { type AllChannels, BaseChannel, type GuildMember, type GuildRole, channelFrom } from '../../structures';
 import { PermissionsBitField } from '../../structures/extra/Permissions';
 import type {
@@ -133,7 +133,7 @@ export class ChannelShorter extends BaseShorter {
 		channelId: string,
 		body: RESTPostAPIChannelThreadsJSONBody | RESTPostAPIGuildForumThreadsJSONBody,
 		reason?: string,
-	) {
+	): Promise<ThreadChannelStructure> {
 		return this.client.threads.create(channelId, body, reason);
 	}
 
@@ -197,7 +197,7 @@ export class ChannelShorter extends BaseShorter {
 		return permissions;
 	}
 
-	async fetchMessages(channelId: string, query?: RESTGetAPIChannelMessagesQuery) {
+	async fetchMessages(channelId: string, query?: RESTGetAPIChannelMessagesQuery): Promise<MessageStructure[]> {
 		const result = await this.client.proxy.channels(channelId).messages.get({
 			query,
 		});

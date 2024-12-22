@@ -495,7 +495,7 @@ export class HandleCommand {
 		};
 	}
 
-	makeResolver(...args: Parameters<(typeof Transformers)['OptionResolver']>) {
+	makeResolver(...args: Parameters<(typeof Transformers)['OptionResolver']>): OptionResolverStructure {
 		return Transformers.OptionResolver(...args);
 	}
 

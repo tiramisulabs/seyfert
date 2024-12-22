@@ -1,10 +1,11 @@
-import type { ContextMenuCommand, ReturnCache } from '../..';
+import type { ContextMenuCommand, InteractionGuildMemberStructure, ReturnCache } from '../..';
 import {
 	type GuildMemberStructure,
 	type GuildStructure,
 	type MessageStructure,
 	Transformers,
 	type UserStructure,
+	type WebhookMessageStructure,
 } from '../../client/transformers';
 import {
 	type InteractionCreateBodyRequest,
@@ -12,6 +13,7 @@ import {
 	type MakeRequired,
 	type ModalCreateBodyRequest,
 	type UnionToTuple,
+	type When,
 	toSnakeCase,
 } from '../../common';
 import type { AllChannels, MessageCommandInteraction, UserCommandInteraction } from '../../structures';
@@ -66,7 +68,10 @@ export class MenuCommandContext<
 		return this.command.name;
 	}
 
-	write<WR extends boolean = false>(body: InteractionCreateBodyRequest, withResponse?: WR) {
+	write<WR extends boolean = false>(
+		body: InteractionCreateBodyRequest,
+		withResponse?: WR,
+	): Promise<When<WR, WebhookMessageStructure, void>> {
 		return this.interaction.write<WR>(body, withResponse);
 	}
 
@@ -74,11 +79,14 @@ export class MenuCommandContext<
 		return this.interaction.modal(body);
 	}
 
-	deferReply<WR extends boolean = false>(ephemeral = false, withResponse?: WR) {
+	deferReply<WR extends boolean = false>(
+		ephemeral = false,
+		withResponse?: WR,
+	): Promise<When<WR, WebhookMessageStructure, undefined>> {
 		return this.interaction.deferReply<WR>(ephemeral ? MessageFlags.Ephemeral : undefined, withResponse);
 	}
 
-	editResponse(body: InteractionMessageUpdateBodyRequest) {
+	editResponse(body: InteractionMessageUpdateBodyRequest): Promise<WebhookMessageStructure> {
 		return this.interaction.editResponse(body);
 	}
 
@@ -89,11 +97,11 @@ export class MenuCommandContext<
 	editOrReply<WR extends boolean = false>(
 		body: InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest,
 		withResponse?: WR,
-	) {
+	): Promise<When<WR, WebhookMessageStructure, void>> {
 		return this.interaction.editOrReply<WR>(body as InteractionCreateBodyRequest, withResponse);
 	}
 
-	fetchResponse() {
+	fetchResponse(): Promise<WebhookMessageStructure> {
 		return this.interaction.fetchResponse();
 	}
 
@@ -141,11 +149,11 @@ export class MenuCommandContext<
 		return this.interaction.channelId!;
 	}
 
-	get author() {
+	get author(): UserStructure {
 		return this.interaction.user;
 	}
 
-	get member() {
+	get member(): InteractionGuildMemberStructure | undefined {
 		return this.interaction.member;
 	}
 

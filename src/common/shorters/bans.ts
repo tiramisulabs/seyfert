@@ -49,7 +49,7 @@ export class BanShorter extends BaseShorter {
 	 * @param force Whether to force fetching the ban from the API even if it exists in the cache.
 	 * @returns A Promise that resolves to the fetched ban.
 	 */
-	async fetch(guildId: string, userId: string, force = false) {
+	async fetch(guildId: string, userId: string, force = false): Promise<GuildBanStructure> {
 		let ban: APIBan | GuildBanStructure | undefined;
 		if (!force) {
 			ban = await this.client.cache.bans?.get(userId, guildId);
@@ -68,7 +68,7 @@ export class BanShorter extends BaseShorter {
 	 * @param force Whether to force listing bans from the API even if they exist in the cache.
 	 * @returns A Promise that resolves to an array of listed bans.
 	 */
-	async list(guildId: string, query?: RESTGetAPIGuildBansQuery, force = false) {
+	async list(guildId: string, query?: RESTGetAPIGuildBansQuery, force = false): Promise<GuildBanStructure[]> {
 		let bans: APIBan[] | GuildBanStructure[];
 		if (!force) {
 			bans = (await this.client.cache.bans?.values(guildId)) ?? [];

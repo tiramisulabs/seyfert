@@ -1,3 +1,4 @@
+import type { GuildMemberStructure } from '../client';
 import type { UsingClient } from '../commands';
 import type { ObjectToLower, StructPropState, StructStates, ToClass } from '../common/types/util';
 import type { APIGuild, APIPartialGuild, GatewayGuildCreateDispatchData, RESTPatchAPIGuildJSONBody } from '../types';
@@ -61,7 +62,7 @@ export class Guild<State extends StructStates = 'api'> extends (BaseGuild as unk
 		}
 	}
 
-	async fetchOwner(force = false) {
+	async fetchOwner(force = false): Promise<GuildMemberStructure | null> {
 		// For no reason, discord has some guilds without owner... 🤓
 		if (!this.ownerId) {
 			return null;

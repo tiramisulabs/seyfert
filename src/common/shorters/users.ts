@@ -1,10 +1,15 @@
-import { type DMChannelStructure, Transformers } from '../../client/transformers';
+import {
+	type DMChannelStructure,
+	type MessageStructure,
+	Transformers,
+	type UserStructure,
+} from '../../client/transformers';
 import { BaseChannel } from '../../structures';
 import type { MessageCreateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
 
 export class UsersShorter extends BaseShorter {
-	async createDM(userId: string, force = false) {
+	async createDM(userId: string, force = false): Promise<DMChannelStructure> {
 		if (!force) {
 			const dm = await this.client.cache.channels?.get(userId);
 			if (dm) return dm as DMChannelStructure;
@@ -16,13 +21,13 @@ export class UsersShorter extends BaseShorter {
 		return Transformers.DMChannel(this.client, data);
 	}
 
-	async deleteDM(userId: string, reason?: string) {
+	async deleteDM(userId: string, reason?: string): Promise<DMChannelStructure> {
 		const res = await this.client.proxy.channels(userId).delete({ reason });
 		await this.client.cache.channels?.removeIfNI(BaseChannel.__intent__('@me'), res.id, '@me');
 		return Transformers.DMChannel(this.client, res);
 	}
 
-	async fetch(userId: string, force = false) {
+	async fetch(userId: string, force = false): Promise<UserStructure> {
 		return Transformers.User(this.client, await this.raw(userId, force));
 	}
 
@@ -37,7 +42,7 @@ export class UsersShorter extends BaseShorter {
 		return data;
 	}
 
-	async write(userId: string, body: MessageCreateBodyRequest) {
+	async write(userId: string, body: MessageCreateBodyRequest): Promise<MessageStructure> {
 		return (await this.client.users.createDM(userId)).messages.write(body);
 	}
 }

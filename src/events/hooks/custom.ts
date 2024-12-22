@@ -1,24 +1,30 @@
-import { type ClientUserStructure, Transformers } from '../../client/transformers';
+import { type ClientUserStructure, type GuildStructure, Transformers } from '../../client/transformers';
 import type { UsingClient } from '../../commands';
-import type { GatewayRawGuildCreateDispatch, GatewayRawGuildDeleteDispatch } from '../../types';
+import type { APIUnavailableGuild, GatewayRawGuildCreateDispatch, GatewayRawGuildDeleteDispatch } from '../../types';
 
-export const BOT_READY = (_self: UsingClient, me: ClientUserStructure) => {
+export const BOT_READY = (_self: UsingClient, me: ClientUserStructure): ClientUserStructure => {
 	return me;
 };
 
-export const WORKER_READY = (_self: UsingClient, me: ClientUserStructure) => {
+export const WORKER_READY = (_self: UsingClient, me: ClientUserStructure): ClientUserStructure => {
 	return me;
 };
 
-export const WORKER_SHARDS_CONNECTED = (_self: UsingClient, me: ClientUserStructure) => {
+export const WORKER_SHARDS_CONNECTED = (_self: UsingClient, me: ClientUserStructure): ClientUserStructure => {
 	return me;
 };
 
-export const RAW_GUILD_CREATE = (self: UsingClient, data: GatewayRawGuildCreateDispatch['d']) => {
+export const RAW_GUILD_CREATE = (
+	self: UsingClient,
+	data: GatewayRawGuildCreateDispatch['d'],
+): GuildStructure<'create'> => {
 	return Transformers.Guild<'create'>(self, data);
 };
 
-export const RAW_GUILD_DELETE = async (self: UsingClient, data: GatewayRawGuildDeleteDispatch['d']) => {
+export const RAW_GUILD_DELETE = async (
+	self: UsingClient,
+	data: GatewayRawGuildDeleteDispatch['d'],
+): Promise<GuildStructure<'cached'> | APIUnavailableGuild> => {
 	return (await self.cache.guilds?.get(data.id)) ?? data;
 };
 

@@ -1,11 +1,18 @@
 import type { ReturnCache } from '../..';
-import type { GuildMemberStructure, GuildStructure } from '../../client/transformers';
+import type {
+	GuildMemberStructure,
+	GuildStructure,
+	InteractionGuildMemberStructure,
+	UserStructure,
+	WebhookMessageStructure,
+} from '../../client/transformers';
 import type {
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
 	MakeRequired,
 	ModalCreateBodyRequest,
 	UnionToTuple,
+	When,
 } from '../../common';
 import type { AllChannels, EntryPointInteraction } from '../../structures';
 import { MessageFlags } from '../../types';
@@ -37,7 +44,10 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 		return this.command.name;
 	}
 
-	write<WR extends boolean = false>(body: InteractionCreateBodyRequest, withResponse?: WR) {
+	write<WR extends boolean = false>(
+		body: InteractionCreateBodyRequest,
+		withResponse?: WR,
+	): Promise<When<WR, WebhookMessageStructure, void>> {
 		return this.interaction.write<WR>(body, withResponse);
 	}
 
@@ -45,11 +55,14 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 		return this.interaction.modal(body);
 	}
 
-	deferReply<WR extends boolean = false>(ephemeral = false, withResponse?: WR) {
+	deferReply<WR extends boolean = false>(
+		ephemeral = false,
+		withResponse?: WR,
+	): Promise<When<WR, WebhookMessageStructure, undefined>> {
 		return this.interaction.deferReply<WR>(ephemeral ? MessageFlags.Ephemeral : undefined, withResponse);
 	}
 
-	editResponse(body: InteractionMessageUpdateBodyRequest) {
+	editResponse(body: InteractionMessageUpdateBodyRequest): Promise<WebhookMessageStructure> {
 		return this.interaction.editResponse(body);
 	}
 
@@ -60,7 +73,7 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 	editOrReply<WR extends boolean = false>(
 		body: InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest,
 		withResponse?: WR,
-	) {
+	): Promise<When<WR, WebhookMessageStructure, void>> {
 		return this.interaction.editOrReply<WR>(body as InteractionCreateBodyRequest, withResponse);
 	}
 
@@ -112,11 +125,11 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 		return this.interaction.channelId!;
 	}
 
-	get author() {
+	get author(): UserStructure {
 		return this.interaction.user;
 	}
 
-	get member() {
+	get member(): InteractionGuildMemberStructure | undefined {
 		return this.interaction.member;
 	}
 

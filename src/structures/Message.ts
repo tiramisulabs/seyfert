@@ -1,10 +1,14 @@
-import { Embed } from '..';
+import { type AllChannels, Embed } from '..';
 import type { ListenerOptions } from '../builders';
 import {
 	type GuildMemberStructure,
+	type GuildStructure,
+	type MessageStructure,
 	type PollStructure,
 	Transformers,
 	type UserStructure,
+	type WebhookMessageStructure,
+	type WebhookStructure,
 } from '../client/transformers';
 import type { UsingClient } from '../commands';
 import { type ObjectToLower, toCamelCase } from '../common';
@@ -56,7 +60,7 @@ export class BaseMessage extends DiscordBase {
 		this.patch(data);
 	}
 
-	get user() {
+	get user(): UserStructure {
 		return this.author;
 	}
 
@@ -68,12 +72,12 @@ export class BaseMessage extends DiscordBase {
 		return Formatter.messageLink(this.guildId!, this.channelId, this.id);
 	}
 
-	async guild(force = false) {
+	async guild(force = false): Promise<GuildStructure<'api'> | undefined> {
 		if (!this.guildId) return;
 		return this.client.guilds.fetch(this.guildId, force);
 	}
 
-	channel(force = false) {
+	channel(force = false): Promise<AllChannels> {
 		return this.client.channels.fetch(this.channelId, force);
 	}
 
@@ -125,11 +129,11 @@ export class Message extends BaseMessage {
 		super(client, data);
 	}
 
-	fetch(force = false) {
+	fetch(force = false): Promise<MessageStructure> {
 		return this.client.messages.fetch(this.id, this.channelId, force);
 	}
 
-	reply(body: Omit<MessageCreateBodyRequest, 'message_reference'>, fail = true) {
+	reply(body: Omit<MessageCreateBodyRequest, 'message_reference'>, fail = true): Promise<MessageStructure> {
 		return this.write({
 			...body,
 			message_reference: {
@@ -141,11 +145,11 @@ export class Message extends BaseMessage {
 		});
 	}
 
-	edit(body: MessageUpdateBodyRequest) {
+	edit(body: MessageUpdateBodyRequest): Promise<MessageStructure> {
 		return this.client.messages.edit(this.id, this.channelId, body);
 	}
 
-	write(body: MessageCreateBodyRequest) {
+	write(body: MessageCreateBodyRequest): Promise<MessageStructure> {
 		return this.client.messages.write(this.channelId, body);
 	}
 
@@ -153,7 +157,7 @@ export class Message extends BaseMessage {
 		return this.client.messages.delete(this.id, this.channelId, reason);
 	}
 
-	crosspost(reason?: string) {
+	crosspost(reason?: string): Promise<MessageStructure> {
 		return this.client.messages.crosspost(this.id, this.channelId, reason);
 	}
 }
@@ -173,15 +177,15 @@ export class WebhookMessage extends BaseMessage {
 		super(client, data);
 	}
 
-	fetchWebhook() {
+	fetchWebhook(): Promise<WebhookStructure> {
 		return this.client.webhooks.fetch(this.webhookId, this.webhookToken);
 	}
 
-	fetch() {
+	fetch(): Promise<WebhookMessageStructure> {
 		return this.client.webhooks.fetchMessage(this.webhookId, this.webhookToken, this.id, this.thread?.id);
 	}
 
-	edit(body: EditMessageWebhook) {
+	edit(body: EditMessageWebhook): Promise<WebhookMessageStructure> {
 		const { query, ...rest } = body;
 		return this.client.webhooks.editMessage(this.webhookId, this.webhookToken, {
 			body: rest,
@@ -190,7 +194,7 @@ export class WebhookMessage extends BaseMessage {
 		});
 	}
 
-	write(body: WriteMessageWebhook) {
+	write(body: WriteMessageWebhook): Promise<WebhookMessageStructure | null> {
 		const { query, ...rest } = body;
 		return this.client.webhooks.writeMessage(this.webhookId, this.webhookToken, {
 			body: rest,

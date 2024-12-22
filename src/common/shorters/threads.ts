@@ -24,7 +24,7 @@ export class ThreadShorter extends BaseShorter {
 		channelId: string,
 		body: RESTPostAPIChannelThreadsJSONBody | RESTPostAPIGuildForumThreadsJSONBody,
 		reason?: string,
-	) {
+	): Promise<ThreadChannelStructure> {
 		return (
 			this.client.proxy
 				.channels(channelId)
@@ -46,7 +46,7 @@ export class ThreadShorter extends BaseShorter {
 		channelId: string,
 		messageId: string,
 		options: RESTPostAPIChannelMessagesThreadsJSONBody & { reason?: string },
-	) {
+	): Promise<ThreadChannelStructure> {
 		const { reason, ...body } = options;
 
 		return this.client.proxy
@@ -67,12 +67,12 @@ export class ThreadShorter extends BaseShorter {
 		return this.client.proxy.channels(threadId)['thread-members']('@me').delete();
 	}
 
-	lock(threadId: string, locked = true, reason?: string) {
+	lock(threadId: string, locked = true, reason?: string): Promise<ThreadChannelStructure> {
 		return this.edit(threadId, { locked }, reason).then(x => channelFrom(x, this.client) as ThreadChannelStructure);
 	}
 
-	edit(threadId: string, body: RESTPatchAPIChannelJSONBody, reason?: string) {
-		return this.client.channels.edit(threadId, body, { reason });
+	async edit(threadId: string, body: RESTPatchAPIChannelJSONBody, reason?: string): Promise<ThreadChannelStructure> {
+		return (await this.client.channels.edit(threadId, body, { reason })) as ThreadChannelStructure;
 	}
 
 	removeMember(threadId: string, memberId: string) {
@@ -106,7 +106,11 @@ export class ThreadShorter extends BaseShorter {
 		channelId: string,
 		type: 'public' | 'private',
 		query?: RESTGetAPIChannelThreadsArchivedQuery,
-	) {
+	): Promise<{
+		threads: ThreadChannelStructure[];
+		members: GetAPIChannelThreadMemberResult[];
+		hasMore: boolean;
+	}> {
 		const data = await this.client.proxy.channels(channelId).threads.archived[type].get({ query });
 
 		return {
@@ -116,7 +120,14 @@ export class ThreadShorter extends BaseShorter {
 		};
 	}
 
-	async listJoinedArchivedPrivate(channelId: string, query?: RESTGetAPIChannelThreadsArchivedQuery) {
+	async listJoinedArchivedPrivate(
+		channelId: string,
+		query?: RESTGetAPIChannelThreadsArchivedQuery,
+	): Promise<{
+		threads: ThreadChannelStructure[];
+		members: GetAPIChannelThreadMemberResult[];
+		hasMore: boolean;
+	}> {
 		const data = await this.client.proxy.channels(channelId).users('@me').threads.archived.private.get({ query });
 		return {
 			threads: data.threads.map(thread => channelFrom(thread, this.client) as ThreadChannelStructure),

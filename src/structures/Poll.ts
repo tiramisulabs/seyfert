@@ -1,4 +1,5 @@
 import type { ValidAnswerId } from '../api/Routes/channels';
+import type { MessageStructure, UserStructure } from '../client/transformers';
 import type { UsingClient } from '../commands';
 import { type ObjectToLower, toCamelCase } from '../common';
 import type { APIPoll } from '../types';
@@ -25,11 +26,11 @@ export class Poll extends Base {
 		return new Date(this.expiry);
 	}
 
-	end() {
+	end(): Promise<MessageStructure> {
 		return this.client.messages.endPoll(this.channelId, this.messageId);
 	}
 
-	getAnswerVoters(id: ValidAnswerId) {
+	getAnswerVoters(id: ValidAnswerId): Promise<UserStructure[]> {
 		if (!this.answers.find(x => x.answerId === id)) throw new Error('Invalid answer id');
 		return this.client.messages.getAnswerVoters(this.channelId, this.messageId, id);
 	}

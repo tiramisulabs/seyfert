@@ -435,15 +435,15 @@ export class Interaction<
 	FromGuild extends boolean = boolean,
 	Type extends APIInteraction = APIInteraction,
 > extends BaseInteraction<FromGuild, Type> {
-	fetchMessage(messageId: string) {
+	fetchMessage(messageId: string): Promise<WebhookMessageStructure> {
 		return this.client.interactions.fetchResponse(this.token, messageId);
 	}
 
-	fetchResponse() {
+	fetchResponse(): Promise<WebhookMessageStructure> {
 		return this.fetchMessage('@original');
 	}
 
-	async write<FR extends boolean = false>(
+	write<FR extends boolean = false>(
 		body: InteractionCreateBodyRequest,
 		withResponse?: FR,
 	): Promise<When<FR, WebhookMessageStructure, void>> {
@@ -467,7 +467,10 @@ export class Interaction<
 		body: InteractionCreateBodyRequest,
 		fetchReply?: FR,
 	): Promise<When<FR, WebhookMessageStructure, void>>;
-	async editOrReply<FR extends true = true>(body: InteractionMessageUpdateBodyRequest, fetchReply?: FR) {
+	async editOrReply<FR extends true = true>(
+		body: InteractionMessageUpdateBodyRequest,
+		fetchReply?: FR,
+	): Promise<WebhookMessageStructure> {
 		if (await this.replied) {
 			const { content, embeds, allowed_mentions, components, files, attachments, poll } = body;
 			return this.editResponse({ content, embeds, allowed_mentions, components, files, attachments, poll });
@@ -475,11 +478,11 @@ export class Interaction<
 		return this.write(body as InteractionCreateBodyRequest, fetchReply);
 	}
 
-	editMessage(messageId: string, body: InteractionMessageUpdateBodyRequest) {
+	editMessage(messageId: string, body: InteractionMessageUpdateBodyRequest): Promise<WebhookMessageStructure> {
 		return this.client.interactions.editMessage(this.token, messageId, body);
 	}
 
-	editResponse(body: InteractionMessageUpdateBodyRequest) {
+	editResponse(body: InteractionMessageUpdateBodyRequest): Promise<WebhookMessageStructure> {
 		return this.editMessage('@original', body);
 	}
 
@@ -491,7 +494,7 @@ export class Interaction<
 		return this.client.interactions.deleteResponse(this.token, messageId);
 	}
 
-	followup(body: MessageWebhookCreateBodyRequest) {
+	followup(body: MessageWebhookCreateBodyRequest): Promise<WebhookMessageStructure> {
 		return this.client.interactions.followup(this.token, body);
 	}
 }
@@ -784,8 +787,11 @@ export interface ModalSubmitInteraction<FromGuild extends boolean = boolean>
 export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends BaseInteraction<FromGuild> {
 	declare data: ObjectToLower<APIModalSubmission>;
 
-	update<WR extends boolean = false>(data: ComponentInteractionMessageUpdate, withResponse?: WR) {
-		return this.reply(
+	update<WR extends boolean = false>(
+		data: ComponentInteractionMessageUpdate,
+		withResponse?: WR,
+	): Promise<When<WR, WebhookMessageStructure, undefined>> {
+		return this.reply<WR>(
 			{
 				type: InteractionResponseType.UpdateMessage,
 				data,
@@ -794,7 +800,7 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 		);
 	}
 
-	deferUpdate<WR extends boolean = false>(withResponse?: WR) {
+	deferUpdate<WR extends boolean = false>(withResponse?: WR): Promise<When<WR, WebhookMessageStructure, undefined>> {
 		return this.reply<WR>(
 			{
 				type: InteractionResponseType.DeferredMessageUpdate,

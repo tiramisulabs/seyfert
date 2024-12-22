@@ -1,7 +1,8 @@
-import { Transformers } from '../../client';
+import { Transformers, type UserStructure } from '../../client';
 import type { UsingClient } from '../../commands';
-import { toCamelCase } from '../../common';
+import { type ObjectToLower, toCamelCase } from '../../common';
 import type {
+	APISoundBoard,
 	GatewayGuildSoundboardSoundCreateDispatchData,
 	GatewayGuildSoundboardSoundDeleteDispatchData,
 	GatewayGuildSoundboardSoundUpdateDispatchData,
@@ -12,21 +13,37 @@ import type {
 export const GUILD_SOUNDBOARD_SOUND_CREATE = (
 	self: UsingClient,
 	data: GatewayGuildSoundboardSoundCreateDispatchData,
-) => {
+):
+	| (ObjectToLower<Omit<GatewayGuildSoundboardSoundCreateDispatchData, 'user'>> & {
+			user: UserStructure;
+	  })
+	| ObjectToLower<Omit<GatewayGuildSoundboardSoundCreateDispatchData, 'user'>> => {
 	return data.user ? { ...toCamelCase(data), user: Transformers.User(self, data.user) } : toCamelCase(data);
 };
 
 export const GUILD_SOUNDBOARD_SOUND_UPDATE = (
 	self: UsingClient,
 	data: GatewayGuildSoundboardSoundUpdateDispatchData,
-) => {
+):
+	| (ObjectToLower<Omit<GatewayGuildSoundboardSoundUpdateDispatchData, 'user'>> & {
+			user: UserStructure;
+	  })
+	| ObjectToLower<Omit<GatewayGuildSoundboardSoundUpdateDispatchData, 'user'>> => {
 	return data.user ? { ...toCamelCase(data), user: Transformers.User(self, data.user) } : toCamelCase(data);
 };
 
 export const GUILD_SOUNDBOARD_SOUNDS_UPDATE = (
 	self: UsingClient,
 	data: GatewayGuildSoundboardSoundsUpdateDispatchData,
-) => {
+): {
+	guildId: string;
+	sounds: (
+		| (ObjectToLower<Omit<APISoundBoard, 'user'>> & {
+				user: UserStructure;
+		  })
+		| ObjectToLower<Omit<APISoundBoard, 'user'>>
+	)[];
+} => {
 	return {
 		guildId: data.guild_id,
 		sounds: data.soundboard_sounds.map(d =>

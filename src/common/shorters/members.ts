@@ -1,4 +1,9 @@
-import { type GuildMemberStructure, Transformers, type VoiceStateStructure } from '../../client/transformers';
+import {
+	type GuildMemberStructure,
+	type GuildRoleStructure,
+	Transformers,
+	type VoiceStateStructure,
+} from '../../client/transformers';
 import { PermissionsBitField } from '../../structures/extra/Permissions';
 import {
 	type APIGuildMember,
@@ -19,7 +24,7 @@ export class MemberShorter extends BaseShorter {
 	 * @param resolve The GuildMemberResolvable to resolve.
 	 * @returns A Promise that resolves to the resolved member.
 	 */
-	async resolve(guildId: string, resolve: GuildMemberResolvable) {
+	async resolve(guildId: string, resolve: GuildMemberResolvable): Promise<GuildMemberStructure | undefined> {
 		if (typeof resolve === 'string') {
 			const match: { id?: string } | undefined = resolve.match(FormattingPatterns.User)?.groups;
 			if (match?.id) {
@@ -48,7 +53,7 @@ export class MemberShorter extends BaseShorter {
 	 * @param query The query parameters for searching members.
 	 * @returns A Promise that resolves to an array of matched members.
 	 */
-	async search(guildId: string, query?: RESTGetAPIGuildMembersSearchQuery) {
+	async search(guildId: string, query?: RESTGetAPIGuildMembersSearchQuery): Promise<GuildMemberStructure[]> {
 		const members = await this.client.proxy.guilds(guildId).members.search.get({
 			query,
 		});
@@ -100,7 +105,12 @@ export class MemberShorter extends BaseShorter {
 	 * @param reason The reason for editing the member.
 	 * @returns A Promise that resolves to the edited member.
 	 */
-	async edit(guildId: string, memberId: string, body: RESTPatchAPIGuildMemberJSONBody, reason?: string) {
+	async edit(
+		guildId: string,
+		memberId: string,
+		body: RESTPatchAPIGuildMemberJSONBody,
+		reason?: string,
+	): Promise<GuildMemberStructure> {
 		const member = await this.client.proxy.guilds(guildId).members(memberId).patch({ body, reason });
 		await this.client.cache.members?.setIfNI('GuildMembers', memberId, guildId, member);
 		return Transformers.GuildMember(this.client, member, member.user, guildId);
@@ -113,7 +123,11 @@ export class MemberShorter extends BaseShorter {
 	 * @param body The request body for adding the member.
 	 * @returns A Promise that resolves to the added member.
 	 */
-	async add(guildId: string, memberId: string, body: RESTPutAPIGuildMemberJSONBody) {
+	async add(
+		guildId: string,
+		memberId: string,
+		body: RESTPutAPIGuildMemberJSONBody,
+	): Promise<GuildMemberStructure | undefined> {
 		const member = await this.client.proxy.guilds(guildId).members(memberId).put({
 			body,
 		});
@@ -135,7 +149,7 @@ export class MemberShorter extends BaseShorter {
 	 * @param force Whether to force fetching the member from the API even if it exists in the cache.
 	 * @returns A Promise that resolves to the fetched member.
 	 */
-	async fetch(guildId: string, memberId: string, force = false) {
+	async fetch(guildId: string, memberId: string, force = false): Promise<GuildMemberStructure> {
 		const member = await this.raw(guildId, memberId, force);
 		return Transformers.GuildMember(this.client, member, member.user, guildId);
 	}
@@ -159,7 +173,7 @@ export class MemberShorter extends BaseShorter {
 	 * @param force Whether to force listing members from the API even if they exist in the cache.
 	 * @returns A Promise that resolves to an array of listed members.
 	 */
-	async list(guildId: string, query?: RESTGetAPIGuildMembersQuery, force = false) {
+	async list(guildId: string, query?: RESTGetAPIGuildMembersQuery, force = false): Promise<GuildMemberStructure[]> {
 		let members: APIGuildMember[] | GuildMemberStructure[];
 		if (!force) {
 			members = (await this.client.cache.members?.values(guildId)) ?? [];
@@ -191,7 +205,7 @@ export class MemberShorter extends BaseShorter {
 		return this.client.proxy.guilds(guildId).members(memberId).roles(id).delete();
 	}
 
-	async listRoles(guildId: string, memberId: string, force = false) {
+	async listRoles(guildId: string, memberId: string, force = false): Promise<GuildRoleStructure[]> {
 		if (!force) {
 			const member = await this.client.cache.members?.get(memberId, guildId);
 			if (member) {
@@ -206,7 +220,7 @@ export class MemberShorter extends BaseShorter {
 		return allRoles.filter(role => rolesId.includes(role.id));
 	}
 
-	async sortRoles(guildId: string, memberId: string, force = false) {
+	async sortRoles(guildId: string, memberId: string, force = false): Promise<GuildRoleStructure[]> {
 		const roles = await this.listRoles(guildId, memberId, force);
 		return roles.sort((a, b) => b.position - a.position);
 	}
@@ -241,7 +255,7 @@ export class MemberShorter extends BaseShorter {
 	 * @param time The time in seconds to timeout the member for.
 	 * @param reason The reason for the timeout.
 	 */
-	timeout(guildId: string, memberId: string, time: number | null, reason?: string) {
+	timeout(guildId: string, memberId: string, time: number | null, reason?: string): Promise<GuildMemberStructure> {
 		return this.edit(
 			guildId,
 			memberId,

@@ -1,4 +1,4 @@
-import { Transformers } from '../../client/transformers';
+import { type AutoModerationRuleStructure, Transformers } from '../../client/transformers';
 import type { UsingClient } from '../../commands';
 import { toCamelCase } from '../../common';
 import type {
@@ -15,14 +15,23 @@ export const AUTO_MODERATION_ACTION_EXECUTION = (
 	return toCamelCase(data);
 };
 
-export const AUTO_MODERATION_RULE_CREATE = (self: UsingClient, data: GatewayAutoModerationRuleCreateDispatchData) => {
+export const AUTO_MODERATION_RULE_CREATE = (
+	self: UsingClient,
+	data: GatewayAutoModerationRuleCreateDispatchData,
+): AutoModerationRuleStructure => {
 	return Transformers.AutoModerationRule(self, data);
 };
 
-export const AUTO_MODERATION_RULE_DELETE = (self: UsingClient, data: GatewayAutoModerationRuleDeleteDispatchData) => {
+export const AUTO_MODERATION_RULE_DELETE = (
+	self: UsingClient,
+	data: GatewayAutoModerationRuleDeleteDispatchData,
+): AutoModerationRuleStructure => {
 	return Transformers.AutoModerationRule(self, data);
 };
 
-export const AUTO_MODERATION_RULE_UPDATE = (self: UsingClient, data: GatewayAutoModerationRuleUpdateDispatchData) => {
+export const AUTO_MODERATION_RULE_UPDATE = (
+	self: UsingClient,
+	data: GatewayAutoModerationRuleUpdateDispatchData,
+): AutoModerationRuleStructure => {
 	return Transformers.AutoModerationRule(self, data);
 };

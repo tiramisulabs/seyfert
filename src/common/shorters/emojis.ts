@@ -12,7 +12,7 @@ export class EmojiShorter extends BaseShorter {
 	 * @param force Whether to force fetching emojis from the API even if they exist in the cache.
 	 * @returns A Promise that resolves to an array of emojis.
 	 */
-	async list(guildId: string, force = false) {
+	async list(guildId: string, force = false): Promise<GuildEmojiStructure[]> {
 		let emojis: APIEmoji[] | GuildEmojiStructure[];
 		if (!force) {
 			emojis = (await this.client.cache.emojis?.values(guildId)) ?? [];
@@ -34,7 +34,10 @@ export class EmojiShorter extends BaseShorter {
 	 * @param body The data for creating the emoji.
 	 * @returns A Promise that resolves to the created emoji.
 	 */
-	async create(guildId: string, body: OmitInsert<RESTPostAPIGuildEmojiJSONBody, 'image', { image: ImageResolvable }>) {
+	async create(
+		guildId: string,
+		body: OmitInsert<RESTPostAPIGuildEmojiJSONBody, 'image', { image: ImageResolvable }>,
+	): Promise<GuildEmojiStructure> {
 		const bodyResolved = { ...body, image: await resolveImage(body.image) };
 		const emoji = await this.client.proxy.guilds(guildId).emojis.post({
 			body: bodyResolved,
@@ -52,7 +55,7 @@ export class EmojiShorter extends BaseShorter {
 	 * @param force Whether to force fetching the emoji from the API even if it exists in the cache.
 	 * @returns A Promise that resolves to the fetched emoji.
 	 */
-	async fetch(guildId: string, emojiId: string, force = false) {
+	async fetch(guildId: string, emojiId: string, force = false): Promise<GuildEmojiStructure> {
 		let emoji: APIEmoji | GuildEmojiStructure | undefined;
 		if (!force) {
 			emoji = await this.client.cache.emojis?.get(emojiId);
@@ -81,7 +84,12 @@ export class EmojiShorter extends BaseShorter {
 	 * @param reason The reason for editing the emoji.
 	 * @returns A Promise that resolves to the edited emoji.
 	 */
-	async edit(guildId: string, emojiId: string, body: RESTPatchAPIGuildEmojiJSONBody, reason?: string) {
+	async edit(
+		guildId: string,
+		emojiId: string,
+		body: RESTPatchAPIGuildEmojiJSONBody,
+		reason?: string,
+	): Promise<GuildEmojiStructure> {
 		const emoji = await this.client.proxy.guilds(guildId).emojis(emojiId).patch({ body, reason });
 		await this.client.cache.emojis?.setIfNI('GuildExpressions', emoji.id!, guildId, emoji);
 		return Transformers.GuildEmoji(this.client, emoji, guildId);

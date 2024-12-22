@@ -1,4 +1,4 @@
-import { Transformers } from '../../client/transformers';
+import { type GuildRoleStructure, Transformers } from '../../client/transformers';
 import type {
 	APIRole,
 	RESTPatchAPIGuildRoleJSONBody,
@@ -15,13 +15,13 @@ export class RoleShorter extends BaseShorter {
 	 * @param reason The reason for creating the role.
 	 * @returns A Promise that resolves when the role is created.
 	 */
-	async create(guildId: string, body: RESTPostAPIGuildRoleJSONBody, reason?: string) {
+	async create(guildId: string, body: RESTPostAPIGuildRoleJSONBody, reason?: string): Promise<GuildRoleStructure> {
 		const res = await this.client.proxy.guilds(guildId).roles.post({ body, reason });
 		await this.client.cache.roles?.setIfNI('Guilds', res.id, guildId, res);
 		return Transformers.GuildRole(this.client, res, guildId);
 	}
 
-	async fetch(guildId: string, roleId: string, force = false) {
+	async fetch(guildId: string, roleId: string, force = false): Promise<GuildRoleStructure> {
 		const role = await this.raw(guildId, roleId, force);
 		return Transformers.GuildRole(this.client, role, guildId);
 	}
@@ -43,7 +43,7 @@ export class RoleShorter extends BaseShorter {
 	 * @param force Whether to force fetching roles from the API even if they exist in the cache.
 	 * @returns A Promise that resolves to an array of roles.
 	 */
-	async list(guildId: string, force = false) {
+	async list(guildId: string, force = false): Promise<GuildRoleStructure[]> {
 		const roles = await this.listRaw(guildId, force);
 		return roles.map(r => Transformers.GuildRole(this.client, r, guildId));
 	}
@@ -72,7 +72,12 @@ export class RoleShorter extends BaseShorter {
 	 * @param reason The reason for editing the role.
 	 * @returns A Promise that resolves when the role is edited.
 	 */
-	async edit(guildId: string, roleId: string, body: RESTPatchAPIGuildRoleJSONBody, reason?: string) {
+	async edit(
+		guildId: string,
+		roleId: string,
+		body: RESTPatchAPIGuildRoleJSONBody,
+		reason?: string,
+	): Promise<GuildRoleStructure> {
 		const res = await this.client.proxy.guilds(guildId).roles(roleId).patch({ body, reason });
 		await this.client.cache.roles?.setIfNI('Guilds', roleId, guildId, res);
 		return Transformers.GuildRole(this.client, res, guildId);
@@ -85,7 +90,7 @@ export class RoleShorter extends BaseShorter {
 	 * @param reason The reason for deleting the role.
 	 * @returns A Promise that resolves when the role is deleted.
 	 */
-	async delete(guildId: string, roleId: string, reason?: string) {
+	async delete(guildId: string, roleId: string, reason?: string): Promise<GuildRoleStructure> {
 		const res = await this.client.proxy.guilds(guildId).roles(roleId).delete({ reason });
 		this.client.cache.roles?.removeIfNI('Guilds', roleId, guildId);
 		return Transformers.GuildRole(this.client, res, guildId);
@@ -97,7 +102,7 @@ export class RoleShorter extends BaseShorter {
 	 * @param body The data to update the positions of roles with.
 	 * @returns A Promise that resolves to an array of edited roles.
 	 */
-	async editPositions(guildId: string, body: RESTPatchAPIGuildRolePositionsJSONBody) {
+	async editPositions(guildId: string, body: RESTPatchAPIGuildRolePositionsJSONBody): Promise<GuildRoleStructure[]> {
 		const roles = await this.client.proxy.guilds(guildId).roles.patch({
 			body,
 		});

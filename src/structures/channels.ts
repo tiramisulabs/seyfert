@@ -9,14 +9,18 @@ import {
 	type DirectoryChannelStructure,
 	type ForumChannelStructure,
 	type GuildMemberStructure,
+	type GuildStructure,
 	type MediaChannelStructure,
+	type MessageStructure,
 	type NewsChannelStructure,
 	type StageChannelStructure,
 	type TextGuildChannelStructure,
 	type ThreadChannelStructure,
 	Transformers,
+	type UserStructure,
 	type VoiceChannelStructure,
 	type VoiceStateStructure,
+	type WebhookStructure,
 } from '../client';
 import type { UsingClient } from '../commands';
 import {
@@ -80,11 +84,11 @@ export class BaseNoEditableChannel<T extends ChannelType> extends DiscordBase<AP
 		return Formatter.channelLink(this.id);
 	}
 
-	fetch(force = false) {
+	fetch(force = false): Promise<AllChannels> {
 		return this.client.channels.fetch(this.id, force);
 	}
 
-	delete(reason?: string) {
+	delete(reason?: string): Promise<AllChannels> {
 		return this.client.channels.delete(this.id, { reason });
 	}
 
@@ -150,11 +154,14 @@ export class BaseNoEditableChannel<T extends ChannelType> extends DiscordBase<AP
 
 	static allMethods(ctx: MethodContext<{ guildId: string }>) {
 		return {
-			list: (force = false) => ctx.client.guilds.channels.list(ctx.guildId, force),
-			fetch: (id: string, force = false) => ctx.client.guilds.channels.fetch(ctx.guildId, id, force),
-			create: (body: RESTPostAPIGuildChannelJSONBody) => ctx.client.guilds.channels.create(ctx.guildId, body),
-			delete: (id: string, reason?: string) => ctx.client.guilds.channels.delete(ctx.guildId, id, reason),
-			edit: (id: string, body: RESTPatchAPIChannelJSONBody, reason?: string) =>
+			list: (force = false): Promise<AllChannels[]> => ctx.client.guilds.channels.list(ctx.guildId, force),
+			fetch: (id: string, force = false): Promise<AllChannels> =>
+				ctx.client.guilds.channels.fetch(ctx.guildId, id, force),
+			create: (body: RESTPostAPIGuildChannelJSONBody): Promise<AllChannels> =>
+				ctx.client.guilds.channels.create(ctx.guildId, body),
+			delete: (id: string, reason?: string): Promise<AllChannels> =>
+				ctx.client.guilds.channels.delete(ctx.guildId, id, reason),
+			edit: (id: string, body: RESTPatchAPIChannelJSONBody, reason?: string): Promise<AllChannels> =>
 				ctx.client.guilds.channels.edit(ctx.guildId, id, body, reason),
 			editPositions: (body: RESTPatchAPIGuildChannelPositionsJSONBody) =>
 				ctx.client.guilds.channels.editPositions(ctx.guildId, body),
@@ -218,7 +225,7 @@ export class BaseGuildChannel extends BaseChannel<ChannelType> {
 		return this.client.channels.overwritesFor(this.id, member);
 	}
 
-	guild(force = false) {
+	guild(force = false): Promise<GuildStructure<'api'>> {
 		return this.client.guilds.fetch(this.guildId!, force);
 	}
 
@@ -265,15 +272,18 @@ export class MessagesMethods extends DiscordBase {
 
 	static messages(ctx: MethodContext<{ channelId: string }>) {
 		return {
-			write: (body: MessageCreateBodyRequest) => ctx.client.messages.write(ctx.channelId, body),
-			edit: (messageId: string, body: MessageUpdateBodyRequest) =>
+			write: (body: MessageCreateBodyRequest): Promise<MessageStructure> =>
+				ctx.client.messages.write(ctx.channelId, body),
+			edit: (messageId: string, body: MessageUpdateBodyRequest): Promise<MessageStructure> =>
 				ctx.client.messages.edit(messageId, ctx.channelId, body),
-			crosspost: (messageId: string, reason?: string) =>
+			crosspost: (messageId: string, reason?: string): Promise<MessageStructure> =>
 				ctx.client.messages.crosspost(messageId, ctx.channelId, reason),
 			delete: (messageId: string, reason?: string) => ctx.client.messages.delete(messageId, ctx.channelId, reason),
-			fetch: (messageId: string, force = false) => ctx.client.messages.fetch(messageId, ctx.channelId, force),
+			fetch: (messageId: string, force = false): Promise<MessageStructure> =>
+				ctx.client.messages.fetch(messageId, ctx.channelId, force),
 			purge: (messages: string[], reason?: string) => ctx.client.messages.purge(messages, ctx.channelId, reason),
-			list: (fetchOptions: RESTGetAPIChannelMessagesQuery) => ctx.client.messages.list(ctx.channelId, fetchOptions),
+			list: (fetchOptions: RESTGetAPIChannelMessagesQuery): Promise<MessageStructure[]> =>
+				ctx.client.messages.list(ctx.channelId, fetchOptions),
 		};
 	}
 
@@ -282,8 +292,11 @@ export class MessagesMethods extends DiscordBase {
 			add: (messageId: string, emoji: EmojiResolvable) => ctx.client.reactions.add(messageId, ctx.channelId, emoji),
 			delete: (messageId: string, emoji: EmojiResolvable, userId = '@me') =>
 				ctx.client.reactions.delete(messageId, ctx.channelId, emoji, userId),
-			fetch: (messageId: string, emoji: EmojiResolvable, query?: RESTGetAPIChannelMessageReactionUsersQuery) =>
-				ctx.client.reactions.fetch(messageId, ctx.channelId, emoji, query),
+			fetch: (
+				messageId: string,
+				emoji: EmojiResolvable,
+				query?: RESTGetAPIChannelMessageReactionUsersQuery,
+			): Promise<UserStructure[]> => ctx.client.reactions.fetch(messageId, ctx.channelId, emoji, query),
 			purge: (messageId: string, emoji?: EmojiResolvable) =>
 				ctx.client.reactions.purge(messageId, ctx.channelId, emoji),
 		};
@@ -291,7 +304,7 @@ export class MessagesMethods extends DiscordBase {
 
 	static pins(ctx: MethodContext<{ channelId: string }>) {
 		return {
-			fetch: () => ctx.client.channels.pins(ctx.channelId),
+			fetch: (): Promise<MessageStructure[]> => ctx.client.channels.pins(ctx.channelId),
 			set: (messageId: string, reason?: string) => ctx.client.channels.setPin(messageId, ctx.channelId, reason),
 			delete: (messageId: string, reason?: string) => ctx.client.channels.deletePin(messageId, ctx.channelId, reason),
 		};
@@ -396,7 +409,7 @@ export class ThreadOnlyMethods extends DiscordBase {
 		return this.edit({ default_thread_rate_limit_per_user: rate }, reason);
 	}
 
-	thread(body: RESTPostAPIGuildForumThreadsJSONBody, reason?: string) {
+	thread(body: RESTPostAPIGuildForumThreadsJSONBody, reason?: string): Promise<ThreadChannelStructure> {
 		return this.client.channels.thread(this.id, body, reason);
 	}
 }
@@ -421,7 +434,7 @@ export class VoiceChannelMethods extends DiscordBase {
 		return this.edit({ video_quality_mode: VideoQualityMode[quality] }, reason);
 	}
 
-	setVoiceState(status: string | null = null) {
+	setVoiceStatus(status: string | null = null) {
 		return this.client.channels.setVoiceStatus(this.id, status);
 	}
 
@@ -435,7 +448,7 @@ export class VoiceChannelMethods extends DiscordBase {
 		});
 	}
 
-	public async members(force?: boolean) {
+	public async members(force?: boolean): Promise<Collection<string, GuildMemberStructure>> {
 		const collection = new Collection<string, GuildMemberStructure>();
 
 		const states = await this.states();
@@ -457,7 +470,7 @@ export class WebhookGuildMethods extends DiscordBase {
 
 	static guild(ctx: MethodContext<{ guildId: string }>) {
 		return {
-			list: () => ctx.client.webhooks.listFromGuild(ctx.guildId),
+			list: (): Promise<WebhookStructure[]> => ctx.client.webhooks.listFromGuild(ctx.guildId),
 		};
 	}
 }
@@ -470,8 +483,9 @@ export class WebhookChannelMethods extends DiscordBase {
 
 	static channel(ctx: MethodContext<{ channelId: string }>) {
 		return {
-			list: () => ctx.client.webhooks.listFromChannel(ctx.channelId),
-			create: (body: RESTPostAPIChannelWebhookJSONBody) => ctx.client.webhooks.create(ctx.channelId, body),
+			list: (): Promise<WebhookStructure[]> => ctx.client.webhooks.listFromChannel(ctx.channelId),
+			create: (body: RESTPostAPIChannelWebhookJSONBody): Promise<WebhookStructure> =>
+				ctx.client.webhooks.create(ctx.channelId, body),
 		};
 	}
 }
