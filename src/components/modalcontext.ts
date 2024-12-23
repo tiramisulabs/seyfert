@@ -126,7 +126,7 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	 */
 	channel(mode?: 'rest' | 'flow'): Promise<AllChannels>;
 	channel(mode?: 'cache'): ReturnCache<AllChannels>;
-	channel(mode: 'cache' | 'rest' | 'flow' = 'cache') {
+	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (this.interaction?.channel && mode === 'cache')
 			return this.client.cache.adapter.isAsync ? Promise.resolve(this.interaction.channel) : this.interaction.channel;
 		return this.client.channels.fetch(this.channelId, mode === 'rest');
@@ -139,7 +139,7 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	 */
 	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
 	me(mode?: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
-	me(mode: 'cache' | 'rest' | 'flow' = 'cache') {
+	me(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (!this.guildId)
 			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
 		switch (mode) {
@@ -157,7 +157,7 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	 */
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
 	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
-	guild(mode: 'cache' | 'rest' | 'flow' = 'cache') {
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (!this.guildId)
 			return (
 				mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve()
