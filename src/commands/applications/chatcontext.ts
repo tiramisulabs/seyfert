@@ -20,7 +20,7 @@ import type { CommandMetadata, ExtendContext, GlobalMetadata, InferWithPrefix, U
 
 export interface CommandContext<T extends OptionsRecord = {}, M extends keyof RegisteredMiddlewares = never>
 	extends BaseContext,
-	ExtendContext {
+		ExtendContext {
 	/**@internal */
 	__edited?: true;
 	/**@internal */

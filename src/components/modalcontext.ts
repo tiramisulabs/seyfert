@@ -18,7 +18,7 @@ import type {
 } from '../common';
 import { MessageFlags } from '../types';
 
-export interface ModalContext extends BaseContext, ExtendContext { }
+export interface ModalContext extends BaseContext, ExtendContext {}
 
 /**
  * Represents a context for interacting with components in a Discord bot.

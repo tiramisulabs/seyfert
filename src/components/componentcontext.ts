@@ -32,7 +32,7 @@ import { ComponentType, MessageFlags } from '../types';
 export interface ComponentContext<
 	Type extends keyof ContextComponentCommandInteractionMap = keyof ContextComponentCommandInteractionMap,
 > extends BaseContext,
-	ExtendContext { }
+		ExtendContext {}
 
 /**
  * Represents a context for interacting with components in a Discord bot.
