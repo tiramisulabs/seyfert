@@ -21,7 +21,7 @@ import type { RegisteredMiddlewares } from '../decorators';
 import type { EntryPointCommand } from './entryPoint';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
 
-export interface EntryPointContext<M extends keyof RegisteredMiddlewares = never> extends BaseContext, ExtendContext {}
+export interface EntryPointContext<M extends keyof RegisteredMiddlewares = never> extends BaseContext, ExtendContext { }
 
 export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> extends BaseContext {
 	constructor(
@@ -83,7 +83,7 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 
 	channel(mode?: 'rest' | 'flow'): Promise<AllChannels>;
 	channel(mode?: 'cache'): ReturnCache<AllChannels>;
-	channel(mode: 'cache' | 'rest' | 'flow' = 'cache') {
+	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (this.interaction.channel && mode === 'cache')
 			return this.client.cache.adapter.isAsync ? Promise.resolve(this.interaction.channel) : this.interaction.channel;
 		return this.client.channels.fetch(this.channelId, mode === 'rest');
@@ -91,7 +91,7 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 
 	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
 	me(mode?: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
-	me(mode: 'cache' | 'rest' | 'flow' = 'cache') {
+	me(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (!this.guildId)
 			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
 		switch (mode) {

@@ -28,7 +28,7 @@ export interface MenuCommandContext<
 	T extends MessageCommandInteraction | UserCommandInteraction,
 	M extends keyof RegisteredMiddlewares = never,
 > extends BaseContext,
-		ExtendContext {}
+	ExtendContext { }
 
 export class MenuCommandContext<
 	T extends MessageCommandInteraction | UserCommandInteraction,
@@ -107,7 +107,7 @@ export class MenuCommandContext<
 
 	channel(mode?: 'rest' | 'flow'): Promise<AllChannels>;
 	channel(mode?: 'cache'): ReturnCache<AllChannels>;
-	channel(mode: 'cache' | 'rest' | 'flow' = 'cache') {
+	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (this.interaction?.channel && mode === 'cache')
 			return this.client.cache.adapter.isAsync ? Promise.resolve(this.interaction.channel) : this.interaction.channel;
 		return this.client.channels.fetch(this.channelId, mode === 'rest');
@@ -115,7 +115,7 @@ export class MenuCommandContext<
 
 	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
 	me(mode?: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
-	me(mode: 'cache' | 'rest' | 'flow' = 'cache') {
+	me(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (!this.guildId)
 			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
 		switch (mode) {
