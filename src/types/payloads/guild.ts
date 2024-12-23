@@ -2,7 +2,7 @@
  * Types extracted from https://discord.com/developers/docs/resources/guild
  */
 
-import type { GuildMemberFlags, Permissions, Snowflake } from '../index';
+import type { GuildMemberFlags, Locale, LocaleString, Permissions, Snowflake } from '../index';
 import type { APIEmoji, APIPartialEmoji } from './emoji';
 import type { PresenceUpdateReceiveStatus } from './gateway';
 import type { OAuth2Scopes } from './oauth2';
@@ -227,7 +227,7 @@ export interface APIGuild extends APIPartialGuild {
 	 *
 	 * @default "en-US"
 	 */
-	preferred_locale: string;
+	preferred_locale: LocaleString;
 	/**
 	 * The id of the channel where admins and moderators of Community guilds receive notices from Discord
 	 */
@@ -280,6 +280,19 @@ export interface APIGuild extends APIPartialGuild {
 	 * The id of the channel where admins and moderators of Community guilds receive safety alerts from Discord
 	 */
 	safety_alerts_channel_id: Snowflake | null;
+}
+
+/**
+ * https://discord.com/developers/docs/resources/guild#guild-object-guild-structure
+ */
+export interface APIPartialInteractionGuild extends Pick<APIGuild, 'features' | 'id'> {
+	/**
+	 * The preferred locale of a Community guild; used in guild discovery and notices from Discord; defaults to "en-US"
+	 *
+	 * @unstable https://github.com/discord/discord-api-docs/issues/6938
+	 * @default "en-US"
+	 */
+	locale: Locale;
 }
 
 /**

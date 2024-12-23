@@ -33,13 +33,13 @@ export interface APIEntitlement {
 	 */
 	deleted: boolean;
 	/**
-	 * Start date at which the entitlement is valid. Not present when using test entitlements.
+	 * Start date at which the entitlement is valid.
 	 */
-	starts_at?: string;
+	starts_at: string | null;
 	/**
-	 * Date at which the entitlement is no longer valid. Not present when using test entitlements.
+	 * Date at which the entitlement is no longer valid.
 	 */
-	ends_at?: string | null;
+	ends_at: string | null;
 	/**
 	 * For consumable items, whether or not the entitlement has been consumed
 	 */
@@ -163,6 +163,8 @@ export interface APISubscription {
 	sku_ids: string[];
 	/** List of entitlements granted for this subscription */
 	entitlements_ids: string[];
+	/** List of SKUs that this user will be subscribed to at renewal */
+	renewal_sku_ids: Snowflake[] | null;
 	/** Start of the current subscription period */
 	current_period_start: string;
 	/** End of the current subscription period */

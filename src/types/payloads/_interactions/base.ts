@@ -10,7 +10,7 @@ import type {
 	APIThreadChannel,
 	ThreadChannelType,
 } from '../channel';
-import type { APIGuildMember } from '../guild';
+import type { APIGuildMember, APIPartialInteractionGuild } from '../guild';
 import type { APIEntitlement } from '../monetization';
 import type { APIRole } from '../permissions';
 import type { APIUser } from '../user';
@@ -119,6 +119,10 @@ export interface APIBaseInteraction<Type extends InteractionType, Data> {
 	 * The command data payload
 	 */
 	data?: Data;
+	/**
+	 * The guild it was sent from
+	 */
+	guild?: APIPartialInteractionGuild;
 	/**
 	 * The guild it was sent from
 	 */

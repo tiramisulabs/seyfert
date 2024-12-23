@@ -1,7 +1,6 @@
-import type { Snowflake } from '../index';
+import type { Snowflake } from '..';
 import type { APIGuildMember } from './guild';
 import type { APIUser } from './user';
-
 interface APIGuildScheduledEventBase<Type extends GuildScheduledEventEntityType> {
 	/**
 	 * The id of the guild event
@@ -67,6 +66,108 @@ interface APIGuildScheduledEventBase<Type extends GuildScheduledEventEntityType>
 	 * The cover image of the scheduled event
 	 */
 	image?: string | null;
+	/**
+	 * The definition for how often this event should recur
+	 */
+	recurrence_rule: APIGuildScheduledEventRecurrenceRule | null;
+}
+/**
+ * https://discord.com/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-recurrence-rule-object-guild-scheduled-event-recurrence-rule-structure
+ */
+export interface APIGuildScheduledEventRecurrenceRule {
+	/**
+	 * Starting time of the recurrence interval
+	 */
+	start: string;
+	/**
+	 * Ending time of the recurrence interval
+	 */
+	end: string | null;
+	/**
+	 * How often the event occurs
+	 */
+	frequency: GuildScheduledEventRecurrenceRuleFrequency;
+	/**
+	 * The spacing between the events, defined by `frequency`.
+	 * For example, `frequency` of {@apilink GuildScheduledEventRecurrenceRuleFrequency#Weekly} and an `interval` of `2`
+	 * would be "every-other week"
+	 */
+	interval: number;
+	/**
+	 * Set of specific days within a week for the event to recur on
+	 */
+	by_weekday: GuildScheduledEventRecurrenceRuleWeekday[] | null;
+	/**
+	 * List of specific days within a specific week (1-5) to recur on
+	 */
+	by_n_weekday: GuildScheduledEventRecurrenceRuleNWeekday[] | null;
+	/**
+	 * Set of specific months to recur on
+	 */
+	by_month: GuildScheduledEventRecurrenceRuleMonth[] | null;
+	/**
+	 * Set of specific dates within a month to recur on
+	 */
+	by_month_day: number[] | null;
+	/**
+	 * Set of days within a year to recur on (1-364)
+	 */
+	by_year_day: number[] | null;
+	/**
+	 * The total amount of times that the event is allowed to recur before stopping
+	 */
+	count: number | null;
+}
+/**
+ * https://discord.com/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-recurrence-rule-object-guild-scheduled-event-recurrence-rule-frequency
+ */
+export declare enum GuildScheduledEventRecurrenceRuleFrequency {
+	Yearly = 0,
+	Monthly = 1,
+	Weekly = 2,
+	Daily = 3,
+}
+/**
+ * https://discord.com/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-recurrence-rule-object-guild-scheduled-event-recurrence-rule-weekday
+ */
+export declare enum GuildScheduledEventRecurrenceRuleWeekday {
+	Monday = 0,
+	Tuesday = 1,
+	Wednesday = 2,
+	Thursday = 3,
+	Friday = 4,
+	Saturday = 5,
+	Sunday = 6,
+}
+/**
+ * https://discord.com/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-recurrence-rule-object-guild-scheduled-event-recurrence-rule-month
+ */
+export declare enum GuildScheduledEventRecurrenceRuleMonth {
+	January = 1,
+	February = 2,
+	March = 3,
+	April = 4,
+	May = 5,
+	June = 6,
+	July = 7,
+	August = 8,
+	September = 9,
+	October = 10,
+	November = 11,
+	December = 12,
+}
+/**
+ * https://discord.com/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-recurrence-rule-object-guild-scheduled-event-recurrence-rule-nweekday-structure
+ */
+export interface GuildScheduledEventRecurrenceRuleNWeekday {
+	/**
+	 * The week to reoccur on.
+	 */
+	n: 1 | 2 | 3 | 4 | 5;
+	/**
+	 * The day within the week to reoccur on
+	 */
+	day: GuildScheduledEventRecurrenceRuleWeekday;
 }
 
 export interface APIStageInstanceGuildScheduledEvent
