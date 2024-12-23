@@ -32,7 +32,7 @@ import { ComponentType, MessageFlags } from '../types';
 export interface ComponentContext<
 	Type extends keyof ContextComponentCommandInteractionMap = keyof ContextComponentCommandInteractionMap,
 > extends BaseContext,
-		ExtendContext {}
+	ExtendContext { }
 
 /**
  * Represents a context for interacting with components in a Discord bot.
@@ -187,7 +187,7 @@ export class ComponentContext<
 	 */
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
 	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
-	guild(mode: 'cache' | 'rest' | 'flow' = 'cache') {
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (!this.guildId)
 			return (
 				mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve()

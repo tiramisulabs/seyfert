@@ -28,7 +28,7 @@ export interface MenuCommandContext<
 	T extends MessageCommandInteraction | UserCommandInteraction,
 	M extends keyof RegisteredMiddlewares = never,
 > extends BaseContext,
-		ExtendContext {}
+	ExtendContext { }
 
 export class MenuCommandContext<
 	T extends MessageCommandInteraction | UserCommandInteraction,
@@ -128,7 +128,7 @@ export class MenuCommandContext<
 
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
 	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
-	guild(mode: 'cache' | 'rest' | 'flow' = 'cache') {
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (!this.guildId)
 			return (
 				mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve()

@@ -21,7 +21,7 @@ import type { RegisteredMiddlewares } from '../decorators';
 import type { EntryPointCommand } from './entryPoint';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
 
-export interface EntryPointContext<M extends keyof RegisteredMiddlewares = never> extends BaseContext, ExtendContext {}
+export interface EntryPointContext<M extends keyof RegisteredMiddlewares = never> extends BaseContext, ExtendContext { }
 
 export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> extends BaseContext {
 	constructor(
@@ -104,7 +104,7 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
 	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
-	guild(mode: 'cache' | 'rest' | 'flow' = 'cache') {
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (!this.guildId)
 			return (
 				mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve()

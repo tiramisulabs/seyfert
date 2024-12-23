@@ -18,7 +18,7 @@ import type {
 } from '../common';
 import { MessageFlags } from '../types';
 
-export interface ModalContext extends BaseContext, ExtendContext {}
+export interface ModalContext extends BaseContext, ExtendContext { }
 
 /**
  * Represents a context for interacting with components in a Discord bot.
@@ -157,7 +157,7 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	 */
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
 	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
-	guild(mode: 'cache' | 'rest' | 'flow' = 'cache') {
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (!this.guildId)
 			return (
 				mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve()

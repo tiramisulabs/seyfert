@@ -20,7 +20,7 @@ import type { CommandMetadata, ExtendContext, GlobalMetadata, InferWithPrefix, U
 
 export interface CommandContext<T extends OptionsRecord = {}, M extends keyof RegisteredMiddlewares = never>
 	extends BaseContext,
-		ExtendContext {
+	ExtendContext {
 	/**@internal */
 	__edited?: true;
 	/**@internal */
@@ -177,7 +177,7 @@ export class CommandContext<
 
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
 	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
-	guild(mode: 'cache' | 'rest' | 'flow' = 'cache') {
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (!this.guildId)
 			return (mode === 'cache'
 				? this.client.cache.adapter.isAsync
