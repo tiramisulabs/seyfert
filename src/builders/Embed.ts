@@ -28,7 +28,7 @@ export class Embed {
 	 * @param author - The author information.
 	 * @returns The updated Embed instance.
 	 * @example
-	 * embed.setAuthor({ name: 'John Doe', iconURL: 'https://example.com/avatar.png' });
+	 * embed.setAuthor({ name: 'John Doe', iconUrl: 'https://example.com/avatar.png' });
 	 */
 	setAuthor(author?: ObjectToLower<APIEmbedAuthor>): this {
 		this.data.author = author && toSnakeCase(author);
@@ -89,7 +89,7 @@ export class Embed {
 	 * @param footer - The footer information.
 	 * @returns The updated Embed instance.
 	 * @example
-	 * embed.setFooter({ text: 'This is the footer', iconURL: 'https://example.com/footer.png' });
+	 * embed.setFooter({ text: 'This is the footer', iconUrl: 'https://example.com/footer.png' });
 	 */
 	setFooter(footer?: ObjectToLower<Omit<APIEmbedFooter, 'proxy_icon_url'>>): this {
 		this.data.footer = footer && toSnakeCase(footer);
