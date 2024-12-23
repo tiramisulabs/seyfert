@@ -23,6 +23,7 @@ import type {
 } from './guild';
 import type {
 	APIGuildScheduledEvent,
+	APIGuildScheduledEventRecurrenceRule,
 	GuildScheduledEventEntityType,
 	GuildScheduledEventStatus,
 } from './guildScheduledEvent';
@@ -195,6 +196,10 @@ export enum AuditLogEvent {
 	ThreadDelete,
 
 	ApplicationCommandPermissionUpdate = 121,
+
+	SoundboardSoundCreate = 130,
+	SoundboardSoundUpdate,
+	SoundboardSoundDelete,
 
 	AutoModerationRuleCreate = 140,
 	AutoModerationRuleUpdate,
@@ -372,6 +377,8 @@ export type APIAuditLogChange =
 	| APIAuditLogChangeKeyDeny
 	| APIAuditLogChangeKeyDescription
 	| APIAuditLogChangeKeyDiscoverySplashHash
+	| APIAuditLogChangeKeyEmojiId
+	| APIAuditLogChangeKeyEmojiName
 	| APIAuditLogChangeKeyEnabled
 	| APIAuditLogChangeKeyEnableEmoticons
 	| APIAuditLogChangeKeyEntityType
@@ -404,12 +411,14 @@ export type APIAuditLogChange =
 	| APIAuditLogChangeKeyPermissions
 	| APIAuditLogChangeKeyPosition
 	| APIAuditLogChangeKeyPreferredLocale
+	| APIAuditLogChangeKeyPremiumProgressBarEnabled
 	| APIAuditLogChangeKeyPrivacyLevel
 	| APIAuditLogChangeKeyPruneDeleteDays
 	| APIAuditLogChangeKeyPublicUpdatesChannelId
 	| APIAuditLogChangeKeyRateLimitPerUser
 	| APIAuditLogChangeKeyRegion
 	| APIAuditLogChangeKeyRulesChannelId
+	| APIAuditLogChangeKeySoundId
 	| APIAuditLogChangeKeySplashHash
 	| APIAuditLogChangeKeyStatus
 	| APIAuditLogChangeKeySystemChannelFlags
@@ -420,10 +429,12 @@ export type APIAuditLogChange =
 	| APIAuditLogChangeKeyTriggerMetadata
 	| APIAuditLogChangeKeyTriggerType
 	| APIAuditLogChangeKeyType
+	| APIAuditLogChangeKeyUserId
 	| APIAuditLogChangeKeyUserLimit
 	| APIAuditLogChangeKeyUses
 	| APIAuditLogChangeKeyVanityURLCode
 	| APIAuditLogChangeKeyVerificationLevel
+	| APIAuditLogChangeKeyVolume
 	| APIAuditLogChangeKeyWidgetChannelId
 	| APIAuditLogChangeKeyWidgetEnabled;
 
@@ -534,6 +545,11 @@ export type APIAuditLogChangeKeyDefaultMessageNotifications = AuditLogChangeData
 export type APIAuditLogChangeKeyVanityURLCode = AuditLogChangeData<'vanity_url_code', string>;
 
 /**
+ * Returned when a guild's boost progress bar is enabled
+ */
+export type APIAuditLogChangeKeyPremiumProgressBarEnabled = AuditLogChangeData<'premium_progress_bar_enabled', boolean>;
+
+/**
  * Returned when new role(s) are added
  */
 export type APIAuditLogChangeKey$Add = AuditLogChangeData<'$add', Pick<APIRole, 'id' | 'name'>[]>;
@@ -606,6 +622,14 @@ export type APIAuditLogChangeKeyApplicationId = AuditLogChangeData<'application_
  * is changed
  */
 export type APIAuditLogChangeKeyRateLimitPerUser = AuditLogChangeData<'rate_limit_per_user', number>;
+
+/**
+ *  Returned when a guild scheduled event's recurrence_rule is changed
+ */
+export type APIAuditLogChangeKeyRecurrenceRule = AuditLogChangeData<
+	'recurrence_rule',
+	APIGuildScheduledEventRecurrenceRule
+>;
 
 /**
  * Returned when a permission bitfield is changed
@@ -865,6 +889,27 @@ export type APIAuditLogChangeKeyDefaultThreadRateLimitPerUser = AuditLogChangeDa
 	'default_thread_rate_limit_per_user',
 	number
 >;
+
+/**
+ * Returned when a soundboard is create or deleted
+ */
+export type APIAuditLogChangeKeySoundId = AuditLogChangeData<'sound_id', Snowflake>;
+/**
+ * Returned when a soundboard's volume is changed
+ */
+export type APIAuditLogChangeKeyVolume = AuditLogChangeData<'volume', number>;
+/**
+ * Returned when a soundboard's custom emoji is changed
+ */
+export type APIAuditLogChangeKeyEmojiId = AuditLogChangeData<'emoji_id', Snowflake>;
+/**
+ * Returned when a soundboard's unicode emoji is changed
+ */
+export type APIAuditLogChangeKeyEmojiName = AuditLogChangeData<'emoji_name', string>;
+/**
+ * Returned when a sounboard is created
+ */
+export type APIAuditLogChangeKeyUserId = AuditLogChangeData<'user_id', Snowflake>;
 
 interface AuditLogChangeData<K extends string, D> {
 	key: K;
