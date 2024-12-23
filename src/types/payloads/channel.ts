@@ -748,10 +748,6 @@ export interface APIMessageSnapshot {
 	 * Subset of the message object fields
 	 */
 	message: APIMessageSnapshotFields;
-	/**
-	 * Id of the origin message's guild
-	 */
-	guild_id?: Snowflake;
 }
 
 export type APIMessageSnapshotFields = Pick<
@@ -981,7 +977,7 @@ export interface APIThreadMetadata {
 	/**
 	 * Whether the thread is locked; when a thread is locked, only users with `MANAGE_THREADS` can unarchive it
 	 */
-	locked?: boolean;
+	locked: boolean;
 	/**
 	 * Whether non-moderators can add other non-moderators to the thread; only available on private threads
 	 */

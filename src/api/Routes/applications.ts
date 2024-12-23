@@ -9,6 +9,7 @@ import type {
 	RESTGetAPIApplicationGuildCommandsQuery,
 	RESTGetAPIApplicationGuildCommandsResult,
 	RESTGetAPIApplicationRoleConnectionMetadataResult,
+	RESTGetAPIEntitlementResult,
 	RESTGetAPIEntitlementsQuery,
 	RESTGetAPIEntitlementsResult,
 	RESTGetAPIGuildApplicationCommandsPermissionsResult,
@@ -112,6 +113,7 @@ export interface ApplicationRoutes {
 			(
 				id: string,
 			): {
+				get(args?: RestArgumentsNoBody<never>): Promise<RESTGetAPIEntitlementResult>;
 				delete(args?: RestArgumentsNoBody): Promise<never>;
 				consume: {
 					post(args?: RestArgumentsNoBody): Promise<never>;
