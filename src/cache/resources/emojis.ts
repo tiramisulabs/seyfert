@@ -1,4 +1,4 @@
-import type { ReturnCache } from '../..';
+import type { CacheFrom, ReturnCache } from '../..';
 import { type GuildEmojiStructure, Transformers } from '../../client/transformers';
 import { fakePromise } from '../../common';
 import type { APIEmoji } from '../../types';
@@ -8,7 +8,7 @@ export class Emojis extends GuildRelatedResource<any, APIEmoji> {
 	namespace = 'emoji';
 
 	//@ts-expect-error
-	filter(data: APIEmoji, id: string, guild_id?: string) {
+	filter(data: APIEmoji, id: string, guild_id: string, from: CacheFrom) {
 		return true;
 	}
 

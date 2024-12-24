@@ -8,6 +8,7 @@ import type {
 } from '../../types';
 
 import type { ValidAnswerId } from '../../api/Routes/channels';
+import { CacheFrom } from '../../cache';
 import { type MessageStructure, type ThreadChannelStructure, Transformers, type UserStructure } from '../../client';
 import type { MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
@@ -28,7 +29,13 @@ export class MessageShorter extends BaseShorter {
 				files: parsedFiles,
 			})
 			.then(async message => {
-				await this.client.cache.messages?.setIfNI('GuildMessages', message.id, message.channel_id, message);
+				await this.client.cache.messages?.setIfNI(
+					CacheFrom.Rest,
+					'GuildMessages',
+					message.id,
+					message.channel_id,
+					message,
+				);
 				return Transformers.Message(this.client, message);
 			});
 	}
@@ -47,7 +54,13 @@ export class MessageShorter extends BaseShorter {
 				files: parsedFiles,
 			})
 			.then(async message => {
-				await this.client.cache.messages?.setIfNI('GuildMessages', message.id, message.channel_id, message);
+				await this.client.cache.messages?.setIfNI(
+					CacheFrom.Rest,
+					'GuildMessages',
+					message.id,
+					message.channel_id,
+					message,
+				);
 				return Transformers.Message(this.client, message);
 			});
 	}
@@ -58,7 +71,7 @@ export class MessageShorter extends BaseShorter {
 			.messages(messageId)
 			.crosspost.post({ reason })
 			.then(async m => {
-				await this.client.cache.messages?.setIfNI('GuildMessages', m.id, m.channel_id, m);
+				await this.client.cache.messages?.setIfNI(CacheFrom.Rest, 'GuildMessages', m.id, m.channel_id, m);
 				return Transformers.Message(this.client, m);
 			});
 	}
@@ -85,7 +98,7 @@ export class MessageShorter extends BaseShorter {
 			.messages(messageId)
 			.get()
 			.then(async x => {
-				await this.client.cache.messages?.set(x.id, x.channel_id, x);
+				await this.client.cache.messages?.set(CacheFrom.Rest, x.id, x.channel_id, x);
 				return Transformers.Message(this.client, x);
 			});
 	}

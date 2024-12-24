@@ -1,3 +1,4 @@
+import { CacheFrom } from '../../cache';
 import {
 	type GuildMemberStructure,
 	type GuildRoleStructure,
@@ -58,6 +59,7 @@ export class MemberShorter extends BaseShorter {
 			query,
 		});
 		await this.client.cache.members?.set(
+			CacheFrom.Rest,
 			members.map(x => [x.user.id, x] as [string, APIGuildMember]),
 			guildId,
 		);
@@ -112,7 +114,7 @@ export class MemberShorter extends BaseShorter {
 		reason?: string,
 	): Promise<GuildMemberStructure> {
 		const member = await this.client.proxy.guilds(guildId).members(memberId).patch({ body, reason });
-		await this.client.cache.members?.setIfNI('GuildMembers', memberId, guildId, member);
+		await this.client.cache.members?.setIfNI(CacheFrom.Rest, 'GuildMembers', memberId, guildId, member);
 		return Transformers.GuildMember(this.client, member, member.user, guildId);
 	}
 
@@ -137,7 +139,7 @@ export class MemberShorter extends BaseShorter {
 			return;
 		}
 
-		await this.client.cache.members?.setIfNI('GuildMembers', member.user.id, guildId, member);
+		await this.client.cache.members?.setIfNI(CacheFrom.Rest, 'GuildMembers', member.user.id, guildId, member);
 
 		return Transformers.GuildMember(this.client, member, member.user, guildId);
 	}
@@ -162,7 +164,7 @@ export class MemberShorter extends BaseShorter {
 		}
 
 		member = await this.client.proxy.guilds(guildId).members(memberId).get();
-		await this.client.cache.members?.set(member.user.id, guildId, member);
+		await this.client.cache.members?.set(CacheFrom.Rest, member.user.id, guildId, member);
 		return member;
 	}
 
@@ -182,7 +184,11 @@ export class MemberShorter extends BaseShorter {
 		members = await this.client.proxy.guilds(guildId).members.get({
 			query,
 		});
-		await this.client.cache.members?.set(members.map(x => [x.user.id, x]) as [string, APIGuildMember][], guildId);
+		await this.client.cache.members?.set(
+			CacheFrom.Rest,
+			members.map(x => [x.user.id, x]) as [string, APIGuildMember][],
+			guildId,
+		);
 		return members.map(m => Transformers.GuildMember(this.client, m, m.user, guildId));
 	}
 
@@ -244,7 +250,7 @@ export class MemberShorter extends BaseShorter {
 		}
 
 		const state = await this.client.proxy.guilds(guildId)['voice-states'](memberId).get();
-		await this.client.cache.voiceStates?.set(memberId, guildId, state);
+		await this.client.cache.voiceStates?.set(CacheFrom.Rest, memberId, guildId, state);
 		return Transformers.VoiceState(this.client, state);
 	}
 

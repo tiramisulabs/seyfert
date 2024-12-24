@@ -1,3 +1,4 @@
+import { CacheFrom } from '../..';
 import {
 	type DMChannelStructure,
 	type MessageStructure,
@@ -17,7 +18,7 @@ export class UsersShorter extends BaseShorter {
 		const data = await this.client.proxy.users('@me').channels.post({
 			body: { recipient_id: userId },
 		});
-		await this.client.cache.channels?.set(userId, '@me', data);
+		await this.client.cache.channels?.set(CacheFrom.Rest, userId, '@me', data);
 		return Transformers.DMChannel(this.client, data);
 	}
 
@@ -38,7 +39,7 @@ export class UsersShorter extends BaseShorter {
 		}
 
 		const data = await this.client.proxy.users(userId).get();
-		await this.client.cache.users?.patch(userId, data);
+		await this.client.cache.users?.patch(CacheFrom.Rest, userId, data);
 		return data;
 	}
 

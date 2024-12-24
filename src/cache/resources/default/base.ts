@@ -1,7 +1,7 @@
 import type { UsingClient } from '../../../commands';
 import { fakePromise } from '../../../common';
 import type { GatewayIntentBits } from '../../../types';
-import type { Cache, ReturnCache } from '../../index';
+import type { Cache, CacheFrom, ReturnCache } from '../../index';
 
 export class BaseResource<T = any, S = any> {
 	namespace = 'base';
@@ -12,7 +12,7 @@ export class BaseResource<T = any, S = any> {
 	) {}
 
 	//@ts-expect-error
-	filter(data: any, id: string) {
+	filter(data: any, id: string, from: CacheFrom) {
 		return true;
 	}
 
@@ -27,9 +27,9 @@ export class BaseResource<T = any, S = any> {
 		return;
 	}
 
-	setIfNI(intent: keyof typeof GatewayIntentBits, id: string, data: S) {
+	setIfNI(from: CacheFrom, intent: keyof typeof GatewayIntentBits, id: string, data: S) {
 		if (!this.cache.hasIntent(intent)) {
-			return this.set(id, data);
+			return this.set(from, id, data);
 		}
 	}
 
@@ -41,13 +41,13 @@ export class BaseResource<T = any, S = any> {
 		return fakePromise(this.adapter.bulkGet(ids.map(id => this.hashId(id)))).then(x => x.filter(y => y));
 	}
 
-	set(id: string, data: S) {
-		if (!this.filter(data, id)) return;
+	set(from: CacheFrom, id: string, data: S) {
+		if (!this.filter(data, id, from)) return;
 		return fakePromise(this.addToRelationship(id)).then(() => this.adapter.set(this.hashId(id), data));
 	}
 
-	patch(id: string, data: S) {
-		if (!this.filter(data, id)) return;
+	patch(from: CacheFrom, id: string, data: S) {
+		if (!this.filter(data, id, from)) return;
 		return fakePromise(this.addToRelationship(id)).then(() => this.adapter.patch(this.hashId(id), data));
 	}
 

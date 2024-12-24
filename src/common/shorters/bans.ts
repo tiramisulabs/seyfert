@@ -1,3 +1,4 @@
+import { CacheFrom } from '../../cache';
 import { type GuildBanStructure, Transformers } from '../../client/transformers';
 import type {
 	APIBan,
@@ -57,7 +58,7 @@ export class BanShorter extends BaseShorter {
 		}
 
 		ban = await this.client.proxy.guilds(guildId).bans(userId).get();
-		await this.client.cache.members?.set(ban.user.id, guildId, ban);
+		await this.client.cache.members?.set(CacheFrom.Rest, ban.user.id, guildId, ban);
 		return Transformers.GuildBan(this.client, ban, guildId);
 	}
 
@@ -78,6 +79,7 @@ export class BanShorter extends BaseShorter {
 			query,
 		});
 		await this.client.cache.bans?.set(
+			CacheFrom.Rest,
 			bans.map<[string, APIBan]>(x => [x.user.id, x]),
 			guildId,
 		);

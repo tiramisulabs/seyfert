@@ -1,14 +1,14 @@
 import { fakePromise } from '../../common';
 import { type AllChannels, channelFrom } from '../../structures';
 import type { APIChannel } from '../../types';
-import type { ReturnCache } from '../index';
+import type { CacheFrom, ReturnCache } from '../index';
 import { GuildRelatedResource } from './default/guild-related';
 
 export class Channels extends GuildRelatedResource<any, APIChannel> {
 	namespace = 'channel';
 
 	//@ts-expect-error
-	filter(data: APIChannel, id: string, guild_id: string) {
+	filter(data: APIChannel, id: string, guild_id: string, from: CacheFrom) {
 		return true;
 	}
 

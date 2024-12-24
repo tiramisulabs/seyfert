@@ -1,3 +1,4 @@
+import type { CacheFrom } from '../..';
 import type { GatewayPresenceUpdate } from '../../types';
 import { GuildRelatedResource } from './default/guild-related';
 
@@ -5,7 +6,7 @@ export class Presences extends GuildRelatedResource<PresenceResource, GatewayPre
 	namespace = 'presence';
 
 	//@ts-expect-error
-	filter(data: GatewayPresenceUpdate, id: string, guild_id?: string) {
+	filter(data: GatewayPresenceUpdate, id: string, guild_id: string, from: CacheFrom) {
 		return true;
 	}
 

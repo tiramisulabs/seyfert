@@ -1,4 +1,4 @@
-import type { ReturnCache } from '../..';
+import type { CacheFrom, ReturnCache } from '../..';
 import { type GuildMemberStructure, Transformers } from '../../client/transformers';
 import { fakePromise } from '../../common';
 import type { APIGuildMember } from '../../types';
@@ -7,7 +7,7 @@ export class Members extends GuildBasedResource<any, APIGuildMember> {
 	namespace = 'member';
 
 	//@ts-expect-error
-	filter(data: APIGuildMember, id: string, guild_id: string) {
+	filter(data: APIGuildMember, id: string, guild_id: string, from: CacheFrom) {
 		return true;
 	}
 
@@ -71,16 +71,16 @@ export class Members extends GuildBasedResource<any, APIGuildMember> {
 		return super.values(guild);
 	}
 
-	override async set(memberId: string, guildId: string, data: any): Promise<void>;
-	override async set(memberId_dataArray: [string, any][], guildId: string): Promise<void>;
-	override async set(__keys: string | [string, any][], guild: string, data?: any) {
+	override async set(from: CacheFrom, memberId: string, guildId: string, data: any): Promise<void>;
+	override async set(from: CacheFrom, memberId_dataArray: [string, any][], guildId: string): Promise<void>;
+	override async set(from: CacheFrom, __keys: string | [string, any][], guild: string, data?: any) {
 		const keys: [string, any][] = Array.isArray(__keys) ? __keys : [[__keys, data]];
-		const bulkData: (['members', any, string, string] | ['users', any, string])[] = [];
+		const bulkData: ([typeof from, 'members', any, string, string] | [typeof from, 'users', any, string])[] = [];
 
 		for (const [id, value] of keys) {
 			if (value.user) {
-				bulkData.push(['members', value, id, guild]);
-				bulkData.push(['users', value.user, id]);
+				bulkData.push([from, 'members', value, id, guild]);
+				bulkData.push([from, 'users', value.user, id]);
 			}
 		}
 
