@@ -433,7 +433,6 @@ export class BaseClient {
 		const { locations, debug, ...env } = seyfertConfig;
 
 		const locationsFullPaths: RC['locations'] = {
-			base: locations.base,
 			output: locations.output,
 		};
 
@@ -520,11 +519,9 @@ export interface StartOptions {
 }
 
 interface RCLocations extends ExtendedRCLocations {
-	base: string;
 	output: string;
 	commands?: string;
 	langs?: string;
-	templates?: string;
 	events?: string;
 	components?: string;
 }
