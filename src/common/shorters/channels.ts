@@ -39,7 +39,11 @@ export class ChannelShorter extends BaseShorter {
 		}
 
 		channel = await this.client.proxy.channels(id).get();
-		await this.client.cache.channels?.patch(id, undefined, channel);
+		await this.client.cache.channels?.patch(
+			id,
+			'guild_id' in channel && channel.guild_id ? channel.guild_id : '@me',
+			channel,
+		);
 		return channel as APIChannel;
 	}
 

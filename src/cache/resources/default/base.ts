@@ -48,7 +48,7 @@ export class BaseResource<T = any, S = any> {
 
 	patch(id: string, data: S) {
 		if (!this.filter(data, id)) return;
-		return fakePromise(this.addToRelationship(id)).then(() => this.adapter.patch(false, this.hashId(id), data));
+		return fakePromise(this.addToRelationship(id)).then(() => this.adapter.patch(this.hashId(id), data));
 	}
 
 	remove(id: string) {

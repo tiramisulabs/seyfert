@@ -156,21 +156,15 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 		this.__set(keys, data);
 	}
 
-	bulkPatch(updateOnly: boolean, keys: [string, any][]) {
+	bulkPatch(keys: [string, any][]) {
 		for (const [key, value] of keys) {
 			const oldData = this.get(key);
-			if (updateOnly && !oldData) {
-				continue;
-			}
 			this.__set(key, Array.isArray(value) ? value : { ...(oldData ?? {}), ...value });
 		}
 	}
 
-	patch(updateOnly: boolean, keys: string, data: any) {
+	patch(keys: string, data: any) {
 		const oldData = this.get(keys);
-		if (updateOnly && !oldData) {
-			return;
-		}
 		this.__set(keys, Array.isArray(data) ? data : { ...(oldData ?? {}), ...data });
 	}
 

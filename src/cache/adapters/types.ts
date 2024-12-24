@@ -15,8 +15,8 @@ export interface Adapter {
 	bulkSet(keyValue: [string, any][]): Awaitable<void>;
 	set(id: string, data: any): Awaitable<void>;
 
-	bulkPatch(updateOnly: boolean, keyValue: [string, any][]): Awaitable<void>;
-	patch(updateOnly: boolean, id: string, data: any): Awaitable<void>;
+	bulkPatch(keyValue: [string, any][]): Awaitable<void>;
+	patch(id: string, data: any): Awaitable<void>;
 
 	values(to: string): Awaitable<any[]>;
 

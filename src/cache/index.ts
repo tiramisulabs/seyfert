@@ -363,7 +363,7 @@ export class Cache {
 		}
 
 		await this.adapter.bulkAddToRelationShip(relationshipsData);
-		await this.adapter.bulkPatch(false, allData);
+		await this.adapter.bulkPatch(allData);
 	}
 
 	async bulkSet(

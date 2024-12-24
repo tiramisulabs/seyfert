@@ -64,12 +64,9 @@ export class MemoryAdapter<T> implements Adapter {
 		this.storage.set(key, this.options.encode(data));
 	}
 
-	bulkPatch(updateOnly: boolean, keys: [string, any][]) {
+	bulkPatch(keys: [string, any][]) {
 		for (const [key, value] of keys) {
 			const oldData = this.get(key);
-			if (updateOnly && !oldData) {
-				continue;
-			}
 			this.storage.set(
 				key,
 				Array.isArray(value) ? this.options.encode(value) : this.options.encode({ ...(oldData ?? {}), ...value }),
@@ -77,11 +74,8 @@ export class MemoryAdapter<T> implements Adapter {
 		}
 	}
 
-	patch(updateOnly: boolean, keys: string, data: any) {
+	patch(keys: string, data: any) {
 		const oldData = this.get(keys);
-		if (updateOnly && !oldData) {
-			return;
-		}
 		this.storage.set(
 			keys,
 			Array.isArray(data) ? this.options.encode(data) : this.options.encode({ ...(oldData ?? {}), ...data }),

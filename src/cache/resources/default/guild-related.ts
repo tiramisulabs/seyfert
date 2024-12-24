@@ -68,38 +68,27 @@ export class GuildRelatedResource<T = any, S = any> {
 		);
 	}
 
-	patch(__keys: string, guild?: string, data?: any): ReturnCache<void>;
-	patch(__keys: [string, any][], guild?: string): ReturnCache<void>;
-	patch(__keys: string | [string, any][], guild?: string, data?: any): ReturnCache<void> {
+	patch(__keys: string, guild: string, data?: any): ReturnCache<void>;
+	patch(__keys: [string, any][], guild: string): ReturnCache<void>;
+	patch(__keys: string | [string, any][], guild: string, data?: any): ReturnCache<void> {
 		const keys = (Array.isArray(__keys) ? __keys : [[__keys, data]]).filter(x => this.filter(x[1], x[0], guild)) as [
 			string,
 			any,
 		][];
 
-		if (guild) {
-			return fakePromise(
-				this.addToRelationship(
-					keys.map(x => x[0]),
-					guild,
-				),
-			).then(
-				() =>
-					this.adapter.bulkPatch(
-						false,
-						keys.map(([key, value]) => {
-							return [this.hashId(key), this.parse(value, key, guild)] as const;
-						}),
-					) as void,
-			);
-		}
 		return fakePromise(
-			this.adapter.bulkPatch(
-				true,
-				keys.map(([key, value]) => {
-					return [this.hashId(key), value];
-				}),
+			this.addToRelationship(
+				keys.map(x => x[0]),
+				guild,
 			),
-		).then(x => x);
+		).then(
+			() =>
+				this.adapter.bulkPatch(
+					keys.map(([key, value]) => {
+						return [this.hashId(key), this.parse(value, key, guild)] as const;
+					}),
+				) as void,
+		);
 	}
 
 	remove(id: string | string[], guild: string) {

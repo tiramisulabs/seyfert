@@ -1,4 +1,4 @@
-import type { ClientUserStructure } from '../client';
+import { type ClientUserStructure, Transformers } from '../client';
 import type { UsingClient } from '../commands';
 import type { GatewayReadyDispatchData, RESTPatchAPICurrentUserJSONBody } from '../types';
 import { User } from './User';
@@ -15,11 +15,11 @@ export class ClientUser extends User {
 
 	async fetch(): Promise<ClientUserStructure> {
 		const data = await this.api.users('@me').get();
-		return new ClientUser(this.client, data, this.application);
+		return Transformers.ClientUser(this.client, data, this.application);
 	}
 
 	async edit(body: RESTPatchAPICurrentUserJSONBody): Promise<ClientUserStructure> {
 		const data = await this.api.users('@me').patch({ body });
-		return new ClientUser(this.client, data, this.application);
+		return Transformers.ClientUser(this.client, data, this.application);
 	}
 }
