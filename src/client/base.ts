@@ -433,14 +433,14 @@ export class BaseClient {
 		const { locations, debug, ...env } = seyfertConfig;
 
 		const locationsFullPaths: RC['locations'] = {
-			output: locations.output,
+			base: locations.base,
 		};
 
 		for (const i in locations) {
 			const key = i as keyof typeof locations;
 			const location = locations[key];
 			if (key in locationsFullPaths) continue;
-			if (typeof location === 'string') locationsFullPaths[key] = join(process.cwd(), locations.output, location);
+			if (typeof location === 'string') locationsFullPaths[key] = join(process.cwd(), locations.base, location);
 			else locationsFullPaths[key] = location as any;
 		}
 
@@ -519,7 +519,7 @@ export interface StartOptions {
 }
 
 interface RCLocations extends ExtendedRCLocations {
-	output: string;
+	base: string;
 	commands?: string;
 	langs?: string;
 	events?: string;
