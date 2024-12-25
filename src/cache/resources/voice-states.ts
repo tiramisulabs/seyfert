@@ -1,4 +1,4 @@
-import type { ReturnCache } from '../..';
+import type { CacheFrom, ReturnCache } from '../..';
 import { Transformers, type VoiceStateStructure } from '../../client/transformers';
 import { fakePromise } from '../../common';
 import type { APIVoiceState } from '../../types';
@@ -8,7 +8,7 @@ export class VoiceStates extends GuildBasedResource<any, APIVoiceState> {
 	namespace = 'voice_state';
 
 	//@ts-expect-error
-	filter(data: APIVoiceState, id: string, guild_id: string) {
+	filter(data: APIVoiceState, id: string, guild_id: string, from: CacheFrom) {
 		return true;
 	}
 

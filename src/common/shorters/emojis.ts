@@ -1,4 +1,5 @@
 import { resolveImage } from '../../builders';
+import { CacheFrom } from '../../cache';
 import { type GuildEmojiStructure, Transformers } from '../../client/transformers';
 import type { APIEmoji, RESTPatchAPIGuildEmojiJSONBody, RESTPostAPIGuildEmojiJSONBody } from '../../types';
 import type { ImageResolvable } from '../types/resolvables';
@@ -22,6 +23,7 @@ export class EmojiShorter extends BaseShorter {
 		}
 		emojis = await this.client.proxy.guilds(guildId).emojis.get();
 		await this.client.cache.emojis?.set(
+			CacheFrom.Rest,
 			emojis.map<[string, APIEmoji]>(x => [x.id!, x]),
 			guildId,
 		);
@@ -43,7 +45,7 @@ export class EmojiShorter extends BaseShorter {
 			body: bodyResolved,
 		});
 
-		await this.client.cache.emojis?.setIfNI('GuildExpressions', emoji.id!, guildId, emoji);
+		await this.client.cache.emojis?.setIfNI(CacheFrom.Rest, 'GuildExpressions', emoji.id!, guildId, emoji);
 
 		return Transformers.GuildEmoji(this.client, emoji, guildId);
 	}
@@ -91,7 +93,7 @@ export class EmojiShorter extends BaseShorter {
 		reason?: string,
 	): Promise<GuildEmojiStructure> {
 		const emoji = await this.client.proxy.guilds(guildId).emojis(emojiId).patch({ body, reason });
-		await this.client.cache.emojis?.setIfNI('GuildExpressions', emoji.id!, guildId, emoji);
+		await this.client.cache.emojis?.setIfNI(CacheFrom.Rest, 'GuildExpressions', emoji.id!, guildId, emoji);
 		return Transformers.GuildEmoji(this.client, emoji, guildId);
 	}
 }

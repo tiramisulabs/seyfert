@@ -1,4 +1,4 @@
-import type { MessageData, ReturnCache } from '../..';
+import type { CacheFrom, MessageData, ReturnCache } from '../..';
 import { type MessageStructure, Transformers } from '../../client/transformers';
 import { fakePromise } from '../../common';
 import type { APIMessage, APIUser } from '../../types';
@@ -8,7 +8,7 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 	namespace = 'message';
 
 	//@ts-expect-error
-	filter(data: MessageData, id: string, channel_id?: string) {
+	filter(data: MessageData, id: string, channel_id: string, from: CacheFrom) {
 		return true;
 	}
 

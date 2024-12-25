@@ -1,7 +1,7 @@
 import type { UsingClient } from '../../../commands';
 import { fakePromise } from '../../../common';
 import type { GatewayIntentBits } from '../../../types';
-import type { Cache, ReturnCache } from '../../index';
+import type { Cache, CacheFrom, ReturnCache } from '../../index';
 
 export class GuildBasedResource<T = any, S = any> {
 	namespace = 'base';
@@ -12,7 +12,7 @@ export class GuildBasedResource<T = any, S = any> {
 	) {}
 
 	//@ts-expect-error
-	filter(data: any, id: string, guild_id: string) {
+	filter(data: any, id: string, guild_id: string, from: CacheFrom) {
 		return true;
 	}
 
@@ -33,9 +33,9 @@ export class GuildBasedResource<T = any, S = any> {
 		return;
 	}
 
-	setIfNI(intent: keyof typeof GatewayIntentBits, id: string, guildId: string, data: S) {
+	setIfNI(from: CacheFrom, intent: keyof typeof GatewayIntentBits, id: string, guildId: string, data: S) {
 		if (!this.cache.hasIntent(intent)) {
-			return this.set(id, guildId, data);
+			return this.set(from, id, guildId, data);
 		}
 	}
 
@@ -47,11 +47,11 @@ export class GuildBasedResource<T = any, S = any> {
 		return fakePromise(this.adapter.bulkGet(ids.map(id => this.hashGuildId(guild, id)))).then(x => x.filter(y => y));
 	}
 
-	set(__keys: string, guild: string, data: S): ReturnCache<void>;
-	set(__keys: [string, S][], guild: string): ReturnCache<void>;
-	set(__keys: string | [string, S][], guild: string, data?: S): ReturnCache<void> {
+	set(from: CacheFrom, __keys: string, guild: string, data: S): ReturnCache<void>;
+	set(from: CacheFrom, __keys: [string, S][], guild: string): ReturnCache<void>;
+	set(from: CacheFrom, __keys: string | [string, S][], guild: string, data?: S): ReturnCache<void> {
 		const keys = (Array.isArray(__keys) ? __keys : [[__keys, data]]).filter(x =>
-			this.filter(x[1], x[0] as string, guild),
+			this.filter(x[1], x[0] as string, guild, from),
 		) as [string, any][];
 
 		return fakePromise(
@@ -68,13 +68,12 @@ export class GuildBasedResource<T = any, S = any> {
 		) as void;
 	}
 
-	patch(__keys: string, guild: string, data: S): ReturnCache<void>;
-	patch(__keys: [string, any][], guild: string): ReturnCache<void>;
-	patch(__keys: string | [string, any][], guild: string, data?: any): ReturnCache<void> {
-		const keys = (Array.isArray(__keys) ? __keys : [[__keys, data]]).filter(x => this.filter(x[1], x[0], guild)) as [
-			string,
-			any,
-		][];
+	patch(from: CacheFrom, __keys: string, guild: string, data: S): ReturnCache<void>;
+	patch(from: CacheFrom, __keys: [string, any][], guild: string): ReturnCache<void>;
+	patch(from: CacheFrom, __keys: string | [string, any][], guild: string, data?: any): ReturnCache<void> {
+		const keys = (Array.isArray(__keys) ? __keys : [[__keys, data]]).filter(x =>
+			this.filter(x[1], x[0], guild, from),
+		) as [string, any][];
 
 		return fakePromise(this.adapter.bulkGet(keys.map(([key]) => this.hashGuildId(guild, key)))).then(oldDatas =>
 			fakePromise(

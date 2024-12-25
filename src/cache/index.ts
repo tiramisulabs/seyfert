@@ -278,6 +278,7 @@ export class Cache {
 	async bulkPatch(
 		keys: (
 			| readonly [
+					CacheFrom,
 					/* type */
 					NonGuildBased,
 					/* data */
@@ -286,6 +287,7 @@ export class Cache {
 					string,
 			  ]
 			| readonly [
+					CacheFrom,
 					/* type */
 					GuildBased | GuildRelated,
 					/* data */
@@ -299,7 +301,7 @@ export class Cache {
 	) {
 		const allData: [string, any][] = [];
 		const relationshipsData: Record<string, string[]> = {};
-		for (const [type, data, id, guildId] of keys) {
+		for (const [from, type, data, id, guildId] of keys) {
 			switch (type) {
 				case 'roles':
 				case 'stickers':
@@ -311,7 +313,7 @@ export class Cache {
 				case 'bans':
 				case 'messages':
 					{
-						if (!this[type]?.filter(data, id, guildId)) continue;
+						if (!this[type]?.filter(data, id, guildId, from)) continue;
 						const hashId = this[type]?.hashId(guildId!);
 						if (!hashId) {
 							continue;
@@ -329,7 +331,7 @@ export class Cache {
 				case 'voiceStates':
 				case 'members':
 					{
-						if (!this[type]?.filter(data, id, guildId)) continue;
+						if (!this[type]?.filter(data, id, guildId, from)) continue;
 						const hashId = this[type]?.hashId(guildId!);
 						if (!hashId) {
 							continue;
@@ -345,7 +347,7 @@ export class Cache {
 				case 'users':
 				case 'guilds':
 					{
-						if (!this[type]?.filter(data, id)) continue;
+						if (!this[type]?.filter(data, id, from)) continue;
 						const hashId = this[type]?.namespace;
 						if (!hashId) {
 							continue;
@@ -369,6 +371,7 @@ export class Cache {
 	async bulkSet(
 		keys: (
 			| readonly [
+					CacheFrom,
 					/* type */
 					NonGuildBased,
 					/* data */
@@ -377,6 +380,7 @@ export class Cache {
 					string,
 			  ]
 			| readonly [
+					CacheFrom,
 					/* type */
 					GuildBased | GuildRelated,
 					/* data */
@@ -390,7 +394,7 @@ export class Cache {
 	) {
 		const allData: [string, any][] = [];
 		const relationshipsData: Record<string, string[]> = {};
-		for (const [type, data, id, guildId] of keys) {
+		for (const [from, type, data, id, guildId] of keys) {
 			switch (type) {
 				case 'roles':
 				case 'stickers':
@@ -401,7 +405,7 @@ export class Cache {
 				case 'overwrites':
 				case 'messages':
 					{
-						if (!this[type]?.filter(data, id, guildId)) continue;
+						if (!this[type]?.filter(data, id, guildId, from)) continue;
 						const hashId = this[type]?.hashId(guildId!);
 						if (!hashId) {
 							continue;
@@ -420,7 +424,7 @@ export class Cache {
 				case 'voiceStates':
 				case 'members':
 					{
-						if (!this[type]?.filter(data, id, guildId)) continue;
+						if (!this[type]?.filter(data, id, guildId, from)) continue;
 						const hashId = this[type]?.hashId(guildId!);
 						if (!hashId) {
 							continue;
@@ -436,7 +440,7 @@ export class Cache {
 				case 'users':
 				case 'guilds':
 					{
-						if (!this[type]?.filter(data, id)) continue;
+						if (!this[type]?.filter(data, id, from)) continue;
 						const hashId = this[type]?.namespace;
 						if (!hashId) {
 							continue;
@@ -464,17 +468,17 @@ export class Cache {
 	protected async onPacketDefault(event: GatewayDispatchPayload) {
 		switch (event.t) {
 			case 'READY':
-				await this.users?.set(event.d.user.id, event.d.user);
+				await this.users?.set(CacheFrom.Gateway, event.d.user.id, event.d.user);
 				break;
 			case 'GUILD_CREATE':
 			case 'GUILD_UPDATE':
 			case 'RAW_GUILD_CREATE':
-				await this.guilds?.patch(event.d.id, { unavailable: false, ...event.d });
+				await this.guilds?.patch(CacheFrom.Gateway, event.d.id, { unavailable: false, ...event.d });
 				break;
 			case 'GUILD_DELETE':
 			case 'RAW_GUILD_DELETE':
 				if (event.d.unavailable) {
-					await this.guilds?.patch(event.d.id, event.d);
+					await this.guilds?.patch(CacheFrom.Gateway, event.d.id, event.d);
 				} else {
 					await this.guilds?.remove(event.d.id);
 				}
@@ -483,13 +487,18 @@ export class Cache {
 			case 'CHANNEL_UPDATE':
 				{
 					if ('guild_id' in event.d) {
-						await this.channels?.set(event.d.id, event.d.guild_id!, event.d);
+						await this.channels?.set(CacheFrom.Gateway, event.d.id, event.d.guild_id!, event.d);
 						if (event.d.permission_overwrites?.length)
-							await this.overwrites?.set(event.d.id, event.d.guild_id!, event.d.permission_overwrites);
+							await this.overwrites?.set(
+								CacheFrom.Gateway,
+								event.d.id,
+								event.d.guild_id!,
+								event.d.permission_overwrites,
+							);
 						break;
 					}
 					if (event.d.type === ChannelType.DM) {
-						await this.channels?.set(event.d.recipients![0]?.id, '@me', event.d);
+						await this.channels?.set(CacheFrom.Gateway, event.d.recipients![0]?.id, '@me', event.d);
 						break;
 					}
 				}
@@ -499,13 +508,13 @@ export class Cache {
 				break;
 			case 'GUILD_ROLE_CREATE':
 			case 'GUILD_ROLE_UPDATE':
-				await this.roles?.set(event.d.role.id, event.d.guild_id, event.d.role);
+				await this.roles?.set(CacheFrom.Gateway, event.d.role.id, event.d.guild_id, event.d.role);
 				break;
 			case 'GUILD_ROLE_DELETE':
 				await this.roles?.remove(event.d.role_id, event.d.guild_id);
 				break;
 			case 'GUILD_BAN_ADD':
-				await this.bans?.set(event.d.user.id, event.d.guild_id, event.d);
+				await this.bans?.set(CacheFrom.Gateway, event.d.user.id, event.d.guild_id, event.d);
 				break;
 			case 'GUILD_BAN_REMOVE':
 				await this.bans?.remove(event.d.user.id, event.d.guild_id);
@@ -514,6 +523,7 @@ export class Cache {
 				{
 					await this.emojis?.remove(await this.emojis?.keys(event.d.guild_id), event.d.guild_id);
 					await this.emojis?.set(
+						CacheFrom.Gateway,
 						event.d.emojis.map(x => [x.id!, x] as [string, APIEmoji]),
 						event.d.guild_id,
 					);
@@ -523,6 +533,7 @@ export class Cache {
 				{
 					await this.stickers?.remove(await this.stickers?.keys(event.d.guild_id), event.d.guild_id);
 					await this.stickers?.set(
+						CacheFrom.Gateway,
 						event.d.stickers.map(x => [x.id, x] as [string, APISticker]),
 						event.d.guild_id,
 					);
@@ -530,7 +541,7 @@ export class Cache {
 				break;
 			case 'GUILD_MEMBER_ADD':
 			case 'GUILD_MEMBER_UPDATE':
-				if (event.d.user) await this.members?.set(event.d.user.id, event.d.guild_id, event.d);
+				if (event.d.user) await this.members?.set(CacheFrom.Gateway, event.d.user.id, event.d.guild_id, event.d);
 				break;
 			case 'GUILD_MEMBER_REMOVE':
 				await this.members?.remove(event.d.user.id, event.d.guild_id);
@@ -538,12 +549,12 @@ export class Cache {
 
 			case 'PRESENCE_UPDATE':
 				// Should update member data?
-				await this.presences?.set(event.d.user.id, event.d.guild_id, event.d);
+				await this.presences?.set(CacheFrom.Gateway, event.d.user.id, event.d.guild_id, event.d);
 				break;
 
 			case 'THREAD_CREATE':
 			case 'THREAD_UPDATE':
-				if (event.d.guild_id) await this.channels?.set(event.d.id, event.d.guild_id, event.d);
+				if (event.d.guild_id) await this.channels?.set(CacheFrom.Gateway, event.d.id, event.d.guild_id, event.d);
 				break;
 
 			case 'THREAD_DELETE':
@@ -551,7 +562,7 @@ export class Cache {
 				break;
 
 			case 'USER_UPDATE':
-				await this.users?.set(event.d.id, event.d);
+				await this.users?.set(CacheFrom.Gateway, event.d.id, event.d);
 				break;
 
 			case 'VOICE_STATE_UPDATE':
@@ -561,7 +572,7 @@ export class Cache {
 					}
 
 					if (event.d.channel_id != null) {
-						await this.voiceStates?.set(event.d.user_id, event.d.guild_id, event.d);
+						await this.voiceStates?.set(CacheFrom.Gateway, event.d.user_id, event.d.guild_id, event.d);
 					} else {
 						await this.voiceStates?.remove(event.d.user_id, event.d.guild_id);
 					}
@@ -569,7 +580,7 @@ export class Cache {
 				break;
 			case 'STAGE_INSTANCE_CREATE':
 			case 'STAGE_INSTANCE_UPDATE':
-				await this.stageInstances?.set(event.d.id, event.d.guild_id, event.d);
+				await this.stageInstances?.set(CacheFrom.Gateway, event.d.id, event.d.guild_id, event.d);
 				break;
 			case 'STAGE_INSTANCE_DELETE':
 				await this.stageInstances?.remove(event.d.id, event.d.guild_id);
@@ -578,12 +589,13 @@ export class Cache {
 				{
 					if (this.messages !== undefined) {
 						const data: Parameters<Cache['bulkPatch']>[0] = [
-							['messages', event.d, event.d.id, event.d.channel_id],
-							['users', event.d.author, event.d.author.id],
+							[CacheFrom.Gateway, 'messages', event.d, event.d.id, event.d.channel_id],
+							[CacheFrom.Gateway, 'users', event.d.author, event.d.author.id],
 						];
 
 						if (event.d.guild_id) {
-							if (event.d.member) data.push(['members', event.d.member, event.d.author.id, event.d.guild_id]);
+							if (event.d.member)
+								data.push([CacheFrom.Gateway, 'members', event.d.member, event.d.author.id, event.d.guild_id]);
 						}
 
 						await this.bulkPatch(data);
@@ -594,12 +606,13 @@ export class Cache {
 				{
 					if (this.messages !== undefined) {
 						const data: Parameters<Cache['bulkPatch']>[0] = [
-							['messages', event.d, event.d.id, event.d.channel_id],
-							['users', event.d.author, event.d.author.id],
+							[CacheFrom.Gateway, 'messages', event.d, event.d.id, event.d.channel_id],
+							[CacheFrom.Gateway, 'users', event.d.author, event.d.author.id],
 						];
 
 						if (event.d.guild_id) {
-							if (event.d.member) data.push(['members', event.d.member, event.d.author.id, event.d.guild_id]);
+							if (event.d.member)
+								data.push([CacheFrom.Gateway, 'members', event.d.member, event.d.author.id, event.d.guild_id]);
 						}
 
 						await this.bulkPatch(data);
@@ -674,7 +687,7 @@ export class Cache {
 			createUser('marcrock'),
 		];
 		for (const user of users) {
-			await this.users.set(user.id, user);
+			await this.users.set(CacheFrom.Test, user.id, user);
 		}
 		let count = 0;
 		if ((await this.users.values()).length !== users.length)
@@ -727,7 +740,7 @@ export class Cache {
 		for (const guildId in guildMembers) {
 			const members = guildMembers[guildId];
 			for (const member of members) {
-				await this.members.set(member.user.id, guildId, member);
+				await this.members.set(CacheFrom.Test, member.user.id, guildId, member);
 			}
 			if ((await this.members.values(guildId)).length !== members.length)
 				throw new Error('members.values(guildId) is not of the expected size.');
@@ -836,7 +849,7 @@ export class Cache {
 		for (const guildId in guildChannels) {
 			const channels = guildChannels[guildId];
 			for (const channel of channels) {
-				await this.channels.set(channel.id, guildId, channel);
+				await this.channels.set(CacheFrom.Test, channel.id, guildId, channel);
 			}
 			if ((await this.channels.values(guildId)).length !== channels.length)
 				throw new Error('channels.values(guildId) is not of the expected size');
@@ -905,7 +918,7 @@ export class Cache {
 		for (const guildId in guildOverwrites) {
 			const bulkOverwrites = guildOverwrites[guildId];
 			for (const overwrites of bulkOverwrites) {
-				await this.overwrites.set(overwrites[0].channel_id, guildId, overwrites);
+				await this.overwrites.set(CacheFrom.Test, overwrites[0].channel_id, guildId, overwrites);
 			}
 			if ((await this.overwrites.values(guildId)).length !== bulkOverwrites.length)
 				throw new Error('overwrites.values(channelId) is not of the expected size');
@@ -955,4 +968,10 @@ export class Cache {
 
 		this.__logger__!.info('the overwrites cache seems to be alright.');
 	}
+}
+
+export enum CacheFrom {
+	Gateway = 1,
+	Rest,
+	Test,
 }

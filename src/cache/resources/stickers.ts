@@ -1,4 +1,4 @@
-import type { ReturnCache } from '../..';
+import type { CacheFrom, ReturnCache } from '../..';
 import { type StickerStructure, Transformers } from '../../client/transformers';
 import { fakePromise } from '../../common';
 import type { APISticker } from '../../types';
@@ -8,7 +8,7 @@ export class Stickers extends GuildRelatedResource<any, APISticker> {
 	namespace = 'sticker';
 
 	//@ts-expect-error
-	filter(data: APISticker, id: string, guild_id?: string) {
+	filter(data: APISticker, id: string, guild_id: string, from: CacheFrom) {
 		return true;
 	}
 
