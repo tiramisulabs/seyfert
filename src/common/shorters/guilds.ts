@@ -1,4 +1,5 @@
 import { resolveFiles } from '../../builders';
+import { CacheFrom } from '../../cache';
 import type { Channels } from '../../cache/resources/channels';
 import {
 	type AnonymousGuildStructure,
@@ -33,7 +34,7 @@ export class GuildShorter extends BaseShorter {
 	 */
 	async create(body: RESTPostAPIGuildsJSONBody): Promise<GuildStructure<'api'>> {
 		const guild = await this.client.proxy.guilds.post({ body });
-		await this.client.cache.guilds?.setIfNI('Guilds', guild.id, guild);
+		await this.client.cache.guilds?.setIfNI(CacheFrom.Rest, 'Guilds', guild.id, guild);
 		return Transformers.Guild<'api'>(this.client, guild);
 	}
 
@@ -54,7 +55,7 @@ export class GuildShorter extends BaseShorter {
 		}
 
 		const data = await this.client.proxy.guilds(id).get();
-		await this.client.cache.guilds?.patch(id, data);
+		await this.client.cache.guilds?.patch(CacheFrom.Rest, id, data);
 		return (await this.client.cache.guilds?.raw(id)) ?? data;
 	}
 
@@ -71,7 +72,7 @@ export class GuildShorter extends BaseShorter {
 	async edit(guildId: string, body: RESTPatchAPIGuildJSONBody, reason?: string) {
 		const guild = await this.client.proxy.guilds(guildId).patch({ body, reason });
 
-		if (!this.client.cache.hasGuildsIntent) await this.client.cache.guilds?.patch(guildId, guild);
+		if (!this.client.cache.hasGuildsIntent) await this.client.cache.guilds?.patch(CacheFrom.Rest, guildId, guild);
 		return new Guild(this.client, guild);
 	}
 
@@ -88,7 +89,7 @@ export class GuildShorter extends BaseShorter {
 			if (self?.user) return Transformers.GuildMember(this.client, self, self.user, id);
 		}
 		const self = await this.client.proxy.guilds(id).members(this.client.botId).get();
-		await this.client.cache.members?.patch(self.user.id, id, self);
+		await this.client.cache.members?.patch(CacheFrom.Rest, self.user.id, id, self);
 		return Transformers.GuildMember(this.client, self, self.user, id);
 	}
 
@@ -121,6 +122,7 @@ export class GuildShorter extends BaseShorter {
 				}
 				channels = await this.client.proxy.guilds(guildId).channels.get();
 				await this.client.cache.channels?.set(
+					CacheFrom.Rest,
 					channels.map<[string, APIChannel]>(x => [x.id, x]),
 					guildId,
 				);
@@ -142,7 +144,7 @@ export class GuildShorter extends BaseShorter {
 				}
 
 				channel = await this.client.proxy.channels(channelId).get();
-				await this.client.cache.channels?.patch(channelId, guildId, channel);
+				await this.client.cache.channels?.patch(CacheFrom.Rest, channelId, guildId, channel);
 				return channelFrom(channel, this.client);
 			},
 
@@ -154,7 +156,13 @@ export class GuildShorter extends BaseShorter {
 			 */
 			create: async (guildId: string, body: RESTPostAPIGuildChannelJSONBody) => {
 				const res = await this.client.proxy.guilds(guildId).channels.post({ body });
-				await this.client.cache.channels?.setIfNI(BaseChannel.__intent__(guildId), res.id, guildId, res);
+				await this.client.cache.channels?.setIfNI(
+					CacheFrom.Rest,
+					BaseChannel.__intent__(guildId),
+					res.id,
+					guildId,
+					res,
+				);
 				return channelFrom(res, this.client);
 			},
 
@@ -181,7 +189,13 @@ export class GuildShorter extends BaseShorter {
 			 */
 			edit: async (guildchannelId: string, channelId: string, body: RESTPatchAPIChannelJSONBody, reason?: string) => {
 				const res = await this.client.proxy.channels(channelId).patch({ body, reason });
-				await this.client.cache.channels?.setIfNI(BaseChannel.__intent__(guildchannelId), res.id, guildchannelId, res);
+				await this.client.cache.channels?.setIfNI(
+					CacheFrom.Rest,
+					BaseChannel.__intent__(guildchannelId),
+					res.id,
+					guildchannelId,
+					res,
+				);
 				return channelFrom(res, this.client);
 			},
 
@@ -293,6 +307,7 @@ export class GuildShorter extends BaseShorter {
 			list: async (guildId: string): Promise<StickerStructure[]> => {
 				const stickers = await this.client.proxy.guilds(guildId).stickers.get();
 				await this.client.cache.stickers?.set(
+					CacheFrom.Rest,
 					stickers.map(st => [st.id, st] as any),
 					guildId,
 				);
@@ -315,7 +330,7 @@ export class GuildShorter extends BaseShorter {
 				const sticker = await this.client.proxy
 					.guilds(guildId)
 					.stickers.post({ reason, body: json, files: [{ ...fileResolve[0], key: 'file' }], appendToFormData: true });
-				await this.client.cache.stickers?.setIfNI('GuildExpressions', sticker.id, guildId, sticker);
+				await this.client.cache.stickers?.setIfNI(CacheFrom.Rest, 'GuildExpressions', sticker.id, guildId, sticker);
 				return Transformers.Sticker(this.client, sticker);
 			},
 
@@ -334,7 +349,7 @@ export class GuildShorter extends BaseShorter {
 				reason?: string,
 			): Promise<StickerStructure> => {
 				const sticker = await this.client.proxy.guilds(guildId).stickers(stickerId).patch({ body, reason });
-				await this.client.cache.stickers?.setIfNI('GuildExpressions', stickerId, guildId, sticker);
+				await this.client.cache.stickers?.setIfNI(CacheFrom.Rest, 'GuildExpressions', stickerId, guildId, sticker);
 				return Transformers.Sticker(this.client, sticker);
 			},
 
@@ -352,7 +367,7 @@ export class GuildShorter extends BaseShorter {
 					if (sticker) return sticker;
 				}
 				sticker = await this.client.proxy.guilds(guildId).stickers(stickerId).get();
-				await this.client.cache.stickers?.patch(stickerId, guildId, sticker);
+				await this.client.cache.stickers?.patch(CacheFrom.Rest, stickerId, guildId, sticker);
 				return Transformers.Sticker(this.client, sticker);
 			},
 

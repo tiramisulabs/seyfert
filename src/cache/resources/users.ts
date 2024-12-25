@@ -1,4 +1,4 @@
-import type { ReturnCache } from '../..';
+import type { CacheFrom, ReturnCache } from '../..';
 import { Transformers, type UserStructure } from '../../client/transformers';
 import { fakePromise } from '../../common';
 import type { APIUser } from '../../types';
@@ -8,7 +8,7 @@ export class Users extends BaseResource<any, APIUser> {
 	namespace = 'user';
 
 	//@ts-expect-error
-	filter(data: APIUser, id: string) {
+	filter(data: APIUser, id: string, from: CacheFrom) {
 		return true;
 	}
 

@@ -1,4 +1,4 @@
-import type { ReturnCache } from '../..';
+import type { CacheFrom, ReturnCache } from '../..';
 import { fakePromise } from '../../common/it/utils';
 import { PermissionsBitField } from '../../structures/extra/Permissions';
 import type { APIOverwrite } from '../../types';
@@ -8,7 +8,7 @@ export class Overwrites extends GuildRelatedResource<any, APIOverwrite[]> {
 	namespace = 'overwrite';
 
 	//@ts-expect-error
-	filter(data: APIOverwrite[], id: string, guild_id?: string) {
+	filter(data: APIOverwrite[], id: string, guild_id: string, from: CacheFrom) {
 		return true;
 	}
 

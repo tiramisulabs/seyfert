@@ -1,3 +1,4 @@
+import { CacheFrom } from '../../cache';
 import type { Channels } from '../../cache/resources/channels';
 import type { Overwrites } from '../../cache/resources/overwrites';
 import { type MessageStructure, type ThreadChannelStructure, Transformers } from '../../client/transformers';
@@ -40,6 +41,7 @@ export class ChannelShorter extends BaseShorter {
 
 		channel = await this.client.proxy.channels(id).get();
 		await this.client.cache.channels?.patch(
+			CacheFrom.Rest,
 			id,
 			'guild_id' in channel && channel.guild_id ? channel.guild_id : '@me',
 			channel,
@@ -74,9 +76,16 @@ export class ChannelShorter extends BaseShorter {
 	): Promise<AllChannels> {
 		const options = MergeOptions<MakeRequired<ChannelShorterOptionalParams, 'guildId'>>({ guildId: '@me' }, optional);
 		const res = await this.client.proxy.channels(id).patch({ body, reason: options.reason });
-		await this.client.cache.channels?.setIfNI(BaseChannel.__intent__(options.guildId), res.id, options.guildId, res);
+		await this.client.cache.channels?.setIfNI(
+			CacheFrom.Rest,
+			BaseChannel.__intent__(options.guildId),
+			res.id,
+			options.guildId,
+			res,
+		);
 		if (body.permission_overwrites && 'permission_overwrites' in res && res.permission_overwrites)
 			await this.client.cache.overwrites?.setIfNI(
+				CacheFrom.Rest,
 				BaseChannel.__intent__(options.guildId),
 				res.id,
 				options.guildId,
@@ -97,6 +106,7 @@ export class ChannelShorter extends BaseShorter {
 	async pins(channelId: string): Promise<MessageStructure[]> {
 		const messages = await this.client.proxy.channels(channelId).pins.get();
 		await this.client.cache.messages?.patch(
+			CacheFrom.Rest,
 			messages.map(x => {
 				return [x.id, x];
 			}) satisfies [string, any][],
@@ -206,6 +216,7 @@ export class ChannelShorter extends BaseShorter {
 			query,
 		});
 		await this.client.cache.messages?.patch(
+			CacheFrom.Rest,
 			result.map(x => {
 				return [x.id, x];
 			}) satisfies [string, any][],

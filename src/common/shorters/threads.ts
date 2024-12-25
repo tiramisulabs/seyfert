@@ -1,3 +1,4 @@
+import { CacheFrom } from '../..';
 import type { ThreadChannelStructure } from '../../client/transformers';
 import { channelFrom } from '../../structures';
 import type {
@@ -32,6 +33,7 @@ export class ThreadShorter extends BaseShorter {
 				// When testing this, discord returns the thread object, but in discord api types it does not.
 				.then(async thread => {
 					await this.client.cache.channels?.setIfNI(
+						CacheFrom.Rest,
 						'Guilds',
 						thread.id,
 						(thread as APIThreadChannel).guild_id!,
@@ -54,7 +56,13 @@ export class ThreadShorter extends BaseShorter {
 			.messages(messageId)
 			.threads.post({ body, reason })
 			.then(async thread => {
-				await this.client.cache.channels?.setIfNI('Guilds', thread.id, (thread as APIThreadChannel).guild_id!, thread);
+				await this.client.cache.channels?.setIfNI(
+					CacheFrom.Rest,
+					'Guilds',
+					thread.id,
+					(thread as APIThreadChannel).guild_id!,
+					thread,
+				);
 				return channelFrom(thread, this.client) as ThreadChannelStructure;
 			});
 	}

@@ -1,3 +1,4 @@
+import { CacheFrom } from '../../cache';
 import { type GuildRoleStructure, Transformers } from '../../client/transformers';
 import type {
 	APIRole,
@@ -17,7 +18,7 @@ export class RoleShorter extends BaseShorter {
 	 */
 	async create(guildId: string, body: RESTPostAPIGuildRoleJSONBody, reason?: string): Promise<GuildRoleStructure> {
 		const res = await this.client.proxy.guilds(guildId).roles.post({ body, reason });
-		await this.client.cache.roles?.setIfNI('Guilds', res.id, guildId, res);
+		await this.client.cache.roles?.setIfNI(CacheFrom.Rest, 'Guilds', res.id, guildId, res);
 		return Transformers.GuildRole(this.client, res, guildId);
 	}
 
@@ -33,7 +34,7 @@ export class RoleShorter extends BaseShorter {
 			if (role) return role;
 		}
 		role = await this.client.proxy.guilds(guildId).roles(roleId).get();
-		await this.client.cache.roles?.set(roleId, guildId, role);
+		await this.client.cache.roles?.set(CacheFrom.Rest, roleId, guildId, role);
 		return role;
 	}
 
@@ -58,6 +59,7 @@ export class RoleShorter extends BaseShorter {
 		}
 		roles = await this.client.proxy.guilds(guildId).roles.get();
 		await this.client.cache.roles?.set(
+			CacheFrom.Rest,
 			roles.map<[string, APIRole]>(r => [r.id, r]),
 			guildId,
 		);
@@ -79,7 +81,7 @@ export class RoleShorter extends BaseShorter {
 		reason?: string,
 	): Promise<GuildRoleStructure> {
 		const res = await this.client.proxy.guilds(guildId).roles(roleId).patch({ body, reason });
-		await this.client.cache.roles?.setIfNI('Guilds', roleId, guildId, res);
+		await this.client.cache.roles?.setIfNI(CacheFrom.Rest, 'Guilds', roleId, guildId, res);
 		return Transformers.GuildRole(this.client, res, guildId);
 	}
 
@@ -108,6 +110,7 @@ export class RoleShorter extends BaseShorter {
 		});
 		if (!this.client.cache.hasRolesIntent) {
 			await this.client.cache.roles?.set(
+				CacheFrom.Rest,
 				roles.map(x => [x.id, x] as [string, any]),
 				guildId,
 			);

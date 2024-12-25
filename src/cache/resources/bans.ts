@@ -1,4 +1,4 @@
-import type { ReturnCache } from '../..';
+import type { CacheFrom, ReturnCache } from '../..';
 import { type GuildBanStructure, Transformers } from '../../client/transformers';
 import { fakePromise } from '../../common';
 import type { APIBan, GatewayGuildBanModifyDispatchData } from '../../types';
@@ -7,7 +7,7 @@ export class Bans extends GuildBasedResource<any, GatewayGuildBanModifyDispatchD
 	namespace = 'ban';
 
 	//@ts-expect-error
-	filter(data: APIBan, id: string, guild_id: string) {
+	filter(data: APIBan, id: string, guild_id: string, from: CacheFrom) {
 		return true;
 	}
 

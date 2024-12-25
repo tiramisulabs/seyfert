@@ -1,4 +1,4 @@
-import type { ReturnCache } from '../..';
+import type { CacheFrom, ReturnCache } from '../..';
 import { type GuildRoleStructure, Transformers } from '../../client/transformers';
 import { fakePromise } from '../../common';
 import type { APIRole } from '../../types';
@@ -8,7 +8,7 @@ export class Roles extends GuildRelatedResource<any, APIRole> {
 	namespace = 'role';
 
 	//@ts-expect-error
-	filter(data: APIRole, id: string, guild_id?: string) {
+	filter(data: APIRole, id: string, guild_id: string, from: CacheFrom) {
 		return true;
 	}
 
