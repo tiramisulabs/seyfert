@@ -185,7 +185,10 @@ export class EventHandler extends BaseHandler {
 		const Event = this.values[name];
 		try {
 			if (!Event || (Event.data.once && Event.fired)) {
-				return;
+				return this.client.cache.onPacket({
+					t: name,
+					d: packet,
+				} as GatewayDispatchPayload);
 			}
 			Event.fired = true;
 			const hook = await RawEvents[name]?.(client, packet as never);
