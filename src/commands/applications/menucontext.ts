@@ -106,15 +106,15 @@ export class MenuCommandContext<
 	}
 
 	channel(mode?: 'rest' | 'flow'): Promise<AllChannels>;
-	channel(mode?: 'cache'): ReturnCache<AllChannels>;
+	channel(mode: 'cache'): ReturnCache<AllChannels>;
 	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
-		if (this.interaction?.channel && mode === 'cache')
+		if (this.interaction.channel && mode === 'cache')
 			return this.client.cache.adapter.isAsync ? Promise.resolve(this.interaction.channel) : this.interaction.channel;
 		return this.client.channels.fetch(this.channelId, mode === 'rest');
 	}
 
 	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
-	me(mode?: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
+	me(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
 	me(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (!this.guildId)
 			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
@@ -127,7 +127,7 @@ export class MenuCommandContext<
 	}
 
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
-	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (!this.guildId)
 			return (
@@ -179,5 +179,5 @@ export interface GuildMenuCommandContext<
 	M extends keyof RegisteredMiddlewares = never,
 > extends Omit<MakeRequired<MenuCommandContext<T, M>, 'guildId' | 'member'>, 'guild'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
-	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 }

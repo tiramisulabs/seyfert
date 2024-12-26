@@ -62,7 +62,7 @@ export class ComponentContext<
 	 * Gets the language object for the interaction's locale.
 	 */
 	get t() {
-		return this.client.t(this.interaction?.locale ?? this.client.langs?.defaultLang ?? 'en-US');
+		return this.client.t(this.interaction.locale ?? this.client.langs?.defaultLang ?? 'en-US');
 	}
 
 	/**
@@ -155,9 +155,9 @@ export class ComponentContext<
 	 * @returns A promise that resolves to the channel.
 	 */
 	channel(mode?: 'rest' | 'flow'): Promise<AllChannels>;
-	channel(mode?: 'cache'): ReturnCache<AllChannels>;
+	channel(mode: 'cache'): ReturnCache<AllChannels>;
 	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
-		if (this.interaction?.channel && mode === 'cache')
+		if (this.interaction.channel && mode === 'cache')
 			return this.client.cache.adapter.isAsync ? Promise.resolve(this.interaction.channel) : this.interaction.channel;
 		return this.client.channels.fetch(this.channelId, mode === 'rest');
 	}
@@ -168,7 +168,7 @@ export class ComponentContext<
 	 * @returns A promise that resolves to the bot member.
 	 */
 	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
-	me(mode?: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
+	me(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
 	me(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (!this.guildId)
 			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
@@ -186,7 +186,7 @@ export class ComponentContext<
 	 * @returns A promise that resolves to the guild.
 	 */
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
-	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (!this.guildId)
 			return (
@@ -275,5 +275,5 @@ export interface GuildComponentContext<
 	M extends keyof RegisteredMiddlewares = never,
 > extends Omit<MakeRequired<ComponentContext<Type, M>, 'guildId' | 'member'>, 'guild'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
-	guild(mode?: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 }
