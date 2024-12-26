@@ -189,6 +189,13 @@ export class EventHandler extends BaseHandler {
 			}
 			Event.fired = true;
 			const hook = await RawEvents[name]?.(client, packet as never);
+
+			if (runCache)
+				await this.client.cache.onPacket({
+					t: name,
+					d: packet,
+				} as GatewayDispatchPayload);
+
 			await (Event.run as any)(hook, client, shardId);
 		} catch (e) {
 			await this.onFail(name, e);
