@@ -74,20 +74,6 @@ export interface APIApplicationCommand {
 	 */
 	default_member_permissions: Permissions | null;
 	/**
-	 * Indicates whether the command is available in DMs with the app, only for globally-scoped commands. By default, commands are visible
-	 *
-	 * @deprecated Use `contexts` instead
-	 */
-	dm_permission?: boolean;
-	/**
-	 * Whether the command is enabled by default when the app is added to a guild
-	 *
-	 * If missing, this property should be assumed as `true`
-	 *
-	 * @deprecated Use `dm_permission` and/or `default_member_permissions` instead
-	 */
-	default_permission?: boolean;
-	/**
 	 * Indicates whether the command is age-restricted, defaults to `false`
 	 */
 	nsfw?: boolean;
@@ -201,10 +187,7 @@ export type APIApplicationCommandInteractionData =
 export type APIApplicationCommandInteractionWrapper<Data extends APIApplicationCommandInteractionData> =
 	APIBaseInteraction<InteractionType.ApplicationCommand, Data> &
 		Required<
-			Pick<
-				APIBaseInteraction<InteractionType.ApplicationCommand, Data>,
-				'app_permissions' | 'channel_id' | 'channel' | 'data'
-			>
+			Pick<APIBaseInteraction<InteractionType.ApplicationCommand, Data>, 'app_permissions' | 'channel' | 'data'>
 		>;
 
 /**

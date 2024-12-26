@@ -47,8 +47,8 @@ export class User extends DiscordBase<APIUser> {
 	}
 
 	avatarDecorationURL(options?: ImageOptions) {
-		if (!this.avatarDecoration) return;
-		return this.rest.cdn['avatar-decorations'](this.id).get(this.avatarDecoration, options);
+		if (!this.avatarDecorationData) return;
+		return this.rest.cdn['avatar-decoration-presets'](this.avatarDecorationData.asset).get(options);
 	}
 
 	bannerURL(options?: ImageOptions) {

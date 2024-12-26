@@ -122,7 +122,7 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 	}
 
 	get channelId() {
-		return this.interaction.channelId!;
+		return this.interaction.channel.id;
 	}
 
 	get author(): UserStructure {

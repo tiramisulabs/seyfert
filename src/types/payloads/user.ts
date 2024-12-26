@@ -84,14 +84,6 @@ export interface APIUser {
 	 */
 	public_flags?: UserFlags;
 	/**
-	 * The user's avatar decoration hash
-	 *
-	 * See https://discord.com/developers/docs/reference#image-formatting
-	 *
-	 * @deprecated Use `avatar_decoration_data` instead
-	 */
-	avatar_decoration?: string | null;
-	/**
 	 * The data for the user's avatar decoration
 	 *
 	 * See https://discord.com/developers/docs/resources/user#avatar-decoration-data-object
@@ -296,11 +288,6 @@ export enum ConnectionService {
 	TikTok = 'tiktok',
 	Twitch = 'twitch',
 	X = 'twitter',
-	/**
-	 * @deprecated This is the old name for {@apilink ConnectionService#X}
-	 */
-
-	Twitter = X,
 	Xbox = 'xbox',
 	YouTube = 'youtube',
 }

@@ -200,7 +200,7 @@ export class CommandContext<
 	}
 
 	get channelId() {
-		return this.interaction?.channelId || (this.message! as MessageStructure).channelId;
+		return this.interaction?.channel.id || (this.message! as MessageStructure).channelId;
 	}
 
 	get author(): UserStructure {

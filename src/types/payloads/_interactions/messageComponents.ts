@@ -15,7 +15,7 @@ export type APIMessageComponentInteraction = APIBaseInteraction<
 	Required<
 		Pick<
 			APIBaseInteraction<InteractionType.MessageComponent, APIMessageComponentInteractionData>,
-			'app_permissions' | 'channel_id' | 'channel' | 'data' | 'message'
+			'app_permissions' | 'channel' | 'data' | 'message'
 		>
 	>;
 
@@ -26,7 +26,7 @@ export type APIMessageComponentButtonInteraction = APIBaseInteraction<
 	Required<
 		Pick<
 			APIBaseInteraction<InteractionType.MessageComponent, APIMessageButtonInteractionData>,
-			'app_permissions' | 'channel_id' | 'channel' | 'data' | 'message'
+			'app_permissions' | 'channel' | 'data' | 'message'
 		>
 	>;
 
@@ -37,7 +37,7 @@ export type APIMessageComponentSelectMenuInteraction = APIBaseInteraction<
 	Required<
 		Pick<
 			APIBaseInteraction<InteractionType.MessageComponent, APIMessageSelectMenuInteractionData>,
-			'app_permissions' | 'channel_id' | 'channel' | 'data' | 'message'
+			'app_permissions' | 'channel' | 'data' | 'message'
 		>
 	>;
 

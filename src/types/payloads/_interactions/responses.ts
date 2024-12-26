@@ -26,8 +26,7 @@ export type APIInteractionResponse =
 	| APIInteractionResponsePong
 	| APIInteractionResponseUpdateMessage
 	| APIModalInteractionResponse
-	| APIInteractionResponseLaunchActivity
-	| APIPremiumRequiredInteractionResponse;
+	| APIInteractionResponseLaunchActivity;
 
 export interface APIInteractionResponsePong {
 	type: InteractionResponseType.Pong;
@@ -41,10 +40,6 @@ export interface APIApplicationCommandAutocompleteResponse {
 export interface APIModalInteractionResponse {
 	type: InteractionResponseType.Modal;
 	data: APIModalInteractionResponseCallbackData;
-}
-
-export interface APIPremiumRequiredInteractionResponse {
-	type: InteractionResponseType.PremiumRequired;
 }
 
 export interface APIInteractionResponseChannelMessageWithSource {
@@ -102,12 +97,6 @@ export enum InteractionResponseType {
 	 * Respond to an interaction with an modal for a user to fill-out
 	 */
 	Modal,
-	/**
-	 * Respond to an interaction with an upgrade button, only available for apps with monetization enabled
-	 *
-	 * @deprecated See https://discord.com/developers/docs/change-log#premium-apps-new-premium-button-style-deep-linking-url-schemes
-	 */
-	PremiumRequired,
 	/**
 	 * Launch the Activity associated with the app. Only available for apps with Activities enabled
 	 */

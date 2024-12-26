@@ -130,13 +130,7 @@ export interface APIBaseInteraction<Type extends InteractionType, Data> {
 	/**
 	 * The channel it was sent from
 	 */
-	channel?: Partial<APIChannel> & Pick<APIChannel, 'id' | 'type'>;
-	/**
-	 * The id of the channel it was sent from
-	 *
-	 * @deprecated Use {@apilink APIBaseInteraction#channel} instead
-	 */
-	channel_id?: Snowflake;
+	channel: Partial<APIChannel> & Pick<APIChannel, 'id' | 'type'>;
 	/**
 	 * Guild member data for the invoking user, including permissions
 	 *
@@ -233,17 +227,7 @@ export interface APIInteractionDataResolved {
 }
 
 /**
- * @deprecated Renamed to `APIInteractionDataResolved`
- */
-export type APIChatInputApplicationCommandInteractionDataResolved = APIInteractionDataResolved;
-
-/**
  * `users` and optional `members` from APIInteractionDataResolved, for user commands and user selects
  */
 export type APIUserInteractionDataResolved = Pick<APIInteractionDataResolved, 'members'> &
 	Required<Pick<APIInteractionDataResolved, 'users'>>;
-
-/**
- * @deprecated Renamed to `APIUserInteractionDataResolved`
- */
-export type APIUserApplicationCommandInteractionDataResolved = APIUserInteractionDataResolved;

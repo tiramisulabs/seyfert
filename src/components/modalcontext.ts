@@ -181,7 +181,7 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	 * Gets the ID of the channel of the interaction.
 	 */
 	get channelId() {
-		return this.interaction.channelId!;
+		return this.interaction.channel.id;
 	}
 
 	/**

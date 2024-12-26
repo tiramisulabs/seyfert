@@ -107,14 +107,6 @@ export interface APIGuild extends APIPartialGuild {
 	 */
 	permissions?: Permissions;
 	/**
-	 * Voice region id for the guild
-	 *
-	 * See https://discord.com/developers/docs/resources/voice#voice-region-object
-	 *
-	 * @deprecated This field has been deprecated in favor of `rtc_region` on the channel.
-	 */
-	region: string;
-	/**
 	 * ID of afk channel
 	 */
 	afk_channel_id: Snowflake | null;
