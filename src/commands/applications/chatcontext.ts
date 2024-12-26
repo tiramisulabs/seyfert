@@ -146,7 +146,7 @@ export class CommandContext<
 	channel(mode?: 'rest' | 'flow'): Promise<If<InferWithPrefix, AllChannels | undefined, AllChannels>>;
 	channel(mode: 'cache'): ReturnCache<If<InferWithPrefix, AllChannels | undefined, AllChannels>>;
 	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
-		if (this.interaction?.channel && mode === 'cache')
+		if (this.interaction && mode === 'cache')
 			return this.client.cache.adapter.isAsync ? Promise.resolve(this.interaction.channel) : this.interaction.channel;
 		switch (mode) {
 			case 'cache':
@@ -200,7 +200,7 @@ export class CommandContext<
 	}
 
 	get channelId() {
-		return this.interaction?.channelId || (this.message! as MessageStructure).channelId;
+		return this.interaction?.channel.id || (this.message! as MessageStructure).channelId;
 	}
 
 	get author(): UserStructure {

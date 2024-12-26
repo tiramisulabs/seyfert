@@ -33,7 +33,6 @@ import type {
 	DistributivePick,
 	Nullable,
 	StrictPartial,
-	StrictRequired,
 } from '../utils';
 import type { RESTPutAPIChannelPermissionJSONBody } from './channel';
 
@@ -500,20 +499,6 @@ export interface RESTPatchAPIGuildMemberJSONBody {
 export type RESTPatchAPIGuildMemberResult = APIGuildMember;
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-current-user-nick
- *
- *  @deprecated Use [Modify Current Member](https://discord.com/developers/docs/resources/guild#modify-current-member) instead.
- */
-export interface RESTPatchAPICurrentGuildMemberNicknameJSONBody {
-	/**
-	 * Value to set users nickname to
-	 *
-	 * Requires `CHANGE_NICKNAME` permission
-	 */
-	nick?: string | null | undefined;
-}
-
-/**
  * https://discord.com/developers/docs/resources/guild#modify-current-member
  */
 export interface RESTPatchAPICurrentGuildMemberJSONBody {
@@ -524,14 +509,6 @@ export interface RESTPatchAPICurrentGuildMemberJSONBody {
 	 */
 	nick?: string | null | undefined;
 }
-
-/**
- * https://discord.com/developers/docs/resources/guild#modify-current-user-nick
- *
- * @deprecated Use [Modify Current Member](https://discord.com/developers/docs/resources/guild#modify-current-member) instead.
- */
-export type RESTPatchAPICurrentGuildMemberNicknameResult =
-	StrictRequired<RESTPatchAPICurrentGuildMemberNicknameJSONBody>;
 
 /**
  * https://discord.com/developers/docs/resources/guild#add-guild-member-role
@@ -582,12 +559,6 @@ export type RESTGetAPIGuildBanResult = APIBan;
  * https://discord.com/developers/docs/resources/guild#create-guild-ban
  */
 export interface RESTPutAPIGuildBanJSONBody {
-	/**
-	 * Number of days to delete messages for (0-7)
-	 *
-	 * @deprecated use `delete_message_seconds` instead
-	 */
-	delete_message_days?: number | undefined;
 	/**
 	 * Number of seconds to delete messages for, between 0 and 604800 (7 days)
 	 */

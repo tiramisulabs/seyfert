@@ -7,10 +7,10 @@ import type { ChannelType, OverwriteType, Permissions, Snowflake, VideoQualityMo
 import type { APIApplication } from './application';
 import type { APIPartialEmoji } from './emoji';
 import type { APIGuildMember } from './guild';
-import type { APIInteractionDataResolved, APIMessageInteraction, APIMessageInteractionMetadata } from './interactions';
+import type { APIInteractionDataResolved, APIMessageInteractionMetadata } from './interactions';
 import type { APIRole } from './permissions';
 import type { APIPoll } from './poll';
-import type { APISticker, APIStickerItem } from './sticker';
+import type { APIStickerItem } from './sticker';
 import type { APIUser } from './user';
 
 /**
@@ -566,12 +566,6 @@ export interface APIMessage {
 	 */
 	interaction_metadata?: APIMessageInteractionMetadata;
 	/**
-	 * Sent if the message is a response to an Interaction
-	 *
-	 * @deprecated In favor of `interaction_metadata`
-	 */
-	interaction?: APIMessageInteraction;
-	/**
 	 * Sent if a thread was started from this message
 	 */
 	thread?: APIThreadChannel;
@@ -592,14 +586,6 @@ export interface APIMessage {
 	 * See https://discord.com/developers/docs/resources/sticker#sticker-item-object
 	 */
 	sticker_items?: APIStickerItem[];
-	/**
-	 * The stickers sent with the message
-	 *
-	 * See https://discord.com/developers/docs/resources/sticker#sticker-object
-	 *
-	 * @deprecated Use `sticker_items` instead
-	 */
-	stickers?: APISticker[];
 	/**
 	 * A generally increasing integer (there may be gaps or duplicates) that represents the approximate position of the message in a thread
 	 *
@@ -763,7 +749,6 @@ export type APIMessageSnapshotFields = Pick<
 	| 'type'
 	| 'sticker_items'
 	| 'components'
-	| 'stickers'
 >;
 
 /**
@@ -1560,15 +1545,6 @@ export enum ComponentType {
 	 * Select menu for channels
 	 */
 	ChannelSelect,
-
-	// EVERYTHING BELOW THIS LINE SHOULD BE OLD NAMES FOR RENAMED ENUM MEMBERS //
-
-	/**
-	 * Select menu for picking from defined text options
-	 *
-	 * @deprecated This is the old name for {@apilink ComponentType#StringSelect}
-	 */
-	SelectMenu = 3,
 }
 
 /**

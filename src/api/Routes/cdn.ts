@@ -10,8 +10,8 @@ export interface CDNRoute {
 	avatars(id: string): {
 		get(hash: string, options?: CDNUrlOptions): string;
 	};
-	'avatar-decorations'(userId: string): {
-		get(hash: string, options?: BaseCDNUrlOptions): string;
+	'avatar-decoration-presets'(asset: string): {
+		get(options?: BaseCDNUrlOptions): string;
 	};
 	'channel-icons'(channelId: string): {
 		get(hash: string, options?: BaseCDNUrlOptions): string;

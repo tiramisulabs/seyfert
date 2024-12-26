@@ -28,12 +28,6 @@ export interface APIStageInstance {
 	 */
 	privacy_level: StageInstancePrivacyLevel;
 	/**
-	 * Whether or not stage discovery is disabled
-	 *
-	 * @deprecated
-	 */
-	discoverable_disabled: boolean;
-	/**
 	 * The id of the scheduled event for this stage instance
 	 */
 	guild_scheduled_event_id?: Snowflake;
@@ -44,15 +38,9 @@ export interface APIStageInstance {
  */
 export enum StageInstancePrivacyLevel {
 	/**
-	 * The stage instance is visible publicly, such as on stage discovery
-	 *
-	 * @deprecated
-	 */
-	Public = 1,
-	/**
 	 * The stage instance is visible to only guild members
 	 */
-	GuildOnly,
+	GuildOnly = 2,
 }
 
 /**

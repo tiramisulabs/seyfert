@@ -30,12 +30,6 @@ export interface APISticker {
 	 */
 	tags: string;
 	/**
-	 * Previously the sticker asset hash, now an empty string
-	 *
-	 * @deprecated
-	 */
-	asset?: '';
-	/**
 	 * Type of sticker
 	 *
 	 * See https://discord.com/developers/docs/resources/sticker#sticker-object-sticker-types

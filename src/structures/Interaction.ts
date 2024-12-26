@@ -123,7 +123,7 @@ export class BaseInteraction<
 			this.message = Transformers.Message(client, interaction.message);
 		}
 		this.appPermissions = new PermissionsBitField(Number(interaction.app_permissions));
-		if (interaction.channel) {
+		if ('channel' in interaction) {
 			this.channel = channelFrom(interaction.channel, client);
 		}
 		this.user = this.member?.user ?? Transformers.User(client, interaction.user!);
@@ -395,6 +395,7 @@ export class AutocompleteInteraction<FromGuild extends boolean = boolean> extend
 	declare data: ObjectToLower<APIApplicationCommandAutocompleteInteraction['data']>;
 	options: OptionResolverStructure;
 	declare entitlements: EntitlementStructure[];
+	declare channel: AllChannels;
 	constructor(
 		client: UsingClient,
 		interaction: APIApplicationCommandAutocompleteInteraction,
@@ -435,6 +436,7 @@ export class Interaction<
 	FromGuild extends boolean = boolean,
 	Type extends APIInteraction = APIInteraction,
 > extends BaseInteraction<FromGuild, Type> {
+	declare channel: AllChannels;
 	fetchMessage(messageId: string): Promise<WebhookMessageStructure> {
 		return this.client.interactions.fetchResponse(this.token, messageId);
 	}
@@ -504,6 +506,7 @@ export class ApplicationCommandInteraction<
 	Type extends APIApplicationCommandInteraction = APIApplicationCommandInteraction,
 > extends Interaction<FromGuild, Type> {
 	type!: ApplicationCommandType;
+	declare channel: AllChannels;
 	respond(
 		data:
 			| APIInteractionResponseChannelMessageWithSource
@@ -522,6 +525,7 @@ export class EntryPointInteraction<FromGuild extends boolean = boolean> extends 
 	FromGuild,
 	APIEntryPointCommandInteraction
 > {
+	declare channel: AllChannels;
 	async withReponse(data?: InteractionCreateBodyRequest) {
 		let body = { type: InteractionResponseType.LaunchActivity } as const;
 
@@ -586,7 +590,6 @@ export class ComponentInteraction<
 	Type extends APIMessageComponentInteraction = APIMessageComponentInteraction,
 > extends Interaction<FromGuild, Type> {
 	declare data: ObjectToLower<APIMessageComponentInteraction['data']>;
-	declare channelId: string;
 	declare channel: AllChannels;
 	declare type: InteractionType.MessageComponent;
 	declare message: MessageStructure;
@@ -624,7 +627,7 @@ export class ButtonInteraction extends ComponentInteraction {
 
 export class SelectMenuInteraction extends ComponentInteraction {
 	declare data: ObjectToLower<APIMessageComponentSelectMenuInteraction['data']>;
-
+	declare channel: AllChannels;
 	constructor(
 		client: UsingClient,
 		interaction: APIMessageComponentSelectMenuInteraction,
@@ -646,7 +649,7 @@ export class StringSelectMenuInteraction<
 >) {
 	declare data: OmitInsert<ObjectToLower<APIMessageStringSelectInteractionData>, 'values', { values: T }>;
 	declare values: T;
-
+	declare channel: AllChannels;
 	isStringSelectMenu(): this is StringSelectMenuInteraction {
 		return true;
 	}
@@ -654,6 +657,7 @@ export class StringSelectMenuInteraction<
 
 export class ChannelSelectMenuInteraction extends SelectMenuInteraction {
 	channels: AllChannels[];
+	declare channel: AllChannels;
 	constructor(
 		client: UsingClient,
 		interaction: APIMessageComponentSelectMenuInteraction,
@@ -673,6 +677,7 @@ export class MentionableSelectMenuInteraction extends SelectMenuInteraction {
 	roles: GuildRoleStructure[];
 	members: InteractionGuildMemberStructure[];
 	users: UserStructure[];
+	declare channel: AllChannels;
 	constructor(
 		client: UsingClient,
 		interaction: APIMessageComponentSelectMenuInteraction,
@@ -703,6 +708,7 @@ export class MentionableSelectMenuInteraction extends SelectMenuInteraction {
 
 export class RoleSelectMenuInteraction extends SelectMenuInteraction {
 	roles: GuildRoleStructure[];
+	declare channel: AllChannels;
 	constructor(
 		client: UsingClient,
 		interaction: APIMessageComponentSelectMenuInteraction,
@@ -721,6 +727,7 @@ export class RoleSelectMenuInteraction extends SelectMenuInteraction {
 export class UserSelectMenuInteraction extends SelectMenuInteraction {
 	members: InteractionGuildMemberStructure[];
 	users: UserStructure[];
+	declare channel: AllChannels;
 	constructor(
 		client: UsingClient,
 		interaction: APIMessageComponentSelectMenuInteraction,
@@ -751,7 +758,7 @@ export class ChatInputCommandInteraction<FromGuild extends boolean = boolean> ex
 	APIChatInputApplicationCommandInteraction
 > {
 	declare data: ObjectToLower<APIChatInputApplicationCommandInteractionData>;
-
+	declare channel: AllChannels;
 	isChatInput(): this is ChatInputCommandInteraction {
 		return true;
 	}
@@ -763,7 +770,7 @@ export class UserCommandInteraction<FromGuild extends boolean = boolean> extends
 > {
 	declare type: ApplicationCommandType.User;
 	declare data: ObjectToLower<APIUserApplicationCommandInteractionData>;
-
+	declare channel: AllChannels;
 	isUser(): this is UserCommandInteraction {
 		return true;
 	}
@@ -775,7 +782,7 @@ export class MessageCommandInteraction<FromGuild extends boolean = boolean> exte
 > {
 	declare type: ApplicationCommandType.Message;
 	declare data: ObjectToLower<APIMessageApplicationCommandInteractionData>;
-
+	declare channel: AllChannels;
 	isMessage(): this is MessageCommandInteraction {
 		return true;
 	}
@@ -786,7 +793,7 @@ export interface ModalSubmitInteraction<FromGuild extends boolean = boolean>
 @mix(Interaction)
 export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends BaseInteraction<FromGuild> {
 	declare data: ObjectToLower<APIModalSubmission>;
-
+	declare channel: AllChannels;
 	update<WR extends boolean = false>(
 		data: ComponentInteractionMessageUpdate,
 		withResponse?: WR,

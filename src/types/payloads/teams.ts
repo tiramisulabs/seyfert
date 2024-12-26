@@ -42,12 +42,6 @@ export interface APITeamMember {
 	 */
 	membership_state: TeamMemberMembershipState;
 	/**
-	 * Will always be `["*"]`
-	 *
-	 * @deprecated Use `role` instead
-	 */
-	permissions: ['*'];
-	/**
 	 * The id of the parent team of which they are a member
 	 */
 	team_id: Snowflake;
