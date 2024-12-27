@@ -55,11 +55,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	get latency() {
-		let acc = 0;
-
-		this.gateway.forEach(s => (acc += s.latency));
-
-		return acc / this.gateway.size;
+		return this.gateway.latency;
 	}
 
 	async loadEvents(dir?: string) {
