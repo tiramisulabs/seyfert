@@ -47,6 +47,7 @@ import { ActionRow, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles }
 import {
 	type EntitlementStructure,
 	type GuildRoleStructure,
+	type GuildStructure,
 	type InteractionGuildMemberStructure,
 	type MessageStructure,
 	type OptionResolverStructure,
@@ -363,7 +364,7 @@ export class BaseInteraction<
 		}
 	}
 
-	async fetchGuild(force = false) {
+	async fetchGuild(force = false): Promise<GuildStructure<'api'> | undefined> {
 		return this.guildId ? this.client.guilds.fetch(this.guildId, force) : undefined;
 	}
 }

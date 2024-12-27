@@ -137,7 +137,7 @@ export class BaseGuildMember extends DiscordBase {
 			ban: (id: string, body?: RESTPutAPIGuildBanJSONBody, reason?: string) =>
 				client.members.ban(guildId, id, body, reason),
 			kick: (id: string, reason?: string) => client.members.kick(guildId, id, reason),
-			edit: (id: string, body: RESTPatchAPIGuildMemberJSONBody, reason?: string) =>
+			edit: (id: string, body: RESTPatchAPIGuildMemberJSONBody, reason?: string): Promise<GuildMemberStructure> =>
 				client.members.edit(guildId, id, body, reason),
 			add: (id: string, body: RESTPutAPIGuildMemberJSONBody): Promise<GuildMemberStructure | undefined> =>
 				client.members.add(guildId, id, body),
