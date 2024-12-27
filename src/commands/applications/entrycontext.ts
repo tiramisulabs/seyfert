@@ -77,7 +77,7 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 		return this.interaction.editOrReply<WR>(body as InteractionCreateBodyRequest, withResponse);
 	}
 
-	fetchResponse() {
+	fetchResponse(): Promise<WebhookMessageStructure> {
 		return this.interaction.fetchResponse();
 	}
 

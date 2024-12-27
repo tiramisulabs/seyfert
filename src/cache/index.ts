@@ -5,16 +5,6 @@ import type { Adapter } from './adapters';
 import { Guilds } from './resources/guilds';
 import { Users } from './resources/users';
 
-import { Bans } from './resources/bans';
-import { Channels } from './resources/channels';
-import { Emojis } from './resources/emojis';
-import { Members } from './resources/members';
-import { Presences } from './resources/presence';
-import { Roles } from './resources/roles';
-import { StageInstances } from './resources/stage-instances';
-import { Stickers } from './resources/stickers';
-import { VoiceStates } from './resources/voice-states';
-
 import type { InternalOptions, UsingClient } from '../commands';
 import {
 	type APIChannel,
@@ -30,8 +20,17 @@ import {
 	GuildMemberFlags,
 	OverwriteType,
 } from '../types';
+import { Bans } from './resources/bans';
+import { Channels } from './resources/channels';
+import { Emojis } from './resources/emojis';
+import { Members } from './resources/members';
 import { Messages } from './resources/messages';
 import { Overwrites } from './resources/overwrites';
+import { Presences } from './resources/presence';
+import { Roles } from './resources/roles';
+import { StageInstances } from './resources/stage-instances';
+import { Stickers } from './resources/stickers';
+import { VoiceStates } from './resources/voice-states';
 export { BaseResource } from './resources/default/base';
 export { GuildBasedResource } from './resources/default/guild-based';
 export { GuildRelatedResource } from './resources/default/guild-related';
@@ -219,7 +218,23 @@ export class Cache {
 					string,
 			  ]
 		)[],
-	) {
+	): Promise<
+		Partial<{
+			messages: ReturnManagers['messages'][];
+			users: ReturnManagers['users'][];
+			guilds: ReturnManagers['guilds'][];
+			members: ReturnManagers['members'][];
+			voiceStates: ReturnManagers['voiceStates'][];
+			emojis: ReturnManagers['emojis'][];
+			roles: ReturnManagers['roles'][];
+			channels: ReturnManagers['channels'][];
+			stickers: ReturnManagers['stickers'][];
+			presences: ReturnManagers['presences'][];
+			stageInstances: ReturnManagers['stageInstances'][];
+			overwrites: ReturnManagers['overwrites'][];
+			bans: ReturnManagers['bans'][];
+		}>
+	> {
 		const allData: Partial<Record<NonGuildBased | GuildBased | GuildRelated, string[][]>> = {};
 		for (const [type, id, guildId] of keys) {
 			switch (type) {
