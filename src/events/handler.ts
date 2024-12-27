@@ -12,43 +12,29 @@ import {
 } from '../common';
 import type { ClientEvents } from '../events/hooks';
 import * as RawEvents from '../events/hooks';
-import {
-	type APIThreadChannel,
-	ChannelType,
-	type GatewayDispatchPayload,
-} from '../types';
-import type {
-	ClientEvent,
-	ClientNameEvents,
-	CustomEvents,
-	CustomEventsKeys,
-	EventContext,
-} from './event';
+import { type APIThreadChannel, ChannelType, type GatewayDispatchPayload } from '../types';
+import type { ClientEvent, ClientNameEvents, CustomEvents, CustomEventsKeys, EventContext } from './event';
 
-export type EventValue = MakeRequired<ClientEvent, '__filePath'> & {
-	fired?: boolean;
-};
+export type EventValue = MakeRequired<ClientEvent, '__filePath'> & { fired?: boolean };
 export type GatewayEvents = Uppercase<SnakeCase<keyof ClientEvents>>;
 
-export type ResolveEventParams<
-	T extends ClientNameEvents | CustomEventsKeys | GatewayEvents
-> = T extends CustomEventsKeys
-	? [...Parameters<CustomEvents[T]>, UsingClient]
-	: T extends GatewayEvents
-	? EventContext<{ data: { name: CamelCase<T> } }>
-	: T extends ClientNameEvents
-	? EventContext<{ data: { name: T } }>
-	: never;
+export type ResolveEventParams<T extends ClientNameEvents | CustomEventsKeys | GatewayEvents> =
+	T extends CustomEventsKeys
+		? [...Parameters<CustomEvents[T]>, UsingClient]
+		: T extends GatewayEvents
+			? EventContext<{ data: { name: CamelCase<T> } }>
+			: T extends ClientNameEvents
+				? EventContext<{ data: { name: T } }>
+				: never;
 
-export type ResolveEventRunParams<
-	T extends ClientNameEvents | CustomEventsKeys | GatewayEvents
-> = T extends CustomEventsKeys
-	? Parameters<CustomEvents[T]>
-	: T extends GatewayEvents
-	? EventContext<{ data: { name: CamelCase<T> } }>
-	: T extends ClientNameEvents
-	? EventContext<{ data: { name: T } }>
-	: never;
+export type ResolveEventRunParams<T extends ClientNameEvents | CustomEventsKeys | GatewayEvents> =
+	T extends CustomEventsKeys
+		? Parameters<CustomEvents[T]>
+		: T extends GatewayEvents
+			? EventContext<{ data: { name: CamelCase<T> } }>
+			: T extends ClientNameEvents
+				? EventContext<{ data: { name: T } }>
+				: never;
 
 export type EventValues = {
 	[K in CustomEventsKeys | GatewayEvents]: Omit<EventValue, 'run'> & {
@@ -63,14 +49,11 @@ export class EventHandler extends BaseHandler {
 
 	onFail = (event: GatewayEvents | CustomEventsKeys, err: unknown) =>
 		this.logger.warn('<Client>.events.onFail', err, event);
-	filter = (path: string) =>
-		path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
+	filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
 
 	values: Partial<EventValues> = {};
 
-	discordEvents = Object.keys(RawEvents).map((x) =>
-		ReplaceRegex.camel(x.toLowerCase())
-	) as ClientNameEvents[];
+	discordEvents = Object.keys(RawEvents).map(x => ReplaceRegex.camel(x.toLowerCase())) as ClientNameEvents[];
 
 	set(events: ClientEvent[]) {
 		for (const event of events) {
@@ -82,23 +65,16 @@ export class EventHandler extends BaseHandler {
 			}
 			this.values[
 				this.discordEvents.includes(instance.data.name)
-					? (ReplaceRegex.snake(
-							instance.data.name
-					  ).toUpperCase() as GatewayEvents)
+					? (ReplaceRegex.snake(instance.data.name).toUpperCase() as GatewayEvents)
 					: (instance.data.name as CustomEventsKeys)
 			] = instance as EventValue;
 		}
 	}
 
 	async load(eventsDir: string) {
-		const paths = await this.loadFilesK<{ file: ClientEvent }>(
-			await this.getFiles(eventsDir)
-		);
+		const paths = await this.loadFilesK<{ file: ClientEvent }>(await this.getFiles(eventsDir));
 
-		for (const { events, file } of paths.map((x) => ({
-			events: this.onFile(x.file),
-			file: x,
-		}))) {
+		for (const { events, file } of paths.map(x => ({ events: this.onFile(x.file), file: x }))) {
 			if (!events) continue;
 			for (const i of events) {
 				const instance = this.callback(i);
@@ -106,27 +82,21 @@ export class EventHandler extends BaseHandler {
 				if (typeof instance?.run !== 'function') {
 					this.logger.warn(
 						file.path.split(process.cwd()).slice(1).join(process.cwd()),
-						'Missing run function, use `export default {...}` syntax'
+						'Missing run function, use `export default {...}` syntax',
 					);
 					continue;
 				}
 				instance.__filePath = file.path;
 				this.values[
 					this.discordEvents.includes(instance.data.name)
-						? (ReplaceRegex.snake(
-								instance.data.name
-						  ).toUpperCase() as GatewayEvents)
+						? (ReplaceRegex.snake(instance.data.name).toUpperCase() as GatewayEvents)
 						: (instance.data.name as CustomEventsKeys)
 				] = instance as EventValue;
 			}
 		}
 	}
 
-	async execute(
-		raw: GatewayDispatchPayload,
-		client: Client<true> | WorkerClient<true>,
-		shardId: number
-	) {
+	async execute(raw: GatewayDispatchPayload, client: Client<true> | WorkerClient<true>, shardId: number) {
 		switch (raw.t) {
 			case 'MESSAGE_DELETE':
 				{
@@ -154,8 +124,7 @@ export class EventHandler extends BaseHandler {
 					// ignore unavailable guilds?
 					if (raw.d.unavailable) break;
 					for (const [messageId, value] of client.components.values) {
-						if (value.guildId === raw.d.id)
-							client.components.deleteValue(messageId, 'guildDelete');
+						if (value.guildId === raw.d.id) client.components.deleteValue(messageId, 'guildDelete');
 					}
 				}
 				break;
@@ -163,31 +132,22 @@ export class EventHandler extends BaseHandler {
 				{
 					if (!client.components.values.size) break;
 
-					if (
-						raw.d.type === ChannelType.DM ||
-						raw.d.type === ChannelType.GroupDM
-					) {
+					if (raw.d.type === ChannelType.DM || raw.d.type === ChannelType.GroupDM) {
 						for (const value of client.components.values) {
-							if (raw.d.id === value[1].channelId)
-								client.components.deleteValue(value[0], 'channelDelete');
+							if (raw.d.id === value[1].channelId) client.components.deleteValue(value[0], 'channelDelete');
 						}
 					} else {
 						if (!raw.d.guild_id) break;
 						// this is why we dont recommend to use collectors, use ComponentCommand instead
-						const channels = await client.cache.channels?.valuesRaw(
-							raw.d.guild_id
-						);
+						const channels = await client.cache.channels?.valuesRaw(raw.d.guild_id);
 						const threads = channels
 							?.filter(
-								(x) =>
-									[
-										ChannelType.PublicThread,
-										ChannelType.PrivateThread,
-										ChannelType.AnnouncementThread,
-									].includes(x.type) &&
-									(x as APIThreadChannel).parent_id === raw.d.id
+								x =>
+									[ChannelType.PublicThread, ChannelType.PrivateThread, ChannelType.AnnouncementThread].includes(
+										x.type,
+									) && (x as APIThreadChannel).parent_id === raw.d.id,
 							)
-							.map((x) => x.id);
+							.map(x => x.id);
 						for (const value of client.components.values) {
 							const channelId = value[1].channelId;
 							if (raw.d.id === channelId || threads?.includes(channelId)) {
@@ -220,7 +180,7 @@ export class EventHandler extends BaseHandler {
 		client: Client | WorkerClient,
 		packet: unknown,
 		shardId: number,
-		runCache = true
+		runCache = true,
 	) {
 		const Event = this.values[name];
 		try {
@@ -229,7 +189,7 @@ export class EventHandler extends BaseHandler {
 					? this.client.cache.onPacket({
 							t: name,
 							d: packet,
-					  } as GatewayDispatchPayload)
+						} as GatewayDispatchPayload)
 					: undefined;
 			}
 			Event.fired = true;
@@ -247,10 +207,7 @@ export class EventHandler extends BaseHandler {
 		}
 	}
 
-	async runCustom<T extends CustomEventsKeys>(
-		name: T,
-		...args: ResolveEventRunParams<T>
-	) {
+	async runCustom<T extends CustomEventsKeys>(name: T, ...args: ResolveEventRunParams<T>) {
 		const Event = this.values[name];
 		try {
 			if (!Event || (Event.data.once && Event.fired)) {
@@ -258,10 +215,7 @@ export class EventHandler extends BaseHandler {
 				return this.client.collectors.run(name, args, this.client);
 			}
 			Event.fired = true;
-			this.logger.debug(
-				`executed a custom event [${name}]`,
-				Event.data.once ? 'once' : ''
-			);
+			this.logger.debug(`executed a custom event [${name}]`, Event.data.once ? 'once' : '');
 
 			await Promise.all([
 				(Event.run as any)(...args, this.client),
@@ -280,9 +234,7 @@ export class EventHandler extends BaseHandler {
 		const event = this.values[name];
 		if (!event?.__filePath) return null;
 		delete require.cache[event.__filePath];
-		const imported = await magicImport(event.__filePath).then(
-			(x) => x.default ?? x
-		);
+		const imported = await magicImport(event.__filePath).then(x => x.default ?? x);
 		imported.__filePath = event.__filePath;
 		this.values[name] = imported;
 		return imported;
@@ -301,11 +253,7 @@ export class EventHandler extends BaseHandler {
 	}
 
 	onFile(file: FileLoaded<ClientEvent>): ClientEvent[] | undefined {
-		return file.default
-			? Array.isArray(file.default)
-				? file.default
-				: [file.default]
-			: undefined;
+		return file.default ? (Array.isArray(file.default) ? file.default : [file.default]) : undefined;
 	}
 
 	callback = (file: ClientEvent): ClientEvent | false => file;
