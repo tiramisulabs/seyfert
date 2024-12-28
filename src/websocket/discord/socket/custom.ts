@@ -73,7 +73,10 @@ export class SeyfertWebSocket {
 						resolve(this.connect(retries + 1));
 					}, 500);
 				} else {
-					rej(e);
+					this.onerror(e);
+					setTimeout(() => {
+						resolve(this.connect(0));
+					}, 5e3);
 				}
 			});
 
