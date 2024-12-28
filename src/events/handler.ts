@@ -253,7 +253,7 @@ export class EventHandler extends BaseHandler {
 	}
 
 	onFile(file: FileLoaded<ClientEvent>): ClientEvent[] | undefined {
-		return file.default ? [file.default] : undefined;
+		return file.default ? (Array.isArray(file.default) ? file.default : [file.default]) : undefined;
 	}
 
 	callback = (file: ClientEvent): ClientEvent | false => file;
