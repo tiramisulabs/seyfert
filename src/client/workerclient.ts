@@ -38,19 +38,19 @@ let workerData: WorkerData;
 let manager: import('node:worker_threads').MessagePort;
 try {
 	workerData = {
-		debug: process.env.SEYFERT_WORKER_DEBUG === 'true',
+		debug: String(process.env.SEYFERT_WORKER_DEBUG) === 'true',
 		intents: Number(process.env.SEYFERT_WORKER_INTENTS),
-		path: process.env.SEYFERT_WORKER_PATH!,
+		path: String(process.env.SEYFERT_WORKER_PATH),
 		shards: JSON.parse(process.env.SEYFERT_WORKER_SHARDS!),
-		token: process.env.SEYFERT_WORKER_TOKEN!,
+		token: String(process.env.SEYFERT_WORKER_TOKEN),
 		workerId: Number(process.env.SEYFERT_WORKER_WORKERID),
-		workerProxy: process.env.SEYFERT_WORKER_WORKERPROXY === 'true',
+		workerProxy: String(process.env.SEYFERT_WORKER_WORKERPROXY) === 'true',
 		totalShards: Number(process.env.SEYFERT_WORKER_TOTALSHARDS),
-		mode: process.env.SEYFERT_WORKER_MODE as 'custom' | 'threads' | 'clusters',
-		resharding: process.env.SEYFERT_WORKER_RESHARDING === 'true',
+		mode: String(process.env.SEYFERT_WORKER_MODE) as 'custom' | 'threads' | 'clusters',
+		resharding: String(process.env.SEYFERT_WORKER_RESHARDING) === 'true',
 		totalWorkers: Number(process.env.SEYFERT_WORKER_TOTALWORKERS),
 		info: JSON.parse(process.env.SEYFERT_WORKER_INFO!),
-		compress: process.env.SEYFERT_WORKER_COMPRESS === 'true',
+		compress: String(process.env.SEYFERT_WORKER_COMPRESS) === 'true',
 	} satisfies WorkerData;
 } catch {
 	//
@@ -443,7 +443,11 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	async resumeShard(shardId: number, shardData: MakeRequired<ShardData>) {
-		const exists = (await this.tellWorkers((r, vars) => r.shards.has(vars.shardId), { shardId })).some(x => x);
+		const exists = (
+			await this.tellWorkers((r, vars) => r.shards.has(vars.shardId), {
+				shardId,
+			})
+		).some(x => x);
 		if (exists) throw new Error('Cannot override existing shard');
 		const shard = this.createShard(shardId, {
 			info: this.workerData.info,
