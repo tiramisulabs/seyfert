@@ -1,6 +1,6 @@
 {
 	"name": "seyfert",
-	"version": "2.1.0",
+	"version": "2.2.0",
 	"description": "The most advanced framework for discord bots",
 	"main": "./lib/index.js",
 	"module": "./lib/index.js",
@@ -26,7 +26,7 @@
 		"@commitlint/config-conventional": "^19.6.0",
 		"@types/node": "^22.10.2",
 		"husky": "^9.1.7",
-		"lint-staged": "^15.2.11",
+		"lint-staged": "^15.3.0",
 		"typescript": "^5.7.2",
 		"vitest": "^2.1.8"
 	},
