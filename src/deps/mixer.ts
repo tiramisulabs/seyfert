@@ -47,7 +47,7 @@ export function Mixin<T, C extends TypeClass[]>(...args: C): C[number] & T {
 	const ignoreOverwriteToString = Object.keys(Object.getOwnPropertyDescriptors(args[0].prototype)).includes('toString');
 	function MixedClass(...constructorArgs: any[]) {
 		for (const i of args) {
-			const descriptors = getDescriptors(i).toReversed();
+			const descriptors = getDescriptors(i).reverse();
 			for (const j of descriptors) {
 				// @ts-expect-error
 				Object.assign(this, new j.constructor.value(...constructorArgs));
