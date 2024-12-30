@@ -10,7 +10,11 @@ import type {
 	WebhookMessageStructure,
 } from '../../client/transformers';
 import type { If, MakeRequired, UnionToTuple, When } from '../../common';
-import type { InteractionCreateBodyRequest, InteractionMessageUpdateBodyRequest } from '../../common/types/write';
+import type {
+	InteractionCreateBodyRequest,
+	InteractionMessageUpdateBodyRequest,
+	MessageWebhookCreateBodyRequest,
+} from '../../common/types/write';
 import { type AllChannels, ChatInputCommandInteraction, type Message } from '../../structures';
 import { MessageFlags } from '../../types';
 import { BaseContext } from '../basecontext';
@@ -53,14 +57,6 @@ export class CommandContext<
 	options: ContextOptions<T> = {} as never;
 	metadata: CommandMetadata<UnionToTuple<M>> = {} as never;
 	globalMetadata: GlobalMetadata = {};
-
-	get proxy() {
-		return this.client.proxy;
-	}
-
-	get t() {
-		return this.client.t(this.interaction?.locale ?? this.client.langs.defaultLang ?? 'en-US');
-	}
 
 	get fullCommandName() {
 		return this.resolver.fullCommandName;
@@ -134,6 +130,11 @@ export class CommandContext<
 			return this.editResponse(body);
 		}
 		return this.write(body as InteractionCreateBodyRequest, withResponse);
+	}
+
+	followup(body: MessageWebhookCreateBodyRequest) {
+		if (this.interaction) return this.interaction.followup(body);
+		return this.messageResponse!.reply(body);
 	}
 
 	async fetchResponse(): Promise<

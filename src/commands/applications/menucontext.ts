@@ -11,6 +11,7 @@ import {
 	type InteractionCreateBodyRequest,
 	type InteractionMessageUpdateBodyRequest,
 	type MakeRequired,
+	type MessageWebhookCreateBodyRequest,
 	type ModalCreateBodyRequest,
 	type UnionToTuple,
 	type When,
@@ -99,6 +100,10 @@ export class MenuCommandContext<
 		withResponse?: WR,
 	): Promise<When<WR, WebhookMessageStructure, void>> {
 		return this.interaction.editOrReply<WR>(body as InteractionCreateBodyRequest, withResponse);
+	}
+
+	followup(body: MessageWebhookCreateBodyRequest) {
+		return this.interaction.followup(body);
 	}
 
 	fetchResponse(): Promise<WebhookMessageStructure> {
