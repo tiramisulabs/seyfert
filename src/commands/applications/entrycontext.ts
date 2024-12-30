@@ -10,6 +10,7 @@ import type {
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
 	MakeRequired,
+	MessageWebhookCreateBodyRequest,
 	ModalCreateBodyRequest,
 	UnionToTuple,
 	When,
@@ -75,6 +76,10 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 		withResponse?: WR,
 	): Promise<When<WR, WebhookMessageStructure, void>> {
 		return this.interaction.editOrReply<WR>(body as InteractionCreateBodyRequest, withResponse);
+	}
+
+	followup(body: MessageWebhookCreateBodyRequest) {
+		return this.interaction.followup(body);
 	}
 
 	fetchResponse(): Promise<WebhookMessageStructure> {

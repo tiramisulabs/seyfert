@@ -12,6 +12,7 @@ import type {
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
 	MakeRequired,
+	MessageWebhookCreateBodyRequest,
 	ModalCreateBodyRequest,
 	UnionToTuple,
 	When,
@@ -97,6 +98,10 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 		fetchReply?: FR,
 	): Promise<When<FR, WebhookMessageStructure, void>> {
 		return this.interaction.editOrReply<FR>(body as InteractionCreateBodyRequest, fetchReply);
+	}
+
+	followup(body: MessageWebhookCreateBodyRequest) {
+		return this.interaction.followup(body);
 	}
 
 	/**
