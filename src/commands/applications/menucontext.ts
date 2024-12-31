@@ -102,7 +102,7 @@ export class MenuCommandContext<
 		return this.interaction.editOrReply<WR>(body as InteractionCreateBodyRequest, withResponse);
 	}
 
-	followup(body: MessageWebhookCreateBodyRequest) {
+	followup(body: MessageWebhookCreateBodyRequest): Promise<WebhookMessageStructure> {
 		return this.interaction.followup(body);
 	}
 

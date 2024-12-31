@@ -100,7 +100,7 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 		return this.interaction.editOrReply<FR>(body as InteractionCreateBodyRequest, fetchReply);
 	}
 
-	followup(body: MessageWebhookCreateBodyRequest) {
+	followup(body: MessageWebhookCreateBodyRequest): Promise<WebhookMessageStructure> {
 		return this.interaction.followup(body);
 	}
 

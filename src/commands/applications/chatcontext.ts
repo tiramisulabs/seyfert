@@ -136,9 +136,11 @@ export class CommandContext<
 		return this.write(body as InteractionCreateBodyRequest, withResponse);
 	}
 
-	followup(body: MessageWebhookCreateBodyRequest) {
+	followup(
+		body: MessageWebhookCreateBodyRequest,
+	): Promise<If<InferWithPrefix, WebhookMessageStructure | MessageStructure, WebhookMessageStructure>> {
 		if (this.interaction) return this.interaction.followup(body);
-		return this.messageResponse!.reply(body);
+		return this.messageResponse!.reply(body) as never;
 	}
 
 	async fetchResponse(): Promise<

@@ -131,7 +131,7 @@ export class ComponentContext<
 		return this.interaction.editOrReply<FR>(body as InteractionCreateBodyRequest, fetchReply);
 	}
 
-	followup(body: MessageWebhookCreateBodyRequest) {
+	followup(body: MessageWebhookCreateBodyRequest): Promise<WebhookMessageStructure> {
 		return this.interaction.followup(body);
 	}
 
