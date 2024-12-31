@@ -58,6 +58,10 @@ export class CommandContext<
 	metadata: CommandMetadata<UnionToTuple<M>> = {} as never;
 	globalMetadata: GlobalMetadata = {};
 
+	get t() {
+		return this.client.t(this.interaction?.locale ?? this.client.langs.defaultLang ?? 'en-US');
+	}
+
 	get fullCommandName() {
 		return this.resolver.fullCommandName;
 	}
