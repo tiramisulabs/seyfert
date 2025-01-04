@@ -69,7 +69,7 @@ export class BaseMessage extends DiscordBase {
 	}
 
 	get url() {
-		return Formatter.messageLink(this.guildId!, this.channelId, this.id);
+		return Formatter.messageLink(this.guildId ?? this.messageReference?.guildId ?? '@me', this.channelId, this.id);
 	}
 
 	async guild(force = false): Promise<GuildStructure<'api'> | undefined> {
