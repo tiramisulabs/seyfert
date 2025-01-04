@@ -14,10 +14,7 @@ import type { UsingClient } from '../commands';
 import { type ObjectToLower, toCamelCase } from '../common';
 import { Formatter } from '../common';
 import type { EmojiResolvable } from '../common/types/resolvables';
-import type {
-	MessageCreateBodyRequest,
-	MessageUpdateBodyRequest,
-} from '../common/types/write';
+import type { MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../common/types/write';
 import type { ActionRowMessageComponents } from '../components';
 import { MessageActionRowComponent } from '../components/ActionRow';
 import type {
@@ -28,22 +25,14 @@ import type {
 	APIUser,
 	GatewayMessageCreateDispatchData,
 } from '../types';
-import type {
-	MessageWebhookMethodEditParams,
-	MessageWebhookMethodWriteParams,
-} from './Webhook';
+import type { MessageWebhookMethodEditParams, MessageWebhookMethodWriteParams } from './Webhook';
 import { DiscordBase } from './extra/DiscordBase';
 
 export type MessageData = APIMessage | GatewayMessageCreateDispatchData;
 
 export interface BaseMessage
 	extends DiscordBase,
-		ObjectToLower<
-			Omit<
-				MessageData,
-				'timestamp' | 'author' | 'mentions' | 'components' | 'poll' | 'embeds'
-			>
-		> {
+		ObjectToLower<Omit<MessageData, 'timestamp' | 'author' | 'mentions' | 'components' | 'poll' | 'embeds'>> {
 	timestamp?: number;
 	guildId?: string;
 	author: UserStructure;
@@ -66,9 +55,8 @@ export class BaseMessage extends DiscordBase {
 			channels: data.mention_channels ?? [],
 			users: [],
 		};
-		this.components =
-			data.components?.map((x) => new MessageActionRowComponent(x)) ?? [];
-		this.embeds = data.embeds.map((embed) => new InMessageEmbed(embed));
+		this.components = data.components?.map(x => new MessageActionRowComponent(x)) ?? [];
+		this.embeds = data.embeds.map(embed => new InMessageEmbed(embed));
 		this.patch(data);
 	}
 
@@ -77,20 +65,11 @@ export class BaseMessage extends DiscordBase {
 	}
 
 	createComponentCollector(options?: ListenerOptions) {
-		return this.client.components.createComponentCollector(
-			this.id,
-			this.channelId,
-			this.guildId,
-			options
-		);
+		return this.client.components.createComponentCollector(this.id, this.channelId, this.guildId, options);
 	}
 
 	get url() {
-		return Formatter.messageLink(
-			this.guildId ?? this.messageReference?.guildId ?? '@me',
-			this.channelId,
-			this.id
-		);
+		return Formatter.messageLink(this.guildId ?? this.messageReference?.guildId ?? '@me', this.channelId, this.id);
 	}
 
 	async guild(force = false): Promise<GuildStructure<'api'> | undefined> {
@@ -116,50 +95,34 @@ export class BaseMessage extends DiscordBase {
 		}
 
 		if ('member' in data && data.member) {
-			this.member = Transformers.GuildMember(
-				this.client,
-				data.member,
-				data.author,
-				this.guildId!
-			);
+			this.member = Transformers.GuildMember(this.client, data.member, data.author, this.guildId!);
 		}
 
 		if (data.mentions?.length) {
 			this.mentions.users = this.guildId
-				? data.mentions.map((m) =>
+				? data.mentions.map(m =>
 						Transformers.GuildMember(
 							this.client,
 							{
-								...(m as APIUser & { member?: Omit<APIGuildMember, 'user'> })
-									.member!,
+								...(m as APIUser & { member?: Omit<APIGuildMember, 'user'> }).member!,
 								user: m,
 							},
 							m,
-							this.guildId!
-						)
-				  )
-				: data.mentions.map((u) => Transformers.User(this.client, u));
+							this.guildId!,
+						),
+					)
+				: data.mentions.map(u => Transformers.User(this.client, u));
 		}
 
 		if (data.poll) {
-			this.poll = Transformers.Poll(
-				this.client,
-				data.poll,
-				this.channelId,
-				this.id
-			);
+			this.poll = Transformers.Poll(this.client, data.poll, this.channelId, this.id);
 		}
 	}
 }
 
 export interface Message
 	extends BaseMessage,
-		ObjectToLower<
-			Omit<
-				MessageData,
-				'timestamp' | 'author' | 'mentions' | 'components' | 'poll' | 'embeds'
-			>
-		> {}
+		ObjectToLower<Omit<MessageData, 'timestamp' | 'author' | 'mentions' | 'components' | 'poll' | 'embeds'>> {}
 
 export class Message extends BaseMessage {
 	constructor(client: UsingClient, data: MessageData) {
@@ -170,10 +133,7 @@ export class Message extends BaseMessage {
 		return this.client.messages.fetch(this.id, this.channelId, force);
 	}
 
-	reply(
-		body: Omit<MessageCreateBodyRequest, 'message_reference'>,
-		fail = true
-	): Promise<MessageStructure> {
+	reply(body: Omit<MessageCreateBodyRequest, 'message_reference'>, fail = true): Promise<MessageStructure> {
 		return this.write({
 			...body,
 			message_reference: {
@@ -202,10 +162,7 @@ export class Message extends BaseMessage {
 	}
 }
 
-export type EditMessageWebhook = Omit<
-	MessageWebhookMethodEditParams,
-	'messageId'
->['body'] &
+export type EditMessageWebhook = Omit<MessageWebhookMethodEditParams, 'messageId'>['body'] &
 	Pick<MessageWebhookMethodEditParams, 'query'>;
 export type WriteMessageWebhook = MessageWebhookMethodWriteParams['body'] &
 	Pick<MessageWebhookMethodWriteParams, 'query'>;
@@ -215,7 +172,7 @@ export class WebhookMessage extends BaseMessage {
 		client: UsingClient,
 		data: MessageData,
 		readonly webhookId: string,
-		readonly webhookToken: string
+		readonly webhookToken: string,
 	) {
 		super(client, data);
 	}
@@ -225,12 +182,7 @@ export class WebhookMessage extends BaseMessage {
 	}
 
 	fetch(): Promise<WebhookMessageStructure> {
-		return this.client.webhooks.fetchMessage(
-			this.webhookId,
-			this.webhookToken,
-			this.id,
-			this.thread?.id
-		);
+		return this.client.webhooks.fetchMessage(this.webhookId, this.webhookToken, this.id, this.thread?.id);
 	}
 
 	edit(body: EditMessageWebhook): Promise<WebhookMessageStructure> {
@@ -244,23 +196,14 @@ export class WebhookMessage extends BaseMessage {
 
 	write(body: WriteMessageWebhook): Promise<WebhookMessageStructure | null> {
 		const { query, ...rest } = body;
-		return this.client.webhooks.writeMessage(
-			this.webhookId,
-			this.webhookToken,
-			{
-				body: rest,
-				query,
-			}
-		);
+		return this.client.webhooks.writeMessage(this.webhookId, this.webhookToken, {
+			body: rest,
+			query,
+		});
 	}
 
 	delete(reason?: string) {
-		return this.client.webhooks.deleteMessage(
-			this.webhookId,
-			this.webhookToken,
-			this.id,
-			reason
-		);
+		return this.client.webhooks.deleteMessage(this.webhookId, this.webhookToken, this.id, reason);
 	}
 }
 
