@@ -12,7 +12,7 @@ describe('PermissionsBitField', () => {
 	test('add', () => {
 		const p = new PermissionsBitField(['CreateEvents']);
 		p.add(['AttachFiles']);
-		p.add('ChangeNickname');
+		p.add(['ChangeNickname']);
 		assert.equal(
 			p.bits,
 			PermissionFlagsBits.CreateEvents | PermissionFlagsBits.AttachFiles | PermissionFlagsBits.ChangeNickname,
@@ -21,14 +21,14 @@ describe('PermissionsBitField', () => {
 
 	test('remove', () => {
 		const p = new PermissionsBitField(['CreateEvents']);
-		p.remove('CreateEvents');
+		p.remove(['CreateEvents']);
 		assert.equal(p.bits, BitField.None);
 	});
 
 	test('keys', () => {
 		const p = new PermissionsBitField(['CreateEvents', 'Administrator']);
 		p.add(['AttachFiles']);
-		p.add('ChangeNickname');
+		p.add(['ChangeNickname']);
 
 		const keys = ['CreateEvents', 'Administrator', 'AttachFiles', 'ChangeNickname'];
 		assert.equal(
@@ -40,7 +40,7 @@ describe('PermissionsBitField', () => {
 
 	test('values', () => {
 		const p = new PermissionsBitField(['CreateEvents']);
-		p.add('Administrator');
+		p.add(['Administrator']);
 		p.add(['ChangeNickname']);
 		assert.deepEqual(p.values(), [
 			PermissionFlagsBits.Administrator,
@@ -51,15 +51,15 @@ describe('PermissionsBitField', () => {
 
 	test('missings', () => {
 		const p = new PermissionsBitField(['CreateEvents']);
-		p.add('Administrator');
+		p.add(['Administrator']);
 		p.add(['ChangeNickname']);
-		assert.deepEqual(p.missings('Connect'), [PermissionFlagsBits.Connect]);
+		assert.deepEqual(p.missings(['Connect']), [PermissionFlagsBits.Connect]);
 	});
 
 	test('equals', () => {
 		const p = new PermissionsBitField(['CreateEvents']);
 		p.add(['ChangeNickname']);
 		assert.deepEqual(p.equals(['ChangeNickname', 'CreateEvents']), true);
-		assert.deepEqual(p.equals('Connect'), false);
+		assert.deepEqual(p.equals(['Connect']), false);
 	});
 });

@@ -242,18 +242,18 @@ export class GuildMember extends BaseGuildMember {
 	}
 
 	async bannable(force = false) {
-		return (await this.manageable(force)) && (await this.__me!.fetchPermissions(force)).has('BanMembers');
+		return (await this.manageable(force)) && (await this.__me!.fetchPermissions(force)).has(['BanMembers']);
 	}
 
 	async kickable(force = false) {
-		return (await this.manageable(force)) && (await this.__me!.fetchPermissions(force)).has('KickMembers');
+		return (await this.manageable(force)) && (await this.__me!.fetchPermissions(force)).has(['KickMembers']);
 	}
 
 	async moderatable(force = false) {
 		return (
-			!(await this.roles.permissions(force)).has('Administrator') &&
+			!(await this.roles.permissions(force)).has(['Administrator']) &&
 			(await this.manageable(force)) &&
-			(await this.__me!.fetchPermissions(force)).has('KickMembers')
+			(await this.__me!.fetchPermissions(force)).has(['KickMembers'])
 		);
 	}
 }
