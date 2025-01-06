@@ -6,7 +6,7 @@ export type ClientNameEvents = Extract<keyof ClientEvents, string>;
 export type CustomEventsKeys = Extract<keyof CustomEvents, string>;
 
 export interface ClientDataEvent {
-	name: ClientNameEvents;
+	name: ClientNameEvents | CustomEventsKeys;
 	once: boolean;
 }
 

@@ -154,19 +154,19 @@ export class ChannelShorter extends BaseShorter {
 	async memberPermissions(channelId: string, member: GuildMember, checkAdmin = true): Promise<PermissionsBitField> {
 		const memberPermissions = await member.fetchPermissions();
 
-		if (checkAdmin && memberPermissions.has(PermissionFlagsBits.Administrator)) {
+		if (checkAdmin && memberPermissions.has([PermissionFlagsBits.Administrator])) {
 			return new PermissionsBitField(PermissionsBitField.All);
 		}
 
 		const overwrites = await this.overwritesFor(channelId, member);
 		const permissions = new PermissionsBitField(memberPermissions.bits);
 
-		permissions.remove(overwrites.everyone?.deny.bits ?? 0n);
-		permissions.add(overwrites.everyone?.allow.bits ?? 0n);
-		permissions.remove(overwrites.roles.length > 0 ? overwrites.roles.map(role => role.deny.bits) : 0n);
-		permissions.add(overwrites.roles.length > 0 ? overwrites.roles.map(role => role.allow.bits) : 0n);
-		permissions.remove(overwrites.member?.deny.bits ?? 0n);
-		permissions.add(overwrites.member?.allow.bits ?? 0n);
+		permissions.remove([overwrites.everyone?.deny.bits ?? 0n]);
+		permissions.add([overwrites.everyone?.allow.bits ?? 0n]);
+		permissions.remove(overwrites.roles.length > 0 ? overwrites.roles.map(role => role.deny.bits) : [0n]);
+		permissions.add(overwrites.roles.length > 0 ? overwrites.roles.map(role => role.allow.bits) : [0n]);
+		permissions.remove([overwrites.member?.deny.bits ?? 0n]);
+		permissions.add([overwrites.member?.allow.bits ?? 0n]);
 		return permissions;
 	}
 
@@ -195,7 +195,7 @@ export class ChannelShorter extends BaseShorter {
 	}
 
 	async rolePermissions(channelId: string, role: GuildRole, checkAdmin = true): Promise<PermissionsBitField> {
-		if (checkAdmin && role.permissions.has(PermissionFlagsBits.Administrator)) {
+		if (checkAdmin && role.permissions.has([PermissionFlagsBits.Administrator])) {
 			return new PermissionsBitField(PermissionsBitField.All);
 		}
 		const channelOverwrites = (await this.client.cache.overwrites?.get(channelId)) ?? [];
@@ -204,10 +204,10 @@ export class ChannelShorter extends BaseShorter {
 		const roleOverwrites = channelOverwrites.find(x => x.id === role.id);
 		const permissions = new PermissionsBitField(role.permissions.bits);
 
-		permissions.remove(everyoneOverwrites?.deny.bits ?? 0n);
-		permissions.add(everyoneOverwrites?.allow.bits ?? 0n);
-		permissions.remove(roleOverwrites?.deny.bits ?? 0n);
-		permissions.add(roleOverwrites?.allow.bits ?? 0n);
+		permissions.remove([everyoneOverwrites?.deny.bits ?? 0n]);
+		permissions.add([everyoneOverwrites?.allow.bits ?? 0n]);
+		permissions.remove([roleOverwrites?.deny.bits ?? 0n]);
+		permissions.add([roleOverwrites?.allow.bits ?? 0n]);
 		return permissions;
 	}
 
