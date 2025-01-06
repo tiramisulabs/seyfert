@@ -15,7 +15,7 @@ export type CallbackEventHandler = {
 } & {
 	[K in keyof CustomEvents]: (...data: [Parameters<CustomEvents[K]>, UsingClient, number]) => unknown;
 };
-export type EventContext<T extends { data: { name: ClientNameEvents } }> = Parameters<
+export type EventContext<T extends { data: { name: ClientNameEvents | CustomEventsKeys } }> = Parameters<
 	CallbackEventHandler[T['data']['name']]
 >;
 export interface ClientEvent {
