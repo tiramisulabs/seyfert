@@ -29,6 +29,7 @@ import {
 	type LocaleString,
 } from '../../types';
 import type { Groups, RegisteredMiddlewares } from '../decorators';
+import type { CommandOptionWithType } from '../handle';
 import type { CommandContext } from './chatcontext';
 import type {
 	ExtraProps,
@@ -124,7 +125,7 @@ export class BaseCommand {
 	name_localizations?: Partial<Record<LocaleString, string>>;
 	description_localizations?: Partial<Record<LocaleString, string>>;
 
-	options?: CommandOption[] | SubCommand[];
+	options?: CommandOptionWithType[] | SubCommand[];
 
 	ignore?: IgnoreCommand;
 
@@ -344,7 +345,7 @@ export class Command extends BaseCommand {
 export abstract class SubCommand extends BaseCommand {
 	type = ApplicationCommandOptionType.Subcommand;
 	group?: string;
-	declare options?: CommandOption[];
+	declare options?: CommandOptionWithType[];
 
 	toJSON() {
 		return {
