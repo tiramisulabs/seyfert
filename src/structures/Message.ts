@@ -72,9 +72,14 @@ export class BaseMessage extends DiscordBase {
 		return Formatter.messageLink(this.guildId ?? '@me', this.channelId, this.id);
 	}
 
-	async guild(force = false): Promise<GuildStructure<'api'> | undefined> {
-		if (!this.guildId) return;
-		return this.client.guilds.fetch(this.guildId, force);
+	async guild(mode?: 'rest' | 'flow' | 'cache'): Promise<GuildStructure<'api' | 'cached'> | undefined> {
+		if (!this.guildId) return Promise.resolve(undefined);
+		switch (mode) {
+			case 'cache':
+				return this.client.cache?.guilds?.get(this.guildId) as any;
+			default:
+				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+		}
 	}
 
 	channel(force = false): Promise<AllChannels> {
