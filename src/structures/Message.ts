@@ -1,4 +1,4 @@
-import { type AllChannels, Embed } from '..';
+import { type AllChannels, Embed, ReturnCache } from '..';
 import type { ListenerOptions } from '../builders';
 import {
 	type GuildMemberStructure,
@@ -72,9 +72,19 @@ export class BaseMessage extends DiscordBase {
 		return Formatter.messageLink(this.guildId ?? '@me', this.channelId, this.id);
 	}
 
-	async guild(force = false): Promise<GuildStructure<'api'> | undefined> {
-		if (!this.guildId) return;
-		return this.client.guilds.fetch(this.guildId, force);
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
+	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		if (!this.guildId)
+			return (
+				mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve()
+			) as any;
+		switch (mode) {
+			case 'cache':
+				return this.client.cache.guilds?.get(this.guildId);
+			default:
+				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+		}
 	}
 
 	channel(force = false): Promise<AllChannels> {
