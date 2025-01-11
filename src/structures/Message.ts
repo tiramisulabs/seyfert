@@ -1,4 +1,4 @@
-import { type AllChannels, Embed, ReturnCache } from '..';
+import { type AllChannels, Embed, type ReturnCache } from '..';
 import type { ListenerOptions } from '../builders';
 import {
 	type GuildMemberStructure,
