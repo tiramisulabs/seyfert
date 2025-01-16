@@ -1,4 +1,6 @@
 {
 	"typescript.tsdk": "node_modules/typescript/lib",
-	"editor.defaultFormatter": "biomejs.biome"
+	"[typescript]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
 }
