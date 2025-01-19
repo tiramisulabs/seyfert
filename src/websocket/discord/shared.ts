@@ -133,6 +133,9 @@ export interface ShardOptions extends ShardDetails {
 export enum ShardSocketCloseCodes {
 	Shutdown = 3000,
 	ZombiedConnection = 3010,
+	Reconnect = 3020,
+	Resharding = 3030,
+	ShutdownAll = 3040,
 }
 
 export interface WorkerData {

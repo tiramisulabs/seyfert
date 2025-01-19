@@ -1,13 +1,19 @@
 import { inflateSync } from 'node:zlib';
 import { LogLevels, Logger, type MakeRequired, MergeOptions, hasIntent } from '../../common';
 import {
+	type APIGuildMember,
 	GatewayCloseCodes,
 	GatewayDispatchEvents,
 	type GatewayDispatchPayload,
+	type GatewayGuildMembersChunkPresence,
 	GatewayOpcodes,
 	type GatewayReceivePayload,
 	type GatewaySendPayload,
 } from '../../types';
+import type {
+	GatewayRequestGuildMembersDataWithQuery,
+	GatewayRequestGuildMembersDataWithUserIds,
+} from '../../types/gateway';
 import { properties } from '../constants';
 import { DynamicBucket } from '../structures';
 import { ConnectTimeout } from '../structures/timeout';
@@ -42,6 +48,18 @@ export class Shard {
 	pendingGuilds = new Set<string>();
 	options: MakeRequired<ShardOptions, 'properties' | 'ratelimitOptions'>;
 	isReady = false;
+	private requestGuildMembersChunk = new Map<
+		string,
+		{
+			members: APIGuildMember[];
+			presences: GatewayGuildMembersChunkPresence[];
+			resolve: (value: {
+				members: APIGuildMember[];
+				presences: GatewayGuildMembersChunkPresence[];
+			}) => void;
+			reject: (reason?: any) => void;
+		}
+	>();
 
 	constructor(
 		public id: number,
@@ -198,14 +216,14 @@ export class Shard {
 		);
 	}
 
-	disconnect() {
+	disconnect(code = ShardSocketCloseCodes.Shutdown) {
 		this.debugger?.info(`[Shard #${this.id}] Disconnecting`);
-		this.close(ShardSocketCloseCodes.Shutdown, 'Shard down request');
+		this.close(code, 'Shard down request');
 	}
 
 	async reconnect() {
 		this.debugger?.info(`[Shard #${this.id}] Reconnecting`);
-		this.disconnect();
+		this.disconnect(ShardSocketCloseCodes.Reconnect);
 		await this.connect();
 	}
 
@@ -300,6 +318,29 @@ export class Shard {
 								this.options.handlePayload(this.id, packet);
 							}
 							break;
+						case GatewayDispatchEvents.GuildMembersChunk:
+							{
+								if (!packet.d.nonce) {
+									this.options.handlePayload(this.id, packet);
+									break;
+								}
+								const guildMemberChunk = this.requestGuildMembersChunk.get(packet.d.nonce);
+								if (!guildMemberChunk) {
+									this.options.handlePayload(this.id, packet);
+									break;
+								}
+								guildMemberChunk.members.push(...packet.d.members);
+								if (packet.d.presences) guildMemberChunk.presences.push(...packet.d.presences);
+								if (packet.d.chunk_index + 1 === packet.d.chunk_count) {
+									this.requestGuildMembersChunk.delete(packet.d.nonce);
+									guildMemberChunk.resolve({
+										members: guildMemberChunk.members,
+										presences: guildMemberChunk.presences,
+									});
+								}
+								this.options.handlePayload(this.id, packet);
+							}
+							break;
 						default:
 							this.options.handlePayload(this.id, packet);
 							break;
@@ -307,6 +348,48 @@ export class Shard {
 				}
 				break;
 		}
+	}
+
+	async requestGuildMember(
+		options:
+			| Omit<GatewayRequestGuildMembersDataWithQuery, 'nonce'>
+			| Omit<GatewayRequestGuildMembersDataWithUserIds, 'nonce'>,
+	) {
+		const nonce = Date.now().toString() + Math.random().toString(36);
+
+		let resolve: (value: {
+			members: APIGuildMember[];
+			presences: GatewayGuildMembersChunkPresence[];
+		}) => void = () => {
+			//
+		};
+		let reject: (reason?: any) => void = () => {
+			//
+		};
+
+		const promise = new Promise<{
+			members: APIGuildMember[];
+			presences: GatewayGuildMembersChunkPresence[];
+		}>((res, rej) => {
+			resolve = res;
+			reject = rej;
+		});
+		this.requestGuildMembersChunk.set(nonce, {
+			members: [],
+			presences: [],
+			reject,
+			resolve,
+		});
+
+		this.send(false, {
+			op: GatewayOpcodes.RequestGuildMembers,
+			d: {
+				...options,
+				nonce,
+			},
+		});
+
+		return promise;
 	}
 
 	protected async handleClosed(close: { code: number; reason: string }) {
