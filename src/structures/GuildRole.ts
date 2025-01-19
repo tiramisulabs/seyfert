@@ -1,3 +1,4 @@
+import type { ReturnCache } from '../../src';
 import type { GuildRoleStructure, GuildStructure } from '../client';
 import type { UsingClient } from '../commands';
 import { Formatter, type MethodContext, type ObjectToLower } from '../common';
@@ -23,9 +24,18 @@ export class GuildRole extends DiscordBase {
 		this.permissions = new PermissionsBitField(BigInt(data.permissions));
 	}
 
-	async guild(force = false): Promise<GuildStructure<'api'> | undefined> {
-		if (!this.guildId) return;
-		return this.client.guilds.fetch(this.guildId, force);
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
+	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.guilds?.get(this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+		}
 	}
 
 	fetch(force = false): Promise<GuildRoleStructure> {

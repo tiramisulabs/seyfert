@@ -150,7 +150,7 @@ export class CommandContext<
 		return (this.messageResponse = (await this.messageResponse!.fetch()) as never);
 	}
 
-	channel(mode?: 'rest' | 'flow'): Promise<If<InferWithPrefix, AllChannels | undefined, AllChannels>>;
+	channel(mode?: 'rest' | 'flow'): Promise<AllChannels>;
 	channel(mode: 'cache'): ReturnCache<If<InferWithPrefix, AllChannels | undefined, AllChannels>>;
 	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (this.interaction && mode === 'cache')
@@ -166,7 +166,7 @@ export class CommandContext<
 		}
 	}
 
-	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
+	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure | undefined>;
 	me(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
 	me(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (!this.guildId)
@@ -186,11 +186,7 @@ export class CommandContext<
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (!this.guildId)
-			return (mode === 'cache'
-				? this.client.cache.adapter.isAsync
-					? Promise.resolve()
-					: undefined
-				: Promise.resolve()) as unknown as undefined;
+			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
 		switch (mode) {
 			case 'cache':
 				return (

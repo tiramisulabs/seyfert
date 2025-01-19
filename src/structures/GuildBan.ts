@@ -1,3 +1,4 @@
+import type { ReturnCache } from '../../src';
 import type { GuildBanStructure, GuildStructure } from '../client';
 import type { UsingClient } from '../commands';
 import { Formatter, type MethodContext, type ObjectToLower } from '../common';
@@ -24,8 +25,18 @@ export class GuildBan extends DiscordBase {
 		return this.client.bans.remove(this.guildId, this.id, reason);
 	}
 
-	guild(force = false): Promise<GuildStructure<'api'>> {
-		return this.client.guilds.fetch(this.guildId, force);
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
+	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.guilds?.get(this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+		}
 	}
 
 	fetch(force = false): Promise<GuildBanStructure> {

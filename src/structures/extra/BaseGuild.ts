@@ -1,4 +1,6 @@
 import type { WorkerClient } from '../..';
+import type { ReturnCache } from '../../../src';
+import type { GuildStructure } from '../../client';
 import { type ObjectToLower, calculateShardId } from '../../common';
 import type { ImageOptions } from '../../common/types/options';
 import { type APIPartialGuild, GuildFeature } from '../../types';
@@ -31,9 +33,18 @@ export class BaseGuild extends DiscordBase<APIPartialGuild> {
 	/**
 	 * Fetch guild on API
 	 */
-	async fetch() {
-		const data = await this.api.guilds(this.id).get();
-		return new BaseGuild(this.client, data);
+	fetch(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
+	fetch(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	fetch(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.guilds?.get(this.id) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.guilds.fetch(this.id, mode === 'rest');
+		}
 	}
 
 	/**

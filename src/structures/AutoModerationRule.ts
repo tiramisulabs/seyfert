@@ -1,3 +1,4 @@
+import type { ReturnCache } from '../../src';
 import type { AutoModerationRuleStructure, GuildMemberStructure, GuildStructure } from '../client';
 import type { UsingClient } from '../commands';
 import type { MethodContext, ObjectToLower } from '../common';
@@ -19,8 +20,18 @@ export class AutoModerationRule extends DiscordBase<APIAutoModerationRule> {
 		return this.client.members.fetch(this.guildId, this.creatorId, force);
 	}
 
-	guild(force = false): Promise<GuildStructure<'api'>> {
-		return this.client.guilds.fetch(this.guildId, force);
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
+	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow'): any {
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.guilds?.get(this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+		}
 	}
 
 	fetch(): Promise<AutoModerationRuleStructure> {

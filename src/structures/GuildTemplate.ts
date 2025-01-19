@@ -1,3 +1,4 @@
+import type { ReturnCache } from '../../src';
 import type { GuildStructure, GuildTemplateStructure } from '../client';
 import type { UsingClient } from '../commands';
 import type { MethodContext, ObjectToLower } from '../common';
@@ -12,8 +13,18 @@ export class GuildTemplate extends Base {
 		this.__patchThis(data);
 	}
 
-	guild(force = false): Promise<GuildStructure<'api'>> {
-		return this.client.guilds.fetch(this.sourceGuildId, force);
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
+	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.guilds?.get(this.sourceGuildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.guilds.fetch(this.sourceGuildId, mode === 'rest');
+		}
 	}
 
 	fetch(): Promise<GuildTemplateStructure> {

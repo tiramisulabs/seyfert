@@ -7,6 +7,7 @@ export type GuildMemberData =
 	| GatewayGuildMemberAddDispatchData
 	| APIInteractionDataResolvedGuildMember;
 
+import type { ReturnCache } from '../../src';
 import {
 	type DMChannelStructure,
 	type GuildMemberStructure,
@@ -59,8 +60,18 @@ export class BaseGuildMember extends DiscordBase {
 		this.patch(data);
 	}
 
-	guild(force = false): Promise<GuildStructure<'api'>> {
-		return this.client.guilds.fetch(this.guildId, force);
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
+	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.guilds?.get(this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+		}
 	}
 
 	fetch(force = false): Promise<GuildMemberStructure> {

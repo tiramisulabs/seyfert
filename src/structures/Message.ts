@@ -81,14 +81,27 @@ export class BaseMessage extends DiscordBase {
 			) as any;
 		switch (mode) {
 			case 'cache':
-				return this.client.cache.guilds?.get(this.guildId);
+				return (
+					this.client.cache.guilds?.get(this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
 			default:
 				return this.client.guilds.fetch(this.guildId, mode === 'rest');
 		}
 	}
 
-	channel(force = false): Promise<AllChannels> {
-		return this.client.channels.fetch(this.channelId, force);
+	channel(mode?: 'rest' | 'flow'): Promise<AllChannels>;
+	channel(mode: 'cache'): ReturnCache<AllChannels | undefined>;
+	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.channels?.get(this.channelId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.channels.fetch(this.channelId, mode === 'rest');
+		}
 	}
 
 	react(emoji: EmojiResolvable) {

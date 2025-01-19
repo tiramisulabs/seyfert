@@ -84,8 +84,18 @@ export class BaseNoEditableChannel<T extends ChannelType> extends DiscordBase<AP
 		return Formatter.channelLink(this.id);
 	}
 
-	fetch(force = false): Promise<AllChannels> {
-		return this.client.channels.fetch(this.id, force);
+	fetch(mode?: 'rest' | 'flow'): Promise<AllChannels>;
+	fetch(mode: 'cache'): ReturnCache<AllChannels | undefined>;
+	fetch(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.channels?.get(this.id) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.channels.fetch(this.id, mode === 'rest');
+		}
 	}
 
 	delete(reason?: string): Promise<AllChannels> {
@@ -195,6 +205,7 @@ interface IChannelTypes {
 
 export interface BaseGuildChannel extends ObjectToLower<Omit<APIGuildChannel<ChannelType>, 'permission_overwrites'>> {}
 export class BaseGuildChannel extends BaseChannel<ChannelType> {
+	declare guildId: string;
 	constructor(client: UsingClient, data: APIGuildChannel<ChannelType>) {
 		const { permission_overwrites, ...rest } = data;
 		super(client, rest);
@@ -225,8 +236,18 @@ export class BaseGuildChannel extends BaseChannel<ChannelType> {
 		return this.client.channels.overwritesFor(this.id, member);
 	}
 
-	guild(force = false): Promise<GuildStructure<'api'>> {
-		return this.client.guilds.fetch(this.guildId!, force);
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
+	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.guilds?.get(this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+		}
 	}
 
 	get url() {
@@ -341,7 +362,7 @@ export class MessagesMethods extends DiscordBase {
 }
 
 export interface TextBaseGuildChannel
-	extends ObjectToLower<Omit<APITextChannel, 'type' | 'permission_overwrites'>>,
+	extends ObjectToLower<Omit<APITextChannel, 'type' | 'permission_overwrites' | 'guild_id'>>,
 		MessagesMethods {}
 @mix(MessagesMethods)
 export class TextBaseGuildChannel extends BaseGuildChannel {}
@@ -491,7 +512,7 @@ export class WebhookChannelMethods extends DiscordBase {
 }
 
 export interface TextGuildChannel
-	extends ObjectToLower<Omit<APITextChannel, 'type' | 'permission_overwrites'>>,
+	extends ObjectToLower<Omit<APITextChannel, 'type' | 'permission_overwrites' | 'guild_id'>>,
 		BaseGuildChannel,
 		TextBaseGuildChannel,
 		WebhookChannelMethods {}
@@ -506,26 +527,30 @@ export class DMChannel extends BaseNoEditableChannel<ChannelType.DM> {
 	declare type: ChannelType.DM;
 }
 export interface VoiceChannel
-	extends ObjectToLower<Omit<APIGuildVoiceChannel, 'permission_overwrites'>>,
+	extends ObjectToLower<Omit<APIGuildVoiceChannel, 'permission_overwrites' | 'guild_id'>>,
 		Omit<TextGuildChannel, keyof BaseGuildChannel>,
 		VoiceChannelMethods,
-		WebhookChannelMethods {}
+		WebhookChannelMethods {
+	guildId: string;
+}
 @mix(TextGuildChannel, VoiceChannelMethods)
 export class VoiceChannel extends BaseGuildChannel {
 	declare type: ChannelType.GuildVoice;
 }
 
 export interface StageChannel
-	extends ObjectToLower<Omit<APIGuildStageVoiceChannel, 'type' | 'permission_overwrites'>>,
+	extends ObjectToLower<Omit<APIGuildStageVoiceChannel, 'type' | 'permission_overwrites' | 'guild_id'>>,
 		TopicableGuildChannel,
-		VoiceChannelMethods {}
+		VoiceChannelMethods {
+	guildId: string;
+}
 @mix(TopicableGuildChannel, VoiceChannelMethods)
 export class StageChannel extends BaseGuildChannel {
 	declare type: ChannelType.GuildStageVoice;
 }
 
 export interface MediaChannel
-	extends ObjectToLower<Omit<APIGuildMediaChannel, 'type' | 'permission_overwrites'>>,
+	extends ObjectToLower<Omit<APIGuildMediaChannel, 'type' | 'permission_overwrites' | 'guild_id'>>,
 		ThreadOnlyMethods {}
 @mix(ThreadOnlyMethods)
 export class MediaChannel extends BaseGuildChannel {
@@ -533,7 +558,7 @@ export class MediaChannel extends BaseGuildChannel {
 }
 
 export interface ForumChannel
-	extends ObjectToLower<Omit<APIGuildForumChannel, 'permission_overwrites'>>,
+	extends ObjectToLower<Omit<APIGuildForumChannel, 'permission_overwrites' | 'guild_id'>>,
 		Omit<ThreadOnlyMethods, 'type' | 'edit'>,
 		WebhookChannelMethods {}
 @mix(ThreadOnlyMethods, WebhookChannelMethods)
@@ -542,7 +567,7 @@ export class ForumChannel extends BaseGuildChannel {
 }
 
 export interface ThreadChannel
-	extends ObjectToLower<Omit<APIThreadChannel, 'permission_overwrites'>>,
+	extends ObjectToLower<Omit<APIThreadChannel, 'permission_overwrites' | 'guild_id'>>,
 		Omit<TextBaseGuildChannel, 'edit' | 'parentId'> {}
 @mix(TextBaseGuildChannel)
 export class ThreadChannel extends BaseChannel<
@@ -602,7 +627,8 @@ export class ThreadChannel extends BaseChannel<
 	}
 }
 
-export interface CategoryChannel extends ObjectToLower<Omit<APIGuildCategoryChannel, 'permission_overwrites'>> {}
+export interface CategoryChannel
+	extends ObjectToLower<Omit<APIGuildCategoryChannel, 'permission_overwrites' | 'guild_id'>> {}
 
 export class CategoryChannel extends (BaseGuildChannel as unknown as ToClass<
 	Omit<BaseGuildChannel, 'setParent' | 'type'>,
@@ -612,7 +638,7 @@ export class CategoryChannel extends (BaseGuildChannel as unknown as ToClass<
 }
 
 export interface NewsChannel
-	extends ObjectToLower<Omit<APINewsChannel, 'permission_overwrites'>>,
+	extends ObjectToLower<Omit<APINewsChannel, 'permission_overwrites' | 'guild_id'>>,
 		WebhookChannelMethods,
 		Omit<TextGuildChannel, keyof BaseGuildChannel> {}
 @mix(TextGuildChannel, WebhookChannelMethods)

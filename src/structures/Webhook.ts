@@ -1,3 +1,4 @@
+import type { ReturnCache } from '../../src';
 import {
 	type AnonymousGuildStructure,
 	type GuildStructure,
@@ -66,9 +67,20 @@ export class Webhook extends DiscordBase {
 	 * @param force Whether to force fetching the guild even if it's already cached.
 	 * @returns A promise that resolves to the guild associated with the webhook, or undefined if not applicable.
 	 */
-	async guild(force = false): Promise<GuildStructure<'api'> | undefined> {
-		if (!this.sourceGuild?.id) return;
-		return this.client.guilds.fetch(this.sourceGuild.id, force);
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
+	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		if (!this.guildId)
+			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.guilds?.get(this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+		}
 	}
 
 	/**
@@ -76,9 +88,18 @@ export class Webhook extends DiscordBase {
 	 * @param force Whether to force fetching the channel even if it's already cached.
 	 * @returns A promise that resolves to the channel associated with the webhook, or undefined if not applicable.
 	 */
-	async channel(force = false): Promise<AllChannels | undefined> {
-		if (!this.sourceChannel?.id) return;
-		return this.client.channels.fetch(this.sourceChannel.id, force);
+	channel(mode?: 'rest' | 'flow'): Promise<AllChannels>;
+	channel(mode: 'cache'): ReturnCache<AllChannels | undefined>;
+	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.channels?.get(this.channelId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.channels.fetch(this.channelId, mode === 'rest');
+		}
 	}
 
 	/**

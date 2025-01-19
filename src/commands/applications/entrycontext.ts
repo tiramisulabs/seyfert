@@ -89,19 +89,22 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 	channel(mode?: 'rest' | 'flow'): Promise<AllChannels>;
 	channel(mode: 'cache'): ReturnCache<AllChannels>;
 	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
-		if (this.interaction.channel && mode === 'cache')
+		if (mode === 'cache')
 			return this.client.cache.adapter.isAsync ? Promise.resolve(this.interaction.channel) : this.interaction.channel;
 		return this.client.channels.fetch(this.channelId, mode === 'rest');
 	}
 
-	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
+	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure | undefined>;
 	me(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
 	me(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (!this.guildId)
 			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
 		switch (mode) {
 			case 'cache':
-				return this.client.cache.members?.get(this.client.botId, this.guildId);
+				return (
+					this.client.cache.members?.get(this.client.botId, this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
 			default:
 				return this.client.members.fetch(this.guildId, this.client.botId, mode === 'rest');
 		}

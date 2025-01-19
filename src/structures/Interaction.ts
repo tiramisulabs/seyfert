@@ -42,6 +42,7 @@ import {
 	type RESTPostAPIInteractionCallbackResult,
 } from '../types';
 
+import type { ReturnCache } from '../../src';
 import type { RawFile } from '../api';
 import { ActionRow, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
 import {
@@ -364,8 +365,20 @@ export class BaseInteraction<
 		}
 	}
 
-	async fetchGuild(force = false): Promise<GuildStructure<'api'> | undefined> {
-		return this.guildId ? this.client.guilds.fetch(this.guildId, force) : undefined;
+	fetchGuild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
+	fetchGuild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	fetchGuild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		if (!this.guildId)
+			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.guilds?.get(this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+		}
 	}
 }
 
