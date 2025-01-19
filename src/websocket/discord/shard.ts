@@ -402,6 +402,9 @@ export class Shard {
 
 		switch (close.code) {
 			case ShardSocketCloseCodes.Shutdown:
+			case ShardSocketCloseCodes.Reconnect:
+			case ShardSocketCloseCodes.Resharding:
+			case ShardSocketCloseCodes.ShutdownAll:
 				//Force disconnect, ignore
 				break;
 			case 1000:
