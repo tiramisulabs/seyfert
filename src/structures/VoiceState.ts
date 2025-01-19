@@ -1,10 +1,9 @@
-import type { UserStructure, UsingClient, VoiceStateStructure } from '../';
+import type { AllGuildVoiceChannels, UserStructure, UsingClient, VoiceStateStructure } from '../';
 import type { GuildStructure, ReturnCache } from '../../src';
 import type { VoiceStateResource } from '../cache/resources/voice-states';
 import { type GuildMemberStructure, Transformers } from '../client/transformers';
 import type { ObjectToLower } from '../common';
 import type { APIVoiceState } from '../types';
-import type { AllChannels } from './channels';
 import { Base } from './extra/Base';
 
 export interface VoiceState extends Base, ObjectToLower<Omit<VoiceStateResource, 'member'>> {}
@@ -31,8 +30,8 @@ export class VoiceState extends Base {
 		return this.client.users.fetch(this.userId, force);
 	}
 
-	channel(mode?: 'rest' | 'flow'): Promise<AllChannels | undefined>;
-	channel(mode: 'cache'): ReturnCache<AllChannels | undefined>;
+	channel(mode?: 'rest' | 'flow'): Promise<AllGuildVoiceChannels | undefined>;
+	channel(mode: 'cache'): ReturnCache<AllGuildVoiceChannels | undefined>;
 	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (!this.channelId)
 			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
