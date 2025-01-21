@@ -106,10 +106,7 @@ export enum InteractionResponseType {
 /**
  * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-response-object-interaction-callback-data-structure
  */
-export type APIInteractionResponseCallbackData = Omit<
-	RESTPostAPIWebhookWithTokenJSONBody,
-	'avatar_url' | 'username'
-> & { flags?: MessageFlags };
+export type APIInteractionResponseCallbackData = Omit<RESTPostAPIWebhookWithTokenJSONBody, 'avatar_url' | 'username'>;
 
 export interface APICommandAutocompleteInteractionResponseCallbackData {
 	choices?: APIApplicationCommandOptionChoice[];
