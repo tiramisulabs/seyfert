@@ -94,8 +94,18 @@ export class BaseGuildMember extends DiscordBase {
 		return this.client.members.presence(this.id);
 	}
 
-	voice(force = false): Promise<VoiceStateStructure> {
-		return this.client.members.voice(this.guildId, this.id, force);
+	voice(mode?: 'rest' | 'flow'): Promise<VoiceStateStructure>;
+	voice(mode: 'cache'): ReturnCache<VoiceStateStructure | undefined>;
+	voice(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.voiceStates?.get(this.id, this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.members.voice(this.guildId, this.id, mode === 'rest');
+		}
 	}
 
 	toString() {
