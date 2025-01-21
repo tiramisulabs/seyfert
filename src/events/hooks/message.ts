@@ -60,10 +60,10 @@ export const MESSAGE_UPDATE = async (
 	return [Transformers.Message(self, data) as any, await self.cache.messages?.get(data.id)];
 };
 
-export const MESSAGE_POLL_VOTE_REMOVE = (_: UsingClient, data: GatewayMessagePollVoteRemoveDispatch) => {
+export const MESSAGE_POLL_VOTE_REMOVE = (_: UsingClient, data: GatewayMessagePollVoteRemoveDispatch['d']) => {
 	return toCamelCase(data);
 };
 
-export const MESSAGE_POLL_VOTE_ADD = (_: UsingClient, data: GatewayMessagePollVoteAddDispatch) => {
+export const MESSAGE_POLL_VOTE_ADD = (_: UsingClient, data: GatewayMessagePollVoteAddDispatch['d']) => {
 	return toCamelCase(data);
 };
