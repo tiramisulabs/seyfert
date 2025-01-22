@@ -7,7 +7,7 @@ export type GuildMemberData =
 	| GatewayGuildMemberAddDispatchData
 	| APIInteractionDataResolvedGuildMember;
 
-import type { ReturnCache } from '../../src';
+import type { ReturnCache } from '../';
 import {
 	type DMChannelStructure,
 	type GuildMemberStructure,
