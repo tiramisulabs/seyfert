@@ -25,7 +25,6 @@ import {
 	type MessageCreateBodyRequest,
 	type MethodContext,
 	type ObjectToLower,
-	type ToClass,
 } from '../common';
 import type {
 	APIGuildMember,
@@ -291,10 +290,7 @@ export interface InteractionGuildMember
  * Represents a guild member
  * @link https://discord.com/developers/docs/resources/guild#guild-member-object
  */
-export class InteractionGuildMember extends (GuildMember as unknown as ToClass<
-	Omit<GuildMember, 'deaf' | 'mute'>,
-	InteractionGuildMember
->) {
+export class InteractionGuildMember extends GuildMember {
 	permissions: PermissionsBitField;
 	constructor(
 		client: UsingClient,
