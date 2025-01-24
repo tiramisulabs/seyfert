@@ -1,4 +1,4 @@
-import type { ReturnCache } from '../..';
+import type { ReturnCache } from '../../cache';
 import type {
 	GuildMemberStructure,
 	GuildStructure,

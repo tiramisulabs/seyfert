@@ -1,6 +1,6 @@
 import type { GuildStructure, RawFile, StickerStructure, UsingClient } from '..';
-import type { ReturnCache } from '../../src';
 import type { Attachment, AttachmentBuilder } from '../builders';
+import type { ReturnCache } from '../cache';
 import { Transformers, type UserStructure } from '../client/transformers';
 import type { MethodContext, ObjectToLower } from '../common';
 import type { APISticker, RESTPatchAPIGuildStickerJSONBody, RESTPostAPIGuildStickerFormDataBody } from '../types';

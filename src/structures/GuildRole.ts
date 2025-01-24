@@ -1,4 +1,4 @@
-import type { ReturnCache } from '../../src';
+import type { ReturnCache } from '../cache';
 import type { GuildRoleStructure, GuildStructure } from '../client';
 import type { UsingClient } from '../commands';
 import { Formatter, type MethodContext, type ObjectToLower } from '../common';

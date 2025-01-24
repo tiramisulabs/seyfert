@@ -1,5 +1,11 @@
-import type { AllGuildVoiceChannels, UserStructure, UsingClient, VoiceStateStructure } from '../';
-import type { GuildStructure, ReturnCache } from '../../src';
+import type {
+	AllGuildVoiceChannels,
+	GuildStructure,
+	ReturnCache,
+	UserStructure,
+	UsingClient,
+	VoiceStateStructure,
+} from '../';
 import type { VoiceStateResource } from '../cache/resources/voice-states';
 import { type GuildMemberStructure, Transformers } from '../client/transformers';
 import type { ObjectToLower } from '../common';

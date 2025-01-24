@@ -1,4 +1,4 @@
-import type { ReturnCache } from '../../src';
+import type { ReturnCache } from '../cache';
 import {
 	type AnonymousGuildStructure,
 	type GuildStructure,

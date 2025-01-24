@@ -7,7 +7,7 @@ export type GuildMemberData =
 	| GatewayGuildMemberAddDispatchData
 	| APIInteractionDataResolvedGuildMember;
 
-import type { ReturnCache } from '../';
+import type { GuildRoleStructure, ReturnCache } from '../';
 import {
 	type DMChannelStructure,
 	type GuildMemberStructure,
@@ -38,7 +38,6 @@ import type {
 	RESTPutAPIGuildBanJSONBody,
 	RESTPutAPIGuildMemberJSONBody,
 } from '../types';
-import type { GuildRole } from './GuildRole';
 import { PermissionsBitField } from './extra/Permissions';
 
 export interface BaseGuildMember extends DiscordBase, ObjectToLower<Omit<APIGuildMember, 'user' | 'roles'>> {}
@@ -133,7 +132,7 @@ export class BaseGuildMember extends DiscordBase {
 	get roles() {
 		return {
 			keys: Object.freeze(this._roles.concat(this.guildId)) as string[],
-			list: (force = false): Promise<GuildRole[]> =>
+			list: (force = false): Promise<GuildRoleStructure[]> =>
 				this.client.roles
 					.list(this.guildId, force)
 					.then(roles => roles.filter(role => this.roles.keys.includes(role.id))),
@@ -141,9 +140,9 @@ export class BaseGuildMember extends DiscordBase {
 			remove: (id: string) => this.client.members.removeRole(this.guildId, this.id, id),
 			permissions: (force = false) =>
 				this.roles.list(force).then(roles => new PermissionsBitField(roles.map(x => BigInt(x.permissions.bits)))),
-			sorted: (force = false): Promise<GuildRole[]> =>
+			sorted: (force = false): Promise<GuildRoleStructure[]> =>
 				this.roles.list(force).then(roles => roles.sort((a, b) => b.position - a.position)),
-			highest: (force = false): Promise<GuildRole> => this.roles.sorted(force).then(roles => roles[0]),
+			highest: (force = false): Promise<GuildRoleStructure> => this.roles.sorted(force).then(roles => roles[0]),
 		};
 	}
 

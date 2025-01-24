@@ -1,5 +1,4 @@
-import type { WorkerClient } from '../..';
-import type { ReturnCache } from '../../../src';
+import type { ReturnCache, WorkerClient } from '../..';
 import type { GuildStructure } from '../../client';
 import { type ObjectToLower, calculateShardId } from '../../common';
 import type { ImageOptions } from '../../common/types/options';

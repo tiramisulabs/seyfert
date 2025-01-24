@@ -1,5 +1,5 @@
-import type { ReturnCache } from '../../src';
 import type { BaseCDNUrlOptions } from '../api';
+import type { ReturnCache } from '../cache';
 import type { GuildEmojiStructure, GuildStructure } from '../client';
 import type { UsingClient } from '../commands';
 import { type EmojiShorter, Formatter, type MethodContext, type ObjectToLower } from '../common';

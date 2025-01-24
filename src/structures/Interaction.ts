@@ -42,9 +42,9 @@ import {
 	type RESTPostAPIInteractionCallbackResult,
 } from '../types';
 
-import type { ReturnCache } from '../../src';
 import type { RawFile } from '../api';
 import { ActionRow, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
+import type { ReturnCache } from '../cache';
 import {
 	type EntitlementStructure,
 	type GuildRoleStructure,
