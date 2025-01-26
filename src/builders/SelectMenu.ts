@@ -1,12 +1,5 @@
 import type { EmojiResolvable, RestOrArray } from '../common';
 import { resolvePartialEmoji } from '../common/it/utils';
-import type {
-	ChannelSelectMenuInteraction,
-	ComponentInteraction,
-	MentionableSelectMenuInteraction,
-	RoleSelectMenuInteraction,
-	UserSelectMenuInteraction,
-} from '../structures';
 import {
 	type APIChannelSelectComponent,
 	type APIMentionableSelectComponent,
@@ -49,14 +42,12 @@ function mappedDefault<T extends SelectMenuDefaultValueType>(
  * @template Select - The type of APISelectMenuComponent.
  * @template Interaction - The type of interaction.
  * @example
- * const selectMenu = new SelectMenu<APIUserSelectComponent, UserSelectMenuInteraction>();
+ * const selectMenu = new SelectMenu<APIUserSelectComponent>();
  * selectMenu.setCustomId("user-select-menu");
  * selectMenu.setPlaceholder("Select a user");
  */
 export class SelectMenu<
 	Select extends APISelectMenuComponent = APISelectMenuComponent,
-	//@ts-expect-error
-	Interaction = ComponentInteraction,
 > extends BaseComponentBuilder<Select> {
 	/**
 	 * Sets the custom ID for the select menu.
@@ -107,7 +98,7 @@ export class SelectMenu<
  * userSelectMenu.setCustomId("user-select");
  * userSelectMenu.addDefaultUsers("123456789", "987654321");
  */
-export class UserSelectMenu extends SelectMenu<APIUserSelectComponent, UserSelectMenuInteraction> {
+export class UserSelectMenu extends SelectMenu<APIUserSelectComponent> {
 	constructor(data: Partial<APIUserSelectComponent> = {}) {
 		super({ ...data, type: ComponentType.UserSelect });
 	}
@@ -142,7 +133,7 @@ export class UserSelectMenu extends SelectMenu<APIUserSelectComponent, UserSelec
  * roleSelectMenu.setCustomId("role-select");
  * roleSelectMenu.addDefaultRoles("123456789", "987654321");
  */
-export class RoleSelectMenu extends SelectMenu<APIRoleSelectComponent, RoleSelectMenuInteraction> {
+export class RoleSelectMenu extends SelectMenu<APIRoleSelectComponent> {
 	constructor(data: Partial<APIRoleSelectComponent> = {}) {
 		super({ ...data, type: ComponentType.RoleSelect });
 	}
@@ -178,7 +169,7 @@ export type MentionableDefaultElement = { id: string; type: keyof Omit<typeof Se
  * const mentionableSelectMenu = new MentionableSelectMenu();
  * mentionableSelectMenu.setCustomId("mentionable-select");
  */
-export class MentionableSelectMenu extends SelectMenu<APIMentionableSelectComponent, MentionableSelectMenuInteraction> {
+export class MentionableSelectMenu extends SelectMenu<APIMentionableSelectComponent> {
 	constructor(data: Partial<APIMentionableSelectComponent> = {}) {
 		super({ ...data, type: ComponentType.MentionableSelect });
 	}
@@ -220,7 +211,7 @@ export class MentionableSelectMenu extends SelectMenu<APIMentionableSelectCompon
  * channelSelectMenu.addDefaultChannels("123456789", "987654321");
  * channelSelectMenu.setChannelTypes([ChannelType.GuildText, ChannelType.GuildVoice]);
  */
-export class ChannelSelectMenu extends SelectMenu<APIChannelSelectComponent, ChannelSelectMenuInteraction> {
+export class ChannelSelectMenu extends SelectMenu<APIChannelSelectComponent> {
 	constructor(data: Partial<APIChannelSelectComponent> = {}) {
 		super({ ...data, type: ComponentType.ChannelSelect });
 	}
