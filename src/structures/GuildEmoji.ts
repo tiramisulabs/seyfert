@@ -1,4 +1,5 @@
 import type { BaseCDNUrlOptions } from '../api';
+import type { ReturnCache } from '../cache';
 import type { GuildEmojiStructure, GuildStructure } from '../client';
 import type { UsingClient } from '../commands';
 import { type EmojiShorter, Formatter, type MethodContext, type ObjectToLower } from '../common';
@@ -16,9 +17,18 @@ export class GuildEmoji extends DiscordBase {
 		super(client, { ...data, id: data.id! });
 	}
 
-	async guild(force = false): Promise<GuildStructure<'api'> | undefined> {
-		if (!this.guildId) return;
-		return this.client.guilds.fetch(this.guildId, force);
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
+	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow'): unknown {
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.guilds?.get(this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+		}
 	}
 
 	edit(body: RESTPatchAPIChannelJSONBody, reason?: string): Promise<GuildEmojiStructure> {

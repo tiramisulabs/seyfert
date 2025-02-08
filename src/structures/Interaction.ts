@@ -44,6 +44,7 @@ import {
 
 import type { RawFile } from '../api';
 import { ActionRow, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
+import type { ReturnCache } from '../cache';
 import {
 	type EntitlementStructure,
 	type GuildRoleStructure,
@@ -197,12 +198,12 @@ export class BaseInteraction<
 		if ('attachments' in body) {
 			payload.attachments =
 				body.attachments?.map((x, i) => ({
-					id: i,
+					id: x.id ?? i.toString(),
 					...resolveAttachment(x),
 				})) ?? undefined;
 		} else if (files?.length) {
-			payload.attachments = files?.map(({ filename }, id) => ({
-				id,
+			payload.attachments = files?.map(({ filename }, i) => ({
+				id: i.toString(),
 				filename,
 			})) as RESTAPIAttachment[];
 		}
@@ -364,8 +365,20 @@ export class BaseInteraction<
 		}
 	}
 
-	async fetchGuild(force = false): Promise<GuildStructure<'api'> | undefined> {
-		return this.guildId ? this.client.guilds.fetch(this.guildId, force) : undefined;
+	fetchGuild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
+	fetchGuild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	fetchGuild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		if (!this.guildId)
+			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.guilds?.get(this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+		}
 	}
 }
 
