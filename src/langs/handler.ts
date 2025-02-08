@@ -45,14 +45,15 @@ export class LangsHandler extends BaseHandler {
 		}
 	}
 
-	parse(file: EventInstance) {
-		const locale = file.name.split('.').slice(0, -1).join('.') || file.name;
-		const result = this.onFile(locale, file.file);
-		if ('path' in file) this.__paths[locale] = file.path as string;
-		if (result) this.values[locale] = result;
+	parse(file: LangInstance) {
+		const oldLocale = file.name.split('.').slice(0, -1).join('.') || file.name;
+		const result = this.onFile(oldLocale, file.file);
+		if (!result) return;
+		if ('path' in file) this.__paths[result.locale] = file.path as string;
+		this.values[result.locale] = result.file;
 	}
 
-	set(instances: EventInstance[]) {
+	set(instances: LangInstance[]) {
 		for (const i of instances) {
 			this.parse(i);
 		}
@@ -79,9 +80,14 @@ export class LangsHandler extends BaseHandler {
 		}
 	}
 
-	onFile(_locale: string, file: FileLoaded<Record<string, any>>): Record<string, any> | false {
-		return file.default ?? false;
+	onFile(locale: string, file: FileLoaded<Record<string, any>>): { file: Record<string, any>; locale: string } | false {
+		return file.default
+			? {
+					file: file.default,
+					locale,
+				}
+			: false;
 	}
 }
 
-export type EventInstance = { name: string; file: Record<string, any> };
+export type LangInstance = { name: string; file: Record<string, any>; path: string };
