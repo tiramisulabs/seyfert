@@ -47,7 +47,7 @@ export class LangsHandler extends BaseHandler {
 
 	parse(file: LangInstance) {
 		const oldLocale = file.name.split('.').slice(0, -1).join('.') || file.name;
-		const result = this.onFile(oldLocale, file.file);
+		const result = this.onFile(oldLocale, file);
 		if (!result) return;
 		if ('path' in file) this.__paths[result.locale] = file.path as string;
 		this.values[result.locale] = result.file;
@@ -80,7 +80,7 @@ export class LangsHandler extends BaseHandler {
 		}
 	}
 
-	onFile(locale: string, file: FileLoaded<Record<string, any>>): { file: Record<string, any>; locale: string } | false {
+	onFile(locale: string, { file }: LangInstance): { file: Record<string, any>; locale: string } | false {
 		return file.default
 			? {
 					file: file.default,
@@ -90,4 +90,4 @@ export class LangsHandler extends BaseHandler {
 	}
 }
 
-export type LangInstance = { name: string; file: Record<string, any>; path: string };
+export type LangInstance = { name: string; file: FileLoaded<Record<string, any>>; path: string };
