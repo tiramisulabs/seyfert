@@ -2,6 +2,7 @@ import { type CustomStructures, OptionResolver } from '../commands';
 import type { StructStates } from '../common/';
 import {
 	AnonymousGuild,
+	ApplicationEmoji,
 	AutoModerationRule,
 	BaseChannel,
 	BaseGuildChannel,
@@ -9,6 +10,7 @@ import {
 	ClientUser,
 	DMChannel,
 	DirectoryChannel,
+	Emoji,
 	Entitlement,
 	ForumChannel,
 	Guild,
@@ -32,10 +34,13 @@ import {
 	Webhook,
 	WebhookMessage,
 } from '../structures';
+import { Application } from '../structures/Application';
 import type { ChannelType } from '../types';
 
 export type PollStructure = InferCustomStructure<Poll, 'Poll'>;
 export type ClientUserStructure = InferCustomStructure<ClientUser, 'ClientUser'>;
+export type ApplicationStructure = InferCustomStructure<Application, 'Application'>;
+export type ApplicationEmojiStructure = InferCustomStructure<ApplicationEmoji, 'ApplicationEmoji'>;
 export type AnonymousGuildStructure = InferCustomStructure<AnonymousGuild, 'AnonymousGuild'>;
 export type AutoModerationRuleStructure = InferCustomStructure<AutoModerationRule, 'AutoModerationRule'>;
 export type BaseChannelStructure = InferCustomStructure<BaseChannel<ChannelType>, 'BaseChannel'>;
@@ -52,6 +57,7 @@ export type NewsChannelStructure = InferCustomStructure<NewsChannel, 'NewsChanne
 export type DirectoryChannelStructure = InferCustomStructure<DirectoryChannel, 'DirectoryChannel'>;
 export type GuildStructure<State extends StructStates = 'api'> = InferCustomStructure<Guild<State>, 'Guild'>;
 export type GuildBanStructure = InferCustomStructure<GuildBan, 'GuildBan'>;
+export type EmojiStructure = InferCustomStructure<Emoji, 'Emoji'>;
 export type GuildEmojiStructure = InferCustomStructure<GuildEmoji, 'GuildEmoji'>;
 export type GuildMemberStructure = InferCustomStructure<GuildMember, 'GuildMember'>;
 export type InteractionGuildMemberStructure = InferCustomStructure<InteractionGuildMember, 'InteractionGuildMember'>;
@@ -67,6 +73,14 @@ export type OptionResolverStructure = InferCustomStructure<OptionResolver, 'Opti
 export type EntitlementStructure = InferCustomStructure<Entitlement, 'Entitlement'>;
 
 export const Transformers = {
+	Application(...args: ConstructorParameters<typeof Application>): ApplicationStructure {
+		return new Application(...args);
+	},
+
+	ApplicationEmoji(...args: ConstructorParameters<typeof ApplicationEmoji>): ApplicationEmojiStructure {
+		return new ApplicationEmoji(...args);
+	},
+
 	AnonymousGuild(...args: ConstructorParameters<typeof AnonymousGuild>): AnonymousGuildStructure {
 		return new AnonymousGuild(...args);
 	},
@@ -117,6 +131,9 @@ export const Transformers = {
 	},
 	GuildBan(...args: ConstructorParameters<typeof GuildBan>): GuildBanStructure {
 		return new GuildBan(...args);
+	},
+	Emoji(...args: ConstructorParameters<typeof Emoji>): EmojiStructure {
+		return new Emoji(...args);
 	},
 	GuildEmoji(...args: ConstructorParameters<typeof GuildEmoji>): GuildEmojiStructure {
 		return new GuildEmoji(...args);
