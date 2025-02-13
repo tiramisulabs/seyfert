@@ -1,10 +1,9 @@
 import type { UsingClient } from '..';
-import type { ObjectToLower } from '../common';
+import type { ApplicationEmojiResolvable, ObjectToLower } from '../common';
 import type {
 	APIApplication,
 	RESTPatchAPIApplicationEmojiJSONBody,
 	RESTPatchCurrentApplicationJSONBody,
-	RESTPostAPIApplicationEmojiJSONBody,
 } from '../types';
 import { DiscordBase } from './extra/DiscordBase';
 
@@ -52,7 +51,7 @@ export class Application extends DiscordBase<APIApplication> {
 		/**
 		 * Create an application emoji.
 		 */
-		create: (data: RESTPostAPIApplicationEmojiJSONBody) => this.client.applications.createEmoji(data),
+		create: (data: ApplicationEmojiResolvable) => this.client.applications.createEmoji(data),
 		/**
 		 * Edit an application emoji.
 		 */

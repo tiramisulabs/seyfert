@@ -5,11 +5,9 @@ import type {
 	RESTGetAPIEntitlementsQuery,
 	RESTPatchAPIApplicationEmojiJSONBody,
 	RESTPatchCurrentApplicationJSONBody,
-	RESTPostAPIApplicationEmojiJSONBody,
 	RESTPostAPIEntitlementBody,
 } from '../../types';
-import type { ImageResolvable } from '../types/resolvables';
-import type { OmitInsert } from '../types/util';
+import type { ApplicationEmojiResolvable } from '../types/resolvables';
 import { BaseShorter } from './base';
 
 export class ApplicationShorter extends BaseShorter {
@@ -51,7 +49,7 @@ export class ApplicationShorter extends BaseShorter {
 	 * @param body.image The [image data string](https://discord.com/developers/docs/reference#image-data) of the emoji.
 	 * @returns The created emoji.
 	 */
-	async createEmoji(raw: OmitInsert<RESTPostAPIApplicationEmojiJSONBody, 'image', { image: ImageResolvable }>) {
+	async createEmoji(raw: ApplicationEmojiResolvable) {
 		const data = await this.client.proxy
 			.applications(this.client.applicationId)
 			.emojis.post({ body: { ...raw, image: await resolveImage(raw.image) } });
