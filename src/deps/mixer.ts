@@ -24,10 +24,8 @@ function getNodeDescriptors(c: TypeClass) {
 	const result: Record<string, TypedPropertyDescriptor<unknown> | PropertyDescriptor>[] = [];
 	while (proto) {
 		const descriptors = Object.getOwnPropertyDescriptors(proto);
-		// @ts-expect-error this is not a function in all cases
-		if (descriptors.valueOf.configurable) break;
 		result.push(descriptors);
-		proto = proto.__proto__;
+		proto = Object.getPrototypeOf(proto);
 	}
 	return result;
 }
@@ -44,31 +42,29 @@ function getDescriptors(c: TypeClass) {
  * @returns The mixed class.
  */
 export function Mixin<T, C extends TypeClass[]>(...args: C): C[number] & T {
-	const ignoreOverwriteToString = Object.keys(Object.getOwnPropertyDescriptors(args[0].prototype)).includes('toString');
-	function MixedClass(...constructorArgs: any[]) {
-		for (const i of args) {
-			const descriptors = getDescriptors(i).reverse();
-			for (const j of descriptors) {
-				// @ts-expect-error
-				Object.assign(this, new j.constructor.value(...constructorArgs));
+	const Base = args[0];
 
-				for (const descriptorK in j) {
-					if (descriptorK === 'constructor') continue;
-					if (descriptorK in MixedClass.prototype && descriptorK !== 'toString') continue;
-					const descriptor = j[descriptorK];
-					if (descriptor.value) {
-						if (descriptorK === 'toString' && ignoreOverwriteToString) {
-							MixedClass.prototype[descriptorK] = args[0].prototype.toString;
-							continue;
+	class MixedClass extends Base {
+		constructor(...constructorArgs: any[]) {
+			super(...constructorArgs);
+
+			for (const mixin of args.slice(1)) {
+				const descriptors = getDescriptors(mixin).reverse();
+				for (const desc of descriptors) {
+					for (const key in desc) {
+						if (key === 'constructor') continue;
+						if (key in mixin.prototype) continue;
+						const descriptor = desc[key];
+
+						if (descriptor.value) {
+							// @ts-expect-error
+							MixedClass.prototype[key] = descriptor.value;
+						} else if (descriptor.get || descriptor.set) {
+							Object.defineProperty(MixedClass.prototype, key, {
+								get: descriptor.get,
+								set: descriptor.set,
+							});
 						}
-						MixedClass.prototype[descriptorK] = descriptor.value;
-						continue;
-					}
-					if (descriptor.get || descriptor.set) {
-						Object.defineProperty(MixedClass.prototype, descriptorK, {
-							get: descriptor.get,
-							set: descriptor.set,
-						});
 					}
 				}
 			}
@@ -89,11 +85,9 @@ export const mix =
 	(decoratedClass: any) => {
 		ingredients.unshift(decoratedClass);
 		const mixedClass = Mixin(...ingredients);
-
 		Object.defineProperty(mixedClass, 'name', {
 			value: decoratedClass.name,
 			writable: false,
 		});
-
 		return mixedClass as any;
 	};
