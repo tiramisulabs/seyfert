@@ -14,14 +14,11 @@ export class EmojiShorter extends BaseShorter {
 	 * @returns A Promise that resolves to an array of emojis.
 	 */
 	async list(guildId: string, force = false): Promise<GuildEmojiStructure[]> {
-		let emojis: APIEmoji[] | GuildEmojiStructure[];
 		if (!force) {
-			emojis = (await this.client.cache.emojis?.values(guildId)) ?? [];
-			if (emojis.length) {
-				return emojis;
-			}
+			const cached = (await this.client.cache.emojis?.values(guildId)) as GuildEmojiStructure[];
+			if (cached) return cached;
 		}
-		emojis = await this.client.proxy.guilds(guildId).emojis.get();
+		const emojis = await this.client.proxy.guilds(guildId).emojis.get();
 		await this.client.cache.emojis?.set(
 			CacheFrom.Rest,
 			emojis.map<[string, APIEmoji]>(x => [x.id!, x]),
@@ -58,12 +55,11 @@ export class EmojiShorter extends BaseShorter {
 	 * @returns A Promise that resolves to the fetched emoji.
 	 */
 	async fetch(guildId: string, emojiId: string, force = false): Promise<GuildEmojiStructure> {
-		let emoji: APIEmoji | GuildEmojiStructure | undefined;
 		if (!force) {
-			emoji = await this.client.cache.emojis?.get(emojiId);
+			const emoji = (await this.client.cache.emojis?.get(emojiId)) as GuildEmojiStructure;
 			if (emoji) return emoji;
 		}
-		emoji = await this.client.proxy.guilds(guildId).emojis(emojiId).get();
+		const emoji = await this.client.proxy.guilds(guildId).emojis(emojiId).get();
 		return Transformers.GuildEmoji(this.client, emoji, guildId);
 	}
 
