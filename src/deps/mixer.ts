@@ -53,7 +53,7 @@ export function Mixin<T, C extends TypeClass[]>(...args: C): C[number] & T {
 				for (const desc of descriptors) {
 					for (const key in desc) {
 						if (key === 'constructor') continue;
-						if (key in mixin.prototype) continue;
+						if (key in MixedClass.prototype) continue;
 						const descriptor = desc[key];
 
 						if (descriptor.value) {
