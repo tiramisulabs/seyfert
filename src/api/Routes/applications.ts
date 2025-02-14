@@ -14,12 +14,15 @@ import type {
 	RESTGetAPIEntitlementsResult,
 	RESTGetAPIGuildApplicationCommandsPermissionsResult,
 	RESTGetAPISKUsResult,
+	RESTGetCurrentApplicationResult,
 	RESTPatchAPIApplicationCommandJSONBody,
 	RESTPatchAPIApplicationCommandResult,
 	RESTPatchAPIApplicationEmojiJSONBody,
 	RESTPatchAPIApplicationEmojiResult,
 	RESTPatchAPIApplicationGuildCommandJSONBody,
 	RESTPatchAPIApplicationGuildCommandResult,
+	RESTPatchCurrentApplicationJSONBody,
+	RESTPatchCurrentApplicationResult,
 	RESTPostAPIApplicationCommandsJSONBody,
 	RESTPostAPIApplicationCommandsResult,
 	RESTPostAPIApplicationEmojiJSONBody,
@@ -36,11 +39,17 @@ import type {
 	RESTPutAPIApplicationRoleConnectionMetadataJSONBody,
 	RESTPutAPIApplicationRoleConnectionMetadataResult,
 	RESTPutAPIGuildApplicationCommandsPermissionsResult,
+	RestGetAPIApplicationActivityInstanceResult,
 } from '../../types';
 import type { RestArguments, RestArgumentsNoBody } from '../api';
 
 export interface ApplicationRoutes {
 	applications: (id: string) => {
+		get(args?: RestArgumentsNoBody): Promise<RESTGetCurrentApplicationResult>;
+		patch(args: RestArguments<RESTPatchCurrentApplicationJSONBody>): Promise<RESTPatchCurrentApplicationResult>;
+		'activity-instances': (id: string) => {
+			get(args?: RestArgumentsNoBody): Promise<RestGetAPIApplicationActivityInstanceResult>;
+		};
 		guilds: (id: string) => {
 			commands: {
 				get(

@@ -1,4 +1,9 @@
-import type { APIApplication, APIApplicationRoleConnectionMetadata, APIEmoji } from '../payloads';
+import type {
+	APIActivityInstance,
+	APIApplication,
+	APIApplicationEmoji,
+	APIApplicationRoleConnectionMetadata,
+} from '../payloads';
 import type { Nullable, StrictPartial } from '../utils';
 import type { RESTPatchAPIGuildEmojiJSONBody, RESTPostAPIGuildEmojiJSONBody } from './emoji';
 
@@ -49,13 +54,13 @@ export type RESTPatchCurrentApplicationResult = APIApplication;
  * https://discord.com/developers/docs/resources/emoji#list-application-emojis
  */
 export interface RESTGetAPIApplicationEmojisResult {
-	emojis: APIEmoji[];
+	items: APIApplicationEmoji[];
 }
 
 /**
  * https://discord.com/developers/docs/resources/emoji#get-application-emoji
  */
-export type RESTGetAPIApplicationEmojiResult = APIEmoji;
+export type RESTGetAPIApplicationEmojiResult = APIApplicationEmoji;
 
 /**
  * https://discord.com/developers/docs/resources/emoji#create-application-emoji-json-params
@@ -65,7 +70,7 @@ export type RESTPostAPIApplicationEmojiJSONBody = Pick<RESTPostAPIGuildEmojiJSON
 /**
  * https://discord.com/developers/docs/resources/emoji#create-application-emoji
  */
-export type RESTPostAPIApplicationEmojiResult = APIEmoji;
+export type RESTPostAPIApplicationEmojiResult = APIApplicationEmoji;
 
 /**
  * https://discord.com/developers/docs/resources/emoji#modify-application-emoji
@@ -75,9 +80,14 @@ export type RESTPatchAPIApplicationEmojiJSONBody = Pick<RESTPatchAPIGuildEmojiJS
 /**
  * https://discord.com/developers/docs/resources/emoji#modify-application-emoji
  */
-export type RESTPatchAPIApplicationEmojiResult = APIEmoji;
+export type RESTPatchAPIApplicationEmojiResult = APIApplicationEmoji;
 
 /**
  * https://discord.com/developers/docs/resources/emoji#delete-application-emoji
  */
 export type RESTDeleteAPIApplicationEmojiResult = never;
+
+/**
+ * https://discord.com/developers/docs/resources/application#get-application-activity-instance
+ */
+export type RestGetAPIApplicationActivityInstanceResult = APIActivityInstance | undefined;
