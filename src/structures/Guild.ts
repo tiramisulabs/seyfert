@@ -1,4 +1,4 @@
-import type { GuildMemberStructure } from '../client';
+import type { GuildMemberStructure, GuildStructure } from '../client';
 import type { UsingClient } from '../commands';
 import type { ObjectToLower, StructPropState, StructStates, ToClass } from '../common/types/util';
 import type { APIGuild, APIPartialGuild, GatewayGuildCreateDispatchData, RESTPatchAPIGuildJSONBody } from '../types';
@@ -79,7 +79,7 @@ export class Guild<State extends StructStates = 'api'> extends (BaseGuild as unk
 	emojis = GuildEmoji.methods({ client: this.client, guildId: this.id });
 	bans = GuildBan.methods({ client: this.client, guildId: this.id });
 
-	edit(body: RESTPatchAPIGuildJSONBody, reason?: string) {
+	edit(body: RESTPatchAPIGuildJSONBody, reason?: string): Promise<GuildStructure<'api'>> {
 		return this.client.guilds.edit(this.id, body, reason);
 	}
 }
