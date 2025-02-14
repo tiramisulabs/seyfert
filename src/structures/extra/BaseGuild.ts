@@ -47,13 +47,19 @@ export class BaseGuild extends DiscordBase<APIPartialGuild> {
 	}
 
 	/**
+	 * Leave the guild.
+	 */
+	leave() {
+		return this.client.guilds.leave(this.id);
+	}
+
+	/**
 	 * iconURL gets the current guild icon.
 	 * @link https://discord.com/developers/docs/reference#image-formatting
 	 */
 	iconURL(options?: ImageOptions): string | undefined {
-		if (!this.icon) {
-			return;
-		}
+		if (!this.icon) return;
+
 		return this.rest.cdn.icons(this.id).get(this.icon, options);
 	}
 
@@ -64,9 +70,8 @@ export class BaseGuild extends DiscordBase<APIPartialGuild> {
 	 * @returns Splash url or void.
 	 */
 	splashURL(options?: ImageOptions): string | undefined {
-		if (!this.splash) {
-			return;
-		}
+		if (!this.splash) return;
+
 		return this.rest.cdn['discovery-splashes'](this.id).get(this.splash, options);
 	}
 
@@ -77,9 +82,8 @@ export class BaseGuild extends DiscordBase<APIPartialGuild> {
 	 * @returns Banner url or void
 	 */
 	bannerURL(options?: ImageOptions): string | undefined {
-		if (!this.banner) {
-			return;
-		}
+		if (!this.banner) return;
+
 		return this.rest.cdn.banners(this.id).get(this.banner, options);
 	}
 

@@ -96,6 +96,14 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		return acc / this.shards.size;
 	}
 
+	get applicationId() {
+		return this.me?.application.id ?? super.applicationId;
+	}
+
+	set applicationId(id: string) {
+		super.applicationId = id;
+	}
+
 	setServices(rest: ServicesOptions) {
 		super.setServices(rest);
 		if (this.options.postMessage && rest.cache?.adapter instanceof WorkerAdapter) {

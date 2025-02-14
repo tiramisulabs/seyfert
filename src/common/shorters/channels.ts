@@ -1,5 +1,4 @@
 import { CacheFrom } from '../../cache';
-import type { Channels } from '../../cache/resources/channels';
 import type { Overwrites } from '../../cache/resources/overwrites';
 import { type MessageStructure, type ThreadChannelStructure, Transformers } from '../../client/transformers';
 import { type AllChannels, BaseChannel, type GuildMember, type GuildRole, channelFrom } from '../../structures';
@@ -29,9 +28,8 @@ export class ChannelShorter extends BaseShorter {
 	}
 
 	async raw(id: string, force?: boolean): Promise<APIChannel> {
-		let channel: APIChannel | ReturnType<Channels['raw']>;
 		if (!force) {
-			channel = await this.client.cache.channels?.raw(id);
+			const channel = await this.client.cache.channels?.raw(id);
 			const overwrites = await this.client.cache.overwrites?.raw(id);
 			if (channel) {
 				if (overwrites) (channel as APIGuildChannel<ChannelType>).permission_overwrites = overwrites;
@@ -39,7 +37,7 @@ export class ChannelShorter extends BaseShorter {
 			}
 		}
 
-		channel = await this.client.proxy.channels(id).get();
+		const channel = await this.client.proxy.channels(id).get();
 		await this.client.cache.channels?.patch(
 			CacheFrom.Rest,
 			id,
@@ -198,11 +196,11 @@ export class ChannelShorter extends BaseShorter {
 		if (checkAdmin && role.permissions.has([PermissionFlagsBits.Administrator])) {
 			return new PermissionsBitField(PermissionsBitField.All);
 		}
-		const channelOverwrites = (await this.client.cache.overwrites?.get(channelId)) ?? [];
-
+		const permissions = new PermissionsBitField(role.permissions.bits);
+		const channelOverwrites = await this.client.cache.overwrites?.get(channelId);
+		if (!channelOverwrites) return permissions;
 		const everyoneOverwrites = channelOverwrites.find(x => x.id === role.guildId);
 		const roleOverwrites = channelOverwrites.find(x => x.id === role.id);
-		const permissions = new PermissionsBitField(role.permissions.bits);
 
 		permissions.remove([everyoneOverwrites?.deny.bits ?? 0n]);
 		permissions.add([everyoneOverwrites?.allow.bits ?? 0n]);
