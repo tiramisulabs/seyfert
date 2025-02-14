@@ -76,11 +76,9 @@ export const Transformers = {
 	Application(...args: ConstructorParameters<typeof Application>): ApplicationStructure {
 		return new Application(...args);
 	},
-
 	ApplicationEmoji(...args: ConstructorParameters<typeof ApplicationEmoji>): ApplicationEmojiStructure {
 		return new ApplicationEmoji(...args);
 	},
-
 	AnonymousGuild(...args: ConstructorParameters<typeof AnonymousGuild>): AnonymousGuildStructure {
 		return new AnonymousGuild(...args);
 	},

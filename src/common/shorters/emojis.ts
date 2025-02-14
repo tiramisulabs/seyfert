@@ -15,8 +15,8 @@ export class EmojiShorter extends BaseShorter {
 	 */
 	async list(guildId: string, force = false): Promise<GuildEmojiStructure[]> {
 		if (!force) {
-			const cached = (await this.client.cache.emojis?.values(guildId)) as GuildEmojiStructure[];
-			if (cached) return cached;
+			const cached = (await this.client.cache.emojis?.values(guildId)) as GuildEmojiStructure[] | undefined;
+			if (cached?.length) return cached;
 		}
 		const emojis = await this.client.proxy.guilds(guildId).emojis.get();
 		await this.client.cache.emojis?.set(
@@ -56,7 +56,7 @@ export class EmojiShorter extends BaseShorter {
 	 */
 	async fetch(guildId: string, emojiId: string, force = false): Promise<GuildEmojiStructure> {
 		if (!force) {
-			const emoji = (await this.client.cache.emojis?.get(emojiId)) as GuildEmojiStructure;
+			const emoji = (await this.client.cache.emojis?.get(emojiId)) as GuildEmojiStructure | undefined;
 			if (emoji) return emoji;
 		}
 		const emoji = await this.client.proxy.guilds(guildId).emojis(emojiId).get();

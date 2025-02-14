@@ -17,8 +17,10 @@ export class ApplicationShorter extends BaseShorter {
 	 */
 	async listEmojis(force = false): Promise<ApplicationEmojiStructure[]> {
 		if (!force) {
-			const cached = this.client.cache.emojis?.values(this.client.applicationId) as ApplicationEmojiStructure[];
-			if (cached) return cached;
+			const cached = (await this.client.cache.emojis?.values(this.client.applicationId)) as
+				| ApplicationEmojiStructure[]
+				| undefined;
+			if (cached?.length) return cached;
 		}
 		const data = await this.client.proxy.applications(this.client.applicationId).emojis.get();
 		this.client.cache.emojis?.set(
@@ -35,7 +37,7 @@ export class ApplicationShorter extends BaseShorter {
 	 */
 	async getEmoji(emojiId: string, force = false): Promise<ApplicationEmojiStructure> {
 		if (!force) {
-			const cached = this.client.cache.emojis?.get(emojiId) as ApplicationEmojiStructure;
+			const cached = (await this.client.cache.emojis?.get(emojiId)) as ApplicationEmojiStructure;
 			if (cached) return cached;
 		}
 		const data = await this.client.proxy.applications(this.client.applicationId).emojis(emojiId).get();
