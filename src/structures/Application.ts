@@ -1,4 +1,5 @@
 import type { UsingClient } from '..';
+import type { ApplicationEmojiStructure, ApplicationStructure } from '../client';
 import type { ApplicationEmojiResolvable, ObjectToLower } from '../common';
 import type {
 	APIApplication,
@@ -21,14 +22,14 @@ export class Application extends DiscordBase<APIApplication> {
 	/**
 	 * Fetch the current application.
 	 */
-	fetch() {
+	fetch(): Promise<ApplicationStructure> {
 		return this.client.applications.fetch();
 	}
 
 	/**
 	 * Edit the current application.
 	 */
-	edit(data: RESTPatchCurrentApplicationJSONBody) {
+	edit(data: RESTPatchCurrentApplicationJSONBody): Promise<ApplicationStructure> {
 		return this.client.applications.edit(data);
 	}
 
@@ -43,19 +44,20 @@ export class Application extends DiscordBase<APIApplication> {
 		/**
 		 * Get an application emoji.
 		 */
-		fetch: (id: string) => this.client.applications.getEmoji(id),
+		fetch: (id: string): Promise<ApplicationEmojiStructure> => this.client.applications.getEmoji(id),
 		/**
 		 * Get the application emojis.
 		 */
-		list: () => this.client.applications.listEmojis(),
+		list: (): Promise<ApplicationEmojiStructure[]> => this.client.applications.listEmojis(),
 		/**
 		 * Create an application emoji.
 		 */
-		create: (data: ApplicationEmojiResolvable) => this.client.applications.createEmoji(data),
+		create: (data: ApplicationEmojiResolvable): Promise<ApplicationEmojiStructure> =>
+			this.client.applications.createEmoji(data),
 		/**
 		 * Edit an application emoji.
 		 */
-		edit: (emojiId: string, body: RESTPatchAPIApplicationEmojiJSONBody) =>
+		edit: (emojiId: string, body: RESTPatchAPIApplicationEmojiJSONBody): Promise<ApplicationEmojiStructure> =>
 			this.client.applications.editEmoji(emojiId, body),
 	};
 }

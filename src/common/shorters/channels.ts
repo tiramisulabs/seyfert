@@ -30,8 +30,8 @@ export class ChannelShorter extends BaseShorter {
 	async raw(id: string, force?: boolean): Promise<APIChannel> {
 		if (!force) {
 			const channel = await this.client.cache.channels?.raw(id);
-			const overwrites = await this.client.cache.overwrites?.raw(id);
 			if (channel) {
+				const overwrites = await this.client.cache.overwrites?.raw(id);
 				if (overwrites) (channel as APIGuildChannel<ChannelType>).permission_overwrites = overwrites;
 				return channel as APIChannel;
 			}

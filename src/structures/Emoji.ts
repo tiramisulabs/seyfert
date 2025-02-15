@@ -1,6 +1,12 @@
 import type { BaseCDNUrlOptions } from '../api';
 import type { ReturnCache } from '../cache';
-import type { GuildEmojiStructure, GuildStructure } from '../client';
+import {
+	type ApplicationEmojiStructure,
+	type GuildEmojiStructure,
+	type GuildStructure,
+	Transformers,
+	type UserStructure,
+} from '../client';
 import type { UsingClient } from '../commands';
 import { type EmojiShorter, Formatter, type MethodContext, type ObjectToLower, type When } from '../common';
 import type {
@@ -9,16 +15,15 @@ import type {
 	RESTPatchAPIApplicationEmojiJSONBody,
 	RESTPatchAPIGuildEmojiJSONBody,
 } from '../types';
-import { User } from './User';
 import { DiscordBase } from './extra/DiscordBase';
 
 export interface Emoji extends DiscordBase, ObjectToLower<Omit<APIEmoji, 'id' | 'user'>> {}
 
 export class Emoji<T extends boolean = false> extends DiscordBase {
-	user: When<T, User>;
+	user: When<T, UserStructure>;
 	constructor(client: UsingClient, data: APIEmoji) {
 		super(client, { ...data, id: data.id! });
-		this.user = (data.user && new User(client, data.user)) as never;
+		this.user = (data.user && Transformers.User(client, data.user)) as never;
 	}
 
 	url(options?: BaseCDNUrlOptions) {
@@ -93,11 +98,11 @@ export class ApplicationEmoji extends Emoji<true> {
 		super(client, data);
 	}
 
-	fetch() {
+	fetch(): Promise<ApplicationEmojiStructure> {
 		return this.client.applications.getEmoji(this.id);
 	}
 
-	edit(body: RESTPatchAPIApplicationEmojiJSONBody) {
+	edit(body: RESTPatchAPIApplicationEmojiJSONBody): Promise<ApplicationEmojiStructure> {
 		return this.client.applications.editEmoji(this.id, body);
 	}
 

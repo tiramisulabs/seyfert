@@ -1,5 +1,10 @@
 import { CacheFrom, resolveImage } from '../..';
-import { type ApplicationEmojiStructure, type EntitlementStructure, Transformers } from '../../client';
+import {
+	type ApplicationEmojiStructure,
+	type ApplicationStructure,
+	type EntitlementStructure,
+	Transformers,
+} from '../../client';
 import type {
 	APIEntitlement,
 	RESTGetAPIEntitlementsQuery,
@@ -23,7 +28,7 @@ export class ApplicationShorter extends BaseShorter {
 			if (cached?.length) return cached;
 		}
 		const data = await this.client.proxy.applications(this.client.applicationId).emojis.get();
-		this.client.cache.emojis?.set(
+		await this.client.cache.emojis?.set(
 			CacheFrom.Rest,
 			data.items.map(e => [e.id, e]),
 			this.client.applicationId,
@@ -41,7 +46,7 @@ export class ApplicationShorter extends BaseShorter {
 			if (cached) return cached;
 		}
 		const data = await this.client.proxy.applications(this.client.applicationId).emojis(emojiId).get();
-		this.client.cache.emojis?.set(CacheFrom.Rest, data.id, this.client.applicationId, data);
+		await this.client.cache.emojis?.set(CacheFrom.Rest, data.id, this.client.applicationId, data);
 		return Transformers.ApplicationEmoji(this.client, data);
 	}
 
@@ -51,11 +56,11 @@ export class ApplicationShorter extends BaseShorter {
 	 * @param body.image The [image data string](https://discord.com/developers/docs/reference#image-data) of the emoji.
 	 * @returns The created emoji.
 	 */
-	async createEmoji(raw: ApplicationEmojiResolvable) {
+	async createEmoji(raw: ApplicationEmojiResolvable): Promise<ApplicationEmojiStructure> {
 		const data = await this.client.proxy
 			.applications(this.client.applicationId)
 			.emojis.post({ body: { ...raw, image: await resolveImage(raw.image) } });
-		this.client.cache.emojis?.set(CacheFrom.Rest, data.id, this.client.applicationId, data);
+		await this.client.cache.emojis?.set(CacheFrom.Rest, data.id, this.client.applicationId, data);
 		return Transformers.ApplicationEmoji(this.client, data);
 	}
 
@@ -65,9 +70,9 @@ export class ApplicationShorter extends BaseShorter {
 	 * @param body.name The new name of the emoji.
 	 * @returns The edited emoji.
 	 */
-	async editEmoji(emojiId: string, body: RESTPatchAPIApplicationEmojiJSONBody) {
+	async editEmoji(emojiId: string, body: RESTPatchAPIApplicationEmojiJSONBody): Promise<ApplicationEmojiStructure> {
 		const data = await this.client.proxy.applications(this.client.applicationId).emojis(emojiId).patch({ body });
-		this.client.cache.emojis?.patch(CacheFrom.Rest, emojiId, this.client.applicationId, data);
+		await this.client.cache.emojis?.patch(CacheFrom.Rest, emojiId, this.client.applicationId, data);
 		return Transformers.ApplicationEmoji(this.client, data);
 	}
 
@@ -125,12 +130,12 @@ export class ApplicationShorter extends BaseShorter {
 		return this.client.proxy.applications(this.client.applicationId).skus.get();
 	}
 
-	async fetch() {
+	async fetch(): Promise<ApplicationStructure> {
 		const data = await this.client.proxy.applications('@me').get();
 		return Transformers.Application(this.client, data);
 	}
 
-	async edit(body: RESTPatchCurrentApplicationJSONBody) {
+	async edit(body: RESTPatchCurrentApplicationJSONBody): Promise<ApplicationStructure> {
 		const data = await this.client.proxy.applications('@me').patch({ body });
 		return Transformers.Application(this.client, data);
 	}
