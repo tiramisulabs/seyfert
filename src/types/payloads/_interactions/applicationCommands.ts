@@ -171,7 +171,7 @@ export enum InteractionContextType {
  * @unstable
  */
 export interface APIEntryPointInteractionData
-	extends Omit<APIBaseApplicationCommandInteractionData<ApplicationCommandType.PrimaryEntryPoint>, 'guild_id'> {}
+	extends APIBaseApplicationCommandInteractionData<ApplicationCommandType.PrimaryEntryPoint> {}
 
 /**
  * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-interaction-data

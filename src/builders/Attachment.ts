@@ -9,7 +9,7 @@ import type { APIAttachment, RESTAPIAttachment } from '../types';
 
 export interface AttachmentResolvableMap {
 	url: string;
-	buffer: Buffer | ArrayBuffer | Uint8Array | Uint8ClampedArray;
+	buffer: ReadableStream | Buffer | ArrayBuffer | Uint8Array | Uint8ClampedArray;
 	path: string;
 }
 export type AttachmentResolvable =
@@ -41,7 +41,9 @@ export class AttachmentBuilder {
 	 * @param data - The partial attachment data.
 	 */
 	constructor(
-		public data: Partial<AttachmentData> = { filename: `${randomBytes?.(8)?.toString('base64url') || 'default'}.jpg` },
+		public data: Partial<AttachmentData> = {
+			filename: `${randomBytes?.(8)?.toString('base64url') || 'default'}.jpg`,
+		},
 	) {}
 
 	/**
@@ -195,7 +197,10 @@ export async function resolveAttachmentData(
 					`The attachment type has been expressed as ${type.toUpperCase()} but cannot be resolved as one.`,
 				);
 			const res = await fetch(data as string);
-			return { data: Buffer.from(await res.arrayBuffer()), contentType: res.headers.get('content-type') };
+			return {
+				data: Buffer.from(await res.arrayBuffer()),
+				contentType: res.headers.get('content-type'),
+			};
 		}
 		case 'path': {
 			const file = path.resolve(data as string);
@@ -208,10 +213,9 @@ export async function resolveAttachmentData(
 		}
 		case 'buffer': {
 			if (isBufferLike(data)) return { data };
-			// @ts-expect-error
-			if (typeof data[Symbol.asyncIterator] === 'function') {
+			if (typeof (data as AsyncIterable<ArrayBuffer>)[Symbol.asyncIterator] === 'function') {
 				const buffers: Buffer[] = [];
-				for await (const resource of data as unknown as AsyncIterable<ArrayBuffer>) buffers.push(Buffer.from(resource));
+				for await (const resource of data as AsyncIterable<ArrayBuffer>) buffers.push(Buffer.from(resource));
 				return { data: Buffer.concat(buffers) };
 			}
 			throw new Error(`The attachment type has been expressed as ${type.toUpperCase()} but cannot be resolved as one.`);
@@ -244,7 +248,9 @@ export async function resolveImage(image: ImageResolvable): Promise<string> {
 		} = image;
 		if (type && resolvable) return resolveBase64((await resolveAttachmentData(resolvable, type)).data as Buffer);
 		throw new Error(
-			`The attachment type has been expressed as ${(type ?? 'Attachment').toUpperCase()} but cannot be resolved as one.`,
+			`The attachment type has been expressed as ${(
+				type ?? 'Attachment'
+			).toUpperCase()} but cannot be resolved as one.`,
 		);
 	}
 
