@@ -1,3 +1,4 @@
+import { basename } from 'node:path';
 import type { FileLoaded } from '../commands/handler';
 import { BaseHandler, isCloudfareWorker, magicImport } from '../common';
 import type { Locale, LocaleString } from '../types';
@@ -63,11 +64,18 @@ export class LangsHandler extends BaseHandler {
 		if (isCloudfareWorker()) {
 			throw new Error('Reload in cloudfare worker is not supported');
 		}
-		const value = this.__paths[lang];
+		const path = this.__paths[lang];
+		if (!path) return null;
+		delete require.cache[path];
+		const value = await magicImport(path).then(x =>
+			this.onFile(lang, {
+				file: x,
+				name: basename(path),
+				path,
+			} satisfies LangInstance),
+		);
 		if (!value) return null;
-		delete require.cache[value];
-
-		return (this.values[lang] = await magicImport(value).then(x => this.onFile(lang, x)));
+		return (this.values[lang] = value.file);
 	}
 
 	async reloadAll(stopIfFail = true) {
