@@ -221,7 +221,6 @@ export class ComponentHandler extends BaseHandler {
 					} else this.logger.warn(e, value);
 					continue;
 				}
-				if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) continue;
 				this.stablishDefaults(component);
 				component.__filePath = file.path;
 				this.commands.push(component);
@@ -307,11 +306,9 @@ export class ComponentHandler extends BaseHandler {
 	async executeComponent(context: ComponentContext) {
 		for (const i of this.commands) {
 			try {
-				if (
-					i.type === InteractionCommandType.COMPONENT &&
-					i.cType === context.interaction.componentType &&
-					(await i.filter(context))
-				) {
+				if (i.type === InteractionCommandType.COMPONENT && i.cType === context.interaction.componentType) {
+					if (!(i.filter && (await i.filter(context)))) continue;
+					if (i.customId && i.customId !== context.interaction.customId) continue;
 					context.command = i;
 					await this.execute(i, context);
 				}
@@ -324,7 +321,9 @@ export class ComponentHandler extends BaseHandler {
 	async executeModal(context: ModalContext) {
 		for (const i of this.commands) {
 			try {
-				if (i.type === InteractionCommandType.MODAL && (await i.filter(context))) {
+				if (i.type === InteractionCommandType.MODAL) {
+					if (i.filter && !(await i.filter(context))) continue;
+					if (i.customId && i.customId !== context.interaction.customId) continue;
 					context.command = i;
 					await this.execute(i, context);
 				}
@@ -339,6 +338,8 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	callback(file: { new (): ComponentCommands }): ComponentCommands | false {
-		return new file();
+		const component = new file();
+		if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) return false;
+		return component;
 	}
 }

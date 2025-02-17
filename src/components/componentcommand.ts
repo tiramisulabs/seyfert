@@ -14,7 +14,8 @@ export interface ComponentCommand {
 export abstract class ComponentCommand {
 	type = InteractionCommandType.COMPONENT;
 	abstract componentType: keyof ContextComponentCommandInteractionMap;
-	abstract filter(context: ComponentContext<typeof this.componentType>): Promise<boolean> | boolean;
+	customId?: string;
+	filter?(context: ComponentContext<typeof this.componentType>): Promise<boolean> | boolean;
 	abstract run(context: ComponentContext<typeof this.componentType>): any;
 
 	middlewares: (keyof RegisteredMiddlewares)[] = [];
