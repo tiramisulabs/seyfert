@@ -221,6 +221,7 @@ export class ComponentHandler extends BaseHandler {
 					} else this.logger.warn(e, value);
 					continue;
 				}
+				if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) continue;
 				this.stablishDefaults(component);
 				component.__filePath = file.path;
 				this.commands.push(component);
@@ -306,11 +307,13 @@ export class ComponentHandler extends BaseHandler {
 	async executeComponent(context: ComponentContext) {
 		for (const i of this.commands) {
 			try {
-				if (i.type === InteractionCommandType.COMPONENT && i.cType === context.interaction.componentType) {
-					if ((await i.filter?.(context)) || i.customId === context.interaction.customId) {
-						context.command = i;
-						await this.execute(i, context);
-					} else continue;
+				if (
+					i.type === InteractionCommandType.COMPONENT &&
+					i.cType === context.interaction.componentType &&
+					(await i._filter(context))
+				) {
+					context.command = i;
+					await this.execute(i, context);
 				}
 			} catch (e) {
 				await this.onFail(e);
@@ -321,11 +324,9 @@ export class ComponentHandler extends BaseHandler {
 	async executeModal(context: ModalContext) {
 		for (const i of this.commands) {
 			try {
-				if (i.type === InteractionCommandType.MODAL) {
-					if ((await i.filter?.(context)) || i.customId === context.interaction.customId) {
-						context.command = i;
-						await this.execute(i, context);
-					} else continue;
+				if (i.type === InteractionCommandType.MODAL && (await i._filter(context))) {
+					context.command = i;
+					await this.execute(i, context);
 				}
 			} catch (e) {
 				await this.onFail(e);
@@ -338,8 +339,6 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	callback(file: { new (): ComponentCommands }): ComponentCommands | false {
-		const component = new file();
-		if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) return false;
-		return component;
+		return new file();
 	}
 }

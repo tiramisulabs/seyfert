@@ -9,8 +9,15 @@ export interface ModalCommand {
 export abstract class ModalCommand {
 	type = InteractionCommandType.MODAL;
 	filter?(context: ModalContext): Promise<boolean> | boolean;
-	abstract customId?: string;
+	customId?: string;
 	abstract run(context: ModalContext): any;
+
+	/** @internal */
+	async _filter(context: ModalContext) {
+		const old = (await this.filter?.(context)) ?? true;
+		if (this.customId) return this.customId === context.customId && old;
+		return old;
+	}
 
 	middlewares: (keyof RegisteredMiddlewares)[] = [];
 
