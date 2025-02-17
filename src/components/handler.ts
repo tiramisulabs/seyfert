@@ -307,10 +307,10 @@ export class ComponentHandler extends BaseHandler {
 		for (const i of this.commands) {
 			try {
 				if (i.type === InteractionCommandType.COMPONENT && i.cType === context.interaction.componentType) {
-					if (!(i.filter && (await i.filter(context)))) continue;
-					if (i.customId && i.customId !== context.interaction.customId) continue;
-					context.command = i;
-					await this.execute(i, context);
+					if ((i.filter && (await i.filter(context))) || (i.customId && i.customId !== context.interaction.customId)) {
+						context.command = i;
+						await this.execute(i, context);
+					} else continue;
 				}
 			} catch (e) {
 				await this.onFail(e);
@@ -322,10 +322,10 @@ export class ComponentHandler extends BaseHandler {
 		for (const i of this.commands) {
 			try {
 				if (i.type === InteractionCommandType.MODAL) {
-					if (i.filter && !(await i.filter(context))) continue;
-					if (i.customId && i.customId !== context.interaction.customId) continue;
-					context.command = i;
-					await this.execute(i, context);
+					if ((i.filter && (await i.filter(context))) || (i.customId && i.customId !== context.interaction.customId)) {
+						context.command = i;
+						await this.execute(i, context);
+					} else continue;
 				}
 			} catch (e) {
 				await this.onFail(e);
