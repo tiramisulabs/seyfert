@@ -19,10 +19,10 @@ export abstract class ComponentCommand {
 	abstract run(context: ComponentContext<typeof this.componentType>): any;
 
 	/** @internal */
-	async _filter(context: ComponentContext) {
-		const old = (await this.filter?.(context)) ?? true;
-		if (this.customId) return this.customId === context.customId && old;
-		return old;
+	_filter(context: ComponentContext) {
+		if (this.customId && this.customId !== context.customId) return false;
+		if (this.filter) return this.filter(context);
+		return true;
 	}
 
 	middlewares: (keyof RegisteredMiddlewares)[] = [];

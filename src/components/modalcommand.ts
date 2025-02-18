@@ -13,10 +13,10 @@ export abstract class ModalCommand {
 	abstract run(context: ModalContext): any;
 
 	/** @internal */
-	async _filter(context: ModalContext) {
-		const old = (await this.filter?.(context)) ?? true;
-		if (this.customId) return this.customId === context.customId && old;
-		return old;
+	_filter(context: ModalContext) {
+		if (this.customId && this.customId !== context.customId) return false;
+		if (this.filter) return this.filter(context);
+		return true;
 	}
 
 	middlewares: (keyof RegisteredMiddlewares)[] = [];
