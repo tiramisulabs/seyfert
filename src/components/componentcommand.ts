@@ -14,8 +14,16 @@ export interface ComponentCommand {
 export abstract class ComponentCommand {
 	type = InteractionCommandType.COMPONENT;
 	abstract componentType: keyof ContextComponentCommandInteractionMap;
-	abstract filter(context: ComponentContext<typeof this.componentType>): Promise<boolean> | boolean;
+	customId?: string;
+	filter?(context: ComponentContext<typeof this.componentType>): Promise<boolean> | boolean;
 	abstract run(context: ComponentContext<typeof this.componentType>): any;
+
+	/** @internal */
+	async _filter(context: ComponentContext) {
+		const old = (await this.filter?.(context)) ?? true;
+		if (this.customId) return this.customId === context.customId && old;
+		return old;
+	}
 
 	middlewares: (keyof RegisteredMiddlewares)[] = [];
 

@@ -310,7 +310,7 @@ export class ComponentHandler extends BaseHandler {
 				if (
 					i.type === InteractionCommandType.COMPONENT &&
 					i.cType === context.interaction.componentType &&
-					(await i.filter(context))
+					(await i._filter(context))
 				) {
 					context.command = i;
 					await this.execute(i, context);
@@ -324,7 +324,7 @@ export class ComponentHandler extends BaseHandler {
 	async executeModal(context: ModalContext) {
 		for (const i of this.commands) {
 			try {
-				if (i.type === InteractionCommandType.MODAL && (await i.filter(context))) {
+				if (i.type === InteractionCommandType.MODAL && (await i._filter(context))) {
 					context.command = i;
 					await this.execute(i, context);
 				}
