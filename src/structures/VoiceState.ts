@@ -1,9 +1,15 @@
-import type { UserStructure, UsingClient, VoiceStateStructure } from '../';
+import type {
+	AllGuildVoiceChannels,
+	GuildStructure,
+	ReturnCache,
+	UserStructure,
+	UsingClient,
+	VoiceStateStructure,
+} from '../';
 import type { VoiceStateResource } from '../cache/resources/voice-states';
 import { type GuildMemberStructure, Transformers } from '../client/transformers';
 import type { ObjectToLower } from '../common';
 import type { APIVoiceState } from '../types';
-import type { AllGuildVoiceChannels } from './channels';
 import { Base } from './extra/Base';
 
 export interface VoiceState extends Base, ObjectToLower<Omit<VoiceStateResource, 'member'>> {}
@@ -30,9 +36,20 @@ export class VoiceState extends Base {
 		return this.client.users.fetch(this.userId, force);
 	}
 
-	async channel(force?: boolean): Promise<AllGuildVoiceChannels | undefined> {
-		if (!this.channelId) return;
-		return this.client.channels.fetch(this.channelId, force) as Promise<AllGuildVoiceChannels>;
+	channel(mode?: 'rest' | 'flow'): Promise<AllGuildVoiceChannels | undefined>;
+	channel(mode: 'cache'): ReturnCache<AllGuildVoiceChannels | undefined>;
+	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		if (!this.channelId)
+			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.channels?.get(this.channelId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.channels.fetch(this.channelId, mode === 'rest');
+		}
 	}
 
 	async setMute(mute = !this.mute, reason?: string): Promise<GuildMemberStructure> {
@@ -73,5 +90,19 @@ export class VoiceState extends Base {
 		const member = await this.client.members.edit(this.guildId, this.userId, { channel_id }, reason);
 		this.channelId = channel_id;
 		return member;
+	}
+
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
+	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.guilds?.get(this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+		}
 	}
 }
