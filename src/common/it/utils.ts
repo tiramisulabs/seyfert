@@ -279,7 +279,12 @@ export const ReplaceRegex = {
 };
 
 export async function magicImport(path: string) {
-	return new Function('path', 'return import(`file:///${path}?update=${Date.now()}`)')(path);
+	try {
+		if ('Deno' in globalThis) throw new Error('https://github.com/denoland/deno/issues/26136');
+		return require(path);
+	} catch {
+		return new Function('path', 'return import(`file:///${path}?update=${Date.now()}`)')(path);
+	}
 }
 
 export type OnFailCallback = (error: unknown) => any;
