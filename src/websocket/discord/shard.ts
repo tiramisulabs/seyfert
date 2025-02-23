@@ -1,5 +1,5 @@
 import { inflateSync } from 'node:zlib';
-import { LogLevels, Logger, type MakeRequired, MergeOptions, hasIntent } from '../../common';
+import { LogLevels, Logger, type MakeRequired, MergeOptions, delay, hasIntent } from '../../common';
 import {
 	type APIGuildMember,
 	GatewayCloseCodes,
@@ -46,8 +46,11 @@ export class Shard {
 	bucket: DynamicBucket;
 	offlineSendQueue: ((_?: unknown) => void)[] = [];
 	pendingGuilds = new Set<string>();
-	options: MakeRequired<ShardOptions, 'properties' | 'ratelimitOptions'>;
+	options: MakeRequired<ShardOptions, 'properties' | 'ratelimitOptions' | 'reconnectTimeout' | 'connectionTimeout'>;
 	isReady = false;
+
+	connectionTimeout?: NodeJS.Timeout;
+
 	private requestGuildMembersChunk = new Map<
 		string,
 		{
@@ -72,6 +75,8 @@ export class Shard {
 					rateLimitResetInterval: 60_000,
 					maxRequestsPerRateLimitTick: 120,
 				},
+				reconnectTimeout: 10e3,
+				connectionTimeout: 30e3,
 			} as ShardOptions,
 			options,
 		);
@@ -126,6 +131,11 @@ export class Shard {
 		clearTimeout(this.heart.nodeInterval);
 
 		this.debugger?.debug(`[Shard #${this.id}] Connecting to ${this.currentGatewayURL}`);
+
+		this.connectionTimeout = setTimeout(
+			() => this.reconnect(ShardSocketCloseCodes.Timeout),
+			this.options.connectionTimeout,
+		);
 
 		// @ts-expect-error Use native websocket when using Bun
 		// biome-ignore lint/correctness/noUndeclaredVariables: /\
@@ -217,13 +227,16 @@ export class Shard {
 	}
 
 	disconnect(code = ShardSocketCloseCodes.Shutdown) {
+		clearTimeout(this.connectionTimeout);
+		this.connectionTimeout = undefined;
 		this.debugger?.info(`[Shard #${this.id}] Disconnecting`);
 		this.close(code, 'Shard down request');
 	}
 
-	async reconnect() {
+	async reconnect(code = ShardSocketCloseCodes.Reconnect) {
 		this.debugger?.info(`[Shard #${this.id}] Reconnecting`);
-		this.disconnect(ShardSocketCloseCodes.Reconnect);
+		this.disconnect(code);
+		await delay(this.options.reconnectTimeout);
 		await this.connect();
 	}
 
@@ -236,6 +249,8 @@ export class Shard {
 
 		switch (packet.op) {
 			case GatewayOpcodes.Hello: {
+				clearTimeout(this.connectionTimeout);
+				this.connectionTimeout = undefined;
 				clearInterval(this.heart.nodeInterval);
 
 				this.heart.interval = packet.d.heartbeat_interval;
@@ -275,12 +290,16 @@ export class Shard {
 					switch (packet.t) {
 						case GatewayDispatchEvents.Resumed:
 							{
+								clearTimeout(this.connectionTimeout);
+								this.connectionTimeout = undefined;
 								this.isReady = true;
 								this.offlineSendQueue.map(resolve => resolve());
 								this.options.handlePayload(this.id, packet);
 							}
 							break;
 						case GatewayDispatchEvents.Ready: {
+							clearTimeout(this.connectionTimeout);
+							this.connectionTimeout = undefined;
 							if (hasIntent(this.options.intents, 'Guilds')) {
 								for (let i = 0; i < packet.d.guilds.length; i++) {
 									this.pendingGuilds.add(packet.d.guilds.at(i)!.id);
@@ -411,6 +430,8 @@ export class Shard {
 			case GatewayCloseCodes.UnknownOpcode:
 			case GatewayCloseCodes.InvalidSeq:
 			case GatewayCloseCodes.SessionTimedOut:
+			// shard failed to connect, try connecting from scratch
+			case ShardSocketCloseCodes.Timeout:
 				{
 					this.data.resume_seq = 0;
 					this.data.session_id = undefined;

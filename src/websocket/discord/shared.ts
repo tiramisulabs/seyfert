@@ -46,6 +46,8 @@ export interface ShardManagerOptions extends ShardDetails {
 		interval: number;
 		percentage: number;
 	};
+	reconnectTimeout?: number;
+	connectionTimeout?: number;
 }
 
 export interface CustomManagerAdapter {
@@ -128,6 +130,8 @@ export interface ShardOptions extends ShardDetails {
 	debugger?: Logger;
 	compress: boolean;
 	presence?: GatewayPresenceUpdateData;
+	reconnectTimeout?: number;
+	connectionTimeout?: number;
 }
 
 export enum ShardSocketCloseCodes {
@@ -136,6 +140,7 @@ export enum ShardSocketCloseCodes {
 	Reconnect = 3020,
 	Resharding = 3030,
 	ShutdownAll = 3040,
+	Timeout = 3050,
 }
 
 export interface WorkerData {
