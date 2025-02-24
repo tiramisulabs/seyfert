@@ -24,6 +24,8 @@ function getNodeDescriptors(c: TypeClass) {
 	const result: Record<string, TypedPropertyDescriptor<unknown> | PropertyDescriptor>[] = [];
 	while (proto) {
 		const descriptors = Object.getOwnPropertyDescriptors(proto);
+		// @ts-expect-error this is not a function in all cases
+		if (descriptors.valueOf.configurable) break;
 		result.push(descriptors);
 		proto = Object.getPrototypeOf(proto);
 	}
@@ -49,15 +51,12 @@ export function Mixin<T, C extends TypeClass[]>(...args: C): C[number] & T {
 			super(...constructorArgs);
 
 			for (const mixin of args.slice(1)) {
-				// @ts-expect-error
-				Object.assign(this, new mixin(...constructorArgs));
-				const descriptors = getDescriptors(mixin).reverse().concat(Object.getOwnPropertyDescriptors(mixin));
+				const descriptors = getDescriptors(mixin).reverse();
 				for (const desc of descriptors) {
+					// @ts-expect-error
+					Object.assign(this, new desc.constructor.value(...constructorArgs));
 					for (const key in desc) {
-						if (key === 'constructor') {
-							Object.assign(this, new desc[key].value(...constructorArgs));
-							continue;
-						}
+						if (key === 'constructor') continue;
 						if (key in MixedClass.prototype) continue;
 						const descriptor = desc[key];
 
