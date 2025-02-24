@@ -1,13 +1,19 @@
 import { inflateSync } from 'node:zlib';
-import { LogLevels, Logger, type MakeRequired, MergeOptions, hasIntent } from '../../common';
+import { LogLevels, Logger, type MakeRequired, MergeOptions, delay, hasIntent } from '../../common';
 import {
+	type APIGuildMember,
 	GatewayCloseCodes,
 	GatewayDispatchEvents,
 	type GatewayDispatchPayload,
+	type GatewayGuildMembersChunkPresence,
 	GatewayOpcodes,
 	type GatewayReceivePayload,
 	type GatewaySendPayload,
 } from '../../types';
+import type {
+	GatewayRequestGuildMembersDataWithQuery,
+	GatewayRequestGuildMembersDataWithUserIds,
+} from '../../types/gateway';
 import { properties } from '../constants';
 import { DynamicBucket } from '../structures';
 import { ConnectTimeout } from '../structures/timeout';
@@ -40,8 +46,23 @@ export class Shard {
 	bucket: DynamicBucket;
 	offlineSendQueue: ((_?: unknown) => void)[] = [];
 	pendingGuilds = new Set<string>();
-	options: MakeRequired<ShardOptions, 'properties' | 'ratelimitOptions'>;
+	options: MakeRequired<ShardOptions, 'properties' | 'ratelimitOptions' | 'reconnectTimeout' | 'connectionTimeout'>;
 	isReady = false;
+
+	connectionTimeout?: NodeJS.Timeout;
+
+	private requestGuildMembersChunk = new Map<
+		string,
+		{
+			members: APIGuildMember[];
+			presences: GatewayGuildMembersChunkPresence[];
+			resolve: (value: {
+				members: APIGuildMember[];
+				presences: GatewayGuildMembersChunkPresence[];
+			}) => void;
+			reject: (reason?: any) => void;
+		}
+	>();
 
 	constructor(
 		public id: number,
@@ -54,6 +75,8 @@ export class Shard {
 					rateLimitResetInterval: 60_000,
 					maxRequestsPerRateLimitTick: 120,
 				},
+				reconnectTimeout: 10e3,
+				connectionTimeout: 30e3,
 			} as ShardOptions,
 			options,
 		);
@@ -108,6 +131,11 @@ export class Shard {
 		clearTimeout(this.heart.nodeInterval);
 
 		this.debugger?.debug(`[Shard #${this.id}] Connecting to ${this.currentGatewayURL}`);
+
+		this.connectionTimeout = setTimeout(
+			() => this.reconnect(ShardSocketCloseCodes.Timeout),
+			this.options.connectionTimeout,
+		);
 
 		// @ts-expect-error Use native websocket when using Bun
 		// biome-ignore lint/correctness/noUndeclaredVariables: /\
@@ -198,14 +226,17 @@ export class Shard {
 		);
 	}
 
-	disconnect() {
+	disconnect(code = ShardSocketCloseCodes.Shutdown) {
+		clearTimeout(this.connectionTimeout);
+		this.connectionTimeout = undefined;
 		this.debugger?.info(`[Shard #${this.id}] Disconnecting`);
-		this.close(ShardSocketCloseCodes.Shutdown, 'Shard down request');
+		this.close(code, 'Shard down request');
 	}
 
-	async reconnect() {
+	async reconnect(code = ShardSocketCloseCodes.Reconnect) {
 		this.debugger?.info(`[Shard #${this.id}] Reconnecting`);
-		this.disconnect();
+		this.disconnect(code);
+		await delay(this.options.reconnectTimeout);
 		await this.connect();
 	}
 
@@ -218,6 +249,8 @@ export class Shard {
 
 		switch (packet.op) {
 			case GatewayOpcodes.Hello: {
+				clearTimeout(this.connectionTimeout);
+				this.connectionTimeout = undefined;
 				clearInterval(this.heart.nodeInterval);
 
 				this.heart.interval = packet.d.heartbeat_interval;
@@ -257,12 +290,16 @@ export class Shard {
 					switch (packet.t) {
 						case GatewayDispatchEvents.Resumed:
 							{
+								clearTimeout(this.connectionTimeout);
+								this.connectionTimeout = undefined;
 								this.isReady = true;
 								this.offlineSendQueue.map(resolve => resolve());
 								this.options.handlePayload(this.id, packet);
 							}
 							break;
 						case GatewayDispatchEvents.Ready: {
+							clearTimeout(this.connectionTimeout);
+							this.connectionTimeout = undefined;
 							if (hasIntent(this.options.intents, 'Guilds')) {
 								for (let i = 0; i < packet.d.guilds.length; i++) {
 									this.pendingGuilds.add(packet.d.guilds.at(i)!.id);
@@ -300,6 +337,29 @@ export class Shard {
 								this.options.handlePayload(this.id, packet);
 							}
 							break;
+						case GatewayDispatchEvents.GuildMembersChunk:
+							{
+								if (!packet.d.nonce) {
+									this.options.handlePayload(this.id, packet);
+									break;
+								}
+								const guildMemberChunk = this.requestGuildMembersChunk.get(packet.d.nonce);
+								if (!guildMemberChunk) {
+									this.options.handlePayload(this.id, packet);
+									break;
+								}
+								guildMemberChunk.members.push(...packet.d.members);
+								if (packet.d.presences) guildMemberChunk.presences.push(...packet.d.presences);
+								if (packet.d.chunk_index + 1 === packet.d.chunk_count) {
+									this.requestGuildMembersChunk.delete(packet.d.nonce);
+									guildMemberChunk.resolve({
+										members: guildMemberChunk.members,
+										presences: guildMemberChunk.presences,
+									});
+								}
+								this.options.handlePayload(this.id, packet);
+							}
+							break;
 						default:
 							this.options.handlePayload(this.id, packet);
 							break;
@@ -307,6 +367,48 @@ export class Shard {
 				}
 				break;
 		}
+	}
+
+	async requestGuildMember(
+		options:
+			| Omit<GatewayRequestGuildMembersDataWithQuery, 'nonce'>
+			| Omit<GatewayRequestGuildMembersDataWithUserIds, 'nonce'>,
+	) {
+		const nonce = Date.now().toString() + Math.random().toString(36);
+
+		let resolve: (value: {
+			members: APIGuildMember[];
+			presences: GatewayGuildMembersChunkPresence[];
+		}) => void = () => {
+			//
+		};
+		let reject: (reason?: any) => void = () => {
+			//
+		};
+
+		const promise = new Promise<{
+			members: APIGuildMember[];
+			presences: GatewayGuildMembersChunkPresence[];
+		}>((res, rej) => {
+			resolve = res;
+			reject = rej;
+		});
+		this.requestGuildMembersChunk.set(nonce, {
+			members: [],
+			presences: [],
+			reject,
+			resolve,
+		});
+
+		this.send(false, {
+			op: GatewayOpcodes.RequestGuildMembers,
+			d: {
+				...options,
+				nonce,
+			},
+		});
+
+		return promise;
 	}
 
 	protected async handleClosed(close: { code: number; reason: string }) {
@@ -319,12 +421,17 @@ export class Shard {
 
 		switch (close.code) {
 			case ShardSocketCloseCodes.Shutdown:
+			case ShardSocketCloseCodes.Reconnect:
+			case ShardSocketCloseCodes.Resharding:
+			case ShardSocketCloseCodes.ShutdownAll:
 				//Force disconnect, ignore
 				break;
 			case 1000:
 			case GatewayCloseCodes.UnknownOpcode:
 			case GatewayCloseCodes.InvalidSeq:
 			case GatewayCloseCodes.SessionTimedOut:
+			// shard failed to connect, try connecting from scratch
+			case ShardSocketCloseCodes.Timeout:
 				{
 					this.data.resume_seq = 0;
 					this.data.session_id = undefined;

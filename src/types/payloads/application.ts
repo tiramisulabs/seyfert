@@ -2,8 +2,9 @@
  * Types extracted from https://discord.com/developers/docs/resources/application
  */
 
-import type { LocalizationMap } from '.';
+import type { APIEmoji, LocalizationMap } from '.';
 import type { Permissions, Snowflake } from '..';
+import type { MakeRequired } from '../../common';
 import type { APIPartialGuild } from './guild';
 import type { ApplicationIntegrationType } from './interactions';
 import type { OAuth2Scopes } from './oauth2';
@@ -292,3 +293,35 @@ export enum ApplicationRoleConnectionMetadataType {
 	 */
 	BooleanNotEqual,
 }
+
+/**
+ * https://discord.com/developers/docs/resources/application#get-application-activity-instance-activity-instance-object
+ */
+export interface APIActivityInstance {
+	application_id: string;
+	instance_id: string;
+	launch_id: string;
+	/** Location the instance is runnning in */
+	location: APIActivityLocation;
+	users: string[];
+}
+
+/**
+ * https://discord.com/developers/docs/resources/application#get-application-activity-instance-activity-location-object
+ */
+export interface APIActivityLocation {
+	id: string;
+	/** Enum describing kind of location */
+	kind: ActivityLocation;
+	channel_id: string;
+	guild_id?: string | null;
+}
+/**
+ * https://discord.com/developers/docs/resources/application#get-application-activity-instance-activity-location-kind-enum
+ */
+export enum ActivityLocation {
+	GuildChannel = 'gc',
+	PrivateChannel = 'pc',
+}
+
+export type APIApplicationEmoji = MakeRequired<APIEmoji, 'id' | 'user'>;

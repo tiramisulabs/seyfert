@@ -252,7 +252,7 @@ export type APIMessageReferenceSend = AddUndefinedToPossiblyUndefinedPropertiesO
  * https://discord.com/developers/docs/resources/message#attachment-object
  */
 export type RESTAPIAttachment = Partial<
-	Pick<APIAttachment, 'description' | 'duration_secs' | 'filename' | 'title' | 'waveform'>
+	Pick<APIAttachment, 'description' | 'duration_secs' | 'filename' | 'title' | 'waveform' | 'id'>
 >;
 
 /**
