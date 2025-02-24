@@ -49,10 +49,15 @@ export function Mixin<T, C extends TypeClass[]>(...args: C): C[number] & T {
 			super(...constructorArgs);
 
 			for (const mixin of args.slice(1)) {
-				const descriptors = getDescriptors(mixin).reverse();
+				// @ts-expect-error
+				Object.assign(this, new mixin(...constructorArgs));
+				const descriptors = getDescriptors(mixin).reverse().concat(Object.getOwnPropertyDescriptors(mixin));
 				for (const desc of descriptors) {
 					for (const key in desc) {
-						if (key === 'constructor') continue;
+						if (key === 'constructor') {
+							Object.assign(this, new desc[key].value(...constructorArgs));
+							continue;
+						}
 						if (key in MixedClass.prototype) continue;
 						const descriptor = desc[key];
 
