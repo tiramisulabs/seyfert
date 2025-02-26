@@ -3,7 +3,7 @@ import type { UsingClient } from '../../commands';
 import { toCamelCase } from '../../common';
 
 /** */
-export abstract class Base {
+export class Base {
 	constructor(client: UsingClient) {
 		Object.assign(this, { client });
 	}
