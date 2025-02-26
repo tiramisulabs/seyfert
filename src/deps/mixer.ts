@@ -1,8 +1,8 @@
 const IgnoredProps = ['constructor', 'prototype', 'name'];
-export function copyProperties(target: InstanceType<TypeClass>, source: TypeClass, ignored?: string[]) {
+export function copyProperties(target: InstanceType<TypeClass>, source: TypeClass) {
 	const keys = Reflect.ownKeys(source);
 	for (const key of keys) {
-		if (IgnoredProps.concat(ignored ?? []).includes(key as string)) continue;
+		if (IgnoredProps.includes(key as string)) continue;
 		if (key in target) continue;
 		const descriptor = Object.getOwnPropertyDescriptor(source, key);
 		if (descriptor) {
@@ -21,6 +21,11 @@ export function Mixin<T, C extends TypeClass[]>(...mixins: C): C[number] & T {
 				// @ts-expect-error
 				const mixinInstance = new mixin(...args);
 				copyProperties(this, mixinInstance);
+				let proto = Object.getPrototypeOf(mixinInstance);
+				while (proto && proto !== Object.prototype) {
+					copyProperties(this, proto);
+					proto = Object.getPrototypeOf(proto);
+				}
 			}
 		}
 	}
