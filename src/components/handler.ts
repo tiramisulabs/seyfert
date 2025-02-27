@@ -1,4 +1,11 @@
-import type { ComponentCallback, ListenerOptions, ModalSubmitCallback } from '../builders/types';
+import type {
+	ComponentCallback,
+	ComponentOnErrorCallback,
+	ComponentRefreshCallback,
+	ComponentStopCallback,
+	ListenerOptions,
+	ModalSubmitCallback,
+} from '../builders/types';
 import { LimitedCollection } from '../collection';
 import { BaseCommand, type RegisteredMiddlewares, type UsingClient } from '../commands';
 import type { FileLoaded } from '../commands/handler';
@@ -18,6 +25,7 @@ type COMPONENTS = {
 	guildId: string | undefined;
 	idle?: NodeJS.Timeout;
 	timeout?: NodeJS.Timeout;
+	onError?: ComponentOnErrorCallback;
 	__run: (customId: UserMatches, callback: ComponentCallback) => any;
 };
 
@@ -94,6 +102,7 @@ export class ComponentHandler extends BaseHandler {
 					});
 				}
 			},
+			onError: options.onError,
 		});
 
 		return {
@@ -117,18 +126,31 @@ export class ComponentHandler extends BaseHandler {
 			if (!(await row.options.filter(interaction))) return row.options.onPass?.(interaction);
 		}
 		row.idle?.refresh();
-		await component.callback(
-			interaction,
-			reason => {
-				this.clearValue(id);
-				row.options?.onStop?.(reason ?? 'stop', () => {
-					this.createComponentCollector(row.messageId, row.channelId, row.guildId, row.options, row.components);
-				});
-			},
-			() => {
-				this.resetTimeouts(id);
-			},
-		);
+
+		const stop: ComponentStopCallback = reason => {
+			this.clearValue(id);
+			row.options?.onStop?.(reason ?? 'stop', () => {
+				this.createComponentCollector(row.messageId, row.channelId, row.guildId, row.options, row.components);
+			});
+		};
+
+		const refresh: ComponentRefreshCallback = () => {
+			this.resetTimeouts(id);
+		};
+
+		try {
+			await component.callback(interaction, stop, refresh);
+		} catch (err) {
+			try {
+				if (row.onError) {
+					await row.onError(interaction, err, stop, refresh);
+				} else {
+					this.client.logger.error('<Client>.components.onComponent', err);
+				}
+			} catch (err) {
+				this.client.logger.error('<Client>.components.onComponent', err);
+			}
+		}
 	}
 
 	hasComponent(id: string, customId: string) {

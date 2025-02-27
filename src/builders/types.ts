@@ -10,6 +10,9 @@ import type { BuilderSelectMenus } from './SelectMenu';
 export type ComponentCallback<
 	T extends ComponentInteraction | StringSelectMenuInteraction = ComponentInteraction | StringSelectMenuInteraction,
 > = (interaction: T, stop: ComponentStopCallback, refresh: ComponentRefreshCallback) => any;
+export type ComponentOnErrorCallback<
+	T extends ComponentInteraction | StringSelectMenuInteraction = ComponentInteraction | StringSelectMenuInteraction,
+> = (interaction: T, error: unknown, stop: ComponentStopCallback, refresh: ComponentRefreshCallback) => any;
 export type ComponentFilterCallback<T = ComponentInteraction> = (interaction: T) => any;
 export type ComponentStopCallback = (
 	reason: 'messageDelete' | 'channelDelete' | 'guildDelete' | 'idle' | 'timeout' | (string & {}) | undefined,
@@ -30,4 +33,5 @@ export interface ListenerOptions {
 	filter?: ComponentFilterCallback;
 	onPass?: ComponentFilterCallback;
 	onStop?: ComponentStopCallback;
+	onError?: ComponentOnErrorCallback;
 }
