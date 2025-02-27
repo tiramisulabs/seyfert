@@ -138,7 +138,10 @@ describe('mix decorator', () => {
 
 	it('should handle constructor arguments', () => {
 		class MixinWithConstructor {
-			constructor(public name: string) {}
+			name: string;
+			constructor(name: string) {
+				this.name = name.slice(0, 2);
+			}
 
 			getName() {
 				return this.name;
