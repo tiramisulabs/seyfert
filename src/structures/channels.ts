@@ -167,8 +167,10 @@ export class BaseNoEditableChannel<T extends ChannelType> extends DiscordBase<AP
 			list: (force = false): Promise<AllChannels[]> => ctx.client.guilds.channels.list(ctx.guildId, force),
 			fetch: (id: string, force = false): Promise<AllChannels> =>
 				ctx.client.guilds.channels.fetch(ctx.guildId, id, force),
-			create: (body: RESTPostAPIGuildChannelJSONBody): Promise<AllChannels> =>
-				ctx.client.guilds.channels.create(ctx.guildId, body),
+			create: <T extends GuildChannelTypes = GuildChannelTypes>(
+				body: RESTPostAPIGuildChannelJSONBody & { type: T },
+			): Promise<GuildChannelMap[T]> =>
+				ctx.client.guilds.channels.create(ctx.guildId, body as never) as Promise<GuildChannelMap[T]>,
 			delete: (id: string, reason?: string): Promise<AllChannels> =>
 				ctx.client.guilds.channels.delete(ctx.guildId, id, reason),
 			edit: (id: string, body: RESTPatchAPIChannelJSONBody, reason?: string): Promise<AllChannels> =>
@@ -689,3 +691,28 @@ export type AllChannels =
 	| NewsChannelStructure
 	| DirectoryChannelStructure
 	| StageChannelStructure;
+
+export type GuildChannelTypes =
+	| ChannelType.GuildAnnouncement
+	| ChannelType.GuildVoice
+	| ChannelType.GuildText
+	| ChannelType.GuildStageVoice
+	| ChannelType.GuildForum
+	| ChannelType.GuildMedia
+	| ChannelType.GuildCategory
+	| ChannelType.AnnouncementThread
+	| ChannelType.PrivateThread
+	| ChannelType.PublicThread;
+
+export type GuildChannelMap = {
+	[ChannelType.GuildAnnouncement]: NewsChannelStructure;
+	[ChannelType.GuildVoice]: VoiceChannelStructure;
+	[ChannelType.GuildText]: TextGuildChannelStructure;
+	[ChannelType.GuildStageVoice]: StageChannelStructure;
+	[ChannelType.GuildForum]: ForumChannelStructure;
+	[ChannelType.GuildMedia]: MediaChannelStructure;
+	[ChannelType.GuildCategory]: CategoryChannelStructure;
+	[ChannelType.AnnouncementThread]: ThreadChannelStructure;
+	[ChannelType.PrivateThread]: ThreadChannelStructure;
+	[ChannelType.PublicThread]: ThreadChannelStructure;
+};
