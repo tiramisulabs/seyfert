@@ -22,7 +22,7 @@ import {
 	type VoiceStateStructure,
 	type WebhookStructure,
 } from '../client';
-import type { UsingClient } from '../commands';
+import type { SeyfertChannelMap, UsingClient } from '../commands';
 import {
 	type EmojiResolvable,
 	type MessageCreateBodyRequest,
@@ -167,8 +167,10 @@ export class BaseNoEditableChannel<T extends ChannelType> extends DiscordBase<AP
 			list: (force = false): Promise<AllChannels[]> => ctx.client.guilds.channels.list(ctx.guildId, force),
 			fetch: (id: string, force = false): Promise<AllChannels> =>
 				ctx.client.guilds.channels.fetch(ctx.guildId, id, force),
-			create: (body: RESTPostAPIGuildChannelJSONBody): Promise<AllChannels> =>
-				ctx.client.guilds.channels.create(ctx.guildId, body),
+			create: <T extends GuildChannelTypes = GuildChannelTypes>(
+				body: RESTPostAPIGuildChannelJSONBody & { type: T },
+			): Promise<SeyfertChannelMap[T]> =>
+				ctx.client.guilds.channels.create(ctx.guildId, body as never) as Promise<SeyfertChannelMap[T]>,
 			delete: (id: string, reason?: string): Promise<AllChannels> =>
 				ctx.client.guilds.channels.delete(ctx.guildId, id, reason),
 			edit: (id: string, body: RESTPatchAPIChannelJSONBody, reason?: string): Promise<AllChannels> =>
@@ -689,3 +691,15 @@ export type AllChannels =
 	| NewsChannelStructure
 	| DirectoryChannelStructure
 	| StageChannelStructure;
+
+export type GuildChannelTypes =
+	| ChannelType.GuildAnnouncement
+	| ChannelType.GuildVoice
+	| ChannelType.GuildText
+	| ChannelType.GuildStageVoice
+	| ChannelType.GuildForum
+	| ChannelType.GuildMedia
+	| ChannelType.GuildCategory
+	| ChannelType.AnnouncementThread
+	| ChannelType.PrivateThread
+	| ChannelType.PublicThread;

@@ -9,7 +9,15 @@ import {
 	type StickerStructure,
 	Transformers,
 } from '../../client/transformers';
-import { type AllChannels, BaseChannel, type CreateStickerBodyRequest, Guild, channelFrom } from '../../structures';
+import type { SeyfertChannelMap } from '../../commands';
+import {
+	type AllChannels,
+	BaseChannel,
+	type CreateStickerBodyRequest,
+	Guild,
+	type GuildChannelTypes,
+	channelFrom,
+} from '../../structures';
 import type {
 	APIChannel,
 	APISticker,
@@ -153,10 +161,13 @@ export class GuildShorter extends BaseShorter {
 		 * @param body The data for creating the channel.
 		 * @returns A Promise that resolves to the created channel.
 		 */
-		create: async (guildId: string, body: RESTPostAPIGuildChannelJSONBody) => {
+		create: async <T extends GuildChannelTypes = GuildChannelTypes>(
+			guildId: string,
+			body: RESTPostAPIGuildChannelJSONBody & { type: T },
+		): Promise<SeyfertChannelMap[T]> => {
 			const res = await this.client.proxy.guilds(guildId).channels.post({ body });
 			await this.client.cache.channels?.setIfNI(CacheFrom.Rest, BaseChannel.__intent__(guildId), res.id, guildId, res);
-			return channelFrom(res, this.client);
+			return channelFrom(res, this.client) as SeyfertChannelMap[T];
 		},
 
 		/**
