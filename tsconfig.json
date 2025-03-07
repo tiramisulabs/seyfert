@@ -26,7 +26,10 @@
 		"strictBindCallApply": true,
 		"strictBuiltinIteratorReturn": true,
 		"strictPropertyInitialization": true,
-		"alwaysStrict": true
+		"alwaysStrict": true,
+		"types": [
+			"node"
+		]
 	},
 	"exclude": [
 		"**/lib",
