@@ -14,8 +14,16 @@ export interface ComponentCommand {
 export abstract class ComponentCommand {
 	type = InteractionCommandType.COMPONENT;
 	abstract componentType: keyof ContextComponentCommandInteractionMap;
-	abstract filter(context: ComponentContext<typeof this.componentType>): Promise<boolean> | boolean;
+	customId?: string;
+	filter?(context: ComponentContext<typeof this.componentType>): Promise<boolean> | boolean;
 	abstract run(context: ComponentContext<typeof this.componentType>): any;
+
+	/** @internal */
+	_filter(context: ComponentContext) {
+		if (this.customId && this.customId !== context.customId) return false;
+		if (this.filter) return this.filter(context);
+		return true;
+	}
 
 	middlewares: (keyof RegisteredMiddlewares)[] = [];
 
