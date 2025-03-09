@@ -14,7 +14,8 @@ export class GuildBan extends DiscordBase {
 		data: APIBan,
 		readonly guildId: string,
 	) {
-		super(client, { ...data, id: data.user.id });
+		const id = 'user' in data ? data.user.id : (data as { id: string }).id;
+		super(client, { ...data, id });
 	}
 
 	create(body?: Parameters<BanShorter['create']>[2], reason?: string) {
