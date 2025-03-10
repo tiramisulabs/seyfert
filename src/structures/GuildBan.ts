@@ -3,7 +3,7 @@ import type { GuildBanStructure, GuildStructure } from '../client';
 import type { UsingClient } from '../commands';
 import { Formatter, type MethodContext, type ObjectToLower } from '../common';
 import type { BanShorter } from '../common/shorters/bans';
-import type { APIBan, RESTGetAPIGuildBansQuery } from '../types';
+import type { APIBan, ActuallyBan, RESTGetAPIGuildBansQuery } from '../types';
 import { DiscordBase } from './extra/DiscordBase';
 
 export interface GuildBan extends DiscordBase, ObjectToLower<Omit<APIBan, 'id'>> {}
@@ -11,10 +11,11 @@ export interface GuildBan extends DiscordBase, ObjectToLower<Omit<APIBan, 'id'>>
 export class GuildBan extends DiscordBase {
 	constructor(
 		client: UsingClient,
-		data: APIBan,
+		data: APIBan | ActuallyBan,
 		readonly guildId: string,
 	) {
-		super(client, { ...data, id: data.user.id });
+		const id = 'user' in data ? data.user.id : data.id;
+		super(client, { ...data, id });
 	}
 
 	create(body?: Parameters<BanShorter['create']>[2], reason?: string) {

@@ -862,6 +862,24 @@ export interface APIBan {
 }
 
 /**
+ * @unstable Intended for future use, but not yet documented
+ */
+export interface ActuallyBan {
+	/**
+	 * The reason for the ban
+	 */
+	reason: string | null;
+	/**
+	 * The banned user
+	 */
+	id: string;
+	/**
+	 * The guild this ban is for
+	 */
+	guild_id: string;
+}
+
+/**
  * https://discord.com/developers/docs/resources/guild#guild-widget-object
  */
 export interface APIGuildWidget {
