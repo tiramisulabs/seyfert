@@ -1,5 +1,6 @@
 import type { GuildStructure, RawFile, StickerStructure, UsingClient } from '..';
 import type { Attachment, AttachmentBuilder } from '../builders';
+import type { ReturnCache } from '../cache';
 import { Transformers, type UserStructure } from '../client/transformers';
 import type { MethodContext, ObjectToLower } from '../common';
 import type { APISticker, RESTPatchAPIGuildStickerJSONBody, RESTPostAPIGuildStickerFormDataBody } from '../types';
@@ -16,9 +17,20 @@ export class Sticker extends DiscordBase {
 		}
 	}
 
-	async guild(force = false): Promise<GuildStructure<'api'> | undefined> {
-		if (!this.guildId) return;
-		return this.client.guilds.fetch(this.guildId, force);
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
+	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		if (!this.guildId)
+			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.guilds?.get(this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+		}
 	}
 
 	async edit(body: RESTPatchAPIGuildStickerJSONBody, reason?: string): Promise<StickerStructure | undefined> {

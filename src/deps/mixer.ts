@@ -1,75 +1,30 @@
-/**
- * Gets the descriptors of a class.
- * @param c The class to get the descriptors of.
- * @returns The descriptors of the class.
- */
-function getDenoDescriptors(c: TypeClass) {
-	const protos = [c.prototype];
-
-	let v = c;
-	while ((v = Object.getPrototypeOf(v))) {
-		if (v.prototype) protos.push(v.prototype);
+const IgnoredProps = ['constructor', 'prototype', 'name'];
+export function copyProperties(target: InstanceType<TypeClass>, source: TypeClass) {
+	const keys = Reflect.ownKeys(source);
+	for (const key of keys) {
+		if (IgnoredProps.includes(key as string)) continue;
+		if (key in target) continue;
+		const descriptor = Object.getOwnPropertyDescriptor(source, key);
+		if (descriptor) {
+			Object.defineProperty(target, key, descriptor);
+		}
 	}
-
-	return protos.map(x => Object.getOwnPropertyDescriptors(x));
 }
 
-/**
- * Gets the descriptors of a class.
- * @param c The class to get the descriptors of.
- * @returns The descriptors of the class.
- */
-function getNodeDescriptors(c: TypeClass) {
-	let proto = c.prototype;
-	const result: Record<string, TypedPropertyDescriptor<unknown> | PropertyDescriptor>[] = [];
-	while (proto) {
-		const descriptors = Object.getOwnPropertyDescriptors(proto);
-		// @ts-expect-error this is not a function in all cases
-		if (descriptors.valueOf.configurable) break;
-		result.push(descriptors);
-		proto = proto.__proto__;
-	}
-	return result;
-}
+export function Mixin<T, C extends TypeClass[]>(...mixins: C): C[number] & T {
+	const Base = mixins[0];
 
-function getDescriptors(c: TypeClass) {
-	//@ts-expect-error
-	// biome-ignore lint/correctness/noUndeclaredVariables: <explanation>
-	return typeof Deno === 'undefined' ? getNodeDescriptors(c) : getDenoDescriptors(c);
-}
-
-/**
- * Mixes a class with other classes.
- * @param args The classes to mix.
- * @returns The mixed class.
- */
-export function Mixin<T, C extends TypeClass[]>(...args: C): C[number] & T {
-	const ignoreOverwriteToString = Object.keys(Object.getOwnPropertyDescriptors(args[0].prototype)).includes('toString');
-	function MixedClass(...constructorArgs: any[]) {
-		for (const i of args) {
-			const descriptors = getDescriptors(i).toReversed();
-			for (const j of descriptors) {
+	class MixedClass extends Base {
+		constructor(...args: any[]) {
+			super(...args);
+			for (const mixin of mixins.slice(1)) {
 				// @ts-expect-error
-				Object.assign(this, new j.constructor.value(...constructorArgs));
-
-				for (const descriptorK in j) {
-					if (descriptorK === 'constructor') continue;
-					if (descriptorK in MixedClass.prototype && descriptorK !== 'toString') continue;
-					const descriptor = j[descriptorK];
-					if (descriptor.value) {
-						if (descriptorK === 'toString' && ignoreOverwriteToString) {
-							MixedClass.prototype[descriptorK] = args[0].prototype.toString;
-							continue;
-						}
-						MixedClass.prototype[descriptorK] = descriptor.value;
-						continue;
-					}
-					if (descriptor.get || descriptor.set) {
-						Object.defineProperty(MixedClass.prototype, descriptorK, {
-							get: descriptor.get,
-							set: descriptor.set,
-						});
-					}
+				const mixinInstance = new mixin(...args);
+				copyProperties(this, mixinInstance);
+				let proto = Object.getPrototypeOf(mixinInstance);
+				while (proto && proto !== Object.prototype) {
+					copyProperties(this, proto);
+					proto = Object.getPrototypeOf(proto);
 				}
 			}
 		}
@@ -89,11 +44,9 @@ export const mix =
 	(decoratedClass: any) => {
 		ingredients.unshift(decoratedClass);
 		const mixedClass = Mixin(...ingredients);
-
 		Object.defineProperty(mixedClass, 'name', {
 			value: decoratedClass.name,
 			writable: false,
 		});
-
 		return mixedClass as any;
 	};

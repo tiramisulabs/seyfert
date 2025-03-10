@@ -1,4 +1,4 @@
-import { type AllChannels, Embed } from '..';
+import { type AllChannels, Embed, type ReturnCache } from '..';
 import type { ListenerOptions } from '../builders';
 import {
 	type GuildMemberStructure,
@@ -69,16 +69,39 @@ export class BaseMessage extends DiscordBase {
 	}
 
 	get url() {
-		return Formatter.messageLink(this.guildId!, this.channelId, this.id);
+		return Formatter.messageLink(this.guildId ?? '@me', this.channelId, this.id);
 	}
 
-	async guild(force = false): Promise<GuildStructure<'api'> | undefined> {
-		if (!this.guildId) return;
-		return this.client.guilds.fetch(this.guildId, force);
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
+	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		if (!this.guildId)
+			return (
+				mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve()
+			) as any;
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.guilds?.get(this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+		}
 	}
 
-	channel(force = false): Promise<AllChannels> {
-		return this.client.channels.fetch(this.channelId, force);
+	channel(mode?: 'rest' | 'flow'): Promise<AllChannels>;
+	channel(mode: 'cache'): ReturnCache<AllChannels | undefined>;
+	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.channels?.get(this.channelId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.channels.fetch(this.channelId, mode === 'rest');
+		}
 	}
 
 	react(emoji: EmojiResolvable) {
