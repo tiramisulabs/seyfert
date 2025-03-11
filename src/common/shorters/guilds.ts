@@ -58,7 +58,7 @@ export class GuildShorter extends BaseShorter {
 	}
 
 	async raw(id: string, options: GuildFetchOptions | boolean = false) {
-		if ((typeof options === 'boolean' && options) || 'force' in (options as GuildFetchOptions)) {
+		if ((typeof options === 'boolean' && options) || (options as GuildFetchOptions).force) {
 			const guild = await this.client.cache.guilds?.raw(id);
 			if (guild) return guild;
 		}
