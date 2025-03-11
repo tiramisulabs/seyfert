@@ -23,6 +23,7 @@ import type {
 	APISticker,
 	GuildWidgetStyle,
 	RESTGetAPICurrentUserGuildsQuery,
+	RESTGetAPIGuildQuery,
 	RESTPatchAPIAutoModerationRuleJSONBody,
 	RESTPatchAPIChannelJSONBody,
 	RESTPatchAPIGuildChannelPositionsJSONBody,
@@ -52,17 +53,17 @@ export class GuildShorter extends BaseShorter {
 	 * @param force Whether to force fetching the guild from the API even if it exists in the cache.
 	 * @returns A Promise that resolves to the fetched guild.
 	 */
-	async fetch(id: string, force = false): Promise<GuildStructure<'api'>> {
-		return Transformers.Guild<'api'>(this.client, await this.raw(id, force));
+	async fetch(id: string, options: GuildFetchOptions | boolean = false) {
+		return Transformers.Guild<'api'>(this.client, await this.raw(id, options));
 	}
 
-	async raw(id: string, force = false) {
-		if (!force) {
+	async raw(id: string, options: GuildFetchOptions | boolean = false) {
+		if ((typeof options === 'boolean' && options) || 'force' in (options as GuildFetchOptions)) {
 			const guild = await this.client.cache.guilds?.raw(id);
 			if (guild) return guild;
 		}
 
-		const data = await this.client.proxy.guilds(id).get();
+		const data = await this.client.proxy.guilds(id).get({ query: (options as GuildFetchOptions).query });
 		await this.client.cache.guilds?.patch(CacheFrom.Rest, id, data);
 		return (await this.client.cache.guilds?.raw(id)) ?? data;
 	}
@@ -383,4 +384,9 @@ export class GuildShorter extends BaseShorter {
 			await this.client.cache.stickers?.removeIfNI('GuildExpressions', stickerId, guildId);
 		},
 	};
+}
+
+export interface GuildFetchOptions {
+	query?: RESTGetAPIGuildQuery;
+	force?: boolean;
 }

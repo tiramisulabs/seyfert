@@ -28,7 +28,7 @@ import type {
 	UnionToTuple,
 	When,
 } from '../common';
-import { ComponentType, MessageFlags } from '../types';
+import { ComponentType, MessageFlags, type RESTGetAPIGuildQuery } from '../types';
 
 export interface ComponentContext<
 	Type extends keyof ContextComponentCommandInteractionMap = keyof ContextComponentCommandInteractionMap,
@@ -190,18 +190,19 @@ export class ComponentContext<
 	 * @param mode - The mode to fetch the guild.
 	 * @returns A promise that resolves to the guild.
 	 */
-	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
-	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
-	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+	guild(mode?: 'rest' | 'flow', query?: RESTGetAPIGuildQuery): Promise<GuildStructure<'cached' | 'api'> | undefined>;
+	guild(mode: 'cache', query?: RESTGetAPIGuildQuery): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow', query?: RESTGetAPIGuildQuery) {
 		if (!this.guildId)
-			return (
-				mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve()
-			) as any;
+			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
 		switch (mode) {
 			case 'cache':
-				return this.client.cache.guilds?.get(this.guildId);
+				return (
+					this.client.cache.guilds?.get(this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
 			default:
-				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+				return this.client.guilds.fetch(this.guildId, { force: mode === 'rest', query });
 		}
 	}
 

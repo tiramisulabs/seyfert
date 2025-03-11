@@ -16,7 +16,7 @@ import type {
 	MessageWebhookCreateBodyRequest,
 } from '../../common/types/write';
 import { type AllChannels, ChatInputCommandInteraction, type Message } from '../../structures';
-import { MessageFlags } from '../../types';
+import { MessageFlags, type RESTGetAPIGuildQuery } from '../../types';
 import { BaseContext } from '../basecontext';
 import type { RegisteredMiddlewares } from '../decorators';
 import type { Command, ContextOptions, OptionsRecord, SubCommand } from './chat';
@@ -182,9 +182,9 @@ export class CommandContext<
 		}
 	}
 
-	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
-	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
-	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+	guild(mode?: 'rest' | 'flow', query?: RESTGetAPIGuildQuery): Promise<GuildStructure<'cached' | 'api'> | undefined>;
+	guild(mode: 'cache', query?: RESTGetAPIGuildQuery): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow', query?: RESTGetAPIGuildQuery) {
 		if (!this.guildId)
 			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
 		switch (mode) {
@@ -194,7 +194,7 @@ export class CommandContext<
 					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
 				);
 			default:
-				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+				return this.client.guilds.fetch(this.guildId, { force: mode === 'rest', query });
 		}
 	}
 
