@@ -50,15 +50,25 @@ export class GuildShorter extends BaseShorter {
 	/**
 	 * Fetches a guild by its ID.
 	 * @param id The ID of the guild to fetch.
-	 * @param force Whether to force fetching the guild from the API even if it exists in the cache.
+	 * @param options The options for fetching the guild.
+	 * @param options.query The query parameters for fetching the guild.
+	 * @param options.force Whether to force fetching the guild from the API even if it exists in the cache.
 	 * @returns A Promise that resolves to the fetched guild.
 	 */
 	async fetch(id: string, options: GuildFetchOptions | boolean = false) {
 		return Transformers.Guild<'api'>(this.client, await this.raw(id, options));
 	}
 
+	/**
+	 * Fetches a guild by its ID.
+	 * @param id The ID of the guild to fetch.
+	 * @param options The options for fetching the guild.
+	 * @param options.query The query parameters for fetching the guild.
+	 * @param options.force Whether to force fetching the guild from the API even if it exists in the cache.
+	 * @returns A Promise that resolves to the fetched guild.
+	 */
 	async raw(id: string, options: GuildFetchOptions | boolean = false) {
-		if ((typeof options === 'boolean' && options) || !(options as GuildFetchOptions).force) {
+		if (!(typeof options === 'boolean' ? options : options.force)) {
 			const guild = await this.client.cache.guilds?.raw(id);
 			if (guild) return guild;
 		}
