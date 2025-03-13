@@ -27,6 +27,9 @@
 		"strictBuiltinIteratorReturn": true,
 		"strictPropertyInitialization": true,
 		"alwaysStrict": true,
+		"types": [
+			"node"
+		]
 	},
 	"exclude": [
 		"**/lib",

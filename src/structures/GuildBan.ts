@@ -1,8 +1,9 @@
+import type { ReturnCache } from '../cache';
 import type { GuildBanStructure, GuildStructure } from '../client';
 import type { UsingClient } from '../commands';
 import { Formatter, type MethodContext, type ObjectToLower } from '../common';
 import type { BanShorter } from '../common/shorters/bans';
-import type { APIBan, RESTGetAPIGuildBansQuery } from '../types';
+import type { APIBan, ActuallyBan, RESTGetAPIGuildBansQuery } from '../types';
 import { DiscordBase } from './extra/DiscordBase';
 
 export interface GuildBan extends DiscordBase, ObjectToLower<Omit<APIBan, 'id'>> {}
@@ -10,10 +11,11 @@ export interface GuildBan extends DiscordBase, ObjectToLower<Omit<APIBan, 'id'>>
 export class GuildBan extends DiscordBase {
 	constructor(
 		client: UsingClient,
-		data: APIBan,
+		data: APIBan | ActuallyBan,
 		readonly guildId: string,
 	) {
-		super(client, { ...data, id: data.user.id });
+		const id = 'user' in data ? data.user.id : data.id;
+		super(client, { ...data, id });
 	}
 
 	create(body?: Parameters<BanShorter['create']>[2], reason?: string) {
@@ -24,8 +26,18 @@ export class GuildBan extends DiscordBase {
 		return this.client.bans.remove(this.guildId, this.id, reason);
 	}
 
-	guild(force = false): Promise<GuildStructure<'api'>> {
-		return this.client.guilds.fetch(this.guildId, force);
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
+	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.guilds?.get(this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+		}
 	}
 
 	fetch(force = false): Promise<GuildBanStructure> {

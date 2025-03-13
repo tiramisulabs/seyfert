@@ -11,13 +11,14 @@ import {
 	type InteractionCreateBodyRequest,
 	type InteractionMessageUpdateBodyRequest,
 	type MakeRequired,
+	type MessageWebhookCreateBodyRequest,
 	type ModalCreateBodyRequest,
 	type UnionToTuple,
 	type When,
 	toSnakeCase,
 } from '../../common';
 import type { AllChannels, MessageCommandInteraction, UserCommandInteraction } from '../../structures';
-import { type APIMessage, ApplicationCommandType, MessageFlags } from '../../types';
+import { type APIMessage, ApplicationCommandType, MessageFlags, type RESTGetAPIGuildQuery } from '../../types';
 import { BaseContext } from '../basecontext';
 import type { RegisteredMiddlewares } from '../decorators';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
@@ -101,6 +102,10 @@ export class MenuCommandContext<
 		return this.interaction.editOrReply<WR>(body as InteractionCreateBodyRequest, withResponse);
 	}
 
+	followup(body: MessageWebhookCreateBodyRequest): Promise<WebhookMessageStructure> {
+		return this.interaction.followup(body);
+	}
+
 	fetchResponse(): Promise<WebhookMessageStructure> {
 		return this.interaction.fetchResponse();
 	}
@@ -108,14 +113,14 @@ export class MenuCommandContext<
 	channel(mode?: 'rest' | 'flow'): Promise<AllChannels>;
 	channel(mode: 'cache'): ReturnCache<AllChannels>;
 	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
-		if (this.interaction.channel && mode === 'cache')
+		if (mode === 'cache')
 			return this.client.cache.adapter.isAsync ? Promise.resolve(this.interaction.channel) : this.interaction.channel;
 		return this.client.channels.fetch(this.channelId, mode === 'rest');
 	}
 
-	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
+	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure | undefined>;
 	me(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
-	me(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+	me(mode: 'cache' | 'rest' | 'flow' = 'flow'): any {
 		if (!this.guildId)
 			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
 		switch (mode) {
@@ -126,18 +131,19 @@ export class MenuCommandContext<
 		}
 	}
 
-	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
-	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
-	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+	guild(mode?: 'rest' | 'flow', query?: RESTGetAPIGuildQuery): Promise<GuildStructure<'cached' | 'api'> | undefined>;
+	guild(mode: 'cache', query?: RESTGetAPIGuildQuery): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow', query?: RESTGetAPIGuildQuery) {
 		if (!this.guildId)
-			return (
-				mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve()
-			) as any;
+			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
 		switch (mode) {
 			case 'cache':
-				return this.client.cache.guilds?.get(this.guildId);
+				return (
+					this.client.cache.guilds?.get(this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
 			default:
-				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+				return this.client.guilds.fetch(this.guildId, { force: mode === 'rest', query });
 		}
 	}
 

@@ -33,5 +33,5 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         with:
           commit: "chore: release packages"
-          publish: npm publish
+          publish: npm publish --provenance
           title: "chore: release packages"
