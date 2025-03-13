@@ -16,7 +16,7 @@ import type {
 	When,
 } from '../../common';
 import type { AllChannels, EntryPointInteraction } from '../../structures';
-import { MessageFlags } from '../../types';
+import { MessageFlags, type RESTGetAPIGuildQuery } from '../../types';
 import { BaseContext } from '../basecontext';
 import type { RegisteredMiddlewares } from '../decorators';
 import type { EntryPointCommand } from './entryPoint';
@@ -110,18 +110,19 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 		}
 	}
 
-	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
-	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
-	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+	guild(mode?: 'rest' | 'flow', query?: RESTGetAPIGuildQuery): Promise<GuildStructure<'cached' | 'api'> | undefined>;
+	guild(mode: 'cache', query?: RESTGetAPIGuildQuery): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow', query?: RESTGetAPIGuildQuery) {
 		if (!this.guildId)
-			return (
-				mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve()
-			) as any;
+			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
 		switch (mode) {
 			case 'cache':
-				return this.client.cache.guilds?.get(this.guildId);
+				return (
+					this.client.cache.guilds?.get(this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
 			default:
-				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+				return this.client.guilds.fetch(this.guildId, { force: mode === 'rest', query });
 		}
 	}
 
