@@ -210,7 +210,7 @@ export class Shard {
 		);
 		if (!requested) {
 			if (!this.heart.ack) {
-				this.close(ShardSocketCloseCodes.ZombiedConnection, 'Zombied connection');
+				this.reconnect(ShardSocketCloseCodes.ZombiedConnection);
 				return;
 			}
 			this.heart.ack = false;
@@ -424,6 +424,7 @@ export class Shard {
 			case ShardSocketCloseCodes.Reconnect:
 			case ShardSocketCloseCodes.Resharding:
 			case ShardSocketCloseCodes.ShutdownAll:
+			case ShardSocketCloseCodes.ZombiedConnection:
 				//Force disconnect, ignore
 				break;
 			case 1000:
@@ -441,7 +442,6 @@ export class Shard {
 				break;
 			case 1001:
 			case 1006:
-			case ShardSocketCloseCodes.ZombiedConnection:
 			case GatewayCloseCodes.UnknownError:
 			case GatewayCloseCodes.DecodeError:
 			case GatewayCloseCodes.NotAuthenticated:
