@@ -2,7 +2,7 @@ export * from './AnonymousGuild';
 export * from './AutoModerationRule';
 export * from './ClientUser';
 export * from './Guild';
-export * from './GuildEmoji';
+export * from './Emoji';
 export * from './GuildMember';
 export * from './GuildPreview';
 export * from './GuildRole';
