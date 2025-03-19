@@ -36,8 +36,8 @@ export interface CreateComponentCollectorResult {
 	run<T extends CollectorInteraction = CollectorInteraction>(
 		customId: UserMatches,
 		callback: ComponentCallback<T>,
-	): any;
-	stop(reason?: string): any;
+	): void;
+	stop(reason?: string): void;
 }
 
 export class ComponentHandler extends BaseHandler {

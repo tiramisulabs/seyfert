@@ -14,7 +14,6 @@ import {
 	type AllChannels,
 	BaseChannel,
 	type CreateStickerBodyRequest,
-	Guild,
 	type GuildChannelTypes,
 	channelFrom,
 } from '../../structures';
@@ -92,7 +91,7 @@ export class GuildShorter extends BaseShorter {
 		const guild = await this.client.proxy.guilds(guildId).patch({ body, reason });
 
 		if (!this.client.cache.hasGuildsIntent) await this.client.cache.guilds?.patch(CacheFrom.Rest, guildId, guild);
-		return new Guild(this.client, guild);
+		return Transformers.Guild(this.client, guild);
 	}
 
 	list(query?: RESTGetAPICurrentUserGuildsQuery): Promise<AnonymousGuildStructure[]> {
