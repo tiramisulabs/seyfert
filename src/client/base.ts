@@ -23,6 +23,7 @@ import {
 	EmojiShorter,
 	GuildShorter,
 	InteractionShorter,
+	InvitesShorter,
 	LogLevels,
 	Logger,
 	type MakeRequired,
@@ -81,6 +82,9 @@ export class BaseClient {
 	interactions = new InteractionShorter(this);
 	voiceStates = new VoiceStateShorter(this);
 	soundboards = new SoundboardShorter(this);
+	invites = new InvitesShorter(this);
+
+	/**@internal */
 
 	debugger?: Logger;
 

@@ -1,5 +1,6 @@
 import type { GuildMemberStructure, GuildStructure } from '../client';
 import type { UsingClient } from '../commands';
+import type { CreateInviteFromChannel } from '../common';
 import type { ObjectToLower, StructPropState, StructStates, ToClass } from '../common/types/util';
 import type { APIGuild, APIPartialGuild, GatewayGuildCreateDispatchData, RESTPatchAPIGuildJSONBody } from '../types';
 import { AutoModerationRule } from './AutoModerationRule';
@@ -82,6 +83,12 @@ export class Guild<State extends StructStates = 'api'> extends (BaseGuild as unk
 	edit(body: RESTPatchAPIGuildJSONBody, reason?: string): Promise<GuildStructure<'api'>> {
 		return this.client.guilds.edit(this.id, body, reason);
 	}
+
+	invites = {
+		list: () => this.client.invites.guilds.list(this.id),
+		create: (data: CreateInviteFromChannel) => this.client.invites.channels.create(data),
+		delete: (code: string, reason?: string) => this.client.invites.delete(code, reason),
+	};
 }
 
 /** Maximun custom guild emojis per level */

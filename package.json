@@ -23,13 +23,13 @@
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
 		"@changesets/cli": "^2.28.1",
-		"@commitlint/cli": "^19.7.1",
-		"@commitlint/config-conventional": "^19.7.1",
-		"@types/node": "^22.13.5",
+		"@commitlint/cli": "^19.8.0",
+		"@commitlint/config-conventional": "^19.8.0",
+		"@types/node": "^22.14.0",
 		"husky": "^9.1.7",
-		"lint-staged": "^15.4.3",
-		"typescript": "^5.7.3",
-		"vitest": "^3.0.6"
+		"lint-staged": "^15.5.0",
+		"typescript": "^5.8.2",
+		"vitest": "^3.1.1"
 	},
 	"homepage": "https://seyfert.dev",
 	"repository": {
@@ -68,6 +68,12 @@
 	"lint-staged": {
 		"*.ts": [
 			"biome check --write"
+		]
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"@biomejs/biome",
+			"esbuild"
 		]
 	}
 }

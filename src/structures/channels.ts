@@ -24,6 +24,7 @@ import {
 } from '../client';
 import type { SeyfertChannelMap, UsingClient } from '../commands';
 import {
+	type CreateInviteFromChannel,
 	type EmojiResolvable,
 	type MessageCreateBodyRequest,
 	type MessageUpdateBodyRequest,
@@ -212,6 +213,16 @@ export class BaseGuildChannel extends BaseChannel<ChannelType> {
 		const { permission_overwrites, ...rest } = data;
 		super(client, rest);
 	}
+
+	invites = {
+		list: () => this.client.invites.channels.list(this.id),
+		create: (data: Omit<CreateInviteFromChannel, 'channelId'>) =>
+			this.client.invites.channels.create({
+				...data,
+				channelId: this.id,
+			}),
+		delete: (code: string, reason?: string) => this.client.invites.delete(code, reason),
+	};
 
 	permissionOverwrites = {
 		fetch: (): ReturnType<Overwrites['get']> =>
