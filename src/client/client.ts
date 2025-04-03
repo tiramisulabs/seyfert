@@ -36,6 +36,14 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 		super(options);
 	}
 
+	get applicationId() {
+		return this.me?.application.id ?? super.applicationId;
+	}
+
+	set applicationId(id: string) {
+		super.applicationId = id;
+	}
+
 	setServices({
 		gateway,
 		...rest
