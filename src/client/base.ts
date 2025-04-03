@@ -84,8 +84,6 @@ export class BaseClient {
 	soundboards = new SoundboardShorter(this);
 	invites = new InvitesShorter(this);
 
-	/**@internal */
-
 	debugger?: Logger;
 
 	logger = new Logger({
