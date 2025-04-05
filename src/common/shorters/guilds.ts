@@ -72,7 +72,9 @@ export class GuildShorter extends BaseShorter {
 			if (guild) return guild;
 		}
 
-		const data = await this.client.proxy.guilds(id).get({ query: (options as GuildFetchOptions).query });
+		const data = await this.client.proxy
+			.guilds(id)
+			.get({ query: typeof options === 'boolean' ? undefined : options.query });
 		await this.client.cache.guilds?.patch(CacheFrom.Rest, id, data);
 		return (await this.client.cache.guilds?.raw(id)) ?? data;
 	}
@@ -87,7 +89,7 @@ export class GuildShorter extends BaseShorter {
 		return this.client.proxy.guilds(id).widget.get({ query: { style } });
 	}
 
-	async edit(guildId: string, body: RESTPatchAPIGuildJSONBody, reason?: string) {
+	async edit(guildId: string, body: RESTPatchAPIGuildJSONBody, reason?: string): Promise<GuildStructure<'api'>> {
 		const guild = await this.client.proxy.guilds(guildId).patch({ body, reason });
 
 		if (!this.client.cache.hasGuildsIntent) await this.client.cache.guilds?.patch(CacheFrom.Rest, guildId, guild);
