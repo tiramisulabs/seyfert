@@ -1,4 +1,4 @@
-import type { ReturnCache } from '../..';
+import type { ReturnCache } from '../../cache';
 import type {
 	GuildMemberStructure,
 	GuildStructure,
@@ -10,12 +10,13 @@ import type {
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
 	MakeRequired,
+	MessageWebhookCreateBodyRequest,
 	ModalCreateBodyRequest,
 	UnionToTuple,
 	When,
 } from '../../common';
 import type { AllChannels, EntryPointInteraction } from '../../structures';
-import { MessageFlags } from '../../types';
+import { MessageFlags, type RESTGetAPIGuildQuery } from '../../types';
 import { BaseContext } from '../basecontext';
 import type { RegisteredMiddlewares } from '../decorators';
 import type { EntryPointCommand } from './entryPoint';
@@ -77,6 +78,10 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 		return this.interaction.editOrReply<WR>(body as InteractionCreateBodyRequest, withResponse);
 	}
 
+	followup(body: MessageWebhookCreateBodyRequest): Promise<WebhookMessageStructure> {
+		return this.interaction.followup(body);
+	}
+
 	fetchResponse(): Promise<WebhookMessageStructure> {
 		return this.interaction.fetchResponse();
 	}
@@ -84,36 +89,40 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 	channel(mode?: 'rest' | 'flow'): Promise<AllChannels>;
 	channel(mode: 'cache'): ReturnCache<AllChannels>;
 	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
-		if (this.interaction.channel && mode === 'cache')
+		if (mode === 'cache')
 			return this.client.cache.adapter.isAsync ? Promise.resolve(this.interaction.channel) : this.interaction.channel;
 		return this.client.channels.fetch(this.channelId, mode === 'rest');
 	}
 
-	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
+	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure | undefined>;
 	me(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
 	me(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (!this.guildId)
 			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
 		switch (mode) {
 			case 'cache':
-				return this.client.cache.members?.get(this.client.botId, this.guildId);
+				return (
+					this.client.cache.members?.get(this.client.botId, this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
 			default:
 				return this.client.members.fetch(this.guildId, this.client.botId, mode === 'rest');
 		}
 	}
 
-	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
-	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
-	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+	guild(mode?: 'rest' | 'flow', query?: RESTGetAPIGuildQuery): Promise<GuildStructure<'cached' | 'api'> | undefined>;
+	guild(mode: 'cache', query?: RESTGetAPIGuildQuery): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow', query?: RESTGetAPIGuildQuery) {
 		if (!this.guildId)
-			return (
-				mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve()
-			) as any;
+			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
 		switch (mode) {
 			case 'cache':
-				return this.client.cache.guilds?.get(this.guildId);
+				return (
+					this.client.cache.guilds?.get(this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
 			default:
-				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+				return this.client.guilds.fetch(this.guildId, { force: mode === 'rest', query });
 		}
 	}
 
@@ -143,7 +152,10 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 }
 
 export interface GuildEntryPointContext<M extends keyof RegisteredMiddlewares = never>
-	extends Omit<MakeRequired<EntryPointContext<M>, 'guildId' | 'member'>, 'guild'> {
+	extends Omit<MakeRequired<EntryPointContext<M>, 'guildId' | 'member'>, 'guild' | 'me'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+
+	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
+	me(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
 }

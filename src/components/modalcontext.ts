@@ -12,6 +12,7 @@ import type {
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
 	MakeRequired,
+	MessageWebhookCreateBodyRequest,
 	ModalCreateBodyRequest,
 	UnionToTuple,
 	When,
@@ -99,6 +100,10 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 		return this.interaction.editOrReply<FR>(body as InteractionCreateBodyRequest, fetchReply);
 	}
 
+	followup(body: MessageWebhookCreateBodyRequest): Promise<WebhookMessageStructure> {
+		return this.interaction.followup(body);
+	}
+
 	/**
 	 * @returns A Promise that resolves to the fetched message
 	 */
@@ -127,7 +132,7 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	channel(mode?: 'rest' | 'flow'): Promise<AllChannels>;
 	channel(mode: 'cache'): ReturnCache<AllChannels>;
 	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
-		if (this.interaction.channel && mode === 'cache')
+		if (mode === 'cache')
 			return this.client.cache.adapter.isAsync ? Promise.resolve(this.interaction.channel) : this.interaction.channel;
 		return this.client.channels.fetch(this.channelId, mode === 'rest');
 	}
@@ -137,9 +142,9 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	 * @param mode - The mode to fetch the member.
 	 * @returns A promise that resolves to the bot member.
 	 */
-	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
+	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure | undefined>;
 	me(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
-	me(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+	me(mode: 'cache' | 'rest' | 'flow' = 'flow'): any {
 		if (!this.guildId)
 			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
 		switch (mode) {
@@ -208,7 +213,10 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 }
 
 export interface GuildModalContext<M extends keyof RegisteredMiddlewares = never>
-	extends Omit<MakeRequired<ModalContext<M>, 'guildId' | 'member'>, 'guild'> {
+	extends Omit<MakeRequired<ModalContext<M>, 'guildId' | 'member'>, 'guild' | 'me'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+
+	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
+	me(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
 }

@@ -1,4 +1,4 @@
-import type { ReturnCache } from '../..';
+import type { ReturnCache } from '../../cache';
 import type { Client, WorkerClient } from '../../client';
 import type {
 	GuildMemberStructure,
@@ -10,9 +10,13 @@ import type {
 	WebhookMessageStructure,
 } from '../../client/transformers';
 import type { If, MakeRequired, UnionToTuple, When } from '../../common';
-import type { InteractionCreateBodyRequest, InteractionMessageUpdateBodyRequest } from '../../common/types/write';
+import type {
+	InteractionCreateBodyRequest,
+	InteractionMessageUpdateBodyRequest,
+	MessageWebhookCreateBodyRequest,
+} from '../../common/types/write';
 import { type AllChannels, ChatInputCommandInteraction, type Message } from '../../structures';
-import { MessageFlags } from '../../types';
+import { MessageFlags, type RESTGetAPIGuildQuery } from '../../types';
 import { BaseContext } from '../basecontext';
 import type { RegisteredMiddlewares } from '../decorators';
 import type { Command, ContextOptions, OptionsRecord, SubCommand } from './chat';
@@ -53,10 +57,6 @@ export class CommandContext<
 	options: ContextOptions<T> = {} as never;
 	metadata: CommandMetadata<UnionToTuple<M>> = {} as never;
 	globalMetadata: GlobalMetadata = {};
-
-	get proxy() {
-		return this.client.proxy;
-	}
 
 	get t() {
 		return this.client.t(this.interaction?.locale ?? this.client.langs.defaultLang ?? 'en-US');
@@ -136,6 +136,13 @@ export class CommandContext<
 		return this.write(body as InteractionCreateBodyRequest, withResponse);
 	}
 
+	followup(
+		body: MessageWebhookCreateBodyRequest,
+	): Promise<If<InferWithPrefix, WebhookMessageStructure | MessageStructure, WebhookMessageStructure>> {
+		if (this.interaction) return this.interaction.followup(body);
+		return this.messageResponse!.reply(body) as never;
+	}
+
 	async fetchResponse(): Promise<
 		If<InferWithPrefix, WebhookMessageStructure | MessageStructure, WebhookMessageStructure>
 	> {
@@ -143,7 +150,7 @@ export class CommandContext<
 		return (this.messageResponse = (await this.messageResponse!.fetch()) as never);
 	}
 
-	channel(mode?: 'rest' | 'flow'): Promise<If<InferWithPrefix, AllChannels | undefined, AllChannels>>;
+	channel(mode?: 'rest' | 'flow'): Promise<AllChannels>;
 	channel(mode: 'cache'): ReturnCache<If<InferWithPrefix, AllChannels | undefined, AllChannels>>;
 	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (this.interaction && mode === 'cache')
@@ -159,7 +166,7 @@ export class CommandContext<
 		}
 	}
 
-	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
+	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure | undefined>;
 	me(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
 	me(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (!this.guildId)
@@ -175,15 +182,11 @@ export class CommandContext<
 		}
 	}
 
-	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
-	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
-	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+	guild(mode?: 'rest' | 'flow', query?: RESTGetAPIGuildQuery): Promise<GuildStructure<'cached' | 'api'> | undefined>;
+	guild(mode: 'cache', query?: RESTGetAPIGuildQuery): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow', query?: RESTGetAPIGuildQuery) {
 		if (!this.guildId)
-			return (mode === 'cache'
-				? this.client.cache.adapter.isAsync
-					? Promise.resolve()
-					: undefined
-				: Promise.resolve()) as unknown as undefined;
+			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
 		switch (mode) {
 			case 'cache':
 				return (
@@ -191,7 +194,7 @@ export class CommandContext<
 					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
 				);
 			default:
-				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+				return this.client.guilds.fetch(this.guildId, { force: mode === 'rest', query });
 		}
 	}
 
@@ -225,7 +228,10 @@ export class CommandContext<
 }
 
 export interface GuildCommandContext<T extends OptionsRecord = {}, M extends keyof RegisteredMiddlewares = never>
-	extends Omit<MakeRequired<CommandContext<T, M>, 'guildId' | 'member'>, 'guild'> {
+	extends Omit<MakeRequired<CommandContext<T, M>, 'guildId' | 'member'>, 'guild' | 'me'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+
+	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
+	me(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
 }

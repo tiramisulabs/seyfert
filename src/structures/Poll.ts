@@ -30,8 +30,16 @@ export class Poll extends Base {
 		return this.client.messages.endPoll(this.channelId, this.messageId);
 	}
 
-	getAnswerVoters(id: ValidAnswerId): Promise<UserStructure[]> {
-		if (!this.answers.find(x => x.answerId === id)) throw new Error('Invalid answer id');
+	/**
+	 * @param id - The ID of the answer whose voters need to be fetched.
+	 * @param checkAnswer - A flag that determines if the answer ID should be validated before fetching voters.
+	 *                        Default is `false`. If `true`, the method checks if the answer ID exists in the list
+	 *                        of answers and throws an error if not.
+	 */
+	async getAnswerVoters(id: ValidAnswerId, checkAnswer = false): Promise<UserStructure[]> {
+		if (checkAnswer && !this.answers.find(answer => answer.answerId === id)) {
+			throw new Error('Invalid answer id');
+		}
 		return this.client.messages.getAnswerVoters(this.channelId, this.messageId, id);
 	}
 }
