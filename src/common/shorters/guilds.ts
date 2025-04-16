@@ -32,6 +32,8 @@ import type {
 	RESTPostAPIGuildChannelJSONBody,
 	RESTPostAPIGuildsJSONBody,
 } from '../../types';
+import type { APITextChannel } from '../../types/payloads/channel';
+import type { MakeRequired } from '../types/util';
 import { BaseShorter } from './base';
 
 export class GuildShorter extends BaseShorter {
@@ -145,6 +147,21 @@ export class GuildShorter extends BaseShorter {
 				channels.map<[string, APIChannel]>(x => [x.id, x]),
 				guildId,
 			);
+
+			const filtered = channels.filter(
+				(ch): ch is MakeRequired<APITextChannel, 'permission_overwrites' | 'guild_id'> => {
+					return 'permission_overwrites' in ch && ch.permission_overwrites !== undefined && ch.guild_id !== undefined;
+				},
+			);
+			if (filtered.length) {
+				await this.client.cache.overwrites?.set(
+					CacheFrom.Rest,
+					filtered.map(x => {
+						return [x.id, x.permission_overwrites] as const;
+					}),
+					guildId,
+				);
+			}
 			return channels.map(m => channelFrom(m, this.client));
 		},
 
@@ -164,6 +181,9 @@ export class GuildShorter extends BaseShorter {
 
 			channel = await this.client.proxy.channels(channelId).get();
 			await this.client.cache.channels?.patch(CacheFrom.Rest, channelId, guildId, channel);
+			if ('permission_overwrites' in channel && channel.permission_overwrites) {
+				await this.client.cache.overwrites?.set(CacheFrom.Rest, channelId, guildId, channel.permission_overwrites);
+			}
 			return channelFrom(channel, this.client);
 		},
 

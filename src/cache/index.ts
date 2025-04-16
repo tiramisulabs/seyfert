@@ -511,11 +511,8 @@ export class Cache {
 								event.d.guild_id!,
 								event.d.permission_overwrites,
 							);
-						break;
-					}
-					if (event.d.type === ChannelType.DM) {
+					} else if (event.d.type === ChannelType.DM) {
 						await this.channels?.set(CacheFrom.Gateway, event.d.recipients![0]?.id, '@me', event.d);
-						break;
 					}
 				}
 				break;
@@ -593,7 +590,11 @@ export class Cache {
 
 			case 'THREAD_CREATE':
 			case 'THREAD_UPDATE':
-				if (event.d.guild_id) await this.channels?.set(CacheFrom.Gateway, event.d.id, event.d.guild_id, event.d);
+				{
+					if (event.d.guild_id) await this.channels?.set(CacheFrom.Gateway, event.d.id, event.d.guild_id, event.d);
+					if (event.d.permission_overwrites?.length)
+						await this.overwrites?.set(CacheFrom.Gateway, event.d.id, event.d.guild_id!, event.d.permission_overwrites);
+				}
 				break;
 
 			case 'THREAD_DELETE':

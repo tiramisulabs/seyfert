@@ -44,6 +44,9 @@ export class ChannelShorter extends BaseShorter {
 			'guild_id' in channel && channel.guild_id ? channel.guild_id : '@me',
 			channel,
 		);
+		if ('permission_overwrites' in channel && channel.permission_overwrites && channel.guild_id) {
+			await this.client.cache.overwrites?.set(CacheFrom.Rest, id, channel.guild_id, channel.permission_overwrites);
+		}
 		return channel as APIChannel;
 	}
 
