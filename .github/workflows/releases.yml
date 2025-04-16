@@ -63,7 +63,7 @@ jobs:
           prerelease: false
 
       - name: Zip dist folder
-        run: zip -r dist.zip dist
+        run: zip -r dist.zip src
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
