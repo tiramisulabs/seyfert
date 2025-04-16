@@ -1,5 +1,4 @@
 import { CacheFrom } from '../../cache';
-import type { Channels } from '../../cache/resources/channels';
 import type { Overwrites } from '../../cache/resources/overwrites';
 import { type MessageStructure, type ThreadChannelStructure, Transformers } from '../../client/transformers';
 import { type AllChannels, BaseChannel, type GuildMember, type GuildRole, channelFrom } from '../../structures';
@@ -29,23 +28,25 @@ export class ChannelShorter extends BaseShorter {
 	}
 
 	async raw(id: string, force?: boolean): Promise<APIChannel> {
-		let channel: APIChannel | ReturnType<Channels['raw']>;
 		if (!force) {
-			channel = await this.client.cache.channels?.raw(id);
-			const overwrites = await this.client.cache.overwrites?.raw(id);
+			const channel = await this.client.cache.channels?.raw(id);
 			if (channel) {
+				const overwrites = await this.client.cache.overwrites?.raw(id);
 				if (overwrites) (channel as APIGuildChannel<ChannelType>).permission_overwrites = overwrites;
 				return channel as APIChannel;
 			}
 		}
 
-		channel = await this.client.proxy.channels(id).get();
+		const channel = await this.client.proxy.channels(id).get();
 		await this.client.cache.channels?.patch(
 			CacheFrom.Rest,
 			id,
 			'guild_id' in channel && channel.guild_id ? channel.guild_id : '@me',
 			channel,
 		);
+		if ('permission_overwrites' in channel && channel.permission_overwrites && channel.guild_id) {
+			await this.client.cache.overwrites?.set(CacheFrom.Rest, id, channel.guild_id, channel.permission_overwrites);
+		}
 		return channel as APIChannel;
 	}
 
@@ -154,19 +155,19 @@ export class ChannelShorter extends BaseShorter {
 	async memberPermissions(channelId: string, member: GuildMember, checkAdmin = true): Promise<PermissionsBitField> {
 		const memberPermissions = await member.fetchPermissions();
 
-		if (checkAdmin && memberPermissions.has(PermissionFlagsBits.Administrator)) {
+		if (checkAdmin && memberPermissions.has([PermissionFlagsBits.Administrator])) {
 			return new PermissionsBitField(PermissionsBitField.All);
 		}
 
 		const overwrites = await this.overwritesFor(channelId, member);
 		const permissions = new PermissionsBitField(memberPermissions.bits);
 
-		permissions.remove(overwrites.everyone?.deny.bits ?? 0n);
-		permissions.add(overwrites.everyone?.allow.bits ?? 0n);
-		permissions.remove(overwrites.roles.length > 0 ? overwrites.roles.map(role => role.deny.bits) : 0n);
-		permissions.add(overwrites.roles.length > 0 ? overwrites.roles.map(role => role.allow.bits) : 0n);
-		permissions.remove(overwrites.member?.deny.bits ?? 0n);
-		permissions.add(overwrites.member?.allow.bits ?? 0n);
+		permissions.remove([overwrites.everyone?.deny.bits ?? 0n]);
+		permissions.add([overwrites.everyone?.allow.bits ?? 0n]);
+		permissions.remove(overwrites.roles.length > 0 ? overwrites.roles.map(role => role.deny.bits) : [0n]);
+		permissions.add(overwrites.roles.length > 0 ? overwrites.roles.map(role => role.allow.bits) : [0n]);
+		permissions.remove([overwrites.member?.deny.bits ?? 0n]);
+		permissions.add([overwrites.member?.allow.bits ?? 0n]);
 		return permissions;
 	}
 
@@ -195,19 +196,19 @@ export class ChannelShorter extends BaseShorter {
 	}
 
 	async rolePermissions(channelId: string, role: GuildRole, checkAdmin = true): Promise<PermissionsBitField> {
-		if (checkAdmin && role.permissions.has(PermissionFlagsBits.Administrator)) {
+		if (checkAdmin && role.permissions.has([PermissionFlagsBits.Administrator])) {
 			return new PermissionsBitField(PermissionsBitField.All);
 		}
-		const channelOverwrites = (await this.client.cache.overwrites?.get(channelId)) ?? [];
-
+		const permissions = new PermissionsBitField(role.permissions.bits);
+		const channelOverwrites = await this.client.cache.overwrites?.get(channelId);
+		if (!channelOverwrites) return permissions;
 		const everyoneOverwrites = channelOverwrites.find(x => x.id === role.guildId);
 		const roleOverwrites = channelOverwrites.find(x => x.id === role.id);
-		const permissions = new PermissionsBitField(role.permissions.bits);
 
-		permissions.remove(everyoneOverwrites?.deny.bits ?? 0n);
-		permissions.add(everyoneOverwrites?.allow.bits ?? 0n);
-		permissions.remove(roleOverwrites?.deny.bits ?? 0n);
-		permissions.add(roleOverwrites?.allow.bits ?? 0n);
+		permissions.remove([everyoneOverwrites?.deny.bits ?? 0n]);
+		permissions.add([everyoneOverwrites?.allow.bits ?? 0n]);
+		permissions.remove([roleOverwrites?.deny.bits ?? 0n]);
+		permissions.add([roleOverwrites?.allow.bits ?? 0n]);
 		return permissions;
 	}
 

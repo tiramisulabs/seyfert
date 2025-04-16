@@ -3,6 +3,8 @@ export * from './it/utils';
 export * from './it/colors';
 export { CustomizeLoggerCallback, AssignFilenameCallback, LogLevels, Logger, LoggerOptions } from './it/logger';
 export * from './it/formatter';
+// circular lol
+export * from './shorters/invites';
 //
 export * from './shorters/channels';
 export * from './shorters/emojis';

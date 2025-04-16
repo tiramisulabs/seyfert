@@ -19,7 +19,8 @@ export class GuildRelatedResource<T = any, S = any> {
 	parse(data: any, id: string, guild_id: string) {
 		if (!data.id) data.id = id;
 		data.guild_id = guild_id;
-		return data;
+		const { permission_overwrites, ...rest } = data;
+		return rest;
 	}
 
 	get adapter() {

@@ -92,7 +92,8 @@ export type CachedEvents =
 	| 'VOICE_STATE_UPDATE'
 	| 'STAGE_INSTANCE_CREATE'
 	| 'STAGE_INSTANCE_UPDATE'
-	| 'STAGE_INSTANCE_DELETE';
+	| 'STAGE_INSTANCE_DELETE'
+	| 'GUILD_MEMBERS_CHUNK';
 
 export type DisabledCache = {
 	[P in NonGuildBased | GuildBased | GuildRelated | SeyfertBased]?: boolean;
@@ -510,11 +511,8 @@ export class Cache {
 								event.d.guild_id!,
 								event.d.permission_overwrites,
 							);
-						break;
-					}
-					if (event.d.type === ChannelType.DM) {
+					} else if (event.d.type === ChannelType.DM) {
 						await this.channels?.set(CacheFrom.Gateway, event.d.recipients![0]?.id, '@me', event.d);
-						break;
 					}
 				}
 				break;
@@ -554,6 +552,29 @@ export class Cache {
 					);
 				}
 				break;
+			case 'GUILD_MEMBERS_CHUNK': {
+				const data: Parameters<Cache['bulkSet']>[0] = [];
+
+				if (this.members) {
+					for (const member of event.d.members) {
+						data.push(
+							[CacheFrom.Gateway, 'members', member, member.user.id, event.d.guild_id],
+							[CacheFrom.Gateway, 'users', member.user, member.user.id],
+						);
+					}
+				}
+
+				if (this.presences && event.d.presences) {
+					for (const presence of event.d.presences) {
+						data.push([CacheFrom.Gateway, 'presences', presence, presence.user.id, event.d.guild_id]);
+					}
+				}
+
+				if (data.length) {
+					await this.bulkSet(data);
+				}
+				break;
+			}
 			case 'GUILD_MEMBER_ADD':
 			case 'GUILD_MEMBER_UPDATE':
 				if (event.d.user) await this.members?.set(CacheFrom.Gateway, event.d.user.id, event.d.guild_id, event.d);
@@ -569,7 +590,11 @@ export class Cache {
 
 			case 'THREAD_CREATE':
 			case 'THREAD_UPDATE':
-				if (event.d.guild_id) await this.channels?.set(CacheFrom.Gateway, event.d.id, event.d.guild_id, event.d);
+				{
+					if (event.d.guild_id) await this.channels?.set(CacheFrom.Gateway, event.d.id, event.d.guild_id, event.d);
+					if (event.d.permission_overwrites?.length)
+						await this.overwrites?.set(CacheFrom.Gateway, event.d.id, event.d.guild_id!, event.d.permission_overwrites);
+				}
 				break;
 
 			case 'THREAD_DELETE':

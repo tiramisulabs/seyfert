@@ -8,8 +8,16 @@ export interface ModalCommand {
 
 export abstract class ModalCommand {
 	type = InteractionCommandType.MODAL;
-	abstract filter(context: ModalContext): Promise<boolean> | boolean;
+	filter?(context: ModalContext): Promise<boolean> | boolean;
+	customId?: string;
 	abstract run(context: ModalContext): any;
+
+	/** @internal */
+	_filter(context: ModalContext) {
+		if (this.customId && this.customId !== context.customId) return false;
+		if (this.filter) return this.filter(context);
+		return true;
+	}
 
 	middlewares: (keyof RegisteredMiddlewares)[] = [];
 

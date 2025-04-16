@@ -19,7 +19,7 @@ import { ShardManagerDefaults } from '../constants';
 import { DynamicBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';
 import { Shard } from './shard';
-import type { ShardData, ShardManagerOptions, WorkerData } from './shared';
+import { type ShardData, type ShardManagerOptions, ShardSocketCloseCodes, type WorkerData } from './shared';
 
 let parentPort: import('node:worker_threads').MessagePort;
 let workerData: WorkerData;
@@ -100,6 +100,8 @@ export class ShardManager extends Map<number, Shard> {
 			debugger: this.debugger,
 			compress: this.options.compress ?? false,
 			presence: this.options.presence?.(shardId, -1),
+			connectionTimeout: this.options.connectionTimeout,
+			reconnectTimeout: this.options.reconnectTimeout,
 		});
 
 		this.set(shardId, shard);
@@ -159,7 +161,7 @@ export class ShardManager extends Map<number, Shard> {
 				handlePayload = () => {
 					//
 				};
-				this.disconnectAll();
+				this.disconnectAll(ShardSocketCloseCodes.Resharding);
 				this.clear();
 
 				this.options.totalShards = this.options.shardEnd = this.options.info.shards = info.shards;
@@ -220,14 +222,14 @@ export class ShardManager extends Map<number, Shard> {
 		return this.create(shardId).identify();
 	}
 
-	disconnect(shardId: number) {
+	disconnect(shardId: number, code?: ShardSocketCloseCodes) {
 		this.debugger?.info(`Shard #${shardId} force disconnect`);
-		return this.get(shardId)?.disconnect();
+		return this.get(shardId)?.disconnect(code);
 	}
 
-	disconnectAll() {
+	disconnectAll(code = ShardSocketCloseCodes.ShutdownAll) {
 		this.debugger?.info('Disconnect all shards');
-		this.forEach(shard => shard.disconnect());
+		this.forEach(shard => shard.disconnect(code));
 	}
 
 	setShardPresence(shardId: number, payload: GatewayUpdatePresence['d']) {

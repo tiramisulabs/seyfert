@@ -4,7 +4,7 @@ import { WorkerAdapter } from '../cache';
 import { type DeepPartial, LogLevels, type MakeRequired, type When, lazyLoadPackage } from '../common';
 import { EventHandler } from '../events';
 import type { GatewayDispatchPayload, GatewaySendPayload } from '../types';
-import { Shard, type ShardManagerOptions, type WorkerData, properties } from '../websocket';
+import { Shard, type ShardManagerOptions, ShardSocketCloseCodes, type WorkerData, properties } from '../websocket';
 import type {
 	WorkerDisconnectedAllShardsResharding,
 	WorkerMessages,
@@ -94,6 +94,14 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		this.shards.forEach(s => (acc += s.latency));
 
 		return acc / this.shards.size;
+	}
+
+	get applicationId() {
+		return this.me?.application.id ?? super.applicationId;
+	}
+
+	set applicationId(id: string) {
+		super.applicationId = id;
 	}
 
 	setServices(rest: ServicesOptions) {
@@ -350,7 +358,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			case 'DISCONNECT_ALL_SHARDS_RESHARDING':
 				{
 					for (const i of this.shards.values()) {
-						await i.disconnect();
+						await i.disconnect(ShardSocketCloseCodes.Resharding);
 					}
 					this.postMessage({
 						type: 'DISCONNECTED_ALL_SHARDS_RESHARDING',

@@ -14,6 +14,6 @@ export class Entitlement extends DiscordBase<APIEntitlement> {
 	}
 
 	consume() {
-		return this.client.applications.consumeEntitlement(this.applicationId, this.id);
+		return this.client.applications.consumeEntitlement(this.id);
 	}
 }

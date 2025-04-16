@@ -1,4 +1,5 @@
-import type { WorkerClient } from '../..';
+import type { ReturnCache, WorkerClient } from '../..';
+import type { GuildStructure } from '../../client';
 import { type ObjectToLower, calculateShardId } from '../../common';
 import type { ImageOptions } from '../../common/types/options';
 import { type APIPartialGuild, GuildFeature } from '../../types';
@@ -31,9 +32,25 @@ export class BaseGuild extends DiscordBase<APIPartialGuild> {
 	/**
 	 * Fetch guild on API
 	 */
-	async fetch() {
-		const data = await this.api.guilds(this.id).get();
-		return new BaseGuild(this.client, data);
+	fetch(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
+	fetch(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	fetch(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.guilds?.get(this.id) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.guilds.fetch(this.id, mode === 'rest');
+		}
+	}
+
+	/**
+	 * Leave the guild.
+	 */
+	leave() {
+		return this.client.guilds.leave(this.id);
 	}
 
 	/**
@@ -41,9 +58,8 @@ export class BaseGuild extends DiscordBase<APIPartialGuild> {
 	 * @link https://discord.com/developers/docs/reference#image-formatting
 	 */
 	iconURL(options?: ImageOptions): string | undefined {
-		if (!this.icon) {
-			return;
-		}
+		if (!this.icon) return;
+
 		return this.rest.cdn.icons(this.id).get(this.icon, options);
 	}
 
@@ -54,9 +70,8 @@ export class BaseGuild extends DiscordBase<APIPartialGuild> {
 	 * @returns Splash url or void.
 	 */
 	splashURL(options?: ImageOptions): string | undefined {
-		if (!this.splash) {
-			return;
-		}
+		if (!this.splash) return;
+
 		return this.rest.cdn['discovery-splashes'](this.id).get(this.splash, options);
 	}
 
@@ -67,9 +82,8 @@ export class BaseGuild extends DiscordBase<APIPartialGuild> {
 	 * @returns Banner url or void
 	 */
 	bannerURL(options?: ImageOptions): string | undefined {
-		if (!this.banner) {
-			return;
-		}
+		if (!this.banner) return;
+
 		return this.rest.cdn.banners(this.id).get(this.banner, options);
 	}
 
