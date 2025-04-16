@@ -9,22 +9,26 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: check out code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
 
-      - name: Fetch tags
-        run: git fetch --tags
-
-      - name: Set up Node.js
+      - name: Install Node
         uses: actions/setup-node@v4
         with:
-          node-version: '23'
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
       - name: Install dependencies
-        run: npm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build project
-        run: npm run build
+        run: pnpm run build
 
       - name: Get version from package.json
         id: get_version
