@@ -1,17 +1,16 @@
 import { resolveFiles } from '../../builders';
 import { MessagesMethods } from '../../structures';
-import {
-	MessageFlags,
-	type RESTGetAPIChannelMessagesQuery,
-	type RESTPatchAPIChannelMessageJSONBody,
-	type RESTPostAPIChannelMessageJSONBody,
-	type RESTPostAPIChannelMessagesThreadsJSONBody,
+import type {
+	RESTGetAPIChannelMessagesQuery,
+	RESTPatchAPIChannelMessageJSONBody,
+	RESTPostAPIChannelMessageJSONBody,
+	RESTPostAPIChannelMessagesThreadsJSONBody,
 } from '../../types';
 
 import type { ValidAnswerId } from '../../api/Routes/channels';
 import { CacheFrom } from '../../cache';
 import { type MessageStructure, type ThreadChannelStructure, Transformers, type UserStructure } from '../../client';
-import type { MessageComposeBodyRequest, MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../types/write';
+import type { MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
 
 export class MessageShorter extends BaseShorter {
@@ -52,35 +51,6 @@ export class MessageShorter extends BaseShorter {
 			.messages(messageId)
 			.patch({
 				body: MessagesMethods.transformMessageBody<RESTPatchAPIChannelMessageJSONBody>(body, parsedFiles, this.client),
-				files: parsedFiles,
-			})
-			.then(async message => {
-				await this.client.cache.messages?.setIfNI(
-					CacheFrom.Rest,
-					'GuildMessages',
-					message.id,
-					message.channel_id,
-					message,
-				);
-				return Transformers.Message(this.client, message);
-			});
-	}
-
-	async compose(channelId: string, { files, ...body }: MessageComposeBodyRequest): Promise<MessageStructure> {
-		const parsedFiles = files ? await resolveFiles(files) : undefined;
-		const raw = MessagesMethods.transformMessageBody<RESTPostAPIChannelMessageJSONBody>(
-			{
-				...body,
-				flags: (body.flags ?? 0) | MessageFlags.IsComponentsV2,
-			},
-			parsedFiles,
-			this.client,
-		);
-
-		return this.client.proxy
-			.channels(channelId)
-			.messages.post({
-				body: raw,
 				files: parsedFiles,
 			})
 			.then(async message => {

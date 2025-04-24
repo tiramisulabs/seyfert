@@ -29,12 +29,7 @@ import type { OmitInsert } from './util';
 
 export interface ResolverProps {
 	embeds?: Embed[] | APIEmbed[] | undefined;
-	components?: ActionRow[] | undefined;
-	files?: AttachmentBuilder[] | Attachment[] | RawFile[] | undefined;
-}
-
-export interface MessageComposeProps {
-	components?: ActionRow[] | (Container | TextDisplay | Section | MediaGallery | Separator | File)[];
+	components?: (ActionRow | Container | File | Section | Separator | MediaGallery | TextDisplay)[];
 	files?: AttachmentBuilder[] | Attachment[] | RawFile[] | undefined;
 }
 
@@ -48,22 +43,10 @@ export type MessageCreateBodyRequest = OmitInsert<
 	SendResolverProps
 >;
 
-export type MessageComposeBodyRequest = OmitInsert<
-	RESTPostAPIChannelMessageJSONBody,
-	'content' | 'embeds' | 'sticker_ids' | 'poll' | 'components',
-	MessageComposeProps
->;
-
 export type MessageUpdateBodyRequest = OmitInsert<
 	RESTPatchAPIChannelMessageJSONBody,
 	'components' | 'embeds',
 	ResolverProps
->;
-
-export type MessageComposeUpdateBodyRequest = OmitInsert<
-	MessageUpdateBodyRequest,
-	'content' | 'embeds' | 'components',
-	MessageComposeProps
 >;
 
 export type MessageWebhookCreateBodyRequest = OmitInsert<
