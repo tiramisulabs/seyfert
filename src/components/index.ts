@@ -1,4 +1,3 @@
-import type { ActionRow, BuilderComponents } from '../builders';
 import { type APIComponents, type APITopLevelComponent, ButtonStyle, ComponentType } from '../types';
 import { MessageActionRowComponent } from './ActionRow';
 import { BaseComponent } from './BaseComponent';
@@ -38,7 +37,7 @@ export * from './modalcontext';
 
 export type TopLevelComponents =
 	| SectionComponent
-	| ActionRow<BuilderComponents>
+	| ActionRowMessageComponents
 	| TextDisplayComponent
 	| ContainerComponent
 	| FileComponent
@@ -46,7 +45,7 @@ export type TopLevelComponents =
 	| BaseComponent<APITopLevelComponent['type']>;
 
 export type ContainerComponents =
-	| ActionRow<BuilderComponents>
+	| ActionRowMessageComponents
 	| TextDisplayComponent
 	| MediaGalleryComponent
 	| SectionComponent

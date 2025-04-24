@@ -1,7 +1,7 @@
 import type { MakeRequired } from '../../../common';
 import type { RESTPostAPIWebhookWithTokenJSONBody } from '../../index';
-import type { APIActionRowComponent, APIModalActionRowComponent } from '../channel';
-import type { MessageFlags } from '../index';
+
+import type { APIActionRowComponent, APIModalActionRowComponent, MessageFlags } from '../index';
 import type { APIApplicationCommandOptionChoice } from './applicationCommands';
 
 /**

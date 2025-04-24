@@ -148,6 +148,7 @@ export class BaseInteraction<
 				//@ts-ignore
 				return {
 					type: body.type,
+					// @ts-expect-error
 					data: BaseInteraction.transformBody(body.data ?? {}, files, self),
 				};
 			}

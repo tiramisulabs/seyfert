@@ -1,8 +1,9 @@
-import type { APIActionRowComponent, APIModalActionRowComponent } from '../channel';
 import type {
+	APIActionRowComponent,
 	APIBaseInteraction,
 	APIDMInteractionWrapper,
 	APIGuildInteractionWrapper,
+	APIModalActionRowComponent,
 	ComponentType,
 	InteractionType,
 } from '../index';
