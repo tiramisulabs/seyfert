@@ -33,7 +33,7 @@ export class TextDisplay extends BaseComponentBuilder<APITextDispalyComponent> {
 	 * @param content The text content.
 	 * @returns The updated TextDisplay instance.
 	 */
-	content(content: string) {
+	setContent(content: string) {
 		this.data.content = content;
 		return this;
 	}
