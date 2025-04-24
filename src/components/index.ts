@@ -45,7 +45,7 @@ export type TopLevelComponents =
 	| BaseComponent<APITopLevelComponent['type']>;
 
 export type ContainerComponents =
-	| ActionRowMessageComponents
+	| MessageActionRowComponent
 	| TextDisplayComponent
 	| MediaGalleryComponent
 	| SectionComponent
