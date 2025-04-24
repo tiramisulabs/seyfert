@@ -1,13 +1,37 @@
-import { fromComponent } from '../builders';
+import {
+	type ActionRow,
+	type Button,
+	type ChannelSelectMenu,
+	type Container,
+	type File,
+	type MediaGallery,
+	type MentionableSelectMenu,
+	type RoleSelectMenu,
+	type Section,
+	type Separator,
+	type StringSelectMenu,
+	type TextDisplay,
+	type TextInput,
+	type Thumbnail,
+	type UserSelectMenu,
+	fromComponent,
+} from '../builders';
 import {
 	type APIActionRowComponent,
 	type APIActionRowComponentTypes,
 	type APIButtonComponent,
 	type APIChannelSelectComponent,
+	type APIContainerComponent,
+	type APIFileComponent,
+	type APIMediaGalleryComponent,
 	type APIMentionableSelectComponent,
 	type APIRoleSelectComponent,
+	type APISectionComponent,
+	type APISeparatorComponent,
 	type APIStringSelectComponent,
+	type APITextDispalyComponent,
 	type APITextInputComponent,
+	type APIThumbnailComponent,
 	type APIUserSelectComponent,
 	ComponentType,
 } from '../types';
@@ -24,7 +48,7 @@ export class BaseComponent<T extends ComponentType> {
 	}
 
 	toBuilder() {
-		return fromComponent(this.data);
+		return fromComponent(this.data) as BuilderComponentsMap[T];
 	}
 }
 export interface APIComponentsMap {
@@ -36,4 +60,29 @@ export interface APIComponentsMap {
 	[ComponentType.StringSelect]: APIStringSelectComponent;
 	[ComponentType.UserSelect]: APIUserSelectComponent;
 	[ComponentType.TextInput]: APITextInputComponent;
+	[ComponentType.File]: APIFileComponent;
+	[ComponentType.Thumbnail]: APIThumbnailComponent;
+	[ComponentType.Section]: APISectionComponent;
+	[ComponentType.Container]: APIContainerComponent;
+	[ComponentType.MediaGallery]: APIMediaGalleryComponent;
+	[ComponentType.Separator]: APISeparatorComponent;
+	[ComponentType.TextDisplay]: APITextDispalyComponent;
+}
+
+export interface BuilderComponentsMap {
+	[ComponentType.ActionRow]: ActionRow;
+	[ComponentType.Button]: Button;
+	[ComponentType.ChannelSelect]: ChannelSelectMenu;
+	[ComponentType.MentionableSelect]: MentionableSelectMenu;
+	[ComponentType.RoleSelect]: RoleSelectMenu;
+	[ComponentType.StringSelect]: StringSelectMenu;
+	[ComponentType.UserSelect]: UserSelectMenu;
+	[ComponentType.TextInput]: TextInput;
+	[ComponentType.File]: File;
+	[ComponentType.Thumbnail]: Thumbnail;
+	[ComponentType.Section]: Section;
+	[ComponentType.Container]: Container;
+	[ComponentType.MediaGallery]: MediaGallery;
+	[ComponentType.Separator]: Separator;
+	[ComponentType.TextDisplay]: TextDisplay;
 }

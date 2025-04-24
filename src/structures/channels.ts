@@ -1,5 +1,5 @@
 import { Collection, Formatter, type RawFile, type ReturnCache } from '..';
-import { ActionRow, Embed, PollBuilder, resolveAttachment } from '../builders';
+import { Embed, PollBuilder, resolveAttachment } from '../builders';
 import type { Overwrites } from '../cache/resources/overwrites';
 import {
 	type BaseChannelStructure,
@@ -26,6 +26,8 @@ import type { SeyfertChannelMap, UsingClient } from '../commands';
 import {
 	type CreateInviteFromChannel,
 	type EmojiResolvable,
+	type MessageComposeBodyRequest,
+	type MessageComposeUpdateBodyRequest,
 	type MessageCreateBodyRequest,
 	type MessageUpdateBodyRequest,
 	type MethodContext,
@@ -345,7 +347,21 @@ export class MessagesMethods extends DiscordBase {
 	}
 
 	static transformMessageBody<T>(
+		body: MessageComposeBodyRequest | MessageComposeUpdateBodyRequest,
+		files: RawFile[] | undefined,
+		self: UsingClient,
+	): T;
+	static transformMessageBody<T>(
 		body: MessageCreateBodyRequest | MessageUpdateBodyRequest,
+		files: RawFile[] | undefined,
+		self: UsingClient,
+	): T;
+	static transformMessageBody<T>(
+		body:
+			| MessageCreateBodyRequest
+			| MessageUpdateBodyRequest
+			| MessageComposeBodyRequest
+			| MessageComposeUpdateBodyRequest,
 		files: RawFile[] | undefined,
 		self: UsingClient,
 	) {
@@ -353,10 +369,14 @@ export class MessagesMethods extends DiscordBase {
 		const payload = {
 			allowed_mentions: self.options?.allowedMentions,
 			...body,
-			components: body.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)) ?? undefined,
-			embeds: body.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)) ?? undefined,
+			components: body.components?.map(x => ('toJSON' in x ? x.toJSON() : x)) ?? undefined,
 			poll: poll ? (poll instanceof PollBuilder ? poll.toJSON() : poll) : undefined,
 		};
+
+		if ('embeds' in body) {
+			// @ts-expect-error
+			payload.embeds = body.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x));
+		}
 
 		if ('attachments' in body) {
 			payload.attachments =
