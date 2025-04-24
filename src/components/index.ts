@@ -9,10 +9,11 @@ import { MediaGalleryComponent } from './MediaGallery';
 import { MentionableSelectMenuComponent } from './MentionableSelectMenuComponent';
 import { RoleSelectMenuComponent } from './RoleSelectMenuComponent';
 import { SectionComponent } from './Section';
-import type { SeparatorComponent } from './Separator';
+import { SeparatorComponent } from './Separator';
 import { StringSelectMenuComponent } from './StringSelectMenuComponent';
 import { TextDisplayComponent } from './TextDisplay';
-import type { TextInputComponent } from './TextInputComponent';
+import { TextInputComponent } from './TextInputComponent';
+import { ThumbnailComponent } from './Thumbnail';
 import { UserSelectMenuComponent } from './UserSelectMenuComponent';
 
 export type MessageComponents =
@@ -91,6 +92,12 @@ export function componentFactory(component: APIComponents): AllComponents {
 			return new SectionComponent(component);
 		case ComponentType.TextDisplay:
 			return new TextDisplayComponent(component);
+		case ComponentType.Separator:
+			return new SeparatorComponent(component);
+		case ComponentType.Thumbnail:
+			return new ThumbnailComponent(component);
+		case ComponentType.TextInput:
+			return new TextInputComponent(component);
 		default:
 			return new BaseComponent<ComponentType>(component);
 	}

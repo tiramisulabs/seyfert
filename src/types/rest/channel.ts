@@ -1,5 +1,4 @@
 import type { ChannelType, OverwriteType, Permissions, Snowflake, VideoQualityMode } from '..';
-import type { TopLevelComponents } from '../../components';
 
 import type {
 	APIAllowedMentions,
@@ -442,7 +441,7 @@ export interface RESTPatchAPIChannelMessageJSONBody {
 	 *
 	 * See https://discord.com/developers/docs/interactions/message-components#component-object
 	 */
-	components?: TopLevelComponents[] | null | undefined;
+	components?: APITopLevelComponent[] | null | undefined;
 }
 
 /**
