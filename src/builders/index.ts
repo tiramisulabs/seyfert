@@ -1,6 +1,9 @@
 import { type APIComponents, ComponentType } from '../types';
 import { ActionRow } from './ActionRow';
 import { Button } from './Button';
+import { Container } from './Container';
+import { File } from './File';
+import { MediaGallery } from './MediaGallery';
 import { TextInput } from './Modal';
 import { Section } from './Section';
 import {
@@ -10,6 +13,7 @@ import {
 	StringSelectMenu,
 	UserSelectMenu,
 } from './SelectMenu';
+import { Separator } from './Separator';
 import { TextDisplay } from './TextDisplay';
 import { Thumbnail } from './Thumbnail';
 import type { ActionBuilderComponents, BuilderComponents } from './types';
@@ -18,18 +22,18 @@ export * from './ActionRow';
 export * from './Attachment';
 export * from './Base';
 export * from './Button';
-export * from './Embed';
-export * from './Modal';
-export * from './SelectMenu';
-export * from './Poll';
-export * from './types';
 export * from './Container';
+export * from './Embed';
 export * from './File';
-export * from './Section';
 export * from './MediaGallery';
+export * from './Modal';
+export * from './Poll';
+export * from './Section';
+export * from './SelectMenu';
 export * from './Separator';
 export * from './TextDisplay';
 export * from './Thumbnail';
+export * from './types';
 
 export function fromComponent(
 	data: BuilderComponents | APIComponents | ActionRow<ActionBuilderComponents>,
@@ -60,6 +64,13 @@ export function fromComponent(
 			return new TextDisplay(data);
 		case ComponentType.Thumbnail:
 			return new Thumbnail(data);
+		case ComponentType.Container:
+			return new Container(data);
+		case ComponentType.MediaGallery:
+			return new MediaGallery(data);
+		case ComponentType.Separator:
+			return new Separator(data);
+		case ComponentType.File:
+			return new File(data);
 	}
-	return {} as any;
 }
