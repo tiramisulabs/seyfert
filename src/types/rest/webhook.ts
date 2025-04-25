@@ -189,6 +189,14 @@ export interface RESTPostAPIWebhookWithTokenQuery {
 	 * Available only if the {@link RESTPostAPIWebhookWithTokenJSONBody.thread_name} JSON body property is not specified
 	 */
 	thread_id?: Snowflake;
+
+	/**
+	 * Whether to respect the components field of the request. When enabled, allows application-owned webhooks to use all components and
+	 * non-owned webhooks to use non-interactive components.
+	 *
+	 * @default false
+	 */
+	with_components?: boolean;
 }
 
 /**
@@ -207,7 +215,7 @@ export type RESTPostAPIWebhookWithTokenWaitResult = APIMessage;
 /**
  * https://discord.com/developers/docs/resources/webhook#execute-slackcompatible-webhook-query-string-params
  */
-export type RESTPostAPIWebhookWithTokenSlackQuery = RESTPostAPIWebhookWithTokenQuery;
+export type RESTPostAPIWebhookWithTokenSlackQuery = Omit<RESTPostAPIWebhookWithTokenQuery, 'with_components'>;
 
 /**
  * https://discord.com/developers/docs/resources/webhook#execute-slackcompatible-webhook
@@ -225,7 +233,7 @@ export type RESTPostAPIWebhookWithTokenSlackWaitResult = APIMessage;
 /**
  * https://discord.com/developers/docs/resources/webhook#execute-githubcompatible-webhook-query-string-params
  */
-export type RESTPostAPIWebhookWithTokenGitHubQuery = RESTPostAPIWebhookWithTokenQuery;
+export type RESTPostAPIWebhookWithTokenGitHubQuery = Omit<RESTPostAPIWebhookWithTokenQuery, 'with_components'>;
 
 /**
  * https://discord.com/developers/docs/resources/webhook#execute-githubcompatible-webhook
@@ -268,6 +276,7 @@ export type RESTPatchAPIWebhookWithTokenMessageJSONBody = AddUndefinedToPossibly
 	attachments?: RESTAPIAttachment[] | undefined;
 };
 
+export type RESTPatchAPIWebhookWithTokenMessageQuery = Omit<RESTPostAPIWebhookWithTokenQuery, 'wait'>;
 /**
  * https://discord.com/developers/docs/resources/webhook#edit-webhook-message
  */
