@@ -9,6 +9,7 @@ import type {
 	RESTPatchAPIWebhookResult,
 	RESTPatchAPIWebhookWithTokenJSONBody,
 	RESTPatchAPIWebhookWithTokenMessageJSONBody,
+	RESTPatchAPIWebhookWithTokenMessageQuery,
 	RESTPatchAPIWebhookWithTokenMessageResult,
 	RESTPatchAPIWebhookWithTokenResult,
 	RESTPostAPIWebhookWithTokenGitHubQuery,
@@ -33,7 +34,9 @@ export interface WebhookRoutes {
 			token: string,
 		): {
 			get(args?: RestArgumentsNoBody): Promise<RESTGetAPIWebhookWithTokenResult>;
-			patch(args: RestArguments<RESTPatchAPIWebhookWithTokenJSONBody>): Promise<RESTPatchAPIWebhookWithTokenResult>;
+			patch(
+				args: RestArguments<RESTPatchAPIWebhookWithTokenJSONBody, RESTPatchAPIWebhookWithTokenMessageQuery>,
+			): Promise<RESTPatchAPIWebhookWithTokenResult>;
 			delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIWebhookWithTokenResult>;
 			post(
 				args: RestArguments<RESTPostAPIWebhookWithTokenJSONBody, RESTPostAPIWebhookWithTokenQuery>,

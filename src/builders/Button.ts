@@ -1,17 +1,14 @@
 import { type EmojiResolvable, resolvePartialEmoji } from '../common';
 import { type APIButtonComponent, type APIMessageComponentEmoji, type ButtonStyle, ComponentType } from '../types';
+import { BaseComponentBuilder } from './Base';
 
 /**
  * Represents a button component.
  * @template Type - The type of the button component.
  */
-export class Button {
-	/**
-	 * Creates a new Button instance.
-	 * @param data - The initial data for the button.
-	 */
-	constructor(public data: Partial<APIButtonComponent> = {}) {
-		this.data.type = ComponentType.Button;
+export class Button extends BaseComponentBuilder<APIButtonComponent> {
+	constructor(data: Partial<APIButtonComponent> = {}) {
+		super({ type: ComponentType.Button, ...data });
 	}
 
 	/**
@@ -75,13 +72,5 @@ export class Button {
 	setSKUId(skuId: string) {
 		(this.data as Extract<APIButtonComponent, { sku_id?: string }>).sku_id = skuId;
 		return this;
-	}
-
-	/**
-	 * Converts the Button instance to its JSON representation.
-	 * @returns The JSON representation of the Button instance.
-	 */
-	toJSON() {
-		return { ...this.data } as Partial<APIButtonComponent>;
 	}
 }

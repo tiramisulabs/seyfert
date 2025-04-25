@@ -4,7 +4,7 @@ import type { ActionRowMessageComponents } from './index';
 import { componentFactory } from './index';
 
 export class MessageActionRowComponent<
-	T extends ActionRowMessageComponents,
+	T extends ActionRowMessageComponents = ActionRowMessageComponents,
 > extends BaseComponent<ComponentType.ActionRow> {
 	private ComponentsFactory: T[];
 	constructor(data: {

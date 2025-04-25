@@ -1,19 +1,9 @@
 import type { RawFile } from '../../api';
+import type { Attachment, AttachmentBuilder, Embed, Modal, PollBuilder, TopLevelBuilders } from '../../builders';
 import type {
-	ActionRow,
-	Attachment,
-	AttachmentBuilder,
-	BuilderComponents,
-	Embed,
-	Modal,
-	PollBuilder,
-} from '../../builders';
-import type {
-	APIActionRowComponent,
 	APIEmbed,
 	APIInteractionResponseCallbackData,
 	APIInteractionResponseChannelMessageWithSource,
-	APIMessageActionRowComponent,
 	APIModalInteractionResponse,
 	RESTAPIPollCreate,
 	RESTPatchAPIChannelMessageJSONBody,
@@ -26,7 +16,7 @@ import type { OmitInsert } from './util';
 
 export interface ResolverProps {
 	embeds?: Embed[] | APIEmbed[] | undefined;
-	components?: APIActionRowComponent<APIMessageActionRowComponent>[] | ActionRow<BuilderComponents>[] | undefined;
+	components?: TopLevelBuilders[];
 	files?: AttachmentBuilder[] | Attachment[] | RawFile[] | undefined;
 }
 
