@@ -70,7 +70,7 @@ export class MediaGalleryItem {
 	 * Constructs a new MediaGalleryItem.
 	 * @param data Optional initial data for the media gallery item.
 	 */
-	constructor(public data: Partial<APIMediaGalleryItems>) {}
+	constructor(public data: Partial<APIMediaGalleryItems> = {}) {}
 
 	/**
 	 * Sets the media URL for this gallery item.

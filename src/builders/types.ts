@@ -44,7 +44,11 @@ export type BuilderComponents =
 	| Container
 	| Separator
 	| MediaGallery
-	| File;
+	| File
+	| TextInput;
+
+export type TopLevelBuilders = Exclude<BuilderComponents, Thumbnail | TextInput>;
+
 export type FixedComponents<T = Button> = T extends Button ? ButtonLink | ButtonID : T;
 export interface ListenerOptions {
 	timeout?: number;

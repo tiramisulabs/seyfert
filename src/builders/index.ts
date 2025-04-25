@@ -16,7 +16,7 @@ import {
 import { Separator } from './Separator';
 import { TextDisplay } from './TextDisplay';
 import { Thumbnail } from './Thumbnail';
-import type { ActionBuilderComponents, BuilderComponents } from './types';
+import type { BuilderComponents } from './types';
 
 export * from './ActionRow';
 export * from './Attachment';
@@ -35,9 +35,7 @@ export * from './TextDisplay';
 export * from './Thumbnail';
 export * from './types';
 
-export function fromComponent(
-	data: BuilderComponents | APIComponents | ActionRow<ActionBuilderComponents>,
-): BuilderComponents {
+export function fromComponent(data: BuilderComponents | APIComponents): BuilderComponents {
 	if ('toJSON' in data) {
 		return data;
 	}

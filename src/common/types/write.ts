@@ -1,18 +1,5 @@
 import type { RawFile } from '../../api';
-import type {
-	ActionRow,
-	Attachment,
-	AttachmentBuilder,
-	Container,
-	Embed,
-	File,
-	MediaGallery,
-	Modal,
-	PollBuilder,
-	Section,
-	Separator,
-	TextDisplay,
-} from '../../builders';
+import type { Attachment, AttachmentBuilder, Embed, Modal, PollBuilder, TopLevelBuilders } from '../../builders';
 import type {
 	APIEmbed,
 	APIInteractionResponseCallbackData,
@@ -29,7 +16,7 @@ import type { OmitInsert } from './util';
 
 export interface ResolverProps {
 	embeds?: Embed[] | APIEmbed[] | undefined;
-	components?: (ActionRow | Container | File | Section | Separator | MediaGallery | TextDisplay)[];
+	components?: TopLevelBuilders[];
 	files?: AttachmentBuilder[] | Attachment[] | RawFile[] | undefined;
 }
 
