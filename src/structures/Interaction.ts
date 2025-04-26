@@ -490,8 +490,8 @@ export class Interaction<
 		fetchReply?: FR,
 	): Promise<WebhookMessageStructure> {
 		if (await this.replied) {
-			const { content, embeds, allowed_mentions, components, files, attachments, poll } = body;
-			return this.editResponse({ content, embeds, allowed_mentions, components, files, attachments, poll });
+			const { content, embeds, allowed_mentions, components, files, attachments, poll, flags } = body;
+			return this.editResponse({ content, embeds, allowed_mentions, components, files, attachments, poll, flags });
 		}
 		return this.write(body as InteractionCreateBodyRequest, fetchReply);
 	}

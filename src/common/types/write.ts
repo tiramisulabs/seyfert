@@ -5,6 +5,7 @@ import type {
 	APIInteractionResponseCallbackData,
 	APIInteractionResponseChannelMessageWithSource,
 	APIModalInteractionResponse,
+	MessageFlags,
 	RESTAPIPollCreate,
 	RESTPatchAPIChannelMessageJSONBody,
 	RESTPatchAPIWebhookWithTokenMessageJSONBody,
@@ -52,7 +53,9 @@ export type InteractionMessageUpdateBodyRequest = OmitInsert<
 	RESTPatchAPIWebhookWithTokenMessageJSONBody,
 	'components' | 'embeds' | 'poll',
 	SendResolverProps
->;
+> & {
+	flags?: MessageFlags;
+};
 
 export type ComponentInteractionMessageUpdate = OmitInsert<
 	APIInteractionResponseCallbackData,
