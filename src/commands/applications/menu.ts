@@ -53,6 +53,7 @@ export abstract class ContextMenuCommand {
 		Object.setPrototypeOf(this, __tempCommand.prototype);
 	}
 
+	onBeforeMiddlewares?(context: MenuCommandContext<any>): any;
 	abstract run?(context: MenuCommandContext<any>): any;
 	onAfterRun?(context: MenuCommandContext<any>, error: unknown | undefined): any;
 	onRunError?(context: MenuCommandContext<any, never>, error: unknown): any;

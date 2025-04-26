@@ -91,7 +91,7 @@ export class HandleCommand {
 				await optionsResolver.getCommand()?.onInternalError?.(this.client, optionsResolver.getCommand()!, error);
 			}
 		} catch (error) {
-			// pass
+			this.client.logger.error(`[${optionsResolver.fullCommandName}] Internal error:`, error);
 		}
 	}
 
@@ -100,17 +100,18 @@ export class HandleCommand {
 		interaction: MessageCommandInteraction | UserCommandInteraction,
 		context: MenuCommandContext<MessageCommandInteraction | UserCommandInteraction>,
 	) {
-		if (context.guildId && command.botPermissions) {
-			const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
-			if (permissions) return command.onBotPermissionsFail?.(context, permissions);
-		}
-
-		const resultGlobal = await this.runGlobalMiddlewares(command, context);
-		if (typeof resultGlobal === 'boolean') return;
-		const resultMiddle = await this.runMiddlewares(command, context);
-		if (typeof resultMiddle === 'boolean') return;
-
 		try {
+			if (context.guildId && command.botPermissions) {
+				const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
+				if (permissions) return await command.onBotPermissionsFail?.(context, permissions);
+			}
+
+			await command.onBeforeMiddlewares?.(context);
+			const resultGlobal = await this.runGlobalMiddlewares(command, context);
+			if (typeof resultGlobal === 'boolean') return;
+			const resultMiddle = await this.runMiddlewares(command, context);
+			if (typeof resultMiddle === 'boolean') return;
+
 			try {
 				await command.run!(context);
 				await command.onAfterRun?.(context, undefined);
@@ -121,8 +122,8 @@ export class HandleCommand {
 		} catch (error) {
 			try {
 				await command.onInternalError?.(this.client, command, error);
-			} catch {
-				// pass
+			} catch (err) {
+				this.client.logger.error(`[${command.name}] Internal error:`, err);
 			}
 		}
 	}
@@ -144,17 +145,18 @@ export class HandleCommand {
 	}
 
 	async entryPoint(command: EntryPointCommand, interaction: EntryPointInteraction, context: EntryPointContext) {
-		if (context.guildId && command.botPermissions) {
-			const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
-			if (permissions) return command.onBotPermissionsFail(context, permissions);
-		}
-
-		const resultGlobal = await this.runGlobalMiddlewares(command, context);
-		if (typeof resultGlobal === 'boolean') return;
-		const resultMiddle = await this.runMiddlewares(command, context);
-		if (typeof resultMiddle === 'boolean') return;
-
 		try {
+			if (context.guildId && command.botPermissions) {
+				const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
+				if (permissions) return await command.onBotPermissionsFail(context, permissions);
+			}
+
+			await command.onBeforeMiddlewares?.(context);
+			const resultGlobal = await this.runGlobalMiddlewares(command, context);
+			if (typeof resultGlobal === 'boolean') return;
+			const resultMiddle = await this.runMiddlewares(command, context);
+			if (typeof resultMiddle === 'boolean') return;
+
 			try {
 				await command.run!(context);
 				await command.onAfterRun?.(context, undefined);
@@ -165,8 +167,8 @@ export class HandleCommand {
 		} catch (error) {
 			try {
 				await command.onInternalError(this.client, command, error);
-			} catch {
-				// pass
+			} catch (err) {
+				this.client.logger.error(`[${command.name}] Internal error:`, err);
 			}
 		}
 	}
@@ -177,26 +179,28 @@ export class HandleCommand {
 		resolver: OptionResolverStructure,
 		context: CommandContext,
 	) {
-		if (context.guildId) {
-			if (command.botPermissions) {
-				const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
-				if (permissions) return command.onBotPermissionsFail?.(context, permissions);
-			}
-
-			if (command.defaultMemberPermissions) {
-				const permissions = this.checkPermissions(interaction.member!.permissions, command.defaultMemberPermissions);
-				if (permissions) return command.onPermissionsFail?.(context, permissions);
-			}
-		}
-
-		if (!(await this.runOptions(command, context, resolver))) return;
-
-		const resultGlobal = await this.runGlobalMiddlewares(command, context);
-		if (typeof resultGlobal === 'boolean') return;
-		const resultMiddle = await this.runMiddlewares(command, context);
-		if (typeof resultMiddle === 'boolean') return;
-
 		try {
+			if (context.guildId) {
+				if (command.botPermissions) {
+					const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
+					if (permissions) return await command.onBotPermissionsFail?.(context, permissions);
+				}
+
+				if (command.defaultMemberPermissions) {
+					const permissions = this.checkPermissions(interaction.member!.permissions, command.defaultMemberPermissions);
+					if (permissions) return await command.onPermissionsFail?.(context, permissions);
+				}
+			}
+
+			await command.onBeforeOptions?.(context);
+			if (!(await this.runOptions(command, context, resolver))) return;
+
+			await command.onBeforeMiddlewares?.(context);
+			const resultGlobal = await this.runGlobalMiddlewares(command, context);
+			if (typeof resultGlobal === 'boolean') return;
+			const resultMiddle = await this.runMiddlewares(command, context);
+			if (typeof resultMiddle === 'boolean') return;
+
 			try {
 				await command.run!(context);
 				await command.onAfterRun?.(context, undefined);
@@ -207,8 +211,8 @@ export class HandleCommand {
 		} catch (error) {
 			try {
 				await command.onInternalError?.(this.client, command, error);
-			} catch {
-				// pass
+			} catch (err) {
+				this.client.logger.error(`[${command.name}] Internal error:`, err);
 			}
 		}
 	}
@@ -350,17 +354,17 @@ export class HandleCommand {
 			attachments: {},
 		};
 
-		const args = this.argsParser(argsContent, command, message);
-		const { options, errors } = await this.argsOptionsParser(command, rawMessage, args, resolved);
-		const optionsResolver = this.makeResolver(self, options, parent as Command, rawMessage.guild_id, resolved);
-		const context = new CommandContext(self, message, optionsResolver, shardId, command);
-		//@ts-expect-error
-		const extendContext = self.options?.context?.(message) ?? {};
-		Object.assign(context, extendContext);
-
 		try {
+			const args = this.argsParser(argsContent, command, message);
+			const { options, errors } = await this.argsOptionsParser(command, rawMessage, args, resolved);
+			const optionsResolver = this.makeResolver(self, options, parent as Command, rawMessage.guild_id, resolved);
+			const context = new CommandContext(self, message, optionsResolver, shardId, command);
+			//@ts-expect-error
+			const extendContext = self.options?.context?.(message) ?? {};
+			Object.assign(context, extendContext);
+
 			if (errors.length) {
-				return command.onOptionsError?.(
+				return await command.onOptionsError?.(
 					context,
 					Object.fromEntries(
 						errors.map(x => {
@@ -383,7 +387,7 @@ export class HandleCommand {
 					const permissions = this.checkPermissions(memberPermissions, command.defaultMemberPermissions);
 					const guild = await this.client.guilds.raw(rawMessage.guild_id);
 					if (permissions && guild.owner_id !== rawMessage.author.id) {
-						return command.onPermissionsFail?.(context, memberPermissions.keys(permissions));
+						return await command.onPermissionsFail?.(context, memberPermissions.keys(permissions));
 					}
 				}
 
@@ -391,13 +395,15 @@ export class HandleCommand {
 					const appPermissions = await self.members.permissions(rawMessage.guild_id, self.botId);
 					const permissions = this.checkPermissions(appPermissions, command.botPermissions);
 					if (permissions) {
-						return command.onBotPermissionsFail?.(context, permissions);
+						return await command.onBotPermissionsFail?.(context, permissions);
 					}
 				}
 			}
 
+			await command.onBeforeOptions?.(context);
 			if (!(await this.runOptions(command, context, optionsResolver))) return;
 
+			await command.onBeforeMiddlewares?.(context);
 			const resultGlobal = await this.runGlobalMiddlewares(command, context);
 			if (typeof resultGlobal === 'boolean') return;
 			const resultMiddle = await this.runMiddlewares(command, context);
@@ -412,8 +418,8 @@ export class HandleCommand {
 		} catch (error) {
 			try {
 				await command.onInternalError?.(this.client, command, error);
-			} catch {
-				// http 418
+			} catch (err) {
+				this.client.logger.error(`[${command.name}] Internal error:`, err);
 			}
 		}
 	}
@@ -574,8 +580,8 @@ export class HandleCommand {
 		} catch (e) {
 			try {
 				await command.onInternalError?.(this.client, command as never, e);
-			} catch {
-				// http 418
+			} catch (err) {
+				this.client.logger.error(`[${command.name}] Internal error:`, err);
 			}
 		}
 		return false;
@@ -602,8 +608,8 @@ export class HandleCommand {
 		} catch (e) {
 			try {
 				await command.onInternalError?.(this.client, command as never, e);
-			} catch {
-				// http 418
+			} catch (err) {
+				this.client.logger.error(`[${command.name}] Internal error:`, err);
 			}
 		}
 		return false;
@@ -627,15 +633,7 @@ export class HandleCommand {
 	async runOptions(command: Command | SubCommand, context: CommandContext, resolver: OptionResolverStructure) {
 		const [erroredOptions, result] = await command.__runOptions(context, resolver);
 		if (erroredOptions) {
-			try {
-				await command.onOptionsError?.(context, result);
-			} catch (e) {
-				try {
-					await command.onInternalError?.(this.client, command, e);
-				} catch {
-					// http 418
-				}
-			}
+			await command.onOptionsError?.(context, result);
 			return false;
 		}
 		return true;

@@ -285,6 +285,8 @@ export class BaseCommand {
 		Object.setPrototypeOf(this, __tempCommand.prototype);
 	}
 
+	onBeforeMiddlewares?(context: CommandContext): any;
+	onBeforeOptions?(context: CommandContext): any;
 	run?(context: CommandContext): any;
 	onAfterRun?(context: CommandContext, error: unknown | undefined): any;
 	onRunError?(context: CommandContext, error: unknown): any;

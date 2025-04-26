@@ -470,6 +470,8 @@ export interface BaseClientOptions {
 	globalMiddlewares?: readonly (keyof RegisteredMiddlewares)[];
 	commands?: {
 		defaults?: {
+			onBeforeMiddlewares?: (context: CommandContext | MenuCommandContext<any, never>) => unknown;
+			onBeforeOptions?: Command['onBeforeOptions'];
 			onRunError?: (context: MenuCommandContext<any, never> | CommandContext, error: unknown) => unknown;
 			onPermissionsFail?: Command['onPermissionsFail'];
 			onBotPermissionsFail?: (
@@ -489,6 +491,7 @@ export interface BaseClientOptions {
 	};
 	components?: {
 		defaults?: {
+			onBeforeMiddlewares?: ComponentCommand['onBeforeMiddlewares'];
 			onRunError?: ComponentCommand['onRunError'];
 			onInternalError?: ComponentCommand['onInternalError'];
 			onMiddlewaresError?: ComponentCommand['onMiddlewaresError'];
@@ -497,6 +500,7 @@ export interface BaseClientOptions {
 	};
 	modals?: {
 		defaults?: {
+			onBeforeMiddlewares?: ModalCommand['onBeforeMiddlewares'];
 			onRunError?: ModalCommand['onRunError'];
 			onInternalError?: ModalCommand['onInternalError'];
 			onMiddlewaresError?: ModalCommand['onMiddlewaresError'];

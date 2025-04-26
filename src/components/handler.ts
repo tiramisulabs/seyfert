@@ -204,6 +204,7 @@ export class ComponentHandler extends BaseHandler {
 		component.onMiddlewaresError ??= this.client.options?.[is]?.defaults?.onMiddlewaresError;
 		component.onRunError ??= this.client.options?.[is]?.defaults?.onRunError;
 		component.onAfterRun ??= this.client.options?.[is]?.defaults?.onAfterRun;
+		component.onBeforeMiddlewares ??= this.client.options?.[is]?.defaults?.onBeforeMiddlewares;
 	}
 
 	set(instances: (new () => ComponentCommands)[]) {
@@ -289,6 +290,7 @@ export class ComponentHandler extends BaseHandler {
 
 	async execute(i: ComponentCommands, context: ComponentContext | ModalContext) {
 		try {
+			await i.onBeforeMiddlewares?.(context as never);
 			const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
 				context,
 				(context.client.options?.globalMiddlewares ?? []) as keyof RegisteredMiddlewares,
@@ -298,7 +300,7 @@ export class ComponentHandler extends BaseHandler {
 				return;
 			}
 			if ('error' in resultRunGlobalMiddlewares) {
-				return i.onMiddlewaresError?.(context as never, resultRunGlobalMiddlewares.error ?? 'Unknown error');
+				return await i.onMiddlewaresError?.(context as never, resultRunGlobalMiddlewares.error ?? 'Unknown error');
 			}
 
 			const resultRunMiddlewares = await BaseCommand.__runMiddlewares(context, i.middlewares, false);
@@ -306,7 +308,7 @@ export class ComponentHandler extends BaseHandler {
 				return;
 			}
 			if ('error' in resultRunMiddlewares) {
-				return i.onMiddlewaresError?.(context as never, resultRunMiddlewares.error ?? 'Unknown error');
+				return await i.onMiddlewaresError?.(context as never, resultRunMiddlewares.error ?? 'Unknown error');
 			}
 
 			try {
@@ -319,9 +321,8 @@ export class ComponentHandler extends BaseHandler {
 		} catch (error) {
 			try {
 				await i.onInternalError?.(this.client, error);
-			} catch (e) {
-				// supress error
-				this.logger.error(e);
+			} catch (err) {
+				this.client.logger.error(`[${i.customId ?? 'Component/Modal command'}] Internal error:`, err);
 			}
 		}
 	}
