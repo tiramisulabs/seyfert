@@ -33,6 +33,7 @@ export abstract class ComponentCommand {
 		return ComponentType[this.componentType];
 	}
 
+	onBeforeMiddlewares?(context: ComponentContext): any;
 	onAfterRun?(context: ComponentContext, error: unknown | undefined): any;
 	onRunError?(context: ComponentContext, error: unknown): any;
 	onMiddlewaresError?(context: ComponentContext, error: string): any;
