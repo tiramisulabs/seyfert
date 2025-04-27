@@ -94,7 +94,11 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	}
 
 	private __set(key: string, data: any) {
-		const __guildId = Array.isArray(data) ? data[0].guild_id : data.guild_id;
+		const isArray = Array.isArray(data);
+		if (isArray && data.length === 0) {
+			return;
+		}
+		const __guildId = isArray ? data[0].guild_id : data.guild_id;
 		const namespace = `${key.split('.')[0]}${__guildId ? `.${__guildId}` : ''}`;
 		const self = this;
 		if (!this.storage.has(namespace)) {
