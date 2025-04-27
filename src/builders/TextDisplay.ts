@@ -1,4 +1,4 @@
-import { type APITextDispalyComponent, ComponentType } from '../types';
+import { type APITextDisplayComponent, ComponentType } from '../types';
 import { BaseComponentBuilder } from './Base';
 
 /**
@@ -9,12 +9,12 @@ import { BaseComponentBuilder } from './Base';
  * const text = new TextDisplay().content('Hello, world!');
  * ```
  */
-export class TextDisplay extends BaseComponentBuilder<APITextDispalyComponent> {
+export class TextDisplay extends BaseComponentBuilder<APITextDisplayComponent> {
 	/**
 	 * Constructs a new TextDisplay component.
 	 * @param data Optional initial data for the text display component.
 	 */
-	constructor(data: Partial<APITextDispalyComponent> = {}) {
+	constructor(data: Partial<APITextDisplayComponent> = {}) {
 		super({ type: ComponentType.TextDisplay, ...data });
 	}
 

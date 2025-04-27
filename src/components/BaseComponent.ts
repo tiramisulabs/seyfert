@@ -29,7 +29,7 @@ import {
 	type APISectionComponent,
 	type APISeparatorComponent,
 	type APIStringSelectComponent,
-	type APITextDispalyComponent,
+	type APITextDisplayComponent,
 	type APITextInputComponent,
 	type APIThumbnailComponent,
 	type APIUserSelectComponent,
@@ -66,7 +66,7 @@ export interface APIComponentsMap {
 	[ComponentType.Container]: APIContainerComponent;
 	[ComponentType.MediaGallery]: APIMediaGalleryComponent;
 	[ComponentType.Separator]: APISeparatorComponent;
-	[ComponentType.TextDisplay]: APITextDispalyComponent;
+	[ComponentType.TextDisplay]: APITextDisplayComponent;
 }
 
 export interface BuilderComponentsMap {

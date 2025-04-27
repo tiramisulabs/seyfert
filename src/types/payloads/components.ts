@@ -448,7 +448,7 @@ export interface APISectionComponent {
 	/** Optional identifier for component */
 	id?: number;
 	/**	One to three text components */
-	components: APITextDispalyComponent[];
+	components: APITextDisplayComponent[];
 	/** A thumbnail or a button component, with a future possibility of adding more compatible components */
 	accessory: APIButtonComponent | APIThumbnailComponent;
 }
@@ -459,7 +459,7 @@ export interface APISectionComponent {
  * A Text Display is a top-level content component that allows you to add text to your message formatted with markdown and mention users and roles. This is similar to the content field of a message, but allows you to add multiple text components, controlling the layout of your message.
  * Text Displays are only available in messages.
  */
-export interface APITextDispalyComponent {
+export interface APITextDisplayComponent {
 	/**	10 for text display */
 	type: ComponentType.TextDisplay;
 	/** Optional identifier for component */
@@ -553,7 +553,7 @@ export enum Spacing {
 
 export type APIContainerComponents =
 	| APIActionRowComponent<APIActionRowComponentTypes>
-	| APITextDispalyComponent
+	| APITextDisplayComponent
 	| APISectionComponent
 	| APIMediaGalleryComponent
 	| APIFileComponent
@@ -591,4 +591,4 @@ export type APITopLevelComponent =
 	| APIMediaGalleryComponent
 	| APISectionComponent
 	| APISeparatorComponent
-	| APITextDispalyComponent;
+	| APITextDisplayComponent;
