@@ -17,7 +17,7 @@ import type { OmitInsert } from './util';
 
 export interface ResolverProps {
 	embeds?: Embed[] | APIEmbed[] | undefined;
-	components?: TopLevelBuilders[] | TopLevelBuilders['toJSON'][];
+	components?: TopLevelBuilders[] | ReturnType<TopLevelBuilders['toJSON']>[];
 	files?: AttachmentBuilder[] | Attachment[] | RawFile[] | undefined;
 }
 
