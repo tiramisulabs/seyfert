@@ -196,7 +196,7 @@ export class BaseInteraction<
 			poll: poll ? (poll instanceof PollBuilder ? poll.toJSON() : poll) : undefined,
 		};
 
-		if ('attachments' in body) {
+		if (Array.isArray(body.attachments)) {
 			payload.attachments =
 				body.attachments?.map((x, i) => ({
 					id: x.id ?? i.toString(),
