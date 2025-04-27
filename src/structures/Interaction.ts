@@ -148,6 +148,7 @@ export class BaseInteraction<
 				//@ts-ignore
 				return {
 					type: body.type,
+					// @ts-expect-error
 					data: BaseInteraction.transformBody(body.data ?? {}, files, self),
 				};
 			}
@@ -330,7 +331,6 @@ export class BaseInteraction<
 					case ApplicationCommandType.PrimaryEntryPoint:
 						return new EntryPointInteraction(client, gateway as APIEntryPointCommandInteraction, __reply);
 				}
-			// biome-ignore lint/suspicious/noFallthroughSwitchClause: bad interaction  between biome and ts-server
 			case InteractionType.MessageComponent:
 				switch (gateway.data.component_type) {
 					case ComponentType.Button:
@@ -357,6 +357,8 @@ export class BaseInteraction<
 							gateway as APIMessageComponentSelectMenuInteraction,
 							__reply,
 						);
+					default:
+						return;
 				}
 			case InteractionType.ModalSubmit:
 				return new ModalSubmitInteraction(client, gateway);
@@ -488,8 +490,8 @@ export class Interaction<
 		fetchReply?: FR,
 	): Promise<WebhookMessageStructure> {
 		if (await this.replied) {
-			const { content, embeds, allowed_mentions, components, files, attachments, poll } = body;
-			return this.editResponse({ content, embeds, allowed_mentions, components, files, attachments, poll });
+			const { content, embeds, allowed_mentions, components, files, attachments, poll, flags } = body;
+			return this.editResponse({ content, embeds, allowed_mentions, components, files, attachments, poll, flags });
 		}
 		return this.write(body as InteractionCreateBodyRequest, fetchReply);
 	}

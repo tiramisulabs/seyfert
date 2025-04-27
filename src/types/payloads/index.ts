@@ -20,6 +20,7 @@ export * from './voice';
 export * from './webhook';
 export * from './monetization';
 export * from './soundboard';
+export * from './components';
 
 import type { LocaleString } from '../rest';
 

@@ -1,7 +1,7 @@
 import type { CacheFrom, ReturnCache } from '../..';
 import { type GuildMemberStructure, Transformers } from '../../client/transformers';
 import { fakePromise } from '../../common';
-import type { APIGuildMember } from '../../types';
+import type { APIGuildMember, APIUser } from '../../types';
 import { GuildBasedResource } from './default/guild-based';
 export class Members extends GuildBasedResource<any, APIGuildMember> {
 	namespace = 'member';
@@ -39,14 +39,21 @@ export class Members extends GuildBasedResource<any, APIGuildMember> {
 
 	override bulk(ids: string[], guild: string): ReturnCache<GuildMemberStructure[]> {
 		return fakePromise(super.bulk(ids, guild)).then(members =>
-			fakePromise(this.client.cache.users?.bulkRaw(ids)).then(users =>
-				members
+			fakePromise(this.client.cache.users?.bulkRaw(ids)).then(users => {
+				if (!users) return [];
+				let usersRecord: null | Partial<Record<string, APIUser>> = {};
+				for (const user of users) {
+					usersRecord[user.id] = user;
+				}
+				const result = members
 					.map(rawMember => {
-						const user = users?.find(x => x.id === rawMember.id);
+						const user = usersRecord![rawMember.id];
 						return user ? Transformers.GuildMember(this.client, rawMember, user, guild) : undefined;
 					})
-					.filter(x => x !== undefined),
-			),
+					.filter(x => x !== undefined);
+				usersRecord = null;
+				return result;
+			}),
 		);
 	}
 
@@ -56,14 +63,21 @@ export class Members extends GuildBasedResource<any, APIGuildMember> {
 
 	override values(guild: string): ReturnCache<GuildMemberStructure[]> {
 		return fakePromise(super.values(guild)).then(members =>
-			fakePromise(this.client.cache.users?.valuesRaw()).then(users =>
-				members
+			fakePromise(this.client.cache.users?.bulkRaw(members.map(member => member.id))).then(users => {
+				if (!users) return [];
+				let usersRecord: null | Partial<Record<string, APIUser>> = {};
+				for (const user of users) {
+					usersRecord[user.id] = user;
+				}
+				const result = members
 					.map(rawMember => {
-						const user = users?.find(x => x.id === rawMember.id);
+						const user = usersRecord![rawMember.id];
 						return user ? Transformers.GuildMember(this.client, rawMember, user, rawMember.guild_id) : undefined;
 					})
-					.filter(x => x !== undefined),
-			),
+					.filter(x => x !== undefined);
+				usersRecord = null;
+				return result;
+			}),
 		);
 	}
 

@@ -18,7 +18,7 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 		);
 	}
 
-	raw(id: string): ReturnCache<APIGuild | undefined> {
+	raw(id: string): ReturnCache<(APIGuild & { member_count?: number }) | undefined> {
 		return super.get(id);
 	}
 
@@ -28,7 +28,7 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 		);
 	}
 
-	bulkRaw(ids: string[]): ReturnCache<APIGuild[]> {
+	bulkRaw(ids: string[]): ReturnCache<(APIGuild & { member_count?: number })[]> {
 		return super.bulk(ids);
 	}
 
@@ -38,7 +38,7 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 		);
 	}
 
-	valuesRaw(): ReturnCache<APIGuild[]> {
+	valuesRaw(): ReturnCache<(APIGuild & { member_count?: number })[]> {
 		return super.values();
 	}
 

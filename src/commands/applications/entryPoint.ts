@@ -54,6 +54,7 @@ export abstract class EntryPointCommand {
 		Object.setPrototypeOf(this, __tempCommand.prototype);
 	}
 
+	onBeforeMiddlewares?(context: EntryPointContext): any;
 	abstract run?(context: EntryPointContext): any;
 	onAfterRun?(context: EntryPointContext, error: unknown | undefined): any;
 	onRunError(context: EntryPointContext<never>, error: unknown): any {

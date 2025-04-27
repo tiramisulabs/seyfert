@@ -7,13 +7,13 @@ import {
 } from '../types';
 import { BaseComponentBuilder } from './Base';
 import { fromComponent } from './index';
-import type { BuilderComponents, FixedComponents } from './types';
+import type { ActionBuilderComponents, FixedComponents } from './types';
 
 /**
  * Represents an Action Row component in a message.
  * @template T - The type of components in the Action Row.
  */
-export class ActionRow<T extends BuilderComponents> extends BaseComponentBuilder<
+export class ActionRow<T extends ActionBuilderComponents = ActionBuilderComponents> extends BaseComponentBuilder<
 	APIActionRowComponent<APIActionRowComponentTypes>
 > {
 	/**
@@ -50,8 +50,8 @@ export class ActionRow<T extends BuilderComponents> extends BaseComponentBuilder
 	 * @example
 	 * actionRow.setComponents([buttonComponent1, buttonComponent2]);
 	 */
-	setComponents(component: FixedComponents<T>[]): this {
-		this.components = [...component];
+	setComponents(...component: RestOrArray<FixedComponents<T>>): this {
+		this.components = component.flat() as FixedComponents<T>[];
 		return this;
 	}
 

@@ -1,7 +1,6 @@
 import type { ChannelType, OverwriteType, Permissions, Snowflake, VideoQualityMode } from '..';
 
 import type {
-	APIActionRowComponent,
 	APIAllowedMentions,
 	APIAttachment,
 	APIChannel,
@@ -11,10 +10,10 @@ import type {
 	APIGuildForumDefaultReactionEmoji,
 	APIGuildForumTag,
 	APIMessage,
-	APIMessageActionRowComponent,
 	APIMessageReference,
 	APIThreadList,
 	APIThreadMember,
+	APITopLevelComponent,
 	APIUser,
 	ChannelFlags,
 	ForumLayoutType,
@@ -294,7 +293,7 @@ export interface RESTPostAPIChannelMessageJSONBody {
 	 *
 	 * See https://discord.com/developers/docs/interactions/message-components#component-object
 	 */
-	components?: APIActionRowComponent<APIMessageActionRowComponent>[] | undefined;
+	components?: APITopLevelComponent[] | undefined;
 	/**
 	 * IDs of up to 3 stickers in the server to send in the message
 	 *
@@ -442,7 +441,7 @@ export interface RESTPatchAPIChannelMessageJSONBody {
 	 *
 	 * See https://discord.com/developers/docs/interactions/message-components#component-object
 	 */
-	components?: APIActionRowComponent<APIMessageActionRowComponent>[] | null | undefined;
+	components?: APITopLevelComponent[] | null | undefined;
 }
 
 /**

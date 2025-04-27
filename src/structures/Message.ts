@@ -1,4 +1,4 @@
-import { type AllChannels, Embed, type ReturnCache } from '..';
+import { type AllChannels, Embed, type ReturnCache, componentFactory } from '..';
 import type { ListenerOptions } from '../builders';
 import {
 	type GuildMemberStructure,
@@ -15,8 +15,7 @@ import { type ObjectToLower, toCamelCase } from '../common';
 import { Formatter } from '../common';
 import type { EmojiResolvable } from '../common/types/resolvables';
 import type { MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../common/types/write';
-import type { ActionRowMessageComponents } from '../components';
-import { MessageActionRowComponent } from '../components/ActionRow';
+import type { TopLevelComponents } from '../components';
 import type {
 	APIChannelMention,
 	APIEmbed,
@@ -37,7 +36,7 @@ export interface BaseMessage
 	guildId?: string;
 	author: UserStructure;
 	member?: GuildMemberStructure;
-	components: MessageActionRowComponent<ActionRowMessageComponents>[];
+	components: TopLevelComponents[];
 	poll?: PollStructure;
 	mentions: {
 		roles: string[];
@@ -55,7 +54,7 @@ export class BaseMessage extends DiscordBase {
 			channels: data.mention_channels ?? [],
 			users: [],
 		};
-		this.components = data.components?.map(x => new MessageActionRowComponent(x)) ?? [];
+		this.components = (data.components?.map(componentFactory) as TopLevelComponents[]) ?? [];
 		this.embeds = data.embeds.map(embed => new InMessageEmbed(embed));
 		this.patch(data);
 	}

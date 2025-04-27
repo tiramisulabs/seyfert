@@ -1,5 +1,5 @@
-import type { Snowflake } from '../../index';
-import type { ComponentType } from '../channel';
+import type { ComponentType, Snowflake } from '../../index';
+
 import type { APIBaseInteraction, InteractionType } from '../interactions';
 import type {
 	APIDMInteractionWrapper,

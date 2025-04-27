@@ -23,6 +23,7 @@ export abstract class ModalCommand {
 
 	props!: ExtraProps;
 
+	onBeforeMiddlewares?(context: ModalContext): any;
 	onAfterRun?(context: ModalContext, error: unknown | undefined): any;
 	onRunError?(context: ModalContext, error: unknown): any;
 	onMiddlewaresError?(context: ModalContext, error: string): any;

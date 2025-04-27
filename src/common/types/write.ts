@@ -1,20 +1,11 @@
 import type { RawFile } from '../../api';
+import type { Attachment, AttachmentBuilder, Embed, Modal, PollBuilder, TopLevelBuilders } from '../../builders';
 import type {
-	ActionRow,
-	Attachment,
-	AttachmentBuilder,
-	BuilderComponents,
-	Embed,
-	Modal,
-	PollBuilder,
-} from '../../builders';
-import type {
-	APIActionRowComponent,
 	APIEmbed,
 	APIInteractionResponseCallbackData,
 	APIInteractionResponseChannelMessageWithSource,
-	APIMessageActionRowComponent,
 	APIModalInteractionResponse,
+	MessageFlags,
 	RESTAPIPollCreate,
 	RESTPatchAPIChannelMessageJSONBody,
 	RESTPatchAPIWebhookWithTokenMessageJSONBody,
@@ -26,7 +17,7 @@ import type { OmitInsert } from './util';
 
 export interface ResolverProps {
 	embeds?: Embed[] | APIEmbed[] | undefined;
-	components?: APIActionRowComponent<APIMessageActionRowComponent>[] | ActionRow<BuilderComponents>[] | undefined;
+	components?: TopLevelBuilders[];
 	files?: AttachmentBuilder[] | Attachment[] | RawFile[] | undefined;
 }
 
@@ -62,7 +53,9 @@ export type InteractionMessageUpdateBodyRequest = OmitInsert<
 	RESTPatchAPIWebhookWithTokenMessageJSONBody,
 	'components' | 'embeds' | 'poll',
 	SendResolverProps
->;
+> & {
+	flags?: MessageFlags;
+};
 
 export type ComponentInteractionMessageUpdate = OmitInsert<
 	APIInteractionResponseCallbackData,

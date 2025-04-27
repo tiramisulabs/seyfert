@@ -21,9 +21,9 @@ import type {
  */
 import type {
 	APIWebhook,
-	RESTGetAPIWebhookWithTokenMessageQuery,
 	RESTPatchAPIWebhookJSONBody,
 	RESTPatchAPIWebhookWithTokenJSONBody,
+	RESTPatchAPIWebhookWithTokenMessageQuery,
 	RESTPostAPIWebhookWithTokenQuery,
 } from '../types';
 import type { AllChannels } from './channels';
@@ -181,7 +181,7 @@ export class Webhook extends DiscordBase {
 /** Type definition for parameters of editing a message through a webhook. */
 export type MessageWebhookMethodEditParams = MessageWebhookPayload<
 	MessageWebhookUpdateBodyRequest,
-	{ messageId: string; query?: RESTGetAPIWebhookWithTokenMessageQuery }
+	{ messageId: string; query?: RESTPatchAPIWebhookWithTokenMessageQuery }
 >;
 /** Type definition for parameters of writing a message through a webhook. */
 export type MessageWebhookMethodWriteParams = MessageWebhookPayload<

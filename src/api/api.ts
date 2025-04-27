@@ -98,13 +98,13 @@ export class ApiHandler {
 		}
 	}
 
-	#randomUUID(): UUID {
+	randomUUID(): UUID {
 		const uuid = randomUUID();
-		if (this.workerPromises!.has(uuid)) return this.#randomUUID();
+		if (this.workerPromises!.has(uuid)) return this.randomUUID();
 		return uuid;
 	}
 
-	private sendMessage(_body: WorkerSendApiRequest) {
+	protected sendMessage(_body: WorkerSendApiRequest) {
 		throw new Error('Function not implemented');
 	}
 
@@ -121,7 +121,7 @@ export class ApiHandler {
 		{ auth = true, ...request }: ApiRequestOptions = {},
 	): Promise<T> {
 		if (this.options.workerProxy) {
-			const nonce = this.#randomUUID();
+			const nonce = this.randomUUID();
 			return this.postMessage<T>({
 				method,
 				url,
