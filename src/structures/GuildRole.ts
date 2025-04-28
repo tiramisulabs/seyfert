@@ -46,7 +46,7 @@ export class GuildRole extends DiscordBase {
 		return this.client.roles.edit(this.guildId, this.id, body);
 	}
 
-	delete(reason?: string): Promise<GuildRoleStructure> {
+	delete(reason?: string) {
 		return this.client.roles.delete(this.guildId, this.id, reason);
 	}
 
@@ -61,8 +61,7 @@ export class GuildRole extends DiscordBase {
 			list: (force = false): Promise<GuildRoleStructure[]> => ctx.client.roles.list(ctx.guildId, force),
 			edit: (roleId: string, body: RESTPatchAPIGuildRoleJSONBody, reason?: string): Promise<GuildRoleStructure> =>
 				ctx.client.roles.edit(ctx.guildId, roleId, body, reason),
-			delete: (roleId: string, reason?: string): Promise<GuildRoleStructure> =>
-				ctx.client.roles.delete(ctx.guildId, roleId, reason),
+			delete: (roleId: string, reason?: string) => ctx.client.roles.delete(ctx.guildId, roleId, reason),
 			editPositions: (body: RESTPatchAPIGuildRolePositionsJSONBody): Promise<GuildRoleStructure[]> =>
 				ctx.client.roles.editPositions(ctx.guildId, body),
 		};
