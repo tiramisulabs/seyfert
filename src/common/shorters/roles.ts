@@ -92,8 +92,8 @@ export class RoleShorter extends BaseShorter {
 	 * @param reason The reason for deleting the role.
 	 * @returns A Promise that resolves when the role is deleted.
 	 */
-	async delete(guildId: string, roleId: string, reason?: string): Promise<GuildRoleStructure> {
-		const res = await this.client.proxy.guilds(guildId).roles(roleId).delete({ reason });
+	async delete(guildId: string, roleId: string, reason?: string) {
+		await this.client.proxy.guilds(guildId).roles(roleId).delete({ reason });
 		this.client.cache.roles?.removeIfNI('Guilds', roleId, guildId);
 	}
 
