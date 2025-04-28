@@ -9,8 +9,6 @@ jobs:
   build:
     name: Publish
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
     steps:
       - name: check out code
         uses: actions/checkout@v4
