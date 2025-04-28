@@ -95,7 +95,6 @@ export class RoleShorter extends BaseShorter {
 	async delete(guildId: string, roleId: string, reason?: string): Promise<GuildRoleStructure> {
 		const res = await this.client.proxy.guilds(guildId).roles(roleId).delete({ reason });
 		this.client.cache.roles?.removeIfNI('Guilds', roleId, guildId);
-		return Transformers.GuildRole(this.client, res, guildId);
 	}
 
 	/**
