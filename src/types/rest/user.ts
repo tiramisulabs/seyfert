@@ -91,7 +91,7 @@ export type RESTGetAPICurrentUserGuildsResult = RESTAPIPartialCurrentUserGuild[]
 /**
  * https://discord.com/developers/docs/resources/user#leave-guild
  */
-export type RESTDeleteAPICurrentUserGuildResult = never;
+export type RESTDeleteAPICurrentUserGuildResult = undefined;
 
 /**
  * https://discord.com/developers/docs/resources/user#create-dm

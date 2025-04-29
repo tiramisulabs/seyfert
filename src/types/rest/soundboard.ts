@@ -67,4 +67,4 @@ export type RESTPatchAPIGuildSoundboardSoundResult = APISoundBoard;
  * This endpoint supports the X-Audit-Log-Reason header.
  * @fires GuildSoundboardSoundDelete
  */
-export type RESTDeleteAPIGuildSoundboardSoundResult = never;
+export type RESTDeleteAPIGuildSoundboardSoundResult = undefined;

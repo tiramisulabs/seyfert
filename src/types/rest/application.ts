@@ -85,7 +85,7 @@ export type RESTPatchAPIApplicationEmojiResult = APIApplicationEmoji;
 /**
  * https://discord.com/developers/docs/resources/emoji#delete-application-emoji
  */
-export type RESTDeleteAPIApplicationEmojiResult = never;
+export type RESTDeleteAPIApplicationEmojiResult = undefined;
 
 /**
  * https://discord.com/developers/docs/resources/application#get-application-activity-instance

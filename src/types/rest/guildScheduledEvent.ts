@@ -106,7 +106,7 @@ export type RESTPatchAPIGuildScheduledEventResult = APIGuildScheduledEvent;
 /**
  * https://discord.com/developers/docs/resources/guild-scheduled-event#delete-guild-scheduled-event
  */
-export type RESTDeleteAPIGuildScheduledEventResult = never;
+export type RESTDeleteAPIGuildScheduledEventResult = undefined;
 
 /**
  * https://discord.com/developers/docs/resources/guild-scheduled-event#get-guild-scheduled-event-users

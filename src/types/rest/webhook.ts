@@ -89,12 +89,12 @@ export type RESTPatchAPIWebhookWithTokenResult = RESTGetAPIWebhookWithTokenResul
 /**
  * https://discord.com/developers/docs/resources/webhook#delete-webhook
  */
-export type RESTDeleteAPIWebhookResult = never;
+export type RESTDeleteAPIWebhookResult = undefined;
 
 /**
  * https://discord.com/developers/docs/resources/webhook#delete-webhook-with-token
  */
-export type RESTDeleteAPIWebhookWithTokenResult = never;
+export type RESTDeleteAPIWebhookWithTokenResult = undefined;
 
 /**
  * https://discord.com/developers/docs/resources/webhook#execute-webhook
@@ -202,7 +202,7 @@ export interface RESTPostAPIWebhookWithTokenQuery {
 /**
  * https://discord.com/developers/docs/resources/webhook#execute-webhook
  */
-export type RESTPostAPIWebhookWithTokenResult = never;
+export type RESTPostAPIWebhookWithTokenResult = undefined;
 
 /**
  * Received when a call to https://discord.com/developers/docs/resources/webhook#execute-webhook receives
@@ -220,7 +220,7 @@ export type RESTPostAPIWebhookWithTokenSlackQuery = Omit<RESTPostAPIWebhookWithT
 /**
  * https://discord.com/developers/docs/resources/webhook#execute-slackcompatible-webhook
  */
-export type RESTPostAPIWebhookWithTokenSlackResult = never;
+export type RESTPostAPIWebhookWithTokenSlackResult = undefined;
 
 /**
  * Received when a call to https://discord.com/developers/docs/resources/webhook#execute-webhook receives
@@ -238,7 +238,7 @@ export type RESTPostAPIWebhookWithTokenGitHubQuery = Omit<RESTPostAPIWebhookWith
 /**
  * https://discord.com/developers/docs/resources/webhook#execute-githubcompatible-webhook
  */
-export type RESTPostAPIWebhookWithTokenGitHubResult = never;
+export type RESTPostAPIWebhookWithTokenGitHubResult = undefined;
 
 /**
  * Received when a call to https://discord.com/developers/docs/resources/webhook#execute-webhook receives
@@ -297,4 +297,4 @@ export type RESTPatchAPIWebhookWithTokenMessageResult = APIMessage;
 /**
  * https://discord.com/developers/docs/resources/webhook#delete-webhook-message
  */
-export type RESTDeleteAPIWebhookWithTokenMessageResult = never;
+export type RESTDeleteAPIWebhookWithTokenMessageResult = undefined;

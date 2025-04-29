@@ -322,7 +322,7 @@ export type RESTPatchAPIGuildResult = APIGuild;
 /**
  * https://discord.com/developers/docs/resources/guild#delete-guild
  */
-export type RESTDeleteAPIGuildResult = never;
+export type RESTDeleteAPIGuildResult = undefined;
 
 /**
  * https://discord.com/developers/docs/resources/guild#get-guild-channels
@@ -364,7 +364,7 @@ export type RESTPatchAPIGuildChannelPositionsJSONBody = {
 /**
  * https://discord.com/developers/docs/resources/guild#modify-guild-channel-positions
  */
-export type RESTPatchAPIGuildChannelPositionsResult = never;
+export type RESTPatchAPIGuildChannelPositionsResult = undefined;
 
 /**
  * https://discord.com/developers/docs/resources/guild#list-active-guild-threads
@@ -513,17 +513,17 @@ export interface RESTPatchAPICurrentGuildMemberJSONBody {
 /**
  * https://discord.com/developers/docs/resources/guild#add-guild-member-role
  */
-export type RESTPutAPIGuildMemberRoleResult = never;
+export type RESTPutAPIGuildMemberRoleResult = undefined;
 
 /**
  * https://discord.com/developers/docs/resources/guild#remove-guild-member-role
  */
-export type RESTDeleteAPIGuildMemberRoleResult = never;
+export type RESTDeleteAPIGuildMemberRoleResult = undefined;
 
 /**
  * https://discord.com/developers/docs/resources/guild#remove-guild-member
  */
-export type RESTDeleteAPIGuildMemberResult = never;
+export type RESTDeleteAPIGuildMemberResult = undefined;
 
 /**
  * https://discord.com/developers/docs/resources/guild#get-guild-bans
@@ -568,12 +568,12 @@ export interface RESTPutAPIGuildBanJSONBody {
 /**
  * https://discord.com/developers/docs/resources/guild#create-guild-ban
  */
-export type RESTPutAPIGuildBanResult = never;
+export type RESTPutAPIGuildBanResult = undefined;
 
 /**
  * https://discord.com/developers/docs/resources/guild#remove-guild-ban
  */
-export type RESTDeleteAPIGuildBanResult = never;
+export type RESTDeleteAPIGuildBanResult = undefined;
 
 /**
  * https://discord.com/developers/docs/resources/guild#bulk-guild-ban
@@ -723,7 +723,7 @@ export type RESTPatchAPIGuildRoleResult = APIRole;
 /**
  * https://discord.com/developers/docs/resources/guild#delete-guild-role
  */
-export type RESTDeleteAPIGuildRoleResult = never;
+export type RESTDeleteAPIGuildRoleResult = undefined;
 
 /**
  * https://discord.com/developers/docs/resources/guild#get-guild-prune-count
@@ -800,7 +800,7 @@ export type RESTGetAPIGuildIntegrationsResult = APIGuildIntegration[];
 /**
  * https://discord.com/developers/docs/resources/guild#delete-guild-integration
  */
-export type RESTDeleteAPIGuildIntegrationResult = never;
+export type RESTDeleteAPIGuildIntegrationResult = undefined;
 
 /**
  * https://discord.com/developers/docs/resources/guild#get-guild-widget-settings
@@ -888,7 +888,7 @@ export interface RESTPatchAPIGuildVoiceStateCurrentMemberJSONBody {
 /**
  * https://discord.com/developers/docs/resources/guild#modify-current-user-voice-state
  */
-export type RESTPatchAPIGuildVoiceStateCurrentMemberResult = never;
+export type RESTPatchAPIGuildVoiceStateCurrentMemberResult = undefined;
 
 /**
  * https://discord.com/developers/docs/resources/guild#modify-user-voice-state
@@ -907,7 +907,7 @@ export interface RESTPatchAPIGuildVoiceStateUserJSONBody {
 /**
  * https://discord.com/developers/docs/resources/guild#modify-user-voice-state
  */
-export type RESTPatchAPIGuildVoiceStateUserResult = never;
+export type RESTPatchAPIGuildVoiceStateUserResult = undefined;
 
 /**
  * https://discord.com/developers/docs/resources/guild#get-guild-welcome-screen

@@ -86,7 +86,7 @@ export enum EntitlementOwnerType {
 /**
  * https://discord.com/developers/docs/monetization/entitlements#delete-test-entitlement
  */
-export type RESTDeleteAPIEntitlementResult = never;
+export type RESTDeleteAPIEntitlementResult = undefined;
 
 /**
  * https://discord.com/developers/docs/monetization/skus#list-skus
@@ -96,7 +96,7 @@ export type RESTGetAPISKUsResult = APISKU[];
 /**
  * https://discord.com/developers/docs/monetization/entitlements#consume-an-entitlement
  */
-export type RESTPostAPIEntitlementConsumeResult = never;
+export type RESTPostAPIEntitlementConsumeResult = undefined;
 
 /**
  * https://canary.discord.com/developers/docs/resources/subscription#query-string-params

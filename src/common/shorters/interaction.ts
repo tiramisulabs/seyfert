@@ -1,5 +1,6 @@
 import { BaseInteraction, Modal, type ReplyInteractionBody, resolveFiles } from '../..';
 import { Transformers, type WebhookMessageStructure } from '../../client/transformers';
+import type { RESTPostAPIWebhookWithTokenWaitResult } from '../../types';
 import type { InteractionMessageUpdateBodyRequest, MessageWebhookCreateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
 
@@ -69,12 +70,12 @@ export class InteractionShorter extends BaseShorter {
 
 	async followup(token: string, { files, ...body }: MessageWebhookCreateBodyRequest): Promise<WebhookMessageStructure> {
 		const parsedFiles = files ? await resolveFiles(files) : undefined;
-		const apiMessage = await this.client.proxy
+		const apiMessage = (await this.client.proxy
 			.webhooks(this.client.applicationId)(token)
 			.post({
 				body: BaseInteraction.transformBody(body, parsedFiles, this.client),
 				files: parsedFiles,
-			});
+			})) as RESTPostAPIWebhookWithTokenWaitResult;
 		return Transformers.WebhookMessage(this.client, apiMessage, this.client.applicationId, token);
 	}
 }
