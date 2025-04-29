@@ -71,7 +71,7 @@ export interface ApplicationRoutes {
 					patch(
 						args: RestArguments<RESTPatchAPIApplicationGuildCommandJSONBody>,
 					): Promise<RESTPatchAPIApplicationGuildCommandResult>;
-					delete(args?: RestArgumentsNoBody): Promise<never>;
+					delete(args?: RestArgumentsNoBody): Promise<undefined>;
 					permissions: {
 						get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildApplicationCommandsPermissionsResult>;
 						put(
@@ -92,7 +92,7 @@ export interface ApplicationRoutes {
 				patch(
 					args: RestArguments<RESTPatchAPIApplicationCommandJSONBody>,
 				): Promise<RESTPatchAPIApplicationCommandResult>;
-				delete(args?: RestArgumentsNoBody): Promise<never>;
+				delete(args?: RestArgumentsNoBody): Promise<undefined>;
 			};
 		};
 		'role-connections': {
@@ -122,10 +122,10 @@ export interface ApplicationRoutes {
 			(
 				id: string,
 			): {
-				get(args?: RestArgumentsNoBody<never>): Promise<RESTGetAPIEntitlementResult>;
-				delete(args?: RestArgumentsNoBody): Promise<never>;
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIEntitlementResult>;
+				delete(args?: RestArgumentsNoBody): Promise<undefined>;
 				consume: {
-					post(args?: RestArgumentsNoBody): Promise<never>;
+					post(args?: RestArgumentsNoBody): Promise<undefined>;
 				};
 			};
 		};

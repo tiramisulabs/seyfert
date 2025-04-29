@@ -190,7 +190,7 @@ export interface ChannelRoutes {
 			post(args: RestArguments<RESTPostAPIChannelWebhookJSONBody>): Promise<RESTPostAPIChannelWebhookResult>;
 		};
 		'voice-status': {
-			put(args: RestArguments<{ status: string | null }>): Promise<never>;
+			put(args: RestArguments<{ status: string | null }>): Promise<undefined>;
 		};
 		polls(messageId: string): {
 			answers(id: ValidAnswerId): {
@@ -201,7 +201,7 @@ export interface ChannelRoutes {
 			};
 		};
 		'send-soundboard-sound': {
-			post(args: RestArguments<RESTPostAPISendSoundboardSound>): Promise<never>;
+			post(args: RestArguments<RESTPostAPISendSoundboardSound>): Promise<undefined>;
 		};
 	};
 }

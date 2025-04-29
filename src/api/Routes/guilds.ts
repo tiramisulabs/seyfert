@@ -361,7 +361,7 @@ export interface GuildRoutes {
 					patch(
 						args?: RestArguments<RESTPatchAPIGuildSoundboardSound>,
 					): Promise<RESTPatchAPIGuildSoundboardSoundResult>;
-					delete(args?: RestArgumentsNoBody): Promise<never>;
+					delete(args?: RestArgumentsNoBody): Promise<undefined>;
 				};
 			};
 		};
