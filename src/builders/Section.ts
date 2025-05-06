@@ -9,7 +9,7 @@ export class Section<
 	Ac extends Button | Thumbnail = Button | Thumbnail,
 > extends BaseComponentBuilder<APISectionComponent> {
 	components: TextDisplay[];
-	accessory!: Ac;
+	accessory?: Ac;
 	constructor({ components, accessory, ...data }: Partial<APISectionComponent> = {}) {
 		super({ type: ComponentType.Section, ...data });
 		this.components = (components?.map(component => fromComponent(component)) ?? []) as TextDisplay[];
@@ -46,6 +46,7 @@ export class Section<
 	 * @returns The JSON representation of this section
 	 */
 	toJSON() {
+		if (!this.accessory) throw new Error('Cannot convert to JSON without an accessory.');
 		return {
 			...this.data,
 			components: this.components.map(component => component.toJSON()),
