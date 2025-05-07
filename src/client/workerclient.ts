@@ -1,7 +1,14 @@
 import { type UUID, randomUUID } from 'node:crypto';
 import { ApiHandler, Logger } from '..';
 import { WorkerAdapter } from '../cache';
-import { type DeepPartial, LogLevels, type MakeRequired, type When, lazyLoadPackage } from '../common';
+import {
+	type DeepPartial,
+	LogLevels,
+	type MakeRequired,
+	type When,
+	calculateShardId,
+	lazyLoadPackage,
+} from '../common';
 import { EventHandler } from '../events';
 import type { GatewayDispatchPayload, GatewaySendPayload } from '../types';
 import { Shard, type ShardManagerOptions, ShardSocketCloseCodes, type WorkerData, properties } from '../websocket';
@@ -377,10 +384,16 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							return this.onPacket(packet, shardId);
 						};
 					}
+					workerData.totalShards = data.totalShards;
+					workerData.shards = [...this.shards.keys()];
 					this.resharding.clear();
 				}
 				break;
 		}
+	}
+
+	calculateShardId(guildId: string) {
+		return calculateShardId(guildId, this.workerData.totalShards);
 	}
 
 	private generateNonce(): UUID {
@@ -553,7 +566,7 @@ export function generateShardInfo(shard: Shard): WorkerShardInfo {
 	};
 }
 
-interface WorkerClientOptions extends BaseClientOptions {
+export interface WorkerClientOptions extends BaseClientOptions {
 	commands?: NonNullable<Client['options']>['commands'];
 	handlePayload?: ShardManagerOptions['handlePayload'];
 	gateway?: ClientOptions['gateway'];

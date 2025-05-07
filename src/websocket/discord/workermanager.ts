@@ -288,6 +288,7 @@ export class WorkerManager extends Map<
 						for (const [id] of this.entries()) {
 							this.postMessage(id, {
 								type: 'CONNECT_ALL_SHARDS_RESHARDING',
+								totalShards: this.options.totalShards,
 							} satisfies ConnnectAllShardsResharding);
 						}
 						this.forEach(w => {
@@ -656,7 +657,12 @@ export type ManagerSpawnShardsResharding = CreateManagerMessage<
 	Pick<ShardOptions, 'info' | 'properties' | 'compress'>
 >;
 export type DisconnectAllShardsResharding = CreateManagerMessage<'DISCONNECT_ALL_SHARDS_RESHARDING'>;
-export type ConnnectAllShardsResharding = CreateManagerMessage<'CONNECT_ALL_SHARDS_RESHARDING'>;
+export type ConnnectAllShardsResharding = CreateManagerMessage<
+	'CONNECT_ALL_SHARDS_RESHARDING',
+	{
+		totalShards: number;
+	}
+>;
 export type ManagerSendPayload = CreateManagerMessage<
 	'SEND_PAYLOAD',
 	GatewaySendPayload & { shardId: number; nonce: string }
