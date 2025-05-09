@@ -79,7 +79,7 @@ export class CommandContext<
 		if (this.interaction) return this.interaction.write(body, withResponse);
 		const options = (this.client as Client | WorkerClient).options?.commands;
 		return (this.messageResponse = await (this.message! as Message)[
-			!this.messageResponse && options?.reply?.(this) ? 'reply' : 'write'
+			!this.messageResponse && (await options?.reply?.(this)) ? 'reply' : 'write'
 		](body)) as never;
 	}
 
@@ -97,8 +97,8 @@ export class CommandContext<
 			return this.interaction.deferReply(ephemeral ? MessageFlags.Ephemeral : undefined, withResponse);
 		this.__deferred = true;
 		const options = (this.client as Client | WorkerClient).options?.commands;
-		return (this.messageResponse = await (this.message! as Message)[options?.reply?.(this) ? 'reply' : 'write'](
-			options?.deferReplyResponse?.(this) ?? { content: 'Thinking...' },
+		return (this.messageResponse = await (this.message! as Message)[(await options?.reply?.(this)) ? 'reply' : 'write'](
+			(await options?.deferReplyResponse?.(this)) ?? { content: 'Thinking...' },
 		)) as never;
 	}
 

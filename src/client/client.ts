@@ -219,8 +219,8 @@ export interface ClientOptions extends BaseClientOptions {
 	};
 	commands?: BaseClientOptions['commands'] & {
 		prefix?: (message: MessageStructure) => Awaitable<string[]>;
-		deferReplyResponse?: (ctx: CommandContext) => Parameters<Message['write']>[0];
-		reply?: (ctx: CommandContext) => boolean;
+		deferReplyResponse?: (ctx: CommandContext) => Awaitable<Parameters<Message['write']>[0]>;
+		reply?: (ctx: CommandContext) => Awaitable<boolean>;
 	};
 	handlePayload?: ShardManagerOptions['handlePayload'];
 	resharding?: PickPartial<NonNullable<ShardManagerOptions['resharding']>, 'getInfo'>;
