@@ -38,6 +38,7 @@ export interface CreateComponentCollectorResult {
 		callback: ComponentCallback<T>,
 	): void;
 	stop(reason?: string): void;
+	resetTimeouts(): void;
 }
 
 export class ComponentHandler extends BaseHandler {
@@ -114,6 +115,9 @@ export class ComponentHandler extends BaseHandler {
 				options.onStop?.(reason, () => {
 					this.createComponentCollector(messageId, channelId, guildId, options, old.components);
 				});
+			},
+			resetTimeouts: () => {
+				this.resetTimeouts(messageId);
 			},
 		};
 	}
