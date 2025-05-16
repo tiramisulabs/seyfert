@@ -32,7 +32,7 @@ export class BaseSocket {
 						res(performance.now() - start);
 					};
 					//@ts-expect-error
-					ws.on('pong', listener);
+					ws.addEventListener('pong', listener);
 					//@ts-expect-error
 					ws.ping(nonce);
 				});
