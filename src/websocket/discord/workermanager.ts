@@ -9,6 +9,7 @@ import type { GatewayPresenceUpdateData, GatewaySendPayload, RESTGetAPIGatewayBo
 import { WorkerManagerDefaults, properties } from '../constants';
 import { DynamicBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';
+import { Heartbeater, type WorkerHeartbeaterMessages } from './heartbeater';
 import type { ShardOptions, WorkerData, WorkerManagerOptions } from './shared';
 import type { WorkerInfo, WorkerMessages, WorkerShardInfo } from './worker';
 
@@ -55,6 +56,7 @@ export class WorkerManager extends Map<
 	rest!: ApiHandler;
 	reshardingWorkerQueue: (() => void)[] = [];
 	private _info?: RESTGetAPIGatewayBotResult;
+	heartbeater: Heartbeater;
 
 	constructor(
 		options: Omit<
@@ -75,6 +77,8 @@ export class WorkerManager extends Map<
 				return oldFn(message);
 			};
 		}
+
+		this.heartbeater = new Heartbeater(this.postMessage.bind(this), options.heartbeaterInterval ?? 15e3);
 	}
 
 	setCache(adapter: Adapter) {
@@ -144,12 +148,12 @@ export class WorkerManager extends Map<
 		return workerId;
 	}
 
-	postMessage(id: number, body: ManagerMessages) {
+	postMessage(id: number, body: ManagerMessages | WorkerHeartbeaterMessages) {
 		const worker = this.get(id);
 		if (!worker) return this.debugger?.error(`Worker ${id} does not exists.`);
 		switch (this.options.mode) {
 			case 'clusters':
-				(worker as ClusterWorker).send(body);
+				if ((worker as ClusterWorker).isConnected()) (worker as ClusterWorker).send(body);
 				break;
 			case 'threads':
 				(worker as import('worker_threads').Worker).postMessage(body);
@@ -160,33 +164,40 @@ export class WorkerManager extends Map<
 		}
 	}
 
-	prepareWorkers(shards: number[][], resharding = false) {
+	prepareWorkers(shards: number[][], rawResharding = false) {
 		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
 		if (!worker_threads) throw new Error('Cannot prepare workers without worker_threads.');
 
 		for (let i = 0; i < shards.length; i++) {
+			const registerWorker = (resharding: boolean) => {
+				const worker = this.createWorker({
+					path: this.options.path,
+					debug: this.options.debug,
+					token: this.options.token,
+					shards: shards[i],
+					intents: this.options.intents,
+					workerId: i,
+					workerProxy: this.options.workerProxy,
+					totalShards: resharding ? this._info!.shards : this.totalShards,
+					mode: this.options.mode,
+					resharding,
+					totalWorkers: shards.length,
+					info: {
+						...this.options.info,
+						shards: this.totalShards,
+					},
+					compress: this.options.compress,
+				});
+				this.set(i, worker);
+			};
 			const workerExists = this.has(i);
-			if (resharding || !workerExists) {
-				this[resharding ? 'reshardingWorkerQueue' : 'workerQueue'].push(() => {
-					const worker = this.createWorker({
-						path: this.options.path,
-						debug: this.options.debug,
-						token: this.options.token,
-						shards: shards[i],
-						intents: this.options.intents,
-						workerId: i,
-						workerProxy: this.options.workerProxy,
-						totalShards: resharding ? this._info!.shards : this.totalShards,
-						mode: this.options.mode,
-						resharding,
-						totalWorkers: shards.length,
-						info: {
-							...this.options.info,
-							shards: this.totalShards,
-						},
-						compress: this.options.compress,
+			if (rawResharding || !workerExists) {
+				this[rawResharding ? 'reshardingWorkerQueue' : 'workerQueue'].push(() => {
+					registerWorker(rawResharding);
+					this.heartbeater.register(i, () => {
+						this.delete(i);
+						registerWorker(false);
 					});
-					this.set(i, worker);
 				});
 			}
 		}
@@ -218,6 +229,9 @@ export class WorkerManager extends Map<
 					env,
 				});
 				worker.on('message', data => this.handleWorkerMessage(data));
+				worker.on('error', err => {
+					this.debugger?.error(`[Worker #${workerData.workerId}]`, err);
+				});
 				return worker;
 			}
 			case 'clusters': {
@@ -254,6 +268,9 @@ export class WorkerManager extends Map<
 
 	async handleWorkerMessage(message: WorkerMessages) {
 		switch (message.type) {
+			case 'ACK_HEARTBEAT':
+				this.heartbeater.acknowledge(message.workerId);
+				break;
 			case 'WORKER_READY_RESHARDING':
 				{
 					this.get(message.workerId)!.resharded = true;

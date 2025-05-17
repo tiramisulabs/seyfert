@@ -69,6 +69,9 @@ export interface WorkerManagerOptions extends Omit<ShardManagerOptions, 'handleP
 
 	workerProxy?: boolean;
 
+	/** @default 15000 */
+	heartbeaterInterval?: number;
+
 	path: string;
 
 	handlePayload?(shardId: number, workerId: number, packet: GatewayDispatchPayload): any;

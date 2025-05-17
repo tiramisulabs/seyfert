@@ -2,6 +2,7 @@ import { type UUID, randomUUID } from 'node:crypto';
 import { ApiHandler, Logger } from '..';
 import { WorkerAdapter } from '../cache';
 import {
+	type Awaitable,
 	type DeepPartial,
 	LogLevels,
 	type MakeRequired,
@@ -13,6 +14,7 @@ import { EventHandler } from '../events';
 import type { GatewayDispatchPayload, GatewaySendPayload } from '../types';
 import { Shard, type ShardManagerOptions, ShardSocketCloseCodes, type WorkerData, properties } from '../websocket';
 import type {
+	ClientHeartbeaterMessages,
 	WorkerDisconnectedAllShardsResharding,
 	WorkerMessages,
 	WorkerReady,
@@ -37,6 +39,7 @@ import type { Client, ClientOptions } from './client';
 
 import { MemberUpdateHandler } from '../websocket/discord/events/memberUpdate';
 import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdate';
+import type { WorkerHeartbeaterMessages } from '../websocket/discord/heartbeater';
 import type { ShardData } from '../websocket/discord/shared';
 import { Collectors } from './collectors';
 import { type ClientUserStructure, Transformers } from './transformers';
@@ -173,13 +176,19 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		}
 	}
 
-	postMessage(body: WorkerMessages): unknown {
+	postMessage(body: WorkerMessages | ClientHeartbeaterMessages): unknown {
 		if (manager) return manager.postMessage(body);
 		return process.send!(body);
 	}
 
-	async handleManagerMessages(data: ManagerMessages) {
+	async handleManagerMessages(data: ManagerMessages | WorkerHeartbeaterMessages) {
 		switch (data.type) {
+			case 'HEARTBEAT':
+				this.postMessage({
+					type: 'ACK_HEARTBEAT',
+					workerId: workerData.workerId,
+				});
+				break;
 			case 'CACHE_RESULT':
 				if (this.cache.adapter instanceof WorkerAdapter && this.cache.adapter.promises.has(data.nonce)) {
 					const cacheData = this.cache.adapter.promises.get(data.nonce)!;
@@ -570,8 +579,8 @@ export interface WorkerClientOptions extends BaseClientOptions {
 	commands?: NonNullable<Client['options']>['commands'];
 	handlePayload?: ShardManagerOptions['handlePayload'];
 	gateway?: ClientOptions['gateway'];
-	postMessage?: (body: unknown) => unknown;
+	postMessage?: (body: unknown) => Awaitable<unknown>;
 	/** can have perfomance issues in big bots if the client sends every event, specially in startup (false by default) */
 	sendPayloadToParent?: boolean;
-	handleManagerMessages?(message: ManagerMessages): any;
+	handleManagerMessages?(message: ManagerMessages | WorkerHeartbeaterMessages): Awaitable<unknown>;
 }

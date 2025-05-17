@@ -114,7 +114,12 @@ export type CustomWorkerClientMessages = {
 	>;
 };
 
+export type ClientHeartbeaterMessages = ACKHeartbeat;
+
+export type ACKHeartbeat = CreateWorkerMessage<'ACK_HEARTBEAT'>;
+
 export type WorkerMessages =
+	| ClientHeartbeaterMessages
 	| {
 			[K in BaseWorkerMessage['type']]: Identify<Extract<BaseWorkerMessage, { type: K }>>;
 	  }[BaseWorkerMessage['type']]
