@@ -45,7 +45,7 @@ export class Shard {
 
 	bucket: DynamicBucket;
 	offlineSendQueue: ((_?: unknown) => void)[] = [];
-	pendingGuilds = new Set<string>();
+	pendingGuilds?: Set<string>;
 	options: MakeRequired<ShardOptions, 'properties' | 'ratelimitOptions' | 'reconnectTimeout' | 'connectionTimeout'>;
 	isReady = false;
 
@@ -301,16 +301,14 @@ export class Shard {
 							clearTimeout(this.connectionTimeout);
 							this.connectionTimeout = undefined;
 							if (hasIntent(this.options.intents, 'Guilds')) {
-								for (let i = 0; i < packet.d.guilds.length; i++) {
-									this.pendingGuilds.add(packet.d.guilds.at(i)!.id);
-								}
+								this.pendingGuilds = new Set(...packet.d.guilds.map(guild => guild.id));
 							}
 
 							this.data.resume_gateway_url = packet.d.resume_gateway_url;
 							this.data.session_id = packet.d.session_id;
 							this.offlineSendQueue.map(resolve => resolve());
 							this.options.handlePayload(this.id, packet);
-							if (this.pendingGuilds.size === 0) {
+							if (this.pendingGuilds?.size === 0) {
 								this.isReady = true;
 								this.options.handlePayload(this.id, {
 									t: GatewayDispatchEvents.GuildsReady,
@@ -322,7 +320,7 @@ export class Shard {
 						}
 						case GatewayDispatchEvents.GuildCreate:
 						case GatewayDispatchEvents.GuildDelete:
-							if (this.pendingGuilds.delete(packet.d.id)) {
+							if (this.pendingGuilds?.delete(packet.d.id)) {
 								(packet as any).t = `RAW_${packet.t}`;
 								this.options.handlePayload(this.id, packet);
 								if (this.pendingGuilds.size === 0) {
