@@ -301,7 +301,7 @@ export class Shard {
 							clearTimeout(this.connectionTimeout);
 							this.connectionTimeout = undefined;
 							if (hasIntent(this.options.intents, 'Guilds')) {
-								this.pendingGuilds = new Set(...packet.d.guilds.map(guild => guild.id));
+								this.pendingGuilds = new Set(packet.d.guilds.map(guild => guild.id));
 							}
 
 							this.data.resume_gateway_url = packet.d.resume_gateway_url;
