@@ -7,10 +7,9 @@ import {
 	type RuntimeConfig,
 	type RuntimeConfigHTTP,
 } from './client/base';
-import { type ObjectToLower, isCloudfareWorker } from './common';
+import { isCloudfareWorker } from './common';
 import type { ClientNameEvents, CustomEventsKeys, ResolveEventParams } from './events';
 import { GatewayIntentBits } from './types';
-import type { APIMessageInteractionMetadata } from './types/payloads/_interactions/base';
 export { Logger, PermissionStrings, Formatter } from './common';
 //
 export { Collection, LimitedCollection } from './collection';
@@ -106,14 +105,3 @@ export function extendContext<T extends {}>(
 ) {
 	return cb;
 }
-
-declare const authorizedIntegrationOwners: ObjectToLower<
-	APIMessageInteractionMetadata['authorizing_integration_owners']
->;
-authorizedIntegrationOwners;
-// ^?
-
-declare const interactionMetadataLowercase: ObjectToLower<APIMessageInteractionMetadata>;
-
-interactionMetadataLowercase.authorizingIntegrationOwners;
-//.                              ^?
