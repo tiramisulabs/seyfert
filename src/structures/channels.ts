@@ -581,12 +581,19 @@ export class ForumChannel extends BaseGuildChannel {
 
 export interface ThreadChannel
 	extends ObjectToLower<Omit<APIThreadChannel, 'permission_overwrites' | 'guild_id'>>,
-		Omit<TextBaseGuildChannel, 'edit' | 'parentId'> {}
+		Omit<TextBaseGuildChannel, 'edit' | 'parentId'> {
+	parentId: string;
+}
 @mix(TextBaseGuildChannel)
 export class ThreadChannel extends BaseChannel<
 	ChannelType.PublicThread | ChannelType.AnnouncementThread | ChannelType.PrivateThread
 > {
 	declare type: ChannelType.PublicThread | ChannelType.AnnouncementThread | ChannelType.PrivateThread;
+
+	webhooks = WebhookChannelMethods.channel({
+		client: this.client,
+		channelId: this.parentId,
+	});
 
 	async join() {
 		await this.client.threads.join(this.id);
