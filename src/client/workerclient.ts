@@ -442,7 +442,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		return Promise.all(promises);
 	}
 
-	createShard(id: number, data: Pick<ManagerSpawnShards, 'info' | 'compress'>) {
+	createShard(id: number, data: Pick<ManagerSpawnShards, 'info' | 'compress' | 'properties'>) {
 		const onPacket = this.onPacket.bind(this);
 		const handlePayload = this.options?.handlePayload?.bind(this);
 		const self = this;
@@ -454,6 +454,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			debugger: this.debugger,
 			properties: {
 				...properties,
+				...data.properties,
 				...this.options.gateway?.properties,
 			},
 			async handlePayload(shardId, payload) {
