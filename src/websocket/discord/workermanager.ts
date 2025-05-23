@@ -324,8 +324,8 @@ export class WorkerManager extends Map<
 							shards: this._info!.shards,
 						},
 						properties: {
-							...properties,
 							...this.options.properties,
+							...properties,
 						},
 					} satisfies ManagerSpawnShardsResharding);
 				}
@@ -340,8 +340,8 @@ export class WorkerManager extends Map<
 							shards: this.totalShards,
 						},
 						properties: {
-							...properties,
 							...this.options.properties,
+							...properties,
 						},
 					} satisfies ManagerSpawnShards);
 				}
