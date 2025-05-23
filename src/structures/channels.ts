@@ -586,12 +586,7 @@ export interface ThreadChannel
 export class ThreadChannel extends BaseChannel<
 	ChannelType.PublicThread | ChannelType.AnnouncementThread | ChannelType.PrivateThread
 > {
-	parentId!: string;
 	declare type: ChannelType.PublicThread | ChannelType.AnnouncementThread | ChannelType.PrivateThread;
-	webhooks = WebhookChannelMethods.channel({
-		client: this.client,
-		channelId: this.parentId,
-	});
 
 	async join() {
 		await this.client.threads.join(this.id);
