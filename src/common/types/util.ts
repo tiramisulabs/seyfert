@@ -1,3 +1,4 @@
+import type { InternalOptions } from '../../commands';
 import type { GatewayIntentBits, PermissionFlagsBits } from '../../types';
 
 export type ToClass<T, This> = new (
@@ -15,6 +16,8 @@ export type ToClass<T, This> = new (
 export type StringToNumber<T extends string> = T extends `${infer N extends number}` ? N : never;
 
 export type PickPartial<T, K extends keyof T> = Omit<T, K> & { [P in K]?: T[P] };
+
+export type GetInternalOption<T extends string> = T extends keyof InternalOptions ? InternalOptions[T] : false;
 
 export type MakeDeepPartial<T, K extends keyof T> = Omit<T, K> & {
 	[P in K]?: DeepPartial<T[P]>;

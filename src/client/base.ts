@@ -59,7 +59,14 @@ import type {
 	ModalSubmitInteraction,
 	UserCommandInteraction,
 } from '../structures';
-import type { APIInteraction, APIInteractionResponse, LocaleString, RESTPostAPIChannelMessageJSONBody } from '../types';
+import type {
+	APIApplicationCommand,
+	APIInteraction,
+	APIInteractionResponse,
+	LocaleString,
+	RESTAPIApplicationGuildCommand,
+	RESTPostAPIChannelMessageJSONBody,
+} from '../types';
 import type { MessageStructure } from './transformers';
 
 export class BaseClient {
@@ -341,9 +348,16 @@ export class BaseClient {
 		);
 	}
 
-	async uploadCommands({ applicationId, cachePath }: { applicationId?: string; cachePath?: string } = {}) {
+	async uploadCommands({
+		applicationId,
+		cachePath,
+		putIds,
+	}: { applicationId?: string; cachePath?: string; putIds?: string } = {}) {
 		applicationId ??= await this.getRC().then(x => x.applicationId ?? this.applicationId);
 		assertString(applicationId, 'applicationId is not a string');
+
+		let raw: APIApplicationCommand[] = [];
+		let rawGuild: RESTAPIApplicationGuildCommand[] = [];
 
 		const commands = this.commands.values;
 		const filter = filterSplit<
@@ -356,11 +370,16 @@ export class BaseClient {
 		}
 
 		if (!cachePath || (await this.shouldUploadCommands(cachePath)))
-			await this.proxy.applications(applicationId).commands.put({
-				body: filter.expect
-					.filter(cmd => !('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash)
-					.map(x => x.toJSON()),
-			});
+			await this.proxy
+				.applications(applicationId)
+				.commands.put({
+					body: filter.expect
+						.filter(cmd => !('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash)
+						.map(x => x.toJSON()),
+				})
+				.then(x => {
+					if (putIds) raw = x;
+				});
 
 		const guilds = new Set<string>();
 
@@ -381,7 +400,25 @@ export class BaseClient {
 								cmd => cmd.guildId.includes(guildId) && (!('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash),
 							)
 							.map(x => x.toJSON()),
+					})
+					.then(x => {
+						if (putIds) rawGuild = rawGuild.concat(x);
 					});
+			}
+		}
+
+		if (putIds) {
+			for (const commandRaw of raw) {
+				const command = this.commands.get(commandRaw.name);
+				if (command) {
+					command.id = commandRaw.id as never;
+				}
+			}
+			for (const commandRaw of rawGuild) {
+				const command = this.commands.get(commandRaw.name, commandRaw.guild_id);
+				if (command) {
+					command.id = commandRaw.id as never;
+				}
 			}
 		}
 

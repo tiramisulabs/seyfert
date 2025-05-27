@@ -517,12 +517,7 @@ export class HandleCommand {
 		guild_id?: string;
 		name: string;
 	}): T | undefined {
-		return this.client.commands.values.find(command => {
-			if (data.guild_id) {
-				return command.guildId?.includes(data.guild_id) && command.name === data.name;
-			}
-			return command.name === data.name;
-		}) as T;
+		return this.client.commands.get(data.name, data.guild_id);
 	}
 
 	checkPermissions(app: PermissionsBitField, bot: bigint) {

@@ -34,6 +34,10 @@ export class CommandHandler extends BaseHandler {
 		super(logger);
 	}
 
+	get<T extends Command | ContextMenuCommand | EntryPointCommand>(name: string, guildId?: string): T | undefined {
+		return this.values.find(x => x.name === name && (!guildId || x.guildId?.includes(guildId))) as T;
+	}
+
 	async reload(resolve: string | Command) {
 		if (isCloudfareWorker()) {
 			throw new Error('Reload in cloudfare worker is not supported');

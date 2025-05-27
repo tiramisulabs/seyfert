@@ -1,11 +1,11 @@
-import { type If, Logger } from '../common';
+import { type GetInternalOption, type If, Logger } from '../common';
 
 import type { Adapter } from './adapters';
 
 import { Guilds } from './resources/guilds';
 import { Users } from './resources/users';
 
-import type { InternalOptions, UsingClient } from '../commands';
+import type { UsingClient } from '../commands';
 import {
 	type APIChannel,
 	type APIEmoji,
@@ -35,8 +35,7 @@ export { BaseResource } from './resources/default/base';
 export { GuildBasedResource } from './resources/default/guild-based';
 export { GuildRelatedResource } from './resources/default/guild-related';
 
-export type InferAsyncCache = InternalOptions extends { asyncCache: infer P } ? P : false;
-export type ReturnCache<T> = If<InferAsyncCache, Promise<T>, T>;
+export type ReturnCache<T> = If<GetInternalOption<'asyncCache'>, Promise<T>, T>;
 
 // GuildBased
 export type GuildBased = 'members' | 'voiceStates';

@@ -11,7 +11,7 @@ import type {
 	VoiceChannelStructure,
 } from '../../client';
 import type { BaseClient } from '../../client/base';
-import type { IsStrictlyUndefined } from '../../common';
+import type { GetInternalOption, IsStrictlyUndefined } from '../../common';
 import { ChannelType } from '../../types';
 import type { RegisteredMiddlewares } from '../decorators';
 
@@ -20,7 +20,7 @@ export type StopFunction = (error: string) => void;
 export type NextFunction<T = unknown> = IsStrictlyUndefined<T> extends true ? () => void : (data: T) => void;
 export type PassFunction = () => void;
 
-export type InferWithPrefix = InternalOptions extends { withPrefix: infer P } ? P : false;
+export type InferWithPrefix = GetInternalOption<'withPrefix'>;
 
 export interface GlobalMetadata {}
 export interface DefaultLocale {}

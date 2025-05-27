@@ -16,7 +16,7 @@ import type {
 	OptionResolverStructure,
 	UserStructure,
 } from '../../client/transformers';
-import { magicImport } from '../../common';
+import { type GetInternalOption, type If, magicImport } from '../../common';
 import type { AllChannels, AutocompleteInteraction } from '../../structures';
 import {
 	type APIApplicationCommandBasicOption,
@@ -106,6 +106,9 @@ type ContextOptionsAux<T extends OptionsRecord> = {
 
 export type ContextOptions<T extends OptionsRecord> = ContextOptionsAux<T>;
 
+export interface BaseCommand {
+	id: If<GetInternalOption<'CommandsId'>, string, never>;
+}
 export class BaseCommand {
 	middlewares: (keyof RegisteredMiddlewares)[] = [];
 

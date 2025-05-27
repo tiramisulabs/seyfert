@@ -1,4 +1,4 @@
-import { type PermissionStrings, magicImport } from '../../common';
+import { type GetInternalOption, type If, type PermissionStrings, magicImport } from '../../common';
 import type {
 	ApplicationCommandType,
 	ApplicationIntegrationType,
@@ -9,6 +9,9 @@ import type { RegisteredMiddlewares } from '../decorators';
 import type { MenuCommandContext } from './menucontext';
 import type { ExtraProps, UsingClient } from './shared';
 
+export interface ContextMenuCommand {
+	id: If<GetInternalOption<'CommandsId'>, string, never>;
+}
 export abstract class ContextMenuCommand {
 	middlewares: (keyof RegisteredMiddlewares)[] = [];
 

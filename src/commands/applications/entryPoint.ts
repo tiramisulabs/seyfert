@@ -1,4 +1,4 @@
-import { type PermissionStrings, magicImport } from '../../common';
+import { type GetInternalOption, type If, type PermissionStrings, magicImport } from '../../common';
 import {
 	ApplicationCommandType,
 	type ApplicationIntegrationType,
@@ -10,6 +10,9 @@ import type { RegisteredMiddlewares } from '../decorators';
 import type { EntryPointContext } from './entrycontext';
 import type { ExtraProps, UsingClient } from './shared';
 
+export interface EntryPointCommand {
+	id: If<GetInternalOption<'CommandsId'>, string, never>;
+}
 export abstract class EntryPointCommand {
 	middlewares: (keyof RegisteredMiddlewares)[] = [];
 
