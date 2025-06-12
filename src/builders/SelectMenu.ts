@@ -161,7 +161,7 @@ export class RoleSelectMenu extends SelectMenu<APIRoleSelectComponent> {
 	}
 }
 
-export type MentionableDefaultElement = { id: string; type: keyof Omit<typeof SelectMenuDefaultValueType, 'Channel'> };
+export type MentionableDefaultElement = { id: string; type: keyof typeof SelectMenuDefaultValueType };
 
 /**
  * Represents a Select Menu for selecting mentionable entities.

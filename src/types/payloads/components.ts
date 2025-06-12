@@ -260,7 +260,7 @@ export type APIRoleSelectComponent = APIBaseAutoPopulatedSelectMenuComponent<
  */
 export type APIMentionableSelectComponent = APIBaseAutoPopulatedSelectMenuComponent<
 	ComponentType.MentionableSelect,
-	SelectMenuDefaultValueType.Role | SelectMenuDefaultValueType.User
+	SelectMenuDefaultValueType
 >;
 
 /**
