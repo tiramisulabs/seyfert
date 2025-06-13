@@ -1,6 +1,6 @@
 {
 	"name": "seyfert",
-	"version": "3.1.2",
+	"version": "3.2.0",
 	"description": "The most advanced framework for discord bots",
 	"main": "./lib/index.js",
 	"module": "./lib/index.js",
@@ -22,14 +22,14 @@
 	"license": "MIT",
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
-		"@changesets/cli": "^2.29.2",
-		"@commitlint/cli": "^19.8.0",
-		"@commitlint/config-conventional": "^19.8.0",
-		"@types/node": "^22.15.2",
+		"@changesets/cli": "^2.29.4",
+		"@commitlint/cli": "^19.8.1",
+		"@commitlint/config-conventional": "^19.8.1",
+		"@types/node": "^24.0.1",
 		"husky": "^9.1.7",
 		"lint-staged": "^15.5.1",
 		"typescript": "^5.8.3",
-		"vitest": "^3.1.2"
+		"vitest": "^3.2.3"
 	},
 	"homepage": "https://seyfert.dev",
 	"repository": {
