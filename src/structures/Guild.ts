@@ -1,4 +1,4 @@
-import type { GuildMemberStructure, GuildStructure } from '../client';
+import type { GuildMemberStructure, GuildStructure, ThreadChannelStructure } from '../client';
 import type { UsingClient } from '../commands';
 import type { CreateInviteFromChannel } from '../common';
 import type { ObjectToLower, StructPropState, StructStates, ToClass } from '../common/types/util';
@@ -69,6 +69,10 @@ export class Guild<State extends StructStates = 'api'> extends (BaseGuild as unk
 			return null;
 		}
 		return this.members.fetch(this.ownerId, force);
+	}
+
+	async listActiveThreads(force = false): Promise<ThreadChannelStructure[]> {
+		return this.client.threads.listGuildActive(this.id, force);
 	}
 
 	templates = GuildTemplate.methods({ client: this.client, guildId: this.id });
