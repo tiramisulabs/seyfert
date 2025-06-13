@@ -71,7 +71,7 @@ export class Guild<State extends StructStates = 'api'> extends (BaseGuild as unk
 		return this.members.fetch(this.ownerId, force);
 	}
 
-	async listActiveThreads(force = false): Promise<ThreadChannelStructure[]> {
+	listActiveThreads(force = false): Promise<ThreadChannelStructure[]> {
 		return this.client.threads.listGuildActive(this.id, force);
 	}
 
