@@ -14,6 +14,7 @@ export const LangRouter = (userLocale: string, defaultLang: string, langs: Parti
 					function getValue(locale?: string) {
 						if (typeof locale === 'undefined') throw new Error('Undefined locale');
 						let value = langs[locale] as Record<string, any>;
+						if (typeof value === 'undefined') throw new Error(`Locale "${locale}" not found`);
 						for (const i of route) value = value[i];
 						return value;
 					}
@@ -51,4 +52,4 @@ export type __InternalParseLocale<T extends Record<string, any>> = {
 };
 
 export type ParseLocales<T extends Record<string, any>> = T;
-/**Idea inspiration from: FreeAoi */
+/**Idea inspiration from: FreeAoi | Fixed by: Drylozu */
