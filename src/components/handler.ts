@@ -38,7 +38,7 @@ export interface CreateComponentCollectorResult {
 		callback: ComponentCallback<T>,
 	): void;
 	stop(reason?: string): void;
-	asyncRun<T extends CollectorInteraction = CollectorInteraction>(customId: UserMatches): Promise<T | null>;
+	waitFor<T extends CollectorInteraction = CollectorInteraction>(customId: UserMatches): Promise<T | null>;
 	resetTimeouts(): void;
 }
 
@@ -117,7 +117,7 @@ export class ComponentHandler extends BaseHandler {
 					this.createComponentCollector(messageId, channelId, guildId, options, old.components);
 				});
 			},
-			asyncRun: customId =>
+			waitFor: customId =>
 				new Promise(resolve => {
 					const collector = this.values.get(messageId);
 					if (!collector) return resolve(null);

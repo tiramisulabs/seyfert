@@ -21,9 +21,8 @@ export abstract class ComponentCommand {
 	/** @internal */
 	_filter(context: ComponentContext) {
 		if (this.customId) {
-			const isString = typeof this.customId === 'string';
-			const matches = isString ? this.customId === context.customId : (this.customId as RegExp).test(context.customId);
-
+			const matches =
+				typeof this.customId === 'string' ? this.customId === context.customId : context.customId.match(this.customId);
 			if (!matches) return false;
 		}
 		if (this.filter) return this.filter(context);
