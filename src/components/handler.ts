@@ -38,6 +38,7 @@ export interface CreateComponentCollectorResult {
 		callback: ComponentCallback<T>,
 	): void;
 	stop(reason?: string): void;
+	asyncRun<T extends CollectorInteraction = CollectorInteraction>(customId: UserMatches): Promise<T | null>;
 	resetTimeouts(): void;
 }
 
@@ -116,6 +117,24 @@ export class ComponentHandler extends BaseHandler {
 					this.createComponentCollector(messageId, channelId, guildId, options, old.components);
 				});
 			},
+			asyncRun: customId =>
+				new Promise(resolve => {
+					const collector = this.values.get(messageId);
+					if (!collector) return resolve(null);
+
+					this.values.get(messageId)!.__run(customId, interaction => {
+						this.clearValue(messageId);
+						//@ts-expect-error generic
+						resolve(interaction);
+					});
+
+					if (collector?.timeout) clearTimeout(collector.timeout);
+					collector.timeout = setTimeout(() => {
+						this.clearValue(messageId);
+						resolve(null);
+						// by default 15 seconds in case user don't do anything
+					}, collector?.options?.timeout ?? 15_000);
+				}),
 			resetTimeouts: () => {
 				this.resetTimeouts(messageId);
 			},
