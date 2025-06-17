@@ -1,6 +1,6 @@
-import type { Identify } from '..';
 import type { CDNUrlOptions } from '../../api';
 import type { UsingClient } from '../../commands';
+import type { Identify } from '..';
 
 export type ImageOptions = CDNUrlOptions;
 

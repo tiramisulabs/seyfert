@@ -4,15 +4,15 @@ import type { CreateInviteFromChannel } from '../common';
 import type { ObjectToLower, StructPropState, StructStates, ToClass } from '../common/types/util';
 import type { APIGuild, APIPartialGuild, GatewayGuildCreateDispatchData, RESTPatchAPIGuildJSONBody } from '../types';
 import { AutoModerationRule } from './AutoModerationRule';
+import { BaseChannel, WebhookGuildMethods } from './channels';
 import { GuildEmoji } from './Emoji';
+import { BaseGuild } from './extra/BaseGuild';
+import type { DiscordBase } from './extra/DiscordBase';
 import { GuildBan } from './GuildBan';
 import { GuildMember } from './GuildMember';
 import { GuildRole } from './GuildRole';
 import { GuildTemplate } from './GuildTemplate';
 import { Sticker } from './Sticker';
-import { BaseChannel, WebhookGuildMethods } from './channels';
-import { BaseGuild } from './extra/BaseGuild';
-import type { DiscordBase } from './extra/DiscordBase';
 
 export interface Guild extends ObjectToLower<Omit<APIGuild, 'stickers' | 'emojis' | 'roles'>>, DiscordBase {}
 export class Guild<State extends StructStates = 'api'> extends (BaseGuild as unknown as ToClass<

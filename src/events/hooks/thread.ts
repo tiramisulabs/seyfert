@@ -5,8 +5,8 @@ import type {
 	GatewayThreadCreateDispatchData,
 	GatewayThreadDeleteDispatchData,
 	GatewayThreadListSyncDispatchData,
-	GatewayThreadMemberUpdateDispatchData,
 	GatewayThreadMembersUpdateDispatchData,
+	GatewayThreadMemberUpdateDispatchData,
 	GatewayThreadUpdateDispatchData,
 } from '../../types';
 

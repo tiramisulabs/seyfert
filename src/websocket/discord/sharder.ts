@@ -1,11 +1,11 @@
 import {
-	LogLevels,
+	calculateShardId,
 	Logger,
+	LogLevels,
+	lazyLoadPackage,
 	type MakeRequired,
 	MergeOptions,
 	type WatcherSendToShard,
-	calculateShardId,
-	lazyLoadPackage,
 } from '../../common';
 import type { DeepPartial, MakeDeepPartial } from '../../common/types/util';
 import {

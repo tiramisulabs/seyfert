@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.0.0/schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -8,7 +8,16 @@
 	},
 	"files": {
 		"ignoreUnknown": true,
-		"ignore": ["node_modules/", "build", "lib", "__test__", "package.json", "tsconfig.json", ".vscode"]
+		"includes": [
+			"**/src/**",
+			"!/node_modules/",
+			"!/build",
+			"!/lib",
+			"!/__test__",
+			"!/package.json",
+			"!/tsconfig.json",
+			"!/.vscode"
+		]
 	},
 	"formatter": {
 		"enabled": true,
@@ -18,14 +27,17 @@
 		"lineEnding": "crlf",
 		"formatWithErrors": true
 	},
-	"organizeImports": {
-		"enabled": true
+	"assist": {
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
 	},
 	"linter": {
 		"enabled": true,
 		"rules": {
 			"recommended": false,
-			"all": true,
 			"security": {
 				"noGlobalEval": "off"
 			},
@@ -41,9 +53,7 @@
 			},
 			"correctness": {
 				"noNodejsModules": "off",
-				"useImportExtensions": "off",
-				"noUnusedFunctionParameters": "off",
-				"noUnusedVariables": "off"
+				"useImportExtensions": "off"
 			},
 			"style": {
 				"noDefaultExport": "off",
@@ -56,8 +66,7 @@
 				"noParameterAssign": "off",
 				"useFilenamingConvention": "off",
 				"useEnumInitializers": "off",
-				"useExplicitLengthCheck": "off",
-				"noNamespaceImport": "off"
+				"useExplicitLengthCheck": "off"
 			},
 			"complexity": {
 				"noForEach": "off",
@@ -69,7 +78,8 @@
 				"noBarrelFile": "off",
 				"noDelete": "off",
 				"noReExportAll": "off",
-				"useTopLevelRegex": "off"
+				"useTopLevelRegex": "off",
+				"noNamespaceImport": "off"
 			}
 		}
 	},

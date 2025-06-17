@@ -2,9 +2,9 @@
  * Types extracted from https://discord.com/developers/docs/resources/application
  */
 
-import type { APIEmoji, LocalizationMap } from '.';
-import type { Permissions, Snowflake } from '..';
 import type { MakeRequired } from '../../common';
+import type { Permissions, Snowflake } from '..';
+import type { APIEmoji, LocalizationMap } from '.';
 import type { APIPartialGuild } from './guild';
 import type { ApplicationIntegrationType } from './interactions';
 import type { OAuth2Scopes } from './oauth2';

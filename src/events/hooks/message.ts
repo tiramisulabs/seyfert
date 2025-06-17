@@ -1,6 +1,6 @@
 import { type MessageStructure, Transformers } from '../../client/transformers';
 import type { UsingClient } from '../../commands';
-import { type ObjectToLower, type OmitInsert, fakePromise, toCamelCase } from '../../common';
+import { fakePromise, type ObjectToLower, type OmitInsert, toCamelCase } from '../../common';
 import type {
 	GatewayMessageCreateDispatchData,
 	GatewayMessageDeleteBulkDispatchData,

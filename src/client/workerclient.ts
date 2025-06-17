@@ -1,18 +1,22 @@
-import { type UUID, randomUUID } from 'node:crypto';
+import { randomUUID, type UUID } from 'node:crypto';
 import { ApiHandler, Logger } from '..';
 import { WorkerAdapter } from '../cache';
 import {
 	type Awaitable,
+	calculateShardId,
 	type DeepPartial,
 	LogLevels,
+	lazyLoadPackage,
 	type MakeRequired,
 	type When,
-	calculateShardId,
-	lazyLoadPackage,
 } from '../common';
 import { EventHandler } from '../events';
 import type { GatewayDispatchPayload, GatewaySendPayload } from '../types';
-import { Shard, type ShardManagerOptions, ShardSocketCloseCodes, type WorkerData, properties } from '../websocket';
+import { properties, Shard, type ShardManagerOptions, ShardSocketCloseCodes, type WorkerData } from '../websocket';
+import { MemberUpdateHandler } from '../websocket/discord/events/memberUpdate';
+import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdate';
+import type { WorkerHeartbeaterMessages } from '../websocket/discord/heartbeater';
+import type { ShardData } from '../websocket/discord/shared';
 import type {
 	ClientHeartbeaterMessages,
 	WorkerDisconnectedAllShardsResharding,
@@ -36,11 +40,6 @@ import type { ManagerMessages, ManagerSpawnShards } from '../websocket/discord/w
 import type { BaseClientOptions, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import type { Client, ClientOptions } from './client';
-
-import { MemberUpdateHandler } from '../websocket/discord/events/memberUpdate';
-import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdate';
-import type { WorkerHeartbeaterMessages } from '../websocket/discord/heartbeater';
-import type { ShardData } from '../websocket/discord/shared';
 import { Collectors } from './collectors';
 import { type ClientUserStructure, Transformers } from './transformers';
 

@@ -1,11 +1,11 @@
-import { type UUID, randomUUID } from 'node:crypto';
-import { type Awaitable, BASE_HOST, Logger, delay, lazyLoadPackage, snowflakeToTimestamp } from '../common';
+import { randomUUID, type UUID } from 'node:crypto';
+import { type Awaitable, BASE_HOST, delay, Logger, lazyLoadPackage, snowflakeToTimestamp } from '../common';
 import { toArrayBuffer, toBuffer } from '../common/it/utils';
 import type { WorkerData } from '../websocket';
 import type { WorkerSendApiRequest } from '../websocket/discord/worker';
+import { Bucket } from './bucket';
 import { CDNRouter, Router } from './Router';
 import type { APIRoutes } from './Routes';
-import { Bucket } from './bucket';
 import {
 	type ApiHandlerInternalOptions,
 	type ApiHandlerOptions,
@@ -384,11 +384,7 @@ export class ApiHandler {
 		}
 	}
 
-	parseRequest(options: {
-		url: string;
-		headers: RequestHeaders;
-		request: ApiRequestOptions;
-	}) {
+	parseRequest(options: { url: string; headers: RequestHeaders; request: ApiRequestOptions }) {
 		let finalUrl = options.url;
 		let data: string | FormData | undefined;
 		if (options.request.auth) {

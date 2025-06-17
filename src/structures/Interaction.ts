@@ -1,3 +1,33 @@
+import type { RawFile } from '../api';
+import { ActionRow, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
+import type { ReturnCache } from '../cache';
+import {
+	type EntitlementStructure,
+	type GuildRoleStructure,
+	type GuildStructure,
+	type InteractionGuildMemberStructure,
+	type MessageStructure,
+	type OptionResolverStructure,
+	Transformers,
+	type UserStructure,
+	type WebhookMessageStructure,
+} from '../client/transformers';
+import type { ContextOptionsResolved, UsingClient } from '../commands';
+import {
+	type ComponentInteractionMessageUpdate,
+	type InteractionCreateBodyRequest,
+	type InteractionMessageUpdateBodyRequest,
+	type MessageCreateBodyRequest,
+	type MessageUpdateBodyRequest,
+	type MessageWebhookCreateBodyRequest,
+	type ModalCreateBodyRequest,
+	type ObjectToLower,
+	type OmitInsert,
+	type ToClass,
+	toCamelCase,
+	type When,
+} from '../common';
+import { mix } from '../deps/mixer';
 import {
 	type APIActionRowComponent,
 	type APIApplicationCommandAutocompleteInteraction,
@@ -41,37 +71,6 @@ import {
 	type RESTPostAPIInteractionCallbackJSONBody,
 	type RESTPostAPIInteractionCallbackResult,
 } from '../types';
-
-import type { RawFile } from '../api';
-import { ActionRow, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
-import type { ReturnCache } from '../cache';
-import {
-	type EntitlementStructure,
-	type GuildRoleStructure,
-	type GuildStructure,
-	type InteractionGuildMemberStructure,
-	type MessageStructure,
-	type OptionResolverStructure,
-	Transformers,
-	type UserStructure,
-	type WebhookMessageStructure,
-} from '../client/transformers';
-import type { ContextOptionsResolved, UsingClient } from '../commands';
-import {
-	type ComponentInteractionMessageUpdate,
-	type InteractionCreateBodyRequest,
-	type InteractionMessageUpdateBodyRequest,
-	type MessageCreateBodyRequest,
-	type MessageUpdateBodyRequest,
-	type MessageWebhookCreateBodyRequest,
-	type ModalCreateBodyRequest,
-	type ObjectToLower,
-	type OmitInsert,
-	type ToClass,
-	type When,
-	toCamelCase,
-} from '../common';
-import { mix } from '../deps/mixer';
 import { type AllChannels, channelFrom } from './';
 import { DiscordBase } from './extra/DiscordBase';
 import { PermissionsBitField } from './extra/Permissions';
@@ -315,7 +314,6 @@ export class BaseInteraction<
 		switch (gateway.type) {
 			case InteractionType.ApplicationCommandAutocomplete:
 				return new AutocompleteInteraction(client, gateway, undefined, __reply);
-			// biome-ignore lint/suspicious/noFallthroughSwitchClause: bad interaction  between biome and ts-server
 			case InteractionType.ApplicationCommand:
 				switch (gateway.data.type) {
 					case ApplicationCommandType.ChatInput:

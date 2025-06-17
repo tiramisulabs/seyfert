@@ -1,6 +1,5 @@
 import { promises } from 'node:fs';
 import { basename, dirname } from 'node:path';
-import type { EntryPointCommand } from '.';
 import type { Logger, NulleableCoalising, OmitInsert } from '../common';
 import { BaseHandler, isCloudfareWorker } from '../common';
 import { PermissionsBitField } from '../structures/extra/Permissions';
@@ -17,6 +16,7 @@ import {
 	type LocaleString,
 	type LocalizationMap,
 } from '../types';
+import type { EntryPointCommand } from '.';
 import { Command, type CommandOption, SubCommand } from './applications/chat';
 import { ContextMenuCommand } from './applications/menu';
 import { IgnoreCommand, type UsingClient } from './applications/shared';

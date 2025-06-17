@@ -5,8 +5,8 @@ import type {
 	APISoundBoard,
 	GatewayGuildSoundboardSoundCreateDispatchData,
 	GatewayGuildSoundboardSoundDeleteDispatchData,
-	GatewayGuildSoundboardSoundUpdateDispatchData,
 	GatewayGuildSoundboardSoundsUpdateDispatchData,
+	GatewayGuildSoundboardSoundUpdateDispatchData,
 	GatewaySoundboardSoundsDispatchData,
 } from '../../types';
 

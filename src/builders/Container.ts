@@ -1,6 +1,6 @@
-import { type ActionRow, fromComponent } from '.';
 import { type ColorResolvable, type RestOrArray, resolveColor } from '../common';
 import { type APIContainerComponent, ComponentType } from '../types';
+import { type ActionRow, fromComponent } from '.';
 import { BaseComponentBuilder } from './Base';
 import type { File } from './File';
 import type { MediaGallery } from './MediaGallery';

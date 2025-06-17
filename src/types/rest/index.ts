@@ -10,16 +10,16 @@ export * from './guild';
 export * from './guildScheduledEvent';
 export * from './interactions';
 export * from './invite';
+export * from './monetization';
 export * from './oauth2';
 export * from './poll';
+export * from './soundboard';
 export * from './stageInstance';
 export * from './sticker';
 export * from './template';
 export * from './user';
 export * from './voice';
 export * from './webhook';
-export * from './monetization';
-export * from './soundboard';
 
 export type DefaultUserAvatarAssets = 0 | 1 | 2 | 3 | 4 | 5;
 

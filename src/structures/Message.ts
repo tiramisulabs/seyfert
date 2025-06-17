@@ -1,4 +1,4 @@
-import { type AllChannels, Embed, type ReturnCache, componentFactory } from '..';
+import { type AllChannels, componentFactory, Embed, type ReturnCache } from '..';
 import type { ListenerOptions } from '../builders';
 import {
 	type GuildMemberStructure,
@@ -11,8 +11,7 @@ import {
 	type WebhookStructure,
 } from '../client/transformers';
 import type { UsingClient } from '../commands';
-import { type ObjectToLower, toCamelCase } from '../common';
-import { Formatter } from '../common';
+import { Formatter, type ObjectToLower, toCamelCase } from '../common';
 import type { EmojiResolvable } from '../common/types/resolvables';
 import type { MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../common/types/write';
 import type { TopLevelComponents } from '../components';
@@ -24,8 +23,8 @@ import type {
 	APIUser,
 	GatewayMessageCreateDispatchData,
 } from '../types';
-import type { MessageWebhookMethodEditParams, MessageWebhookMethodWriteParams } from './Webhook';
 import { DiscordBase } from './extra/DiscordBase';
+import type { MessageWebhookMethodEditParams, MessageWebhookMethodWriteParams } from './Webhook';
 
 export type MessageData = APIMessage | GatewayMessageCreateDispatchData;
 

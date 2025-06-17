@@ -1,6 +1,7 @@
 import type { Snowflake } from '..';
 import type { APIGuildMember } from './guild';
 import type { APIUser } from './user';
+
 interface APIGuildScheduledEventBase<Type extends GuildScheduledEventEntityType> {
 	/**
 	 * The id of the guild event

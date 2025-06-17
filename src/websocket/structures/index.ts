@@ -1,4 +1,4 @@
-import { type Logger, delay } from '../../common';
+import { delay, type Logger } from '../../common';
 
 /**
  * options of the dynamic bucket

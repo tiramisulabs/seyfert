@@ -1,4 +1,4 @@
-import { type PermissionStrings, magicImport } from '../../common';
+import { magicImport, type PermissionStrings } from '../../common';
 import {
 	ApplicationCommandType,
 	type ApplicationIntegrationType,

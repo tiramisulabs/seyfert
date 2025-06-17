@@ -4,6 +4,7 @@ import {
 	type ChannelSelectMenu,
 	type Container,
 	type File,
+	fromComponent,
 	type MediaGallery,
 	type MentionableSelectMenu,
 	type RoleSelectMenu,
@@ -14,7 +15,6 @@ import {
 	type TextInput,
 	type Thumbnail,
 	type UserSelectMenu,
-	fromComponent,
 } from '../builders';
 import {
 	type APIActionRowComponent,

@@ -1,9 +1,9 @@
 import { resolveFiles } from '../../builders';
 import { Transformers, type WebhookMessageStructure, type WebhookStructure } from '../../client/transformers';
 import {
+	MessagesMethods,
 	type MessageWebhookMethodEditParams,
 	type MessageWebhookMethodWriteParams,
-	MessagesMethods,
 } from '../../structures';
 import type {
 	APIWebhook,

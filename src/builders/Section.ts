@@ -1,6 +1,6 @@
-import { type Button, fromComponent } from '.';
 import type { RestOrArray } from '../common';
 import { type APISectionComponent, ComponentType } from '../types';
+import { type Button, fromComponent } from '.';
 import { BaseComponentBuilder } from './Base';
 import type { TextDisplay } from './TextDisplay';
 import type { Thumbnail } from './Thumbnail';

@@ -5,8 +5,8 @@ import {
 	type BaseChannelStructure,
 	type BaseGuildChannelStructure,
 	type CategoryChannelStructure,
-	type DMChannelStructure,
 	type DirectoryChannelStructure,
+	type DMChannelStructure,
 	type ForumChannelStructure,
 	type GuildMemberStructure,
 	type GuildStructure,
@@ -26,13 +26,13 @@ import type { SeyfertChannelMap, UsingClient } from '../commands';
 import {
 	type CreateInviteFromChannel,
 	type EmojiResolvable,
+	fakePromise,
 	type MessageCreateBodyRequest,
 	type MessageUpdateBodyRequest,
 	type MethodContext,
 	type ObjectToLower,
 	type StringToNumber,
 	type ToClass,
-	fakePromise,
 } from '../common';
 import { mix } from '../deps/mixer';
 import {
@@ -63,9 +63,9 @@ import {
 	type ThreadAutoArchiveDuration,
 	VideoQualityMode,
 } from '../types';
+import { DiscordBase } from './extra/DiscordBase';
 import type { GuildMember } from './GuildMember';
 import type { GuildRole } from './GuildRole';
-import { DiscordBase } from './extra/DiscordBase';
 
 export class BaseNoEditableChannel<T extends ChannelType> extends DiscordBase<APIChannelBase<ChannelType>> {
 	declare type: T;

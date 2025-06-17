@@ -1,5 +1,5 @@
 import { inflateSync } from 'node:zlib';
-import { LogLevels, Logger, type MakeRequired, MergeOptions, delay, hasIntent } from '../../common';
+import { delay, hasIntent, Logger, LogLevels, type MakeRequired, MergeOptions } from '../../common';
 import {
 	type APIGuildMember,
 	GatewayCloseCodes,
@@ -56,10 +56,7 @@ export class Shard {
 		{
 			members: APIGuildMember[];
 			presences: GatewayGuildMembersChunkPresence[];
-			resolve: (value: {
-				members: APIGuildMember[];
-				presences: GatewayGuildMembersChunkPresence[];
-			}) => void;
+			resolve: (value: { members: APIGuildMember[]; presences: GatewayGuildMembersChunkPresence[] }) => void;
 			reject: (reason?: any) => void;
 		}
 	>();
@@ -138,7 +135,6 @@ export class Shard {
 		);
 
 		// @ts-expect-error Use native websocket when using Bun
-		// biome-ignore lint/correctness/noUndeclaredVariables: /\
 		this.websocket = new BaseSocket(typeof Bun === 'undefined' ? 'ws' : 'bun', this.currentGatewayURL);
 
 		this.websocket.onmessage = ({ data }: { data: string | Buffer }) => {
@@ -374,10 +370,7 @@ export class Shard {
 	) {
 		const nonce = Date.now().toString() + Math.random().toString(36);
 
-		let resolve: (value: {
-			members: APIGuildMember[];
-			presences: GatewayGuildMembersChunkPresence[];
-		}) => void = () => {
+		let resolve: (value: { members: APIGuildMember[]; presences: GatewayGuildMembersChunkPresence[] }) => void = () => {
 			//
 		};
 		let reject: (reason?: any) => void = () => {

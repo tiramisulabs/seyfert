@@ -13,9 +13,9 @@ import {
 	type MakeRequired,
 	type MessageWebhookCreateBodyRequest,
 	type ModalCreateBodyRequest,
+	toSnakeCase,
 	type UnionToTuple,
 	type When,
-	toSnakeCase,
 } from '../../common';
 import type { AllChannels, MessageCommandInteraction, UserCommandInteraction } from '../../structures';
 import { type APIMessage, ApplicationCommandType, MessageFlags, type RESTGetAPIGuildQuery } from '../../types';
@@ -47,7 +47,6 @@ export class MenuCommandContext<
 	metadata: CommandMetadata<UnionToTuple<M>> = {} as never;
 	globalMetadata: GlobalMetadata = {};
 
-	// biome-ignore lint/suspicious/useGetterReturn: default don't exist.
 	get target(): InteractionTarget<T> {
 		switch (this.interaction.data.type) {
 			case ApplicationCommandType.Message: {

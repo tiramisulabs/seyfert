@@ -14,8 +14,8 @@ import {
 	type AllChannels,
 	BaseChannel,
 	type CreateStickerBodyRequest,
-	type GuildChannelTypes,
 	channelFrom,
+	type GuildChannelTypes,
 } from '../../structures';
 import type {
 	APIChannel,

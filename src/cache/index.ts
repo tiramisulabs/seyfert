@@ -1,11 +1,5 @@
-import { type If, Logger } from '../common';
-
-import type { Adapter } from './adapters';
-
-import { Guilds } from './resources/guilds';
-import { Users } from './resources/users';
-
 import type { InternalOptions, UsingClient } from '../commands';
+import { type If, Logger } from '../common';
 import {
 	type APIChannel,
 	type APIEmoji,
@@ -20,9 +14,11 @@ import {
 	GuildMemberFlags,
 	OverwriteType,
 } from '../types';
+import type { Adapter } from './adapters';
 import { Bans } from './resources/bans';
 import { Channels } from './resources/channels';
 import { Emojis } from './resources/emojis';
+import { Guilds } from './resources/guilds';
 import { Members } from './resources/members';
 import { Messages } from './resources/messages';
 import { Overwrites } from './resources/overwrites';
@@ -30,7 +26,9 @@ import { Presences } from './resources/presence';
 import { Roles } from './resources/roles';
 import { StageInstances } from './resources/stage-instances';
 import { Stickers } from './resources/stickers';
+import { Users } from './resources/users';
 import { VoiceStates } from './resources/voice-states';
+
 export { BaseResource } from './resources/default/base';
 export { GuildBasedResource } from './resources/default/guild-based';
 export { GuildRelatedResource } from './resources/default/guild-related';

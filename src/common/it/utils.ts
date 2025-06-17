@@ -1,5 +1,7 @@
 import { promises } from 'node:fs';
 import { basename, join } from 'node:path';
+import type { Cache } from '../../cache';
+import { type APIPartialEmoji, FormattingPatterns, GatewayIntentBits } from '../../types';
 import {
 	type ColorResolvable,
 	DiscordEpoch,
@@ -10,8 +12,6 @@ import {
 	type ObjectToSnake,
 	type TypeArray,
 } from '..';
-import type { Cache } from '../../cache';
-import { type APIPartialEmoji, FormattingPatterns, GatewayIntentBits } from '../../types';
 
 /**
  * Calculates the shard ID for a guild based on its ID.
@@ -304,8 +304,6 @@ export function lazyLoadPackage<T>(mod: string): T | undefined {
 	try {
 		return require(mod);
 	} catch (e) {
-		// biome-ignore lint/suspicious/noConsoleLog:
-		// biome-ignore lint/suspicious/noConsole:
 		console.log(`Cannot import ${mod}`, e);
 		return;
 	}

@@ -1,4 +1,4 @@
-import { type UUID, randomUUID } from 'node:crypto';
+import { randomUUID, type UUID } from 'node:crypto';
 import type { UsingClient } from '../commands';
 import type { Awaitable, CamelCase } from '../common';
 import type { CallbackEventHandler, CustomEventsKeys, GatewayEvents } from '../events';

@@ -1,4 +1,4 @@
-import { type WriteStream, createWriteStream, existsSync, mkdirSync, promises } from 'node:fs';
+import { createWriteStream, existsSync, mkdirSync, promises, type WriteStream } from 'node:fs';
 import { join } from 'node:path';
 import { bgBrightWhite, black, bold, brightBlack, cyan, gray, italic, red, stripColor, yellow } from './colors';
 import { MergeOptions } from './utils';

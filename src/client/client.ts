@@ -1,17 +1,17 @@
 import type { CommandContext, Message } from '..';
 import {
 	type Awaitable,
+	assertString,
 	type DeepPartial,
 	type If,
+	lazyLoadPackage,
 	type PickPartial,
 	type WatcherPayload,
 	type WatcherSendToShard,
-	assertString,
-	lazyLoadPackage,
 } from '../common';
 import { EventHandler } from '../events';
 import type { GatewayDispatchPayload, GatewayPresenceUpdateData } from '../types';
-import { ShardManager, type ShardManagerOptions, properties } from '../websocket';
+import { properties, ShardManager, type ShardManagerOptions } from '../websocket';
 import { MemberUpdateHandler } from '../websocket/discord/events/memberUpdate';
 import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdate';
 import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';

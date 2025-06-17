@@ -1,5 +1,5 @@
-import { componentFactory } from '.';
 import type { APISectionComponent, ComponentType } from '../types';
+import { componentFactory } from '.';
 import { BaseComponent } from './BaseComponent';
 import type { ButtonComponent } from './ButtonComponent';
 import type { TextDisplayComponent } from './TextDisplay';

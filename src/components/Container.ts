@@ -1,5 +1,5 @@
-import { type ContainerComponents, componentFactory } from '.';
 import type { APIContainerComponent, ComponentType } from '../types';
+import { type ContainerComponents, componentFactory } from '.';
 import { BaseComponent } from './BaseComponent';
 
 export class ContainerComponent extends BaseComponent<ComponentType.Container> {

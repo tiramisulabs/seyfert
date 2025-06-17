@@ -1,7 +1,6 @@
-import type { ApplicationIntegrationType, InteractionContextType } from '..';
 import type { ChannelType, Permissions, Snowflake } from '../..';
-
 import type { LocaleString } from '../../rest';
+import type { ApplicationIntegrationType, InteractionContextType } from '..';
 import type {
 	APIAttachment,
 	APIChannel,

@@ -4,11 +4,11 @@ import type { FileLoaded } from '../commands/handler';
 import {
 	BaseHandler,
 	type CamelCase,
+	isCloudfareWorker,
 	type MakeRequired,
+	magicImport,
 	ReplaceRegex,
 	type SnakeCase,
-	isCloudfareWorker,
-	magicImport,
 } from '../common';
 import type { ClientEvents } from '../events/hooks';
 import * as RawEvents from '../events/hooks';

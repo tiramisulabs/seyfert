@@ -1,10 +1,3 @@
-import type {
-	AutocompleteCallback,
-	EntryPointContext,
-	MenuCommandContext,
-	OnAutocompleteErrorCallback,
-	ReturnOptionsTypes,
-} from '..';
 import type { Awaitable, FlatObjectKeys } from '../../common';
 import type { ModalContext } from '../../components';
 import type { ComponentContext } from '../../components/componentcontext';
@@ -15,6 +8,13 @@ import {
 	ApplicationCommandOptionType,
 } from '../../types';
 import type { LocalizationMap } from '../../types/payloads';
+import type {
+	AutocompleteCallback,
+	EntryPointContext,
+	MenuCommandContext,
+	OnAutocompleteErrorCallback,
+	ReturnOptionsTypes,
+} from '..';
 import type { CommandContext } from './chatcontext';
 import type { DefaultLocale, MiddlewareContext, OKFunction, SeyfertChannelMap, StopFunction } from './shared';
 

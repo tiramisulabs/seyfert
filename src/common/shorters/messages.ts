@@ -1,4 +1,7 @@
+import type { ValidAnswerId } from '../../api/Routes/channels';
 import { resolveFiles } from '../../builders';
+import { CacheFrom } from '../../cache';
+import { type MessageStructure, type ThreadChannelStructure, Transformers, type UserStructure } from '../../client';
 import { MessagesMethods } from '../../structures';
 import type {
 	RESTGetAPIChannelMessagesQuery,
@@ -6,10 +9,6 @@ import type {
 	RESTPostAPIChannelMessageJSONBody,
 	RESTPostAPIChannelMessagesThreadsJSONBody,
 } from '../../types';
-
-import type { ValidAnswerId } from '../../api/Routes/channels';
-import { CacheFrom } from '../../cache';
-import { type MessageStructure, type ThreadChannelStructure, Transformers, type UserStructure } from '../../client';
 import type { MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
 

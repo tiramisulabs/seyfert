@@ -1,13 +1,12 @@
+import type { UsingClient } from '../../commands';
+import { toCamelCase } from '../../common';
+import { type AllChannels, channelFrom } from '../../structures';
 import type {
 	GatewayChannelCreateDispatchData,
 	GatewayChannelDeleteDispatchData,
 	GatewayChannelPinsUpdateDispatchData,
 	GatewayChannelUpdateDispatchData,
 } from '../../types';
-
-import type { UsingClient } from '../../commands';
-import { toCamelCase } from '../../common';
-import { type AllChannels, channelFrom } from '../../structures';
 
 export const CHANNEL_CREATE = (self: UsingClient, data: GatewayChannelCreateDispatchData): AllChannels => {
 	return channelFrom(data, self);

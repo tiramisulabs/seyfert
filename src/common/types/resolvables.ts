@@ -1,7 +1,7 @@
-import type { EmbedColors, OmitInsert } from '..';
 import type { Attachment, AttachmentDataType, AttachmentResolvable } from '../../builders';
 import type { GuildMember } from '../../structures';
 import type { APIGuildMember, APIPartialEmoji, RESTPostAPIApplicationEmojiJSONBody } from '../../types';
+import type { EmbedColors, OmitInsert } from '..';
 
 export type EmojiResolvable = string | Partial<APIPartialEmoji> | `<${string | undefined}:${string}:${string}>`;
 export type GuildMemberResolvable = string | Partial<GuildMember> | APIGuildMember;

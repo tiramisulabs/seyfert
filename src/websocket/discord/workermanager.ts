@@ -1,12 +1,12 @@
 import cluster, { type Worker as ClusterWorker } from 'node:cluster';
-import { type UUID, randomUUID } from 'node:crypto';
+import { randomUUID, type UUID } from 'node:crypto';
 import type { Worker as WorkerThreadsWorker } from 'node:worker_threads';
 import { ApiHandler, type CustomWorkerManagerEvents, Logger, type UsingClient, type WorkerClient } from '../..';
 import { type Adapter, MemoryAdapter } from '../../cache';
 import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
-import { BASE_HOST, type Identify, MergeOptions, type PickPartial, lazyLoadPackage } from '../../common';
+import { BASE_HOST, type Identify, lazyLoadPackage, MergeOptions, type PickPartial } from '../../common';
 import type { GatewayPresenceUpdateData, GatewaySendPayload, RESTGetAPIGatewayBotResult } from '../../types';
-import { WorkerManagerDefaults, properties } from '../constants';
+import { properties, WorkerManagerDefaults } from '../constants';
 import { DynamicBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';
 import { Heartbeater, type WorkerHeartbeaterMessages } from './heartbeater';

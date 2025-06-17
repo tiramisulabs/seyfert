@@ -1,7 +1,7 @@
 import { CacheFrom } from '../../cache';
 import type { Overwrites } from '../../cache/resources/overwrites';
 import { type MessageStructure, type ThreadChannelStructure, Transformers } from '../../client/transformers';
-import { type AllChannels, BaseChannel, type GuildMember, type GuildRole, channelFrom } from '../../structures';
+import { type AllChannels, BaseChannel, channelFrom, type GuildMember, type GuildRole } from '../../structures';
 import { PermissionsBitField } from '../../structures/extra/Permissions';
 import type {
 	APIChannel,

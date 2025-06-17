@@ -1,4 +1,5 @@
 export * from './client';
+
 import {
 	BaseClient,
 	type BaseClientOptions,
@@ -10,21 +11,22 @@ import {
 import { isCloudfareWorker } from './common';
 import type { ClientNameEvents, CustomEventsKeys, ResolveEventParams } from './events';
 import { GatewayIntentBits } from './types';
-export { Logger, PermissionStrings, Formatter } from './common';
-//
-export { Collection, LimitedCollection } from './collection';
+
 //
 export * from './api';
 export * from './builders';
 export * from './cache';
+//
+export { Collection, LimitedCollection } from './collection';
 export * from './commands';
+export { Formatter, Logger, PermissionStrings } from './common';
 export * from './components';
 export * from './events';
 export * from './langs';
 //
-export { ShardManager, WorkerManager } from './websocket/discord';
-//
 export * from './structures';
+//
+export { ShardManager, WorkerManager } from './websocket/discord';
 
 /**
  * Creates an event with the specified data and run function.

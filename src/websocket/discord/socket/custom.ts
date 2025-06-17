@@ -1,4 +1,4 @@
-import { type UUID, createHash, randomBytes, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID, type UUID } from 'node:crypto';
 import { request } from 'node:https';
 import type { Socket } from 'node:net';
 

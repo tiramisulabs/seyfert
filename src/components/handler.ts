@@ -9,7 +9,7 @@ import type {
 import { LimitedCollection } from '../collection';
 import { BaseCommand, type RegisteredMiddlewares, type UsingClient } from '../commands';
 import type { FileLoaded } from '../commands/handler';
-import { BaseHandler, type Logger, type OnFailCallback, isCloudfareWorker, magicImport } from '../common';
+import { BaseHandler, isCloudfareWorker, type Logger, magicImport, type OnFailCallback } from '../common';
 import type { ComponentInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from '../structures';
 import { ComponentCommand, InteractionCommandType } from './componentcommand';
 import type { ComponentContext } from './componentcontext';

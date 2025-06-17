@@ -1,3 +1,32 @@
+import type { Client, WorkerClient } from '../client';
+import { type MessageStructure, type OptionResolverStructure, Transformers } from '../client/transformers';
+import type { MakeRequired } from '../common';
+import { INTEGER_OPTION_VALUE_LIMIT } from '../common/it/constants';
+import { ComponentContext, ModalContext } from '../components';
+import {
+	type __InternalReplyFunction,
+	AutocompleteInteraction,
+	BaseInteraction,
+	type ChatInputCommandInteraction,
+	type ComponentInteraction,
+	type EntryPointInteraction,
+	type MessageCommandInteraction,
+	type ModalSubmitInteraction,
+	type UserCommandInteraction,
+} from '../structures';
+import type { PermissionsBitField } from '../structures/extra/Permissions';
+import {
+	type APIApplicationCommandInteraction,
+	type APIApplicationCommandInteractionDataOption,
+	type APIInteraction,
+	type APIInteractionDataResolvedChannel,
+	ApplicationCommandOptionType,
+	ApplicationCommandType,
+	ChannelType,
+	type GatewayMessageCreateDispatchData,
+	InteractionContextType,
+	InteractionType,
+} from '../types';
 import {
 	BaseCommand,
 	Command,
@@ -19,35 +48,6 @@ import {
 	SubCommand,
 	type UsingClient,
 } from '.';
-import type { Client, WorkerClient } from '../client';
-import { type MessageStructure, type OptionResolverStructure, Transformers } from '../client/transformers';
-import type { MakeRequired } from '../common';
-import { INTEGER_OPTION_VALUE_LIMIT } from '../common/it/constants';
-import { ComponentContext, ModalContext } from '../components';
-import {
-	AutocompleteInteraction,
-	BaseInteraction,
-	type ChatInputCommandInteraction,
-	type ComponentInteraction,
-	type EntryPointInteraction,
-	type MessageCommandInteraction,
-	type ModalSubmitInteraction,
-	type UserCommandInteraction,
-	type __InternalReplyFunction,
-} from '../structures';
-import type { PermissionsBitField } from '../structures/extra/Permissions';
-import {
-	type APIApplicationCommandInteraction,
-	type APIApplicationCommandInteractionDataOption,
-	type APIInteraction,
-	type APIInteractionDataResolvedChannel,
-	ApplicationCommandOptionType,
-	ApplicationCommandType,
-	ChannelType,
-	type GatewayMessageCreateDispatchData,
-	InteractionContextType,
-	InteractionType,
-} from '../types';
 
 export type CommandOptionWithType = CommandOption & {
 	type: ApplicationCommandOptionType;

@@ -1,7 +1,7 @@
 import type {
 	CategoryChannelStructure,
-	DMChannelStructure,
 	DirectoryChannelStructure,
+	DMChannelStructure,
 	ForumChannelStructure,
 	MediaChannelStructure,
 	NewsChannelStructure,

@@ -171,14 +171,10 @@ type OptionalizeAux<T extends object> = Identify<
  * it is recursive
  */
 export type Optionalize<T> = T extends object
-	? // biome-ignore lint/style/useShorthandArrayType: typescript things
-		// biome-ignore lint/style/useConsistentArrayType: <explanation>
-		T extends Array<unknown>
+	? T extends Array<unknown>
 		? number extends T['length']
 			? T[number] extends object
-				? // biome-ignore lint/style/useShorthandArrayType: <explanation>
-					// biome-ignore lint/style/useConsistentArrayType: <explanation>
-					Array<OptionalizeAux<T[number]>>
+				? Array<OptionalizeAux<T[number]>>
 				: T
 			: Partial<T>
 		: OptionalizeAux<T>

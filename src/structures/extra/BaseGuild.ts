@@ -1,6 +1,6 @@
 import type { ReturnCache, WorkerClient } from '../..';
 import type { GuildStructure } from '../../client';
-import { type ObjectToLower, calculateShardId } from '../../common';
+import { calculateShardId, type ObjectToLower } from '../../common';
 import type { ImageOptions } from '../../common/types/options';
 import { type APIPartialGuild, GuildFeature } from '../../types';
 import type { ShardManager } from '../../websocket';

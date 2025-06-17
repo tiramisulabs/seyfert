@@ -1,5 +1,5 @@
-import type { APIAttachment, Snowflake } from '..';
 import type { Identify, MakeRequired } from '../../common';
+import type { APIAttachment, Snowflake } from '..';
 import type { ChannelType } from '../utils';
 
 /**

@@ -23,8 +23,8 @@
  */
 
 export * from './gateway';
-export * from './rest';
 export * from './payloads';
+export * from './rest';
 export * from './rest';
 export * from './utils';
 
