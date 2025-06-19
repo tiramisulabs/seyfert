@@ -1,4 +1,5 @@
 import type { RestOrArray } from '../common';
+import { ModalSubmitInteraction } from '../structures';
 import {
 	type APIActionRowComponent,
 	type APIModalInteractionResponseCallbackData,
@@ -86,6 +87,22 @@ export class Modal<T extends ModalBuilderComponents = TextInput> {
 	 */
 	run(func: ModalSubmitCallback): this {
 		this.__exec = func;
+		return this;
+	}
+
+	waitFor(func: ModalSubmitCallback, timeout: number): this {
+		this.run(
+			interaction =>
+				new Promise(resolve => {
+					const timer = setTimeout(() => {
+						resolve(null);
+					}, timeout);
+					func(interaction).then((data: ModalSubmitInteraction) => {
+						clearTimeout(timer);
+						resolve(data);
+					});
+				}),
+		);
 		return this;
 	}
 
