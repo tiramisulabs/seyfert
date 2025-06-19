@@ -90,20 +90,17 @@ export class Modal<T extends ModalBuilderComponents = TextInput> {
 		return this;
 	}
 
-	waitFor(func: ModalSubmitCallback, timeout: number): this {
-		this.run(
-			interaction =>
-				new Promise(resolve => {
-					const timer = setTimeout(() => {
-						resolve(null);
-					}, timeout);
-					func(interaction).then((data: ModalSubmitInteraction) => {
-						clearTimeout(timer);
-						resolve(data);
-					});
-				}),
-		);
-		return this;
+	waitFor(timeout?: number): Promise<ModalSubmitInteraction<boolean> | null> {
+		return new Promise<ModalSubmitInteraction<boolean> | null>(res => {
+			this.run(interaction => {
+				res(interaction);
+			});
+			if (timeout && timeout > 0) {
+				setTimeout(() => {
+					res(null);
+				}, timeout);
+			}
+		});
 	}
 
 	/**
