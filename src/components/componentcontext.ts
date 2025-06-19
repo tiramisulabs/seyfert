@@ -18,16 +18,18 @@ import type {
 } from '../client/transformers';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, RegisteredMiddlewares, UsingClient } from '../commands';
 import { BaseContext } from '../commands/basecontext';
-import type {
+import {
 	ComponentInteractionMessageUpdate,
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
 	MakeRequired,
 	MessageWebhookCreateBodyRequest,
 	ModalCreateBodyRequest,
+	ModalCreateOptions,
 	UnionToTuple,
 	When,
 } from '../common';
+import { ModalSubmitInteraction } from '../structures';
 import { ComponentType, MessageFlags, type RESTGetAPIGuildQuery } from '../types';
 
 export interface ComponentContext<
@@ -150,8 +152,11 @@ export class ComponentContext<
 		return this.interaction.deleteResponse();
 	}
 
-	modal(body: ModalCreateBodyRequest) {
-		return this.interaction.modal(body);
+	modal(body: ModalCreateBodyRequest, options?: undefined): Promise<undefined>;
+	modal(body: ModalCreateBodyRequest, options: ModalCreateOptions): Promise<ModalSubmitInteraction | null>;
+	modal(body: ModalCreateBodyRequest, options?: ModalCreateOptions | undefined) {
+		if (options === undefined) return this.interaction.modal(body);
+		return this.interaction.modal(body, options);
 	}
 
 	/**

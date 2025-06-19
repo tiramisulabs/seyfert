@@ -8,16 +8,22 @@ import {
 	type WebhookMessageStructure,
 } from '../../client/transformers';
 import {
-	type InteractionCreateBodyRequest,
-	type InteractionMessageUpdateBodyRequest,
-	type MakeRequired,
-	type MessageWebhookCreateBodyRequest,
-	type ModalCreateBodyRequest,
+	InteractionCreateBodyRequest,
+	InteractionMessageUpdateBodyRequest,
+	MakeRequired,
+	MessageWebhookCreateBodyRequest,
+	ModalCreateBodyRequest,
+	ModalCreateOptions,
 	toSnakeCase,
-	type UnionToTuple,
-	type When,
+	UnionToTuple,
+	When,
 } from '../../common';
-import type { AllChannels, MessageCommandInteraction, UserCommandInteraction } from '../../structures';
+import {
+	AllChannels,
+	MessageCommandInteraction,
+	ModalSubmitInteraction,
+	UserCommandInteraction,
+} from '../../structures';
 import { type APIMessage, ApplicationCommandType, MessageFlags, type RESTGetAPIGuildQuery } from '../../types';
 import { BaseContext } from '../basecontext';
 import type { RegisteredMiddlewares } from '../decorators';
@@ -75,8 +81,11 @@ export class MenuCommandContext<
 		return this.interaction.write<WR>(body, withResponse);
 	}
 
-	modal(body: ModalCreateBodyRequest) {
-		return this.interaction.modal(body);
+	modal(body: ModalCreateBodyRequest, options?: undefined): Promise<undefined>;
+	modal(body: ModalCreateBodyRequest, options: ModalCreateOptions): Promise<ModalSubmitInteraction | null>;
+	modal(body: ModalCreateBodyRequest, options?: ModalCreateOptions | undefined) {
+		if (options === undefined) return this.interaction.modal(body);
+		return this.interaction.modal(body, options);
 	}
 
 	deferReply<WR extends boolean = false>(

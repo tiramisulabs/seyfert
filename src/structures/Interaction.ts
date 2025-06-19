@@ -21,6 +21,7 @@ import {
 	type MessageUpdateBodyRequest,
 	type MessageWebhookCreateBodyRequest,
 	type ModalCreateBodyRequest,
+	ModalCreateOptions,
 	type ObjectToLower,
 	type OmitInsert,
 	type ToClass,
@@ -472,11 +473,37 @@ export class Interaction<
 		) as never;
 	}
 
-	modal(body: ModalCreateBodyRequest) {
-		return this.reply({
+	modal(body: ModalCreateBodyRequest, options?: undefined): Promise<undefined>;
+	modal(body: ModalCreateBodyRequest, options: ModalCreateOptions): Promise<ModalSubmitInteraction | null>;
+	async modal(body: ModalCreateBodyRequest, options?: ModalCreateOptions | undefined) {
+		if (options !== undefined && !(body instanceof Modal)) {
+			body = new Modal(body);
+		}
+
+		if (options === undefined)
+			return this.reply({
+				type: InteractionResponseType.Modal,
+				data: body,
+			});
+
+		const promise = new Promise<ModalSubmitInteraction | null>(res => {
+			let nodeTimeout: NodeJS.Timeout | undefined;
+			// body is always a modal here, so we can safely cast it
+			(body as Modal).__exec = (interaction: ModalSubmitInteraction) => {
+				res(interaction);
+				clearTimeout(nodeTimeout);
+			};
+			if (options?.waitFor && options?.waitFor > 0) {
+				nodeTimeout = setTimeout(() => {
+					res(null);
+				}, options.waitFor);
+			}
+		});
+		await this.reply({
 			type: InteractionResponseType.Modal,
 			data: body,
 		});
+		return promise;
 	}
 
 	async editOrReply<FR extends boolean = false>(

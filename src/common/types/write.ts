@@ -70,3 +70,7 @@ export type InteractionCreateBodyRequest = OmitInsert<
 >;
 
 export type ModalCreateBodyRequest = APIModalInteractionResponse['data'] | Modal;
+
+export interface ModalCreateOptions {
+	waitFor?: number;
+}
