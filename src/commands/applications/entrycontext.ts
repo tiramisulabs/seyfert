@@ -12,10 +12,11 @@ import type {
 	MakeRequired,
 	MessageWebhookCreateBodyRequest,
 	ModalCreateBodyRequest,
+	ModalCreateOptions,
 	UnionToTuple,
 	When,
 } from '../../common';
-import type { AllChannels, EntryPointInteraction } from '../../structures';
+import type { AllChannels, EntryPointInteraction, ModalSubmitInteraction } from '../../structures';
 import { MessageFlags, type RESTGetAPIGuildQuery } from '../../types';
 import { BaseContext } from '../basecontext';
 import type { RegisteredMiddlewares } from '../decorators';
@@ -52,8 +53,11 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 		return this.interaction.write<WR>(body, withResponse);
 	}
 
-	modal(body: ModalCreateBodyRequest) {
-		return this.interaction.modal(body);
+	modal(body: ModalCreateBodyRequest, options?: undefined): Promise<undefined>;
+	modal(body: ModalCreateBodyRequest, options: ModalCreateOptions): Promise<ModalSubmitInteraction | null>;
+	modal(body: ModalCreateBodyRequest, options?: ModalCreateOptions | undefined) {
+		if (options === undefined) return this.interaction.modal(body);
+		return this.interaction.modal(body, options);
 	}
 
 	deferReply<WR extends boolean = false>(

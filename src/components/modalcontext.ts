@@ -1,4 +1,4 @@
-import type { AllChannels, Interaction, ModalCommand, ModalSubmitInteraction, ReturnCache } from '..';
+import type { AllChannels, ModalCommand, ModalSubmitInteraction, ReturnCache } from '..';
 import type {
 	GuildMemberStructure,
 	GuildStructure,
@@ -8,12 +8,13 @@ import type {
 } from '../client/transformers';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, RegisteredMiddlewares, UsingClient } from '../commands';
 import { BaseContext } from '../commands/basecontext';
-import type {
+import {
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
 	MakeRequired,
 	MessageWebhookCreateBodyRequest,
 	ModalCreateBodyRequest,
+	ModalCreateOptions,
 	UnionToTuple,
 	When,
 } from '../common';
@@ -119,9 +120,11 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 		return this.interaction.deleteResponse();
 	}
 
-	modal(body: ModalCreateBodyRequest): ReturnType<Interaction['modal']> {
-		//@ts-expect-error
-		return this.interaction.modal(body);
+	modal(body: ModalCreateBodyRequest, options?: undefined): Promise<undefined>;
+	modal(body: ModalCreateBodyRequest, options: ModalCreateOptions): Promise<ModalSubmitInteraction | null>;
+	modal(body: ModalCreateBodyRequest, options?: ModalCreateOptions | undefined) {
+		// @ts-expect-error
+		return this.interaction.modal(body, options);
 	}
 
 	/**
