@@ -16,6 +16,7 @@ import type {
 import type { OmitInsert } from './util';
 
 export interface ResolverProps {
+	content?: string | undefined | null;
 	embeds?: Embed[] | APIEmbed[] | undefined;
 	components?: TopLevelBuilders[] | ReturnType<TopLevelBuilders['toJSON']>[];
 	files?: AttachmentBuilder[] | Attachment[] | RawFile[] | undefined;
@@ -27,31 +28,31 @@ export interface SendResolverProps extends ResolverProps {
 
 export type MessageCreateBodyRequest = OmitInsert<
 	RESTPostAPIChannelMessageJSONBody,
-	'components' | 'embeds' | 'poll',
+	'components' | 'embeds' | 'poll' | 'content',
 	SendResolverProps
 >;
 
 export type MessageUpdateBodyRequest = OmitInsert<
 	RESTPatchAPIChannelMessageJSONBody,
-	'components' | 'embeds',
+	'components' | 'embeds' | 'content',
 	ResolverProps
 >;
 
 export type MessageWebhookCreateBodyRequest = OmitInsert<
 	RESTPostAPIWebhookWithTokenJSONBody,
-	'components' | 'embeds' | 'poll',
+	'components' | 'embeds' | 'poll' | 'content',
 	SendResolverProps
 >;
 
 export type MessageWebhookUpdateBodyRequest = OmitInsert<
 	RESTPatchAPIWebhookWithTokenMessageJSONBody,
-	'components' | 'embeds' | 'poll',
+	'components' | 'embeds' | 'poll' | 'content',
 	ResolverProps
 >;
 
 export type InteractionMessageUpdateBodyRequest = OmitInsert<
 	RESTPatchAPIWebhookWithTokenMessageJSONBody,
-	'components' | 'embeds' | 'poll',
+	'components' | 'embeds' | 'poll' | 'content',
 	SendResolverProps
 > & {
 	flags?: MessageFlags;
@@ -59,13 +60,13 @@ export type InteractionMessageUpdateBodyRequest = OmitInsert<
 
 export type ComponentInteractionMessageUpdate = OmitInsert<
 	APIInteractionResponseCallbackData,
-	'components' | 'embeds',
+	'components' | 'embeds' | 'content',
 	ResolverProps
 >;
 
 export type InteractionCreateBodyRequest = OmitInsert<
 	APIInteractionResponseChannelMessageWithSource['data'],
-	'components' | 'embeds' | 'poll',
+	'components' | 'embeds' | 'poll' | 'content',
 	SendResolverProps
 >;
 
