@@ -291,17 +291,19 @@ export class ApiHandler {
 		await this.onRatelimit?.(response, request);
 
 		const content = `${JSON.stringify(request)} `;
-		let retryAfter =
+		let retryAfter: number | undefined;
+
+		const data = JSON.parse(result);
+		if (data.retry_after) retryAfter = Math.ceil(data.retry_after * 1000);
+
+		retryAfter ??=
 			Number(response.headers.get('x-ratelimit-reset-after') || response.headers.get('retry-after')) * 1000;
 
 		if (Number.isNaN(retryAfter)) {
-			try {
-				retryAfter = JSON.parse(result).retry_after * 1000;
-			} catch (err) {
-				this.debugger?.warn(`Unexpected error: ${err}`);
-				reject(err);
-				return false;
-			}
+			this.debugger?.warn(`${route} Could not extract retry_after from 429 response. ${result}`);
+			next();
+			reject(new Error('Could not extract retry_after from 429 response.'));
+			return false;
 		}
 
 		this.debugger?.info(
