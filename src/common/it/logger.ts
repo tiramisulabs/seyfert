@@ -1,6 +1,6 @@
 import { createWriteStream, existsSync, mkdirSync, promises, type WriteStream } from 'node:fs';
 import { join } from 'node:path';
-import { bgBrightWhite, black, bold, brightBlack, cyan, gray, italic, red, stripColor, yellow } from './colors';
+import { bgBrightWhite, black, bold, brightBlack, cyan, gray, green, italic, red, stripColor, yellow } from './colors';
 import { MergeOptions } from './utils';
 export enum LogLevels {
 	Debug = 0,
@@ -8,6 +8,7 @@ export enum LogLevels {
 	Warn = 2,
 	Error = 3,
 	Fatal = 4,
+	Check = 5,
 }
 
 export type LoggerOptions = {
@@ -210,6 +211,13 @@ export class Logger {
 	fatal(...args: any[]) {
 		this.rawLog(LogLevels.Fatal, ...args);
 	}
+	/**
+	 * Logs a Check message (used for assertions or checks).
+	 * @param args The arguments to log.
+	 */
+	check(...args: any[]) {
+		this.rawLog(LogLevels.Check, ...args);
+	}
 
 	private __write(log: unknown[]) {
 		if (this.saveOnFile || Logger.saveOnFile === 'all' || Logger.saveOnFile?.includes(this.name)) {
@@ -257,6 +265,7 @@ export class Logger {
 		[LogLevels.Warn, yellow],
 		[LogLevels.Error, red],
 		[LogLevels.Fatal, (str: string) => red(bold(italic(str)))],
+		[LogLevels.Check, green],
 	]);
 
 	/**
@@ -268,6 +277,7 @@ export class Logger {
 		[LogLevels.Warn, 'WARN'],
 		[LogLevels.Error, 'ERROR'],
 		[LogLevels.Fatal, 'FATAL'],
+		[LogLevels.Check, 'CHECK'],
 	]);
 }
 
