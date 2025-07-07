@@ -12,6 +12,7 @@ export * from './message';
 export * from './presence';
 export * from './soundboard';
 export * from './stage';
+export * from './subscriptions';
 export * from './thread';
 export * from './typing';
 export * from './user';
