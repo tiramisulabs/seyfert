@@ -36,7 +36,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 		super(options);
 	}
 
-	get applicationId(): When<Ready, string> {
+	get applicationId(): When<Ready, string, ''> {
 		return (this.me?.application.id ?? super.applicationId) as never;
 	}
 

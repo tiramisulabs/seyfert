@@ -179,15 +179,15 @@ export class BaseClient {
 		this._botId = id;
 	}
 
-	get botId(): string | undefined {
-		return this._botId ?? BaseClient.getBotIdFromToken(this.rest.options.token);
+	get botId(): string {
+		return this._botId ?? BaseClient.getBotIdFromToken(this.rest.options.token) ?? '';
 	}
 
 	set applicationId(id: string) {
 		this._applicationId = id;
 	}
 
-	get applicationId(): string | undefined {
+	get applicationId(): string {
 		return this._applicationId ?? this.botId;
 	}
 
