@@ -179,7 +179,7 @@ export class BaseClient {
 		this._botId = id;
 	}
 
-	get botId() {
+	get botId(): string | undefined {
 		return this._botId ?? BaseClient.getBotIdFromToken(this.rest.options.token);
 	}
 
@@ -187,7 +187,7 @@ export class BaseClient {
 		this._applicationId = id;
 	}
 
-	get applicationId() {
+	get applicationId(): string | undefined {
 		return this._applicationId ?? this.botId;
 	}
 

@@ -3,11 +3,11 @@ import {
 	type Awaitable,
 	assertString,
 	type DeepPartial,
-	type If,
 	lazyLoadPackage,
 	type PickPartial,
 	type WatcherPayload,
 	type WatcherSendToShard,
+	When,
 } from '../common';
 import { EventHandler } from '../events';
 import type { GatewayDispatchPayload, GatewayPresenceUpdateData } from '../types';
@@ -23,7 +23,7 @@ let parentPort: import('node:worker_threads').MessagePort;
 
 export class Client<Ready extends boolean = boolean> extends BaseClient {
 	gateway!: ShardManager;
-	me!: If<Ready, ClientUserStructure>;
+	me!: When<Ready, ClientUserStructure>;
 	declare options: Omit<ClientOptions, 'commands'> & {
 		commands: NonNullable<ClientOptions['commands']>;
 	};
@@ -36,8 +36,8 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 		super(options);
 	}
 
-	get applicationId() {
-		return this.me?.application.id ?? super.applicationId;
+	get applicationId(): When<Ready, string> {
+		return (this.me?.application.id ?? super.applicationId) as never;
 	}
 
 	set applicationId(id: string) {

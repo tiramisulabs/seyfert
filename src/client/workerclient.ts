@@ -105,8 +105,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		return acc / this.shards.size;
 	}
 
-	get applicationId() {
-		return this.me?.application.id ?? super.applicationId;
+	get applicationId(): When<Ready, string> {
+		return (this.me?.application.id ?? super.applicationId) as never;
 	}
 
 	set applicationId(id: string) {
