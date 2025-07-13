@@ -110,9 +110,10 @@ export class MemberShorter extends BaseShorter {
 	async edit(
 		guildId: string,
 		memberId: string,
-		body: RESTPatchAPIGuildMemberJSONBody,
+		body: RESTPatchAPIGuildMemberJSONBody | { nick?: string },
 		reason?: string,
 	): Promise<GuildMemberStructure> {
+		memberId = memberId === this.client.botId && body.nick ? '@me' : memberId;
 		const member = await this.client.proxy.guilds(guildId).members(memberId).patch({ body, reason });
 		await this.client.cache.members?.setIfNI(CacheFrom.Rest, 'GuildMembers', memberId, guildId, member);
 		return Transformers.GuildMember(this.client, member, member.user, guildId);
