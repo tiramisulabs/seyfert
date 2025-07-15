@@ -33,7 +33,7 @@ export class OptionResolver {
 	readonly options: OptionResolved[];
 	public hoistedOptions: OptionResolved[];
 	private subCommand: string | null = null;
-	private group: string | null = null;
+	private group?: string;
 	constructor(
 		private client: UsingClient,
 		options: APIApplicationCommandInteractionDataOption[],
@@ -63,7 +63,7 @@ export class OptionResolver {
 	getCommand() {
 		if (this.subCommand) {
 			return (this.parent?.options as SubCommand[] | undefined)?.find(
-				x => (this.group ? x.group === this.group : true) && x.name === this.subCommand,
+				x => this.group === x.group && x.name === this.subCommand,
 			);
 		}
 		return this.parent;

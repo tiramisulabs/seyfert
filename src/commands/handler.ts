@@ -1,5 +1,5 @@
 import { promises } from 'node:fs';
-import { basename, dirname } from 'node:path';
+import { dirname } from 'node:path';
 import type { Logger, NulleableCoalising, OmitInsert } from '../common';
 import { BaseHandler, isCloudfareWorker } from '../common';
 import { PermissionsBitField } from '../structures/extra/Permissions';
@@ -299,7 +299,7 @@ export class CommandHandler extends BaseHandler {
 						//@AutoLoad
 						const options = await this.getFiles(dirname(file.path));
 						for (const option of options) {
-							if (file.name === basename(option)) {
+							if (file.path === option) {
 								continue;
 							}
 							try {
