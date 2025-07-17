@@ -146,7 +146,10 @@ export interface Message
 		ObjectToLower<Omit<MessageData, 'timestamp' | 'author' | 'mentions' | 'components' | 'poll' | 'embeds'>> {}
 
 export class Message extends BaseMessage {
-	constructor(client: UsingClient, data: MessageData) {
+	constructor(
+		client: UsingClient,
+		public data: MessageData,
+	) {
 		super(client, data);
 	}
 
@@ -180,6 +183,9 @@ export class Message extends BaseMessage {
 
 	crosspost(reason?: string): Promise<MessageStructure> {
 		return this.client.messages.crosspost(this.id, this.channelId, reason);
+	}
+	ToJson(): APIMessage {
+		return { ...this.data };
 	}
 }
 
