@@ -425,10 +425,14 @@ export class BaseClient {
 					magicImport(join(process.cwd(), `seyfert.config${ext}`)).then(x => x.default ?? x),
 				),
 			).catch((e: AggregateError) => {
-				if (e.errors.every((err: Error) => err.stack?.includes('ERR_MODULE_NOT_FOUND'))) {
-					throw new Error('No seyfert.config file found');
-				}
-				throw e.errors.find((err: Error) => !err.stack?.includes('ERR_MODULE_NOT_FOUND')) ?? e.errors[0];
+				const errors = e.errors.map((err: Error) => {
+					err.message = err.message.replace(/seyfert\.config\.(js|mjs|cjs|ts|mts|cts)/g, 'seyfert.config');
+					return err;
+				});
+
+				const uniqueError = errors.find(er => errors.filter(err => err.message === er.message).length === 1);
+				if (uniqueError) throw uniqueError;
+				throw new Error('No seyfert.config file found');
 			}))) as T;
 
 		const { locations, debug, ...env } = seyfertConfig;
