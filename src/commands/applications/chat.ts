@@ -11,6 +11,7 @@ import type {
 } from '../..';
 import type { Attachment } from '../../builders';
 import type {
+	GuildMemberStructure,
 	GuildRoleStructure,
 	InteractionGuildMemberStructure,
 	OptionResolverStructure,
@@ -50,7 +51,7 @@ export interface ReturnOptionsTypes {
 	6: InteractionGuildMemberStructure | UserStructure;
 	7: AllChannels;
 	8: GuildRoleStructure;
-	9: GuildRoleStructure | AllChannels | UserStructure;
+	9: GuildRoleStructure | InteractionGuildMemberStructure | GuildMemberStructure | UserStructure;
 	10: number; // number
 	11: Attachment;
 }
