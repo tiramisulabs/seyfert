@@ -402,7 +402,13 @@ export class ApiHandler {
 				const fileKey = file.key ?? `files[${index}]`;
 
 				if (isBufferLike(file.data)) {
-					formData.append(fileKey, new Blob([file.data], { type: file.contentType }), file.filename);
+					let data: Exclude<typeof file.data, Uint8Array | Uint8ClampedArray>;
+					if (Buffer.isBuffer(file.data) || file.data instanceof Uint8Array || file.data instanceof Uint8ClampedArray) {
+						data = toArrayBuffer(file.data);
+					} else {
+						data = file.data;
+					}
+					formData.append(fileKey, new Blob([data], { type: file.contentType }), file.filename);
 				} else {
 					formData.append(fileKey, new Blob([`${file.data}`], { type: file.contentType }), file.filename);
 				}

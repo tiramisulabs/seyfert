@@ -397,7 +397,7 @@ export function hasIntent(intents: number, target: keyof typeof GatewayIntentBit
 	return (intents & intent) === intent;
 }
 
-export function toArrayBuffer(buffer: Buffer) {
+export function toArrayBuffer(buffer: Buffer | Uint8ClampedArray | Uint8Array) {
 	const arrayBuffer = new ArrayBuffer(buffer.length);
 	const view = new Uint8Array(arrayBuffer);
 	for (let i = 0; i < buffer.length; ++i) {

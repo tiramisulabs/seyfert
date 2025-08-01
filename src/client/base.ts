@@ -43,6 +43,7 @@ import {
 	UsersShorter,
 	WebhookShorter,
 } from '../common';
+import { toArrayBuffer } from '../common/it/utils';
 import { BanShorter } from '../common/shorters/bans';
 import { SoundboardShorter } from '../common/shorters/soundboard';
 import { VoiceStateShorter } from '../common/shorters/voiceStates';
@@ -298,7 +299,17 @@ export class BaseClient {
 					for (const [index, file] of files.entries()) {
 						const fileKey = file.key ?? `files[${index}]`;
 						if (isBufferLike(file.data)) {
-							response.append(fileKey, new Blob([file.data], { type: file.contentType }), file.filename);
+							let data: Exclude<typeof file.data, Uint8Array | Uint8ClampedArray>;
+							if (
+								Buffer.isBuffer(file.data) ||
+								file.data instanceof Uint8Array ||
+								file.data instanceof Uint8ClampedArray
+							) {
+								data = toArrayBuffer(file.data);
+							} else {
+								data = file.data;
+							}
+							response.append(fileKey, new Blob([data], { type: file.contentType }), file.filename);
 						} else {
 							response.append(fileKey, new Blob([`${file.data}`], { type: file.contentType }), file.filename);
 						}
