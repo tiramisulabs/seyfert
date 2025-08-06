@@ -89,6 +89,12 @@ export interface APIUser {
 	 * See https://discord.com/developers/docs/resources/user#avatar-decoration-data-object
 	 */
 	avatar_decoration_data?: APIAvatarDecorationData | null;
+	/**
+	 * The user's primary guild
+	 *
+	 * See https://discord.com/developers/docs/resources/user#user-object-user-primary-guild
+	 */
+	primary_guild?: PrimaryGuild;
 }
 
 /**
@@ -210,6 +216,30 @@ export enum UserPremiumType {
 	NitroClassic,
 	Nitro,
 	NitroBasic,
+}
+
+/**
+ * https://discord.com/developers/docs/resources/user#user-object-user-primary-guild
+ */
+export interface PrimaryGuild {
+	/**
+	 * the id of the user's primary guild
+	 */
+	identity_guild_id: string | null;
+	/**
+	 * whether the user is displaying the primary guild's server tag.
+	 * This can be null if the system clears the identity, e.g. the server no longer supports tags.
+	 * This will be false if the user manually removes their tag.
+	 */
+	identity_enabled: boolean | null;
+	/**
+	 * the text of the user's server tag. Limited to 4 characters
+	 */
+	tag: string | null;
+	/**
+	 * the server tag badge hash
+	 */
+	badge: string | null;
 }
 
 /**

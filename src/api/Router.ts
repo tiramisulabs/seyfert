@@ -1,6 +1,13 @@
 import { CDN_URL } from '../common';
 import type { APIRoutes, ApiHandler, CDNRoute } from './index';
-import type { HttpMethods, ImageExtension, ImageSize, SoundExtension, StickerExtension } from './shared';
+import type {
+	HttpMethods,
+	ImageExtension,
+	ImageSize,
+	SoundExtension,
+	StickerExtension,
+	TagBadgeExtension,
+} from './shared';
 
 export enum ProxyRequestMethod {
 	Delete = 'delete',
@@ -60,8 +67,10 @@ export const CDNRouter = {
 	},
 };
 
-export interface BaseCDNUrlOptions {
-	extension?: ImageExtension | StickerExtension | SoundExtension;
+export type AllCDNExtensions = ImageExtension | StickerExtension | SoundExtension | TagBadgeExtension;
+
+export interface BaseCDNUrlOptions<T extends AllCDNExtensions = AllCDNExtensions> {
+	extension?: T;
 	size?: ImageSize;
 }
 
