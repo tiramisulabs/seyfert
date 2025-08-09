@@ -44,7 +44,6 @@ export interface CDNRoute {
 	'guild-tag-badges'(guildId: string): {
 		get(hash: string, options?: BaseCDNUrlOptions<TagBadgeExtension>): string;
 	};
-
 	emojis(id: string): {
 		get(options?: BaseCDNUrlOptions): string;
 	};
