@@ -30,24 +30,12 @@ import type {
 	RESTPatchAPIGuildStickerJSONBody,
 	RESTPostAPIAutoModerationRuleJSONBody,
 	RESTPostAPIGuildChannelJSONBody,
-	RESTPostAPIGuildsJSONBody,
 } from '../../types';
 import type { APITextChannel } from '../../types/payloads/channel';
 import type { MakeRequired } from '../types/util';
 import { BaseShorter } from './base';
 
 export class GuildShorter extends BaseShorter {
-	/**
-	 * Creates a new guild.
-	 * @param body The data for creating the guild.
-	 * @returns A Promise that resolves to the created guild.
-	 */
-	async create(body: RESTPostAPIGuildsJSONBody): Promise<GuildStructure<'api'>> {
-		const guild = await this.client.proxy.guilds.post({ body });
-		await this.client.cache.guilds?.setIfNI(CacheFrom.Rest, 'Guilds', guild.id, guild);
-		return Transformers.Guild<'api'>(this.client, guild);
-	}
-
 	/**
 	 * Fetches a guild by its ID.
 	 * @param id The ID of the guild to fetch.
