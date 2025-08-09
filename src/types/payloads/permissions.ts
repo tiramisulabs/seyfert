@@ -18,8 +18,13 @@ export interface APIRole {
 	name: string;
 	/**
 	 * Integer representation of hexadecimal color code
+	 * @deprecated
 	 */
 	color: number;
+	/**
+	 * The role's colors
+	 */
+	colors: APIRoleColors;
 	/**
 	 * If this role is pinned in the user listing
 	 */
@@ -60,6 +65,23 @@ export interface APIRole {
 	flags: RoleFlags;
 }
 
+/**
+ * https://discord.com/developers/docs/topics/permissions#role-object-role-colors-object
+ */
+export interface APIRoleColors {
+	/**
+	 *  The primary color for the role
+	 */
+	primary_color: number;
+	/**
+	 * The secondary color for the role, this will make the role a gradient between the other provided colors
+	 */
+	secondary_color: number | null;
+	/**
+	 * The tertiary color for the role, this will turn the gradient into a holographic style
+	 */
+	tertiary_color: number | null;
+}
 /**
  * https://discord.com/developers/docs/topics/permissions#role-object-role-tags-structure
  */

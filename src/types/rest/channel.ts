@@ -599,7 +599,34 @@ export type RESTPostAPIChannelTypingResult = undefined;
 /**
  * https://discord.com/developers/docs/resources/channel#get-pinned-messages
  */
-export type RESTGetAPIChannelPinsResult = APIMessage[];
+export interface RESTGetAPIChannelPinsResult {
+	items: RESTGetAPIChannelPinsItems[];
+	has_more: boolean;
+}
+
+export interface RESTGetAPIChannelPinsQuery {
+	/**
+	 * Get messages pinned before this timestamp
+	 */
+	before?: string;
+	/**
+	 * Max number of pins to return (1-50)
+	 */
+	after?: string;
+
+	limit?: number;
+}
+
+export interface RESTGetAPIChannelPinsItems {
+	/**
+	 * The time the message was pinned
+	 */
+	pinned_at: string;
+	/**
+	 * The message that was pinned
+	 */
+	message: APIMessage;
+}
 
 /**
  * https://discord.com/developers/docs/resources/channel#pin-message

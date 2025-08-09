@@ -13,6 +13,7 @@ import type {
 	RESTGetAPIChannelMessageResult,
 	RESTGetAPIChannelMessagesQuery,
 	RESTGetAPIChannelMessagesResult,
+	RESTGetAPIChannelPinsQuery,
 	RESTGetAPIChannelPinsResult,
 	RESTGetAPIChannelResult,
 	RESTGetAPIChannelThreadMemberQuery,
@@ -116,15 +117,6 @@ export interface ChannelRoutes {
 			put(args?: RestArguments<RESTPutAPIChannelRecipientJSONBody>): Promise<RESTPutAPIChannelRecipientResult>;
 			delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIChannelRecipientResult>;
 		};
-		pins: {
-			get(args?: RestArgumentsNoBody): Promise<RESTGetAPIChannelPinsResult>;
-			(
-				id: string,
-			): {
-				put(args?: RestArgumentsNoBody): Promise<RESTPutAPIChannelPinResult>;
-				delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIChannelPinResult>;
-			};
-		};
 		followers: {
 			post(args: RestArguments<RESTPostAPIChannelFollowersJSONBody>): Promise<RESTPostAPIChannelFollowersResult>;
 		};
@@ -143,6 +135,15 @@ export interface ChannelRoutes {
 				post(
 					args: RestArguments<RESTPostAPIChannelMessagesBulkDeleteJSONBody>,
 				): Promise<RESTPostAPIChannelMessagesBulkDeleteResult>;
+			};
+			pins: {
+				get(args?: RestArgumentsNoBody<RESTGetAPIChannelPinsQuery>): Promise<RESTGetAPIChannelPinsResult>;
+				(
+					id: string,
+				): {
+					put(args?: RestArgumentsNoBody): Promise<RESTPutAPIChannelPinResult>;
+					delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIChannelPinResult>;
+				};
 			};
 			(
 				id: string,

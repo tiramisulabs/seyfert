@@ -74,6 +74,7 @@ export interface APIGuildCreateRole extends RESTPostAPIGuildRoleJSONBody {
 
 /**
  * https://discord.com/developers/docs/resources/guild#create-guild
+ * @deprecated
  */
 export interface RESTPostAPIGuildsJSONBody {
 	/**
