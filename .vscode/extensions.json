@@ -1,10 +1,10 @@
 {
-    "recommendations": [
-        "biomejs.biome",
-        "orta.vscode-twoslash-queries",
-        "eamodio.gitlens",
-        "yoavbls.pretty-ts-errors",
-				"usernamehw.errorlens",
-				"better-ts-errors.better-ts-errors"
-    ]
+	"recommendations": [
+		"biomejs.biome",
+		"orta.vscode-twoslash-queries",
+		"eamodio.gitlens",
+		"yoavbls.pretty-ts-errors",
+		"usernamehw.errorlens",
+		"better-ts-errors.better-ts-errors"
+	]
 }

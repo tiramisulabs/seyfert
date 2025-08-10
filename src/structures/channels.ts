@@ -54,7 +54,7 @@ import {
 	type RESTAPIAttachment,
 	type RESTGetAPIChannelMessageReactionUsersQuery,
 	type RESTGetAPIChannelMessagesQuery,
-	RESTGetAPIChannelPinsQuery,
+	type RESTGetAPIChannelPinsQuery,
 	type RESTPatchAPIChannelJSONBody,
 	type RESTPatchAPIGuildChannelPositionsJSONBody,
 	type RESTPostAPIChannelWebhookJSONBody,
