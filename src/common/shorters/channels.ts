@@ -7,6 +7,7 @@ import type {
 	APIChannel,
 	APIGuildChannel,
 	RESTGetAPIChannelMessagesQuery,
+	RESTGetAPIChannelPinsQuery,
 	RESTPatchAPIChannelJSONBody,
 	RESTPostAPIChannelThreadsJSONBody,
 	RESTPostAPIGuildForumThreadsJSONBody,
@@ -104,16 +105,25 @@ export class ChannelShorter extends BaseShorter {
 		return this.client.proxy.channels(id).typing.post();
 	}
 
-	async pins(channelId: string): Promise<MessageStructure[]> {
-		const messages = await this.client.proxy.channels(channelId).pins.get();
+	async pins(
+		channelId: string,
+		query?: RESTGetAPIChannelPinsQuery,
+	): Promise<{ hasMore: boolean; items: { pinnedAt: string; message: MessageStructure }[] }> {
+		const pins = await this.client.proxy.channels(channelId).messages.pins.get({ query });
 		await this.client.cache.messages?.patch(
 			CacheFrom.Rest,
-			messages.map(x => {
-				return [x.id, x];
+			pins.items.map(x => {
+				return [x.message.id, x.message];
 			}) satisfies [string, any][],
 			channelId,
 		);
-		return messages.map(message => Transformers.Message(this.client, message));
+		return {
+			hasMore: pins.has_more,
+			items: pins.items.map(x => ({
+				pinnedAt: x.pinned_at,
+				message: Transformers.Message(this.client, x.message),
+			})),
+		};
 	}
 
 	/**
@@ -124,7 +134,7 @@ export class ChannelShorter extends BaseShorter {
 	 * @returns A Promise that resolves when the message is successfully pinned.
 	 */
 	setPin(messageId: string, channelId: string, reason?: string) {
-		return this.client.proxy.channels(channelId).pins(messageId).put({ reason });
+		return this.client.proxy.channels(channelId).messages.pins(messageId).put({ reason });
 	}
 
 	/**
@@ -135,7 +145,7 @@ export class ChannelShorter extends BaseShorter {
 	 * @returns A Promise that resolves when the message is successfully unpinned.
 	 */
 	deletePin(messageId: string, channelId: string, reason?: string) {
-		return this.client.proxy.channels(channelId).pins(messageId).delete({ reason });
+		return this.client.proxy.channels(channelId).messages.pins(messageId).delete({ reason });
 	}
 
 	/**

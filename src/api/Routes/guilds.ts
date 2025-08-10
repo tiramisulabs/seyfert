@@ -107,10 +107,8 @@ import type {
 	RESTPostAPIGuildSoundboardSoundResult,
 	RESTPostAPIGuildStickerFormDataBody,
 	RESTPostAPIGuildStickerResult,
-	RESTPostAPIGuildsJSONBody,
 	RESTPostAPIGuildsMFAJSONBody,
 	RESTPostAPIGuildsMFAResult,
-	RESTPostAPIGuildsResult,
 	RESTPostAPIGuildTemplatesJSONBody,
 	RESTPostAPIGuildTemplatesResult,
 	RESTPostAPITemplateCreateGuildJSONBody,
@@ -127,7 +125,6 @@ import type { RawFile } from '../shared';
 
 export interface GuildRoutes {
 	guilds: {
-		post(args: RestArguments<RESTPostAPIGuildsJSONBody>): Promise<RESTPostAPIGuildsResult>;
 		templates(code: string): {
 			get(args?: RestArgumentsNoBody): Promise<RESTGetAPITemplateResult>;
 			post(args: RestArguments<RESTPostAPITemplateCreateGuildJSONBody>): Promise<RESTPostAPITemplateCreateGuildResult>;

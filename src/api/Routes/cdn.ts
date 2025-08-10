@@ -1,4 +1,4 @@
-import type { BaseCDNUrlOptions, CDNUrlOptions } from '../..';
+import type { BaseCDNUrlOptions, CDNUrlOptions, TagBadgeExtension } from '../..';
 import type { SoundExtension, StickerExtension } from '../shared';
 
 export interface CDNRoute {
@@ -40,6 +40,9 @@ export interface CDNRoute {
 	};
 	'guild-events'(eventId: string): {
 		get(hash: string, options?: BaseCDNUrlOptions): string;
+	};
+	'guild-tag-badges'(guildId: string): {
+		get(hash: string, options?: BaseCDNUrlOptions<TagBadgeExtension>): string;
 	};
 	emojis(id: string): {
 		get(options?: BaseCDNUrlOptions): string;
