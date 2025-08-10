@@ -612,8 +612,6 @@ export interface RESTGetAPIChannelPinsQuery {
 	/**
 	 * Max number of pins to return (1-50)
 	 */
-	after?: string;
-
 	limit?: number;
 }
 

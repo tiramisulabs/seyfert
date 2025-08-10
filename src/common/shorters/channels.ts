@@ -7,6 +7,7 @@ import type {
 	APIChannel,
 	APIGuildChannel,
 	RESTGetAPIChannelMessagesQuery,
+	RESTGetAPIChannelPinsQuery,
 	RESTPatchAPIChannelJSONBody,
 	RESTPostAPIChannelThreadsJSONBody,
 	RESTPostAPIGuildForumThreadsJSONBody,
@@ -106,8 +107,9 @@ export class ChannelShorter extends BaseShorter {
 
 	async pins(
 		channelId: string,
+		query?: RESTGetAPIChannelPinsQuery,
 	): Promise<{ hasMore: boolean; items: { pinnedAt: string; message: MessageStructure }[] }> {
-		const pins = await this.client.proxy.channels(channelId).messages.pins.get();
+		const pins = await this.client.proxy.channels(channelId).messages.pins.get({ query });
 		await this.client.cache.messages?.patch(
 			CacheFrom.Rest,
 			pins.items.map(x => {
