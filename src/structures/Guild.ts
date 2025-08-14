@@ -28,7 +28,7 @@ export class Guild<State extends StructStates = 'api'> extends (BaseGuild as unk
 		super(client, data);
 
 		if ('joined_at' in data) {
-			this.joinedAt = Number(data.joined_at) as never;
+			this.joinedAt = Date.parse(data.joined_at) as never;
 			this.memberCount = data.member_count as never;
 			this.large = data.large as never;
 			this.unavailable = data.unavailable as never;
