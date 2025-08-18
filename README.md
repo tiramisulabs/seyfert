@@ -55,6 +55,6 @@ We are open to contributions, fork the repo and make your changes!
 - [Discord server](https://discord.com/invite/XNw2RZFzaP)
 - [npm - core](https://www.npmjs.com/package/seyfert)
 - [Website](https://seyfert.dev)
-- [Documentation](https://docs.seyfert.dev)
+- [Documentation](https://seyfert.dev/guide)
 
 ![Seyfert star history](https://api.star-history.com/svg?repos=tiramisulabs/seyfert&type=Date)
