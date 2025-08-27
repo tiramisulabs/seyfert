@@ -7,6 +7,7 @@ import type { ActionRow } from './ActionRow';
 import type { Button } from './Button';
 import type { Container } from './Container';
 import type { File } from './File';
+import { Label } from './Label';
 import type { MediaGallery } from './MediaGallery';
 import type { TextInput } from './Modal';
 import type { Section } from './Section';
@@ -32,7 +33,7 @@ export type ButtonLink = Omit<Button, 'setCustomId'>;
 export type ButtonID = Omit<Button, 'setURL'>;
 
 export type MessageBuilderComponents = FixedComponents<Button> | BuilderSelectMenus;
-export type ModalBuilderComponents = TextInput;
+export type ModalBuilderComponents = Label;
 export type ActionBuilderComponents = MessageBuilderComponents | TextInput;
 
 export type BuilderComponents =
@@ -45,7 +46,8 @@ export type BuilderComponents =
 	| Separator
 	| MediaGallery
 	| File
-	| TextInput;
+	| TextInput
+	| Label;
 
 export type TopLevelBuilders = Exclude<BuilderComponents, Thumbnail | TextInput>;
 

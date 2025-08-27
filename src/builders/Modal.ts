@@ -1,15 +1,14 @@
 import type { RestOrArray } from '../common';
 import {
-	type APIActionRowComponent,
-	type APIModalInteractionResponseCallbackData,
+	APIModalInteractionResponseCallbackData,
 	type APITextInputComponent,
 	ComponentType,
 	type TextInputStyle,
 } from '../types';
-import type { ActionRow } from './ActionRow';
 import { BaseComponentBuilder, type OptionValuesLength } from './Base';
 import { fromComponent } from './index';
-import type { ModalBuilderComponents, ModalSubmitCallback } from './types';
+import { Label } from './Label';
+import type { ModalSubmitCallback } from './types';
 
 /**
  * Represents a modal for user interactions.
@@ -26,17 +25,17 @@ import type { ModalBuilderComponents, ModalSubmitCallback } from './types';
  * });
  * const json = modal.toJSON();
  */
-export class Modal<T extends ModalBuilderComponents = TextInput> {
+export class Modal {
 	/** @internal */
 	__exec?: ModalSubmitCallback;
-	components: ActionRow<T>[] = [];
+	components: Label[] = [];
 
 	/**
 	 * Creates a new Modal instance.
 	 * @param data - Optional data for the modal.
 	 */
 	constructor(public data: Partial<APIModalInteractionResponseCallbackData> = {}) {
-		this.components = this.components.concat((data.components?.map(fromComponent) as ActionRow<T>[]) ?? []);
+		this.components = this.components.concat((data.components?.map(fromComponent) as Label[]) ?? []);
 	}
 
 	/**
@@ -44,7 +43,7 @@ export class Modal<T extends ModalBuilderComponents = TextInput> {
 	 * @param components - Components to be added to the modal.
 	 * @returns The current Modal instance.
 	 */
-	addComponents(...components: RestOrArray<ActionRow<T>>): this {
+	addComponents(...components: RestOrArray<Label>): this {
 		this.components = this.components.concat(components.flat());
 		return this;
 	}
@@ -54,7 +53,7 @@ export class Modal<T extends ModalBuilderComponents = TextInput> {
 	 * @param component - The components to set into the modal.
 	 * @returns The current Modal instance.
 	 */
-	setComponents(component: ActionRow<T>[]): this {
+	setComponents(component: Label[]): this {
 		this.components = [...component];
 		return this;
 	}
@@ -97,7 +96,7 @@ export class Modal<T extends ModalBuilderComponents = TextInput> {
 		return {
 			custom_id: this.data.custom_id,
 			title: this.data.title,
-			components: this.components.map(x => x.toJSON() as unknown as APIActionRowComponent<APITextInputComponent>),
+			components: this.components.map(x => x.toJSON()),
 		} as APIModalInteractionResponseCallbackData;
 	}
 }

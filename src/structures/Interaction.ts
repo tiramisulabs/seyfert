@@ -1,5 +1,6 @@
 import type { RawFile } from '../api';
 import { ActionRow, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
+import { Label } from '../builders/Label';
 import type { ReturnCache } from '../cache';
 import {
 	type EntitlementStructure,
@@ -30,7 +31,6 @@ import {
 } from '../common';
 import { mix } from '../deps/mixer';
 import {
-	type APIActionRowComponent,
 	type APIApplicationCommandAutocompleteInteraction,
 	type APIApplicationCommandInteraction,
 	type APIBaseInteraction,
@@ -57,7 +57,6 @@ import {
 	type APIMessageUserSelectInteractionData,
 	type APIModalSubmission,
 	type APIModalSubmitInteraction,
-	type APITextInputComponent,
 	type APIUserApplicationCommandInteraction,
 	type APIUserApplicationCommandInteractionData,
 	ApplicationCommandType,
@@ -161,11 +160,7 @@ export class BaseInteraction<
 							: {
 									...body.data,
 									components: body.data?.components
-										? body.data.components.map(x =>
-												x instanceof ActionRow
-													? (x.toJSON() as unknown as APIActionRowComponent<APITextInputComponent>)
-													: x,
-											)
+										? body.data.components.map(x => (x instanceof Label ? x.toJSON() : x))
 										: [],
 								},
 				};
@@ -866,17 +861,17 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 	}
 
 	getInputValue(customId: string, required: true): string;
-	getInputValue(customId: string, required?: false): string | undefined;
-	getInputValue(customId: string, required?: boolean): string | undefined {
-		let value: string | undefined;
+	getInputValue(customId: string, required?: false): string | string[] | undefined;
+	getInputValue(customId: string, required?: boolean): string | string[] | undefined {
+		let value: string | string[] | undefined;
 		for (const { components } of this.components) {
 			const get = components.find(x => x.customId === customId);
 			if (get) {
-				value = get.value;
+				value = get.value ?? get.values;
 				break;
 			}
 		}
-		if (!value && required) throw new Error(`${customId} component doesn't have a value`);
+		if ((!value || value.length === 0) && required) throw new Error(`${customId} component doesn't have a value`);
 		return value;
 	}
 
