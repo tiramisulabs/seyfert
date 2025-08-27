@@ -38,7 +38,6 @@ export type ActionBuilderComponents = Button | BuilderSelectMenus;
 
 export type BuilderComponents =
 	| ActionRow
-	| TextInput
 	| BuilderSelectMenus
 	| Button
 	| Section<Button | Thumbnail>
