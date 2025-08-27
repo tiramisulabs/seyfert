@@ -76,6 +76,10 @@ export enum ComponentType {
 	 * Container component
 	 */
 	Container = 17,
+	/**
+	 * Label component
+	 */
+	Label,
 }
 
 /**
@@ -574,6 +578,18 @@ export interface APIContainerComponent {
 	accent_color?: number;
 	/** Whether the container should be a spoiler (or blurred out). Defaults to false. */
 	spoiler?: boolean;
+}
+
+/**
+ * https://discord.com/developers/docs/components/reference#label
+ */
+export interface APILabelComponent {
+	/** 18 for label */
+	type: ComponentType.Label;
+	/** Optional identifier for component */
+	id?: number;
+	/** Text that will be displayed similar to a message */
+	content: string;
 }
 
 /**

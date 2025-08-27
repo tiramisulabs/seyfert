@@ -198,6 +198,40 @@ export interface GatewayReconnect extends NonDispatchPayload {
 }
 
 /**
+ * https://discord.com/developers/docs/events/gateway-events#rate-limited
+ */
+export type GatewayRateLimitedDispatch = DataPayload<GatewayDispatchEvents.RateLimited, GatewayRateLimitedDispatchData>;
+
+export interface GatewayRateLimitedDispatchData {
+	/**
+	 * Gateway opcode of the event that was rate limited (for now only GuildMembersChunk)
+	 */
+	opcode: Extract<GatewayDispatchEvents, GatewayDispatchEvents.GuildMembersChunk>;
+	/**
+	 * The number of seconds to wait before submitting another request
+	 */
+	retry_after: number;
+	/**
+	 * Metadata for the event that was rate limited
+	 */
+	num_retries: number;
+}
+
+/**
+ * https://discord.com/developers/docs/events/gateway-events#rate-limited-request-guild-member-rate-limit-metadata-structure
+ */
+export interface GatewayRateLimitedMetadata {
+	/**
+	 * ID of the guild to get members for
+	 */
+	guild_id: Snowflake;
+	/**
+	 * nonce to identify the Guild Members Chunk response
+	 */
+	nonce: string;
+}
+
+/**
  * https://discord.com/developers/docs/topics/gateway-events#ready
  */
 export type GatewayReadyDispatch = DataPayload<GatewayDispatchEvents.Ready, GatewayReadyDispatchData>;

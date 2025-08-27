@@ -375,6 +375,7 @@ export enum GatewayDispatchEvents {
 	SubscriptionDelete = 'SUBSCRIPTION_DELETE',
 	Ready = 'READY',
 	Resumed = 'RESUMED',
+	RateLimited = 'RATE_LIMITED',
 	ThreadCreate = 'THREAD_CREATE',
 	ThreadDelete = 'THREAD_DELETE',
 	ThreadListSync = 'THREAD_LIST_SYNC',
