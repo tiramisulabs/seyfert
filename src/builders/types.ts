@@ -32,13 +32,15 @@ export type ModalSubmitCallback<T = ModalSubmitInteraction> = (interaction: T) =
 export type ButtonLink = Omit<Button, 'setCustomId'>;
 export type ButtonID = Omit<Button, 'setURL'>;
 
-export type MessageBuilderComponents = FixedComponents<Button> | BuilderSelectMenus;
+export type MessageBuilderComponents = Exclude<TopLevelBuilders, Label>;
 export type ModalBuilderComponents = Label;
-export type ActionBuilderComponents = MessageBuilderComponents | TextInput;
+export type ActionBuilderComponents = Button | BuilderSelectMenus;
 
 export type BuilderComponents =
 	| ActionRow
-	| ActionBuilderComponents
+	| TextInput
+	| BuilderSelectMenus
+	| Button
 	| Section<Button | Thumbnail>
 	| Thumbnail
 	| TextDisplay
@@ -49,7 +51,7 @@ export type BuilderComponents =
 	| TextInput
 	| Label;
 
-export type TopLevelBuilders = Exclude<BuilderComponents, Thumbnail | TextInput>;
+export type TopLevelBuilders = Exclude<BuilderComponents, Thumbnail | TextInput | Button | BuilderSelectMenus>;
 
 export type FixedComponents<T = Button> = T extends Button ? ButtonLink | ButtonID : T;
 export interface ListenerOptions {
