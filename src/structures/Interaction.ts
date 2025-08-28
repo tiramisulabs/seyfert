@@ -860,7 +860,7 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 		return this.data.components;
 	}
 
-	getInputValue(customId: string, required: true): string;
+	getInputValue(customId: string, required: true): string | string[];
 	getInputValue(customId: string, required?: false): string | string[] | undefined;
 	getInputValue(customId: string, required?: boolean): string | string[] | undefined {
 		let value: string | string[] | undefined;

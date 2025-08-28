@@ -1,8 +1,8 @@
-import { APILabelComponent, ComponentType } from '../types';
+import { type APILabelComponent, ComponentType } from '../types';
 import { fromComponent } from '.';
 import { BaseComponentBuilder } from './Base';
-import { TextInput } from './Modal';
-import { StringSelectMenu } from './SelectMenu';
+import type { TextInput } from './Modal';
+import type { StringSelectMenu } from './SelectMenu';
 
 export class Label extends BaseComponentBuilder<APILabelComponent> {
 	constructor({ component, ...data }: Partial<APILabelComponent> = {}) {

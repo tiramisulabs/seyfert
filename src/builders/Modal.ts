@@ -1,6 +1,6 @@
 import type { RestOrArray } from '../common';
 import {
-	APIModalInteractionResponseCallbackData,
+	type APIModalInteractionResponseCallbackData,
 	type APITextInputComponent,
 	ComponentType,
 	type TextInputStyle,

@@ -214,7 +214,7 @@ export interface GatewayRateLimitedDispatchData {
 	/**
 	 * Metadata for the event that was rate limited
 	 */
-	num_retries: number;
+	metadata: GatewayRateLimitedMetadata;
 }
 
 /**
@@ -228,7 +228,7 @@ export interface GatewayRateLimitedMetadata {
 	/**
 	 * nonce to identify the Guild Members Chunk response
 	 */
-	nonce: string;
+	nonce?: string;
 }
 
 /**

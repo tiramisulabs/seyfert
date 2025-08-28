@@ -24,7 +24,7 @@ import {
 	type APIChannelSelectComponent,
 	type APIContainerComponent,
 	type APIFileComponent,
-	APILabelComponent,
+	type APILabelComponent,
 	type APIMediaGalleryComponent,
 	type APIMentionableSelectComponent,
 	type APIRoleSelectComponent,
