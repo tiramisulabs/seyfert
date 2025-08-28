@@ -58,6 +58,9 @@ export class Shard {
 			presences: GatewayGuildMembersChunkPresence[];
 			resolve: (value: { members: APIGuildMember[]; presences: GatewayGuildMembersChunkPresence[] }) => void;
 			reject: (reason?: any) => void;
+			options:
+				| Omit<GatewayRequestGuildMembersDataWithQuery, 'nonce'>
+				| Omit<GatewayRequestGuildMembersDataWithUserIds, 'nonce'>;
 		}
 	>();
 
@@ -354,6 +357,37 @@ export class Shard {
 								this.options.handlePayload(this.id, packet);
 							}
 							break;
+						case GatewayDispatchEvents.RateLimited:
+							{
+								switch (packet.d.opcode) {
+									case GatewayOpcodes.RequestGuildMembers:
+										{
+											const { retry_after, metadata } = packet.d;
+											const nonce = metadata.nonce;
+											if (!nonce) {
+												this.options.handlePayload(this.id, packet);
+												return;
+											}
+											if (!this.requestGuildMembersChunk.has(nonce)) {
+												this.options.handlePayload(this.id, packet);
+												return;
+											}
+											const guildMemberChunk = this.requestGuildMembersChunk.get(nonce)!;
+											void delay((retry_after + 0.5) * 1e3).then(() => {
+												this.send(false, {
+													op: GatewayOpcodes.RequestGuildMembers,
+													d: {
+														...guildMemberChunk.options,
+														nonce,
+													},
+												});
+											});
+										}
+										break;
+								}
+							}
+							this.options.handlePayload(this.id, packet);
+							break;
 						default:
 							this.options.handlePayload(this.id, packet);
 							break;
@@ -389,6 +423,7 @@ export class Shard {
 			presences: [],
 			reject,
 			resolve,
+			options,
 		});
 
 		this.send(false, {

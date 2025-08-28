@@ -138,7 +138,8 @@ export type GatewayDispatchPayload =
 	| GatewayGuildSoundboardSoundDeleteDispatch
 	| GatewayGuildSoundboardSoundUpdateDispatch
 	| GatewayGuildSoundboardSoundsUpdateDispatch
-	| GatewaySoundboardSoundsDispatch;
+	| GatewaySoundboardSoundsDispatch
+	| GatewayRateLimitedDispatch;
 
 // #region Dispatch Payloads
 
@@ -206,7 +207,7 @@ export interface GatewayRateLimitedDispatchData {
 	/**
 	 * Gateway opcode of the event that was rate limited (for now only GuildMembersChunk)
 	 */
-	opcode: Extract<GatewayDispatchEvents, GatewayDispatchEvents.GuildMembersChunk>;
+	opcode: Extract<GatewayOpcodes, GatewayOpcodes.RequestGuildMembers>;
 	/**
 	 * The number of seconds to wait before submitting another request
 	 */
