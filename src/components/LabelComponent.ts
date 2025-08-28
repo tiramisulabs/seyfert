@@ -1,4 +1,5 @@
 import { APILabelComponent, ComponentType } from '../types';
+import { componentFactory } from '.';
 import { BaseComponent } from './BaseComponent';
 
 export class LabelComponent extends BaseComponent<ComponentType.Label> {
@@ -15,6 +16,6 @@ export class LabelComponent extends BaseComponent<ComponentType.Label> {
 	}
 
 	get component() {
-		return this.data.component;
+		return componentFactory(this.data.component);
 	}
 }
