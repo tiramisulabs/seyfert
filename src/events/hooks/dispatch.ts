@@ -2,7 +2,7 @@ import { type ClientUserStructure, Transformers } from '../../client/transformer
 import type { UsingClient } from '../../commands';
 import type {
 	GatewayDispatchPayload,
-	GatewayRateLimitedDispatch,
+	GatewayRateLimitedDispatchData,
 	GatewayReadyDispatchData,
 	GatewayResumedDispatch,
 } from '../../types';
@@ -19,6 +19,6 @@ export const RAW = (_self: UsingClient, data: GatewayDispatchPayload) => {
 	return data;
 };
 
-export const RATE_LIMITED = (_self: UsingClient, data: GatewayRateLimitedDispatch) => {
+export const RATE_LIMITED = (_self: UsingClient, data: GatewayRateLimitedDispatchData) => {
 	return data;
 };
