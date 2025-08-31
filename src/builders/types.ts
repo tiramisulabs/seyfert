@@ -7,6 +7,7 @@ import type { ActionRow } from './ActionRow';
 import type { Button } from './Button';
 import type { Container } from './Container';
 import type { File } from './File';
+import { Label } from './Label';
 import type { MediaGallery } from './MediaGallery';
 import type { TextInput } from './Modal';
 import type { Section } from './Section';
@@ -31,13 +32,14 @@ export type ModalSubmitCallback<T = ModalSubmitInteraction> = (interaction: T) =
 export type ButtonLink = Omit<Button, 'setCustomId'>;
 export type ButtonID = Omit<Button, 'setURL'>;
 
-export type MessageBuilderComponents = FixedComponents<Button> | BuilderSelectMenus;
-export type ModalBuilderComponents = TextInput;
-export type ActionBuilderComponents = MessageBuilderComponents | TextInput;
+export type MessageBuilderComponents = Exclude<TopLevelBuilders, Label>;
+export type ModalBuilderComponents = Label;
+export type ActionBuilderComponents = Button | BuilderSelectMenus;
 
 export type BuilderComponents =
 	| ActionRow
-	| ActionBuilderComponents
+	| BuilderSelectMenus
+	| Button
 	| Section<Button | Thumbnail>
 	| Thumbnail
 	| TextDisplay
@@ -45,9 +47,10 @@ export type BuilderComponents =
 	| Separator
 	| MediaGallery
 	| File
-	| TextInput;
+	| TextInput
+	| Label;
 
-export type TopLevelBuilders = Exclude<BuilderComponents, Thumbnail | TextInput>;
+export type TopLevelBuilders = Exclude<BuilderComponents, Thumbnail | TextInput | Button | BuilderSelectMenus>;
 
 export type FixedComponents<T = Button> = T extends Button ? ButtonLink | ButtonID : T;
 export interface ListenerOptions {

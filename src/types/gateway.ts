@@ -138,7 +138,8 @@ export type GatewayDispatchPayload =
 	| GatewayGuildSoundboardSoundDeleteDispatch
 	| GatewayGuildSoundboardSoundUpdateDispatch
 	| GatewayGuildSoundboardSoundsUpdateDispatch
-	| GatewaySoundboardSoundsDispatch;
+	| GatewaySoundboardSoundsDispatch
+	| GatewayRateLimitedDispatch;
 
 // #region Dispatch Payloads
 
@@ -195,6 +196,40 @@ export type GatewayInvalidSessionData = boolean;
 export interface GatewayReconnect extends NonDispatchPayload {
 	op: GatewayOpcodes.Reconnect;
 	d: never;
+}
+
+/**
+ * https://discord.com/developers/docs/events/gateway-events#rate-limited
+ */
+export type GatewayRateLimitedDispatch = DataPayload<GatewayDispatchEvents.RateLimited, GatewayRateLimitedDispatchData>;
+
+export interface GatewayRateLimitedDispatchData {
+	/**
+	 * Gateway opcode of the event that was rate limited (for now only GuildMembersChunk)
+	 */
+	opcode: Extract<GatewayOpcodes, GatewayOpcodes.RequestGuildMembers>;
+	/**
+	 * The number of seconds to wait before submitting another request
+	 */
+	retry_after: number;
+	/**
+	 * Metadata for the event that was rate limited
+	 */
+	metadata: GatewayRateLimitedMetadata;
+}
+
+/**
+ * https://discord.com/developers/docs/events/gateway-events#rate-limited-request-guild-member-rate-limit-metadata-structure
+ */
+export interface GatewayRateLimitedMetadata {
+	/**
+	 * ID of the guild to get members for
+	 */
+	guild_id: Snowflake;
+	/**
+	 * nonce to identify the Guild Members Chunk response
+	 */
+	nonce?: string;
 }
 
 /**

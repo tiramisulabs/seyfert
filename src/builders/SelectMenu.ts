@@ -288,6 +288,16 @@ export class StringSelectMenu extends SelectMenu {
 		return this;
 	}
 
+	/**
+	 * Sets whether the string select is required to answer in a modal.
+	 * @param required - Whether the string select is required to answer in a modal.
+	 * @returns The current StringSelectMenu instance.
+	 */
+	setRequired(required = true): this {
+		this.data.required = required;
+		return this;
+	}
+
 	toJSON(): APIStringSelectComponent {
 		const { options, ...raw } = this.data;
 		return {

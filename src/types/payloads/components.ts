@@ -76,6 +76,10 @@ export enum ComponentType {
 	 * Container component
 	 */
 	Container = 17,
+	/**
+	 * Label component
+	 */
+	Label,
 }
 
 /**
@@ -237,6 +241,12 @@ export interface APIStringSelectComponent extends APIBaseSelectMenuComponent<Com
 	 * Specified choices in a select menu; max 25
 	 */
 	options: APISelectMenuOption[];
+	/**
+	 * Whether the string select is required to answer in a modal
+	 *
+	 * @default true
+	 */
+	required?: boolean;
 }
 
 /**
@@ -577,6 +587,22 @@ export interface APIContainerComponent {
 }
 
 /**
+ * https://discord.com/developers/docs/components/reference#label
+ */
+export interface APILabelComponent {
+	/** 18 for label */
+	type: ComponentType.Label;
+	/** Optional identifier for component */
+	id?: string;
+	/** The label text */
+	label: string;
+	/** An optional description textfor the label */
+	description?: string;
+	/** 	The component within the label */
+	component: APITextInputComponent | APIStringSelectComponent;
+}
+
+/**
  * https://discord.com/developers/docs/components/reference#unfurled-media-item-structure
  */
 export interface APIUnfurledMediaItem
@@ -591,4 +617,5 @@ export type APITopLevelComponent =
 	| APIMediaGalleryComponent
 	| APISectionComponent
 	| APISeparatorComponent
-	| APITextDisplayComponent;
+	| APITextDisplayComponent
+	| APILabelComponent;

@@ -3,6 +3,7 @@ import { ActionRow } from './ActionRow';
 import { Button } from './Button';
 import { Container } from './Container';
 import { File } from './File';
+import { Label } from './Label';
 import { MediaGallery } from './MediaGallery';
 import { TextInput } from './Modal';
 import { Section } from './Section';
@@ -70,5 +71,7 @@ export function fromComponent(data: BuilderComponents | APIComponents): BuilderC
 			return new Separator(data);
 		case ComponentType.File:
 			return new File(data);
+		case ComponentType.Label:
+			return new Label(data);
 	}
 }

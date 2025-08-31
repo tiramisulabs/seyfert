@@ -11,7 +11,8 @@ import type {
 export interface ModalSubmitComponent {
 	type: ComponentType;
 	custom_id: string;
-	value: string;
+	value?: string;
+	values?: string[];
 }
 
 export interface ModalSubmitActionRowComponent

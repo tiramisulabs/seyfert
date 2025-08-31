@@ -16,6 +16,7 @@ import {
 	type Thumbnail,
 	type UserSelectMenu,
 } from '../builders';
+import { Label } from '../builders/Label';
 import {
 	type APIActionRowComponent,
 	type APIActionRowComponentTypes,
@@ -23,6 +24,7 @@ import {
 	type APIChannelSelectComponent,
 	type APIContainerComponent,
 	type APIFileComponent,
+	type APILabelComponent,
 	type APIMediaGalleryComponent,
 	type APIMentionableSelectComponent,
 	type APIRoleSelectComponent,
@@ -67,6 +69,7 @@ export interface APIComponentsMap {
 	[ComponentType.MediaGallery]: APIMediaGalleryComponent;
 	[ComponentType.Separator]: APISeparatorComponent;
 	[ComponentType.TextDisplay]: APITextDisplayComponent;
+	[ComponentType.Label]: APILabelComponent;
 }
 
 export interface BuilderComponentsMap {
@@ -85,4 +88,5 @@ export interface BuilderComponentsMap {
 	[ComponentType.MediaGallery]: MediaGallery;
 	[ComponentType.Separator]: Separator;
 	[ComponentType.TextDisplay]: TextDisplay;
+	[ComponentType.Label]: Label;
 }
