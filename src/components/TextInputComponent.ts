@@ -14,10 +14,6 @@ export class TextInputComponent extends BaseComponent<ComponentType.TextInput> {
 		return this.data.style;
 	}
 
-	get label() {
-		return this.data.label;
-	}
-
 	get max() {
 		return this.data.max_length;
 	}

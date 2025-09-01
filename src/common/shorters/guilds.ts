@@ -32,7 +32,7 @@ import type {
 	RESTPostAPIGuildChannelJSONBody,
 } from '../../types';
 import type { APITextChannel } from '../../types/payloads/channel';
-import type { MakeRequired } from '../types/util';
+import type { If, MakeRequired } from '../types/util';
 import { BaseShorter } from './base';
 
 export class GuildShorter extends BaseShorter {
@@ -86,11 +86,20 @@ export class GuildShorter extends BaseShorter {
 		return Transformers.Guild(this.client, guild);
 	}
 
-	list(query?: RESTGetAPICurrentUserGuildsQuery): Promise<AnonymousGuildStructure[]> {
+	async list<T extends boolean = false>(
+		query?: RESTGetAPICurrentUserGuildsQuery,
+		force?: T,
+	): Promise<If<T, AnonymousGuildStructure[], GuildStructure<'cached'>[]>> {
+		if (!force) {
+			const guilds = await this.client.cache.guilds?.values();
+			if (guilds?.length) return guilds;
+		}
 		return this.client.proxy
 			.users('@me')
 			.guilds.get({ query })
-			.then(guilds => guilds.map(guild => Transformers.AnonymousGuild(this.client, { ...guild, splash: null })));
+			.then(guilds =>
+				guilds.map(guild => Transformers.AnonymousGuild(this.client, { ...guild, splash: null })),
+			) as never;
 	}
 
 	async fetchSelf(id: string, force = false): Promise<GuildMemberStructure> {

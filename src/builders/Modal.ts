@@ -129,16 +129,6 @@ export class TextInput extends BaseComponentBuilder<APITextInputComponent> {
 	}
 
 	/**
-	 * Sets the label of the text input.
-	 * @param label - The label of the text input.
-	 * @returns The current TextInput instance.
-	 */
-	setLabel(label: string): this {
-		this.data.label = label;
-		return this;
-	}
-
-	/**
 	 * Sets the placeholder of the text input.
 	 * @param placeholder - The placeholder text.
 	 * @returns The current TextInput instance.
