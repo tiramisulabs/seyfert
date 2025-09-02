@@ -89,7 +89,7 @@ export class GuildShorter extends BaseShorter {
 	async list<T extends boolean = false>(
 		query?: RESTGetAPICurrentUserGuildsQuery,
 		force?: T,
-	): Promise<If<T, AnonymousGuildStructure[], GuildStructure<'cached'>[]>> {
+	): Promise<If<T, AnonymousGuildStructure[], GuildStructure<'cached'>[] | AnonymousGuildStructure[]>> {
 		if (!force) {
 			const guilds = await this.client.cache.guilds?.values();
 			if (guilds?.length) return guilds;
