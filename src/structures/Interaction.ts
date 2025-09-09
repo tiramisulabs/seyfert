@@ -864,13 +864,11 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 	getInputValue(customId: string, required?: false): string | string[] | undefined;
 	getInputValue(customId: string, required?: boolean): string | string[] | undefined {
 		let value: string | string[] | undefined;
-		for (const { components } of this.components) {
-			const get = components.find(x => x.customId === customId);
-			if (get) {
-				value = get.value ?? get.values;
-				break;
-			}
+		const get = this.components.find(x => x.component.customId === customId);
+		if (get) {
+			value = get.component.value ?? get.component.values;
 		}
+
 		if ((!value || value.length === 0) && required) throw new Error(`${customId} component doesn't have a value`);
 		return value;
 	}

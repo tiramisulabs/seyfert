@@ -17,7 +17,7 @@ export interface ModalSubmitComponent {
 
 export interface ModalSubmitActionRowComponent
 	extends Omit<APIActionRowComponent<APIModalActionRowComponent>, 'components'> {
-	components: ModalSubmitComponent[];
+	component: ModalSubmitComponent;
 }
 
 /**
