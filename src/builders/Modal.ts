@@ -5,12 +5,9 @@ import {
 	ComponentType,
 	type TextInputStyle,
 } from '../types';
+import { fromComponent } from '.';
 import { BaseComponentBuilder, type OptionValuesLength } from './Base';
-import { fromComponent, TextDisplay } from './index';
-import { Label } from './Label';
-import type { ModalSubmitCallback } from './types';
-
-export type ModalBuilderComponents = Label | TextDisplay;
+import type { ModalBuilderComponents, ModalSubmitCallback } from './types';
 
 /**
  * Represents a modal for user interactions.
