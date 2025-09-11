@@ -1,7 +1,7 @@
 import type { MakeRequired } from '../../../common';
 import type { RESTPostAPIWebhookWithTokenJSONBody } from '../../index';
 
-import type { APILabelComponent, MessageFlags } from '../index';
+import type { APILabelComponent, APITextDisplayComponent, MessageFlags } from '../index';
 import type { APIApplicationCommandOptionChoice } from './applicationCommands';
 
 /**
@@ -127,7 +127,7 @@ export interface APIModalInteractionResponseCallbackData {
 	/**
 	 * Between 1 and 5 (inclusive) components that make up the modal
 	 */
-	components: APILabelComponent[];
+	components: (APILabelComponent | APITextDisplayComponent)[];
 }
 
 /**

@@ -33,7 +33,7 @@ export type ButtonLink = Omit<Button, 'setCustomId'>;
 export type ButtonID = Omit<Button, 'setURL'>;
 
 export type MessageBuilderComponents = Exclude<TopLevelBuilders, Label>;
-export type ModalBuilderComponents = Label;
+export type ModalBuilderComponents = Label | TextDisplay;
 export type ActionBuilderComponents = Button | BuilderSelectMenus;
 
 export type BuilderComponents =

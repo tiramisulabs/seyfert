@@ -595,7 +595,7 @@ export interface APILabelComponent {
 	/** An optional description textfor the label */
 	description?: string;
 	/** 	The component within the label */
-	component: APITextInputComponent | APIStringSelectComponent;
+	component: APITextInputComponent | APISelectMenuComponent;
 }
 
 /**

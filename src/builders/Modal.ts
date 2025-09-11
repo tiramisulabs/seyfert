@@ -6,9 +6,11 @@ import {
 	type TextInputStyle,
 } from '../types';
 import { BaseComponentBuilder, type OptionValuesLength } from './Base';
-import { fromComponent } from './index';
+import { fromComponent, TextDisplay } from './index';
 import { Label } from './Label';
 import type { ModalSubmitCallback } from './types';
+
+export type ModalBuilderComponents = Label | TextDisplay;
 
 /**
  * Represents a modal for user interactions.
@@ -28,14 +30,14 @@ import type { ModalSubmitCallback } from './types';
 export class Modal {
 	/** @internal */
 	__exec?: ModalSubmitCallback;
-	components: Label[] = [];
+	components: ModalBuilderComponents[] = [];
 
 	/**
 	 * Creates a new Modal instance.
 	 * @param data - Optional data for the modal.
 	 */
 	constructor(public data: Partial<APIModalInteractionResponseCallbackData> = {}) {
-		this.components = this.components.concat((data.components?.map(fromComponent) as Label[]) ?? []);
+		this.components = this.components.concat((data.components?.map(fromComponent) as ModalBuilderComponents[]) ?? []);
 	}
 
 	/**
@@ -43,7 +45,7 @@ export class Modal {
 	 * @param components - Components to be added to the modal.
 	 * @returns The current Modal instance.
 	 */
-	addComponents(...components: RestOrArray<Label>): this {
+	addComponents(...components: RestOrArray<ModalBuilderComponents>): this {
 		this.components = this.components.concat(components.flat());
 		return this;
 	}
@@ -53,7 +55,7 @@ export class Modal {
 	 * @param component - The components to set into the modal.
 	 * @returns The current Modal instance.
 	 */
-	setComponents(component: Label[]): this {
+	setComponents(component: ModalBuilderComponents[]): this {
 		this.components = [...component];
 		return this;
 	}

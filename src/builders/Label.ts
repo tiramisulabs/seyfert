@@ -2,14 +2,16 @@ import { type APILabelComponent, ComponentType } from '../types';
 import { fromComponent } from '.';
 import { BaseComponentBuilder } from './Base';
 import type { TextInput } from './Modal';
-import type { StringSelectMenu } from './SelectMenu';
+import type { BuilderSelectMenus } from './SelectMenu';
+
+export type LabelBuilderComponents = TextInput | BuilderSelectMenus;
 
 export class Label extends BaseComponentBuilder<APILabelComponent> {
 	constructor({ component, ...data }: Partial<APILabelComponent> = {}) {
 		super({ type: ComponentType.Label, ...data });
-		if (component) this.component = fromComponent(component) as TextInput | StringSelectMenu;
+		if (component) this.component = fromComponent(component) as LabelBuilderComponents;
 	}
-	component?: TextInput | StringSelectMenu;
+	component?: LabelBuilderComponents;
 
 	setLabel(label: string): this {
 		this.data.label = label;
@@ -21,7 +23,7 @@ export class Label extends BaseComponentBuilder<APILabelComponent> {
 		return this;
 	}
 
-	setComponent(component: TextInput | StringSelectMenu): this {
+	setComponent(component: LabelBuilderComponents): this {
 		this.component = component;
 		return this;
 	}
