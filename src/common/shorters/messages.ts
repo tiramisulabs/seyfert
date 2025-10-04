@@ -92,7 +92,9 @@ export class MessageShorter extends BaseShorter {
 			if (message) return message;
 		}
 
-		return this.client.proxy.channels(channelId).messages(messageId).get();
+		const message = await this.client.proxy.channels(channelId).messages(messageId).get();
+		await this.client.cache.messages?.set(CacheFrom.Rest, message.id, message.channel_id, message);
+		return message;
 	}
 
 	async fetch(messageId: string, channelId: string, force = false): Promise<MessageStructure> {
