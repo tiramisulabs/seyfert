@@ -11,6 +11,7 @@ import {
 	FormattingPatterns,
 	type RESTGetAPIGuildMembersQuery,
 	type RESTGetAPIGuildMembersSearchQuery,
+	RESTPatchAPICurrentGuildMemberJSONBody,
 	type RESTPatchAPIGuildMemberJSONBody,
 	type RESTPutAPIGuildBanJSONBody,
 	type RESTPutAPIGuildMemberJSONBody,
@@ -110,7 +111,7 @@ export class MemberShorter extends BaseShorter {
 	async edit(
 		guildId: string,
 		memberId: string,
-		body: RESTPatchAPIGuildMemberJSONBody | { nick?: string | null },
+		body: RESTPatchAPIGuildMemberJSONBody | RESTPatchAPICurrentGuildMemberJSONBody,
 		reason?: string,
 	): Promise<GuildMemberStructure> {
 		memberId = memberId === this.client.botId && 'nick' in body ? '@me' : memberId;
