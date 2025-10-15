@@ -7,6 +7,7 @@ import type { ActionRow } from './ActionRow';
 import type { Button } from './Button';
 import type { Container } from './Container';
 import type { File } from './File';
+import { FileUpload } from './FileUpload';
 import { Label } from './Label';
 import type { MediaGallery } from './MediaGallery';
 import type { TextInput } from './Modal';
@@ -48,7 +49,8 @@ export type BuilderComponents =
 	| MediaGallery
 	| File
 	| TextInput
-	| Label;
+	| Label
+	| FileUpload;
 
 export type TopLevelBuilders = Exclude<BuilderComponents, Thumbnail | TextInput | Button | BuilderSelectMenus>;
 

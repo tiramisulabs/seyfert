@@ -3,6 +3,7 @@ import { ActionRow } from './ActionRow';
 import { Button } from './Button';
 import { Container } from './Container';
 import { File } from './File';
+import { FileUpload } from './FileUpload';
 import { Label } from './Label';
 import { MediaGallery } from './MediaGallery';
 import { TextInput } from './Modal';
@@ -26,6 +27,7 @@ export * from './Button';
 export * from './Container';
 export * from './Embed';
 export * from './File';
+export * from './FileUpload';
 export * from './MediaGallery';
 export * from './Modal';
 export * from './Poll';
@@ -73,5 +75,7 @@ export function fromComponent(data: BuilderComponents | APIComponents): BuilderC
 			return new File(data);
 		case ComponentType.Label:
 			return new Label(data);
+		case ComponentType.FileUpload:
+			return new FileUpload(data);
 	}
 }

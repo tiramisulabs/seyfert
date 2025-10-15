@@ -4,6 +4,7 @@ import {
 	type ChannelSelectMenu,
 	type Container,
 	type File,
+	FileUpload,
 	fromComponent,
 	type MediaGallery,
 	type MentionableSelectMenu,
@@ -24,6 +25,7 @@ import {
 	type APIChannelSelectComponent,
 	type APIContainerComponent,
 	type APIFileComponent,
+	APIFileUploadComponent,
 	type APILabelComponent,
 	type APIMediaGalleryComponent,
 	type APIMentionableSelectComponent,
@@ -70,6 +72,7 @@ export interface APIComponentsMap {
 	[ComponentType.Separator]: APISeparatorComponent;
 	[ComponentType.TextDisplay]: APITextDisplayComponent;
 	[ComponentType.Label]: APILabelComponent;
+	[ComponentType.FileUpload]: APIFileUploadComponent;
 }
 
 export interface BuilderComponentsMap {
@@ -89,4 +92,5 @@ export interface BuilderComponentsMap {
 	[ComponentType.Separator]: Separator;
 	[ComponentType.TextDisplay]: TextDisplay;
 	[ComponentType.Label]: Label;
+	[ComponentType.FileUpload]: FileUpload;
 }

@@ -80,6 +80,10 @@ export enum ComponentType {
 	 * Label component
 	 */
 	Label,
+	/**
+	 * File upload component
+	 */
+	FileUpload,
 }
 
 /**
@@ -434,6 +438,7 @@ export type APIActionRowComponentTypes = APIMessageActionRowComponent | APIModal
 export type APIMessageActionRowComponent = APIButtonComponent | APISelectMenuComponent;
 
 export type APIComponents =
+	| APIFileUploadComponent
 	| APIMessageActionRowComponent
 	| APIModalActionRowComponent
 	| APIContainerComponent
@@ -595,7 +600,25 @@ export interface APILabelComponent {
 	/** An optional description textfor the label */
 	description?: string;
 	/** 	The component within the label */
-	component: APITextInputComponent | APISelectMenuComponent;
+	component: APITextInputComponent | APISelectMenuComponent | APIFileUploadComponent;
+}
+
+/**
+ * https://discord.com/developers/docs/components/reference#file-upload
+ */
+export interface APIFileUploadComponent {
+	/** 19 for file upload */
+	type: ComponentType.FileUpload;
+	/** Optional identifier for component */
+	id?: string;
+	/** ID for the file upload; max 100 characters */
+	custom_id: string;
+	/** Minimum number of items that must be uploaded (defaults to 1); min 0, max 10 */
+	min_values?: number;
+	/** Maximum number of items that can be uploaded (defaults to 1); min 0, max 10 */
+	max_values?: number;
+	/** Whether the file upload is required (defaults to false) */
+	required?: boolean;
 }
 
 /**
