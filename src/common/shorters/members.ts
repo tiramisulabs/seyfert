@@ -11,7 +11,7 @@ import {
 	FormattingPatterns,
 	type RESTGetAPIGuildMembersQuery,
 	type RESTGetAPIGuildMembersSearchQuery,
-	RESTPatchAPICurrentGuildMemberJSONBody,
+	type RESTPatchAPICurrentGuildMemberJSONBody,
 	type RESTPatchAPIGuildMemberJSONBody,
 	type RESTPutAPIGuildBanJSONBody,
 	type RESTPutAPIGuildMemberJSONBody,
