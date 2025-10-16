@@ -192,11 +192,15 @@ export class BaseInteraction<
 		};
 
 		if (Array.isArray(body.attachments)) {
-			payload.attachments =
-				body.attachments?.map((x, i) => ({
+			payload.attachments = body.attachments.map((x, i) => {
+				if (x instanceof Attachment) {
+					return x.toJSON();
+				}
+				return {
 					id: x.id ?? i.toString(),
 					...resolveAttachment(x),
-				})) ?? undefined;
+				};
+			});
 		} else if (files?.length) {
 			payload.attachments = files?.map(({ filename }, i) => ({
 				id: i.toString(),
@@ -881,16 +885,16 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 			const attachments = this.data.resolved?.attachments;
 			if (attachments) {
 				return Object.values(attachments).map(
-					x => 
+					x =>
 						new Attachment(this.client, {
 							...x,
-							proxy_url: x.url
-						})
-				)
+							proxy_url: x.url,
+						}),
+				);
 			}
 		}
 		return undefined;
-	};
+	}
 
 	isModal(): this is ModalSubmitInteraction {
 		return true;
