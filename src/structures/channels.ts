@@ -1,5 +1,5 @@
 import { Collection, Formatter, type RawFile, type ReturnCache } from '..';
-import { Embed, PollBuilder, resolveAttachment } from '../builders';
+import { Attachment, Embed, PollBuilder, resolveAttachment } from '../builders';
 import type { Overwrites } from '../cache/resources/overwrites';
 import {
 	type BaseChannelStructure,
@@ -361,10 +361,15 @@ export class MessagesMethods extends DiscordBase {
 
 		if ('attachments' in body) {
 			payload.attachments =
-				body.attachments?.map((x, i) => ({
-					id: i.toString(),
-					...resolveAttachment(x),
-				})) ?? undefined;
+				body.attachments?.map((x, i) => {
+					if (x instanceof Attachment) {
+						return x.toJSON();
+					}
+					return {
+						id: i.toString(),
+						...resolveAttachment(x),
+					};
+				}) ?? undefined;
 		} else if (files?.length) {
 			payload.attachments = files?.map(({ filename }, i) => ({
 				id: i.toString(),

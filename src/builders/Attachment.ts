@@ -33,6 +33,10 @@ export class Attachment extends Base {
 		super(client);
 		this.__patchThis(data);
 	}
+
+	toJSON(): APIAttachment {
+		return { ...this.data };
+	}
 }
 
 export class AttachmentBuilder {
