@@ -874,21 +874,24 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 		return value;
 	}
 
-	getAttachmentsValue(): Attachment[] | undefined {
-		if (!this.data.resolved.attachments) return;
-		const values = Object.values(this.data.resolved.attachments);
-		
-		return values.map((value) => {
-			const data: APIAttachment = {
-				...value,
-				proxy_url: value.proxyUrl,
-				duration_secs: value.durationSecs,
-				content_type: value.contentType
+	getFiles(customId: string, required: true): Attachment[];
+	getFiles(customId: string, required?: false): Attachment[] | undefined;
+	getFiles(customId: string, required?: boolean): Attachment[] | undefined {
+		const value = this.getInputValue(customId, required as never);
+		if (value) {
+			const attachments = this.data.resolved?.attachments;
+			if (attachments) {
+				return Object.values(attachments).map(
+					x => 
+						new Attachment(this.client, {
+							...x,
+							proxy_url: x.url
+						})
+				)
 			}
-
-			return new Attachment(this.client, data);
-		});
-	}
+		}
+		return undefined;
+	};
 
 	isModal(): this is ModalSubmitInteraction {
 		return true;
