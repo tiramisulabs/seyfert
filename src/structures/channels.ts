@@ -363,7 +363,12 @@ export class MessagesMethods extends DiscordBase {
 			payload.attachments =
 				body.attachments?.map((x, i) => {
 					if (x instanceof Attachment) {
-						return x.toJSON();
+						return {
+							id: x.id,
+							title: x.title,
+							description: x.description,
+							filename: x.filename,
+						};
 					}
 					return {
 						id: i.toString(),

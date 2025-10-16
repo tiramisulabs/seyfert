@@ -41,7 +41,7 @@ export interface APIModalSubmission {
 		/**
 		 * A map of attachments
 		 */
-		attachments: Record<Snowflake, Omit<APIAttachment, 'duration_secs' | 'waveform'>>
+		attachments: Record<Snowflake, Omit<APIAttachment, 'duration_secs' | 'waveform'>>;
 	};
 }
 

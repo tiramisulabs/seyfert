@@ -194,7 +194,12 @@ export class BaseInteraction<
 		if (Array.isArray(body.attachments)) {
 			payload.attachments = body.attachments.map((x, i) => {
 				if (x instanceof Attachment) {
-					return x.toJSON();
+					return {
+						id: x.id ?? i.toString(),
+						title: x.title,
+						description: x.description,
+						filename: x.filename,
+					};
 				}
 				return {
 					id: x.id ?? i.toString(),
