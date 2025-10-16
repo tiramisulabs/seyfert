@@ -26,6 +26,7 @@ export * from './Base';
 export * from './Button';
 export * from './Container';
 export * from './Embed';
+export * from "./Label";
 export * from './File';
 export * from './FileUpload';
 export * from './MediaGallery';

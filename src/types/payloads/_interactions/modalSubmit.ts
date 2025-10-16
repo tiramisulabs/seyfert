@@ -3,6 +3,7 @@ import type {
 	APIBaseInteraction,
 	APIDMInteractionWrapper,
 	APIGuildInteractionWrapper,
+	APIInteractionDataResolved,
 	APIModalActionRowComponent,
 	ComponentType,
 	InteractionType,
@@ -32,6 +33,7 @@ export interface APIModalSubmission {
 	 * A list of child components
 	 */
 	components: ModalSubmitActionRowComponent[];
+	resolved: Pick<APIInteractionDataResolved, "attachments">;
 }
 
 /**
