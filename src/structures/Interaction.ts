@@ -33,7 +33,6 @@ import { mix } from '../deps/mixer';
 import {
 	type APIApplicationCommandAutocompleteInteraction,
 	type APIApplicationCommandInteraction,
-	type APIAttachment,
 	type APIBaseInteraction,
 	type APIChatInputApplicationCommandInteraction,
 	type APIChatInputApplicationCommandInteractionData,
