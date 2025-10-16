@@ -1,5 +1,7 @@
+import { Snowflake } from '../..';
 import type {
 	APIActionRowComponent,
+	APIAttachment,
 	APIBaseInteraction,
 	APIDMInteractionWrapper,
 	APIGuildInteractionWrapper,
@@ -32,6 +34,15 @@ export interface APIModalSubmission {
 	 * A list of child components
 	 */
 	components: ModalSubmitActionRowComponent[];
+	/**
+	 * Resolved data structure
+	 */
+	resolved?: {
+		/**
+		 * A map of attachments
+		 */
+		attachments: Record<Snowflake, Omit<APIAttachment, 'duration_secs' | 'waveform'>>
+	};
 }
 
 /**

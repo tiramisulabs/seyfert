@@ -1,5 +1,5 @@
 import type { RawFile } from '../api';
-import { ActionRow, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
+import { ActionRow, Attachment, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
 import { Label } from '../builders/Label';
 import type { ReturnCache } from '../cache';
 import {
@@ -33,6 +33,7 @@ import { mix } from '../deps/mixer';
 import {
 	type APIApplicationCommandAutocompleteInteraction,
 	type APIApplicationCommandInteraction,
+	type APIAttachment,
 	type APIBaseInteraction,
 	type APIChatInputApplicationCommandInteraction,
 	type APIChatInputApplicationCommandInteractionData,
@@ -872,6 +873,25 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 		if ((!value || value.length === 0) && required) throw new Error(`${customId} component doesn't have a value`);
 		return value;
 	}
+
+	getFiles(customId: string, required: true): Attachment[];
+	getFiles(customId: string, required?: false): Attachment[] | undefined;
+	getFiles(customId: string, required?: boolean): Attachment[] | undefined {
+		const value = this.getInputValue(customId, required as never);
+		if (value) {
+			const attachments = this.data.resolved?.attachments;
+			if (attachments) {
+				return Object.values(attachments).map(
+					x => 
+						new Attachment(this.client, {
+							...x,
+							proxy_url: x.url
+						})
+				)
+			}
+		}
+		return undefined;
+	};
 
 	isModal(): this is ModalSubmitInteraction {
 		return true;

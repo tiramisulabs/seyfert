@@ -28,6 +28,7 @@ export * from './Container';
 export * from './Embed';
 export * from './File';
 export * from './FileUpload';
+export * from './Label';
 export * from './MediaGallery';
 export * from './Modal';
 export * from './Poll';
