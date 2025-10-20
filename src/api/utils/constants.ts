@@ -1,4 +1,4 @@
-export const DefaultUserAgent = 'DiscordBot (https://seyfert.dev, v3.2.5)';
+export const DefaultUserAgent = 'DiscordBot (https://seyfert.dev, v3.2.5)' as const;
 export const ALLOWED_EXTENSIONS = ['webp', 'png', 'jpg', 'jpeg', 'gif'] as const;
 export const ALLOWED_STICKER_EXTENSIONS = ['png', 'json', 'gif'] as const;
 export const ALLOWED_SIZES = [16, 32, 64, 100, 128, 256, 512, 1_024, 2_048, 4_096] as const;

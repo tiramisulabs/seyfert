@@ -24,9 +24,12 @@ export type ComponentOnErrorCallback<
 	T extends ComponentInteraction | StringSelectMenuInteraction = ComponentInteraction | StringSelectMenuInteraction,
 > = (interaction: T, error: unknown, stop: ComponentStopCallback, refresh: ComponentRefreshCallback) => any;
 export type ComponentFilterCallback<T = ComponentInteraction> = (interaction: T) => any;
-export type ComponentStopCallback = (
+export type ComponentOnStopCallback = (
 	reason: 'messageDelete' | 'channelDelete' | 'guildDelete' | 'idle' | 'timeout' | (string & {}) | undefined,
 	refresh: ComponentRefreshCallback,
+) => any;
+export type ComponentStopCallback = (
+	reason: 'messageDelete' | 'channelDelete' | 'guildDelete' | 'idle' | 'timeout' | (string & {}) | undefined,
 ) => any;
 export type ComponentRefreshCallback = () => any;
 export type ModalSubmitCallback<T = ModalSubmitInteraction> = (interaction: T) => any;
@@ -60,6 +63,6 @@ export interface ListenerOptions {
 	idle?: number;
 	filter?: ComponentFilterCallback;
 	onPass?: ComponentFilterCallback;
-	onStop?: ComponentStopCallback;
+	onStop?: ComponentOnStopCallback;
 	onError?: ComponentOnErrorCallback;
 }

@@ -1,4 +1,4 @@
-import type {
+import {
 	ComponentCallback,
 	ComponentOnErrorCallback,
 	ComponentRefreshCallback,
