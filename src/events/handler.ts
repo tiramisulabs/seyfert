@@ -15,7 +15,9 @@ import * as RawEvents from '../events/hooks';
 import { type APIThreadChannel, ChannelType, type GatewayDispatchPayload } from '../types';
 import type { ClientEvent, ClientNameEvents, CustomEvents, CustomEventsKeys, EventContext } from './event';
 
-export type EventValue = MakeRequired<ClientEvent, '__filePath'> & { fired?: boolean };
+export type EventValue = MakeRequired<ClientEvent, '__filePath'> & {
+	fired?: boolean;
+};
 export type GatewayEvents = Uppercase<SnakeCase<keyof ClientEvents>>;
 
 export type ResolveEventParams<T extends ClientNameEvents | CustomEventsKeys | GatewayEvents> =
@@ -74,7 +76,10 @@ export class EventHandler extends BaseHandler {
 	async load(eventsDir: string) {
 		const paths = await this.loadFilesK<{ file: ClientEvent }>(await this.getFiles(eventsDir));
 
-		for (const { events, file } of paths.map(x => ({ events: this.onFile(x.file), file: x }))) {
+		for (const { events, file } of paths.map(x => ({
+			events: this.onFile(x.file),
+			file: x,
+		}))) {
 			if (!events) continue;
 			for (const i of events) {
 				const instance = this.callback(i);
@@ -215,7 +220,7 @@ export class EventHandler extends BaseHandler {
 				return this.client.collectors.run(name, args, this.client);
 			}
 			Event.fired = true;
-			this.logger.debug(`executed a custom event [${name}]`, Event.data.once ? 'once' : '');
+			this.client.debugger?.debug(`executed a custom event [${name}]`, Event.data.once ? 'once' : '');
 
 			await Promise.all([
 				(Event.run as any)(...args, this.client),
