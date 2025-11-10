@@ -21,13 +21,13 @@
 	"author": "MARCROCK22",
 	"license": "MIT",
 	"devDependencies": {
-		"@biomejs/biome": "2.2.0",
-		"@changesets/cli": "^2.29.6",
+		"@biomejs/biome": "2.3.4",
+		"@changesets/cli": "^2.29.7",
 		"@commitlint/cli": "^19.8.1",
 		"@commitlint/config-conventional": "^19.8.1",
-		"@types/node": "^24.3.0",
+		"@types/node": "^24.10.0",
 		"husky": "^9.1.7",
-		"typescript": "^5.9.2",
+		"typescript": "^5.9.3",
 		"vitest": "^3.2.4"
 	},
 	"homepage": "https://seyfert.dev",

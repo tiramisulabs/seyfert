@@ -1,7 +1,7 @@
 import { type APILabelComponent, ComponentType } from '../types';
 import { fromComponent } from '.';
 import { BaseComponentBuilder } from './Base';
-import { FileUpload } from './FileUpload';
+import type { FileUpload } from './FileUpload';
 import type { TextInput } from './Modal';
 import type { BuilderSelectMenus } from './SelectMenu';
 
