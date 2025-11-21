@@ -72,8 +72,7 @@ export class ThreadShorter extends BaseShorter {
 	}
 
 	async lock(threadId: string, locked = true, reason?: string): Promise<ThreadChannelStructure> {
-		const x = await this.edit(threadId, { locked }, reason);
-		return channelFrom(x, this.client) as ThreadChannelStructure;
+		return this.edit(threadId, { locked }, reason);
 	}
 
 	async edit(threadId: string, body: RESTPatchAPIChannelJSONBody, reason?: string): Promise<ThreadChannelStructure> {
