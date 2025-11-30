@@ -14,15 +14,33 @@ export interface ComponentCommand {
 export abstract class ComponentCommand {
 	type = InteractionCommandType.COMPONENT;
 	abstract componentType: keyof ContextComponentCommandInteractionMap;
-	customId?: string | RegExp;
+	customId?: string | RegExp | string[] | RegExp[];
 	filter?(context: ComponentContext<typeof this.componentType>): Promise<boolean> | boolean;
 	abstract run(context: ComponentContext<typeof this.componentType>): any;
 
 	/** @internal */
 	_filter(context: ComponentContext) {
 		if (this.customId) {
-			const matches =
-				typeof this.customId === 'string' ? this.customId === context.customId : context.customId.match(this.customId);
+			let matches = false;
+			if (typeof this.customId === 'string') {
+				matches = this.customId === context.customId;
+			} else if (this.customId instanceof RegExp) {
+				matches = !!context.customId.match(this.customId);
+			} else if (Array.isArray(this.customId)) {
+				for (const id of this.customId) {
+					if (typeof id === 'string') {
+						if (id === context.customId) {
+							matches = true;
+							break;
+						}
+					} else {
+						if (context.customId.match(id)) {
+							matches = true;
+							break;
+						}
+					}
+				}
+			}
 			if (!matches) return false;
 		}
 		if (this.filter) return this.filter(context);
