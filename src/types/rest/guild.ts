@@ -739,6 +739,11 @@ export type RESTPatchAPIGuildRoleResult = APIRole;
 export type RESTDeleteAPIGuildRoleResult = undefined;
 
 /**
+ * https://discord.com/developers/docs/resources/guild#get-guild-role-member-counts
+ */
+export type RESTGetAPIGuildRoleMemberCountsResult = Record<string, number>;
+
+/**
  * https://discord.com/developers/docs/resources/guild#get-guild-prune-count
  */
 export interface RESTGetAPIGuildPruneCountQuery {

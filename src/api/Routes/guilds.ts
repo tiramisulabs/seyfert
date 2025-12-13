@@ -35,6 +35,7 @@ import type {
 	RESTGetAPIGuildPruneCountResult,
 	RESTGetAPIGuildQuery,
 	RESTGetAPIGuildResult,
+	RESTGetAPIGuildRoleMemberCountsResult,
 	RESTGetAPIGuildRoleResult,
 	RESTGetAPIGuildRolesResult,
 	RESTGetAPIGuildScheduledEventQuery,
@@ -210,6 +211,9 @@ export interface GuildRoutes {
 					get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildRoleResult>;
 					patch(args: RestArguments<RESTPatchAPIGuildRoleJSONBody>): Promise<RESTPatchAPIGuildRoleResult>;
 					delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIGuildRoleResult>;
+				};
+				'member-counts': {
+					get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildRoleMemberCountsResult>;
 				};
 			};
 			bans: {

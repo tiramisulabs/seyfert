@@ -2,6 +2,7 @@ import { CacheFrom } from '../../cache';
 import { type GuildRoleStructure, Transformers } from '../../client/transformers';
 import type {
 	APIRole,
+	RESTGetAPIGuildRoleMemberCountsResult,
 	RESTPatchAPIGuildRoleJSONBody,
 	RESTPatchAPIGuildRolePositionsJSONBody,
 	RESTPostAPIGuildRoleJSONBody,
@@ -95,6 +96,15 @@ export class RoleShorter extends BaseShorter {
 	async delete(guildId: string, roleId: string, reason?: string) {
 		await this.client.proxy.guilds(guildId).roles(roleId).delete({ reason });
 		this.client.cache.roles?.removeIfNI('Guilds', roleId, guildId);
+	}
+
+	/**
+	 * Returns a map of role IDs to the number of members with the role. Does not include the @everyone role.
+	 * @param guildId The ID of the guild.
+	 * @returns A Promise that resolves to an object mapping role IDs to member counts.
+	 */
+	memberCounts(guildId: string): Promise<RESTGetAPIGuildRoleMemberCountsResult> {
+		return this.client.proxy.guilds(guildId).roles['member-counts'].get();
 	}
 
 	/**
