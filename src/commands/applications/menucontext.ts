@@ -73,7 +73,7 @@ export class MenuCommandContext<
 	get fullCommandName() {
 		return this.command.name;
 	}
-	
+
 	get deferred() {
 		return !!this.interaction.deferred;
 	}
