@@ -26,9 +26,9 @@ export interface CommandContext<T extends OptionsRecord = {}, M extends keyof Re
 	extends BaseContext,
 		ExtendContext {
 	/**@internal */
-	__edited?: true;
+	__edited?: boolean;
 	/**@internal */
-	__deferred?: true;
+	__deferred?: boolean;
 }
 
 export class CommandContext<
@@ -64,6 +64,10 @@ export class CommandContext<
 
 	get fullCommandName() {
 		return this.resolver.fullCommandName;
+	}
+
+	get deferred() {
+		return !!this.__deferred;
 	}
 
 	async write<WR extends boolean = false>(
