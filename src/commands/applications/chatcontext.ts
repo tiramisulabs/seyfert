@@ -26,9 +26,9 @@ export interface CommandContext<T extends OptionsRecord = {}, M extends keyof Re
 	extends BaseContext,
 		ExtendContext {
 	/**@internal */
-	__edited?: boolean;
+	__edited?: true;
 	/**@internal */
-	__deferred?: boolean;
+	__deferred?: true;
 }
 
 export class CommandContext<
