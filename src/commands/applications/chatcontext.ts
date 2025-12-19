@@ -66,6 +66,10 @@ export class CommandContext<
 		return this.resolver.fullCommandName;
 	}
 
+	get deferred() {
+		return !!this.__deferred;
+	}
+
 	async write<WR extends boolean = false>(
 		body: InteractionCreateBodyRequest,
 		withResponse?: WR,

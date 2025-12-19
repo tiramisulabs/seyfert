@@ -103,6 +103,7 @@ export class BaseInteraction<
 	channel?: AllChannels;
 	message?: MessageStructure;
 	replied?: Promise<boolean | RESTPostAPIInteractionCallbackResult | undefined> | boolean;
+	deferred?: boolean;
 	appPermissions: PermissionsBitField;
 	entitlements: EntitlementStructure[];
 
@@ -256,6 +257,7 @@ export class BaseInteraction<
 		flags?: MessageFlags,
 		withResponse?: WR,
 	): Promise<When<WR, WebhookMessageStructure, undefined>> {
+		this.deferred = true;
 		return this.reply(
 			{
 				type: InteractionResponseType.DeferredChannelMessageWithSource,
