@@ -74,6 +74,10 @@ export class MenuCommandContext<
 		return this.command.name;
 	}
 
+	get deferred() {
+		return !!this.interaction.deferred;
+	}
+
 	write<WR extends boolean = false>(
 		body: InteractionCreateBodyRequest,
 		withResponse?: WR,
