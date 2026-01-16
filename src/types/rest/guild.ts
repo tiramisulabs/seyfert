@@ -17,6 +17,7 @@ import type {
 	APIGuildWidget,
 	APIGuildWidgetSettings,
 	APIRole,
+	APIRoleColors,
 	APIThreadList,
 	APIVoiceRegion,
 	GuildDefaultMessageNotifications,
@@ -649,6 +650,10 @@ export interface RESTPostAPIGuildRoleJSONBody {
 	 */
 	color?: number | null | undefined;
 	/**
+	 * The colors of the role.
+	 */
+	colors?: APIRoleColors;
+	/**
 	 * Whether the role should be displayed separately in the sidebar
 	 *
 	 * @default false
@@ -710,6 +715,10 @@ export interface RESTPatchAPIGuildRoleJSONBody {
 	 * RGB color value
 	 */
 	color?: number | null | undefined;
+	/**
+	 * The colors of the role.
+	 */
+	colors?: APIRoleColors;
 	/**
 	 * Whether the role should be displayed separately in the sidebar
 	 */
