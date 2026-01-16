@@ -21,10 +21,10 @@ export class InvitesShorter extends BaseShorter {
 		return this.client.proxy.invites(code)['target-users'].get();
 	}
 
-	updateTargetUsers(code: string, targetUsers: string[]) {
+	updateTargetUsers(code: string, targetIds: string[]) {
 		return this.client.proxy.invites(code)['target-users'].put({
 			body: {
-				target_users_file: new Blob([targetUsers.join('\n')], { type: 'text/csv' }),
+				target_users_file: new Blob([`users\n${targetIds.join('\n')}`], { type: 'text/csv' }),
 			},
 			appendToFormData: true,
 		});
