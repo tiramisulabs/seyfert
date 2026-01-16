@@ -558,7 +558,7 @@ export enum GuildFeature {
 	/**
 	 * Guild is able to set gradient colors to roles.
 	 */
-	EnhancedRoleColors = 'ENHANCED_ROLE_COLORS'
+	EnhancedRoleColors = 'ENHANCED_ROLE_COLORS',
 }
 
 /**

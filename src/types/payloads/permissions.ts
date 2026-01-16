@@ -71,7 +71,7 @@ export interface APIRole {
 export interface APIRoleColors {
 	/**
 	 *  The primary color for the role
-	 * 
+	 *
 	 * @default 0
 	 */
 	primary_color: number;
