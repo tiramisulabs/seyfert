@@ -17,6 +17,26 @@ export class InvitesShorter extends BaseShorter {
 			.then(x => toCamelCase(x));
 	}
 
+	getTargetUsers(code: string) {
+		return this.client.proxy.invites(code)['target-users'].get();
+	}
+
+	updateTargetUsers(code: string, targetUsers: string[]) {
+		return this.client.proxy.invites(code)['target-users'].put({
+			body: {
+				target_users_file: new Blob([targetUsers.join('\n')], { type: 'text/csv' }),
+			},
+			appendToFormData: true,
+		});
+	}
+
+	jobStatus(code: string) {
+		return this.client.proxy
+			.invites(code)
+			['target-users']['job-status'].get()
+			.then(x => toCamelCase(x));
+	}
+
 	channels = {
 		create: ({ channelId, reason, ...body }: CreateInviteFromChannel) =>
 			this.client.proxy

@@ -564,6 +564,17 @@ export interface RESTPostAPIChannelInviteJSONBody {
 	 * - The application must have the `EMBEDDED` flag
 	 */
 	target_application_id?: Snowflake | undefined;
+	/**
+	 * A csv file with a single column of user IDs for all the users able to accept this invite
+	 * - Requires multipart/form-data as the content type with other parameters as form fields in the multipart body.
+	 * - Requires the MANAGE_GUILD permission.
+	 * - Uploading a file with invalid user IDs will result in a 400 with the invalid IDs described.
+	 */
+	target_users_file?: Blob | undefined;
+	/**
+	 * the role ID(s) for roles in the guild given to the users that accept this invite
+	 */
+	role_ids?: Snowflake[] | undefined;
 }
 
 /**
