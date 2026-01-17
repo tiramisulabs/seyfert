@@ -395,23 +395,19 @@ export class ApiHandler {
 		if (options.request.query) {
 			finalUrl += `?${new URLSearchParams(options.request.query)}`;
 		}
-		if (options.request.files?.length) {
+
+		if (options.request.files?.length || options.request.appendToFormData) {
 			const formData = new FormData();
 
-			for (const [index, file] of options.request.files.entries()) {
+			for (const [index, file] of options.request.files?.entries() ?? []) {
 				const fileKey = file.key ?? `files[${index}]`;
-
-				if (isBufferLike(file.data)) {
-					let data: Exclude<typeof file.data, Uint8Array | Uint8ClampedArray>;
-					if (Buffer.isBuffer(file.data) || file.data instanceof Uint8Array || file.data instanceof Uint8ClampedArray) {
-						data = toArrayBuffer(file.data);
-					} else {
-						data = file.data;
-					}
-					formData.append(fileKey, new Blob([data], { type: file.contentType }), file.filename);
-				} else {
-					formData.append(fileKey, new Blob([`${file.data}`], { type: file.contentType }), file.filename);
-				}
+				const blobContent = isBufferLike(file.data)
+					? file.data instanceof ArrayBuffer
+						? file.data
+						: toArrayBuffer(file.data)
+					: `${file.data}`;
+				const blob = new Blob([blobContent], { type: file.contentType });
+				formData.append(fileKey, blob, file.filename);
 			}
 
 			if (options.request.body) {
@@ -423,6 +419,7 @@ export class ApiHandler {
 					formData.append('payload_json', JSON.stringify(options.request.body));
 				}
 			}
+
 			data = formData;
 		} else if (options.request.body) {
 			options.headers['Content-Type'] = 'application/json';
