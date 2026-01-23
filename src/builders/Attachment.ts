@@ -266,4 +266,3 @@ export async function resolveImage(image: ImageResolvable): Promise<string> {
 	const file = await resolveAttachmentData(image.data, image.type);
 	return resolveBase64(file.data as Buffer);
 }
-
