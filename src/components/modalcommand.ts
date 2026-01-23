@@ -9,12 +9,16 @@ export interface ModalCommand {
 export abstract class ModalCommand {
 	type = InteractionCommandType.MODAL;
 	filter?(context: ModalContext): Promise<boolean> | boolean;
-	customId?: string;
+	customId?: string | RegExp;
 	abstract run(context: ModalContext): any;
 
 	/** @internal */
 	_filter(context: ModalContext) {
-		if (this.customId && this.customId !== context.customId) return false;
+		if (this.customId) {
+			const matches =
+				typeof this.customId === 'string' ? this.customId === context.customId : context.customId.match(this.customId);
+			if (!matches) return false;
+		}
 		if (this.filter) return this.filter(context);
 		return true;
 	}

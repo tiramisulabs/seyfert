@@ -17,6 +17,7 @@ import type {
 	APIGuildWidget,
 	APIGuildWidgetSettings,
 	APIRole,
+	APIRoleColors,
 	APIThreadList,
 	APIVoiceRegion,
 	GuildDefaultMessageNotifications,
@@ -649,6 +650,10 @@ export interface RESTPostAPIGuildRoleJSONBody {
 	 */
 	color?: number | null | undefined;
 	/**
+	 * The colors of the role.
+	 */
+	colors?: APIRoleColors;
+	/**
 	 * Whether the role should be displayed separately in the sidebar
 	 *
 	 * @default false
@@ -711,6 +716,10 @@ export interface RESTPatchAPIGuildRoleJSONBody {
 	 */
 	color?: number | null | undefined;
 	/**
+	 * The colors of the role.
+	 */
+	colors?: APIRoleColors;
+	/**
 	 * Whether the role should be displayed separately in the sidebar
 	 */
 	hoist?: boolean | null | undefined;
@@ -737,6 +746,11 @@ export type RESTPatchAPIGuildRoleResult = APIRole;
  * https://discord.com/developers/docs/resources/guild#delete-guild-role
  */
 export type RESTDeleteAPIGuildRoleResult = undefined;
+
+/**
+ * https://discord.com/developers/docs/resources/guild#get-guild-role-member-counts
+ */
+export type RESTGetAPIGuildRoleMemberCountsResult = Record<string, number>;
 
 /**
  * https://discord.com/developers/docs/resources/guild#get-guild-prune-count

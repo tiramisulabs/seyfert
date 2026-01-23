@@ -103,6 +103,7 @@ export class BaseInteraction<
 	channel?: AllChannels;
 	message?: MessageStructure;
 	replied?: Promise<boolean | RESTPostAPIInteractionCallbackResult | undefined> | boolean;
+	deferred?: boolean;
 	appPermissions: PermissionsBitField;
 	entitlements: EntitlementStructure[];
 
@@ -256,6 +257,7 @@ export class BaseInteraction<
 		flags?: MessageFlags,
 		withResponse?: WR,
 	): Promise<When<WR, WebhookMessageStructure, undefined>> {
+		this.deferred = true;
 		return this.reply(
 			{
 				type: InteractionResponseType.DeferredChannelMessageWithSource,
@@ -873,9 +875,9 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 	getInputValue(customId: string, required?: false): string | string[] | undefined;
 	getInputValue(customId: string, required?: boolean): string | string[] | undefined {
 		let value: string | string[] | undefined;
-		const get = this.components.find(x => x.component.customId === customId);
+		const get = this.components.find(x => x.component && x.component.customId === customId);
 		if (get) {
-			value = get.component.value ?? get.component.values;
+			value = get.component?.value ?? get.component?.values;
 		}
 
 		if ((!value || value.length === 0) && required) throw new Error(`${customId} component doesn't have a value`);

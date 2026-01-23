@@ -691,6 +691,18 @@ export const PermissionFlagsBits = {
 	 * Applies to channel types: Text, Voice, Stage
 	 */
 	UseExternalApps: 1n << 50n,
+	/**
+	 * Allows pinning and unpinning messages
+	 *
+	 * Applies to channel types: Text
+	 */
+	PinMessages: 1n << 51n,
+	/**
+	 * Allows bypassing slowmode restrictions
+	 *
+	 * Applies to channel types: Text, Voice, Stage
+	 */
+	BypassSlowmode: 1n << 52n,
 } as const;
 
 /**

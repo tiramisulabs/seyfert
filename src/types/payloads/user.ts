@@ -180,10 +180,6 @@ export enum UserFlags {
 	 */
 	DisablePremium = 1 << 21,
 	/**
-	 * User is an [Active Developer](https://support-dev.discord.com/hc/articles/10113997751447)
-	 */
-	ActiveDeveloper = 1 << 22,
-	/**
 	 * User's account has been [quarantined](https://support.discord.com/hc/articles/6461420677527) based on recent activity
 	 *
 	 * @unstable This user flag is currently not documented by Discord but has a known value which we will try to keep up to date.

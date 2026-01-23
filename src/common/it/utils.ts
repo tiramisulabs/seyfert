@@ -271,7 +271,7 @@ export function toCamelCase<Obj extends Record<string, any>>(target: Obj): Objec
 
 export const ReplaceRegex = {
 	camel: (s: string) => {
-		return s.toLowerCase().replace(/(_\S)/gi, a => a[1].toUpperCase());
+		return s.replace(/_([a-z0-9])/gi, (_, char) => char.toUpperCase());
 	},
 	snake: (s: string) => {
 		return s.replace(/[A-Z]/g, a => `_${a.toLowerCase()}`);

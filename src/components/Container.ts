@@ -10,7 +10,7 @@ export class ContainerComponent extends BaseComponent<ComponentType.Container> {
 	}
 
 	get components() {
-		return this.data.components;
+		return this._components;
 	}
 
 	get accentColor() {

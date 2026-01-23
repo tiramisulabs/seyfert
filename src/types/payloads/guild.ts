@@ -547,6 +547,18 @@ export enum GuildFeature {
 	 * Guild has enabled the welcome screen
 	 */
 	WelcomeScreenEnabled = 'WELCOME_SCREEN_ENABLED',
+	/**
+	 * Guild has access to guest invites.
+	 */
+	GuestsEnabled = 'GUESTS_ENABLED',
+	/**
+	 * Guild has access to set guild tags.
+	 */
+	GuildTags = 'GUILD_TAGS',
+	/**
+	 * Guild is able to set gradient colors to roles.
+	 */
+	EnhancedRoleColors = 'ENHANCED_ROLE_COLORS',
 }
 
 /**
