@@ -31,7 +31,7 @@ export class Attachment extends Base {
 		public data: APIAttachment,
 	) {
 		super(client);
-		this.__patchThis(data);
+		this.__patchThis({ ...data });
 	}
 
 	toJSON(): APIAttachment {
@@ -266,3 +266,4 @@ export async function resolveImage(image: ImageResolvable): Promise<string> {
 	const file = await resolveAttachmentData(image.data, image.type);
 	return resolveBase64(file.data as Buffer);
 }
+
