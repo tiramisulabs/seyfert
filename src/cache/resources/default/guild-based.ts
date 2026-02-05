@@ -77,7 +77,7 @@ export class GuildBasedResource<T = any, S = any> {
 			this.filter(x[1], x[0], guild, from),
 		) as [string, any][];
 
-		if (!keys.length) void fakePromise(undefined);
+		if (!keys.length) return fakePromise(undefined).then(() => {}) as void;
 
 		return fakePromise(this.adapter.bulkGet(keys.map(([key]) => this.hashGuildId(guild, key)))).then(oldDatas =>
 			fakePromise(
