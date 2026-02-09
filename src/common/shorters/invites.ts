@@ -17,6 +17,11 @@ export class InvitesShorter extends BaseShorter {
 			.then(x => toCamelCase(x));
 	}
 
+	/**
+	 * Returns a list of users that can accept this invite.
+	 * @param code  The invite code.
+	 * @returns The csv file as a string, with a single header user_id.
+	 */
 	getTargetUsers(code: string) {
 		return this.client.proxy.invites(code)['target-users'].get();
 	}
