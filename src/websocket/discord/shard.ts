@@ -362,8 +362,8 @@ export class Shard {
 								switch (packet.d.opcode) {
 									case GatewayOpcodes.RequestGuildMembers:
 										{
-											const { retry_after, metadata } = packet.d;
-											const nonce = metadata.nonce;
+											const { retry_after, meta } = packet.d;
+											const nonce = meta.nonce;
 											if (!nonce) {
 												this.options.handlePayload(this.id, packet);
 												return;

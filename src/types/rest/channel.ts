@@ -516,7 +516,9 @@ export type RESTPutAPIChannelPermissionResult = undefined;
 /**
  * https://discord.com/developers/docs/resources/channel#get-channel-invites
  */
-export type RESTGetAPIChannelInvitesResult = (APIExtendedInvite & { roles?: Pick<APIRole, "id" | "name" | "position" | "color" | "colors" | "icon" | "unicode_emoji">})[];
+export type RESTGetAPIChannelInvitesResult = (APIExtendedInvite & {
+	roles?: Pick<APIRole, 'id' | 'name' | 'position' | 'color' | 'colors' | 'icon' | 'unicode_emoji'>;
+})[];
 
 /**
  * https://discord.com/developers/docs/resources/channel#create-channel-invite

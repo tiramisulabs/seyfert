@@ -215,7 +215,7 @@ export interface GatewayRateLimitedDispatchData {
 	/**
 	 * Metadata for the event that was rate limited
 	 */
-	metadata: GatewayRateLimitedMetadata;
+	meta: GatewayRateLimitedMetadata;
 }
 
 /**
