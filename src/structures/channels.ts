@@ -32,6 +32,7 @@ import {
 	type MethodContext,
 	type ObjectToLower,
 	type StringToNumber,
+	ThreadOnlyCreateBodyRequest,
 	type ToClass,
 } from '../common';
 import { mix } from '../deps/mixer';
@@ -59,7 +60,6 @@ import {
 	type RESTPatchAPIGuildChannelPositionsJSONBody,
 	type RESTPostAPIChannelWebhookJSONBody,
 	type RESTPostAPIGuildChannelJSONBody,
-	type RESTPostAPIGuildForumThreadsJSONBody,
 	type SortOrderType,
 	type ThreadAutoArchiveDuration,
 	VideoQualityMode,
@@ -454,7 +454,7 @@ export class ThreadOnlyMethods extends DiscordBase {
 		return this.edit({ default_thread_rate_limit_per_user: rate }, reason);
 	}
 
-	thread(body: RESTPostAPIGuildForumThreadsJSONBody, reason?: string): Promise<ThreadChannelStructure> {
+	thread(body: ThreadOnlyCreateBodyRequest, reason?: string): Promise<ThreadChannelStructure> {
 		return this.client.channels.thread(this.id, body, reason);
 	}
 }

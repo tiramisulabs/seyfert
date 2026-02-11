@@ -699,7 +699,10 @@ export type RESTPostAPIGuildForumThreadsJSONBody = RESTPostAPIChannelMessagesThr
 	/**
 	 * The initial message of the thread
 	 */
-	message: RESTPostAPIChannelMessageJSONBody;
+	message: Pick<
+		RESTPostAPIChannelMessageJSONBody,
+		'content' | 'embeds' | 'components' | 'attachments' | 'flags' | 'sticker_ids' | 'allowed_mentions'
+	>;
 	/**
 	 * The IDs of the set of tags to apply to the thread; limited to 5
 	 */

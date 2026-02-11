@@ -9,12 +9,11 @@ import type {
 	RESTGetAPIChannelMessagesQuery,
 	RESTGetAPIChannelPinsQuery,
 	RESTPatchAPIChannelJSONBody,
-	RESTPostAPIChannelThreadsJSONBody,
-	RESTPostAPIGuildForumThreadsJSONBody,
 } from '../../types';
 import { type ChannelType, PermissionFlagsBits } from '../../types';
 import { MergeOptions } from '../it/utils';
 import type { MakeRequired } from '../types/util';
+import { ThreadCreateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
 
 export class ChannelShorter extends BaseShorter {
@@ -154,11 +153,7 @@ export class ChannelShorter extends BaseShorter {
 	 * @param reason The reason for unpinning the message.
 	 * @returns A promise that resolves when the thread is succesfully created.
 	 */
-	thread(
-		channelId: string,
-		body: RESTPostAPIChannelThreadsJSONBody | RESTPostAPIGuildForumThreadsJSONBody,
-		reason?: string,
-	): Promise<ThreadChannelStructure> {
+	async thread(channelId: string, body: ThreadCreateBodyRequest, reason?: string): Promise<ThreadChannelStructure> {
 		return this.client.threads.create(channelId, body, reason);
 	}
 

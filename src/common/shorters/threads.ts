@@ -1,7 +1,8 @@
-import { CacheFrom } from '../..';
+import { CacheFrom, resolveFiles } from '../..';
 import type { ThreadChannelStructure } from '../../client/transformers';
-import { channelFrom } from '../../structures';
+import { channelFrom, MessagesMethods } from '../../structures';
 import {
+	APIChannel,
 	type APIThreadChannel,
 	type APIThreadMember,
 	ChannelType,
@@ -9,10 +10,10 @@ import {
 	type RESTGetAPIChannelThreadsArchivedQuery,
 	type RESTPatchAPIChannelJSONBody,
 	type RESTPostAPIChannelMessagesThreadsJSONBody,
-	type RESTPostAPIChannelThreadsJSONBody,
 	type RESTPostAPIGuildForumThreadsJSONBody,
 } from '../../types';
 import type { MakeRequired, When } from '../types/util';
+import { ThreadCreateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
 
 export class ThreadShorter extends BaseShorter {
@@ -22,27 +23,39 @@ export class ThreadShorter extends BaseShorter {
 	 * @param reason The reason for unpinning the message.
 	 * @returns A promise that resolves when the thread is succesfully created.
 	 */
-	create(
-		channelId: string,
-		body: RESTPostAPIChannelThreadsJSONBody | RESTPostAPIGuildForumThreadsJSONBody,
-		reason?: string,
-	): Promise<ThreadChannelStructure> {
-		return (
-			this.client.proxy
-				.channels(channelId)
-				.threads.post({ body, reason })
-				// When testing this, discord returns the thread object, but in discord api types it does not.
-				.then(async thread => {
-					await this.client.cache.channels?.setIfNI(
-						CacheFrom.Rest,
-						'Guilds',
-						thread.id,
-						(thread as APIThreadChannel).guild_id!,
-						thread,
-					);
-					return channelFrom(thread, this.client) as ThreadChannelStructure;
-				})
+	async create(channelId: string, body: ThreadCreateBodyRequest, reason?: string): Promise<ThreadChannelStructure> {
+		let thread: APIChannel;
+		if ('message' in body) {
+			const { message, files, ...rest } = body;
+			const parsedFiles = files ? await resolveFiles(files) : undefined;
+
+			const transformedBody = MessagesMethods.transformMessageBody<RESTPostAPIGuildForumThreadsJSONBody['message']>(
+				body,
+				parsedFiles,
+				this.client,
+			);
+
+			thread = await this.client.proxy.channels(channelId).threads.post({
+				body: {
+					...rest,
+					message: transformedBody,
+				},
+				files: parsedFiles,
+				reason,
+			});
+		} else {
+			thread = await this.client.proxy.channels(channelId).threads.post({ body, reason });
+		}
+		// When testing this, discord returns the thread object, but in discord api types it does not.
+		await this.client.cache.channels?.setIfNI(
+			CacheFrom.Rest,
+			'Guilds',
+			thread.id,
+			(thread as APIThreadChannel).guild_id!,
+			thread,
 		);
+
+		return channelFrom(thread, this.client) as ThreadChannelStructure;
 	}
 
 	async fromMessage(

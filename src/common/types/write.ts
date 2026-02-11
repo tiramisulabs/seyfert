@@ -10,6 +10,8 @@ import type {
 	RESTPatchAPIChannelMessageJSONBody,
 	RESTPatchAPIWebhookWithTokenMessageJSONBody,
 	RESTPostAPIChannelMessageJSONBody,
+	RESTPostAPIChannelThreadsJSONBody,
+	RESTPostAPIGuildForumThreadsJSONBody,
 	RESTPostAPIWebhookWithTokenJSONBody,
 } from '../../types';
 
@@ -75,3 +77,15 @@ export type ModalCreateBodyRequest = APIModalInteractionResponse['data'] | Modal
 export interface ModalCreateOptions {
 	waitFor?: number;
 }
+
+export type ThreadOnlyCreateBodyRequest = OmitInsert<
+	RESTPostAPIGuildForumThreadsJSONBody,
+	'message',
+	{
+		message: Pick<MessageCreateBodyRequest, keyof RESTPostAPIGuildForumThreadsJSONBody['message']>;
+		files?: ResolverProps['files'];
+		name: string;
+	}
+>;
+
+export type ThreadCreateBodyRequest = ThreadOnlyCreateBodyRequest | RESTPostAPIChannelThreadsJSONBody;
