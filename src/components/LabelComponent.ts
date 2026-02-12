@@ -1,4 +1,4 @@
-import { APILabelComponent, ComponentType } from '../types';
+import type { APILabelComponent, ComponentType } from '../types';
 import { componentFactory } from '.';
 import { BaseComponent } from './BaseComponent';
 

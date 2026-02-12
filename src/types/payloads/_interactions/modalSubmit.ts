@@ -1,4 +1,5 @@
-import { Snowflake } from '../..';
+import type { Snowflake } from '../..';
+
 import type {
 	APIActionRowComponent,
 	APIAttachment,

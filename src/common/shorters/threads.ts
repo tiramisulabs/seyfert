@@ -2,7 +2,7 @@ import { CacheFrom, resolveFiles } from '../..';
 import type { ThreadChannelStructure } from '../../client/transformers';
 import { channelFrom, MessagesMethods } from '../../structures';
 import {
-	APIChannel,
+	type APIChannel,
 	type APIThreadChannel,
 	type APIThreadMember,
 	ChannelType,
@@ -13,7 +13,7 @@ import {
 	type RESTPostAPIGuildForumThreadsJSONBody,
 } from '../../types';
 import type { MakeRequired, When } from '../types/util';
-import { ThreadCreateBodyRequest } from '../types/write';
+import type { ThreadCreateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
 
 export class ThreadShorter extends BaseShorter {

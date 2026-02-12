@@ -7,7 +7,7 @@ import {
 	type PickPartial,
 	type WatcherPayload,
 	type WatcherSendToShard,
-	When,
+	type When,
 } from '../common';
 import { EventHandler } from '../events';
 import type { GatewayDispatchPayload, GatewayPresenceUpdateData } from '../types';

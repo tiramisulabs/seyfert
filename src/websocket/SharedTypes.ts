@@ -14,6 +14,7 @@ import type {
 	GatewayAutoModerationActionExecutionDispatchData,
 	GatewayChannelPinsUpdateDispatchData,
 	GatewayChannelUpdateDispatchData,
+	GatewayDispatchEvents,
 	GatewayEntitlementCreateDispatchData,
 	GatewayGuildBanAddDispatchData,
 	GatewayGuildBanRemoveDispatchData,
@@ -65,7 +66,6 @@ import type {
 	GatewayWebhooksUpdateDispatchData,
 	PresenceUpdateStatus,
 } from '../types';
-import { GatewayDispatchEvents } from '../types';
 import type { APISoundBoard } from '../types/payloads/soundboard';
 
 /** https://discord.com/developers/docs/topics/gateway-events#update-presence */

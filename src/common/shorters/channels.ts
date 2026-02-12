@@ -13,7 +13,7 @@ import type {
 import { type ChannelType, PermissionFlagsBits } from '../../types';
 import { MergeOptions } from '../it/utils';
 import type { MakeRequired } from '../types/util';
-import { ThreadCreateBodyRequest } from '../types/write';
+import type { ThreadCreateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
 
 export class ChannelShorter extends BaseShorter {

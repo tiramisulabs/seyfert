@@ -8,17 +8,17 @@ import {
 	type WebhookMessageStructure,
 } from '../../client/transformers';
 import {
-	InteractionCreateBodyRequest,
-	InteractionMessageUpdateBodyRequest,
-	MakeRequired,
-	MessageWebhookCreateBodyRequest,
-	ModalCreateBodyRequest,
-	ModalCreateOptions,
+	type InteractionCreateBodyRequest,
+	type InteractionMessageUpdateBodyRequest,
+	type MakeRequired,
+	type MessageWebhookCreateBodyRequest,
+	type ModalCreateBodyRequest,
+	type ModalCreateOptions,
 	toSnakeCase,
-	UnionToTuple,
-	When,
+	type UnionToTuple,
+	type When,
 } from '../../common';
-import {
+import type {
 	AllChannels,
 	MessageCommandInteraction,
 	ModalSubmitInteraction,

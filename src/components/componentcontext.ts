@@ -18,7 +18,7 @@ import type {
 } from '../client/transformers';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, RegisteredMiddlewares, UsingClient } from '../commands';
 import { BaseContext } from '../commands/basecontext';
-import {
+import type {
 	ComponentInteractionMessageUpdate,
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
@@ -29,7 +29,7 @@ import {
 	UnionToTuple,
 	When,
 } from '../common';
-import { ModalSubmitInteraction } from '../structures';
+import type { ModalSubmitInteraction } from '../structures';
 import { ComponentType, MessageFlags, type RESTGetAPIGuildQuery } from '../types';
 
 export interface ComponentContext<

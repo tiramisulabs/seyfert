@@ -32,7 +32,7 @@ import {
 	type MethodContext,
 	type ObjectToLower,
 	type StringToNumber,
-	ThreadOnlyCreateBodyRequest,
+	type ThreadOnlyCreateBodyRequest,
 	type ToClass,
 } from '../common';
 import { mix } from '../deps/mixer';

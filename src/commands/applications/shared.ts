@@ -12,7 +12,7 @@ import type {
 } from '../../client';
 import type { BaseClient } from '../../client/base';
 import type { IsStrictlyUndefined } from '../../common';
-import { ChannelType } from '../../types';
+import type { ChannelType } from '../../types';
 import type { RegisteredMiddlewares } from '../decorators';
 
 export type OKFunction<T> = (value: T) => void;

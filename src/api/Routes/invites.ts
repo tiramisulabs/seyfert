@@ -1,4 +1,4 @@
-import { MakeRequired } from '../../common';
+import type { MakeRequired } from '../../common';
 import type {
 	RESTDeleteAPIInviteResult,
 	RESTGetAPIInviteQuery,

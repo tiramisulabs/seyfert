@@ -22,7 +22,7 @@ import {
 	type MessageUpdateBodyRequest,
 	type MessageWebhookCreateBodyRequest,
 	type ModalCreateBodyRequest,
-	ModalCreateOptions,
+	type ModalCreateOptions,
 	type ObjectToLower,
 	type OmitInsert,
 	type ToClass,
