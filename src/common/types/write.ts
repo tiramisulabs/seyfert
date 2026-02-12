@@ -78,10 +78,11 @@ export interface ModalCreateOptions {
 	waitFor?: number;
 }
 
+// Absolute black magic, do not question it, just use it and be happy that it works.
+// I have no idea why other types explode but here works
+
 /**
- * At least one of the following properties must be provided: `content`, `embeds`, `components` or `files`.
- * Absolute black magic, do not question it, just use it and be happy that it works.
- * I have no idea why other types explode but here works
+ * At least one of the following properties must be provided: any content of `message` or `files`.
  */
 export type ThreadOnlyCreateBodyRequest = RequireAtLeastOne<
 	OmitInsert<
