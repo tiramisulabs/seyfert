@@ -454,6 +454,12 @@ export class ThreadOnlyMethods extends DiscordBase {
 		return this.edit({ default_thread_rate_limit_per_user: rate }, reason);
 	}
 
+	/**
+	 * Create a new thread.
+	 * @param body After name, at least one of the following properties must be provided: any content of `message` or `files`.
+	 * @param reason The reason for creating the thread, shows up on audit logs.
+	 * @returns A promise that resolves with the created thread.
+	 */
 	thread(body: ThreadOnlyCreateBodyRequest, reason?: string): Promise<ThreadChannelStructure> {
 		return this.client.channels.thread(this.id, body, reason);
 	}

@@ -80,16 +80,20 @@ export interface ModalCreateOptions {
 
 // Absolute black magic, do not question it, just use it and be happy that it works.
 // I have no idea why other types explode but here works
-
+// I think it's because of the recursive nature of the types, but I'm not sure
+// For now, I will use this as a pilot for a future changes.
 /**
- * At least one of the following properties must be provided: any content of `message` or `files`.
+ * Force at least one of the following properties must be provided: any content of `message` or `files`.
  */
 export type ThreadOnlyCreateBodyRequest = RequireAtLeastOne<
 	OmitInsert<
 		RESTPostAPIGuildForumThreadsJSONBody,
 		'message',
 		{
-			message?: Pick<MessageCreateBodyRequest, keyof RESTPostAPIGuildForumThreadsJSONBody['message']>;
+			message?: RequireAtLeastOne<
+				Pick<MessageCreateBodyRequest, keyof RESTPostAPIGuildForumThreadsJSONBody['message']>,
+				'sticker_ids' | 'content' | 'embeds' | 'components'
+			>;
 			files?: ResolverProps['files'];
 			name: string;
 		}
