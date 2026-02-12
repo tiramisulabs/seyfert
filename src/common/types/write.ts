@@ -15,7 +15,7 @@ import type {
 	RESTPostAPIWebhookWithTokenJSONBody,
 } from '../../types';
 
-import type { OmitInsert } from './util';
+import type { OmitInsert, RequireAtLeastOne } from './util';
 
 export interface ResolverProps {
 	content?: string | undefined | null;
@@ -78,14 +78,22 @@ export interface ModalCreateOptions {
 	waitFor?: number;
 }
 
-export type ThreadOnlyCreateBodyRequest = OmitInsert<
-	RESTPostAPIGuildForumThreadsJSONBody,
-	'message',
-	{
-		message: Pick<MessageCreateBodyRequest, keyof RESTPostAPIGuildForumThreadsJSONBody['message']>;
-		files?: ResolverProps['files'];
-		name: string;
-	}
+/**
+ * At least one of the following properties must be provided: `content`, `embeds`, `components` or `files`.
+ * Absolute black magic, do not question it, just use it and be happy that it works.
+ * I have no idea why other types explode but here works
+ */
+export type ThreadOnlyCreateBodyRequest = RequireAtLeastOne<
+	OmitInsert<
+		RESTPostAPIGuildForumThreadsJSONBody,
+		'message',
+		{
+			message?: Pick<MessageCreateBodyRequest, keyof RESTPostAPIGuildForumThreadsJSONBody['message']>;
+			files?: ResolverProps['files'];
+			name: string;
+		}
+	>,
+	'message' | 'files'
 >;
 
 export type ThreadCreateBodyRequest = ThreadOnlyCreateBodyRequest | RESTPostAPIChannelThreadsJSONBody;

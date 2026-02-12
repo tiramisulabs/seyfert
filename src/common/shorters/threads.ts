@@ -25,12 +25,12 @@ export class ThreadShorter extends BaseShorter {
 	 */
 	async create(channelId: string, body: ThreadCreateBodyRequest, reason?: string): Promise<ThreadChannelStructure> {
 		let thread: APIChannel;
-		if ('message' in body) {
+		if ('message' in body || 'files' in body) {
 			const { message, files, ...rest } = body;
 			const parsedFiles = files ? await resolveFiles(files) : undefined;
 
 			const transformedBody = MessagesMethods.transformMessageBody<RESTPostAPIGuildForumThreadsJSONBody['message']>(
-				message,
+				message ?? {},
 				parsedFiles,
 				this.client,
 			);

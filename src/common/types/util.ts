@@ -32,6 +32,8 @@ export type DeepPartial<T> = {
 
 export type OmitInsert<T, K extends keyof T, I> = I extends [] ? Omit<T, K> & I[number] : Omit<T, K> & I;
 
+export type RequireAtLeastOne<T, Keys extends keyof T = keyof T> = T & { [K in Keys]: Required<Pick<T, K>> }[Keys];
+
 export type IntentStrings = (keyof typeof GatewayIntentBits)[];
 
 export type PermissionStrings = (keyof typeof PermissionFlagsBits)[];
