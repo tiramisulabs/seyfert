@@ -221,6 +221,12 @@ export interface APIBaseSelectMenuComponent<
 	 * @default false
 	 */
 	disabled?: boolean;
+	/**
+	 * Whether the select is required to answer in a modal
+	 *
+	 * @default true
+	 */
+	required?: boolean;
 }
 
 export interface APIBaseAutoPopulatedSelectMenuComponent<

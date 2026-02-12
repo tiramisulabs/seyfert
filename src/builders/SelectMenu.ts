@@ -89,6 +89,17 @@ export class SelectMenu<
 		this.data.disabled = disabled;
 		return this;
 	}
+
+	/**
+	 *
+	 * Sets whether the select menu is required to answer in a modal.
+	 *  [required=true] - Indicates whether the select menu is required to answer in a modal.
+	 * @returns The current SelectMenu instance.
+	 */
+	setRequired(required = true): this {
+		this.data.required = required;
+		return this;
+	}
 }
 
 /**
