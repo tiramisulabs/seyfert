@@ -359,7 +359,7 @@ export class BaseClient {
 		const filter = filterSplit<
 			Omit<Command | ContextMenuCommand, 'guildId'> | EntryPointCommand,
 			MakeRequired<Command | ContextMenuCommand, 'guildId'>
-		>(commands, command => ('guildId' in command ? !command.guildId : true));
+		>(commands, command => ('guildId' in command ? !(command.guildId.length > 0) : true));
 
 		if (this.commands.entryPoint) {
 			filter.expect.push(this.commands.entryPoint);
