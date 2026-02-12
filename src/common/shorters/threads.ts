@@ -30,7 +30,7 @@ export class ThreadShorter extends BaseShorter {
 			const parsedFiles = files ? await resolveFiles(files) : undefined;
 
 			const transformedBody = MessagesMethods.transformMessageBody<RESTPostAPIGuildForumThreadsJSONBody['message']>(
-				body,
+				message,
 				parsedFiles,
 				this.client,
 			);
@@ -43,10 +43,8 @@ export class ThreadShorter extends BaseShorter {
 				files: parsedFiles,
 				reason,
 			});
-		} else {
-			thread = await this.client.proxy.channels(channelId).threads.post({ body, reason });
-		}
-		// When testing this, discord returns the thread object, but in discord api types it does not.
+		} else thread = await this.client.proxy.channels(channelId).threads.post({ body, reason });
+
 		await this.client.cache.channels?.setIfNI(
 			CacheFrom.Rest,
 			'Guilds',
