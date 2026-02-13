@@ -885,7 +885,13 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 		if (!component && required) throw new Error(`${customId} component not found or is not a channel select menu`);
 		if (component && 'values' in component) {
 			const resolved = this.data.resolved?.channels;
-			return component.values.map(x => channelFrom(resolved![x], this.client));
+			if (!resolved) {
+				if (required) {
+					throw new Error(`Resolved channel data is missing for component ${customId}`);
+				}
+				return;
+			}
+			return component.values.map(x => channelFrom(resolved[x], this.client));
 		}
 	}
 
