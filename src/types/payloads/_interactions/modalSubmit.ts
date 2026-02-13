@@ -33,12 +33,12 @@ export interface ModalSubmitRadioGroupData extends ModalSubmitComponent {
 
 export type ModalSubmitRadioGroup = ModalSubmitInsadeLabel<ModalSubmitRadioGroupData>;
 
-export interface ModalSubmitCheckBoxGroupData extends ModalSubmitComponent {
+export interface ModalSubmitCheckboxGroupData extends ModalSubmitComponent {
 	type: ComponentType.CheckboxGroup;
 	values: string[];
 }
 
-export type ModalSubmitCheckBoxGroup = ModalSubmitInsadeLabel<ModalSubmitCheckBoxGroupData>;
+export type ModalSubmitCheckboxGroup = ModalSubmitInsadeLabel<ModalSubmitCheckboxGroupData>;
 
 export interface ModalSubmitCheckboxData extends ModalSubmitComponent {
 	type: ComponentType.Checkbox;
