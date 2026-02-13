@@ -131,7 +131,10 @@ export class WorkerManager extends Map<
 		const id = workerId ?? this.calculateWorkerId(shardId!);
 
 		if (!this.has(id)) {
-			throw new SeyfertError(`Worker #${id} doesn't exist`);
+			throw new SeyfertError(`Worker #${id} doesn't exist`, {
+				code: 'WORKER_NOT_FOUND',
+				metadata: { workerId: id },
+			});
 		}
 
 		const data = await this.getWorkerInfo(id);
