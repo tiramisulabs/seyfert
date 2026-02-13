@@ -6,7 +6,7 @@ export enum LogLevels {
 	Debug = 0,
 	Info = 1,
 	Warn = 2,
-	SeyfertError = 3,
+	Error = 3,
 	Fatal = 4,
 }
 
@@ -200,7 +200,7 @@ export class Logger {
 	 * @param args The arguments to log.
 	 */
 	error(...args: any[]) {
-		this.rawLog(LogLevels.SeyfertError, ...args);
+		this.rawLog(LogLevels.Error, ...args);
 	}
 
 	/**
@@ -255,7 +255,7 @@ export class Logger {
 		[LogLevels.Debug, gray],
 		[LogLevels.Info, cyan],
 		[LogLevels.Warn, yellow],
-		[LogLevels.SeyfertError, red],
+		[LogLevels.Error, red],
 		[LogLevels.Fatal, (str: string) => red(bold(italic(str)))],
 	]);
 
@@ -266,7 +266,7 @@ export class Logger {
 		[LogLevels.Debug, 'DEBUG'],
 		[LogLevels.Info, 'INFO'],
 		[LogLevels.Warn, 'WARN'],
-		[LogLevels.SeyfertError, 'ERROR'],
+		[LogLevels.Error, 'ERROR'],
 		[LogLevels.Fatal, 'FATAL'],
 	]);
 }
