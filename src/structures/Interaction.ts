@@ -67,6 +67,7 @@ import {
 	InteractionResponseType,
 	InteractionType,
 	type MessageFlags,
+	type ModalSubmitInsideLabelData,
 	type RESTAPIAttachment,
 	type RESTPostAPIInteractionCallbackJSONBody,
 	type RESTPostAPIInteractionCallbackResult,
@@ -871,13 +872,117 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 		return this.data.components;
 	}
 
+	getComponent(customId: string, type: ComponentType[] = []) {
+		return this.components
+			.filter(c => c.type === ComponentType.Label && c.component && type.includes(c.component.type))
+			.find(c => c.component!.customId === customId)?.component as ModalSubmitInsideLabelData | undefined;
+	}
+
+	getChannels(customId: string, required: true): AllChannels[];
+	getChannels(customId: string, required?: false): AllChannels[] | void;
+	getChannels(customId: string, required?: boolean): AllChannels[] | void {
+		const component = this.getComponent(customId, [ComponentType.ChannelSelect]);
+		if (!component && required) throw new Error(`${customId} component not found or is not a channel select menu`);
+		if (component && 'values' in component) {
+			const resolved = this.data.resolved?.channels;
+			return component.values.map(x => channelFrom(resolved![x], this.client));
+		}
+	}
+
+	getRoles(customId: string, required: true): GuildRoleStructure[];
+	getRoles(customId: string, required?: false): GuildRoleStructure[] | void;
+	getRoles(customId: string, required?: boolean): GuildRoleStructure[] | void {
+		const component = this.getComponent(customId, [ComponentType.RoleSelect]);
+		if (!component && required) throw new Error(`${customId} component not found or is not a role select menu`);
+		if (component && 'values' in component) {
+			const resolved = this.data.resolved?.roles;
+			return component.values.map(x => Transformers.GuildRole(this.client, resolved![x], this.guildId!));
+		}
+	}
+
+	getUsers(customId: string, required: true): UserStructure[];
+	getUsers(customId: string, required?: false): UserStructure[] | void;
+	getUsers(customId: string, required?: boolean): UserStructure[] | void {
+		const component = this.getComponent(customId, [ComponentType.UserSelect]);
+		if (!component && required) throw new Error(`${customId} component not found or is not a user select menu`);
+		if (component && 'values' in component) {
+			const resolved = this.data.resolved?.users;
+			return component.values.map(x => Transformers.User(this.client, resolved![x]));
+		}
+	}
+
+	getMentionables(
+		customId: string,
+		required: true,
+	): (UserStructure | GuildRoleStructure | InteractionGuildMemberStructure)[];
+	getMentionables(
+		customId: string,
+		required?: false,
+	): (UserStructure | GuildRoleStructure | InteractionGuildMemberStructure)[] | void;
+	getMentionables(
+		customId: string,
+		required?: boolean,
+	): (UserStructure | GuildRoleStructure | InteractionGuildMemberStructure)[] | void {
+		const component = this.getComponent(customId, [ComponentType.MentionableSelect]);
+		if (!component && required) throw new Error(`${customId} component not found or is not a mentionable select menu`);
+		if (component && 'values' in component) {
+			const resolved = this.data.resolved;
+			return component.values.map(x => {
+				if (resolved?.users?.[x]) return Transformers.User(this.client, resolved!.users[x]);
+				if (resolved?.roles?.[x]) return Transformers.GuildRole(this.client, resolved!.roles[x], this.guildId!);
+				if (resolved?.members?.[x])
+					return Transformers.InteractionGuildMember(
+						this.client,
+						resolved!.members[x],
+						resolved!.users![x]!,
+						this.guildId!,
+					);
+				throw new Error(`Mentionable ${x} not found in resolved data`);
+			});
+		}
+	}
+
+	getRadioValues(customId: string, required: true): string;
+	getRadioValues(customId: string, required?: false): string | void;
+	getRadioValues(customId: string, required?: boolean): string | void {
+		const component = this.getComponent(customId, [ComponentType.RadioGroup]);
+		if (!component && required) throw new Error(`${customId} component not found or is not a radio group`);
+		if (component && 'value' in component) {
+			return component.value as string;
+		}
+	}
+
+	/**
+	 * For checkbox groups.
+	 */
+	getCheckboxValues(customId: string, required: true): string[];
+	getCheckboxValues(customId: string, required?: false): string[] | void;
+	getCheckboxValues(customId: string, required?: boolean): string[] | void {
+		const component = this.getComponent(customId, [ComponentType.CheckboxGroup]);
+		if (!component && required) throw new Error(`${customId} component not found or is not a checkbox group`);
+		if (component && 'values' in component) {
+			return component.values as string[];
+		}
+	}
+
+	getCheckbox(customId: string, required: true): boolean;
+	getCheckbox(customId: string, required?: false): boolean | void;
+	getCheckbox(customId: string, required?: boolean): boolean | void {
+		const component = this.getComponent(customId, [ComponentType.Checkbox]);
+		if (!component && required) throw new Error(`${customId} component not found or is not a checkbox`);
+		if (component && 'value' in component) {
+			return !!component.value;
+		}
+	}
+
 	getInputValue(customId: string, required: true): string | string[];
 	getInputValue(customId: string, required?: false): string | string[] | undefined;
 	getInputValue(customId: string, required?: boolean): string | string[] | undefined {
 		let value: string | string[] | undefined;
-		const get = this.components.find(x => x.component && x.component.customId === customId);
+		const get = this.getComponent(customId, [ComponentType.TextInput, ComponentType.StringSelect]);
 		if (get) {
-			value = get.component?.value ?? get.component?.values;
+			if ('value' in get) value = get.value as string;
+			if ('values' in get) value = get.values;
 		}
 
 		if ((!value || value.length === 0) && required) throw new Error(`${customId} component doesn't have a value`);

@@ -5,12 +5,15 @@ import type {
 } from '../structures/Interaction';
 import type { ActionRow } from './ActionRow';
 import type { Button } from './Button';
+import type { Checkbox } from './Checkbox';
+import type { CheckboxGroup } from './CheckboxGroup';
 import type { Container } from './Container';
 import type { File } from './File';
 import type { FileUpload } from './FileUpload';
 import type { Label } from './Label';
 import type { MediaGallery } from './MediaGallery';
 import type { TextInput } from './Modal';
+import type { RadioGroup } from './RadioGroup';
 import type { Section } from './Section';
 import type { BuilderSelectMenus } from './SelectMenu';
 import type { Separator } from './Separator';
@@ -53,7 +56,10 @@ export type BuilderComponents =
 	| File
 	| TextInput
 	| Label
-	| FileUpload;
+	| FileUpload
+	| RadioGroup
+	| Checkbox
+	| CheckboxGroup;
 
 export type TopLevelBuilders = Exclude<BuilderComponents, Thumbnail | TextInput | Button | BuilderSelectMenus>;
 

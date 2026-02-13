@@ -6,8 +6,10 @@ import {
 	type File,
 	type FileUpload,
 	fromComponent,
+	type Label,
 	type MediaGallery,
 	type MentionableSelectMenu,
+	type RadioGroup,
 	type RoleSelectMenu,
 	type Section,
 	type Separator,
@@ -17,18 +19,22 @@ import {
 	type Thumbnail,
 	type UserSelectMenu,
 } from '../builders';
-import type { Label } from '../builders/Label';
+import type { Checkbox } from '../builders/Checkbox';
+import type { CheckboxGroup } from '../builders/CheckboxGroup';
 import type {
 	APIActionRowComponent,
 	APIActionRowComponentTypes,
 	APIButtonComponent,
 	APIChannelSelectComponent,
+	APICheckboxComponent,
+	APICheckboxGroupComponent,
 	APIContainerComponent,
 	APIFileComponent,
 	APIFileUploadComponent,
 	APILabelComponent,
 	APIMediaGalleryComponent,
 	APIMentionableSelectComponent,
+	APIRadioGroupComponent,
 	APIRoleSelectComponent,
 	APISectionComponent,
 	APISeparatorComponent,
@@ -73,6 +79,9 @@ export interface APIComponentsMap {
 	[ComponentType.TextDisplay]: APITextDisplayComponent;
 	[ComponentType.Label]: APILabelComponent;
 	[ComponentType.FileUpload]: APIFileUploadComponent;
+	[ComponentType.RadioGroup]: APIRadioGroupComponent;
+	[ComponentType.CheckboxGroup]: APICheckboxGroupComponent;
+	[ComponentType.Checkbox]: APICheckboxComponent;
 }
 
 export interface BuilderComponentsMap {
@@ -93,4 +102,7 @@ export interface BuilderComponentsMap {
 	[ComponentType.TextDisplay]: TextDisplay;
 	[ComponentType.Label]: Label;
 	[ComponentType.FileUpload]: FileUpload;
+	[ComponentType.RadioGroup]: RadioGroup;
+	[ComponentType.CheckboxGroup]: CheckboxGroup;
+	[ComponentType.Checkbox]: Checkbox;
 }
