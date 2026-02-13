@@ -11,7 +11,7 @@ export class FileUpload extends BaseComponentBuilder<APIFileUploadComponent> {
 	 * @param id - The ID for the file upload.
 	 * @returns The current FileUpload instance.
 	 */
-	setId(id: string) {
+	setId(id: number) {
 		this.data.id = id;
 		return this;
 	}
