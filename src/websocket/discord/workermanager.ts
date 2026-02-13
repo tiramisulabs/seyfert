@@ -131,7 +131,7 @@ export class WorkerManager extends Map<
 		const id = workerId ?? this.calculateWorkerId(shardId!);
 
 		if (!this.has(id)) {
-			throw new SeyfertError(`Worker #${workerId} doesn't exist`);
+			throw new SeyfertError(`Worker #${id} doesn't exist`);
 		}
 
 		const data = await this.getWorkerInfo(id);
@@ -506,7 +506,7 @@ export class WorkerManager extends Map<
 		const worker = this.has(workerId);
 
 		if (!worker) {
-			throw new SeyfertError(`Worker #${workerId} doesnt exist`);
+			throw new SeyfertError(`Worker #${workerId} doesn't exist`);
 		}
 
 		const nonce = this.generateNonce();
@@ -526,7 +526,7 @@ export class WorkerManager extends Map<
 		const worker = this.has(workerId);
 
 		if (!worker) {
-			throw new SeyfertError(`Worker #${workerId} doesnt exist`);
+			throw new SeyfertError(`Worker #${workerId} doesn't exist`);
 		}
 
 		const nonce = this.generateNonce();
@@ -540,7 +540,7 @@ export class WorkerManager extends Map<
 		const worker = this.has(workerId);
 
 		if (!worker) {
-			throw new SeyfertError(`Worker #${workerId} doesnt exist`);
+			throw new SeyfertError(`Worker #${workerId} doesn't exist`);
 		}
 
 		const nonce = this.generateNonce();
