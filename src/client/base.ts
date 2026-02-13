@@ -437,7 +437,7 @@ export class BaseClient {
 					magicImport(join(process.cwd(), `seyfert.config${ext}`)).then(x => x.default ?? x),
 				),
 			).catch((e: AggregateError) => {
-				const errors = e.errors.map((err: SeyfertError) => {
+				const errors = e.errors.map((err: Error) => {
 					err.message = err.message.replace(/seyfert\.config\.(js|mjs|cjs|ts|mts|cts)/g, 'seyfert.config');
 					return err;
 				});
