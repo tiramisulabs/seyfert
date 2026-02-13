@@ -37,7 +37,7 @@ export class CommandHandler extends BaseHandler {
 	async reload(resolve: string | Command) {
 		if (isCloudfareWorker()) {
 			throw new SeyfertError('RELOAD_NOT_SUPPORTED_IN_CLOUDFLARE_WORKER', {
-				metadata: { detail: 'Reload in cloudfare worker is not supported' },
+				metadata: { detail: 'Reload in Cloudflare worker is not supported' },
 			});
 		}
 		if (typeof resolve === 'string') {
