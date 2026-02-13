@@ -3,7 +3,7 @@ import { type APICheckboxGroupComponent, type APICheckboxGroupOption, ComponentT
 import { BaseComponentBuilder, type OptionValuesLength } from './Base';
 
 export class CheckboxGroup extends BaseComponentBuilder<APICheckboxGroupComponent> {
-	#options: APICheckboxGroupOption[] = [];
+	#options: CheckboxGroupOption[] = [];
 	constructor(data: Partial<APICheckboxGroupComponent> = {}) {
 		super({ type: ComponentType.CheckboxGroup, ...data });
 	}
@@ -34,7 +34,7 @@ export class CheckboxGroup extends BaseComponentBuilder<APICheckboxGroupComponen
 	 * @param options - The maximum and minimum values.
 	 * @returns The current CheckboxGroup instance.
 	 */
-	setValuesLength({ max, min }: Partial<OptionValuesLength>): this {
+	setSelectionLimit({ max, min }: Partial<OptionValuesLength>): this {
 		this.data.max_values = max;
 		this.data.min_values = min;
 		return this;
@@ -50,22 +50,25 @@ export class CheckboxGroup extends BaseComponentBuilder<APICheckboxGroupComponen
 		return this;
 	}
 
-	setOptions(...options: RestOrArray<APICheckboxGroupOption>) {
+	setOptions(...options: RestOrArray<CheckboxGroupOption>) {
 		this.#options = options.flat();
 		return this;
 	}
 
-	addOptions(...options: RestOrArray<APICheckboxGroupOption>) {
+	addOptions(...options: RestOrArray<CheckboxGroupOption>) {
 		this.#options = this.#options.concat(options.flat());
 		return this;
 	}
 
 	toJSON(): APICheckboxGroupComponent {
-		if (this.#options.length === 0 && this.data.options?.length === 0)
-			throw new Error('CheckboxGroup must have at least one option.');
+		const options = [...this.#options.map(option => option.toJSON()), ...(this.data.options ?? [])];
+		const optionCount = options.length;
+		if (optionCount < 2 || optionCount > 10) {
+			throw new Error('RadioGroup must have between 2 and 10 options.');
+		}
 		return {
 			...this.data,
-			options: [...this.#options, ...(this.data.options ?? [])],
+			options,
 		} as APICheckboxGroupComponent;
 	}
 }
@@ -114,5 +117,9 @@ export class CheckboxGroupOption {
 	setDefault(value: boolean) {
 		this.data.default = value;
 		return this;
+	}
+
+	toJSON() {
+		return { ...this.data };
 	}
 }

@@ -25,34 +25,34 @@ export interface ModalSubmitFileUploadData extends ModalSubmitComponent {
 	values: string[];
 }
 
-export type ModalSubmitFileUpload = ModalSubmitInsadeLabel<ModalSubmitFileUploadData>;
+export type ModalSubmitFileUpload = ModalSubmitInsideLabel<ModalSubmitFileUploadData>;
 export interface ModalSubmitRadioGroupData extends ModalSubmitComponent {
 	type: ComponentType.RadioGroup;
 	value: string;
 }
 
-export type ModalSubmitRadioGroup = ModalSubmitInsadeLabel<ModalSubmitRadioGroupData>;
+export type ModalSubmitRadioGroup = ModalSubmitInsideLabel<ModalSubmitRadioGroupData>;
 
 export interface ModalSubmitCheckboxGroupData extends ModalSubmitComponent {
 	type: ComponentType.CheckboxGroup;
 	values: string[];
 }
 
-export type ModalSubmitCheckboxGroup = ModalSubmitInsadeLabel<ModalSubmitCheckboxGroupData>;
+export type ModalSubmitCheckboxGroup = ModalSubmitInsideLabel<ModalSubmitCheckboxGroupData>;
 
 export interface ModalSubmitCheckboxData extends ModalSubmitComponent {
 	type: ComponentType.Checkbox;
 	value: boolean;
 }
 
-export type ModalSubmitCheckbox = ModalSubmitInsadeLabel<ModalSubmitCheckboxData>;
+export type ModalSubmitCheckbox = ModalSubmitInsideLabel<ModalSubmitCheckboxData>;
 
 export interface ModalSubmitTextInputData extends ModalSubmitComponent {
 	type: ComponentType.TextInput;
 	value: string;
 }
 
-export type ModalSubmitTextInput = ModalSubmitInsadeLabel<ModalSubmitTextInputData>;
+export type ModalSubmitTextInput = ModalSubmitInsideLabel<ModalSubmitTextInputData>;
 
 export interface ModalSubmitSelectMenuData extends ModalSubmitComponent {
 	type:
@@ -64,16 +64,16 @@ export interface ModalSubmitSelectMenuData extends ModalSubmitComponent {
 	values: string[];
 }
 
-export type ModalSubmitSelectMenu = ModalSubmitInsadeLabel<ModalSubmitSelectMenuData>;
+export type ModalSubmitSelectMenu = ModalSubmitInsideLabel<ModalSubmitSelectMenuData>;
 
 export type ModalSubmitInsideLabelData =
 	| ModalSubmitRadioGroupData
-	| ModalSubmitCheckBoxGroupData
+	| ModalSubmitCheckboxGroupData
 	| ModalSubmitCheckboxData
 	| ModalSubmitTextInputData
 	| ModalSubmitSelectMenuData
 	| ModalSubmitFileUploadData;
-export interface ModalSubmitInsadeLabel<C extends ModalSubmitInsideLabelData = ModalSubmitInsideLabelData> {
+export interface ModalSubmitInsideLabel<C extends ModalSubmitInsideLabelData = ModalSubmitInsideLabelData> {
 	type: ComponentType.Label;
 	id?: number;
 	component?: C;
@@ -90,7 +90,7 @@ export interface APIModalSubmission {
 	/**
 	 * A list of child components
 	 */
-	components: ModalSubmitInsadeLabel[];
+	components: ModalSubmitInsideLabel[];
 	/**
 	 * Resolved data structure
 	 */

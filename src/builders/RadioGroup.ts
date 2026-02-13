@@ -9,9 +9,9 @@ export class RadioGroup extends BaseComponentBuilder<APIRadioGroupComponent> {
 	}
 
 	/**
-	 * Sets the ID for the file upload.
-	 * @param id - The ID for the file upload.
-	 * @returns The current FileUpload instance.
+	 * Sets the ID for the radio group.
+	 * @param id - The ID for the radio group.
+	 * @returns The current RadioGroup instance.
 	 */
 	setId(id: number) {
 		this.data.id = id;
@@ -19,9 +19,9 @@ export class RadioGroup extends BaseComponentBuilder<APIRadioGroupComponent> {
 	}
 
 	/**
-	 * Sets the custom ID for the file upload.
-	 * @param customId - The custom ID for the file upload.
-	 * @returns The current FileUpload instance.
+	 * Sets the custom ID for the radio group.
+	 * @param customId - The custom ID for the radio group.
+	 * @returns The current RadioGroup instance.
 	 */
 	setCustomId(customId: string) {
 		this.data.custom_id = customId;
@@ -39,9 +39,9 @@ export class RadioGroup extends BaseComponentBuilder<APIRadioGroupComponent> {
 	}
 
 	/**
-	 * Sets whether the file upload is required.
-	 * @param required - Whether the file upload is required (true by discord side).
-	 * @returns The current FileUpload instance.
+	 * Sets whether the radio group is required.
+	 * @param required - Whether the radio group is required (true by discord side).
+	 * @returns The current RadioGroup instance.
 	 */
 	setRequired(required: boolean) {
 		this.data.required = required;
@@ -49,11 +49,14 @@ export class RadioGroup extends BaseComponentBuilder<APIRadioGroupComponent> {
 	}
 
 	toJSON() {
-		if (this.#options.length === 0 && this.data.options?.length === 0)
-			throw new Error('RadioGroup must have at least one option.');
+		const options = [...this.#options.map(option => option.data as APIRadioGroupOption), ...(this.data.options ?? [])];
+		const optionCount = options.length;
+		if (optionCount < 2 || optionCount > 10) {
+			throw new Error('RadioGroup must have between 2 and 10 options.');
+		}
 		return {
 			...this.data,
-			options: [...this.#options.map(option => option.data as APIRadioGroupOption), ...(this.data.options ?? [])],
+			options,
 		} as APIRadioGroupComponent;
 	}
 }
@@ -64,7 +67,7 @@ export class RadioGroupOption {
 	/**
 	 * Sets the label for the option.
 	 *  label - The label for the option.
-	 * @returns The current StringSelectOption instance.
+	 * @returns The current RadioGroupOption instance.
 	 */
 	setLabel(label: string): this {
 		this.data.label = label;
@@ -74,7 +77,7 @@ export class RadioGroupOption {
 	/**
 	 * Sets the value for the option.
 	 *  value - The value for the option.
-	 * @returns The current StringSelectOption instance.
+	 * @returns The current RadioGroupOption instance.
 	 */
 	setValue(value: string): this {
 		this.data.value = value;
@@ -84,7 +87,7 @@ export class RadioGroupOption {
 	/**
 	 * Sets the description for the option.
 	 *  description - The description for the option.
-	 * @returns The current StringSelectOption instance.
+	 * @returns The current RadioGroupOption instance.
 	 */
 	setDescription(description: string): this {
 		this.data.description = description;
@@ -94,7 +97,7 @@ export class RadioGroupOption {
 	/**
 	 * Sets whether the option is the default.
 	 *  [value=true] - Indicates whether the option is the default (true by discord side).
-	 * @returns The current StringSelectOption instance.
+	 * @returns The current RadioGroupOption instance.
 	 */
 	setDefault(value = true): this {
 		this.data.default = value;

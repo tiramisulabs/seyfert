@@ -872,10 +872,10 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 		return this.data.components;
 	}
 
-	getComponent(customId: string, type: ComponentType[] = []) {
+	getComponent(customId: string, type: ComponentType[] = []): ObjectToLower<ModalSubmitInsideLabelData> | undefined {
 		return this.components
-			.filter(c => c.type === ComponentType.Label && c.component && type.includes(c.component.type))
-			.find(c => c.component!.customId === customId)?.component as ModalSubmitInsideLabelData | undefined;
+			.filter(c => c.type === ComponentType.Label && c.component && (!type.length || type.includes(c.component.type)))
+			.find(c => c.component!.customId === customId)?.component;
 	}
 
 	getChannels(customId: string, required: true): AllChannels[];
@@ -885,7 +885,7 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 		if (!component && required) throw new Error(`${customId} component not found or is not a channel select menu`);
 		if (component && 'values' in component) {
 			const resolved = this.data.resolved?.channels;
-			return component.values.map(x => channelFrom(resolved![x], this.client));
+			return component.values.filter(x => resolved?.[x]).map(x => channelFrom(resolved![x], this.client));
 		}
 	}
 
@@ -896,7 +896,9 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 		if (!component && required) throw new Error(`${customId} component not found or is not a role select menu`);
 		if (component && 'values' in component) {
 			const resolved = this.data.resolved?.roles;
-			return component.values.map(x => Transformers.GuildRole(this.client, resolved![x], this.guildId!));
+			return component.values
+				.filter(x => resolved?.[x])
+				.map(x => Transformers.GuildRole(this.client, resolved![x], this.guildId!));
 		}
 	}
 
@@ -907,7 +909,7 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 		if (!component && required) throw new Error(`${customId} component not found or is not a user select menu`);
 		if (component && 'values' in component) {
 			const resolved = this.data.resolved?.users;
-			return component.values.map(x => Transformers.User(this.client, resolved![x]));
+			return component.values.filter(x => resolved?.[x]).map(x => Transformers.User(this.client, resolved![x]));
 		}
 	}
 
@@ -992,7 +994,7 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 	getFiles(customId: string, required: true): Attachment[];
 	getFiles(customId: string, required?: false): Attachment[] | undefined;
 	getFiles(customId: string, required?: boolean): Attachment[] | undefined {
-		const value = this.getInputValue(customId, required as never);
+		const value = this.getComponent(customId, [ComponentType.File]);
 		if (value) {
 			const attachments = this.data.resolved?.attachments;
 			if (attachments) {
@@ -1004,6 +1006,7 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 						}),
 				);
 			}
+			if (required) throw new Error(`${customId} component doesn't have any files`);
 		}
 		return undefined;
 	}

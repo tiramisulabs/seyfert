@@ -369,6 +369,7 @@ export interface APISelectMenuOption {
  * https://discord.com/developers/docs/interactions/message-components#text-inputs-text-input-structure
  */
 export interface APITextInputComponent extends APIBaseComponent<ComponentType.TextInput> {
+	id?: number;
 	/**
 	 * One of text input styles
 	 */
@@ -608,7 +609,7 @@ export type APILabelComponents =
  */
 export interface APILabelComponent extends APIBaseComponent<ComponentType.Label> {
 	/** Optional identifier for component */
-	id?: string;
+	id?: number;
 	/** The label text */
 	label: string;
 	/** An optional description textfor the label */
@@ -622,7 +623,7 @@ export interface APILabelComponent extends APIBaseComponent<ComponentType.Label>
  */
 export interface APIFileUploadComponent extends APIBaseComponent<ComponentType.FileUpload> {
 	/** Optional identifier for component */
-	id?: string;
+	id?: number;
 	/** ID for the file upload; max 100 characters */
 	custom_id: string;
 	/** Minimum number of items that must be uploaded (defaults to 1); min 0, max 10 */
