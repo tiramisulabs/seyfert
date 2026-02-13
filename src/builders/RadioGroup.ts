@@ -1,4 +1,4 @@
-import type { RestOrArray } from '../common';
+import { createValidationMetadata, type RestOrArray, SeyfertError } from '../common';
 import { type APIRadioGroupComponent, type APIRadioGroupOption, ComponentType } from '../types';
 import { BaseComponentBuilder } from './Base';
 
@@ -52,7 +52,12 @@ export class RadioGroup extends BaseComponentBuilder<APIRadioGroupComponent> {
 		const options = [...this.#options.map(option => option.data as APIRadioGroupOption), ...(this.data.options ?? [])];
 		const optionCount = options.length;
 		if (optionCount < 2 || optionCount > 10) {
-			throw new Error('RadioGroup must have between 2 and 10 options.');
+			throw new SeyfertError('RadioGroup must have between 2 and 10 options.', {
+				code: 'INVALID_OPTIONS_LENGTH',
+				metadata: createValidationMetadata('number of options between 2 and 10', optionCount, {
+					component: 'RadioGroup',
+				}),
+			});
 		}
 		return {
 			...this.data,

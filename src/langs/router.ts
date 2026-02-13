@@ -1,4 +1,5 @@
 import type { DefaultLocale } from '../commands';
+import { SeyfertError } from '../common';
 
 export const LangRouter = (userLocale: string, defaultLang: string, langs: Partial<Record<string, any>>) => {
 	function createProxy(
@@ -12,9 +13,9 @@ export const LangRouter = (userLocale: string, defaultLang: string, langs: Parti
 			get: (_, key: string) => {
 				if (key === 'get') {
 					function getValue(locale?: string) {
-						if (typeof locale === 'undefined') throw new Error('Undefined locale');
+						if (typeof locale === 'undefined') throw new SeyfertError('Undefined locale');
 						let value = langs[locale] as Record<string, any>;
-						if (typeof value === 'undefined') throw new Error(`Locale "${locale}" not found`);
+						if (typeof value === 'undefined') throw new SeyfertError(`Locale "${locale}" not found`);
 						for (const i of route) value = value[i];
 						return value;
 					}

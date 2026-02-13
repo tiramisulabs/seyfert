@@ -1,6 +1,6 @@
 import { basename } from 'node:path';
 import type { FileLoaded } from '../commands/handler';
-import { BaseHandler, isCloudfareWorker, magicImport } from '../common';
+import { BaseHandler, isCloudfareWorker, magicImport, SeyfertError } from '../common';
 import type { Locale, LocaleString } from '../types';
 import { LangRouter } from './router';
 
@@ -62,7 +62,7 @@ export class LangsHandler extends BaseHandler {
 
 	async reload(lang: string) {
 		if (isCloudfareWorker()) {
-			throw new Error('Reload in cloudfare worker is not supported');
+			throw new SeyfertError('Reload in cloudfare worker is not supported');
 		}
 		const path = this.__paths[lang];
 		if (!path) return null;

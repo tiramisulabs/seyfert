@@ -3,7 +3,7 @@ import { promises } from 'node:fs';
 import path from 'node:path';
 import type { RawFile, UsingClient } from '..';
 import { isBufferLike } from '../api/utils/utils';
-import type { ImageResolvable, ObjectToLower } from '../common';
+import { createValidationMetadata, type ImageResolvable, type ObjectToLower, SeyfertError } from '../common';
 import { Base } from '../structures/extra/Base';
 import type { APIAttachment, RESTAPIAttachment } from '../types';
 
@@ -190,15 +190,22 @@ export async function resolveAttachmentData(
 }> {
 	if (data instanceof AttachmentBuilder) {
 		if (!data.data.resolvable)
-			throw new Error('The attachment type has been expressed as attachment but cannot be resolved as one.');
+			throw new SeyfertError('The attachment type has been expressed as attachment but cannot be resolved as one.', {
+				code: 'INVALID_ATTACHMENT_TYPE',
+				metadata: createValidationMetadata('AttachmentBuilder with resolvable data', data.data.resolvable),
+			});
 		return { data: data.data.resolvable };
 	}
 
 	switch (type) {
 		case 'url': {
 			if (!/^https?:\/\//.test(data as string))
-				throw new Error(
+				throw new SeyfertError(
 					`The attachment type has been expressed as ${type.toUpperCase()} but cannot be resolved as one.`,
+					{
+						code: 'INVALID_ATTACHMENT_TYPE',
+						metadata: createValidationMetadata('string URL starting with http:// or https://', data),
+					},
 				);
 			const res = await fetch(data as string);
 			return {
@@ -210,8 +217,12 @@ export async function resolveAttachmentData(
 			const file = path.resolve(data as string);
 			const stats = await promises.stat(file);
 			if (!stats.isFile())
-				throw new Error(
+				throw new SeyfertError(
 					`The attachment type has been expressed as ${type.toUpperCase()} but cannot be resolved as one.`,
+					{
+						code: 'INVALID_ATTACHMENT_TYPE',
+						metadata: createValidationMetadata('path to an existing file', file),
+					},
 				);
 			return { data: await promises.readFile(file) };
 		}
@@ -222,10 +233,19 @@ export async function resolveAttachmentData(
 				for await (const resource of data as AsyncIterable<ArrayBuffer>) buffers.push(Buffer.from(resource));
 				return { data: Buffer.concat(buffers) };
 			}
-			throw new Error(`The attachment type has been expressed as ${type.toUpperCase()} but cannot be resolved as one.`);
+			throw new SeyfertError(
+				`The attachment type has been expressed as ${type.toUpperCase()} but cannot be resolved as one.`,
+				{
+					code: 'INVALID_ATTACHMENT_TYPE',
+					metadata: createValidationMetadata('Buffer | ArrayBuffer | AsyncIterable<ArrayBuffer>', data),
+				},
+			);
 		}
 		default: {
-			throw new Error(`The attachment type has been expressed as ${type} but cannot be resolved as one.`);
+			throw new SeyfertError(`The attachment type has been expressed as ${type} but cannot be resolved as one.`, {
+				code: 'INVALID_ATTACHMENT_TYPE',
+				metadata: createValidationMetadata('url | path | buffer', type),
+			});
 		}
 	}
 }
@@ -251,10 +271,17 @@ export async function resolveImage(image: ImageResolvable): Promise<string> {
 			data: { type, resolvable },
 		} = image;
 		if (type && resolvable) return resolveBase64((await resolveAttachmentData(resolvable, type)).data as Buffer);
-		throw new Error(
+		throw new SeyfertError(
 			`The attachment type has been expressed as ${(
 				type ?? 'Attachment'
 			).toUpperCase()} but cannot be resolved as one.`,
+			{
+				code: 'INVALID_ATTACHMENT_TYPE',
+				metadata: createValidationMetadata('AttachmentBuilder with type and resolvable data', {
+					type,
+					resolvable,
+				}),
+			},
 		);
 	}
 

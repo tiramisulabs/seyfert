@@ -1,5 +1,13 @@
 import { randomUUID, type UUID } from 'node:crypto';
-import { type Awaitable, BASE_HOST, delay, Logger, lazyLoadPackage, snowflakeToTimestamp } from '../common';
+import {
+	type Awaitable,
+	BASE_HOST,
+	delay,
+	Logger,
+	lazyLoadPackage,
+	SeyfertError,
+	snowflakeToTimestamp,
+} from '../common';
 import { toArrayBuffer, toBuffer } from '../common/it/utils';
 import type { WorkerData } from '../websocket';
 import type { WorkerSendApiRequest } from '../websocket/discord/worker';
@@ -49,7 +57,7 @@ export class ApiHandler {
 		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
 
 		if (options.workerProxy && !worker_threads?.parentPort && !process.send)
-			throw new Error('Cannot use workerProxy without a parent.');
+			throw new SeyfertError('Cannot use workerProxy without a parent.');
 		if (options.workerProxy) this.workerPromises = new Map();
 
 		if (worker_threads?.parentPort) {
@@ -105,7 +113,7 @@ export class ApiHandler {
 	}
 
 	protected sendMessage(_body: WorkerSendApiRequest) {
-		throw new Error('Function not implemented');
+		throw new SeyfertError('Function not implemented');
 	}
 
 	protected postMessage<T = unknown>(body: WorkerSendApiRequest) {
@@ -120,6 +128,9 @@ export class ApiHandler {
 		url: `/${string}`,
 		{ auth = true, ...request }: ApiRequestOptions = {},
 	): Promise<T> {
+		const originTrace: { stack?: string } = {};
+		Error.captureStackTrace(originTrace, this.request);
+
 		if (this.options.workerProxy) {
 			const nonce = this.randomUUID();
 			return this.postMessage<T>({
@@ -188,14 +199,14 @@ export class ApiHandler {
 						try {
 							result = JSON.parse(result);
 						} catch (err) {
-							this.debugger?.warn('Error parsing result error (', result, ')', err);
+							this.debugger?.warn('SeyfertError parsing result error (', result, ')', err);
 							reject(err);
 							return;
 						}
 					}
 				}
-				const parsedError = this.parseError(method, route, response, result);
-				this.debugger?.warn(parsedError);
+				const parsedError = this.parseError(method, route, response, result, originTrace);
+				this.debugger?.warn(parsedError.message);
 				reject(parsedError);
 				return;
 			}
@@ -205,7 +216,7 @@ export class ApiHandler {
 					try {
 						result = JSON.parse(result);
 					} catch (err) {
-						this.debugger?.warn('Error parsing result (', result, ')', err);
+						this.debugger?.warn('SeyfertError parsing result (', result, ')', err);
 						next();
 						reject(err);
 						return;
@@ -234,9 +245,26 @@ export class ApiHandler {
 		});
 	}
 
-	parseError(method: HttpMethods, route: `/${string}`, response: Response, result: string | Record<string, any>) {
+	parseError(
+		method: HttpMethods,
+		route: `/${string}`,
+		response: Response,
+		result: string | Record<string, any>,
+		originTrace?: { stack?: string },
+	) {
 		let errMessage = '';
+		let code: string | undefined;
+		const metadata: Record<string, unknown> = {
+			method,
+			route,
+			status: response.status,
+			statusText: response.statusText,
+		};
 		if (typeof result === 'object') {
+			if (typeof result.code !== 'undefined') {
+				code = String(result.code);
+			}
+			metadata.response = result;
 			errMessage += `${result.message ?? 'Unknown'} ${result.code ?? ''}\n[${response.status} ${response.statusText}] ${method} ${route}`;
 
 			if ('errors' in result) {
@@ -246,7 +274,26 @@ export class ApiHandler {
 		} else {
 			errMessage = `[${response.status} ${response.statusText}] ${method} ${route}`;
 		}
-		return new Error(errMessage);
+
+		const error = new SeyfertError(errMessage, { code, metadata });
+		const originStack = originTrace?.stack;
+		if (originStack) {
+			const originLines = originStack
+				.split('\n')
+				.slice(1)
+				.filter(
+					line =>
+						!line.includes('node:internal') &&
+						!line.includes('/src/api/api.ts') &&
+						!line.includes('\\src\\api\\api.ts'),
+				);
+
+			if (originLines.length) {
+				error.stack = `${error.name}: ${error.message}\n${originLines.join('\n')}`;
+			}
+		}
+
+		return error;
 	}
 
 	parseValidationError(data: Record<string, any>, path = '', errors: string[] = []) {
@@ -290,7 +337,7 @@ export class ApiHandler {
 	) {
 		await this.onRatelimit?.(response, request);
 
-		const content = `${JSON.stringify(request)} `;
+		const bucket = this.ratelimits.get(route)!;
 		let retryAfter: number | undefined;
 
 		const data = JSON.parse(result);
@@ -302,19 +349,26 @@ export class ApiHandler {
 		if (Number.isNaN(retryAfter)) {
 			this.debugger?.warn(`${route} Could not extract retry_after from 429 response. ${result}`);
 			next();
-			reject(new Error('Could not extract retry_after from 429 response.'));
+			reject(
+				new SeyfertError('Could not extract retry_after from 429 response.', {
+					code: 'INVALID_RETRY_AFTER',
+					metadata: {
+						route,
+						method,
+						status: response.status,
+						result,
+					},
+				}),
+			);
 			return false;
 		}
 
-		this.debugger?.info(
-			`${
-				response.headers.get('x-ratelimit-global') ? 'Global' : 'Unexpected'
-			} 429: ${result.slice(0, 256)}\n${content} ${now} ${route} ${response.status}: ${this.ratelimits.get(route)!.remaining}/${
-				this.ratelimits.get(route)!.limit
-			} left | Reset ${retryAfter} (${this.ratelimits.get(route)!.reset - now}ms left) | Scope ${response.headers.get(
-				'x-ratelimit-scope',
-			)}`,
-		);
+		if (this.debugger) {
+			const content = `${JSON.stringify(request)} `;
+			this.debugger.info(
+				`${response.headers.get('x-ratelimit-global') ? 'Global' : 'Unexpected'} 429: ${result.slice(0, 256)}\n${content} ${now} ${route} ${response.status}: ${bucket.remaining}/${bucket.limit} left | Reset ${retryAfter} (${bucket.reset - now}ms left) | Scope ${response.headers.get('x-ratelimit-scope')}`,
+			);
+		}
 		if (retryAfter) {
 			await delay(retryAfter);
 			next();

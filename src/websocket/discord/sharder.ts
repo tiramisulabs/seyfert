@@ -5,6 +5,7 @@ import {
 	lazyLoadPackage,
 	type MakeRequired,
 	MergeOptions,
+	SeyfertError,
 	type WatcherSendToShard,
 } from '../../common';
 import type { DeepPartial, MakeDeepPartial } from '../../common/types/util';
@@ -290,7 +291,7 @@ export class ShardManager extends Map<number, Shard> {
 	}
 
 	resume(shardId: number, shardData: MakeRequired<ShardData>) {
-		if (this.has(shardId)) throw new Error('Cannot override existing shard');
+		if (this.has(shardId)) throw new SeyfertError('Cannot override existing shard');
 		const shard = this.create(shardId);
 		shard.data = shardData;
 		return this.connectQueue.push(shard.connect.bind(shard));

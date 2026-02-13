@@ -1,6 +1,7 @@
 import { Transformers, type UserStructure } from '../../client/transformers';
 import { encodeEmoji, resolveEmoji } from '../../common/it/utils';
 import type { RESTGetAPIChannelMessageReactionUsersQuery } from '../../types';
+import { SeyfertError } from '..';
 import type { EmojiResolvable } from '../types/resolvables';
 import { BaseShorter } from './base';
 
@@ -9,7 +10,7 @@ export class ReactionShorter extends BaseShorter {
 		const rawEmoji = await resolveEmoji(emoji, this.client.cache);
 
 		if (!rawEmoji) {
-			throw new Error('Emoji no resolvable');
+			throw new SeyfertError('Emoji no resolvable');
 		}
 
 		return this.client.proxy.channels(channelId).messages(messageId).reactions(encodeEmoji(rawEmoji))('@me').put({});
@@ -19,7 +20,7 @@ export class ReactionShorter extends BaseShorter {
 		const rawEmoji = await resolveEmoji(emoji, this.client.cache);
 
 		if (!rawEmoji) {
-			throw new Error('Emoji no resolvable');
+			throw new SeyfertError('Emoji no resolvable');
 		}
 
 		return this.client.proxy.channels(channelId).messages(messageId).reactions(encodeEmoji(rawEmoji))(userId).delete();
@@ -34,7 +35,7 @@ export class ReactionShorter extends BaseShorter {
 		const rawEmoji = await resolveEmoji(emoji, this.client.cache);
 
 		if (!rawEmoji) {
-			throw new Error('Emoji no resolvable');
+			throw new SeyfertError('Emoji no resolvable');
 		}
 
 		return this.client.proxy
@@ -52,7 +53,7 @@ export class ReactionShorter extends BaseShorter {
 		const rawEmoji = await resolveEmoji(emoji, this.client.cache);
 
 		if (!rawEmoji) {
-			throw new Error('Emoji no resolvable');
+			throw new SeyfertError('Emoji no resolvable');
 		}
 
 		return this.client.proxy.channels(channelId).messages(messageId).reactions(encodeEmoji(rawEmoji)).delete();

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { lazyLoadPackage } from '../../common';
+import { lazyLoadPackage, SeyfertError } from '../../common';
 import type { WorkerData } from '../../websocket';
 import type { WorkerSendCacheRequest } from '../../websocket/discord/worker';
 import type { Adapter } from './types';
@@ -39,7 +39,7 @@ export class WorkerAdapter implements Adapter {
 		return new Promise<any>((res, rej) => {
 			const timeout = setTimeout(() => {
 				this.promises.delete(nonce);
-				rej(new Error('Timeout cache request'));
+				rej(new SeyfertError('Timeout cache request', { code: 'CACHE_TIMEOUT', metadata: { nonce, method } }));
 			}, 60e3);
 			this.promises.set(nonce, { resolve: res, timeout });
 		});

@@ -1,7 +1,7 @@
 import { promises } from 'node:fs';
 import { dirname } from 'node:path';
 import type { Logger, NulleableCoalising, OmitInsert } from '../common';
-import { BaseHandler, isCloudfareWorker } from '../common';
+import { BaseHandler, isCloudfareWorker, SeyfertError } from '../common';
 import { PermissionsBitField } from '../structures/extra/Permissions';
 import {
 	type APIApplicationCommandChannelOption,
@@ -36,7 +36,7 @@ export class CommandHandler extends BaseHandler {
 
 	async reload(resolve: string | Command) {
 		if (isCloudfareWorker()) {
-			throw new Error('Reload in cloudfare worker is not supported');
+			throw new SeyfertError('Reload in cloudfare worker is not supported');
 		}
 		if (typeof resolve === 'string') {
 			return this.values.find(x => x.name === resolve)?.reload();
@@ -278,7 +278,7 @@ export class CommandHandler extends BaseHandler {
 					commandInstance = this.onCommand(command);
 					if (!commandInstance) continue;
 				} catch (e) {
-					if (e instanceof Error && e.message.includes('is not a constructor')) {
+					if (e instanceof SeyfertError && e.message.includes('is not a constructor')) {
 						this.logger.warn(
 							`${file.path
 								.split(process.cwd())

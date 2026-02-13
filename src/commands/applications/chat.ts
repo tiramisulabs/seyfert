@@ -17,7 +17,7 @@ import type {
 	OptionResolverStructure,
 	UserStructure,
 } from '../../client/transformers';
-import { magicImport } from '../../common';
+import { magicImport, SeyfertError } from '../../common';
 import type { AllChannels, AutocompleteInteraction } from '../../structures';
 import {
 	type APIApplicationCommandBasicOption,
@@ -179,7 +179,7 @@ export class BaseCommand {
 				errored = true;
 				data[i.name] = {
 					failed: true,
-					value: e instanceof Error ? e.message : typeof e === 'string' ? e : inspect(e),
+					value: e instanceof SeyfertError ? e.message : typeof e === 'string' ? e : inspect(e),
 					parseError: undefined,
 				};
 			}

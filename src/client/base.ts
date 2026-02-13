@@ -38,6 +38,7 @@ import {
 	magicImport,
 	ReactionShorter,
 	RoleShorter,
+	SeyfertError,
 	TemplateShorter,
 	ThreadShorter,
 	UsersShorter,
@@ -277,7 +278,7 @@ export class BaseClient {
 	}
 
 	protected async onPacket(..._packet: unknown[]): Promise<any> {
-		throw new Error('Function not implemented');
+		throw new SeyfertError('Function not implemented');
 	}
 
 	/**
@@ -359,7 +360,7 @@ export class BaseClient {
 		const filter = filterSplit<
 			Omit<Command | ContextMenuCommand, 'guildId'> | EntryPointCommand,
 			MakeRequired<Command | ContextMenuCommand, 'guildId'>
-		>(commands, command => ('guildId' in command ? !(command.guildId.length > 0) : true));
+		>(commands, command => ('guildId' in command ? !((command.guildId ?? []).length > 0) : true));
 
 		if (this.commands.entryPoint) {
 			filter.expect.push(this.commands.entryPoint);
@@ -436,14 +437,14 @@ export class BaseClient {
 					magicImport(join(process.cwd(), `seyfert.config${ext}`)).then(x => x.default ?? x),
 				),
 			).catch((e: AggregateError) => {
-				const errors = e.errors.map((err: Error) => {
+				const errors = e.errors.map((err: SeyfertError) => {
 					err.message = err.message.replace(/seyfert\.config\.(js|mjs|cjs|ts|mts|cts)/g, 'seyfert.config');
 					return err;
 				});
 
 				const uniqueError = errors.find(er => errors.filter(err => err.message === er.message).length === 1);
 				if (uniqueError) throw uniqueError;
-				throw new Error('No seyfert.config file found');
+				throw new SeyfertError('No seyfert.config file found');
 			}))) as T;
 
 		const { locations, debug, ...env } = seyfertConfig;

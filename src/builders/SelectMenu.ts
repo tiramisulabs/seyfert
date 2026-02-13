@@ -1,4 +1,4 @@
-import type { EmojiResolvable, RestOrArray } from '../common';
+import { createValidationMetadata, type EmojiResolvable, type RestOrArray, SeyfertError } from '../common';
 import { resolvePartialEmoji } from '../common/it/utils';
 import {
 	type APIChannelSelectComponent,
@@ -373,7 +373,11 @@ export class StringSelectOption {
 	 */
 	setEmoji(emoji: EmojiResolvable) {
 		const resolve = resolvePartialEmoji(emoji);
-		if (!resolve) throw new Error('Invalid Emoji');
+		if (!resolve)
+			throw new SeyfertError('Invalid Emoji', {
+				code: 'INVALID_EMOJI',
+				metadata: createValidationMetadata('EmojiResolvable', emoji, { component: 'StringSelectOption' }),
+			});
 		this.data.emoji = resolve as APIMessageComponentEmoji;
 		return this;
 	}
