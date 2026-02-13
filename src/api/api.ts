@@ -216,7 +216,7 @@ export class ApiHandler {
 					try {
 						result = JSON.parse(result);
 					} catch (err) {
-						this.debugger?.warn('SeyfertError parsing result (', result, ')', err);
+						this.debugger?.warn('Failed parsing result (', result, ')', err);
 						next();
 						reject(err);
 						return;
