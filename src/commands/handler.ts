@@ -278,7 +278,7 @@ export class CommandHandler extends BaseHandler {
 					commandInstance = this.onCommand(command);
 					if (!commandInstance) continue;
 				} catch (e) {
-					if (e instanceof SeyfertError && e.message.includes('is not a constructor')) {
+					if (e instanceof Error && e.message.includes('is not a constructor')) {
 						this.logger.warn(
 							`${file.path
 								.split(process.cwd())
