@@ -236,7 +236,7 @@ export class EventHandler extends BaseHandler {
 	async reload(name: GatewayEvents | CustomEventsKeys) {
 		if (isCloudfareWorker()) {
 			throw new SeyfertError('RELOAD_NOT_SUPPORTED_IN_CLOUDFLARE_WORKER', {
-				metadata: { detail: 'Reload in cloudfare worker is not supported' },
+				metadata: { detail: 'Reload in Cloudflare worker is not supported' },
 			});
 		}
 		const event = this.values[name];
