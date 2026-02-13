@@ -84,6 +84,18 @@ export enum ComponentType {
 	 * File upload component
 	 */
 	FileUpload,
+	/**
+	 * Single-choice set of options
+	 */
+	RadioGroup = 21,
+	/**
+	 * Multi-selectable group of checkboxes
+	 */
+	CheckboxGroup,
+	/**
+	 * Single checkbox for yes/no choice
+	 */
+	Checkbox,
 }
 
 /**
@@ -357,6 +369,7 @@ export interface APISelectMenuOption {
  * https://discord.com/developers/docs/interactions/message-components#text-inputs-text-input-structure
  */
 export interface APITextInputComponent extends APIBaseComponent<ComponentType.TextInput> {
+	id?: number;
 	/**
 	 * One of text input styles
 	 */
@@ -449,7 +462,11 @@ export type APIComponents =
 	| APIModalActionRowComponent
 	| APIContainerComponent
 	| APIContainerComponents
-	| APITopLevelComponent;
+	| APITopLevelComponent
+	| APILabelComponent
+	| APIRadioGroupComponent
+	| APICheckboxGroupComponent
+	| APICheckboxComponent;
 
 // Modal components
 export type APIModalActionRowComponent = APITextInputComponent;
@@ -459,9 +476,7 @@ export type APIModalActionRowComponent = APITextInputComponent;
  *
  * A Section is a top-level layout component that allows you to join text contextually with an accessory.
  */
-export interface APISectionComponent {
-	/** 9 for section component */
-	type: ComponentType.Section;
+export interface APISectionComponent extends APIBaseComponent<ComponentType.Section> {
 	/** Optional identifier for component */
 	id?: number;
 	/**	One to three text components */
@@ -476,9 +491,7 @@ export interface APISectionComponent {
  * A Text Display is a top-level content component that allows you to add text to your message formatted with markdown and mention users and roles. This is similar to the content field of a message, but allows you to add multiple text components, controlling the layout of your message.
  * Text Displays are only available in messages.
  */
-export interface APITextDisplayComponent {
-	/**	10 for text display */
-	type: ComponentType.TextDisplay;
+export interface APITextDisplayComponent extends APIBaseComponent<ComponentType.TextDisplay> {
 	/** Optional identifier for component */
 	id?: number;
 	/** Text that will be displayed similar to a message */
@@ -491,9 +504,7 @@ export interface APITextDisplayComponent {
  * A Thumbnail is a content component that is a small image only usable as an accessory in a section. The preview comes from an url or attachment through the unfurled media item structure.
  * Thumbnails are only available in messages as an accessory in a section.
  */
-export interface APIThumbnailComponent {
-	/**	11 for thumbnail */
-	type: ComponentType.Thumbnail;
+export interface APIThumbnailComponent extends APIBaseComponent<ComponentType.Thumbnail> {
 	/** Optional identifier for component */
 	id?: number;
 	/**	A url or attachment */
@@ -510,9 +521,7 @@ export interface APIThumbnailComponent {
  * A Media Gallery is a top-level content component that allows you to display 1-10 media attachments in an organized gallery format. Each item can have optional descriptions and can be marked as spoilers.
  * Media Galleries are only available in messages.
  */
-export interface APIMediaGalleryComponent {
-	/** 12 for media gallery */
-	type: ComponentType.MediaGallery;
+export interface APIMediaGalleryComponent extends APIBaseComponent<ComponentType.MediaGallery> {
 	/** Optional identifier for component */
 	id?: number;
 	/** 1 to 10 media gallery items */
@@ -534,9 +543,7 @@ export interface APIMediaGalleryItems {
  * A File is a top-level component that allows you to display an uploaded file as an attachment to the message and reference it in the component. Each file component can only display 1 attached file, but you can upload multiple files and add them to different file components within your payload. This is similar to the embeds field of a message but allows you to control the layout of your message by using this anywhere as a component.
  * Files are only available in messages.
  */
-export interface APIFileComponent {
-	/** 13 for file */
-	type: ComponentType.File;
+export interface APIFileComponent extends APIBaseComponent<ComponentType.File> {
 	/** Optional identifier for component */
 	id?: number;
 	/** This unfurled media item is unique in that it only supports attachment references using the attachment://<filename> syntax */
@@ -550,9 +557,7 @@ export interface APIFileComponent {
  *
  * A Separator is a top-level layout component that adds vertical padding and visual division between other components.
  */
-export interface APISeparatorComponent {
-	/** 14 for separator */
-	type: ComponentType.Separator;
+export interface APISeparatorComponent extends APIBaseComponent<ComponentType.Separator> {
 	/** Optional identifier for component */
 	id?: number;
 	/** Whether a visual divider should be displayed in the component. Defaults to true */
@@ -580,9 +585,7 @@ export type APIContainerComponents =
 /**
  * https://discord.com/developers/docs/components/reference#container
  */
-export interface APIContainerComponent {
-	/** 15 for container */
-	type: ComponentType.Container;
+export interface APIContainerComponent extends APIBaseComponent<ComponentType.Container> {
 	/** Optional identifier for component */
 	id?: number;
 	/** Up to 10 components of the type action row, text display, section, media gallery, separator, or file */
@@ -593,30 +596,34 @@ export interface APIContainerComponent {
 	spoiler?: boolean;
 }
 
+export type APILabelComponents =
+	| APITextInputComponent
+	| APISelectMenuComponent
+	| APIFileUploadComponent
+	| APIRadioGroupComponent
+	| APICheckboxGroupComponent
+	| APICheckboxComponent;
+
 /**
  * https://discord.com/developers/docs/components/reference#label
  */
-export interface APILabelComponent {
-	/** 18 for label */
-	type: ComponentType.Label;
+export interface APILabelComponent extends APIBaseComponent<ComponentType.Label> {
 	/** Optional identifier for component */
-	id?: string;
+	id?: number;
 	/** The label text */
 	label: string;
 	/** An optional description textfor the label */
 	description?: string;
 	/** 	The component within the label */
-	component: APITextInputComponent | APISelectMenuComponent | APIFileUploadComponent;
+	component: APILabelComponents;
 }
 
 /**
  * https://discord.com/developers/docs/components/reference#file-upload
  */
-export interface APIFileUploadComponent {
-	/** 19 for file upload */
-	type: ComponentType.FileUpload;
+export interface APIFileUploadComponent extends APIBaseComponent<ComponentType.FileUpload> {
 	/** Optional identifier for component */
-	id?: string;
+	id?: number;
 	/** ID for the file upload; max 100 characters */
 	custom_id: string;
 	/** Minimum number of items that must be uploaded (defaults to 1); min 0, max 10 */
@@ -625,6 +632,78 @@ export interface APIFileUploadComponent {
 	max_values?: number;
 	/** Whether the file upload is required (defaults to false) */
 	required?: boolean;
+}
+
+/**
+ * https://docs.discord.com/developers/components/reference#radio-group
+ */
+export interface APIRadioGroupComponent extends APIBaseComponent<ComponentType.RadioGroup> {
+	/** Optional identifier for component */
+	id?: number;
+	/** Developer-defined identifier for the input; 1-100 characters */
+	custom_id: string;
+	/**	List of options to show; min 2, max 10 */
+	options: APIRadioGroupOption[];
+	/** Whether a selection is required to submit the modal (defaults to true) */
+	required?: boolean;
+}
+
+/**
+ * https://docs.discord.com/developers/components/reference#radio-group-option-structure
+ */
+export interface APIRadioGroupOption {
+	/** Dev-defined value of the option; max 100 characters */
+	value: string;
+	/** User-facing name of the option; max 100 characters */
+	label: string;
+	/** Additional description of the option; max 100 characters */
+	description?: string;
+	/** Shows the option as selected by default */
+	default?: boolean;
+}
+
+/**
+ * https://docs.discord.com/developers/components/reference#checkbox-group
+ */
+export interface APICheckboxGroupComponent extends APIBaseComponent<ComponentType.CheckboxGroup> {
+	/** Optional identifier for component */
+	id?: number;
+	/** Developer-defined identifier for the input; 1-100 characters */
+	custom_id: string;
+	/** List of options to show; min 2, max 10 */
+	options: APICheckboxGroupOption[];
+	/** Minimum number of items that must be chosen; min 0, max 10 (defaults to 1); if set to 0 required must be false */
+	min_values?: number;
+	/** Maximum number of items that can be chosen; min 1, max 10 (defaults to the number of options) */
+	max_values?: number;
+	/** Whether a selection is required to submit the modal (defaults to true) */
+	required?: boolean;
+}
+
+/**
+ * https://docs.discord.com/developers/components/reference#checkbox-group-option-structure
+ */
+export interface APICheckboxGroupOption {
+	/** Dev-defined value of the option; max 100 characters */
+	value: string;
+	/** User-facing name of the option; max 100 characters */
+	label: string;
+	/** Additional description of the option; max 100 characters */
+	description?: string;
+	/** Shows the option as selected by default */
+	default?: boolean;
+}
+
+/**
+ * https://docs.discord.com/developers/components/reference#checkbox
+ */
+export interface APICheckboxComponent extends APIBaseComponent<ComponentType.Checkbox> {
+	/** Optional identifier for component */
+	id?: number;
+	/** Developer-defined identifier for the input; 1-100 characters */
+	custom_id: string;
+	/** Whether the checkbox is selected by default */
+	default?: boolean;
 }
 
 /**

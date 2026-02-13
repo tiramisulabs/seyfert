@@ -358,11 +358,11 @@ export class StringSelectOption {
 
 	/**
 	 * Sets whether the option is the default.
-	 *  [Default=true] - Indicates whether the option is the default.
+	 *  [value=true] - Indicates whether the option is the default.
 	 * @returns The current StringSelectOption instance.
 	 */
-	setDefault(Default = true): this {
-		this.data.default = Default;
+	setDefault(value = true): this {
+		this.data.default = value;
 		return this;
 	}
 

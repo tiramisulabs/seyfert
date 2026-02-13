@@ -1,11 +1,17 @@
 import { type APILabelComponent, ComponentType } from '../types';
-import { fromComponent } from '.';
+import { type Checkbox, type CheckboxGroup, fromComponent, type RadioGroup } from '.';
 import { BaseComponentBuilder } from './Base';
 import type { FileUpload } from './FileUpload';
 import type { TextInput } from './Modal';
 import type { BuilderSelectMenus } from './SelectMenu';
 
-export type LabelBuilderComponents = TextInput | BuilderSelectMenus | FileUpload;
+export type LabelBuilderComponents =
+	| TextInput
+	| BuilderSelectMenus
+	| FileUpload
+	| Checkbox
+	| CheckboxGroup
+	| RadioGroup;
 
 export class Label extends BaseComponentBuilder<APILabelComponent> {
 	constructor({ component, ...data }: Partial<APILabelComponent> = {}) {

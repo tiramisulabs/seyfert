@@ -1,12 +1,15 @@
 import { type APIComponents, ComponentType } from '../types';
 import { ActionRow } from './ActionRow';
 import { Button } from './Button';
+import { Checkbox } from './Checkbox';
+import { CheckboxGroup } from './CheckboxGroup';
 import { Container } from './Container';
 import { File } from './File';
 import { FileUpload } from './FileUpload';
 import { Label } from './Label';
 import { MediaGallery } from './MediaGallery';
 import { TextInput } from './Modal';
+import { RadioGroup } from './RadioGroup';
 import { Section } from './Section';
 import {
 	ChannelSelectMenu,
@@ -24,6 +27,8 @@ export * from './ActionRow';
 export * from './Attachment';
 export * from './Base';
 export * from './Button';
+export * from './Checkbox';
+export * from './CheckboxGroup';
 export * from './Container';
 export * from './Embed';
 export * from './File';
@@ -32,6 +37,7 @@ export * from './Label';
 export * from './MediaGallery';
 export * from './Modal';
 export * from './Poll';
+export * from './RadioGroup';
 export * from './Section';
 export * from './SelectMenu';
 export * from './Separator';
@@ -78,5 +84,11 @@ export function fromComponent(data: BuilderComponents | APIComponents): BuilderC
 			return new Label(data);
 		case ComponentType.FileUpload:
 			return new FileUpload(data);
+		case ComponentType.RadioGroup:
+			return new RadioGroup(data);
+		case ComponentType.CheckboxGroup:
+			return new CheckboxGroup(data);
+		case ComponentType.Checkbox:
+			return new Checkbox(data);
 	}
 }

@@ -1,26 +1,82 @@
 import type { Snowflake } from '../..';
 
 import type {
-	APIActionRowComponent,
 	APIAttachment,
 	APIBaseInteraction,
 	APIDMInteractionWrapper,
 	APIGuildInteractionWrapper,
-	APIModalActionRowComponent,
+	APIInteractionDataResolvedChannel,
+	APIInteractionDataResolvedGuildMember,
+	APILabelComponents,
+	APIRole,
+	APIUser,
 	ComponentType,
 	InteractionType,
 } from '../index';
 
 export interface ModalSubmitComponent {
-	type: ComponentType;
+	type: APILabelComponents['type'];
+	id?: number;
 	custom_id: string;
-	value?: string;
-	values?: string[];
 }
 
-export interface ModalSubmitActionRowComponent
-	extends Omit<APIActionRowComponent<APIModalActionRowComponent>, 'components'> {
-	component?: ModalSubmitComponent;
+export interface ModalSubmitFileUploadData extends ModalSubmitComponent {
+	type: ComponentType.FileUpload;
+	values: string[];
+}
+
+export type ModalSubmitFileUpload = ModalSubmitInsideLabel<ModalSubmitFileUploadData>;
+export interface ModalSubmitRadioGroupData extends ModalSubmitComponent {
+	type: ComponentType.RadioGroup;
+	value: string;
+}
+
+export type ModalSubmitRadioGroup = ModalSubmitInsideLabel<ModalSubmitRadioGroupData>;
+
+export interface ModalSubmitCheckboxGroupData extends ModalSubmitComponent {
+	type: ComponentType.CheckboxGroup;
+	values: string[];
+}
+
+export type ModalSubmitCheckboxGroup = ModalSubmitInsideLabel<ModalSubmitCheckboxGroupData>;
+
+export interface ModalSubmitCheckboxData extends ModalSubmitComponent {
+	type: ComponentType.Checkbox;
+	value: boolean;
+}
+
+export type ModalSubmitCheckbox = ModalSubmitInsideLabel<ModalSubmitCheckboxData>;
+
+export interface ModalSubmitTextInputData extends ModalSubmitComponent {
+	type: ComponentType.TextInput;
+	value: string;
+}
+
+export type ModalSubmitTextInput = ModalSubmitInsideLabel<ModalSubmitTextInputData>;
+
+export interface ModalSubmitSelectMenuData extends ModalSubmitComponent {
+	type:
+		| ComponentType.StringSelect
+		| ComponentType.UserSelect
+		| ComponentType.RoleSelect
+		| ComponentType.MentionableSelect
+		| ComponentType.ChannelSelect;
+	values: string[];
+}
+
+export type ModalSubmitSelectMenu = ModalSubmitInsideLabel<ModalSubmitSelectMenuData>;
+
+export type ModalSubmitInsideLabelData =
+	| ModalSubmitRadioGroupData
+	| ModalSubmitCheckboxGroupData
+	| ModalSubmitCheckboxData
+	| ModalSubmitTextInputData
+	| ModalSubmitSelectMenuData
+	| ModalSubmitFileUploadData;
+export interface ModalSubmitInsideLabel<C extends ModalSubmitInsideLabelData = ModalSubmitInsideLabelData> {
+	type: ComponentType.Label;
+	id?: number;
+	component?: C;
 }
 
 /**
@@ -34,7 +90,7 @@ export interface APIModalSubmission {
 	/**
 	 * A list of child components
 	 */
-	components: ModalSubmitActionRowComponent[];
+	components: ModalSubmitInsideLabel[];
 	/**
 	 * Resolved data structure
 	 */
@@ -42,7 +98,23 @@ export interface APIModalSubmission {
 		/**
 		 * A map of attachments
 		 */
-		attachments: Record<Snowflake, Omit<APIAttachment, 'duration_secs' | 'waveform'>>;
+		attachments?: Record<Snowflake, Omit<APIAttachment, 'duration_secs' | 'waveform'>>;
+		/**
+		 * A map of members
+		 */
+		members?: Record<Snowflake, APIInteractionDataResolvedGuildMember>;
+		/**
+		 * A map of roles
+		 */
+		roles?: Record<Snowflake, APIRole>;
+		/**
+		 * A map of users
+		 */
+		users?: Record<Snowflake, APIUser>;
+		/**
+		 * A map of channels
+		 */
+		channels?: Record<Snowflake, APIInteractionDataResolvedChannel>;
 	};
 }
 
