@@ -451,7 +451,7 @@ export class AutocompleteInteraction<FromGuild extends boolean = boolean> extend
 
 	/** @intenal */
 	async reply(..._args: unknown[]): Promise<any> {
-		throw new SeyfertError('CANNOT_USE_REPLY_IN_THIS_INTERACTION', {
+		throw new SeyfertError('CANNOT_USE_REPLY', {
 			metadata: { detail: 'Cannot use reply in this interaction' },
 		});
 	}

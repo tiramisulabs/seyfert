@@ -62,7 +62,7 @@ export class LangsHandler extends BaseHandler {
 
 	async reload(lang: string) {
 		if (isCloudfareWorker()) {
-			throw new SeyfertError('RELOAD_NOT_SUPPORTED_IN_CLOUDFLARE_WORKER', {
+			throw new SeyfertError('RELOAD_NOT_SUPPORTED', {
 				metadata: { detail: 'Reload in Cloudflare worker is not supported' },
 			});
 		}

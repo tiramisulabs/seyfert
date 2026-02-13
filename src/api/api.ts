@@ -277,7 +277,7 @@ export class ApiHandler {
 			errMessage = `[${response.status} ${response.statusText}] ${method} ${route}`;
 		}
 
-		const error = new SeyfertError(code ?? 'API_REQUEST_FAILED', {
+		const error = new SeyfertError(`API_${response.statusText}_${code}`, {
 			metadata: {
 				...metadata,
 				detail: errMessage,
