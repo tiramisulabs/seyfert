@@ -146,7 +146,15 @@ export class WorkerManager extends Map<
 	calculateWorkerId(shardId: number) {
 		const workerId = Math.floor((shardId - this.shardStart) / this.shardsPerWorker);
 		if (workerId >= this.totalWorkers) {
-			throw new SeyfertError('Invalid shardId');
+			throw new SeyfertError('Invalid shardId', {
+				code: 'INVALID_SHARD_ID',
+				metadata: {
+					shardId,
+					shardStart: this.shardStart,
+					shardsPerWorker: this.shardsPerWorker,
+					totalWorkers: this.totalWorkers,
+				},
+			});
 		}
 		return workerId;
 	}

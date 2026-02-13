@@ -179,7 +179,7 @@ export class BaseCommand {
 				errored = true;
 				data[i.name] = {
 					failed: true,
-					value: e instanceof SeyfertError ? e.message : typeof e === 'string' ? e : inspect(e),
+					value: e instanceof SeyfertError || e instanceof Error ? e.message : typeof e === 'string' ? e : inspect(e),
 					parseError: undefined,
 				};
 			}
