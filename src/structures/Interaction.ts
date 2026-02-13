@@ -243,7 +243,7 @@ export class BaseInteraction<
 		withResponse?: WR,
 	): Promise<When<WR, WebhookMessageStructure, undefined>> {
 		if (this.replied) {
-			throw new SeyfertError('Interaction already replied');
+			throw new SeyfertError('INTERACTION_ALREADY_REPLIED', { metadata: { detail: 'Interaction already replied' } });
 		}
 		const result = await this.matchReplied(body, withResponse);
 		// @ts-expect-error
@@ -451,7 +451,9 @@ export class AutocompleteInteraction<FromGuild extends boolean = boolean> extend
 
 	/** @intenal */
 	async reply(..._args: unknown[]): Promise<any> {
-		throw new SeyfertError('Cannot use reply in this interaction');
+		throw new SeyfertError('CANNOT_USE_REPLY_IN_THIS_INTERACTION', {
+			metadata: { detail: 'Cannot use reply in this interaction' },
+		});
 	}
 }
 
@@ -884,7 +886,9 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 	getChannels(customId: string, required?: boolean): AllChannels[] | void {
 		const component = this.getComponent(customId, [ComponentType.ChannelSelect]);
 		if (!component && required)
-			throw new SeyfertError(`${customId} component not found or is not a channel select menu`);
+			throw new SeyfertError('INTERNAL_ERROR', {
+				metadata: { detail: `${customId} component not found or is not a channel select menu` },
+			});
 		if (component && 'values' in component) {
 			const resolved = this.data.resolved?.channels;
 			return component.values.filter(x => resolved?.[x]).map(x => channelFrom(resolved![x], this.client));
@@ -895,7 +899,10 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 	getRoles(customId: string, required?: false): GuildRoleStructure[] | void;
 	getRoles(customId: string, required?: boolean): GuildRoleStructure[] | void {
 		const component = this.getComponent(customId, [ComponentType.RoleSelect]);
-		if (!component && required) throw new SeyfertError(`${customId} component not found or is not a role select menu`);
+		if (!component && required)
+			throw new SeyfertError('INTERNAL_ERROR', {
+				metadata: { detail: `${customId} component not found or is not a role select menu` },
+			});
 		if (component && 'values' in component) {
 			const resolved = this.data.resolved?.roles;
 			return component.values
@@ -908,7 +915,10 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 	getUsers(customId: string, required?: false): UserStructure[] | void;
 	getUsers(customId: string, required?: boolean): UserStructure[] | void {
 		const component = this.getComponent(customId, [ComponentType.UserSelect]);
-		if (!component && required) throw new SeyfertError(`${customId} component not found or is not a user select menu`);
+		if (!component && required)
+			throw new SeyfertError('INTERNAL_ERROR', {
+				metadata: { detail: `${customId} component not found or is not a user select menu` },
+			});
 		if (component && 'values' in component) {
 			const resolved = this.data.resolved?.users;
 			return component.values.filter(x => resolved?.[x]).map(x => Transformers.User(this.client, resolved![x]));
@@ -929,7 +939,9 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 	): (UserStructure | GuildRoleStructure | InteractionGuildMemberStructure)[] | void {
 		const component = this.getComponent(customId, [ComponentType.MentionableSelect]);
 		if (!component && required)
-			throw new SeyfertError(`${customId} component not found or is not a mentionable select menu`);
+			throw new SeyfertError('INTERNAL_ERROR', {
+				metadata: { detail: `${customId} component not found or is not a mentionable select menu` },
+			});
 		if (component && 'values' in component) {
 			const resolved = this.data.resolved;
 			return component.values.map(x => {
@@ -942,7 +954,9 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 						resolved!.users![x]!,
 						this.guildId!,
 					);
-				throw new SeyfertError(`Mentionable ${x} not found in resolved data`);
+				throw new SeyfertError('INTERNAL_ERROR', {
+					metadata: { detail: `Mentionable ${x} not found in resolved data` },
+				});
 			});
 		}
 	}
@@ -951,7 +965,10 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 	getRadioValues(customId: string, required?: false): string | void;
 	getRadioValues(customId: string, required?: boolean): string | void {
 		const component = this.getComponent(customId, [ComponentType.RadioGroup]);
-		if (!component && required) throw new SeyfertError(`${customId} component not found or is not a radio group`);
+		if (!component && required)
+			throw new SeyfertError('INTERNAL_ERROR', {
+				metadata: { detail: `${customId} component not found or is not a radio group` },
+			});
 		if (component && 'value' in component) {
 			return component.value as string;
 		}
@@ -964,7 +981,10 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 	getCheckboxValues(customId: string, required?: false): string[] | void;
 	getCheckboxValues(customId: string, required?: boolean): string[] | void {
 		const component = this.getComponent(customId, [ComponentType.CheckboxGroup]);
-		if (!component && required) throw new SeyfertError(`${customId} component not found or is not a checkbox group`);
+		if (!component && required)
+			throw new SeyfertError('INTERNAL_ERROR', {
+				metadata: { detail: `${customId} component not found or is not a checkbox group` },
+			});
 		if (component && 'values' in component) {
 			return component.values as string[];
 		}
@@ -974,7 +994,10 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 	getCheckbox(customId: string, required?: false): boolean | void;
 	getCheckbox(customId: string, required?: boolean): boolean | void {
 		const component = this.getComponent(customId, [ComponentType.Checkbox]);
-		if (!component && required) throw new SeyfertError(`${customId} component not found or is not a checkbox`);
+		if (!component && required)
+			throw new SeyfertError('INTERNAL_ERROR', {
+				metadata: { detail: `${customId} component not found or is not a checkbox` },
+			});
 		if (component && 'value' in component) {
 			return !!component.value;
 		}
@@ -991,7 +1014,7 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 		}
 
 		if ((!value || value.length === 0) && required)
-			throw new SeyfertError(`${customId} component doesn't have a value`);
+			throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `${customId} component doesn't have a value` } });
 		return value;
 	}
 
@@ -1010,7 +1033,10 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 						}),
 				);
 			}
-			if (required) throw new SeyfertError(`${customId} component doesn't have any files`);
+			if (required)
+				throw new SeyfertError('INTERNAL_ERROR', {
+					metadata: { detail: `${customId} component doesn't have any files` },
+				});
 		}
 		return undefined;
 	}

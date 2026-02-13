@@ -143,10 +143,10 @@ export class OptionResolver {
 	private getTypedOption(name: string, allow: ApplicationCommandOptionType[]) {
 		const option = this.getHoisted(name);
 		if (!option) {
-			throw new SeyfertError('Bad Option');
+			throw new SeyfertError('BAD_OPTION', { metadata: { detail: 'Bad Option' } });
 		}
 		if (!allow.includes(option.type)) {
-			throw new SeyfertError('Bad Option');
+			throw new SeyfertError('BAD_OPTION', { metadata: { detail: 'Bad Option' } });
 		}
 		return option;
 	}

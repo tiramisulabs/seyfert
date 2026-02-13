@@ -47,11 +47,13 @@ export class Section<
 	 */
 	toJSON() {
 		if (!this.accessory)
-			throw new SeyfertError('Cannot convert to JSON without an accessory.', {
-				code: 'MISSING_ACCESSORY',
-				metadata: createValidationMetadata('accessory to be set before calling toJSON()', this.accessory, {
-					component: 'Section',
-				}),
+			throw new SeyfertError('MISSING_ACCESSORY', {
+				metadata: {
+					...createValidationMetadata('accessory to be set before calling toJSON()', this.accessory, {
+						component: 'Section',
+					}),
+					detail: 'Cannot convert to JSON without an accessory.',
+				},
 			});
 		return {
 			...this.data,

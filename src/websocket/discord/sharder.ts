@@ -291,7 +291,10 @@ export class ShardManager extends Map<number, Shard> {
 	}
 
 	resume(shardId: number, shardData: MakeRequired<ShardData>) {
-		if (this.has(shardId)) throw new SeyfertError('Cannot override existing shard');
+		if (this.has(shardId))
+			throw new SeyfertError('CANNOT_OVERRIDE_EXISTING_SHARD', {
+				metadata: { detail: 'Cannot override existing shard' },
+			});
 		const shard = this.create(shardId);
 		shard.data = shardData;
 		return this.connectQueue.push(shard.connect.bind(shard));

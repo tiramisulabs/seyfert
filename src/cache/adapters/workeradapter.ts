@@ -39,7 +39,7 @@ export class WorkerAdapter implements Adapter {
 		return new Promise<any>((res, rej) => {
 			const timeout = setTimeout(() => {
 				this.promises.delete(nonce);
-				rej(new SeyfertError('Timeout cache request', { code: 'CACHE_TIMEOUT', metadata: { nonce, method } }));
+				rej(new SeyfertError('CACHE_TIMEOUT', { metadata: { ...{ nonce, method }, detail: 'Timeout cache request' } }));
 			}, 60e3);
 			this.promises.set(nonce, { resolve: res, timeout });
 		});

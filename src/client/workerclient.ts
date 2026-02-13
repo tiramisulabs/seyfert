@@ -415,7 +415,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		return new Promise<T>((res, rej) => {
 			const timeout = setTimeout(() => {
 				this.promises.delete(nonce);
-				rej(new SeyfertError(message, { code: 'WORKER_TIMEOUT', metadata: { nonce } }));
+				rej(new SeyfertError('WORKER_TIMEOUT', { metadata: { ...{ nonce }, detail: message } }));
 			}, 60e3);
 			this.promises.set(nonce, { resolve: res, timeout });
 		});
@@ -479,7 +479,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				shardId,
 			})
 		).some(x => x);
-		if (exists) throw new SeyfertError('Cannot override existing shard');
+		if (exists)
+			throw new SeyfertError('CANNOT_OVERRIDE_EXISTING_SHARD', {
+				metadata: { detail: 'Cannot override existing shard' },
+			});
 		const shard = this.createShard(shardId, {
 			info: this.workerData.info,
 			compress: this.workerData.compress,

@@ -52,11 +52,13 @@ export class RadioGroup extends BaseComponentBuilder<APIRadioGroupComponent> {
 		const options = [...this.#options.map(option => option.data as APIRadioGroupOption), ...(this.data.options ?? [])];
 		const optionCount = options.length;
 		if (optionCount < 2 || optionCount > 10) {
-			throw new SeyfertError('RadioGroup must have between 2 and 10 options.', {
-				code: 'INVALID_OPTIONS_LENGTH',
-				metadata: createValidationMetadata('number of options between 2 and 10', optionCount, {
-					component: 'RadioGroup',
-				}),
+			throw new SeyfertError('INVALID_OPTIONS_LENGTH', {
+				metadata: {
+					...createValidationMetadata('number of options between 2 and 10', optionCount, {
+						component: 'RadioGroup',
+					}),
+					detail: 'RadioGroup must have between 2 and 10 options.',
+				},
 			});
 		}
 		return {

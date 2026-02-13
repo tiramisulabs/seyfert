@@ -282,7 +282,9 @@ export class ComponentHandler extends BaseHandler {
 	async reload(path: string) {
 		if (!this.client.components) return;
 		if (isCloudfareWorker()) {
-			throw new SeyfertError('Reload in cloudfare worker is not supported');
+			throw new SeyfertError('RELOAD_NOT_SUPPORTED_IN_CLOUDFLARE_WORKER', {
+				metadata: { detail: 'Reload in cloudfare worker is not supported' },
+			});
 		}
 		const component = this.client.components.commands.find(
 			x =>

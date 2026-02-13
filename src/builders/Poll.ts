@@ -51,9 +51,11 @@ export class PollBuilder {
 		if (!data.emoji) return { text: data.text };
 		const resolve = resolvePartialEmoji(data.emoji);
 		if (!resolve)
-			throw new SeyfertError('Invalid Emoji', {
-				code: 'INVALID_EMOJI',
-				metadata: createValidationMetadata('EmojiResolvable', data.emoji, { component: 'PollBuilder' }),
+			throw new SeyfertError('INVALID_EMOJI', {
+				metadata: {
+					...createValidationMetadata('EmojiResolvable', data.emoji, { component: 'PollBuilder' }),
+					detail: 'Invalid Emoji',
+				},
 			});
 		return { text: data.text, emoji: resolve };
 	}

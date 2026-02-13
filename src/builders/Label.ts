@@ -38,11 +38,13 @@ export class Label extends BaseComponentBuilder<APILabelComponent> {
 
 	toJSON(): APILabelComponent {
 		if (!this.component)
-			throw new SeyfertError('Cannot convert to JSON without a component.', {
-				code: 'MISSING_COMPONENT',
-				metadata: createValidationMetadata('component to be set before calling toJSON()', this.component, {
-					component: 'Label',
-				}),
+			throw new SeyfertError('MISSING_COMPONENT', {
+				metadata: {
+					...createValidationMetadata('component to be set before calling toJSON()', this.component, {
+						component: 'Label',
+					}),
+					detail: 'Cannot convert to JSON without a component.',
+				},
 			});
 		return {
 			...(this.data as APILabelComponent),

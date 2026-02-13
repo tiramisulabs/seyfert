@@ -57,7 +57,9 @@ export class ApiHandler {
 		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
 
 		if (options.workerProxy && !worker_threads?.parentPort && !process.send)
-			throw new SeyfertError('Cannot use workerProxy without a parent.');
+			throw new SeyfertError('API_WORKER_PROXY_PARENT_REQUIRED', {
+				metadata: { detail: 'Cannot use workerProxy without a parent.' },
+			});
 		if (options.workerProxy) this.workerPromises = new Map();
 
 		if (worker_threads?.parentPort) {
@@ -113,7 +115,7 @@ export class ApiHandler {
 	}
 
 	protected sendMessage(_body: WorkerSendApiRequest) {
-		throw new SeyfertError('Function not implemented');
+		throw new SeyfertError('FUNCTION_NOT_IMPLEMENTED', { metadata: { detail: 'Function not implemented' } });
 	}
 
 	protected postMessage<T = unknown>(body: WorkerSendApiRequest) {
@@ -275,7 +277,12 @@ export class ApiHandler {
 			errMessage = `[${response.status} ${response.statusText}] ${method} ${route}`;
 		}
 
-		const error = new SeyfertError(errMessage, { code, metadata });
+		const error = new SeyfertError(code ?? 'API_REQUEST_FAILED', {
+			metadata: {
+				...metadata,
+				detail: errMessage,
+			},
+		});
 		const originStack = originTrace?.stack;
 		if (originStack) {
 			const originLines = originStack
@@ -350,13 +357,15 @@ export class ApiHandler {
 			this.debugger?.warn(`${route} Could not extract retry_after from 429 response. ${result}`);
 			next();
 			reject(
-				new SeyfertError('Could not extract retry_after from 429 response.', {
-					code: 'INVALID_RETRY_AFTER',
+				new SeyfertError('INVALID_RETRY_AFTER', {
 					metadata: {
-						route,
-						method,
-						status: response.status,
-						result,
+						...{
+							route,
+							method,
+							status: response.status,
+							result,
+						},
+						detail: 'Could not extract retry_after from 429 response.',
 					},
 				}),
 			);

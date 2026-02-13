@@ -64,11 +64,13 @@ export class CheckboxGroup extends BaseComponentBuilder<APICheckboxGroupComponen
 		const options = [...this.#options.map(option => option.toJSON()), ...(this.data.options ?? [])];
 		const optionCount = options.length;
 		if (optionCount < 2 || optionCount > 10) {
-			throw new SeyfertError('CheckboxGroup must have between 2 and 10 options.', {
-				code: 'INVALID_OPTIONS_LENGTH',
-				metadata: createValidationMetadata('number of options between 2 and 10', optionCount, {
-					component: 'CheckboxGroup',
-				}),
+			throw new SeyfertError('INVALID_OPTIONS_LENGTH', {
+				metadata: {
+					...createValidationMetadata('number of options between 2 and 10', optionCount, {
+						component: 'CheckboxGroup',
+					}),
+					detail: 'CheckboxGroup must have between 2 and 10 options.',
+				},
 			});
 		}
 		return {

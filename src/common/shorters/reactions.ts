@@ -10,7 +10,7 @@ export class ReactionShorter extends BaseShorter {
 		const rawEmoji = await resolveEmoji(emoji, this.client.cache);
 
 		if (!rawEmoji) {
-			throw new SeyfertError('Emoji not resolvable');
+			throw new SeyfertError('EMOJI_NOT_RESOLVABLE', { metadata: { detail: 'Emoji not resolvable' } });
 		}
 
 		return this.client.proxy.channels(channelId).messages(messageId).reactions(encodeEmoji(rawEmoji))('@me').put({});
@@ -20,7 +20,7 @@ export class ReactionShorter extends BaseShorter {
 		const rawEmoji = await resolveEmoji(emoji, this.client.cache);
 
 		if (!rawEmoji) {
-			throw new SeyfertError('Emoji not resolvable');
+			throw new SeyfertError('EMOJI_NOT_RESOLVABLE', { metadata: { detail: 'Emoji not resolvable' } });
 		}
 
 		return this.client.proxy.channels(channelId).messages(messageId).reactions(encodeEmoji(rawEmoji))(userId).delete();
@@ -35,7 +35,7 @@ export class ReactionShorter extends BaseShorter {
 		const rawEmoji = await resolveEmoji(emoji, this.client.cache);
 
 		if (!rawEmoji) {
-			throw new SeyfertError('Emoji not resolvable');
+			throw new SeyfertError('EMOJI_NOT_RESOLVABLE', { metadata: { detail: 'Emoji not resolvable' } });
 		}
 
 		return this.client.proxy
@@ -53,7 +53,7 @@ export class ReactionShorter extends BaseShorter {
 		const rawEmoji = await resolveEmoji(emoji, this.client.cache);
 
 		if (!rawEmoji) {
-			throw new SeyfertError('Emoji not resolvable');
+			throw new SeyfertError('EMOJI_NOT_RESOLVABLE', { metadata: { detail: 'Emoji not resolvable' } });
 		}
 
 		return this.client.proxy.channels(channelId).messages(messageId).reactions(encodeEmoji(rawEmoji)).delete();

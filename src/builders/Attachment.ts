@@ -190,9 +190,11 @@ export async function resolveAttachmentData(
 }> {
 	if (data instanceof AttachmentBuilder) {
 		if (!data.data.resolvable)
-			throw new SeyfertError('The attachment type has been expressed as attachment but cannot be resolved as one.', {
-				code: 'INVALID_ATTACHMENT_TYPE',
-				metadata: createValidationMetadata('AttachmentBuilder with resolvable data', data.data.resolvable),
+			throw new SeyfertError('INVALID_ATTACHMENT_TYPE', {
+				metadata: {
+					...createValidationMetadata('AttachmentBuilder with resolvable data', data.data.resolvable),
+					detail: 'The attachment type has been expressed as attachment but cannot be resolved as one.',
+				},
 			});
 		return { data: data.data.resolvable };
 	}
@@ -200,13 +202,12 @@ export async function resolveAttachmentData(
 	switch (type) {
 		case 'url': {
 			if (!/^https?:\/\//.test(data as string))
-				throw new SeyfertError(
-					`The attachment type has been expressed as ${type.toUpperCase()} but cannot be resolved as one.`,
-					{
-						code: 'INVALID_ATTACHMENT_TYPE',
-						metadata: createValidationMetadata('string URL starting with http:// or https://', data),
+				throw new SeyfertError('INVALID_ATTACHMENT_TYPE', {
+					metadata: {
+						...createValidationMetadata('string URL starting with http:// or https://', data),
+						detail: `The attachment type has been expressed as ${type.toUpperCase()} but cannot be resolved as one.`,
 					},
-				);
+				});
 			const res = await fetch(data as string);
 			return {
 				data: Buffer.from(await res.arrayBuffer()),
@@ -217,13 +218,12 @@ export async function resolveAttachmentData(
 			const file = path.resolve(data as string);
 			const stats = await promises.stat(file);
 			if (!stats.isFile())
-				throw new SeyfertError(
-					`The attachment type has been expressed as ${type.toUpperCase()} but cannot be resolved as one.`,
-					{
-						code: 'INVALID_ATTACHMENT_TYPE',
-						metadata: createValidationMetadata('path to an existing file', file),
+				throw new SeyfertError('INVALID_ATTACHMENT_TYPE', {
+					metadata: {
+						...createValidationMetadata('path to an existing file', file),
+						detail: `The attachment type has been expressed as ${type.toUpperCase()} but cannot be resolved as one.`,
 					},
-				);
+				});
 			return { data: await promises.readFile(file) };
 		}
 		case 'buffer': {
@@ -233,18 +233,19 @@ export async function resolveAttachmentData(
 				for await (const resource of data as AsyncIterable<ArrayBuffer>) buffers.push(Buffer.from(resource));
 				return { data: Buffer.concat(buffers) };
 			}
-			throw new SeyfertError(
-				`The attachment type has been expressed as ${type.toUpperCase()} but cannot be resolved as one.`,
-				{
-					code: 'INVALID_ATTACHMENT_TYPE',
-					metadata: createValidationMetadata('Buffer | ArrayBuffer | AsyncIterable<ArrayBuffer>', data),
+			throw new SeyfertError('INVALID_ATTACHMENT_TYPE', {
+				metadata: {
+					...createValidationMetadata('Buffer | ArrayBuffer | AsyncIterable<ArrayBuffer>', data),
+					detail: `The attachment type has been expressed as ${type.toUpperCase()} but cannot be resolved as one.`,
 				},
-			);
+			});
 		}
 		default: {
-			throw new SeyfertError(`The attachment type has been expressed as ${type} but cannot be resolved as one.`, {
-				code: 'INVALID_ATTACHMENT_TYPE',
-				metadata: createValidationMetadata('url | path | buffer', type),
+			throw new SeyfertError('INVALID_ATTACHMENT_TYPE', {
+				metadata: {
+					...createValidationMetadata('url | path | buffer', type),
+					detail: `The attachment type has been expressed as ${type} but cannot be resolved as one.`,
+				},
 			});
 		}
 	}
@@ -271,18 +272,17 @@ export async function resolveImage(image: ImageResolvable): Promise<string> {
 			data: { type, resolvable },
 		} = image;
 		if (type && resolvable) return resolveBase64((await resolveAttachmentData(resolvable, type)).data as Buffer);
-		throw new SeyfertError(
-			`The attachment type has been expressed as ${(
-				type ?? 'Attachment'
-			).toUpperCase()} but cannot be resolved as one.`,
-			{
-				code: 'INVALID_ATTACHMENT_TYPE',
-				metadata: createValidationMetadata('AttachmentBuilder with type and resolvable data', {
+		throw new SeyfertError('INVALID_ATTACHMENT_TYPE', {
+			metadata: {
+				...createValidationMetadata('AttachmentBuilder with type and resolvable data', {
 					type,
 					resolvable,
 				}),
+				detail: `The attachment type has been expressed as ${(
+					type ?? 'Attachment'
+				).toUpperCase()} but cannot be resolved as one.`,
 			},
-		);
+		});
 	}
 
 	if (image instanceof Attachment) {

@@ -49,7 +49,11 @@ export class SeyfertWebSocket {
 				const accept = res.headers['sec-websocket-accept'];
 				if (accept !== hash) {
 					socket.end(() => {
-						rej(new SeyfertError('Invalid sec-websocket-accept header'));
+						rej(
+							new SeyfertError('INVALID_SEC_WEBSOCKET_ACCEPT_HEADER', {
+								metadata: { detail: 'Invalid sec-websocket-accept header' },
+							}),
+						);
 					});
 					return;
 				}

@@ -265,7 +265,7 @@ export class Cache {
 					}
 					break;
 				default:
-					throw new SeyfertError(`Invalid type ${type}`);
+					throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Invalid type ${type}` } });
 			}
 		}
 
@@ -374,7 +374,7 @@ export class Cache {
 					}
 					break;
 				default:
-					throw new SeyfertError(`Invalid type ${type}`);
+					throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Invalid type ${type}` } });
 			}
 		}
 
@@ -467,7 +467,7 @@ export class Cache {
 					}
 					break;
 				default:
-					throw new SeyfertError(`Invalid type ${type}`);
+					throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Invalid type ${type}` } });
 			}
 		}
 
@@ -687,8 +687,14 @@ export class Cache {
 	}
 
 	private async testUsersAndMembers() {
-		if (!this.users) throw new SeyfertError('Users cache disabled, you should enable it for this.');
-		if (!this.members) throw new SeyfertError('Members cache disabled, you should enable it for this.');
+		if (!this.users)
+			throw new SeyfertError('CACHE_USERS_DISABLED', {
+				metadata: { detail: 'Users cache disabled, you should enable it for this.' },
+			});
+		if (!this.members)
+			throw new SeyfertError('CACHE_MEMBERS_DISABLED', {
+				metadata: { detail: 'Members cache disabled, you should enable it for this.' },
+			});
 
 		function createUser(name: string): APIUser {
 			return {
@@ -729,23 +735,36 @@ export class Cache {
 		}
 		let count = 0;
 		if ((await this.users.values()).length !== users.length)
-			throw new SeyfertError('users.values() is not of the expected size.');
+			throw new SeyfertError('CACHE_USERS_VALUES_SIZE_MISMATCH', {
+				metadata: { detail: 'users.values() is not of the expected size.' },
+			});
 		if ((await this.users.count()) !== users.length)
-			throw new SeyfertError('users.count() is not of the expected amount');
+			throw new SeyfertError('CACHE_USERS_COUNT_MISMATCH', {
+				metadata: { detail: 'users.count() is not of the expected amount' },
+			});
 		for (const user of users) {
 			const cache = await this.users.raw(user.id);
-			if (!cache) throw new SeyfertError(`users.raw(${user.id}) has returned undefined!!!!!!`);
+			if (!cache)
+				throw new SeyfertError('INTERNAL_ERROR', {
+					metadata: { detail: `users.raw(${user.id}) has returned undefined!!!!!!` },
+				});
 			if (cache.username !== user.username)
-				throw new SeyfertError(
-					`users.raw(${user.id}).username is not of the expected value!!!!! (cache (${cache.username})) (expected value: (${user.username}))`,
-				);
+				throw new SeyfertError('INTERNAL_ERROR', {
+					metadata: {
+						detail: `users.raw(${user.id}).username is not of the expected value!!!!! (cache (${cache.username})) (expected value: (${user.username}))`,
+					},
+				});
 			if (cache.id !== user.id)
-				throw new SeyfertError(
-					`users.raw(${user.id}).id is not of the expected value!!!!!! (cache (${cache.id})) (expected value: (${user.id}))`,
-				);
+				throw new SeyfertError('INTERNAL_ERROR', {
+					metadata: {
+						detail: `users.raw(${user.id}).id is not of the expected value!!!!!! (cache (${cache.id})) (expected value: (${user.id}))`,
+					},
+				});
 			await this.users.remove(user.id);
 			if ((await this.users.count()) !== users.length - ++count)
-				throw new SeyfertError(`users.count() should be ${users.length - count}!! please check your remove method`);
+				throw new SeyfertError('INTERNAL_ERROR', {
+					metadata: { detail: `users.count() should be ${users.length - count}!! please check your remove method` },
+				});
 		}
 
 		this.__logger__!.info('the user cache seems to be alright.');
@@ -755,7 +774,9 @@ export class Cache {
 
 		// unexpected error message
 		if ((await this.users.count()) !== 0)
-			throw new SeyfertError('users.count() should be 0!! please check your flush method');
+			throw new SeyfertError('CACHE_USERS_COUNT_NOT_ZERO', {
+				metadata: { detail: 'users.count() should be 0!! please check your flush method' },
+			});
 
 		const guildMembers: Record<string, APIGuildMember[]> = {
 			'852531635252494346': [
@@ -783,30 +804,47 @@ export class Cache {
 				await this.members.set(CacheFrom.Test, member.user.id, guildId, member);
 			}
 			if ((await this.members.values(guildId)).length !== members.length)
-				throw new SeyfertError('members.values(guildId) is not of the expected size.');
+				throw new SeyfertError('CACHE_MEMBERS_GUILD_VALUES_SIZE_MISMATCH', {
+					metadata: { detail: 'members.values(guildId) is not of the expected size.' },
+				});
 			if ((await this.members.count(guildId)) !== members.length)
-				throw new SeyfertError('members.count(guildId) is not of the expected amount');
+				throw new SeyfertError('CACHE_MEMBERS_GUILD_COUNT_MISMATCH', {
+					metadata: { detail: 'members.count(guildId) is not of the expected amount' },
+				});
 			for (const member of members) {
 				const cache = await this.members.raw(member.user.id, guildId);
-				if (!cache) throw new SeyfertError(`members.raw(${member.user.id}, ${guildId}) has returned undefined.`);
+				if (!cache)
+					throw new SeyfertError('INTERNAL_ERROR', {
+						metadata: { detail: `members.raw(${member.user.id}, ${guildId}) has returned undefined.` },
+					});
 				if (cache.roles[0] !== member.roles[0])
-					throw new SeyfertError(
-						`members.raw(${member.user.id}, ${guildId}).roles[0] is not the expected value: ${member.roles[0]} (cache: ${cache.roles[0]})`,
-					);
+					throw new SeyfertError('INTERNAL_ERROR', {
+						metadata: {
+							detail: `members.raw(${member.user.id}, ${guildId}).roles[0] is not the expected value: ${member.roles[0]} (cache: ${cache.roles[0]})`,
+						},
+					});
 				if (cache.user.username !== member.user.username)
-					throw new SeyfertError(
-						`members.raw(${member.user.id}, ${guildId}).user.username is not the expected value!!!!!! (cache (${cache.user.username})) (expected value: (${member.user.username}))`,
-					);
+					throw new SeyfertError('INTERNAL_ERROR', {
+						metadata: {
+							detail: `members.raw(${member.user.id}, ${guildId}).user.username is not the expected value!!!!!! (cache (${cache.user.username})) (expected value: (${member.user.username}))`,
+						},
+					});
 				if (cache.user.id !== member.user.id)
-					throw new SeyfertError(
-						`members.raw(${member.user.id}, ${guildId}).user.id is not the expected value!!!!!! (cache (${cache.user.id})) (expected value: (${member.user.id}))`,
-					);
+					throw new SeyfertError('INTERNAL_ERROR', {
+						metadata: {
+							detail: `members.raw(${member.user.id}, ${guildId}).user.id is not the expected value!!!!!! (cache (${cache.user.id})) (expected value: (${member.user.id}))`,
+						},
+					});
 			}
 		}
 		if ((await this.members.values('*')).length !== Object.values(guildMembers).flat().length)
-			throw new SeyfertError('members.values(*) is not of the expected size');
+			throw new SeyfertError('CACHE_MEMBERS_VALUES_SIZE_MISMATCH', {
+				metadata: { detail: 'members.values(*) is not of the expected size' },
+			});
 		if ((await this.members.count('*')) !== Object.values(guildMembers).flat().length)
-			throw new SeyfertError('the global amount of members.count(*) is not the expected amount');
+			throw new SeyfertError('CACHE_MEMBERS_GLOBAL_COUNT_MISMATCH', {
+				metadata: { detail: 'the global amount of members.count(*) is not the expected amount' },
+			});
 
 		count = 0;
 		for (const guildId in guildMembers) {
@@ -814,9 +852,11 @@ export class Cache {
 			for (const member of members) {
 				await this.members.remove(member.user.id, guildId);
 				if ((await this.members.count(guildId)) !== members.length - ++count)
-					throw new SeyfertError(
-						`members.count(${guildId}) should be ${members.length - count}!! please check your remove method`,
-					);
+					throw new SeyfertError('INTERNAL_ERROR', {
+						metadata: {
+							detail: `members.count(${guildId}) should be ${members.length - count}!! please check your remove method`,
+						},
+					});
 			}
 			count = 0;
 		}
@@ -825,17 +865,27 @@ export class Cache {
 
 		// unexpected error message
 		if ((await this.users.count()) !== 0)
-			throw new SeyfertError('users.count() should be zero!! please check your flush method');
+			throw new SeyfertError('CACHE_USERS_COUNT_NOT_ZERO', {
+				metadata: { detail: 'users.count() should be zero!! please check your flush method' },
+			});
 		// unexpected error message
 		if ((await this.members.count('*')) !== 0)
-			throw new SeyfertError("members.count('*') should be zero!! please check your flush method");
+			throw new SeyfertError('CACHE_MEMBERS_COUNT_NOT_ZERO', {
+				metadata: { detail: "members.count('*') should be zero!! please check your flush method" },
+			});
 
 		this.__logger__!.info('the member cache seems to be alright.');
 	}
 
 	private async testChannelsAndOverwrites() {
-		if (!this.channels) throw new SeyfertError('Channels cache disabled, you should enable it for this.');
-		if (!this.overwrites) throw new SeyfertError('Overwrites cache disabled, you should enable it for this.');
+		if (!this.channels)
+			throw new SeyfertError('CACHE_CHANNELS_DISABLED', {
+				metadata: { detail: 'Channels cache disabled, you should enable it for this.' },
+			});
+		if (!this.overwrites)
+			throw new SeyfertError('CACHE_OVERWRITES_DISABLED', {
+				metadata: { detail: 'Overwrites cache disabled, you should enable it for this.' },
+			});
 
 		function createChannel(name: string): APITextChannel {
 			return {
@@ -892,30 +942,47 @@ export class Cache {
 				await this.channels.set(CacheFrom.Test, channel.id, guildId, channel);
 			}
 			if ((await this.channels.values(guildId)).length !== channels.length)
-				throw new SeyfertError('channels.values(guildId) is not of the expected size');
+				throw new SeyfertError('CACHE_CHANNELS_GUILD_VALUES_SIZE_MISMATCH', {
+					metadata: { detail: 'channels.values(guildId) is not of the expected size' },
+				});
 			if ((await this.channels.count(guildId)) !== channels.length)
-				throw new SeyfertError('channels.count(guildId) is not of the expected amount');
+				throw new SeyfertError('CACHE_CHANNELS_GUILD_COUNT_MISMATCH', {
+					metadata: { detail: 'channels.count(guildId) is not of the expected amount' },
+				});
 			for (const channel of channels) {
 				const cache = await this.channels.raw(channel.id);
-				if (!cache) throw new SeyfertError(`channels.raw(${channel.id}) has returned undefined!!!!!!`);
+				if (!cache)
+					throw new SeyfertError('INTERNAL_ERROR', {
+						metadata: { detail: `channels.raw(${channel.id}) has returned undefined!!!!!!` },
+					});
 				if (cache.type !== ChannelType.GuildText)
-					throw new SeyfertError(
-						`channels.raw(${channel.id}).type is not of the expected type: ${channel.type}!!!!!!!! (mismatched type: ${cache.type})`,
-					);
+					throw new SeyfertError('INTERNAL_ERROR', {
+						metadata: {
+							detail: `channels.raw(${channel.id}).type is not of the expected type: ${channel.type}!!!!!!!! (mismatched type: ${cache.type})`,
+						},
+					});
 				if (cache.name !== channel.name)
-					throw new SeyfertError(
-						`channels.raw(${channel.id}).name is not the expected value!!!!!! (cache (${cache.name})) (expected value: (${channel.name}))`,
-					);
+					throw new SeyfertError('INTERNAL_ERROR', {
+						metadata: {
+							detail: `channels.raw(${channel.id}).name is not the expected value!!!!!! (cache (${cache.name})) (expected value: (${channel.name}))`,
+						},
+					});
 				if (cache.id !== channel.id)
-					throw new SeyfertError(
-						`channels.raw(${channel.id}).id is not the expected value!!!!!! (cache (${cache.id})) (expected value: (${channel.id}))`,
-					);
+					throw new SeyfertError('INTERNAL_ERROR', {
+						metadata: {
+							detail: `channels.raw(${channel.id}).id is not the expected value!!!!!! (cache (${cache.id})) (expected value: (${channel.id}))`,
+						},
+					});
 			}
 		}
 		if ((await this.channels.values('*')).length !== Object.values(guildChannels).flat().length)
-			throw new SeyfertError('channels.values(*) is not of the expected size');
+			throw new SeyfertError('CACHE_CHANNELS_VALUES_SIZE_MISMATCH', {
+				metadata: { detail: 'channels.values(*) is not of the expected size' },
+			});
 		if ((await this.channels.count('*')) !== Object.values(guildChannels).flat().length)
-			throw new SeyfertError('channels.count(*) is not of the expected amount');
+			throw new SeyfertError('CACHE_CHANNELS_COUNT_MISMATCH', {
+				metadata: { detail: 'channels.count(*) is not of the expected amount' },
+			});
 
 		let count = 0;
 		for (const guildId in guildChannels) {
@@ -923,16 +990,20 @@ export class Cache {
 			for (const channel of channels) {
 				await this.channels.remove(channel.id, guildId);
 				if ((await this.channels.count(guildId)) !== channels.length - ++count)
-					throw new SeyfertError(
-						`channels.count(${guildId}) should be ${channels.length - count}!! please check your remove method`,
-					);
+					throw new SeyfertError('INTERNAL_ERROR', {
+						metadata: {
+							detail: `channels.count(${guildId}) should be ${channels.length - count}!! please check your remove method`,
+						},
+					});
 			}
 			count = 0;
 		}
 
 		// unexpected error message
 		if ((await this.channels.count('*')) !== 0)
-			throw new SeyfertError(`channels.count('*') should be zero!! please check your remove method`);
+			throw new SeyfertError('CACHE_CHANNELS_COUNT_NOT_ZERO', {
+				metadata: { detail: `channels.count('*') should be zero!! please check your remove method` },
+			});
 
 		this.__logger__!.info('the channel cache seems to be alright');
 
@@ -961,16 +1032,25 @@ export class Cache {
 				await this.overwrites.set(CacheFrom.Test, overwrites[0].channel_id, guildId, overwrites);
 			}
 			if ((await this.overwrites.values(guildId)).length !== bulkOverwrites.length)
-				throw new SeyfertError('overwrites.values(channelId) is not of the expected size');
+				throw new SeyfertError('CACHE_OVERWRITES_CHANNEL_VALUES_SIZE_MISMATCH', {
+					metadata: { detail: 'overwrites.values(channelId) is not of the expected size' },
+				});
 			if ((await this.overwrites.count(guildId)) !== bulkOverwrites.length)
-				throw new SeyfertError('overwrites.count(channelId) is not of the expected amount');
+				throw new SeyfertError('CACHE_OVERWRITES_CHANNEL_COUNT_MISMATCH', {
+					metadata: { detail: 'overwrites.count(channelId) is not of the expected amount' },
+				});
 			for (const overwrites of bulkOverwrites) {
 				const cache = await this.overwrites.raw(overwrites[0].channel_id);
-				if (!cache) throw new SeyfertError(`overwrites.raw(${overwrites[0].channel_id}) has returned undefined!!!!!!`);
+				if (!cache)
+					throw new SeyfertError('INTERNAL_ERROR', {
+						metadata: { detail: `overwrites.raw(${overwrites[0].channel_id}) has returned undefined!!!!!!` },
+					});
 				if (cache.length !== overwrites.length)
-					throw new SeyfertError(
-						`overwrites.raw(${overwrites[0].channel_id}).length is not of the expected length!!!!!! (cache (${cache.length})) (expected value: (${overwrites.length}))`,
-					);
+					throw new SeyfertError('INTERNAL_ERROR', {
+						metadata: {
+							detail: `overwrites.raw(${overwrites[0].channel_id}).length is not of the expected length!!!!!! (cache (${cache.length})) (expected value: (${overwrites.length}))`,
+						},
+					});
 				for (const overwrite of overwrites) {
 					if (
 						!cache.some(x => {
@@ -983,7 +1063,9 @@ export class Cache {
 							);
 						})
 					)
-						throw new SeyfertError("cache wasn't found in the overwrites cache");
+						throw new SeyfertError('CACHE_OVERWRITE_NOT_FOUND', {
+							metadata: { detail: "cache wasn't found in the overwrites cache" },
+						});
 				}
 			}
 		}
@@ -995,16 +1077,20 @@ export class Cache {
 			for (const overwrites of bulkOverwrites) {
 				await this.overwrites.remove(overwrites[0].channel_id, guildId);
 				if ((await this.overwrites.count(guildId)) !== bulkOverwrites.length - ++count)
-					throw new SeyfertError(
-						`overwrites.count(${guildId}) should be ${overwrites.length - count}!! please check your remove method`,
-					);
+					throw new SeyfertError('INTERNAL_ERROR', {
+						metadata: {
+							detail: `overwrites.count(${guildId}) should be ${overwrites.length - count}!! please check your remove method`,
+						},
+					});
 			}
 			count = 0;
 		}
 
 		// unexpected error message
 		if ((await this.overwrites.count('*')) !== 0)
-			throw new SeyfertError(`overwrites.count('*') should be zero!! please check your remove method`);
+			throw new SeyfertError('CACHE_OVERWRITES_COUNT_NOT_ZERO', {
+				metadata: { detail: `overwrites.count('*') should be zero!! please check your remove method` },
+			});
 
 		this.__logger__!.info('the overwrites cache seems to be alright.');
 	}

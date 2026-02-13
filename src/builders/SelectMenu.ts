@@ -374,9 +374,11 @@ export class StringSelectOption {
 	setEmoji(emoji: EmojiResolvable) {
 		const resolve = resolvePartialEmoji(emoji);
 		if (!resolve)
-			throw new SeyfertError('Invalid Emoji', {
-				code: 'INVALID_EMOJI',
-				metadata: createValidationMetadata('EmojiResolvable', emoji, { component: 'StringSelectOption' }),
+			throw new SeyfertError('INVALID_EMOJI', {
+				metadata: {
+					...createValidationMetadata('EmojiResolvable', emoji, { component: 'StringSelectOption' }),
+					detail: 'Invalid Emoji',
+				},
 			});
 		this.data.emoji = resolve as APIMessageComponentEmoji;
 		return this;

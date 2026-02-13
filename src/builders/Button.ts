@@ -49,9 +49,11 @@ export class Button extends BaseComponentBuilder<APIButtonComponent> {
 	setEmoji(emoji: EmojiResolvable) {
 		const resolve = resolvePartialEmoji(emoji);
 		if (!resolve)
-			throw new SeyfertError('Invalid Emoji', {
-				code: 'INVALID_EMOJI',
-				metadata: createValidationMetadata('EmojiResolvable', emoji, { component: 'Button' }),
+			throw new SeyfertError('INVALID_EMOJI', {
+				metadata: {
+					...createValidationMetadata('EmojiResolvable', emoji, { component: 'Button' }),
+					detail: 'Invalid Emoji',
+				},
 			});
 		(this.data as Extract<APIButtonComponent, { emoji?: APIMessageComponentEmoji }>).emoji =
 			resolve as APIMessageComponentEmoji;

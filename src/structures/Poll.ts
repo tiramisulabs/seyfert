@@ -38,7 +38,7 @@ export class Poll extends Base {
 	 */
 	async getAnswerVoters(id: ValidAnswerId, checkAnswer = false): Promise<UserStructure[]> {
 		if (checkAnswer && !this.answers.find(answer => answer.answerId === id)) {
-			throw new SeyfertError('Invalid answer id');
+			throw new SeyfertError('INVALID_ANSWER_ID', { metadata: { detail: 'Invalid answer id' } });
 		}
 		return this.client.messages.getAnswerVoters(this.channelId, this.messageId, id);
 	}
