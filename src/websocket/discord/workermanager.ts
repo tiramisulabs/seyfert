@@ -122,13 +122,16 @@ export class WorkerManager extends Map<
 		workerId,
 	}: { shardId: number; workerId?: number } | { shardId?: number; workerId: number }) {
 		if (typeof shardId !== 'number' && typeof workerId !== 'number') {
-			throw new SeyfertError('Undefined workerId and shardId');
+			throw new SeyfertError('Undefined workerId and shardId', {
+				code: 'UNDEFINED_WORKER_AND_SHARD_ID',
+				metadata: { shardId, workerId },
+			});
 		}
 
 		const id = workerId ?? this.calculateWorkerId(shardId!);
 
 		if (!this.has(id)) {
-			throw new SeyfertError(`Worker #${workerId} doesnt exist`);
+			throw new SeyfertError(`Worker #${workerId} doesn't exist`);
 		}
 
 		const data = await this.getWorkerInfo(id);
