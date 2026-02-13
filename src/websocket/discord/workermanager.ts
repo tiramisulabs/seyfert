@@ -180,7 +180,7 @@ export class WorkerManager extends Map<
 
 	prepareWorkers(shards: number[][], rawResharding = false) {
 		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
-		if (!worker_threads) throw new SeyfertError('Cannot prepare workers without worker_threads.');
+		if (!worker_threads) throw new SeyfertError('Cannot prepare workers without worker_threads.', { code: 'WORKER_THREADS_NOT_AVAILABLE' });
 
 		for (let i = 0; i < shards.length; i++) {
 			const registerWorker = (resharding: boolean) => {
