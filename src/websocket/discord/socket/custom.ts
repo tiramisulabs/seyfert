@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomUUID, type UUID } from 'node:crypto';
 import { request } from 'node:https';
 import type { Socket } from 'node:net';
+import { SeyfertError } from '../../../common';
 
 export class SeyfertWebSocket {
 	socket?: Socket = undefined;
@@ -48,7 +49,11 @@ export class SeyfertWebSocket {
 				const accept = res.headers['sec-websocket-accept'];
 				if (accept !== hash) {
 					socket.end(() => {
-						rej(new Error('Invalid sec-websocket-accept header'));
+						rej(
+							new SeyfertError('INVALID_SEC_WEBSOCKET_ACCEPT_HEADER', {
+								metadata: { detail: 'Invalid sec-websocket-accept header' },
+							}),
+						);
 					});
 					return;
 				}

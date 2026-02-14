@@ -1,7 +1,7 @@
 import { promises } from 'node:fs';
 import { dirname } from 'node:path';
 import type { Logger, NulleableCoalising, OmitInsert } from '../common';
-import { BaseHandler, isCloudfareWorker } from '../common';
+import { BaseHandler, isCloudfareWorker, SeyfertError } from '../common';
 import { PermissionsBitField } from '../structures/extra/Permissions';
 import {
 	type APIApplicationCommandChannelOption,
@@ -36,7 +36,9 @@ export class CommandHandler extends BaseHandler {
 
 	async reload(resolve: string | Command) {
 		if (isCloudfareWorker()) {
-			throw new Error('Reload in cloudfare worker is not supported');
+			throw new SeyfertError('RELOAD_NOT_SUPPORTED', {
+				metadata: { detail: 'Reload in Cloudflare worker is not supported' },
+			});
 		}
 		if (typeof resolve === 'string') {
 			return this.values.find(x => x.name === resolve)?.reload();

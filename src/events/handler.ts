@@ -8,6 +8,7 @@ import {
 	type MakeRequired,
 	magicImport,
 	ReplaceRegex,
+	SeyfertError,
 	type SnakeCase,
 } from '../common';
 import type { ClientEvents } from '../events/hooks';
@@ -234,7 +235,9 @@ export class EventHandler extends BaseHandler {
 
 	async reload(name: GatewayEvents | CustomEventsKeys) {
 		if (isCloudfareWorker()) {
-			throw new Error('Reload in cloudfare worker is not supported');
+			throw new SeyfertError('RELOAD_NOT_SUPPORTED', {
+				metadata: { detail: 'Reload in Cloudflare worker is not supported' },
+			});
 		}
 		const event = this.values[name];
 		if (!event?.__filePath) return null;

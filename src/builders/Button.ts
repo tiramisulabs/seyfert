@@ -1,4 +1,4 @@
-import { type EmojiResolvable, resolvePartialEmoji } from '../common';
+import { createValidationMetadata, type EmojiResolvable, resolvePartialEmoji, SeyfertError } from '../common';
 import { type APIButtonComponent, type APIMessageComponentEmoji, type ButtonStyle, ComponentType } from '../types';
 import { BaseComponentBuilder } from './Base';
 
@@ -48,7 +48,13 @@ export class Button extends BaseComponentBuilder<APIButtonComponent> {
 	 */
 	setEmoji(emoji: EmojiResolvable) {
 		const resolve = resolvePartialEmoji(emoji);
-		if (!resolve) throw new Error('Invalid Emoji');
+		if (!resolve)
+			throw new SeyfertError('INVALID_EMOJI', {
+				metadata: {
+					...createValidationMetadata('EmojiResolvable', emoji, { component: 'Button' }),
+					detail: 'Invalid Emoji',
+				},
+			});
 		(this.data as Extract<APIButtonComponent, { emoji?: APIMessageComponentEmoji }>).emoji =
 			resolve as APIMessageComponentEmoji;
 		return this;

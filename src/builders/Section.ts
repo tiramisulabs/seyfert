@@ -1,4 +1,4 @@
-import type { RestOrArray } from '../common';
+import { createValidationMetadata, type RestOrArray, SeyfertError } from '../common';
 import { type APISectionComponent, ComponentType } from '../types';
 import { type Button, fromComponent } from '.';
 import { BaseComponentBuilder } from './Base';
@@ -46,7 +46,15 @@ export class Section<
 	 * @returns The JSON representation of this section
 	 */
 	toJSON() {
-		if (!this.accessory) throw new Error('Cannot convert to JSON without an accessory.');
+		if (!this.accessory)
+			throw new SeyfertError('MISSING_ACCESSORY', {
+				metadata: {
+					...createValidationMetadata('accessory to be set before calling toJSON()', this.accessory, {
+						component: 'Section',
+					}),
+					detail: 'Cannot convert to JSON without an accessory.',
+				},
+			});
 		return {
 			...this.data,
 			components: this.components.map(component => component.toJSON()),

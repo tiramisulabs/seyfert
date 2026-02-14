@@ -2,6 +2,7 @@
 export * from './bot/watcher';
 export * from './it/colors';
 export * from './it/constants';
+export * from './it/error';
 export * from './it/formatter';
 export { AssignFilenameCallback, CustomizeLoggerCallback, Logger, LoggerOptions, LogLevels } from './it/logger';
 export * from './it/utils';

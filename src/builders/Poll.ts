@@ -1,4 +1,11 @@
-import { type DeepPartial, type EmojiResolvable, type RestOrArray, resolvePartialEmoji } from '../common';
+import {
+	createValidationMetadata,
+	type DeepPartial,
+	type EmojiResolvable,
+	type RestOrArray,
+	resolvePartialEmoji,
+	SeyfertError,
+} from '../common';
 import { type APIPollMedia, PollLayoutType, type RESTAPIPollCreate } from '../types';
 
 export class PollBuilder {
@@ -43,7 +50,13 @@ export class PollBuilder {
 	private resolvedPollMedia(data: PollMedia) {
 		if (!data.emoji) return { text: data.text };
 		const resolve = resolvePartialEmoji(data.emoji);
-		if (!resolve) throw new Error('Invalid Emoji');
+		if (!resolve)
+			throw new SeyfertError('INVALID_EMOJI', {
+				metadata: {
+					...createValidationMetadata('EmojiResolvable', data.emoji, { component: 'PollBuilder' }),
+					detail: 'Invalid Emoji',
+				},
+			});
 		return { text: data.text, emoji: resolve };
 	}
 }
