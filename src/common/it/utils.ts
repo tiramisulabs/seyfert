@@ -10,6 +10,7 @@ import {
 	type Logger,
 	type ObjectToLower,
 	type ObjectToSnake,
+	SeyfertError,
 	type TypeArray,
 } from '..';
 
@@ -38,7 +39,8 @@ export function resolveColor(color: ColorResolvable): number {
 	const type = typeof color;
 
 	if (type === 'number') {
-		if (!Number.isInteger(color) || (color as number) < 0) throw new Error(`Invalid color: ${color}`);
+		if (!Number.isInteger(color) || (color as number) < 0)
+			throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Invalid color: ${color}` } });
 		return color as number;
 	}
 
@@ -280,7 +282,10 @@ export const ReplaceRegex = {
 
 export async function magicImport(path: string) {
 	try {
-		if ('Deno' in globalThis) throw new Error('https://github.com/denoland/deno/issues/26136');
+		if ('Deno' in globalThis)
+			throw new SeyfertError('DENO_FILE_API_UNSUPPORTED', {
+				metadata: { detail: 'https://github.com/denoland/deno/issues/26136' },
+			});
 		return require(path);
 	} catch {
 		return new Function('path', 'return import(`file:///${path}?update=${Date.now()}`)')(path);
@@ -417,6 +422,6 @@ export function toBuffer(arrayBuffer: ArrayBuffer) {
 
 export function assertString(value: unknown, message?: string): asserts value is string {
 	if (!(typeof value === 'string' && value !== '')) {
-		throw new Error(message ?? 'Value is not a string');
+		throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: message ?? 'Value is not a string' } });
 	}
 }

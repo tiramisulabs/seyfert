@@ -1,7 +1,7 @@
 import type { ValidAnswerId } from '../api/Routes/channels';
 import type { MessageStructure, UserStructure } from '../client/transformers';
 import type { UsingClient } from '../commands';
-import { type ObjectToLower, toCamelCase } from '../common';
+import { type ObjectToLower, SeyfertError, toCamelCase } from '../common';
 import type { APIPoll } from '../types';
 import { Base } from './extra/Base';
 
@@ -38,7 +38,7 @@ export class Poll extends Base {
 	 */
 	async getAnswerVoters(id: ValidAnswerId, checkAnswer = false): Promise<UserStructure[]> {
 		if (checkAnswer && !this.answers.find(answer => answer.answerId === id)) {
-			throw new Error('Invalid answer id');
+			throw new SeyfertError('INVALID_ANSWER_ID', { metadata: { detail: 'Invalid answer id' } });
 		}
 		return this.client.messages.getAnswerVoters(this.channelId, this.messageId, id);
 	}

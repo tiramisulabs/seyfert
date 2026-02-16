@@ -6,7 +6,7 @@ import {
 	Transformers,
 	type UserStructure,
 } from '../client/transformers';
-import type { MakeRequired } from '../common';
+import { type MakeRequired, SeyfertError } from '../common';
 import { type AllChannels, channelFrom } from '../structures';
 import {
 	type APIApplicationCommandInteractionDataOption,
@@ -143,10 +143,10 @@ export class OptionResolver {
 	private getTypedOption(name: string, allow: ApplicationCommandOptionType[]) {
 		const option = this.getHoisted(name);
 		if (!option) {
-			throw new Error('Bad Option');
+			throw new SeyfertError('BAD_OPTION', { metadata: { detail: 'Bad Option' } });
 		}
 		if (!allow.includes(option.type)) {
-			throw new Error('Bad Option');
+			throw new SeyfertError('BAD_OPTION', { metadata: { detail: 'Bad Option' } });
 		}
 		return option;
 	}

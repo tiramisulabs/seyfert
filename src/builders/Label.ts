@@ -1,3 +1,4 @@
+import { createValidationMetadata, SeyfertError } from '../common';
 import { type APILabelComponent, ComponentType } from '../types';
 import { type Checkbox, type CheckboxGroup, fromComponent, type RadioGroup } from '.';
 import { BaseComponentBuilder } from './Base';
@@ -36,7 +37,15 @@ export class Label extends BaseComponentBuilder<APILabelComponent> {
 	}
 
 	toJSON(): APILabelComponent {
-		if (!this.component) throw new Error('Cannot convert to JSON without a component.');
+		if (!this.component)
+			throw new SeyfertError('MISSING_COMPONENT', {
+				metadata: {
+					...createValidationMetadata('component to be set before calling toJSON()', this.component, {
+						component: 'Label',
+					}),
+					detail: 'Cannot convert to JSON without a component.',
+				},
+			});
 		return {
 			...(this.data as APILabelComponent),
 			component: this.component.toJSON(),

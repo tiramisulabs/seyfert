@@ -4,7 +4,7 @@ import type { Worker as WorkerThreadsWorker } from 'node:worker_threads';
 import { ApiHandler, type CustomWorkerManagerEvents, Logger, type UsingClient, type WorkerClient } from '../..';
 import { type Adapter, MemoryAdapter } from '../../cache';
 import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
-import { BASE_HOST, type Identify, lazyLoadPackage, MergeOptions, type PickPartial } from '../../common';
+import { BASE_HOST, type Identify, lazyLoadPackage, MergeOptions, type PickPartial, SeyfertError } from '../../common';
 import type { GatewayPresenceUpdateData, GatewaySendPayload, RESTGetAPIGatewayBotResult } from '../../types';
 import { properties, WorkerManagerDefaults } from '../constants';
 import { DynamicBucket } from '../structures';
@@ -122,13 +122,17 @@ export class WorkerManager extends Map<
 		workerId,
 	}: { shardId: number; workerId?: number } | { shardId?: number; workerId: number }) {
 		if (typeof shardId !== 'number' && typeof workerId !== 'number') {
-			throw new Error('Undefined workerId and shardId');
+			throw new SeyfertError('WORKER_AND_SHARD_ID_REQUIRED', {
+				metadata: { ...{ shardId, workerId }, detail: 'Undefined workerId and shardId' },
+			});
 		}
 
 		const id = workerId ?? this.calculateWorkerId(shardId!);
 
 		if (!this.has(id)) {
-			throw new Error(`Worker #${workerId} doesnt exist`);
+			throw new SeyfertError('WORKER_NOT_FOUND', {
+				metadata: { ...{ workerId: id }, detail: `Worker #${id} doesn't exist` },
+			});
 		}
 
 		const data = await this.getWorkerInfo(id);
@@ -143,7 +147,17 @@ export class WorkerManager extends Map<
 	calculateWorkerId(shardId: number) {
 		const workerId = Math.floor((shardId - this.shardStart) / this.shardsPerWorker);
 		if (workerId >= this.totalWorkers) {
-			throw new Error('Invalid shardId');
+			throw new SeyfertError('INVALID_SHARD_ID', {
+				metadata: {
+					...{
+						shardId,
+						shardStart: this.shardStart,
+						shardsPerWorker: this.shardsPerWorker,
+						totalWorkers: this.totalWorkers,
+					},
+					detail: 'Invalid shardId',
+				},
+			});
 		}
 		return workerId;
 	}
@@ -166,7 +180,10 @@ export class WorkerManager extends Map<
 
 	prepareWorkers(shards: number[][], rawResharding = false) {
 		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
-		if (!worker_threads) throw new Error('Cannot prepare workers without worker_threads.');
+		if (!worker_threads)
+			throw new SeyfertError('WORKER_THREADS_REQUIRED', {
+				metadata: { detail: 'Cannot prepare workers without worker_threads.' },
+			});
 
 		for (let i = 0; i < shards.length; i++) {
 			const registerWorker = (resharding: boolean) => {
@@ -214,7 +231,10 @@ export class WorkerManager extends Map<
 			return worker;
 		}
 		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
-		if (!worker_threads) throw new Error('Cannot create worker without worker_threads.');
+		if (!worker_threads)
+			throw new SeyfertError('WORKER_THREADS_REQUIRED', {
+				metadata: { detail: 'Cannot create worker without worker_threads.' },
+			});
 		const env: Record<string, any> = {
 			SEYFERT_SPAWNING: 'true',
 		};
@@ -357,7 +377,9 @@ export class WorkerManager extends Map<
 				{
 					const worker = this.has(message.workerId);
 					if (!worker) {
-						throw new Error('Invalid request from unavailable worker');
+						throw new SeyfertError('INVALID_WORKER_REQUEST', {
+							metadata: { detail: 'Invalid request from unavailable worker' },
+						});
 					}
 					// @ts-expect-error
 					const result = await this.cacheAdapter[message.method](...message.args);
@@ -492,7 +514,7 @@ export class WorkerManager extends Map<
 		return new Promise<T>((res, rej) => {
 			const timeout = setTimeout(() => {
 				this.promises.delete(nonce);
-				rej(new Error(message));
+				rej(new SeyfertError('WORKER_TIMEOUT', { metadata: { ...{ nonce }, detail: message } }));
 			}, 60e3);
 			this.promises.set(nonce, { resolve: res, timeout });
 		});
@@ -503,7 +525,7 @@ export class WorkerManager extends Map<
 		const worker = this.has(workerId);
 
 		if (!worker) {
-			throw new Error(`Worker #${workerId} doesnt exist`);
+			throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Worker #${workerId} doesn't exist` } });
 		}
 
 		const nonce = this.generateNonce();
@@ -523,7 +545,7 @@ export class WorkerManager extends Map<
 		const worker = this.has(workerId);
 
 		if (!worker) {
-			throw new Error(`Worker #${workerId} doesnt exist`);
+			throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Worker #${workerId} doesn't exist` } });
 		}
 
 		const nonce = this.generateNonce();
@@ -537,7 +559,7 @@ export class WorkerManager extends Map<
 		const worker = this.has(workerId);
 
 		if (!worker) {
-			throw new Error(`Worker #${workerId} doesnt exist`);
+			throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Worker #${workerId} doesn't exist` } });
 		}
 
 		const nonce = this.generateNonce();
@@ -598,11 +620,13 @@ export class WorkerManager extends Map<
 			});
 		}
 		if (this.totalShards / this.shardsPerWorker > this.totalWorkers) {
-			throw new Error(
-				`Cannot create enough shards in the specified workers, minimum: ${Math.ceil(
-					this.totalShards / this.shardsPerWorker,
-				)}`,
-			);
+			throw new SeyfertError('INTERNAL_ERROR', {
+				metadata: {
+					detail: `Cannot create enough shards in the specified workers, minimum: ${Math.ceil(
+						this.totalShards / this.shardsPerWorker,
+					)}`,
+				},
+			});
 		}
 
 		const spaces = WorkerManager.prepareSpaces(

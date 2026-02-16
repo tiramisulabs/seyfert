@@ -9,7 +9,7 @@ import type {
 import { LimitedCollection } from '../collection';
 import { BaseCommand, type RegisteredMiddlewares, type UsingClient } from '../commands';
 import type { FileLoaded } from '../commands/handler';
-import { BaseHandler, isCloudfareWorker, type Logger, magicImport, type OnFailCallback } from '../common';
+import { BaseHandler, isCloudfareWorker, type Logger, magicImport, type OnFailCallback, SeyfertError } from '../common';
 import type { ComponentInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from '../structures';
 import { ComponentCommand, InteractionCommandType } from './componentcommand';
 import type { ComponentContext } from './componentcontext';
@@ -282,7 +282,9 @@ export class ComponentHandler extends BaseHandler {
 	async reload(path: string) {
 		if (!this.client.components) return;
 		if (isCloudfareWorker()) {
-			throw new Error('Reload in cloudfare worker is not supported');
+			throw new SeyfertError('RELOAD_NOT_SUPPORTED', {
+				metadata: { detail: 'Reload in Cloudflare worker is not supported' },
+			});
 		}
 		const component = this.client.components.commands.find(
 			x =>

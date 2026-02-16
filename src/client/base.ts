@@ -38,6 +38,7 @@ import {
 	magicImport,
 	ReactionShorter,
 	RoleShorter,
+	SeyfertError,
 	TemplateShorter,
 	ThreadShorter,
 	UsersShorter,
@@ -277,7 +278,7 @@ export class BaseClient {
 	}
 
 	protected async onPacket(..._packet: unknown[]): Promise<any> {
-		throw new Error('Function not implemented');
+		throw new SeyfertError('FUNCTION_NOT_IMPLEMENTED', { metadata: { detail: 'Function not implemented' } });
 	}
 
 	/**
@@ -443,7 +444,9 @@ export class BaseClient {
 
 				const uniqueError = errors.find(er => errors.filter(err => err.message === er.message).length === 1);
 				if (uniqueError) throw uniqueError;
-				throw new Error('No seyfert.config file found');
+				throw new SeyfertError('NO_SEYFERT_CONFIG', {
+					metadata: { detail: 'No seyfert.config file found' },
+				});
 			}))) as T;
 
 		const { locations, debug, ...env } = seyfertConfig;

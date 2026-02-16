@@ -49,6 +49,19 @@ npm i seyfert
 ## Contributing
 We are open to contributions, fork the repo and make your changes!
 
+## Typed errors
+
+Seyfert throws `SeyfertError` in validation/runtime checks and can include:
+
+- `code`: machine-readable identifier (`INVALID_EMOJI`, `INVALID_OPTIONS_LENGTH`, `MISSING_COMPONENT`, etc.)
+- `metadata`: structured context for diagnostics
+
+For validation errors, metadata follows this convention:
+
+- `expected`: expected value/shape
+- `received`: value actually received
+- `receivedType`: optional primitive/runtime type
+
 ## Useful links
 
 - [GitHub Repository](https://github.com/tiramisulabs/seyfert)

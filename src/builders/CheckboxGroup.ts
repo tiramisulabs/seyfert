@@ -1,4 +1,4 @@
-import type { RestOrArray } from '../common';
+import { createValidationMetadata, type RestOrArray, SeyfertError } from '../common';
 import { type APICheckboxGroupComponent, type APICheckboxGroupOption, ComponentType } from '../types';
 import { BaseComponentBuilder, type OptionValuesLength } from './Base';
 
@@ -64,7 +64,14 @@ export class CheckboxGroup extends BaseComponentBuilder<APICheckboxGroupComponen
 		const options = [...this.#options.map(option => option.toJSON()), ...(this.data.options ?? [])];
 		const optionCount = options.length;
 		if (optionCount < 2 || optionCount > 10) {
-			throw new Error('RadioGroup must have between 2 and 10 options.');
+			throw new SeyfertError('INVALID_OPTIONS_LENGTH', {
+				metadata: {
+					...createValidationMetadata('number of options between 2 and 10', optionCount, {
+						component: 'CheckboxGroup',
+					}),
+					detail: 'CheckboxGroup must have between 2 and 10 options.',
+				},
+			});
 		}
 		return {
 			...this.data,
