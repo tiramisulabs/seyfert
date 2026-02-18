@@ -1021,7 +1021,7 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 	getFiles(customId: string, required: true): Attachment[];
 	getFiles(customId: string, required?: false): Attachment[] | undefined;
 	getFiles(customId: string, required?: boolean): Attachment[] | undefined {
-		const value = this.getComponent(customId, [ComponentType.File]);
+		const value = this.getComponent(customId, [ComponentType.FileUpload]);
 		if (value) {
 			const attachments = this.data.resolved?.attachments;
 			if (attachments) {
@@ -1045,3 +1045,4 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 		return true;
 	}
 }
+
