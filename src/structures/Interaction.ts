@@ -1045,4 +1045,3 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 		return true;
 	}
 }
-
