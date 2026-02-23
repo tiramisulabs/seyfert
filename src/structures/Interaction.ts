@@ -875,9 +875,9 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 		return this.data.components;
 	}
 
-	getComponent(customId: string, type: ComponentType[] = []): ObjectToLower<ModalSubmitInsideLabelData> | undefined {
+	getComponent(customId: string, type?: ComponentType[]): ObjectToLower<ModalSubmitInsideLabelData> | undefined {
 		return this.components
-			.filter(c => c.type === ComponentType.Label && c.component && (!type.length || type.includes(c.component.type)))
+			.filter(c => c.type === ComponentType.Label && c.component && (!type?.length || type.includes(c.component.type)))
 			.find(c => c.component!.customId === customId)?.component;
 	}
 
@@ -1007,7 +1007,7 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 	getInputValue(customId: string, required?: false): string | string[] | undefined;
 	getInputValue(customId: string, required?: boolean): string | string[] | undefined {
 		let value: string | string[] | undefined;
-		const get = this.getComponent(customId, [ComponentType.TextInput, ComponentType.StringSelect]);
+		const get = this.getComponent(customId);
 		if (get) {
 			if ('value' in get) value = get.value as string;
 			if ('values' in get) value = get.values;
@@ -1045,4 +1045,3 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 		return true;
 	}
 }
-
