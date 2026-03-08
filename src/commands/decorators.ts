@@ -153,11 +153,11 @@ export function Declare(declare: CommandDeclareOptions) {
 			name = declare.name;
 			nsfw = declare.nsfw;
 			props = declare.props;
-			contexts = declare.contexts?.map(i => 
-				typeof i === 'string' ? InteractionContextType[i] : i
-			) ?? Object.values(InteractionContextType).filter(x => typeof x === 'number');
-			integrationTypes = declare.integrationTypes?.map(i => 
-				typeof i === 'string' ? ApplicationIntegrationType[i] : i
+			contexts =
+				declare.contexts?.map(i => (typeof i === 'string' ? InteractionContextType[i] : i)) ??
+				Object.values(InteractionContextType).filter(x => typeof x === 'number');
+			integrationTypes = declare.integrationTypes?.map(i =>
+				typeof i === 'string' ? ApplicationIntegrationType[i] : i,
 			) ?? [ApplicationIntegrationType.GuildInstall];
 			defaultMemberPermissions = declare.defaultMemberPermissions
 				? PermissionsBitField.resolve(declare.defaultMemberPermissions)
