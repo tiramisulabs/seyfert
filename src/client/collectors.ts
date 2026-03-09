@@ -115,7 +115,6 @@ export class Collectors {
 				} catch (e) {
 					await i.options.onRunError?.(data as never, e, stop);
 				}
-				break;
 			}
 		}
 	}
