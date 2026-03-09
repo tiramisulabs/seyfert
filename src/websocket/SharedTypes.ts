@@ -58,6 +58,7 @@ import type {
 	GatewayThreadListSyncDispatchData,
 	GatewayThreadMembersUpdateDispatchData,
 	GatewayThreadMemberUpdateDispatchData,
+	GatewayThreadUpdateDispatchData,
 	GatewayTypingStartDispatchData,
 	GatewayUserUpdateDispatchData,
 	GatewayVoiceChannelEffectSendDispachData,
@@ -113,7 +114,7 @@ export interface Events {
 	[GatewayDispatchEvents.AutoModerationActionExecution]: GatewayAutoModerationActionExecutionDispatchData;
 	[GatewayDispatchEvents.ThreadCreate]: GatewayThreadCreateDispatchData;
 	[GatewayDispatchEvents.ThreadDelete]: GatewayThreadDeleteDispatchData;
-	[GatewayDispatchEvents.ThreadUpdate]: GatewayThreadDeleteDispatchData;
+	[GatewayDispatchEvents.ThreadUpdate]: GatewayThreadUpdateDispatchData;
 	[GatewayDispatchEvents.ThreadListSync]: GatewayThreadListSyncDispatchData;
 	[GatewayDispatchEvents.ThreadMemberUpdate]: GatewayThreadMemberUpdateDispatchData;
 	[GatewayDispatchEvents.ThreadMembersUpdate]: GatewayThreadMembersUpdateDispatchData;
