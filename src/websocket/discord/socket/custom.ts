@@ -175,8 +175,7 @@ export class SeyfertWebSocket {
 		this.socket?.destroy();
 		this.socket = undefined;
 		if (this.__closeCalled) return;
-		if (!this.__lastError) return this.connect();
-		this.onclose(this.__lastError);
+		this.onclose(this.__lastError ?? { code: 1006, reason: 'Connection lost' });
 		this.__lastError = null;
 	}
 
