@@ -290,44 +290,46 @@ export class BaseClient {
 		headers: { 'Content-Type'?: string };
 		response: APIInteractionResponse | FormData;
 	}> {
-		return new Promise(async r => {
-			await this.handleCommand.interaction(rawBody, -1, async ({ body, files }) => {
-				let response: FormData | APIInteractionResponse;
-				const headers: { 'Content-Type'?: string } = {};
+		return new Promise((resolve, reject) => {
+			this.handleCommand
+				.interaction(rawBody, -1, async ({ body, files }) => {
+					let response: FormData | APIInteractionResponse;
+					const headers: { 'Content-Type'?: string } = {};
 
-				if (files) {
-					response = new FormData();
-					for (const [index, file] of files.entries()) {
-						const fileKey = file.key ?? `files[${index}]`;
-						if (isBufferLike(file.data)) {
-							let data: Exclude<typeof file.data, Uint8Array | Uint8ClampedArray>;
-							if (
-								Buffer.isBuffer(file.data) ||
-								file.data instanceof Uint8Array ||
-								file.data instanceof Uint8ClampedArray
-							) {
-								data = toArrayBuffer(file.data);
+					if (files) {
+						response = new FormData();
+						for (const [index, file] of files.entries()) {
+							const fileKey = file.key ?? `files[${index}]`;
+							if (isBufferLike(file.data)) {
+								let data: Exclude<typeof file.data, Uint8Array | Uint8ClampedArray>;
+								if (
+									Buffer.isBuffer(file.data) ||
+									file.data instanceof Uint8Array ||
+									file.data instanceof Uint8ClampedArray
+								) {
+									data = toArrayBuffer(file.data);
+								} else {
+									data = file.data;
+								}
+								response.append(fileKey, new Blob([data], { type: file.contentType }), file.filename);
 							} else {
-								data = file.data;
+								response.append(fileKey, new Blob([`${file.data}`], { type: file.contentType }), file.filename);
 							}
-							response.append(fileKey, new Blob([data], { type: file.contentType }), file.filename);
-						} else {
-							response.append(fileKey, new Blob([`${file.data}`], { type: file.contentType }), file.filename);
 						}
+						if (body) {
+							response.append('payload_json', JSON.stringify(body));
+						}
+					} else {
+						response = body ?? {};
+						headers['Content-Type'] = 'application/json';
 					}
-					if (body) {
-						response.append('payload_json', JSON.stringify(body));
-					}
-				} else {
-					response = body ?? {};
-					headers['Content-Type'] = 'application/json';
-				}
 
-				return r({
-					headers,
-					response,
-				});
-			});
+					resolve({
+						headers,
+						response,
+					});
+				})
+				.catch(reject);
 		});
 	}
 

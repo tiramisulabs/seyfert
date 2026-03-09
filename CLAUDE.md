@@ -53,7 +53,7 @@ src/
 
 Uses [`@commitlint/config-conventional`](https://github.com/conventional-changelog/commitlint/tree/master/@commitlint/config-conventional).
 
-Format: `type(scope): description` — lowercase, imperative, no trailing period, header ≤ 100 chars.
+Format: `type(scope): description` — lowercase, imperative, no trailing period, **header must not exceed 100 characters** (enforced by commitlint `header-max-length` rule via husky commit-msg hook). Keep descriptions short and direct; avoid filler like "for improved readability and error handling".
 
 Types: `feat` `fix` `chore` `refactor` `build` `ci` `docs` `perf` `test` `revert` `style`
 
