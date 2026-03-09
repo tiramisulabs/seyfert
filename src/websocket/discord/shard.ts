@@ -292,7 +292,7 @@ export class Shard {
 								clearTimeout(this.connectionTimeout);
 								this.connectionTimeout = undefined;
 								this.isReady = true;
-								this.offlineSendQueue.map(resolve => resolve());
+								this.offlineSendQueue.splice(0).map(resolve => resolve());
 								this.options.handlePayload(this.id, packet);
 							}
 							break;
@@ -305,7 +305,7 @@ export class Shard {
 
 							this.data.resume_gateway_url = packet.d.resume_gateway_url;
 							this.data.session_id = packet.d.session_id;
-							this.offlineSendQueue.map(resolve => resolve());
+							this.offlineSendQueue.splice(0).map(resolve => resolve());
 							this.options.handlePayload(this.id, packet);
 							if (this.pendingGuilds?.size === 0) {
 								this.isReady = true;
