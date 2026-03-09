@@ -126,17 +126,22 @@ export class ComponentHandler extends BaseHandler {
 					if (!collector) return resolve(null);
 
 					let nodeTimeout: NodeJS.Timeout | undefined;
-
-					this.values.get(messageId)!.__run(customId, interaction => {
+					const callback: ComponentCallback = interaction => {
 						clearTimeout(nodeTimeout);
 						//@ts-expect-error generic
 						resolve(interaction);
-					});
+					};
+
+					this.values.get(messageId)!.__run(customId, callback);
 
 					if (timeout && timeout > 0)
 						nodeTimeout = setTimeout(() => {
+							const current = this.values.get(messageId);
+							if (current) {
+								const idx = current.components.findIndex(c => c.callback === callback);
+								if (idx !== -1) current.components.splice(idx, 1);
+							}
 							resolve(null);
-							// by default 15 seconds in case user don't do anything
 						}, timeout);
 				}),
 			resetTimeouts: () => {
