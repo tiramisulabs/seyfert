@@ -9,15 +9,16 @@ import type {
 } from '..';
 import type { ReturnCache } from '../cache';
 import type { GuildMemberStructure, GuildStructure } from '../client/transformers';
-import type { RegisteredMiddlewares } from '../commands';
+import type { ExtendContext, RegisteredMiddlewares } from '../commands';
+import type { BaseContext } from '../commands/basecontext';
 import type { ComponentInteractionMessageUpdate, MakeRequired } from '../common';
 import { ComponentType } from '../types';
 import { InteractionResponseContext } from './interactioncontext';
 
 export interface ComponentContext<
 	Type extends keyof ContextComponentCommandInteractionMap = keyof ContextComponentCommandInteractionMap,
-	M extends keyof RegisteredMiddlewares = never,
-> extends InteractionResponseContext<ContextComponentCommandInteractionMap[Type], M> {}
+> extends BaseContext,
+		ExtendContext {}
 
 export class ComponentContext<
 	Type extends keyof ContextComponentCommandInteractionMap,

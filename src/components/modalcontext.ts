@@ -1,11 +1,11 @@
 import type { ModalCommand, ModalSubmitInteraction, ReturnCache } from '..';
 import type { GuildMemberStructure, GuildStructure } from '../client/transformers';
-import type { RegisteredMiddlewares } from '../commands';
+import type { ExtendContext, RegisteredMiddlewares } from '../commands';
+import type { BaseContext } from '../commands/basecontext';
 import type { MakeRequired } from '../common';
 import { InteractionResponseContext } from './interactioncontext';
 
-export interface ModalContext<M extends keyof RegisteredMiddlewares = never>
-	extends InteractionResponseContext<ModalSubmitInteraction, M> {}
+export interface ModalContext extends BaseContext, ExtendContext {}
 
 export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends InteractionResponseContext<
 	ModalSubmitInteraction,
