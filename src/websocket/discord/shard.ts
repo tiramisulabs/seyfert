@@ -1,5 +1,5 @@
 import { inflateSync } from 'node:zlib';
-import { delay, hasIntent, Logger, LogLevels, type MakeRequired, MergeOptions } from '../../common';
+import { delay, hasIntent, Logger, LogLevels, type MakeRequired, MergeOptions, SeyfertError } from '../../common';
 import {
 	type APIGuildMember,
 	GatewayCloseCodes,
@@ -58,6 +58,7 @@ export class Shard {
 			presences: GatewayGuildMembersChunkPresence[];
 			resolve: (value: { members: APIGuildMember[]; presences: GatewayGuildMembersChunkPresence[] }) => void;
 			reject: (reason?: any) => void;
+			timeout: NodeJS.Timeout;
 			options:
 				| Omit<GatewayRequestGuildMembersDataWithQuery, 'nonce'>
 				| Omit<GatewayRequestGuildMembersDataWithUserIds, 'nonce'>;
@@ -347,7 +348,9 @@ export class Shard {
 								}
 								guildMemberChunk.members.push(...packet.d.members);
 								if (packet.d.presences) guildMemberChunk.presences.push(...packet.d.presences);
+								guildMemberChunk.timeout.refresh();
 								if (packet.d.chunk_index + 1 === packet.d.chunk_count) {
+									clearTimeout(guildMemberChunk.timeout);
 									this.requestGuildMembersChunk.delete(packet.d.nonce);
 									guildMemberChunk.resolve({
 										members: guildMemberChunk.members,
@@ -418,11 +421,22 @@ export class Shard {
 			resolve = res;
 			reject = rej;
 		});
+		const timeout = setTimeout(() => {
+			const chunk = this.requestGuildMembersChunk.get(nonce);
+			if (chunk) {
+				this.requestGuildMembersChunk.delete(nonce);
+				chunk.reject(
+					new SeyfertError('REQUEST_GUILD_MEMBERS_TIMEOUT', { metadata: { detail: '30s without receiving a chunk' } }),
+				);
+			}
+		}, 30_000);
+
 		this.requestGuildMembersChunk.set(nonce, {
 			members: [],
 			presences: [],
 			reject,
 			resolve,
+			timeout,
 			options,
 		});
 
