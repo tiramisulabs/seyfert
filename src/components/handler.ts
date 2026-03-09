@@ -197,8 +197,9 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	onModalSubmit(interaction: ModalSubmitInteraction) {
-		setImmediate(() => this.modals.delete(interaction.user.id));
-		return this.modals.get(interaction.user.id)?.(interaction);
+		const callback = this.modals.get(interaction.user.id);
+		this.modals.delete(interaction.user.id);
+		return callback?.(interaction);
 	}
 
 	deleteValue(id: string, reason?: string) {
