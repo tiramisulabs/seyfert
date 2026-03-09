@@ -188,7 +188,7 @@ export class Cache {
 		return this.hasIntent('GuildVoiceStates');
 	}
 
-	get hasPrenseceUpdates() {
+	get hasPresenceUpdates() {
 		return this.hasIntent('GuildPresences');
 	}
 
