@@ -499,17 +499,9 @@ export class VoiceChannelMethods extends DiscordBase {
 		});
 	}
 
-	public async members(force?: boolean): Promise<Collection<string, GuildMemberStructure>> {
-		const collection = new Collection<string, GuildMemberStructure>();
-
+	public async members(force?: boolean): Promise<GuildMemberStructure[]> {
 		const states = await this.states();
-
-		for (const state of states) {
-			const member = await state.member(force);
-			collection.set(member.id, member);
-		}
-
-		return collection;
+		return await Promise.all(states.map(state => state.member(force)));
 	}
 }
 
