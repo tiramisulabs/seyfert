@@ -104,7 +104,7 @@ export class Collectors {
 
 		const data = (await RawEvents[name]?.(client, raw as never)) ?? raw;
 
-		for (const i of collectors) {
+		for (const i of [...collectors]) {
 			if (await i.options.filter(data as never)) {
 				i.idle?.refresh();
 				const stop = (reason = 'unknown') => {
