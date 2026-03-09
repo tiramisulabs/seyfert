@@ -121,17 +121,13 @@ export class BaseMessage extends DiscordBase {
 
 		if (data.mentions?.length) {
 			this.mentions.users = this.guildId
-				? data.mentions.map(m =>
-						Transformers.GuildMember(
-							this.client,
-							{
-								...(m as APIUser & { member?: Omit<APIGuildMember, 'user'> }).member!,
-								user: m,
-							},
-							m,
-							this.guildId!,
-						),
-					)
+				? data.mentions.map(m => {
+						const memberData = (m as APIUser & { member?: Omit<APIGuildMember, 'user'> }).member;
+						if (memberData) {
+							return Transformers.GuildMember(this.client, { ...memberData, user: m }, m, this.guildId!);
+						}
+						return Transformers.User(this.client, m);
+					})
 				: data.mentions.map(u => Transformers.User(this.client, u));
 		}
 
