@@ -28,8 +28,8 @@ export interface DecoratorDeclareOptions {
 	defaultMemberPermissions?: PermissionStrings | bigint;
 	guildId?: string[];
 	nsfw?: boolean;
-	integrationTypes?: (keyof typeof ApplicationIntegrationType)[];
-	contexts?: (keyof typeof InteractionContextType)[];
+	integrationTypes?: (keyof typeof ApplicationIntegrationType)[] | ApplicationIntegrationType[];
+	contexts?: (keyof typeof InteractionContextType)[] | InteractionContextType[];
 	ignore?: IgnoreCommand;
 	aliases?: string[];
 	props?: ExtraProps;
@@ -154,11 +154,11 @@ export function Declare(declare: CommandDeclareOptions) {
 			nsfw = declare.nsfw;
 			props = declare.props;
 			contexts =
-				declare.contexts?.map(i => InteractionContextType[i]) ??
+				declare.contexts?.map(i => (typeof i === 'string' ? InteractionContextType[i] : i)) ??
 				Object.values(InteractionContextType).filter(x => typeof x === 'number');
-			integrationTypes = declare.integrationTypes?.map(i => ApplicationIntegrationType[i]) ?? [
-				ApplicationIntegrationType.GuildInstall,
-			];
+			integrationTypes = declare.integrationTypes?.map(i =>
+				typeof i === 'string' ? ApplicationIntegrationType[i] : i,
+			) ?? [ApplicationIntegrationType.GuildInstall];
 			defaultMemberPermissions = declare.defaultMemberPermissions
 				? PermissionsBitField.resolve(declare.defaultMemberPermissions)
 				: declare.defaultMemberPermissions;
