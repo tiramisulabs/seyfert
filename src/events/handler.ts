@@ -209,7 +209,11 @@ export class EventHandler extends BaseHandler {
 
 			await (Event.run as any)(hook, client, shardId);
 		} catch (e) {
-			await this.onFail(name, e);
+			try {
+				await this.onFail(name, e);
+			} catch (err) {
+				this.logger.error('Error in onFail handler', err);
+			}
 		}
 	}
 
