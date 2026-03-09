@@ -1,8 +1,5 @@
 import type { ModalCommand, ModalSubmitInteraction, ReturnCache } from '..';
-import type {
-	GuildMemberStructure,
-	GuildStructure,
-} from '../client/transformers';
+import type { GuildMemberStructure, GuildStructure } from '../client/transformers';
 import type { RegisteredMiddlewares } from '../commands';
 import type { MakeRequired } from '../common';
 import { InteractionResponseContext } from './interactioncontext';

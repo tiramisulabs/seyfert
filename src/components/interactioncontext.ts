@@ -97,9 +97,7 @@ export abstract class InteractionResponseContext<
 	channel(mode: 'cache'): ReturnCache<AllChannels>;
 	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
 		if (mode === 'cache')
-			return this.client.cache.adapter.isAsync
-				? Promise.resolve(this._interaction.channel)
-				: this._interaction.channel;
+			return this.client.cache.adapter.isAsync ? Promise.resolve(this._interaction.channel) : this._interaction.channel;
 		return this.client.channels.fetch(this.channelId, mode === 'rest');
 	}
 

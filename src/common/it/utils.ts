@@ -76,6 +76,11 @@ export function isObject(o: any): o is Record<string, unknown> {
 	return o && typeof o === 'object' && !Array.isArray(o);
 }
 
+function isPlainObject(o: object): o is Record<string, unknown> {
+	const proto = Object.getPrototypeOf(o);
+	return proto === Object.prototype || proto === null;
+}
+
 /**
  * Merges multiple options objects together, deeply extending objects.
  * @param defaults The default options object.
@@ -208,21 +213,21 @@ export function toSnakeCase<Obj extends Record<string, any>>(target: Obj): Objec
 				result[ReplaceRegex.snake(key)] = value;
 				break;
 			case 'object': {
+				if (value === null) {
+					result[ReplaceRegex.snake(key)] = null;
+					break;
+				}
 				if (Array.isArray(value)) {
 					result[ReplaceRegex.snake(key)] = value.map(prop =>
 						typeof prop === 'object' && prop ? toSnakeCase(prop) : prop,
 					);
 					break;
 				}
-				if (isObject(value)) {
+				if (isPlainObject(value)) {
 					result[ReplaceRegex.snake(key)] = toSnakeCase(value);
 					break;
 				}
-				if (!Number.isNaN(value)) {
-					result[ReplaceRegex.snake(key)] = null;
-					break;
-				}
-				result[ReplaceRegex.snake(key)] = toSnakeCase(value);
+				result[ReplaceRegex.snake(key)] = value;
 				break;
 			}
 		}
@@ -249,21 +254,21 @@ export function toCamelCase<Obj extends Record<string, any>>(target: Obj): Objec
 				result[ReplaceRegex.camel(key)] = value;
 				break;
 			case 'object': {
+				if (value === null) {
+					result[ReplaceRegex.camel(key)] = null;
+					break;
+				}
 				if (Array.isArray(value)) {
 					result[ReplaceRegex.camel(key)] = value.map(prop =>
 						typeof prop === 'object' && prop ? toCamelCase(prop) : prop,
 					);
 					break;
 				}
-				if (isObject(value)) {
+				if (isPlainObject(value)) {
 					result[ReplaceRegex.camel(key)] = toCamelCase(value);
 					break;
 				}
-				if (!Number.isNaN(value)) {
-					result[ReplaceRegex.camel(key)] = null;
-					break;
-				}
-				result[ReplaceRegex.camel(key)] = toCamelCase(value);
+				result[ReplaceRegex.camel(key)] = value;
 				break;
 			}
 		}
