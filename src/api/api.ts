@@ -123,7 +123,20 @@ export class ApiHandler {
 	protected postMessage<T = unknown>(body: WorkerSendApiRequest) {
 		this.sendMessage(body);
 		return new Promise<T>((res, rej) => {
-			this.workerPromises!.set(body.nonce, { reject: rej, resolve: res });
+			const timeout = setTimeout(() => {
+				this.workerPromises!.delete(body.nonce);
+				rej(new SeyfertError('WORKER_TIMEOUT', { metadata: { detail: `nonce: ${body.nonce}` } }));
+			}, 30_000);
+			this.workerPromises!.set(body.nonce, {
+				resolve: value => {
+					clearTimeout(timeout);
+					res(value);
+				},
+				reject: reason => {
+					clearTimeout(timeout);
+					rej(reason);
+				},
+			});
 		});
 	}
 
