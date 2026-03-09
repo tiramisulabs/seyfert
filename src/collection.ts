@@ -223,6 +223,8 @@ export class LimitedCollection<K, V> {
 
 	private readonly options: LimitedCollectionOptions<K, V>;
 	private timeout: NodeJS.Timeout | undefined = undefined;
+	private _closer: LimitedCollectionData<V> | undefined = undefined;
+	private _closerDirty = true;
 
 	constructor(options: Partial<LimitedCollectionOptions<K, V>> = {}) {
 		this.options = MergeOptions(LimitedCollection.default, options);
@@ -249,10 +251,13 @@ export class LimitedCollection<K, V> {
 		}
 
 		const expireOn = Date.now() + customExpire;
-		this.data.set(
-			key,
-			customExpire > 0 ? { value, expire: customExpire, expireOn } : { value, expire: -1, expireOn: -1 },
-		);
+		const entry = customExpire > 0 ? { value, expire: customExpire, expireOn } : { value, expire: -1, expireOn: -1 };
+		this.data.set(key, entry);
+
+		if (entry.expire !== -1 && (!this._closer || this._closerDirty || entry.expireOn <= this._closer.expireOn)) {
+			this._closer = entry;
+			this._closerDirty = false;
+		}
 
 		if (this.size > this.options.limit) {
 			const iter = this.data.keys();
@@ -294,9 +299,10 @@ export class LimitedCollection<K, V> {
 	get(key: K) {
 		const data = this.data.get(key);
 		if (this.options.resetOnDemand && data && data.expire !== -1) {
-			const oldExpireOn = data.expireOn;
+			const wasCloser = this._closer === data;
 			data.expireOn = Date.now() + data.expire;
-			if (this.closer?.expireOn === oldExpireOn) {
+			if (wasCloser) {
+				this._closerDirty = true;
 				this.resetTimeout();
 			}
 		}
@@ -330,8 +336,12 @@ export class LimitedCollection<K, V> {
 	delete(key: K) {
 		const value = this.raw(key);
 		if (value) {
-			if (value.expireOn === this.closer?.expireOn) setImmediate(() => this.resetTimeout());
+			const wasCloser = this._closer === value;
+			if (wasCloser) this._closerDirty = true;
 			this.options.onDelete?.(key, value.value);
+			const result = this.data.delete(key);
+			if (wasCloser) setImmediate(() => this.resetTimeout());
+			return result;
 		}
 		return this.data.delete(key);
 	}
@@ -348,20 +358,17 @@ export class LimitedCollection<K, V> {
 	 * console.log(closestElement); // Output: { value: 'three', expire: 500, expireOn: [current timestamp + 500] }
 	 */
 	get closer() {
-		let d: LimitedCollectionData<V> | undefined;
-		for (const value of this.data.values()) {
-			if (value.expire === -1) {
-				continue;
+		if (this._closerDirty) {
+			this._closer = undefined;
+			for (const value of this.data.values()) {
+				if (value.expire === -1) continue;
+				if (!this._closer || value.expireOn < this._closer.expireOn) {
+					this._closer = value;
+				}
 			}
-			if (!d) {
-				d = value;
-				continue;
-			}
-			if (d.expireOn > value.expireOn) {
-				d = value;
-			}
+			this._closerDirty = false;
 		}
-		return d;
+		return this._closer;
 	}
 
 	/**
@@ -415,6 +422,8 @@ export class LimitedCollection<K, V> {
 
 	clear() {
 		this.data.clear();
+		this._closer = undefined;
+		this._closerDirty = false;
 		this.resetTimeout();
 	}
 
