@@ -403,21 +403,11 @@ export function hasIntent(intents: number, target: keyof typeof GatewayIntentBit
 }
 
 export function toArrayBuffer(buffer: Buffer | Uint8ClampedArray | Uint8Array) {
-	const arrayBuffer = new ArrayBuffer(buffer.length);
-	const view = new Uint8Array(arrayBuffer);
-	for (let i = 0; i < buffer.length; ++i) {
-		view[i] = buffer[i];
-	}
-	return arrayBuffer;
+	return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
 }
 
 export function toBuffer(arrayBuffer: ArrayBuffer) {
-	const buffer = Buffer.alloc(arrayBuffer.byteLength);
-	const view = new Uint8Array(arrayBuffer);
-	for (let i = 0; i < buffer.length; ++i) {
-		buffer[i] = view[i];
-	}
-	return buffer;
+	return Buffer.from(arrayBuffer);
 }
 
 export function assertString(value: unknown, message?: string): asserts value is string {
