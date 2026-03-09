@@ -46,7 +46,7 @@ export function resolveColor(color: ColorResolvable): number {
 
 	if (type === 'string') {
 		const lookupColor = ColorLookup[color as keyof typeof EmbedColors];
-		if (lookupColor) {
+		if (lookupColor != null) {
 			return lookupColor === -1 ? Math.floor(Math.random() * 0xffffff) : lookupColor;
 		}
 		return (color as string).startsWith('#') ? Number.parseInt((color as string).slice(1), 16) : EmbedColors.Default;
