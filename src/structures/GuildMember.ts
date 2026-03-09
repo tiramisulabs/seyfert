@@ -252,12 +252,16 @@ export class GuildMember extends BaseGuildMember {
 	}
 
 	async manageable(force = false) {
-		this.__me = await this.client.guilds.fetchSelf(this.guildId, force);
-		const ownerId = (await this.client.guilds.fetch(this.guildId, force)).ownerId;
-		if (this.user.id === ownerId) return false;
+		const [me, guild] = await Promise.all([
+			this.client.guilds.fetchSelf(this.guildId, force),
+			this.client.guilds.fetch(this.guildId, force),
+		]);
+		this.__me = me;
+		if (this.user.id === guild.ownerId) return false;
 		if (this.user.id === this.client.botId) return false;
-		if (this.client.botId === ownerId) return true;
-		return (await this.__me!.roles.highest()).position > (await this.roles.highest(force)).position;
+		if (this.client.botId === guild.ownerId) return true;
+		const [myHighest, theirHighest] = await Promise.all([me.roles.highest(), this.roles.highest(force)]);
+		return myHighest.position > theirHighest.position;
 	}
 
 	async bannable(force = false) {
