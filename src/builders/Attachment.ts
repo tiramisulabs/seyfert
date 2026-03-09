@@ -209,6 +209,14 @@ export async function resolveAttachmentData(
 					},
 				});
 			const res = await fetch(data as string);
+			if (!res.ok) {
+				throw new SeyfertError('INVALID_ATTACHMENT_TYPE', {
+					metadata: {
+						...createValidationMetadata('successful HTTP response', `${res.status} ${res.statusText}`),
+						detail: `Failed to fetch attachment from URL: ${res.status} ${res.statusText}`,
+					},
+				});
+			}
 			return {
 				data: Buffer.from(await res.arrayBuffer()),
 				contentType: res.headers.get('content-type'),
