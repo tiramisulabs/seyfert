@@ -36,19 +36,19 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 	}
 
 	override bulk(ids: string[]): ReturnCache<MessageStructure[]> {
-		return fakePromise(super.bulk(ids) as APIMessageResource[]).then(messages =>
-			messages
-				.map(rawMessage => {
-					return this.cache.users && rawMessage?.user_id
-						? fakePromise(
-								this.cache.adapter.get(this.cache.users.hashId(rawMessage.user_id)) as APIUser | undefined,
-							).then(user => {
-								return user ? Transformers.Message(this.client, { ...rawMessage, author: user }) : undefined;
-							})
-						: undefined;
-				})
-				.filter(x => x !== undefined),
-		);
+		return fakePromise(super.bulk(ids) as APIMessageResource[]).then(messages => {
+			const hashes: (string | undefined)[] = this.cache.users
+				? messages.map(x => (x.user_id ? this.cache.users?.hashId(x.user_id) : undefined))
+				: [];
+			return fakePromise(this.cache.adapter.bulkGet(hashes.filter(x => x !== undefined)) as APIUser[]).then(users => {
+				return messages
+					.map(message => {
+						const user = users.find(user => user.id === message.user_id);
+						return user ? Transformers.Message(this.client, { ...message, author: user }) : undefined;
+					})
+					.filter(x => x !== undefined);
+			});
+		});
 	}
 
 	bulkRaw(ids: string[]): ReturnCache<APIMessageResource[]> {
