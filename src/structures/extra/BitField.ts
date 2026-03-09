@@ -1,4 +1,4 @@
-export type BitFieldResolvable<T extends object> = keyof T | number | bigint;
+export type BitFieldResolvable<T extends object> = keyof T | number | bigint | string;
 
 export class BitField<T extends object> {
 	static None = 0n;
@@ -75,16 +75,25 @@ export class BitField<T extends object> {
 		for (const bit of Array.isArray(bits) ? bits : [bits]) {
 			switch (typeof bit) {
 				case 'string':
-					bitsResult |= this.resolve([this.Flags[bit]]);
+					if (bit in this.Flags) {
+						bitsResult |= this.Flags[bit];
+					} else if (/^-?\d+$/.test(bit)) {
+						bitsResult |= BigInt(bit);
+					} else {
+						throw new TypeError(`Cannot resolve bitfield: ${bit}`);
+					}
 					break;
 				case 'number':
+					if (!Number.isInteger(bit)) {
+						throw new TypeError(`Cannot resolve bitfield: ${bit}`);
+					}
 					bitsResult |= BigInt(bit);
 					break;
 				case 'bigint':
 					bitsResult |= bit;
 					break;
 				default:
-					throw new TypeError(`Cannot resolve permission: ${typeof bit === 'symbol' ? String(bit) : (bit as unknown)}`);
+					throw new TypeError(`Cannot resolve bitfield: ${typeof bit === 'symbol' ? String(bit) : (bit as unknown)}`);
 			}
 		}
 

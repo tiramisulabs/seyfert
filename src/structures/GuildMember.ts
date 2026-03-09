@@ -299,6 +299,6 @@ export class InteractionGuildMember extends GuildMember {
 		guildId: string,
 	) {
 		super(client, data, user, guildId);
-		this.permissions = new PermissionsBitField(Number(data.permissions));
+		this.permissions = new PermissionsBitField(data.permissions);
 	}
 }
