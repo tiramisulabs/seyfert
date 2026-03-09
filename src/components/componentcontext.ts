@@ -244,7 +244,7 @@ export class ComponentContext<
 	}
 
 	isButton(): this is ComponentContext<'Button', M> {
-		return this.interaction.data.componentType === ComponentType.Button;
+		return this.interaction.componentType === ComponentType.Button;
 	}
 
 	isChannelSelectMenu(): this is ComponentContext<'ChannelSelect', M> {
