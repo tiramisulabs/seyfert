@@ -472,6 +472,7 @@ export class BaseClient {
 		const obj: ResolvedRC = {
 			debug: !!debug,
 			...env,
+			intents: 'intents' in seyfertConfig ? (seyfertConfig.intents ?? 0) : 0,
 			locations: locationsFullPaths,
 		};
 
@@ -569,6 +570,7 @@ interface RC extends ExtendedRC {
 export type ResolvedRC = Omit<RC, 'locations' | 'debug'> & {
 	locations: MakeRequired<RC['locations'], 'base'>;
 	debug: boolean;
+	intents: number;
 };
 
 export type InternalRuntimeConfigHTTP = Omit<
