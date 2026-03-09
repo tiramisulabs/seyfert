@@ -194,7 +194,7 @@ export class ApiHandler {
 				}
 				if ([502, 503].includes(response.status) && ++attempts < 4) {
 					this.clearResetInterval(route);
-					return this.handle50X(method, url, request, next);
+					return this.handle50X(method, url, request, next, resolve, reject);
 				}
 				this.clearResetInterval(route);
 				next();
@@ -319,18 +319,24 @@ export class ApiHandler {
 		return errors;
 	}
 
-	async handle50X(method: HttpMethods, url: `/${string}`, request: ApiRequestOptions, next: () => void) {
+	async handle50X(
+		method: HttpMethods,
+		url: `/${string}`,
+		request: ApiRequestOptions,
+		next: () => void,
+		resolve: (value: unknown) => void,
+		reject: (err: unknown) => void,
+	) {
 		const wait = Math.floor(Math.random() * 1900 + 100);
 		this.debugger?.warn(`Handling a 50X status, retrying in ${wait}ms`);
 		next();
 		await delay(wait);
 		return this.request(method, url, {
-			body: request.body,
-			auth: request.auth,
-			reason: request.reason,
-			route: request.route,
+			...request,
 			unshift: true,
-		});
+		})
+			.then(resolve)
+			.catch(reject);
 	}
 
 	async handle429(
