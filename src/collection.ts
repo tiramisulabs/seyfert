@@ -89,20 +89,18 @@ export class Collection<K, V> extends Map<K, V> {
 	 */
 	reduce<T = any>(fn: (accumulator: T, value: V, key: K, collection: this) => T, initialValue?: T): T {
 		const entries = this.entries();
-		const first = entries.next().value as [K, V];
-		let result = initialValue;
-
-		if (result !== undefined) {
-			result = fn(result, first[1], first[0], this);
+		let result: T;
+		if (initialValue !== undefined) {
+			result = initialValue;
 		} else {
-			result = first[1] as unknown as T;
+			const first = entries.next();
+			if (first.done) throw new TypeError('Reduce of empty collection with no initial value');
+			result = first.value[1] as unknown as T;
 		}
-
 		for (const [key, value] of entries) {
 			result = fn(result, value, key, this);
 		}
-
-		return result as T;
+		return result;
 	}
 
 	/**
