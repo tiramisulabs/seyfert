@@ -11,8 +11,8 @@ export class MemberUpdateHandler {
 
 		const data = this.guildMemberUpdate.get(member.user.id)!;
 
-		if (this.usersEqual(data.member.user, member.user)) {
-			return this.membersEquals(data.member, member);
+		if (this.usersEqual(data.member.user, member.user) && this.membersEquals(data.member, member)) {
+			return false;
 		}
 
 		clearTimeout(data.timeout);
