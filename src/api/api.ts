@@ -1,4 +1,4 @@
-import { randomUUID, type UUID } from "node:crypto";
+import { randomUUID, type UUID } from 'node:crypto';
 import {
 	type Awaitable,
 	BASE_HOST,
@@ -7,13 +7,13 @@ import {
 	lazyLoadPackage,
 	SeyfertError,
 	snowflakeToTimestamp,
-} from "../common";
-import { toArrayBuffer, toBuffer } from "../common/it/utils";
-import type { WorkerData } from "../websocket";
-import type { WorkerSendApiRequest } from "../websocket/discord/worker";
-import { Bucket } from "./bucket";
-import { CDNRouter, Router } from "./Router";
-import type { APIRoutes } from "./Routes";
+} from '../common';
+import { toArrayBuffer, toBuffer } from '../common/it/utils';
+import type { WorkerData } from '../websocket';
+import type { WorkerSendApiRequest } from '../websocket/discord/worker';
+import { Bucket } from './bucket';
+import { CDNRouter, Router } from './Router';
+import type { APIRoutes } from './Routes';
 import {
 	type ApiHandlerInternalOptions,
 	type ApiHandlerOptions,
@@ -22,8 +22,8 @@ import {
 	type HttpMethods,
 	type RawFile,
 	type RequestHeaders,
-} from "./shared";
-import { isBufferLike } from "./utils/utils";
+} from './shared';
+import { isBufferLike } from './utils/utils';
 
 export interface ApiHandler {
 	/* @internal */
@@ -33,10 +33,7 @@ export interface ApiHandler {
 	workerData?: WorkerData;
 }
 
-export type OnRatelimitCallback = (
-	response: Response,
-	request: ApiRequestOptions,
-) => Awaitable<any>;
+export type OnRatelimitCallback = (response: Response, request: ApiRequestOptions) => Awaitable<any>;
 
 export class ApiHandler {
 	options: ApiHandlerInternalOptions;
@@ -44,56 +41,44 @@ export class ApiHandler {
 	ratelimits = new Map<string, Bucket>();
 	readyQueue: (() => void)[] = [];
 	cdn = CDNRouter.createProxy();
-	workerPromises?: Map<
-		string,
-		{ resolve: (value: any) => any; reject: (error: any) => any }
-	>;
+	workerPromises?: Map<string, { resolve: (value: any) => any; reject: (error: any) => any }>;
 	onRatelimit?: OnRatelimitCallback;
 
 	constructor(options: ApiHandlerOptions) {
 		this.options = {
-			baseUrl: "api/v10",
+			baseUrl: 'api/v10',
 			domain: BASE_HOST,
-			type: "Bot",
+			type: 'Bot',
 			...options,
 			userAgent: DefaultUserAgent,
 		};
 		if (options.debug) this.debug = true;
 
-		const worker_threads = lazyLoadPackage<
-			typeof import("node:worker_threads")
-		>("node:worker_threads");
+		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
 
 		if (options.workerProxy && !worker_threads?.parentPort && !process.send)
-			throw new SeyfertError("API_WORKER_PROXY_PARENT_REQUIRED", {
-				metadata: { detail: "Cannot use workerProxy without a parent." },
+			throw new SeyfertError('API_WORKER_PROXY_PARENT_REQUIRED', {
+				metadata: { detail: 'Cannot use workerProxy without a parent.' },
 			});
 		if (options.workerProxy) this.workerPromises = new Map();
 
 		if (worker_threads?.parentPort) {
-			this.sendMessage = async (body) => {
+			this.sendMessage = async body => {
 				worker_threads.parentPort!.postMessage(
 					body,
 					body.requestOptions.files
-						?.filter(
-							(x) => !["string", "boolean", "number"].includes(typeof x.data),
-						)
-						.map((x) =>
-							x.data instanceof Buffer
-								? toArrayBuffer(x.data)
-								: (x.data as ArrayBuffer),
-						),
+						?.filter(x => !['string', 'boolean', 'number'].includes(typeof x.data))
+						.map(x => (x.data instanceof Buffer ? toArrayBuffer(x.data) : (x.data as ArrayBuffer))),
 				);
 			};
 		} else if (process.send) {
-			this.sendMessage = (body) => {
+			this.sendMessage = body => {
 				const data = {
 					...body,
 					requestOptions: {
 						...body.requestOptions,
-						files: body.requestOptions.files?.map((file) => {
-							if (file.data instanceof ArrayBuffer)
-								file.data = toBuffer(file.data);
+						files: body.requestOptions.files?.map(file => {
+							if (file.data instanceof ArrayBuffer) file.data = toBuffer(file.data);
 							return file;
 						}),
 					},
@@ -106,7 +91,7 @@ export class ApiHandler {
 	set debug(active: boolean) {
 		this.debugger = active
 			? new Logger({
-					name: "[API]",
+					name: '[API]',
 				})
 			: undefined;
 	}
@@ -130,8 +115,8 @@ export class ApiHandler {
 	}
 
 	protected sendMessage(_body: WorkerSendApiRequest) {
-		throw new SeyfertError("FUNCTION_NOT_IMPLEMENTED", {
-			metadata: { detail: "Function not implemented" },
+		throw new SeyfertError('FUNCTION_NOT_IMPLEMENTED', {
+			metadata: { detail: 'Function not implemented' },
 		});
 	}
 
@@ -155,7 +140,7 @@ export class ApiHandler {
 			return this.postMessage<T>({
 				method,
 				url,
-				type: "WORKER_API_REQUEST",
+				type: 'WORKER_API_REQUEST',
 				workerId: this.workerData!.workerId,
 				nonce,
 				requestOptions: { auth, ...request },
@@ -164,13 +149,9 @@ export class ApiHandler {
 		const route = request.route || this.routefy(url, method);
 		let attempts = 0;
 
-		const callback = async (
-			next: () => void,
-			resolve: (data: any) => void,
-			reject: (err: unknown) => void,
-		) => {
+		const callback = async (next: () => void, resolve: (data: any) => void, reject: (err: unknown) => void) => {
 			const headers = {
-				"User-Agent": this.options.userAgent,
+				'User-Agent': this.options.userAgent,
 			} satisfies RequestHeaders;
 
 			const { data, finalUrl } = this.parseRequest({
@@ -183,26 +164,22 @@ export class ApiHandler {
 
 			try {
 				const url = `${this.options.domain}/${this.options.baseUrl}${finalUrl}`;
-				this.debugger?.debug(
-					`Sending, Method: ${method} | Url: [${finalUrl}](${route}) | Auth: ${auth}`,
-				);
+				this.debugger?.debug(`Sending, Method: ${method} | Url: [${finalUrl}](${route}) | Auth: ${auth}`);
 				response = await fetch(url, {
 					method,
 					headers,
 					body: data,
 				});
-				this.debugger?.debug(
-					`Received response: ${response.statusText}(${response.status})`,
-				);
+				this.debugger?.debug(`Received response: ${response.statusText}(${response.status})`);
 			} catch (err) {
-				this.debugger?.debug("Fetch error", err);
+				this.debugger?.debug('Fetch error', err);
 				next();
 				reject(err);
 				return;
 			}
 
 			const now = Date.now();
-			const headerNow = Date.parse(response.headers.get("date") ?? "");
+			const headerNow = Date.parse(response.headers.get('date') ?? '');
 
 			this.setRatelimitsBucket(route, response);
 			this.setResetBucket(route, response, now, headerNow);
@@ -211,17 +188,7 @@ export class ApiHandler {
 
 			if (response.status >= 300) {
 				if (response.status === 429) {
-					const result429 = await this.handle429(
-						route,
-						method,
-						url,
-						request,
-						response,
-						result,
-						next,
-						reject,
-						now,
-					);
+					const result429 = await this.handle429(route, method, url, request, response, result, next, reject, now);
 					if (result429 !== false) return resolve(result429);
 					return this.clearResetInterval(route);
 				}
@@ -232,43 +199,28 @@ export class ApiHandler {
 				this.clearResetInterval(route);
 				next();
 				if (result.length > 0) {
-					if (
-						response.headers.get("content-type")?.includes("application/json")
-					) {
+					if (response.headers.get('content-type')?.includes('application/json')) {
 						try {
 							result = JSON.parse(result);
 						} catch (err) {
-							this.debugger?.warn(
-								"SeyfertError parsing result error (",
-								result,
-								")",
-								err,
-							);
+							this.debugger?.warn('SeyfertError parsing result error (', result, ')', err);
 							reject(err);
 							return;
 						}
 					}
 				}
-				const parsedError = this.parseError(
-					method,
-					route,
-					response,
-					result,
-					originTrace,
-				);
+				const parsedError = this.parseError(method, route, response, result, originTrace);
 				this.debugger?.warn(parsedError.message);
 				reject(parsedError);
 				return;
 			}
 
 			if (result.length > 0) {
-				if (
-					response.headers.get("content-type")?.includes("application/json")
-				) {
+				if (response.headers.get('content-type')?.includes('application/json')) {
 					try {
 						result = JSON.parse(result);
 					} catch (err) {
-						this.debugger?.warn("Failed parsing result (", result, ")", err);
+						this.debugger?.warn('Failed parsing result (', result, ')', err);
 						next();
 						reject(err);
 						return;
@@ -286,17 +238,13 @@ export class ApiHandler {
 					if (!this.ratelimits.has(route)) {
 						this.ratelimits.set(route, new Bucket(1));
 					}
-					this.ratelimits
-						.get(route)!
-						.push({ next: callback, resolve, reject }, request.unshift);
+					this.ratelimits.get(route)!.push({ next: callback, resolve, reject }, request.unshift);
 				});
 			} else {
 				if (!this.ratelimits.has(route)) {
 					this.ratelimits.set(route, new Bucket(1));
 				}
-				this.ratelimits
-					.get(route)!
-					.push({ next: callback, resolve, reject }, request.unshift);
+				this.ratelimits.get(route)!.push({ next: callback, resolve, reject }, request.unshift);
 			}
 		});
 	}
@@ -308,7 +256,7 @@ export class ApiHandler {
 		result: string | Record<string, any>,
 		originTrace?: { stack?: string },
 	) {
-		let errMessage = "";
+		let errMessage = '';
 		let code: string | undefined;
 		const metadata: Record<string, unknown> = {
 			method,
@@ -316,16 +264,16 @@ export class ApiHandler {
 			status: response.status,
 			statusText: response.statusText,
 		};
-		if (typeof result === "object") {
-			if (typeof result.code !== "undefined") {
+		if (typeof result === 'object') {
+			if (typeof result.code !== 'undefined') {
 				code = String(result.code);
 			}
 			metadata.response = result;
-			errMessage += `${result.message ?? "Unknown"} ${result.code ?? ""}\n[${response.status} ${response.statusText}] ${method} ${route}`;
+			errMessage += `${result.message ?? 'Unknown'} ${result.code ?? ''}\n[${response.status} ${response.statusText}] ${method} ${route}`;
 
-			if ("errors" in result) {
+			if ('errors' in result) {
 				const errors = this.parseValidationError(result.errors);
-				errMessage += `\n${errors.join("\n") || JSON.stringify(result.errors, null, 2)}`;
+				errMessage += `\n${errors.join('\n') || JSON.stringify(result.errors, null, 2)}`;
 			}
 		} else {
 			errMessage = `[${response.status} ${response.statusText}] ${method} ${route}`;
@@ -340,34 +288,30 @@ export class ApiHandler {
 		const originStack = originTrace?.stack;
 		if (originStack) {
 			const originLines = originStack
-				.split("\n")
+				.split('\n')
 				.slice(1)
 				.filter(
-					(line) =>
-						!line.includes("node:internal") &&
-						!line.includes("/src/api/api.ts") &&
-						!line.includes("\\src\\api\\api.ts"),
+					line =>
+						!line.includes('node:internal') &&
+						!line.includes('/src/api/api.ts') &&
+						!line.includes('\\src\\api\\api.ts'),
 				);
 
 			if (originLines.length) {
-				error.stack = `${error.name}: ${error.message}\n${originLines.join("\n")}`;
+				error.stack = `${error.name}: ${error.message}\n${originLines.join('\n')}`;
 			}
 		}
 
 		return error;
 	}
 
-	parseValidationError(
-		data: Record<string, any>,
-		path = "",
-		errors: string[] = [],
-	) {
+	parseValidationError(data: Record<string, any>, path = '', errors: string[] = []) {
 		for (const key in data) {
-			if (key === "_errors") {
+			if (key === '_errors') {
 				for (const error of data[key]) {
 					errors.push(`${path.slice(0, -1)} [${error.code}]: ${error.message}`);
 				}
-			} else if (typeof data[key] === "object") {
+			} else if (typeof data[key] === 'object') {
 				this.parseValidationError(data[key], `${path}${key}.`, errors);
 			}
 		}
@@ -375,12 +319,7 @@ export class ApiHandler {
 		return errors;
 	}
 
-	async handle50X(
-		method: HttpMethods,
-		url: `/${string}`,
-		request: ApiRequestOptions,
-		next: () => void,
-	) {
+	async handle50X(method: HttpMethods, url: `/${string}`, request: ApiRequestOptions, next: () => void) {
 		const wait = Math.floor(Math.random() * 1900 + 100);
 		this.debugger?.warn(`Handling a 50X status, retrying in ${wait}ms`);
 		next();
@@ -414,18 +353,13 @@ export class ApiHandler {
 		if (data.retry_after) retryAfter = Math.ceil(data.retry_after * 1000);
 
 		retryAfter ??=
-			Number(
-				response.headers.get("x-ratelimit-reset-after") ||
-					response.headers.get("retry-after"),
-			) * 1000;
+			Number(response.headers.get('x-ratelimit-reset-after') || response.headers.get('retry-after')) * 1000;
 
 		if (Number.isNaN(retryAfter)) {
-			this.debugger?.warn(
-				`${route} Could not extract retry_after from 429 response. ${result}`,
-			);
+			this.debugger?.warn(`${route} Could not extract retry_after from 429 response. ${result}`);
 			next();
 			reject(
-				new SeyfertError("INVALID_RETRY_AFTER", {
+				new SeyfertError('INVALID_RETRY_AFTER', {
 					metadata: {
 						...{
 							route,
@@ -433,7 +367,7 @@ export class ApiHandler {
 							status: response.status,
 							result,
 						},
-						detail: "Could not extract retry_after from 429 response.",
+						detail: 'Could not extract retry_after from 429 response.',
 					},
 				}),
 			);
@@ -443,7 +377,7 @@ export class ApiHandler {
 		if (this.debugger) {
 			const content = `${JSON.stringify(request)} `;
 			this.debugger.info(
-				`${response.headers.get("x-ratelimit-global") ? "Global" : "Unexpected"} 429: ${result.slice(0, 256)}\n${content} ${now} ${route} ${response.status}: ${bucket.remaining}/${bucket.limit} left | Reset ${retryAfter} (${bucket.reset - now}ms left) | Scope ${response.headers.get("x-ratelimit-scope")}`,
+				`${response.headers.get('x-ratelimit-global') ? 'Global' : 'Unexpected'} 429: ${result.slice(0, 256)}\n${content} ${now} ${route} ${response.status}: ${bucket.remaining}/${bucket.limit} left | Reset ${retryAfter} (${bucket.reset - now}ms left) | Scope ${response.headers.get('x-ratelimit-scope')}`,
 			);
 		}
 		if (retryAfter) {
@@ -468,38 +402,24 @@ export class ApiHandler {
 	}
 
 	clearResetInterval(route: string) {
-		clearInterval(
-			this.ratelimits.get(route)!.processingResetAfter as NodeJS.Timeout,
-		);
+		clearInterval(this.ratelimits.get(route)!.processingResetAfter as NodeJS.Timeout);
 		this.ratelimits.get(route)!.processingResetAfter = undefined;
 		this.ratelimits.get(route)!.resetAfter = 0;
 	}
 
-	setResetBucket(
-		route: string,
-		resp: Response,
-		now: number,
-		headerNow: number,
-	) {
-		const retryAfter =
-			Number(
-				resp.headers.get("x-ratelimit-reset-after") ||
-					resp.headers.get("retry-after"),
-			) * 1000;
+	setResetBucket(route: string, resp: Response, now: number, headerNow: number) {
+		const retryAfter = Number(resp.headers.get('x-ratelimit-reset-after') || resp.headers.get('retry-after')) * 1000;
 
 		if (retryAfter >= 0) {
-			if (resp.headers.get("x-ratelimit-global")) {
+			if (resp.headers.get('x-ratelimit-global')) {
 				this.globalBlock = true;
 				setTimeout(() => this.globalUnblock(), retryAfter || 1);
 			} else {
 				this.ratelimits.get(route)!.reset = (retryAfter || 1) + now;
 			}
-		} else if (resp.headers.get("x-ratelimit-reset")) {
-			let resetTime = +resp.headers.get("x-ratelimit-reset")! * 1000;
-			if (
-				route.endsWith("/reactions/:id") &&
-				+resp.headers.get("x-ratelimit-reset")! * 1000 - headerNow === 1000
-			) {
+		} else if (resp.headers.get('x-ratelimit-reset')) {
+			let resetTime = +resp.headers.get('x-ratelimit-reset')! * 1000;
+			if (route.endsWith('/reactions/:id') && +resp.headers.get('x-ratelimit-reset')! * 1000 - headerNow === 1000) {
 				resetTime = now + 250;
 			}
 			this.ratelimits.get(route)!.reset = Math.max(resetTime, now);
@@ -509,39 +429,29 @@ export class ApiHandler {
 	}
 
 	setRatelimitsBucket(route: string, resp: Response) {
-		if (resp.headers.has("x-ratelimit-limit")) {
-			this.ratelimits.get(route)!.limit =
-				+resp.headers.get("x-ratelimit-limit")!;
+		if (resp.headers.has('x-ratelimit-limit')) {
+			this.ratelimits.get(route)!.limit = +resp.headers.get('x-ratelimit-limit')!;
 		}
 
-		const raw = resp.headers.get("x-ratelimit-remaining");
+		const raw = resp.headers.get('x-ratelimit-remaining');
 		this.ratelimits.get(route)!.remaining = raw != null ? +raw : 1;
 
 		if (this.options.smartBucket) {
 			if (
-				resp.headers.has("x-ratelimit-reset-after") &&
+				resp.headers.has('x-ratelimit-reset-after') &&
 				!this.ratelimits.get(route)!.resetAfter &&
-				Number(resp.headers.get("x-ratelimit-limit")) ===
-					Number(resp.headers.get("x-ratelimit-remaining")) + 1
+				Number(resp.headers.get('x-ratelimit-limit')) === Number(resp.headers.get('x-ratelimit-remaining')) + 1
 			) {
-				this.ratelimits.get(route)!.resetAfter =
-					+resp.headers.get("x-ratelimit-reset-after")! * 1000;
+				this.ratelimits.get(route)!.resetAfter = +resp.headers.get('x-ratelimit-reset-after')! * 1000;
 			}
 
-			if (
-				this.ratelimits.get(route)!.resetAfter &&
-				!this.ratelimits.get(route)!.remaining
-			) {
+			if (this.ratelimits.get(route)!.resetAfter && !this.ratelimits.get(route)!.remaining) {
 				this.ratelimits.get(route)!.triggerResetAfter();
 			}
 		}
 	}
 
-	parseRequest(options: {
-		url: string;
-		headers: RequestHeaders;
-		request: ApiRequestOptions;
-	}) {
+	parseRequest(options: { url: string; headers: RequestHeaders; request: ApiRequestOptions }) {
 		let finalUrl = options.url;
 		let data: string | FormData | undefined;
 		if (options.request.auth) {
@@ -571,52 +481,48 @@ export class ApiHandler {
 						formData.append(key, value);
 					}
 				} else {
-					formData.append("payload_json", JSON.stringify(options.request.body));
+					formData.append('payload_json', JSON.stringify(options.request.body));
 				}
 			}
 
 			data = formData;
 		} else if (options.request.body) {
-			options.headers["Content-Type"] = "application/json";
+			options.headers['Content-Type'] = 'application/json';
 			data = JSON.stringify(options.request.body);
 		}
 		if (options.request.reason) {
-			options.headers["X-Audit-Log-Reason"] = encodeURIComponent(
-				options.request.reason,
-			);
+			options.headers['X-Audit-Log-Reason'] = encodeURIComponent(options.request.reason);
 		}
 		return { data, finalUrl } as { data: typeof data; finalUrl: `/${string}` };
 	}
 
 	routefy(url: string, method: HttpMethods): `/${string}` {
-		if (url.startsWith("/interactions/") && url.endsWith("/callback")) {
-			return "/interactions/:id/:token/callback";
+		if (url.startsWith('/interactions/') && url.endsWith('/callback')) {
+			return '/interactions/:id/:token/callback';
 		}
 
 		let route = url
 			.replace(/\/([a-z-]+)\/(?:[0-9]{17,19})/g, (match, p) =>
-				p === "channels" || p === "guilds" || p === "webhooks"
-					? match
-					: `/${p}/:id`,
+				p === 'channels' || p === 'guilds' || p === 'webhooks' ? match : `/${p}/:id`,
 			)
-			.replace(/\/reactions\/[^/]+/g, "/reactions/:id")
-			.replace(/\/reactions\/:id\/[^/]+/g, "/reactions/:id/:userID")
-			.replace(/^\/webhooks\/(\d+)\/[A-Za-z0-9-_]{64,}/, "/webhooks/$1/:token");
+			.replace(/\/reactions\/[^/]+/g, '/reactions/:id')
+			.replace(/\/reactions\/:id\/[^/]+/g, '/reactions/:id/:userID')
+			.replace(/^\/webhooks\/(\d+)\/[A-Za-z0-9-_]{64,}/, '/webhooks/$1/:token');
 
-		if (method === "DELETE" && route.endsWith("/messages/:id")) {
-			const messageID = url.slice(url.lastIndexOf("/") + 1);
+		if (method === 'DELETE' && route.endsWith('/messages/:id')) {
+			const messageID = url.slice(url.lastIndexOf('/') + 1);
 			const createdAt = Number(snowflakeToTimestamp(messageID));
 			if (Date.now() - createdAt >= 1000 * 60 * 60 * 24 * 14) {
-				method += "_OLD";
+				method += '_OLD';
 			} else if (Date.now() - createdAt <= 1000 * 10) {
-				method += "_NEW";
+				method += '_NEW';
 			}
 			route = method + route;
-		} else if (method === "GET" && /\/guilds\/[0-9]+\/channels$/.test(route)) {
-			route = "/guilds/:id/channels";
+		} else if (method === 'GET' && /\/guilds\/[0-9]+\/channels$/.test(route)) {
+			route = '/guilds/:id/channels';
 		}
-		if (method === "PUT" || method === "DELETE") {
-			const index = route.indexOf("/reactions");
+		if (method === 'PUT' || method === 'DELETE') {
+			const index = route.indexOf('/reactions');
 			if (index !== -1) {
 				route = `MODIFY${route.slice(0, index + 10)}`;
 			}
@@ -625,10 +531,7 @@ export class ApiHandler {
 	}
 }
 
-export type RequestOptions = Pick<
-	ApiRequestOptions,
-	"reason" | "auth" | "appendToFormData" | "token"
->;
+export type RequestOptions = Pick<ApiRequestOptions, 'reason' | 'auth' | 'appendToFormData' | 'token'>;
 
 export type RestArguments<
 	B extends Record<string, any> | undefined,
@@ -647,8 +550,7 @@ export type RestArguments<
 ) &
 	RequestOptions;
 
-export type RestArgumentsNoBody<Q extends never | Record<string, any> = never> =
-	{
-		query?: Q;
-		files?: RawFile[];
-	} & RequestOptions;
+export type RestArgumentsNoBody<Q extends never | Record<string, any> = never> = {
+	query?: Q;
+	files?: RawFile[];
+} & RequestOptions;
