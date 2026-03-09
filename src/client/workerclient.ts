@@ -99,6 +99,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	get latency() {
+		if (this.shards.size <= 0) return 0;
 		let acc = 0;
 
 		this.shards.forEach(s => (acc += s.latency));
