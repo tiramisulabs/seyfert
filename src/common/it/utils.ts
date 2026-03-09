@@ -402,8 +402,14 @@ export function hasIntent(intents: number, target: keyof typeof GatewayIntentBit
 	return (intents & intent) === intent;
 }
 
-export function toArrayBuffer(buffer: Buffer | Uint8ClampedArray | Uint8Array) {
-	return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+export function toArrayBuffer(buffer: Buffer | Uint8ClampedArray | Uint8Array): ArrayBuffer {
+	const { buffer: ab, byteOffset, byteLength } = buffer;
+	if (ab instanceof SharedArrayBuffer) {
+		const copy = new ArrayBuffer(byteLength);
+		new Uint8Array(copy).set(new Uint8Array(ab, byteOffset, byteLength));
+		return copy;
+	}
+	return ab.slice(byteOffset, byteOffset + byteLength);
 }
 
 export function toBuffer(arrayBuffer: ArrayBuffer) {

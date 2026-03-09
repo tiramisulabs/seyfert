@@ -1,4 +1,4 @@
-import { Collection, Formatter, type RawFile, type ReturnCache } from '..';
+import { Formatter, type RawFile, type ReturnCache } from '..';
 import { Attachment, Embed, PollBuilder, resolveAttachment } from '../builders';
 import type { Overwrites } from '../cache/resources/overwrites';
 import {
