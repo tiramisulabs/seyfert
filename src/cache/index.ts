@@ -324,7 +324,6 @@ export class Cache {
 				case 'stageInstances':
 				case 'emojis':
 				case 'overwrites':
-				case 'bans':
 				case 'messages':
 					{
 						if (!this[type]?.filter(data, id, guildId, from)) continue;
@@ -342,6 +341,7 @@ export class Cache {
 						allData.push([this[type]!.hashId(id), this[type]!.parse(data, id, guildId!)]);
 					}
 					break;
+				case 'bans':
 				case 'voiceStates':
 				case 'members':
 					{
