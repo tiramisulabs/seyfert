@@ -288,7 +288,10 @@ export class SeyfertWebSocket {
 	}
 
 	get readyState() {
-		return ['opening', 'open', 'closed', 'closed'].indexOf(this.socket?.readyState ?? 'closed');
+		const state = this.socket?.readyState;
+		if (state === 'open') return 1;
+		if (state === 'opening') return 0;
+		return 3;
 	}
 
 	/**
