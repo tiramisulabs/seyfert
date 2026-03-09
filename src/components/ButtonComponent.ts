@@ -35,7 +35,7 @@ export class LinkButtonComponent extends BaseComponent<ComponentType.Button> {
 	}
 }
 
-export type ButtonStyleExludeLink = Exclude<ButtonStyle, ButtonStyle.Link>;
+export type ButtonStyleExcludeLink = Exclude<ButtonStyle, ButtonStyle.Link>;
 
 export class ButtonComponent extends BaseComponent<ComponentType.Button> {
 	declare data: APIButtonComponentWithCustomId;

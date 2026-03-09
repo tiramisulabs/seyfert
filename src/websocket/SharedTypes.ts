@@ -211,7 +211,7 @@ export type ChannelSameEvents = RestToKeys<
 	]
 >;
 
-export type AutoModetaractionRuleEvents = RestToKeys<
+export type AutoModerationRuleEvents = RestToKeys<
 	[
 		APIAutoModerationRule,
 		GatewayDispatchEvents.AutoModerationRuleCreate,
@@ -238,7 +238,7 @@ export type SoundboardSoundsEvents = RestToKeys<
 >;
 
 export type NormalizeEvents = Events &
-	AutoModetaractionRuleEvents &
+	AutoModerationRuleEvents &
 	ChannelSameEvents &
 	GuildScheduledSameEvents &
 	GuildScheduledUserSameEvents &

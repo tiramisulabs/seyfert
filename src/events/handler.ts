@@ -4,7 +4,7 @@ import type { FileLoaded } from '../commands/handler';
 import {
 	BaseHandler,
 	type CamelCase,
-	isCloudfareWorker,
+	isCloudflareWorker,
 	type MakeRequired,
 	magicImport,
 	ReplaceRegex,
@@ -238,7 +238,7 @@ export class EventHandler extends BaseHandler {
 	}
 
 	async reload(name: GatewayEvents | CustomEventsKeys) {
-		if (isCloudfareWorker()) {
+		if (isCloudflareWorker()) {
 			throw new SeyfertError('RELOAD_NOT_SUPPORTED', {
 				metadata: { detail: 'Reload in Cloudflare worker is not supported' },
 			});

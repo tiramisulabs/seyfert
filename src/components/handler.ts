@@ -9,7 +9,14 @@ import type {
 import { LimitedCollection } from '../collection';
 import { BaseCommand, type RegisteredMiddlewares, type UsingClient } from '../commands';
 import type { FileLoaded } from '../commands/handler';
-import { BaseHandler, isCloudfareWorker, type Logger, magicImport, type OnFailCallback, SeyfertError } from '../common';
+import {
+	BaseHandler,
+	isCloudflareWorker,
+	type Logger,
+	magicImport,
+	type OnFailCallback,
+	SeyfertError,
+} from '../common';
 import type { ComponentInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from '../structures';
 import { ComponentCommand, InteractionCommandType } from './componentcommand';
 import type { ComponentContext } from './componentcontext';
@@ -230,7 +237,7 @@ export class ComponentHandler extends BaseHandler {
 		return component;
 	}
 
-	stablishDefaults(component: ComponentCommands) {
+	establishDefaults(component: ComponentCommands) {
 		component.props ??= this.client.options.commands?.defaults?.props ?? {};
 		const is = component instanceof ModalCommand ? 'modals' : 'components';
 		component.onInternalError ??= this.client.options?.[is]?.defaults?.onInternalError;
@@ -250,7 +257,7 @@ export class ComponentHandler extends BaseHandler {
 				this.logger.warn(e, i);
 				continue;
 			}
-			this.stablishDefaults(component);
+			this.establishDefaults(component);
 
 			this.commands.push(component);
 		}
@@ -278,7 +285,7 @@ export class ComponentHandler extends BaseHandler {
 					continue;
 				}
 				if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) continue;
-				this.stablishDefaults(component);
+				this.establishDefaults(component);
 				component.__filePath = file.path;
 				this.commands.push(component);
 			}
@@ -287,7 +294,7 @@ export class ComponentHandler extends BaseHandler {
 
 	async reload(path: string) {
 		if (!this.client.components) return;
-		if (isCloudfareWorker()) {
+		if (isCloudflareWorker()) {
 			throw new SeyfertError('RELOAD_NOT_SUPPORTED', {
 				metadata: { detail: 'Reload in Cloudflare worker is not supported' },
 			});

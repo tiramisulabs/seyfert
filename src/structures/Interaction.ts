@@ -579,7 +579,7 @@ export class EntryPointInteraction<FromGuild extends boolean = boolean> extends 
 	APIEntryPointCommandInteraction
 > {
 	declare channel: AllChannels;
-	async withReponse(data?: InteractionCreateBodyRequest) {
+	async withResponse(data?: InteractionCreateBodyRequest) {
 		let body = { type: InteractionResponseType.LaunchActivity } as const;
 
 		if (data) {

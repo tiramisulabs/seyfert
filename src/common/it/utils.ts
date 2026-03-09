@@ -319,7 +319,7 @@ export function lazyLoadPackage<T>(mod: string): T | undefined {
 	}
 }
 
-export function isCloudfareWorker() {
+export function isCloudflareWorker() {
 	//@ts-expect-error
 	return process.platform === 'browser';
 }
