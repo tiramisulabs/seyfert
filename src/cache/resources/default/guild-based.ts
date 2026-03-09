@@ -104,15 +104,23 @@ export class GuildBasedResource<T = any, S = any> {
 	}
 
 	keys(guild: string): ReturnCache<string[]> {
-		return this.adapter.scan(this.hashGuildId(guild, '*'), true) as string[];
+		if (guild === '*') return this.adapter.scan(this.hashGuildId(guild, '*'), true) as string[];
+		return fakePromise(this.adapter.getToRelationship(this.hashId(guild))).then(keys =>
+			keys.map(x => this.hashGuildId(guild, x)),
+		) as string[];
 	}
 
 	values(guild: string): ReturnCache<(T & { guild_id: string })[]> {
-		return this.adapter.scan(this.hashGuildId(guild, '*')) as any[];
+		if (guild === '*') return this.adapter.scan(this.hashGuildId(guild, '*')) as any[];
+		return fakePromise(this.adapter.getToRelationship(this.hashId(guild))).then(keys =>
+			this.adapter.bulkGet(keys.map(x => this.hashGuildId(guild, x))),
+		) as (T & { guild_id: string })[];
 	}
 
 	count(guild: string): ReturnCache<number> {
-		return fakePromise(this.adapter.scan(this.hashGuildId(guild, '*'), true)).then(data => data.length);
+		if (guild === '*')
+			return fakePromise(this.adapter.scan(this.hashGuildId(guild, '*'), true)).then(data => data.length);
+		return this.adapter.count(this.hashId(guild)) as number;
 	}
 
 	contains(id: string, guild: string): ReturnCache<boolean> {
