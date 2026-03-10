@@ -3,7 +3,9 @@
     "allow": [
       "Bash(npx vitest:*)",
       "Bash(npx tsc:*)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(npm test:*)",
+      "Bash(git -C*)"
     ]
   }
 }
