@@ -31,16 +31,8 @@ export class Collectors {
 	readonly values = new Map<AllClientEvents, RunData<any>[]>();
 
 	private generateRandomUUID(name: AllClientEvents): UUID | '*' {
-		const collectors = this.values.get(name);
-		if (!collectors) return '*';
-
-		let nonce = randomUUID();
-
-		while (collectors.find(x => x.nonce === nonce)) {
-			nonce = randomUUID();
-		}
-
-		return nonce;
+		if (!this.values.has(name)) return '*';
+		return randomUUID();
 	}
 
 	create<T extends AllClientEvents>(options: RunData<T>['options']) {
