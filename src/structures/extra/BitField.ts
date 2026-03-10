@@ -69,14 +69,15 @@ export class BitField<T extends object> {
 		return this.bits;
 	}
 
-	resolve(bits: BitFieldResolvable<T> | BitFieldResolvable<T>[]): bigint {
+	resolve(bits: BitFieldResolvable<T> | BitFieldResolvable<T>[], _flags?: Record<string, bigint>): bigint {
+		const flags = _flags ?? this.Flags;
 		let bitsResult = 0n;
 
 		for (const bit of Array.isArray(bits) ? bits : [bits]) {
 			switch (typeof bit) {
 				case 'string':
-					if (bit in this.Flags) {
-						bitsResult |= this.Flags[bit];
+					if (bit in flags) {
+						bitsResult |= flags[bit];
 					} else if (/^-?\d+$/.test(bit)) {
 						bitsResult |= BigInt(bit);
 					} else {
