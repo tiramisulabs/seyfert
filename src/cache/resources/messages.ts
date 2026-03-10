@@ -41,12 +41,14 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 				? messages.map(x => (x.user_id ? this.cache.users?.hashId(x.user_id) : undefined))
 				: [];
 			return fakePromise(this.cache.adapter.bulkGet(hashes.filter(x => x !== undefined)) as APIUser[]).then(users => {
-				return messages
-					.map(message => {
-						const user = users.find(user => user.id === message.user_id);
-						return user ? Transformers.Message(this.client, { ...message, author: user }) : undefined;
-					})
-					.filter(x => x !== undefined);
+				const userMap = new Map<string, APIUser>();
+				for (const user of users) userMap.set(user.id, user);
+				const result: MessageStructure[] = [];
+				for (const message of messages) {
+					const user = message.user_id ? userMap.get(message.user_id) : undefined;
+					if (user) result.push(Transformers.Message(this.client, { ...message, author: user }));
+				}
+				return result;
 			});
 		});
 	}
@@ -61,12 +63,14 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 				? messages.map(x => (x.user_id ? this.cache.users?.hashId(x.user_id) : undefined))
 				: [];
 			return fakePromise(this.cache.adapter.bulkGet(hashes.filter(x => x !== undefined)) as APIUser[]).then(users => {
-				return messages
-					.map(message => {
-						const user = users.find(user => user.id === message.user_id);
-						return user ? Transformers.Message(this.client, { ...message, author: user }) : undefined;
-					})
-					.filter(x => x !== undefined);
+				const userMap = new Map<string, APIUser>();
+				for (const user of users) userMap.set(user.id, user);
+				const result: MessageStructure[] = [];
+				for (const message of messages) {
+					const user = message.user_id ? userMap.get(message.user_id) : undefined;
+					if (user) result.push(Transformers.Message(this.client, { ...message, author: user }));
+				}
+				return result;
 			});
 		});
 	}
