@@ -34,7 +34,7 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	isAsync = false;
 
 	readonly storage = new Map<string, LimitedCollection<string, T>>();
-	readonly relationships = new Map<string, Map<string, string[]>>();
+	readonly relationships = new Map<string, Map<string, Set<string>>>();
 
 	options: MakeRequired<LimitedMemoryAdapterOptions<T>, 'default' | 'encode' | 'decode'>;
 
@@ -64,17 +64,30 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	scan(query: string, keys: true): string[];
 	scan(query: string, keys = false) {
 		const sq = query.split('.');
-		const isWildcard = sq.map(segment => segment === '*');
+		const values: (string | unknown)[] = [];
 
-		return [...this.storage.values()].flatMap(storageEntry =>
-			Array.from(storageEntry.entries())
-				.filter(([key]) => key.split('.').every((value, i) => isWildcard[i] || sq[i] === value))
-				.map(([key, value]) => (keys ? key : this.options.decode(value.value))),
-		);
+		for (const storageEntry of this.storage.values()) {
+			for (const [key, entry] of storageEntry.entries()) {
+				const keySplit = key.split('.');
+				if (
+					keySplit.length === sq.length &&
+					keySplit.every((segment, i) => (sq[i] === '*' ? !!segment : sq[i] === segment))
+				) {
+					values.push(keys ? key : this.options.decode(entry.value));
+				}
+			}
+		}
+
+		return values;
 	}
 
 	bulkGet(keys: string[]) {
-		return keys.map(key => this.get(key)).filter(x => x);
+		const result: unknown[] = [];
+		for (const key of keys) {
+			const data = this.get(key);
+			if (data) result.push(data);
+		}
+		return result;
 	}
 
 	get(key: string) {
@@ -182,11 +195,15 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	}
 
 	keys(to: string) {
-		return this.getToRelationship(to).map(id => `${to}.${id}`);
+		const result: string[] = [];
+		for (const id of this._getRelationshipSet(to)) {
+			result.push(`${to}.${id}`);
+		}
+		return result;
 	}
 
 	count(to: string) {
-		return this.getToRelationship(to).length;
+		return this._getRelationshipSet(to).size;
 	}
 
 	bulkRemove(keys: string[]) {
@@ -240,18 +257,22 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	}
 
 	contains(to: string, keys: string): boolean {
-		return this.getToRelationship(to).includes(keys);
+		return this._getRelationshipSet(to).has(keys);
 	}
 
-	getToRelationship(to: string) {
+	private _getRelationshipSet(to: string) {
 		const key = to.split('.')[0];
-		if (!this.relationships.has(key)) this.relationships.set(key, new Map<string, string[]>());
+		if (!this.relationships.has(key)) this.relationships.set(key, new Map<string, Set<string>>());
 		const relation = this.relationships.get(key)!;
 		const subrelationKey = to.split('.')[1] ?? '*';
 		if (!relation.has(subrelationKey)) {
-			relation.set(subrelationKey, []);
+			relation.set(subrelationKey, new Set<string>());
 		}
 		return relation.get(subrelationKey)!;
+	}
+
+	getToRelationship(to: string): string[] {
+		return [...this._getRelationshipSet(to)];
 	}
 
 	bulkAddToRelationShip(data: Record<string, string[]>) {
@@ -261,29 +282,17 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	}
 
 	addToRelationship(to: string, keys: string | string[]) {
-		const key = to.split('.')[0];
-		if (!this.relationships.has(key)) {
-			this.relationships.set(key, new Map<string, string[]>());
-		}
-
-		const data = this.getToRelationship(to);
+		const data = this._getRelationshipSet(to);
 
 		for (const key of Array.isArray(keys) ? keys : [keys]) {
-			if (!data.includes(key)) {
-				data.push(key);
-			}
+			data.add(key);
 		}
 	}
 
 	removeToRelationship(to: string, keys: string | string[]) {
-		const data = this.getToRelationship(to);
-		if (data) {
-			for (const key of Array.isArray(keys) ? keys : [keys]) {
-				const idx = data.indexOf(key);
-				if (idx !== -1) {
-					data.splice(idx, 1);
-				}
-			}
+		const data = this._getRelationshipSet(to);
+		for (const key of Array.isArray(keys) ? keys : [keys]) {
+			data.delete(key);
 		}
 	}
 
