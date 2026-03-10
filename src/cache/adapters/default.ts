@@ -45,12 +45,12 @@ export class MemoryAdapter<T> implements Adapter {
 	}
 
 	bulkGet(keys: string[]) {
-		return keys
-			.map(x => {
-				const data = this.storage.get(x);
-				return data ? this.options.decode(data) : null;
-			})
-			.filter(x => x);
+		const result: unknown[] = [];
+		for (const key of keys) {
+			const data = this.storage.get(key);
+			if (data) result.push(this.options.decode(data));
+		}
+		return result;
 	}
 
 	get(keys: string) {
