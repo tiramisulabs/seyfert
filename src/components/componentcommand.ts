@@ -1,10 +1,6 @@
 import type { ExtraProps, RegisteredMiddlewares, UsingClient } from '../commands';
 import { ComponentType } from '../types';
-import type {
-	ComponentContext,
-	ContextComponentCommandInteractionMap,
-	GuildComponentContext,
-} from './componentcontext';
+import type { ComponentContext, ContextComponentCommandInteractionMap } from './componentcontext';
 
 export const InteractionCommandType = {
 	COMPONENT: 0,
@@ -20,9 +16,7 @@ export abstract class ComponentCommand {
 	abstract componentType: keyof ContextComponentCommandInteractionMap;
 	customId?: string | RegExp;
 	filter?(context: ComponentContext<typeof this.componentType>): Promise<boolean> | boolean;
-	abstract run(
-		context: ComponentContext<typeof this.componentType> | GuildComponentContext<typeof this.componentType>,
-	): any;
+	abstract run(context: ComponentContext<typeof this.componentType>): any;
 
 	/** @internal */
 	_filter(context: ComponentContext) {

@@ -1,6 +1,6 @@
 import type { ExtraProps, RegisteredMiddlewares, UsingClient } from '../commands';
 import { InteractionCommandType } from './componentcommand';
-import type { GuildModalContext, ModalContext } from './modalcontext';
+import type { ModalContext } from './modalcontext';
 
 export interface ModalCommand {
 	__filePath?: string;
@@ -10,7 +10,7 @@ export abstract class ModalCommand {
 	type = InteractionCommandType.MODAL;
 	filter?(context: ModalContext): Promise<boolean> | boolean;
 	customId?: string | RegExp;
-	abstract run(context: ModalContext | GuildModalContext): any;
+	abstract run(context: ModalContext): any;
 
 	/** @internal */
 	_filter(context: ModalContext) {
