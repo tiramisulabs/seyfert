@@ -323,6 +323,7 @@ export class LimitedCollection<K, V> {
 		return this.data.has(key);
 	}
 
+	private _pendingReset = false;
 	/**
 	 * Removes an element from the limited collection.
 	 * @param key The key of the element to remove.
@@ -340,7 +341,13 @@ export class LimitedCollection<K, V> {
 			if (wasCloser) this._closerDirty = true;
 			this.options.onDelete?.(key, value.value);
 			const result = this.data.delete(key);
-			if (wasCloser) setImmediate(() => this.resetTimeout());
+			if (wasCloser && !this._pendingReset) {
+				this._pendingReset = true;
+				setImmediate(() => {
+					this._pendingReset = false;
+					this.resetTimeout();
+				});
+			}
 			return result;
 		}
 		return this.data.delete(key);
