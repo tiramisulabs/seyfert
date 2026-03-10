@@ -24,7 +24,7 @@ export class PermissionsBitField extends BitField<typeof PermissionFlagsBits> {
 	}
 
 	static resolve<T extends typeof PermissionFlagsBits>(bits: BitFieldResolvable<T> | BitFieldResolvable<T>[]): bigint {
-		return PermissionsBitField.prototype.resolve(
+		return BitField.prototype.resolve(
 			bits as BitFieldResolvable<typeof PermissionFlagsBits> | BitFieldResolvable<typeof PermissionFlagsBits>[],
 			PermissionFlagsBits,
 		);
