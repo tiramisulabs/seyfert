@@ -79,8 +79,12 @@ export class GuildBasedResource<T = any, S = any> {
 
 		if (!keys.length) return fakePromise(undefined).then(() => {}) as void;
 
-		return fakePromise(this.adapter.bulkGet(keys.map(([key]) => this.hashGuildId(guild, key)))).then(oldDatas =>
-			fakePromise(
+		return fakePromise(this.adapter.bulkGet(keys.map(([key]) => this.hashGuildId(guild, key)))).then(oldDatas => {
+			const oldDataMap = new Map<string, any>();
+			for (const item of oldDatas as any[]) {
+				if (item?.id) oldDataMap.set(item.id, item);
+			}
+			return fakePromise(
 				this.addToRelationship(
 					keys.map(x => x[0]),
 					guild,
@@ -88,12 +92,12 @@ export class GuildBasedResource<T = any, S = any> {
 			).then(() =>
 				this.adapter.bulkSet(
 					keys.map(([key, value]) => {
-						const oldData = oldDatas.find(x => x.id === key) ?? {};
+						const oldData = oldDataMap.get(key) ?? {};
 						return [this.hashGuildId(guild, key), this.parse({ ...oldData, ...value }, key, guild)];
 					}),
 				),
-			),
-		) as void;
+			);
+		}) as void;
 	}
 
 	remove(id: string | string[], guild: string) {
