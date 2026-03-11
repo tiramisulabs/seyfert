@@ -1,5 +1,5 @@
 import { inflateSync } from 'node:zlib';
-import { delay, hasIntent, Logger, LogLevels, type MakeRequired, MergeOptions } from '../../common';
+import { delay, hasIntent, Logger, LogLevels, type MakeRequired, MergeOptions, SeyfertError } from '../../common';
 import {
 	type APIGuildMember,
 	GatewayCloseCodes,
@@ -24,6 +24,7 @@ import { ShardSocketCloseCodes } from './shared';
 export interface ShardHeart {
 	interval: number;
 	nodeInterval?: NodeJS.Timeout;
+	ackTimeout?: NodeJS.Timeout;
 	lastAck?: number;
 	lastBeat?: number;
 	ack: boolean;
@@ -58,6 +59,7 @@ export class Shard {
 			presences: GatewayGuildMembersChunkPresence[];
 			resolve: (value: { members: APIGuildMember[]; presences: GatewayGuildMembersChunkPresence[] }) => void;
 			reject: (reason?: any) => void;
+			timeout: NodeJS.Timeout;
 			options:
 				| Omit<GatewayRequestGuildMembersDataWithQuery, 'nonce'>
 				| Omit<GatewayRequestGuildMembersDataWithUserIds, 'nonce'>;
@@ -223,11 +225,19 @@ export class Shard {
 				d: this.data.resume_seq ?? null,
 			}),
 		);
+
+		clearTimeout(this.heart.ackTimeout);
+		this.heart.ackTimeout = setTimeout(() => {
+			if (!this.heart.ack) {
+				this.reconnect(ShardSocketCloseCodes.ZombiedConnection);
+			}
+		}, this.heart.interval * 1.5);
 	}
 
 	disconnect(code = ShardSocketCloseCodes.Shutdown) {
 		clearTimeout(this.connectionTimeout);
 		this.connectionTimeout = undefined;
+		clearTimeout(this.heart.ackTimeout);
 		this.debugger?.info(`[Shard #${this.id}] Disconnecting`);
 		this.close(code, 'Shard down request');
 	}
@@ -266,6 +276,7 @@ export class Shard {
 				{
 					this.heart.ack = true;
 					this.heart.lastAck = Date.now();
+					clearTimeout(this.heart.ackTimeout);
 				}
 				break;
 			case GatewayOpcodes.Heartbeat:
@@ -292,7 +303,7 @@ export class Shard {
 								clearTimeout(this.connectionTimeout);
 								this.connectionTimeout = undefined;
 								this.isReady = true;
-								this.offlineSendQueue.map(resolve => resolve());
+								for (const resolve of this.offlineSendQueue.splice(0)) resolve();
 								this.options.handlePayload(this.id, packet);
 							}
 							break;
@@ -305,7 +316,7 @@ export class Shard {
 
 							this.data.resume_gateway_url = packet.d.resume_gateway_url;
 							this.data.session_id = packet.d.session_id;
-							this.offlineSendQueue.map(resolve => resolve());
+							for (const resolve of this.offlineSendQueue.splice(0)) resolve();
 							this.options.handlePayload(this.id, packet);
 							if (this.pendingGuilds?.size === 0) {
 								this.isReady = true;
@@ -347,7 +358,9 @@ export class Shard {
 								}
 								guildMemberChunk.members.push(...packet.d.members);
 								if (packet.d.presences) guildMemberChunk.presences.push(...packet.d.presences);
+								guildMemberChunk.timeout.refresh();
 								if (packet.d.chunk_index + 1 === packet.d.chunk_count) {
+									clearTimeout(guildMemberChunk.timeout);
 									this.requestGuildMembersChunk.delete(packet.d.nonce);
 									guildMemberChunk.resolve({
 										members: guildMemberChunk.members,
@@ -418,11 +431,22 @@ export class Shard {
 			resolve = res;
 			reject = rej;
 		});
+		const timeout = setTimeout(() => {
+			const chunk = this.requestGuildMembersChunk.get(nonce);
+			if (chunk) {
+				this.requestGuildMembersChunk.delete(nonce);
+				chunk.reject(
+					new SeyfertError('REQUEST_GUILD_MEMBERS_TIMEOUT', { metadata: { detail: '30s without receiving a chunk' } }),
+				);
+			}
+		}, 30_000);
+
 		this.requestGuildMembersChunk.set(nonce, {
 			members: [],
 			presences: [],
 			reject,
 			resolve,
+			timeout,
 			options,
 		});
 
@@ -440,6 +464,7 @@ export class Shard {
 	protected async handleClosed(close: { code: number; reason: string }) {
 		this.isReady = false;
 		clearInterval(this.heart.nodeInterval);
+		clearTimeout(this.heart.ackTimeout);
 		this.logger.warn(
 			`${ShardSocketCloseCodes[close.code] ?? GatewayCloseCodes[close.code] ?? close.code} (${close.code})`,
 			close.reason,
