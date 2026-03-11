@@ -48,7 +48,7 @@ export class MemoryAdapter<T> implements Adapter {
 		const result: unknown[] = [];
 		for (const key of keys) {
 			const data = this.storage.get(key);
-			if (data) result.push(this.options.decode(data));
+			if (data !== undefined) result.push(this.options.decode(data));
 		}
 		return result;
 	}
