@@ -136,7 +136,7 @@ export class WebhookShorter extends BaseShorter {
 	 * @param reason The reason for deleting the message.
 	 * @returns A Promise that resolves when the message is deleted.
 	 */
-	deleteMessage(payload: WebhookShorterMessageParams<'thread_id', 'messageId'>) {
+	deleteMessage(payload: WebhookShorterMessageDeleteParams) {
 		return this.client.proxy
 			.webhooks(payload.webhookId)(payload.token)
 			.messages(payload.messageId)
