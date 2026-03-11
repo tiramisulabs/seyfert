@@ -15,6 +15,8 @@ import type {
 	MessageWebhookUpdateBodyRequest,
 	MethodContext,
 	ObjectToLower,
+	WebhookShorterMessageDeleteParams,
+	WebhookShorterMessageFetchParams,
 } from '../common';
 /**
  * Represents a Discord webhook.
@@ -157,8 +159,18 @@ export class Webhook extends DiscordBase {
 			edit: (payload: MessageWebhookMethodEditParams): Promise<WebhookMessageStructure> =>
 				client.webhooks.editMessage(webhookId, webhookToken, payload),
 			/** Deletes a message sent through the webhook. */
-			delete: (messageId: string, reason?: string) =>
-				client.webhooks.deleteMessage(webhookId, webhookToken, messageId, reason),
+			delete: (payload: MessageWebhookMethodDeleteParams) =>
+				client.webhooks.deleteMessage({
+					...payload,
+					token: webhookToken,
+					webhookId,
+				}),
+			fetch: (payload: MessageWebhookMethodFetchParams): Promise<WebhookMessageStructure> =>
+				client.webhooks.fetchMessage({
+					...payload,
+					token: webhookToken,
+					webhookId,
+				}),
 		};
 	}
 
@@ -188,3 +200,7 @@ export type MessageWebhookMethodWriteParams = MessageWebhookPayload<
 	MessageWebhookCreateBodyRequest,
 	{ query?: RESTPostAPIWebhookWithTokenQuery }
 >;
+
+export type MessageWebhookMethodDeleteParams = Omit<WebhookShorterMessageDeleteParams, 'token' | 'webhookId'>;
+
+export type MessageWebhookMethodFetchParams = Omit<WebhookShorterMessageFetchParams, 'token' | 'webhookId'>;

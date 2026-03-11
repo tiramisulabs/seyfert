@@ -203,7 +203,12 @@ export class WebhookMessage extends BaseMessage {
 	}
 
 	fetch(): Promise<WebhookMessageStructure> {
-		return this.client.webhooks.fetchMessage(this.webhookId, this.webhookToken, this.id, this.thread?.id);
+		return this.client.webhooks.fetchMessage({
+			messageId: this.id,
+			webhookId: this.webhookId,
+			token: this.webhookToken,
+			query: this.thread?.id ? { thread_id: this.thread.id } : undefined,
+		});
 	}
 
 	edit(body: EditMessageWebhook): Promise<WebhookMessageStructure> {
@@ -224,7 +229,13 @@ export class WebhookMessage extends BaseMessage {
 	}
 
 	delete(reason?: string) {
-		return this.client.webhooks.deleteMessage(this.webhookId, this.webhookToken, this.id, reason);
+		return this.client.webhooks.deleteMessage({
+			webhookId: this.webhookId,
+			token: this.webhookToken,
+			messageId: this.id,
+			reason,
+			query: this.thread?.id ? { thread_id: this.thread.id } : undefined,
+		});
 	}
 }
 
