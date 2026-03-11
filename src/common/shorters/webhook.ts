@@ -11,7 +11,9 @@ import type {
 	RESTPatchAPIWebhookWithTokenJSONBody,
 	RESTPostAPIChannelWebhookJSONBody,
 	RESTPostAPIWebhookWithTokenJSONBody,
+	RESTPostAPIWebhookWithTokenQuery,
 } from '../../types';
+import type { MakeRequired, OmitInsert } from '../types/util';
 import { BaseShorter } from './base';
 
 export class WebhookShorter extends BaseShorter {
@@ -134,8 +136,11 @@ export class WebhookShorter extends BaseShorter {
 	 * @param reason The reason for deleting the message.
 	 * @returns A Promise that resolves when the message is deleted.
 	 */
-	deleteMessage(webhookId: string, token: string, messageId: string, reason?: string) {
-		return this.client.proxy.webhooks(webhookId)(token).messages(messageId).delete({ reason });
+	deleteMessage(payload: WebhookShorterMessageParams<'thread_id', 'messageId'>) {
+		return this.client.proxy
+			.webhooks(payload.webhookId)(payload.token)
+			.messages(payload.messageId)
+			.delete({ reason: payload.reason, query: payload.query, auth: false });
 	}
 
 	/**
@@ -146,17 +151,12 @@ export class WebhookShorter extends BaseShorter {
 	 * @param threadId The ID of the thread the message belongs to.
 	 * @returns A Promise that resolves to the fetched message
 	 */
-	async fetchMessage(
-		webhookId: string,
-		token: string,
-		messageId: string,
-		threadId?: string,
-	): Promise<WebhookMessageStructure> {
+	async fetchMessage(payload: WebhookShorterMessageFetchParams): Promise<WebhookMessageStructure> {
 		const message = await this.client.proxy
-			.webhooks(webhookId)(token)
-			.messages(messageId)
-			.get({ auth: false, query: threadId ? { thread_id: threadId } : undefined });
-		return Transformers.WebhookMessage(this.client, message, webhookId, token);
+			.webhooks(payload.webhookId)(payload.token)
+			.messages(payload.messageId)
+			.get({ auth: false, query: payload.query });
+		return Transformers.WebhookMessage(this.client, message, payload.webhookId, payload.token);
 	}
 
 	async listFromGuild(guildId: string): Promise<WebhookStructure[]> {
@@ -171,3 +171,24 @@ export class WebhookShorter extends BaseShorter {
 }
 
 export type WebhookShorterOptionalParams = Partial<{ token: string; reason: string }>;
+
+export interface WebhookShorterMessageParameters {
+	webhookId: string;
+	token: string;
+	messageId?: string;
+	reason?: string;
+}
+
+export type WebhookShorterMessageParams<
+	Query extends keyof RESTPostAPIWebhookWithTokenQuery = never,
+	R extends keyof WebhookShorterMessageParameters = never,
+> = OmitInsert<
+	WebhookShorterMessageParameters,
+	R,
+	MakeRequired<WebhookShorterMessageParameters, R> &
+		(Query extends never ? {} : { query?: Pick<RESTPostAPIWebhookWithTokenQuery, Query> })
+>;
+
+export type WebhookShorterMessageDeleteParams = WebhookShorterMessageParams<'thread_id', 'messageId'>;
+
+export type WebhookShorterMessageFetchParams = Omit<WebhookShorterMessageParams<'thread_id', 'messageId'>, 'reason'>;
