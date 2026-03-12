@@ -295,6 +295,10 @@ export type RESTPatchAPIWebhookWithTokenMessageFormDataBody =
 export type RESTPatchAPIWebhookWithTokenMessageResult = APIMessage;
 
 /**
+ * https://docs.discord.com/developers/resources/webhook#delete-webhook-message
+ */
+export type RESTDeleteAPIWebhookWithTokenMessageQuery = Pick<RESTPostAPIWebhookWithTokenQuery, 'thread_id'>;
+/**
  * https://discord.com/developers/docs/resources/webhook#delete-webhook-message
  */
 export type RESTDeleteAPIWebhookWithTokenMessageResult = undefined;

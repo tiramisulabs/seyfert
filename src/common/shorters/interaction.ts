@@ -27,8 +27,13 @@ export class InteractionShorter extends BaseShorter {
 			});
 	}
 
-	fetchResponse(token: string, messageId: string): Promise<WebhookMessageStructure> {
-		return this.client.webhooks.fetchMessage(this.client.applicationId, token, messageId);
+	fetchResponse(token: string, messageId: string, threadId?: string): Promise<WebhookMessageStructure> {
+		return this.client.webhooks.fetchMessage({
+			messageId,
+			token,
+			webhookId: this.client.applicationId,
+			query: threadId ? { thread_id: threadId } : undefined,
+		});
 	}
 
 	fetchOriginal(token: string): Promise<WebhookMessageStructure> {

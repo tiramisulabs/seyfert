@@ -24,6 +24,7 @@ import { ShardSocketCloseCodes } from './shared';
 export interface ShardHeart {
 	interval: number;
 	nodeInterval?: NodeJS.Timeout;
+	ackTimeout?: NodeJS.Timeout;
 	lastAck?: number;
 	lastBeat?: number;
 	ack: boolean;
@@ -226,11 +227,19 @@ export class Shard {
 				d: this.data.resume_seq ?? null,
 			}),
 		);
+
+		clearTimeout(this.heart.ackTimeout);
+		this.heart.ackTimeout = setTimeout(() => {
+			if (!this.heart.ack) {
+				this.reconnect(ShardSocketCloseCodes.ZombiedConnection);
+			}
+		}, this.heart.interval * 1.5);
 	}
 
 	disconnect(code = ShardSocketCloseCodes.Shutdown) {
 		clearTimeout(this.connectionTimeout);
 		this.connectionTimeout = undefined;
+		clearTimeout(this.heart.ackTimeout);
 		this.debugger?.info(`[Shard #${this.id}] Disconnecting`);
 		this.close(code, 'Shard down request');
 	}
@@ -269,6 +278,7 @@ export class Shard {
 				{
 					this.heart.ack = true;
 					this.heart.lastAck = Date.now();
+					clearTimeout(this.heart.ackTimeout);
 				}
 				break;
 			case GatewayOpcodes.Heartbeat:
@@ -295,7 +305,7 @@ export class Shard {
 								clearTimeout(this.connectionTimeout);
 								this.connectionTimeout = undefined;
 								this.isReady = true;
-								this.offlineSendQueue.splice(0).map(resolve => resolve());
+								for (const resolve of this.offlineSendQueue.splice(0)) resolve();
 								this.options.handlePayload(this.id, packet);
 							}
 							break;
@@ -308,7 +318,7 @@ export class Shard {
 
 							this.data.resume_gateway_url = packet.d.resume_gateway_url;
 							this.data.session_id = packet.d.session_id;
-							this.offlineSendQueue.splice(0).map(resolve => resolve());
+							for (const resolve of this.offlineSendQueue.splice(0)) resolve();
 							this.options.handlePayload(this.id, packet);
 							if (this.pendingGuilds?.size === 0) {
 								this.isReady = true;
@@ -456,6 +466,7 @@ export class Shard {
 	protected async handleClosed(close: { code: number; reason: string }) {
 		this.isReady = false;
 		clearInterval(this.heart.nodeInterval);
+		clearTimeout(this.heart.ackTimeout);
 		this.logger.warn(
 			`${ShardSocketCloseCodes[close.code] ?? GatewayCloseCodes[close.code] ?? close.code} (${close.code})`,
 			close.reason,
