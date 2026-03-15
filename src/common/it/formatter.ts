@@ -43,31 +43,48 @@ export enum HeadingLevel {
  */
 export enum TimestampStyle {
 	/**
-	 * Represents a short timestamp style.
+	 * Represents a short time format. (t)
+	 * @example `16:20`
 	 */
 	ShortTime = 't',
 	/**
-	 * Represents a long timestamp style.
+	 * Represents a medium time format. (T)
+	 * @example `16:20:30`
 	 */
-	LongTime = 'T',
+	MediumTime = 'T',
 	/**
-	 * Represents a short date style.
+	 * Represents a short date format. (d)
+	 * @example `20/04/2021`
 	 */
 	ShortDate = 'd',
 	/**
-	 * Represents a long date style.
+	 * Represents a long date format. (D)
+	 * @example `April 20, 2021`
 	 */
 	LongDate = 'D',
 	/**
-	 * Represents a short time style.
+	 * Represents a long date-short time format. (f)
+	 * @example `April 20, 2021 at 16:20`
 	 */
-	ShortDateTime = 'f',
+	LongDateShortTime = 'f',
 	/**
-	 * Represents a long time style.
+	 * Represents a full date-short time format. (F)
+	 * @example `Tuesday, April 20, 2021 at 16:20`
 	 */
-	LongDateTime = 'F',
+	FullDateShortTime = 'F',
 	/**
-	 * Represents a relative time style.
+	 * Represents a short date-short time format. (s)
+	 * @example `20/04/2021, 16:20`
+	 */
+	ShortDateShortTime = 's',
+	/**
+	 * Represents a short date-medium time format. (S)
+	 * @example `20/04/2021, 16:20:30`
+	 */
+	ShortDateMediumTime = 'S',
+	/**
+	 * Represents a relative time format. (R)
+	 * @example `2 months ago`
 	 */
 	RelativeTime = 'R',
 }
