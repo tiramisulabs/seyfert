@@ -13,7 +13,15 @@ import {
 } from '../common';
 import { EventHandler } from '../events';
 import type { GatewayDispatchPayload, GatewaySendPayload } from '../types';
-import { properties, Shard, type ShardManagerOptions, ShardSocketCloseCodes, type WorkerData } from '../websocket';
+import {
+	properties,
+	Shard,
+	type ShardDisconnectData,
+	type ShardManagerOptions,
+	type ShardReconnectData,
+	ShardSocketCloseCodes,
+	type WorkerData,
+} from '../websocket';
 import { MemberUpdateHandler } from '../websocket/discord/events/memberUpdate';
 import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdate';
 import type { WorkerHeartbeaterMessages } from '../websocket/discord/heartbeater';
@@ -104,6 +112,16 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		this.shards.forEach(s => (acc += s.latency));
 
 		return acc / this.shards.size;
+	}
+
+	private async onShardDisconnect(data: ShardDisconnectData) {
+		await this.options?.onShardDisconnect?.(data);
+		await this.events.runEvent('SHARD_DISCONNECT', this, data, data.shardId, false);
+	}
+
+	private async onShardReconnect(data: ShardReconnectData) {
+		await this.options?.onShardReconnect?.(data);
+		await this.events.runEvent('SHARD_RECONNECT', this, data, data.shardId, false);
 	}
 
 	get applicationId(): When<Ready, string, ''> {
@@ -255,6 +273,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							info: data.info,
 							compress: data.compress,
 							debugger: this.debugger,
+							onShardDisconnect: this.onShardDisconnect.bind(this),
+							onShardReconnect: this.onShardReconnect.bind(this),
 							properties: {
 								...properties,
 								...this.options.gateway?.properties,
@@ -452,6 +472,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			info: data.info,
 			compress: data.compress,
 			debugger: this.debugger,
+			onShardDisconnect: this.onShardDisconnect.bind(this),
+			onShardReconnect: this.onShardReconnect.bind(this),
 			properties: {
 				...properties,
 				...data.properties,
@@ -582,6 +604,8 @@ export function generateShardInfo(shard: Shard): WorkerShardInfo {
 export interface WorkerClientOptions extends BaseClientOptions {
 	commands?: NonNullable<Client['options']>['commands'];
 	handlePayload?: ShardManagerOptions['handlePayload'];
+	onShardDisconnect?: ShardManagerOptions['onShardDisconnect'];
+	onShardReconnect?: ShardManagerOptions['onShardReconnect'];
 	gateway?: ClientOptions['gateway'];
 	postMessage?: (body: unknown) => Awaitable<unknown>;
 	/** can have perfomance issues in big bots if the client sends every event, specially in startup (false by default) */

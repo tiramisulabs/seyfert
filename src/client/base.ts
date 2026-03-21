@@ -196,6 +196,8 @@ export class BaseClient {
 	setServices({ rest, cache, langs, middlewares, handleCommand }: ServicesOptions) {
 		if (rest) {
 			rest.onRatelimit ??= this.rest.onRatelimit?.bind(rest);
+			rest.onSuccessRequest ??= this.rest.onSuccessRequest?.bind(rest);
+			rest.onFailRequest ??= this.rest.onFailRequest?.bind(rest);
 			this.rest = rest;
 		}
 		if (cache) {

@@ -11,7 +11,13 @@ import {
 } from '../common';
 import { EventHandler } from '../events';
 import type { GatewayDispatchPayload, GatewayPresenceUpdateData } from '../types';
-import { properties, ShardManager, type ShardManagerOptions } from '../websocket';
+import {
+	properties,
+	type ShardDisconnectData,
+	ShardManager,
+	type ShardManagerOptions,
+	type ShardReconnectData,
+} from '../websocket';
 import { MemberUpdateHandler } from '../websocket/discord/events/memberUpdate';
 import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdate';
 import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';
@@ -58,12 +64,32 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				await onPacket(shardId, packet);
 				return oldFn(shardId, packet);
 			};
+			const oldOnShardDisconnect = gateway.options.onShardDisconnect;
+			gateway.options.onShardDisconnect = async data => {
+				await oldOnShardDisconnect?.(data);
+				await this.onShardDisconnect(data);
+			};
+			const oldOnShardReconnect = gateway.options.onShardReconnect;
+			gateway.options.onShardReconnect = async data => {
+				await oldOnShardReconnect?.(data);
+				await this.onShardReconnect(data);
+			};
 			this.gateway = gateway;
 		}
 	}
 
 	get latency() {
 		return this.gateway.latency;
+	}
+
+	private async onShardDisconnect(data: ShardDisconnectData) {
+		await this.options?.onShardDisconnect?.(data);
+		await this.events.runEvent('SHARD_DISCONNECT', this, data, data.shardId, false);
+	}
+
+	private async onShardReconnect(data: ShardReconnectData) {
+		await this.options?.onShardReconnect?.(data);
+		await this.events.runEvent('SHARD_RECONNECT', this, data, data.shardId, false);
 	}
 
 	async loadEvents(dir?: string) {
@@ -118,6 +144,8 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 					await this.options?.handlePayload?.(shardId, packet);
 					return this.onPacket(shardId, packet);
 				},
+				onShardDisconnect: this.onShardDisconnect.bind(this),
+				onShardReconnect: this.onShardReconnect.bind(this),
 				presence: this.options?.presence,
 				debug: debugRC,
 				shardStart: this.options?.shards?.start,
@@ -223,5 +251,7 @@ export interface ClientOptions extends BaseClientOptions {
 		reply?: (ctx: CommandContext) => Awaitable<boolean>;
 	};
 	handlePayload?: ShardManagerOptions['handlePayload'];
+	onShardDisconnect?: ShardManagerOptions['onShardDisconnect'];
+	onShardReconnect?: ShardManagerOptions['onShardReconnect'];
 	resharding?: PickPartial<NonNullable<ShardManagerOptions['resharding']>, 'getInfo'>;
 }

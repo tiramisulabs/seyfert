@@ -152,6 +152,7 @@ export class Shard {
 
 		this.websocket.onopen = () => {
 			this.heart.ack = true;
+			void this.options.onShardReconnect?.({ shardId: this.id });
 		};
 	}
 
@@ -470,53 +471,61 @@ export class Shard {
 			close.reason,
 		);
 
-		switch (close.code) {
-			case ShardSocketCloseCodes.Shutdown:
-			case ShardSocketCloseCodes.Reconnect:
-			case ShardSocketCloseCodes.Resharding:
-			case ShardSocketCloseCodes.ShutdownAll:
-			case ShardSocketCloseCodes.ZombiedConnection:
-				//Force disconnect, ignore
-				break;
-			case 1000:
-			case GatewayCloseCodes.UnknownOpcode:
-			case GatewayCloseCodes.InvalidSeq:
-			case GatewayCloseCodes.SessionTimedOut:
-			// shard failed to connect, try connecting from scratch
-			case ShardSocketCloseCodes.Timeout:
-				{
-					this.data.resume_seq = 0;
-					this.data.session_id = undefined;
-					this.data.resume_gateway_url = undefined;
-					await this.reconnect();
-				}
-				break;
-			case 1001:
-			case 1006:
-			case GatewayCloseCodes.UnknownError:
-			case GatewayCloseCodes.DecodeError:
-			case GatewayCloseCodes.NotAuthenticated:
-			case GatewayCloseCodes.AlreadyAuthenticated:
-			case GatewayCloseCodes.RateLimited:
-				{
-					this.logger.info('Trying to reconnect');
-					await this.reconnect();
-				}
-				break;
-			case GatewayCloseCodes.AuthenticationFailed:
-			case GatewayCloseCodes.DisallowedIntents:
-			case GatewayCloseCodes.InvalidAPIVersion:
-			case GatewayCloseCodes.InvalidIntents:
-			case GatewayCloseCodes.InvalidShard:
-			case GatewayCloseCodes.ShardingRequired:
-				this.logger.fatal('Cannot reconnect');
-				break;
-			default:
-				{
-					this.logger.warn('Unknown close code, trying to reconnect anyways');
-					await this.reconnect();
-				}
-				break;
+		try {
+			switch (close.code) {
+				case ShardSocketCloseCodes.Shutdown:
+				case ShardSocketCloseCodes.Reconnect:
+				case ShardSocketCloseCodes.Resharding:
+				case ShardSocketCloseCodes.ShutdownAll:
+				case ShardSocketCloseCodes.ZombiedConnection:
+					//Force disconnect, ignore
+					break;
+				case 1000:
+				case GatewayCloseCodes.UnknownOpcode:
+				case GatewayCloseCodes.InvalidSeq:
+				case GatewayCloseCodes.SessionTimedOut:
+				// shard failed to connect, try connecting from scratch
+				case ShardSocketCloseCodes.Timeout:
+					{
+						this.data.resume_seq = 0;
+						this.data.session_id = undefined;
+						this.data.resume_gateway_url = undefined;
+						await this.reconnect();
+					}
+					break;
+				case 1001:
+				case 1006:
+				case GatewayCloseCodes.UnknownError:
+				case GatewayCloseCodes.DecodeError:
+				case GatewayCloseCodes.NotAuthenticated:
+				case GatewayCloseCodes.AlreadyAuthenticated:
+				case GatewayCloseCodes.RateLimited:
+					{
+						this.logger.info('Trying to reconnect');
+						await this.reconnect();
+					}
+					break;
+				case GatewayCloseCodes.AuthenticationFailed:
+				case GatewayCloseCodes.DisallowedIntents:
+				case GatewayCloseCodes.InvalidAPIVersion:
+				case GatewayCloseCodes.InvalidIntents:
+				case GatewayCloseCodes.InvalidShard:
+				case GatewayCloseCodes.ShardingRequired:
+					this.logger.fatal('Cannot reconnect');
+					break;
+				default:
+					{
+						this.logger.warn('Unknown close code, trying to reconnect anyways');
+						await this.reconnect();
+					}
+					break;
+			}
+		} finally {
+			await this.options.onShardDisconnect?.({
+				shardId: this.id,
+				code: close.code,
+				reason: close.reason,
+			});
 		}
 	}
 
