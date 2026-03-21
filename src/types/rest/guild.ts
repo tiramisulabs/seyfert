@@ -1190,7 +1190,7 @@ export interface RESTGetAPIGuildMessagesSearch {
 	/**
 	 * A nested array of messages that match the query
 	 */
-	messages: APIMessage[][];
+	messages: [APIMessage][];
 	/**
 	 * The threads that contain the returned messages
 	 */

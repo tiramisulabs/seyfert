@@ -153,7 +153,7 @@ export class GuildShorter extends BaseShorter {
 		const data = result as RESTGetAPIGuildMessagesSearch;
 		return {
 			...data,
-			messages: data.messages.flat().map(message => Transformers.Message(this.client, message)),
+			messages: data.messages.flatMap(messages => Transformers.Message(this.client, messages[0])),
 			threads: data.threads.map(thread => channelFrom(thread, this.client)),
 		};
 	}
