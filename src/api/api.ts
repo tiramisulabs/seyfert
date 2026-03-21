@@ -34,6 +34,13 @@ export interface ApiHandler {
 }
 
 export type OnRatelimitCallback = (response: Response, request: ApiRequestOptions) => Awaitable<any>;
+export type OnSuccessRequestCallback = (method: HttpMethods, url: `/${string}`, response: Response) => Awaitable<any>;
+export type OnFailRequestCallback = (
+	method: HttpMethods,
+	url: `/${string}`,
+	error: unknown,
+	statusCode?: number,
+) => Awaitable<any>;
 
 export class ApiHandler {
 	options: ApiHandlerInternalOptions;
@@ -43,6 +50,8 @@ export class ApiHandler {
 	cdn = CDNRouter.createProxy();
 	workerPromises?: Map<string, { resolve: (value: any) => any; reject: (error: any) => any }>;
 	onRatelimit?: OnRatelimitCallback;
+	onSuccessRequest?: OnSuccessRequestCallback;
+	onFailRequest?: OnFailRequestCallback;
 
 	constructor(options: ApiHandlerOptions) {
 		this.options = {
@@ -125,6 +134,22 @@ export class ApiHandler {
 		});
 	}
 
+	private async notifySuccessRequest(method: HttpMethods, url: `/${string}`, response: Response) {
+		try {
+			await this.onSuccessRequest?.(method, url, response);
+		} catch (error) {
+			this.debugger?.warn('onSuccessRequest callback error', error);
+		}
+	}
+
+	private async notifyFailRequest(method: HttpMethods, url: `/${string}`, error: unknown, statusCode?: number) {
+		try {
+			await this.onFailRequest?.(method, url, error, statusCode);
+		} catch (callbackError) {
+			this.debugger?.warn('onFailRequest callback error', callbackError);
+		}
+	}
+
 	async request<T = unknown>(
 		method: HttpMethods,
 		url: `/${string}`,
@@ -161,9 +186,9 @@ export class ApiHandler {
 			let response: Response;
 
 			try {
-				const url = `${this.options.domain}/${this.options.baseUrl}${finalUrl}`;
+				const requestUrl = `${this.options.domain}/${this.options.baseUrl}${finalUrl}`;
 				this.debugger?.debug(`Sending, Method: ${method} | Url: [${finalUrl}](${route}) | Auth: ${auth}`);
-				response = await fetch(url, {
+				response = await fetch(requestUrl, {
 					method,
 					headers,
 					body: data,
@@ -171,6 +196,7 @@ export class ApiHandler {
 				this.debugger?.debug(`Received response: ${response.statusText}(${response.status})`);
 			} catch (err) {
 				this.debugger?.debug('Fetch error', err);
+				await this.notifyFailRequest(method, finalUrl, err);
 				next();
 				reject(err);
 				return;
@@ -188,6 +214,7 @@ export class ApiHandler {
 				if (response.status === 429) {
 					const result429 = await this.handle429(route, method, url, request, response, result, next, reject, now);
 					if (result429 !== false) return resolve(result429);
+					await this.notifyFailRequest(method, finalUrl, result, response.status);
 					return this.clearResetInterval(route);
 				}
 				if ([502, 503].includes(response.status) && ++attempts < 4) {
@@ -202,6 +229,7 @@ export class ApiHandler {
 							result = JSON.parse(result);
 						} catch (err) {
 							this.debugger?.warn('SeyfertError parsing result error (', result, ')', err);
+							await this.notifyFailRequest(method, finalUrl, err, response.status);
 							reject(err);
 							return;
 						}
@@ -209,6 +237,7 @@ export class ApiHandler {
 				}
 				const parsedError = this.parseError(method, route, response, result, originTrace);
 				this.debugger?.warn(parsedError.message);
+				await this.notifyFailRequest(method, finalUrl, parsedError, response.status);
 				reject(parsedError);
 				return;
 			}
@@ -219,6 +248,7 @@ export class ApiHandler {
 						result = JSON.parse(result);
 					} catch (err) {
 						this.debugger?.warn('Failed parsing result (', result, ')', err);
+						await this.notifyFailRequest(method, finalUrl, err, response.status);
 						next();
 						reject(err);
 						return;
@@ -226,6 +256,7 @@ export class ApiHandler {
 				}
 			}
 
+			await this.notifySuccessRequest(method, finalUrl, response);
 			next();
 			return resolve(result || undefined);
 		};

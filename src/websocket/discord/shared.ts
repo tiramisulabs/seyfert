@@ -9,6 +9,16 @@ import type {
 import type { IdentifyProperties } from '../constants';
 import type { WorkerMessages } from './worker';
 
+export interface ShardDisconnectData {
+	shardId: number;
+	code: number;
+	reason: string;
+}
+
+export interface ShardReconnectData {
+	shardId: number;
+}
+
 export interface ShardManagerOptions extends ShardDetails {
 	/** Important data which is used by the manager to connect shards to the gateway. */
 	info: APIGatewayBotInfo;
@@ -28,6 +38,8 @@ export interface ShardManagerOptions extends ShardDetails {
 	 * The payload handlers for messages on the shard.
 	 */
 	handlePayload(shardId: number, packet: GatewayDispatchPayload): unknown;
+	onShardDisconnect?(data: ShardDisconnectData): Awaitable<unknown>;
+	onShardReconnect?(data: ShardReconnectData): Awaitable<unknown>;
 	/**
 	 * wheter to send debug information to the console
 	 */
@@ -126,6 +138,8 @@ export interface ShardDetails {
 export interface ShardOptions extends ShardDetails {
 	info: APIGatewayBotInfo;
 	handlePayload(shardId: number, packet: GatewayDispatchPayload): unknown;
+	onShardDisconnect?(data: ShardDisconnectData): Awaitable<unknown>;
+	onShardReconnect?(data: ShardReconnectData): Awaitable<unknown>;
 	ratelimitOptions?: {
 		maxRequestsPerRateLimitTick: number;
 		rateLimitResetInterval: number;

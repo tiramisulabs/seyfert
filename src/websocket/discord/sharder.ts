@@ -97,6 +97,8 @@ export class ShardManager extends Map<number, Shard> {
 			intents: this.options.intents,
 			info: { ...this.options.info, shards: this.totalShards },
 			handlePayload: this.options.handlePayload,
+			onShardDisconnect: this.options.onShardDisconnect,
+			onShardReconnect: this.options.onShardReconnect,
 			properties: this.options.properties,
 			debugger: this.debugger,
 			compress: this.options.compress ?? false,
