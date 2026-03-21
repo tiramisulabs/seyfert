@@ -6,6 +6,7 @@ import {
 	type AutoModerationRuleStructure,
 	type GuildMemberStructure,
 	type GuildStructure,
+	type MessageStructure,
 	type StickerStructure,
 	Transformers,
 } from '../../client/transformers';
@@ -22,6 +23,9 @@ import type {
 	APISticker,
 	GuildWidgetStyle,
 	RESTGetAPICurrentUserGuildsQuery,
+	RESTGetAPIGuildMessagesSearch,
+	RESTGetAPIGuildMessagesSearchQuery,
+	RESTGetAPIGuildMessagesSearchResult,
 	RESTGetAPIGuildQuery,
 	RESTPatchAPIAutoModerationRuleJSONBody,
 	RESTPatchAPIChannelJSONBody,
@@ -32,6 +36,8 @@ import type {
 	RESTPostAPIGuildChannelJSONBody,
 } from '../../types';
 import type { APITextChannel } from '../../types/payloads/channel';
+import { SeyfertError } from '../it/error';
+import { delay } from '../it/utils';
 import type { If, MakeRequired } from '../types/util';
 import { BaseShorter } from './base';
 
@@ -118,6 +124,38 @@ export class GuildShorter extends BaseShorter {
 			.guilds(id)
 			.delete()
 			.then(() => this.client.cache.guilds?.removeIfNI('Guilds', id));
+	}
+
+	/**
+	 * Searches for messages within a guild using a variety of filters.
+	 * Requires `READ_MESSAGE_HISTORY` permission.
+	 * @param guildId The ID of the guild to search in.
+	 * @param query The search query parameters.
+	 * @param wait Whether to automatically wait and retry when the guild index is not yet available (HTTP 202).
+	 * @returns A Promise that resolves to the search results with flattened messages.
+	 */
+	async searchMessages(
+		guildId: string,
+		query?: RESTGetAPIGuildMessagesSearchQuery,
+		wait = false,
+	): Promise<GuildSearchMessagesResult> {
+		const result = await this.client.proxy.guilds(guildId).messages.search.get({ query });
+
+		if ('code' in result && result.code === 110_000) {
+			if (!wait)
+				throw new SeyfertError('GUILD_SEARCH_INDEX_NOT_READY', {
+					metadata: { guildId, retryAfter: result.retry_after },
+				});
+			await delay(result.retry_after * 1000);
+			return this.searchMessages(guildId, query, wait);
+		}
+
+		const data = result as RESTGetAPIGuildMessagesSearch;
+		return {
+			...data,
+			messages: data.messages.flat().map(message => Transformers.Message(this.client, message)),
+			threads: data.threads.map(thread => channelFrom(thread, this.client)),
+		};
 	}
 
 	/**
@@ -417,4 +455,9 @@ export class GuildShorter extends BaseShorter {
 export interface GuildFetchOptions {
 	query?: RESTGetAPIGuildQuery;
 	force?: boolean;
+}
+
+export interface GuildSearchMessagesResult extends Omit<RESTGetAPIGuildMessagesSearchResult, 'messages' | 'threads'> {
+	messages: MessageStructure[];
+	threads: AllChannels[];
 }

@@ -1,8 +1,14 @@
 import type { GuildMemberStructure, GuildStructure, ThreadChannelStructure } from '../client';
 import type { UsingClient } from '../commands';
-import type { CreateInviteFromChannel } from '../common';
+import type { CreateInviteFromChannel, GuildSearchMessagesResult } from '../common';
 import type { ObjectToLower, StructPropState, StructStates, ToClass } from '../common/types/util';
-import type { APIGuild, APIPartialGuild, GatewayGuildCreateDispatchData, RESTPatchAPIGuildJSONBody } from '../types';
+import type {
+	APIGuild,
+	APIPartialGuild,
+	GatewayGuildCreateDispatchData,
+	RESTGetAPIGuildMessagesSearchQuery,
+	RESTPatchAPIGuildJSONBody,
+} from '../types';
 import { AutoModerationRule } from './AutoModerationRule';
 import { BaseChannel, WebhookGuildMethods } from './channels';
 import { GuildEmoji } from './Emoji';
@@ -86,6 +92,10 @@ export class Guild<State extends StructStates = 'api'> extends (BaseGuild as unk
 
 	edit(body: RESTPatchAPIGuildJSONBody, reason?: string): Promise<GuildStructure<'api'>> {
 		return this.client.guilds.edit(this.id, body, reason);
+	}
+
+	searchMessages(query?: RESTGetAPIGuildMessagesSearchQuery, wait?: boolean): Promise<GuildSearchMessagesResult> {
+		return this.client.guilds.searchMessages(this.id, query, wait);
 	}
 
 	invites = {
