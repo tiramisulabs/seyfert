@@ -16,9 +16,11 @@ import type {
 	APIGuildWelcomeScreen,
 	APIGuildWidget,
 	APIGuildWidgetSettings,
+	APIMessage,
 	APIRole,
 	APIRoleColors,
 	APIThreadList,
+	APIThreadMember,
 	APIVoiceRegion,
 	GuildDefaultMessageNotifications,
 	GuildExplicitContentFilter,
@@ -1005,3 +1007,224 @@ export type RESTAPIModifyGuildOnboardingPromptOptionData = AddUndefinedToPossibl
  * https://discord.com/developers/docs/resources/guild#modify-guild-onboarding
  */
 export type RESTPutAPIGuildOnboardingResult = APIGuildOnboarding;
+
+/**
+ * https://discord.com/developers/docs/resources/message#search-guild-messages
+ */
+export enum GuildSearchAuthorType {
+	User = 'user',
+	Bot = 'bot',
+	Webhook = 'webhook',
+}
+
+/**
+ * https://discord.com/developers/docs/resources/message#search-guild-messages
+ */
+export enum GuildSearchHasType {
+	Image = 'image',
+	Sound = 'sound',
+	Video = 'video',
+	File = 'file',
+	Sticker = 'sticker',
+	Embed = 'embed',
+	Link = 'link',
+	Poll = 'poll',
+	Snapshot = 'snapshot',
+}
+
+/**
+ * https://discord.com/developers/docs/resources/message#search-guild-messages
+ */
+export enum GuildSearchEmbedType {
+	Image = 'image',
+	Video = 'video',
+	GIF = 'gif',
+	Sound = 'sound',
+	Article = 'article',
+}
+
+/**
+ * https://discord.com/developers/docs/resources/message#search-guild-messages
+ */
+export enum GuildSearchSortBy {
+	Timestamp = 'timestamp',
+	Relevance = 'relevance',
+}
+
+/**
+ * https://discord.com/developers/docs/resources/message#search-guild-messages
+ */
+export enum GuildSearchSortOrder {
+	Ascending = 'asc',
+	Descending = 'desc',
+}
+
+export type GuildSearchNegatable<T extends string> = `${T}` | `-${T}`;
+
+/**
+ * https://discord.com/developers/docs/resources/message#search-guild-messages
+ */
+export interface RESTGetAPIGuildMessagesSearchQuery {
+	/**
+	 * Filter messages by content (max 1024 characters)
+	 */
+	content?: string;
+	/**
+	 * Filter messages by these channels (max 500)
+	 */
+	channel_id?: Snowflake[];
+	/**
+	 * Filter messages by these authors (max 100)
+	 */
+	author_id?: Snowflake[];
+	/**
+	 * Filter by author type (prefix with `-` to negate)
+	 */
+	author_type?: GuildSearchNegatable<GuildSearchAuthorType>[];
+	/**
+	 * Filter messages that mention these users (max 100)
+	 */
+	mentions?: Snowflake[];
+	/**
+	 * Filter messages that mention these roles (max 100)
+	 */
+	mentions_role_id?: Snowflake[];
+	/**
+	 * Filter messages that do or do not mention @everyone
+	 */
+	mention_everyone?: boolean;
+	/**
+	 * Filter messages that reply to these users (max 100)
+	 */
+	replied_to_user_id?: Snowflake[];
+	/**
+	 * Filter messages that reply to these messages (max 100)
+	 */
+	replied_to_message_id?: Snowflake[];
+	/**
+	 * Filter messages by whether they are or are not pinned
+	 */
+	pinned?: boolean;
+	/**
+	 * Filter by content type (prefix with `-` to negate)
+	 */
+	has?: GuildSearchNegatable<GuildSearchHasType>[];
+	/**
+	 * Filter messages by embed type
+	 */
+	embed_type?: GuildSearchEmbedType[];
+	/**
+	 * Filter messages by embed provider (case-sensitive, e.g. `Tenor`) (max 256 characters, max 100)
+	 */
+	embed_provider?: ('Tenor' | ({} & string))[];
+	/**
+	 * Filter messages by link hostname (e.g. `discordapp.com`) (max 256 characters, max 100)
+	 */
+	link_hostname?: string[];
+	/**
+	 * Filter messages by attachment filename (max 1024 characters, max 100)
+	 */
+	attachment_filename?: string[];
+	/**
+	 * Filter messages by attachment extension (e.g. `txt`) (max 256 characters, max 100)
+	 */
+	attachment_extension?: string[];
+	/**
+	 * Max number of words to skip between matching tokens (max 100)
+	 *
+	 * @default 2
+	 */
+	slop?: number;
+	/**
+	 * The sorting algorithm to use
+	 */
+	sort_by?: GuildSearchSortBy;
+	/**
+	 * The sort order (ignored with relevance sorting)
+	 *
+	 * @default "desc"
+	 */
+	sort_order?: GuildSearchSortOrder;
+	/**
+	 * Max number of messages to return (1-25)
+	 *
+	 * @default 25
+	 */
+	limit?: number;
+	/**
+	 * Number to offset the returned messages by (max 9975)
+	 */
+	offset?: number;
+	/**
+	 * Get messages before this message ID
+	 */
+	max_id?: Snowflake;
+	/**
+	 * Get messages after this message ID
+	 */
+	min_id?: Snowflake;
+	/**
+	 * Whether to include results from age-restricted channels
+	 *
+	 * @default false
+	 */
+	include_nsfw?: boolean;
+}
+
+/**
+ * https://discord.com/developers/docs/resources/message#search-guild-messages
+ */
+export interface RESTGetAPIGuildMessagesSearch {
+	/**
+	 * Whether the guild is undergoing a deep historical indexing operation
+	 */
+	doing_deep_historical_index: boolean;
+	/**
+	 * The number of documents that have been indexed during the current index operation, if any
+	 */
+	documents_indexed: number;
+	/**
+	 * The total number of results that match the query
+	 */
+	total_results: number;
+	/**
+	 * A nested array of messages that match the query
+	 */
+	messages: [APIMessage][];
+	/**
+	 * The threads that contain the returned messages
+	 */
+	threads: APIChannel[];
+	/**
+	 * A thread member object for each returned thread the current user has joined
+	 */
+	members: APIThreadMember[];
+}
+
+/**
+ * https://discord.com/developers/docs/resources/message#search-guild-messages
+ *
+ * Response when the index is not yet available (HTTP 202)
+ */
+export interface RESTGetAPIGuildMessagesSearchIndexingResult {
+	/**
+	 * Error description
+	 */
+	message: string;
+	/**
+	 * Error code (110000)
+	 */
+	code: 110_000;
+	/**
+	 * Always 0 when indexing
+	 */
+	documents_indexed: 0;
+	/**
+	 * Seconds to wait before retrying
+	 */
+	retry_after: number;
+}
+
+export type RESTGetAPIGuildMessagesSearchResult =
+	| RESTGetAPIGuildMessagesSearch
+	| RESTGetAPIGuildMessagesSearchIndexingResult;
