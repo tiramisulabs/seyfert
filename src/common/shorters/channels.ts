@@ -124,8 +124,8 @@ export class ChannelShorter extends BaseShorter {
 		if (options.guildId === '@me') return;
 
 		const overwrite: APIOverwrite = {
-			allow: (body.allow ?? '0') as APIOverwrite['allow'],
-			deny: (body.deny ?? '0') as APIOverwrite['deny'],
+			allow: body.allow,
+			deny: body.deny,
 			id: overwriteId,
 			type: body.type,
 		};
