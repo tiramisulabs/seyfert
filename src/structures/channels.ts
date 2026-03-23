@@ -24,6 +24,7 @@ import {
 } from '../client';
 import type { SeyfertChannelMap, UsingClient } from '../commands';
 import {
+	type ChannelShorterOverwriteBody,
 	type CreateInviteFromChannel,
 	type EmojiResolvable,
 	fakePromise,
@@ -60,7 +61,6 @@ import {
 	type RESTPatchAPIGuildChannelPositionsJSONBody,
 	type RESTPostAPIChannelWebhookJSONBody,
 	type RESTPostAPIGuildChannelJSONBody,
-	type RESTPutAPIChannelPermissionJSONBody,
 	type SortOrderType,
 	type ThreadAutoArchiveDuration,
 	VideoQualityMode,
@@ -237,7 +237,7 @@ export class BaseGuildChannel extends BaseChannel<ChannelType> {
 				: this.client.cache.adapter.isAsync
 					? (Promise.resolve([]) as never)
 					: [],
-		edit: (overwriteId: string, body: RESTPutAPIChannelPermissionJSONBody, reason?: string) =>
+		edit: (overwriteId: string, body: ChannelShorterOverwriteBody, reason?: string) =>
 			this.client.channels.editOverwrite(this.id, overwriteId, body, { guildId: this.guildId, reason }),
 		delete: (overwriteId: string, reason?: string) =>
 			this.client.channels.deleteOverwrite(this.id, overwriteId, { guildId: this.guildId, reason }),

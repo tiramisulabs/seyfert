@@ -14,7 +14,7 @@ import type {
 } from '../../types';
 import { type ChannelType, PermissionFlagsBits } from '../../types';
 import { MergeOptions } from '../it/utils';
-import type { MakeRequired } from '../types/util';
+import type { MakeRequired, OmitInsert, PermissionStrings } from '../types/util';
 import type { ThreadCreateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
 
@@ -107,11 +107,21 @@ export class ChannelShorter extends BaseShorter {
 	async editOverwrite(
 		channelId: string,
 		overwriteId: string,
-		body: RESTPutAPIChannelPermissionJSONBody,
+		body: ChannelShorterOverwriteBody,
 		optional: ChannelShorterOptionalParams = { guildId: '@me' },
 	) {
 		const options = MergeOptions<MakeRequired<ChannelShorterOptionalParams, 'guildId'>>({ guildId: '@me' }, optional);
-		await this.client.proxy.channels(channelId).permissions(overwriteId).put({ body, reason: options.reason });
+		await this.client.proxy
+			.channels(channelId)
+			.permissions(overwriteId)
+			.put({
+				body: {
+					...body,
+					allow: body.allow ? PermissionsBitField.resolve(body.allow).toString() : '0',
+					deny: body.deny ? PermissionsBitField.resolve(body.deny).toString() : '0',
+				},
+				reason: options.reason,
+			});
 
 		if (options.guildId === '@me') return;
 
@@ -314,3 +324,11 @@ export class ChannelShorter extends BaseShorter {
 }
 
 export type ChannelShorterOptionalParams = Partial<{ guildId: (string & {}) | '@me'; reason: string }>;
+export type ChannelShorterOverwriteBody = OmitInsert<
+	RESTPutAPIChannelPermissionJSONBody,
+	'allow' | 'deny',
+	{
+		allow?: PermissionStrings;
+		deny?: PermissionStrings;
+	}
+>;
