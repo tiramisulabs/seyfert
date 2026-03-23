@@ -39,11 +39,12 @@ describe('channel overwrites endpoint', () => {
 		await channelShorter.editOverwrite(
 			channelId,
 			overwriteId,
-			{ allow: '1', deny: '2', type: OverwriteType.Member },
+			{ allow: [1], deny: [2], type: OverwriteType.Member },
 			{ guildId, reason: 'set overwrite' },
 		);
 
 		const cached = await client.cache.overwrites?.raw(channelId);
+		console.log(cached);
 		expect(cached).toEqual([
 			{ allow: '1', deny: '2', guild_id: guildId, id: overwriteId, type: OverwriteType.Member },
 		]);

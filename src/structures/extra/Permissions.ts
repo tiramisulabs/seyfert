@@ -50,4 +50,8 @@ export class PermissionsBitField extends BitField<typeof PermissionFlagsBits> {
 
 		return bitsResult;
 	}
+
+	toString() {
+		return this.bit.toString();
+	}
 }

@@ -107,21 +107,19 @@ export class ChannelShorter extends BaseShorter {
 	async editOverwrite(
 		channelId: string,
 		overwriteId: string,
-		body: ChannelShorterOverwriteBody,
+		raw: ChannelShorterOverwriteBody,
 		optional: ChannelShorterOptionalParams = { guildId: '@me' },
 	) {
+		const body = {
+			...raw,
+			allow: raw.allow ? PermissionsBitField.resolve(raw.allow).toString() : '0',
+			deny: raw.deny ? PermissionsBitField.resolve(raw.deny).toString() : '0',
+		};
 		const options = MergeOptions<MakeRequired<ChannelShorterOptionalParams, 'guildId'>>({ guildId: '@me' }, optional);
-		await this.client.proxy
-			.channels(channelId)
-			.permissions(overwriteId)
-			.put({
-				body: {
-					...body,
-					allow: body.allow ? PermissionsBitField.resolve(body.allow).toString() : '0',
-					deny: body.deny ? PermissionsBitField.resolve(body.deny).toString() : '0',
-				},
-				reason: options.reason,
-			});
+		await this.client.proxy.channels(channelId).permissions(overwriteId).put({
+			body,
+			reason: options.reason,
+		});
 
 		if (options.guildId === '@me') return;
 
