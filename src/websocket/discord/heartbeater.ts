@@ -40,4 +40,11 @@ export class Heartbeater {
 		if (!heartbeat) return;
 		heartbeat.ack = true;
 	}
+
+	unregister(workerId: number) {
+		const heartbeat = this.store.get(workerId);
+		if (!heartbeat) return;
+		clearInterval(heartbeat.interval);
+		this.store.delete(workerId);
+	}
 }

@@ -1,4 +1,4 @@
-import { Collection, Formatter, type RawFile, type ReturnCache } from '..';
+import { Formatter, type RawFile, type ReturnCache } from '..';
 import { Attachment, Embed, PollBuilder, resolveAttachment } from '../builders';
 import type { Overwrites } from '../cache/resources/overwrites';
 import {
@@ -504,17 +504,9 @@ export class VoiceChannelMethods extends DiscordBase {
 		});
 	}
 
-	public async members(force?: boolean): Promise<Collection<string, GuildMemberStructure>> {
-		const collection = new Collection<string, GuildMemberStructure>();
-
+	public async members(force?: boolean): Promise<GuildMemberStructure[]> {
 		const states = await this.states();
-
-		for (const state of states) {
-			const member = await state.member(force);
-			collection.set(member.id, member);
-		}
-
-		return collection;
+		return await Promise.all(states.map(state => state.member(force)));
 	}
 }
 

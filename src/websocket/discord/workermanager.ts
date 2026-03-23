@@ -212,6 +212,7 @@ export class WorkerManager extends Map<
 				this[rawResharding ? 'reshardingWorkerQueue' : 'workerQueue'].push(() => {
 					registerWorker(rawResharding);
 					this.heartbeater.register(i, () => {
+						this.heartbeater.unregister(i);
 						this.delete(i);
 						registerWorker(false);
 					});

@@ -33,6 +33,7 @@ export type AllComponents = MessageComponents | TopLevelComponents | ContainerCo
 
 export * from './componentcommand';
 export * from './componentcontext';
+export * from './interactioncontext';
 export * from './modalcommand';
 export * from './modalcontext';
 

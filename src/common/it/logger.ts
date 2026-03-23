@@ -44,12 +44,17 @@ export class Logger {
 	/**
 	 * The custom callback function for logging.
 	 */
+	private static __memoryCache: { rss: number; ts: number } = { rss: 0, ts: 0 };
+
 	private static __callback: CustomizeLoggerCallback = (self, level, args) => {
 		const color = Logger.colorFunctions.get(level) ?? Logger.noColor;
-		const memoryData = process.memoryUsage?.();
-		const date = new Date();
+		const now = Date.now();
+		if (now - Logger.__memoryCache.ts > 1000) {
+			Logger.__memoryCache = { rss: process.memoryUsage?.()?.rss ?? 0, ts: now };
+		}
+		const date = new Date(now);
 		return [
-			brightBlack(formatMemoryUsage(memoryData?.rss ?? 0)),
+			brightBlack(formatMemoryUsage(Logger.__memoryCache.rss)),
 			bgBrightWhite(black(`[${date.toLocaleDateString()} ${date.toLocaleTimeString()}]`)),
 			color(Logger.prefixes.get(level) ?? 'DEBUG'),
 			self.name ? `${self.name} >` : '>',
