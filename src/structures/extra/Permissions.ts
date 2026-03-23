@@ -1,4 +1,3 @@
-import type { PermissionStrings } from '../../common';
 import { PermissionFlagsBits } from '../../types';
 import { BitField, type BitFieldResolvable } from './BitField';
 
