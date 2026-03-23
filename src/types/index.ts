@@ -36,4 +36,4 @@ export type Snowflake = string;
 /**
  * https://discord.com/developers/docs/topics/permissions
  */
-export type Permissions = string;
+export type Permissions = string | number | bigint;
