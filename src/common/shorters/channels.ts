@@ -6,13 +6,15 @@ import { PermissionsBitField } from '../../structures/extra/Permissions';
 import type {
 	APIChannel,
 	APIGuildChannel,
+	APIOverwrite,
 	RESTGetAPIChannelMessagesQuery,
 	RESTGetAPIChannelPinsQuery,
 	RESTPatchAPIChannelJSONBody,
+	RESTPutAPIChannelPermissionJSONBody,
 } from '../../types';
 import { type ChannelType, PermissionFlagsBits } from '../../types';
 import { MergeOptions } from '../it/utils';
-import type { MakeRequired } from '../types/util';
+import type { MakeRequired, OmitInsert, PermissionStrings } from '../types/util';
 import type { ThreadCreateBodyRequest } from '../types/write';
 import { BaseShorter } from './base';
 
@@ -93,6 +95,89 @@ export class ChannelShorter extends BaseShorter {
 				res.permission_overwrites,
 			);
 		return channelFrom(res, this.client);
+	}
+
+	/**
+	 * Edits or creates a permission overwrite for a channel.
+	 * @param channelId The ID of the channel.
+	 * @param overwriteId The ID of the role or member overwrite.
+	 * @param body The overwrite payload.
+	 * @param optional Optional parameters including guild id and reason.
+	 */
+	async editOverwrite(
+		channelId: string,
+		overwriteId: string,
+		raw: ChannelShorterOverwriteBody,
+		optional: ChannelShorterOptionalParams = { guildId: '@me' },
+	) {
+		const body = {
+			...raw,
+			allow: raw.allow ? PermissionsBitField.resolve(raw.allow).toString() : '0',
+			deny: raw.deny ? PermissionsBitField.resolve(raw.deny).toString() : '0',
+		};
+		const options = MergeOptions<MakeRequired<ChannelShorterOptionalParams, 'guildId'>>({ guildId: '@me' }, optional);
+		await this.client.proxy.channels(channelId).permissions(overwriteId).put({
+			body,
+			reason: options.reason,
+		});
+
+		if (options.guildId === '@me') return;
+
+		const overwrite: APIOverwrite = {
+			allow: body.allow,
+			deny: body.deny,
+			id: overwriteId,
+			type: body.type,
+		};
+		const cachedOverwrites = (await this.client.cache.overwrites?.raw(channelId)) ?? [];
+		const updatedOverwrites = [...cachedOverwrites.filter(current => current.id !== overwriteId), overwrite];
+
+		await this.client.cache.overwrites?.setIfNI(
+			CacheFrom.Rest,
+			BaseChannel.__intent__(options.guildId),
+			channelId,
+			options.guildId,
+			updatedOverwrites,
+		);
+	}
+
+	/**
+	 * Deletes a permission overwrite from a channel.
+	 * @param channelId The ID of the channel.
+	 * @param overwriteId The ID of the role or member overwrite.
+	 * @param optional Optional parameters including guild id and reason.
+	 */
+	async deleteOverwrite(
+		channelId: string,
+		overwriteId: string,
+		optional: ChannelShorterOptionalParams = { guildId: '@me' },
+	) {
+		const options = MergeOptions<MakeRequired<ChannelShorterOptionalParams, 'guildId'>>({ guildId: '@me' }, optional);
+		await this.client.proxy.channels(channelId).permissions(overwriteId).delete({ reason: options.reason });
+
+		if (options.guildId === '@me') return;
+
+		const cachedOverwrites = await this.client.cache.overwrites?.raw(channelId);
+		if (!cachedOverwrites) return;
+
+		const updatedOverwrites = cachedOverwrites.filter(current => current.id !== overwriteId);
+
+		if (!updatedOverwrites.length) {
+			await this.client.cache.overwrites?.removeIfNI(
+				BaseChannel.__intent__(options.guildId),
+				channelId,
+				options.guildId,
+			);
+			return;
+		}
+
+		await this.client.cache.overwrites?.setIfNI(
+			CacheFrom.Rest,
+			BaseChannel.__intent__(options.guildId),
+			channelId,
+			options.guildId,
+			updatedOverwrites,
+		);
 	}
 
 	/**
@@ -237,3 +322,11 @@ export class ChannelShorter extends BaseShorter {
 }
 
 export type ChannelShorterOptionalParams = Partial<{ guildId: (string & {}) | '@me'; reason: string }>;
+export type ChannelShorterOverwriteBody = OmitInsert<
+	RESTPutAPIChannelPermissionJSONBody,
+	'allow' | 'deny',
+	{
+		allow?: PermissionStrings;
+		deny?: PermissionStrings;
+	}
+>;

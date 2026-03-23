@@ -30,6 +30,8 @@ import type {
 	RESTGetAPIGuildMembersResult,
 	RESTGetAPIGuildMembersSearchQuery,
 	RESTGetAPIGuildMembersSearchResult,
+	RESTGetAPIGuildMessagesSearchQuery,
+	RESTGetAPIGuildMessagesSearchResult,
 	RESTGetAPIGuildPreviewResult,
 	RESTGetAPIGuildPruneCountQuery,
 	RESTGetAPIGuildPruneCountResult,
@@ -190,6 +192,13 @@ export interface GuildRoutes {
 						put(args?: RestArgumentsNoBody): Promise<RESTPutAPIGuildMemberRoleResult>;
 						delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIGuildMemberRoleResult>;
 					};
+				};
+			};
+			messages: {
+				search: {
+					get(
+						args?: RestArgumentsNoBody<RESTGetAPIGuildMessagesSearchQuery>,
+					): Promise<RESTGetAPIGuildMessagesSearchResult>;
 				};
 			};
 			threads: {

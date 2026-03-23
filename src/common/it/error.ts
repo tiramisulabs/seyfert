@@ -126,6 +126,7 @@ export const SeyfertErrorMessages = {
 	CACHE_OVERWRITES_COUNT_NOT_ZERO: 'Overwrites count should be zero.',
 	INVALID_RETRY_AFTER: 'Could not extract retry_after from 429 response.',
 	DENO_FILE_API_UNSUPPORTED: 'Deno file API limitation encountered.',
+	GUILD_SEARCH_INDEX_NOT_READY: 'Guild search index is not yet available.',
 };
 
 export type SeyfertErrorCode = keyof typeof SeyfertErrorMessages | (string & {});
