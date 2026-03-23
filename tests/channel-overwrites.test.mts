@@ -44,7 +44,6 @@ describe('channel overwrites endpoint', () => {
 		);
 
 		const cached = await client.cache.overwrites?.raw(channelId);
-		console.log(cached);
 		expect(cached).toEqual([
 			{ allow: '1', deny: '2', guild_id: guildId, id: overwriteId, type: OverwriteType.Member },
 		]);
