@@ -1,4 +1,3 @@
-import type { PermissionStrings } from '../../common';
 import { PermissionFlagsBits } from '../../types';
 import { BitField, type BitFieldResolvable } from './BitField';
 
@@ -13,7 +12,7 @@ export class PermissionsBitField extends BitField<typeof PermissionFlagsBits> {
 		if (bitfields) this.bit = this.resolve(bitfields);
 	}
 
-	declare keys: (bits?: BitFieldResolvable<typeof PermissionFlagsBits>[]) => PermissionStrings;
+	declare keys: (bits?: BitFieldResolvable<typeof PermissionFlagsBits>[]) => (keyof typeof PermissionFlagsBits)[];
 
 	has(bits: BitFieldResolvable<typeof PermissionFlagsBits>[]) {
 		return super.has(bits) || super.has(['Administrator']);
@@ -50,5 +49,9 @@ export class PermissionsBitField extends BitField<typeof PermissionFlagsBits> {
 		}
 
 		return bitsResult;
+	}
+
+	toString() {
+		return this.bit.toString();
 	}
 }

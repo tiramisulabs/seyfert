@@ -24,8 +24,8 @@ export type CommandDeclareOptions =
 export interface DecoratorDeclareOptions {
 	name: string;
 	description: string;
-	botPermissions?: PermissionStrings | bigint;
-	defaultMemberPermissions?: PermissionStrings | bigint;
+	botPermissions?: PermissionStrings;
+	defaultMemberPermissions?: PermissionStrings;
 	guildId?: string[];
 	nsfw?: boolean;
 	integrationTypes?: (keyof typeof ApplicationIntegrationType)[] | ApplicationIntegrationType[];

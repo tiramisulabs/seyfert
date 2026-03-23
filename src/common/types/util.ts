@@ -36,7 +36,12 @@ export type RequireAtLeastOne<T, Keys extends keyof T = keyof T> = T & { [K in K
 
 export type IntentStrings = (keyof typeof GatewayIntentBits)[];
 
-export type PermissionStrings = (keyof typeof PermissionFlagsBits)[];
+export type PermissionStrings = (
+	| keyof typeof PermissionFlagsBits
+	| (typeof PermissionFlagsBits)[keyof typeof PermissionFlagsBits]
+	| bigint
+	| number
+)[];
 
 export type RestOrArray<T> = T[] | [T[]];
 
