@@ -32,8 +32,4 @@ export class PermissionsBitField extends BitField<typeof PermissionFlagsBits> {
 	toString() {
 		return this.bit.toString();
 	}
-
-	toString() {
-		return this.bit.toString();
-	}
 }
