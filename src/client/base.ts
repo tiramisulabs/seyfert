@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { ApiHandler } from '../api';
 import { isBufferLike } from '../api/utils/utils';
 import type { Adapter, DisabledCache } from '../cache';
-import { Cache, MemoryAdapter } from '../cache';
+import { Cache, LimitedMemoryAdapter } from '../cache';
 import type {
 	Command,
 	CommandContext,
@@ -24,6 +24,7 @@ import {
 	ApplicationShorter,
 	assertString,
 	ChannelShorter,
+	defaultCacheSettings,
 	EmojiShorter,
 	filterSplit,
 	GuildShorter,
@@ -65,7 +66,7 @@ import type { MessageStructure } from './transformers';
 
 export class BaseClient {
 	rest = new ApiHandler({ token: 'INVALID' });
-	cache = new Cache(0, new MemoryAdapter(), {}, this);
+	cache = new Cache(0, new LimitedMemoryAdapter(defaultCacheSettings), {}, this);
 
 	applications = new ApplicationShorter(this);
 	users = new UsersShorter(this);
