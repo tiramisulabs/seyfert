@@ -1,3 +1,5 @@
+import type { LimitedMemoryAdapterOptions } from '../..';
+
 export enum EmbedColors {
 	Default = 0x000000,
 	White = 0xffffff,
@@ -40,3 +42,39 @@ export const BASE_URL = `${BASE_HOST}/api`;
 export const CDN_URL = 'https://cdn.discordapp.com';
 
 export const INTEGER_OPTION_VALUE_LIMIT = 2 ** 53;
+
+export const defaultCacheSettings: LimitedMemoryAdapterOptions<any> = {
+	ban: {
+		limit: 100,
+	},
+	member: {
+		limit: 200,
+	},
+	voice_state: {
+		limit: 50,
+	},
+	channel: {
+		limit: 200,
+	},
+	emoji: {
+		limit: 500,
+	},
+	presence: {
+		limit: 100,
+	},
+	role: {
+		limit: 200,
+	},
+	stage_instance: {
+		limit: 10,
+	},
+	sticker: {
+		limit: 60,
+	},
+	overwrite: {
+		limit: 100,
+	},
+	message: {
+		limit: 50,
+	},
+};
