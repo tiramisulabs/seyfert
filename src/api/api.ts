@@ -508,7 +508,17 @@ export class ApiHandler {
 			options.headers.Authorization = `${this.options.type} ${options.request.token || this.options.token}`;
 		}
 		if (options.request.query) {
-			finalUrl += `?${new URLSearchParams(options.request.query)}`;
+			const params = new URLSearchParams();
+			for (const [key, value] of Object.entries(options.request.query)) {
+				if (Array.isArray(value)) {
+					for (const item of value) {
+						params.append(key, String(item));
+					}
+				} else {
+					params.append(key, String(value));
+				}
+			}
+			finalUrl += `?${params}`;
 		}
 
 		if (options.request.files?.length || options.request.appendToFormData) {
