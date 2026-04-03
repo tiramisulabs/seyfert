@@ -33,12 +33,20 @@ export function getColorEnabled(): boolean {
  * @param open
  * @param close
  */
+const codeCache = new Map<string, Code>();
+
 function code(open: number[], close: number): Code {
-	return {
-		open: `\x1b[${open.join(';')}m`,
-		close: `\x1b[${close}m`,
-		regexp: new RegExp(`\\x1b\\[${close}m`, 'g'),
-	};
+	const key = `${open.join(';')};${close}`;
+	let cached = codeCache.get(key);
+	if (!cached) {
+		cached = {
+			open: `\x1b[${open.join(';')}m`,
+			close: `\x1b[${close}m`,
+			regexp: new RegExp(`\\x1b\\[${close}m`, 'g'),
+		};
+		codeCache.set(key, cached);
+	}
+	return cached;
 }
 
 /**
