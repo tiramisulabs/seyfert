@@ -175,19 +175,20 @@ export class HandleCommand {
 
 	async chatInput(
 		command: Command | SubCommand,
-		interaction: ChatInputCommandInteraction,
 		resolver: OptionResolverStructure,
 		context: CommandContext,
 	) {
 		try {
 			if (context.guildId) {
 				if (command.botPermissions) {
-					const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
+					const appPermissions = await this.client.members.permissions(context.guildId, this.client.botId);
+					const permissions = this.checkPermissions(appPermissions, command.botPermissions);
 					if (permissions) return await command.onBotPermissionsFail?.(context, permissions);
 				}
 
 				if (command.defaultMemberPermissions) {
-					const permissions = this.checkPermissions(interaction.member!.permissions, command.defaultMemberPermissions);
+					const memberPermissions = await this.client.members.permissions(context.guildId, context.author.id);
+					const permissions = this.checkPermissions(memberPermissions, command.defaultMemberPermissions);
 					if (permissions) return await command.onPermissionsFail?.(context, permissions);
 				}
 			}
@@ -297,7 +298,7 @@ export class HandleCommand {
 						const context = new CommandContext(this.client, interaction, optionsResolver, shardId, command);
 						const extendContext = this.client.options?.context?.(interaction) ?? {};
 						Object.assign(context, extendContext);
-						await this.chatInput(command, interaction, optionsResolver, context);
+						await this.chatInput(command, optionsResolver, context);
 						break;
 					}
 				}
