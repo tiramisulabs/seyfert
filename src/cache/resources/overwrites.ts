@@ -26,7 +26,8 @@ export class Overwrites extends GuildRelatedResource<any, APIOverwrite[]> {
 	override get(
 		id: string,
 	): ReturnCache<
-		{ type: OverwriteType; id: string; deny: PermissionsBitField; allow: PermissionsBitField; guildId: string }[] | undefined
+		| { type: OverwriteType; id: string; deny: PermissionsBitField; allow: PermissionsBitField; guildId: string }[]
+		| undefined
 	> {
 		return fakePromise(super.get(id) as (APIOverwrite & { guild_id: string })[] | undefined).then(rawOverwrites =>
 			rawOverwrites
