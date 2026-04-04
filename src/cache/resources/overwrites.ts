@@ -1,7 +1,7 @@
 import type { CacheFrom, ReturnCache } from '../..';
 import { fakePromise } from '../../common/it/utils';
 import { PermissionsBitField } from '../../structures/extra/Permissions';
-import type { APIOverwrite } from '../../types';
+import type { APIOverwrite, OverwriteType } from '../../types';
 import { GuildRelatedResource } from './default/guild-related';
 
 export class Overwrites extends GuildRelatedResource<any, APIOverwrite[]> {
@@ -26,7 +26,7 @@ export class Overwrites extends GuildRelatedResource<any, APIOverwrite[]> {
 	override get(
 		id: string,
 	): ReturnCache<
-		{ type: number; id: string; deny: PermissionsBitField; allow: PermissionsBitField; guildId: string }[] | undefined
+		{ type: OverwriteType; id: string; deny: PermissionsBitField; allow: PermissionsBitField; guildId: string }[] | undefined
 	> {
 		return fakePromise(super.get(id) as (APIOverwrite & { guild_id: string })[] | undefined).then(rawOverwrites =>
 			rawOverwrites
@@ -44,7 +44,7 @@ export class Overwrites extends GuildRelatedResource<any, APIOverwrite[]> {
 	override values(
 		guild: string,
 	): ReturnCache<
-		{ type: number; id: string; deny: PermissionsBitField; allow: PermissionsBitField; guildId: string }[][]
+		{ type: OverwriteType; id: string; deny: PermissionsBitField; allow: PermissionsBitField; guildId: string }[][]
 	> {
 		return fakePromise(super.values(guild) as (APIOverwrite & { guild_id: string })[][]).then(values =>
 			values.map(rawOverwrites =>
@@ -65,7 +65,7 @@ export class Overwrites extends GuildRelatedResource<any, APIOverwrite[]> {
 
 	override bulk(
 		ids: string[],
-	): ReturnCache<{ type: number; id: string; deny: PermissionsBitField; allow: PermissionsBitField }[][]> {
+	): ReturnCache<{ type: OverwriteType; id: string; deny: PermissionsBitField; allow: PermissionsBitField }[][]> {
 		return fakePromise(super.bulk(ids) as (APIOverwrite & { guild_id: string })[][]).then(values =>
 			values.map(rawOverwrites =>
 				rawOverwrites.map(rawOverwrite => ({
