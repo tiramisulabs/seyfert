@@ -173,11 +173,7 @@ export class HandleCommand {
 		}
 	}
 
-	async chatInput(
-		command: Command | SubCommand,
-		resolver: OptionResolverStructure,
-		context: CommandContext,
-	) {
+	async chatInput(command: Command | SubCommand, resolver: OptionResolverStructure, context: CommandContext) {
 		try {
 			if (context.guildId) {
 				if (command.botPermissions) {
