@@ -37,9 +37,6 @@ export class PermissionsBitField extends BitField<typeof PermissionFlagsBits> {
 				case 'string':
 					bitsResult |= PermissionsBitField.resolve(PermissionFlagsBits[bit as keyof typeof PermissionFlagsBits]);
 					break;
-				case 'number':
-					bitsResult |= BigInt(bit);
-					break;
 				case 'bigint':
 					bitsResult |= bit;
 					break;

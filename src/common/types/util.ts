@@ -40,7 +40,6 @@ export type PermissionStrings = (
 	| keyof typeof PermissionFlagsBits
 	| (typeof PermissionFlagsBits)[keyof typeof PermissionFlagsBits]
 	| bigint
-	| number
 )[];
 
 export type RestOrArray<T> = T[] | [T[]];
