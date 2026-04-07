@@ -109,7 +109,7 @@ export class BaseClient {
 	/**@internal */
 	static _seyfertCfWorkerConfig?: InternalRuntimeConfigHTTP | InternalRuntimeConfig;
 	/**@internal */
-	private static _rcCache?: ResolvedRC;
+	private _rcCache?: ResolvedRC;
 
 	constructor(options?: BaseClientOptions) {
 		this.options = MergeOptions(
@@ -436,7 +436,7 @@ export class BaseClient {
 	async getRC<
 		T extends InternalRuntimeConfigHTTP | InternalRuntimeConfig = InternalRuntimeConfigHTTP | InternalRuntimeConfig,
 	>(): Promise<ResolvedRC> {
-		if (BaseClient._rcCache) return BaseClient._rcCache;
+		if (this._rcCache) return this._rcCache;
 
 		const seyfertConfig = (BaseClient._seyfertCfWorkerConfig ||
 			(await this.options?.getRC?.()) ||
@@ -478,7 +478,7 @@ export class BaseClient {
 			locations: locationsFullPaths,
 		};
 
-		BaseClient._rcCache = obj;
+		this._rcCache = obj;
 		return obj;
 	}
 }

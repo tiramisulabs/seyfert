@@ -262,6 +262,21 @@ describe('LimitedCollection', () => {
 		vi.useRealTimers();
 	});
 
+	test('overwriting the closer with a later expiry does not expire early', () => {
+		vi.useFakeTimers();
+		const c = new LimitedCollection<number, string>();
+		c.set(1, 'one', 100);
+		vi.advanceTimersByTime(50);
+		c.set(1, 'one-again', 200);
+		vi.advanceTimersByTime(60);
+		assert.equal(c.has(1), true);
+		vi.advanceTimersByTime(139);
+		assert.equal(c.has(1), true);
+		vi.advanceTimersByTime(2);
+		assert.equal(c.has(1), false);
+		vi.useRealTimers();
+	});
+
 	test('keys, values, entries iterate correctly', () => {
 		const c = new LimitedCollection<number, string>();
 		c.set(1, 'one');

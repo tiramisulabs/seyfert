@@ -250,11 +250,21 @@ export class LimitedCollection<K, V> {
 			return;
 		}
 
+		const previous = this.data.get(key);
+		const replacedCloser = previous !== undefined && this._closer === previous;
+		if (replacedCloser) {
+			this._closerDirty = true;
+		}
+
 		const expireOn = Date.now() + customExpire;
 		const entry = customExpire > 0 ? { value, expire: customExpire, expireOn } : { value, expire: -1, expireOn: -1 };
 		this.data.set(key, entry);
 
-		if (entry.expire !== -1 && (!this._closer || this._closerDirty || entry.expireOn <= this._closer.expireOn)) {
+		if (
+			entry.expire !== -1 &&
+			!replacedCloser &&
+			(!this._closer || this._closerDirty || entry.expireOn <= this._closer.expireOn)
+		) {
 			this._closer = entry;
 			this._closerDirty = false;
 		}
@@ -440,6 +450,9 @@ export class LimitedCollection<K, V> {
 				continue;
 			}
 			if (Date.now() >= value.expireOn) {
+				if (this._closer === value) {
+					this._closerDirty = true;
+				}
 				this.options.onDelete?.(key, value.value);
 				this.data.delete(key);
 			}

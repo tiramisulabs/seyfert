@@ -85,7 +85,7 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 		const result: unknown[] = [];
 		for (const key of keys) {
 			const data = this.get(key);
-			if (data) result.push(data);
+			if (data !== undefined && data !== null) result.push(data);
 		}
 		return result;
 	}
@@ -93,8 +93,8 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	get(key: string) {
 		for (const storageEntry of this.storage.values()) {
 			if (storageEntry.has(key)) {
-				const data = storageEntry.get(key);
-				return data ? this.options.decode(data) : null;
+				const data = storageEntry.raw(key);
+				return data ? this.options.decode(data.value) : null;
 			}
 		}
 		return null;
@@ -186,7 +186,7 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 		for (const key of data) {
 			const content = this.get(key);
 
-			if (content) {
+			if (content !== undefined && content !== null) {
 				array.push(content);
 			}
 		}
