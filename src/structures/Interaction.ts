@@ -126,7 +126,7 @@ export class BaseInteraction<
 		if (interaction.message) {
 			this.message = Transformers.Message(client, interaction.message);
 		}
-		this.appPermissions = new PermissionsBitField(interaction.app_permissions);
+		this.appPermissions = new PermissionsBitField(BigInt(interaction.app_permissions));
 		if ('channel' in interaction) {
 			this.channel = channelFrom(interaction.channel, client);
 		}
