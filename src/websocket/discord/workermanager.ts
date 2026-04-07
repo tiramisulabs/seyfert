@@ -136,6 +136,7 @@ export class WorkerManager extends Map<
 		}
 
 		const data = await this.getWorkerInfo(id);
+		if (!data.shards.length) return 0;
 
 		return data.shards.reduce((acc, prv) => acc + prv.latency, 0) / data.shards.length;
 	}

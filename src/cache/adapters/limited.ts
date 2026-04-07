@@ -124,6 +124,9 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 						const existsRelation = self.relationships.has(relationshipNamespace);
 						if (existsRelation) {
 							switch (relationshipNamespace) {
+								case 'message':
+									if (data.channel_id) self.removeToRelationship(`${relationshipNamespace}.${data.channel_id}`, k.split('.')[1]);
+									break;
 								case 'ban':
 								case 'member':
 								case 'voice_state':
@@ -260,11 +263,15 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 		return this._getRelationshipSet(to).has(keys);
 	}
 
+	private _getRelationshipData(to: string) {
+		const [key, subrelationKey = '*'] = to.split('.');
+		return { key, subrelationKey };
+	}
+
 	private _getRelationshipSet(to: string) {
-		const key = to.split('.')[0];
+		const { key, subrelationKey } = this._getRelationshipData(to);
 		if (!this.relationships.has(key)) this.relationships.set(key, new Map<string, Set<string>>());
 		const relation = this.relationships.get(key)!;
-		const subrelationKey = to.split('.')[1] ?? '*';
 		if (!relation.has(subrelationKey)) {
 			relation.set(subrelationKey, new Set<string>());
 		}
@@ -298,7 +305,16 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 
 	removeRelationship(to: string | string[]) {
 		for (const i of Array.isArray(to) ? to : [to]) {
-			this.relationships.delete(i);
+			const { key, subrelationKey } = this._getRelationshipData(i);
+			if (subrelationKey === '*') {
+				this.relationships.delete(key);
+				continue;
+			}
+
+			const relation = this.relationships.get(key);
+			if (!relation) continue;
+			relation.delete(subrelationKey);
+			if (!relation.size) this.relationships.delete(key);
 		}
 	}
 }

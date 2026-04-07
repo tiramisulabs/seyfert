@@ -48,17 +48,12 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 			? keysChannels.map(i => i.slice(this.cache.channels!.namespace.length + 1))
 			: [];
 
-		const overwriteKeys: string[] = [];
+		const overwriteKeys = this.cache.overwrites ? ((await this.cache.overwrites.keys(id)) ?? []) : [];
 		const messageKeys: string[] = [];
 		const messageRelationships: string[] = [];
-		const overwriteRelationships: string[] = [];
+		const overwriteRelationships = this.cache.overwrites ? [this.cache.overwrites.hashId(id)] : [];
 
 		for (const channelId of channelIds) {
-			if (this.cache.overwrites) {
-				const keys = await this.cache.overwrites.keys(channelId);
-				overwriteKeys.push(...keys);
-				overwriteRelationships.push(this.cache.overwrites.hashId(channelId));
-			}
 			if (this.cache.messages) {
 				const keys = await this.cache.messages.keys(channelId);
 				messageKeys.push(...keys);

@@ -54,8 +54,8 @@ export class MemoryAdapter<T> implements Adapter {
 	}
 
 	get(keys: string) {
-		const data = this.storage.get(keys);
-		return data ? this.options.decode(data) : null;
+		if (!this.storage.has(keys)) return null;
+		return this.options.decode(this.storage.get(keys)!);
 	}
 
 	bulkSet(keys: [string, any][]) {
@@ -91,11 +91,7 @@ export class MemoryAdapter<T> implements Adapter {
 		const data = this.keys(to);
 
 		for (const key of data) {
-			const content = this.get(key);
-
-			if (content) {
-				array.push(content);
-			}
+			if (this.storage.has(key)) array.push(this.options.decode(this.storage.get(key)!));
 		}
 
 		return array;
