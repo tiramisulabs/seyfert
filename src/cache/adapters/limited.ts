@@ -125,7 +125,8 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 						if (existsRelation) {
 							switch (relationshipNamespace) {
 								case 'message':
-									if (data.channel_id) self.removeToRelationship(`${relationshipNamespace}.${data.channel_id}`, k.split('.')[1]);
+									if (data.channel_id)
+										self.removeToRelationship(`${relationshipNamespace}.${data.channel_id}`, k.split('.')[1]);
 									break;
 								case 'ban':
 								case 'member':
