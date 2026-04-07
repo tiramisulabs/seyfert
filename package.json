@@ -10,7 +10,6 @@
 	],
 	"scripts": {
 		"build": "tsc --outDir ./lib",
-		"bench:cache-adapters": "node --expose-gc ./scripts/bench/cache-adapters.cjs",
 		"prepublishOnly": "npm run build",
 		"prepare": "npm run build && husky",
 		"lint": "biome lint --write ./src",
