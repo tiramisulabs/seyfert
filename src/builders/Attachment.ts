@@ -209,6 +209,14 @@ export async function resolveAttachmentData(
 					},
 				});
 			const res = await fetch(data as string);
+			if (!res.ok) {
+				throw new SeyfertError('INVALID_ATTACHMENT_TYPE', {
+					metadata: {
+						...createValidationMetadata('successful HTTP response', `${res.status} ${res.statusText}`),
+						detail: `Failed to fetch attachment from URL: ${res.status} ${res.statusText}`,
+					},
+				});
+			}
 			return {
 				data: Buffer.from(await res.arrayBuffer()),
 				contentType: res.headers.get('content-type'),
@@ -256,8 +264,8 @@ export async function resolveAttachmentData(
  * @param data - The base64 data.
  * @returns The resolved data URL.
  */
-export function resolveBase64(data: string | Buffer) {
-	if (Buffer.isBuffer(data)) return `data:image/jpg;base64,${data.toString('base64')}`;
+export function resolveBase64(data: string | Buffer, contentType = 'image/jpeg') {
+	if (Buffer.isBuffer(data)) return `data:${contentType};base64,${data.toString('base64')}`;
 	return data;
 }
 
@@ -271,7 +279,10 @@ export async function resolveImage(image: ImageResolvable): Promise<string> {
 		const {
 			data: { type, resolvable },
 		} = image;
-		if (type && resolvable) return resolveBase64((await resolveAttachmentData(resolvable, type)).data as Buffer);
+		if (type && resolvable) {
+			const file = await resolveAttachmentData(resolvable, type);
+			return resolveBase64(file.data as Buffer, file.contentType ?? undefined);
+		}
 		throw new SeyfertError('INVALID_ATTACHMENT_TYPE', {
 			metadata: {
 				...createValidationMetadata('AttachmentBuilder with type and resolvable data', {
@@ -287,9 +298,10 @@ export async function resolveImage(image: ImageResolvable): Promise<string> {
 
 	if (image instanceof Attachment) {
 		const response = await fetch(image.url);
-		return resolveBase64((await resolveAttachmentData(await response.arrayBuffer(), 'buffer')).data as Buffer);
+		const file = await resolveAttachmentData(await response.arrayBuffer(), 'buffer');
+		return resolveBase64(file.data as Buffer, response.headers.get('content-type') ?? file.contentType ?? undefined);
 	}
 
 	const file = await resolveAttachmentData(image.data, image.type);
-	return resolveBase64(file.data as Buffer);
+	return resolveBase64(file.data as Buffer, file.contentType ?? undefined);
 }

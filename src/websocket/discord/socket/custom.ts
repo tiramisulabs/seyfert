@@ -174,9 +174,12 @@ export class SeyfertWebSocket {
 		this.socket?.removeAllListeners();
 		this.socket?.destroy();
 		this.socket = undefined;
+		for (const [, promise] of this.__promises) {
+			promise.reject(new Error('WebSocket closed'));
+		}
+		this.__promises.clear();
 		if (this.__closeCalled) return;
-		if (!this.__lastError) return this.connect();
-		this.onclose(this.__lastError);
+		this.onclose(this.__lastError ?? { code: 1006, reason: 'Connection lost' });
 		this.__lastError = null;
 	}
 
@@ -279,6 +282,7 @@ export class SeyfertWebSocket {
 			})
 			.finally(() => {
 				clearTimeout(timeout);
+				this.__promises.delete(id);
 			});
 	}
 
@@ -289,7 +293,10 @@ export class SeyfertWebSocket {
 	}
 
 	get readyState() {
-		return ['opening', 'open', 'closed', 'closed'].indexOf(this.socket?.readyState ?? 'closed');
+		const state = this.socket?.readyState;
+		if (state === 'open') return 1;
+		if (state === 'opening') return 0;
+		return 3;
 	}
 
 	/**

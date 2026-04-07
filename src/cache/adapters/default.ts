@@ -9,7 +9,7 @@ export class MemoryAdapter<T> implements Adapter {
 	isAsync = false;
 
 	readonly storage = new Map<string, T>();
-	readonly relationships = new Map<string, string[]>();
+	readonly relationships = new Map<string, Set<string>>();
 
 	constructor(
 		public options: MemoryAdapterOptions<T> = {
@@ -32,7 +32,11 @@ export class MemoryAdapter<T> implements Adapter {
 		const values: (string | unknown)[] = [];
 		const sq = query.split('.');
 		for (const [key, value] of this.storage.entries()) {
-			if (key.split('.').every((value, i) => (sq[i] === '*' ? !!value : sq[i] === value))) {
+			const keySplit = key.split('.');
+			if (
+				keySplit.length === sq.length &&
+				keySplit.every((segment, i) => (sq[i] === '*' ? !!segment : sq[i] === segment))
+			) {
 				values.push(keys ? key : this.options.decode(value));
 			}
 		}
@@ -41,17 +45,17 @@ export class MemoryAdapter<T> implements Adapter {
 	}
 
 	bulkGet(keys: string[]) {
-		return keys
-			.map(x => {
-				const data = this.storage.get(x);
-				return data ? this.options.decode(data) : null;
-			})
-			.filter(x => x);
+		const result: unknown[] = [];
+		for (const key of keys) {
+			const data = this.storage.get(key);
+			if (data !== undefined) result.push(this.options.decode(data));
+		}
+		return result;
 	}
 
 	get(keys: string) {
-		const data = this.storage.get(keys);
-		return data ? this.options.decode(data) : null;
+		if (!this.storage.has(keys)) return null;
+		return this.options.decode(this.storage.get(keys)!);
 	}
 
 	bulkSet(keys: [string, any][]) {
@@ -87,11 +91,7 @@ export class MemoryAdapter<T> implements Adapter {
 		const data = this.keys(to);
 
 		for (const key of data) {
-			const content = this.get(key);
-
-			if (content) {
-				array.push(content);
-			}
+			if (this.storage.has(key)) array.push(this.options.decode(this.storage.get(key)!));
 		}
 
 		return array;
@@ -102,7 +102,7 @@ export class MemoryAdapter<T> implements Adapter {
 	}
 
 	count(to: string) {
-		return this.getToRelationship(to).length;
+		return this.relationships.get(to)?.size ?? 0;
 	}
 
 	bulkRemove(keys: string[]) {
@@ -121,11 +121,11 @@ export class MemoryAdapter<T> implements Adapter {
 	}
 
 	contains(to: string, keys: string): boolean {
-		return this.getToRelationship(to).includes(keys);
+		return this.relationships.get(to)?.has(keys) ?? false;
 	}
 
-	getToRelationship(to: string) {
-		return this.relationships.get(to) || [];
+	getToRelationship(to: string): string[] {
+		return [...(this.relationships.get(to) ?? [])];
 	}
 
 	bulkAddToRelationShip(data: Record<string, string[]>) {
@@ -136,26 +136,21 @@ export class MemoryAdapter<T> implements Adapter {
 
 	addToRelationship(to: string, keys: string | string[]) {
 		if (!this.relationships.has(to)) {
-			this.relationships.set(to, []);
+			this.relationships.set(to, new Set());
 		}
 
-		const data = this.getToRelationship(to);
+		const data = this.relationships.get(to)!;
 
 		for (const key of Array.isArray(keys) ? keys : [keys]) {
-			if (!data.includes(key)) {
-				data.push(key);
-			}
+			data.add(key);
 		}
 	}
 
 	removeToRelationship(to: string, keys: string | string[]) {
-		const data = this.getToRelationship(to);
+		const data = this.relationships.get(to);
 		if (data) {
 			for (const key of Array.isArray(keys) ? keys : [keys]) {
-				const idx = data.indexOf(key);
-				if (idx !== -1) {
-					data.splice(idx, 1);
-				}
+				data.delete(key);
 			}
 		}
 	}

@@ -9,7 +9,14 @@ import type {
 import { LimitedCollection } from '../collection';
 import { BaseCommand, type RegisteredMiddlewares, type UsingClient } from '../commands';
 import type { FileLoaded } from '../commands/handler';
-import { BaseHandler, isCloudfareWorker, type Logger, magicImport, type OnFailCallback, SeyfertError } from '../common';
+import {
+	BaseHandler,
+	isCloudflareWorker,
+	type Logger,
+	magicImport,
+	type OnFailCallback,
+	SeyfertError,
+} from '../common';
 import type { ComponentInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from '../structures';
 import { ComponentCommand, InteractionCommandType } from './componentcommand';
 import type { ComponentContext } from './componentcontext';
@@ -126,17 +133,22 @@ export class ComponentHandler extends BaseHandler {
 					if (!collector) return resolve(null);
 
 					let nodeTimeout: NodeJS.Timeout | undefined;
-
-					this.values.get(messageId)!.__run(customId, interaction => {
+					const callback: ComponentCallback = interaction => {
 						clearTimeout(nodeTimeout);
 						//@ts-expect-error generic
 						resolve(interaction);
-					});
+					};
+
+					this.values.get(messageId)!.__run(customId, callback);
 
 					if (timeout && timeout > 0)
 						nodeTimeout = setTimeout(() => {
+							const current = this.values.get(messageId);
+							if (current) {
+								const idx = current.components.findIndex(c => c.callback === callback);
+								if (idx !== -1) current.components.splice(idx, 1);
+							}
 							resolve(null);
-							// by default 15 seconds in case user don't do anything
 						}, timeout);
 				}),
 			resetTimeouts: () => {
@@ -197,8 +209,9 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	onModalSubmit(interaction: ModalSubmitInteraction) {
-		setImmediate(() => this.modals.delete(interaction.user.id));
-		return this.modals.get(interaction.user.id)?.(interaction);
+		const callback = this.modals.get(interaction.user.id);
+		this.modals.delete(interaction.user.id);
+		return callback?.(interaction);
 	}
 
 	deleteValue(id: string, reason?: string) {
@@ -224,7 +237,7 @@ export class ComponentHandler extends BaseHandler {
 		return component;
 	}
 
-	stablishDefaults(component: ComponentCommands) {
+	establishDefaults(component: ComponentCommands) {
 		component.props ??= this.client.options.commands?.defaults?.props ?? {};
 		const is = component instanceof ModalCommand ? 'modals' : 'components';
 		component.onInternalError ??= this.client.options?.[is]?.defaults?.onInternalError;
@@ -244,7 +257,7 @@ export class ComponentHandler extends BaseHandler {
 				this.logger.warn(e, i);
 				continue;
 			}
-			this.stablishDefaults(component);
+			this.establishDefaults(component);
 
 			this.commands.push(component);
 		}
@@ -272,7 +285,7 @@ export class ComponentHandler extends BaseHandler {
 					continue;
 				}
 				if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) continue;
-				this.stablishDefaults(component);
+				this.establishDefaults(component);
 				component.__filePath = file.path;
 				this.commands.push(component);
 			}
@@ -281,7 +294,7 @@ export class ComponentHandler extends BaseHandler {
 
 	async reload(path: string) {
 		if (!this.client.components) return;
-		if (isCloudfareWorker()) {
+		if (isCloudflareWorker()) {
 			throw new SeyfertError('RELOAD_NOT_SUPPORTED', {
 				metadata: { detail: 'Reload in Cloudflare worker is not supported' },
 			});

@@ -58,6 +58,7 @@ import type {
 	GatewayThreadListSyncDispatchData,
 	GatewayThreadMembersUpdateDispatchData,
 	GatewayThreadMemberUpdateDispatchData,
+	GatewayThreadUpdateDispatchData,
 	GatewayTypingStartDispatchData,
 	GatewayUserUpdateDispatchData,
 	GatewayVoiceChannelEffectSendDispachData,
@@ -113,7 +114,7 @@ export interface Events {
 	[GatewayDispatchEvents.AutoModerationActionExecution]: GatewayAutoModerationActionExecutionDispatchData;
 	[GatewayDispatchEvents.ThreadCreate]: GatewayThreadCreateDispatchData;
 	[GatewayDispatchEvents.ThreadDelete]: GatewayThreadDeleteDispatchData;
-	[GatewayDispatchEvents.ThreadUpdate]: GatewayThreadDeleteDispatchData;
+	[GatewayDispatchEvents.ThreadUpdate]: GatewayThreadUpdateDispatchData;
 	[GatewayDispatchEvents.ThreadListSync]: GatewayThreadListSyncDispatchData;
 	[GatewayDispatchEvents.ThreadMemberUpdate]: GatewayThreadMemberUpdateDispatchData;
 	[GatewayDispatchEvents.ThreadMembersUpdate]: GatewayThreadMembersUpdateDispatchData;
@@ -210,7 +211,7 @@ export type ChannelSameEvents = RestToKeys<
 	]
 >;
 
-export type AutoModetaractionRuleEvents = RestToKeys<
+export type AutoModerationRuleEvents = RestToKeys<
 	[
 		APIAutoModerationRule,
 		GatewayDispatchEvents.AutoModerationRuleCreate,
@@ -237,7 +238,7 @@ export type SoundboardSoundsEvents = RestToKeys<
 >;
 
 export type NormalizeEvents = Events &
-	AutoModetaractionRuleEvents &
+	AutoModerationRuleEvents &
 	ChannelSameEvents &
 	GuildScheduledSameEvents &
 	GuildScheduledUserSameEvents &

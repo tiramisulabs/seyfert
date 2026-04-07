@@ -157,20 +157,22 @@ export class Shard {
 	}
 
 	async send<T extends GatewaySendPayload = GatewaySendPayload>(force: boolean, message: T) {
-		this.debugger?.info(
-			`[Shard #${this.id}] Sending: ${GatewayOpcodes[message.op]} ${JSON.stringify(
-				message.d,
-				(_, value) => {
-					if (typeof value === 'string')
-						return value.replaceAll(this.options.token, v => {
-							const split = v.split('.');
-							return `${split[0]}.${'*'.repeat(split[1].length)}.${'*'.repeat(split[2].length)}`;
-						});
-					return value;
-				},
-				1,
-			)}`,
-		);
+		if (this.debugger) {
+			this.debugger.info(
+				`[Shard #${this.id}] Sending: ${GatewayOpcodes[message.op]} ${JSON.stringify(
+					message.d,
+					(_, value) => {
+						if (typeof value === 'string')
+							return value.replaceAll(this.options.token, v => {
+								const split = v.split('.');
+								return `${split[0]}.${'*'.repeat(split[1].length)}.${'*'.repeat(split[2].length)}`;
+							});
+						return value;
+					},
+					1,
+				)}`,
+			);
+		}
 		await this.checkOffline(force);
 		await this.bucket.acquire(force);
 		await this.checkOffline(force);
