@@ -61,6 +61,7 @@ export class SeyfertError extends Error {
 			code: this.code,
 			metadata: this.metadata,
 			cause: this.cause,
+			stack: this.stack,
 		};
 	}
 }
