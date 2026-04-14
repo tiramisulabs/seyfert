@@ -131,7 +131,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 
 		const { token: tokenRC, intents: intentsRC, debug: debugRC } = await this.getRC<InternalRuntimeConfig>();
 		const token = options?.token ?? tokenRC;
-		const intents = options?.connection?.intents ?? intentsRC;
+		const intents = (options?.connection?.intents ?? intentsRC)!;
 		this.cache.intents = intents;
 
 		if (!this.gateway) {
