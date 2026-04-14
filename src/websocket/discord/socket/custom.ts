@@ -1,4 +1,5 @@
 import { createHash, randomBytes, randomUUID, type UUID } from 'node:crypto';
+import type { ClientRequest } from 'node:http';
 import { request } from 'node:https';
 import type { Socket } from 'node:net';
 import { SeyfertError } from '../../../common';
@@ -21,6 +22,8 @@ export class SeyfertWebSocket {
 		reason: string;
 	} = null;
 	__closeCalled?: boolean;
+	request?: ClientRequest;
+	retryTimeout?: NodeJS.Timeout;
 	#closeEmitted = false;
 
 	constructor(url: string) {
@@ -30,7 +33,7 @@ export class SeyfertWebSocket {
 		this.connect();
 	}
 
-	private connect() {
+	private connect(retries = 0) {
 		return new Promise<void>((resolve, rej) => {
 			const key = randomBytes(16).toString('base64');
 			const req = request({
@@ -44,8 +47,12 @@ export class SeyfertWebSocket {
 					'Sec-WebSocket-Version': '13',
 				},
 			});
+			this.request = req;
 
 			req.on('upgrade', (res, socket) => {
+				if (this.request === req) {
+					this.request = undefined;
+				}
 				if (this.__closeCalled) {
 					socket.destroy();
 					resolve();
@@ -76,15 +83,32 @@ export class SeyfertWebSocket {
 			});
 
 			req.on('close', () => {
+				if (this.request === req) {
+					this.request = undefined;
+				}
 				req.removeAllListeners();
 			});
 
 			req.on('error', e => {
-				this.onerror(e);
+				if (this.request === req) {
+					this.request = undefined;
+				}
 				if (this.__closeCalled) {
 					resolve();
 					return;
 				}
+				if (retries < 5) {
+					this.retryTimeout = setTimeout(() => {
+						this.retryTimeout = undefined;
+						if (this.__closeCalled) {
+							resolve();
+							return;
+						}
+						resolve(this.connect(retries + 1));
+					}, 500);
+					return;
+				}
+				this.onerror(e);
 				this.__lastError = { code: 1006, reason: e.message };
 				resolve();
 				this.#emitClose(this.__lastError);
@@ -243,6 +267,10 @@ export class SeyfertWebSocket {
 
 	close(code: number, reason: string) {
 		this.__closeCalled = true;
+		clearTimeout(this.retryTimeout);
+		this.retryTimeout = undefined;
+		this.request?.destroy();
+		this.request = undefined;
 		// alloc payload length
 		const buffer = Buffer.alloc(2 + Buffer.byteLength(reason));
 		// gateway close code
@@ -304,6 +332,7 @@ export class SeyfertWebSocket {
 	}
 
 	get readyState() {
+		if (this.request || this.retryTimeout) return 0;
 		return ['opening', 'open', 'closed', 'closed'].indexOf(this.socket?.readyState ?? 'closed');
 	}
 

@@ -552,7 +552,7 @@ export class Shard {
 
 	close(code: number, reason: string) {
 		clearInterval(this.heart.nodeInterval);
-		if (!this.isOpen) {
+		if (!this.websocket) {
 			return this.debugger?.warn(`[Shard #${this.id}] Is not open, reason:`, reason);
 		}
 		this.debugger?.debug(`[Shard #${this.id}] Called close with reason:`, reason);
