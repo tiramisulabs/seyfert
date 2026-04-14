@@ -108,6 +108,8 @@ export class BaseClient {
 
 	/**@internal */
 	static _seyfertCfWorkerConfig?: InternalRuntimeConfigHTTP | InternalRuntimeConfig;
+	/**@internal */
+	private static _rcCache?: ResolvedRC;
 
 	constructor(options?: BaseClientOptions) {
 		this.options = MergeOptions(
@@ -431,7 +433,9 @@ export class BaseClient {
 
 	async getRC<
 		T extends InternalRuntimeConfigHTTP | InternalRuntimeConfig = InternalRuntimeConfigHTTP | InternalRuntimeConfig,
-	>() {
+	>(): Promise<ResolvedRC> {
+		if (BaseClient._rcCache) return BaseClient._rcCache;
+
 		const seyfertConfig = (BaseClient._seyfertCfWorkerConfig ||
 			(await this.options?.getRC?.()) ||
 			(await Promise.any(
@@ -465,11 +469,13 @@ export class BaseClient {
 			else locationsFullPaths[key] = location as any;
 		}
 
-		const obj = {
+		const obj: ResolvedRC = {
 			debug: !!debug,
 			...env,
 			locations: locationsFullPaths,
 		};
+
+		BaseClient._rcCache = obj;
 
 		return obj;
 	}
@@ -560,6 +566,11 @@ interface RC extends ExtendedRC {
 	port?: number;
 	publicKey?: string;
 }
+
+export type ResolvedRC = Omit<RC, 'locations' | 'debug'> & {
+	locations: MakeRequired<RC['locations'], 'base'>;
+	debug: boolean;
+};
 
 export type InternalRuntimeConfigHTTP = Omit<
 	MakeRequired<RC, 'publicKey' | 'port' | 'applicationId'>,
