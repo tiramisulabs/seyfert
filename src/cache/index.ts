@@ -87,6 +87,7 @@ export type CachedEvents =
 	| 'THREAD_CREATE'
 	| 'THREAD_UPDATE'
 	| 'USER_UPDATE'
+	| 'VOICE_CHANNEL_STATUS_UPDATE'
 	| 'VOICE_STATE_UPDATE'
 	| 'STAGE_INSTANCE_CREATE'
 	| 'STAGE_INSTANCE_UPDATE'
@@ -613,6 +614,16 @@ export class Cache {
 						await this.voiceStates?.set(CacheFrom.Gateway, event.d.user_id, event.d.guild_id, event.d);
 					} else {
 						await this.voiceStates?.remove(event.d.user_id, event.d.guild_id);
+					}
+				}
+				break;
+			case 'VOICE_CHANNEL_STATUS_UPDATE':
+				{
+					const cachedChannel = await this.channels?.raw(event.d.id);
+					if (cachedChannel) {
+						await this.channels?.patch(CacheFrom.Gateway, event.d.id, event.d.guild_id, {
+							status: event.d.status ?? null,
+						});
 					}
 				}
 				break;

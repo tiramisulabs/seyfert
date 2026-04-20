@@ -131,6 +131,7 @@ export type GatewayDispatchPayload =
 	| GatewayThreadUpdateDispatch
 	| GatewayTypingStartDispatch
 	| GatewayUserUpdateDispatch
+	| GatewayVoiceChannelStatusUpdateDispatch
 	| GatewayVoiceServerUpdateDispatch
 	| GatewayVoiceStateUpdateDispatch
 	| GatewayWebhooksUpdateDispatch
@@ -1678,6 +1679,32 @@ export type GatewayVoiceChannelEffectSendReaction = Omit<
 >;
 
 export type GatewayVoiceChannelEffectSendSoundboard = _GatewayVoiceChannelEffectSendDispachData;
+
+/**
+ * https://discord.com/developers/docs/events/gateway-events#voice-channel-status-update
+ */
+export type GatewayVoiceChannelStatusUpdateDispatch = DataPayload<
+	GatewayDispatchEvents.VoiceChannelStatusUpdate,
+	GatewayVoiceChannelStatusUpdateDispatchData
+>;
+
+/**
+ * https://discord.com/developers/docs/events/gateway-events#voice-channel-status-update
+ */
+export interface GatewayVoiceChannelStatusUpdateDispatchData {
+	/**
+	 * ID of the voice channel
+	 */
+	id: Snowflake;
+	/**
+	 * ID of the guild
+	 */
+	guild_id: Snowflake;
+	/**
+	 * The status of the voice channel
+	 */
+	status?: string | null;
+}
 
 /**
  * https://discord.com/developers/docs/topics/gateway-events#voice-state-update

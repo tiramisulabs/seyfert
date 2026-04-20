@@ -385,6 +385,7 @@ export enum GatewayDispatchEvents {
 	TypingStart = 'TYPING_START',
 	UserUpdate = 'USER_UPDATE',
 	VoiceChannelEffectSend = 'VOICE_CHANNEL_EFFECT_SEND',
+	VoiceChannelStatusUpdate = 'VOICE_CHANNEL_STATUS_UPDATE',
 	VoiceServerUpdate = 'VOICE_SERVER_UPDATE',
 	VoiceStateUpdate = 'VOICE_STATE_UPDATE',
 	WebhooksUpdate = 'WEBHOOKS_UPDATE',
