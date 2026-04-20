@@ -11,6 +11,7 @@ export interface ApiHandlerOptions {
 	token: string;
 	debug?: boolean;
 	agent?: string;
+	requestTimeout?: number;
 	smartBucket?: boolean;
 	workerProxy?: boolean;
 	type?: 'Bearer' | 'Bot';
@@ -18,6 +19,7 @@ export interface ApiHandlerOptions {
 
 export interface ApiHandlerInternalOptions extends MakeRequired<ApiHandlerOptions, 'baseUrl' | 'domain' | 'type'> {
 	userAgent: string;
+	requestTimeout: number;
 }
 
 export interface RawFile {
@@ -37,6 +39,8 @@ export interface ApiRequestOptions {
 	unshift?: boolean;
 	appendToFormData?: boolean;
 	token?: string;
+	/** @internal */
+	retryCount?: number;
 }
 
 export type HttpMethods = 'GET' | 'DELETE' | 'PUT' | 'POST' | 'PATCH';
