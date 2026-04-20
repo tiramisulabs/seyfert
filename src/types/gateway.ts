@@ -1738,10 +1738,7 @@ export interface GatewayVoiceChannelStartTimeUpdateDispatchData {
 /**
  * https://discord.com/developers/docs/events/gateway-events#channel-info
  */
-export type GatewayChannelInfoDispatch = DataPayload<
-	GatewayDispatchEvents.ChannelInfo,
-	GatewayChannelInfoDispatchData
->;
+export type GatewayChannelInfoDispatch = DataPayload<GatewayDispatchEvents.ChannelInfo, GatewayChannelInfoDispatchData>;
 
 /**
  * https://discord.com/developers/docs/events/gateway-events#channel-info
