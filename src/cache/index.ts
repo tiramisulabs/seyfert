@@ -618,14 +618,9 @@ export class Cache {
 				}
 				break;
 			case 'VOICE_CHANNEL_STATUS_UPDATE':
-				{
-					const cachedChannel = await this.channels?.raw(event.d.id);
-					if (cachedChannel) {
-						await this.channels?.patch(CacheFrom.Gateway, event.d.id, event.d.guild_id, {
-							status: event.d.status ?? null,
-						});
-					}
-				}
+				await this.channels?.patch(CacheFrom.Gateway, event.d.id, event.d.guild_id, {
+					status: event.d.status ?? null,
+				});
 				break;
 			case 'STAGE_INSTANCE_CREATE':
 			case 'STAGE_INSTANCE_UPDATE':
