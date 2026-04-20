@@ -3,6 +3,7 @@ import type { UsingClient } from '../../commands';
 import { toCamelCase } from '../../common';
 import type {
 	GatewayVoiceChannelEffectSendDispachData,
+	GatewayVoiceChannelStartTimeUpdateDispatchData,
 	GatewayVoiceChannelStatusUpdateDispatchData,
 	GatewayVoiceServerUpdateDispatchData,
 	GatewayVoiceStateUpdateDispatchData,
@@ -29,4 +30,11 @@ export const VOICE_CHANNEL_STATUS_UPDATE = async (
 	data: GatewayVoiceChannelStatusUpdateDispatchData,
 ) => {
 	return [toCamelCase(data), await self.cache.channels?.get(data.id)];
+};
+
+export const VOICE_CHANNEL_START_TIME_UPDATE = (
+	_self: UsingClient,
+	data: GatewayVoiceChannelStartTimeUpdateDispatchData,
+) => {
+	return toCamelCase(data);
 };

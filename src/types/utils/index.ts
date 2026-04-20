@@ -211,6 +211,10 @@ export enum GatewayOpcodes {
 	 * Used to request soundboard sounds for a list of guilds. The server will send Soundboard Sounds events for each guild in response.
 	 */
 	RequestSoundboardSounds = 31,
+	/**
+	 * Used to request ephemeral channel data for channels in a guild. The server will send a Channel Info event in response.
+	 */
+	RequestChannelInfo = 43,
 }
 
 /**
@@ -332,6 +336,7 @@ export enum GatewayDispatchEvents {
 	ApplicationCommandPermissionsUpdate = 'APPLICATION_COMMAND_PERMISSIONS_UPDATE',
 	ChannelCreate = 'CHANNEL_CREATE',
 	ChannelDelete = 'CHANNEL_DELETE',
+	ChannelInfo = 'CHANNEL_INFO',
 	ChannelPinsUpdate = 'CHANNEL_PINS_UPDATE',
 	ChannelUpdate = 'CHANNEL_UPDATE',
 	GuildBanAdd = 'GUILD_BAN_ADD',
@@ -385,6 +390,7 @@ export enum GatewayDispatchEvents {
 	TypingStart = 'TYPING_START',
 	UserUpdate = 'USER_UPDATE',
 	VoiceChannelEffectSend = 'VOICE_CHANNEL_EFFECT_SEND',
+	VoiceChannelStartTimeUpdate = 'VOICE_CHANNEL_START_TIME_UPDATE',
 	VoiceChannelStatusUpdate = 'VOICE_CHANNEL_STATUS_UPDATE',
 	VoiceServerUpdate = 'VOICE_SERVER_UPDATE',
 	VoiceStateUpdate = 'VOICE_STATE_UPDATE',
@@ -680,6 +686,12 @@ export const PermissionFlagsBits = {
 	 * Applies to channel types: Text, Voice, Stage
 	 */
 	SendVoiceMessages: 1n << 46n,
+	/**
+	 * Allows setting voice channel status
+	 *
+	 * Applies to channel types: Voice
+	 */
+	SetVoiceChannelStatus: 1n << 48n,
 	/**
 	 * Allows sending polls
 	 *
