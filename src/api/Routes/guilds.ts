@@ -16,7 +16,6 @@ import type {
 	RESTGetAPIAuditLogResult,
 	RESTGetAPIAutoModerationRuleResult,
 	RESTGetAPIAutoModerationRulesResult,
-	RESTGetAPICurrentUserVoiceState,
 	RESTGetAPIGuildBanResult,
 	RESTGetAPIGuildBansQuery,
 	RESTGetAPIGuildBansResult,
@@ -59,8 +58,9 @@ import type {
 	RESTGetAPIGuildWidgetImageResult,
 	RESTGetAPIGuildWidgetJSONResult,
 	RESTGetAPIGuildWidgetSettingsResult,
+	RESTGetAPIGuildVoiceStateCurrentMemberResult,
+	RESTGetAPIGuildVoiceStateUserResult,
 	RESTGetAPITemplateResult,
-	RESTGetAPIUserVoiceState,
 	RESTPatchAPIAutoModerationRuleJSONBody,
 	RESTPatchAPIAutoModerationRuleResult,
 	RESTPatchAPICurrentGuildMemberJSONBody,
@@ -78,7 +78,7 @@ import type {
 	RESTPatchAPIGuildRoleResult,
 	RESTPatchAPIGuildScheduledEventJSONBody,
 	RESTPatchAPIGuildScheduledEventResult,
-	RESTPatchAPIGuildSoundboardSound,
+	RESTPatchAPIGuildSoundboardSoundJSONBody,
 	RESTPatchAPIGuildSoundboardSoundResult,
 	RESTPatchAPIGuildStickerJSONBody,
 	RESTPatchAPIGuildStickerResult,
@@ -106,7 +106,7 @@ import type {
 	RESTPostAPIGuildRoleResult,
 	RESTPostAPIGuildScheduledEventJSONBody,
 	RESTPostAPIGuildScheduledEventResult,
-	RESTPostAPIGuildSoundboardSound,
+	RESTPostAPIGuildSoundboardSoundJSONBody,
 	RESTPostAPIGuildSoundboardSoundResult,
 	RESTPostAPIGuildStickerFormDataBody,
 	RESTPostAPIGuildStickerResult,
@@ -299,7 +299,7 @@ export interface GuildRoutes {
 					patch(
 						args: RestArguments<RESTPatchAPIGuildVoiceStateCurrentMemberJSONBody>,
 					): Promise<RESTPatchAPIGuildVoiceStateCurrentMemberResult>;
-					get(args?: RestArgumentsNoBody): Promise<RESTGetAPICurrentUserVoiceState>;
+					get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildVoiceStateCurrentMemberResult>;
 				};
 				(
 					userId: string,
@@ -307,7 +307,7 @@ export interface GuildRoutes {
 					patch(
 						args: RestArguments<RESTPatchAPIGuildVoiceStateUserJSONBody>,
 					): Promise<RESTPatchAPIGuildVoiceStateUserResult>;
-					get(args?: RestArgumentsNoBody): Promise<RESTGetAPIUserVoiceState>;
+					get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildVoiceStateUserResult>;
 				};
 			};
 			stickers: {
@@ -363,13 +363,13 @@ export interface GuildRoutes {
 			};
 			'soundboard-sounds': {
 				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildSoundboardSoundsResult>;
-				post(args: RestArguments<RESTPostAPIGuildSoundboardSound>): Promise<RESTPostAPIGuildSoundboardSoundResult>;
+				post(args: RestArguments<RESTPostAPIGuildSoundboardSoundJSONBody>): Promise<RESTPostAPIGuildSoundboardSoundResult>;
 				(
 					id: string,
 				): {
 					get(args?: RestArgumentsNoBody): Promise<RESTPostAPIGuildSoundboardSoundResult>;
 					patch(
-						args?: RestArguments<RESTPatchAPIGuildSoundboardSound>,
+						args?: RestArguments<RESTPatchAPIGuildSoundboardSoundJSONBody>,
 					): Promise<RESTPatchAPIGuildSoundboardSoundResult>;
 					delete(args?: RestArgumentsNoBody): Promise<undefined>;
 				};

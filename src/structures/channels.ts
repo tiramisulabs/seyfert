@@ -56,7 +56,7 @@ import {
 	type RESTAPIAttachment,
 	type RESTGetAPIChannelMessageReactionUsersQuery,
 	type RESTGetAPIChannelMessagesQuery,
-	type RESTGetAPIChannelPinsQuery,
+	type RESTGetAPIChannelMessagesPinsQuery,
 	type RESTPatchAPIChannelJSONBody,
 	type RESTPatchAPIGuildChannelPositionsJSONBody,
 	type RESTPostAPIChannelWebhookJSONBody,
@@ -344,7 +344,7 @@ export class MessagesMethods extends DiscordBase {
 
 	static pins(ctx: MethodContext<{ channelId: string }>) {
 		return {
-			fetch: (query?: RESTGetAPIChannelPinsQuery) => ctx.client.channels.pins(ctx.channelId, query),
+			fetch: (query?: RESTGetAPIChannelMessagesPinsQuery) => ctx.client.channels.pins(ctx.channelId, query),
 			set: (messageId: string, reason?: string) => ctx.client.channels.setPin(messageId, ctx.channelId, reason),
 			delete: (messageId: string, reason?: string) => ctx.client.channels.deletePin(messageId, ctx.channelId, reason),
 		};

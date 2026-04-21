@@ -66,7 +66,7 @@ import type {
 	GatewayWebhooksUpdateDispatchData,
 	PresenceUpdateStatus,
 } from '../types';
-import type { APISoundBoard } from '../types/payloads/soundboard';
+import type { APISoundboardSound } from '../types/payloads/soundboard';
 
 /** https://discord.com/developers/docs/topics/gateway-events#update-presence */
 export interface StatusUpdate {
@@ -233,7 +233,11 @@ export type SubscriptionEvents = RestToKeys<
 >;
 
 export type SoundboardSoundsEvents = RestToKeys<
-	[APISoundBoard, GatewayDispatchEvents.GuildSoundboardSoundCreate, GatewayDispatchEvents.GuildSoundboardSoundUpdate]
+	[
+		APISoundboardSound,
+		GatewayDispatchEvents.GuildSoundboardSoundCreate,
+		GatewayDispatchEvents.GuildSoundboardSoundUpdate,
+	]
 >;
 
 export type NormalizeEvents = Events &
