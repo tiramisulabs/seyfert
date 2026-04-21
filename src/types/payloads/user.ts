@@ -84,17 +84,31 @@ export interface APIUser {
 	 */
 	public_flags?: UserFlags;
 	/**
+	 * The user's avatar decoration hash
+	 *
+	 * See https://discord.com/developers/docs/reference#image-formatting
+	 *
+	 * @deprecated Use `avatar_decoration_data` instead
+	 */
+	avatar_decoration?: string | null;
+	/**
 	 * The data for the user's avatar decoration
 	 *
 	 * See https://discord.com/developers/docs/resources/user#avatar-decoration-data-object
 	 */
 	avatar_decoration_data?: APIAvatarDecorationData | null;
 	/**
+	 * The data for the user's collectibles
+	 *
+	 * See https://discord.com/developers/docs/resources/user#collectibles
+	 */
+	collectibles?: APICollectibles | null;
+	/**
 	 * The user's primary guild
 	 *
 	 * See https://discord.com/developers/docs/resources/user#user-object-user-primary-guild
 	 */
-	primary_guild?: PrimaryGuild;
+	primary_guild?: APIUserPrimaryGuild | null;
 }
 
 /**
@@ -180,6 +194,12 @@ export enum UserFlags {
 	 */
 	DisablePremium = 1 << 21,
 	/**
+	 * User is an Active Developer
+	 *
+	 * @deprecated This user flag is no longer available.
+	 */
+	ActiveDeveloper = 1 << 22,
+	/**
 	 * User's account has been [quarantined](https://support.discord.com/hc/articles/6461420677527) based on recent activity
 	 *
 	 * @unstable This user flag is currently not documented by Discord but has a known value which we will try to keep up to date.
@@ -217,11 +237,51 @@ export enum UserPremiumType {
 /**
  * https://discord.com/developers/docs/resources/user#user-object-user-primary-guild
  */
-export interface PrimaryGuild {
+export interface APICollectibles {
+	/**
+	 * Nameplate data owned by the user
+	 */
+	nameplate?: APINameplateData;
+}
+
+export interface APINameplateData {
+	/**
+	 * ID of the nameplate SKU
+	 */
+	sku_id: Snowflake;
+	/**
+	 * Path to the nameplate asset
+	 */
+	asset: string;
+	/**
+	 * The label of this nameplate. Currently unused
+	 */
+	label: string;
+	/**
+	 * Background color of the nameplate
+	 */
+	palette: NameplatePalette;
+}
+
+export enum NameplatePalette {
+	Berry = 'berry',
+	BubbleGum = 'bubble_gum',
+	Clover = 'clover',
+	Cobalt = 'cobalt',
+	Crimson = 'crimson',
+	Forest = 'forest',
+	Lemon = 'lemon',
+	Sky = 'sky',
+	Teal = 'teal',
+	Violet = 'violet',
+	White = 'white',
+}
+
+export interface APIUserPrimaryGuild {
 	/**
 	 * the id of the user's primary guild
 	 */
-	identity_guild_id: string | null;
+	identity_guild_id: Snowflake | null;
 	/**
 	 * whether the user is displaying the primary guild's server tag.
 	 * This can be null if the system clears the identity, e.g. the server no longer supports tags.
@@ -237,6 +297,8 @@ export interface PrimaryGuild {
 	 */
 	badge: string | null;
 }
+
+export type PrimaryGuild = APIUserPrimaryGuild;
 
 /**
  * https://discord.com/developers/docs/resources/user#connection-object

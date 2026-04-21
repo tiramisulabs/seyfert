@@ -8,7 +8,7 @@ import type { PresenceUpdateReceiveStatus } from './gateway';
 import type { OAuth2Scopes } from './oauth2';
 import type { APIRole } from './permissions';
 import type { APISticker } from './sticker';
-import type { APIAvatarDecorationData, APIUser } from './user';
+import type { APIAvatarDecorationData, APICollectibles, APIUser } from './user';
 
 /**
  * https://discord.com/developers/docs/resources/guild#unavailable-guild-object
@@ -259,7 +259,7 @@ export interface APIGuild extends APIPartialGuild {
 	 *
 	 * See https://discord.com/developers/docs/resources/sticker#sticker-object
 	 */
-	stickers: APISticker[];
+	stickers?: APISticker[];
 	/**
 	 * Whether the guild has the boost progress bar enabled.
 	 */
@@ -272,6 +272,10 @@ export interface APIGuild extends APIPartialGuild {
 	 * The id of the channel where admins and moderators of Community guilds receive safety alerts from Discord
 	 */
 	safety_alerts_channel_id: Snowflake | null;
+	/**
+	 * The incidents data for this guild
+	 */
+	incidents_data: APIIncidentsData | null;
 }
 
 /**
@@ -700,11 +704,17 @@ export interface APIGuildMember {
 	 */
 	avatar_decoration_data?: APIAvatarDecorationData | null;
 	/**
+	 * The data for the member's collectibles
+	 *
+	 * See https://discord.com/developers/docs/resources/user#collectibles
+	 */
+	collectibles?: APICollectibles | null;
+	/**
 	 * The data for the member's guild banner
 	 *
 	 * See https://github.com/discord/discord-api-docs/discussions/4217
 	 */
-	banner: null | string;
+	banner?: string | null;
 }
 
 /**
@@ -1136,4 +1146,26 @@ export enum GuildOnboardingMode {
 export enum GuildOnboardingPromptType {
 	MultipleChoice,
 	Dropdown,
+}
+
+/**
+ * https://discord.com/developers/docs/resources/guild#incidents-data-object
+ */
+export interface APIIncidentsData {
+	/**
+	 * When invites get enabled again
+	 */
+	invites_disabled_until: string | null;
+	/**
+	 * When direct messages get enabled again
+	 */
+	dms_disabled_until: string | null;
+	/**
+	 * When the dm spam was detected
+	 */
+	dm_spam_detected_at?: string | null;
+	/**
+	 * When the raid was detected
+	 */
+	raid_detected_at?: string | null;
 }

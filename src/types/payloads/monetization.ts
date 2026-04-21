@@ -156,13 +156,17 @@ export enum SKUType {
 
 export interface APISubscription {
 	/** ID of the subscription */
-	id: string;
+	id: Snowflake;
 	/** ID of the user who is subscribed */
-	user_id: string;
+	user_id: Snowflake;
 	/** List of SKUs subscribed to */
-	sku_ids: string[];
+	sku_ids: Snowflake[];
 	/** List of entitlements granted for this subscription */
-	entitlements_ids: string[];
+	entitlement_ids: Snowflake[];
+	/**
+	 * @deprecated Use `entitlement_ids` instead.
+	 */
+	entitlements_ids?: Snowflake[];
 	/** List of SKUs that this user will be subscribed to at renewal */
 	renewal_sku_ids: Snowflake[] | null;
 	/** Start of the current subscription period */
