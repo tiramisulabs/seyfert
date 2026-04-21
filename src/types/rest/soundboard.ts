@@ -1,4 +1,5 @@
-import type { APISoundBoard } from '../payloads/soundboard';
+import type { APISoundboardSound } from '../payloads/soundboard';
+import type { Snowflake } from '..';
 
 /**
  * https://discord.com/developers/docs/resources/soundboard#send-soundboard-sound
@@ -6,22 +7,46 @@ import type { APISoundBoard } from '../payloads/soundboard';
  * @requires Permissions Speak and UseSoundboard
  * @satisfies VoiceState without deaf, self_deaf, mute, or suppress enabled.
  */
-export interface RESTPostAPISendSoundboardSound {
+export type RESTPostAPISendSoundboardSoundResult = undefined;
+
+/**
+ * https://discord.com/developers/docs/resources/soundboard#send-soundboard-sound-json-params
+ */
+export interface RESTPostAPISoundboardSendSoundJSONBody {
 	/** the id of the soundboard sound to play */
-	sound_id: string;
+	sound_id: Snowflake;
 	/** the id of the guild the soundboard sound is from, required to play sounds from different servers */
-	source_guild_id?: string;
+	source_guild_id?: Snowflake;
 }
+
+/**
+ * https://discord.com/developers/docs/resources/soundboard#send-soundboard-sound
+ *
+ * @deprecated Use `RESTPostAPISoundboardSendSoundJSONBody` instead.
+ */
+export type RESTPostAPISendSoundboardSound = RESTPostAPISoundboardSendSoundJSONBody;
 
 /**
  * https://discord.com/developers/docs/resources/soundboard#list-default-soundboard-sounds
  */
-export type RESTGetAPIDefaultsSoundboardSoundsResult = Omit<APISoundBoard, 'user' | 'guild_id'>[];
+export type RESTGetAPISoundboardDefaultSoundsResult = APISoundboardSound[];
+
+/**
+ * https://discord.com/developers/docs/resources/soundboard#list-default-soundboard-sounds
+ *
+ * @deprecated Use `RESTGetAPISoundboardDefaultSoundsResult` instead.
+ */
+export type RESTGetAPIDefaultsSoundboardSoundsResult = RESTGetAPISoundboardDefaultSoundsResult;
 
 /**
  * https://discord.com/developers/docs/resources/soundboard#list-guild-soundboard-sounds
  */
-export type RESTGetAPIGuildSoundboardSoundsResult = { items: APISoundBoard[] };
+export type RESTGetAPIGuildSoundboardSoundsResult = { items: APISoundboardSound[] };
+
+/**
+ * https://discord.com/developers/docs/resources/soundboard#get-guild-soundboard-sound
+ */
+export type RESTGetAPIGuildSoundboardSoundResult = APISoundboardSound;
 
 /**
  * https://discord.com/developers/docs/resources/soundboard#create-guild-soundboard-sound
@@ -30,7 +55,7 @@ export type RESTGetAPIGuildSoundboardSoundsResult = { items: APISoundBoard[] };
  * This endpoint supports the X-Audit-Log-Reason header.
  * @requires Permission CreateGuildExpressions
  */
-export interface RESTPostAPIGuildSoundboardSound {
+export interface RESTPostAPIGuildSoundboardSoundJSONBody {
 	/** name of the soundboard sound (2-32 characters) */
 	name: string;
 	/**	the mp3 or ogg sound data, base64 encoded, similar to image data */
@@ -38,29 +63,43 @@ export interface RESTPostAPIGuildSoundboardSound {
 	/**	the volume of the soundboard sound, from 0 to 1, defaults to 1 */
 	volume?: number | null;
 	/**	the id of the custom emoji for the soundboard sound */
-	emoji_id?: string | null;
+	emoji_id?: Snowflake | null;
 	/**	the unicode character of a standard emoji for the soundboard sound */
 	emoji_name?: string | null;
 }
 
-export type RESTPostAPIGuildSoundboardSoundResult = APISoundBoard;
+/**
+ * https://discord.com/developers/docs/resources/soundboard#create-guild-soundboard-sound
+ *
+ * @deprecated Use `RESTPostAPIGuildSoundboardSoundJSONBody` instead.
+ */
+export type RESTPostAPIGuildSoundboardSound = RESTPostAPIGuildSoundboardSoundJSONBody;
+
+export type RESTPostAPIGuildSoundboardSoundResult = APISoundboardSound;
 
 /**
  * https://discord.com/developers/docs/resources/soundboard#modify-guild-soundboard-sound
  * @fires GuildSoundboardSoundUpdate
  */
-export interface RESTPatchAPIGuildSoundboardSound {
+export interface RESTPatchAPIGuildSoundboardSoundJSONBody {
 	/** name of the soundboard sound (2-32 characters) */
 	name?: string;
 	/**	the volume of the soundboard sound, from 0 to 1, defaults to 1 */
 	volume?: number | null;
 	/**	the id of the custom emoji for the soundboard sound */
-	emoji_id?: string | null;
+	emoji_id?: Snowflake | null;
 	/**	the unicode character of a standard emoji for the soundboard sound */
 	emoji_name?: string | null;
 }
 
-export type RESTPatchAPIGuildSoundboardSoundResult = APISoundBoard;
+/**
+ * https://discord.com/developers/docs/resources/soundboard#modify-guild-soundboard-sound
+ *
+ * @deprecated Use `RESTPatchAPIGuildSoundboardSoundJSONBody` instead.
+ */
+export type RESTPatchAPIGuildSoundboardSound = RESTPatchAPIGuildSoundboardSoundJSONBody;
+
+export type RESTPatchAPIGuildSoundboardSoundResult = APISoundboardSound;
 
 /**
  * https://discord.com/developers/docs/resources/soundboard#delete-guild-soundboard-sound

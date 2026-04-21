@@ -2,13 +2,14 @@ import type {
 	APIApplicationCommand,
 	APIApplicationCommandPermission,
 	APIGuildApplicationCommandPermissions,
-	APIInteractionCallbackLaunchActivity,
-	APIInteractionCallbackMessage,
+	APIMessage,
 	APIInteractionResponse,
 	APIInteractionResponseCallbackData,
 	ApplicationCommandType,
-	EntryPointCommandHandlerType,
+	InteractionResponseType,
+	InteractionType,
 } from '../payloads';
+import type { Snowflake } from '..';
 import type { AddUndefinedToPossiblyUndefinedPropertiesOfInterface, NonNullableFields, StrictPartial } from '../utils';
 import type {
 	RESTDeleteAPIWebhookWithTokenMessageResult,
@@ -42,7 +43,7 @@ export type RESTGetAPIApplicationCommandsResult = APIApplicationCommand[];
  */
 export type RESTGetAPIApplicationCommandResult = APIApplicationCommand;
 
-type RESTPostAPIBaseApplicationCommandsJSONBody = AddUndefinedToPossiblyUndefinedPropertiesOfInterface<
+export type RESTPostAPIBaseApplicationCommandsJSONBody = AddUndefinedToPossiblyUndefinedPropertiesOfInterface<
 	Omit<
 		APIApplicationCommand,
 		| 'application_id'
@@ -56,7 +57,6 @@ type RESTPostAPIBaseApplicationCommandsJSONBody = AddUndefinedToPossiblyUndefine
 		| 'name_localized'
 		| 'type'
 		| 'version'
-		| 'handler'
 	> &
 		Partial<
 			NonNullableFields<Pick<APIApplicationCommand, 'contexts'>> &
@@ -82,10 +82,9 @@ export interface RESTPostAPIContextMenuApplicationCommandsJSONBody extends RESTP
 /**
  * https://discord.com/developers/docs/interactions/application-commands#create-global-application-command
  */
-export interface RESTPostAPIEntryPointApplicationCommandsJSONBody extends RESTPostAPIBaseApplicationCommandsJSONBody {
+export interface RESTPostAPIPrimaryEntryPointApplicationCommandJSONBody
+	extends RESTPostAPIBaseApplicationCommandsJSONBody {
 	type: ApplicationCommandType.PrimaryEntryPoint;
-	description: string;
-	handler: EntryPointCommandHandlerType;
 }
 
 /**
@@ -94,7 +93,7 @@ export interface RESTPostAPIEntryPointApplicationCommandsJSONBody extends RESTPo
 export type RESTPostAPIApplicationCommandsJSONBody =
 	| RESTPostAPIChatInputApplicationCommandsJSONBody
 	| RESTPostAPIContextMenuApplicationCommandsJSONBody
-	| RESTPostAPIEntryPointApplicationCommandsJSONBody;
+	| RESTPostAPIPrimaryEntryPointApplicationCommandJSONBody;
 
 /**
  * https://discord.com/developers/docs/interactions/application-commands#create-global-application-command
@@ -194,9 +193,45 @@ export type RESTPostAPIInteractionCallbackQuery = {
 };
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback
+ * https://discord.com/developers/docs/interactions/receiving-and-responding#create-interaction-response
  */
-export type RESTPostAPIInteractionCallbackResult = APIInteractionCallbackLaunchActivity | APIInteractionCallbackMessage;
+export type RESTPostAPIInteractionCallbackResult = RESTPostAPIInteractionCallbackWithResponseResult;
+
+/**
+ * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback-interaction-callback-response-object
+ */
+export interface RESTPostAPIInteractionCallbackWithResponseResult {
+	interaction: RESTAPIInteractionCallbackObject;
+	resource?: RESTAPIInteractionCallbackResourceObject;
+}
+
+/**
+ * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback-interaction-callback-object
+ */
+export interface RESTAPIInteractionCallbackObject {
+	id: Snowflake;
+	type: InteractionType;
+	activity_instance_id?: string;
+	response_message_id?: Snowflake;
+	response_message_loading?: boolean;
+	response_message_ephemeral?: boolean;
+}
+
+/**
+ * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback-interaction-callback-resource-object
+ */
+export interface RESTAPIInteractionCallbackResourceObject {
+	type: InteractionResponseType;
+	activity_instance?: RESTAPIInteractionCallbackActivityInstanceResource;
+	message?: APIMessage;
+}
+
+/**
+ * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback-interaction-callback-activity-instance-resource
+ */
+export interface RESTAPIInteractionCallbackActivityInstanceResource {
+	id: string;
+}
 
 /**
  * https://discord.com/developers/docs/interactions/receiving-and-responding#create-interaction-response
