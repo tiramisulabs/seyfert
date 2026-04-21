@@ -20,23 +20,9 @@ export interface RESTPostAPISoundboardSendSoundJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/soundboard#send-soundboard-sound
- *
- * @deprecated Use `RESTPostAPISoundboardSendSoundJSONBody` instead.
- */
-export type RESTPostAPISendSoundboardSound = RESTPostAPISoundboardSendSoundJSONBody;
-
-/**
  * https://discord.com/developers/docs/resources/soundboard#list-default-soundboard-sounds
  */
 export type RESTGetAPISoundboardDefaultSoundsResult = APISoundboardSound[];
-
-/**
- * https://discord.com/developers/docs/resources/soundboard#list-default-soundboard-sounds
- *
- * @deprecated Use `RESTGetAPISoundboardDefaultSoundsResult` instead.
- */
-export type RESTGetAPIDefaultsSoundboardSoundsResult = RESTGetAPISoundboardDefaultSoundsResult;
 
 /**
  * https://discord.com/developers/docs/resources/soundboard#list-guild-soundboard-sounds
@@ -68,13 +54,6 @@ export interface RESTPostAPIGuildSoundboardSoundJSONBody {
 	emoji_name?: string | null;
 }
 
-/**
- * https://discord.com/developers/docs/resources/soundboard#create-guild-soundboard-sound
- *
- * @deprecated Use `RESTPostAPIGuildSoundboardSoundJSONBody` instead.
- */
-export type RESTPostAPIGuildSoundboardSound = RESTPostAPIGuildSoundboardSoundJSONBody;
-
 export type RESTPostAPIGuildSoundboardSoundResult = APISoundboardSound;
 
 /**
@@ -91,13 +70,6 @@ export interface RESTPatchAPIGuildSoundboardSoundJSONBody {
 	/**	the unicode character of a standard emoji for the soundboard sound */
 	emoji_name?: string | null;
 }
-
-/**
- * https://discord.com/developers/docs/resources/soundboard#modify-guild-soundboard-sound
- *
- * @deprecated Use `RESTPatchAPIGuildSoundboardSoundJSONBody` instead.
- */
-export type RESTPatchAPIGuildSoundboardSound = RESTPatchAPIGuildSoundboardSoundJSONBody;
 
 export type RESTPatchAPIGuildSoundboardSoundResult = APISoundboardSound;
 

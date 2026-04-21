@@ -34,11 +34,6 @@ export interface RESTAPIChannelPatchOverwrite extends RESTPutAPIChannelPermissio
 }
 
 /**
- * @deprecated Use `RESTAPIChannelPatchOverwrite` instead.
- */
-export type APIChannelPatchOverwrite = RESTAPIChannelPatchOverwrite;
-
-/**
  * https://discord.com/developers/docs/resources/channel#get-channel
  */
 export type RESTGetAPIChannelResult = APIChannel;
@@ -256,11 +251,6 @@ export type RESTAPIMessageReference = AddUndefinedToPossiblyUndefinedPropertiesO
 	};
 
 /**
- * @deprecated Use `RESTAPIMessageReference` instead.
- */
-export type APIMessageReferenceSend = RESTAPIMessageReference;
-
-/**
  * https://discord.com/developers/docs/resources/message#attachment-object
  */
 export type RESTAPIAttachment = Partial<
@@ -367,11 +357,6 @@ export type RESTPutAPIChannelMessageReactionResult = undefined;
  * https://discord.com/developers/docs/resources/channel#delete-own-reaction
  */
 export type RESTDeleteAPIChannelMessageOwnReactionResult = undefined;
-
-/**
- * @deprecated Use `RESTDeleteAPIChannelMessageOwnReactionResult` instead.
- */
-export type RESTDeleteAPIChannelMessageOwnReaction = RESTDeleteAPIChannelMessageOwnReactionResult;
 
 /**
  * https://discord.com/developers/docs/resources/channel#delete-user-reaction
@@ -654,24 +639,6 @@ export interface RESTGetAPIChannelMessagesPinsResult {
 }
 
 /**
- * https://discord.com/developers/docs/resources/channel#get-pinned-messages
- */
-export interface RESTGetAPIChannelPinsResult {
-	items: APIMessagePin[];
-	has_more: boolean;
-}
-
-/**
- * @deprecated Use `RESTGetAPIChannelMessagesPinsQuery` instead.
- */
-export type RESTGetAPIChannelPinsQuery = RESTGetAPIChannelMessagesPinsQuery;
-
-/**
- * @deprecated Use `APIMessagePin` instead.
- */
-export type RESTGetAPIChannelPinsItems = APIMessagePin;
-
-/**
  * https://discord.com/developers/docs/resources/message#pin-message
  */
 export type RESTPutAPIChannelMessagesPinResult = undefined;
@@ -680,16 +647,6 @@ export type RESTPutAPIChannelMessagesPinResult = undefined;
  * https://discord.com/developers/docs/resources/message#unpin-message
  */
 export type RESTDeleteAPIChannelMessagesPinResult = undefined;
-
-/**
- * @deprecated Use `RESTPutAPIChannelMessagesPinResult` instead.
- */
-export type RESTPutAPIChannelPinResult = RESTPutAPIChannelMessagesPinResult;
-
-/**
- * @deprecated Use `RESTDeleteAPIChannelMessagesPinResult` instead.
- */
-export type RESTDeleteAPIChannelPinResult = RESTDeleteAPIChannelMessagesPinResult;
 
 /**
  * https://discord.com/developers/docs/resources/channel#group-dm-add-recipient

@@ -23,8 +23,3 @@ export interface APISoundboardSound {
 	/** the user who created this sound */
 	user?: APIUser;
 }
-
-/**
- * @deprecated Use `APISoundboardSound` instead.
- */
-export type APISoundBoard = APISoundboardSound;

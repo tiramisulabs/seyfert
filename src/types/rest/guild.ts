@@ -44,17 +44,7 @@ export interface RESTAPIGuildCreateOverwrite extends RESTPutAPIChannelPermission
 	id: number | string;
 }
 
-/**
- * @deprecated Use `RESTAPIGuildCreateOverwrite` instead.
- */
-export type APIGuildCreateOverwrite = RESTAPIGuildCreateOverwrite;
-
 export type RESTAPIGuildChannelResolvable = Exclude<APIChannel, APIDMChannel | APIGroupDMChannel>;
-
-/**
- * @deprecated Use `RESTAPIGuildChannelResolvable` instead.
- */
-export type APIGuildChannelResolvable = RESTAPIGuildChannelResolvable;
 
 export type RESTAPIGuildCreatePartialChannel = StrictPartial<
 	DistributivePick<
@@ -83,19 +73,9 @@ export type RESTAPIGuildCreatePartialChannel = StrictPartial<
 	permission_overwrites?: RESTAPIGuildCreateOverwrite[] | undefined;
 };
 
-/**
- * @deprecated Use `RESTAPIGuildCreatePartialChannel` instead.
- */
-export type APIGuildCreatePartialChannel = RESTAPIGuildCreatePartialChannel;
-
 export interface RESTAPIGuildCreateRole extends RESTPostAPIGuildRoleJSONBody {
 	id: number | string;
 }
-
-/**
- * @deprecated Use `RESTAPIGuildCreateRole` instead.
- */
-export type APIGuildCreateRole = RESTAPIGuildCreateRole;
 
 /**
  * https://discord.com/developers/docs/resources/guild#create-guild
@@ -547,22 +527,6 @@ export interface RESTPatchAPICurrentGuildMemberJSONBody {
 	 */
 	bio?: string | null | undefined;
 }
-
-/**
- * https://discord.com/developers/docs/resources/guild#modify-current-user-nick
- *
- * @deprecated Use `RESTPatchAPICurrentGuildMemberJSONBody` instead.
- */
-export interface RESTPatchAPICurrentGuildMemberNicknameJSONBody {
-	nick?: string | null | undefined;
-}
-
-/**
- * https://discord.com/developers/docs/resources/guild#modify-current-user-nick
- *
- * @deprecated Use `RESTPatchAPICurrentGuildMemberResult` instead.
- */
-export type RESTPatchAPICurrentGuildMemberNicknameResult = Required<RESTPatchAPICurrentGuildMemberNicknameJSONBody>;
 
 /**
  * https://discord.com/developers/docs/resources/guild#modify-current-member

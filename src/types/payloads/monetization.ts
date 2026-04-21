@@ -163,10 +163,6 @@ export interface APISubscription {
 	sku_ids: Snowflake[];
 	/** List of entitlements granted for this subscription */
 	entitlement_ids: Snowflake[];
-	/**
-	 * @deprecated Use `entitlement_ids` instead.
-	 */
-	entitlements_ids?: Snowflake[];
 	/** List of SKUs that this user will be subscribed to at renewal */
 	renewal_sku_ids: Snowflake[] | null;
 	/** Start of the current subscription period */

@@ -5,11 +5,6 @@ import type { APIVoiceRegion, APIVoiceState } from '../payloads';
 export type RESTGetAPIVoiceRegionsResult = APIVoiceRegion[];
 
 /**
- * @deprecated This was exported with the wrong name, use `RESTGetAPIVoiceRegionsResult` instead.
- */
-export type GetAPIVoiceRegionsResult = RESTGetAPIVoiceRegionsResult;
-
-/**
  * https://discord.com/developers/docs/resources/voice#get-current-user-voice-state
  */
 export type RESTGetAPICurrentUserVoiceState = RESTGetAPIUserVoiceState;

@@ -18,20 +18,6 @@ export interface RESTGetStickerPacksResult {
 export type RESTGetAPIStickerPackResult = APIStickerPack;
 
 /**
- * https://discord.com/developers/docs/resources/sticker#get-sticker-pack
- *
- * @deprecated Use `RESTGetAPIStickerPackResult` instead.
- */
-export type RESTGetAPIStickerPack = APIStickerPack;
-
-/**
- * https://discord.com/developers/docs/resources/sticker#list-sticker-packs
- *
- * @deprecated Use `RESTGetStickerPacksResult` instead.
- */
-export type RESTGetNitroStickerPacksResult = RESTGetStickerPacksResult;
-
-/**
  * https://discord.com/developers/docs/resources/sticker#list-guild-stickers
  */
 export type RESTGetAPIGuildStickersResult = APISticker[];
