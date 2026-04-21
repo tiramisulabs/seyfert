@@ -52,14 +52,14 @@ import type {
 	RESTGetAPIGuildThreadsResult,
 	RESTGetAPIGuildVanityUrlResult,
 	RESTGetAPIGuildVoiceRegionsResult,
+	RESTGetAPIGuildVoiceStateCurrentMemberResult,
+	RESTGetAPIGuildVoiceStateUserResult,
 	RESTGetAPIGuildWebhooksResult,
 	RESTGetAPIGuildWelcomeScreenResult,
 	RESTGetAPIGuildWidgetImageQuery,
 	RESTGetAPIGuildWidgetImageResult,
 	RESTGetAPIGuildWidgetJSONResult,
 	RESTGetAPIGuildWidgetSettingsResult,
-	RESTGetAPIGuildVoiceStateCurrentMemberResult,
-	RESTGetAPIGuildVoiceStateUserResult,
 	RESTGetAPITemplateResult,
 	RESTPatchAPIAutoModerationRuleJSONBody,
 	RESTPatchAPIAutoModerationRuleResult,
@@ -363,7 +363,9 @@ export interface GuildRoutes {
 			};
 			'soundboard-sounds': {
 				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildSoundboardSoundsResult>;
-				post(args: RestArguments<RESTPostAPIGuildSoundboardSoundJSONBody>): Promise<RESTPostAPIGuildSoundboardSoundResult>;
+				post(
+					args: RestArguments<RESTPostAPIGuildSoundboardSoundJSONBody>,
+				): Promise<RESTPostAPIGuildSoundboardSoundResult>;
 				(
 					id: string,
 				): {

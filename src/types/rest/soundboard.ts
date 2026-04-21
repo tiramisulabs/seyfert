@@ -1,5 +1,5 @@
-import type { APISoundboardSound } from '../payloads/soundboard';
 import type { Snowflake } from '..';
+import type { APISoundboardSound } from '../payloads/soundboard';
 
 /**
  * https://discord.com/developers/docs/resources/soundboard#send-soundboard-sound

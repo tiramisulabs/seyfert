@@ -247,7 +247,7 @@ export type RESTAPIMessageReference = AddUndefinedToPossiblyUndefinedPropertiesO
 		 *
 		 * @default true
 		 */
-			fail_if_not_exists?: boolean | undefined;
+		fail_if_not_exists?: boolean | undefined;
 	};
 
 /**

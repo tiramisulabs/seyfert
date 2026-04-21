@@ -1,15 +1,15 @@
+import type { Snowflake } from '..';
 import type {
 	APIApplicationCommand,
 	APIApplicationCommandPermission,
 	APIGuildApplicationCommandPermissions,
-	APIMessage,
 	APIInteractionResponse,
 	APIInteractionResponseCallbackData,
+	APIMessage,
 	ApplicationCommandType,
 	InteractionResponseType,
 	InteractionType,
 } from '../payloads';
-import type { Snowflake } from '..';
 import type { AddUndefinedToPossiblyUndefinedPropertiesOfInterface, NonNullableFields, StrictPartial } from '../utils';
 import type {
 	RESTDeleteAPIWebhookWithTokenMessageResult,

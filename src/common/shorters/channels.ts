@@ -7,8 +7,8 @@ import type {
 	APIChannel,
 	APIGuildChannel,
 	APIOverwrite,
-	RESTGetAPIChannelMessagesQuery,
 	RESTGetAPIChannelMessagesPinsQuery,
+	RESTGetAPIChannelMessagesQuery,
 	RESTPatchAPIChannelJSONBody,
 	RESTPutAPIChannelPermissionJSONBody,
 } from '../../types';

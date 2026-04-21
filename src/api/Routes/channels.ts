@@ -3,8 +3,8 @@ import type {
 	RESTDeleteAPIChannelMessageOwnReactionResult,
 	RESTDeleteAPIChannelMessageReactionResult,
 	RESTDeleteAPIChannelMessageResult,
-	RESTDeleteAPIChannelPermissionResult,
 	RESTDeleteAPIChannelMessagesPinResult,
+	RESTDeleteAPIChannelPermissionResult,
 	RESTDeleteAPIChannelRecipientResult,
 	RESTDeleteAPIChannelResult,
 	RESTDeleteAPIChannelThreadMembersResult,
@@ -12,10 +12,10 @@ import type {
 	RESTGetAPIChannelMessageReactionUsersQuery,
 	RESTGetAPIChannelMessageReactionUsersResult,
 	RESTGetAPIChannelMessageResult,
-	RESTGetAPIChannelMessagesQuery,
-	RESTGetAPIChannelMessagesResult,
 	RESTGetAPIChannelMessagesPinsQuery,
 	RESTGetAPIChannelMessagesPinsResult,
+	RESTGetAPIChannelMessagesQuery,
+	RESTGetAPIChannelMessagesResult,
 	RESTGetAPIChannelResult,
 	RESTGetAPIChannelThreadMemberQuery,
 	RESTGetAPIChannelThreadMemberResult,
@@ -52,9 +52,9 @@ import type {
 	RESTPostAPIPollExpireResult,
 	RESTPostAPISoundboardSendSoundJSONBody,
 	RESTPutAPIChannelMessageReactionResult,
+	RESTPutAPIChannelMessagesPinResult,
 	RESTPutAPIChannelPermissionJSONBody,
 	RESTPutAPIChannelPermissionResult,
-	RESTPutAPIChannelMessagesPinResult,
 	RESTPutAPIChannelRecipientJSONBody,
 	RESTPutAPIChannelRecipientResult,
 	RESTPutAPIChannelThreadMembersResult,
@@ -138,7 +138,9 @@ export interface ChannelRoutes {
 				): Promise<RESTPostAPIChannelMessagesBulkDeleteResult>;
 			};
 			pins: {
-				get(args?: RestArgumentsNoBody<RESTGetAPIChannelMessagesPinsQuery>): Promise<RESTGetAPIChannelMessagesPinsResult>;
+				get(
+					args?: RestArgumentsNoBody<RESTGetAPIChannelMessagesPinsQuery>,
+				): Promise<RESTGetAPIChannelMessagesPinsResult>;
 				(
 					id: string,
 				): {
