@@ -57,6 +57,7 @@ export class ApiHandler {
 		this.options = {
 			baseUrl: 'api/v10',
 			domain: BASE_HOST,
+			requestTimeout: 15_000,
 			type: 'Bot',
 			...options,
 			userAgent: DefaultUserAgent,
@@ -169,8 +170,9 @@ export class ApiHandler {
 				requestOptions: { auth, ...request },
 			});
 		}
-		const route = request.route || this.routefy(url, method);
-		let attempts = 0;
+		const requestOptions = { auth, ...request };
+		const route = requestOptions.route || this.routefy(url, method);
+		const retryCount = request.retryCount ?? 0;
 
 		const callback = async (next: () => void, resolve: (data: any) => void, reject: (err: unknown) => void) => {
 			const headers = {
@@ -180,25 +182,27 @@ export class ApiHandler {
 			const { data, finalUrl } = this.parseRequest({
 				url,
 				headers,
-				request: { ...request, auth },
+				request: requestOptions,
 			});
 
 			let response: Response;
 
 			try {
+				const signal = this.options.requestTimeout > 0 ? AbortSignal.timeout(this.options.requestTimeout) : undefined;
 				const requestUrl = `${this.options.domain}/${this.options.baseUrl}${finalUrl}`;
 				this.debugger?.debug(`Sending, Method: ${method} | Url: [${finalUrl}](${route}) | Auth: ${auth}`);
 				response = await fetch(requestUrl, {
 					method,
 					headers,
 					body: data,
+					signal,
 				});
 				this.debugger?.debug(`Received response: ${response.statusText}(${response.status})`);
 			} catch (err) {
 				this.debugger?.debug('Fetch error', err);
-				await this.notifyFailRequest(method, finalUrl, err);
 				next();
 				reject(err);
+				void this.notifyFailRequest(method, finalUrl, err);
 				return;
 			}
 
@@ -212,14 +216,28 @@ export class ApiHandler {
 
 			if (response.status >= 300) {
 				if (response.status === 429) {
-					const result429 = await this.handle429(route, method, url, request, response, result, next, reject, now);
+					const result429 = await this.handle429(
+						route,
+						method,
+						url,
+						requestOptions,
+						response,
+						result,
+						next,
+						reject,
+						now,
+					);
 					if (result429 !== false) return resolve(result429);
-					await this.notifyFailRequest(method, finalUrl, result, response.status);
+					void this.notifyFailRequest(method, finalUrl, result, response.status);
 					return this.clearResetInterval(route);
 				}
-				if ([502, 503].includes(response.status) && ++attempts < 4) {
+				if ([502, 503].includes(response.status) && retryCount < 3) {
 					this.clearResetInterval(route);
-					return this.handle50X(method, url, request, next);
+					void this.handle50X(method, url, { ...requestOptions, retryCount: retryCount + 1 }, next).then(
+						resolve,
+						reject,
+					);
+					return;
 				}
 				this.clearResetInterval(route);
 				next();
@@ -229,16 +247,16 @@ export class ApiHandler {
 							result = JSON.parse(result);
 						} catch (err) {
 							this.debugger?.warn('SeyfertError parsing result error (', result, ')', err);
-							await this.notifyFailRequest(method, finalUrl, err, response.status);
 							reject(err);
+							void this.notifyFailRequest(method, finalUrl, err, response.status);
 							return;
 						}
 					}
 				}
 				const parsedError = this.parseError(method, route, response, result, originTrace);
 				this.debugger?.warn(parsedError.message);
-				await this.notifyFailRequest(method, finalUrl, parsedError, response.status);
 				reject(parsedError);
+				void this.notifyFailRequest(method, finalUrl, parsedError, response.status);
 				return;
 			}
 
@@ -248,17 +266,18 @@ export class ApiHandler {
 						result = JSON.parse(result);
 					} catch (err) {
 						this.debugger?.warn('Failed parsing result (', result, ')', err);
-						await this.notifyFailRequest(method, finalUrl, err, response.status);
 						next();
 						reject(err);
+						void this.notifyFailRequest(method, finalUrl, err, response.status);
 						return;
 					}
 				}
 			}
 
-			await this.notifySuccessRequest(method, finalUrl, response);
 			next();
-			return resolve(result || undefined);
+			resolve(result || undefined);
+			void this.notifySuccessRequest(method, finalUrl, response);
+			return;
 		};
 
 		return new Promise((resolve, reject) => {
@@ -353,13 +372,7 @@ export class ApiHandler {
 		this.debugger?.warn(`Handling a 50X status, retrying in ${wait}ms`);
 		next();
 		await delay(wait);
-		return this.request(method, url, {
-			body: request.body,
-			auth: request.auth,
-			reason: request.reason,
-			route: request.route,
-			unshift: true,
-		});
+		return this.request(method, url, { ...request, unshift: true });
 	}
 
 	async handle429(
@@ -412,22 +425,10 @@ export class ApiHandler {
 		if (retryAfter) {
 			await delay(retryAfter);
 			next();
-			return this.request(method, url, {
-				body: request.body,
-				auth: request.auth,
-				reason: request.reason,
-				route: request.route,
-				unshift: true,
-			});
+			return this.request(method, url, { ...request, unshift: true });
 		}
 		next();
-		return this.request(method, url, {
-			body: request.body,
-			auth: request.auth,
-			reason: request.reason,
-			route: request.route,
-			unshift: true,
-		});
+		return this.request(method, url, { ...request, unshift: true });
 	}
 
 	clearResetInterval(route: string) {
