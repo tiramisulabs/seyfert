@@ -1,4 +1,5 @@
 import { createHash, randomBytes, randomUUID, type UUID } from 'node:crypto';
+import type { ClientRequest } from 'node:http';
 import { request } from 'node:https';
 import type { Socket } from 'node:net';
 import { SeyfertError } from '../../../common';
@@ -21,6 +22,9 @@ export class SeyfertWebSocket {
 		reason: string;
 	} = null;
 	__closeCalled?: boolean;
+	request?: ClientRequest;
+	retryTimeout?: NodeJS.Timeout;
+	#closeEmitted = false;
 
 	constructor(url: string) {
 		const urlParts = new URL(url);
@@ -43,8 +47,18 @@ export class SeyfertWebSocket {
 					'Sec-WebSocket-Version': '13',
 				},
 			});
+			this.request = req;
 
 			req.on('upgrade', (res, socket) => {
+				if (this.request === req) {
+					this.request = undefined;
+				}
+				if (this.__closeCalled) {
+					socket.destroy();
+					resolve();
+					return;
+				}
+
 				const hash = createHash('sha1').update(`${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`).digest('base64');
 				const accept = res.headers['sec-websocket-accept'];
 				if (accept !== hash) {
@@ -69,20 +83,35 @@ export class SeyfertWebSocket {
 			});
 
 			req.on('close', () => {
+				if (this.request === req) {
+					this.request = undefined;
+				}
 				req.removeAllListeners();
 			});
 
 			req.on('error', e => {
+				if (this.request === req) {
+					this.request = undefined;
+				}
+				if (this.__closeCalled) {
+					resolve();
+					return;
+				}
 				if (retries < 5) {
-					setTimeout(() => {
+					this.retryTimeout = setTimeout(() => {
+						this.retryTimeout = undefined;
+						if (this.__closeCalled) {
+							resolve();
+							return;
+						}
 						resolve(this.connect(retries + 1));
 					}, 500);
-				} else {
-					this.onerror(e);
-					setTimeout(() => {
-						resolve(this.connect(0));
-					}, 5e3);
+					return;
 				}
+				this.onerror(e);
+				this.__lastError = { code: 1006, reason: e.message };
+				resolve();
+				this.#emitClose(this.__lastError);
 			});
 
 			req.end();
@@ -152,19 +181,19 @@ export class SeyfertWebSocket {
 					this.onmessage({ data: body });
 				}
 				break;
-			// pong
+			// ping
 			case 0x9:
 				this.onping(body.toString());
 				break;
-			// ping
+			// pong
 			case 0xa:
 				this.onpong(body.toString());
 				break;
 			// close
 			case 0x8:
 				this.__lastError = {
-					code: body.readUInt16BE(0),
-					reason: body.subarray(2).toString(),
+					code: body.length >= 2 ? body.readUInt16BE(0) : 1005,
+					reason: body.length > 2 ? body.subarray(2).toString() : '',
 				};
 				break;
 		}
@@ -175,8 +204,12 @@ export class SeyfertWebSocket {
 		this.socket?.destroy();
 		this.socket = undefined;
 		if (this.__closeCalled) return;
-		if (!this.__lastError) return this.connect();
-		this.onclose(this.__lastError);
+		this.#emitClose(
+			this.__lastError ?? {
+				code: 1006,
+				reason: 'Socket closed without a close frame',
+			},
+		);
 		this.__lastError = null;
 	}
 
@@ -209,7 +242,7 @@ export class SeyfertWebSocket {
 	}
 
 	onping(_data: string) {
-		//
+		this.pong(_data);
 	}
 
 	onpong(_data: string) {
@@ -234,6 +267,10 @@ export class SeyfertWebSocket {
 
 	close(code: number, reason: string) {
 		this.__closeCalled = true;
+		clearTimeout(this.retryTimeout);
+		this.retryTimeout = undefined;
+		this.request?.destroy();
+		this.request = undefined;
 		// alloc payload length
 		const buffer = Buffer.alloc(2 + Buffer.byteLength(reason));
 		// gateway close code
@@ -245,7 +282,13 @@ export class SeyfertWebSocket {
 
 		this.socket?.end();
 
-		this.onclose({ code, reason });
+		this.#emitClose({ code, reason });
+	}
+
+	#emitClose(close: { code: number; reason: string }) {
+		if (this.#closeEmitted) return;
+		this.#closeEmitted = true;
+		this.onclose(close);
 	}
 
 	pong(data: string) {
@@ -289,6 +332,7 @@ export class SeyfertWebSocket {
 	}
 
 	get readyState() {
+		if (this.request || this.retryTimeout) return 0;
 		return ['opening', 'open', 'closed', 'closed'].indexOf(this.socket?.readyState ?? 'closed');
 	}
 

@@ -44,6 +44,9 @@ export class Shard {
 		ack: true,
 	};
 
+	private isConnecting = false;
+	private reconnectPromise: Promise<void> | undefined;
+
 	bucket: DynamicBucket;
 	offlineSendQueue: ((_?: unknown) => void)[] = [];
 	pendingGuilds?: Set<string>;
@@ -124,9 +127,16 @@ export class Shard {
 	}
 
 	async connect() {
+		if (this.isConnecting) {
+			this.debugger?.debug(`[Shard #${this.id}] Already connecting, skipping`);
+			return;
+		}
+
+		this.isConnecting = true;
 		await this.connectTimeout.wait();
 		if (this.isOpen) {
 			this.debugger?.debug(`[Shard #${this.id}] Attempted to connect while open`);
+			this.isConnecting = false;
 			return;
 		}
 
@@ -151,6 +161,7 @@ export class Shard {
 		this.websocket.onerror = (event: ErrorEvent) => this.logger.error(event);
 
 		this.websocket.onopen = () => {
+			this.isConnecting = false;
 			this.heart.ack = true;
 			void this.options.onShardReconnect?.({ shardId: this.id });
 		};
@@ -239,15 +250,25 @@ export class Shard {
 		clearTimeout(this.connectionTimeout);
 		this.connectionTimeout = undefined;
 		clearTimeout(this.heart.ackTimeout);
+		this.isConnecting = false;
 		this.debugger?.info(`[Shard #${this.id}] Disconnecting`);
 		this.close(code, 'Shard down request');
 	}
 
 	async reconnect(code = ShardSocketCloseCodes.Reconnect) {
-		this.debugger?.info(`[Shard #${this.id}] Reconnecting`);
-		this.disconnect(code);
-		await delay(this.options.reconnectTimeout);
-		await this.connect();
+		return (this.reconnectPromise ??= (async () => {
+			this.debugger?.info(`[Shard #${this.id}] Reconnecting`);
+			this.disconnect(code);
+			await delay(this.options.reconnectTimeout);
+			await this.connect();
+		})().finally(() => {
+			this.reconnectPromise = undefined;
+		}));
+	}
+
+	private flushOfflineSendQueue() {
+		const queue = this.offlineSendQueue.splice(0);
+		for (const resolve of queue) resolve();
 	}
 
 	onpacket(packet: GatewayReceivePayload) {
@@ -304,7 +325,7 @@ export class Shard {
 								clearTimeout(this.connectionTimeout);
 								this.connectionTimeout = undefined;
 								this.isReady = true;
-								for (const resolve of this.offlineSendQueue.splice(0)) resolve();
+								this.flushOfflineSendQueue();
 								this.options.handlePayload(this.id, packet);
 							}
 							break;
@@ -317,7 +338,7 @@ export class Shard {
 
 							this.data.resume_gateway_url = packet.d.resume_gateway_url;
 							this.data.session_id = packet.d.session_id;
-							for (const resolve of this.offlineSendQueue.splice(0)) resolve();
+							this.flushOfflineSendQueue();
 							this.options.handlePayload(this.id, packet);
 							if (this.pendingGuilds?.size === 0) {
 								this.isReady = true;
@@ -531,7 +552,7 @@ export class Shard {
 
 	close(code: number, reason: string) {
 		clearInterval(this.heart.nodeInterval);
-		if (!this.isOpen) {
+		if (!this.websocket) {
 			return this.debugger?.warn(`[Shard #${this.id}] Is not open, reason:`, reason);
 		}
 		this.debugger?.debug(`[Shard #${this.id}] Called close with reason:`, reason);
