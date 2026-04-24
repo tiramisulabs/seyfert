@@ -1,9 +1,10 @@
 import type {
 	RESTDeleteAPIChannelAllMessageReactionsResult,
+	RESTDeleteAPIChannelMessageOwnReactionResult,
 	RESTDeleteAPIChannelMessageReactionResult,
 	RESTDeleteAPIChannelMessageResult,
+	RESTDeleteAPIChannelMessagesPinResult,
 	RESTDeleteAPIChannelPermissionResult,
-	RESTDeleteAPIChannelPinResult,
 	RESTDeleteAPIChannelRecipientResult,
 	RESTDeleteAPIChannelResult,
 	RESTDeleteAPIChannelThreadMembersResult,
@@ -11,10 +12,10 @@ import type {
 	RESTGetAPIChannelMessageReactionUsersQuery,
 	RESTGetAPIChannelMessageReactionUsersResult,
 	RESTGetAPIChannelMessageResult,
+	RESTGetAPIChannelMessagesPinsQuery,
+	RESTGetAPIChannelMessagesPinsResult,
 	RESTGetAPIChannelMessagesQuery,
 	RESTGetAPIChannelMessagesResult,
-	RESTGetAPIChannelPinsQuery,
-	RESTGetAPIChannelPinsResult,
 	RESTGetAPIChannelResult,
 	RESTGetAPIChannelThreadMemberQuery,
 	RESTGetAPIChannelThreadMemberResult,
@@ -49,11 +50,11 @@ import type {
 	RESTPostAPIChannelWebhookResult,
 	RESTPostAPIGuildForumThreadsJSONBody,
 	RESTPostAPIPollExpireResult,
-	RESTPostAPISendSoundboardSound,
+	RESTPostAPISoundboardSendSoundJSONBody,
 	RESTPutAPIChannelMessageReactionResult,
+	RESTPutAPIChannelMessagesPinResult,
 	RESTPutAPIChannelPermissionJSONBody,
 	RESTPutAPIChannelPermissionResult,
-	RESTPutAPIChannelPinResult,
 	RESTPutAPIChannelRecipientJSONBody,
 	RESTPutAPIChannelRecipientResult,
 	RESTPutAPIChannelThreadMembersResult,
@@ -137,12 +138,14 @@ export interface ChannelRoutes {
 				): Promise<RESTPostAPIChannelMessagesBulkDeleteResult>;
 			};
 			pins: {
-				get(args?: RestArgumentsNoBody<RESTGetAPIChannelPinsQuery>): Promise<RESTGetAPIChannelPinsResult>;
+				get(
+					args?: RestArgumentsNoBody<RESTGetAPIChannelMessagesPinsQuery>,
+				): Promise<RESTGetAPIChannelMessagesPinsResult>;
 				(
 					id: string,
 				): {
-					put(args?: RestArgumentsNoBody): Promise<RESTPutAPIChannelPinResult>;
-					delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIChannelPinResult>;
+					put(args?: RestArgumentsNoBody): Promise<RESTPutAPIChannelMessagesPinResult>;
+					delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIChannelMessagesPinResult>;
 				};
 			};
 			(
@@ -172,7 +175,7 @@ export interface ChannelRoutes {
 							id: '@me',
 						): {
 							put(args?: RestArgumentsNoBody): Promise<RESTPutAPIChannelMessageReactionResult>;
-							delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIChannelMessageReactionResult>;
+							delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIChannelMessageOwnReactionResult>;
 						};
 						(
 							id: string,
@@ -202,7 +205,7 @@ export interface ChannelRoutes {
 			};
 		};
 		'send-soundboard-sound': {
-			post(args: RestArguments<RESTPostAPISendSoundboardSound>): Promise<undefined>;
+			post(args: RestArguments<RESTPostAPISoundboardSendSoundJSONBody>): Promise<undefined>;
 		};
 	};
 }

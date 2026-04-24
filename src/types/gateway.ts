@@ -36,7 +36,7 @@ import type {
 	GatewayThreadListSync as RawGatewayThreadListSync,
 	GatewayThreadMembersUpdate as RawGatewayThreadMembersUpdate,
 } from './payloads/index';
-import type { APISoundBoard } from './payloads/soundboard';
+import type { APISoundboardSound } from './payloads/soundboard';
 import type { ReactionType } from './rest/index';
 import type { AnimationTypes, Nullable } from './utils';
 
@@ -666,7 +666,7 @@ export interface GatewayGuildCreateDispatchData extends APIGuild {
 	 *
 	 * https://discord.com/developers/docs/resources/soundboard
 	 */
-	soundboard_sounds: APISoundBoard[];
+	soundboard_sounds: APISoundboardSound[];
 }
 
 /**
@@ -1040,14 +1040,14 @@ export interface GatewayGuildScheduledEventUserRemoveDispatchData {
 	guild_id: Snowflake;
 }
 
-export type GatewayGuildSoundboardSoundCreateDispatchData = APISoundBoard;
+export type GatewayGuildSoundboardSoundCreateDispatchData = APISoundboardSound;
 
 export type GatewayGuildSoundboardSoundCreateDispatch = DataPayload<
 	GatewayDispatchEvents.GuildSoundboardSoundCreate,
 	GatewayGuildSoundboardSoundCreateDispatchData
 >;
 
-export type GatewayGuildSoundboardSoundUpdateDispatchData = APISoundBoard;
+export type GatewayGuildSoundboardSoundUpdateDispatchData = APISoundboardSound;
 
 export type GatewayGuildSoundboardSoundUpdateDispatch = DataPayload<
 	GatewayDispatchEvents.GuildSoundboardSoundUpdate,
@@ -1068,7 +1068,7 @@ export type GatewayGuildSoundboardSoundDeleteDispatch = DataPayload<
 
 export interface GatewayGuildSoundboardSoundsUpdateDispatchData {
 	/** The guild's soundboard sound */
-	soundboard_sounds: APISoundBoard[];
+	soundboard_sounds: APISoundboardSound[];
 	/** ID of the guild */
 	guild_id: string;
 }
@@ -1080,7 +1080,7 @@ export type GatewayGuildSoundboardSoundsUpdateDispatch = DataPayload<
 
 export interface GatewaySoundboardSoundsDispatchData {
 	/** The guild's soundboard sounds */
-	soundboard_sounds: APISoundBoard[];
+	soundboard_sounds: APISoundboardSound[];
 	/** ID of the guild */
 	guild_id: string;
 }
