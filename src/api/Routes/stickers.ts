@@ -1,4 +1,4 @@
-import type { RESTGetAPIStickerPack, RESTGetAPIStickerResult, RESTGetStickerPacksResult } from '../../types';
+import type { RESTGetAPIStickerPackResult, RESTGetAPIStickerResult, RESTGetStickerPacksResult } from '../../types';
 import type { RestArgumentsNoBody } from '../api';
 
 export interface StickerRoutes {
@@ -10,7 +10,7 @@ export interface StickerRoutes {
 		(
 			id: string,
 		): {
-			get(args?: RestArgumentsNoBody): Promise<RESTGetAPIStickerPack>;
+			get(args?: RestArgumentsNoBody): Promise<RESTGetAPIStickerPackResult>;
 		};
 	};
 }
