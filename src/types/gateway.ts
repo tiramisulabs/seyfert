@@ -60,7 +60,8 @@ export type GatewaySendPayload =
 	| GatewayResume
 	| GatewayUpdatePresence
 	| GatewayVoiceStateUpdate
-	| GatewayRequestSoundboardSounds;
+	| GatewayRequestSoundboardSounds
+	| GatewayRequestChannelInfo;
 
 export type GatewayReceivePayload =
 	| GatewayDispatchPayload
@@ -131,8 +132,11 @@ export type GatewayDispatchPayload =
 	| GatewayThreadUpdateDispatch
 	| GatewayTypingStartDispatch
 	| GatewayUserUpdateDispatch
+	| GatewayVoiceChannelStartTimeUpdateDispatch
+	| GatewayVoiceChannelStatusUpdateDispatch
 	| GatewayVoiceServerUpdateDispatch
 	| GatewayVoiceStateUpdateDispatch
+	| GatewayChannelInfoDispatch
 	| GatewayWebhooksUpdateDispatch
 	| GatewayGuildSoundboardSoundCreateDispatch
 	| GatewayGuildSoundboardSoundDeleteDispatch
@@ -1680,6 +1684,95 @@ export type GatewayVoiceChannelEffectSendReaction = Omit<
 export type GatewayVoiceChannelEffectSendSoundboard = _GatewayVoiceChannelEffectSendDispachData;
 
 /**
+ * https://discord.com/developers/docs/events/gateway-events#voice-channel-status-update
+ */
+export type GatewayVoiceChannelStatusUpdateDispatch = DataPayload<
+	GatewayDispatchEvents.VoiceChannelStatusUpdate,
+	GatewayVoiceChannelStatusUpdateDispatchData
+>;
+
+/**
+ * https://discord.com/developers/docs/events/gateway-events#voice-channel-status-update
+ */
+export interface GatewayVoiceChannelStatusUpdateDispatchData {
+	/**
+	 * ID of the voice channel
+	 */
+	id: Snowflake;
+	/**
+	 * ID of the guild
+	 */
+	guild_id: Snowflake;
+	/**
+	 * The status of the voice channel
+	 */
+	status?: string | null;
+}
+
+/**
+ * https://discord.com/developers/docs/events/gateway-events#voice-channel-start-time-update
+ */
+export type GatewayVoiceChannelStartTimeUpdateDispatch = DataPayload<
+	GatewayDispatchEvents.VoiceChannelStartTimeUpdate,
+	GatewayVoiceChannelStartTimeUpdateDispatchData
+>;
+
+/**
+ * https://discord.com/developers/docs/events/gateway-events#voice-channel-start-time-update
+ */
+export interface GatewayVoiceChannelStartTimeUpdateDispatchData {
+	/**
+	 * ID of the voice channel
+	 */
+	id: Snowflake;
+	/**
+	 * ID of the guild
+	 */
+	guild_id: Snowflake;
+	/**
+	 * Unix timestamp (in seconds) of when the voice session started
+	 */
+	voice_start_time?: number | null;
+}
+
+/**
+ * https://discord.com/developers/docs/events/gateway-events#channel-info
+ */
+export type GatewayChannelInfoDispatch = DataPayload<GatewayDispatchEvents.ChannelInfo, GatewayChannelInfoDispatchData>;
+
+/**
+ * https://discord.com/developers/docs/events/gateway-events#channel-info
+ */
+export interface GatewayChannelInfoDispatchData {
+	/**
+	 * The guild id
+	 */
+	guild_id: Snowflake;
+	/**
+	 * Ephemeral data for channels in the guild
+	 */
+	channels: GatewayChannelInfoChannelData[];
+}
+
+/**
+ * https://discord.com/developers/docs/events/gateway-events#channel-info-channel-info-channel-structure
+ */
+export interface GatewayChannelInfoChannelData {
+	/**
+	 * The channel id
+	 */
+	id: Snowflake;
+	/**
+	 * The voice channel status
+	 */
+	status?: string | null;
+	/**
+	 * Unix timestamp (in seconds) of when the voice session started
+	 */
+	voice_start_time?: number | null;
+}
+
+/**
  * https://discord.com/developers/docs/topics/gateway-events#voice-state-update
  */
 export type GatewayVoiceStateUpdateDispatch = DataPayload<
@@ -1985,6 +2078,29 @@ export interface GatewayRequestSoundboardSoundsData {
 	/** IDs of the guilds to get soundboard sounds for */
 	guild_ids: string[];
 }
+
+/**
+ * https://discord.com/developers/docs/events/gateway-events#request-channel-info
+ */
+export interface GatewayRequestChannelInfo {
+	op: GatewayOpcodes.RequestChannelInfo;
+	d: GatewayRequestChannelInfoData;
+}
+
+/**
+ * https://discord.com/developers/docs/events/gateway-events#request-channel-info-request-channel-info-structure
+ */
+export interface GatewayRequestChannelInfoData {
+	/**
+	 * The guild id to request channel info for
+	 */
+	guild_id: Snowflake;
+	/**
+	 * The fields to request. Available fields: "status", "voice_start_time"
+	 */
+	fields: ('status' | 'voice_start_time')[];
+}
+
 /**
  * https://discord.com/developers/docs/topics/gateway-events#update-voice-state
  */
