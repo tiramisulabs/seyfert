@@ -850,6 +850,35 @@ export interface APIMessageCall {
 }
 
 /**
+ * https://docs.discord.com/developers/resources/message#base-theme-types
+ */
+export enum BaseThemeType {
+	Unset = 0,
+	Dark = 1,
+	Light = 2,
+	Darker = 3,
+	Midnight = 4,
+}
+
+/**
+ * https://docs.discord.com/developers/resources/message#shared-client-theme-object
+ */
+export interface APIMessageSharedClientTheme {
+	colors: string[];
+	gradient_angle: number;
+	base_mix: number;
+	base_theme?: BaseThemeType | null;
+}
+
+/**
+ * https://discord.com/developers/docs/resources/message#message-pin-object
+ */
+export interface APIMessagePin {
+	pinned_at: string;
+	message: APIMessage;
+}
+
+/**
  * https://discord.com/developers/docs/resources/channel#role-subscription-data-object-role-subscription-data-object-structure
  */
 export interface APIMessageRoleSubscriptionData {

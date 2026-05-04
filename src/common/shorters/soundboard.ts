@@ -1,7 +1,7 @@
 import type {
-	RESTPatchAPIGuildSoundboardSound,
-	RESTPostAPIGuildSoundboardSound,
-	RESTPostAPISendSoundboardSound,
+	RESTPatchAPIGuildSoundboardSoundJSONBody,
+	RESTPostAPIGuildSoundboardSoundJSONBody,
+	RESTPostAPISoundboardSendSoundJSONBody,
 } from '../../types';
 import { BaseShorter } from './base';
 
@@ -10,7 +10,7 @@ export class SoundboardShorter extends BaseShorter {
 		return this.client.proxy['soundboard-default-sounds'].get();
 	}
 
-	send(channelId: string, body: RESTPostAPISendSoundboardSound) {
+	send(channelId: string, body: RESTPostAPISoundboardSendSoundJSONBody) {
 		return this.client.proxy.channels(channelId)['send-soundboard-sound'].post({
 			body,
 		});
@@ -24,13 +24,13 @@ export class SoundboardShorter extends BaseShorter {
 		return this.client.proxy.guilds(guildId)['soundboard-sounds'](soundID).get();
 	}
 
-	create(guildId: string, body: RESTPostAPIGuildSoundboardSound) {
+	create(guildId: string, body: RESTPostAPIGuildSoundboardSoundJSONBody) {
 		return this.client.proxy.guilds(guildId)['soundboard-sounds'].post({
 			body,
 		});
 	}
 
-	edit(guildId: string, soundID: string, body: RESTPatchAPIGuildSoundboardSound) {
+	edit(guildId: string, soundID: string, body: RESTPatchAPIGuildSoundboardSoundJSONBody) {
 		return this.client.proxy.guilds(guildId)['soundboard-sounds'](soundID).patch({
 			body,
 		});
