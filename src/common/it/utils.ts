@@ -282,10 +282,6 @@ export const ReplaceRegex = {
 
 export async function magicImport(path: string) {
 	try {
-		if ('Deno' in globalThis)
-			throw new SeyfertError('DENO_FILE_API_UNSUPPORTED', {
-				metadata: { detail: 'https://github.com/denoland/deno/issues/26136' },
-			});
 		return require(path);
 	} catch {
 		return new Function('path', 'return import(`file:///${path}?update=${Date.now()}`)')(path);
