@@ -1,8 +1,7 @@
 import { ReturnCache } from '../..';
 import { Transformers, VoiceChannelStructure, type VoiceStateStructure } from '../../client/transformers';
 import type { UsingClient } from '../../commands';
-import { CamelCase, ObjectToLower, toCamelCase } from '../../common';
-import { AllChannels } from '../../structures';
+import { ObjectToLower, toCamelCase } from '../../common';
 import type {
 	GatewayVoiceChannelEffectSendDispachData,
 	GatewayVoiceChannelStartTimeUpdateDispatchData,
