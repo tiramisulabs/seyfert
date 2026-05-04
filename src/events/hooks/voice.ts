@@ -1,6 +1,8 @@
-import { Transformers, type VoiceStateStructure } from '../../client/transformers';
+import { ReturnCache } from '../..';
+import { Transformers, VoiceChannelStructure, type VoiceStateStructure } from '../../client/transformers';
 import type { UsingClient } from '../../commands';
-import { toCamelCase } from '../../common';
+import { CamelCase, ObjectToLower, toCamelCase } from '../../common';
+import { AllChannels } from '../../structures';
 import type {
 	GatewayVoiceChannelEffectSendDispachData,
 	GatewayVoiceChannelStartTimeUpdateDispatchData,
@@ -28,8 +30,8 @@ export const VOICE_CHANNEL_EFFECT_SEND = (_self: UsingClient, data: GatewayVoice
 export const VOICE_CHANNEL_STATUS_UPDATE = async (
 	self: UsingClient,
 	data: GatewayVoiceChannelStatusUpdateDispatchData,
-) => {
-	return [toCamelCase(data), await self.cache.channels?.get(data.id)];
+): Promise<[status: ObjectToLower<GatewayVoiceChannelStatusUpdateDispatchData>] | [status: ObjectToLower<GatewayVoiceChannelStatusUpdateDispatchData>, channel: ReturnCache<VoiceChannelStructure | undefined>]> => {
+	return [toCamelCase(data), await self.cache.channels?.get(data.id) as never];
 };
 
 export const VOICE_CHANNEL_START_TIME_UPDATE = (
