@@ -258,6 +258,8 @@ export class Shard {
 	async reconnect(code = ShardSocketCloseCodes.Reconnect) {
 		return (this.reconnectPromise ??= (async () => {
 			this.debugger?.info(`[Shard #${this.id}] Reconnecting`);
+			// Clear ackTimeout before disconnecting to prevent a cascading reconnect
+			// triggered by the ackTimeout firing while we are already reconnecting.
 			this.disconnect(code);
 			await delay(this.options.reconnectTimeout);
 			await this.connect();
@@ -502,6 +504,12 @@ export class Shard {
 					//Force disconnect, ignore
 					break;
 				case 1000:
+					// Discord sends 1000 for normal closure; try to resume the session
+					// rather than wiping it, so we don't lose seq/session_id unnecessarily.
+					{
+						await this.reconnect();
+					}
+					break;
 				case GatewayCloseCodes.UnknownOpcode:
 				case GatewayCloseCodes.InvalidSeq:
 				case GatewayCloseCodes.SessionTimedOut:
