@@ -260,8 +260,6 @@ export class Shard {
 			this.debugger?.info(`[Shard #${this.id}] Reconnecting`);
 			// Clear ackTimeout before disconnecting to prevent a cascading reconnect
 			// triggered by the ackTimeout firing while we are already reconnecting.
-			clearTimeout(this.heart.ackTimeout);
-			this.heart.ackTimeout = undefined;
 			this.disconnect(code);
 			await delay(this.options.reconnectTimeout);
 			await this.connect();
