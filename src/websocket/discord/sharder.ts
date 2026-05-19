@@ -12,6 +12,7 @@ import type { DeepPartial, MakeDeepPartial } from '../../common/types/util';
 import {
 	type GatewayDispatchPayload,
 	GatewayOpcodes,
+	type GatewayRequestChannelInfo,
 	type GatewaySendPayload,
 	type GatewayUpdatePresence,
 	type GatewayVoiceStateUpdate,
@@ -277,6 +278,19 @@ export class ShardManager extends Map<number, Shard> {
 				channel_id: null,
 				self_mute: false,
 				self_deaf: false,
+			},
+		});
+	}
+
+	requestChannelInfo(guild_id: string, fields: ('status' | 'voice_start_time')[]) {
+		const shardId = this.calculateShardId(guild_id);
+		this.debugger?.info(`Shard #${shardId} request channel info for ${guild_id}`);
+
+		return this.send<GatewayRequestChannelInfo>(shardId, {
+			op: GatewayOpcodes.RequestChannelInfo,
+			d: {
+				guild_id,
+				fields,
 			},
 		});
 	}

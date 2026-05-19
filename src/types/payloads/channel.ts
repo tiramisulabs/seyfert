@@ -146,6 +146,10 @@ export interface APIVoiceChannelBase<T extends ChannelType>
 	extends APIGuildChannel<T>,
 		Omit<APITextBasedChannel<T>, 'last_pin_timestamp' | 'name'> {
 	/**
+	 * The status of the voice or stage channel
+	 */
+	status?: string | null;
+	/**
 	 * The bitrate (in bits) of the voice or stage channel
 	 */
 	bitrate?: number;
