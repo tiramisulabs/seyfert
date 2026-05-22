@@ -170,6 +170,9 @@ export class ApiHandler {
 		url: `/${string}`,
 		{ auth = true, ...request }: ApiRequestOptions = {},
 	): Promise<T> {
+		const retryRequest = request as ApiRequestOptions & { _50xRetries?: number };
+		let attempts = retryRequest._50xRetries ?? 0;
+		delete retryRequest._50xRetries;
 		const originTrace: { stack?: string } = {};
 		Error.captureStackTrace(originTrace, this.request);
 
@@ -185,7 +188,6 @@ export class ApiHandler {
 			});
 		}
 		const route = request.route || this.routefy(url, method);
-		let attempts = 0;
 
 		const callback = async (next: () => void, resolve: (data: any) => void, reject: (err: unknown) => void) => {
 			const headers = {
@@ -234,7 +236,7 @@ export class ApiHandler {
 				}
 				if ([502, 503].includes(response.status) && ++attempts < 4) {
 					this.clearResetInterval(route);
-					return this.handle50X(method, url, request, next, resolve, reject);
+					return this.handle50X(method, url, request, attempts, next, resolve, reject);
 				}
 				this.clearResetInterval(route);
 				next();
@@ -367,6 +369,7 @@ export class ApiHandler {
 		method: HttpMethods,
 		url: `/${string}`,
 		request: ApiRequestOptions,
+		attempts: number,
 		next: () => void,
 		resolve: (value: unknown) => void,
 		reject: (err: unknown) => void,
@@ -378,7 +381,8 @@ export class ApiHandler {
 		return this.request(method, url, {
 			...request,
 			unshift: true,
-		})
+			_50xRetries: attempts,
+		} as ApiRequestOptions)
 			.then(resolve)
 			.catch(reject);
 	}

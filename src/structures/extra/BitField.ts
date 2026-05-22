@@ -78,19 +78,22 @@ export class BitField<T extends object> {
 				case 'string':
 					if (bit in flags) {
 						bitsResult |= flags[bit];
-					} else if (/^-?\d+$/.test(bit)) {
+					} else if (/^\d+$/.test(bit)) {
 						bitsResult |= BigInt(bit);
 					} else {
 						throw new TypeError(`Cannot resolve bitfield: ${bit}`);
 					}
 					break;
 				case 'number':
-					if (!Number.isInteger(bit)) {
+					if (!Number.isInteger(bit) || bit < 0) {
 						throw new TypeError(`Cannot resolve bitfield: ${bit}`);
 					}
 					bitsResult |= BigInt(bit);
 					break;
 				case 'bigint':
+					if (bit < 0n) {
+						throw new TypeError(`Cannot resolve bitfield: ${bit}`);
+					}
 					bitsResult |= bit;
 					break;
 				default:
