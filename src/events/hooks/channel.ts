@@ -4,6 +4,7 @@ import { type AllChannels, channelFrom } from '../../structures';
 import type {
 	GatewayChannelCreateDispatchData,
 	GatewayChannelDeleteDispatchData,
+	GatewayChannelInfoDispatchData,
 	GatewayChannelPinsUpdateDispatchData,
 	GatewayChannelUpdateDispatchData,
 } from '../../types';
@@ -25,4 +26,8 @@ export const CHANNEL_UPDATE = async (
 	data: GatewayChannelUpdateDispatchData,
 ): Promise<[channel: AllChannels, old?: AllChannels]> => {
 	return [channelFrom(data, self), await self.cache.channels?.get(data.id)];
+};
+
+export const CHANNEL_INFO = (_self: UsingClient, data: GatewayChannelInfoDispatchData) => {
+	return toCamelCase(data);
 };

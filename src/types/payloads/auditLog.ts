@@ -219,6 +219,9 @@ export enum AuditLogEvent {
 
 	HomeSettingsCreate = 190,
 	HomeSettingsUpdate,
+
+	VoiceChannelStatusUpdate = 192,
+	VoiceChannelStatusDelete,
 }
 
 /**
@@ -337,6 +340,14 @@ export interface APIAuditLogOptions {
 	 * - MEMBER_ROLE_UPDATE
 	 */
 	integration_type?: APIGuildIntegrationType;
+
+	/**
+	 * The new voice channel status
+	 *
+	 * Present from:
+	 * - VOICE_CHANNEL_STATUS_UPDATE
+	 */
+	status?: string;
 }
 
 export enum AuditLogOptionsType {

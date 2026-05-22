@@ -191,6 +191,8 @@ export class Collection<K, V> extends Map<K, V> {
 }
 
 type LimitedCollectionData<V> = { expire: number; expireOn: number; value: V };
+type LimitedCollectionExpiration = { expire: number; expireOn: number };
+type LimitedCollectionCloser<K> = LimitedCollectionExpiration & { key: K };
 
 export interface LimitedCollectionOptions<K, V> {
 	limit: number;
@@ -219,11 +221,12 @@ export class LimitedCollection<K, V> {
 		expire: 0,
 	};
 
-	private readonly data = new Map<K, LimitedCollectionData<V>>();
+	private readonly data = new Map<K, V>();
+	private readonly expirations = new Map<K, LimitedCollectionExpiration>();
 
 	private readonly options: LimitedCollectionOptions<K, V>;
 	private timeout: NodeJS.Timeout | undefined = undefined;
-	private _closer: LimitedCollectionData<V> | undefined = undefined;
+	private _closer: LimitedCollectionCloser<K> | undefined = undefined;
 	private _closerDirty = true;
 
 	constructor(options: Partial<LimitedCollectionOptions<K, V>> = {}) {
@@ -250,22 +253,27 @@ export class LimitedCollection<K, V> {
 			return;
 		}
 
-		const previous = this.data.get(key);
-		const replacedCloser = previous !== undefined && this._closer === previous;
+		const previousExpiration = this.expirations.get(key);
+		const replacedCloser = previousExpiration !== undefined && this._closer?.key === key;
 		if (replacedCloser) {
 			this._closerDirty = true;
 		}
 
-		const expireOn = Date.now() + customExpire;
-		const entry = customExpire > 0 ? { value, expire: customExpire, expireOn } : { value, expire: -1, expireOn: -1 };
-		this.data.set(key, entry);
+		const expireOn = customExpire > 0 ? Date.now() + customExpire : -1;
+		this.data.set(key, value);
+
+		if (customExpire > 0) {
+			this.expirations.set(key, { expire: customExpire, expireOn });
+		} else {
+			this.expirations.delete(key);
+		}
 
 		if (
-			entry.expire !== -1 &&
+			customExpire > 0 &&
 			!replacedCloser &&
-			(!this._closer || this._closerDirty || entry.expireOn <= this._closer.expireOn)
+			(!this._closer || this._closerDirty || expireOn <= this._closer.expireOn)
 		) {
-			this._closer = entry;
+			this._closer = { key, expire: customExpire, expireOn };
 			this._closerDirty = false;
 		}
 
@@ -293,7 +301,26 @@ export class LimitedCollection<K, V> {
 	 * console.log(rawData); // Output: { value: 'one', expire: -1, expireOn: -1 }
 	 */
 	raw(key: K) {
-		return this.data.get(key);
+		const value = this.data.get(key);
+		if (value === undefined && !this.data.has(key)) {
+			return;
+		}
+		const resolvedValue = value as V;
+
+		if (this.expirations.size === 0) {
+			return {
+				value: resolvedValue,
+				expire: -1,
+				expireOn: -1,
+			};
+		}
+
+		const expiration = this.expirations.get(key);
+		return {
+			value: resolvedValue,
+			expire: expiration?.expire ?? -1,
+			expireOn: expiration?.expireOn ?? -1,
+		};
 	}
 
 	/**
@@ -307,16 +334,25 @@ export class LimitedCollection<K, V> {
 	 * console.log(value); // Output: 'one'
 	 */
 	get(key: K) {
-		const data = this.data.get(key);
-		if (this.options.resetOnDemand && data && data.expire !== -1) {
-			const wasCloser = this._closer === data;
-			data.expireOn = Date.now() + data.expire;
+		const value = this.data.get(key);
+		if (value === undefined && !this.data.has(key)) {
+			return;
+		}
+
+		if (!this.options.resetOnDemand || this.expirations.size === 0) {
+			return value;
+		}
+
+		const expiration = this.expirations.get(key);
+		if (this.options.resetOnDemand && expiration) {
+			const wasCloser = this._closer?.key === key;
+			expiration.expireOn = Date.now() + expiration.expire;
 			if (wasCloser) {
 				this._closerDirty = true;
 				this.resetTimeout();
 			}
 		}
-		return data?.value;
+		return value;
 	}
 
 	/**
@@ -345,22 +381,25 @@ export class LimitedCollection<K, V> {
 	 * console.log(collection.delete(2)); // Output: false
 	 */
 	delete(key: K) {
-		const value = this.raw(key);
-		if (value) {
-			const wasCloser = this._closer === value;
-			if (wasCloser) this._closerDirty = true;
-			this.options.onDelete?.(key, value.value);
-			const result = this.data.delete(key);
-			if (wasCloser && !this._pendingReset) {
-				this._pendingReset = true;
-				setImmediate(() => {
-					this._pendingReset = false;
-					this.resetTimeout();
-				});
-			}
-			return result;
+		const value = this.data.get(key);
+		if (value === undefined && !this.data.has(key)) {
+			return false;
 		}
-		return this.data.delete(key);
+		const resolvedValue = value as V;
+
+		const wasCloser = this._closer?.key === key;
+		if (wasCloser) this._closerDirty = true;
+		this.options.onDelete?.(key, resolvedValue);
+		const result = this.data.delete(key);
+		this.expirations.delete(key);
+		if (wasCloser && !this._pendingReset) {
+			this._pendingReset = true;
+			setImmediate(() => {
+				this._pendingReset = false;
+				this.resetTimeout();
+			});
+		}
+		return result;
 	}
 
 	/**
@@ -377,15 +416,26 @@ export class LimitedCollection<K, V> {
 	get closer() {
 		if (this._closerDirty) {
 			this._closer = undefined;
-			for (const value of this.data.values()) {
-				if (value.expire === -1) continue;
-				if (!this._closer || value.expireOn < this._closer.expireOn) {
-					this._closer = value;
+			for (const [key, expiration] of this.expirations.entries()) {
+				if (!this._closer || expiration.expireOn < this._closer.expireOn) {
+					this._closer = { key, ...expiration };
 				}
 			}
 			this._closerDirty = false;
 		}
-		return this._closer;
+		if (!this._closer) {
+			return;
+		}
+
+		const value = this.data.get(this._closer.key);
+		if (value === undefined && !this.data.has(this._closer.key)) {
+			return;
+		}
+		return {
+			value: value as V,
+			expire: this._closer.expire,
+			expireOn: this._closer.expireOn,
+		};
 	}
 
 	/**
@@ -430,31 +480,40 @@ export class LimitedCollection<K, V> {
 	}
 
 	values() {
-		return this.data.values();
+		return (function* (self: LimitedCollection<K, V>) {
+			for (const key of self.data.keys()) {
+				yield self.raw(key)!;
+			}
+		})(this);
 	}
 
 	entries() {
-		return this.data.entries();
+		return (function* (self: LimitedCollection<K, V>) {
+			for (const key of self.data.keys()) {
+				yield [key, self.raw(key)!] as [K, LimitedCollectionData<V>];
+			}
+		})(this);
 	}
 
 	clear() {
 		this.data.clear();
+		this.expirations.clear();
 		this._closer = undefined;
 		this._closerDirty = false;
 		this.resetTimeout();
 	}
 
 	private clearExpired() {
-		for (const [key, value] of this.data) {
-			if (value.expireOn === -1) {
-				continue;
-			}
-			if (Date.now() >= value.expireOn) {
-				if (this._closer === value) {
+		for (const [key, expiration] of this.expirations) {
+			if (Date.now() >= expiration.expireOn) {
+				if (this._closer?.key === key) {
 					this._closerDirty = true;
 				}
-				this.options.onDelete?.(key, value.value);
+				if (this.data.has(key)) {
+					this.options.onDelete?.(key, this.data.get(key)!);
+				}
 				this.data.delete(key);
+				this.expirations.delete(key);
 			}
 		}
 	}

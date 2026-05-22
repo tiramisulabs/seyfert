@@ -10,7 +10,9 @@ import type {
 	APIGuildForumDefaultReactionEmoji,
 	APIGuildForumTag,
 	APIMessage,
+	APIMessagePin,
 	APIMessageReference,
+	APIMessageSharedClientTheme,
 	APIRole,
 	APIThreadList,
 	APIThreadMember,
@@ -27,7 +29,7 @@ import type {
 import type { AddUndefinedToPossiblyUndefinedPropertiesOfInterface, StrictPartial } from '../utils';
 import type { RESTAPIPollCreate } from './poll';
 
-export interface APIChannelPatchOverwrite extends RESTPutAPIChannelPermissionJSONBody {
+export interface RESTAPIChannelPatchOverwrite extends RESTPutAPIChannelPermissionJSONBody {
 	id: Snowflake;
 }
 
@@ -97,7 +99,7 @@ export interface RESTPatchAPIChannelJSONBody {
 	 *
 	 * Channel types: all excluding newsThread, publicThread, privateThread
 	 */
-	permission_overwrites?: APIChannelPatchOverwrite[] | null | undefined;
+	permission_overwrites?: RESTAPIChannelPatchOverwrite[] | null | undefined;
 	/**
 	 * ID of the new parent category for a channel
 	 *
@@ -236,7 +238,7 @@ export type RESTGetAPIChannelMessageResult = APIMessage;
 /**
  * https://discord.com/developers/docs/resources/channel#message-reference-object-message-reference-structure
  */
-export type APIMessageReferenceSend = AddUndefinedToPossiblyUndefinedPropertiesOfInterface<
+export type RESTAPIMessageReference = AddUndefinedToPossiblyUndefinedPropertiesOfInterface<
 	Required<Pick<APIMessageReference, 'message_id'>>
 > &
 	StrictPartial<APIMessageReference> & {
@@ -288,7 +290,7 @@ export interface RESTPostAPIChannelMessageJSONBody {
 	 *
 	 * See https://discord.com/developers/docs/resources/channel#message-reference-object-message-reference-structure
 	 */
-	message_reference?: APIMessageReferenceSend | undefined;
+	message_reference?: RESTAPIMessageReference | undefined;
 	/**
 	 * The components to include with the message
 	 *
@@ -318,6 +320,10 @@ export interface RESTPostAPIChannelMessageJSONBody {
 	 * A poll!
 	 */
 	poll?: RESTAPIPollCreate | undefined;
+	/**
+	 * The custom client-side theme to share via the message
+	 */
+	shared_client_theme?: APIMessageSharedClientTheme | undefined;
 }
 
 /**
@@ -350,7 +356,7 @@ export type RESTPutAPIChannelMessageReactionResult = undefined;
 /**
  * https://discord.com/developers/docs/resources/channel#delete-own-reaction
  */
-export type RESTDeleteAPIChannelMessageOwnReaction = undefined;
+export type RESTDeleteAPIChannelMessageOwnReactionResult = undefined;
 
 /**
  * https://discord.com/developers/docs/resources/channel#delete-user-reaction
@@ -611,14 +617,9 @@ export type RESTPostAPIChannelFollowersResult = APIFollowedChannel;
 export type RESTPostAPIChannelTypingResult = undefined;
 
 /**
- * https://discord.com/developers/docs/resources/channel#get-pinned-messages
+ * https://discord.com/developers/docs/resources/message#get-channel-pins
  */
-export interface RESTGetAPIChannelPinsResult {
-	items: RESTGetAPIChannelPinsItems[];
-	has_more: boolean;
-}
-
-export interface RESTGetAPIChannelPinsQuery {
+export interface RESTGetAPIChannelMessagesPinsQuery {
 	/**
 	 * Get messages pinned before this timestamp
 	 */
@@ -629,26 +630,23 @@ export interface RESTGetAPIChannelPinsQuery {
 	limit?: number;
 }
 
-export interface RESTGetAPIChannelPinsItems {
-	/**
-	 * The time the message was pinned
-	 */
-	pinned_at: string;
-	/**
-	 * The message that was pinned
-	 */
-	message: APIMessage;
+/**
+ * https://discord.com/developers/docs/resources/message#get-channel-pins
+ */
+export interface RESTGetAPIChannelMessagesPinsResult {
+	items: APIMessagePin[];
+	has_more: boolean;
 }
 
 /**
- * https://discord.com/developers/docs/resources/channel#pin-message
+ * https://discord.com/developers/docs/resources/message#pin-message
  */
-export type RESTPutAPIChannelPinResult = undefined;
+export type RESTPutAPIChannelMessagesPinResult = undefined;
 
 /**
- * https://discord.com/developers/docs/resources/channel#unpin-message
+ * https://discord.com/developers/docs/resources/message#unpin-message
  */
-export type RESTDeleteAPIChannelPinResult = undefined;
+export type RESTDeleteAPIChannelMessagesPinResult = undefined;
 
 /**
  * https://discord.com/developers/docs/resources/channel#group-dm-add-recipient

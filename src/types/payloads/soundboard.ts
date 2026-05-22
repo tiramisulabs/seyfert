@@ -5,7 +5,7 @@
 import type { APIUser } from './user';
 
 /** https://discord.com/developers/docs/resources/soundboard#soundboard-sound-object-soundboard-sound-structure */
-export interface APISoundBoard {
+export interface APISoundboardSound {
 	/**	the name of this sound */
 	name: string;
 	/**	the id of this sound */

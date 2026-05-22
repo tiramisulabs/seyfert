@@ -146,6 +146,10 @@ export interface APIVoiceChannelBase<T extends ChannelType>
 	extends APIGuildChannel<T>,
 		Omit<APITextBasedChannel<T>, 'last_pin_timestamp' | 'name'> {
 	/**
+	 * The status of the voice or stage channel
+	 */
+	status?: string | null;
+	/**
 	 * The bitrate (in bits) of the voice or stage channel
 	 */
 	bitrate?: number;
@@ -843,6 +847,35 @@ export interface APIMessageCall {
 	 * ISO8601 timestamp when the call ended
 	 */
 	ended_timestamp?: string | null;
+}
+
+/**
+ * https://docs.discord.com/developers/resources/message#base-theme-types
+ */
+export enum BaseThemeType {
+	Unset = 0,
+	Dark = 1,
+	Light = 2,
+	Darker = 3,
+	Midnight = 4,
+}
+
+/**
+ * https://docs.discord.com/developers/resources/message#shared-client-theme-object
+ */
+export interface APIMessageSharedClientTheme {
+	colors: string[];
+	gradient_angle: number;
+	base_mix: number;
+	base_theme?: BaseThemeType | null;
+}
+
+/**
+ * https://discord.com/developers/docs/resources/message#message-pin-object
+ */
+export interface APIMessagePin {
+	pinned_at: string;
+	message: APIMessage;
 }
 
 /**

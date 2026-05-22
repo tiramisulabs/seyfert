@@ -35,6 +35,7 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 
 	readonly storage = new Map<string, LimitedCollection<string, T>>();
 	readonly relationships = new Map<string, Map<string, Set<string>>>();
+	readonly keyToStorage = new Map<string, LimitedCollection<string, T>>();
 
 	options: MakeRequired<LimitedMemoryAdapterOptions<T>, 'default' | 'encode' | 'decode'>;
 
@@ -90,75 +91,217 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 		return result;
 	}
 
-	get(key: string) {
-		for (const storageEntry of this.storage.values()) {
-			if (storageEntry.has(key)) {
-				const data = storageEntry.raw(key);
-				return data ? this.options.decode(data.value) : null;
-			}
-		}
-		return null;
+	private _getKeyResource(key: string) {
+		const separatorIndex = key.indexOf('.');
+		return separatorIndex === -1 ? key : key.slice(0, separatorIndex);
 	}
 
-	private __set(key: string, data: any) {
+	private _getKeyScope(key: string) {
+		const separatorIndex = key.indexOf('.');
+		if (separatorIndex === -1) {
+			return '';
+		}
+
+		const scopeStart = separatorIndex + 1;
+		const scopeEnd = key.indexOf('.', scopeStart);
+		return scopeEnd === -1 ? key.slice(scopeStart) : key.slice(scopeStart, scopeEnd);
+	}
+
+	private _supportsNamespaceIndex(resource: string) {
+		switch (resource) {
+			case 'channel':
+			case 'emoji':
+			case 'presence':
+			case 'role':
+			case 'stage_instance':
+			case 'sticker':
+			case 'overwrite':
+			case 'message':
+				return true;
+			default:
+				return false;
+		}
+	}
+
+	private _setIndexedStorage(resource: string, key: string, storageEntry: LimitedCollection<string, T>) {
+		if (!this._supportsNamespaceIndex(resource)) {
+			return;
+		}
+		this.keyToStorage.set(key, storageEntry);
+	}
+
+	private _deleteIndexedStorage(resource: string, key: string) {
+		if (!this._supportsNamespaceIndex(resource)) {
+			return;
+		}
+		this.keyToStorage.delete(key);
+	}
+
+	private _getIndexedStorage(resource: string, key: string) {
+		if (!this._supportsNamespaceIndex(resource)) {
+			return;
+		}
+		return this.keyToStorage.get(key);
+	}
+
+	private _getDerivedNamespace(resource: string, scope: string) {
+		switch (resource) {
+			case 'ban':
+			case 'member':
+			case 'voice_state':
+				return scope ? `${resource}.${scope}` : resource;
+			default:
+				return resource;
+		}
+	}
+
+	private _isResourceNamespace(resource: string, namespace: string) {
+		return namespace === resource || namespace.startsWith(`${resource}.`);
+	}
+
+	private _findNamespaceByStorage(resource: string, storageEntry: LimitedCollection<string, T>) {
+		for (const [namespace, candidate] of this.storage.entries()) {
+			if (candidate === storageEntry && this._isResourceNamespace(resource, namespace)) {
+				return namespace;
+			}
+		}
+
+		return undefined;
+	}
+
+	private _getStorageNamespace(resource: string, data: any) {
 		const isArray = Array.isArray(data);
 		if (isArray && data.length === 0) {
 			return;
 		}
-		const __guildId = isArray ? data[0].guild_id : data.guild_id;
-		const namespace = `${key.split('.')[0]}${__guildId ? `.${__guildId}` : ''}`;
-		const self = this;
-		if (!this.storage.has(namespace)) {
-			this.storage.set(
-				namespace,
-				new LimitedCollection({
-					expire:
-						this.options[key.split('.')[0] as Exclude<keyof LimitedMemoryAdapterOptions<T>, 'decode' | 'encode'>]
-							?.expire ?? this.options.default.expire,
-					limit:
-						this.options[key.split('.')[0] as Exclude<keyof LimitedMemoryAdapterOptions<T>, 'decode' | 'encode'>]
-							?.limit ?? this.options.default.limit,
-					resetOnDemand: true,
-					onDelete(k) {
-						const relationshipNamespace = key.split('.')[0];
-						const existsRelation = self.relationships.has(relationshipNamespace);
-						if (existsRelation) {
-							switch (relationshipNamespace) {
-								case 'message':
-									if (data.channel_id)
-										self.removeToRelationship(`${relationshipNamespace}.${data.channel_id}`, k.split('.')[1]);
-									break;
-								case 'ban':
-								case 'member':
-								case 'voice_state':
-									{
-										const split = k.split('.');
-										self.removeToRelationship(`${namespace}.${split[1]}`, split[2]);
-									}
-									break;
-								case 'channel':
-								case 'emoji':
-								case 'presence':
-								case 'role':
-								case 'stage_instance':
-								case 'sticker':
-								case 'overwrite':
-								case 'message':
-									self.removeToRelationship(namespace, k.split('.')[1]);
-									break;
-								// case 'guild':
-								// case 'user':
-								default:
-									self.removeToRelationship(namespace, k.split('.')[1]);
-									break;
-							}
-						}
-					},
-				}),
-			);
+
+		const scope = isArray ? data[0].guild_id : data.guild_id;
+		return `${resource}${scope ? `.${scope}` : ''}`;
+	}
+
+	private _getStorageEntry(key: string) {
+		const resource = this._getKeyResource(key);
+		const supportsNamespaceIndex = this._supportsNamespaceIndex(resource);
+		const indexedStorage = this._getIndexedStorage(resource, key);
+		if (indexedStorage?.has(key)) {
+			return {
+				resource,
+				storageEntry: indexedStorage,
+			};
 		}
 
-		this.storage.get(namespace)!.set(key, this.options.encode(data));
+		if (indexedStorage) {
+			this._deleteIndexedStorage(resource, key);
+		}
+
+		if (!supportsNamespaceIndex) {
+			const namespace = this._getDerivedNamespace(resource, this._getKeyScope(key));
+			const storageEntry = this.storage.get(namespace);
+			if (storageEntry?.has(key)) {
+				return {
+					resource,
+					namespace,
+					storageEntry,
+				};
+			}
+		}
+
+		for (const [namespace, storageEntry] of this.storage.entries()) {
+			if (this._isResourceNamespace(resource, namespace) && storageEntry.has(key)) {
+				this._setIndexedStorage(resource, key, storageEntry);
+				return {
+					resource,
+					namespace,
+					storageEntry,
+				};
+			}
+		}
+
+		return;
+	}
+
+	get(key: string) {
+		const entry = this._getStorageEntry(key);
+		if (!entry) {
+			return null;
+		}
+
+		return this.options.decode(entry.storageEntry.get(key)!);
+	}
+
+	private __set(key: string, data: any) {
+		const resource = this._getKeyResource(key);
+		const namespace = this._getStorageNamespace(resource, data);
+		if (!namespace) {
+			return;
+		}
+
+		let storageEntry = this.storage.get(namespace);
+		if (!storageEntry) {
+			const self = this;
+			storageEntry = new LimitedCollection({
+				expire:
+					this.options[resource as Exclude<keyof LimitedMemoryAdapterOptions<T>, 'decode' | 'encode'>]?.expire ??
+					this.options.default.expire,
+				limit:
+					this.options[resource as Exclude<keyof LimitedMemoryAdapterOptions<T>, 'decode' | 'encode'>]?.limit ??
+					this.options.default.limit,
+				resetOnDemand: true,
+				onDelete(k, value) {
+					self._deleteIndexedStorage(resource, k);
+					const relationshipNamespace = resource;
+					const existsRelation = self.relationships.has(relationshipNamespace);
+					if (existsRelation) {
+						switch (relationshipNamespace) {
+							case 'message':
+								{
+									const decodedValue = self.options.decode(value) as { channel_id?: string };
+									if (decodedValue.channel_id)
+										self.removeToRelationship(`${relationshipNamespace}.${decodedValue.channel_id}`, k.split('.')[1]);
+								}
+								break;
+							case 'ban':
+							case 'member':
+							case 'voice_state':
+								{
+									const split = k.split('.');
+									self.removeToRelationship(`${namespace}.${split[1]}`, split[2]);
+								}
+								break;
+							case 'channel':
+							case 'emoji':
+							case 'presence':
+							case 'role':
+							case 'stage_instance':
+							case 'sticker':
+							case 'overwrite':
+								self.removeToRelationship(namespace, k.split('.')[1]);
+								break;
+							// case 'guild':
+							// case 'user':
+							default:
+								self.removeToRelationship(namespace, k.split('.')[1]);
+								break;
+						}
+					}
+				},
+			});
+			this.storage.set(namespace, storageEntry);
+		}
+
+		const previousBucket = this._getIndexedStorage(resource, key);
+		if (previousBucket && previousBucket !== storageEntry) {
+			previousBucket?.delete(key);
+			if (previousBucket?.size === 0) {
+				const previousNamespace = this._findNamespaceByStorage(resource, previousBucket);
+				if (previousNamespace) {
+					this.storage.delete(previousNamespace);
+				}
+			}
+		}
+
+		this._setIndexedStorage(resource, key, storageEntry);
+		storageEntry.set(key, this.options.encode(data));
 	}
 
 	bulkSet(keys: [string, any][]) {
@@ -217,47 +360,25 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	}
 
 	remove(key: string) {
-		const keySplit = key.split('.');
-		const parentNamespace = keySplit.at(0)!;
-		switch (parentNamespace) {
-			case 'ban':
-			case 'member':
-			case 'voice_state':
-				{
-					this.storage
-						.get(`${parentNamespace}.${keySplit.at(1)}`)
-						?.delete(`${parentNamespace}.${keySplit.at(1)}.${keySplit.at(2)}`);
-				}
-				break;
-			case 'channel':
-			case 'emoji':
-			case 'presence':
-			case 'role':
-			case 'stage_instance':
-			case 'sticker':
-			case 'overwrite':
-			case 'message':
-				for (const keyStorage of this.storage.keys()) {
-					if (keyStorage.startsWith(parentNamespace)) {
-						const storage = this.storage.get(keyStorage)!;
-						if (storage.has(key)) {
-							storage.delete(key);
-							break;
-						}
-					}
-				}
-				break;
-			// case 'user':
-			// case 'guild':
-			default:
-				this.storage.get(parentNamespace)?.delete(`${parentNamespace}.${keySplit.at(1)}`);
-				break;
+		const entry = this._getStorageEntry(key);
+		if (!entry) {
+			return;
+		}
+
+		entry.storageEntry.delete(key);
+		this._deleteIndexedStorage(entry.resource, key);
+		if (entry.storageEntry.size === 0) {
+			const namespace = entry.namespace ?? this._findNamespaceByStorage(entry.resource, entry.storageEntry);
+			if (namespace) {
+				this.storage.delete(namespace);
+			}
 		}
 	}
 
 	flush(): void {
 		this.storage.clear();
 		this.relationships.clear();
+		this.keyToStorage.clear();
 	}
 
 	contains(to: string, keys: string): boolean {

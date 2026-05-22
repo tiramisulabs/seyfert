@@ -27,7 +27,8 @@ There are many reasons to use Seyfert, but they dont all fit in this tiny readme
 
 ## Installation
 > [!NOTE]
-> Node v18>= is required (or v16 with `--experimental-fetch` flag), Bun/Node LTS recommended.
+> Node v18>= (or v16 with `--experimental-fetch` flag), Deno v2.6.9>= is required.
+> Bun/Node/Deno LTS recommended.
 
 ```sh
 pnpm add seyfert

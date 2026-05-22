@@ -2,7 +2,7 @@ import { Transformers, type UserStructure } from '../../client';
 import type { UsingClient } from '../../commands';
 import { type ObjectToLower, toCamelCase } from '../../common';
 import type {
-	APISoundBoard,
+	APISoundboardSound,
 	GatewayGuildSoundboardSoundCreateDispatchData,
 	GatewayGuildSoundboardSoundDeleteDispatchData,
 	GatewayGuildSoundboardSoundsUpdateDispatchData,
@@ -38,10 +38,10 @@ export const GUILD_SOUNDBOARD_SOUNDS_UPDATE = (
 ): {
 	guildId: string;
 	sounds: (
-		| (ObjectToLower<Omit<APISoundBoard, 'user'>> & {
+		| (ObjectToLower<Omit<APISoundboardSound, 'user'>> & {
 				user: UserStructure;
 		  })
-		| ObjectToLower<Omit<APISoundBoard, 'user'>>
+		| ObjectToLower<Omit<APISoundboardSound, 'user'>>
 	)[];
 } => {
 	return {

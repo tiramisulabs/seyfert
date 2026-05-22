@@ -4,6 +4,7 @@ import type { UsingClient } from '../commands';
 import { Formatter, type MethodContext, type ObjectToLower } from '../common';
 import type {
 	APIRole,
+	RESTGetAPIGuildRoleMemberCountsResult,
 	RESTPatchAPIGuildRoleJSONBody,
 	RESTPatchAPIGuildRolePositionsJSONBody,
 	RESTPostAPIGuildRoleJSONBody,
@@ -64,6 +65,7 @@ export class GuildRole extends DiscordBase {
 			delete: (roleId: string, reason?: string) => ctx.client.roles.delete(ctx.guildId, roleId, reason),
 			editPositions: (body: RESTPatchAPIGuildRolePositionsJSONBody): Promise<GuildRoleStructure[]> =>
 				ctx.client.roles.editPositions(ctx.guildId, body),
+			memberCounts: (): Promise<RESTGetAPIGuildRoleMemberCountsResult> => ctx.client.roles.memberCounts(ctx.guildId),
 		};
 	}
 }
