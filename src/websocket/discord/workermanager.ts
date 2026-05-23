@@ -209,17 +209,17 @@ export class WorkerManager extends Map<
 				this.set(i, worker);
 				return i;
 			};
-			const registerWorkerHeartbeat = (workerId: number) => {
+			const registerWorkerHeartbeat = (workerId: number, resharding: boolean) => {
 				this.heartbeater.register(workerId, deadWorkerId => {
 					this.heartbeater.unregister(deadWorkerId);
 					this.delete(deadWorkerId);
-					registerWorkerHeartbeat(registerWorker(false));
+					registerWorkerHeartbeat(registerWorker(resharding), resharding);
 				});
 			};
 			const workerExists = this.has(i);
 			if (rawResharding || !workerExists) {
 				this[rawResharding ? 'reshardingWorkerQueue' : 'workerQueue'].push(() => {
-					registerWorkerHeartbeat(registerWorker(rawResharding));
+					registerWorkerHeartbeat(registerWorker(rawResharding), rawResharding);
 				});
 			}
 		}
