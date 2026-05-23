@@ -10,7 +10,7 @@ import {
 } from '../common';
 import { toArrayBuffer, toBuffer } from '../common/it/utils';
 import type { WorkerData } from '../websocket';
-import type { WorkerSendApiRequest } from '../websocket/discord/worker';
+import { WORKER_TIMEOUT_MS, type WorkerSendApiRequest } from '../websocket/discord/worker';
 import { Bucket } from './bucket';
 import { CDNRouter, Router } from './Router';
 import type { APIRoutes } from './Routes';
@@ -135,7 +135,7 @@ export class ApiHandler {
 			const timeout = setTimeout(() => {
 				this.workerPromises!.delete(body.nonce);
 				rej(new SeyfertError('WORKER_TIMEOUT', { metadata: { detail: `nonce: ${body.nonce}` } }));
-			}, 30_000);
+			}, WORKER_TIMEOUT_MS);
 			this.workerPromises!.set(body.nonce, {
 				resolve: value => {
 					clearTimeout(timeout);

@@ -11,7 +11,7 @@ import { DynamicBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';
 import { Heartbeater, type WorkerHeartbeaterMessages } from './heartbeater';
 import type { ShardOptions, WorkerData, WorkerManagerOptions } from './shared';
-import type { WorkerInfo, WorkerMessages, WorkerShardInfo } from './worker';
+import { WORKER_TIMEOUT_MS, type WorkerInfo, type WorkerMessages, type WorkerShardInfo } from './worker';
 
 export class WorkerManager extends Map<
 	number,
@@ -517,7 +517,7 @@ export class WorkerManager extends Map<
 			const timeout = setTimeout(() => {
 				this.promises.delete(nonce);
 				rej(new SeyfertError('WORKER_TIMEOUT', { metadata: { ...{ nonce }, detail: message } }));
-			}, 60e3);
+			}, WORKER_TIMEOUT_MS);
 			this.promises.set(nonce, { resolve: res, timeout });
 		});
 	}

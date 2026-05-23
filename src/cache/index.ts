@@ -37,7 +37,7 @@ export type InferAsyncCache = InternalOptions extends { asyncCache: infer P } ? 
 export type ReturnCache<T> = If<InferAsyncCache, Promise<T>, T>;
 
 // GuildBased
-export type GuildBased = 'members' | 'voiceStates';
+export type GuildBased = 'members' | 'voiceStates' | 'bans';
 
 // ClientGuildBased
 export type GuildRelated =
@@ -48,8 +48,7 @@ export type GuildRelated =
 	| 'presences'
 	| 'stageInstances'
 	| 'overwrites'
-	| 'messages'
-	| 'bans';
+	| 'messages';
 
 // ClientBased
 export type NonGuildBased = 'users' | 'guilds';
