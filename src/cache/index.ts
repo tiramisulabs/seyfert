@@ -53,6 +53,9 @@ export type GuildRelated =
 // ClientBased
 export type NonGuildBased = 'users' | 'guilds';
 
+type BulkGetUnscoped = NonGuildBased | Exclude<GuildRelated, 'messages'>;
+type BulkGetScoped = GuildBased | 'messages';
+
 // ClientBased
 export type SeyfertBased = 'onPacket';
 
@@ -204,16 +207,16 @@ export class Cache {
 		keys: (
 			| readonly [
 					/* type */
-					NonGuildBased | GuildRelated,
+					BulkGetUnscoped,
 					/* source id */
 					string,
 			  ]
 			| readonly [
 					/* type */
-					GuildBased,
+					BulkGetScoped,
 					/* source id */
 					string,
-					/* guild id */
+					/* scope id */
 					string,
 			  ]
 		)[],
@@ -237,6 +240,7 @@ export class Cache {
 		const allData: Partial<Record<NonGuildBased | GuildBased | GuildRelated, string[][]>> = {};
 		for (const [type, id, guildId] of keys) {
 			switch (type) {
+				case 'messages':
 				case 'bans':
 				case 'voiceStates':
 				case 'members':
@@ -256,7 +260,6 @@ export class Cache {
 				case 'users':
 				case 'guilds':
 				case 'overwrites':
-				case 'messages':
 					{
 						if (!allData[type]) {
 							allData[type] = [];
