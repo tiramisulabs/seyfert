@@ -207,16 +207,19 @@ export class WorkerManager extends Map<
 					compress: this.options.compress,
 				});
 				this.set(i, worker);
+				return i;
+			};
+			const registerWorkerHeartbeat = (workerId: number) => {
+				this.heartbeater.register(workerId, deadWorkerId => {
+					this.heartbeater.unregister(deadWorkerId);
+					this.delete(deadWorkerId);
+					registerWorkerHeartbeat(registerWorker(false));
+				});
 			};
 			const workerExists = this.has(i);
 			if (rawResharding || !workerExists) {
 				this[rawResharding ? 'reshardingWorkerQueue' : 'workerQueue'].push(() => {
-					registerWorker(rawResharding);
-					this.heartbeater.register(i, () => {
-						this.heartbeater.unregister(i);
-						this.delete(i);
-						registerWorker(false);
-					});
+					registerWorkerHeartbeat(registerWorker(rawResharding));
 				});
 			}
 		}
