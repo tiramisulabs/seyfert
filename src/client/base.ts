@@ -569,11 +569,13 @@ interface RC extends ExtendedRC {
 	publicKey?: string;
 }
 
-export type ResolvedRC = Omit<RC, 'locations' | 'debug'> & {
-	locations: MakeRequired<RC['locations'], 'base'>;
-	debug: boolean;
-	intents: number;
-};
+export type ResolvedRC = Readonly<
+	Omit<RC, 'locations' | 'debug'> & {
+		locations: Readonly<MakeRequired<RC['locations'], 'base'>>;
+		debug: boolean;
+		intents: number;
+	}
+>;
 
 export type InternalRuntimeConfigHTTP = Omit<
 	MakeRequired<RC, 'publicKey' | 'port' | 'applicationId'>,

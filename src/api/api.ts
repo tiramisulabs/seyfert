@@ -165,11 +165,8 @@ export class ApiHandler {
 		}
 	}
 
-	async request<T = unknown>(
-		method: HttpMethods,
-		url: `/${string}`,
-		{ auth = true, ...request }: ApiRequestOptions = {},
-	): Promise<T> {
+	async request<T = unknown>(method: HttpMethods, url: `/${string}`, request: ApiRequestOptions = {}): Promise<T> {
+		const { auth = true } = request;
 		const retryRequest = request as ApiRequestOptions & { _50xRetries?: number };
 		let attempts = retryRequest._50xRetries ?? 0;
 		delete retryRequest._50xRetries;

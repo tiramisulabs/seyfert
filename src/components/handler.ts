@@ -312,7 +312,9 @@ export class ComponentHandler extends BaseHandler {
 		if (index === -1) return null;
 		this.client.components.commands.splice(index, 1);
 		const imported = await magicImport(component.__filePath).then(x => x.default ?? x);
-		const command = new imported();
+		const command = this.callback(imported);
+		if (!command) return null;
+		this.establishDefaults(command);
 		command.__filePath = component.__filePath;
 		this.client.components.commands.push(command);
 		return imported;

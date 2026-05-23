@@ -76,7 +76,8 @@ export function isObject(o: any): o is Record<string, unknown> {
 	return o && typeof o === 'object' && !Array.isArray(o);
 }
 
-function isPlainObject(o: object): o is Record<string, unknown> {
+function isPlainObject(o: unknown): o is Record<string, unknown> {
+	if (!o || typeof o !== 'object') return false;
 	const proto = Object.getPrototypeOf(o);
 	return proto === Object.prototype || proto === null;
 }
@@ -218,9 +219,7 @@ export function toSnakeCase<Obj extends Record<string, any>>(target: Obj): Objec
 					break;
 				}
 				if (Array.isArray(value)) {
-					result[ReplaceRegex.snake(key)] = value.map(prop =>
-						typeof prop === 'object' && prop ? toSnakeCase(prop) : prop,
-					);
+					result[ReplaceRegex.snake(key)] = value.map(prop => (isPlainObject(prop) ? toSnakeCase(prop) : prop));
 					break;
 				}
 				if (isPlainObject(value)) {
@@ -259,9 +258,7 @@ export function toCamelCase<Obj extends Record<string, any>>(target: Obj): Objec
 					break;
 				}
 				if (Array.isArray(value)) {
-					result[ReplaceRegex.camel(key)] = value.map(prop =>
-						typeof prop === 'object' && prop ? toCamelCase(prop) : prop,
-					);
+					result[ReplaceRegex.camel(key)] = value.map(prop => (isPlainObject(prop) ? toCamelCase(prop) : prop));
 					break;
 				}
 				if (isPlainObject(value)) {

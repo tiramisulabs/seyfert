@@ -76,7 +76,7 @@ export class BitField<T extends object> {
 		for (const bit of Array.isArray(bits) ? bits : [bits]) {
 			switch (typeof bit) {
 				case 'string':
-					if (bit in flags) {
+					if (Object.prototype.hasOwnProperty.call(flags, bit)) {
 						bitsResult |= flags[bit];
 					} else if (/^\d+$/.test(bit)) {
 						bitsResult |= BigInt(bit);
@@ -85,7 +85,7 @@ export class BitField<T extends object> {
 					}
 					break;
 				case 'number':
-					if (!Number.isInteger(bit) || bit < 0) {
+					if (!Number.isSafeInteger(bit) || bit < 0) {
 						throw new TypeError(`Cannot resolve bitfield: ${bit}`);
 					}
 					bitsResult |= BigInt(bit);

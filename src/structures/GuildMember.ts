@@ -260,7 +260,7 @@ export class GuildMember extends BaseGuildMember {
 		if (this.user.id === guild.ownerId) return false;
 		if (this.user.id === this.client.botId) return false;
 		if (this.client.botId === guild.ownerId) return true;
-		const [myHighest, theirHighest] = await Promise.all([me.roles.highest(), this.roles.highest(force)]);
+		const [myHighest, theirHighest] = await Promise.all([me.roles.highest(force), this.roles.highest(force)]);
 		return myHighest.position > theirHighest.position;
 	}
 

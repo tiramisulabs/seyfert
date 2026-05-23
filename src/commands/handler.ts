@@ -569,5 +569,5 @@ export type FileLoaded<T = null> = {
 } & Record<string, NulleableCoalising<T, HandleableCommand>>;
 
 export type HandleableCommand = new () => Command | SubCommand | ContextMenuCommand | EntryPointCommand;
-export type SettableCommand = new () => Extract<InstanceType<HandleableCommand>, SubCommand>;
+export type SettableCommand = new () => Exclude<InstanceType<HandleableCommand>, SubCommand>;
 export type HandleableSubCommand = new () => SubCommand;

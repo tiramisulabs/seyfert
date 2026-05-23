@@ -238,13 +238,14 @@ export class Cache {
 		const allData: Partial<Record<NonGuildBased | GuildBased | GuildRelated, string[][]>> = {};
 		for (const [type, id, guildId] of keys) {
 			switch (type) {
+				case 'bans':
 				case 'voiceStates':
 				case 'members':
 					{
 						if (!allData[type]) {
 							allData[type] = [];
 						}
-						allData[type]!.push([id, guildId]);
+						allData[type]!.push([id, guildId!]);
 					}
 					break;
 				case 'roles':
@@ -256,7 +257,6 @@ export class Cache {
 				case 'users':
 				case 'guilds':
 				case 'overwrites':
-				case 'bans':
 				case 'messages':
 					{
 						if (!allData[type]) {

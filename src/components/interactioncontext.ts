@@ -137,7 +137,7 @@ export abstract class InteractionResponseContext<
 	}
 
 	get channelId() {
-		return this._interaction.channel.id;
+		return (this._interaction as { channelId?: string }).channelId ?? this._interaction.channel!.id;
 	}
 
 	get author(): UserStructure {
