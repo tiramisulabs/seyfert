@@ -79,8 +79,12 @@ export class GuildBasedResource<T = any, S = any> {
 
 		if (!keys.length) return fakePromise(undefined).then(() => {}) as void;
 
-		return fakePromise(this.adapter.bulkGet(keys.map(([key]) => this.hashGuildId(guild, key)))).then(oldDatas =>
-			fakePromise(
+		return fakePromise(this.adapter.bulkGet(keys.map(([key]) => this.hashGuildId(guild, key)))).then(oldDatas => {
+			const oldDataMap = new Map<string, any>();
+			for (const item of oldDatas as any[]) {
+				if (item?.id) oldDataMap.set(item.id, item);
+			}
+			return fakePromise(
 				this.addToRelationship(
 					keys.map(x => x[0]),
 					guild,
@@ -88,12 +92,12 @@ export class GuildBasedResource<T = any, S = any> {
 			).then(() =>
 				this.adapter.bulkSet(
 					keys.map(([key, value]) => {
-						const oldData = oldDatas.find(x => x.id === key) ?? {};
+						const oldData = oldDataMap.get(key) ?? {};
 						return [this.hashGuildId(guild, key), this.parse({ ...oldData, ...value }, key, guild)];
 					}),
 				),
-			),
-		) as void;
+			);
+		}) as void;
 	}
 
 	remove(id: string | string[], guild: string) {
@@ -104,15 +108,23 @@ export class GuildBasedResource<T = any, S = any> {
 	}
 
 	keys(guild: string): ReturnCache<string[]> {
-		return this.adapter.scan(this.hashGuildId(guild, '*'), true) as string[];
+		if (guild === '*') return this.adapter.scan(this.hashGuildId(guild, '*'), true) as string[];
+		return fakePromise(this.adapter.getToRelationship(this.hashId(guild))).then(keys =>
+			keys.map(x => this.hashGuildId(guild, x)),
+		) as string[];
 	}
 
 	values(guild: string): ReturnCache<(T & { guild_id: string })[]> {
-		return this.adapter.scan(this.hashGuildId(guild, '*')) as any[];
+		if (guild === '*') return this.adapter.scan(this.hashGuildId(guild, '*')) as any[];
+		return fakePromise(this.adapter.getToRelationship(this.hashId(guild))).then(keys =>
+			this.adapter.bulkGet(keys.map(x => this.hashGuildId(guild, x))),
+		) as (T & { guild_id: string })[];
 	}
 
 	count(guild: string): ReturnCache<number> {
-		return fakePromise(this.adapter.scan(this.hashGuildId(guild, '*'), true)).then(data => data.length);
+		if (guild === '*')
+			return fakePromise(this.adapter.scan(this.hashGuildId(guild, '*'), true)).then(data => data.length);
+		return this.adapter.count(this.hashId(guild)) as number;
 	}
 
 	contains(id: string, guild: string): ReturnCache<boolean> {

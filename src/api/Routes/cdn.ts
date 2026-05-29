@@ -22,7 +22,7 @@ export interface CDNRoute {
 	splashes(guildId: string): {
 		get(hash: string, options?: BaseCDNUrlOptions): string;
 	};
-	'discovery-splashes'(guidId: string): {
+	'discovery-splashes'(guildId: string): {
 		get(hash: string, options?: BaseCDNUrlOptions): string;
 	};
 	banners(id: string): {

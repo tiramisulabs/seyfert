@@ -10,7 +10,7 @@ import {
 } from '../common';
 import { toArrayBuffer, toBuffer } from '../common/it/utils';
 import type { WorkerData } from '../websocket';
-import type { WorkerSendApiRequest } from '../websocket/discord/worker';
+import { WORKER_TIMEOUT_MS, type WorkerSendApiRequest } from '../websocket/discord/worker';
 import { Bucket } from './bucket';
 import { CDNRouter, Router } from './Router';
 import type { APIRoutes } from './Routes';
@@ -124,13 +124,28 @@ export class ApiHandler {
 	}
 
 	protected sendMessage(_body: WorkerSendApiRequest) {
-		throw new SeyfertError('FUNCTION_NOT_IMPLEMENTED', { metadata: { detail: 'Function not implemented' } });
+		throw new SeyfertError('FUNCTION_NOT_IMPLEMENTED', {
+			metadata: { detail: 'Function not implemented' },
+		});
 	}
 
 	protected postMessage<T = unknown>(body: WorkerSendApiRequest) {
 		this.sendMessage(body);
 		return new Promise<T>((res, rej) => {
-			this.workerPromises!.set(body.nonce, { reject: rej, resolve: res });
+			const timeout = setTimeout(() => {
+				this.workerPromises!.delete(body.nonce);
+				rej(new SeyfertError('WORKER_TIMEOUT', { metadata: { detail: `nonce: ${body.nonce}` } }));
+			}, WORKER_TIMEOUT_MS);
+			this.workerPromises!.set(body.nonce, {
+				resolve: value => {
+					clearTimeout(timeout);
+					res(value);
+				},
+				reject: reason => {
+					clearTimeout(timeout);
+					rej(reason);
+				},
+			});
 		});
 	}
 
@@ -150,11 +165,11 @@ export class ApiHandler {
 		}
 	}
 
-	async request<T = unknown>(
-		method: HttpMethods,
-		url: `/${string}`,
-		{ auth = true, ...request }: ApiRequestOptions = {},
-	): Promise<T> {
+	async request<T = unknown>(method: HttpMethods, url: `/${string}`, request: ApiRequestOptions = {}): Promise<T> {
+		const { auth = true } = request;
+		const retryRequest = request as ApiRequestOptions & { _50xRetries?: number };
+		let attempts = retryRequest._50xRetries ?? 0;
+		delete retryRequest._50xRetries;
 		const originTrace: { stack?: string } = {};
 		Error.captureStackTrace(originTrace, this.request);
 
@@ -170,7 +185,6 @@ export class ApiHandler {
 			});
 		}
 		const route = request.route || this.routefy(url, method);
-		let attempts = 0;
 
 		const callback = async (next: () => void, resolve: (data: any) => void, reject: (err: unknown) => void) => {
 			const headers = {
@@ -219,7 +233,7 @@ export class ApiHandler {
 				}
 				if ([502, 503].includes(response.status) && ++attempts < 4) {
 					this.clearResetInterval(route);
-					return this.handle50X(method, url, request, next);
+					return this.handle50X(method, url, request, attempts, next, resolve, reject);
 				}
 				this.clearResetInterval(route);
 				next();
@@ -348,18 +362,26 @@ export class ApiHandler {
 		return errors;
 	}
 
-	async handle50X(method: HttpMethods, url: `/${string}`, request: ApiRequestOptions, next: () => void) {
+	async handle50X(
+		method: HttpMethods,
+		url: `/${string}`,
+		request: ApiRequestOptions,
+		attempts: number,
+		next: () => void,
+		resolve: (value: unknown) => void,
+		reject: (err: unknown) => void,
+	) {
 		const wait = Math.floor(Math.random() * 1900 + 100);
 		this.debugger?.warn(`Handling a 50X status, retrying in ${wait}ms`);
 		next();
 		await delay(wait);
 		return this.request(method, url, {
-			body: request.body,
-			auth: request.auth,
-			reason: request.reason,
-			route: request.route,
+			...request,
 			unshift: true,
-		});
+			_50xRetries: attempts,
+		} as ApiRequestOptions)
+			.then(resolve)
+			.catch(reject);
 	}
 
 	async handle429(
@@ -462,8 +484,8 @@ export class ApiHandler {
 			this.ratelimits.get(route)!.limit = +resp.headers.get('x-ratelimit-limit')!;
 		}
 
-		this.ratelimits.get(route)!.remaining =
-			resp.headers.get('x-ratelimit-remaining') === undefined ? 1 : +resp.headers.get('x-ratelimit-remaining')!;
+		const raw = resp.headers.get('x-ratelimit-remaining');
+		this.ratelimits.get(route)!.remaining = raw != null ? +raw : 1;
 
 		if (this.options.smartBucket) {
 			if (

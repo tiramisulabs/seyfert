@@ -71,7 +71,7 @@ export class VoiceState extends Base {
 
 	async requestSpeak(date: string | Date = new Date()) {
 		if (typeof date === 'string') date = new Date(date);
-		if (Number.isNaN(date)) return Promise.reject('Invalid date');
+		if (Number.isNaN(date.getTime())) return Promise.reject('Invalid date');
 		date = date.toISOString();
 		await this.client.voiceStates.requestSpeak(this.guildId, date);
 		this.requestToSpeakTimestamp = date;

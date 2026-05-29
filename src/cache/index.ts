@@ -37,7 +37,7 @@ export type InferAsyncCache = InternalOptions extends { asyncCache: infer P } ? 
 export type ReturnCache<T> = If<InferAsyncCache, Promise<T>, T>;
 
 // GuildBased
-export type GuildBased = 'members' | 'voiceStates';
+export type GuildBased = 'members' | 'voiceStates' | 'bans';
 
 // ClientGuildBased
 export type GuildRelated =
@@ -48,11 +48,13 @@ export type GuildRelated =
 	| 'presences'
 	| 'stageInstances'
 	| 'overwrites'
-	| 'messages'
-	| 'bans';
+	| 'messages';
 
 // ClientBased
 export type NonGuildBased = 'users' | 'guilds';
+
+type BulkGetUnscoped = NonGuildBased | Exclude<GuildRelated, 'messages'>;
+type BulkGetScoped = GuildBased | 'messages';
 
 // ClientBased
 export type SeyfertBased = 'onPacket';
@@ -189,7 +191,7 @@ export class Cache {
 		return this.hasIntent('GuildVoiceStates');
 	}
 
-	get hasPrenseceUpdates() {
+	get hasPresenceUpdates() {
 		return this.hasIntent('GuildPresences');
 	}
 
@@ -205,16 +207,16 @@ export class Cache {
 		keys: (
 			| readonly [
 					/* type */
-					NonGuildBased | GuildRelated,
+					BulkGetUnscoped,
 					/* source id */
 					string,
 			  ]
 			| readonly [
 					/* type */
-					GuildBased,
+					BulkGetScoped,
 					/* source id */
 					string,
-					/* guild id */
+					/* scope id */
 					string,
 			  ]
 		)[],
@@ -238,13 +240,15 @@ export class Cache {
 		const allData: Partial<Record<NonGuildBased | GuildBased | GuildRelated, string[][]>> = {};
 		for (const [type, id, guildId] of keys) {
 			switch (type) {
+				case 'messages':
+				case 'bans':
 				case 'voiceStates':
 				case 'members':
 					{
 						if (!allData[type]) {
 							allData[type] = [];
 						}
-						allData[type]!.push([id, guildId]);
+						allData[type]!.push([id, guildId!]);
 					}
 					break;
 				case 'roles':
@@ -256,8 +260,6 @@ export class Cache {
 				case 'users':
 				case 'guilds':
 				case 'overwrites':
-				case 'bans':
-				case 'messages':
 					{
 						if (!allData[type]) {
 							allData[type] = [];
@@ -325,7 +327,6 @@ export class Cache {
 				case 'stageInstances':
 				case 'emojis':
 				case 'overwrites':
-				case 'bans':
 				case 'messages':
 					{
 						if (!this[type]?.filter(data, id, guildId, from)) continue;
@@ -351,6 +352,7 @@ export class Cache {
 						allData.push([this[type]!.hashId(id), this[type]!.parse(data, id, guildId!)]);
 					}
 					break;
+				case 'bans':
 				case 'voiceStates':
 				case 'members':
 					{

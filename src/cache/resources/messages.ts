@@ -37,18 +37,18 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 
 	override bulk(ids: string[]): ReturnCache<MessageStructure[]> {
 		return fakePromise(super.bulk(ids) as APIMessageResource[]).then(messages => {
-			const userHashes = this.cache.users
-				? messages.flatMap(message => (message.user_id ? [this.cache.users!.hashId(message.user_id)] : []))
+			const hashes: (string | undefined)[] = this.cache.users
+				? messages.map(x => (x.user_id ? this.cache.users?.hashId(x.user_id) : undefined))
 				: [];
-
-			return fakePromise(this.cache.adapter.bulkGet(userHashes) as APIUser[]).then(users => {
-				const usersById = new Map(users.map(user => [user.id, user]));
-				return messages
-					.map(message => {
-						const user = message.user_id ? usersById.get(message.user_id) : undefined;
-						return user ? Transformers.Message(this.client, { ...message, author: user }) : undefined;
-					})
-					.filter((message): message is MessageStructure => message !== undefined);
+			return fakePromise(this.cache.adapter.bulkGet(hashes.filter(x => x !== undefined)) as APIUser[]).then(users => {
+				const userMap = new Map<string, APIUser>();
+				for (const user of users) userMap.set(user.id, user);
+				const result: MessageStructure[] = [];
+				for (const message of messages) {
+					const user = message.user_id ? userMap.get(message.user_id) : undefined;
+					if (user) result.push(Transformers.Message(this.client, { ...message, author: user }));
+				}
+				return result;
 			});
 		});
 	}
@@ -63,13 +63,14 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 				? messages.map(x => (x.user_id ? this.cache.users?.hashId(x.user_id) : undefined))
 				: [];
 			return fakePromise(this.cache.adapter.bulkGet(hashes.filter(x => x !== undefined)) as APIUser[]).then(users => {
-				const usersById = new Map(users.map(user => [user.id, user]));
-				return messages
-					.map(message => {
-						const user = message.user_id ? usersById.get(message.user_id) : undefined;
-						return user ? Transformers.Message(this.client, { ...message, author: user }) : undefined;
-					})
-					.filter((message): message is MessageStructure => message !== undefined);
+				const userMap = new Map<string, APIUser>();
+				for (const user of users) userMap.set(user.id, user);
+				const result: MessageStructure[] = [];
+				for (const message of messages) {
+					const user = message.user_id ? userMap.get(message.user_id) : undefined;
+					if (user) result.push(Transformers.Message(this.client, { ...message, author: user }));
+				}
+				return result;
 			});
 		});
 	}

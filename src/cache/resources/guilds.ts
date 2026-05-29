@@ -44,6 +44,29 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 
 	override async remove(id: string) {
 		const keysChannels = (await this.cache.channels?.keys(id)) ?? [];
+		const channelIds = this.cache.channels
+			? keysChannels.map(i => i.slice(this.cache.channels!.namespace.length + 1))
+			: [];
+
+		const overwriteKeys = this.cache.overwrites ? ((await this.cache.overwrites.keys(id)) ?? []) : [];
+		const messageKeys: string[] = [];
+		const messageRelationships: string[] = [];
+		const overwriteRelationships = this.cache.overwrites ? [this.cache.overwrites.hashId(id)] : [];
+
+		if (this.cache.messages) {
+			const messageEntries = await Promise.allSettled(
+				channelIds.map(async channelId => ({
+					keys: await this.cache.messages!.keys(channelId),
+					relationship: this.cache.messages!.hashId(channelId),
+				})),
+			);
+			for (const { value } of messageEntries.filter(result => result.status === 'fulfilled')) {
+				const { keys, relationship } = value;
+				messageKeys.push(...keys);
+				messageRelationships.push(relationship);
+			}
+		}
+
 		await this.cache.adapter.bulkRemove(
 			(
 				await Promise.all([
@@ -57,18 +80,10 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 					this.cache.stageInstances?.keys(id) ?? [],
 					this.cache.bans?.keys(id) ?? [],
 				])
-			).flat(),
+			)
+				.flat()
+				.concat(overwriteKeys, messageKeys),
 		);
-
-		if (this.cache.messages && this.cache.channels) {
-			const keysMessages: string[] = [];
-			for (const i of keysChannels) {
-				const channelId = i.slice(this.cache.channels.namespace.length + 1);
-				const messages = await this.cache.messages.keys(channelId);
-				keysMessages.push(...messages);
-			}
-			if (keysMessages.length) await this.cache.adapter.bulkRemove(keysMessages);
-		}
 
 		await this.cache.adapter.removeRelationship(
 			[
@@ -80,6 +95,9 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 				this.cache.voiceStates?.hashId(id),
 				this.cache.presences?.hashId(id),
 				this.cache.stageInstances?.hashId(id),
+				this.cache.bans?.hashId(id),
+				...overwriteRelationships,
+				...messageRelationships,
 			].filter(x => x !== undefined),
 		);
 

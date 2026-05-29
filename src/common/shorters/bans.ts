@@ -60,7 +60,7 @@ export class BanShorter extends BaseShorter {
 		}
 
 		ban = await this.client.proxy.guilds(guildId).bans(userId).get();
-		await this.client.cache.members?.set(CacheFrom.Rest, ban.user.id, guildId, ban);
+		await this.client.cache.bans?.set(CacheFrom.Rest, ban.user.id, guildId, ban);
 		return Transformers.GuildBan(this.client, ban, guildId);
 	}
 

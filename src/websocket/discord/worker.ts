@@ -2,6 +2,8 @@ import type { ApiRequestOptions, CustomWorkerClientEvents, HttpMethods } from '.
 import type { Identify } from '../../common';
 import type { GatewayDispatchPayload } from '../../types';
 
+export const WORKER_TIMEOUT_MS = 60_000;
+
 export interface WorkerShardInfo {
 	open: boolean;
 	shardId: number;
