@@ -1,6 +1,5 @@
 import { resolveFiles } from '../../builders';
 import { CacheFrom } from '../../cache';
-import type { Channels } from '../../cache/resources/channels';
 import {
 	type AnonymousGuildStructure,
 	type AutoModerationRuleStructure,
@@ -20,7 +19,6 @@ import {
 } from '../../structures';
 import type {
 	APIChannel,
-	APISticker,
 	GuildWidgetStyle,
 	RESTGetAPICurrentUserGuildsQuery,
 	RESTGetAPIGuildMessagesSearch,
@@ -33,6 +31,7 @@ import type {
 	RESTPatchAPIGuildJSONBody,
 	RESTPatchAPIGuildStickerJSONBody,
 	RESTPostAPIAutoModerationRuleJSONBody,
+	RESTPostAPIChannelFollowersResult,
 	RESTPostAPIGuildChannelJSONBody,
 } from '../../types';
 import type { APITextChannel } from '../../types/payloads/channel';
@@ -169,14 +168,14 @@ export class GuildShorter extends BaseShorter {
 		 * @returns A Promise that resolves to an array of channels.
 		 */
 		list: async (guildId: string, force = false): Promise<AllChannels[]> => {
-			let channels: ReturnType<Channels['values']> | APIChannel[];
 			if (!force) {
-				channels = (await this.client.cache.channels?.values(guildId)) ?? [];
-				if (channels.length) {
-					return channels;
+				const cachedChannels = (await this.client.cache.channels?.values(guildId)) ?? [];
+				if (cachedChannels.length) {
+					return cachedChannels;
 				}
 			}
-			channels = await this.client.proxy.guilds(guildId).channels.get();
+
+			const channels = await this.client.proxy.guilds(guildId).channels.get();
 			await this.client.cache.channels?.set(
 				CacheFrom.Rest,
 				channels.map<[string, APIChannel]>(x => [x.id, x]),
@@ -207,19 +206,8 @@ export class GuildShorter extends BaseShorter {
 		 * @param force Whether to force fetching the channel from the API even if it exists in the cache.
 		 * @returns A Promise that resolves to the fetched channel.
 		 */
-		fetch: async (guildId: string, channelId: string, force?: boolean) => {
-			let channel: APIChannel | ReturnType<Channels['get']>;
-			if (!force) {
-				channel = await this.client.cache.channels?.get(channelId);
-				if (channel) return channel as ReturnType<typeof channelFrom>;
-			}
-
-			channel = await this.client.proxy.channels(channelId).get();
-			await this.client.cache.channels?.patch(CacheFrom.Rest, channelId, guildId, channel);
-			if ('permission_overwrites' in channel && channel.permission_overwrites) {
-				await this.client.cache.overwrites?.set(CacheFrom.Rest, channelId, guildId, channel.permission_overwrites);
-			}
-			return channelFrom(channel, this.client);
+		fetch: async (_guildId: string, channelId: string, force?: boolean) => {
+			return this.client.channels.fetch(channelId, force);
 		},
 
 		/**
@@ -245,29 +233,19 @@ export class GuildShorter extends BaseShorter {
 		 * @returns A Promise that resolves to the deleted channel.
 		 */
 		delete: async (guildId: string, channelId: string, reason?: string) => {
-			const res = await this.client.proxy.channels(channelId).delete({ reason });
-			await this.client.cache.channels?.removeIfNI(BaseChannel.__intent__(guildId), res.id, guildId);
-			return channelFrom(res, this.client);
+			return this.client.channels.delete(channelId, { guildId, reason });
 		},
 
 		/**
 		 * Edits a channel in the guild.
-		 * @param guildchannelId The ID of the guild.
+		 * @param guildId The ID of the guild.
 		 * @param channelId The ID of the channel to edit.
 		 * @param body The data to update the channel with.
 		 * @param reason The reason for editing the channel.
 		 * @returns A Promise that resolves to the edited channel.
 		 */
-		edit: async (guildchannelId: string, channelId: string, body: RESTPatchAPIChannelJSONBody, reason?: string) => {
-			const res = await this.client.proxy.channels(channelId).patch({ body, reason });
-			await this.client.cache.channels?.setIfNI(
-				CacheFrom.Rest,
-				BaseChannel.__intent__(guildchannelId),
-				res.id,
-				guildchannelId,
-				res,
-			);
-			return channelFrom(res, this.client);
+		edit: async (guildId: string, channelId: string, body: RESTPatchAPIChannelJSONBody, reason?: string) => {
+			return this.client.channels.edit(channelId, body, { guildId, reason });
 		},
 
 		/**
@@ -278,7 +256,11 @@ export class GuildShorter extends BaseShorter {
 		editPositions: (guildId: string, body: RESTPatchAPIGuildChannelPositionsJSONBody) =>
 			this.client.proxy.guilds(guildId).channels.patch({ body }),
 
-		addFollower: async (channelId: string, webhook_channel_id: string, reason?: string) => {
+		addFollower: async (
+			channelId: string,
+			webhook_channel_id: string,
+			reason?: string,
+		): Promise<RESTPostAPIChannelFollowersResult> => {
 			return this.client.proxy.channels(channelId).followers.post({
 				body: {
 					webhook_channel_id,
@@ -428,12 +410,12 @@ export class GuildShorter extends BaseShorter {
 		 * @returns A Promise that resolves to the fetched sticker.
 		 */
 		fetch: async (guildId: string, stickerId: string, force = false): Promise<StickerStructure> => {
-			let sticker: APISticker | StickerStructure | undefined;
 			if (!force) {
-				sticker = await this.client.cache.stickers?.get(stickerId);
-				if (sticker) return sticker;
+				const cachedSticker = await this.client.cache.stickers?.get(stickerId);
+				if (cachedSticker) return cachedSticker;
 			}
-			sticker = await this.client.proxy.guilds(guildId).stickers(stickerId).get();
+
+			const sticker = await this.client.proxy.guilds(guildId).stickers(stickerId).get();
 			await this.client.cache.stickers?.patch(CacheFrom.Rest, stickerId, guildId, sticker);
 			return Transformers.Sticker(this.client, sticker);
 		},

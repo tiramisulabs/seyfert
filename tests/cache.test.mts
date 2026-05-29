@@ -1,6 +1,6 @@
 import { assert, describe, expect, test } from 'vitest';
-import { CacheFrom, Client, LimitedMemoryAdapter, MemoryAdapter } from '../lib/index';
-import { BaseClient } from '../lib/client/base';
+import { Cache, CacheFrom, Client, LimitedMemoryAdapter, MemoryAdapter } from '../src/index';
+import { BaseClient } from '../src/client/base';
 
 // all intents
 const intents = 53608447;
@@ -237,6 +237,56 @@ describe('test limited memory cache adapter indexing', () => {
 			false,
 		);
 	});
+	test('relationship reads do not allocate empty buckets', () => {
+		const adapter = new LimitedMemoryAdapter();
+		const relationships = (adapter as LimitedMemoryAdapter<unknown> & { relationships: Map<string, unknown> }).relationships;
+
+		assert.equal(adapter.contains('message.channel-1', 'message-1'), false);
+		assert.deepEqual(adapter.getToRelationship('message.channel-1'), []);
+		assert.deepEqual(adapter.keys('message.channel-1'), []);
+		assert.equal(adapter.count('message.channel-1'), 0);
+		assert.equal(relationships.size, 0);
+
+		adapter.addToRelationship('message.channel-1', 'message-1');
+		assert.equal(adapter.contains('message.channel-1', 'message-1'), true);
+
+		adapter.removeToRelationship('message.channel-1', 'message-1');
+		assert.equal(relationships.size, 0);
+	});
+
+	test('message cache stores authors so transformed messages can be read back', async () => {
+		const client: any = {};
+		const cache = new Cache(0, new MemoryAdapter(), {}, client);
+		client.cache = cache;
+		const message = {
+			attachments: [],
+			author: { avatar: null, discriminator: '0001', id: 'user-1', username: 'socram' },
+			channel_id: 'channel-1',
+			components: [],
+			content: 'hello',
+			edited_timestamp: null,
+			embeds: [],
+			flags: 0,
+			id: 'message-1',
+			mention_everyone: false,
+			mention_roles: [],
+			mentions: [],
+			pinned: false,
+			timestamp: new Date(0).toISOString(),
+			tts: false,
+			type: 0,
+		};
+
+		await cache.messages?.set(CacheFrom.Rest, message.id, message.channel_id, message);
+
+		const cachedMessage = await cache.messages?.get(message.id);
+		const rawMessage = await cache.messages?.raw(message.id);
+
+		assert.equal(cachedMessage?.author.id, message.author.id);
+		assert.equal(rawMessage?.user_id, message.author.id);
+		assert.equal(await cache.users?.raw(message.author.id), message.author);
+	});
+
 });
 
 describe('base client runtime config cache', () => {

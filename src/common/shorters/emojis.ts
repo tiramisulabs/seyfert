@@ -60,6 +60,7 @@ export class EmojiShorter extends BaseShorter {
 			if (emoji) return emoji;
 		}
 		const emoji = await this.client.proxy.guilds(guildId).emojis(emojiId).get();
+		await this.client.cache.emojis?.set(CacheFrom.Rest, emoji.id!, guildId, emoji);
 		return Transformers.GuildEmoji(this.client, emoji, guildId);
 	}
 

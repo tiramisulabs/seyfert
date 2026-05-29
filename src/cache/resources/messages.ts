@@ -82,6 +82,24 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 	keys(channel: string) {
 		return super.keys(channel);
 	}
+
+	private _buildCacheEntries(from: CacheFrom, keys: [string, any][], channelId: string) {
+		return keys.map(([id, value]) => [from, 'messages', value, id, channelId] as const);
+	}
+
+	override async set(from: CacheFrom, messageId: string, channelId: string, data: any): Promise<void>;
+	override async set(from: CacheFrom, messageDataArray: [string, any][], channelId: string): Promise<void>;
+	override async set(from: CacheFrom, __keys: string | [string, any][], channelId: string, data?: any) {
+		const keys: [string, any][] = Array.isArray(__keys) ? __keys : [[__keys, data]];
+		await this.cache.bulkSet(this._buildCacheEntries(from, keys, channelId));
+	}
+
+	override async patch(from: CacheFrom, messageId: string, channelId: string, data: any): Promise<void>;
+	override async patch(from: CacheFrom, messageDataArray: [string, any][], channelId: string): Promise<void>;
+	override async patch(from: CacheFrom, __keys: string | [string, any][], channelId: string, data?: any) {
+		const keys: [string, any][] = Array.isArray(__keys) ? __keys : [[__keys, data]];
+		await this.cache.bulkPatch(this._buildCacheEntries(from, keys, channelId));
+	}
 }
 
 export type APIMessageResource = Omit<APIMessage, 'author' | 'member'> & { user_id?: string };
