@@ -340,6 +340,14 @@ export class Cache {
 						if (type !== 'overwrites' && type !== 'messages') {
 							data.guild_id = guildId;
 						}
+						if (type === 'messages' && data?.author?.id && this.users?.filter(data.author, data.author.id, from)) {
+							const userHashId = this.users.namespace;
+							if (!(userHashId in relationshipsData)) {
+								relationshipsData[userHashId] = [];
+							}
+							relationshipsData[userHashId].push(data.author.id);
+							allData.push([this.users.hashId(data.author.id), data.author]);
+						}
 						allData.push([this[type]!.hashId(id), this[type]!.parse(data, id, guildId!)]);
 					}
 					break;
@@ -431,6 +439,14 @@ export class Cache {
 						relationshipsData[hashId].push(id);
 						if (type !== 'overwrites' && type !== 'messages') {
 							data.guild_id = guildId;
+						}
+						if (type === 'messages' && data?.author?.id && this.users?.filter(data.author, data.author.id, from)) {
+							const userHashId = this.users.namespace;
+							if (!(userHashId in relationshipsData)) {
+								relationshipsData[userHashId] = [];
+							}
+							relationshipsData[userHashId].push(data.author.id);
+							allData.push([this.users.hashId(data.author.id), data.author]);
 						}
 						allData.push([this[type]!.hashId(id), this[type]!.parse(data, id, guildId!)]);
 					}

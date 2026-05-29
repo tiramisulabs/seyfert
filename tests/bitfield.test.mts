@@ -1,7 +1,7 @@
 import { assert, describe, test } from 'vitest';
-import { BitField } from '../lib/structures/extra/BitField';
-import { PermissionsBitField } from '../lib/structures/extra/Permissions';
-import { PermissionFlagsBits } from '../lib/types';
+import { BitField } from '../src/structures/extra/BitField';
+import { PermissionsBitField } from '../src/structures/extra/Permissions';
+import { PermissionFlagsBits } from '../src/types';
 
 describe('PermissionsBitField', () => {
 	test('constructor', () => {

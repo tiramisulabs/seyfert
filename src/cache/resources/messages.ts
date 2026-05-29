@@ -36,19 +36,21 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 	}
 
 	override bulk(ids: string[]): ReturnCache<MessageStructure[]> {
-		return fakePromise(super.bulk(ids) as APIMessageResource[]).then(messages =>
-			messages
-				.map(rawMessage => {
-					return this.cache.users && rawMessage?.user_id
-						? fakePromise(
-								this.cache.adapter.get(this.cache.users.hashId(rawMessage.user_id)) as APIUser | undefined,
-							).then(user => {
-								return user ? Transformers.Message(this.client, { ...rawMessage, author: user }) : undefined;
-							})
-						: undefined;
-				})
-				.filter(x => x !== undefined),
-		);
+		return fakePromise(super.bulk(ids) as APIMessageResource[]).then(messages => {
+			const userHashes = this.cache.users
+				? messages.flatMap(message => (message.user_id ? [this.cache.users!.hashId(message.user_id)] : []))
+				: [];
+
+			return fakePromise(this.cache.adapter.bulkGet(userHashes) as APIUser[]).then(users => {
+				const usersById = new Map(users.map(user => [user.id, user]));
+				return messages
+					.map(message => {
+						const user = message.user_id ? usersById.get(message.user_id) : undefined;
+						return user ? Transformers.Message(this.client, { ...message, author: user }) : undefined;
+					})
+					.filter((message): message is MessageStructure => message !== undefined);
+			});
+		});
 	}
 
 	bulkRaw(ids: string[]): ReturnCache<APIMessageResource[]> {
@@ -61,12 +63,13 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 				? messages.map(x => (x.user_id ? this.cache.users?.hashId(x.user_id) : undefined))
 				: [];
 			return fakePromise(this.cache.adapter.bulkGet(hashes.filter(x => x !== undefined)) as APIUser[]).then(users => {
+				const usersById = new Map(users.map(user => [user.id, user]));
 				return messages
 					.map(message => {
-						const user = users.find(user => user.id === message.user_id);
+						const user = message.user_id ? usersById.get(message.user_id) : undefined;
 						return user ? Transformers.Message(this.client, { ...message, author: user }) : undefined;
 					})
-					.filter(x => x !== undefined);
+					.filter((message): message is MessageStructure => message !== undefined);
 			});
 		});
 	}
@@ -77,6 +80,24 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 
 	keys(channel: string) {
 		return super.keys(channel);
+	}
+
+	private _buildCacheEntries(from: CacheFrom, keys: [string, any][], channelId: string) {
+		return keys.map(([id, value]) => [from, 'messages', value, id, channelId] as const);
+	}
+
+	override async set(from: CacheFrom, messageId: string, channelId: string, data: any): Promise<void>;
+	override async set(from: CacheFrom, messageDataArray: [string, any][], channelId: string): Promise<void>;
+	override async set(from: CacheFrom, __keys: string | [string, any][], channelId: string, data?: any) {
+		const keys: [string, any][] = Array.isArray(__keys) ? __keys : [[__keys, data]];
+		await this.cache.bulkSet(this._buildCacheEntries(from, keys, channelId));
+	}
+
+	override async patch(from: CacheFrom, messageId: string, channelId: string, data: any): Promise<void>;
+	override async patch(from: CacheFrom, messageDataArray: [string, any][], channelId: string): Promise<void>;
+	override async patch(from: CacheFrom, __keys: string | [string, any][], channelId: string, data?: any) {
+		const keys: [string, any][] = Array.isArray(__keys) ? __keys : [[__keys, data]];
+		await this.cache.bulkPatch(this._buildCacheEntries(from, keys, channelId));
 	}
 }
 

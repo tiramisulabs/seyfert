@@ -89,7 +89,7 @@ export class MemoryAdapter<T> implements Adapter {
 		for (const key of data) {
 			const content = this.get(key);
 
-			if (content) {
+			if (content !== undefined && content !== null) {
 				array.push(content);
 			}
 		}

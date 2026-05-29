@@ -1,7 +1,18 @@
 import { LimitedCollection } from '../..';
 import { type MakeRequired, MergeOptions } from '../../common';
 import type { Adapter } from './types';
-//TODO: optimizar esto
+
+const namespaceIndexedResources = new Set([
+	'channel',
+	'emoji',
+	'presence',
+	'role',
+	'stage_instance',
+	'sticker',
+	'overwrite',
+	'message',
+]);
+const scopeDerivedResources = new Set(['ban', 'member', 'voice_state']);
 export interface ResourceLimitedMemoryAdapter {
 	expire?: number;
 	limit?: number;
@@ -108,19 +119,7 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	}
 
 	private _supportsNamespaceIndex(resource: string) {
-		switch (resource) {
-			case 'channel':
-			case 'emoji':
-			case 'presence':
-			case 'role':
-			case 'stage_instance':
-			case 'sticker':
-			case 'overwrite':
-			case 'message':
-				return true;
-			default:
-				return false;
-		}
+		return namespaceIndexedResources.has(resource);
 	}
 
 	private _setIndexedStorage(resource: string, key: string, storageEntry: LimitedCollection<string, T>) {
@@ -145,14 +144,7 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	}
 
 	private _getDerivedNamespace(resource: string, scope: string) {
-		switch (resource) {
-			case 'ban':
-			case 'member':
-			case 'voice_state':
-				return scope ? `${resource}.${scope}` : resource;
-			default:
-				return resource;
-		}
+		return scope && scopeDerivedResources.has(resource) ? `${resource}.${scope}` : resource;
 	}
 
 	private _isResourceNamespace(resource: string, namespace: string) {
@@ -342,15 +334,20 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	}
 
 	keys(to: string) {
+		const relationship = this._getRelationshipSet(to);
+		if (!relationship) {
+			return [];
+		}
+
 		const result: string[] = [];
-		for (const id of this._getRelationshipSet(to)) {
+		for (const id of relationship) {
 			result.push(`${to}.${id}`);
 		}
 		return result;
 	}
 
 	count(to: string) {
-		return this._getRelationshipSet(to).size;
+		return this._getRelationshipSet(to)?.size ?? 0;
 	}
 
 	bulkRemove(keys: string[]) {
@@ -382,7 +379,7 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	}
 
 	contains(to: string, keys: string): boolean {
-		return this._getRelationshipSet(to).has(keys);
+		return this._getRelationshipSet(to)?.has(keys) ?? false;
 	}
 
 	private _getRelationshipData(to: string) {
@@ -392,16 +389,28 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 
 	private _getRelationshipSet(to: string) {
 		const { key, subrelationKey } = this._getRelationshipData(to);
-		if (!this.relationships.has(key)) this.relationships.set(key, new Map<string, Set<string>>());
-		const relation = this.relationships.get(key)!;
-		if (!relation.has(subrelationKey)) {
-			relation.set(subrelationKey, new Set<string>());
+		return this.relationships.get(key)?.get(subrelationKey);
+	}
+
+	private _ensureRelationshipSet(to: string) {
+		const { key, subrelationKey } = this._getRelationshipData(to);
+		let relation = this.relationships.get(key);
+		if (!relation) {
+			relation = new Map<string, Set<string>>();
+			this.relationships.set(key, relation);
 		}
-		return relation.get(subrelationKey)!;
+
+		let values = relation.get(subrelationKey);
+		if (!values) {
+			values = new Set<string>();
+			relation.set(subrelationKey, values);
+		}
+
+		return values;
 	}
 
 	getToRelationship(to: string): string[] {
-		return [...this._getRelationshipSet(to)];
+		return [...(this._getRelationshipSet(to) ?? [])];
 	}
 
 	bulkAddToRelationShip(data: Record<string, string[]>) {
@@ -411,7 +420,7 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	}
 
 	addToRelationship(to: string, keys: string | string[]) {
-		const data = this._getRelationshipSet(to);
+		const data = this._ensureRelationshipSet(to);
 
 		for (const key of Array.isArray(keys) ? keys : [keys]) {
 			data.add(key);
@@ -420,8 +429,19 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 
 	removeToRelationship(to: string, keys: string | string[]) {
 		const data = this._getRelationshipSet(to);
+		if (!data) {
+			return;
+		}
+
 		for (const key of Array.isArray(keys) ? keys : [keys]) {
 			data.delete(key);
+		}
+
+		if (!data.size) {
+			const { key, subrelationKey } = this._getRelationshipData(to);
+			const relation = this.relationships.get(key);
+			relation?.delete(subrelationKey);
+			if (relation && !relation.size) this.relationships.delete(key);
 		}
 	}
 
