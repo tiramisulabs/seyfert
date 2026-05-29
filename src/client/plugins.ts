@@ -69,8 +69,8 @@ export function resolveClientPlugins(
 	const merged = MergeOptions<BaseClientOptions>(defaults, ...pluginOptions, userOptions);
 	merged.plugins = plugins;
 
-	composeContext(merged, pluginOptions, userOptions);
-	composeGlobalMiddlewares(merged, pluginOptions, userOptions);
+	composeContext(merged, defaults, pluginOptions, userOptions);
+	composeGlobalMiddlewares(merged, defaults, pluginOptions, userOptions);
 	composeDefaults(
 		merged.commands?.defaults,
 		defaults.commands?.defaults,
@@ -107,13 +107,18 @@ function omitPlugins(options: BaseClientOptions): ClientOptionsFragment {
 
 function composeContext(
 	target: BaseClientOptions,
+	defaults: BaseClientOptions,
 	pluginOptions: readonly ClientOptionsFragment[],
 	userOptions: ClientOptionsFragment,
 ) {
-	const callbacks = pluginOptions
-		.map(fragment => fragment.context)
-		.filter((callback): callback is NonNullable<BaseClientOptions['context']> => typeof callback === 'function');
-	if (userOptions.context) callbacks.push(userOptions.context);
+	const callbacks: NonNullable<BaseClientOptions['context']>[] = [];
+	if (typeof defaults.context === 'function') callbacks.push(defaults.context);
+	callbacks.push(
+		...pluginOptions
+			.map(fragment => fragment.context)
+			.filter((callback): callback is NonNullable<BaseClientOptions['context']> => typeof callback === 'function'),
+	);
+	if (typeof userOptions.context === 'function') callbacks.push(userOptions.context);
 	if (!callbacks.length) return;
 
 	target.context = interaction =>
@@ -122,10 +127,14 @@ function composeContext(
 
 function composeGlobalMiddlewares(
 	target: BaseClientOptions,
+	defaults: BaseClientOptions,
 	pluginOptions: readonly ClientOptionsFragment[],
 	userOptions: ClientOptionsFragment,
 ) {
-	const middlewares = pluginOptions.flatMap(fragment => [...(fragment.globalMiddlewares ?? [])]);
+	const middlewares = [
+		...(defaults.globalMiddlewares ?? []),
+		...pluginOptions.flatMap(fragment => fragment.globalMiddlewares ?? []),
+	];
 	middlewares.push(...(userOptions.globalMiddlewares ?? []));
 	if (middlewares.length) target.globalMiddlewares = middlewares;
 }

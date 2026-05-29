@@ -105,7 +105,7 @@ export class BaseClient {
 	}
 
 	readonly plugins: readonly SeyfertPlugin[] = [];
-	private pluginsStarted = false;
+	private pluginsSetupPromise?: Promise<void>;
 	options: BaseClientOptions;
 
 	/**@internal */
@@ -276,10 +276,8 @@ export class BaseClient {
 		// The reason of this method is so for adapters that need to connect somewhere, have time to connect.
 		// Or maybe clear cache?
 		await this.cache.adapter.start();
-		if (!this.pluginsStarted) {
-			await setupClientPlugins(this as SeyfertPluginClient, this.plugins);
-			this.pluginsStarted = true;
-		}
+		this.pluginsSetupPromise ??= setupClientPlugins(this as SeyfertPluginClient, this.plugins);
+		await this.pluginsSetupPromise;
 	}
 
 	protected async onPacket(..._packet: unknown[]): Promise<any> {

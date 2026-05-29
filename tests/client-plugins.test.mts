@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { Client, type ClientOptions } from '../src/client/client';
-import type { SeyfertPlugin } from '../src/client/plugins';
+import { resolveClientPlugins, type SeyfertPlugin } from '../src/client/plugins';
 
 function runtimeConfig() {
 	return {
@@ -46,6 +46,36 @@ describe('client plugins', () => {
 			shared: 'user',
 		});
 		expect(client.options.globalMiddlewares).toEqual(['pluginA', 'pluginB', 'user']);
+	});
+
+	test('preserves base context and global middlewares before plugin and user options', () => {
+		const plugin: SeyfertPlugin = {
+			name: 'plugin',
+			options: () => ({
+				context: () => ({ fromPlugin: true, shared: 'plugin' }),
+				globalMiddlewares: ['plugin' as never],
+			}),
+		};
+
+		const { options } = resolveClientPlugins(
+			{
+				context: () => ({ fromBase: true, shared: 'base' }),
+				globalMiddlewares: ['base' as never],
+			},
+			{
+				plugins: [plugin],
+				context: () => ({ fromUser: true, shared: 'user' }),
+				globalMiddlewares: ['user' as never],
+			},
+		);
+
+		expect(options.context?.({} as never)).toEqual({
+			fromBase: true,
+			fromPlugin: true,
+			fromUser: true,
+			shared: 'user',
+		});
+		expect(options.globalMiddlewares).toEqual(['base', 'plugin', 'user']);
 	});
 
 	test('runs plugin lifecycle hooks before user lifecycle hooks', async () => {
@@ -108,5 +138,38 @@ describe('client plugins', () => {
 		await client.start({ token: 'header.payload.signature' }, false);
 
 		expect(calls).toEqual(['plugin-a', 'plugin-b']);
+	});
+
+	test('shares setup work across concurrent starts', async () => {
+		const calls: string[] = [];
+		let releaseSetup = () => {};
+		const holdSetup = new Promise<void>(resolve => {
+			releaseSetup = resolve;
+		});
+		const plugin: SeyfertPlugin = {
+			name: 'plugin',
+			setup: async () => {
+				calls.push('plugin');
+				await holdSetup;
+			},
+		};
+		const client = createClient({ plugins: [plugin] });
+
+		(client as unknown as { gateway: unknown }).gateway = {};
+
+		const starts = [
+			client.start({ token: 'header.payload.signature' }, false),
+			client.start({ token: 'header.payload.signature' }, false),
+		];
+
+		try {
+			await new Promise(resolve => setTimeout(resolve, 0));
+			expect(calls).toEqual(['plugin']);
+		} finally {
+			releaseSetup();
+			await Promise.allSettled(starts);
+		}
+
+		expect(calls).toEqual(['plugin']);
 	});
 });
