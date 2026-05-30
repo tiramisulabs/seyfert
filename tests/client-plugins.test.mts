@@ -201,4 +201,23 @@ describe('client plugins', () => {
 
 		expect(calls).toEqual(['plugin']);
 	});
+
+	test('retries setup after plugin setup fails', async () => {
+		const calls: string[] = [];
+		const plugin: SeyfertPlugin = {
+			name: 'plugin',
+			setup: () => {
+				calls.push('plugin');
+				if (calls.length === 1) throw new Error('setup failed');
+			},
+		};
+		const client = createClient({ plugins: [plugin] });
+
+		(client as unknown as { gateway: unknown }).gateway = {};
+
+		await expect(client.start({ token: 'header.payload.signature' }, false)).rejects.toThrow('setup failed');
+		await expect(client.start({ token: 'header.payload.signature' }, false)).resolves.toBeUndefined();
+
+		expect(calls).toEqual(['plugin', 'plugin']);
+	});
 });

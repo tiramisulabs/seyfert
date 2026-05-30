@@ -269,8 +269,7 @@ export class BaseClient {
 
 		if (!this.handleCommand) this.handleCommand = new HandleCommand(this);
 
-		this.pluginsSetupPromise ??= setupClientPlugins(this as SeyfertPluginClient, this.plugins);
-		await this.pluginsSetupPromise;
+		await this.setupPlugins();
 
 		// The reason of this method is so for adapters that need to connect somewhere, have time to connect.
 		// Or maybe clear cache?
@@ -279,6 +278,17 @@ export class BaseClient {
 		await this.loadLangs(options.langsDir);
 		await this.loadCommands(options.commandsDir);
 		await this.loadComponents(options.componentsDir);
+	}
+
+	private async setupPlugins() {
+		this.pluginsSetupPromise ??= setupClientPlugins(this as SeyfertPluginClient, this.plugins);
+
+		try {
+			await this.pluginsSetupPromise;
+		} catch (error) {
+			this.pluginsSetupPromise = undefined;
+			throw error;
+		}
 	}
 
 	protected async onPacket(..._packet: unknown[]): Promise<any> {
