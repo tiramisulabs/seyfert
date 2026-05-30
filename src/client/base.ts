@@ -260,10 +260,6 @@ export class BaseClient {
 			'langsDir' | 'commandsDir' | 'connection' | 'token' | 'componentsDir'
 		> = {},
 	) {
-		await this.loadLangs(options.langsDir);
-		await this.loadCommands(options.commandsDir);
-		await this.loadComponents(options.componentsDir);
-
 		const { token: tokenRC, debug } = await this.getRC();
 		const token = options.token ?? tokenRC;
 		assertString(token, 'token is not a string');
@@ -273,11 +269,16 @@ export class BaseClient {
 
 		if (!this.handleCommand) this.handleCommand = new HandleCommand(this);
 
+		this.pluginsSetupPromise ??= setupClientPlugins(this as SeyfertPluginClient, this.plugins);
+		await this.pluginsSetupPromise;
+
 		// The reason of this method is so for adapters that need to connect somewhere, have time to connect.
 		// Or maybe clear cache?
 		await this.cache.adapter.start();
-		this.pluginsSetupPromise ??= setupClientPlugins(this as SeyfertPluginClient, this.plugins);
-		await this.pluginsSetupPromise;
+
+		await this.loadLangs(options.langsDir);
+		await this.loadCommands(options.commandsDir);
+		await this.loadComponents(options.componentsDir);
 	}
 
 	protected async onPacket(..._packet: unknown[]): Promise<any> {

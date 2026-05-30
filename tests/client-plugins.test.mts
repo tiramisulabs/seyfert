@@ -140,6 +140,35 @@ describe('client plugins', () => {
 		expect(calls).toEqual(['plugin-a', 'plugin-b']);
 	});
 
+	test('runs setup before cache start and command loading', async () => {
+		const calls: string[] = [];
+		const plugin: SeyfertPlugin = {
+			name: 'plugin',
+			setup: () => {
+				calls.push('plugin');
+			},
+		};
+		const client = createClient({ plugins: [plugin] });
+
+		(client as unknown as { gateway: unknown }).gateway = {};
+		client.cache.adapter.start = async () => {
+			calls.push('cache');
+		};
+		client.loadLangs = async () => {
+			calls.push('langs');
+		};
+		client.loadCommands = async () => {
+			calls.push('commands');
+		};
+		client.loadComponents = async () => {
+			calls.push('components');
+		};
+
+		await client.start({ token: 'header.payload.signature' }, false);
+
+		expect(calls).toEqual(['plugin', 'cache', 'langs', 'commands', 'components']);
+	});
+
 	test('shares setup work across concurrent starts', async () => {
 		const calls: string[] = [];
 		let releaseSetup = () => {};
