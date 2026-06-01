@@ -33,7 +33,6 @@ import {
 	LogLevels,
 	type MakeRequired,
 	MemberShorter,
-	MergeOptions,
 	MessageShorter,
 	magicImport,
 	ReactionShorter,
@@ -61,6 +60,7 @@ import type {
 	UserCommandInteraction,
 } from '../structures';
 import type { APIInteraction, APIInteractionResponse, LocaleString, RESTPostAPIChannelMessageJSONBody } from '../types';
+import { resolveClientPlugins, type SeyfertPlugin, type SeyfertPluginClient, setupClientPlugins } from './plugins';
 import type { MessageStructure } from './transformers';
 
 export class BaseClient {
@@ -104,73 +104,72 @@ export class BaseClient {
 		return Buffer.from(token.split('.')[0], 'base64').toString('ascii');
 	}
 
+	readonly plugins: readonly SeyfertPlugin[] = [];
+	private pluginsSetupPromise?: Promise<void>;
 	options: BaseClientOptions;
 
 	/**@internal */
 	static _seyfertCfWorkerConfig?: InternalRuntimeConfigHTTP | InternalRuntimeConfig;
 
 	constructor(options?: BaseClientOptions) {
-		this.options = MergeOptions(
-			{
-				commands: {
-					defaults: {
-						onRunError(context, error): any {
-							context.client.logger.fatal(`${context.command.name}.<onRunError>`, context.author.id, error);
-						},
-						onOptionsError(context, metadata): any {
-							context.client.logger.fatal(`${context.command.name}.<onOptionsError>`, context.author.id, metadata);
-						},
-						onMiddlewaresError(context, error: string): any {
-							context.client.logger.fatal(`${context.command.name}.<onMiddlewaresError>`, context.author.id, error);
-						},
-						onBotPermissionsFail(context, permissions): any {
-							context.client.logger.fatal(
-								`${context.command.name}.<onBotPermissionsFail>`,
-								context.author.id,
-								permissions,
-							);
-						},
-						onPermissionsFail(context, permissions): any {
-							context.client.logger.fatal(
-								`${context.command.name}.<onPermissionsFail>`,
-								context.author.id,
-								permissions,
-							);
-						},
-						onInternalError(client: UsingClient, command, error: unknown): any {
-							client.logger.fatal(`${command.name}.<onInternalError>`, error);
-						},
+		const defaults = {
+			commands: {
+				defaults: {
+					onRunError(context, error): any {
+						context.client.logger.fatal(`${context.command.name}.<onRunError>`, context.author.id, error);
+					},
+					onOptionsError(context, metadata): any {
+						context.client.logger.fatal(`${context.command.name}.<onOptionsError>`, context.author.id, metadata);
+					},
+					onMiddlewaresError(context, error: string): any {
+						context.client.logger.fatal(`${context.command.name}.<onMiddlewaresError>`, context.author.id, error);
+					},
+					onBotPermissionsFail(context, permissions): any {
+						context.client.logger.fatal(
+							`${context.command.name}.<onBotPermissionsFail>`,
+							context.author.id,
+							permissions,
+						);
+					},
+					onPermissionsFail(context, permissions): any {
+						context.client.logger.fatal(`${context.command.name}.<onPermissionsFail>`, context.author.id, permissions);
+					},
+					onInternalError(client: UsingClient, command, error: unknown): any {
+						client.logger.fatal(`${command.name}.<onInternalError>`, error);
 					},
 				},
-				components: {
-					defaults: {
-						onRunError(context: ComponentContext, error: unknown): any {
-							context.client.logger.fatal('ComponentCommand.<onRunError>', context.author.id, error);
-						},
-						onMiddlewaresError(context: ComponentContext, error: string): any {
-							context.client.logger.fatal('ComponentCommand.<onMiddlewaresError>', context.author.id, error);
-						},
-						onInternalError(client: UsingClient, error: unknown): any {
-							client.logger.fatal(error);
-						},
+			},
+			components: {
+				defaults: {
+					onRunError(context: ComponentContext, error: unknown): any {
+						context.client.logger.fatal('ComponentCommand.<onRunError>', context.author.id, error);
+					},
+					onMiddlewaresError(context: ComponentContext, error: string): any {
+						context.client.logger.fatal('ComponentCommand.<onMiddlewaresError>', context.author.id, error);
+					},
+					onInternalError(client: UsingClient, error: unknown): any {
+						client.logger.fatal(error);
 					},
 				},
-				modals: {
-					defaults: {
-						onRunError(context: ModalContext, error: unknown): any {
-							context.client.logger.fatal('ModalCommand.<onRunError>', context.author.id, error);
-						},
-						onMiddlewaresError(context: ModalContext, error: string): any {
-							context.client.logger.fatal('ModalCommand.<onMiddlewaresError>', context.author.id, error);
-						},
-						onInternalError(client: UsingClient, error: unknown): any {
-							client.logger.fatal(error);
-						},
+			},
+			modals: {
+				defaults: {
+					onRunError(context: ModalContext, error: unknown): any {
+						context.client.logger.fatal('ModalCommand.<onRunError>', context.author.id, error);
+					},
+					onMiddlewaresError(context: ModalContext, error: string): any {
+						context.client.logger.fatal('ModalCommand.<onMiddlewaresError>', context.author.id, error);
+					},
+					onInternalError(client: UsingClient, error: unknown): any {
+						client.logger.fatal(error);
 					},
 				},
-			} satisfies BaseClientOptions,
-			options,
-		);
+			},
+		} satisfies BaseClientOptions;
+		const resolved = resolveClientPlugins(defaults, options);
+
+		this.options = resolved.options;
+		this.plugins = resolved.plugins;
 	}
 
 	get proxy() {
@@ -261,10 +260,6 @@ export class BaseClient {
 			'langsDir' | 'commandsDir' | 'connection' | 'token' | 'componentsDir'
 		> = {},
 	) {
-		await this.loadLangs(options.langsDir);
-		await this.loadCommands(options.commandsDir);
-		await this.loadComponents(options.componentsDir);
-
 		const { token: tokenRC, debug } = await this.getRC();
 		const token = options.token ?? tokenRC;
 		assertString(token, 'token is not a string');
@@ -274,9 +269,26 @@ export class BaseClient {
 
 		if (!this.handleCommand) this.handleCommand = new HandleCommand(this);
 
+		await this.setupPlugins();
+
 		// The reason of this method is so for adapters that need to connect somewhere, have time to connect.
 		// Or maybe clear cache?
 		await this.cache.adapter.start();
+
+		await this.loadLangs(options.langsDir);
+		await this.loadCommands(options.commandsDir);
+		await this.loadComponents(options.componentsDir);
+	}
+
+	private async setupPlugins() {
+		this.pluginsSetupPromise ??= setupClientPlugins(this as SeyfertPluginClient, this.plugins);
+
+		try {
+			await this.pluginsSetupPromise;
+		} catch (error) {
+			this.pluginsSetupPromise = undefined;
+			throw error;
+		}
 	}
 
 	protected async onPacket(..._packet: unknown[]): Promise<any> {
@@ -476,6 +488,7 @@ export class BaseClient {
 }
 
 export interface BaseClientOptions {
+	plugins?: readonly SeyfertPlugin[];
 	context?: (
 		interaction:
 			| ChatInputCommandInteraction<boolean>
