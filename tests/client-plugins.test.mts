@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { Client, type ClientOptions } from '../src/client/client';
-import { resolveClientPlugins, type SeyfertPlugin } from '../src/client/plugins';
+import { resolveClientPlugins, runContextScopes, type SeyfertPlugin } from '../src/client/plugins';
 
 function runtimeConfig() {
 	return {
@@ -113,6 +113,63 @@ describe('client plugins', () => {
 		await client.options.commands?.defaults?.onAfterRun?.({} as never, undefined);
 
 		expect(calls).toEqual(['plugin-a', 'plugin-b', 'user']);
+	});
+
+	test('composes context scopes in plugin order before user scopes', async () => {
+		const calls: string[] = [];
+		const pluginA: SeyfertPlugin = {
+			name: 'plugin-a',
+			options: () => ({
+				contextScopes: [
+					async (_context, run) => {
+						calls.push('plugin-a before');
+						const result = await run();
+						calls.push('plugin-a after');
+						return result;
+					},
+				],
+			}),
+		};
+		const pluginB: SeyfertPlugin = {
+			name: 'plugin-b',
+			options: () => ({
+				contextScopes: [
+					async (_context, run) => {
+						calls.push('plugin-b before');
+						const result = await run();
+						calls.push('plugin-b after');
+						return result;
+					},
+				],
+			}),
+		};
+		const client = createClient({
+			plugins: [pluginA, pluginB],
+			contextScopes: [
+				async (_context, run) => {
+					calls.push('user before');
+					const result = await run();
+					calls.push('user after');
+					return result;
+				},
+			],
+		});
+
+		const result = await runContextScopes(client.options.contextScopes, {}, async () => {
+			calls.push('handler');
+			return 'done';
+		});
+
+		expect(result).toBe('done');
+		expect(calls).toEqual([
+			'plugin-a before',
+			'plugin-b before',
+			'user before',
+			'handler',
+			'user after',
+			'plugin-b after',
+			'plugin-a after',
+		]);
 	});
 
 	test('runs setup once during start in plugin order', async () => {
