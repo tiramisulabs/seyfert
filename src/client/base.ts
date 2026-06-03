@@ -63,6 +63,8 @@ import type { APIInteraction, APIInteractionResponse, LocaleString, RESTPostAPIC
 import { resolveClientPlugins, type SeyfertPlugin, type SeyfertPluginClient, setupClientPlugins } from './plugins';
 import type { MessageStructure } from './transformers';
 
+export type ContextScope = <T>(context: unknown, run: () => Awaitable<T>) => Awaitable<T>;
+
 export class BaseClient {
 	rest = new ApiHandler({ token: 'INVALID' });
 	cache = new Cache(0, new MemoryAdapter(), {}, this);
@@ -489,6 +491,7 @@ export class BaseClient {
 
 export interface BaseClientOptions {
 	plugins?: readonly SeyfertPlugin[];
+	contextScopes?: readonly ContextScope[];
 	context?: (
 		interaction:
 			| ChatInputCommandInteraction<boolean>

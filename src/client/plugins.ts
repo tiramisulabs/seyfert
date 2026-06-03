@@ -1,7 +1,7 @@
 import type { UsingClient } from '../commands';
 import { MergeOptions } from '../common';
 import type { Awaitable } from '../common/types/util';
-import type { BaseClientOptions } from './base';
+import type { BaseClientOptions, ContextScope } from './base';
 
 type ClientOptionsFragment = Partial<Omit<BaseClientOptions, 'plugins'>>;
 type CommandDefaults = NonNullable<NonNullable<BaseClientOptions['commands']>['defaults']>;
@@ -70,6 +70,7 @@ export function resolveClientPlugins(
 	merged.plugins = plugins;
 
 	composeContext(merged, defaults, pluginOptions, userOptions);
+	composeContextScopes(merged, defaults, pluginOptions, userOptions);
 	composeGlobalMiddlewares(merged, defaults, pluginOptions, userOptions);
 	composeDefaults(
 		merged.commands?.defaults,
@@ -100,6 +101,17 @@ export async function setupClientPlugins(client: SeyfertPluginClient, plugins: r
 	for (const plugin of plugins) await plugin.setup?.(client);
 }
 
+export function runContextScopes<T>(
+	scopes: readonly ContextScope[] | undefined,
+	context: unknown,
+	run: () => Awaitable<T>,
+): Awaitable<T> {
+	if (!scopes?.length) return run();
+
+	const scopedRun = scopes.reduceRight<() => Awaitable<T>>((next, scope) => () => scope(context, next), run);
+	return scopedRun();
+}
+
 function omitPlugins(options: BaseClientOptions): ClientOptionsFragment {
 	const { plugins: _plugins, ...rest } = options;
 	return rest;
@@ -123,6 +135,20 @@ function composeContext(
 
 	target.context = interaction =>
 		callbacks.reduce<Record<string, unknown>>((context, callback) => Object.assign(context, callback(interaction)), {});
+}
+
+function composeContextScopes(
+	target: BaseClientOptions,
+	defaults: BaseClientOptions,
+	pluginOptions: readonly ClientOptionsFragment[],
+	userOptions: ClientOptionsFragment,
+) {
+	const scopes = [
+		...(defaults.contextScopes ?? []),
+		...pluginOptions.flatMap(fragment => fragment.contextScopes ?? []),
+		...(userOptions.contextScopes ?? []),
+	];
+	if (scopes.length) target.contextScopes = scopes;
 }
 
 function composeGlobalMiddlewares(
