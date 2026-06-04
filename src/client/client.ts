@@ -126,7 +126,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	async start(options: Omit<DeepPartial<StartOptions>, 'httpConnection'> = {}, execute = true) {
-		await super.start(options);
+		await super.start(options, false);
 		await this.loadEvents(options.eventsDir);
 
 		const { token: tokenRC, intents: intentsRC, debug: debugRC } = await this.getRC<InternalRuntimeConfig>();
@@ -169,6 +169,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 		} else {
 			await super.execute(options);
 		}
+		this.markInitialized();
 	}
 
 	protected async onPacket(shardId: number, packet: GatewayDispatchPayload) {

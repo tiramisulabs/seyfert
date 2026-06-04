@@ -60,7 +60,13 @@ import type {
 	UserCommandInteraction,
 } from '../structures';
 import type { APIInteraction, APIInteractionResponse, LocaleString, RESTPostAPIChannelMessageJSONBody } from '../types';
-import { resolveClientPlugins, type SeyfertPlugin, type SeyfertPluginClient, setupClientPlugins } from './plugins';
+import {
+	resolveClientPlugins,
+	type SeyfertPlugin,
+	type SeyfertPluginClient,
+	setupClientPlugins,
+	teardownClientPlugins,
+} from './plugins';
 import type { MessageStructure } from './transformers';
 
 export type ContextScope = <T>(context: unknown, run: () => Awaitable<T>) => Awaitable<T>;
@@ -108,6 +114,9 @@ export class BaseClient {
 
 	readonly plugins: readonly SeyfertPlugin[] = [];
 	private pluginsSetupPromise?: Promise<void>;
+	private pluginsTeardownPromise?: Promise<void>;
+	private pluginsAreSetup = false;
+	initialized = false;
 	options: BaseClientOptions;
 
 	/**@internal */
@@ -261,7 +270,9 @@ export class BaseClient {
 			DeepPartial<StartOptions>,
 			'langsDir' | 'commandsDir' | 'connection' | 'token' | 'componentsDir'
 		> = {},
+		markInitialized = true,
 	) {
+		this.markStopping();
 		const { token: tokenRC, debug } = await this.getRC();
 		const token = options.token ?? tokenRC;
 		assertString(token, 'token is not a string');
@@ -280,17 +291,51 @@ export class BaseClient {
 		await this.loadLangs(options.langsDir);
 		await this.loadCommands(options.commandsDir);
 		await this.loadComponents(options.componentsDir);
+		if (markInitialized) this.markInitialized();
 	}
 
 	private async setupPlugins() {
+		if (this.pluginsAreSetup) return;
+		if (this.pluginsTeardownPromise) await this.pluginsTeardownPromise;
+
 		this.pluginsSetupPromise ??= setupClientPlugins(this as SeyfertPluginClient, this.plugins);
 
 		try {
 			await this.pluginsSetupPromise;
+			this.pluginsAreSetup = true;
 		} catch (error) {
 			this.pluginsSetupPromise = undefined;
 			throw error;
 		}
+	}
+
+	async stop() {
+		this.markStopping();
+		if (!(this.pluginsAreSetup || this.pluginsSetupPromise)) return;
+
+		const teardown =
+			this.pluginsTeardownPromise ??
+			(async () => {
+				await this.pluginsSetupPromise;
+				await teardownClientPlugins(this as SeyfertPluginClient, this.plugins);
+			})();
+		this.pluginsTeardownPromise = teardown;
+
+		try {
+			await teardown;
+		} finally {
+			this.pluginsAreSetup = false;
+			this.pluginsSetupPromise = undefined;
+			this.pluginsTeardownPromise = undefined;
+		}
+	}
+
+	protected markInitialized() {
+		this.initialized = true;
+	}
+
+	protected markStopping() {
+		this.initialized = false;
 	}
 
 	protected async onPacket(..._packet: unknown[]): Promise<any> {

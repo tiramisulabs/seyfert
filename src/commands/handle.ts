@@ -470,25 +470,49 @@ export class HandleCommand {
 	}
 
 	getCommandFromContent(commandRaw: string[]): CommandFromContent {
+		return this.resolveCommandFromNameParts(commandRaw);
+	}
+
+	resolveByName(fullName: string, guildId?: string): CommandFromContent | undefined {
+		const parts = fullName
+			.trim()
+			.split(/\s+/)
+			.filter(x => x)
+			.slice(0, 3);
+		if (!parts.length) return undefined;
+
+		const resolved = this.resolveCommandFromNameParts(parts, guildId, false);
+		return resolved.command ? resolved : undefined;
+	}
+
+	private resolveCommandFromNameParts(
+		commandRaw: string[],
+		guildId?: string,
+		allowFallback = true,
+	): CommandFromContent {
 		const rawParentName = commandRaw[0];
 		const rawGroupName = commandRaw.length === 3 ? commandRaw[1] : undefined;
 		const rawSubcommandName = rawGroupName ? commandRaw[2] : commandRaw[1];
-		const parent = this.getParentMessageCommand(rawParentName);
+		const parent = this.getParentMessageCommand(rawParentName, guildId);
 		const fullCommandName = `${rawParentName}${
 			rawGroupName ? ` ${rawGroupName} ${rawSubcommandName}` : `${rawSubcommandName ? ` ${rawSubcommandName}` : ''}`
 		}`;
 
 		if (!(parent instanceof Command)) return { fullCommandName };
 
-		if (rawGroupName && !parent.groups?.[rawGroupName] && !parent.groupsAliases?.[rawGroupName])
-			return this.getCommandFromContent([rawParentName, rawGroupName]);
+		if (rawGroupName && !parent.groups?.[rawGroupName] && !parent.groupsAliases?.[rawGroupName]) {
+			if (!allowFallback) return { fullCommandName };
+			return this.resolveCommandFromNameParts([rawParentName, rawGroupName], guildId);
+		}
 		if (
 			rawSubcommandName &&
 			!parent.options?.some(
 				x => x instanceof SubCommand && (x.name === rawSubcommandName || x.aliases?.includes(rawSubcommandName)),
 			)
-		)
-			return this.getCommandFromContent([rawParentName]);
+		) {
+			if (!allowFallback) return { fullCommandName };
+			return this.resolveCommandFromNameParts([rawParentName], guildId);
+		}
 
 		const groupName = rawGroupName ? parent.groupsAliases?.[rawGroupName] || rawGroupName : undefined;
 
@@ -517,12 +541,18 @@ export class HandleCommand {
 		return Transformers.OptionResolver(...args);
 	}
 
-	getParentMessageCommand(rawParentName: string) {
+	getParentMessageCommand(rawParentName: string, guildId?: string) {
 		return this.client.commands.values.find(
 			x =>
 				(!('ignore' in x) || x.ignore !== IgnoreCommand.Message) &&
+				this.commandCanRunInGuild(x, guildId) &&
 				(x.name === rawParentName || ('aliases' in x ? x.aliases?.includes(rawParentName) : false)),
 		);
+	}
+
+	private commandCanRunInGuild(command: Command | ContextMenuCommand, guildId?: string) {
+		if (!command.guildId?.length) return true;
+		return guildId ? command.guildId.includes(guildId) : false;
 	}
 
 	getCommand<T extends Command | ContextMenuCommand | EntryPointCommand>(data: {

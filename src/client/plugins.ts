@@ -11,12 +11,14 @@ type AnyFunction = (...args: unknown[]) => unknown;
 
 export type SeyfertPluginClient = UsingClient & {
 	plugins: readonly SeyfertPlugin[];
+	initialized: boolean;
 };
 
 export interface SeyfertPlugin {
 	name: string;
 	options?(current: Readonly<BaseClientOptions>): ClientOptionsFragment;
 	setup?(client: SeyfertPluginClient): Awaitable<void>;
+	teardown?(client: SeyfertPluginClient): Awaitable<void>;
 }
 
 export interface ResolvedClientPlugins {
@@ -101,6 +103,20 @@ export async function setupClientPlugins(client: SeyfertPluginClient, plugins: r
 	for (const plugin of plugins) await plugin.setup?.(client);
 }
 
+export async function teardownClientPlugins(client: SeyfertPluginClient, plugins: readonly SeyfertPlugin[]) {
+	const errors: unknown[] = [];
+
+	for (const plugin of [...plugins].reverse()) {
+		try {
+			await plugin.teardown?.(client);
+		} catch (error) {
+			errors.push(error);
+		}
+	}
+
+	if (errors.length) throw new AggregateError(errors, 'Seyfert plugin teardown failed.');
+}
+
 export function runContextScopes<T>(
 	scopes: readonly ContextScope[] | undefined,
 	context: unknown,
@@ -181,8 +197,13 @@ function composeDefaults<TDefaults extends object, TKey extends keyof TDefaults>
 
 		if (!pluginHooks.length && typeof userHook !== 'function') continue;
 
-		const tailHook = typeof userHook === 'function' ? userHook : fallbackHook;
-		const hooks = isFunction(tailHook) ? [...pluginHooks, tailHook] : pluginHooks;
+		const hooks = isFunction(userHook)
+			? [...pluginHooks, userHook]
+			: pluginHooks.length
+				? pluginHooks
+				: isFunction(fallbackHook)
+					? [fallbackHook]
+					: [];
 		target[key] = composeHooks(hooks) as TDefaults[TKey];
 	}
 }
