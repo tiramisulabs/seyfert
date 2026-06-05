@@ -8,9 +8,7 @@ export class HttpClient extends BaseClient {
 	}
 
 	async start(options: DeepPartial<Omit<StartOptions, 'connection' | 'eventsDir'>> = {}) {
-		await super.start(options, false);
-		const result = await this.execute(options.httpConnection);
-		this.markInitialized();
-		return result;
+		await super.start(options);
+		return this.execute(options.httpConnection);
 	}
 }

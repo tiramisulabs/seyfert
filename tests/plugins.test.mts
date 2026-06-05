@@ -2,7 +2,6 @@ import { assert, describe, test } from 'vitest';
 import { BaseClient, type BaseClientOptions } from '../lib/client/base';
 import {
 	resolveClientPlugins,
-	setupClientPlugins,
 	teardownClientPlugins,
 	type SeyfertPlugin,
 	type SeyfertPluginClient,
@@ -141,14 +140,30 @@ describe('client plugins', () => {
 		assert.deepEqual(calls, ['third', 'second', 'first']);
 	});
 
-	test('client stop is idempotent and flips initialized before teardown', async () => {
+	test('plugin lifecycle does not expose mutable initialized state', async () => {
 		const states: boolean[] = [];
+		const plugin: SeyfertPlugin = {
+			name: 'lifecycle',
+			setup: client => states.push('initialized' in client),
+			teardown: client => states.push('initialized' in client),
+		};
+		const client = new BaseClient({
+			getRC: createRuntimeConfig,
+			plugins: [plugin],
+		});
+
+		await client.start();
+		await client.stop();
+
+		assert.deepEqual(states, [false, false]);
+	});
+
+	test('client stop is idempotent', async () => {
 		let teardownCalls = 0;
 		const plugin: SeyfertPlugin = {
 			name: 'lifecycle',
-			teardown: client => {
+			teardown: () => {
 				teardownCalls++;
-				states.push(client.initialized);
 			},
 		};
 		const client = new BaseClient({
@@ -158,21 +173,23 @@ describe('client plugins', () => {
 
 		await client.start();
 
-		assert.equal(client.initialized, true);
-
 		await client.stop();
 		await client.stop();
 
-		assert.equal(client.initialized, false);
 		assert.equal(teardownCalls, 1);
-		assert.deepEqual(states, [false]);
 	});
 
-	test('setup receives initialized=false and start flips initialized after setup', async () => {
-		const states: boolean[] = [];
+	test('client can start plugins again after stop', async () => {
+		let setupCalls = 0;
+		let teardownCalls = 0;
 		const plugin: SeyfertPlugin = {
-			name: 'setup-state',
-			setup: client => states.push(client.initialized),
+			name: 'restartable',
+			setup: () => {
+				setupCalls++;
+			},
+			teardown: () => {
+				teardownCalls++;
+			},
 		};
 		const client = new BaseClient({
 			getRC: createRuntimeConfig,
@@ -180,11 +197,12 @@ describe('client plugins', () => {
 		});
 
 		await client.start();
-
-		assert.deepEqual(states, [false]);
-		assert.equal(client.initialized, true);
-
 		await client.stop();
+		await client.start();
+		await client.stop();
+
+		assert.equal(setupCalls, 2);
+		assert.equal(teardownCalls, 2);
 	});
 });
 

@@ -11,7 +11,6 @@ type AnyFunction = (...args: unknown[]) => unknown;
 
 export type SeyfertPluginClient = UsingClient & {
 	plugins: readonly SeyfertPlugin[];
-	initialized: boolean;
 };
 
 export interface SeyfertPlugin {

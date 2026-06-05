@@ -114,9 +114,7 @@ export class BaseClient {
 
 	readonly plugins: readonly SeyfertPlugin[] = [];
 	private pluginsSetupPromise?: Promise<void>;
-	private pluginsTeardownPromise?: Promise<void>;
-	private pluginsAreSetup = false;
-	initialized = false;
+	private pluginsStopPromise?: Promise<void>;
 	options: BaseClientOptions;
 
 	/**@internal */
@@ -270,9 +268,7 @@ export class BaseClient {
 			DeepPartial<StartOptions>,
 			'langsDir' | 'commandsDir' | 'connection' | 'token' | 'componentsDir'
 		> = {},
-		markInitialized = true,
 	) {
-		this.markStopping();
 		const { token: tokenRC, debug } = await this.getRC();
 		const token = options.token ?? tokenRC;
 		assertString(token, 'token is not a string');
@@ -291,18 +287,15 @@ export class BaseClient {
 		await this.loadLangs(options.langsDir);
 		await this.loadCommands(options.commandsDir);
 		await this.loadComponents(options.componentsDir);
-		if (markInitialized) this.markInitialized();
 	}
 
 	private async setupPlugins() {
-		if (this.pluginsAreSetup) return;
-		if (this.pluginsTeardownPromise) await this.pluginsTeardownPromise;
+		if (this.pluginsStopPromise) await this.pluginsStopPromise;
 
 		this.pluginsSetupPromise ??= setupClientPlugins(this as SeyfertPluginClient, this.plugins);
 
 		try {
 			await this.pluginsSetupPromise;
-			this.pluginsAreSetup = true;
 		} catch (error) {
 			this.pluginsSetupPromise = undefined;
 			throw error;
@@ -310,32 +303,25 @@ export class BaseClient {
 	}
 
 	async stop() {
-		this.markStopping();
-		if (!(this.pluginsAreSetup || this.pluginsSetupPromise)) return;
+		const setup = this.pluginsSetupPromise;
+		if (!setup) return;
 
-		const teardown =
-			this.pluginsTeardownPromise ??
+		const stop =
+			this.pluginsStopPromise ??
 			(async () => {
-				await this.pluginsSetupPromise;
+				await setup;
 				await teardownClientPlugins(this as SeyfertPluginClient, this.plugins);
 			})();
-		this.pluginsTeardownPromise = teardown;
+		this.pluginsStopPromise = stop;
 
 		try {
-			await teardown;
+			await stop;
 		} finally {
-			this.pluginsAreSetup = false;
-			this.pluginsSetupPromise = undefined;
-			this.pluginsTeardownPromise = undefined;
+			if (this.pluginsStopPromise === stop) {
+				this.pluginsSetupPromise = undefined;
+				this.pluginsStopPromise = undefined;
+			}
 		}
-	}
-
-	protected markInitialized() {
-		this.initialized = true;
-	}
-
-	protected markStopping() {
-		this.initialized = false;
 	}
 
 	protected async onPacket(..._packet: unknown[]): Promise<any> {

@@ -182,9 +182,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			type: workerData.resharding ? 'WORKER_START_RESHARDING' : 'WORKER_START',
 			workerId: workerData.workerId,
 		} satisfies WorkerStart | WorkerStartResharding);
-		await super.start(options, false);
+		await super.start(options);
 		await this.loadEvents(options.eventsDir);
-		this.markInitialized();
 	}
 
 	async loadEvents(dir?: string) {
