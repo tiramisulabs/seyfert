@@ -298,6 +298,14 @@ export async function resolveImage(image: ImageResolvable): Promise<string> {
 
 	if (image instanceof Attachment) {
 		const response = await fetch(image.url);
+		if (!response.ok) {
+			throw new SeyfertError('INVALID_ATTACHMENT_TYPE', {
+				metadata: {
+					...createValidationMetadata('successful HTTP response', `${response.status} ${response.statusText}`),
+					detail: `Failed to fetch attachment from URL: ${response.status} ${response.statusText}`,
+				},
+			});
+		}
 		const file = await resolveAttachmentData(await response.arrayBuffer(), 'buffer');
 		return resolveBase64(file.data as Buffer, response.headers.get('content-type') ?? file.contentType ?? undefined);
 	}

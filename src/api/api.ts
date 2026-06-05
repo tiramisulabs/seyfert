@@ -41,6 +41,7 @@ export type OnFailRequestCallback = (
 	error: unknown,
 	statusCode?: number,
 ) => Awaitable<any>;
+type InternalApiRequestOptions = ApiRequestOptions & { _50xRetries?: number };
 
 export class ApiHandler {
 	options: ApiHandlerInternalOptions;
@@ -166,10 +167,10 @@ export class ApiHandler {
 	}
 
 	async request<T = unknown>(method: HttpMethods, url: `/${string}`, request: ApiRequestOptions = {}): Promise<T> {
-		const { auth = true } = request;
-		const retryRequest = request as ApiRequestOptions & { _50xRetries?: number };
-		let attempts = retryRequest._50xRetries ?? 0;
-		delete retryRequest._50xRetries;
+		const requestOptions = { ...request } as InternalApiRequestOptions;
+		const { auth = true } = requestOptions;
+		let attempts = requestOptions._50xRetries ?? 0;
+		delete requestOptions._50xRetries;
 		const originTrace: { stack?: string } = {};
 		Error.captureStackTrace(originTrace, this.request);
 
@@ -181,10 +182,10 @@ export class ApiHandler {
 				type: 'WORKER_API_REQUEST',
 				workerId: this.workerData!.workerId,
 				nonce,
-				requestOptions: { auth, ...request },
+				requestOptions: { auth, ...requestOptions },
 			});
 		}
-		const route = request.route || this.routefy(url, method);
+		const route = requestOptions.route || this.routefy(url, method);
 
 		const callback = async (next: () => void, resolve: (data: any) => void, reject: (err: unknown) => void) => {
 			const headers = {
@@ -194,7 +195,7 @@ export class ApiHandler {
 			const { data, finalUrl } = this.parseRequest({
 				url,
 				headers,
-				request: { ...request, auth },
+				request: { ...requestOptions, auth },
 			});
 
 			let response: Response;
@@ -226,14 +227,24 @@ export class ApiHandler {
 
 			if (response.status >= 300) {
 				if (response.status === 429) {
-					const result429 = await this.handle429(route, method, url, request, response, result, next, reject, now);
+					const result429 = await this.handle429(
+						route,
+						method,
+						url,
+						requestOptions,
+						response,
+						result,
+						next,
+						reject,
+						now,
+					);
 					if (result429 !== false) return resolve(result429);
 					await this.notifyFailRequest(method, finalUrl, result, response.status);
 					return this.clearResetInterval(route);
 				}
 				if ([502, 503].includes(response.status) && ++attempts < 4) {
 					this.clearResetInterval(route);
-					return this.handle50X(method, url, request, attempts, next, resolve, reject);
+					return this.handle50X(method, url, requestOptions, attempts, next, resolve, reject);
 				}
 				this.clearResetInterval(route);
 				next();
