@@ -60,7 +60,13 @@ import type {
 	UserCommandInteraction,
 } from '../structures';
 import type { APIInteraction, APIInteractionResponse, LocaleString, RESTPostAPIChannelMessageJSONBody } from '../types';
-import { resolveClientPlugins, type SeyfertPlugin, type SeyfertPluginClient, setupClientPlugins } from './plugins';
+import {
+	resolveClientPlugins,
+	type SeyfertPlugin,
+	type SeyfertPluginClient,
+	setupClientPlugins,
+	teardownClientPlugins,
+} from './plugins';
 import type { MessageStructure } from './transformers';
 
 export type ContextScope = <T>(context: unknown, run: () => Awaitable<T>) => Awaitable<T>;
@@ -108,6 +114,7 @@ export class BaseClient {
 
 	readonly plugins: readonly SeyfertPlugin[] = [];
 	private pluginsSetupPromise?: Promise<void>;
+	private pluginsClosePromise?: Promise<void>;
 	options: BaseClientOptions;
 
 	/**@internal */
@@ -283,6 +290,8 @@ export class BaseClient {
 	}
 
 	private async setupPlugins() {
+		if (this.pluginsClosePromise) await this.pluginsClosePromise;
+
 		this.pluginsSetupPromise ??= setupClientPlugins(this as SeyfertPluginClient, this.plugins);
 
 		try {
@@ -290,6 +299,34 @@ export class BaseClient {
 		} catch (error) {
 			this.pluginsSetupPromise = undefined;
 			throw error;
+		}
+	}
+
+	/**
+	 * Closes resources managed by the plugin lifecycle.
+	 *
+	 * This waits for in-flight plugin setup and runs `SeyfertPlugin.teardown`.
+	 * It does not close the gateway, REST client, or cache adapter.
+	 */
+	async close() {
+		const setup = this.pluginsSetupPromise;
+		if (!setup) return;
+
+		const close =
+			this.pluginsClosePromise ??
+			(async () => {
+				await setup;
+				await teardownClientPlugins(this as SeyfertPluginClient, this.plugins);
+			})();
+		this.pluginsClosePromise = close;
+
+		try {
+			await close;
+		} finally {
+			if (this.pluginsClosePromise === close) {
+				this.pluginsSetupPromise = undefined;
+				this.pluginsClosePromise = undefined;
+			}
 		}
 	}
 
