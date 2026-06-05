@@ -454,6 +454,7 @@ export class HandleCommand {
 				.split(' ')
 				.filter(x => x)
 				.slice(0, 3),
+			_message.guild_id,
 		);
 
 		if (!result.command) return result;
@@ -469,10 +470,15 @@ export class HandleCommand {
 		};
 	}
 
-	getCommandFromContent(commandRaw: string[]): CommandFromContent {
-		return this.resolveCommandFromNameParts(commandRaw);
+	getCommandFromContent(commandRaw: string[], guildId?: string): CommandFromContent {
+		return this.resolveCommandFromNameParts(commandRaw, guildId);
 	}
 
+	/**
+	 * Resolves a message command by its full name.
+	 *
+	 * Guild-scoped commands require a matching `guildId`; without one, they intentionally resolve to `undefined`.
+	 */
 	resolveByName(fullName: string, guildId?: string): CommandFromContent | undefined {
 		const parts = fullName
 			.trim()

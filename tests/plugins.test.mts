@@ -2,6 +2,7 @@ import { assert, describe, test } from 'vitest';
 import { BaseClient, type BaseClientOptions } from '../lib/client/base';
 import {
 	resolveClientPlugins,
+	setupClientPlugins,
 	teardownClientPlugins,
 	type SeyfertPlugin,
 	type SeyfertPluginClient,
@@ -140,6 +141,51 @@ describe('client plugins', () => {
 		assert.deepEqual(calls, ['third', 'second', 'first']);
 	});
 
+	test('plugin setup failure tears down completed plugins in LIFO order', async () => {
+		const calls: string[] = [];
+		const setupError = new Error('setup failed');
+		const plugins: SeyfertPlugin[] = [
+			{
+				name: 'first',
+				setup: () => {
+					calls.push('setup first');
+				},
+				teardown: () => {
+					calls.push('teardown first');
+				},
+			},
+			{
+				name: 'second',
+				setup: () => {
+					calls.push('setup second');
+				},
+				teardown: () => {
+					calls.push('teardown second');
+				},
+			},
+			{
+				name: 'third',
+				setup: () => {
+					calls.push('setup third');
+					throw setupError;
+				},
+				teardown: () => {
+					calls.push('teardown third');
+				},
+			},
+		];
+
+		let thrown: unknown;
+		try {
+			await setupClientPlugins({ plugins } as SeyfertPluginClient, plugins);
+		} catch (error) {
+			thrown = error;
+		}
+
+		assert.equal(thrown, setupError);
+		assert.deepEqual(calls, ['setup first', 'setup second', 'setup third', 'teardown second', 'teardown first']);
+	});
+
 	test('plugin lifecycle does not expose mutable initialized state', async () => {
 		const states: boolean[] = [];
 		const plugin: SeyfertPlugin = {
@@ -153,12 +199,12 @@ describe('client plugins', () => {
 		});
 
 		await client.start();
-		await client.stop();
+		await client.close();
 
 		assert.deepEqual(states, [false, false]);
 	});
 
-	test('client stop is idempotent', async () => {
+	test('client close is idempotent', async () => {
 		let teardownCalls = 0;
 		const plugin: SeyfertPlugin = {
 			name: 'lifecycle',
@@ -173,13 +219,13 @@ describe('client plugins', () => {
 
 		await client.start();
 
-		await client.stop();
-		await client.stop();
+		await client.close();
+		await client.close();
 
 		assert.equal(teardownCalls, 1);
 	});
 
-	test('client can start plugins again after stop', async () => {
+	test('client can start plugins again after close', async () => {
 		let setupCalls = 0;
 		let teardownCalls = 0;
 		const plugin: SeyfertPlugin = {
@@ -197,9 +243,9 @@ describe('client plugins', () => {
 		});
 
 		await client.start();
-		await client.stop();
+		await client.close();
 		await client.start();
-		await client.stop();
+		await client.close();
 
 		assert.equal(setupCalls, 2);
 		assert.equal(teardownCalls, 2);
@@ -240,6 +286,34 @@ describe('handle command resolution', () => {
 		assert.equal(client.handleCommand.resolveByName('audio unknown', 'guild-1'), undefined);
 		assert.equal(client.handleCommand.resolveByName('audio tools transcode', 'guild-2'), undefined);
 		assert.equal(client.handleCommand.resolveByName('audio tools transcode'), undefined);
+	});
+
+	test('resolves guild-scoped message commands from content using the message guild', () => {
+		const client = new BaseClient({
+			getRC: createRuntimeConfig,
+		});
+
+		const command = new Command();
+		command.name = 'deploy';
+		command.description = 'Deploy tools';
+		command.contexts = [];
+		command.integrationTypes = [];
+		command.guildId = ['guild-1'];
+		client.commands.values.push(command);
+		client.handleCommand = new HandleCommand(client as never);
+
+		const insideGuild = client.handleCommand.resolveCommandFromContent('deploy now', '!', {
+			guild_id: 'guild-1',
+		} as never);
+		const outsideGuild = client.handleCommand.resolveCommandFromContent('deploy now', '!', {
+			guild_id: 'guild-2',
+		} as never);
+		const directMessage = client.handleCommand.resolveCommandFromContent('deploy now', '!', {} as never);
+
+		assert.equal(insideGuild.command, command);
+		assert.equal(insideGuild.argsContent, 'now');
+		assert.equal(outsideGuild.command, undefined);
+		assert.equal(directMessage.command, undefined);
 	});
 });
 

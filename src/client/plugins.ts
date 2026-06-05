@@ -99,7 +99,21 @@ export function resolveClientPlugins(
 }
 
 export async function setupClientPlugins(client: SeyfertPluginClient, plugins: readonly SeyfertPlugin[]) {
-	for (const plugin of plugins) await plugin.setup?.(client);
+	const completed: SeyfertPlugin[] = [];
+
+	try {
+		for (const plugin of plugins) {
+			await plugin.setup?.(client);
+			completed.push(plugin);
+		}
+	} catch (setupError) {
+		try {
+			await teardownClientPlugins(client, completed);
+		} catch (teardownError) {
+			throw new AggregateError([setupError, teardownError], 'Seyfert plugin setup failed and cleanup also failed.');
+		}
+		throw setupError;
+	}
 }
 
 export async function teardownClientPlugins(client: SeyfertPluginClient, plugins: readonly SeyfertPlugin[]) {

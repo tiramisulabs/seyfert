@@ -114,7 +114,7 @@ export class BaseClient {
 
 	readonly plugins: readonly SeyfertPlugin[] = [];
 	private pluginsSetupPromise?: Promise<void>;
-	private pluginsStopPromise?: Promise<void>;
+	private pluginsClosePromise?: Promise<void>;
 	options: BaseClientOptions;
 
 	/**@internal */
@@ -290,7 +290,7 @@ export class BaseClient {
 	}
 
 	private async setupPlugins() {
-		if (this.pluginsStopPromise) await this.pluginsStopPromise;
+		if (this.pluginsClosePromise) await this.pluginsClosePromise;
 
 		this.pluginsSetupPromise ??= setupClientPlugins(this as SeyfertPluginClient, this.plugins);
 
@@ -302,24 +302,30 @@ export class BaseClient {
 		}
 	}
 
-	async stop() {
+	/**
+	 * Closes resources managed by the plugin lifecycle.
+	 *
+	 * This waits for in-flight plugin setup and runs `SeyfertPlugin.teardown`.
+	 * It does not close the gateway, REST client, or cache adapter.
+	 */
+	async close() {
 		const setup = this.pluginsSetupPromise;
 		if (!setup) return;
 
-		const stop =
-			this.pluginsStopPromise ??
+		const close =
+			this.pluginsClosePromise ??
 			(async () => {
 				await setup;
 				await teardownClientPlugins(this as SeyfertPluginClient, this.plugins);
 			})();
-		this.pluginsStopPromise = stop;
+		this.pluginsClosePromise = close;
 
 		try {
-			await stop;
+			await close;
 		} finally {
-			if (this.pluginsStopPromise === stop) {
+			if (this.pluginsClosePromise === close) {
 				this.pluginsSetupPromise = undefined;
-				this.pluginsStopPromise = undefined;
+				this.pluginsClosePromise = undefined;
 			}
 		}
 	}
