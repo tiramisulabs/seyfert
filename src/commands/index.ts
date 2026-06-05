@@ -8,4 +8,5 @@ export * from './applications/menucontext';
 export * from './applications/options';
 export * from './applications/shared';
 export * from './decorators';
+export type { CommandFromContent } from './handle';
 export * from './optionresolver';

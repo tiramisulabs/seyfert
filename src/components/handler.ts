@@ -6,6 +6,7 @@ import type {
 	ListenerOptions,
 	ModalSubmitCallback,
 } from '../builders/types';
+import { runContextScopes } from '../client/plugins';
 import { LimitedCollection } from '../collection';
 import { BaseCommand, type RegisteredMiddlewares, type UsingClient } from '../commands';
 import type { FileLoaded } from '../commands/handler';
@@ -333,42 +334,44 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	async execute(i: ComponentCommands, context: ComponentContext | ModalContext) {
-		try {
-			await i.onBeforeMiddlewares?.(context as never);
-			const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
-				context,
-				(context.client.options?.globalMiddlewares ?? []) as keyof RegisteredMiddlewares,
-				true,
-			);
-			if (resultRunGlobalMiddlewares.pass) {
-				return;
-			}
-			if ('error' in resultRunGlobalMiddlewares) {
-				return await i.onMiddlewaresError?.(context as never, resultRunGlobalMiddlewares.error ?? 'Unknown error');
-			}
-
-			const resultRunMiddlewares = await BaseCommand.__runMiddlewares(context, i.middlewares, false);
-			if (resultRunMiddlewares.pass) {
-				return;
-			}
-			if ('error' in resultRunMiddlewares) {
-				return await i.onMiddlewaresError?.(context as never, resultRunMiddlewares.error ?? 'Unknown error');
-			}
-
+		return runContextScopes(context.client.options.contextScopes, context, async () => {
 			try {
-				await i.run(context as never);
-				await i.onAfterRun?.(context as never, undefined);
+				await i.onBeforeMiddlewares?.(context as never);
+				const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
+					context,
+					(context.client.options?.globalMiddlewares ?? []) as keyof RegisteredMiddlewares,
+					true,
+				);
+				if (resultRunGlobalMiddlewares.pass) {
+					return;
+				}
+				if ('error' in resultRunGlobalMiddlewares) {
+					return await i.onMiddlewaresError?.(context as never, resultRunGlobalMiddlewares.error ?? 'Unknown error');
+				}
+
+				const resultRunMiddlewares = await BaseCommand.__runMiddlewares(context, i.middlewares, false);
+				if (resultRunMiddlewares.pass) {
+					return;
+				}
+				if ('error' in resultRunMiddlewares) {
+					return await i.onMiddlewaresError?.(context as never, resultRunMiddlewares.error ?? 'Unknown error');
+				}
+
+				try {
+					await i.run(context as never);
+					await i.onAfterRun?.(context as never, undefined);
+				} catch (error) {
+					await i.onRunError?.(context as never, error);
+					await i.onAfterRun?.(context as never, error);
+				}
 			} catch (error) {
-				await i.onRunError?.(context as never, error);
-				await i.onAfterRun?.(context as never, error);
+				try {
+					await i.onInternalError?.(this.client, error);
+				} catch (err) {
+					this.client.logger.error(`[${i.customId ?? 'Component/Modal command'}] Internal error:`, err);
+				}
 			}
-		} catch (error) {
-			try {
-				await i.onInternalError?.(this.client, error);
-			} catch (err) {
-				this.client.logger.error(`[${i.customId ?? 'Component/Modal command'}] Internal error:`, err);
-			}
-		}
+		});
 	}
 
 	async executeComponent(context: ComponentContext) {
