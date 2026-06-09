@@ -17,6 +17,7 @@ class EconomyApi {
 
 const storage = createPlugin({
 	name: 'storage',
+	meta: { label: 'primary' },
 	client: {
 		storage: () => ({ connected: true }),
 	},
@@ -55,6 +56,7 @@ declare function commandContext(): CommandContext;
 
 expectType<Register>({ plugins: [economy] });
 expectType<SeyfertPlugin<any, any, any>>(economy);
+expectType<string>(storage.meta.label);
 expectType<EconomyApi>({} as PluginExtensionOf<typeof economy>['economy']);
 expectType<{ add(amount: number): void }>({} as PluginContextOf<typeof economy>['wallet']);
 

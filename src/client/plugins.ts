@@ -62,10 +62,8 @@ export interface ResolvedClientPlugins {
 }
 
 export function createPlugin<
-	const E extends object = {},
-	const C extends object = {},
-	const I extends readonly AnySeyfertPlugin[] = readonly [],
->(plugin: SeyfertPlugin<E, C, I>): SeyfertPlugin<E, C, I> {
+	const TPlugin extends SeyfertPlugin<any, any, readonly AnySeyfertPlugin[]> & Record<string, unknown>,
+>(plugin: TPlugin): TPlugin {
 	return plugin;
 }
 
