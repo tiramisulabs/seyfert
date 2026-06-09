@@ -2,10 +2,13 @@ import {
 	Client,
 	type CommandContext,
 	createPlugin,
+	createServiceKey,
 	definePlugins,
 	type PluginContextOf,
 	type PluginExtensionOf,
+	type RegisteredPluginServices,
 	type Register,
+	type ServiceKey,
 	type SeyfertPlugin,
 	type SeyfertPluginApi,
 } from 'seyfert';
@@ -15,6 +18,14 @@ declare function expectType<T>(value: T): void;
 class EconomyApi {
 	addCoins(_userId: string, _amount: number) {}
 }
+
+class LedgerService {
+	readBalance(_userId: string) {
+		return 100;
+	}
+}
+
+const ledgerKey = createServiceKey('ledger');
 
 const storage = createPlugin({
 	name: 'storage',
@@ -39,6 +50,14 @@ const economy = createPlugin({
 	},
 	register(api) {
 		expectType<SeyfertPluginApi>(api);
+		api.services.set(ledgerKey, () => new LedgerService());
+		api.events.once('commandsLoaded', metadata => {
+			expectType<number>(metadata.total);
+		});
+		api.events.onAny((name, ...payload) => {
+			expectType<string>(name);
+			expectType<unknown[]>(payload);
+		});
 		api.options.set({ allowedMentions: { parse: [] } });
 	},
 	setup(client) {
@@ -55,6 +74,10 @@ declare module 'seyfert' {
 	interface Register {
 		plugins: typeof plugins;
 	}
+
+	interface RegisteredPluginServices {
+		ledger: LedgerService;
+	}
 }
 
 declare function commandContext(): CommandContext;
@@ -65,11 +88,17 @@ expectType<readonly [typeof economy, typeof storage]>(plugins);
 expectType<readonly [typeof economy, typeof storage]>(arrayPlugins);
 expectType<readonly []>(emptyPlugins);
 expectType<string>(storage.meta.label);
+expectType<ServiceKey<LedgerService, 'ledger'>>(ledgerKey);
 expectType<EconomyApi>({} as PluginExtensionOf<typeof economy>['economy']);
 expectType<{ add(amount: number): void }>({} as PluginContextOf<typeof economy>['wallet']);
 
 const client = new Client({ plugins });
 client.economy.addCoins('user', 2);
+const ledger = client.services.get(ledgerKey);
+expectType<LedgerService | undefined>(ledger);
+expectType<LedgerService>(client.services.require(ledgerKey));
+expectType<LedgerService | undefined>(client.services.get('ledger'));
+expectType<RegisteredPluginServices['ledger'] | undefined>(client.services.get('ledger'));
 
 const ctx = commandContext();
 ctx.client.economy.addCoins('user', 3);

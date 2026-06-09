@@ -1,4 +1,5 @@
 import type { Client, WorkerClient } from '../client';
+import { wrapPluginError } from '../client/plugins/errors';
 import type { UsingClient } from '../commands';
 import type { FileLoaded } from '../commands/handler';
 import {
@@ -300,10 +301,7 @@ export class EventHandler extends BaseHandler {
 				Promise.resolve()
 					.then(() => listener.handler(...args))
 					.catch(error => {
-						throw new Error(
-							`Seyfert plugin "${listener.record.plugin.name}" failed during event "${name}" at index ${listener.record.index}.`,
-							{ cause: error },
-						);
+						throw wrapPluginError(listener.record.plugin.name, `event:${name}`, listener.record.index, error);
 					}),
 			);
 		}
@@ -312,10 +310,7 @@ export class EventHandler extends BaseHandler {
 				Promise.resolve()
 					.then(() => listener.handler(name, ...args))
 					.catch(error => {
-						throw new Error(
-							`Seyfert plugin "${listener.record.plugin.name}" failed during event "${name}" at index ${listener.record.index}.`,
-							{ cause: error },
-						);
+						throw wrapPluginError(listener.record.plugin.name, `event:${name}`, listener.record.index, error);
 					}),
 			);
 		}

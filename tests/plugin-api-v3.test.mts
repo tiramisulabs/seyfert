@@ -1,5 +1,14 @@
 import { describe, expect, test } from 'vitest';
-import { Client, Command, ComponentCommand, createPlugin, definePlugins, ModalCommand, type MiddlewareContext } from '../src';
+import {
+	Client,
+	Command,
+	ComponentCommand,
+	createPlugin,
+	createServiceKey,
+	definePlugins,
+	ModalCommand,
+	type MiddlewareContext,
+} from '../src';
 import { BaseClient } from '../src/client/base';
 
 function runtimeConfig() {
@@ -191,18 +200,23 @@ describe('plugin api v3', () => {
 	});
 
 	test('lets plugins observe commandsLoaded through the event bus', async () => {
-		const calls: string[] = [];
+		const calls: unknown[] = [];
 		const plugin = createPlugin({
 			name: 'events',
 			register(api) {
-				api.events.on('commandsLoaded', () => calls.push('commandsLoaded'));
+				api.events.on('commandsLoaded', metadata => calls.push(metadata));
 			},
 		});
 		const client = createGatewayClient([plugin]);
 
-		await client.events.runCustom('commandsLoaded' as never, client.commands.values as never);
+		await client.events.runCustom('commandsLoaded' as never, {
+			kind: 'commands',
+			total: 0,
+			items: [],
+			plugin: { total: 0, sources: {} },
+		} as never);
 
-		expect(calls).toEqual(['commandsLoaded']);
+		expect(calls).toEqual([expect.objectContaining({ kind: 'commands', total: 0 })]);
 	});
 
 	test('lets plugin event listeners emit custom events', async () => {
@@ -210,15 +224,52 @@ describe('plugin api v3', () => {
 		const plugin = createPlugin({
 			name: 'event-emitter',
 			register(api) {
-				api.events.on('botReady', () => api.events.emit('commandsLoaded', []));
-				api.events.on('commandsLoaded', () => calls.push('commandsLoaded'));
+				api.events.on('botReady', () =>
+					api.events.emit('commandsLoaded', {
+						kind: 'commands',
+						total: 0,
+						items: [],
+						plugin: { total: 0, sources: {} },
+					}),
+				);
+				api.events.on('commandsLoaded', metadata => calls.push(metadata.kind));
 			},
 		});
 		const client = createGatewayClient([plugin]);
 
 		await client.events.runEvent('BOT_READY' as never, client, {} as never, -1, false);
 
-		expect(calls).toEqual(['commandsLoaded']);
+		expect(calls).toEqual(['commands']);
+	});
+
+	test('emits commandsLoaded and componentsLoaded metadata', async () => {
+		const snapshots: unknown[] = [];
+		const plugin = createPlugin({
+			name: 'loaded-observer',
+			register(api) {
+				api.events.on('commandsLoaded', payload => snapshots.push(payload));
+				api.events.on('componentsLoaded', payload => snapshots.push(payload));
+			},
+		});
+		const client = createGatewayClient([plugin]);
+		client.loadEvents = async () => {};
+		client.loadCommands = async () => {};
+		client.loadComponents = async () => {};
+
+		await client.start({}, false);
+
+		expect(snapshots).toEqual([
+			expect.objectContaining({
+				kind: 'commands',
+				total: expect.any(Number),
+				plugin: expect.objectContaining({ total: expect.any(Number), sources: expect.any(Object) }),
+			}),
+			expect.objectContaining({
+				kind: 'components',
+				total: expect.any(Number),
+				plugin: expect.objectContaining({ total: expect.any(Number), sources: expect.any(Object) }),
+			}),
+		]);
 	});
 
 	test('registers plugin middleware and global middleware option', () => {
@@ -233,6 +284,125 @@ describe('plugin api v3', () => {
 
 		expect(client.middlewares?.audit).toBe(audit);
 		expect(client.options.globalMiddlewares).toContain('audit');
+	});
+
+	test('registers plugin services and resolves them lazily', () => {
+		const calls: string[] = [];
+		const ledgerKey = createServiceKey<{ readBalance(userId: string): number }>('runtime-ledger');
+		const plugin = createPlugin({
+			name: 'services',
+			register(api) {
+				api.services.set(ledgerKey, () => {
+					calls.push('create service');
+					return { readBalance: () => 100 };
+				});
+			},
+		});
+		const client = createBaseClient([plugin]);
+
+		expect(client.services.has(ledgerKey)).toBe(true);
+		expect(calls).toEqual([]);
+		expect(client.services.require(ledgerKey).readBalance('user')).toBe(100);
+		expect(client.services.get(ledgerKey)).toBe(client.services.get('runtime-ledger' as never));
+		expect(calls).toEqual(['create service']);
+	});
+
+	test('wraps plugin service factory failures with plugin metadata', () => {
+		const serviceKey = createServiceKey<{ ok: true }>('broken-service');
+		const plugin = createPlugin({
+			name: 'broken-service-plugin',
+			register(api) {
+				api.services.set(serviceKey, () => {
+					throw new Error('service boom');
+				});
+			},
+		});
+		const client = createBaseClient([plugin]);
+
+		expect(() => client.services.require(serviceKey)).toThrowError(
+			expect.objectContaining({
+				name: 'SeyfertPluginError',
+				plugin: 'broken-service-plugin',
+				phase: 'services.broken-service',
+				index: 0,
+			}),
+		);
+	});
+
+	test('collects plugin diagnostics warnings and service contributions', () => {
+		const serviceKey = createServiceKey<{ ok: true }>('diagnostic-service');
+		const plugin = createPlugin({
+			name: 'diagnostic-plugin',
+			register(api) {
+				api.services.set(serviceKey, { ok: true });
+				api.diagnostics.warn('Optional package "redis" was not found.', { code: 'missing-optional-peer' });
+			},
+		});
+		const client = createBaseClient([plugin]);
+
+		expect(client.plugins.diagnostics).toEqual([
+			expect.objectContaining({
+				name: 'diagnostic-plugin',
+				services: ['diagnostic-service'],
+				warnings: [
+					expect.objectContaining({
+						code: 'missing-optional-peer',
+						message: 'Optional package "redis" was not found.',
+						phase: 'register',
+					}),
+				],
+			}),
+		]);
+	});
+
+	test('tracks lifecycle status in plugin diagnostics', async () => {
+		const plugin = createPlugin({ name: 'status-plugin', setup() {} });
+		const client = createBaseClient([plugin]);
+
+		expect(client.plugins.diagnostics[0]?.status).toBe('registered');
+		await client.start();
+		expect(client.plugins.diagnostics[0]?.status).toBe('ready');
+		await client.close();
+		expect(client.plugins.diagnostics[0]?.status).toBe('closed');
+	});
+
+	test('wraps plugin event listener failures with plugin metadata', async () => {
+		const failures: unknown[] = [];
+		const plugin = createPlugin({
+			name: 'bad-event',
+			register(api) {
+				api.events.on('botReady', () => {
+					throw new Error('listener boom');
+				});
+			},
+		});
+		const client = createGatewayClient([plugin]);
+		client.events.onFail = async (_name, error) => failures.push(error);
+
+		await client.events.runEvent('BOT_READY' as never, client, {} as never, -1, false);
+
+		expect(failures[0]).toMatchObject({
+			name: 'SeyfertPluginError',
+			plugin: 'bad-event',
+			phase: 'event:BOT_READY',
+			index: 0,
+		});
+	});
+
+	test('supports plugin events.once utility', async () => {
+		const calls: string[] = [];
+		const plugin = createPlugin({
+			name: 'once-listener',
+			register(api) {
+				api.events.once('botReady', () => calls.push('ready'));
+			},
+		});
+		const client = createGatewayClient([plugin]);
+
+		await client.events.runEvent('BOT_READY' as never, client, {} as never, -1, false);
+		await client.events.runEvent('BOT_READY' as never, client, {} as never, -1, false);
+
+		expect(calls).toEqual(['ready']);
 	});
 
 	test('attributes register errors to plugin and phase', () => {

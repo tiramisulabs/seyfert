@@ -8,7 +8,9 @@ import type {
 	HandleableComponent,
 	HandleableModal,
 	PluginContextInteraction,
+	PluginDiagnosticMessage,
 	PluginDiagnostics,
+	PluginLifecycleStatus,
 	ResolvedPluginList,
 	SeyfertPluginOptions,
 } from './types';
@@ -20,6 +22,7 @@ export interface PluginRuntimeRecord {
 	clientKeys: readonly string[];
 	ctxKeys: readonly string[];
 	optionFragments: SeyfertPluginOptions[];
+	status: PluginLifecycleStatus;
 }
 
 export interface PluginCommandContribution {
@@ -57,6 +60,11 @@ export interface PluginMiddlewareContribution {
 	global: boolean;
 }
 
+export interface PluginServiceContribution {
+	record: PluginRuntimeRecord;
+	factory: (client: BaseClient) => unknown;
+}
+
 export interface PluginRuntimeRegistry {
 	plugins: ResolvedPluginList;
 	records: readonly PluginRuntimeRecord[];
@@ -66,6 +74,9 @@ export interface PluginRuntimeRegistry {
 	events: PluginEventContribution[];
 	anyEvents: PluginAnyEventContribution[];
 	middlewares: PluginMiddlewareContribution[];
+	services: Map<string, PluginServiceContribution>;
+	serviceOwners: Map<string, PluginRuntimeRecord>;
+	diagnostics: PluginDiagnosticMessage[];
 	client?: BaseClient;
 }
 
@@ -78,6 +89,7 @@ export function createPluginRuntimeRegistry(plugins: readonly AnySeyfertPlugin[]
 		clientKeys: Object.keys(plugin.client ?? {}),
 		ctxKeys: Object.keys(plugin.ctx ?? {}),
 		optionFragments: [],
+		status: 'registered',
 	}));
 	assertUniqueStaticKeys(records, 'clientKeys', 'client');
 	assertUniqueStaticKeys(records, 'ctxKeys', 'ctx');
@@ -92,6 +104,9 @@ export function createPluginRuntimeRegistry(plugins: readonly AnySeyfertPlugin[]
 		events: [],
 		anyEvents: [],
 		middlewares: [],
+		services: new Map(),
+		serviceOwners: new Map(),
+		diagnostics: [],
 	};
 
 	Object.defineProperties(resolved, {
@@ -273,6 +288,7 @@ function createPluginDiagnostics(registry: PluginRuntimeRegistry): readonly Plug
 	return registry.records.map(record => ({
 		name: record.plugin.name,
 		index: record.index,
+		status: record.status,
 		imports: record.imports.map(plugin => plugin.name),
 		clientKeys: record.clientKeys,
 		ctxKeys: record.ctxKeys,
@@ -286,6 +302,10 @@ function createPluginDiagnostics(registry: PluginRuntimeRegistry): readonly Plug
 		middlewares: registry.middlewares
 			.filter(contribution => contribution.record === record)
 			.map(contribution => contribution.name),
+		services: [...registry.services.entries()]
+			.filter(([, contribution]) => contribution.record === record)
+			.map(([name]) => name),
+		warnings: registry.diagnostics.filter(message => message.plugin === record.plugin.name),
 	}));
 }
 

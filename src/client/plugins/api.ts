@@ -1,17 +1,25 @@
 import { isGatewayEventName } from '../../events/utils';
 import type { PluginRuntimeRecord, PluginRuntimeRegistry } from './registry';
+import { addPluginService, serviceName } from './services';
 import type { SeyfertPluginApi, SeyfertPluginOptions } from './types';
 
 export function createPluginApi(record: PluginRuntimeRecord, registry: PluginRuntimeRegistry): SeyfertPluginApi {
+	const addEvent: SeyfertPluginApi['events']['on'] = (name, handler, opts) => {
+		registry.events.push({
+			record,
+			name: String(name),
+			handler: handler as (...args: unknown[]) => unknown,
+			once: opts?.once,
+		});
+	};
+
 	return {
 		events: {
 			on(name, handler, opts) {
-				registry.events.push({
-					record,
-					name: String(name),
-					handler: handler as (...args: unknown[]) => unknown,
-					once: opts?.once,
-				});
+				addEvent(name, handler, opts);
+			},
+			once(name, handler) {
+				addEvent(name, handler, { once: true });
 			},
 			onAny(handler) {
 				registry.anyEvents.push({
@@ -57,6 +65,27 @@ export function createPluginApi(record: PluginRuntimeRecord, registry: PluginRun
 				if (opts?.global) {
 					record.optionFragments.push({ globalMiddlewares: [name as never] } satisfies SeyfertPluginOptions);
 				}
+			},
+		},
+		services: {
+			set(name: Parameters<SeyfertPluginApi['services']['set']>[0], value: unknown) {
+				const key = serviceName(name as never);
+				addPluginService(registry, record, key, typeof value === 'function' ? (value as never) : () => value);
+			},
+			has(name: Parameters<SeyfertPluginApi['services']['has']>[0]) {
+				return registry.services.has(serviceName(name as never));
+			},
+		},
+		diagnostics: {
+			warn(message, options) {
+				registry.diagnostics.push({
+					plugin: record.plugin.name,
+					index: record.index,
+					phase: options?.phase ?? 'register',
+					severity: 'warn',
+					code: options?.code,
+					message,
+				});
 			},
 		},
 		options: {

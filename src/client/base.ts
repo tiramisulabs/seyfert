@@ -66,6 +66,8 @@ import type { APIInteraction, APIInteractionResponse, LocaleString, RESTPostAPIC
 import {
 	type AnySeyfertPlugin,
 	bindClientPlugins,
+	type PluginLoadedMetadata,
+	type PluginServiceRegistry,
 	type ResolvedPluginList,
 	resolveClientPlugins,
 	setupClientPlugins,
@@ -73,6 +75,7 @@ import {
 } from './plugins';
 import { createPluginConflictError, wrapPluginError } from './plugins/errors';
 import type { PluginRuntimeRegistry } from './plugins/registry';
+import { createServiceRegistry } from './plugins/services';
 import type { MessageStructure } from './transformers';
 
 export type ContextScopeContext = BaseContext & ExtendContext;
@@ -125,6 +128,7 @@ export class BaseClient {
 	}
 
 	readonly plugins: ResolvedPluginList = [] as unknown as ResolvedPluginList;
+	services: PluginServiceRegistry;
 	declare events?: CustomEventRunner;
 	/** @internal */
 	readonly pluginRegistry: PluginRuntimeRegistry;
@@ -195,6 +199,7 @@ export class BaseClient {
 		this.options = resolved.options;
 		this.plugins = resolved.plugins;
 		this.pluginRegistry = resolved.registry;
+		this.services = createServiceRegistry(this, this.pluginRegistry);
 		bindClientPlugins(this, this.pluginRegistry);
 	}
 
@@ -304,10 +309,16 @@ export class BaseClient {
 		await this.loadLangs(options.langsDir);
 		await this.loadCommands(options.commandsDir);
 		this.applyPluginCommands();
-		await this.emitPluginCustomEvent('commandsLoaded', this.commands.values);
+		await this.emitPluginCustomEvent(
+			'commandsLoaded',
+			this.createPluginLoadedMetadata('commands', this.commands.values),
+		);
 		await this.loadComponents(options.componentsDir);
 		this.applyPluginComponents();
-		await this.emitPluginCustomEvent('componentsLoaded', this.components.commands);
+		await this.emitPluginCustomEvent(
+			'componentsLoaded',
+			this.createPluginLoadedMetadata('components', this.components.commands),
+		);
 	}
 
 	private async setupPlugins() {
@@ -484,6 +495,26 @@ export class BaseClient {
 			}
 			target.push(constructor);
 		}
+	}
+
+	private createPluginLoadedMetadata<TKind extends 'commands' | 'components', TItem>(
+		kind: TKind,
+		items: readonly TItem[],
+	): PluginLoadedMetadata<TKind, TItem> {
+		const sources: Record<string, number> = {};
+		for (const item of items) {
+			const source = (item as PluginSourced)[pluginSourceKey];
+			if (source) sources[source] = (sources[source] ?? 0) + 1;
+		}
+		return {
+			kind,
+			total: items.length,
+			items,
+			plugin: {
+				total: Object.values(sources).reduce((sum, value) => sum + value, 0),
+				sources,
+			},
+		};
 	}
 
 	private async emitPluginCustomEvent<T extends CustomEventsKeys>(name: T, ...args: ResolveEventRunParams<T>) {

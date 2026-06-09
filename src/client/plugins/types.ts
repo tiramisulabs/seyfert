@@ -8,6 +8,59 @@ import type { BaseClient, BaseClientOptions } from '../base';
 
 export interface Register {}
 
+export interface RegisteredPluginServices {}
+
+export interface ServiceKey<T, Name extends string = string> {
+	readonly name: Name;
+	readonly __service?: T;
+}
+
+export type ServiceValue<T> = T extends ServiceKey<infer Value, string> ? Value : never;
+
+export interface PluginServiceRegistry {
+	get<const Name extends keyof RegisteredPluginServices & string>(
+		name: Name,
+	): RegisteredPluginServices[Name] | undefined;
+	get<T, const Name extends string>(key: ServiceKey<T, Name>): T | undefined;
+	require<const Name extends keyof RegisteredPluginServices & string>(name: Name): RegisteredPluginServices[Name];
+	require<T, const Name extends string>(key: ServiceKey<T, Name>): T;
+	has<const Name extends string>(name: Name | ServiceKey<unknown, Name>): boolean;
+}
+
+export type PluginDiagnosticSeverity = 'warn';
+export type PluginLifecycleStatus = 'registered' | 'setting-up' | 'ready' | 'closing' | 'closed' | 'failed';
+export type PluginLifecyclePhase =
+	| 'resolve'
+	| 'options'
+	| 'register'
+	| 'client'
+	| 'ctx'
+	| 'services'
+	| 'commands.add'
+	| 'components.add'
+	| 'setup'
+	| 'teardown'
+	| `event:${string}`;
+
+export interface PluginDiagnosticMessage {
+	plugin: string;
+	index: number;
+	phase: PluginLifecyclePhase | string;
+	severity: PluginDiagnosticSeverity;
+	code?: string;
+	message: string;
+}
+
+export interface PluginLoadedMetadata<TKind extends 'commands' | 'components', TItem = unknown> {
+	kind: TKind;
+	total: number;
+	items: readonly TItem[];
+	plugin: {
+		total: number;
+		sources: Readonly<Record<string, number>>;
+	};
+}
+
 export type SeyfertPluginOptions<TOptions extends BaseClientOptions = BaseClientOptions> = Partial<
 	Omit<TOptions, 'plugins'>
 >;
@@ -67,6 +120,10 @@ export interface SeyfertPluginApi {
 			handler: (...args: ResolveEventParams<E>) => unknown,
 			opts?: { once?: boolean },
 		): void;
+		once<E extends ClientNameEvents | CustomEventsKeys | GatewayEvents>(
+			name: E,
+			handler: (...args: ResolveEventParams<E>) => unknown,
+		): void;
 		onAny(handler: (name: string, ...args: unknown[]) => unknown): void;
 		emit<E extends CustomEventsKeys>(name: E, ...payload: ResolveEventRunParams<E>): void;
 	};
@@ -81,6 +138,17 @@ export interface SeyfertPluginApi {
 	};
 	middlewares: {
 		add(name: string, middleware: MiddlewareContext, opts?: { global?: boolean }): void;
+	};
+	services: {
+		set<T, const Name extends string>(key: ServiceKey<T, Name>, value: T | ((client: BaseClient) => T)): void;
+		set<const Name extends keyof RegisteredPluginServices & string>(
+			name: Name,
+			value: RegisteredPluginServices[Name] | ((client: BaseClient) => RegisteredPluginServices[Name]),
+		): void;
+		has<const Name extends string>(name: Name | ServiceKey<unknown, Name>): boolean;
+	};
+	diagnostics: {
+		warn(message: string, options?: { code?: string; phase?: PluginLifecyclePhase | string }): void;
 	};
 	options: {
 		set(fragment: SeyfertPluginOptions): void;
@@ -113,6 +181,7 @@ export interface SeyfertPlugin<
 export interface PluginDiagnostics {
 	name: string;
 	index: number;
+	status: PluginLifecycleStatus;
 	imports: readonly string[];
 	clientKeys: readonly string[];
 	ctxKeys: readonly string[];
@@ -121,4 +190,6 @@ export interface PluginDiagnostics {
 	modals: number;
 	events: readonly string[];
 	middlewares: readonly string[];
+	services: readonly string[];
+	warnings: readonly PluginDiagnosticMessage[];
 }

@@ -11,6 +11,9 @@ import {
 	type PluginRuntimeRegistry,
 	runPluginRegister,
 } from './plugins/registry';
+
+export { createServiceKey } from './plugins/services';
+
 import type {
 	AnySeyfertPlugin,
 	ResolvedPluginList,
@@ -31,13 +34,21 @@ export type {
 	PluginContextInteraction,
 	PluginContextMap,
 	PluginContextOf,
+	PluginDiagnosticMessage,
+	PluginDiagnosticSeverity,
 	PluginDiagnostics,
 	PluginExtensionOf,
+	PluginLifecycleStatus,
+	PluginLoadedMetadata,
+	PluginServiceRegistry,
 	Register,
 	RegisteredPluginContext,
 	RegisteredPluginExtension,
+	RegisteredPluginServices,
 	RegisteredPlugins,
 	ResolvedPluginList,
+	ServiceKey,
+	ServiceValue,
 	SeyfertCommandDefaults,
 	SeyfertComponentDefaults,
 	SeyfertModalDefaults,
@@ -172,21 +183,25 @@ export async function setupClientPlugins(
 	client: BaseClient & { plugins: ResolvedPluginList },
 	plugins: ResolvedPluginList,
 ) {
-	const completed: AnySeyfertPlugin[] = [];
+	const completed: PluginRuntimeRegistry['records'][number][] = [];
+	const records = getPluginRecords(client, plugins);
 
 	try {
-		for (let index = 0; index < plugins.length; index++) {
-			const plugin = plugins[index]!;
+		for (const record of records) {
+			const plugin = record.plugin;
 			try {
+				record.status = 'setting-up';
 				await plugin.setup?.(client as never);
-				completed.push(plugin);
+				record.status = 'ready';
+				completed.push(record);
 			} catch (error) {
-				throw wrapPluginError(plugin.name, 'setup', index, error);
+				record.status = 'failed';
+				throw wrapPluginError(plugin.name, 'setup', record.index, error);
 			}
 		}
 	} catch (setupError) {
 		try {
-			await teardownClientPlugins(client, completed);
+			await teardownPluginRecords(client, completed);
 		} catch (teardownError) {
 			throw new AggregateError([setupError, teardownError], 'Seyfert plugin setup failed and cleanup also failed.');
 		}
@@ -198,18 +213,48 @@ export async function teardownClientPlugins(
 	client: BaseClient & { plugins: ResolvedPluginList },
 	plugins: readonly AnySeyfertPlugin[],
 ) {
+	await teardownPluginRecords(client, getPluginRecords(client, plugins));
+}
+
+async function teardownPluginRecords(
+	client: BaseClient & { plugins: ResolvedPluginList },
+	records: readonly PluginRuntimeRegistry['records'][number][],
+) {
 	const errors: unknown[] = [];
 
-	for (const plugin of [...plugins].reverse()) {
-		const index = plugins.indexOf(plugin);
+	for (const record of [...records].reverse()) {
+		const plugin = record.plugin;
 		try {
+			record.status = 'closing';
 			await plugin.teardown?.(client as never);
+			record.status = 'closed';
 		} catch (error) {
-			errors.push(wrapPluginError(plugin.name, 'teardown', index, error));
+			record.status = 'failed';
+			errors.push(wrapPluginError(plugin.name, 'teardown', record.index, error));
 		}
 	}
 
 	if (errors.length) throw new AggregateError(errors, 'Seyfert plugin teardown failed.');
+}
+
+function getPluginRecords(
+	client: BaseClient & { pluginRegistry?: PluginRuntimeRegistry },
+	plugins: readonly AnySeyfertPlugin[],
+) {
+	const records = client.pluginRegistry?.records ?? [];
+	return plugins.map((plugin, index) => {
+		const record = records.find(record => record.plugin === plugin);
+		if (record) return record;
+		return {
+			plugin,
+			index,
+			imports: plugin.imports ?? [],
+			clientKeys: Object.keys(plugin.client ?? {}),
+			ctxKeys: Object.keys(plugin.ctx ?? {}),
+			optionFragments: [],
+			status: 'registered' as const,
+		};
+	});
 }
 
 export function runContextScopes<T>(
