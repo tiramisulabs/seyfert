@@ -67,6 +67,14 @@ export function createPlugin<
 	return plugin;
 }
 
+export function definePlugins<const TPlugins extends readonly AnySeyfertPlugin[]>(plugins: TPlugins): TPlugins;
+export function definePlugins<const TPlugins extends readonly AnySeyfertPlugin[]>(...plugins: TPlugins): TPlugins;
+export function definePlugins<const TPlugins extends readonly AnySeyfertPlugin[]>(
+	...plugins: TPlugins | [TPlugins]
+): TPlugins {
+	return (Array.isArray(plugins[0]) ? plugins[0] : plugins) as TPlugins;
+}
+
 export function createContextScope(scope: ContextScope): ContextScope {
 	return scope;
 }

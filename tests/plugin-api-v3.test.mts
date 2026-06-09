@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { Client, Command, ComponentCommand, createPlugin, ModalCommand, type MiddlewareContext } from '../src';
+import { Client, Command, ComponentCommand, createPlugin, definePlugins, ModalCommand, type MiddlewareContext } from '../src';
 import { BaseClient } from '../src/client/base';
 
 function runtimeConfig() {
@@ -44,6 +44,15 @@ class PluginModal extends ModalCommand {
 }
 
 describe('plugin api v3', () => {
+	test('defines a canonical plugin tuple from rest arguments or an array', () => {
+		const storage = createPlugin({ name: 'storage' });
+		const economy = createPlugin({ name: 'economy', imports: [storage] });
+
+		expect(definePlugins(economy, storage)).toEqual([economy, storage]);
+		expect(definePlugins([economy, storage])).toEqual([economy, storage]);
+		expect(definePlugins()).toEqual([]);
+	});
+
 	test('expands imports before importers and dedupes the same instance', () => {
 		const storage = createPlugin({ name: 'storage' });
 		const economy = createPlugin({ name: 'economy', imports: [storage] });
