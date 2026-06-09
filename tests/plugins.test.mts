@@ -135,8 +135,10 @@ describe('client plugins', () => {
 
 		assert.instanceOf(thrown, AggregateError);
 		assert.equal(thrown.errors.length, 2);
-		assert.equal(thrown.errors[0].message, 'third failed');
-		assert.equal(thrown.errors[1], firstError);
+		assert.match(thrown.errors[0].message, /third.*teardown|teardown.*third/);
+		assert.equal(thrown.errors[0].cause.message, 'third failed');
+		assert.match(thrown.errors[1].message, /first.*teardown|teardown.*first/);
+		assert.equal(thrown.errors[1].cause, firstError);
 
 		assert.deepEqual(calls, ['third', 'second', 'first']);
 	});
@@ -182,7 +184,8 @@ describe('client plugins', () => {
 			thrown = error;
 		}
 
-		assert.equal(thrown, setupError);
+		assert.match((thrown as Error).message, /third.*setup|setup.*third/);
+		assert.equal((thrown as Error).cause, setupError);
 		assert.deepEqual(calls, ['setup first', 'setup second', 'setup third', 'teardown second', 'teardown first']);
 	});
 

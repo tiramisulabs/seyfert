@@ -1,7 +1,11 @@
-import type { UsingClient } from '../commands';
+import type { Command, ContextMenuCommand, UsingClient } from '../commands';
+import type { ComponentCommands } from '../components/handler';
 import type { ClientEvents } from './hooks';
 
-export interface CustomEvents {}
+export interface CustomEvents {
+	commandsLoaded: (commands: readonly (Command | ContextMenuCommand)[]) => void;
+	componentsLoaded: (components: readonly ComponentCommands[]) => void;
+}
 export type ClientNameEvents = Extract<keyof ClientEvents, string>;
 export type CustomEventsKeys = Extract<keyof CustomEvents, string>;
 

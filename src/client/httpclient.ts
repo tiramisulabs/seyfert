@@ -1,6 +1,7 @@
 import type { DeepPartial } from '../common';
 import type { BaseClientOptions, StartOptions } from './base';
 import { BaseClient } from './base';
+import type { RegisteredPluginExtension } from './plugins';
 
 export class HttpClient extends BaseClient {
 	constructor(options?: BaseClientOptions) {
@@ -12,3 +13,5 @@ export class HttpClient extends BaseClient {
 		return this.execute(options.httpConnection);
 	}
 }
+
+export interface HttpClient extends RegisteredPluginExtension {}

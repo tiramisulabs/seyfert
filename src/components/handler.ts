@@ -236,6 +236,7 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	set(instances: (new () => ComponentCommands)[]) {
+		const added: ComponentCommands[] = [];
 		for (const i of instances) {
 			let component: ReturnType<typeof this.callback>;
 			try {
@@ -248,7 +249,9 @@ export class ComponentHandler extends BaseHandler {
 			this.stablishDefaults(component);
 
 			this.commands.push(component);
+			added.push(component);
 		}
+		return added;
 	}
 
 	async load(componentsDir: string) {

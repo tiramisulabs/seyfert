@@ -272,7 +272,9 @@ describe('client plugins', () => {
 
 		(client as unknown as { gateway: unknown }).gateway = {};
 
-		await expect(client.start({ token: 'header.payload.signature' }, false)).rejects.toThrow('setup failed');
+		await expect(client.start({ token: 'header.payload.signature' }, false)).rejects.toThrow(
+			/plugin.*setup|setup.*plugin/,
+		);
 		await expect(client.start({ token: 'header.payload.signature' }, false)).resolves.toBeUndefined();
 
 		expect(calls).toEqual(['plugin', 'plugin']);

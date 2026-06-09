@@ -23,6 +23,7 @@ import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdat
 import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import { Collectors } from './collectors';
+import type { RegisteredPluginExtension } from './plugins';
 import { type ClientUserStructure, type MessageStructure, Transformers } from './transformers';
 
 let parentPort: import('node:worker_threads').MessagePort;
@@ -233,6 +234,8 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 		}
 	}
 }
+
+export interface Client<Ready extends boolean = boolean> extends RegisteredPluginExtension {}
 
 export interface ClientOptions extends BaseClientOptions {
 	presence?: (shardId: number) => GatewayPresenceUpdateData;

@@ -9,17 +9,19 @@ import type {
 	CommandContext,
 	ContextMenuCommand,
 	EntryPointCommand,
+	ExtendContext,
 	ExtendedRC,
 	ExtendedRCLocations,
 	ExtraProps,
 	MenuCommandContext,
 	RegisteredMiddlewares,
-	SubCommand,
 	UsingClient,
 } from '../commands';
+import { SubCommand } from '../commands';
 import { IgnoreCommand, type InferWithPrefix, type MiddlewareContext } from '../commands/applications/shared';
+import type { BaseContext } from '../commands/basecontext';
 import { HandleCommand } from '../commands/handle';
-import { CommandHandler } from '../commands/handler';
+import { CommandHandler, type HandleableCommand } from '../commands/handler';
 import {
 	ApplicationShorter,
 	assertString,
@@ -49,7 +51,8 @@ import { SoundboardShorter } from '../common/shorters/soundboard';
 import { VoiceStateShorter } from '../common/shorters/voiceStates';
 import type { Awaitable, DeepPartial, IntentStrings, OmitInsert, PermissionStrings, When } from '../common/types/util';
 import type { ComponentCommand, ComponentContext, ModalCommand, ModalContext } from '../components';
-import { ComponentHandler } from '../components/handler';
+import { type ComponentCommands, ComponentHandler } from '../components/handler';
+import type { CustomEventRunner, CustomEventsKeys, ResolveEventRunParams } from '../events';
 import { LangsHandler } from '../langs/handler';
 import type {
 	ChatInputCommandInteraction,
@@ -61,15 +64,24 @@ import type {
 } from '../structures';
 import type { APIInteraction, APIInteractionResponse, LocaleString, RESTPostAPIChannelMessageJSONBody } from '../types';
 import {
+	type AnySeyfertPlugin,
+	bindClientPlugins,
+	type ResolvedPluginList,
 	resolveClientPlugins,
-	type SeyfertPlugin,
-	type SeyfertPluginClient,
 	setupClientPlugins,
 	teardownClientPlugins,
 } from './plugins';
+import { createPluginConflictError, wrapPluginError } from './plugins/errors';
+import type { PluginRuntimeRegistry } from './plugins/registry';
 import type { MessageStructure } from './transformers';
 
-export type ContextScope = <T>(context: unknown, run: () => Awaitable<T>) => Awaitable<T>;
+export type ContextScopeContext = BaseContext & ExtendContext;
+export type ContextScope = <T>(context: ContextScopeContext, run: () => Awaitable<T>) => Awaitable<T>;
+
+const pluginSourceKey = '__seyfertPluginSource';
+type PluginSourced = {
+	[pluginSourceKey]?: string;
+};
 
 export class BaseClient {
 	rest = new ApiHandler({ token: 'INVALID' });
@@ -112,7 +124,10 @@ export class BaseClient {
 		return Buffer.from(token.split('.')[0], 'base64').toString('ascii');
 	}
 
-	readonly plugins: readonly SeyfertPlugin[] = [];
+	readonly plugins: ResolvedPluginList = [] as unknown as ResolvedPluginList;
+	declare events?: CustomEventRunner;
+	/** @internal */
+	readonly pluginRegistry: PluginRuntimeRegistry;
 	private pluginsSetupPromise?: Promise<void>;
 	private pluginsClosePromise?: Promise<void>;
 	options: BaseClientOptions;
@@ -179,6 +194,8 @@ export class BaseClient {
 
 		this.options = resolved.options;
 		this.plugins = resolved.plugins;
+		this.pluginRegistry = resolved.registry;
+		bindClientPlugins(this, this.pluginRegistry);
 	}
 
 	get proxy() {
@@ -286,13 +303,17 @@ export class BaseClient {
 
 		await this.loadLangs(options.langsDir);
 		await this.loadCommands(options.commandsDir);
+		this.applyPluginCommands();
+		await this.emitPluginCustomEvent('commandsLoaded', this.commands.values);
 		await this.loadComponents(options.componentsDir);
+		this.applyPluginComponents();
+		await this.emitPluginCustomEvent('componentsLoaded', this.components.commands);
 	}
 
 	private async setupPlugins() {
 		if (this.pluginsClosePromise) await this.pluginsClosePromise;
 
-		this.pluginsSetupPromise ??= setupClientPlugins(this as SeyfertPluginClient, this.plugins);
+		this.pluginsSetupPromise ??= setupClientPlugins(this, this.plugins);
 
 		try {
 			await this.pluginsSetupPromise;
@@ -316,7 +337,7 @@ export class BaseClient {
 			this.pluginsClosePromise ??
 			(async () => {
 				await setup;
-				await teardownClientPlugins(this as SeyfertPluginClient, this.plugins);
+				await teardownClientPlugins(this, this.plugins);
 			})();
 		this.pluginsClosePromise = close;
 
@@ -328,6 +349,145 @@ export class BaseClient {
 				this.pluginsClosePromise = undefined;
 			}
 		}
+	}
+
+	private applyPluginCommands() {
+		const contributions = this.pluginRegistry.commands;
+		if (!contributions.length) return;
+
+		this.commands.values = this.commands.values.filter(command => !(pluginSourceKey in command));
+		if (this.commands.entryPoint && pluginSourceKey in this.commands.entryPoint) this.commands.entryPoint = null;
+
+		const existingNames = new Set(this.commands.values.map(command => command.name));
+		if (this.commands.entryPoint) existingNames.add(this.commands.entryPoint.name);
+
+		const constructors: HandleableCommand[] = [];
+		const sourceByName = new Map<string, string>();
+
+		for (const contribution of contributions) {
+			for (const command of contribution.commands) {
+				let instance: InstanceType<HandleableCommand>;
+				try {
+					instance = new command();
+				} catch (error) {
+					throw wrapPluginError(contribution.record.plugin.name, 'commands.add', contribution.record.index, error);
+				}
+				if (instance instanceof SubCommand) {
+					throw createPluginConflictError(
+						contribution.record.plugin.name,
+						'commands.add',
+						contribution.record.index,
+						`SubCommand "${instance.name}" cannot be registered as a top-level plugin command.`,
+					);
+				}
+				if (!instance.name) {
+					throw createPluginConflictError(
+						contribution.record.plugin.name,
+						'commands.add',
+						contribution.record.index,
+						'Plugin command is missing a name.',
+					);
+				}
+				if (existingNames.has(instance.name)) {
+					throw createPluginConflictError(
+						contribution.record.plugin.name,
+						'commands.add',
+						contribution.record.index,
+						`Command "${instance.name}" is already registered.`,
+					);
+				}
+
+				existingNames.add(instance.name);
+				sourceByName.set(instance.name, contribution.record.plugin.name);
+				constructors.push(command);
+			}
+		}
+
+		for (const command of this.commands.set(constructors)) {
+			(command as PluginSourced)[pluginSourceKey] = sourceByName.get(command.name);
+		}
+	}
+
+	private applyPluginComponents() {
+		const contributions = this.pluginRegistry.components;
+		const modalContributions = this.pluginRegistry.modals;
+		if (!(contributions.length || modalContributions.length)) return;
+
+		const existing = this.components.commands.filter(command => !(pluginSourceKey in command));
+		this.components.commands.splice(0, this.components.commands.length, ...existing);
+
+		const existingCustomIds = new Set(
+			this.components.commands
+				.map(component => component.customId)
+				.filter((customId): customId is string => typeof customId === 'string'),
+		);
+		const constructors: (new () => ComponentCommands)[] = [];
+		const sourceByCustomId = new Map<string, string>();
+
+		for (const record of this.pluginRegistry.records) {
+			for (const contribution of contributions.filter(contribution => contribution.record === record)) {
+				this.collectPluginComponents(
+					contribution.components,
+					contribution.record.plugin.name,
+					contribution.record.index,
+					existingCustomIds,
+					sourceByCustomId,
+					constructors,
+				);
+			}
+			for (const contribution of modalContributions.filter(contribution => contribution.record === record)) {
+				this.collectPluginComponents(
+					contribution.modals,
+					contribution.record.plugin.name,
+					contribution.record.index,
+					existingCustomIds,
+					sourceByCustomId,
+					constructors,
+				);
+			}
+		}
+
+		for (const component of this.components.set(constructors)) {
+			if (typeof component.customId === 'string') {
+				(component as PluginSourced)[pluginSourceKey] = sourceByCustomId.get(component.customId);
+			}
+		}
+	}
+
+	private collectPluginComponents(
+		constructors: readonly (new () => ComponentCommands)[],
+		pluginName: string,
+		index: number,
+		existingCustomIds: Set<string>,
+		sourceByCustomId: Map<string, string>,
+		target: (new () => ComponentCommands)[],
+	) {
+		for (const constructor of constructors) {
+			let instance: ComponentCommands;
+			try {
+				instance = new constructor();
+			} catch (error) {
+				throw wrapPluginError(pluginName, 'components.add', index, error);
+			}
+
+			if (typeof instance.customId === 'string') {
+				if (existingCustomIds.has(instance.customId)) {
+					throw createPluginConflictError(
+						pluginName,
+						'components.add',
+						index,
+						`Component or modal "${instance.customId}" is already registered.`,
+					);
+				}
+				existingCustomIds.add(instance.customId);
+				sourceByCustomId.set(instance.customId, pluginName);
+			}
+			target.push(constructor);
+		}
+	}
+
+	private async emitPluginCustomEvent<T extends CustomEventsKeys>(name: T, ...args: ResolveEventRunParams<T>) {
+		await this.events?.runCustom(name, ...args);
 	}
 
 	protected async onPacket(..._packet: unknown[]): Promise<any> {
@@ -527,7 +687,7 @@ export class BaseClient {
 }
 
 export interface BaseClientOptions {
-	plugins?: readonly SeyfertPlugin[];
+	plugins?: readonly AnySeyfertPlugin[];
 	contextScopes?: readonly ContextScope[];
 	context?: (
 		interaction:

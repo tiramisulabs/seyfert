@@ -244,28 +244,37 @@ export class CommandHandler extends BaseHandler {
 		return false;
 	}
 
-	set(commands: SeteableCommand[]) {
+	set(commands: HandleableCommand[]) {
+		const added: (Command | ContextMenuCommand | EntryPointCommand)[] = [];
 		this.values ??= [];
 		for (const command of commands) {
-			let commandInstance: Command | undefined;
+			let commandInstance: ReturnType<typeof this.onCommand>;
 			try {
-				commandInstance = this.onCommand(command) as Command;
+				commandInstance = this.onCommand(command);
 				if (!commandInstance) continue;
 			} catch (e) {
 				this.logger.warn(`${command.name} ins't a resolvable command`);
 				this.logger.error(e);
 				continue;
 			}
+			if (commandInstance instanceof SubCommand) continue;
 			commandInstance.props = this.client.options.commands?.defaults?.props ?? {};
 			const isCommand = this.stablishCommandDefaults(commandInstance);
 			if (isCommand) {
-				for (const option of commandInstance.options ?? []) {
-					if (option instanceof SubCommand) this.stablishSubCommandDefaults(commandInstance, option);
+				for (const option of isCommand.options ?? []) {
+					if (option instanceof SubCommand) this.stablishSubCommandDefaults(isCommand, option);
 				}
 			} else this.stablishContextCommandDefaults(commandInstance);
 			this.parseLocales(commandInstance);
-			this.values.push(commandInstance);
+			if ('handler' in commandInstance && commandInstance.handler) {
+				this.entryPoint = commandInstance as EntryPointCommand;
+				added.push(commandInstance as EntryPointCommand);
+			} else {
+				this.values.push(commandInstance as Command | ContextMenuCommand);
+				added.push(commandInstance as Command | ContextMenuCommand);
+			}
 		}
+		return added;
 	}
 
 	async load(commandsDir: string, client: UsingClient) {
@@ -569,5 +578,5 @@ export type FileLoaded<T = null> = {
 } & Record<string, NulleableCoalising<T, HandleableCommand>>;
 
 export type HandleableCommand = new () => Command | SubCommand | ContextMenuCommand | EntryPointCommand;
-export type SeteableCommand = new () => Extract<InstanceType<HandleableCommand>, SubCommand>;
+export type SeteableCommand = HandleableCommand;
 export type HandleableSubCommand = new () => SubCommand;

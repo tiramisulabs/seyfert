@@ -1,28 +1,76 @@
-import type { UsingClient } from '../commands';
 import { MergeOptions } from '../common';
 import type { Awaitable } from '../common/types/util';
-import type { BaseClientOptions, ContextScope } from './base';
+import type { BaseClient, BaseClientOptions, ContextScope, ContextScopeContext } from './base';
+import { wrapPluginError } from './plugins/errors';
+import {
+	bindPluginClient,
+	createPluginContextFragment,
+	createPluginRuntimeRegistry,
+	installPluginClientMaps,
+	installPluginMiddlewares,
+	type PluginRuntimeRegistry,
+	runPluginRegister,
+} from './plugins/registry';
+import type {
+	AnySeyfertPlugin,
+	ResolvedPluginList,
+	SeyfertCommandDefaults,
+	SeyfertComponentDefaults,
+	SeyfertModalDefaults,
+	SeyfertPlugin,
+	SeyfertPluginOptions,
+} from './plugins/types';
 
-type ClientOptionsFragment = Partial<Omit<BaseClientOptions, 'plugins'>>;
-type CommandDefaults = NonNullable<NonNullable<BaseClientOptions['commands']>['defaults']>;
-type ComponentDefaults = NonNullable<NonNullable<BaseClientOptions['components']>['defaults']>;
-type ModalDefaults = NonNullable<NonNullable<BaseClientOptions['modals']>['defaults']>;
+export type {
+	AnySeyfertPlugin,
+	ContextOf,
+	ExtendOf,
+	HandleableComponent,
+	HandleableModal,
+	PluginClientMap,
+	PluginContextInteraction,
+	PluginContextMap,
+	PluginContextOf,
+	PluginDiagnostics,
+	PluginExtensionOf,
+	Register,
+	RegisteredPluginContext,
+	RegisteredPluginExtension,
+	RegisteredPlugins,
+	ResolvedPluginList,
+	SeyfertCommandDefaults,
+	SeyfertComponentDefaults,
+	SeyfertModalDefaults,
+	SeyfertPlugin,
+	SeyfertPluginApi,
+	SeyfertPluginClient,
+	SeyfertPluginOptions,
+} from './plugins/types';
+
+type CommandDefaults = SeyfertCommandDefaults;
+type ComponentDefaults = SeyfertComponentDefaults;
+type ModalDefaults = SeyfertModalDefaults;
 type AnyFunction = (...args: unknown[]) => unknown;
-
-export type SeyfertPluginClient = UsingClient & {
-	plugins: readonly SeyfertPlugin[];
+type LegacyPluginOptions = AnySeyfertPlugin & {
+	options?(current: Readonly<BaseClientOptions>): SeyfertPluginOptions;
 };
 
-export interface SeyfertPlugin {
-	name: string;
-	options?(current: Readonly<BaseClientOptions>): ClientOptionsFragment;
-	setup?(client: SeyfertPluginClient): Awaitable<void>;
-	teardown?(client: SeyfertPluginClient): Awaitable<void>;
+export interface ResolvedClientPlugins {
+	plugins: ResolvedPluginList;
+	options: BaseClientOptions;
+	registry: PluginRuntimeRegistry;
 }
 
-export interface ResolvedClientPlugins {
-	plugins: readonly SeyfertPlugin[];
-	options: BaseClientOptions;
+export function createPlugin<
+	const E extends object = {},
+	const C extends object = {},
+	const I extends readonly AnySeyfertPlugin[] = readonly [],
+>(plugin: SeyfertPlugin<E, C, I>): SeyfertPlugin<E, C, I> {
+	return plugin;
+}
+
+export function createContextScope(scope: ContextScope): ContextScope {
+	return scope;
 }
 
 const commandHookKeys = [
@@ -57,18 +105,28 @@ export function resolveClientPlugins(
 	defaults: BaseClientOptions,
 	options: BaseClientOptions = {},
 ): ResolvedClientPlugins {
-	const plugins = options.plugins ?? [];
+	const registry = createPluginRuntimeRegistry(options.plugins as readonly AnySeyfertPlugin[] | undefined);
 	const userOptions = omitPlugins(options);
-	const pluginOptions: ClientOptionsFragment[] = [];
+	const pluginOptions: SeyfertPluginOptions[] = [];
 
-	for (const plugin of plugins) {
+	for (const record of registry.records) {
+		const contextFragment = createPluginContextFragment(record, registry);
+		if (contextFragment) pluginOptions.push(contextFragment);
+
 		const current = MergeOptions<BaseClientOptions>(defaults, ...pluginOptions, userOptions);
-		const fragment = plugin.options?.(current);
-		if (fragment) pluginOptions.push(fragment);
+		try {
+			const fragment = (record.plugin as LegacyPluginOptions).options?.(current);
+			if (fragment) pluginOptions.push(fragment);
+		} catch (error) {
+			throw wrapPluginError(record.plugin.name, 'options', record.index, error);
+		}
+
+		runPluginRegister(record, registry);
+		pluginOptions.push(...record.optionFragments);
 	}
 
 	const merged = MergeOptions<BaseClientOptions>(defaults, ...pluginOptions, userOptions);
-	merged.plugins = plugins;
+	merged.plugins = registry.plugins;
 
 	composeContext(merged, defaults, pluginOptions, userOptions);
 	composeContextScopes(merged, defaults, pluginOptions, userOptions);
@@ -95,16 +153,30 @@ export function resolveClientPlugins(
 		modalHookKeys,
 	);
 
-	return { plugins, options: merged };
+	return { plugins: registry.plugins, options: merged, registry };
 }
 
-export async function setupClientPlugins(client: SeyfertPluginClient, plugins: readonly SeyfertPlugin[]) {
-	const completed: SeyfertPlugin[] = [];
+export function bindClientPlugins(client: BaseClient, registry: PluginRuntimeRegistry) {
+	bindPluginClient(registry, client);
+	installPluginClientMaps(client, registry);
+	installPluginMiddlewares(client, registry);
+}
+
+export async function setupClientPlugins(
+	client: BaseClient & { plugins: ResolvedPluginList },
+	plugins: ResolvedPluginList,
+) {
+	const completed: AnySeyfertPlugin[] = [];
 
 	try {
-		for (const plugin of plugins) {
-			await plugin.setup?.(client);
-			completed.push(plugin);
+		for (let index = 0; index < plugins.length; index++) {
+			const plugin = plugins[index]!;
+			try {
+				await plugin.setup?.(client as never);
+				completed.push(plugin);
+			} catch (error) {
+				throw wrapPluginError(plugin.name, 'setup', index, error);
+			}
 		}
 	} catch (setupError) {
 		try {
@@ -116,14 +188,18 @@ export async function setupClientPlugins(client: SeyfertPluginClient, plugins: r
 	}
 }
 
-export async function teardownClientPlugins(client: SeyfertPluginClient, plugins: readonly SeyfertPlugin[]) {
+export async function teardownClientPlugins(
+	client: BaseClient & { plugins: ResolvedPluginList },
+	plugins: readonly AnySeyfertPlugin[],
+) {
 	const errors: unknown[] = [];
 
 	for (const plugin of [...plugins].reverse()) {
+		const index = plugins.indexOf(plugin);
 		try {
-			await plugin.teardown?.(client);
+			await plugin.teardown?.(client as never);
 		} catch (error) {
-			errors.push(error);
+			errors.push(wrapPluginError(plugin.name, 'teardown', index, error));
 		}
 	}
 
@@ -132,7 +208,7 @@ export async function teardownClientPlugins(client: SeyfertPluginClient, plugins
 
 export function runContextScopes<T>(
 	scopes: readonly ContextScope[] | undefined,
-	context: unknown,
+	context: ContextScopeContext,
 	run: () => Awaitable<T>,
 ): Awaitable<T> {
 	if (!scopes?.length) return run();
@@ -141,7 +217,7 @@ export function runContextScopes<T>(
 	return scopedRun();
 }
 
-function omitPlugins(options: BaseClientOptions): ClientOptionsFragment {
+function omitPlugins(options: BaseClientOptions): SeyfertPluginOptions {
 	const { plugins: _plugins, ...rest } = options;
 	return rest;
 }
@@ -149,8 +225,8 @@ function omitPlugins(options: BaseClientOptions): ClientOptionsFragment {
 function composeContext(
 	target: BaseClientOptions,
 	defaults: BaseClientOptions,
-	pluginOptions: readonly ClientOptionsFragment[],
-	userOptions: ClientOptionsFragment,
+	pluginOptions: readonly SeyfertPluginOptions[],
+	userOptions: SeyfertPluginOptions,
 ) {
 	const callbacks: NonNullable<BaseClientOptions['context']>[] = [];
 	if (typeof defaults.context === 'function') callbacks.push(defaults.context);
@@ -169,8 +245,8 @@ function composeContext(
 function composeContextScopes(
 	target: BaseClientOptions,
 	defaults: BaseClientOptions,
-	pluginOptions: readonly ClientOptionsFragment[],
-	userOptions: ClientOptionsFragment,
+	pluginOptions: readonly SeyfertPluginOptions[],
+	userOptions: SeyfertPluginOptions,
 ) {
 	const scopes = [
 		...(defaults.contextScopes ?? []),
@@ -183,8 +259,8 @@ function composeContextScopes(
 function composeGlobalMiddlewares(
 	target: BaseClientOptions,
 	defaults: BaseClientOptions,
-	pluginOptions: readonly ClientOptionsFragment[],
-	userOptions: ClientOptionsFragment,
+	pluginOptions: readonly SeyfertPluginOptions[],
+	userOptions: SeyfertPluginOptions,
 ) {
 	const middlewares = [
 		...(defaults.globalMiddlewares ?? []),

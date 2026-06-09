@@ -2,6 +2,7 @@ import type { Client, WorkerClient } from '../client';
 import type { UsingClient } from '../commands';
 import type { FileLoaded } from '../commands/handler';
 import {
+	type Awaitable,
 	BaseHandler,
 	type CamelCase,
 	isCloudfareWorker,
@@ -13,6 +14,7 @@ import {
 } from '../common';
 import type { ClientEvents } from '../events/hooks';
 import * as RawEvents from '../events/hooks';
+import { normalizeEventName, resolveRawEventData } from '../events/utils';
 import { type APIThreadChannel, ChannelType, type GatewayDispatchPayload } from '../types';
 import type { ClientEvent, ClientNameEvents, CustomEvents, CustomEventsKeys, EventContext } from './event';
 
@@ -45,16 +47,63 @@ export type EventValues = {
 	};
 };
 
+export interface CustomEventRunner {
+	runCustom<T extends CustomEventsKeys>(name: T, ...args: ResolveEventRunParams<T>): Awaitable<void>;
+}
+
+type PluginEventListener = {
+	record: {
+		plugin: { name: string };
+		index: number;
+	};
+	name: string;
+	handler: (...args: unknown[]) => unknown;
+	once?: boolean;
+	fired?: boolean;
+};
+
+type PluginAnyEventListener = {
+	record: {
+		plugin: { name: string };
+		index: number;
+	};
+	handler: (name: string, ...args: unknown[]) => unknown;
+};
+
+type ClientWithPluginRegistry =
+	| Client
+	| WorkerClient
+	| {
+			pluginRegistry?: {
+				events: readonly PluginEventListener[];
+				anyEvents: readonly PluginAnyEventListener[];
+			};
+	  };
+
 export class EventHandler extends BaseHandler {
 	constructor(protected client: Client | WorkerClient) {
 		super(client.logger);
+		const registry = (client as ClientWithPluginRegistry).pluginRegistry;
+		if (registry) {
+			for (const listener of registry.events) this.addPluginListener(listener);
+			this.pluginAnyListeners.push(...registry.anyEvents);
+		}
 	}
 
-	onFail = (event: GatewayEvents | CustomEventsKeys, err: unknown) =>
+	onFail = (event: GatewayEvents | CustomEventsKeys | string, err: unknown) =>
 		this.logger.warn('<Client>.events.onFail', err, event);
 	filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
 
 	values: Partial<EventValues> = {};
+	private pluginListeners = new Map<string, PluginEventListener[]>();
+	private pluginAnyListeners: PluginAnyEventListener[] = [];
+
+	private addPluginListener(listener: PluginEventListener) {
+		const name = normalizeEventName(listener.name);
+		const listeners = this.pluginListeners.get(name) ?? [];
+		listeners.push(listener);
+		this.pluginListeners.set(name, listeners);
+	}
 
 	discordEvents = Object.keys(RawEvents).map(x => ReplaceRegex.camel(x.toLowerCase())) as ClientNameEvents[];
 
@@ -66,11 +115,7 @@ export class EventHandler extends BaseHandler {
 				this.logger.warn('Missing event run function');
 				continue;
 			}
-			this.values[
-				this.discordEvents.includes(instance.data.name)
-					? (ReplaceRegex.snake(instance.data.name).toUpperCase() as GatewayEvents)
-					: (instance.data.name as CustomEventsKeys)
-			] = instance as EventValue;
+			this.values[normalizeEventName(instance.data.name) as CustomEventsKeys | GatewayEvents] = instance as EventValue;
 		}
 	}
 
@@ -93,11 +138,8 @@ export class EventHandler extends BaseHandler {
 					continue;
 				}
 				instance.__filePath = file.path;
-				this.values[
-					this.discordEvents.includes(instance.data.name)
-						? (ReplaceRegex.snake(instance.data.name).toUpperCase() as GatewayEvents)
-						: (instance.data.name as CustomEventsKeys)
-				] = instance as EventValue;
+				this.values[normalizeEventName(instance.data.name) as CustomEventsKeys | GatewayEvents] =
+					instance as EventValue;
 			}
 		}
 	}
@@ -188,9 +230,10 @@ export class EventHandler extends BaseHandler {
 		shardId: number,
 		runCache = true,
 	) {
+		const listeners = this.getPluginListeners(name);
 		const Event = this.values[name];
 		try {
-			if (!Event || (Event.data.once && Event.fired)) {
+			if ((!Event || (Event.data.once && Event.fired)) && !listeners.length && !this.pluginAnyListeners.length) {
 				return runCache
 					? this.client.cache.onPacket({
 							t: name,
@@ -198,8 +241,7 @@ export class EventHandler extends BaseHandler {
 						} as GatewayDispatchPayload)
 					: undefined;
 			}
-			Event.fired = true;
-			const hook = await RawEvents[name]?.(client, packet as never);
+			const hook = await resolveRawEventData(name, client, packet);
 
 			if (runCache)
 				await this.client.cache.onPacket({
@@ -207,30 +249,86 @@ export class EventHandler extends BaseHandler {
 					d: packet,
 				} as GatewayDispatchPayload);
 
-			await (Event.run as any)(hook, client, shardId);
+			const tasks: Promise<unknown>[] = [];
+			if (Event && !(Event.data.once && Event.fired)) {
+				Event.fired = true;
+				tasks.push(Promise.resolve((Event.run as any)(hook, client, shardId)));
+			}
+			tasks.push(...this.createPluginListenerTasks(name, listeners, [hook, client, shardId]));
+			await this.settleEventTasks(name, tasks);
 		} catch (e) {
 			await this.onFail(name, e);
 		}
 	}
 
 	async runCustom<T extends CustomEventsKeys>(name: T, ...args: ResolveEventRunParams<T>) {
+		const listeners = this.getPluginListeners(name);
 		const Event = this.values[name];
 		try {
-			if (!Event || (Event.data.once && Event.fired)) {
+			if ((!Event || (Event.data.once && Event.fired)) && !listeners.length && !this.pluginAnyListeners.length) {
 				// @ts-expect-error
 				return this.client.collectors.run(name, args, this.client);
 			}
-			Event.fired = true;
-			this.client.debugger?.debug(`executed a custom event [${name}]`, Event.data.once ? 'once' : '');
+			this.client.debugger?.debug(`executed a custom event [${name}]`, Event?.data.once ? 'once' : '');
 
-			await Promise.all([
-				(Event.run as any)(...args, this.client),
+			const tasks: Promise<unknown>[] = [
 				// @ts-expect-error
-				this.client.collectors.run(name, args, this.client),
-			]);
+				Promise.resolve(this.client.collectors.run(name, args, this.client)),
+			];
+			if (Event && !(Event.data.once && Event.fired)) {
+				Event.fired = true;
+				tasks.push(Promise.resolve((Event.run as any)(...args, this.client)));
+			}
+			tasks.push(...this.createPluginListenerTasks(name, listeners, [...args, this.client]));
+			await this.settleEventTasks(name, tasks);
 		} catch (e) {
 			await this.onFail(name, e);
 		}
+	}
+
+	private getPluginListeners(name: string) {
+		return this.pluginListeners.get(normalizeEventName(name)) ?? [];
+	}
+
+	// Plugin listeners are additive: build isolated tasks so one failure is attributed without skipping the rest.
+	private createPluginListenerTasks(name: string, listeners: readonly PluginEventListener[], args: readonly unknown[]) {
+		const tasks: Promise<unknown>[] = [];
+		for (const listener of listeners) {
+			if (listener.once && listener.fired) continue;
+			listener.fired = true;
+			tasks.push(
+				Promise.resolve()
+					.then(() => listener.handler(...args))
+					.catch(error => {
+						throw new Error(
+							`Seyfert plugin "${listener.record.plugin.name}" failed during event "${name}" at index ${listener.record.index}.`,
+							{ cause: error },
+						);
+					}),
+			);
+		}
+		for (const listener of this.pluginAnyListeners) {
+			tasks.push(
+				Promise.resolve()
+					.then(() => listener.handler(name, ...args))
+					.catch(error => {
+						throw new Error(
+							`Seyfert plugin "${listener.record.plugin.name}" failed during event "${name}" at index ${listener.record.index}.`,
+							{ cause: error },
+						);
+					}),
+			);
+		}
+		return tasks;
+	}
+
+	private async settleEventTasks(name: GatewayEvents | CustomEventsKeys | string, tasks: readonly Promise<unknown>[]) {
+		const results = await Promise.allSettled(tasks);
+		await Promise.all(
+			results.map(async result => {
+				if (result.status === 'rejected') await this.onFail(name, result.reason);
+			}),
+		);
 	}
 
 	async reload(name: GatewayEvents | CustomEventsKeys) {

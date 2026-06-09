@@ -11,6 +11,7 @@ import type {
 	VoiceChannelStructure,
 } from '../../client';
 import type { BaseClient } from '../../client/base';
+import type { RegisteredPluginContext, RegisteredPluginExtension } from '../../client/plugins';
 import type { IsStrictlyUndefined } from '../../common';
 import type { ChannelType } from '../../types';
 import type { RegisteredMiddlewares } from '../decorators';
@@ -24,9 +25,9 @@ export type InferWithPrefix = InternalOptions extends { withPrefix: infer P } ? 
 
 export interface GlobalMetadata {}
 export interface DefaultLocale {}
-export interface ExtendContext {}
+export interface ExtendContext extends RegisteredPluginContext {}
 export interface ExtraProps {}
-export interface UsingClient extends BaseClient {}
+export type UsingClient = BaseClient & RegisteredPluginExtension;
 export interface CustomWorkerClientEvents {}
 export interface CustomWorkerManagerEvents {}
 export interface ExtendedRC {}

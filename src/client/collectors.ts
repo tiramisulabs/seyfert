@@ -2,7 +2,7 @@ import { randomUUID, type UUID } from 'node:crypto';
 import type { UsingClient } from '../commands';
 import type { Awaitable, CamelCase } from '../common';
 import type { CallbackEventHandler, CustomEventsKeys, GatewayEvents } from '../events';
-import * as RawEvents from '../events/hooks';
+import { resolveRawEventData } from '../events/utils';
 
 export type AllClientEvents = CustomEventsKeys | GatewayEvents;
 export type ParseClientEventName<T extends AllClientEvents> = T extends CustomEventsKeys ? T : CamelCase<T>;
@@ -102,7 +102,7 @@ export class Collectors {
 		const collectors = this.values.get(name);
 		if (!collectors) return;
 
-		const data = (await RawEvents[name]?.(client, raw as never)) ?? raw;
+		const data = await resolveRawEventData(name, client, raw);
 
 		for (const i of collectors) {
 			if (await i.options.filter(data as never)) {
