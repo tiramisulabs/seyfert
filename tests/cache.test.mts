@@ -1,5 +1,6 @@
 import { assert, describe, test } from 'vitest';
 import { Client, LimitedMemoryAdapter, MemoryAdapter } from '../lib/index';
+import { BaseResource } from '../lib/cache/resources/default/base';
 
 // all intents
 const intents = 53608447;
@@ -24,6 +25,19 @@ describe('test memory cache adapter', () => {
 			},
 		});
 		return client.cache.testAdapter();
+	});
+});
+
+describe('base cache resource', () => {
+	test('normalizes adapter cache misses to undefined', () => {
+		const adapter = new MemoryAdapter();
+		const resource = new BaseResource<{ id: string }>({ adapter } as any, {} as any);
+
+		assert.strictEqual(adapter.get('base.missing'), null);
+		assert.strictEqual(resource.get('missing'), undefined);
+
+		adapter.set('base.present', { id: 'present' });
+		assert.deepEqual(resource.get('present'), { id: 'present' });
 	});
 });
 
