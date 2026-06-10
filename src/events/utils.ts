@@ -17,7 +17,7 @@ export function isGatewayEventName(name: string) {
 export async function resolveRawEventData(name: string, client: UsingClient, raw: unknown) {
 	if (!isRawEventName(name)) return raw;
 	const rawEvent = RawEvents[name] as (client: UsingClient, raw: unknown) => unknown;
-	return (await rawEvent(client, raw)) ?? raw;
+	return rawEvent(client, raw);
 }
 
 function isRawEventName(name: string): name is keyof typeof RawEvents {

@@ -11,6 +11,7 @@ import {
 	type MiddlewareContext,
 } from '../src';
 import { BaseClient } from '../src/client/base';
+import { resolveRawEventData } from '../src/events/utils';
 import { GatewayIntentBits, GatewayOpcodes, type GatewaySendPayload } from '../src/types';
 import { ShardManager } from '../src/websocket';
 
@@ -344,6 +345,12 @@ describe('plugin api v3', () => {
 		expect(warn.mock.calls[0][0]).toContain('"missing"');
 		expect(context.metadata).toEqual({ registered: { ran: true } });
 		expect(result).toEqual({});
+	});
+
+	test('preserves undefined values returned by raw event transformers', async () => {
+		const raw = { op: GatewayOpcodes.Dispatch, t: 'RESUMED', d: {} };
+
+		await expect(resolveRawEventData('RESUMED', {} as never, raw)).resolves.toBeUndefined();
 	});
 
 	test('checks plugin requirements and records optional dependency warnings', () => {
