@@ -10,12 +10,27 @@ import {
 	type MiddlewareContext,
 } from '../src';
 import { BaseClient } from '../src/client/base';
+import { GatewayIntentBits, GatewayOpcodes, type GatewaySendPayload } from '../src/types';
+import { ShardManager } from '../src/websocket';
 
 function runtimeConfig() {
 	return {
 		token: Buffer.from('bot').toString('base64'),
 		locations: { base: '' },
 		intents: 0,
+	};
+}
+
+function gatewayInfo() {
+	return {
+		session_start_limit: {
+			max_concurrency: 1,
+			remaining: 1000,
+			reset_after: 0,
+			total: 1000,
+		},
+		shards: 1,
+		url: 'wss://gateway.discord.gg',
 	};
 }
 
@@ -284,6 +299,167 @@ describe('plugin api v3', () => {
 
 		expect(client.middlewares?.audit).toBe(audit);
 		expect(client.options.globalMiddlewares).toContain('audit');
+	});
+
+	test('checks plugin requirements and records optional dependency warnings', () => {
+		const storage = createPlugin({ name: 'storage' });
+		const economy = createPlugin({
+			name: 'economy',
+			imports: [storage],
+			requires: ['plugin:storage', { req: 'plugin:redis', optional: true }],
+			register(api) {
+				expect(api.has('plugin:storage')).toBe(true);
+				expect(api.has('plugin:redis')).toBe(false);
+			},
+		});
+		const client = createBaseClient([economy]);
+
+		expect(client.plugins.diagnostics).toEqual([
+			expect.objectContaining({ name: 'storage', requirements: [] }),
+			expect.objectContaining({
+				name: 'economy',
+				requirements: [
+					expect.objectContaining({ req: 'plugin:storage', optional: false, satisfied: true }),
+					expect.objectContaining({ req: 'plugin:redis', optional: true, satisfied: false }),
+				],
+				warnings: [
+					expect.objectContaining({
+						code: 'missing-optional-requirement',
+						phase: 'requires',
+					}),
+				],
+			}),
+		]);
+	});
+
+	test('throws attributed errors for missing required plugin dependencies', () => {
+		const plugin = createPlugin({
+			name: 'needs-storage',
+			requires: ['plugin:storage'],
+		});
+
+		expect(() => createBaseClient([plugin])).toThrow(/needs-storage.*requires|requires.*needs-storage/);
+	});
+
+	test('lets plugins contribute gateway intents', async () => {
+		const plugin = createPlugin({
+			name: 'intent-plugin',
+			register(api) {
+				api.gateway.addIntents('Guilds');
+			},
+		});
+		const client = createGatewayClient([plugin]);
+
+		await client.start({}, false);
+
+		expect(client.cache.intents & GatewayIntentBits.Guilds).toBe(GatewayIntentBits.Guilds);
+	});
+
+	test('emits uploadCommands metadata for plugin observers', async () => {
+		const events: unknown[] = [];
+		const plugin = createPlugin({
+			name: 'upload-observer',
+			register(api) {
+				api.events.on('uploadCommands', metadata => events.push(metadata));
+			},
+		});
+		const client = createGatewayClient([plugin]);
+		const uploaded: unknown[] = [];
+		client.rest = {
+			proxy: {
+				applications: (applicationId: string) => ({
+					commands: {
+						put: (data: unknown) => uploaded.push({ applicationId, data, scope: 'global' }),
+					},
+					guilds: (guildId: string) => ({
+						commands: {
+							put: (data: unknown) => uploaded.push({ applicationId, data, guildId, scope: 'guild' }),
+						},
+					}),
+				}),
+			},
+		} as never;
+		client.commands.values = [
+			{
+				name: 'global',
+				toJSON: () => ({ name: 'global' }),
+			},
+		] as never;
+
+		await client.uploadCommands({ applicationId: 'app' });
+
+		expect(uploaded).toHaveLength(1);
+		expect(events).toEqual([
+			expect.objectContaining({
+				applicationId: 'app',
+				commands: 1,
+				reason: 'forced',
+				scope: 'global',
+				status: 'uploaded',
+			}),
+		]);
+	});
+
+	test('wraps autocomplete execution through plugin hooks', async () => {
+		const calls: string[] = [];
+		const plugin = createPlugin({
+			name: 'autocomplete-wrapper',
+			register(api) {
+				api.autocomplete.wrap(async ({ command }, next) => {
+					calls.push('before');
+					await next();
+					calls.push(command?.name ?? 'missing');
+					calls.push('after');
+				});
+			},
+		});
+		const client = createBaseClient([plugin]);
+		await client.start();
+
+		await client.handleCommand.autocomplete(
+			{} as never,
+			{
+				fullCommandName: 'search',
+				getCommand: () => ({ name: 'search' }),
+			} as never,
+			{
+				name: 'query',
+				autocomplete: async () => calls.push('run'),
+			} as never,
+		);
+
+		expect(calls).toEqual(['before', 'run', 'query', 'after']);
+	});
+
+	test('wraps gateway send payloads through plugin hooks', async () => {
+		const sent: GatewaySendPayload[] = [];
+		const plugin = createPlugin({
+			name: 'gateway-wrapper',
+			register(api) {
+				api.gateway.wrapPayload(({ payload }) => ({
+					...payload,
+					d: 'wrapped',
+				}));
+			},
+		});
+		const client = createGatewayClient([plugin]);
+		client.setServices({
+			gateway: new ShardManager({
+				token: 'token',
+				intents: 0,
+				info: gatewayInfo(),
+				handlePayload() {},
+			}),
+		});
+		client.gateway.set(0, {
+			send: async (_force: boolean, payload: GatewaySendPayload) => {
+				sent.push(payload);
+			},
+		} as never);
+
+		await client.gateway.send(0, { op: GatewayOpcodes.Heartbeat, d: null });
+
+		expect(sent).toEqual([{ op: GatewayOpcodes.Heartbeat, d: 'wrapped' }]);
 	});
 
 	test('registers plugin services and resolves them lazily', () => {

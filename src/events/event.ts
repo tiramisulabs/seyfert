@@ -1,4 +1,4 @@
-import type { PluginLoadedMetadata } from '../client/plugins';
+import type { PluginLoadedMetadata, PluginUploadCommandsMetadata } from '../client/plugins';
 import type { Command, ContextMenuCommand, UsingClient } from '../commands';
 import type { ComponentCommands } from '../components/handler';
 import type { ClientEvents } from './hooks';
@@ -6,6 +6,7 @@ import type { ClientEvents } from './hooks';
 export interface CustomEvents {
 	commandsLoaded: (metadata: PluginLoadedMetadata<'commands', Command | ContextMenuCommand>) => void;
 	componentsLoaded: (metadata: PluginLoadedMetadata<'components', ComponentCommands>) => void;
+	uploadCommands: (metadata: PluginUploadCommandsMetadata) => void;
 }
 export type ClientNameEvents = Extract<keyof ClientEvents, string>;
 export type CustomEventsKeys = Extract<keyof CustomEvents, string>;

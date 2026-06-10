@@ -1,5 +1,10 @@
 import { isGatewayEventName } from '../../events/utils';
-import type { PluginRuntimeRecord, PluginRuntimeRegistry } from './registry';
+import {
+	hasPluginRequirement,
+	type PluginRuntimeRecord,
+	type PluginRuntimeRegistry,
+	resolveGatewayIntent,
+} from './registry';
 import { addPluginService, serviceName } from './services';
 import type { SeyfertPluginApi, SeyfertPluginOptions } from './types';
 
@@ -14,6 +19,9 @@ export function createPluginApi(record: PluginRuntimeRecord, registry: PluginRun
 	};
 
 	return {
+		has(req) {
+			return hasPluginRequirement(registry, req);
+		},
 		events: {
 			on(name, handler, opts) {
 				addEvent(name, handler, opts);
@@ -65,6 +73,19 @@ export function createPluginApi(record: PluginRuntimeRecord, registry: PluginRun
 				if (opts?.global) {
 					record.optionFragments.push({ globalMiddlewares: [name as never] } satisfies SeyfertPluginOptions);
 				}
+			},
+		},
+		autocomplete: {
+			wrap(wrapper) {
+				registry.autocompleteWrappers.push({ record, wrapper });
+			},
+		},
+		gateway: {
+			addIntents(...intents) {
+				registry.gatewayIntents.push({ record, intents: intents.map(resolveGatewayIntent) });
+			},
+			wrapPayload(wrapper) {
+				registry.gatewayPayloadWrappers.push({ record, wrapper });
 			},
 		},
 		services: {

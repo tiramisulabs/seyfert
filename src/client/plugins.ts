@@ -9,6 +9,7 @@ import {
 	installPluginClientMaps,
 	installPluginMiddlewares,
 	type PluginRuntimeRegistry,
+	resolvePluginIntents,
 	runPluginRegister,
 } from './plugins/registry';
 
@@ -16,6 +17,9 @@ export { createServiceKey } from './plugins/services';
 
 import type {
 	AnySeyfertPlugin,
+	PluginAutocompleteNext,
+	PluginAutocompletePayload,
+	PluginGatewayPayload,
 	ResolvedPluginList,
 	SeyfertCommandDefaults,
 	SeyfertComponentDefaults,
@@ -30,22 +34,35 @@ export type {
 	ExtendOf,
 	HandleableComponent,
 	HandleableModal,
+	PluginAutocompleteNext,
+	PluginAutocompletePayload,
+	PluginAutocompleteWrapper,
 	PluginClientMap,
 	PluginContextInteraction,
 	PluginContextMap,
+	PluginContextMapOf,
 	PluginContextOf,
 	PluginDiagnosticMessage,
 	PluginDiagnosticSeverity,
 	PluginDiagnostics,
 	PluginExtensionOf,
+	PluginGatewayPayload,
+	PluginGatewayPayloadWrapper,
+	PluginIntentResolvable,
 	PluginLifecycleStatus,
 	PluginLoadedMetadata,
+	PluginRequirement,
+	PluginRequirementDiagnostic,
+	PluginRequirementInput,
 	PluginServiceRegistry,
+	PluginUploadCommandsMetadata,
+	PluginUsingClient,
 	Register,
 	RegisteredPluginContext,
 	RegisteredPluginExtension,
 	RegisteredPluginServices,
 	RegisteredPlugins,
+	RegisterPlugins,
 	ResolvedPluginList,
 	ServiceKey,
 	ServiceValue,
@@ -177,6 +194,47 @@ export function bindClientPlugins(client: BaseClient, registry: PluginRuntimeReg
 	bindPluginClient(registry, client);
 	installPluginClientMaps(client, registry);
 	installPluginMiddlewares(client, registry);
+}
+
+export function resolveClientPluginIntents(client: BaseClient, base: number) {
+	return resolvePluginIntents(client.pluginRegistry, base);
+}
+
+export function runPluginAutocompleteWrappers(
+	client: BaseClient,
+	payload: PluginAutocompletePayload,
+	run: PluginAutocompleteNext,
+) {
+	const wrappers = client.pluginRegistry.autocompleteWrappers;
+	if (!wrappers.length) return run();
+
+	const dispatch = wrappers.reduceRight<PluginAutocompleteNext>(
+		(next, contribution) => () =>
+			Promise.resolve(contribution.wrapper(payload, next)).catch(error => {
+				throw wrapPluginError(contribution.record.plugin.name, 'autocomplete.wrap', contribution.record.index, error);
+			}),
+		run,
+	);
+	return dispatch();
+}
+
+export async function applyPluginGatewayPayloadWrappers(
+	client: BaseClient,
+	shardId: number,
+	payload: PluginGatewayPayload['payload'],
+) {
+	let current = payload;
+	for (const contribution of client.pluginRegistry.gatewayPayloadWrappers) {
+		let result: Awaited<ReturnType<typeof contribution.wrapper>>;
+		try {
+			result = await contribution.wrapper({ client, shardId, payload: current });
+		} catch (error) {
+			throw wrapPluginError(contribution.record.plugin.name, 'gateway.wrapPayload', contribution.record.index, error);
+		}
+		if (result === null) return null;
+		if (result !== undefined) current = result;
+	}
+	return current;
 }
 
 export async function setupClientPlugins(

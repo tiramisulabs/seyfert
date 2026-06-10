@@ -5,9 +5,12 @@ import {
 	createServiceKey,
 	definePlugins,
 	type PluginContextOf,
+	type PluginContextMapOf,
 	type PluginExtensionOf,
+	type PluginUsingClient,
 	type RegisteredPluginServices,
 	type Register,
+	type RegisterPlugins,
 	type ServiceKey,
 	type SeyfertPlugin,
 	type SeyfertPluginApi,
@@ -38,6 +41,7 @@ const storage = createPlugin({
 const economy = createPlugin({
 	name: 'economy',
 	imports: [storage],
+	requires: ['plugin:storage', { req: 'plugin:cache', optional: true }],
 	client: {
 		economy: () => new EconomyApi(),
 	},
@@ -50,6 +54,19 @@ const economy = createPlugin({
 	},
 	register(api) {
 		expectType<SeyfertPluginApi>(api);
+		expectType<boolean>(api.has('plugin:storage'));
+		api.gateway.addIntents('Guilds');
+		api.gateway.wrapPayload(({ client, payload, shardId }) => {
+			expectType<number>(shardId);
+			expectType<unknown>(client.services.get(ledgerKey));
+			return payload;
+		});
+		api.autocomplete.wrap(async ({ command, interaction, optionsResolver }, next) => {
+			expectType<string | undefined>(command?.name);
+			expectType<unknown>(interaction);
+			expectType<string>(optionsResolver.fullCommandName);
+			await next();
+		});
 		api.services.set(ledgerKey, () => new LedgerService());
 		api.events.once('commandsLoaded', metadata => {
 			expectType<number>(metadata.total);
@@ -71,9 +88,7 @@ const arrayPlugins = definePlugins([economy, storage]);
 const emptyPlugins = definePlugins();
 
 declare module 'seyfert' {
-	interface Register {
-		plugins: typeof plugins;
-	}
+	interface Register extends RegisterPlugins<typeof plugins> {}
 
 	interface RegisteredPluginServices {
 		ledger: LedgerService;
@@ -91,6 +106,8 @@ expectType<string>(storage.meta.label);
 expectType<ServiceKey<LedgerService, 'ledger'>>(ledgerKey);
 expectType<EconomyApi>({} as PluginExtensionOf<typeof economy>['economy']);
 expectType<{ add(amount: number): void }>({} as PluginContextOf<typeof economy>['wallet']);
+expectType<EconomyApi>({} as PluginUsingClient<typeof plugins>['economy']);
+expectType<{ add(amount: number): void }>({} as PluginContextMapOf<typeof plugins>['wallet']);
 
 const client = new Client({ plugins });
 client.economy.addCoins('user', 2);

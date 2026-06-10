@@ -5,6 +5,7 @@ import type {
 	GatewayDispatchPayload,
 	GatewayIntentBits,
 	GatewayPresenceUpdateData,
+	GatewaySendPayload,
 } from '../../types';
 import type { IdentifyProperties } from '../constants';
 import type { WorkerMessages } from './worker';
@@ -38,6 +39,10 @@ export interface ShardManagerOptions extends ShardDetails {
 	 * The payload handlers for messages on the shard.
 	 */
 	handlePayload(shardId: number, packet: GatewayDispatchPayload): unknown;
+	handleSendPayload?(
+		shardId: number,
+		payload: GatewaySendPayload,
+	): Awaitable<GatewaySendPayload | null | undefined | void>;
 	onShardDisconnect?(data: ShardDisconnectData): Awaitable<unknown>;
 	onShardReconnect?(data: ShardReconnectData): Awaitable<unknown>;
 	/**

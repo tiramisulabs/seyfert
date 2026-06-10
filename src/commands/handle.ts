@@ -1,5 +1,5 @@
 import type { Client, WorkerClient } from '../client';
-import { runContextScopes } from '../client/plugins';
+import { runContextScopes, runPluginAutocompleteWrappers } from '../client/plugins';
 import { type MessageStructure, type OptionResolverStructure, Transformers } from '../client/transformers';
 import type { MakeRequired } from '../common';
 import { INTEGER_OPTION_VALUE_LIMIT } from '../common/it/constants';
@@ -64,6 +64,18 @@ export class HandleCommand {
 	constructor(public client: UsingClient) {}
 
 	async autocomplete(
+		interaction: AutocompleteInteraction,
+		optionsResolver: OptionResolverStructure,
+		command?: CommandAutocompleteOption,
+	) {
+		return runPluginAutocompleteWrappers(
+			this.client,
+			{ client: this.client, command, interaction, optionsResolver },
+			() => this.runAutocomplete(interaction, optionsResolver, command),
+		);
+	}
+
+	private async runAutocomplete(
 		interaction: AutocompleteInteraction,
 		optionsResolver: OptionResolverStructure,
 		command?: CommandAutocompleteOption,

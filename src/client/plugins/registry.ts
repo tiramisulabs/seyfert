@@ -1,5 +1,6 @@
 import type { MiddlewareContext } from '../../commands';
 import type { HandleableCommand } from '../../commands/handler';
+import { GatewayIntentBits } from '../../types';
 import type { BaseClient } from '../base';
 import { createPluginApi } from './api';
 import { createPluginConflictError, wrapPluginError } from './errors';
@@ -7,10 +8,16 @@ import type {
 	AnySeyfertPlugin,
 	HandleableComponent,
 	HandleableModal,
+	PluginAutocompleteWrapper,
 	PluginContextInteraction,
 	PluginDiagnosticMessage,
 	PluginDiagnostics,
+	PluginGatewayPayloadWrapper,
+	PluginIntentResolvable,
 	PluginLifecycleStatus,
+	PluginRequirement,
+	PluginRequirementDiagnostic,
+	PluginRequirementInput,
 	ResolvedPluginList,
 	SeyfertPluginOptions,
 } from './types';
@@ -65,6 +72,25 @@ export interface PluginServiceContribution {
 	factory: (client: BaseClient) => unknown;
 }
 
+export interface PluginGatewayIntentContribution {
+	record: PluginRuntimeRecord;
+	intents: readonly number[];
+}
+
+export interface PluginAutocompleteWrapperContribution {
+	record: PluginRuntimeRecord;
+	wrapper: PluginAutocompleteWrapper;
+}
+
+export interface PluginGatewayPayloadWrapperContribution {
+	record: PluginRuntimeRecord;
+	wrapper: PluginGatewayPayloadWrapper;
+}
+
+export interface PluginRequirementContribution extends PluginRequirementDiagnostic {
+	record: PluginRuntimeRecord;
+}
+
 export interface PluginRuntimeRegistry {
 	plugins: ResolvedPluginList;
 	records: readonly PluginRuntimeRecord[];
@@ -74,9 +100,13 @@ export interface PluginRuntimeRegistry {
 	events: PluginEventContribution[];
 	anyEvents: PluginAnyEventContribution[];
 	middlewares: PluginMiddlewareContribution[];
+	autocompleteWrappers: PluginAutocompleteWrapperContribution[];
+	gatewayIntents: PluginGatewayIntentContribution[];
+	gatewayPayloadWrappers: PluginGatewayPayloadWrapperContribution[];
 	services: Map<string, PluginServiceContribution>;
 	serviceOwners: Map<string, PluginRuntimeRecord>;
 	diagnostics: PluginDiagnosticMessage[];
+	requirements: PluginRequirementContribution[];
 	client?: BaseClient;
 }
 
@@ -104,9 +134,13 @@ export function createPluginRuntimeRegistry(plugins: readonly AnySeyfertPlugin[]
 		events: [],
 		anyEvents: [],
 		middlewares: [],
+		autocompleteWrappers: [],
+		gatewayIntents: [],
+		gatewayPayloadWrappers: [],
 		services: new Map(),
 		serviceOwners: new Map(),
 		diagnostics: [],
+		requirements: [],
 	};
 
 	Object.defineProperties(resolved, {
@@ -117,6 +151,8 @@ export function createPluginRuntimeRegistry(plugins: readonly AnySeyfertPlugin[]
 			get: () => createPluginDiagnostics(registry),
 		},
 	});
+
+	validatePluginRequirements(registry);
 
 	return registry;
 }
@@ -134,6 +170,21 @@ export function runPluginRegister(record: PluginRuntimeRecord, registry: PluginR
 
 export function bindPluginClient(registry: PluginRuntimeRegistry, client: BaseClient) {
 	registry.client = client;
+}
+
+export function hasPluginRequirement(registry: PluginRuntimeRegistry, req: PluginRequirement) {
+	if (req.startsWith('plugin:')) {
+		const name = req.slice('plugin:'.length);
+		return registry.records.some(record => record.plugin.name === name);
+	}
+	return false;
+}
+
+export function resolvePluginIntents(registry: PluginRuntimeRegistry, base: number) {
+	return registry.gatewayIntents.reduce(
+		(intents, contribution) => contribution.intents.reduce((current, intent) => current | intent, intents),
+		base,
+	);
 }
 
 export function createPluginContextFragment(
@@ -302,11 +353,54 @@ function createPluginDiagnostics(registry: PluginRuntimeRegistry): readonly Plug
 		middlewares: registry.middlewares
 			.filter(contribution => contribution.record === record)
 			.map(contribution => contribution.name),
+		autocompleteWrappers: registry.autocompleteWrappers.filter(contribution => contribution.record === record).length,
+		gatewayPayloadWrappers: registry.gatewayPayloadWrappers.filter(contribution => contribution.record === record)
+			.length,
+		requirements: registry.requirements
+			.filter(contribution => contribution.record === record)
+			.map(({ req, optional, satisfied }) => ({ req, optional, satisfied })),
 		services: [...registry.services.entries()]
 			.filter(([, contribution]) => contribution.record === record)
 			.map(([name]) => name),
 		warnings: registry.diagnostics.filter(message => message.plugin === record.plugin.name),
 	}));
+}
+
+export function resolveGatewayIntent(intent: PluginIntentResolvable): number {
+	return typeof intent === 'string' ? GatewayIntentBits[intent] : intent;
+}
+
+function normalizeRequirement(input: PluginRequirementInput): PluginRequirementDiagnostic {
+	if (typeof input === 'string') return { req: input, optional: false, satisfied: false };
+	return { req: input.req, optional: input.optional === true, satisfied: false };
+}
+
+function validatePluginRequirements(registry: PluginRuntimeRegistry) {
+	for (const record of registry.records) {
+		for (const input of record.plugin.requires ?? []) {
+			const requirement = normalizeRequirement(input);
+			requirement.satisfied = hasPluginRequirement(registry, requirement.req);
+			registry.requirements.push({ record, ...requirement });
+			if (requirement.satisfied) continue;
+			if (requirement.optional) {
+				registry.diagnostics.push({
+					plugin: record.plugin.name,
+					index: record.index,
+					phase: 'requires',
+					severity: 'warn',
+					code: 'missing-optional-requirement',
+					message: `Optional plugin requirement "${requirement.req}" is not registered.`,
+				});
+				continue;
+			}
+			throw createPluginConflictError(
+				record.plugin.name,
+				'requires',
+				record.index,
+				`Plugin requirement "${requirement.req}" is not registered.`,
+			);
+		}
+	}
 }
 
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {

@@ -295,15 +295,35 @@ export class ShardManager extends Map<number, Shard> {
 		});
 	}
 
-	send<T extends GatewaySendPayload>(shardId: number, payload: T) {
+	async send<T extends GatewaySendPayload>(shardId: number, payload: T) {
+		const resolvedPayload = await this.resolveSendPayload(shardId, payload);
+		if (!resolvedPayload) return false;
+
 		if (workerData?.__USING_WATCHER__) {
-			return parentPort?.postMessage({
+			if (!parentPort) {
+				throw new SeyfertError('INTERNAL_ERROR', {
+					metadata: { detail: 'Cannot send shard payload without a watcher parent port' },
+				});
+			}
+			parentPort.postMessage({
 				type: 'SEND_TO_SHARD',
 				shardId,
-				payload,
+				payload: resolvedPayload,
 			} satisfies WatcherSendToShard);
+			return true;
 		}
-		this.get(shardId)?.send(false, payload);
+		const shard = this.get(shardId);
+		if (!shard) {
+			throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Shard #${shardId} doesn't exist` } });
+		}
+		await shard.send(false, resolvedPayload);
+		return true;
+	}
+
+	private async resolveSendPayload<T extends GatewaySendPayload>(shardId: number, payload: T) {
+		const result = await this.options.handleSendPayload?.(shardId, payload);
+		if (result === null) return null;
+		return (result ?? payload) as T;
 	}
 
 	resume(shardId: number, shardData: MakeRequired<ShardData>) {

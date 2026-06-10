@@ -68,6 +68,7 @@ import {
 	bindClientPlugins,
 	type PluginLoadedMetadata,
 	type PluginServiceRegistry,
+	type PluginUploadCommandsMetadata,
 	type ResolvedPluginList,
 	resolveClientPlugins,
 	setupClientPlugins,
@@ -610,12 +611,23 @@ export class BaseClient {
 			filter.expect.push(this.commands.entryPoint);
 		}
 
-		if (!cachePath || (await this.shouldUploadCommands(cachePath)))
+		const globalCommands = filter.expect
+			.filter(cmd => !('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash)
+			.map(x => x.toJSON());
+		const shouldUploadGlobal = !cachePath || (await this.shouldUploadCommands(cachePath));
+		if (shouldUploadGlobal) {
 			await this.proxy.applications(applicationId).commands.put({
-				body: filter.expect
-					.filter(cmd => !('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash)
-					.map(x => x.toJSON()),
+				body: globalCommands,
 			});
+		}
+		await this.emitUploadCommandsMetadata({
+			applicationId,
+			cachePath,
+			commands: globalCommands.length,
+			reason: cachePath ? (shouldUploadGlobal ? 'cache-miss' : 'cache-hit') : 'forced',
+			scope: 'global',
+			status: shouldUploadGlobal ? 'uploaded' : 'skipped',
+		});
 
 		const guilds = new Set<string>();
 
@@ -626,21 +638,31 @@ export class BaseClient {
 		}
 
 		for (const guildId of guilds) {
-			if (!cachePath || (await this.shouldUploadCommands(cachePath, guildId))) {
-				await this.proxy
-					.applications(applicationId)
-					.guilds(guildId)
-					.commands.put({
-						body: filter.never
-							.filter(
-								cmd => cmd.guildId.includes(guildId) && (!('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash),
-							)
-							.map(x => x.toJSON()),
-					});
+			const guildCommands = filter.never
+				.filter(cmd => cmd.guildId.includes(guildId) && (!('ignore' in cmd) || cmd.ignore !== IgnoreCommand.Slash))
+				.map(x => x.toJSON());
+			const shouldUploadGuild = !cachePath || (await this.shouldUploadCommands(cachePath, guildId));
+			if (shouldUploadGuild) {
+				await this.proxy.applications(applicationId).guilds(guildId).commands.put({
+					body: guildCommands,
+				});
 			}
+			await this.emitUploadCommandsMetadata({
+				applicationId,
+				cachePath,
+				commands: guildCommands.length,
+				guildId,
+				reason: cachePath ? (shouldUploadGuild ? 'cache-miss' : 'cache-hit') : 'forced',
+				scope: 'guild',
+				status: shouldUploadGuild ? 'uploaded' : 'skipped',
+			});
 		}
 
 		if (cachePath) await this.syncCachePath(cachePath);
+	}
+
+	private async emitUploadCommandsMetadata(metadata: PluginUploadCommandsMetadata) {
+		await this.emitPluginCustomEvent('uploadCommands', metadata);
 	}
 
 	async loadCommands(dir?: string) {

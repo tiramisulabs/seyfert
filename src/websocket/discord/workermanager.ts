@@ -145,6 +145,20 @@ export class WorkerManager extends Map<
 	}
 
 	calculateWorkerId(shardId: number) {
+		if (shardId < this.shardStart || shardId >= this.shardEnd) {
+			throw new SeyfertError('INVALID_SHARD_ID', {
+				metadata: {
+					...{
+						shardId,
+						shardStart: this.shardStart,
+						shardEnd: this.shardEnd,
+						shardsPerWorker: this.shardsPerWorker,
+						totalWorkers: this.totalWorkers,
+					},
+					detail: 'Invalid shardId',
+				},
+			});
+		}
 		const workerId = Math.floor((shardId - this.shardStart) / this.shardsPerWorker);
 		if (workerId >= this.totalWorkers) {
 			throw new SeyfertError('INVALID_SHARD_ID', {
@@ -528,16 +542,25 @@ export class WorkerManager extends Map<
 			throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Worker #${workerId} doesn't exist` } });
 		}
 
+		const payload = await this.resolveSendPayload(shardId, data);
+		if (!payload) return false;
+
 		const nonce = this.generateNonce();
 
 		this.postMessage(workerId, {
 			type: 'SEND_PAYLOAD',
 			shardId,
 			nonce,
-			...data,
+			...payload,
 		} satisfies ManagerSendPayload);
 
 		return this.generateSendPromise<true>(nonce, 'Shard send payload timeout');
+	}
+
+	private async resolveSendPayload(shardId: number, payload: GatewaySendPayload) {
+		const result = await this.options.handleSendPayload?.(shardId, payload);
+		if (result === null) return null;
+		return result ?? payload;
 	}
 
 	async getShardInfo(shardId: number) {
@@ -598,7 +621,7 @@ export class WorkerManager extends Map<
 			(await BaseClient.prototype.getRC<InternalRuntimeConfig>());
 
 		this.options.debug ||= rc.debug ?? false;
-		this.options.intents ||= rc.intents ?? 0;
+		this.options.intents ??= rc.intents ?? 0;
 		this.options.token ??= rc.token;
 		this.rest ??= new ApiHandler({
 			token: this.options.token,

@@ -10,7 +10,7 @@ import {
 	type When,
 } from '../common';
 import { EventHandler } from '../events';
-import type { GatewayDispatchPayload, GatewayPresenceUpdateData } from '../types';
+import type { GatewayDispatchPayload, GatewayPresenceUpdateData, GatewaySendPayload } from '../types';
 import {
 	properties,
 	type ShardDisconnectData,
@@ -23,7 +23,11 @@ import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdat
 import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import { Collectors } from './collectors';
-import type { RegisteredPluginExtension } from './plugins';
+import {
+	applyPluginGatewayPayloadWrappers,
+	type RegisteredPluginExtension,
+	resolveClientPluginIntents,
+} from './plugins';
 import { type ClientUserStructure, type MessageStructure, Transformers } from './transformers';
 
 let parentPort: import('node:worker_threads').MessagePort;
@@ -75,6 +79,9 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				await oldOnShardReconnect?.(data);
 				await this.onShardReconnect(data);
 			};
+			const oldHandleSendPayload = gateway.options.handleSendPayload;
+			gateway.options.handleSendPayload = (shardId, payload) =>
+				this.handleGatewaySendPayload(shardId, payload, oldHandleSendPayload);
 			this.gateway = gateway;
 		}
 	}
@@ -117,7 +124,9 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						this.gateway.options.handlePayload(data.shardId, data.payload);
 						break;
 					case 'SEND_TO_SHARD':
-						this.gateway.send(data.shardId, data.payload);
+						void this.gateway.send(data.shardId, data.payload).catch(error => {
+							this.logger.fatal('Watcher failed to send payload to shard', error);
+						});
 						break;
 				}
 			});
@@ -132,7 +141,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 
 		const { token: tokenRC, intents: intentsRC, debug: debugRC } = await this.getRC<InternalRuntimeConfig>();
 		const token = options?.token ?? tokenRC;
-		const intents = options?.connection?.intents ?? intentsRC;
+		const intents = resolveClientPluginIntents(this, options?.connection?.intents ?? intentsRC);
 		this.cache.intents = intents;
 
 		if (!this.gateway) {
@@ -145,6 +154,8 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 					await this.options?.handlePayload?.(shardId, packet);
 					return this.onPacket(shardId, packet);
 				},
+				handleSendPayload: (shardId, payload) =>
+					this.handleGatewaySendPayload(shardId, payload, this.options?.handleSendPayload),
 				onShardDisconnect: this.onShardDisconnect.bind(this),
 				onShardReconnect: this.onShardReconnect.bind(this),
 				presence: this.options?.presence,
@@ -233,6 +244,18 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			}
 		}
 	}
+
+	private async handleGatewaySendPayload(
+		shardId: number,
+		payload: GatewaySendPayload,
+		handleSendPayload?: ShardManagerOptions['handleSendPayload'],
+	) {
+		const pluginPayload = await applyPluginGatewayPayloadWrappers(this, shardId, payload);
+		if (pluginPayload === null) return null;
+		const result = await handleSendPayload?.(shardId, pluginPayload);
+		if (result === null) return null;
+		return result ?? pluginPayload;
+	}
 }
 
 export interface Client<Ready extends boolean = boolean> extends RegisteredPluginExtension {}
@@ -254,6 +277,7 @@ export interface ClientOptions extends BaseClientOptions {
 		reply?: (ctx: CommandContext) => Awaitable<boolean>;
 	};
 	handlePayload?: ShardManagerOptions['handlePayload'];
+	handleSendPayload?: ShardManagerOptions['handleSendPayload'];
 	onShardDisconnect?: ShardManagerOptions['onShardDisconnect'];
 	onShardReconnect?: ShardManagerOptions['onShardReconnect'];
 	resharding?: PickPartial<NonNullable<ShardManagerOptions['resharding']>, 'getInfo'>;
