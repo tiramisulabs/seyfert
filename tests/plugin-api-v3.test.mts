@@ -1,5 +1,6 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import {
+	BaseCommand,
 	Client,
 	Command,
 	ComponentCommand,
@@ -299,6 +300,48 @@ describe('plugin api v3', () => {
 
 		expect(client.middlewares?.audit).toBe(audit);
 		expect(client.options.globalMiddlewares).toContain('audit');
+	});
+
+	test('warns and stops when an assigned middleware is not registered', async () => {
+		const warn = vi.fn();
+		const context = {
+			client: {
+				middlewares: {},
+				logger: { warn },
+			},
+			command: { name: 'secure' },
+			globalMetadata: {},
+			metadata: {},
+		} as never;
+
+		const result = await BaseCommand.__runMiddlewares(context, ['auth' as never], false);
+
+		expect(warn).toHaveBeenCalledOnce();
+		expect(warn.mock.calls[0][0]).toContain('Command "secure"');
+		expect(warn.mock.calls[0][0]).toContain('"auth"');
+		expect(result.error).toContain('not registered');
+	});
+
+	test('does not run a middleware chain when any assigned middleware is missing', async () => {
+		const warn = vi.fn();
+		const registered = vi.fn();
+		const context = {
+			client: {
+				middlewares: {
+					registered,
+				},
+				logger: { warn },
+			},
+			command: { name: 'partial' },
+			globalMetadata: {},
+			metadata: {},
+		} as never;
+
+		const result = await BaseCommand.__runMiddlewares(context, ['registered' as never, 'missing' as never], false);
+
+		expect(registered).not.toHaveBeenCalled();
+		expect(warn).toHaveBeenCalledOnce();
+		expect(result.error).toContain('"missing"');
 	});
 
 	test('checks plugin requirements and records optional dependency warnings', () => {

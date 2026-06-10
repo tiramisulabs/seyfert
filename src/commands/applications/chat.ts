@@ -196,6 +196,17 @@ export class BaseCommand {
 		if (!middlewares.length) {
 			return Promise.resolve({});
 		}
+		const missingMiddlewares = middlewares.filter(middleware => !context.client.middlewares?.[middleware]);
+		if (missingMiddlewares.length) {
+			const owner = BaseCommand.__getMiddlewareOwnerName(context);
+			const message = `${owner} has ${
+				global ? 'global ' : ''
+			}middleware${missingMiddlewares.length === 1 ? '' : 's'} ${missingMiddlewares
+				.map(middleware => `"${String(middleware)}"`)
+				.join(', ')} assigned, but ${missingMiddlewares.length === 1 ? 'it is' : 'they are'} not registered.`;
+			context.client.logger.warn(message);
+			return Promise.resolve({ error: message });
+		}
 		let index = 0;
 
 		return new Promise(res => {
@@ -229,6 +240,15 @@ export class BaseCommand {
 			};
 			context.client.middlewares![middlewares[0]]({ context, next, stop, pass });
 		});
+	}
+
+	private static __getMiddlewareOwnerName(
+		context: CommandContext<{}, never> | ComponentContext | MenuCommandContext<any> | ModalContext | EntryPointContext,
+	) {
+		const command = context.command as { customId?: string | RegExp; name?: string } | undefined;
+		if (command?.name) return `Command "${command.name}"`;
+		if (typeof command?.customId === 'string') return `Component "${command.customId}"`;
+		return 'Command';
 	}
 
 	/** @internal */
