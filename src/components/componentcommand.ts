@@ -1,4 +1,4 @@
-import type { ExtraProps, RegisteredMiddlewares, UsingClient } from '../commands';
+import type { ExtraProps, ResolvedRegisteredMiddlewares, UsingClient } from '../commands';
 import { ComponentType } from '../types';
 import type { ComponentContext, ContextComponentCommandInteractionMap } from './componentcontext';
 
@@ -29,7 +29,7 @@ export abstract class ComponentCommand {
 		return true;
 	}
 
-	middlewares: (keyof RegisteredMiddlewares)[] = [];
+	middlewares: (keyof ResolvedRegisteredMiddlewares)[] = [];
 
 	props!: ExtraProps;
 

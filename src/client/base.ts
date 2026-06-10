@@ -14,7 +14,7 @@ import type {
 	ExtendedRCLocations,
 	ExtraProps,
 	MenuCommandContext,
-	RegisteredMiddlewares,
+	ResolvedRegisteredMiddlewares,
 	UsingClient,
 } from '../commands';
 import { SubCommand } from '../commands';
@@ -752,7 +752,7 @@ export interface BaseClientOptions {
 			| EntryPointInteraction<boolean>
 			| When<InferWithPrefix, MessageStructure, never>,
 	) => Record<string, unknown>;
-	globalMiddlewares?: readonly (keyof RegisteredMiddlewares)[];
+	globalMiddlewares?: readonly (keyof ResolvedRegisteredMiddlewares)[];
 	commands?: {
 		defaults?: {
 			onBeforeMiddlewares?: (context: CommandContext | MenuCommandContext<any, never>) => unknown;

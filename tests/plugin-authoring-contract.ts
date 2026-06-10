@@ -1,16 +1,23 @@
 import {
 	Client,
+	type CommandMetadata,
 	type CommandContext,
 	createPlugin,
 	createServiceKey,
 	definePlugins,
+	Middlewares,
+	type MetadataMiddleware,
+	type MiddlewareContext,
 	type PluginContextOf,
 	type PluginContextMapOf,
 	type PluginExtensionOf,
+	type PluginMiddlewaresMapOf,
 	type PluginUsingClient,
+	type RegisteredPluginMiddlewares,
 	type RegisteredPluginServices,
 	type Register,
 	type RegisterPlugins,
+	type ResolvedRegisteredMiddlewares,
 	type ServiceKey,
 	type SeyfertPlugin,
 	type SeyfertPluginApi,
@@ -27,6 +34,9 @@ class LedgerService {
 		return 100;
 	}
 }
+
+type AuthMiddleware = MiddlewareContext<{ userId: string }, CommandContext>;
+type AuditMiddleware = MiddlewareContext<undefined, CommandContext>;
 
 const ledgerKey = createServiceKey('ledger');
 
@@ -83,7 +93,15 @@ const economy = createPlugin({
 	},
 });
 
-const plugins = definePlugins(economy, storage);
+const auth: SeyfertPlugin<{}, {}, readonly [], { auth: AuthMiddleware; audit: AuditMiddleware }> = createPlugin({
+	name: 'auth',
+	register(api) {
+		api.middlewares.add('auth', (({ next }) => next({ userId: '1' })) as AuthMiddleware);
+		api.middlewares.add('audit', (({ next }) => next()) as AuditMiddleware);
+	},
+});
+
+const plugins = definePlugins(economy, storage, auth);
 const arrayPlugins = definePlugins([economy, storage]);
 const emptyPlugins = definePlugins();
 
@@ -96,10 +114,11 @@ declare module 'seyfert' {
 }
 
 declare function commandContext(): CommandContext;
+declare function authCommandContext(): CommandContext<{}, 'auth'>;
 
 expectType<Register>({ plugins });
 expectType<SeyfertPlugin<any, any, any>>(economy);
-expectType<readonly [typeof economy, typeof storage]>(plugins);
+expectType<readonly [typeof economy, typeof storage, typeof auth]>(plugins);
 expectType<readonly [typeof economy, typeof storage]>(arrayPlugins);
 expectType<readonly []>(emptyPlugins);
 expectType<string>(storage.meta.label);
@@ -108,6 +127,19 @@ expectType<EconomyApi>({} as PluginExtensionOf<typeof economy>['economy']);
 expectType<{ add(amount: number): void }>({} as PluginContextOf<typeof economy>['wallet']);
 expectType<EconomyApi>({} as PluginUsingClient<typeof plugins>['economy']);
 expectType<{ add(amount: number): void }>({} as PluginContextMapOf<typeof plugins>['wallet']);
+expectType<AuthMiddleware>({} as PluginMiddlewaresMapOf<typeof plugins>['auth']);
+expectType<AuthMiddleware>({} as RegisteredPluginMiddlewares['auth']);
+expectType<{ auth: { userId: string } }>({} as CommandMetadata<'auth'>);
+expectType<{ auth: { userId: string } }>({} as CommandMetadata<'auth' | 'audit'>);
+expectType<{}>({} as CommandMetadata<'audit'>);
+// @ts-expect-error middlewares without metadata payload are omitted from command metadata
+({} as CommandMetadata<'audit'>).audit;
+// @ts-expect-error middlewares without metadata payload are omitted even when mixed with payload middlewares
+({} as CommandMetadata<'auth' | 'audit'>).audit;
+expectType<{ userId: string }>({} as MetadataMiddleware<AuthMiddleware>);
+expectType<{ userId: string }>({} as MetadataMiddleware<RegisteredPluginMiddlewares['auth']>);
+expectType<{ userId: string }>({} as MetadataMiddleware<ResolvedRegisteredMiddlewares['auth']>);
+expectType<AuthMiddleware>({} as ResolvedRegisteredMiddlewares['auth']);
 
 const client = new Client({ plugins });
 client.economy.addCoins('user', 2);
@@ -120,3 +152,7 @@ expectType<RegisteredPluginServices['ledger'] | undefined>(client.services.get('
 const ctx = commandContext();
 ctx.client.economy.addCoins('user', 3);
 ctx.wallet.add(3);
+expectType<ReturnType<typeof Middlewares>>(Middlewares(['auth']));
+// @ts-expect-error plugin middlewares must be registered before they can be referenced
+Middlewares(['missing']);
+expectType<{ userId: string }>(authCommandContext().metadata.auth);

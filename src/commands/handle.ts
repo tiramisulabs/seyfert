@@ -41,7 +41,7 @@ import {
 	IgnoreCommand,
 	MenuCommandContext,
 	type MessageCommandOptionErrors,
-	type RegisteredMiddlewares,
+	type ResolvedRegisteredMiddlewares,
 	type SeyfertChannelOption,
 	type SeyfertIntegerOption,
 	type SeyfertNumberOption,
@@ -626,7 +626,7 @@ export class HandleCommand {
 		try {
 			const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
 				context,
-				(this.client.options?.globalMiddlewares ?? []) as keyof RegisteredMiddlewares,
+				(this.client.options?.globalMiddlewares ?? []) as (keyof ResolvedRegisteredMiddlewares)[],
 				true,
 			);
 			if (resultRunGlobalMiddlewares.pass) {
@@ -654,7 +654,7 @@ export class HandleCommand {
 		try {
 			const resultRunMiddlewares = await BaseCommand.__runMiddlewares(
 				context,
-				command.middlewares as keyof RegisteredMiddlewares,
+				command.middlewares as (keyof ResolvedRegisteredMiddlewares)[],
 				false,
 			);
 			if (resultRunMiddlewares.pass) {

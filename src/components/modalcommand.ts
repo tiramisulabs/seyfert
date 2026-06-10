@@ -1,4 +1,4 @@
-import type { ExtraProps, RegisteredMiddlewares, UsingClient } from '../commands';
+import type { ExtraProps, ResolvedRegisteredMiddlewares, UsingClient } from '../commands';
 import { InteractionCommandType } from './componentcommand';
 import type { ModalContext } from './modalcontext';
 
@@ -23,7 +23,7 @@ export abstract class ModalCommand {
 		return true;
 	}
 
-	middlewares: (keyof RegisteredMiddlewares)[] = [];
+	middlewares: (keyof ResolvedRegisteredMiddlewares)[] = [];
 
 	props!: ExtraProps;
 

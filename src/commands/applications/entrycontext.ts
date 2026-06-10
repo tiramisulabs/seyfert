@@ -13,19 +13,20 @@ import type {
 	MessageWebhookCreateBodyRequest,
 	ModalCreateBodyRequest,
 	ModalCreateOptions,
-	UnionToTuple,
 	When,
 } from '../../common';
 import type { AllChannels, EntryPointInteraction, ModalSubmitInteraction } from '../../structures';
 import { MessageFlags, type RESTGetAPIGuildQuery } from '../../types';
 import { BaseContext } from '../basecontext';
-import type { RegisteredMiddlewares } from '../decorators';
+import type { ResolvedRegisteredMiddlewares } from '../decorators';
 import type { EntryPointCommand } from './entryPoint';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
 
-export interface EntryPointContext<M extends keyof RegisteredMiddlewares = never> extends BaseContext, ExtendContext {}
+export interface EntryPointContext<M extends keyof ResolvedRegisteredMiddlewares = never>
+	extends BaseContext,
+		ExtendContext {}
 
-export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> extends BaseContext {
+export class EntryPointContext<M extends keyof ResolvedRegisteredMiddlewares = never> extends BaseContext {
 	constructor(
 		readonly client: UsingClient,
 		readonly interaction: EntryPointInteraction,
@@ -35,7 +36,7 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 		super(client);
 	}
 
-	metadata: CommandMetadata<UnionToTuple<M>> = {} as never;
+	metadata: CommandMetadata<M> = {} as never;
 	globalMetadata: GlobalMetadata = {};
 
 	get t() {
@@ -159,7 +160,7 @@ export class EntryPointContext<M extends keyof RegisteredMiddlewares = never> ex
 	}
 }
 
-export interface GuildEntryPointContext<M extends keyof RegisteredMiddlewares = never>
+export interface GuildEntryPointContext<M extends keyof ResolvedRegisteredMiddlewares = never>
 	extends Omit<MakeRequired<EntryPointContext<M>, 'guildId' | 'member'>, 'guild' | 'me'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;

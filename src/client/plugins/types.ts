@@ -1,4 +1,4 @@
-import type { MiddlewareContext } from '../../commands';
+import type { AnyMiddlewareContext, MiddlewareContext } from '../../commands';
 import type { CommandAutocompleteOption } from '../../commands/applications/chat';
 import type { HandleableCommand } from '../../commands/handler';
 import type { Awaitable } from '../../common/types/util';
@@ -132,10 +132,16 @@ export type PluginContextMap<T extends object> = {
 	readonly [K in keyof T]: (interaction: PluginContextInteraction, client: BaseClient) => T[K];
 };
 
-export type AnySeyfertPlugin = SeyfertPlugin<any, any, readonly AnySeyfertPlugin[]>;
+export type PluginMiddlewareMap = Record<string, AnyMiddlewareContext>;
+export type AnySeyfertPlugin = SeyfertPlugin<any, any, readonly AnySeyfertPlugin[], any>;
 
-export type PluginExtensionOf<T> = T extends SeyfertPlugin<infer E, any, any> ? E : {};
-export type PluginContextOf<T> = T extends SeyfertPlugin<any, infer C, any> ? C : {};
+export type PluginExtensionOf<T> = T extends SeyfertPlugin<infer E, any, any, any> ? E : {};
+export type PluginContextOf<T> = T extends SeyfertPlugin<any, infer C, any, any> ? C : {};
+export type PluginMiddlewaresOf<T> = T extends SeyfertPlugin<any, any, any, infer M>
+	? IsOpenPluginMiddlewareMap<M> extends true
+		? {}
+		: M
+	: {};
 
 export type ExtendOf<TPlugins extends readonly AnySeyfertPlugin[]> = UnionToIntersection<
 	PluginExtensionOf<TPlugins[number]>
@@ -144,21 +150,30 @@ export type ExtendOf<TPlugins extends readonly AnySeyfertPlugin[]> = UnionToInte
 export type ContextOf<TPlugins extends readonly AnySeyfertPlugin[]> = UnionToIntersection<
 	PluginContextOf<TPlugins[number]>
 >;
+export type MiddlewaresOf<TPlugins extends readonly AnySeyfertPlugin[]> = UnionToIntersection<
+	PluginMiddlewaresOf<TPlugins[number]>
+>;
 
 export type RegisteredPlugins = Register extends { plugins: infer T extends readonly AnySeyfertPlugin[] }
 	? T
 	: readonly [];
 export type RegisteredPluginExtension = Materialize<ExtendOf<RegisteredPlugins>>;
 export type RegisteredPluginContext = Materialize<ContextOf<RegisteredPlugins>>;
+export type RegisteredPluginMiddlewares = Materialize<MiddlewaresOf<RegisteredPlugins>>;
 export type PluginUsingClient<TPlugins extends readonly AnySeyfertPlugin[] = RegisteredPlugins> = BaseClient &
 	Materialize<ExtendOf<TPlugins>>;
 export type PluginContextMapOf<TPlugins extends readonly AnySeyfertPlugin[] = RegisteredPlugins> = Materialize<
 	ContextOf<TPlugins>
 >;
+export type PluginMiddlewaresMapOf<TPlugins extends readonly AnySeyfertPlugin[] = RegisteredPlugins> = Materialize<
+	MiddlewaresOf<TPlugins>
+>;
 
 type UnionToIntersection<T> = (T extends unknown ? (value: T) => void : never) extends (value: infer R) => void
 	? R
 	: never;
+type IsAny<T> = 0 extends 1 & T ? true : false;
+type IsOpenPluginMiddlewareMap<T> = IsAny<T> extends true ? true : string extends keyof T ? true : false;
 type Materialize<T> = {
 	[K in keyof T]: T[K];
 };
@@ -166,7 +181,7 @@ type Materialize<T> = {
 export type HandleableComponent = new () => ComponentCommand;
 export type HandleableModal = new () => ModalCommand;
 
-export interface SeyfertPluginApi {
+export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewareMap> {
 	has(req: PluginRequirement): boolean;
 	events: {
 		on<E extends ClientNameEvents | CustomEventsKeys | GatewayEvents>(
@@ -191,6 +206,7 @@ export interface SeyfertPluginApi {
 		add(...modals: HandleableModal[]): void;
 	};
 	middlewares: {
+		add<const Name extends keyof M & string>(name: Name, middleware: M[Name], opts?: { global?: boolean }): void;
 		add(name: string, middleware: MiddlewareContext, opts?: { global?: boolean }): void;
 	};
 	autocomplete: {
@@ -229,13 +245,14 @@ export interface SeyfertPlugin<
 	E extends object = {},
 	C extends object = {},
 	I extends readonly AnySeyfertPlugin[] = readonly [],
+	M extends PluginMiddlewareMap = {},
 > {
 	name: string;
 	imports?: I;
 	requires?: readonly PluginRequirementInput[];
 	client?: PluginClientMap<E>;
 	ctx?: PluginContextMap<C>;
-	register?(api: SeyfertPluginApi): void;
+	register?(api: SeyfertPluginApi<M>): void;
 	setup?(client: SeyfertPluginClient & ExtendOf<I> & E): Awaitable<void>;
 	teardown?(client: SeyfertPluginClient & ExtendOf<I> & E): Awaitable<void>;
 }

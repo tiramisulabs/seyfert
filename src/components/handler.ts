@@ -8,7 +8,7 @@ import type {
 } from '../builders/types';
 import { runContextScopes } from '../client/plugins';
 import { LimitedCollection } from '../collection';
-import { BaseCommand, type RegisteredMiddlewares, type UsingClient } from '../commands';
+import { BaseCommand, type ResolvedRegisteredMiddlewares, type UsingClient } from '../commands';
 import type { FileLoaded } from '../commands/handler';
 import { BaseHandler, isCloudfareWorker, type Logger, magicImport, type OnFailCallback, SeyfertError } from '../common';
 import type { ComponentInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from '../structures';
@@ -327,7 +327,7 @@ export class ComponentHandler extends BaseHandler {
 				await i.onBeforeMiddlewares?.(context as never);
 				const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
 					context,
-					(context.client.options?.globalMiddlewares ?? []) as keyof RegisteredMiddlewares,
+					(context.client.options?.globalMiddlewares ?? []) as (keyof ResolvedRegisteredMiddlewares)[],
 					true,
 				);
 				if (resultRunGlobalMiddlewares.pass) {

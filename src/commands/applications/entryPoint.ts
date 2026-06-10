@@ -6,12 +6,12 @@ import {
 	type InteractionContextType,
 	type LocaleString,
 } from '../../types';
-import type { RegisteredMiddlewares } from '../decorators';
+import type { ResolvedRegisteredMiddlewares } from '../decorators';
 import type { EntryPointContext } from './entrycontext';
 import type { ExtraProps, UsingClient } from './shared';
 
 export abstract class EntryPointCommand {
-	middlewares: (keyof RegisteredMiddlewares)[] = [];
+	middlewares: (keyof ResolvedRegisteredMiddlewares)[] = [];
 
 	__filePath?: string;
 	__t?: { name: string | undefined; description: string | undefined };

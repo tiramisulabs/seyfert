@@ -9,7 +9,7 @@ import type {
 	UserStructure,
 	WebhookMessageStructure,
 } from '../../client/transformers';
-import type { If, MakeRequired, UnionToTuple, When } from '../../common';
+import type { If, MakeRequired, When } from '../../common';
 import type {
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
@@ -18,11 +18,11 @@ import type {
 import { type AllChannels, ChatInputCommandInteraction, type Message } from '../../structures';
 import { MessageFlags, type RESTGetAPIGuildQuery } from '../../types';
 import { BaseContext } from '../basecontext';
-import type { RegisteredMiddlewares } from '../decorators';
+import type { ResolvedRegisteredMiddlewares } from '../decorators';
 import type { Command, ContextOptions, OptionsRecord, SubCommand } from './chat';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, InferWithPrefix, UsingClient } from './shared';
 
-export interface CommandContext<T extends OptionsRecord = {}, M extends keyof RegisteredMiddlewares = never>
+export interface CommandContext<T extends OptionsRecord = {}, M extends keyof ResolvedRegisteredMiddlewares = never>
 	extends BaseContext,
 		ExtendContext {
 	/**@internal */
@@ -33,7 +33,7 @@ export interface CommandContext<T extends OptionsRecord = {}, M extends keyof Re
 
 export class CommandContext<
 	T extends OptionsRecord = {},
-	M extends keyof RegisteredMiddlewares = never,
+	M extends keyof ResolvedRegisteredMiddlewares = never,
 > extends BaseContext {
 	message!: If<InferWithPrefix, MessageStructure | undefined, undefined>;
 	interaction!: If<InferWithPrefix, ChatInputCommandInteraction | undefined, ChatInputCommandInteraction>;
@@ -55,7 +55,7 @@ export class CommandContext<
 	}
 
 	options: ContextOptions<T> = {} as never;
-	metadata: CommandMetadata<UnionToTuple<M>> = {} as never;
+	metadata: CommandMetadata<M> = {} as never;
 	globalMetadata: GlobalMetadata = {};
 
 	get t() {
@@ -231,8 +231,10 @@ export class CommandContext<
 	}
 }
 
-export interface GuildCommandContext<T extends OptionsRecord = {}, M extends keyof RegisteredMiddlewares = never>
-	extends Omit<MakeRequired<CommandContext<T, M>, 'guildId' | 'member'>, 'guild' | 'me'> {
+export interface GuildCommandContext<
+	T extends OptionsRecord = {},
+	M extends keyof ResolvedRegisteredMiddlewares = never,
+> extends Omit<MakeRequired<CommandContext<T, M>, 'guildId' | 'member'>, 'guild' | 'me'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 

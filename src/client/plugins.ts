@@ -51,6 +51,9 @@ export type {
 	PluginIntentResolvable,
 	PluginLifecycleStatus,
 	PluginLoadedMetadata,
+	PluginMiddlewareMap,
+	PluginMiddlewaresMapOf,
+	PluginMiddlewaresOf,
 	PluginRequirement,
 	PluginRequirementDiagnostic,
 	PluginRequirementInput,
@@ -60,6 +63,7 @@ export type {
 	Register,
 	RegisteredPluginContext,
 	RegisteredPluginExtension,
+	RegisteredPluginMiddlewares,
 	RegisteredPluginServices,
 	RegisteredPlugins,
 	RegisterPlugins,
@@ -90,7 +94,7 @@ export interface ResolvedClientPlugins {
 }
 
 export function createPlugin<
-	const TPlugin extends SeyfertPlugin<any, any, readonly AnySeyfertPlugin[]> & Record<string, unknown>,
+	const TPlugin extends SeyfertPlugin<any, any, readonly AnySeyfertPlugin[], any> & Record<string, unknown>,
 >(plugin: TPlugin): TPlugin {
 	return plugin;
 }

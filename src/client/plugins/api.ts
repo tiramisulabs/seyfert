@@ -1,3 +1,4 @@
+import type { MiddlewareContext } from '../../commands';
 import { isGatewayEventName } from '../../events/utils';
 import {
 	hasPluginRequirement,
@@ -63,7 +64,7 @@ export function createPluginApi(record: PluginRuntimeRecord, registry: PluginRun
 			},
 		},
 		middlewares: {
-			add(name, middleware, opts) {
+			add(name: string, middleware: MiddlewareContext, opts?: { global?: boolean }) {
 				registry.middlewares.push({
 					record,
 					name,

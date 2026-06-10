@@ -29,7 +29,7 @@ import {
 	type InteractionContextType,
 	type LocaleString,
 } from '../../types';
-import type { Groups, RegisteredMiddlewares } from '../decorators';
+import type { Groups, ResolvedRegisteredMiddlewares } from '../decorators';
 import type { CommandOptionWithType } from '../handle';
 import type { CommandContext } from './chatcontext';
 import type {
@@ -108,7 +108,7 @@ type ContextOptionsAux<T extends OptionsRecord> = {
 export type ContextOptions<T extends OptionsRecord> = ContextOptionsAux<T>;
 
 export class BaseCommand {
-	middlewares: (keyof RegisteredMiddlewares)[] = [];
+	middlewares: (keyof ResolvedRegisteredMiddlewares)[] = [];
 
 	__filePath?: string;
 	__t?: { name: string | undefined; description: string | undefined };
@@ -190,7 +190,7 @@ export class BaseCommand {
 	/** @internal */
 	static __runMiddlewares(
 		context: CommandContext<{}, never> | ComponentContext | MenuCommandContext<any> | ModalContext | EntryPointContext,
-		middlewares: (keyof RegisteredMiddlewares)[],
+		middlewares: (keyof ResolvedRegisteredMiddlewares)[],
 		global: boolean,
 	): Promise<{ error?: string; pass?: boolean }> {
 		if (!middlewares.length) {
@@ -233,14 +233,14 @@ export class BaseCommand {
 
 	/** @internal */
 	__runMiddlewares(context: CommandContext<{}, never>) {
-		return BaseCommand.__runMiddlewares(context, this.middlewares as (keyof RegisteredMiddlewares)[], false);
+		return BaseCommand.__runMiddlewares(context, this.middlewares as (keyof ResolvedRegisteredMiddlewares)[], false);
 	}
 
 	/** @internal */
 	__runGlobalMiddlewares(context: CommandContext<{}, never>) {
 		return BaseCommand.__runMiddlewares(
 			context,
-			(context.client.options?.globalMiddlewares ?? []) as (keyof RegisteredMiddlewares)[],
+			(context.client.options?.globalMiddlewares ?? []) as (keyof ResolvedRegisteredMiddlewares)[],
 			true,
 		);
 	}

@@ -16,7 +16,13 @@ import type {
 	UserStructure,
 	WebhookMessageStructure,
 } from '../client/transformers';
-import type { CommandMetadata, ExtendContext, GlobalMetadata, RegisteredMiddlewares, UsingClient } from '../commands';
+import type {
+	CommandMetadata,
+	ExtendContext,
+	GlobalMetadata,
+	ResolvedRegisteredMiddlewares,
+	UsingClient,
+} from '../commands';
 import { BaseContext } from '../commands/basecontext';
 import type {
 	ComponentInteractionMessageUpdate,
@@ -26,7 +32,6 @@ import type {
 	MessageWebhookCreateBodyRequest,
 	ModalCreateBodyRequest,
 	ModalCreateOptions,
-	UnionToTuple,
 	When,
 } from '../common';
 import type { ModalSubmitInteraction } from '../structures';
@@ -43,7 +48,7 @@ export interface ComponentContext<
  */
 export class ComponentContext<
 	Type extends keyof ContextComponentCommandInteractionMap,
-	M extends keyof RegisteredMiddlewares = never,
+	M extends keyof ResolvedRegisteredMiddlewares = never,
 > extends BaseContext {
 	/**
 	 * Creates a new instance of the ComponentContext class.
@@ -58,7 +63,7 @@ export class ComponentContext<
 	}
 
 	command!: ComponentCommand;
-	metadata: CommandMetadata<UnionToTuple<M>> = {} as never;
+	metadata: CommandMetadata<M> = {} as never;
 	globalMetadata: GlobalMetadata = {};
 
 	/**
@@ -283,7 +288,7 @@ export interface ContextComponentCommandInteractionMap {
 
 export interface GuildComponentContext<
 	Type extends keyof ContextComponentCommandInteractionMap,
-	M extends keyof RegisteredMiddlewares = never,
+	M extends keyof ResolvedRegisteredMiddlewares = never,
 > extends Omit<MakeRequired<ComponentContext<Type, M>, 'guildId' | 'member'>, 'guild' | 'me'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;

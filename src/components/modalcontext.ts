@@ -6,7 +6,13 @@ import type {
 	UserStructure,
 	WebhookMessageStructure,
 } from '../client/transformers';
-import type { CommandMetadata, ExtendContext, GlobalMetadata, RegisteredMiddlewares, UsingClient } from '../commands';
+import type {
+	CommandMetadata,
+	ExtendContext,
+	GlobalMetadata,
+	ResolvedRegisteredMiddlewares,
+	UsingClient,
+} from '../commands';
 import { BaseContext } from '../commands/basecontext';
 import type {
 	InteractionCreateBodyRequest,
@@ -15,7 +21,6 @@ import type {
 	MessageWebhookCreateBodyRequest,
 	ModalCreateBodyRequest,
 	ModalCreateOptions,
-	UnionToTuple,
 	When,
 } from '../common';
 import { MessageFlags } from '../types';
@@ -26,7 +31,7 @@ export interface ModalContext extends BaseContext, ExtendContext {}
  * Represents a context for interacting with components in a Discord bot.
  * @template Type - The type of component interaction.
  */
-export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends BaseContext {
+export class ModalContext<M extends keyof ResolvedRegisteredMiddlewares = never> extends BaseContext {
 	/**
 	 * Creates a new instance of the ComponentContext class.
 	 * @param client - The UsingClient instance.
@@ -40,7 +45,7 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	}
 
 	command!: ModalCommand;
-	metadata: CommandMetadata<UnionToTuple<M>> = {} as never;
+	metadata: CommandMetadata<M> = {} as never;
 	globalMetadata: GlobalMetadata = {};
 
 	get customId() {
@@ -215,7 +220,7 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	}
 }
 
-export interface GuildModalContext<M extends keyof RegisteredMiddlewares = never>
+export interface GuildModalContext<M extends keyof ResolvedRegisteredMiddlewares = never>
 	extends Omit<MakeRequired<ModalContext<M>, 'guildId' | 'member'>, 'guild' | 'me'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
