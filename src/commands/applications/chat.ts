@@ -205,8 +205,9 @@ export class BaseCommand {
 				.map(middleware => `"${String(middleware)}"`)
 				.join(', ')} assigned, but ${missingMiddlewares.length === 1 ? 'it is' : 'they are'} not registered.`;
 			context.client.logger.warn(message);
-			return Promise.resolve({ error: message });
 		}
+		const activeMiddlewares = middlewares.filter(middleware => context.client.middlewares?.[middleware]);
+		if (!activeMiddlewares.length) return Promise.resolve({});
 		let index = 0;
 
 		return new Promise(res => {
@@ -223,13 +224,13 @@ export class BaseCommand {
 					return;
 				}
 				if (args.length) {
-					context[global ? 'globalMetadata' : 'metadata'][middlewares[index]] = args[0] as never;
+					context[global ? 'globalMetadata' : 'metadata'][activeMiddlewares[index]] = args[0] as never;
 				}
-				if (++index >= middlewares.length) {
+				if (++index >= activeMiddlewares.length) {
 					running = false;
 					return res({});
 				}
-				context.client.middlewares![middlewares[index]]({ context, next, stop, pass });
+				context.client.middlewares![activeMiddlewares[index]]({ context, next, stop, pass });
 			}
 			const stop: StopFunction = err => {
 				if (!running) {
@@ -238,7 +239,7 @@ export class BaseCommand {
 				running = false;
 				return res({ error: err });
 			};
-			context.client.middlewares![middlewares[0]]({ context, next, stop, pass });
+			context.client.middlewares![activeMiddlewares[0]]({ context, next, stop, pass });
 		});
 	}
 
