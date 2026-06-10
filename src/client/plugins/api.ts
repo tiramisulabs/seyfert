@@ -7,7 +7,9 @@ import {
 	resolveGatewayIntent,
 } from './registry';
 import { addPluginService, serviceName } from './services';
-import type { SeyfertPluginApi, SeyfertPluginOptions } from './types';
+import type { ServiceKey, SeyfertPluginApi, SeyfertPluginOptions } from './types';
+
+type PluginServiceName = string | ServiceKey<unknown, string>;
 
 export function createPluginApi(record: PluginRuntimeRecord, registry: PluginRuntimeRegistry): SeyfertPluginApi {
 	const addEvent: SeyfertPluginApi['events']['on'] = (name, handler, opts) => {
@@ -90,12 +92,12 @@ export function createPluginApi(record: PluginRuntimeRecord, registry: PluginRun
 			},
 		},
 		services: {
-			set(name: Parameters<SeyfertPluginApi['services']['set']>[0], value: unknown) {
-				const key = serviceName(name as never);
+			set(name: PluginServiceName, value: unknown) {
+				const key = serviceName(name);
 				addPluginService(registry, record, key, typeof value === 'function' ? (value as never) : () => value);
 			},
-			has(name: Parameters<SeyfertPluginApi['services']['has']>[0]) {
-				return registry.services.has(serviceName(name as never));
+			has(name: PluginServiceName) {
+				return registry.services.has(serviceName(name));
 			},
 		},
 		diagnostics: {
