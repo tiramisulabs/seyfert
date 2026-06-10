@@ -83,9 +83,6 @@ type CommandDefaults = SeyfertCommandDefaults;
 type ComponentDefaults = SeyfertComponentDefaults;
 type ModalDefaults = SeyfertModalDefaults;
 type AnyFunction = (...args: unknown[]) => unknown;
-type LegacyPluginOptions = AnySeyfertPlugin & {
-	options?(current: Readonly<BaseClientOptions>): SeyfertPluginOptions;
-};
 
 export interface ResolvedClientPlugins {
 	plugins: ResolvedPluginList;
@@ -153,7 +150,7 @@ export function resolveClientPlugins(
 
 		const current = MergeOptions<BaseClientOptions>(defaults, ...pluginOptions, userOptions);
 		try {
-			const fragment = (record.plugin as LegacyPluginOptions).options?.(current);
+			const fragment = record.plugin.options?.(current);
 			if (fragment) pluginOptions.push(fragment);
 		} catch (error) {
 			throw wrapPluginError(record.plugin.name, 'options', record.index, error);

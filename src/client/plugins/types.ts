@@ -252,6 +252,7 @@ export interface SeyfertPlugin<
 	requires?: readonly PluginRequirementInput[];
 	client?: PluginClientMap<E>;
 	ctx?: PluginContextMap<C>;
+	options?(current: Readonly<BaseClientOptions>): SeyfertPluginOptions;
 	register?(api: SeyfertPluginApi<M>): void;
 	setup?(client: SeyfertPluginClient & ExtendOf<I> & E): Awaitable<void>;
 	teardown?(client: SeyfertPluginClient & ExtendOf<I> & E): Awaitable<void>;

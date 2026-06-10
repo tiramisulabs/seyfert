@@ -21,6 +21,7 @@ import {
 	type ServiceKey,
 	type SeyfertPlugin,
 	type SeyfertPluginApi,
+	type SeyfertPluginOptions,
 } from 'seyfert';
 
 declare function expectType<T>(value: T): void;
@@ -101,7 +102,15 @@ const auth: SeyfertPlugin<{}, {}, readonly [], { auth: AuthMiddleware; audit: Au
 	},
 });
 
-const plugins = definePlugins(economy, storage, auth);
+const optionsPlugin: SeyfertPlugin = {
+	name: 'options',
+	options(current) {
+		expectType<Readonly<SeyfertPluginOptions>>(current);
+		return { allowedMentions: { parse: [] } };
+	},
+};
+
+const plugins = definePlugins(economy, storage, auth, optionsPlugin);
 const arrayPlugins = definePlugins([economy, storage]);
 const emptyPlugins = definePlugins();
 
@@ -118,7 +127,7 @@ declare function authCommandContext(): CommandContext<{}, 'auth'>;
 
 expectType<Register>({ plugins });
 expectType<SeyfertPlugin<any, any, any>>(economy);
-expectType<readonly [typeof economy, typeof storage, typeof auth]>(plugins);
+expectType<readonly [typeof economy, typeof storage, typeof auth, typeof optionsPlugin]>(plugins);
 expectType<readonly [typeof economy, typeof storage]>(arrayPlugins);
 expectType<readonly []>(emptyPlugins);
 expectType<string>(storage.meta.label);
