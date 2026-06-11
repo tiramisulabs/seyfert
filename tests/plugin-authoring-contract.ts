@@ -248,7 +248,7 @@ const economy = createPlugin({
 	},
 });
 
-const missingLangsPrefix = createPlugin({
+createPlugin({
 	name: 'missing-langs-prefix',
 	register(api) {
 		// @ts-expect-error locale prefix is required for lang contributions
@@ -302,9 +302,9 @@ const combinedAtomic = createPlugin({
 		combinedClient(client) {
 			expectType<1>(client.importedCounter.count);
 			// @ts-expect-error client factories see imports, not their own plugin extensions
-			client.combinedClient;
+			expectType<never>(client.combinedClient);
 			// @ts-expect-error imported extension does not expose missing members
-			client.importedCounter.missing;
+			expectType<never>(client.importedCounter.missing);
 			return { source: 'combined-client' as const, importedCount: client.importedCounter.count };
 		},
 	},
@@ -314,7 +314,7 @@ const combinedAtomic = createPlugin({
 			expectType<1>(client.importedCounter.count);
 			expectType<'combined-client'>(client.combinedClient.source);
 			// @ts-expect-error own ctx extension is not available while constructing ctx fragments
-			client.combinedCtx;
+			expectType<never>(client.combinedCtx);
 			return { source: client.combinedClient.source, importedCount: client.importedCounter.count };
 		},
 	},
@@ -361,7 +361,7 @@ const combinedAtomic = createPlugin({
 		expectType<'combined-client'>(client.combinedClient.source);
 		expectType<boolean | undefined>(api?.has('plugin:combined-import'));
 		// @ts-expect-error setup client extension keeps exact shape
-		client.combinedClient.missing;
+		expectType<never>(client.combinedClient.missing);
 	},
 	teardown(client, api) {
 		expectType<1>(client.importedCounter.count);
@@ -375,7 +375,7 @@ const noMetaPlugin = createPlugin({
 	name: 'no-meta',
 });
 // @ts-expect-error plugins without meta should not expose a meta property
-noMetaPlugin.meta;
+expectType<never>(noMetaPlugin.meta);
 
 const invalidPlugin = createPlugin({
 	name: 'invalid',
@@ -465,7 +465,7 @@ expectType<readonly []>(emptyPlugins);
 expectType<string>(storage.meta.label);
 expectType<'atomic'>(combinedAtomic.meta.kind);
 // @ts-expect-error plugins without meta should not expose a meta property
-noMetaPlugin.meta;
+expectType<never>(noMetaPlugin.meta);
 expectType<SharedKey<LedgerService, 'ledger'>>(ledgerKey);
 expectType<SharedKey<{ fromClient: 'combined-client' }, 'combined-shared'>>(combinedSharedKey);
 expectType<SharedKey<() => 'shared-fn', 'shared-fn'>>(functionSharedKey);
