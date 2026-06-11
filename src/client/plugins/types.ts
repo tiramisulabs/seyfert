@@ -1,4 +1,17 @@
-import type { AnyMiddlewareContext, MiddlewareContext } from '../../commands';
+import type { ApiRequestOptions, HttpMethods } from '../../api/shared';
+import type { BaseResource, Cache } from '../../cache';
+import type {
+	AnyMiddlewareContext,
+	Command,
+	CommandContext,
+	ContextMenuCommand,
+	EntryPointCommand,
+	EntryPointContext,
+	MenuCommandContext,
+	MiddlewareContext,
+	SubCommand,
+	UsingClient,
+} from '../../commands';
 import type { CommandAutocompleteOption } from '../../commands/applications/chat';
 import type { HandleableCommand } from '../../commands/handler';
 import type { Awaitable } from '../../common/types/util';
@@ -6,36 +19,71 @@ import type { ComponentCommand, ModalCommand } from '../../components';
 import type { ClientNameEvents, CustomEventsKeys } from '../../events';
 import type { GatewayEvents, ResolveEventParams, ResolveEventRunParams } from '../../events/handler';
 import type { AutocompleteInteraction } from '../../structures';
-import type { GatewayIntentBits, GatewaySendPayload } from '../../types';
+import type { GatewayDispatchPayload, GatewayIntentBits, GatewaySendPayload, LocaleString } from '../../types';
 import type { BaseClient, BaseClientOptions } from '../base';
-import type { OptionResolverStructure } from '../transformers';
+import type { MessageStructure, OptionResolverStructure } from '../transformers';
 
 export interface Register {}
 export type RegisterPlugins<TPlugins extends readonly AnySeyfertPlugin[]> = { plugins: TPlugins };
 
-export interface RegisteredPluginServices {}
+export interface RegisteredPluginShared {}
 
-export interface ServiceKey<T, Name extends string = string> {
+export interface SharedKey<T, Name extends string = string> {
 	readonly name: Name;
-	readonly __service?: T;
+	readonly __shared?: T;
 }
 
-export type ServiceValue<T> = T extends ServiceKey<infer Value, string> ? Value : never;
+export type SharedValue<T> = T extends SharedKey<infer Value, string> ? Value : never;
 
-export interface PluginServiceRegistry {
-	get<const Name extends keyof RegisteredPluginServices & string>(
-		name: Name,
-	): RegisteredPluginServices[Name] | undefined;
-	get<T, const Name extends string>(key: ServiceKey<T, Name>): T | undefined;
-	require<const Name extends keyof RegisteredPluginServices & string>(name: Name): RegisteredPluginServices[Name];
-	require<T, const Name extends string>(key: ServiceKey<T, Name>): T;
-	has<const Name extends string>(name: Name | ServiceKey<unknown, Name>): boolean;
+export interface PluginSharedRegistry {
+	get<const Name extends keyof RegisteredPluginShared & string>(name: Name): RegisteredPluginShared[Name] | undefined;
+	get<T, const Name extends string>(key: SharedKey<T, Name>): T | undefined;
+	unwrap<const Name extends keyof RegisteredPluginShared & string>(name: Name): RegisteredPluginShared[Name];
+	unwrap<T, const Name extends string>(key: SharedKey<T, Name>): T;
+	has<const Name extends string>(name: Name | SharedKey<unknown, Name>): boolean;
 }
 
-export type PluginDiagnosticSeverity = 'warn';
+export interface PluginSharedOptions<T> {
+	dispose?: (value: T) => Awaitable<void>;
+	override?: boolean;
+}
+
+export interface PluginLangOptions {
+	readonly prefix: string;
+}
+
+export interface PluginCommandContributionOptions extends PluginContributionOptions {
+	guilds?: readonly string[];
+}
+
+export interface PluginMiddlewareDenialMetadata {
+	middleware: string;
+	scope: 'global' | 'command';
+}
+
+export enum PluginOrder {
+	Before = 'before',
+	After = 'after',
+}
+
+export type PluginOrderOpt = PluginOrder.Before | PluginOrder.After | number;
+export type PluginDiagnosticSeverity = 'info' | 'warn' | 'error';
+export type PluginDiagnosticCode =
+	| 'missing-optional-requirement'
+	| 'unknown-intent-bits'
+	| 'gateway-payload-veto'
+	| 'contribution-override'
+	| 'contribution-removed'
+	| 'command-guild-scope'
+	| 'static-keys-multi-instance'
+	| (string & {});
 export type PluginLifecycleStatus = 'registered' | 'setting-up' | 'ready' | 'closing' | 'closed' | 'failed';
 export type PluginRequirement = `plugin:${string}`;
-export type PluginRequirementInput = PluginRequirement | { req: PluginRequirement; optional?: boolean };
+export type SemverRange = string;
+export type PluginRequirementInput =
+	| PluginRequirement
+	| { req: PluginRequirement; range?: SemverRange; optional?: boolean }
+	| { capability: SharedKey<unknown, string>; optional?: boolean };
 export type PluginIntentResolvable = keyof typeof GatewayIntentBits | GatewayIntentBits | number;
 export type PluginLifecyclePhase =
 	| 'resolve'
@@ -44,7 +92,7 @@ export type PluginLifecyclePhase =
 	| 'register'
 	| 'client'
 	| 'ctx'
-	| 'services'
+	| 'shared'
 	| 'commands.add'
 	| 'components.add'
 	| 'setup'
@@ -53,15 +101,20 @@ export type PluginLifecyclePhase =
 
 export interface PluginDiagnosticMessage {
 	plugin: string;
+	instanceId?: string;
 	index: number;
 	phase: PluginLifecyclePhase | string;
 	severity: PluginDiagnosticSeverity;
-	code?: string;
+	code?: PluginDiagnosticCode;
 	message: string;
+	data?: Record<string, unknown>;
 }
 
 export interface PluginRequirementDiagnostic {
-	req: PluginRequirement;
+	kind: 'plugin' | 'capability';
+	req: PluginRequirement | string;
+	range?: SemverRange;
+	resolvedVersion?: string;
 	optional: boolean;
 	satisfied: boolean;
 }
@@ -109,6 +162,70 @@ export type PluginGatewayPayloadWrapper = (
 	payload: PluginGatewayPayload,
 ) => Awaitable<GatewaySendPayload | null | undefined | void>;
 
+export interface PluginRestRequestPayload {
+	readonly client: BaseClient;
+	readonly method: HttpMethods;
+	readonly url: `/${string}`;
+	readonly request: Readonly<ApiRequestOptions>;
+}
+
+export interface PluginRestSuccessPayload extends PluginRestRequestPayload {
+	readonly response: Response;
+}
+
+export interface PluginRestFailPayload extends PluginRestRequestPayload {
+	readonly error: unknown;
+	readonly statusCode?: number;
+}
+
+export interface PluginRestRatelimitPayload extends PluginRestRequestPayload {
+	readonly response: Response;
+}
+
+export interface PluginRestObserver {
+	onRequest?(payload: PluginRestRequestPayload): Awaitable<unknown>;
+	onSuccess?(payload: PluginRestSuccessPayload): Awaitable<unknown>;
+	onFail?(payload: PluginRestFailPayload): Awaitable<unknown>;
+	onRatelimit?(payload: PluginRestRatelimitPayload): Awaitable<unknown>;
+}
+
+export type PluginCacheResourceConstructor<T extends BaseResource = BaseResource> = new (
+	cache: Cache,
+	client: UsingClient,
+) => T;
+
+export interface PluginCacheResourceOptions {
+	onPacket?(event: GatewayDispatchPayload, cache: Cache): Awaitable<void>;
+	intents?: readonly PluginIntentResolvable[];
+}
+
+export interface SeyfertPluginHooks {
+	'plugins:ready': [client: BaseClient];
+	'commands:beforeLoad': [client: BaseClient, dir: string | undefined];
+	'commands:afterLoad': [metadata: PluginLoadedMetadata<'commands'>];
+	'components:afterLoad': [metadata: PluginLoadedMetadata<'components'>];
+	'client:close': [client: BaseClient];
+}
+
+export type PluginHookName = keyof SeyfertPluginHooks & string;
+export type PluginHookPayload<K extends PluginHookName> = SeyfertPluginHooks[K] extends readonly unknown[]
+	? SeyfertPluginHooks[K]
+	: never;
+type PluginHookPayloadClientView<T, E extends object> = T extends BaseClient ? T & E : T;
+type PluginHookPayloadTupleView<T extends readonly unknown[], E extends object> = T extends readonly [
+	infer Head,
+	...infer Tail,
+]
+	? [PluginHookPayloadClientView<Head, E>, ...PluginHookPayloadTupleView<Tail, E>]
+	: [];
+export type PluginHookPayloadFor<K extends PluginHookName, E extends object = {}> = PluginHookPayloadTupleView<
+	PluginHookPayload<K>,
+	E
+>;
+export type PluginHookHandler<K extends PluginHookName = PluginHookName, E extends object = {}> = (
+	...args: PluginHookPayloadFor<K, E>
+) => Awaitable<unknown>;
+
 export type SeyfertPluginOptions<TOptions extends BaseClientOptions = BaseClientOptions> = Partial<
 	Omit<TOptions, 'plugins'>
 >;
@@ -122,14 +239,18 @@ export type SeyfertModalDefaults<TOptions extends BaseClientOptions = BaseClient
 	NonNullable<TOptions['modals']>['defaults']
 >;
 
-export type PluginClientMap<T extends object> = {
-	readonly [K in keyof T]: (client: BaseClient) => T[K];
+export type PluginClientMap<T extends object, I extends readonly AnySeyfertPlugin[] = readonly []> = {
+	readonly [K in keyof T]: (client: BaseClient & ExtendOf<I>) => T[K];
 };
 
-export type PluginContextInteraction = Parameters<NonNullable<BaseClientOptions['context']>>[0];
+export type PluginContextInteraction = Parameters<NonNullable<BaseClientOptions['context']>>[0] | MessageStructure;
 
-export type PluginContextMap<T extends object> = {
-	readonly [K in keyof T]: (interaction: PluginContextInteraction, client: BaseClient) => T[K];
+export type PluginContextMap<
+	T extends object,
+	I extends readonly AnySeyfertPlugin[] = readonly [],
+	E extends object = {},
+> = {
+	readonly [K in keyof T]: (interaction: PluginContextInteraction, client: BaseClient & ExtendOf<I> & E) => T[K];
 };
 
 export type PluginMiddlewareMap = Record<string, AnyMiddlewareContext>;
@@ -180,52 +301,113 @@ type Materialize<T> = {
 
 export type HandleableComponent = new () => ComponentCommand;
 export type HandleableModal = new () => ModalCommand;
+export type PluginEventDisposer = () => void;
+export type PluginEventErrorHandler = (error: unknown, name: string) => unknown;
+export interface PluginContributionOptions {
+	override?: boolean;
+}
+export interface PluginMiddlewareOptions extends PluginContributionOptions {
+	global?: boolean;
+	order?: PluginOrderOpt;
+}
+export type PluginCommandObserverContext = CommandContext | MenuCommandContext<any, never> | EntryPointContext;
+export type PluginCommandObserverCommand = Command | SubCommand | ContextMenuCommand | EntryPointCommand;
+export interface PluginCommandObserver {
+	onBeforeOptions?(context: CommandContext): Awaitable<unknown>;
+	onBeforeMiddlewares?(context: PluginCommandObserverContext): Awaitable<unknown>;
+	onMiddlewaresError?(
+		context: PluginCommandObserverContext,
+		error: string,
+		metadata: PluginMiddlewareDenialMetadata,
+	): Awaitable<unknown>;
+	onRunError?(context: PluginCommandObserverContext, error: unknown): Awaitable<unknown>;
+	onAfterRun?(context: PluginCommandObserverContext, error: unknown | undefined): Awaitable<unknown>;
+	onInternalError?(client: UsingClient, command: PluginCommandObserverCommand, error?: unknown): Awaitable<unknown>;
+}
 
-export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewareMap> {
+export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewareMap, E extends object = {}> {
 	has(req: PluginRequirement): boolean;
 	events: {
 		on<E extends ClientNameEvents | CustomEventsKeys | GatewayEvents>(
 			name: E,
 			handler: (...args: ResolveEventParams<E>) => unknown,
-			opts?: { once?: boolean },
-		): void;
+			opts?: { once?: boolean; order?: PluginOrderOpt },
+		): PluginEventDisposer;
 		once<E extends ClientNameEvents | CustomEventsKeys | GatewayEvents>(
 			name: E,
 			handler: (...args: ResolveEventParams<E>) => unknown,
-		): void;
-		onAny(handler: (name: string, ...args: unknown[]) => unknown): void;
-		emit<E extends CustomEventsKeys>(name: E, ...payload: ResolveEventRunParams<E>): void;
+		): PluginEventDisposer;
+		onAny(
+			handler: (name: string, ...args: unknown[]) => unknown,
+			opts?: { order?: PluginOrderOpt },
+		): PluginEventDisposer;
+		onError(handler: PluginEventErrorHandler, opts?: { order?: PluginOrderOpt }): PluginEventDisposer;
+		emit<E extends CustomEventsKeys>(name: E, ...payload: ResolveEventRunParams<E>): Promise<void>;
 	};
 	commands: {
 		add(...commands: HandleableCommand[]): void;
+		add(...args: [...commands: HandleableCommand[], opts: PluginCommandContributionOptions]): void;
+		remove(...names: string[]): void;
+		observe(observer: PluginCommandObserver, opts?: { order?: PluginOrderOpt }): PluginEventDisposer;
+	};
+	rest: {
+		observe(observer: PluginRestObserver, order?: PluginOrderOpt): PluginEventDisposer;
+	};
+	hooks: {
+		tap<K extends PluginHookName>(
+			name: K,
+			handler: PluginHookHandler<K, E>,
+			opts?: { order?: PluginOrderOpt },
+		): PluginEventDisposer;
 	};
 	components: {
 		add(...components: HandleableComponent[]): void;
+		add(...args: [...components: HandleableComponent[], opts: PluginContributionOptions]): void;
+		remove(...customIds: string[]): void;
 	};
 	modals: {
 		add(...modals: HandleableModal[]): void;
+		add(...args: [...modals: HandleableModal[], opts: PluginContributionOptions]): void;
+		remove(...customIds: string[]): void;
 	};
 	middlewares: {
-		add<const Name extends keyof M & string>(name: Name, middleware: M[Name], opts?: { global?: boolean }): void;
-		add(name: string, middleware: MiddlewareContext, opts?: { global?: boolean }): void;
+		add<const Name extends keyof M & string>(name: Name, middleware: M[Name], opts?: PluginMiddlewareOptions): void;
+		add(name: string, middleware: MiddlewareContext, opts?: PluginMiddlewareOptions): void;
+		remove(...names: string[]): void;
 	};
 	autocomplete: {
-		wrap(wrapper: PluginAutocompleteWrapper): void;
+		wrap(wrapper: PluginAutocompleteWrapper, opts?: { order?: PluginOrderOpt }): void;
 	};
 	gateway: {
 		addIntents(...intents: PluginIntentResolvable[]): void;
-		wrapPayload(wrapper: PluginGatewayPayloadWrapper): void;
+		wrapPayload(wrapper: PluginGatewayPayloadWrapper, opts?: { order?: PluginOrderOpt }): void;
 	};
-	services: {
-		set<T, const Name extends string>(key: ServiceKey<T, Name>, value: T | ((client: BaseClient) => T)): void;
-		set<const Name extends keyof RegisteredPluginServices & string>(
-			name: Name,
-			value: RegisteredPluginServices[Name] | ((client: BaseClient) => RegisteredPluginServices[Name]),
+	cache: {
+		resource(name: string, resource: PluginCacheResourceConstructor, opts?: PluginCacheResourceOptions): void;
+	};
+	shared: {
+		set<T, const Name extends string>(
+			key: SharedKey<T, Name>,
+			factory: (client: BaseClient & E) => T,
+			opts?: PluginSharedOptions<T>,
 		): void;
-		has<const Name extends string>(name: Name | ServiceKey<unknown, Name>): boolean;
+		set<const Name extends keyof RegisteredPluginShared & string>(
+			name: Name,
+			factory: (client: BaseClient & E) => RegisteredPluginShared[Name],
+			opts?: PluginSharedOptions<RegisteredPluginShared[Name]>,
+		): void;
+		remove(...names: (string | SharedKey<unknown, string>)[]): void;
+		has<const Name extends string>(name: Name | SharedKey<unknown, Name>): boolean;
 	};
+	langs: {
+		contribute(locale: LocaleString | string, values: Record<string, unknown>, opts: PluginLangOptions): void;
+	};
+	reload(): Promise<void>;
 	diagnostics: {
-		warn(message: string, options?: { code?: string; phase?: PluginLifecyclePhase | string }): void;
+		warn(
+			message: string,
+			options?: { code?: PluginDiagnosticCode; phase?: PluginLifecyclePhase | string; data?: Record<string, unknown> },
+		): void;
 	};
 	options: {
 		set(fragment: SeyfertPluginOptions): void;
@@ -248,18 +430,23 @@ export interface SeyfertPlugin<
 	M extends PluginMiddlewareMap = {},
 > {
 	name: string;
+	instanceId?: string;
 	imports?: I;
 	requires?: readonly PluginRequirementInput[];
-	client?: PluginClientMap<E>;
-	ctx?: PluginContextMap<C>;
+	meta?: unknown;
+	client?: PluginClientMap<E, I>;
+	ctx?: PluginContextMap<C, I, E>;
+	middlewares?: M;
+	globalMiddlewares?: readonly (keyof M & string)[];
 	options?(current: Readonly<BaseClientOptions>): SeyfertPluginOptions;
-	register?(api: SeyfertPluginApi<M>): void;
-	setup?(client: SeyfertPluginClient & ExtendOf<I> & E): Awaitable<void>;
-	teardown?(client: SeyfertPluginClient & ExtendOf<I> & E): Awaitable<void>;
+	register?(api: SeyfertPluginApi<M, ExtendOf<I> & E>): void;
+	setup?(client: SeyfertPluginClient & ExtendOf<I> & E, api?: SeyfertPluginApi<M, ExtendOf<I> & E>): Awaitable<void>;
+	teardown?(client: SeyfertPluginClient & ExtendOf<I> & E, api?: SeyfertPluginApi<M, ExtendOf<I> & E>): Awaitable<void>;
 }
 
 export interface PluginDiagnostics {
 	name: string;
+	instanceId?: string;
 	index: number;
 	status: PluginLifecycleStatus;
 	imports: readonly string[];
@@ -271,8 +458,8 @@ export interface PluginDiagnostics {
 	events: readonly string[];
 	middlewares: readonly string[];
 	requirements: readonly PluginRequirementDiagnostic[];
-	services: readonly string[];
+	shared: readonly string[];
 	autocompleteWrappers: number;
 	gatewayPayloadWrappers: number;
-	warnings: readonly PluginDiagnosticMessage[];
+	messages: readonly PluginDiagnosticMessage[];
 }

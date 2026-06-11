@@ -1,18 +1,27 @@
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import {
 	BaseCommand,
+	BaseResource,
 	Client,
 	Command,
 	ComponentCommand,
+	createMiddleware,
 	createPlugin,
-	createServiceKey,
+	createSharedKey,
 	definePlugins,
+	GatewayIntentBits,
+	GatewayOpcodes,
 	ModalCommand,
+	PluginOrder,
+	runPluginCommandObservers,
+	runPluginHooks,
+	type Cache,
+	type GatewayDispatchPayload,
+	type GatewaySendPayload,
 	type MiddlewareContext,
 } from '../src';
 import { BaseClient } from '../src/client/base';
 import { resolveRawEventData } from '../src/events/utils';
-import { GatewayIntentBits, GatewayOpcodes, type GatewaySendPayload } from '../src/types';
 import { ShardManager } from '../src/websocket';
 
 function runtimeConfig() {
@@ -68,6 +77,15 @@ class PluginModal extends ModalCommand {
 	customId = 'plugin-modal';
 	run() {}
 }
+
+class PluginCacheResource extends BaseResource<{ id: string }, { id: string }> {
+	namespace = 'plugin-resource';
+}
+
+afterEach(() => {
+	vi.restoreAllMocks();
+	vi.unstubAllGlobals();
+});
 
 describe('plugin api v3', () => {
 	test('defines a canonical plugin tuple from rest arguments or an array', () => {
@@ -160,6 +178,72 @@ describe('plugin api v3', () => {
 		expect(client.commands.values.some(command => command.name === 'plugin-ping')).toBe(true);
 	});
 
+	test('applies plugin command guild scope before upload', async () => {
+		const plugin = createPlugin({
+			name: 'guild-commands',
+			register(api) {
+				api.commands.add(PluginPing, { guilds: ['guild-1', 'guild-2'] });
+			},
+		});
+		const client = createBaseClient([plugin]);
+		client.loadCommands = async () => {
+			client.commands.values = [];
+		};
+
+		await client.start();
+
+		const command = client.commands.values.find(command => command.name === 'plugin-ping');
+		expect(command?.guildId).toEqual(['guild-1', 'guild-2']);
+		expect(client.plugins.diagnostics[0]?.messages).toEqual([
+			expect.objectContaining({
+				code: 'command-guild-scope',
+				phase: 'commands.add',
+				severity: 'info',
+			}),
+		]);
+	});
+
+	test('uploads plugin guild-scoped commands separately from global commands', async () => {
+		const plugin = createPlugin({
+			name: 'guild-upload',
+			register(api) {
+				api.commands.add(PluginPing, { guilds: ['guild-1'] });
+			},
+		});
+		const client = createBaseClient([plugin]);
+		const uploaded: unknown[] = [];
+		client.loadCommands = async () => {
+			client.commands.values = [];
+		};
+
+		await client.start();
+		client.rest = {
+			proxy: {
+				applications: (applicationId: string) => ({
+					commands: {
+						put: (data: unknown) => uploaded.push({ applicationId, data, scope: 'global' }),
+					},
+					guilds: (guildId: string) => ({
+						commands: {
+							put: (data: unknown) => uploaded.push({ applicationId, data, guildId, scope: 'guild' }),
+						},
+					}),
+				}),
+			},
+		} as never;
+		await client.uploadCommands({ applicationId: 'app' });
+
+		expect(uploaded).toEqual([
+			{ applicationId: 'app', data: { body: [] }, scope: 'global' },
+			{
+				applicationId: 'app',
+				data: { body: [expect.objectContaining({ name: 'plugin-ping' })] },
+				guildId: 'guild-1',
+				scope: 'guild',
+			},
+		]);
+	});
+
 	test('applies plugin components and modals after component loading', async () => {
 		const plugin = createPlugin({
 			name: 'components',
@@ -214,26 +298,6 @@ describe('plugin api v3', () => {
 		await client.events.runEvent('BOT_READY' as never, client, {} as never, -1, false);
 
 		expect(calls.sort()).toEqual(['first', 'second']);
-	});
-
-	test('lets plugins observe commandsLoaded through the event bus', async () => {
-		const calls: unknown[] = [];
-		const plugin = createPlugin({
-			name: 'events',
-			register(api) {
-				api.events.on('commandsLoaded', metadata => calls.push(metadata));
-			},
-		});
-		const client = createGatewayClient([plugin]);
-
-		await client.events.runCustom('commandsLoaded' as never, {
-			kind: 'commands',
-			total: 0,
-			items: [],
-			plugin: { total: 0, sources: {} },
-		} as never);
-
-		expect(calls).toEqual([expect.objectContaining({ kind: 'commands', total: 0 })]);
 	});
 
 	test('lets plugin event listeners emit custom events', async () => {
@@ -323,28 +387,68 @@ describe('plugin api v3', () => {
 		expect(result).toEqual({});
 	});
 
-	test('runs registered middlewares when another assigned middleware is missing', async () => {
-		const warn = vi.fn();
-		const registered = vi.fn(({ next }) => next({ ran: true }));
+	test('returns middleware denial metadata for stopped global and command middleware', async () => {
+		const stopGlobal = createMiddleware<void>(({ stop }) => stop('global denied'));
+		const stopCommand = createMiddleware<void>(({ stop }) => stop('command denied'));
 		const context = {
 			client: {
 				middlewares: {
-					registered,
+					stopCommand,
+					stopGlobal,
 				},
-				logger: { warn },
+				logger: { warn: vi.fn() },
 			},
-			command: { name: 'partial' },
+			command: { name: 'secure' },
 			globalMetadata: {},
 			metadata: {},
 		} as never;
 
-		const result = await BaseCommand.__runMiddlewares(context, ['registered' as never, 'missing' as never], false);
+		await expect(BaseCommand.__runMiddlewares(context, ['stopGlobal' as never], true)).resolves.toEqual({
+			error: 'global denied',
+			metadata: { middleware: 'stopGlobal', scope: 'global' },
+		});
+		await expect(BaseCommand.__runMiddlewares(context, ['stopCommand' as never], false)).resolves.toEqual({
+			error: 'command denied',
+			metadata: { middleware: 'stopCommand', scope: 'command' },
+		});
+	});
 
-		expect(registered).toHaveBeenCalledOnce();
-		expect(warn).toHaveBeenCalledOnce();
-		expect(warn.mock.calls[0][0]).toContain('"missing"');
-		expect(context.metadata).toEqual({ registered: { ran: true } });
-		expect(result).toEqual({});
+	test('runs command observers with middleware denial metadata and isolates observer failures', async () => {
+		const calls: unknown[] = [];
+		const logger = { error: vi.fn() };
+		const good = createPlugin({
+			name: 'good-observer',
+			register(api) {
+				api.commands.observe({
+					onMiddlewaresError(_context, error, metadata) {
+						calls.push({ error, metadata });
+					},
+				});
+			},
+		});
+		const bad = createPlugin({
+			name: 'bad-observer',
+			register(api) {
+				api.commands.observe({
+					onMiddlewaresError() {
+						throw new Error('observer failed');
+					},
+				});
+			},
+		});
+		const client = createBaseClient([bad, good]);
+		client.logger = logger as never;
+
+		await runPluginCommandObservers(
+			client,
+			'onMiddlewaresError',
+			{} as never,
+			'denied',
+			{ middleware: 'auth', scope: 'global' },
+		);
+
+		expect(calls).toEqual([{ error: 'denied', metadata: { middleware: 'auth', scope: 'global' } }]);
+		expect(logger.error).toHaveBeenCalledOnce();
 	});
 
 	test('preserves undefined values returned by raw event transformers', async () => {
@@ -374,7 +478,7 @@ describe('plugin api v3', () => {
 					expect.objectContaining({ req: 'plugin:storage', optional: false, satisfied: true }),
 					expect.objectContaining({ req: 'plugin:redis', optional: true, satisfied: false }),
 				],
-				warnings: [
+				messages: [
 					expect.objectContaining({
 						code: 'missing-optional-requirement',
 						phase: 'requires',
@@ -393,11 +497,12 @@ describe('plugin api v3', () => {
 		expect(() => createBaseClient([plugin])).toThrow(/needs-storage.*requires|requires.*needs-storage/);
 	});
 
-	test('lets plugins contribute gateway intents', async () => {
+	test('lets plugins contribute gateway intents from gateway and cache APIs', async () => {
 		const plugin = createPlugin({
 			name: 'intent-plugin',
 			register(api) {
 				api.gateway.addIntents('Guilds');
+				api.cache.resource('intentCache', PluginCacheResource, { intents: [GatewayIntentBits.GuildMembers] });
 			},
 		});
 		const client = createGatewayClient([plugin]);
@@ -405,6 +510,7 @@ describe('plugin api v3', () => {
 		await client.start({}, false);
 
 		expect(client.cache.intents & GatewayIntentBits.Guilds).toBe(GatewayIntentBits.Guilds);
+		expect(client.cache.intents & GatewayIntentBits.GuildMembers).toBe(GatewayIntentBits.GuildMembers);
 	});
 
 	test('emits uploadCommands metadata for plugin observers', async () => {
@@ -514,55 +620,55 @@ describe('plugin api v3', () => {
 		expect(sent).toEqual([{ op: GatewayOpcodes.Heartbeat, d: 'wrapped' }]);
 	});
 
-	test('registers plugin services and resolves them lazily', () => {
+	test('registers plugin shared values and resolves them lazily through unwrap', () => {
 		const calls: string[] = [];
-		const ledgerKey = createServiceKey<{ readBalance(userId: string): number }>('runtime-ledger');
+		const ledgerKey = createSharedKey<{ readBalance(userId: string): number }>()('runtime-ledger');
 		const plugin = createPlugin({
-			name: 'services',
+			name: 'shared',
 			register(api) {
-				api.services.set(ledgerKey, () => {
-					calls.push('create service');
+				api.shared.set(ledgerKey, () => {
+					calls.push('create shared');
 					return { readBalance: () => 100 };
 				});
 			},
 		});
 		const client = createBaseClient([plugin]);
 
-		expect(client.services.has(ledgerKey)).toBe(true);
+		expect(client.shared.has(ledgerKey)).toBe(true);
 		expect(calls).toEqual([]);
-		expect(client.services.require(ledgerKey).readBalance('user')).toBe(100);
-		expect(client.services.get(ledgerKey)).toBe(client.services.get('runtime-ledger' as never));
-		expect(calls).toEqual(['create service']);
+		expect(client.shared.unwrap(ledgerKey).readBalance('user')).toBe(100);
+		expect(client.shared.get(ledgerKey)).toBe(client.shared.get('runtime-ledger' as never));
+		expect(calls).toEqual(['create shared']);
 	});
 
-	test('wraps plugin service factory failures with plugin metadata', () => {
-		const serviceKey = createServiceKey<{ ok: true }>('broken-service');
+	test('wraps plugin shared factory failures with plugin metadata', () => {
+		const sharedKey = createSharedKey<{ ok: true }>()('broken-shared');
 		const plugin = createPlugin({
-			name: 'broken-service-plugin',
+			name: 'broken-shared-plugin',
 			register(api) {
-				api.services.set(serviceKey, () => {
-					throw new Error('service boom');
+				api.shared.set(sharedKey, () => {
+					throw new Error('shared boom');
 				});
 			},
 		});
 		const client = createBaseClient([plugin]);
 
-		expect(() => client.services.require(serviceKey)).toThrowError(
+		expect(() => client.shared.unwrap(sharedKey)).toThrowError(
 			expect.objectContaining({
 				name: 'SeyfertPluginError',
-				plugin: 'broken-service-plugin',
-				phase: 'services.broken-service',
+				plugin: 'broken-shared-plugin',
+				phase: 'shared.broken-shared',
 				index: 0,
 			}),
 		);
 	});
 
-	test('collects plugin diagnostics warnings and service contributions', () => {
-		const serviceKey = createServiceKey<{ ok: true }>('diagnostic-service');
+	test('collects plugin diagnostics warnings and shared contributions', () => {
+		const sharedKey = createSharedKey<{ ok: true }>()('diagnostic-shared');
 		const plugin = createPlugin({
 			name: 'diagnostic-plugin',
 			register(api) {
-				api.services.set(serviceKey, { ok: true });
+				api.shared.set(sharedKey, () => ({ ok: true }));
 				api.diagnostics.warn('Optional package "redis" was not found.', { code: 'missing-optional-peer' });
 			},
 		});
@@ -571,8 +677,8 @@ describe('plugin api v3', () => {
 		expect(client.plugins.diagnostics).toEqual([
 			expect.objectContaining({
 				name: 'diagnostic-plugin',
-				services: ['diagnostic-service'],
-				warnings: [
+				shared: ['diagnostic-shared'],
+				messages: [
 					expect.objectContaining({
 						code: 'missing-optional-peer',
 						message: 'Optional package "redis" was not found.',
@@ -580,6 +686,169 @@ describe('plugin api v3', () => {
 					}),
 				],
 			}),
+		]);
+	});
+
+	test('installs plugin cache resources and routes packets through custom handlers', async () => {
+		const packets: GatewayDispatchPayload[] = [];
+		const plugin = createPlugin({
+			name: 'cache-plugin',
+			register(api) {
+				api.cache.resource('pluginResource', PluginCacheResource, {
+					onPacket(event) {
+						packets.push(event);
+					},
+				});
+			},
+		});
+		const client = createBaseClient([plugin]);
+
+		expect((client.cache as Cache & { pluginResource?: PluginCacheResource }).pluginResource).toBeInstanceOf(
+			PluginCacheResource,
+		);
+		await client.cache.onPacket({ t: 'RESUMED', op: GatewayOpcodes.Dispatch, s: 1, d: {} });
+
+		expect(packets).toEqual([expect.objectContaining({ t: 'RESUMED' })]);
+	});
+
+	test('keeps disabled cache state when refreshing plugin cache resources', () => {
+		const plugin = createPlugin({
+			name: 'cache-plugin',
+			register(api) {
+				api.cache.resource('pluginResource', PluginCacheResource);
+			},
+		});
+		const client = createBaseClient([plugin]);
+
+		client.setServices({ cache: { disabledCache: { users: true } } });
+		client.refreshPluginContributions();
+
+		expect(client.cache.users).toBeUndefined();
+		expect((client.cache as Cache & { pluginResource?: PluginCacheResource }).pluginResource).toBeInstanceOf(
+			PluginCacheResource,
+		);
+	});
+
+	test('notifies REST observers with readonly request payloads and isolates observer failures', async () => {
+		const calls: unknown[] = [];
+		const warn = vi.fn();
+		const fetch = vi.fn(async () => new Response('{"ok":true}', { status: 200, headers: { 'content-type': 'json' } }));
+		vi.stubGlobal('fetch', fetch);
+		const bad = createPlugin({
+			name: 'bad-rest',
+			register(api) {
+				api.rest.observe({
+					onRequest() {
+						throw new Error('observer failed');
+					},
+				});
+			},
+		});
+		const good = createPlugin({
+			name: 'good-rest',
+			register(api) {
+				api.rest.observe({
+					onRequest(payload) {
+						calls.push({
+							client: payload.client,
+							frozen: Object.isFrozen(payload),
+							method: payload.method,
+							requestFrozen: Object.isFrozen(payload.request),
+							url: payload.url,
+						});
+					},
+					onSuccess(payload) {
+						calls.push({ status: payload.response.status });
+					},
+				}, PluginOrder.After);
+			},
+		});
+		const client = createBaseClient([bad, good]);
+		client.rest.debugger = { debug: vi.fn(), warn } as never;
+
+		await client.rest.request('GET', '/users/@me', { auth: false, query: { limit: 1 } });
+
+		expect(calls).toEqual([
+			{
+				client,
+				frozen: true,
+				method: 'GET',
+				requestFrozen: true,
+				url: '/users/@me?limit=1',
+			},
+			{ status: 200 },
+		]);
+		expect(warn).toHaveBeenCalledOnce();
+	});
+
+	test('runs hooks in order, supports disposers, and reports hook failures without skipping siblings', async () => {
+		const calls: string[] = [];
+		const errors: unknown[] = [];
+		const warn = vi.fn();
+		const plugin = createPlugin({
+			name: 'hooks',
+			register(api) {
+				api.events.onError((error, name) => errors.push({ error, name }));
+				api.hooks.tap('plugins:ready', () => calls.push('after'), { order: PluginOrder.After });
+				api.hooks.tap('plugins:ready', () => calls.push('before'), { order: PluginOrder.Before });
+				api.hooks.tap('plugins:ready', () => {
+					throw new Error('hook failed');
+				});
+				const dispose = api.hooks.tap('plugins:ready', () => calls.push('disposed'));
+				dispose();
+			},
+		});
+		const client = createBaseClient([plugin]);
+		client.logger = { warn } as never;
+
+		await runPluginHooks(client, 'plugins:ready', client);
+
+		expect(calls).toEqual(['before', 'after']);
+		expect(errors).toEqual([
+			expect.objectContaining({
+				name: 'hook:plugins:ready',
+				error: expect.objectContaining({
+					name: 'SeyfertPluginError',
+					plugin: 'hooks',
+					phase: 'hook:plugins:ready',
+				}),
+			}),
+		]);
+		expect(warn).toHaveBeenCalledWith(
+			'<Client>.hooks.onFail',
+			expect.objectContaining({ plugin: 'hooks' }),
+			'plugins:ready',
+		);
+	});
+
+	test('fires lifecycle hook sites during start, reload, and close', async () => {
+		const calls: string[] = [];
+		const plugin = createPlugin({
+			name: 'lifecycle-hooks',
+			register(api) {
+				api.hooks.tap('plugins:ready', () => calls.push('ready'));
+				api.hooks.tap('commands:beforeLoad', (_client, dir) => calls.push(`before:${dir ?? ''}`));
+				api.hooks.tap('commands:afterLoad', metadata => calls.push(`commands:${metadata.kind}`));
+				api.hooks.tap('components:afterLoad', metadata => calls.push(`components:${metadata.kind}`));
+				api.hooks.tap('client:close', () => calls.push('close'));
+			},
+		});
+		const client = createBaseClient([plugin]);
+		client.loadCommands = async () => {};
+		client.loadComponents = async () => {};
+
+		await client.start({ commandsDir: 'commands' });
+		await client.reloadPluginContributions();
+		await client.close();
+
+		expect(calls).toEqual([
+			'ready',
+			'before:commands',
+			'commands:commands',
+			'components:components',
+			'commands:commands',
+			'components:components',
+			'close',
 		]);
 	});
 

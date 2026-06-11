@@ -17,7 +17,8 @@
 		"format": "biome format --write ./src",
 		"check-h": "biome check --write ./src",
 		"check": "biome check --verbose --write --no-errors-on-unmatched ./src",
-		"test": "vitest run --config ./tests/vitest.config.mts ./tests/"
+		"test:types": "pnpm run build && tsc --noEmit --project tests/plugin-authoring-tsconfig.json",
+		"test": "pnpm run test:types && vitest run --config ./tests/vitest.config.mts ./tests/"
 	},
 	"author": "MARCROCK22",
 	"license": "MIT",

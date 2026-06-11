@@ -235,7 +235,7 @@ export class ComponentHandler extends BaseHandler {
 		component.onBeforeMiddlewares ??= this.client.options?.[is]?.defaults?.onBeforeMiddlewares;
 	}
 
-	set(instances: (new () => ComponentCommands)[]) {
+	set(instances: SeteableComponentCommand[]) {
 		const added: ComponentCommands[] = [];
 		for (const i of instances) {
 			let component: ReturnType<typeof this.callback>;
@@ -334,7 +334,11 @@ export class ComponentHandler extends BaseHandler {
 					return;
 				}
 				if ('error' in resultRunGlobalMiddlewares) {
-					return await i.onMiddlewaresError?.(context as never, resultRunGlobalMiddlewares.error ?? 'Unknown error');
+					return await i.onMiddlewaresError?.(
+						context as never,
+						resultRunGlobalMiddlewares.error ?? 'Unknown error',
+						resultRunGlobalMiddlewares.metadata ?? { middleware: 'unknown', scope: 'global' },
+					);
 				}
 
 				const resultRunMiddlewares = await BaseCommand.__runMiddlewares(context, i.middlewares, false);
@@ -342,7 +346,11 @@ export class ComponentHandler extends BaseHandler {
 					return;
 				}
 				if ('error' in resultRunMiddlewares) {
-					return await i.onMiddlewaresError?.(context as never, resultRunMiddlewares.error ?? 'Unknown error');
+					return await i.onMiddlewaresError?.(
+						context as never,
+						resultRunMiddlewares.error ?? 'Unknown error',
+						resultRunMiddlewares.metadata ?? { middleware: 'unknown', scope: 'command' },
+					);
 				}
 
 				try {
@@ -396,7 +404,9 @@ export class ComponentHandler extends BaseHandler {
 		return file.default ? [file.default] : undefined;
 	}
 
-	callback(file: { new (): ComponentCommands }): ComponentCommands | false {
-		return new file();
+	callback(file: SeteableComponentCommand): ComponentCommands | false {
+		return typeof file === 'function' ? new file() : file;
 	}
 }
+
+export type SeteableComponentCommand = (new () => ComponentCommands) | ComponentCommands;

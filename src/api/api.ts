@@ -41,6 +41,37 @@ export type OnFailRequestCallback = (
 	error: unknown,
 	statusCode?: number,
 ) => Awaitable<any>;
+export interface RestObserverRequestPayload {
+	readonly client: unknown;
+	readonly method: HttpMethods;
+	readonly url: `/${string}`;
+	readonly request: Readonly<ApiRequestOptions>;
+}
+
+export interface RestObserverSuccessPayload extends RestObserverRequestPayload {
+	readonly response: Response;
+}
+
+export interface RestObserverFailPayload extends RestObserverRequestPayload {
+	readonly error: unknown;
+	readonly statusCode?: number;
+}
+
+export interface RestObserverRatelimitPayload extends RestObserverRequestPayload {
+	readonly response: Response;
+}
+
+export interface RestObserver {
+	onRequest?(payload: RestObserverRequestPayload): Awaitable<unknown>;
+	onSuccess?(payload: RestObserverSuccessPayload): Awaitable<unknown>;
+	onFail?(payload: RestObserverFailPayload): Awaitable<unknown>;
+	onRatelimit?(payload: RestObserverRatelimitPayload): Awaitable<unknown>;
+}
+
+export interface RestObserverEntry {
+	readonly plugin: string;
+	readonly observer: RestObserver;
+}
 
 export class ApiHandler {
 	options: ApiHandlerInternalOptions;
@@ -52,6 +83,8 @@ export class ApiHandler {
 	onRatelimit?: OnRatelimitCallback;
 	onSuccessRequest?: OnSuccessRequestCallback;
 	onFailRequest?: OnFailRequestCallback;
+	pluginRestObserverProvider?: () => readonly RestObserverEntry[];
+	pluginRestObserverClient?: unknown;
 
 	constructor(options: ApiHandlerOptions) {
 		this.options = {
@@ -134,7 +167,34 @@ export class ApiHandler {
 		});
 	}
 
-	private async notifySuccessRequest(method: HttpMethods, url: `/${string}`, response: Response) {
+	private async notifyRequest(method: HttpMethods, url: `/${string}`, request: ApiRequestOptions) {
+		await this.notifyPluginRestObservers(
+			'onRequest',
+			freezeRestPayload({
+				client: this.pluginRestObserverClient,
+				method,
+				url,
+				request: readonlyRequestOptions(request),
+			}),
+		);
+	}
+
+	private async notifySuccessRequest(
+		method: HttpMethods,
+		url: `/${string}`,
+		response: Response,
+		request: ApiRequestOptions,
+	) {
+		await this.notifyPluginRestObservers(
+			'onSuccess',
+			freezeRestPayload({
+				client: this.pluginRestObserverClient,
+				method,
+				url,
+				request: readonlyRequestOptions(request),
+				response,
+			}),
+		);
 		try {
 			await this.onSuccessRequest?.(method, url, response);
 		} catch (error) {
@@ -142,11 +202,63 @@ export class ApiHandler {
 		}
 	}
 
-	private async notifyFailRequest(method: HttpMethods, url: `/${string}`, error: unknown, statusCode?: number) {
+	private async notifyFailRequest(
+		method: HttpMethods,
+		url: `/${string}`,
+		error: unknown,
+		statusCode: number | undefined,
+		request: ApiRequestOptions,
+	) {
+		await this.notifyPluginRestObservers(
+			'onFail',
+			freezeRestPayload({
+				client: this.pluginRestObserverClient,
+				method,
+				url,
+				request: readonlyRequestOptions(request),
+				error,
+				statusCode,
+			}),
+		);
 		try {
 			await this.onFailRequest?.(method, url, error, statusCode);
 		} catch (callbackError) {
 			this.debugger?.warn('onFailRequest callback error', callbackError);
+		}
+	}
+
+	private async notifyRatelimit(
+		response: Response,
+		request: ApiRequestOptions,
+		method: HttpMethods,
+		url: `/${string}`,
+	) {
+		await this.notifyPluginRestObservers(
+			'onRatelimit',
+			freezeRestPayload({
+				client: this.pluginRestObserverClient,
+				method,
+				url,
+				request: readonlyRequestOptions(request),
+				response,
+			}),
+		);
+		try {
+			await this.onRatelimit?.(response, request);
+		} catch (error) {
+			this.debugger?.warn('onRatelimit callback error', error);
+		}
+	}
+
+	private async notifyPluginRestObservers(name: keyof RestObserver, payload: unknown) {
+		for (const entry of this.pluginRestObserverProvider?.() ?? []) {
+			const observer = entry.observer[name];
+			if (!observer) continue;
+			try {
+				await (observer as (payload: unknown) => Awaitable<unknown>)(payload);
+			} catch (error) {
+				this.debugger?.warn(`[plugin:${entry.plugin}] REST observer "${name}" callback error`, error);
+			}
 		}
 	}
 
@@ -187,6 +299,7 @@ export class ApiHandler {
 
 			try {
 				const requestUrl = `${this.options.domain}/${this.options.baseUrl}${finalUrl}`;
+				await this.notifyRequest(method, finalUrl, { ...request, auth });
 				this.debugger?.debug(`Sending, Method: ${method} | Url: [${finalUrl}](${route}) | Auth: ${auth}`);
 				response = await fetch(requestUrl, {
 					method,
@@ -196,7 +309,7 @@ export class ApiHandler {
 				this.debugger?.debug(`Received response: ${response.statusText}(${response.status})`);
 			} catch (err) {
 				this.debugger?.debug('Fetch error', err);
-				await this.notifyFailRequest(method, finalUrl, err);
+				await this.notifyFailRequest(method, finalUrl, err, undefined, { ...request, auth });
 				next();
 				reject(err);
 				return;
@@ -214,7 +327,7 @@ export class ApiHandler {
 				if (response.status === 429) {
 					const result429 = await this.handle429(route, method, url, request, response, result, next, reject, now);
 					if (result429 !== false) return resolve(result429);
-					await this.notifyFailRequest(method, finalUrl, result, response.status);
+					await this.notifyFailRequest(method, finalUrl, result, response.status, { ...request, auth });
 					return this.clearResetInterval(route);
 				}
 				if ([502, 503].includes(response.status) && ++attempts < 4) {
@@ -229,7 +342,7 @@ export class ApiHandler {
 							result = JSON.parse(result);
 						} catch (err) {
 							this.debugger?.warn('SeyfertError parsing result error (', result, ')', err);
-							await this.notifyFailRequest(method, finalUrl, err, response.status);
+							await this.notifyFailRequest(method, finalUrl, err, response.status, { ...request, auth });
 							reject(err);
 							return;
 						}
@@ -237,7 +350,7 @@ export class ApiHandler {
 				}
 				const parsedError = this.parseError(method, route, response, result, originTrace);
 				this.debugger?.warn(parsedError.message);
-				await this.notifyFailRequest(method, finalUrl, parsedError, response.status);
+				await this.notifyFailRequest(method, finalUrl, parsedError, response.status, { ...request, auth });
 				reject(parsedError);
 				return;
 			}
@@ -248,7 +361,7 @@ export class ApiHandler {
 						result = JSON.parse(result);
 					} catch (err) {
 						this.debugger?.warn('Failed parsing result (', result, ')', err);
-						await this.notifyFailRequest(method, finalUrl, err, response.status);
+						await this.notifyFailRequest(method, finalUrl, err, response.status, { ...request, auth });
 						next();
 						reject(err);
 						return;
@@ -256,7 +369,7 @@ export class ApiHandler {
 				}
 			}
 
-			await this.notifySuccessRequest(method, finalUrl, response);
+			await this.notifySuccessRequest(method, finalUrl, response, { ...request, auth });
 			next();
 			return resolve(result || undefined);
 		};
@@ -373,7 +486,7 @@ export class ApiHandler {
 		reject: (err: unknown) => void,
 		now: number,
 	) {
-		await this.onRatelimit?.(response, request);
+		await this.notifyRatelimit(response, request, method, url);
 
 		const bucket = this.ratelimits.get(route)!;
 		let retryAfter: number | undefined;
@@ -593,3 +706,17 @@ export type RestArgumentsNoBody<Q extends never | Record<string, any> = never> =
 	query?: Q;
 	files?: RawFile[];
 } & RequestOptions;
+
+function freezeRestPayload<T extends object>(payload: T): Readonly<T> {
+	return Object.freeze(payload);
+}
+
+function readonlyRequestOptions(request: ApiRequestOptions): Readonly<ApiRequestOptions> {
+	const clone: ApiRequestOptions = {
+		...request,
+		body: request.body ? { ...request.body } : undefined,
+		query: request.query ? { ...request.query } : undefined,
+		files: request.files?.map(file => ({ ...file })),
+	};
+	return Object.freeze(clone);
+}

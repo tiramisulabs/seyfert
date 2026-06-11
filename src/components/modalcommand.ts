@@ -1,3 +1,4 @@
+import type { PluginMiddlewareDenialMetadata } from '../client/plugins/types';
 import type { ExtraProps, ResolvedRegisteredMiddlewares, UsingClient } from '../commands';
 import { InteractionCommandType } from './componentcommand';
 import type { ModalContext } from './modalcontext';
@@ -30,6 +31,6 @@ export abstract class ModalCommand {
 	onBeforeMiddlewares?(context: ModalContext): any;
 	onAfterRun?(context: ModalContext, error: unknown | undefined): any;
 	onRunError?(context: ModalContext, error: unknown): any;
-	onMiddlewaresError?(context: ModalContext, error: string): any;
+	onMiddlewaresError?(context: ModalContext, error: string, metadata: PluginMiddlewareDenialMetadata): any;
 	onInternalError?(client: UsingClient, error?: unknown): any;
 }

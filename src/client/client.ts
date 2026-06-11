@@ -24,15 +24,18 @@ import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOp
 import { BaseClient } from './base';
 import { Collectors } from './collectors';
 import {
+	type AnySeyfertPlugin,
 	applyPluginGatewayPayloadWrappers,
+	type ExtendOf,
 	type RegisteredPluginExtension,
+	type RegisteredPlugins,
 	resolveClientPluginIntents,
 } from './plugins';
 import { type ClientUserStructure, type MessageStructure, Transformers } from './transformers';
 
 let parentPort: import('node:worker_threads').MessagePort;
 
-export class Client<Ready extends boolean = boolean> extends BaseClient {
+class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 	gateway!: ShardManager;
 	me!: When<Ready, ClientUserStructure>;
 	declare options: Omit<ClientOptions, 'commands'> & {
@@ -258,9 +261,35 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 	}
 }
 
-export interface Client<Ready extends boolean = boolean> extends RegisteredPluginExtension {}
+type ClientPluginsOf<TPluginsOrReady extends readonly AnySeyfertPlugin[] | boolean> =
+	TPluginsOrReady extends readonly AnySeyfertPlugin[] ? TPluginsOrReady : RegisteredPlugins;
+type ClientReadyOf<
+	TPluginsOrReady extends readonly AnySeyfertPlugin[] | boolean,
+	Ready extends boolean,
+> = TPluginsOrReady extends boolean ? TPluginsOrReady : Ready;
+type Materialize<T> = {
+	[K in keyof T]: T[K];
+};
 
-export interface ClientOptions extends BaseClientOptions {
+export type Client<
+	TPluginsOrReady extends readonly AnySeyfertPlugin[] | boolean = RegisteredPlugins,
+	Ready extends boolean = boolean,
+> = ClientBase<ClientReadyOf<TPluginsOrReady, Ready>> &
+	RegisteredPluginExtension &
+	Materialize<ExtendOf<ClientPluginsOf<TPluginsOrReady>>>;
+
+export interface ClientConstructor {
+	new <Ready extends boolean = boolean>(options?: ClientOptions<RegisteredPlugins>): Client<Ready>;
+	new <const TPlugins extends readonly AnySeyfertPlugin[] = RegisteredPlugins>(
+		options?: ClientOptions<TPlugins>,
+	): Client<TPlugins>;
+}
+
+export const Client = ClientBase as unknown as ClientConstructor;
+
+export interface ClientOptions<TPlugins extends readonly AnySeyfertPlugin[] = RegisteredPlugins>
+	extends BaseClientOptions {
+	plugins?: TPlugins;
 	presence?: (shardId: number) => GatewayPresenceUpdateData;
 	shards?: {
 		start: number;

@@ -10,6 +10,7 @@ import type {
 	SeyfertChoice,
 } from '../..';
 import type { Attachment } from '../../builders';
+import type { PluginMiddlewareDenialMetadata } from '../../client/plugins/types';
 import type {
 	GuildMemberStructure,
 	GuildRoleStructure,
@@ -192,7 +193,7 @@ export class BaseCommand {
 		context: CommandContext<{}, never> | ComponentContext | MenuCommandContext<any> | ModalContext | EntryPointContext,
 		middlewares: (keyof ResolvedRegisteredMiddlewares)[],
 		global: boolean,
-	): Promise<{ error?: string; pass?: boolean }> {
+	): Promise<{ error?: string; metadata?: PluginMiddlewareDenialMetadata; pass?: boolean }> {
 		if (!middlewares.length) {
 			return Promise.resolve({});
 		}
@@ -237,7 +238,10 @@ export class BaseCommand {
 					return;
 				}
 				running = false;
-				return res({ error: err });
+				return res({
+					error: err,
+					metadata: { middleware: String(activeMiddlewares[index]), scope: global ? 'global' : 'command' },
+				});
 			};
 			context.client.middlewares![activeMiddlewares[0]]({ context, next, stop, pass });
 		});
@@ -313,7 +317,7 @@ export class BaseCommand {
 	onAfterRun?(context: CommandContext, error: unknown | undefined): any;
 	onRunError?(context: CommandContext, error: unknown): any;
 	onOptionsError?(context: CommandContext, metadata: OnOptionsReturnObject): any;
-	onMiddlewaresError?(context: CommandContext, error: string): any;
+	onMiddlewaresError?(context: CommandContext, error: string, metadata: PluginMiddlewareDenialMetadata): any;
 	onBotPermissionsFail?(context: CommandContext, permissions: PermissionStrings): any;
 	onPermissionsFail?(context: CommandContext, permissions: PermissionStrings): any;
 	onInternalError?(client: UsingClient, command: Command | SubCommand, error?: unknown): any;

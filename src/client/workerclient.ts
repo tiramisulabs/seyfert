@@ -50,7 +50,7 @@ import type { BaseClientOptions, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import type { Client, ClientOptions } from './client';
 import { Collectors } from './collectors';
-import type { RegisteredPluginExtension } from './plugins';
+import { type RegisteredPluginExtension, resolveClientPluginIntents } from './plugins';
 import { type ClientUserStructure, Transformers } from './transformers';
 
 let workerData: WorkerData;
@@ -177,6 +177,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				}),
 			});
 		}
+		workerData.intents = resolveClientPluginIntents(this, workerData.intents);
 		this.cache.intents = workerData.intents;
 		this.rest.workerData = workerData;
 		this.postMessage({

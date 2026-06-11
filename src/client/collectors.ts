@@ -102,7 +102,7 @@ export class Collectors {
 		const collectors = this.values.get(name);
 		if (!collectors) return;
 
-		const data = await resolveRawEventData(name, client, raw);
+		const data = (await resolveRawEventData(name, client, raw)) ?? raw;
 
 		for (const i of collectors) {
 			if (await i.options.filter(data as never)) {

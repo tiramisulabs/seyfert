@@ -244,7 +244,7 @@ export class CommandHandler extends BaseHandler {
 		return false;
 	}
 
-	set(commands: HandleableCommand[]) {
+	set(commands: SeteableCommand[]) {
 		const added: (Command | ContextMenuCommand | EntryPointCommand)[] = [];
 		this.values ??= [];
 		for (const command of commands) {
@@ -564,8 +564,8 @@ export class CommandHandler extends BaseHandler {
 		return file.default ? [file.default] : undefined;
 	}
 
-	onCommand(file: HandleableCommand): InstanceType<HandleableCommand> | false {
-		return new file();
+	onCommand(file: SeteableCommand): HandleableCommandInstance | false {
+		return typeof file === 'function' ? new file() : file;
 	}
 
 	onSubCommand(file: HandleableSubCommand): SubCommand | false {
@@ -578,5 +578,6 @@ export type FileLoaded<T = null> = {
 } & Record<string, NulleableCoalising<T, HandleableCommand>>;
 
 export type HandleableCommand = new () => Command | SubCommand | ContextMenuCommand | EntryPointCommand;
-export type SeteableCommand = HandleableCommand;
+export type HandleableCommandInstance = Command | SubCommand | ContextMenuCommand | EntryPointCommand;
+export type SeteableCommand = HandleableCommand | HandleableCommandInstance;
 export type HandleableSubCommand = new () => SubCommand;

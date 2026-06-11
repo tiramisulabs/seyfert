@@ -1,6 +1,6 @@
 import { promises } from 'node:fs';
 import { join } from 'node:path';
-import { ApiHandler } from '../api';
+import { ApiHandler, type RestObserverEntry } from '../api';
 import { isBufferLike } from '../api/utils/utils';
 import type { Adapter, DisabledCache } from '../cache';
 import { Cache, MemoryAdapter } from '../cache';
@@ -35,6 +35,7 @@ import {
 	LogLevels,
 	type MakeRequired,
 	MemberShorter,
+	MergeOptions,
 	MessageShorter,
 	magicImport,
 	ReactionShorter,
@@ -52,7 +53,12 @@ import { VoiceStateShorter } from '../common/shorters/voiceStates';
 import type { Awaitable, DeepPartial, IntentStrings, OmitInsert, PermissionStrings, When } from '../common/types/util';
 import type { ComponentCommand, ComponentContext, ModalCommand, ModalContext } from '../components';
 import { type ComponentCommands, ComponentHandler } from '../components/handler';
-import type { CustomEventRunner, CustomEventsKeys, ResolveEventRunParams } from '../events';
+import {
+	CustomEventHandler,
+	type CustomEventRunner,
+	type CustomEventsKeys,
+	type ResolveEventRunParams,
+} from '../events';
 import { LangsHandler } from '../langs/handler';
 import type {
 	ChatInputCommandInteraction,
@@ -67,16 +73,29 @@ import {
 	type AnySeyfertPlugin,
 	bindClientPlugins,
 	type PluginLoadedMetadata,
-	type PluginServiceRegistry,
+	type PluginMiddlewareDenialMetadata,
+	type PluginSharedRegistry,
 	type PluginUploadCommandsMetadata,
 	type ResolvedPluginList,
+	refreshClientPluginGlobalMiddlewares,
+	resolveClientPluginIntents,
 	resolveClientPlugins,
+	runPluginHooks,
 	setupClientPlugins,
 	teardownClientPlugins,
 } from './plugins';
 import { createPluginConflictError, wrapPluginError } from './plugins/errors';
-import type { PluginRuntimeRegistry } from './plugins/registry';
-import { createServiceRegistry } from './plugins/services';
+import { orderedPluginContributions } from './plugins/order';
+import {
+	assertCanMutatePluginContribution,
+	installPluginMiddlewares,
+	type PluginComponentContribution,
+	type PluginModalContribution,
+	type PluginRuntimeRecord,
+	type PluginRuntimeRegistry,
+	recordContributionMutationDiagnostic,
+} from './plugins/registry';
+import { createSharedRegistry } from './plugins/shared';
 import type { MessageStructure } from './transformers';
 
 export type ContextScopeContext = BaseContext & ExtendContext;
@@ -129,12 +148,14 @@ export class BaseClient {
 	}
 
 	readonly plugins: ResolvedPluginList = [] as unknown as ResolvedPluginList;
-	services: PluginServiceRegistry;
-	declare events?: CustomEventRunner;
+	shared: PluginSharedRegistry;
+	events: CustomEventRunner = new CustomEventHandler(this);
 	/** @internal */
 	readonly pluginRegistry: PluginRuntimeRegistry;
 	private pluginsSetupPromise?: Promise<void>;
 	private pluginsClosePromise?: Promise<void>;
+	private langBaseValues: Partial<Record<string, any>> = {};
+	private pluginCacheDisabledCache: DisabledCache = {};
 	options: BaseClientOptions;
 
 	/**@internal */
@@ -200,8 +221,10 @@ export class BaseClient {
 		this.options = resolved.options;
 		this.plugins = resolved.plugins;
 		this.pluginRegistry = resolved.registry;
-		this.services = createServiceRegistry(this, this.pluginRegistry);
+		this.shared = createSharedRegistry(this, this.pluginRegistry);
 		bindClientPlugins(this, this.pluginRegistry);
+		this.bindPluginRestObserverProvider();
+		this.refreshPluginCacheResources();
 	}
 
 	get proxy() {
@@ -230,6 +253,7 @@ export class BaseClient {
 			rest.onSuccessRequest ??= this.rest.onSuccessRequest?.bind(rest);
 			rest.onFailRequest ??= this.rest.onFailRequest?.bind(rest);
 			this.rest = rest;
+			this.bindPluginRestObserverProvider();
 		}
 		if (cache) {
 			const caches: (keyof DisabledCache)[] = [
@@ -263,10 +287,10 @@ export class BaseClient {
 			}
 
 			if (cache.adapter) this.cache.adapter = cache.adapter;
-			if (cache.disabledCache) this.cache.buildCache(disabledCache, this);
+			if (cache.disabledCache) this.refreshPluginCacheResources(disabledCache);
 		}
 		if (middlewares) {
-			this.middlewares = middlewares;
+			this.middlewares = { ...(this.middlewares ?? {}), ...middlewares };
 		}
 		if (langs) {
 			this.langs ??= new LangsHandler(this.logger);
@@ -302,24 +326,75 @@ export class BaseClient {
 		if (!this.handleCommand) this.handleCommand = new HandleCommand(this);
 
 		await this.setupPlugins();
+		this.refreshPluginCacheResources();
+		this.reloadPluginMiddlewares();
+		await runPluginHooks(this, 'plugins:ready', this);
 
 		// The reason of this method is so for adapters that need to connect somewhere, have time to connect.
 		// Or maybe clear cache?
 		await this.cache.adapter.start();
 
 		await this.loadLangs(options.langsDir);
+		await runPluginHooks(this, 'commands:beforeLoad', this, options.commandsDir);
 		await this.loadCommands(options.commandsDir);
-		this.applyPluginCommands();
-		await this.emitPluginCustomEvent(
-			'commandsLoaded',
-			this.createPluginLoadedMetadata('commands', this.commands.values),
-		);
+		await this.reloadPluginCommands();
 		await this.loadComponents(options.componentsDir);
+		await this.reloadPluginComponents();
+	}
+
+	async reloadPluginContributions() {
+		this.refreshPluginContributions();
+		const commandsMetadata = this.createPluginLoadedMetadata('commands', this.commands.values);
+		await runPluginHooks(this, 'commands:afterLoad', commandsMetadata);
+		await this.emitPluginCustomEvent('commandsLoaded', commandsMetadata);
+		const componentsMetadata = this.createPluginLoadedMetadata('components', this.components.commands);
+		await runPluginHooks(this, 'components:afterLoad', componentsMetadata);
+		await this.emitPluginCustomEvent('componentsLoaded', componentsMetadata);
+	}
+
+	/** @internal */
+	refreshPluginContributions() {
+		this.reloadPluginMiddlewares();
+		this.refreshPluginCacheResources();
+		this.applyPluginLangs();
+		this.applyPluginCommands();
 		this.applyPluginComponents();
-		await this.emitPluginCustomEvent(
-			'componentsLoaded',
-			this.createPluginLoadedMetadata('components', this.components.commands),
-		);
+	}
+
+	private bindPluginRestObserverProvider() {
+		this.rest.pluginRestObserverClient = this;
+		this.rest.pluginRestObserverProvider = (): readonly RestObserverEntry[] =>
+			orderedPluginContributions(this.pluginRegistry.restObservers)
+				.filter(contribution => contribution.active)
+				.map(contribution => ({
+					plugin: contribution.record.identity,
+					observer: contribution.observer,
+				}));
+	}
+
+	private refreshPluginCacheResources(disabledCache: DisabledCache = this.pluginCacheDisabledCache) {
+		this.pluginCacheDisabledCache = disabledCache;
+		this.cache.intents = resolveClientPluginIntents(this, this.cache.intents);
+		this.cache.buildCache(disabledCache, this);
+	}
+
+	private reloadPluginMiddlewares() {
+		installPluginMiddlewares(this, this.pluginRegistry);
+		refreshClientPluginGlobalMiddlewares(this, this.pluginRegistry);
+	}
+
+	private async reloadPluginCommands() {
+		this.applyPluginCommands();
+		const metadata = this.createPluginLoadedMetadata('commands', this.commands.values);
+		await runPluginHooks(this, 'commands:afterLoad', metadata);
+		await this.emitPluginCustomEvent('commandsLoaded', metadata);
+	}
+
+	private async reloadPluginComponents() {
+		this.applyPluginComponents();
+		const metadata = this.createPluginLoadedMetadata('components', this.components.commands);
+		await runPluginHooks(this, 'components:afterLoad', metadata);
+		await this.emitPluginCustomEvent('componentsLoaded', metadata);
 	}
 
 	private async setupPlugins() {
@@ -349,6 +424,7 @@ export class BaseClient {
 			this.pluginsClosePromise ??
 			(async () => {
 				await setup;
+				await runPluginHooks(this, 'client:close', this);
 				await teardownClientPlugins(this, this.plugins);
 			})();
 		this.pluginsClosePromise = close;
@@ -365,57 +441,131 @@ export class BaseClient {
 
 	private applyPluginCommands() {
 		const contributions = this.pluginRegistry.commands;
-		if (!contributions.length) return;
+		const removals = this.pluginRegistry.commandRemovals;
+		const hasPluginCommands =
+			this.commands.values.some(command => pluginSourceKey in command) ||
+			!!(this.commands.entryPoint && pluginSourceKey in this.commands.entryPoint);
+		if (!(contributions.length || removals.length || hasPluginCommands)) return;
 
 		this.commands.values = this.commands.values.filter(command => !(pluginSourceKey in command));
 		if (this.commands.entryPoint && pluginSourceKey in this.commands.entryPoint) this.commands.entryPoint = null;
 
-		const existingNames = new Set(this.commands.values.map(command => command.name));
-		if (this.commands.entryPoint) existingNames.add(this.commands.entryPoint.name);
-
-		const constructors: HandleableCommand[] = [];
+		const existingCommands = new Map<
+			string,
+			{ command: Command | ContextMenuCommand | EntryPointCommand; owner?: PluginRuntimeRecord }
+		>();
+		for (const command of this.commands.values) existingCommands.set(command.name, { command });
+		if (this.commands.entryPoint)
+			existingCommands.set(this.commands.entryPoint.name, { command: this.commands.entryPoint });
 		const sourceByName = new Map<string, string>();
 
-		for (const contribution of contributions) {
-			for (const command of contribution.commands) {
+		const mutations = orderedPluginContributions([
+			...contributions.map(contribution => ({ ...contribution, kind: 'add' as const })),
+			...removals.map(contribution => ({ ...contribution, kind: 'remove' as const })),
+		]);
+
+		for (const mutation of mutations) {
+			if (mutation.kind === 'remove') {
+				for (const name of mutation.names) {
+					const existing = existingCommands.get(name);
+					if (!existing) continue;
+					assertCanMutatePluginContribution(
+						this.pluginRegistry,
+						mutation.record,
+						'remove',
+						'command',
+						name,
+						existing.owner,
+						'commands.remove',
+					);
+					existingCommands.delete(name);
+					recordContributionMutationDiagnostic(
+						this.pluginRegistry,
+						mutation,
+						'remove',
+						'command',
+						name,
+						existing.owner,
+						'commands.remove',
+					);
+				}
+				continue;
+			}
+
+			for (const command of mutation.commands) {
 				let instance: InstanceType<HandleableCommand>;
 				try {
 					instance = new command();
 				} catch (error) {
-					throw wrapPluginError(contribution.record.plugin.name, 'commands.add', contribution.record.index, error);
+					throw wrapPluginError(
+						mutation.record.plugin.name,
+						'commands.add',
+						mutation.record.index,
+						error,
+						undefined,
+						mutation.record.plugin.instanceId,
+					);
 				}
 				if (instance instanceof SubCommand) {
 					throw createPluginConflictError(
-						contribution.record.plugin.name,
+						mutation.record.plugin.name,
 						'commands.add',
-						contribution.record.index,
+						mutation.record.index,
 						`SubCommand "${instance.name}" cannot be registered as a top-level plugin command.`,
+						mutation.record.plugin.instanceId,
 					);
 				}
 				if (!instance.name) {
 					throw createPluginConflictError(
-						contribution.record.plugin.name,
+						mutation.record.plugin.name,
 						'commands.add',
-						contribution.record.index,
+						mutation.record.index,
 						'Plugin command is missing a name.',
+						mutation.record.plugin.instanceId,
 					);
 				}
-				if (existingNames.has(instance.name)) {
+				if (mutation.guilds?.length && 'guildId' in instance) {
+					instance.guildId = [...mutation.guilds];
+				}
+				const existing = existingCommands.get(instance.name);
+				if (existing && !mutation.override) {
 					throw createPluginConflictError(
-						contribution.record.plugin.name,
+						mutation.record.plugin.name,
 						'commands.add',
-						contribution.record.index,
+						mutation.record.index,
 						`Command "${instance.name}" is already registered.`,
+						mutation.record.plugin.instanceId,
 					);
 				}
-
-				existingNames.add(instance.name);
-				sourceByName.set(instance.name, contribution.record.plugin.name);
-				constructors.push(command);
+				if (existing) {
+					assertCanMutatePluginContribution(
+						this.pluginRegistry,
+						mutation.record,
+						'override',
+						'command',
+						instance.name,
+						existing.owner,
+						'commands.add',
+					);
+					recordContributionMutationDiagnostic(
+						this.pluginRegistry,
+						mutation,
+						'override',
+						'command',
+						instance.name,
+						existing.owner,
+						'commands.add',
+					);
+				}
+				sourceByName.set(instance.name, mutation.record.identity);
+				existingCommands.set(instance.name, { command: instance, owner: mutation.record });
 			}
 		}
 
-		for (const command of this.commands.set(constructors)) {
+		const commands = [...existingCommands.values()]
+			.filter(entry => !!entry.owner)
+			.map(entry => entry.command as InstanceType<HandleableCommand>);
+		for (const command of this.commands.set(commands)) {
 			(command as PluginSourced)[pluginSourceKey] = sourceByName.get(command.name);
 		}
 	}
@@ -423,78 +573,159 @@ export class BaseClient {
 	private applyPluginComponents() {
 		const contributions = this.pluginRegistry.components;
 		const modalContributions = this.pluginRegistry.modals;
-		if (!(contributions.length || modalContributions.length)) return;
+		const removals = this.pluginRegistry.componentRemovals;
+		const modalRemovals = this.pluginRegistry.modalRemovals;
+		const hasPluginComponents = this.components.commands.some(command => pluginSourceKey in command);
+		if (
+			!(
+				contributions.length ||
+				modalContributions.length ||
+				removals.length ||
+				modalRemovals.length ||
+				hasPluginComponents
+			)
+		) {
+			return;
+		}
 
 		const existing = this.components.commands.filter(command => !(pluginSourceKey in command));
 		this.components.commands.splice(0, this.components.commands.length, ...existing);
 
-		const existingCustomIds = new Set(
-			this.components.commands
-				.map(component => component.customId)
-				.filter((customId): customId is string => typeof customId === 'string'),
-		);
-		const constructors: (new () => ComponentCommands)[] = [];
+		const componentsByCustomId = new Map<string, { component: ComponentCommands; owner?: PluginRuntimeRecord }>();
+		for (const component of this.components.commands) {
+			if (typeof component.customId === 'string') componentsByCustomId.set(component.customId, { component });
+		}
+		const dynamicComponents: { component: ComponentCommands; owner: PluginRuntimeRecord }[] = [];
 		const sourceByCustomId = new Map<string, string>();
 
-		for (const record of this.pluginRegistry.records) {
-			for (const contribution of contributions.filter(contribution => contribution.record === record)) {
-				this.collectPluginComponents(
-					contribution.components,
-					contribution.record.plugin.name,
-					contribution.record.index,
-					existingCustomIds,
-					sourceByCustomId,
-					constructors,
-				);
+		const mutations = orderedPluginContributions([
+			...contributions.map(contribution => ({
+				...contribution,
+				kind: 'add' as const,
+				contributionKind: 'component' as const,
+			})),
+			...modalContributions.map(contribution => ({
+				...contribution,
+				kind: 'add' as const,
+				contributionKind: 'modal' as const,
+			})),
+			...removals.map(contribution => ({
+				...contribution,
+				kind: 'remove' as const,
+				contributionKind: 'component' as const,
+			})),
+			...modalRemovals.map(contribution => ({
+				...contribution,
+				kind: 'remove' as const,
+				contributionKind: 'modal' as const,
+			})),
+		]);
+
+		for (const mutation of mutations) {
+			if (mutation.kind === 'remove') {
+				for (const customId of mutation.customIds) {
+					const existing = componentsByCustomId.get(customId);
+					if (!existing) continue;
+					assertCanMutatePluginContribution(
+						this.pluginRegistry,
+						mutation.record,
+						'remove',
+						mutation.contributionKind,
+						customId,
+						existing.owner,
+						`${mutation.contributionKind}s.remove`,
+					);
+					componentsByCustomId.delete(customId);
+					recordContributionMutationDiagnostic(
+						this.pluginRegistry,
+						mutation,
+						'remove',
+						mutation.contributionKind,
+						customId,
+						existing.owner,
+						`${mutation.contributionKind}s.remove`,
+					);
+				}
+				continue;
 			}
-			for (const contribution of modalContributions.filter(contribution => contribution.record === record)) {
-				this.collectPluginComponents(
-					contribution.modals,
-					contribution.record.plugin.name,
-					contribution.record.index,
-					existingCustomIds,
-					sourceByCustomId,
-					constructors,
+
+			const constructors =
+				mutation.contributionKind === 'component'
+					? (mutation as PluginComponentContribution & { contributionKind: 'component' }).components
+					: (mutation as PluginModalContribution & { contributionKind: 'modal' }).modals;
+			for (const constructor of constructors) {
+				const instance = this.createPluginComponentInstance(
+					constructor,
+					mutation.record.plugin.name,
+					mutation.record.index,
+					`${mutation.contributionKind}s.add`,
 				);
+				(instance as PluginSourced)[pluginSourceKey] = mutation.record.identity;
+
+				if (typeof instance.customId !== 'string') {
+					dynamicComponents.push({ component: instance, owner: mutation.record });
+					continue;
+				}
+				const existing = componentsByCustomId.get(instance.customId);
+				if (existing && !mutation.override) {
+					throw createPluginConflictError(
+						mutation.record.plugin.name,
+						`${mutation.contributionKind}s.add`,
+						mutation.record.index,
+						`Component or modal "${instance.customId}" is already registered.`,
+						mutation.record.plugin.instanceId,
+					);
+				}
+				if (existing) {
+					assertCanMutatePluginContribution(
+						this.pluginRegistry,
+						mutation.record,
+						'override',
+						mutation.contributionKind,
+						instance.customId,
+						existing.owner,
+						`${mutation.contributionKind}s.add`,
+					);
+					recordContributionMutationDiagnostic(
+						this.pluginRegistry,
+						mutation,
+						'override',
+						mutation.contributionKind,
+						instance.customId,
+						existing.owner,
+						`${mutation.contributionKind}s.add`,
+					);
+				}
+				sourceByCustomId.set(instance.customId, mutation.record.identity);
+				componentsByCustomId.set(instance.customId, { component: instance, owner: mutation.record });
 			}
 		}
 
-		for (const component of this.components.set(constructors)) {
-			if (typeof component.customId === 'string') {
-				(component as PluginSourced)[pluginSourceKey] = sourceByCustomId.get(component.customId);
-			}
+		const components = [...componentsByCustomId.values(), ...dynamicComponents]
+			.filter((entry): entry is { component: ComponentCommands; owner: PluginRuntimeRecord } => !!entry.owner)
+			.map(entry => entry.component);
+		for (const component of this.components.set(components)) {
+			const source =
+				typeof component.customId === 'string'
+					? sourceByCustomId.get(component.customId)
+					: (component as PluginSourced)[pluginSourceKey];
+			if (source) (component as PluginSourced)[pluginSourceKey] = source;
 		}
 	}
 
-	private collectPluginComponents(
-		constructors: readonly (new () => ComponentCommands)[],
+	private createPluginComponentInstance(
+		constructor: new () => ComponentCommands,
 		pluginName: string,
 		index: number,
-		existingCustomIds: Set<string>,
-		sourceByCustomId: Map<string, string>,
-		target: (new () => ComponentCommands)[],
+		phase: string,
 	) {
-		for (const constructor of constructors) {
-			let instance: ComponentCommands;
-			try {
-				instance = new constructor();
-			} catch (error) {
-				throw wrapPluginError(pluginName, 'components.add', index, error);
-			}
-
-			if (typeof instance.customId === 'string') {
-				if (existingCustomIds.has(instance.customId)) {
-					throw createPluginConflictError(
-						pluginName,
-						'components.add',
-						index,
-						`Component or modal "${instance.customId}" is already registered.`,
-					);
-				}
-				existingCustomIds.add(instance.customId);
-				sourceByCustomId.set(instance.customId, pluginName);
-			}
-			target.push(constructor);
+		try {
+			return new constructor();
+		} catch (error) {
+			const record = this.pluginRegistry.records.find(
+				record => record.plugin.name === pluginName && record.index === index,
+			);
+			throw wrapPluginError(pluginName, phase, index, error, undefined, record?.plugin.instanceId);
 		}
 	}
 
@@ -687,6 +918,22 @@ export class BaseClient {
 			await this.langs.load(dir);
 			this.logger.info('LangsHandler loaded');
 		}
+		this.langBaseValues = this.langs ? cloneRecursive(this.langs.values) : this.langBaseValues;
+		this.applyPluginLangs();
+	}
+
+	private applyPluginLangs() {
+		if (!this.langs) return;
+		const localeContributions = orderedPluginContributions(this.pluginRegistry.langs);
+		const values: Partial<Record<string, any>> = cloneRecursive(this.langBaseValues);
+		for (const contribution of localeContributions) {
+			const current = (values[contribution.locale] as Record<string, any>) ?? {};
+			values[contribution.locale] = MergeOptions(
+				current,
+				createNestedLangValues(contribution.prefix, cloneRecursive(contribution.values)),
+			);
+		}
+		this.langs.values = values;
 	}
 
 	t(locale: string) {
@@ -768,7 +1015,11 @@ export interface BaseClientOptions {
 				command: Command | SubCommand | ContextMenuCommand,
 				error?: unknown,
 			) => unknown;
-			onMiddlewaresError?: (context: CommandContext | MenuCommandContext<any, never>, error: string) => unknown;
+			onMiddlewaresError?: (
+				context: CommandContext | MenuCommandContext<any, never>,
+				error: string,
+				metadata: PluginMiddlewareDenialMetadata,
+			) => unknown;
 			onOptionsError?: Command['onOptionsError'];
 			onAfterRun?: (context: CommandContext | MenuCommandContext<any, never>, error: unknown) => unknown;
 			props?: ExtraProps;
@@ -794,6 +1045,38 @@ export interface BaseClientOptions {
 	};
 	allowedMentions?: RESTPostAPIChannelMessageJSONBody['allowed_mentions'];
 	getRC?(): Awaitable<InternalRuntimeConfig | InternalRuntimeConfigHTTP>;
+}
+
+function createNestedLangValues(prefix: string, values: Record<string, unknown>) {
+	const route = prefix.split('.').filter(Boolean);
+	const clonedValues = cloneRecursive(values) as Record<string, unknown>;
+	const root: Record<string, unknown> = {};
+	let current = root;
+
+	for (let i = 0; i < route.length; i++) {
+		const key = route[i]!;
+		if (i === route.length - 1) {
+			current[key] = clonedValues;
+			break;
+		}
+		const nested: Record<string, unknown> = {};
+		current[key] = nested;
+		current = nested;
+	}
+
+	return root;
+}
+
+function cloneRecursive<T>(value: T): T {
+	if (Array.isArray(value)) return value.map(item => cloneRecursive(item)) as T;
+	if (!value || typeof value !== 'object') return value;
+
+	const entries = value as Record<string, unknown>;
+	const cloned = {} as Record<string, unknown>;
+	for (const key of Object.keys(entries)) {
+		cloned[key] = cloneRecursive(entries[key]);
+	}
+	return cloned as T;
 }
 
 export interface StartOptions {

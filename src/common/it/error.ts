@@ -95,6 +95,8 @@ export const SeyfertErrorMessages = {
 	API_WORKER_PROXY_PARENT_REQUIRED: 'Cannot use workerProxy without a parent.',
 	WORKER_TIMEOUT: 'Worker request timed out.',
 	WORKER_THREADS_REQUIRED: 'worker_threads is required for this operation.',
+	PLUGIN_FAILED: 'Plugin failed.',
+	PLUGIN_TEARDOWN_FAILED: 'Plugin teardown failed.',
 	WORKER_AND_SHARD_ID_REQUIRED: 'workerId and shardId are required.',
 	WORKER_NOT_FOUND: 'Worker not found.',
 	INVALID_SHARD_ID: 'Invalid shardId.',

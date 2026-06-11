@@ -1,3 +1,4 @@
+import type { PluginMiddlewareDenialMetadata } from '../../client/plugins/types';
 import { magicImport, type PermissionStrings } from '../../common';
 import type {
 	ApplicationCommandType,
@@ -57,7 +58,11 @@ export abstract class ContextMenuCommand {
 	abstract run?(context: MenuCommandContext<any>): any;
 	onAfterRun?(context: MenuCommandContext<any>, error: unknown | undefined): any;
 	onRunError?(context: MenuCommandContext<any, never>, error: unknown): any;
-	onMiddlewaresError?(context: MenuCommandContext<any, never>, error: string): any;
+	onMiddlewaresError?(
+		context: MenuCommandContext<any, never>,
+		error: string,
+		metadata: PluginMiddlewareDenialMetadata,
+	): any;
 	onBotPermissionsFail?(context: MenuCommandContext<any, never>, permissions: PermissionStrings): any;
 	onInternalError?(client: UsingClient, command: ContextMenuCommand, error?: unknown): any;
 }

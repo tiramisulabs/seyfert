@@ -1,5 +1,5 @@
 import type { InternalOptions, UsingClient } from '../commands';
-import { type If, Logger, SeyfertError } from '../common';
+import { type Awaitable, type If, Logger, SeyfertError } from '../common';
 import {
 	type APIChannel,
 	type APIEmoji,
@@ -61,6 +61,13 @@ type ReturnManagers = {
 	[K in NonGuildBased | GuildBased | GuildRelated]: NonNullable<Awaited<ReturnType<NonNullable<Cache[K]>['get']>>>;
 };
 
+type PluginCacheResourceContributionLike = {
+	name: string;
+	resource: new (cache: Cache, client: UsingClient) => unknown;
+	onPacket?: (event: GatewayDispatchPayload, cache: Cache) => Awaitable<void>;
+	sequence: number;
+};
+
 export * from './adapters/index';
 
 export type CachedEvents =
@@ -119,6 +126,8 @@ export class Cache {
 	bans?: Bans;
 
 	__logger__?: Logger;
+	private pluginResourceNames = new Set<string>();
+	private pluginResourcePacketHandlers: ((event: GatewayDispatchPayload, cache: Cache) => Awaitable<void>)[] = [];
 
 	constructor(
 		public intents: number,
@@ -130,6 +139,12 @@ export class Cache {
 	}
 
 	buildCache(disabledCache: DisabledCache, client: UsingClient) {
+		for (const name of this.pluginResourceNames) {
+			delete (this as Record<string, unknown>)[name];
+		}
+		this.pluginResourceNames.clear();
+		this.pluginResourcePacketHandlers = [];
+
 		// non-guild based
 		this.users = disabledCache.users ? undefined : new Users(this, client);
 		this.guilds = disabledCache.guilds ? undefined : new Guilds(this, client);
@@ -153,7 +168,17 @@ export class Cache {
 			? ((() => {
 					//
 				}) as any as () => Promise<void>)
-			: this.onPacketDefault.bind(this);
+			: this.onPacketWithPluginResources.bind(this);
+
+		const pluginResources = [
+			...((client as { pluginRegistry?: { cacheResources?: PluginCacheResourceContributionLike[] } }).pluginRegistry
+				?.cacheResources ?? []),
+		].sort((left, right) => left.sequence - right.sequence);
+		for (const contribution of pluginResources) {
+			(this as Record<string, unknown>)[contribution.name] = new contribution.resource(this, client);
+			this.pluginResourceNames.add(contribution.name);
+			if (contribution.onPacket) this.pluginResourcePacketHandlers.push(contribution.onPacket);
+		}
 	}
 
 	flush(): ReturnCache<void> {
@@ -477,7 +502,12 @@ export class Cache {
 	}
 
 	onPacket(event: GatewayDispatchPayload) {
-		return this.onPacketDefault(event);
+		return this.onPacketWithPluginResources(event);
+	}
+
+	private async onPacketWithPluginResources(event: GatewayDispatchPayload) {
+		await this.onPacketDefault(event);
+		for (const handler of this.pluginResourcePacketHandlers) await handler(event, this);
 	}
 
 	protected async onPacketDefault(event: GatewayDispatchPayload) {
