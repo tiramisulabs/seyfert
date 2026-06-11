@@ -57,6 +57,14 @@ class LedgerService {
 	}
 }
 
+class QueuesRegistry {
+	readonly kind = 'queues' as const;
+}
+
+class CooldownManager {
+	readonly kind = 'cooldown' as const;
+}
+
 class ContractCommand extends Command {
 	name = 'contract';
 	description = 'Contract';
@@ -101,6 +109,27 @@ const storage = createPlugin({
 	client: {
 		storage: () => ({ connected: true }),
 	},
+});
+
+const queuesRegistry = new QueuesRegistry();
+const queuesPlugin = createPlugin({
+	name: '@slipher/queues',
+	registry: queuesRegistry,
+	client: {
+		queues: () => queuesRegistry,
+	},
+});
+
+const cooldownManager = new CooldownManager();
+const cooldownPlugin = createPlugin({
+	name: '@slipher/cooldowns',
+	manager: cooldownManager,
+});
+
+createPlugin({
+	name: 'invalid-reserved-extra',
+	// @ts-expect-error reserved lifecycle fields keep the Seyfert plugin contract
+	setup: 'not-a-function',
 });
 
 const economy = createPlugin({
@@ -377,13 +406,6 @@ const noMetaPlugin = createPlugin({
 // @ts-expect-error plugins without meta should not expose a meta property
 expectType<never>(noMetaPlugin.meta);
 
-const invalidPlugin = createPlugin({
-	name: 'invalid',
-	// @ts-expect-error unknown plugin fields are rejected
-	notAPluginField: true,
-});
-expectType<string>(invalidPlugin.name);
-
 const optionsPlugin: SeyfertPlugin = {
 	name: 'options',
 	options(current) {
@@ -466,6 +488,9 @@ expectType<string>(storage.meta.label);
 expectType<'atomic'>(combinedAtomic.meta.kind);
 // @ts-expect-error plugins without meta should not expose a meta property
 expectType<never>(noMetaPlugin.meta);
+expectType<QueuesRegistry>(queuesPlugin.registry);
+expectType<QueuesRegistry>({} as PluginExtensionOf<typeof queuesPlugin>['queues']);
+expectType<CooldownManager>(cooldownPlugin.manager);
 expectType<SharedKey<LedgerService, 'ledger'>>(ledgerKey);
 expectType<SharedKey<{ fromClient: 'combined-client' }, 'combined-shared'>>(combinedSharedKey);
 expectType<SharedKey<() => 'shared-fn', 'shared-fn'>>(functionSharedKey);

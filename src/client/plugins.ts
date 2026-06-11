@@ -158,6 +158,11 @@ type CreatePluginInputBase<
 	teardown?(client: SeyfertPluginClient & ExtendOf<I> & E, api?: SeyfertPluginApi<M, ExtendOf<I> & E>): Awaitable<void>;
 };
 
+type CreatePluginReservedKey =
+	| keyof CreatePluginInputBase<string, readonly AnySeyfertPlugin[], object, object, PluginMiddlewareMap>
+	| 'meta';
+type CreatePluginExtra<T extends object> = Omit<T, CreatePluginReservedKey>;
+
 type CreatePluginInputWithMeta<
 	Name extends string,
 	I extends readonly AnySeyfertPlugin[],
@@ -214,16 +219,22 @@ export function createPlugin<
 	C extends object = {},
 	M extends PluginMiddlewareMap = {},
 	const Meta = never,
->(plugin: CreatePluginInputWithMeta<Name, I, E, C, M, Meta>): CreatePluginOutputWithMeta<Name, I, E, C, M, Meta>;
+	const Extra extends object = {},
+>(
+	plugin: CreatePluginInputWithMeta<Name, I, E, C, M, Meta> & Extra,
+): CreatePluginOutputWithMeta<Name, I, E, C, M, Meta> & CreatePluginExtra<Extra>;
 export function createPlugin<
 	const Name extends string,
 	const I extends readonly AnySeyfertPlugin[] = readonly [],
 	E extends object = {},
 	C extends object = {},
 	M extends PluginMiddlewareMap = {},
->(plugin: CreatePluginInputWithoutMeta<Name, I, E, C, M>): CreatePluginOutputBase<Name, I, E, C, M>;
+	const Extra extends object = {},
+>(
+	plugin: CreatePluginInputWithoutMeta<Name, I, E, C, M> & Extra,
+): CreatePluginOutputBase<Name, I, E, C, M> & CreatePluginExtra<Extra>;
 export function createPlugin(
-	plugin: CreatePluginInputBase<string, readonly AnySeyfertPlugin[], object, object, PluginMiddlewareMap>,
+	plugin: CreatePluginInputBase<string, readonly AnySeyfertPlugin[], object, object, PluginMiddlewareMap> & object,
 ) {
 	return plugin;
 }
