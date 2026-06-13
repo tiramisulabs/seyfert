@@ -1,4 +1,4 @@
-import type { RegisteredPluginMiddlewares } from '../client/plugins';
+import type { RegisteredPluginMiddlewares, SeyfertRegistry } from '../client/plugins';
 import type { FlatObjectKeys, PermissionStrings } from '../common';
 import { PermissionsBitField } from '../structures/extra/Permissions';
 import {
@@ -11,7 +11,11 @@ import {
 import type { CommandOption, OptionsRecord, SubCommand } from './applications/chat';
 import type { AnyMiddlewareContext, DefaultLocale, ExtraProps, IgnoreCommand } from './applications/shared';
 
-export interface RegisteredMiddlewares {}
+export type RegisteredMiddlewares = SeyfertRegistry extends {
+	middlewares: infer M extends Record<string, AnyMiddlewareContext>;
+}
+	? M
+	: {};
 export type ResolvedRegisteredMiddlewares = RegisteredMiddlewares & RegisteredPluginMiddlewares;
 
 export type CommandDeclareOptions =
@@ -137,10 +141,6 @@ export function AutoLoad() {
 			__autoload = true;
 		};
 }
-
-export type ParseMiddlewares<T extends Record<string, AnyMiddlewareContext>> = {
-	[k in keyof T]: T[k];
-};
 
 export function Middlewares(cbs: readonly (keyof ResolvedRegisteredMiddlewares)[]) {
 	return <T extends { new (...args: any[]): object }>(target: T) =>

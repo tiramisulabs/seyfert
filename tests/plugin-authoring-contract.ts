@@ -33,8 +33,6 @@ import {
 	type PluginUsingClient,
 	type RegisteredPluginMiddlewares,
 	type RegisteredPluginShared,
-	type Register,
-	type RegisterPlugins,
 	type ResolvedRegisteredMiddlewares,
 	type SharedKey,
 	type SeyfertPlugin,
@@ -462,7 +460,11 @@ const arrayPlugins = definePlugins([economy, storage, combinedAtomic]);
 const emptyPlugins = definePlugins();
 
 declare module 'seyfert' {
-	interface Register extends RegisterPlugins<typeof plugins> {}
+	interface SeyfertRegistry {
+		plugins: typeof plugins;
+		client: Client<true>;
+		middlewares: { localAudit: typeof combinedAudit };
+	}
 
 	interface RegisteredPluginShared {
 		ledger: LedgerService;
@@ -476,7 +478,6 @@ declare module 'seyfert' {
 declare function commandContext(): CommandContext;
 declare function authCommandContext(): CommandContext<{}, 'auth'>;
 
-expectType<Register>({ plugins });
 expectType<SeyfertPlugin<any, any, any, any>>(economy);
 // @ts-expect-error SeyfertPlugin has only four generic slots
 type NoFifthPluginSlot = SeyfertPlugin<{}, {}, readonly [], {}, {}>;
@@ -541,6 +542,8 @@ expectType<boolean>(explicitLocalClient.defaultedConfig.enabled);
 const ctx = commandContext();
 ctx.client.economy.addCoins('user', 3);
 ctx.wallet.add(3);
+expectType<number>(ctx.client.gateway.latency);
+expectType<typeof combinedAudit>({} as ResolvedRegisteredMiddlewares['localAudit']);
 expectType<ReturnType<typeof Middlewares>>(Middlewares(['auth']));
 expectType<ReturnType<typeof Middlewares>>(Middlewares(['combinedAudit']));
 // @ts-expect-error plugin middlewares must be registered before they can be referenced

@@ -11,7 +11,7 @@ import type {
 	VoiceChannelStructure,
 } from '../../client';
 import type { BaseClient } from '../../client/base';
-import type { RegisteredPluginContext, RegisteredPluginExtension } from '../../client/plugins';
+import type { RegisteredPluginContext, RegisteredPluginExtension, SeyfertRegistry } from '../../client/plugins';
 import type { IsStrictlyUndefined } from '../../common';
 import type { ChannelType } from '../../types';
 import type { ResolvedRegisteredMiddlewares } from '../decorators';
@@ -24,10 +24,12 @@ export type PassFunction = () => void;
 export type InferWithPrefix = InternalOptions extends { withPrefix: infer P } ? P : false;
 
 export interface GlobalMetadata {}
-export interface DefaultLocale {}
+export type DefaultLocale = SeyfertRegistry extends { langs: infer L extends Record<string, any> } ? L : {};
 export interface ExtendContext extends RegisteredPluginContext {}
 export interface ExtraProps {}
-export type UsingClient = BaseClient & RegisteredPluginExtension;
+export type UsingClient = BaseClient &
+	RegisteredPluginExtension &
+	(SeyfertRegistry extends { client: infer C extends BaseClient } ? C : BaseClient);
 export interface CustomWorkerClientEvents {}
 export interface CustomWorkerManagerEvents {}
 export interface ExtendedRC {}

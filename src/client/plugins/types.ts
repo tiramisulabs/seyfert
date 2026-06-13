@@ -23,8 +23,7 @@ import type { GatewayDispatchPayload, GatewayIntentBits, GatewaySendPayload, Loc
 import type { BaseClient, BaseClientOptions } from '../base';
 import type { MessageStructure, OptionResolverStructure } from '../transformers';
 
-export interface Register {}
-export type RegisterPlugins<TPlugins extends readonly AnySeyfertPlugin[]> = { plugins: TPlugins };
+export interface SeyfertRegistry {}
 
 export interface RegisteredPluginShared {}
 
@@ -275,7 +274,7 @@ export type MiddlewaresOf<TPlugins extends readonly AnySeyfertPlugin[]> = UnionT
 	PluginMiddlewaresOf<TPlugins[number]>
 >;
 
-export type RegisteredPlugins = Register extends { plugins: infer T extends readonly AnySeyfertPlugin[] }
+export type RegisteredPlugins = SeyfertRegistry extends { plugins: infer T extends readonly AnySeyfertPlugin[] }
 	? T
 	: readonly [];
 export type RegisteredPluginExtension = Materialize<ExtendOf<RegisteredPlugins>>;
