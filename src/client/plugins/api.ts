@@ -181,6 +181,17 @@ export function createPluginApi(
 				registry.commandObservers.push(contribution);
 				return once(() => removePluginCommandObserverContribution(registry, contribution));
 			},
+			defaults(hooks, opts) {
+				registry.pluginDefaults.push({
+					record,
+					kind: 'commands',
+					hooks: hooks as Record<string, unknown>,
+					suppressDefault: opts?.suppressDefault as boolean | readonly string[] | undefined,
+					scope,
+					order: opts?.order,
+					sequence: nextPluginContributionSequence(registry),
+				});
+			},
 		},
 		rest: {
 			observe(observer, order) {
@@ -230,6 +241,17 @@ export function createPluginApi(
 					sequence: nextPluginContributionSequence(registry),
 				});
 			},
+			defaults(hooks, opts) {
+				registry.pluginDefaults.push({
+					record,
+					kind: 'components',
+					hooks: hooks as Record<string, unknown>,
+					suppressDefault: opts?.suppressDefault as boolean | readonly string[] | undefined,
+					scope,
+					order: opts?.order,
+					sequence: nextPluginContributionSequence(registry),
+				});
+			},
 		},
 		modals: {
 			add(...args) {
@@ -247,6 +269,17 @@ export function createPluginApi(
 					record,
 					customIds,
 					scope,
+					sequence: nextPluginContributionSequence(registry),
+				});
+			},
+			defaults(hooks, opts) {
+				registry.pluginDefaults.push({
+					record,
+					kind: 'modals',
+					hooks: hooks as Record<string, unknown>,
+					suppressDefault: opts?.suppressDefault as boolean | readonly string[] | undefined,
+					scope,
+					order: opts?.order,
 					sequence: nextPluginContributionSequence(registry),
 				});
 			},

@@ -220,6 +220,14 @@ export interface PluginCommandObserverContribution extends PluginOrderedContribu
 	active: boolean;
 }
 
+export interface PluginDefaultsContribution extends PluginOrderedContribution {
+	record: PluginRuntimeRecord;
+	kind: 'commands' | 'components' | 'modals';
+	hooks: Record<string, unknown> | undefined;
+	suppressDefault?: boolean | readonly string[];
+	scope: PluginEventContributionScope;
+}
+
 export interface PluginRequirementContribution extends PluginRequirementDiagnostic {
 	record: PluginRuntimeRecord;
 }
@@ -249,6 +257,7 @@ export interface PluginRuntimeRegistry extends PluginOrderSequence {
 	hooks: PluginHookContribution[];
 	cacheResources: PluginCacheResourceContribution[];
 	commandObservers: PluginCommandObserverContribution[];
+	pluginDefaults: PluginDefaultsContribution[];
 	shared: Map<string, PluginSharedContribution>;
 	sharedOwners: Map<string, PluginRuntimeRecord>;
 	langs: PluginLangContribution[];
@@ -303,6 +312,7 @@ export function createPluginRuntimeRegistry(plugins: readonly AnySeyfertPlugin[]
 		modalRemovals: [],
 		middlewareRemovals: [],
 		commandObservers: [],
+		pluginDefaults: [],
 	};
 	addStaticKeyMultiInstanceDiagnostics(registry);
 	validatePluginRequirements(registry, 'plugin');

@@ -348,6 +348,10 @@ export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewa
 		add(...args: [...commands: HandleableCommand[], opts: PluginCommandContributionOptions]): void;
 		remove(...names: string[]): void;
 		observe(observer: PluginCommandObserver, opts?: { order?: PluginOrderOpt }): PluginEventDisposer;
+		defaults(
+			hooks: Partial<SeyfertCommandDefaults>,
+			opts?: { suppressDefault?: boolean | readonly (keyof SeyfertCommandDefaults)[]; order?: PluginOrderOpt },
+		): void;
 	};
 	rest: {
 		observe(observer: PluginRestObserver, order?: PluginOrderOpt): PluginEventDisposer;
@@ -363,11 +367,19 @@ export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewa
 		add(...components: HandleableComponent[]): void;
 		add(...args: [...components: HandleableComponent[], opts: PluginContributionOptions]): void;
 		remove(...customIds: string[]): void;
+		defaults(
+			hooks: Partial<SeyfertComponentDefaults>,
+			opts?: { suppressDefault?: boolean | readonly (keyof SeyfertComponentDefaults)[]; order?: PluginOrderOpt },
+		): void;
 	};
 	modals: {
 		add(...modals: HandleableModal[]): void;
 		add(...args: [...modals: HandleableModal[], opts: PluginContributionOptions]): void;
 		remove(...customIds: string[]): void;
+		defaults(
+			hooks: Partial<SeyfertModalDefaults>,
+			opts?: { suppressDefault?: boolean | readonly (keyof SeyfertModalDefaults)[]; order?: PluginOrderOpt },
+		): void;
 	};
 	middlewares: {
 		add<const Name extends keyof M & string>(name: Name, middleware: M[Name], opts?: PluginMiddlewareOptions): void;

@@ -103,6 +103,69 @@ describe('client plugins', () => {
 		}
 	});
 
+	test('a plugin suppresses the framework default with api.commands.defaults({ suppressDefault })', async () => {
+		const calls: string[] = [];
+		const plugin: SeyfertPlugin = {
+			name: 'suppressor',
+			register(api) {
+				api.commands.defaults({ onRunError: () => calls.push('plugin') }, { suppressDefault: true });
+			},
+		};
+
+		const resolved = resolveClientPlugins(
+			{ commands: { defaults: { onRunError: () => calls.push('fallback') } } },
+			{ plugins: [plugin] },
+		);
+
+		await resolved.options.commands?.defaults?.onRunError?.({} as never, new Error('boom'));
+
+		assert.deepEqual(calls, ['plugin']);
+	});
+
+	test('suppressDefault drops only the framework floor; an additive peer still runs', async () => {
+		const calls: string[] = [];
+		const additivePlugin: SeyfertPlugin = {
+			name: 'additive',
+			register(api) {
+				api.commands.defaults({ onRunError: () => calls.push('additive') });
+			},
+		};
+		const suppressor: SeyfertPlugin = {
+			name: 'suppressor',
+			register(api) {
+				api.commands.defaults({ onRunError: () => calls.push('suppressor') }, { suppressDefault: true });
+			},
+		};
+
+		const resolved = resolveClientPlugins(
+			{ commands: { defaults: { onRunError: () => calls.push('fallback') } } },
+			{ plugins: [additivePlugin, suppressor] },
+		);
+
+		await resolved.options.commands?.defaults?.onRunError?.({} as never, new Error('boom'));
+
+		assert.deepEqual(calls, ['additive', 'suppressor']);
+	});
+
+	test('suppressDefault is ignored for a key the contribution does not actually handle', async () => {
+		const calls: string[] = [];
+		const plugin: SeyfertPlugin = {
+			name: 'partial',
+			register(api) {
+				api.commands.defaults({ onRunError: () => calls.push('plugin') }, { suppressDefault: ['onMiddlewaresError'] });
+			},
+		};
+
+		const resolved = resolveClientPlugins(
+			{ commands: { defaults: { onRunError: () => calls.push('fallback') } } },
+			{ plugins: [plugin] },
+		);
+
+		await resolved.options.commands?.defaults?.onRunError?.({} as never, new Error('boom'));
+
+		assert.deepEqual(calls, ['plugin', 'fallback']);
+	});
+
 	test('plugin teardown runs in LIFO order and collects errors', async () => {
 		const calls: string[] = [];
 		const firstError = new Error('first failed');
