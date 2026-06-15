@@ -64,9 +64,21 @@ export class Logger {
 	 * Logger.customize((logger, level, args) => {
 	 *     // Custom logging implementation
 	 * });
+	 * @returns A disposer that restores the previous callback (no-op if a newer one replaced it).
 	 */
-	static customize(cb: CustomizeLoggerCallback) {
+	static customize(cb: CustomizeLoggerCallback): () => void {
+		const previous = Logger.__callback;
 		Logger.__callback = cb;
+		return () => {
+			if (Logger.__callback === cb) Logger.__callback = previous;
+		};
+	}
+
+	/**
+	 * Returns the current logging callback, so a customizer can chain the previous one.
+	 */
+	static getCustomizer(): CustomizeLoggerCallback {
+		return Logger.__callback;
 	}
 
 	/**
