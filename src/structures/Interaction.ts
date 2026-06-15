@@ -86,11 +86,7 @@ export type ReplyInteractionBody =
 	| { type: InteractionResponseType.LaunchActivity }
 	| Exclude<RESTPostAPIInteractionCallbackJSONBody, APIInteractionResponsePong>;
 
-export type __InternalReplyFunction = (_: {
-	body: APIInteractionResponse;
-	files?: RawFile[];
-	withResponse?: boolean;
-}) => Promise<any>;
+export type __InternalReplyFunction = (_: { body: APIInteractionResponse; files?: RawFile[] }) => Promise<any>;
 
 export interface BaseInteraction
 	extends ObjectToLower<
@@ -229,15 +225,11 @@ export class BaseInteraction<
 			//@ts-expect-error
 			const data = body.data instanceof Modal ? body.data : rest;
 			const parsedFiles = files ? await resolveFiles(files) : undefined;
-			const result = await (this.replied = this.__reply({
+			await (this.replied = this.__reply({
 				body: BaseInteraction.transformBodyRequest({ data, type: body.type }, parsedFiles, this.client),
 				files: parsedFiles,
-				withResponse,
-			}));
-			this.replied = true;
-			return result?.resource?.message
-				? Transformers.WebhookMessage(this.client, result.resource.message as any, this.id, this.token)
-				: undefined;
+			}).then(() => (this.replied = true)));
+			return;
 		}
 		const result = await (this.replied = this.client.interactions.reply(this.id, this.token, body, withResponse));
 		this.replied = true;
