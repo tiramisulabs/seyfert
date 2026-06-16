@@ -107,8 +107,19 @@ export class CustomEventHandler extends BaseHandler implements CustomEventRunner
 			const collectors = this.runCollectors(name, args);
 			if (collectors) tasks.push(Promise.resolve(collectors));
 			if (Event && !(Event.data.once && Event.fired)) {
-				Event.fired = true;
-				tasks.push(Promise.resolve((Event.run as any)(...args, this.client)));
+				if (Event.data.once) {
+					Event.fired = true;
+					tasks.push(
+						Promise.resolve()
+							.then(() => (Event.run as any)(...args, this.client))
+							.catch(error => {
+								Event.fired = false;
+								throw error;
+							}),
+					);
+				} else {
+					tasks.push(Promise.resolve((Event.run as any)(...args, this.client)));
+				}
 			}
 			tasks.push(...this.createPluginListenerTasks(name, listeners, anyListeners, [...args, this.client]));
 			await this.settleEventTasks(name, tasks);
@@ -366,8 +377,19 @@ export class EventHandler extends CustomEventHandler {
 
 			const tasks: Promise<unknown>[] = [];
 			if (transformed && Event && !(Event.data.once && Event.fired)) {
-				Event.fired = true;
-				tasks.push(Promise.resolve((Event.run as any)(hook, client, shardId)));
+				if (Event.data.once) {
+					Event.fired = true;
+					tasks.push(
+						Promise.resolve()
+							.then(() => (Event.run as any)(hook, client, shardId))
+							.catch(error => {
+								Event.fired = false;
+								throw error;
+							}),
+					);
+				} else {
+					tasks.push(Promise.resolve((Event.run as any)(hook, client, shardId)));
+				}
 			}
 			tasks.push(...this.createPluginListenerTasks(name, listeners, anyListeners, [hook, client, shardId]));
 			await this.settleEventTasks(name, tasks);

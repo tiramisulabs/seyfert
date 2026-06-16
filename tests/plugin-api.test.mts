@@ -55,6 +55,10 @@ function createGatewayClient(plugins = [] as NonNullable<ConstructorParameters<t
 	return client;
 }
 
+async function flushMicrotasks(count = 3) {
+	for (let i = 0; i < count; i++) await Promise.resolve();
+}
+
 class PluginPing extends Command {
 	name = 'plugin-ping';
 	description = 'Plugin ping';
@@ -450,6 +454,134 @@ describe('plugin api v3', () => {
 		const client = createBaseClient([first, second]);
 
 		await expect(client.start()).rejects.toThrow(/second.*commands|commands.*second/);
+	});
+
+	test('retries once custom events after their run fails', async () => {
+		const failures: unknown[] = [];
+		let attempts = 0;
+		const client = createGatewayClient();
+		client.events.onFail = async (_name, error) => failures.push(error);
+		client.events.set([
+			{
+				data: { name: 'commandsLoaded', once: true },
+				run() {
+					attempts++;
+					if (attempts === 1) throw new Error('custom boom');
+				},
+			},
+		]);
+
+		await client.events.runCustom('commandsLoaded', {
+			kind: 'commands',
+			total: 0,
+			items: [],
+			plugin: { total: 0, sources: {} },
+		});
+		await client.events.runCustom('commandsLoaded', {
+			kind: 'commands',
+			total: 0,
+			items: [],
+			plugin: { total: 0, sources: {} },
+		});
+
+		expect(attempts).toBe(2);
+		expect(failures).toHaveLength(1);
+	});
+
+	test('reserves once custom events while their run is unresolved', async () => {
+		const failures: unknown[] = [];
+		let attempts = 0;
+		let release!: () => void;
+		const holdRun = new Promise<void>(resolve => {
+			release = resolve;
+		});
+		const client = createGatewayClient();
+		client.events.onFail = async (_name, error) => failures.push(error);
+		client.events.set([
+			{
+				data: { name: 'commandsLoaded', once: true },
+				run() {
+					attempts++;
+					return holdRun;
+				},
+			},
+		]);
+
+		const firstDispatch = client.events.runCustom('commandsLoaded', {
+			kind: 'commands',
+			total: 0,
+			items: [],
+			plugin: { total: 0, sources: {} },
+		});
+		const secondDispatch = client.events.runCustom('commandsLoaded', {
+			kind: 'commands',
+			total: 0,
+			items: [],
+			plugin: { total: 0, sources: {} },
+		});
+
+		await flushMicrotasks();
+		expect(attempts).toBe(1);
+
+		release();
+		await Promise.all([firstDispatch, secondDispatch]);
+
+		expect(attempts).toBe(1);
+		expect(failures).toHaveLength(0);
+	});
+
+	test('retries once gateway events after their run fails', async () => {
+		const failures: unknown[] = [];
+		let attempts = 0;
+		const client = createGatewayClient();
+		client.events.onFail = async (_name, error) => failures.push(error);
+		client.events.set([
+			{
+				data: { name: 'botReady', once: true },
+				run() {
+					attempts++;
+					if (attempts === 1) throw new Error('gateway boom');
+				},
+			},
+		]);
+
+		await client.events.runEvent('BOT_READY' as never, client, {} as never, -1, false);
+		await client.events.runEvent('BOT_READY' as never, client, {} as never, -1, false);
+
+		expect(attempts).toBe(2);
+		expect(failures).toHaveLength(1);
+	});
+
+	test('reserves once gateway events while their run is unresolved', async () => {
+		const failures: unknown[] = [];
+		let attempts = 0;
+		let release!: () => void;
+		const holdRun = new Promise<void>(resolve => {
+			release = resolve;
+		});
+		const client = createGatewayClient();
+		client.events.onFail = async (_name, error) => failures.push(error);
+		client.events.set([
+			{
+				data: { name: 'botReady', once: true },
+				run() {
+					attempts++;
+					return holdRun;
+				},
+			},
+		]);
+
+		const firstDispatch = client.events.runEvent('BOT_READY' as never, client, {} as never, -1, false);
+		const secondDispatch = client.events.runEvent('BOT_READY' as never, client, {} as never, -1, false);
+
+		await flushMicrotasks();
+		expect(attempts).toBe(1);
+
+		release();
+		await Promise.all([firstDispatch, secondDispatch]);
+
+		expect(attempts).toBe(1);
+		expect(failures).toHaveLength(0);
 	});
 
 	test('runs multiple plugin event listeners without last-wins', async () => {
