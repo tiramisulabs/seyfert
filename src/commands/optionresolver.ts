@@ -6,7 +6,7 @@ import {
 	Transformers,
 	type UserStructure,
 } from '../client/transformers';
-import { type MakeRequired, SeyfertError } from '../common';
+import { type MakePresent, SeyfertError } from '../common';
 import { type AllChannels, channelFrom } from '../structures';
 import {
 	type APIApplicationCommandInteractionDataOption,
@@ -223,7 +223,7 @@ export interface OptionResolved {
 	focused?: boolean;
 }
 
-export type OptionResolvedWithValue = MakeRequired<Pick<OptionResolved, 'name' | 'value' | 'focused'>, 'value'> & {
+export type OptionResolvedWithValue = MakePresent<Pick<OptionResolved, 'name' | 'value' | 'focused'>, 'value'> & {
 	type:
 		| ApplicationCommandOptionType.Boolean
 		| ApplicationCommandOptionType.Integer

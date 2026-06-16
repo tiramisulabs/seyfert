@@ -35,17 +35,55 @@ import {
 	type RegisteredPluginMiddlewares,
 	type RegisteredPluginShared,
 	type ResolvedRegisteredMiddlewares,
+	type OptionResolvedWithValue,
 	type SharedKey,
 	type SeyfertPlugin,
 	type SeyfertPluginApi,
 	type SeyfertPluginOptions,
 	type SemverRange,
+	type ShardManager,
+	config,
 	ModalCommand,
 	type WebhookMessageStructure,
 } from 'seyfert';
+import type { MakePresent, MakeRequired, PickPresent, PickRequired } from '../lib/common';
 
 declare function expectType<T>(value: T): void;
 type IsAny<T> = 0 extends 1 & T ? true : false;
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
+	? (<T>() => T extends B ? 1 : 2) extends <T>() => T extends A ? 1 : 2
+		? true
+		: false
+	: false;
+
+type PresentFixture = {
+	flag?: boolean;
+	count?: 0 | 1;
+	text?: '' | 'x';
+	big?: 0n | 1n;
+	nil?: null | 'ok';
+};
+
+type PresentFixtureAll = MakePresent<PresentFixture, 'flag' | 'count' | 'text' | 'big' | 'nil'>;
+expectType<true>(true as Equal<PresentFixtureAll['flag'], boolean>);
+expectType<true>(true as Equal<PresentFixtureAll['count'], 0 | 1>);
+expectType<true>(true as Equal<PresentFixtureAll['text'], '' | 'x'>);
+expectType<true>(true as Equal<PresentFixtureAll['big'], 0n | 1n>);
+expectType<true>(true as Equal<PresentFixtureAll['nil'], 'ok'>);
+
+type PickPresentFixture = PickPresent<PresentFixture, 'flag' | 'count' | 'text' | 'big' | 'nil'>;
+expectType<true>(true as Equal<PickPresentFixture['flag'], boolean>);
+expectType<true>(true as Equal<PickPresentFixture['count'], 0 | 1>);
+expectType<true>(true as Equal<PickPresentFixture['text'], '' | 'x'>);
+expectType<true>(true as Equal<PickPresentFixture['big'], 0n | 1n>);
+expectType<true>(true as Equal<PickPresentFixture['nil'], 'ok'>);
+expectType<true>(true as Equal<MakeRequired<{ flag?: boolean }, 'flag'>['flag'], true>);
+expectType<true>(true as Equal<PickRequired<{ flag?: boolean }, 'flag'>['flag'], true | undefined>);
+expectType<true>(true as Equal<OptionResolvedWithValue['value'], string | number | boolean>);
+expectType<true>(true as Equal<ShardManager['options']['debug'], boolean>);
+expectType<true>(true as Equal<ShardManager['options']['intents'], number>);
+expectType<true>(true as Equal<ReturnType<typeof config.bot>['intents'], number>);
+expectType<true>(true as Equal<ReturnType<typeof config.http>['port'], number>);
 
 class EconomyApi {
 	addCoins(_userId: string, _amount: number) {}
