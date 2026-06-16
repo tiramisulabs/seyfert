@@ -73,13 +73,7 @@ export class CommandContext<
 	async write<WR extends boolean = false>(
 		body: InteractionCreateBodyRequest,
 		withResponse?: WR,
-	): Promise<
-		When<
-			WR,
-			WebhookMessageStructure | When<InferWithPrefix, MessageStructure, never>,
-			void | WebhookMessageStructure | When<InferWithPrefix, MessageStructure, never>
-		>
-	> {
+	): Promise<When<WR, WebhookMessageStructure | When<InferWithPrefix, MessageStructure, never>, void>> {
 		if (this.interaction) return this.interaction.write(body, withResponse);
 		const options = (this.client as Client | WorkerClient).options?.commands;
 		return (this.messageResponse = await (this.message! as Message)[
@@ -126,16 +120,10 @@ export class CommandContext<
 	editOrReply<WR extends boolean = false>(
 		body: InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest,
 		withResponse?: WR,
-	): Promise<
-		When<
-			WR,
-			WebhookMessageStructure | When<InferWithPrefix, MessageStructure, never>,
-			void | WebhookMessageStructure | When<InferWithPrefix, MessageStructure, never>
-		>
-	> {
+	): Promise<When<WR, WebhookMessageStructure | When<InferWithPrefix, MessageStructure, never>, void>> {
 		if (this.interaction) return this.interaction.editOrReply(body as InteractionCreateBodyRequest, withResponse);
 		if (this.messageResponse) {
-			return this.editResponse(body);
+			return this.editResponse(body) as never;
 		}
 		return this.write(body as InteractionCreateBodyRequest, withResponse);
 	}

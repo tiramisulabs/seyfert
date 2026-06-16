@@ -41,6 +41,7 @@ import {
 	type SeyfertPluginOptions,
 	type SemverRange,
 	ModalCommand,
+	type WebhookMessageStructure,
 } from 'seyfert';
 
 declare function expectType<T>(value: T): void;
@@ -500,6 +501,13 @@ declare module 'seyfert' {
 
 declare function commandContext(): CommandContext;
 declare function authCommandContext(): CommandContext<{}, 'auth'>;
+
+expectType<Promise<void>>(commandContext().write({ content: 'Done!' }));
+expectType<Promise<void>>(commandContext().editOrReply({ content: 'Done!' }));
+expectType<Promise<void>>(commandContext().write({ content: 'Done!' }, false));
+expectType<Promise<void>>(commandContext().editOrReply({ content: 'Done!' }, false));
+expectType<Promise<WebhookMessageStructure>>(commandContext().write({ content: 'Done!' }, true));
+expectType<Promise<WebhookMessageStructure>>(commandContext().editOrReply({ content: 'Done!' }, true));
 
 expectType<SeyfertPlugin<any, any, any, any>>(economy);
 // @ts-expect-error SeyfertPlugin has only four generic slots
