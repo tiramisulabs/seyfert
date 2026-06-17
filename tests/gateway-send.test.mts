@@ -147,6 +147,22 @@ describe('gateway send chokepoints', () => {
 		]);
 	});
 
+	test('WorkerManager.spawn allows missing presence callbacks', () => {
+		const { manager, messages } = createWorkerManager();
+		manager.connectQueue = { push: (callback: () => unknown) => callback() } as never;
+		manager.set(0, {});
+
+		manager.spawn(0, 0);
+
+		expect(messages).toEqual([
+			{
+				type: 'ALLOW_CONNECT',
+				shardId: 0,
+				presence: undefined,
+			},
+		]);
+	});
+
 	test('WorkerManager.start respects an explicit zero intents option', async () => {
 		const { manager } = createWorkerManager({ intents: 0 });
 

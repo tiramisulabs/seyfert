@@ -719,11 +719,11 @@ type CreateManagerMessage<T extends string, D extends object = object> = { type:
 
 export type ManagerAllowConnect = CreateManagerMessage<
 	'ALLOW_CONNECT',
-	{ shardId: number; presence: GatewayPresenceUpdateData }
+	{ shardId: number; presence?: GatewayPresenceUpdateData }
 >;
 export type ManagerAllowConnectResharding = CreateManagerMessage<
 	'ALLOW_CONNECT_RESHARDING',
-	{ shardId: number; presence: GatewayPresenceUpdateData }
+	{ shardId: number; presence?: GatewayPresenceUpdateData }
 >;
 export type ManagerWorkerAlreadyExistsResharding = CreateManagerMessage<'WORKER_ALREADY_EXISTS_RESHARDING'>;
 export type ManagerSpawnShards = CreateManagerMessage<

@@ -97,6 +97,7 @@ import type { BanShorter } from '../lib/common/shorters/bans';
 import type { MemberShorter } from '../lib/common/shorters/members';
 import { PermissionsBitField } from '../lib/structures/extra/Permissions';
 import type { ShardManagerOptions, WorkerManagerOptions } from '../lib/websocket/discord/shared';
+import type { ManagerAllowConnect, ManagerAllowConnectResharding } from '../lib/websocket/discord/workermanager';
 
 declare function expectType<T>(value: T): void;
 type IsAny<T> = 0 extends 1 & T ? true : false;
@@ -533,6 +534,32 @@ const standaloneShardPresenceWithWorkerId = ((_shardId: number, _workerId: numbe
 >;
 
 expectType<NonNullable<WorkerManagerOptions['presence']>>((_shardId: number, _workerId: number) => gatewayPresence);
+
+const workerAllowConnectWithoutPresence = {
+	type: 'ALLOW_CONNECT',
+	shardId: 0,
+} satisfies ManagerAllowConnect;
+expectType<ManagerAllowConnect>(workerAllowConnectWithoutPresence);
+
+const workerAllowConnectWithUndefinedPresence = {
+	type: 'ALLOW_CONNECT',
+	shardId: 0,
+	presence: undefined,
+} satisfies ManagerAllowConnect;
+expectType<ManagerAllowConnect>(workerAllowConnectWithUndefinedPresence);
+
+const workerAllowConnectReshardingWithoutPresence = {
+	type: 'ALLOW_CONNECT_RESHARDING',
+	shardId: 0,
+} satisfies ManagerAllowConnectResharding;
+expectType<ManagerAllowConnectResharding>(workerAllowConnectReshardingWithoutPresence);
+
+const workerAllowConnectReshardingWithUndefinedPresence = {
+	type: 'ALLOW_CONNECT_RESHARDING',
+	shardId: 0,
+	presence: undefined,
+} satisfies ManagerAllowConnectResharding;
+expectType<ManagerAllowConnectResharding>(workerAllowConnectReshardingWithUndefinedPresence);
 
 const customWorkerManagerOptions = {
 	mode: 'custom',
