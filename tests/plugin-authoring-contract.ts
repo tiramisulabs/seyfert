@@ -64,6 +64,7 @@ import {
 	type RegisteredPluginMiddlewares,
 	type RegisteredPluginShared,
 	type ResolvedRegisteredMiddlewares,
+	RadioGroupOption,
 	type ClientMiddlewares,
 	type OptionResolvedWithValue,
 	type SharedKey,
@@ -343,6 +344,15 @@ const modalDefaultsContract = {
 	},
 } satisfies ClientOptions;
 expectType<ClientOptions>(modalDefaultsContract);
+
+const radioGroupOptionContract = new RadioGroupOption({ value: 'yes', label: 'Yes' });
+expectType<RadioGroupOption>(
+	radioGroupOptionContract.setLabel('Absolutely').setValue('absolutely').setDescription('Confirm choice').setDefault(),
+);
+// @ts-expect-error RadioGroupOption requires both value and label at construction.
+new RadioGroupOption({ value: 'yes' });
+// @ts-expect-error RadioGroupOption requires option data at construction.
+new RadioGroupOption();
 
 class ContractCacheResource extends BaseResource<{ id: string }, { id: string }> {
 	namespace = 'contract-cache';

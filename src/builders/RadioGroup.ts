@@ -69,7 +69,7 @@ export class RadioGroup extends BaseComponentBuilder<APIRadioGroupComponent> {
 }
 
 export class RadioGroupOption {
-	constructor(public data: Partial<APIRadioGroupOption> = {}) {}
+	constructor(public data: APIRadioGroupOption) {}
 
 	/**
 	 * Sets the label for the option.
