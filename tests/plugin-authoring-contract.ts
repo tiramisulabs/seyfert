@@ -36,6 +36,7 @@ import {
 	type GuildRoleStructure,
 	type ComponentContext,
 	type EntryPointContext,
+	Embed,
 	type MenuCommandContext,
 	type MessageStructure,
 	type MetadataMiddleware,
@@ -70,6 +71,7 @@ import {
 	config,
 	ModalCommand,
 	type WebhookMessageStructure,
+	type APIEmbed,
 } from 'seyfert';
 import type { MakePresent, MakeRequired, PickPresent, PickRequired } from '../lib/common';
 import type { BanShorter } from '../lib/common/shorters/bans';
@@ -686,8 +688,12 @@ declare function componentContext(): ComponentContext;
 declare function modalContext(): ModalContext;
 declare function menuCommandContext(): MenuCommandContext<any>;
 declare function entryPointContext(): EntryPointContext;
+declare const messageWithEmbeds: MessageStructure;
+declare const rawApiEmbed: APIEmbed;
 
 expectType<Promise<void>>(commandContext().write({ content: 'Done!' }));
+expectType<Promise<void>>(commandContext().write({ embeds: messageWithEmbeds.embeds }));
+expectType<Promise<void>>(commandContext().write({ embeds: [new Embed(), rawApiEmbed] }));
 expectType<Promise<void>>(commandContext().editOrReply({ content: 'Done!' }));
 expectType<Promise<void>>(commandContext().ephemeral({ content: 'Done!' }, false));
 expectType<Promise<void>>(commandContext().write({ content: 'Done!' }, false));

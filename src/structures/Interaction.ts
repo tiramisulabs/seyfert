@@ -1,5 +1,5 @@
 import type { RawFile } from '../api';
-import { ActionRow, Attachment, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
+import { ActionRow, Attachment, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
 import { Label } from '../builders/Label';
 import type { ReturnCache } from '../cache';
 import {
@@ -190,7 +190,7 @@ export class BaseInteraction<
 			allowed_mentions: self.options?.allowedMentions,
 			...body,
 			components: body.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)),
-			embeds: body?.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)),
+			embeds: body?.embeds?.map(x => ('toJSON' in x ? x.toJSON() : x)),
 			poll: poll ? (poll instanceof PollBuilder ? poll.toJSON() : poll) : undefined,
 		};
 

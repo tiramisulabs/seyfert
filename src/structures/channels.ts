@@ -1,5 +1,5 @@
 import { Collection, Formatter, type RawFile, type ReturnCache } from '..';
-import { Attachment, Embed, PollBuilder, resolveAttachment } from '../builders';
+import { Attachment, PollBuilder, resolveAttachment } from '../builders';
 import type { Overwrites } from '../cache/resources/overwrites';
 import {
 	type BaseChannelStructure,
@@ -359,7 +359,7 @@ export class MessagesMethods extends DiscordBase {
 		const payload = {
 			allowed_mentions: self.options?.allowedMentions,
 			...body,
-			embeds: body.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)),
+			embeds: body.embeds?.map(x => ('toJSON' in x ? x.toJSON() : x)),
 			components: body.components?.map(x => ('toJSON' in x ? x.toJSON() : x)) ?? undefined,
 			poll: poll ? (poll instanceof PollBuilder ? poll.toJSON() : poll) : undefined,
 		};
