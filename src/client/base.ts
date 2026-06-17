@@ -73,7 +73,14 @@ import type {
 	ModalSubmitInteraction,
 	UserCommandInteraction,
 } from '../structures';
-import type { APIInteraction, APIInteractionResponse, LocaleString, RESTPostAPIChannelMessageJSONBody } from '../types';
+import {
+	type APIInteraction,
+	type APIInteractionResponse,
+	InteractionResponseType,
+	InteractionType,
+	type LocaleString,
+	type RESTPostAPIChannelMessageJSONBody,
+} from '../types';
 import {
 	type AnySeyfertPlugin,
 	bindClientPlugins,
@@ -843,6 +850,13 @@ export class BaseClient {
 		headers: { 'Content-Type'?: string };
 		response: APIInteractionResponse | FormData;
 	}> {
+		if (rawBody.type === InteractionType.Ping) {
+			return {
+				headers: { 'Content-Type': 'application/json' },
+				response: { type: InteractionResponseType.Pong },
+			};
+		}
+
 		return new Promise(async r => {
 			await this.handleCommand.interaction(rawBody, -1, async ({ body, files }) => {
 				let response: FormData | APIInteractionResponse;
