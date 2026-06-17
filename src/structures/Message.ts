@@ -154,10 +154,6 @@ export interface Message
 	extends BaseMessage,
 		ObjectToLower<Omit<MessageData, 'timestamp' | 'author' | 'mentions' | 'components' | 'poll' | 'embeds'>> {}
 
-export type MessageReplyBodyRequest = Omit<MessageCreateBodyRequest, 'message_reference'> & {
-	fail_if_not_exists?: NonNullable<MessageCreateBodyRequest['message_reference']>['fail_if_not_exists'];
-};
-
 export class Message extends BaseMessage {
 	constructor(client: UsingClient, data: MessageData) {
 		super(client, data);
@@ -167,14 +163,14 @@ export class Message extends BaseMessage {
 		return this.client.messages.fetch(this.id, this.channelId, force);
 	}
 
-	reply({ fail_if_not_exists, ...body }: MessageReplyBodyRequest, fail = true): Promise<MessageStructure> {
+	reply(body: Omit<MessageCreateBodyRequest, 'message_reference'>, fail = true): Promise<MessageStructure> {
 		return this.write({
 			...body,
 			message_reference: {
 				message_id: this.id,
 				channel_id: this.channelId,
 				guild_id: this.guildId,
-				fail_if_not_exists: fail_if_not_exists ?? fail,
+				fail_if_not_exists: fail,
 			},
 		});
 	}
