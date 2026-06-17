@@ -1,5 +1,7 @@
 import { describe, expect, test, vi } from 'vitest';
 import { GuildMember } from '../lib';
+import { BanShorter } from '../lib/common/shorters/bans';
+import { MemberShorter } from '../lib/common/shorters/members';
 
 const guildId = '100000000000000001';
 const botId = '200000000000000002';
@@ -80,5 +82,76 @@ describe('GuildMember roles', () => {
 
 		await expect(targetMember.manageable()).resolves.toBe(false);
 		expect(list.mock.calls.map(call => call[1])).toEqual([false, false, true, true]);
+	});
+});
+
+describe('GuildMember moderation helpers', () => {
+	test('timeout treats numbers as milliseconds', async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+		try {
+			const memberShorter = new MemberShorter({} as any);
+			const edit = vi.spyOn(memberShorter, 'edit').mockResolvedValue({} as any);
+
+			await memberShorter.timeout(guildId, targetId, 1_500, 'brief timeout');
+
+			expect(edit).toHaveBeenCalledWith(
+				guildId,
+				targetId,
+				{ communication_disabled_until: '2026-01-01T00:00:01.500Z' },
+				'brief timeout',
+			);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	test('ban shorters convert options to Discord ban body and audit reason', async () => {
+		const createClient = () => {
+			const put = vi.fn().mockResolvedValue(undefined);
+			const removeIfNI = vi.fn().mockResolvedValue(undefined);
+			const client = {
+				proxy: {
+					guilds(id: string) {
+						expect(id).toBe(guildId);
+						return {
+							bans(memberId: string) {
+								expect(memberId).toBe(targetId);
+								return { put };
+							},
+						};
+					},
+				},
+				cache: {
+					members: { removeIfNI },
+				},
+			};
+
+			return { client, put, removeIfNI };
+		};
+
+		const memberClient = createClient();
+		await new MemberShorter(memberClient.client as any).ban(guildId, targetId, {
+			deleteMessageSeconds: 60,
+			reason: 'cleanup',
+		});
+
+		expect(memberClient.put).toHaveBeenCalledWith({
+			body: { delete_message_seconds: 60 },
+			reason: 'cleanup',
+		});
+		expect(memberClient.removeIfNI).toHaveBeenCalledWith('GuildModeration', targetId, guildId);
+
+		const banClient = createClient();
+		await new BanShorter(banClient.client as any).create(guildId, targetId, {
+			deleteMessageSeconds: 120,
+			reason: 'cleanup more',
+		});
+
+		expect(banClient.put).toHaveBeenCalledWith({
+			body: { delete_message_seconds: 120 },
+			reason: 'cleanup more',
+		});
+		expect(banClient.removeIfNI).toHaveBeenCalledWith('GuildModeration', targetId, guildId);
 	});
 });

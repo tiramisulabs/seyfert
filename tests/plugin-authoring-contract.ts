@@ -3,6 +3,7 @@ import {
 	type AllGuildChannels,
 	type AutocompleteCallback,
 	type AutocompleteInteraction,
+	type BanOptions,
 	type BaseChannelStructure,
 	type BaseGuildChannelStructure,
 	type BaseInteraction,
@@ -29,6 +30,8 @@ import {
 	Middlewares,
 	middlewares,
 	type GatewaySendPayload,
+	GuildBan,
+	GuildMember,
 	type GuildMemberStructure,
 	type GuildRoleStructure,
 	type MessageStructure,
@@ -65,6 +68,8 @@ import {
 	type WebhookMessageStructure,
 } from 'seyfert';
 import type { MakePresent, MakeRequired, PickPresent, PickRequired } from '../lib/common';
+import type { BanShorter } from '../lib/common/shorters/bans';
+import type { MemberShorter } from '../lib/common/shorters/members';
 
 declare function expectType<T>(value: T): void;
 type IsAny<T> = 0 extends 1 & T ? true : false;
@@ -113,6 +118,43 @@ expectType<true>(true as Equal<ReturnType<typeof config.http>['port'], number>);
 expectType<true>(
 	true as Equal<Awaited<ReturnType<GuildMemberStructure['roles']['highest']>>, GuildRoleStructure | undefined>,
 );
+expectType<true>(true as Equal<BanOptions, { deleteMessageSeconds?: number; reason?: string }>);
+declare const guildMember: GuildMember;
+expectType<Promise<GuildMemberStructure>>(guildMember.timeout(1_000, 'one second'));
+expectType<Promise<GuildMemberStructure>>(guildMember.timeout(null, 'clear timeout'));
+expectType<false | number>(guildMember.hasTimeout);
+expectType<Promise<void>>(guildMember.ban({ deleteMessageSeconds: 60, reason: 'cleanup' }));
+// @ts-expect-error GuildMember.timeout accepts milliseconds as a number, not duration objects.
+guildMember.timeout({ seconds: 1 });
+// @ts-expect-error GuildMember.ban uses the public deleteMessageSeconds option.
+guildMember.ban({ delete_message_seconds: 60 });
+// @ts-expect-error GuildMember.ban no longer accepts positional body and reason arguments.
+guildMember.ban({ delete_message_seconds: 60 }, 'cleanup');
+
+const guildMemberMethods = GuildMember.methods({ client: {} as any, guildId: '123' });
+expectType<Promise<void>>(guildMemberMethods.ban('123', { deleteMessageSeconds: 60, reason: 'cleanup' }));
+// @ts-expect-error BaseGuildMember.methods().ban no longer accepts positional body and reason arguments.
+guildMemberMethods.ban('123', { delete_message_seconds: 60 }, 'cleanup');
+
+declare const guildBan: GuildBan;
+expectType<Promise<void>>(guildBan.create({ deleteMessageSeconds: 60, reason: 'cleanup' }));
+// @ts-expect-error GuildBan.create uses the public deleteMessageSeconds option.
+guildBan.create({ delete_message_seconds: 60 });
+
+const guildBanMethods = GuildBan.methods({ client: {} as any, guildId: '123' });
+expectType<Promise<void>>(guildBanMethods.create('456', { deleteMessageSeconds: 60, reason: 'cleanup' }));
+// @ts-expect-error GuildBan.methods().create no longer accepts positional body and reason arguments.
+guildBanMethods.create('456', { delete_message_seconds: 60 }, 'cleanup');
+
+declare const memberShorter: MemberShorter;
+expectType<Promise<void>>(memberShorter.ban('123', '456', { deleteMessageSeconds: 60, reason: 'cleanup' }));
+// @ts-expect-error MemberShorter.ban no longer accepts positional body and reason arguments.
+memberShorter.ban('123', '456', { delete_message_seconds: 60 }, 'cleanup');
+
+declare const banShorter: BanShorter;
+expectType<Promise<void>>(banShorter.create('123', '456', { deleteMessageSeconds: 60, reason: 'cleanup' }));
+// @ts-expect-error BanShorter.create no longer accepts positional body and reason arguments.
+banShorter.create('123', '456', { delete_message_seconds: 60 }, 'cleanup');
 expectType<true>(true as Equal<BaseInteraction['replied'], boolean | undefined>);
 // @ts-expect-error BaseInteraction.replied is public reply state, not the pending reply operation.
 expectType<BaseInteraction['replied']>(Promise.resolve(true));

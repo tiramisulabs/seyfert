@@ -19,6 +19,7 @@ import {
 } from '../client/transformers';
 import type { UsingClient } from '../commands';
 import {
+	type BanOptions,
 	Formatter,
 	type GuildMemberResolvable,
 	type ImageOptions,
@@ -35,7 +36,6 @@ import type {
 	RESTGetAPIGuildMembersQuery,
 	RESTGetAPIGuildMembersSearchQuery,
 	RESTPatchAPIGuildMemberJSONBody,
-	RESTPutAPIGuildBanJSONBody,
 	RESTPutAPIGuildMemberJSONBody,
 } from '../types';
 import { PermissionsBitField } from './extra/Permissions';
@@ -76,8 +76,8 @@ export class BaseGuildMember extends DiscordBase {
 		return this.client.members.fetch(this.guildId, this.id, force);
 	}
 
-	ban(body?: RESTPutAPIGuildBanJSONBody, reason?: string) {
-		return this.client.members.ban(this.guildId, this.id, body, reason);
+	ban(options?: BanOptions) {
+		return this.client.members.ban(this.guildId, this.id, options);
 	}
 
 	kick(reason?: string) {
@@ -154,8 +154,7 @@ export class BaseGuildMember extends DiscordBase {
 			search: (query?: RESTGetAPIGuildMembersSearchQuery): Promise<GuildMemberStructure[]> =>
 				client.members.search(guildId, query),
 			unban: (id: string, reason?: string) => client.members.unban(guildId, id, reason),
-			ban: (id: string, body?: RESTPutAPIGuildBanJSONBody, reason?: string) =>
-				client.members.ban(guildId, id, body, reason),
+			ban: (id: string, options?: BanOptions) => client.members.ban(guildId, id, options),
 			kick: (id: string, reason?: string) => client.members.kick(guildId, id, reason),
 			edit: (id: string, body: RESTPatchAPIGuildMemberJSONBody, reason?: string): Promise<GuildMemberStructure> =>
 				client.members.edit(guildId, id, body, reason),
