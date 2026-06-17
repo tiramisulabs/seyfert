@@ -33,7 +33,6 @@ import {
 	InvitesShorter,
 	Logger,
 	LogLevels,
-	type MakePresent,
 	type MakeRequired,
 	MemberShorter,
 	MergeOptions,
@@ -1181,14 +1180,14 @@ interface RC extends ExtendedRC {
 }
 
 export type InternalRuntimeConfigHTTP = Omit<
-	MakePresent<RC, 'publicKey' | 'port' | 'applicationId'>,
+	MakeRequired<RC, 'publicKey' | 'port' | 'applicationId'>,
 	'intents' | 'locations'
 > & { locations: Omit<RC['locations'], 'events'> };
 export type RuntimeConfigHTTP = Omit<MakeRequired<RC, 'publicKey' | 'applicationId'>, 'intents' | 'locations'> & {
 	locations: Omit<RC['locations'], 'events'>;
 };
 
-export type InternalRuntimeConfig = MakePresent<RC, 'intents'>;
+export type InternalRuntimeConfig = MakeRequired<RC, 'intents'>;
 export type RuntimeConfig = OmitInsert<
 	InternalRuntimeConfig,
 	'intents',

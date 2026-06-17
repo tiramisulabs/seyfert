@@ -1,4 +1,5 @@
 import {
+	ApplicationCommandOptionType,
 	BaseResource,
 	type Cache,
 	Client,
@@ -82,6 +83,14 @@ expectType<true>(true as Equal<PickPresentFixture['nil'], 'ok'>);
 expectType<true>(true as Equal<MakeRequired<{ flag?: boolean }, 'flag'>['flag'], true>);
 expectType<true>(true as Equal<PickRequired<{ flag?: boolean }, 'flag'>['flag'], true | undefined>);
 expectType<true>(true as Equal<OptionResolvedWithValue['value'], string | number | boolean>);
+const falseBooleanOption = {
+	name: 'hidden',
+	type: ApplicationCommandOptionType.Boolean,
+	value: false,
+	focused: false,
+} satisfies OptionResolvedWithValue;
+expectType<false>(falseBooleanOption.value);
+expectType<false>(falseBooleanOption.focused);
 expectType<true>(true as Equal<ShardManager['options']['debug'], boolean>);
 expectType<true>(true as Equal<ShardManager['options']['intents'], number>);
 expectType<true>(true as Equal<ReturnType<typeof config.bot>['intents'], number>);
