@@ -1,6 +1,7 @@
 import type { ReturnCache } from '../../cache';
 import type { Client, WorkerClient } from '../../client';
 import type {
+	BaseGuildChannelStructure,
 	GuildMemberStructure,
 	GuildStructure,
 	InteractionGuildMemberStructure,
@@ -15,12 +16,14 @@ import type {
 	InteractionMessageUpdateBodyRequest,
 	MessageWebhookCreateBodyRequest,
 } from '../../common/types/write';
-import { type AllChannels, ChatInputCommandInteraction, type Message } from '../../structures';
+import { type AllChannels, type AllGuildChannels, ChatInputCommandInteraction, type Message } from '../../structures';
 import { MessageFlags, type RESTGetAPIGuildQuery } from '../../types';
 import { BaseContext } from '../basecontext';
 import type { ResolvedRegisteredMiddlewares } from '../decorators';
 import type { Command, ContextOptions, OptionsRecord, SubCommand } from './chat';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, InferWithPrefix, UsingClient } from './shared';
+
+type GuildCommandChannel = AllGuildChannels | BaseGuildChannelStructure;
 
 export interface CommandContext<T extends OptionsRecord = {}, M extends keyof ResolvedRegisteredMiddlewares = never>
 	extends BaseContext,
@@ -222,7 +225,10 @@ export class CommandContext<
 export interface GuildCommandContext<
 	T extends OptionsRecord = {},
 	M extends keyof ResolvedRegisteredMiddlewares = never,
-> extends Omit<MakeRequired<CommandContext<T, M>, 'guildId' | 'member'>, 'guild' | 'me'> {
+> extends Omit<MakeRequired<CommandContext<T, M>, 'guildId' | 'member'>, 'channel' | 'guild' | 'me'> {
+	channel(mode?: 'rest' | 'flow'): Promise<GuildCommandChannel>;
+	channel(mode: 'cache'): ReturnCache<If<InferWithPrefix, GuildCommandChannel | undefined, GuildCommandChannel>>;
+
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 

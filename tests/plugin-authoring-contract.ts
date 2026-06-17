@@ -1,5 +1,8 @@
 import {
 	ApplicationCommandOptionType,
+	type AllGuildChannels,
+	type BaseChannelStructure,
+	type BaseGuildChannelStructure,
 	type BaseInteraction,
 	BaseResource,
 	type Cache,
@@ -13,6 +16,7 @@ import {
 	createPlugin,
 	createSharedKey,
 	definePlugins,
+	type DMChannelStructure,
 	GatewayIntentBits,
 	GatewayOpcodes,
 	type GatewayDispatchPayload,
@@ -38,6 +42,7 @@ import {
 	type PluginOrderOpt,
 	type SeyfertPluginHooks,
 	type PluginUsingClient,
+	type ReturnCache,
 	type RegisteredPluginMiddlewares,
 	type RegisteredPluginShared,
 	type ResolvedRegisteredMiddlewares,
@@ -567,6 +572,21 @@ expectType<Promise<void>>(commandContext().write({ content: 'Done!' }, false));
 expectType<Promise<void>>(commandContext().editOrReply({ content: 'Done!' }, false));
 expectType<Promise<WebhookMessageStructure>>(commandContext().write({ content: 'Done!' }, true));
 expectType<Promise<WebhookMessageStructure>>(commandContext().editOrReply({ content: 'Done!' }, true));
+
+type GuildCommandChannel = AllGuildChannels | BaseGuildChannelStructure;
+expectType<true>(true as Equal<AllGuildChannels extends GuildCommandChannel ? true : false, true>);
+expectType<true>(true as Equal<BaseGuildChannelStructure extends GuildCommandChannel ? true : false, true>);
+expectType<true>(true as Equal<DMChannelStructure extends GuildCommandChannel ? true : false, false>);
+expectType<true>(true as Equal<BaseChannelStructure extends GuildCommandChannel ? true : false, false>);
+
+const guildCommandContext = commandContext();
+if (guildCommandContext.inGuild()) {
+	const channel = guildCommandContext.channel();
+	expectType<true>(true as Equal<typeof channel, Promise<GuildCommandChannel>>);
+
+	const cachedChannel = guildCommandContext.channel('cache');
+	expectType<true>(true as Equal<typeof cachedChannel, ReturnCache<GuildCommandChannel>>);
+}
 
 expectType<SeyfertPlugin<any, any, any, any>>(economy);
 // @ts-expect-error SeyfertPlugin has only four generic slots
