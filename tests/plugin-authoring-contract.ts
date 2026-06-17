@@ -138,6 +138,9 @@ expectType<HumanMember | undefined>(collectionMembers.find(isHuman));
 expectType<MemberUnion[]>(collectionMembers.filter(member => member.type === 'human'));
 expectType<MemberUnion | undefined>(collectionMembers.find(member => member.type === 'human'));
 
+type ChannelPinResult = Awaited<ReturnType<Client['channels']['pins']>>;
+expectType<true>(true as Equal<ChannelPinResult['items'][number]['pinnedAt'], number>);
+
 const falseBooleanOption = {
 	name: 'hidden',
 	type: ApplicationCommandOptionType.Boolean,

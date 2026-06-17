@@ -192,7 +192,7 @@ export class ChannelShorter extends BaseShorter {
 	async pins(
 		channelId: string,
 		query?: RESTGetAPIChannelMessagesPinsQuery,
-	): Promise<{ hasMore: boolean; items: { pinnedAt: string; message: MessageStructure }[] }> {
+	): Promise<{ hasMore: boolean; items: { pinnedAt: number; message: MessageStructure }[] }> {
 		const pins = await this.client.proxy.channels(channelId).messages.pins.get({ query });
 		await this.client.cache.messages?.patch(
 			CacheFrom.Rest,
@@ -204,7 +204,7 @@ export class ChannelShorter extends BaseShorter {
 		return {
 			hasMore: pins.has_more,
 			items: pins.items.map(x => ({
-				pinnedAt: x.pinned_at,
+				pinnedAt: Date.parse(x.pinned_at),
 				message: Transformers.Message(this.client, x.message),
 			})),
 		};
