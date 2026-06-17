@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { MediaGalleryItem, Modal, PollBuilder, StringSelectOption } from '../lib';
+import { MediaGalleryItem, Modal, PollBuilder, StringSelectMenu, StringSelectOption } from '../lib';
 import { SeyfertError } from '../lib/common';
 
 function expectSeyfertCode(run: () => unknown, code: string, component: string) {
@@ -63,5 +63,33 @@ describe('builder toJSON validation', () => {
 		const option = new StringSelectOption().setLabel('General');
 
 		expectSeyfertCode(() => option.toJSON(), 'MISSING_STRING_SELECT_OPTION_VALUE', 'StringSelectOption');
+	});
+
+	test('StringSelectMenu addOption accepts raw API options', () => {
+		const menu = new StringSelectMenu().setCustomId('topics').addOption({ label: 'General', value: 'general' });
+
+		expect(menu.toJSON().options).toEqual([{ label: 'General', value: 'general' }]);
+	});
+
+	test('StringSelectMenu setOptions accepts raw API option arrays', () => {
+		const menu = new StringSelectMenu()
+			.setCustomId('topics')
+			.setOptions([{ label: 'General', value: 'general' }]);
+
+		expect(menu.toJSON().options).toEqual([{ label: 'General', value: 'general' }]);
+	});
+
+	test('StringSelectMenu setOptions accepts spread builder and raw options', () => {
+		const menu = new StringSelectMenu()
+			.setCustomId('topics')
+			.setOptions(new StringSelectOption({ label: 'News', value: 'news' }), {
+				label: 'General',
+				value: 'general',
+			});
+
+		expect(menu.toJSON().options).toEqual([
+			{ label: 'News', value: 'news' },
+			{ label: 'General', value: 'general' },
+		]);
 	});
 });

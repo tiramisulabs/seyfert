@@ -71,6 +71,8 @@ import {
 	type RegisteredPluginShared,
 	type ResolvedRegisteredMiddlewares,
 	RadioGroupOption,
+	StringSelectMenu,
+	StringSelectOption,
 	SubCommand,
 	type ClientMiddlewares,
 	type OptionResolvedWithValue,
@@ -84,6 +86,7 @@ import {
 	type config,
 	ModalCommand,
 	type WebhookMessageStructure,
+	type APISelectMenuOption,
 	type APIEmbed,
 	type CallbackEventHandler,
 	type ClientOptions,
@@ -482,6 +485,15 @@ expectType<RadioGroupOption>(
 new RadioGroupOption({ value: 'yes' });
 // @ts-expect-error RadioGroupOption requires option data at construction.
 new RadioGroupOption();
+
+const rawStringSelectOptionContract = { label: 'General', value: 'general' } satisfies APISelectMenuOption;
+const stringSelectMenuContract = new StringSelectMenu().setCustomId('topics');
+expectType<StringSelectMenu>(stringSelectMenuContract.addOption(rawStringSelectOptionContract));
+expectType<StringSelectMenu>(stringSelectMenuContract.addOption([rawStringSelectOptionContract]));
+expectType<StringSelectMenu>(stringSelectMenuContract.setOptions([rawStringSelectOptionContract]));
+expectType<StringSelectMenu>(
+	stringSelectMenuContract.setOptions(new StringSelectOption({ label: 'News', value: 'news' }), rawStringSelectOptionContract),
+);
 
 class ContractCacheResource extends BaseResource<{ id: string }, { id: string }> {
 	namespace = 'contract-cache';

@@ -23,6 +23,8 @@ export type BuilderSelectMenus =
 	| ChannelSelectMenu
 	| StringSelectMenu;
 
+type StringSelectOptionResolvable = StringSelectOption | APISelectMenuOption;
+
 /**
  * Maps default values for Select Menus.
  * @template T - The type of SelectMenuDefaultValueType.
@@ -35,6 +37,10 @@ function mappedDefault<T extends SelectMenuDefaultValueType>(
 	type: T,
 ): APISelectMenuDefaultValue<T>[] {
 	return ids.flat().map(id => ({ id, type }));
+}
+
+function resolveStringSelectOption(option: StringSelectOptionResolvable): StringSelectOption {
+	return option instanceof StringSelectOption ? option : new StringSelectOption(option);
 }
 
 /**
@@ -284,8 +290,8 @@ export class StringSelectMenu extends SelectMenu {
 	 * @param options - Options to be added.
 	 * @returns The current StringSelectMenu instance.
 	 */
-	addOption(...options: RestOrArray<StringSelectOption>): this {
-		this.data.options = this.data.options.concat(options.flat());
+	addOption(...options: RestOrArray<StringSelectOptionResolvable>): this {
+		this.data.options = this.data.options.concat(options.flat().map(resolveStringSelectOption));
 		return this;
 	}
 
@@ -294,8 +300,8 @@ export class StringSelectMenu extends SelectMenu {
 	 *  options - Options to be set.
 	 * @returns The current StringSelectMenu instance.
 	 */
-	setOptions(options: StringSelectOption[]): this {
-		this.data.options = options;
+	setOptions(...options: RestOrArray<StringSelectOptionResolvable>): this {
+		this.data.options = options.flat().map(resolveStringSelectOption);
 		return this;
 	}
 
