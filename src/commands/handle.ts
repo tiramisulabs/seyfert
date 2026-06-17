@@ -453,7 +453,7 @@ export class HandleCommand {
 						const permissions = this.checkPermissions(memberPermissions, command.defaultMemberPermissions);
 						const guild = await this.client.guilds.raw(rawMessage.guild_id);
 						if (permissions && guild.owner_id !== rawMessage.author.id) {
-							return await command.onPermissionsFail?.(context, memberPermissions.keys(permissions));
+							return await command.onPermissionsFail?.(context, permissions);
 						}
 					}
 

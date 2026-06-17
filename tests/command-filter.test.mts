@@ -91,6 +91,15 @@ class PrefixFilteredCommand extends Command {
 	run = vi.fn();
 }
 
+class PrefixPermissionCommand extends Command {
+	name = 'restricted';
+	description = 'Restricted';
+	contexts = [InteractionContextType.Guild];
+	defaultMemberPermissions = 1n;
+	onPermissionsFail = vi.fn();
+	run = vi.fn();
+}
+
 class PrefixParentCommand extends Command {
 	name = 'parent-prefix';
 	description = 'Parent prefix';
@@ -271,5 +280,29 @@ describe('command filter', () => {
 		expect(command.onOptionsError).not.toHaveBeenCalled();
 		expect(command.run).toHaveBeenCalledTimes(1);
 		expect(command.run.mock.calls[0][0].options.target).toBe('beta');
+	});
+
+	test('prefix permission failures reuse resolved permission keys', async () => {
+		const client = createClient();
+		const command = new PrefixPermissionCommand();
+		const keys = vi.fn(() => ['ManageGuild']);
+		const memberPermissions = {
+			has: vi.fn(() => false),
+			values: vi.fn(() => [1n]),
+			missings: vi.fn(() => [1n]),
+			keys,
+		};
+
+		client.options.commands!.prefix = async () => ['!'];
+		client.commands.values.push(command);
+		client.members.permissions = vi.fn().mockResolvedValue(memberPermissions);
+		client.guilds.raw = vi.fn().mockResolvedValue({ owner_id: 'not-user-1' });
+
+		await client.handleCommand.message(createRawMessage('!restricted') as never, 0);
+
+		expect(keys).toHaveBeenCalledTimes(1);
+		expect(command.onPermissionsFail).toHaveBeenCalledTimes(1);
+		expect(command.onPermissionsFail.mock.calls[0][1]).toEqual(['ManageGuild']);
+		expect(command.run).not.toHaveBeenCalled();
 	});
 });
