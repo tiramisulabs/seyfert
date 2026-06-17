@@ -14,11 +14,11 @@ export class PermissionsBitField extends BitField<typeof PermissionFlagsBits> {
 
 	declare keys: (bits?: BitFieldResolvable<typeof PermissionFlagsBits>[]) => (keyof typeof PermissionFlagsBits)[];
 
-	has(bits: BitFieldResolvable<typeof PermissionFlagsBits>[]) {
+	has(bits: BitFieldResolvable<typeof PermissionFlagsBits> | BitFieldResolvable<typeof PermissionFlagsBits>[]) {
 		return super.has(bits) || super.has(['Administrator']);
 	}
 
-	strictHas(bits: BitFieldResolvable<typeof PermissionFlagsBits>[]) {
+	strictHas(bits: BitFieldResolvable<typeof PermissionFlagsBits> | BitFieldResolvable<typeof PermissionFlagsBits>[]) {
 		return super.has(bits);
 	}
 

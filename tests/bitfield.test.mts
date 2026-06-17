@@ -62,4 +62,22 @@ describe('PermissionsBitField', () => {
 		assert.deepEqual(p.equals(['ChangeNickname', 'CreateEvents']), true);
 		assert.deepEqual(p.equals(['Connect']), false);
 	});
+
+	test('has accepts scalar and array permissions', () => {
+		const p = new PermissionsBitField(['CreateEvents', 'SendMessages']);
+
+		assert.equal(p.has('CreateEvents'), true);
+		assert.equal(p.has('Connect'), false);
+		assert.equal(p.has(['CreateEvents', 'SendMessages']), true);
+		assert.equal(p.has(['CreateEvents', 'Connect']), false);
+	});
+
+	test('strictHas accepts scalar and array permissions', () => {
+		const p = new PermissionsBitField(['CreateEvents', 'SendMessages']);
+
+		assert.equal(p.strictHas('CreateEvents'), true);
+		assert.equal(p.strictHas('Connect'), false);
+		assert.equal(p.strictHas(['CreateEvents', 'SendMessages']), true);
+		assert.equal(p.strictHas(['CreateEvents', 'Connect']), false);
+	});
 });

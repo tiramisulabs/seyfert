@@ -18,8 +18,9 @@ export class BitField<T extends object> {
 		return this.bit;
 	}
 
-	has(bits: BitFieldResolvable<T>[]) {
-		const bitsResolved = bits.map(bit => this.resolve(bit));
+	has(bits: BitFieldResolvable<T> | BitFieldResolvable<T>[]) {
+		const data = Array.isArray(bits) ? bits : [bits];
+		const bitsResolved = data.map(bit => this.resolve(bit));
 		return bitsResolved.every(bit => (this.bits & bit) === bit);
 	}
 

@@ -94,6 +94,7 @@ import {
 import type { MakePresent, MakeRequired, PickPresent, PickRequired } from '../lib/common';
 import type { BanShorter } from '../lib/common/shorters/bans';
 import type { MemberShorter } from '../lib/common/shorters/members';
+import { PermissionsBitField } from '../lib/structures/extra/Permissions';
 import type { WorkerManagerOptions } from '../lib/websocket/discord/shared';
 
 declare function expectType<T>(value: T): void;
@@ -129,6 +130,12 @@ expectType<true>(true as Equal<MakeRequired<{ flag?: boolean }, 'flag'>['flag'],
 expectType<true>(true as Equal<PickRequired<{ flag?: boolean }, 'flag'>['flag'], true | undefined>);
 expectType<true>(true as Equal<OptionResolvedWithValue['value'], string | number | boolean>);
 expectType<string>(Formatter.timestamp(Date.now()));
+
+const permissionsContract = new PermissionsBitField(['SendMessages']);
+expectType<boolean>(permissionsContract.has('SendMessages'));
+expectType<boolean>(permissionsContract.strictHas('SendMessages'));
+expectType<boolean>(permissionsContract.has(['SendMessages']));
+expectType<boolean>(permissionsContract.strictHas(['SendMessages']));
 
 type HumanMember = { type: 'human'; username: string };
 type BotMember = { type: 'bot'; applicationId: string };
