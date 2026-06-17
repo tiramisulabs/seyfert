@@ -648,7 +648,7 @@ export class HandleCommand {
 		try {
 			const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
 				context,
-				(this.client.options?.globalMiddlewares ?? []) as (keyof ResolvedRegisteredMiddlewares)[],
+				(this.client.options?.globalMiddlewares ?? []) as readonly (keyof ResolvedRegisteredMiddlewares)[],
 				true,
 			);
 			if (resultRunGlobalMiddlewares.pass) {
@@ -687,11 +687,7 @@ export class HandleCommand {
 		context: CommandContext<{}, never> | MenuCommandContext<any> | EntryPointContext,
 	) {
 		try {
-			const resultRunMiddlewares = await BaseCommand.__runMiddlewares(
-				context,
-				command.middlewares as (keyof ResolvedRegisteredMiddlewares)[],
-				false,
-			);
+			const resultRunMiddlewares = await BaseCommand.__runMiddlewares(context, command.middlewares, false);
 			if (resultRunMiddlewares.pass) {
 				return false;
 			}

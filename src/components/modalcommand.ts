@@ -24,7 +24,7 @@ export abstract class ModalCommand {
 		return true;
 	}
 
-	middlewares: (keyof ResolvedRegisteredMiddlewares)[] = [];
+	middlewares: readonly (keyof ResolvedRegisteredMiddlewares)[] = [];
 
 	props!: ExtraProps;
 

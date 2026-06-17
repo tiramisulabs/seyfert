@@ -12,7 +12,7 @@ import type { EntryPointContext } from './entrycontext';
 import type { ExtraProps, UsingClient } from './shared';
 
 export abstract class EntryPointCommand {
-	middlewares: (keyof ResolvedRegisteredMiddlewares)[] = [];
+	middlewares: readonly (keyof ResolvedRegisteredMiddlewares)[] = [];
 
 	__filePath?: string;
 	__t?: { name: string | undefined; description: string | undefined };

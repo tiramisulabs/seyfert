@@ -30,7 +30,7 @@ export abstract class ComponentCommand {
 		return true;
 	}
 
-	middlewares: (keyof ResolvedRegisteredMiddlewares)[] = [];
+	middlewares: readonly (keyof ResolvedRegisteredMiddlewares)[] = [];
 
 	props!: ExtraProps;
 

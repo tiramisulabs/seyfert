@@ -17,6 +17,9 @@ export type RegisteredMiddlewares = SeyfertRegistry extends {
 	? M
 	: {};
 export type ResolvedRegisteredMiddlewares = RegisteredMiddlewares & RegisteredPluginMiddlewares;
+type MiddlewareKey = keyof ResolvedRegisteredMiddlewares;
+
+export type InferMiddlewares<T extends readonly MiddlewareKey[]> = T[number];
 
 export type CommandDeclareOptions =
 	| DecoratorDeclareOptions
@@ -142,7 +145,11 @@ export function AutoLoad() {
 		};
 }
 
-export function Middlewares(cbs: readonly (keyof ResolvedRegisteredMiddlewares)[]) {
+export function middlewares<const T extends readonly MiddlewareKey[]>(...cbs: T) {
+	return cbs;
+}
+
+export function Middlewares(cbs: readonly MiddlewareKey[]) {
 	return <T extends { new (...args: any[]): object }>(target: T) =>
 		class extends target {
 			middlewares = cbs;

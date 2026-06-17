@@ -109,7 +109,7 @@ type ContextOptionsAux<T extends OptionsRecord> = {
 export type ContextOptions<T extends OptionsRecord> = ContextOptionsAux<T>;
 
 export class BaseCommand {
-	middlewares: (keyof ResolvedRegisteredMiddlewares)[] = [];
+	middlewares: readonly (keyof ResolvedRegisteredMiddlewares)[] = [];
 
 	__filePath?: string;
 	__t?: { name: string | undefined; description: string | undefined };
@@ -191,7 +191,7 @@ export class BaseCommand {
 	/** @internal */
 	static __runMiddlewares(
 		context: CommandContext<{}, never> | ComponentContext | MenuCommandContext<any> | ModalContext | EntryPointContext,
-		middlewares: (keyof ResolvedRegisteredMiddlewares)[],
+		middlewares: readonly (keyof ResolvedRegisteredMiddlewares)[],
 		global: boolean,
 	): Promise<{ error?: string; metadata?: PluginMiddlewareDenialMetadata; pass?: boolean }> {
 		if (!middlewares.length) {
@@ -258,14 +258,14 @@ export class BaseCommand {
 
 	/** @internal */
 	__runMiddlewares(context: CommandContext<{}, never>) {
-		return BaseCommand.__runMiddlewares(context, this.middlewares as (keyof ResolvedRegisteredMiddlewares)[], false);
+		return BaseCommand.__runMiddlewares(context, this.middlewares, false);
 	}
 
 	/** @internal */
 	__runGlobalMiddlewares(context: CommandContext<{}, never>) {
 		return BaseCommand.__runMiddlewares(
 			context,
-			(context.client.options?.globalMiddlewares ?? []) as (keyof ResolvedRegisteredMiddlewares)[],
+			(context.client.options?.globalMiddlewares ?? []) as readonly (keyof ResolvedRegisteredMiddlewares)[],
 			true,
 		);
 	}

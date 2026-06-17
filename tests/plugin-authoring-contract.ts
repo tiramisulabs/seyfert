@@ -14,7 +14,9 @@ import {
 	GatewayIntentBits,
 	GatewayOpcodes,
 	type GatewayDispatchPayload,
+	type InferMiddlewares,
 	Middlewares,
+	middlewares,
 	type GatewaySendPayload,
 	type MessageStructure,
 	type MetadataMiddleware,
@@ -591,6 +593,19 @@ expectType<{ userId: string }>({} as MetadataMiddleware<RegisteredPluginMiddlewa
 expectType<{ userId: string }>({} as MetadataMiddleware<ResolvedRegisteredMiddlewares['auth']>);
 expectType<AuthMiddleware>({} as ResolvedRegisteredMiddlewares['auth']);
 expectType<[LedgerService]>({} as SeyfertPluginHooks['economy:refresh']);
+
+const commandMiddlewares = middlewares('auth', 'combinedAudit');
+expectType<true>(true as Equal<typeof commandMiddlewares, readonly ['auth', 'combinedAudit']>);
+expectType<true>(true as Equal<InferMiddlewares<typeof commandMiddlewares>, 'auth' | 'combinedAudit'>);
+expectType<{ auth: { userId: string }; combinedAudit: { auditId: string } }>(
+	{} as CommandMetadata<typeof commandMiddlewares>,
+);
+expectType<ReturnType<typeof Middlewares>>(Middlewares(commandMiddlewares));
+declare function typedMiddlewareCommandContext(): CommandContext<{}, InferMiddlewares<typeof commandMiddlewares>>;
+expectType<{ userId: string }>(typedMiddlewareCommandContext().metadata.auth);
+expectType<{ auditId: string }>(typedMiddlewareCommandContext().metadata.combinedAudit);
+// @ts-expect-error middleware tuple helper only accepts registered middleware keys
+middlewares('missing');
 
 const client = new Client({ plugins });
 client.economy.addCoins('user', 2);

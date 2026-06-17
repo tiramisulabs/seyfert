@@ -342,7 +342,7 @@ export class ComponentHandler extends BaseHandler {
 				await i.onBeforeMiddlewares?.(context as never);
 				const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
 					context,
-					(context.client.options?.globalMiddlewares ?? []) as (keyof ResolvedRegisteredMiddlewares)[],
+					(context.client.options?.globalMiddlewares ?? []) as readonly (keyof ResolvedRegisteredMiddlewares)[],
 					true,
 				);
 				if (resultRunGlobalMiddlewares.pass) {
