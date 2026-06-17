@@ -84,6 +84,7 @@ import {
 	type APIEmbed,
 	type ClientOptions,
 	EntryPointCommandHandlerType,
+	type Collection,
 } from 'seyfert';
 import type { MakePresent, MakeRequired, PickPresent, PickRequired } from '../lib/common';
 import type { BanShorter } from '../lib/common/shorters/bans';
@@ -122,6 +123,18 @@ expectType<true>(true as Equal<PickPresentFixture['nil'], 'ok'>);
 expectType<true>(true as Equal<MakeRequired<{ flag?: boolean }, 'flag'>['flag'], true>);
 expectType<true>(true as Equal<PickRequired<{ flag?: boolean }, 'flag'>['flag'], true | undefined>);
 expectType<true>(true as Equal<OptionResolvedWithValue['value'], string | number | boolean>);
+
+type HumanMember = { type: 'human'; username: string };
+type BotMember = { type: 'bot'; applicationId: string };
+type MemberUnion = HumanMember | BotMember;
+
+declare const collectionMembers: Collection<string, MemberUnion>;
+declare function isHuman(member: MemberUnion): member is HumanMember;
+expectType<HumanMember[]>(collectionMembers.filter(isHuman));
+expectType<HumanMember | undefined>(collectionMembers.find(isHuman));
+expectType<MemberUnion[]>(collectionMembers.filter(member => member.type === 'human'));
+expectType<MemberUnion | undefined>(collectionMembers.find(member => member.type === 'human'));
+
 const falseBooleanOption = {
 	name: 'hidden',
 	type: ApplicationCommandOptionType.Boolean,

@@ -64,6 +64,8 @@ export class Collection<K, V> extends Map<K, V> {
 	 * const filteredArray = collection.filter((value, key) => key % 2 === 0);
 	 * console.log(filteredArray); // Output: ['two']
 	 */
+	filter<S extends V>(fn: (value: V, key: K, collection: this) => value is S): S[];
+	filter(fn: (value: V, key: K, collection: this) => boolean): V[];
 	filter(fn: (value: V, key: K, collection: this) => boolean): V[] {
 		const result: V[] = [];
 
@@ -159,6 +161,8 @@ export class Collection<K, V> extends Map<K, V> {
 	 * const firstEvenValue = collection.find(value => value % 2 === 0);
 	 * console.log(firstEvenValue); // Output: 2
 	 */
+	find<S extends V>(fn: (value: V, key: K, collection: this) => value is S): S | undefined;
+	find(fn: (value: V, key: K, collection: this) => boolean): V | undefined;
 	find(fn: (value: V, key: K, collection: this) => boolean): V | undefined {
 		for (const [key, value] of this.entries()) {
 			if (fn(value, key, this)) {
