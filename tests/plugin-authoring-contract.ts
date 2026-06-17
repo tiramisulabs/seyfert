@@ -17,6 +17,7 @@ import {
 	createIntegerOption,
 	createMiddleware,
 	createNumberOption,
+	defineGroups,
 	definePlugin,
 	createPlugin,
 	createStringOption,
@@ -37,6 +38,9 @@ import {
 	type ComponentContext,
 	type EntryPointContext,
 	Embed,
+	Group,
+	Groups,
+	GroupsT,
 	type MenuCommandContext,
 	type MessageStructure,
 	type MetadataMiddleware,
@@ -118,6 +122,56 @@ const falseBooleanOption = {
 } satisfies OptionResolvedWithValue;
 expectType<false>(falseBooleanOption.value);
 expectType<false>(falseBooleanOption.focused);
+
+const localizedGroups = defineGroups({
+	moderation: {
+		name: [['en-US', 'Moderation']],
+		description: [['en-US', 'Moderation tools']],
+		defaultDescription: 'Moderation tools',
+		aliases: ['mod'],
+	},
+	economy: {
+		defaultDescription: 'Economy tools',
+	},
+});
+expectType<true>(true as Equal<keyof typeof localizedGroups & string, 'moderation' | 'economy'>);
+
+const translatedGroups = defineGroups({
+	admin: {
+		name: 'commands.groups.admin.name',
+		description: 'commands.groups.admin.description',
+		defaultDescription: 'Admin tools',
+		aliases: ['adm'],
+	},
+	reports: {
+		defaultDescription: 'Report tools',
+	},
+});
+expectType<true>(true as Equal<keyof typeof translatedGroups & string, 'admin' | 'reports'>);
+
+// @ts-expect-error group definitions must be either all localized or all translated
+defineGroups({
+	localized: {
+		name: [['en-US', 'Localized']],
+		defaultDescription: 'Localized group',
+	},
+	translated: {
+		name: 'commands.groups.admin.name',
+		defaultDescription: 'Translated group',
+	},
+});
+
+class GroupContractParent {}
+class GroupContractSubcommand {}
+
+Groups(localizedGroups)(GroupContractParent);
+GroupsT(translatedGroups)(GroupContractParent);
+Group(localizedGroups, 'moderation')(GroupContractSubcommand);
+Group(translatedGroups, 'admin')(GroupContractSubcommand);
+Group('legacyString')(GroupContractSubcommand);
+// @ts-expect-error group names passed with a group definition must match declared keys
+Group(localizedGroups, 'moderaton')(GroupContractSubcommand);
+
 expectType<true>(true as Equal<ShardManager['options']['debug'], boolean>);
 expectType<true>(true as Equal<ShardManager['options']['intents'], number>);
 expectType<true>(true as Equal<ReturnType<typeof config.bot>['intents'], number>);
@@ -696,6 +750,16 @@ declare module 'seyfert' {
 		plugins: typeof plugins;
 		client: Client<true>;
 		middlewares: { localAudit: typeof combinedAudit };
+		langs: {
+			commands: {
+				groups: {
+					admin: {
+						name: string;
+						description: string;
+					};
+				};
+			};
+		};
 	}
 
 	interface RegisteredPluginShared {
