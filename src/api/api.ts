@@ -467,10 +467,7 @@ export class ApiHandler {
 		next();
 		await delay(wait);
 		return this.request(method, url, {
-			body: request.body,
-			auth: request.auth,
-			reason: request.reason,
-			route: request.route,
+			...request,
 			unshift: true,
 		});
 	}
@@ -526,19 +523,13 @@ export class ApiHandler {
 			await delay(retryAfter);
 			next();
 			return this.request(method, url, {
-				body: request.body,
-				auth: request.auth,
-				reason: request.reason,
-				route: request.route,
+				...request,
 				unshift: true,
 			});
 		}
 		next();
 		return this.request(method, url, {
-			body: request.body,
-			auth: request.auth,
-			reason: request.reason,
-			route: request.route,
+			...request,
 			unshift: true,
 		});
 	}
