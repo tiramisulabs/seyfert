@@ -126,6 +126,16 @@ type GroupDecorator = <T extends { new (...args: any[]): object }>(
 	new (...args: any[]): { group: string };
 } & T;
 
+type OptionsDecorator = <T extends { new (...args: any[]): object }>(
+	target: T,
+) => {
+	new (...args: any[]): { options: SubCommand[] | CommandOption[] };
+} & T;
+
+type LowercaseOptionsRecord<T extends OptionsRecord> = T & {
+	[K in keyof T as K extends string ? (K extends Lowercase<K> ? never : K) : never]: never;
+};
+
 export function Group(groupName: string): GroupDecorator;
 export function Group<const T extends GroupDefinitions>(_groupsDef: T, groupName: keyof T & string): GroupDecorator;
 export function Group(groupsDefOrGroupName: GroupDefinitions | string, groupName?: string) {
@@ -136,6 +146,8 @@ export function Group(groupsDefOrGroupName: GroupDefinitions | string, groupName
 		};
 }
 
+export function Options(options: (new () => SubCommand)[]): OptionsDecorator;
+export function Options<const T extends OptionsRecord>(options: LowercaseOptionsRecord<T>): OptionsDecorator;
 export function Options(options: (new () => SubCommand)[] | OptionsRecord) {
 	return <T extends { new (...args: any[]): object }>(target: T) =>
 		class extends target {

@@ -50,6 +50,7 @@ import {
 	type ModalContext,
 	type MiddlewareContext,
 	type OnAutocompleteErrorCallback,
+	Options,
 	type PluginContextOf,
 	type PluginContextInteraction,
 	type PluginContextMapOf,
@@ -397,6 +398,32 @@ expectType<((context: MenuCommandContext<any>) => boolean | Promise<boolean>) | 
 );
 declare const entryPointFilterContract: EntryPointCommand;
 expectType<((context: EntryPointContext) => boolean | Promise<boolean>) | undefined>(entryPointFilterContract.filter);
+
+const lowercaseOptionContract = {
+	username: createStringOption({
+		description: 'User name',
+		required: true,
+	}),
+	page: createIntegerOption({
+		description: 'Page',
+		required: false,
+	}),
+} as const;
+
+Options(lowercaseOptionContract)(class LowercaseOptionsCommand {});
+
+declare function lowercaseOptionsCommandContext(): CommandContext<typeof lowercaseOptionContract>;
+expectType<string>(lowercaseOptionsCommandContext().options.username);
+expectType<number | undefined>(lowercaseOptionsCommandContext().options.page);
+
+Options({
+	// @ts-expect-error option record keys must be lowercase
+	UserName: createStringOption({
+		description: 'User name',
+	}),
+});
+
+Options([ContractSubCommand])(class ArrayOptionsCommand {});
 
 class ContractComponent extends ComponentCommand {
 	componentType = 'Button' as const;
