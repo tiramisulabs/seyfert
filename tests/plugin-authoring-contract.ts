@@ -1,6 +1,8 @@
 import {
 	ApplicationCommandOptionType,
 	type AllGuildChannels,
+	type AutocompleteCallback,
+	type AutocompleteInteraction,
 	type BaseChannelStructure,
 	type BaseGuildChannelStructure,
 	type BaseInteraction,
@@ -11,9 +13,12 @@ import {
 	ComponentCommand,
 	type CommandMetadata,
 	type CommandContext,
+	createIntegerOption,
 	createMiddleware,
+	createNumberOption,
 	definePlugin,
 	createPlugin,
+	createStringOption,
 	createSharedKey,
 	definePlugins,
 	type DMChannelStructure,
@@ -29,6 +34,7 @@ import {
 	type MessageStructure,
 	type MetadataMiddleware,
 	type MiddlewareContext,
+	type OnAutocompleteErrorCallback,
 	type PluginContextOf,
 	type PluginContextInteraction,
 	type PluginContextMapOf,
@@ -110,6 +116,71 @@ expectType<true>(
 expectType<true>(true as Equal<BaseInteraction['replied'], boolean | undefined>);
 // @ts-expect-error BaseInteraction.replied is public reply state, not the pending reply operation.
 expectType<BaseInteraction['replied']>(Promise.resolve(true));
+
+createIntegerOption({
+	description: 'Integer autocomplete',
+	autocomplete(interaction) {
+		interaction.respond([{ name: 'D6', value: 6 }]);
+		// @ts-expect-error integer autocomplete rejects string choices
+		interaction.respond([{ name: 'D4', value: 'four' }]);
+	},
+	onAutocompleteError(interaction) {
+		interaction.respond([{ name: 'D8', value: 8 }]);
+		// @ts-expect-error integer autocomplete errors reject string choices
+		interaction.respond([{ name: 'D10', value: 'ten' }]);
+	},
+});
+
+createNumberOption({
+	description: 'Number autocomplete',
+	autocomplete(interaction) {
+		interaction.respond([{ name: 'Half', value: 0.5 }]);
+		// @ts-expect-error number autocomplete rejects string choices
+		interaction.respond([{ name: 'Whole', value: 'one' }]);
+	},
+});
+
+createStringOption({
+	description: 'String autocomplete',
+	autocomplete(interaction) {
+		interaction.respond([{ name: 'Four', value: 'four' }]);
+		// @ts-expect-error string autocomplete rejects numeric choices
+		interaction.respond([{ name: 'D4', value: 4 }]);
+	},
+	onAutocompleteError(interaction) {
+		interaction.respond([{ name: 'Six', value: 'six' }]);
+		// @ts-expect-error string autocomplete errors reject numeric choices
+		interaction.respond([{ name: 'D6', value: 6 }]);
+	},
+});
+
+const bareAutocompleteCallback: AutocompleteCallback = interaction => {
+	interaction.respond([{ name: 'D6', value: 6 }]);
+	interaction.respond([{ name: 'Four', value: 'four' }]);
+};
+expectType<AutocompleteCallback>(bareAutocompleteCallback);
+
+const numberAutocompleteCallback: AutocompleteCallback<number> = interaction => {
+	interaction.respond([{ name: 'D6', value: 6 }]);
+	// @ts-expect-error explicit numeric autocomplete rejects string choices
+	interaction.respond([{ name: 'D4', value: 'four' }]);
+};
+expectType<AutocompleteCallback<number>>(numberAutocompleteCallback);
+
+const bareOnAutocompleteErrorCallback: OnAutocompleteErrorCallback = interaction => {
+	interaction.respond([{ name: 'D8', value: 8 }]);
+	interaction.respond([{ name: 'Eight', value: 'eight' }]);
+};
+expectType<OnAutocompleteErrorCallback>(bareOnAutocompleteErrorCallback);
+
+declare const bareAutocompleteInteraction: AutocompleteInteraction;
+bareAutocompleteInteraction.respond([{ name: 'D6', value: 6 }]);
+bareAutocompleteInteraction.respond([{ name: 'Four', value: 'four' }]);
+
+declare const stringAutocompleteInteraction: AutocompleteInteraction<boolean, string>;
+stringAutocompleteInteraction.respond([{ name: 'Four', value: 'four' }]);
+// @ts-expect-error explicit string autocomplete interaction rejects numeric choices
+stringAutocompleteInteraction.respond([{ name: 'D4', value: 4 }]);
 
 class EconomyApi {
 	addCoins(_userId: string, _amount: number) {}

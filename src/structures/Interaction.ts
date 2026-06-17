@@ -419,18 +419,20 @@ export type AllInteractions =
 	| EntryPointInteraction
 	| BaseInteraction;
 
-export interface AutocompleteInteraction
-	extends ObjectToLower<
+export interface AutocompleteInteraction<
+	FromGuild extends boolean = boolean,
+	ValueType extends string | number = string | number,
+> extends ObjectToLower<
 		Omit<
 			APIApplicationCommandAutocompleteInteraction,
 			'user' | 'member' | 'type' | 'data' | 'message' | 'channel' | 'app_permissions'
 		>
 	> {}
 
-export class AutocompleteInteraction<FromGuild extends boolean = boolean> extends BaseInteraction<
-	FromGuild,
-	APIApplicationCommandAutocompleteInteraction
-> {
+export class AutocompleteInteraction<
+	FromGuild extends boolean = boolean,
+	ValueType extends string | number = string | number,
+> extends BaseInteraction<FromGuild, APIApplicationCommandAutocompleteInteraction> {
 	declare type: InteractionType.ApplicationCommandAutocomplete;
 	declare data: ObjectToLower<APIApplicationCommandAutocompleteInteraction['data']>;
 	options: OptionResolverStructure;
@@ -458,11 +460,11 @@ export class AutocompleteInteraction<FromGuild extends boolean = boolean> extend
 		return this.options.getAutocompleteValue() ?? '';
 	}
 
-	respond(choices: APICommandAutocompleteInteractionResponseCallbackData['choices']) {
+	respond(choices: APICommandAutocompleteInteractionResponseCallbackData<ValueType>['choices']) {
 		return super.reply({ data: { choices }, type: InteractionResponseType.ApplicationCommandAutocompleteResult });
 	}
 
-	isAutocomplete(): this is AutocompleteInteraction {
+	isAutocomplete(): this is AutocompleteInteraction<FromGuild, ValueType> {
 		return true;
 	}
 

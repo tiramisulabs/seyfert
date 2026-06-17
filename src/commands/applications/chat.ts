@@ -57,8 +57,13 @@ export interface ReturnOptionsTypes {
 	11: Attachment;
 }
 
-export type AutocompleteCallback = (interaction: AutocompleteInteraction) => any;
-export type OnAutocompleteErrorCallback = (interaction: AutocompleteInteraction, error: unknown) => any;
+export type AutocompleteCallback<ValueType extends string | number = string | number> = (
+	interaction: AutocompleteInteraction<boolean, ValueType>,
+) => any;
+export type OnAutocompleteErrorCallback<ValueType extends string | number = string | number> = (
+	interaction: AutocompleteInteraction<boolean, ValueType>,
+	error: unknown,
+) => any;
 export type CommandBaseOption =
 	| SeyfertBaseChoiceableOption<ApplicationCommandOptionType>
 	| SeyfertBasicOption<ApplicationCommandOptionType>;
