@@ -34,8 +34,12 @@ import {
 	GuildMember,
 	type GuildMemberStructure,
 	type GuildRoleStructure,
+	type ComponentContext,
+	type EntryPointContext,
+	type MenuCommandContext,
 	type MessageStructure,
 	type MetadataMiddleware,
+	type ModalContext,
 	type MiddlewareContext,
 	type OnAutocompleteErrorCallback,
 	type PluginContextOf,
@@ -678,13 +682,23 @@ declare module 'seyfert' {
 
 declare function commandContext(): CommandContext;
 declare function authCommandContext(): CommandContext<{}, 'auth'>;
+declare function componentContext(): ComponentContext;
+declare function modalContext(): ModalContext;
+declare function menuCommandContext(): MenuCommandContext<any>;
+declare function entryPointContext(): EntryPointContext;
 
 expectType<Promise<void>>(commandContext().write({ content: 'Done!' }));
 expectType<Promise<void>>(commandContext().editOrReply({ content: 'Done!' }));
+expectType<Promise<void>>(commandContext().ephemeral({ content: 'Done!' }, false));
 expectType<Promise<void>>(commandContext().write({ content: 'Done!' }, false));
 expectType<Promise<void>>(commandContext().editOrReply({ content: 'Done!' }, false));
 expectType<Promise<WebhookMessageStructure>>(commandContext().write({ content: 'Done!' }, true));
 expectType<Promise<WebhookMessageStructure>>(commandContext().editOrReply({ content: 'Done!' }, true));
+expectType<Promise<WebhookMessageStructure>>(commandContext().ephemeral({ content: 'Done!' }, true));
+expectType<Promise<WebhookMessageStructure>>(componentContext().ephemeral({ content: 'Done!' }, true));
+expectType<Promise<WebhookMessageStructure>>(modalContext().ephemeral({ content: 'Done!' }, true));
+expectType<Promise<WebhookMessageStructure>>(menuCommandContext().ephemeral({ content: 'Done!' }, true));
+expectType<Promise<WebhookMessageStructure>>(entryPointContext().ephemeral({ content: 'Done!' }, true));
 
 type GuildCommandChannel = AllGuildChannels | BaseGuildChannelStructure;
 expectType<true>(true as Equal<AllGuildChannels extends GuildCommandChannel ? true : false, true>);

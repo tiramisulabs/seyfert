@@ -23,6 +23,7 @@ import type {
 	ModalCreateOptions,
 	When,
 } from '../common';
+import { createEphemeralResponseBody } from '../common';
 import { MessageFlags } from '../types';
 
 export interface ModalContext extends BaseContext, ExtendContext {}
@@ -73,6 +74,13 @@ export class ModalContext<M extends keyof ResolvedRegisteredMiddlewares = never>
 		fetchReply?: FR,
 	): Promise<When<FR, WebhookMessageStructure, void>> {
 		return this.interaction.write<FR>(body, fetchReply);
+	}
+
+	ephemeral<FR extends boolean = false>(
+		body: InteractionCreateBodyRequest,
+		fetchReply?: FR,
+	): Promise<When<FR, WebhookMessageStructure, void>> {
+		return this.write<FR>(createEphemeralResponseBody(body), fetchReply);
 	}
 
 	/**

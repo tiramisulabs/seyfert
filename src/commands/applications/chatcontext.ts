@@ -16,6 +16,7 @@ import type {
 	InteractionMessageUpdateBodyRequest,
 	MessageWebhookCreateBodyRequest,
 } from '../../common/types/write';
+import { createEphemeralResponseBody } from '../../common/types/write';
 import { type AllChannels, type AllGuildChannels, ChatInputCommandInteraction, type Message } from '../../structures';
 import { MessageFlags, type RESTGetAPIGuildQuery } from '../../types';
 import { BaseContext } from '../basecontext';
@@ -82,6 +83,13 @@ export class CommandContext<
 		return (this.messageResponse = await (this.message! as Message)[
 			!this.messageResponse && (await options?.reply?.(this)) ? 'reply' : 'write'
 		](body)) as never;
+	}
+
+	async ephemeral<WR extends boolean = false>(
+		body: InteractionCreateBodyRequest,
+		withResponse?: WR,
+	): Promise<When<WR, WebhookMessageStructure | When<InferWithPrefix, MessageStructure, never>, void>> {
+		return this.write<WR>(this.interaction ? createEphemeralResponseBody(body) : body, withResponse);
 	}
 
 	async deferReply<WR extends boolean = false>(
