@@ -216,7 +216,7 @@ export class BaseCommand {
 		if (!activeMiddlewares.length) return Promise.resolve({});
 		let index = 0;
 
-		return new Promise(res => {
+		return new Promise((res, rej) => {
 			let running = true;
 			const pass: PassFunction = () => {
 				if (!running) {
@@ -236,19 +236,46 @@ export class BaseCommand {
 					running = false;
 					return res({});
 				}
-				context.client.middlewares![activeMiddlewares[index]]({ context, next, stop, pass });
+				invoke(activeMiddlewares[index]);
 			}
-			const stop: StopFunction = err => {
+			const deny = (err: string, middleware: keyof ResolvedRegisteredMiddlewares) => {
 				if (!running) {
 					return;
 				}
 				running = false;
 				return res({
 					error: err,
-					metadata: { middleware: String(activeMiddlewares[index]), scope: global ? 'global' : 'command' },
+					metadata: { middleware: String(middleware), scope: global ? 'global' : 'command' },
 				});
 			};
-			context.client.middlewares![activeMiddlewares[0]]({ context, next, stop, pass });
+			const stop: StopFunction = err => {
+				return deny(err, activeMiddlewares[index]);
+			};
+			const rejectRunner = (err: unknown) => {
+				if (!running) {
+					return;
+				}
+				running = false;
+				rej(err);
+			};
+			function invoke(middleware: keyof ResolvedRegisteredMiddlewares) {
+				let result: unknown;
+				try {
+					result = context.client.middlewares![middleware]({ context, next, stop, pass });
+				} catch (err) {
+					rejectRunner(err);
+					return;
+				}
+				Promise.resolve(result).catch(err => {
+					if (!running) {
+						return;
+					}
+					const message = err instanceof Error ? err.message : String(err);
+					context.client.logger.error(`Middleware "${String(middleware)}" rejected: ${message}`, err);
+					deny(message, middleware);
+				});
+			}
+			invoke(activeMiddlewares[0]);
 		});
 	}
 

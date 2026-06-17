@@ -718,6 +718,151 @@ describe('plugin api v3', () => {
 		});
 	});
 
+	test('returns middleware denial metadata when async middleware rejects before resolving', async () => {
+		const error = new Error('async denied');
+		const asyncReject = createMiddleware<void>(() => Promise.reject(error));
+		const logger = { error: vi.fn(), warn: vi.fn() };
+		const context = {
+			client: {
+				middlewares: {
+					asyncReject,
+				},
+				logger,
+			},
+			command: { name: 'secure' },
+			globalMetadata: {},
+			metadata: {},
+		} as never;
+		const timedOut = Symbol('timedOut');
+
+		const result = await Promise.race([
+			BaseCommand.__runMiddlewares(context, ['asyncReject' as never], false),
+			new Promise(resolve => setTimeout(() => resolve(timedOut), 25)),
+		]);
+
+		expect(result).toEqual({
+			error: 'async denied',
+			metadata: { middleware: 'asyncReject', scope: 'command' },
+		});
+		expect(logger.error).toHaveBeenCalledOnce();
+		expect(logger.error.mock.calls[0][0]).toContain('asyncReject');
+		expect(logger.error.mock.calls[0][0]).toContain('async denied');
+		expect(logger.error.mock.calls[0][1]).toBe(error);
+	});
+
+	test('keeps synchronous middleware throws as rejected runner promises', async () => {
+		const syncThrow = createMiddleware<void>(() => {
+			throw new Error('sync failed');
+		});
+		const logger = { error: vi.fn(), warn: vi.fn() };
+		const context = {
+			client: {
+				middlewares: {
+					syncThrow,
+				},
+				logger,
+			},
+			command: { name: 'secure' },
+			globalMetadata: {},
+			metadata: {},
+		} as never;
+
+		await expect(BaseCommand.__runMiddlewares(context, ['syncThrow' as never], false)).rejects.toThrow('sync failed');
+		expect(logger.error).not.toHaveBeenCalled();
+	});
+
+	test('keeps synchronous throws from middleware invoked after async next as rejected runner promises', async () => {
+		const asyncNext = createMiddleware<void>(async ({ next }) => {
+			await Promise.resolve();
+			next();
+		});
+		const syncThrow = createMiddleware<void>(() => {
+			throw new Error('sync failed after async next');
+		});
+		const logger = { error: vi.fn(), warn: vi.fn() };
+		const context = {
+			client: {
+				middlewares: {
+					asyncNext,
+					syncThrow,
+				},
+				logger,
+			},
+			command: { name: 'secure' },
+			globalMetadata: {},
+			metadata: {},
+		} as never;
+
+		await expect(BaseCommand.__runMiddlewares(context, ['asyncNext' as never, 'syncThrow' as never], false)).rejects.toThrow(
+			'sync failed after async next',
+		);
+		expect(logger.error).not.toHaveBeenCalled();
+	});
+
+	test('keeps synchronous throws from callback-scheduled next as rejected runner promises', async () => {
+		const callbackNext = createMiddleware<void>(({ next }) => {
+			setTimeout(next, 0);
+		});
+		const syncThrow = createMiddleware<void>(() => {
+			throw new Error('sync failed after callback next');
+		});
+		const logger = { error: vi.fn(), warn: vi.fn() };
+		const context = {
+			client: {
+				middlewares: {
+					callbackNext,
+					syncThrow,
+				},
+				logger,
+			},
+			command: { name: 'secure' },
+			globalMetadata: {},
+			metadata: {},
+		} as never;
+
+		await expect(BaseCommand.__runMiddlewares(context, ['callbackNext' as never, 'syncThrow' as never], false)).rejects.toThrow(
+			'sync failed after callback next',
+		);
+		expect(logger.error).not.toHaveBeenCalled();
+	});
+
+	test('attributes async rejection to the rejecting middleware after next advances', async () => {
+		const error = new Error('auth failed late');
+		let rejectAuth!: (error: Error) => void;
+		const auth = createMiddleware<void>(({ next }) => {
+			next();
+			return new Promise((_resolve, reject) => {
+				rejectAuth = reject;
+			});
+		});
+		const audit = createMiddleware<void>(() => undefined);
+		const logger = { error: vi.fn(), warn: vi.fn() };
+		const context = {
+			client: {
+				middlewares: {
+					auth,
+					audit,
+				},
+				logger,
+			},
+			command: { name: 'secure' },
+			globalMetadata: {},
+			metadata: {},
+		} as never;
+
+		const result = BaseCommand.__runMiddlewares(context, ['auth' as never, 'audit' as never], false);
+		rejectAuth(error);
+
+		await expect(result).resolves.toEqual({
+			error: 'auth failed late',
+			metadata: { middleware: 'auth', scope: 'command' },
+		});
+		expect(logger.error).toHaveBeenCalledOnce();
+		expect(logger.error.mock.calls[0][0]).toContain('auth');
+		expect(logger.error.mock.calls[0][0]).not.toContain('audit');
+		expect(logger.error.mock.calls[0][1]).toBe(error);
+	});
+
 	test('runs command observers with middleware denial metadata and isolates observer failures', async () => {
 		const calls: unknown[] = [];
 		const logger = { error: vi.fn() };
