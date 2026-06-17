@@ -41,6 +41,7 @@ import {
 	type EntryPointContext,
 	EntryPointCommand,
 	Embed,
+	Formatter,
 	Group,
 	Groups,
 	GroupsT,
@@ -127,6 +128,7 @@ expectType<true>(true as Equal<PickPresentFixture['nil'], 'ok'>);
 expectType<true>(true as Equal<MakeRequired<{ flag?: boolean }, 'flag'>['flag'], true>);
 expectType<true>(true as Equal<PickRequired<{ flag?: boolean }, 'flag'>['flag'], true | undefined>);
 expectType<true>(true as Equal<OptionResolvedWithValue['value'], string | number | boolean>);
+expectType<string>(Formatter.timestamp(Date.now()));
 
 type HumanMember = { type: 'human'; username: string };
 type BotMember = { type: 'bot'; applicationId: string };
