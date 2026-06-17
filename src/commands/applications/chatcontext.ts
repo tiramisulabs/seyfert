@@ -185,6 +185,22 @@ export class CommandContext<
 		}
 	}
 
+	fetchMember(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure | undefined>;
+	fetchMember(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
+	fetchMember(mode: 'cache' | 'rest' | 'flow' = 'flow'): any {
+		if (!this.guildId)
+			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.members?.get(this.author.id, this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.members.fetch(this.guildId, this.author.id, mode === 'rest');
+		}
+	}
+
 	guild(mode?: 'rest' | 'flow', query?: RESTGetAPIGuildQuery): Promise<GuildStructure<'cached' | 'api'> | undefined>;
 	guild(mode: 'cache', query?: RESTGetAPIGuildQuery): ReturnCache<GuildStructure<'cached'> | undefined>;
 	guild(mode: 'cache' | 'rest' | 'flow' = 'flow', query?: RESTGetAPIGuildQuery) {
@@ -233,7 +249,7 @@ export class CommandContext<
 export interface GuildCommandContext<
 	T extends OptionsRecord = {},
 	M extends keyof ResolvedRegisteredMiddlewares = never,
-> extends Omit<MakeRequired<CommandContext<T, M>, 'guildId' | 'member'>, 'channel' | 'guild' | 'me'> {
+> extends Omit<MakeRequired<CommandContext<T, M>, 'guildId' | 'member'>, 'channel' | 'guild' | 'me' | 'fetchMember'> {
 	channel(mode?: 'rest' | 'flow'): Promise<GuildCommandChannel>;
 	channel(mode: 'cache'): ReturnCache<If<InferWithPrefix, GuildCommandChannel | undefined, GuildCommandChannel>>;
 
@@ -242,4 +258,7 @@ export interface GuildCommandContext<
 
 	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
 	me(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
+
+	fetchMember(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
+	fetchMember(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
 }

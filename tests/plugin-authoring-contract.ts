@@ -940,6 +940,11 @@ expectType<Promise<WebhookMessageStructure>>(modalContext().ephemeral({ content:
 expectType<Promise<WebhookMessageStructure>>(menuCommandContext().ephemeral({ content: 'Done!' }, true));
 expectType<Promise<WebhookMessageStructure>>(entryPointContext().ephemeral({ content: 'Done!' }, true));
 
+expectType<Promise<GuildMemberStructure | undefined>>(commandContext().fetchMember());
+expectType<Promise<GuildMemberStructure | undefined>>(commandContext().fetchMember('flow'));
+expectType<Promise<GuildMemberStructure | undefined>>(commandContext().fetchMember('rest'));
+expectType<ReturnCache<GuildMemberStructure | undefined>>(commandContext().fetchMember('cache'));
+
 type GuildCommandChannel = AllGuildChannels | BaseGuildChannelStructure;
 expectType<true>(true as Equal<AllGuildChannels extends GuildCommandChannel ? true : false, true>);
 expectType<true>(true as Equal<BaseGuildChannelStructure extends GuildCommandChannel ? true : false, true>);
@@ -953,6 +958,11 @@ if (guildCommandContext.inGuild()) {
 
 	const cachedChannel = guildCommandContext.channel('cache');
 	expectType<true>(true as Equal<typeof cachedChannel, ReturnCache<GuildCommandChannel>>);
+
+	expectType<Promise<GuildMemberStructure>>(guildCommandContext.fetchMember());
+	expectType<Promise<GuildMemberStructure>>(guildCommandContext.fetchMember('flow'));
+	expectType<Promise<GuildMemberStructure>>(guildCommandContext.fetchMember('rest'));
+	expectType<ReturnCache<GuildMemberStructure | undefined>>(guildCommandContext.fetchMember('cache'));
 }
 
 expectType<SeyfertPlugin<any, any, any, any>>(economy);
