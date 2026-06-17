@@ -52,7 +52,7 @@ export interface ShardManagerOptions extends ShardDetails {
 	/**
 	 * Set a presence.
 	 */
-	presence?: (shardId: number, workerId: number) => GatewayPresenceUpdateData;
+	presence?: (shardId: number) => GatewayPresenceUpdateData;
 
 	compress?: boolean;
 	resharding?: {
@@ -72,7 +72,7 @@ export interface CustomManagerAdapter {
 	spawn(workerData: WorkerData, env: Record<string, any>): Awaitable<unknown>;
 }
 
-interface WorkerManagerOptionsBase extends Omit<ShardManagerOptions, 'handlePayload' | 'properties'> {
+interface WorkerManagerOptionsBase extends Omit<ShardManagerOptions, 'handlePayload' | 'presence' | 'properties'> {
 	workers?: number;
 
 	/**
@@ -86,6 +86,8 @@ interface WorkerManagerOptionsBase extends Omit<ShardManagerOptions, 'handlePayl
 	heartbeaterInterval?: number;
 
 	handlePayload?(shardId: number, workerId: number, packet: GatewayDispatchPayload): any;
+
+	presence?: (shardId: number, workerId: number) => GatewayPresenceUpdateData;
 
 	handleWorkerMessage?(message: WorkerMessages): any;
 

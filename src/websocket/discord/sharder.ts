@@ -104,7 +104,7 @@ export class ShardManager extends Map<number, Shard> {
 			properties: this.options.properties,
 			debugger: this.debugger,
 			compress: this.options.compress ?? false,
-			presence: this.options.presence?.(shardId, -1),
+			presence: this.options.presence?.(shardId),
 			connectionTimeout: this.options.connectionTimeout,
 			reconnectTimeout: this.options.reconnectTimeout,
 		});

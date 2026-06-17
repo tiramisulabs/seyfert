@@ -90,12 +90,13 @@ import {
 	EntryPointCommandHandlerType,
 	type Collection,
 	type UsingClient,
+	PresenceUpdateStatus,
 } from 'seyfert';
 import type { MakePresent, MakeRequired, PickPresent, PickRequired } from '../lib/common';
 import type { BanShorter } from '../lib/common/shorters/bans';
 import type { MemberShorter } from '../lib/common/shorters/members';
 import { PermissionsBitField } from '../lib/structures/extra/Permissions';
-import type { WorkerManagerOptions } from '../lib/websocket/discord/shared';
+import type { ShardManagerOptions, WorkerManagerOptions } from '../lib/websocket/discord/shared';
 
 declare function expectType<T>(value: T): void;
 type IsAny<T> = 0 extends 1 & T ? true : false;
@@ -512,6 +513,26 @@ const workerManagerInfo = {
 	shards: 1,
 	url: 'wss://gateway.discord.gg',
 };
+
+const gatewayPresence = {
+	activities: [],
+	afk: false,
+	since: null,
+	status: PresenceUpdateStatus.Online,
+} satisfies ReturnType<NonNullable<ShardManagerOptions['presence']>>;
+
+const standaloneShardPresence = ((_shardId: number) => gatewayPresence) satisfies NonNullable<
+	ShardManagerOptions['presence']
+>;
+
+expectType<NonNullable<ShardManagerOptions['presence']>>(standaloneShardPresence);
+
+// @ts-expect-error standalone ShardManager presence no longer receives a worker id.
+const standaloneShardPresenceWithWorkerId = ((_shardId: number, _workerId: number) => gatewayPresence) satisfies NonNullable<
+	ShardManagerOptions['presence']
+>;
+
+expectType<NonNullable<WorkerManagerOptions['presence']>>((_shardId: number, _workerId: number) => gatewayPresence);
 
 const customWorkerManagerOptions = {
 	mode: 'custom',
