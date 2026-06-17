@@ -1,5 +1,6 @@
-import { type AllChannels, componentFactory, Embed, type ReturnCache } from '..';
 import type { ListenerOptions } from '../builders';
+import { Embed } from '../builders/Embed';
+import type { ReturnCache } from '../cache';
 import {
 	type GuildMemberStructure,
 	type GuildStructure,
@@ -11,10 +12,13 @@ import {
 	type WebhookStructure,
 } from '../client/transformers';
 import type { UsingClient } from '../commands';
-import { Formatter, type ObjectToLower, toCamelCase } from '../common';
+import { Formatter } from '../common/it/formatter';
+import { toCamelCase } from '../common/it/utils';
 import type { EmojiResolvable } from '../common/types/resolvables';
+import type { ObjectToLower } from '../common/types/util';
 import type { MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../common/types/write';
 import type { TopLevelComponents } from '../components';
+import { componentFactory } from '../components';
 import type {
 	APIChannelMention,
 	APIEmbed,
@@ -23,6 +27,7 @@ import type {
 	APIUser,
 	GatewayMessageCreateDispatchData,
 } from '../types';
+import type { AllChannels } from './channels';
 import { DiscordBase } from './extra/DiscordBase';
 import type {
 	MessageWebhookMethodEditParams,

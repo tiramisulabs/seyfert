@@ -25,6 +25,7 @@ export * from './events';
 export * from './langs';
 //
 export * from './structures';
+export { GuildRole } from './structures/GuildRole';
 export * from './types';
 //
 export { ShardManager, WorkerManager } from './websocket/discord';
