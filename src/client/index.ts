@@ -1,4 +1,4 @@
-export type { ContextScope, ContextScopeContext, RuntimeConfig, RuntimeConfigHTTP } from './base';
+export type { ClientMiddlewares, ContextScope, ContextScopeContext, RuntimeConfig, RuntimeConfigHTTP } from './base';
 export * from './client';
 export * from './httpclient';
 export * from './plugins';

@@ -18,7 +18,12 @@ import type {
 	UsingClient,
 } from '../commands';
 import { SubCommand } from '../commands';
-import { IgnoreCommand, type InferWithPrefix, type MiddlewareContext } from '../commands/applications/shared';
+import {
+	type AnyMiddlewareContext,
+	IgnoreCommand,
+	type InferWithPrefix,
+	type MiddlewareContext,
+} from '../commands/applications/shared';
 import type { BaseContext } from '../commands/basecontext';
 import { HandleCommand } from '../commands/handle';
 import { CommandHandler, type HandleableCommand, type HandleableCommandInstance } from '../commands/handler';
@@ -108,6 +113,15 @@ const pluginSourceKey = '__seyfertPluginSource';
 type PluginSourced = {
 	[pluginSourceKey]?: string;
 };
+type ResolvedMiddlewareKey<T extends Record<string, AnyMiddlewareContext>> = Extract<keyof T, string>;
+
+export type ClientMiddlewares<T extends Record<string, AnyMiddlewareContext> = ResolvedRegisteredMiddlewares> = [
+	ResolvedMiddlewareKey<T>,
+] extends [never]
+	? Record<string, MiddlewareContext>
+	: {
+			[K in ResolvedMiddlewareKey<T>]?: T[K];
+		};
 
 export class BaseClient {
 	rest = new ApiHandler({ token: 'INVALID' });
@@ -144,7 +158,7 @@ export class BaseClient {
 
 	private _applicationId?: string;
 	private _botId?: string;
-	middlewares?: Record<string, MiddlewareContext>;
+	middlewares?: ClientMiddlewares;
 
 	protected static getBotIdFromToken(token: string): string {
 		return Buffer.from(token.split('.')[0], 'base64').toString('ascii');
@@ -1204,6 +1218,6 @@ export interface ServicesOptions {
 		default?: string;
 		aliases?: Record<string, LocaleString[]>;
 	};
-	middlewares?: Record<string, MiddlewareContext>;
+	middlewares?: ClientMiddlewares;
 	handleCommand?: typeof HandleCommand;
 }

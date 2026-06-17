@@ -40,6 +40,7 @@ import {
 	type RegisteredPluginMiddlewares,
 	type RegisteredPluginShared,
 	type ResolvedRegisteredMiddlewares,
+	type ClientMiddlewares,
 	type OptionResolvedWithValue,
 	type SharedKey,
 	type SeyfertPlugin,
@@ -622,6 +623,23 @@ expectType<{ auditId: string }>(typedMiddlewareCommandContext().metadata.combine
 middlewares('missing');
 
 const client = new Client({ plugins });
+client.setServices({ middlewares: { localAudit: combinedAudit } });
+client.setServices({
+	middlewares: {
+		auth: (({ next }) => next({ userId: '1' })) as AuthMiddleware,
+		combinedAudit,
+	},
+});
+// @ts-expect-error setServices middlewares only accepts registered middleware keys when the registry is typed
+client.setServices({ middlewares: { missing: combinedAudit } });
+// @ts-expect-error setServices preserves the registered middleware value type for each key
+client.setServices({ middlewares: { auth: combinedAudit } });
+const fallbackMiddlewares: ClientMiddlewares<{}> = {
+	anyRuntimeMiddleware: (({ next }) => next(undefined)) as MiddlewareContext,
+};
+expectType<MiddlewareContext>(fallbackMiddlewares.anyRuntimeMiddleware);
+// @ts-expect-error fallback middleware values must still be middleware functions
+const invalidFallbackMiddlewares: ClientMiddlewares<{}> = { anyRuntimeMiddleware: 'not-a-middleware' };
 client.economy.addCoins('user', 2);
 const ledger = client.shared.get(ledgerKey);
 expectType<LedgerService | undefined>(ledger);
