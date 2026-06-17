@@ -1,10 +1,10 @@
 import type { CommandContext, Message } from '..';
 import {
 	type Awaitable,
-	assertString,
 	type DeepPartial,
 	lazyLoadPackage,
 	type PickPartial,
+	SeyfertError,
 	type WatcherPayload,
 	type WatcherSendToShard,
 	type When,
@@ -148,7 +148,9 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 		this.cache.intents = intents;
 
 		if (!this.gateway) {
-			assertString(token, 'token is not a string');
+			if (typeof token !== 'string' || token.length === 0) {
+				throw new SeyfertError('INVALID_TOKEN', { metadata: { detail: 'token is not a string' } });
+			}
 			this.gateway = new ShardManager({
 				token,
 				info: await this.proxy.gateway.bot.get(),

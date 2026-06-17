@@ -342,7 +342,9 @@ export class BaseClient {
 	) {
 		const { token: tokenRC, debug } = await this.getRC();
 		const token = options.token ?? tokenRC;
-		assertString(token, 'token is not a string');
+		if (typeof token !== 'string' || token.length === 0) {
+			throw new SeyfertError('INVALID_TOKEN', { metadata: { detail: 'token is not a string' } });
+		}
 
 		if (this.rest.options.token === 'INVALID') this.rest.options.token = token;
 		this.rest.debug = debug;

@@ -289,11 +289,20 @@ export class ApiHandler {
 				'User-Agent': this.options.userAgent,
 			} satisfies RequestHeaders;
 
-			const { data, finalUrl } = this.parseRequest({
-				url,
-				headers,
-				request: { ...request, auth },
-			});
+			let data: string | FormData | undefined;
+			let finalUrl: `/${string}`;
+
+			try {
+				({ data, finalUrl } = this.parseRequest({
+					url,
+					headers,
+					request: { ...request, auth },
+				}));
+			} catch (err) {
+				next();
+				reject(err);
+				return;
+			}
 
 			let response: Response;
 
@@ -588,7 +597,11 @@ export class ApiHandler {
 		let finalUrl = options.url;
 		let data: string | FormData | undefined;
 		if (options.request.auth) {
-			options.headers.Authorization = `${this.options.type} ${options.request.token || this.options.token}`;
+			const token = options.request.token || this.options.token;
+			if (token === 'INVALID' || typeof token !== 'string' || token.length === 0) {
+				throw new SeyfertError('INVALID_TOKEN', { metadata: { detail: 'token is not a string' } });
+			}
+			options.headers.Authorization = `${this.options.type} ${token}`;
 		}
 		if (options.request.query) {
 			const params = new URLSearchParams();
