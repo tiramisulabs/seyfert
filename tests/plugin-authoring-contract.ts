@@ -66,6 +66,7 @@ import {
 	type PluginOrderOpt,
 	type SeyfertPluginHooks,
 	type PluginUsingClient,
+	PermissionFlagsBits,
 	type ReturnCache,
 	type RegisteredPluginMiddlewares,
 	type RegisteredPluginShared,
@@ -100,6 +101,7 @@ import {
 import type { MakePresent, MakeRequired, PickPresent, PickRequired } from '../lib/common';
 import type { BanShorter } from '../lib/common/shorters/bans';
 import type { MemberShorter } from '../lib/common/shorters/members';
+import type { BitField } from '../lib/structures/extra/BitField';
 import { PermissionsBitField } from '../lib/structures/extra/Permissions';
 import type { ShardManagerOptions, WorkerManagerOptions } from '../lib/websocket/discord/shared';
 import type { ManagerAllowConnect, ManagerAllowConnectResharding } from '../lib/websocket/discord/workermanager';
@@ -139,10 +141,14 @@ expectType<true>(true as Equal<OptionResolvedWithValue['value'], string | number
 expectType<string>(Formatter.timestamp(Date.now()));
 
 const permissionsContract = new PermissionsBitField(['SendMessages']);
+type PermissionFlagKey = keyof typeof PermissionFlagsBits;
 expectType<boolean>(permissionsContract.has('SendMessages'));
 expectType<boolean>(permissionsContract.strictHas('SendMessages'));
 expectType<boolean>(permissionsContract.has(['SendMessages']));
 expectType<boolean>(permissionsContract.strictHas(['SendMessages']));
+declare const bitfieldContract: BitField<typeof PermissionFlagsBits>;
+expectType<PermissionFlagKey[]>(bitfieldContract.keys());
+expectType<PermissionFlagKey[]>(permissionsContract.keys());
 
 type HumanMember = { type: 'human'; username: string };
 type BotMember = { type: 'bot'; applicationId: string };
