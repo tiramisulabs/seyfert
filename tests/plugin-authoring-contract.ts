@@ -56,6 +56,7 @@ import {
 	type PluginDiagnosticCode,
 	type PluginExtensionOf,
 	type PluginHandlerKind,
+	type PluginLoadedMetadata,
 	type PluginMiddlewaresMapOf,
 	type PluginCommandObserver,
 	type PluginCommandObserverContext,
@@ -82,9 +83,11 @@ import {
 	ModalCommand,
 	type WebhookMessageStructure,
 	type APIEmbed,
+	type CallbackEventHandler,
 	type ClientOptions,
 	EntryPointCommandHandlerType,
 	type Collection,
+	type UsingClient,
 } from 'seyfert';
 import type { MakePresent, MakeRequired, PickPresent, PickRequired } from '../lib/common';
 import type { BanShorter } from '../lib/common/shorters/bans';
@@ -143,6 +146,22 @@ const falseBooleanOption = {
 } satisfies OptionResolvedWithValue;
 expectType<false>(falseBooleanOption.value);
 expectType<false>(falseBooleanOption.focused);
+
+type CommandsLoadedCallbackParams = Parameters<CallbackEventHandler['commandsLoaded']>;
+expectType<true>(
+	true as Equal<
+		CommandsLoadedCallbackParams,
+		[
+			PluginLoadedMetadata<'commands', Command | ContextMenuCommand>,
+			UsingClient,
+		]
+	>,
+);
+expectType<true>(true as Equal<CommandsLoadedCallbackParams['length'], 2>);
+
+type BotReadyCallbackParams = Parameters<CallbackEventHandler['botReady']>;
+expectType<true>(true as Equal<BotReadyCallbackParams['length'], 3>);
+expectType<true>(true as Equal<BotReadyCallbackParams[2], number>);
 
 const localizedGroups = defineGroups({
 	moderation: {
