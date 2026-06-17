@@ -142,7 +142,8 @@ export class BaseGuildMember extends DiscordBase {
 				this.roles.list(force).then(roles => new PermissionsBitField(roles.map(x => BigInt(x.permissions.bits)))),
 			sorted: (force = false): Promise<GuildRoleStructure[]> =>
 				this.roles.list(force).then(roles => roles.sort((a, b) => b.position - a.position)),
-			highest: (force = false): Promise<GuildRoleStructure> => this.roles.sorted(force).then(roles => roles[0]),
+			highest: (force = false): Promise<GuildRoleStructure | undefined> =>
+				this.roles.sorted(force).then(roles => roles.at(0)),
 		};
 	}
 
@@ -252,12 +253,30 @@ export class GuildMember extends BaseGuildMember {
 	}
 
 	async manageable(force = false) {
-		this.__me = await this.client.guilds.fetchSelf(this.guildId, force);
+		const me = await this.client.guilds.fetchSelf(this.guildId, force);
+		this.__me = me;
 		const ownerId = (await this.client.guilds.fetch(this.guildId, force)).ownerId;
 		if (this.user.id === ownerId) return false;
 		if (this.user.id === this.client.botId) return false;
 		if (this.client.botId === ownerId) return true;
-		return (await this.__me!.roles.highest()).position > (await this.roles.highest(force)).position;
+		const highestFromCompleteRoles = async (member: Pick<GuildMemberStructure, 'roles'>, forceRoles: boolean) => {
+			const roles = await member.roles.sorted(forceRoles);
+			const roleIds = new Set(roles.map(role => role.id));
+			if (!member.roles.keys.every(roleId => roleIds.has(roleId))) return;
+
+			return roles.at(0);
+		};
+
+		const myHighest = await highestFromCompleteRoles(me, force);
+		const theirHighest = await highestFromCompleteRoles(this, force);
+		if (myHighest && theirHighest) return myHighest.position > theirHighest.position;
+		if (force) return false;
+
+		const forcedMyHighest = await highestFromCompleteRoles(me, true);
+		const forcedTheirHighest = await highestFromCompleteRoles(this, true);
+		if (!forcedMyHighest || !forcedTheirHighest) return false;
+
+		return forcedMyHighest.position > forcedTheirHighest.position;
 	}
 
 	async bannable(force = false) {

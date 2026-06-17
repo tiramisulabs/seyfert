@@ -19,6 +19,8 @@ import {
 	Middlewares,
 	middlewares,
 	type GatewaySendPayload,
+	type GuildMemberStructure,
+	type GuildRoleStructure,
 	type MessageStructure,
 	type MetadataMiddleware,
 	type MiddlewareContext,
@@ -95,6 +97,9 @@ expectType<true>(true as Equal<ShardManager['options']['debug'], boolean>);
 expectType<true>(true as Equal<ShardManager['options']['intents'], number>);
 expectType<true>(true as Equal<ReturnType<typeof config.bot>['intents'], number>);
 expectType<true>(true as Equal<ReturnType<typeof config.http>['port'], number>);
+expectType<true>(
+	true as Equal<Awaited<ReturnType<GuildMemberStructure['roles']['highest']>>, GuildRoleStructure | undefined>,
+);
 
 class EconomyApi {
 	addCoins(_userId: string, _amount: number) {}
