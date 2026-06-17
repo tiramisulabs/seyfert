@@ -1,4 +1,4 @@
-import type { RestOrArray } from '../common';
+import { createValidationMetadata, type RestOrArray, SeyfertError } from '../common';
 import {
 	type APIModalInteractionResponseCallbackData,
 	type APITextInputComponent,
@@ -92,6 +92,24 @@ export class Modal {
 	 * @returns The modal data in JSON format.
 	 */
 	toJSON() {
+		if (!this.data.custom_id)
+			throw new SeyfertError('MISSING_MODAL_CUSTOM_ID', {
+				metadata: {
+					...createValidationMetadata('custom_id to be set before calling toJSON()', this.data.custom_id, {
+						component: 'Modal',
+					}),
+					detail: 'Cannot convert to JSON without a custom_id.',
+				},
+			});
+		if (!this.data.title)
+			throw new SeyfertError('MISSING_MODAL_TITLE', {
+				metadata: {
+					...createValidationMetadata('title to be set before calling toJSON()', this.data.title, {
+						component: 'Modal',
+					}),
+					detail: 'Cannot convert to JSON without a title.',
+				},
+			});
 		return {
 			custom_id: this.data.custom_id,
 			title: this.data.title,
