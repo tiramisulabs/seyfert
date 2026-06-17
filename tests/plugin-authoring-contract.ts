@@ -73,6 +73,7 @@ import {
 	type SeyfertPluginOptions,
 	type SemverRange,
 	type ShardManager,
+	WorkerManager,
 	config,
 	ModalCommand,
 	type WebhookMessageStructure,
@@ -82,6 +83,7 @@ import {
 import type { MakePresent, MakeRequired, PickPresent, PickRequired } from '../lib/common';
 import type { BanShorter } from '../lib/common/shorters/bans';
 import type { MemberShorter } from '../lib/common/shorters/members';
+import type { WorkerManagerOptions } from '../lib/websocket/discord/shared';
 
 declare function expectType<T>(value: T): void;
 type IsAny<T> = 0 extends 1 & T ? true : false;
@@ -374,6 +376,88 @@ expectType<PluginDiagnosticCode>('unknown-intent-bits');
 
 type PluginContextIncludesMessages = MessageStructure extends PluginContextInteraction ? true : false;
 expectType<true>(true as PluginContextIncludesMessages);
+
+const workerManagerInfo = {
+	session_start_limit: {
+		max_concurrency: 1,
+		remaining: 1000,
+		reset_after: 0,
+		total: 1000,
+	},
+	shards: 1,
+	url: 'wss://gateway.discord.gg',
+};
+
+const customWorkerManagerOptions = {
+	mode: 'custom',
+	token: 'token',
+	intents: GatewayIntentBits.Guilds,
+	info: workerManagerInfo,
+	adapter: {
+		postMessage() {},
+		spawn() {},
+	},
+} satisfies WorkerManagerOptions;
+expectType<WorkerManagerOptions>(customWorkerManagerOptions);
+new WorkerManager(customWorkerManagerOptions);
+
+const customWorkerManagerOptionsWithPath = {
+	mode: 'custom',
+	path: 'worker.js',
+	token: 'token',
+	intents: GatewayIntentBits.Guilds,
+	info: workerManagerInfo,
+	adapter: {
+		postMessage() {},
+		spawn() {},
+	},
+} satisfies WorkerManagerOptions;
+expectType<WorkerManagerOptions>(customWorkerManagerOptionsWithPath);
+new WorkerManager(customWorkerManagerOptionsWithPath);
+
+const threadedWorkerManagerOptions = {
+	mode: 'threads',
+	path: 'worker.js',
+	token: 'token',
+	intents: GatewayIntentBits.Guilds,
+	info: workerManagerInfo,
+} satisfies WorkerManagerOptions;
+expectType<WorkerManagerOptions>(threadedWorkerManagerOptions);
+new WorkerManager(threadedWorkerManagerOptions);
+
+const clusteredWorkerManagerOptions = {
+	mode: 'clusters',
+	path: 'worker.js',
+	token: 'token',
+	intents: GatewayIntentBits.Guilds,
+	info: workerManagerInfo,
+} satisfies WorkerManagerOptions;
+expectType<WorkerManagerOptions>(clusteredWorkerManagerOptions);
+new WorkerManager(clusteredWorkerManagerOptions);
+
+// @ts-expect-error custom worker mode requires an adapter.
+const customWorkerManagerOptionsWithoutAdapter: WorkerManagerOptions = {
+	mode: 'custom',
+	token: 'token',
+	intents: GatewayIntentBits.Guilds,
+	info: workerManagerInfo,
+};
+
+// @ts-expect-error thread worker mode requires a worker path.
+const threadedWorkerManagerOptionsWithoutPath: WorkerManagerOptions = {
+	mode: 'threads',
+	token: 'token',
+	intents: GatewayIntentBits.Guilds,
+	info: workerManagerInfo,
+};
+
+// @ts-expect-error cluster worker mode requires a worker path.
+const clusteredWorkerManagerOptionsWithoutPath: WorkerManagerOptions = {
+	mode: 'clusters',
+	token: 'token',
+	intents: GatewayIntentBits.Guilds,
+	info: workerManagerInfo,
+};
 
 const storage = createPlugin({
 	name: 'storage',

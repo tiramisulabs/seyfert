@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { GatewayIntentBits, GatewayOpcodes, type GatewaySendPayload } from '../src/types';
 import { ShardManager, WorkerManager } from '../src/websocket';
 
@@ -29,7 +29,6 @@ function createWorkerManager(options: Partial<ConstructorParameters<typeof Worke
 	const messages: unknown[] = [];
 	const manager = new WorkerManager({
 		mode: 'custom',
-		path: 'worker.js',
 		token: 'token',
 		intents: 0,
 		info: gatewayInfo(),
@@ -111,5 +110,21 @@ describe('gateway send chokepoints', () => {
 		await manager.start();
 
 		expect(manager.options.intents).toBe(0);
+	});
+
+	test('WorkerManager preserves custom adapter paths when provided', () => {
+		const spawn = vi.fn();
+		const { manager } = createWorkerManager({
+			path: 'worker.js',
+			adapter: {
+				postMessage: () => {},
+				spawn,
+			},
+		});
+
+		manager.prepareWorkers([[0]]);
+		manager.workerQueue.shift()!();
+
+		expect(spawn).toHaveBeenCalledWith(expect.objectContaining({ path: 'worker.js' }), expect.any(Object));
 	});
 });
