@@ -1,4 +1,5 @@
 import {
+	ApplicationCommandType,
 	ApplicationCommandOptionType,
 	type AllGuildChannels,
 	type AutocompleteCallback,
@@ -14,6 +15,7 @@ import {
 	ComponentCommand,
 	type CommandMetadata,
 	type CommandContext,
+	ContextMenuCommand,
 	createIntegerOption,
 	createMiddleware,
 	createNumberOption,
@@ -37,6 +39,7 @@ import {
 	type GuildRoleStructure,
 	type ComponentContext,
 	type EntryPointContext,
+	EntryPointCommand,
 	Embed,
 	Group,
 	Groups,
@@ -65,6 +68,7 @@ import {
 	type RegisteredPluginShared,
 	type ResolvedRegisteredMiddlewares,
 	RadioGroupOption,
+	SubCommand,
 	type ClientMiddlewares,
 	type OptionResolvedWithValue,
 	type SharedKey,
@@ -79,6 +83,7 @@ import {
 	type WebhookMessageStructure,
 	type APIEmbed,
 	type ClientOptions,
+	EntryPointCommandHandlerType,
 } from 'seyfert';
 import type { MakePresent, MakeRequired, PickPresent, PickRequired } from '../lib/common';
 import type { BanShorter } from '../lib/common/shorters/bans';
@@ -309,8 +314,54 @@ class CooldownManager {
 class ContractCommand extends Command {
 	name = 'contract';
 	description = 'Contract';
+	filter(context: CommandContext): boolean | Promise<boolean> {
+		expectType<CommandContext>(context);
+		return true;
+	}
 	run() {}
 }
+
+class ContractSubCommand extends SubCommand {
+	name = 'contract-sub';
+	description = 'Contract subcommand';
+	filter(context: CommandContext): boolean | Promise<boolean> {
+		expectType<CommandContext>(context);
+		return Promise.resolve(true);
+	}
+	run() {}
+}
+
+class ContractContextMenuCommand extends ContextMenuCommand {
+	name = 'contract-menu';
+	type = ApplicationCommandType.Message as const;
+	filter(context: MenuCommandContext<any>): boolean | Promise<boolean> {
+		expectType<MenuCommandContext<any>>(context);
+		return true;
+	}
+	run() {}
+}
+
+class ContractEntryPointCommand extends EntryPointCommand {
+	name = 'contract-entry';
+	description = 'Contract entry';
+	handler = EntryPointCommandHandlerType.AppHandler;
+	filter(context: EntryPointContext): boolean | Promise<boolean> {
+		expectType<EntryPointContext>(context);
+		return Promise.resolve(true);
+	}
+	run() {}
+}
+
+declare const commandFilterContract: Command;
+expectType<((context: CommandContext) => boolean | Promise<boolean>) | undefined>(commandFilterContract.filter);
+declare const subCommandFilterContract: SubCommand;
+expectType<((context: CommandContext) => boolean | Promise<boolean>) | undefined>(subCommandFilterContract.filter);
+declare const contextMenuFilterContract: ContextMenuCommand;
+expectType<((context: MenuCommandContext<any>) => boolean | Promise<boolean>) | undefined>(
+	contextMenuFilterContract.filter,
+);
+declare const entryPointFilterContract: EntryPointCommand;
+expectType<((context: EntryPointContext) => boolean | Promise<boolean>) | undefined>(entryPointFilterContract.filter);
 
 class ContractComponent extends ComponentCommand {
 	componentType = 'Button' as const;
