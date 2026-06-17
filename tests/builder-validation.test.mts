@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { MediaGalleryItem, Modal, PollBuilder } from '../lib';
+import { MediaGalleryItem, Modal, PollBuilder, StringSelectOption } from '../lib';
 import { SeyfertError } from '../lib/common';
 
 function expectSeyfertCode(run: () => unknown, code: string, component: string) {
@@ -51,5 +51,17 @@ describe('builder toJSON validation', () => {
 		const item = new MediaGalleryItem().setDescription('Screenshot');
 
 		expectSeyfertCode(() => item.toJSON(), 'MISSING_MEDIA', 'MediaGalleryItem');
+	});
+
+	test('StringSelectOption rejects missing label', () => {
+		const option = new StringSelectOption().setValue('general');
+
+		expectSeyfertCode(() => option.toJSON(), 'MISSING_STRING_SELECT_OPTION_LABEL', 'StringSelectOption');
+	});
+
+	test('StringSelectOption rejects missing value', () => {
+		const option = new StringSelectOption().setLabel('General');
+
+		expectSeyfertCode(() => option.toJSON(), 'MISSING_STRING_SELECT_OPTION_VALUE', 'StringSelectOption');
 	});
 });

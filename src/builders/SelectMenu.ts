@@ -389,6 +389,24 @@ export class StringSelectOption {
 	 * @returns The option data in JSON format.
 	 */
 	toJSON(): APISelectMenuOption {
+		if (!this.data.label)
+			throw new SeyfertError('MISSING_STRING_SELECT_OPTION_LABEL', {
+				metadata: {
+					...createValidationMetadata('label to be set before calling toJSON()', this.data.label, {
+						component: 'StringSelectOption',
+					}),
+					detail: 'Cannot convert to JSON without a label.',
+				},
+			});
+		if (!this.data.value)
+			throw new SeyfertError('MISSING_STRING_SELECT_OPTION_VALUE', {
+				metadata: {
+					...createValidationMetadata('value to be set before calling toJSON()', this.data.value, {
+						component: 'StringSelectOption',
+					}),
+					detail: 'Cannot convert to JSON without a value.',
+				},
+			});
 		return { ...this.data } as APISelectMenuOption;
 	}
 }
