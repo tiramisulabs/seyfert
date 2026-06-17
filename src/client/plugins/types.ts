@@ -13,11 +13,11 @@ import type {
 	UsingClient,
 } from '../../commands';
 import type { CommandAutocompleteOption } from '../../commands/applications/chat';
-import type { HandleableCommand } from '../../commands/handler';
+import type { HandleableCommand, HandleableCommandInstance } from '../../commands/handler';
 import type { Awaitable } from '../../common/types/util';
 import type { ComponentCommand, ModalCommand } from '../../components';
 import type { ClientNameEvents, CustomEventsKeys } from '../../events';
-import type { GatewayEvents, ResolveEventParams, ResolveEventRunParams } from '../../events/handler';
+import type { GatewayEvents, ResolveEventParams } from '../../events/handler';
 import type { AutocompleteInteraction } from '../../structures';
 import type { GatewayDispatchPayload, GatewayIntentBits, GatewaySendPayload, LocaleString } from '../../types';
 import type { BaseClient, BaseClientOptions } from '../base';
@@ -300,6 +300,32 @@ type Materialize<T> = {
 
 export type HandleableComponent = new () => ComponentCommand;
 export type HandleableModal = new () => ModalCommand;
+export type PluginCommandInstance = HandleableCommandInstance;
+export type PluginComponentInstance = ComponentCommand;
+export type PluginModalInstance = ModalCommand;
+export type PluginCommandLoadable = HandleableCommand | PluginCommandInstance;
+export type PluginComponentLoadable = HandleableComponent | PluginComponentInstance;
+export type PluginModalLoadable = HandleableModal | PluginModalInstance;
+export type PluginHandlerKind = 'command' | 'component' | 'modal';
+export type PluginHandlerConstructor = HandleableCommand | HandleableComponent | HandleableModal;
+export type PluginHandlerInstance = PluginCommandInstance | PluginComponentInstance | PluginModalInstance;
+export interface PluginHandlerMetadata {
+	kind: PluginHandlerKind;
+}
+export interface PluginHandlerCreator {
+	<T extends PluginHandlerConstructor>(
+		constructor: T,
+		next: () => InstanceType<T>,
+		metadata: PluginHandlerMetadata,
+	): InstanceType<T>;
+}
+export interface PluginHandlerTransformer {
+	<T extends PluginHandlerInstance>(instance: T, metadata: PluginHandlerMetadata): T | void;
+}
+export interface PluginHandlerOptions {
+	kinds?: readonly PluginHandlerKind[];
+	order?: PluginOrderOpt;
+}
 export type PluginEventDisposer = () => void;
 export type PluginEventErrorHandler = (error: unknown, name: string) => unknown;
 export interface PluginContributionOptions {
@@ -341,11 +367,10 @@ export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewa
 			opts?: { order?: PluginOrderOpt },
 		): PluginEventDisposer;
 		onError(handler: PluginEventErrorHandler, opts?: { order?: PluginOrderOpt }): PluginEventDisposer;
-		emit<E extends CustomEventsKeys>(name: E, ...payload: ResolveEventRunParams<E>): Promise<void>;
 	};
 	commands: {
-		add(...commands: HandleableCommand[]): void;
-		add(...args: [...commands: HandleableCommand[], opts: PluginCommandContributionOptions]): void;
+		add(...commands: PluginCommandLoadable[]): void;
+		add(...args: [...commands: PluginCommandLoadable[], opts: PluginCommandContributionOptions]): void;
 		remove(...names: string[]): void;
 		observe(observer: PluginCommandObserver, opts?: { order?: PluginOrderOpt }): PluginEventDisposer;
 		defaults(
@@ -363,9 +388,13 @@ export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewa
 			opts?: { order?: PluginOrderOpt },
 		): PluginEventDisposer;
 	};
+	handlers: {
+		create(creator: PluginHandlerCreator, opts?: PluginHandlerOptions): void;
+		transform(transformer: PluginHandlerTransformer, opts?: PluginHandlerOptions): void;
+	};
 	components: {
-		add(...components: HandleableComponent[]): void;
-		add(...args: [...components: HandleableComponent[], opts: PluginContributionOptions]): void;
+		add(...components: PluginComponentLoadable[]): void;
+		add(...args: [...components: PluginComponentLoadable[], opts: PluginContributionOptions]): void;
 		remove(...customIds: string[]): void;
 		defaults(
 			hooks: Partial<SeyfertComponentDefaults>,
@@ -373,8 +402,8 @@ export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewa
 		): void;
 	};
 	modals: {
-		add(...modals: HandleableModal[]): void;
-		add(...args: [...modals: HandleableModal[], opts: PluginContributionOptions]): void;
+		add(...modals: PluginModalLoadable[]): void;
+		add(...args: [...modals: PluginModalLoadable[], opts: PluginContributionOptions]): void;
 		remove(...customIds: string[]): void;
 		defaults(
 			hooks: Partial<SeyfertModalDefaults>,

@@ -1,6 +1,5 @@
 import type { MiddlewareContext } from '../../commands';
 import type { HandleableCommand } from '../../commands/handler';
-import { isGatewayEventName } from '../../events/utils';
 import { createPluginConflictError } from './errors';
 import { nextPluginContributionSequence } from './order';
 import {
@@ -26,6 +25,7 @@ import type {
 	PluginCacheResourceConstructor,
 	PluginCommandContributionOptions,
 	PluginContributionOptions,
+	PluginHandlerOptions,
 	PluginOrderOpt,
 	SeyfertPluginApi,
 	SeyfertPluginOptions,
@@ -113,36 +113,13 @@ export function createPluginApi(
 				registry.eventErrors.push(contribution);
 				return once(() => removePluginEventErrorContribution(registry, contribution));
 			},
-			emit(name, ...payload) {
-				const eventName = String(name);
-				if (isGatewayEventName(eventName)) {
-					throw createPluginConflictError(
-						record.plugin.name,
-						`event:${eventName}`,
-						record.index,
-						`Plugin "${record.plugin.name}" cannot emit gateway event "${eventName}".`,
-						record.plugin.instanceId,
-					);
-				}
-				const events = registry.client?.events;
-				if (!events) {
-					throw createPluginConflictError(
-						record.plugin.name,
-						`event:${eventName}`,
-						record.index,
-						`Plugin "${record.plugin.name}" cannot emit "${eventName}" before events are available.`,
-						record.plugin.instanceId,
-					);
-				}
-				return Promise.resolve(events.runCustom(name, ...payload));
-			},
 		},
 		commands: {
 			add(...args) {
-				const [commands, opts] = splitContributionArgs<HandleableCommand, PluginCommandContributionOptions>(
-					args,
-					isCommandContributionOptions,
-				);
+				const [commands, opts] = splitContributionArgs<
+					InstanceType<HandleableCommand> | HandleableCommand,
+					PluginCommandContributionOptions
+				>(args, isCommandContributionOptions);
 				if (opts?.guilds?.length) {
 					addPluginDiagnostic(registry, record, {
 						phase: 'commands.add',
@@ -222,9 +199,31 @@ export function createPluginApi(
 				return once(() => removePluginHookContribution(registry, contribution));
 			},
 		},
+		handlers: {
+			create(creator, opts) {
+				registry.handlerCreators.push({
+					record,
+					creator,
+					scope,
+					kinds: normalizeHandlerKinds(opts),
+					order: opts?.order,
+					sequence: nextPluginContributionSequence(registry),
+				});
+			},
+			transform(transformer, opts) {
+				registry.handlerTransformers.push({
+					record,
+					transformer,
+					scope,
+					kinds: normalizeHandlerKinds(opts),
+					order: opts?.order,
+					sequence: nextPluginContributionSequence(registry),
+				});
+			},
+		},
 		components: {
 			add(...args) {
-				const [components, opts] = splitContributionArgs<HandleableComponent>(args);
+				const [components, opts] = splitContributionArgs<InstanceType<HandleableComponent> | HandleableComponent>(args);
 				registry.components.push({
 					record,
 					components,
@@ -255,7 +254,7 @@ export function createPluginApi(
 		},
 		modals: {
 			add(...args) {
-				const [modals, opts] = splitContributionArgs<HandleableModal>(args);
+				const [modals, opts] = splitContributionArgs<InstanceType<HandleableModal> | HandleableModal>(args);
 				registry.modals.push({
 					record,
 					modals,
@@ -471,6 +470,10 @@ function once(dispose: () => void) {
 		disposed = true;
 		dispose();
 	};
+}
+
+function normalizeHandlerKinds(opts: PluginHandlerOptions | undefined) {
+	return opts?.kinds ? [...opts.kinds] : undefined;
 }
 
 function splitContributionArgs<T, O extends PluginContributionOptions = PluginContributionOptions>(

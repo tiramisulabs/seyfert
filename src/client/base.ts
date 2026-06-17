@@ -21,7 +21,7 @@ import { SubCommand } from '../commands';
 import { IgnoreCommand, type InferWithPrefix, type MiddlewareContext } from '../commands/applications/shared';
 import type { BaseContext } from '../commands/basecontext';
 import { HandleCommand } from '../commands/handle';
-import { CommandHandler, type HandleableCommand } from '../commands/handler';
+import { CommandHandler, type HandleableCommand, type HandleableCommandInstance } from '../commands/handler';
 import {
 	ApplicationShorter,
 	assertString,
@@ -51,7 +51,7 @@ import { BanShorter } from '../common/shorters/bans';
 import { SoundboardShorter } from '../common/shorters/soundboard';
 import { VoiceStateShorter } from '../common/shorters/voiceStates';
 import type { Awaitable, DeepPartial, IntentStrings, OmitInsert, PermissionStrings, When } from '../common/types/util';
-import type { ComponentCommand, ComponentContext, ModalCommand, ModalContext } from '../components';
+import { type ComponentCommand, type ComponentContext, ModalCommand, type ModalContext } from '../components';
 import { type ComponentCommands, ComponentHandler } from '../components/handler';
 import {
 	CustomEventHandler,
@@ -72,6 +72,9 @@ import type { APIInteraction, APIInteractionResponse, LocaleString, RESTPostAPIC
 import {
 	type AnySeyfertPlugin,
 	bindClientPlugins,
+	type PluginHandlerConstructor,
+	type PluginHandlerInstance,
+	type PluginHandlerKind,
 	type PluginLoadedMetadata,
 	type PluginMiddlewareDenialMetadata,
 	type PluginSharedRegistry,
@@ -493,19 +496,7 @@ export class BaseClient {
 			}
 
 			for (const command of mutation.commands) {
-				let instance: InstanceType<HandleableCommand>;
-				try {
-					instance = new command();
-				} catch (error) {
-					throw wrapPluginError(
-						mutation.record.plugin.name,
-						'commands.add',
-						mutation.record.index,
-						error,
-						undefined,
-						mutation.record.plugin.instanceId,
-					);
-				}
+				const instance = this.createPluginCommandInstance(command, mutation.record, 'commands.add');
 				if (instance instanceof SubCommand) {
 					throw createPluginConflictError(
 						mutation.record.plugin.name,
@@ -565,7 +556,9 @@ export class BaseClient {
 		const commands = [...existingCommands.values()]
 			.filter(entry => !!entry.owner)
 			.map(entry => entry.command as InstanceType<HandleableCommand>);
-		for (const command of this.commands.set(commands)) {
+		for (const command of this.commands.set(commands, command =>
+			this.runPluginHandlerTransformers('command', command),
+		)) {
 			(command as PluginSourced)[pluginSourceKey] = sourceByName.get(command.name);
 		}
 	}
@@ -656,9 +649,9 @@ export class BaseClient {
 			for (const constructor of constructors) {
 				const instance = this.createPluginComponentInstance(
 					constructor,
-					mutation.record.plugin.name,
-					mutation.record.index,
+					mutation.record,
 					`${mutation.contributionKind}s.add`,
+					mutation.contributionKind,
 				);
 				(instance as PluginSourced)[pluginSourceKey] = mutation.record.identity;
 
@@ -704,7 +697,9 @@ export class BaseClient {
 		const components = [...componentsByCustomId.values(), ...dynamicComponents]
 			.filter((entry): entry is { component: ComponentCommands; owner: PluginRuntimeRecord } => !!entry.owner)
 			.map(entry => entry.component);
-		for (const component of this.components.set(components)) {
+		for (const component of this.components.set(components, component =>
+			this.runPluginHandlerTransformers(component instanceof ModalCommand ? 'modal' : 'component', component),
+		)) {
 			const source =
 				typeof component.customId === 'string'
 					? sourceByCustomId.get(component.customId)
@@ -713,20 +708,88 @@ export class BaseClient {
 		}
 	}
 
-	private createPluginComponentInstance(
-		constructor: new () => ComponentCommands,
-		pluginName: string,
-		index: number,
+	private createPluginCommandInstance(
+		command: HandleableCommand | HandleableCommandInstance,
+		record: PluginRuntimeRecord,
 		phase: string,
 	) {
-		try {
-			return new constructor();
-		} catch (error) {
-			const record = this.pluginRegistry.records.find(
-				record => record.plugin.name === pluginName && record.index === index,
-			);
-			throw wrapPluginError(pluginName, phase, index, error, undefined, record?.plugin.instanceId);
+		if (typeof command !== 'function') return command;
+		return this.runPluginHandlerCreators('command', command, () => {
+			try {
+				return new command();
+			} catch (error) {
+				throw wrapPluginError(record.plugin.name, phase, record.index, error, undefined, record.plugin.instanceId);
+			}
+		});
+	}
+
+	private createPluginComponentInstance(
+		constructor: (new () => ComponentCommands) | ComponentCommands,
+		record: PluginRuntimeRecord,
+		phase: string,
+		kind: PluginHandlerKind,
+	) {
+		if (typeof constructor !== 'function') return constructor;
+		return this.runPluginHandlerCreators(kind, constructor as PluginHandlerConstructor, () => {
+			try {
+				return new constructor() as InstanceType<PluginHandlerConstructor>;
+			} catch (error) {
+				throw wrapPluginError(record.plugin.name, phase, record.index, error, undefined, record.plugin.instanceId);
+			}
+		}) as ComponentCommands;
+	}
+
+	private runPluginHandlerCreators<T extends PluginHandlerConstructor>(
+		kind: PluginHandlerKind,
+		constructor: T,
+		create: () => InstanceType<T>,
+	): InstanceType<T> {
+		const creators = orderedPluginContributions(this.pluginRegistry.handlerCreators).filter(contribution =>
+			this.matchesPluginHandlerKind(contribution.kinds, kind),
+		);
+		const metadata = { kind };
+		return creators.reduceRight(
+			(next, contribution) => () => {
+				try {
+					return contribution.creator(constructor, next, metadata);
+				} catch (error) {
+					throw wrapPluginError(
+						contribution.record.plugin.name,
+						`handlers.create:${kind}`,
+						contribution.record.index,
+						error,
+						undefined,
+						contribution.record.plugin.instanceId,
+					);
+				}
+			},
+			create,
+		)();
+	}
+
+	private runPluginHandlerTransformers<T extends PluginHandlerInstance>(kind: PluginHandlerKind, instance: T): T {
+		let current = instance;
+		const metadata = { kind };
+		for (const contribution of orderedPluginContributions(this.pluginRegistry.handlerTransformers)) {
+			if (!this.matchesPluginHandlerKind(contribution.kinds, kind)) continue;
+			try {
+				current = (contribution.transformer(current, metadata) ?? current) as T;
+			} catch (error) {
+				throw wrapPluginError(
+					contribution.record.plugin.name,
+					`handlers.transform:${kind}`,
+					contribution.record.index,
+					error,
+					undefined,
+					contribution.record.plugin.instanceId,
+				);
+			}
 		}
+		return current;
+	}
+
+	private matchesPluginHandlerKind(kinds: readonly PluginHandlerKind[] | undefined, kind: PluginHandlerKind) {
+		return !kinds?.length || kinds.includes(kind);
 	}
 
 	private createPluginLoadedMetadata<TKind extends 'commands' | 'components', TItem>(
@@ -899,7 +962,10 @@ export class BaseClient {
 	async loadCommands(dir?: string) {
 		dir ??= await this.getRC().then(x => x.locations.commands);
 		if (dir && this.commands) {
-			await this.commands.load(dir, this);
+			await this.commands.load(dir, this, {
+				create: (constructor, next) => this.runPluginHandlerCreators('command', constructor, next),
+				transform: command => this.runPluginHandlerTransformers('command', command),
+			});
 			this.logger.info('CommandHandler loaded');
 		}
 	}
@@ -907,7 +973,10 @@ export class BaseClient {
 	async loadComponents(dir?: string) {
 		dir ??= await this.getRC().then(x => x.locations.components);
 		if (dir && this.components) {
-			await this.components.load(dir);
+			await this.components.load(dir, {
+				create: (kind, constructor, next) => this.runPluginHandlerCreators(kind, constructor, next),
+				transform: (kind, component) => this.runPluginHandlerTransformers(kind, component),
+			});
 			this.logger.info('ComponentHandler loaded');
 		}
 	}

@@ -1,5 +1,4 @@
 import type { MiddlewareContext } from '../../commands';
-import type { HandleableCommand } from '../../commands/handler';
 import type { Awaitable } from '../../common/types/util';
 import { GatewayIntentBits } from '../../types';
 import type { BaseClient, BaseClientOptions } from '../base';
@@ -13,11 +12,11 @@ import {
 } from './order';
 import type {
 	AnySeyfertPlugin,
-	HandleableComponent,
-	HandleableModal,
 	PluginAutocompleteWrapper,
 	PluginCacheResourceConstructor,
+	PluginCommandLoadable,
 	PluginCommandObserver,
+	PluginComponentLoadable,
 	PluginContextInteraction,
 	PluginDiagnosticCode,
 	PluginDiagnosticMessage,
@@ -25,8 +24,12 @@ import type {
 	PluginDiagnostics,
 	PluginEventErrorHandler,
 	PluginGatewayPayloadWrapper,
+	PluginHandlerCreator,
+	PluginHandlerKind,
+	PluginHandlerTransformer,
 	PluginIntentResolvable,
 	PluginLifecycleStatus,
+	PluginModalLoadable,
 	PluginOrderOpt,
 	PluginRequirement,
 	PluginRequirementDiagnostic,
@@ -51,7 +54,7 @@ export type PluginEventContributionScope = 'register' | 'setup';
 
 export interface PluginCommandContribution {
 	record: PluginRuntimeRecord;
-	commands: readonly HandleableCommand[];
+	commands: readonly PluginCommandLoadable[];
 	scope: PluginEventContributionScope;
 	override: boolean;
 	guilds?: readonly string[];
@@ -66,7 +69,7 @@ export interface PluginCommandRemovalContribution extends PluginOrderedContribut
 
 export interface PluginComponentContribution {
 	record: PluginRuntimeRecord;
-	components: readonly HandleableComponent[];
+	components: readonly PluginComponentLoadable[];
 	scope: PluginEventContributionScope;
 	override: boolean;
 	sequence: number;
@@ -80,7 +83,7 @@ export interface PluginComponentRemovalContribution extends PluginOrderedContrib
 
 export interface PluginModalContribution {
 	record: PluginRuntimeRecord;
-	modals: readonly HandleableModal[];
+	modals: readonly PluginModalLoadable[];
 	scope: PluginEventContributionScope;
 	override: boolean;
 	sequence: number;
@@ -228,6 +231,20 @@ export interface PluginDefaultsContribution extends PluginOrderedContribution {
 	scope: PluginEventContributionScope;
 }
 
+export interface PluginHandlerCreatorContribution extends PluginOrderedContribution {
+	record: PluginRuntimeRecord;
+	creator: PluginHandlerCreator;
+	scope: PluginEventContributionScope;
+	kinds?: readonly PluginHandlerKind[];
+}
+
+export interface PluginHandlerTransformerContribution extends PluginOrderedContribution {
+	record: PluginRuntimeRecord;
+	transformer: PluginHandlerTransformer;
+	scope: PluginEventContributionScope;
+	kinds?: readonly PluginHandlerKind[];
+}
+
 export interface PluginRequirementContribution extends PluginRequirementDiagnostic {
 	record: PluginRuntimeRecord;
 }
@@ -258,6 +275,8 @@ export interface PluginRuntimeRegistry extends PluginOrderSequence {
 	cacheResources: PluginCacheResourceContribution[];
 	commandObservers: PluginCommandObserverContribution[];
 	pluginDefaults: PluginDefaultsContribution[];
+	handlerCreators: PluginHandlerCreatorContribution[];
+	handlerTransformers: PluginHandlerTransformerContribution[];
 	shared: Map<string, PluginSharedContribution>;
 	sharedOwners: Map<string, PluginRuntimeRecord>;
 	langs: PluginLangContribution[];
@@ -313,6 +332,8 @@ export function createPluginRuntimeRegistry(plugins: readonly AnySeyfertPlugin[]
 		middlewareRemovals: [],
 		commandObservers: [],
 		pluginDefaults: [],
+		handlerCreators: [],
+		handlerTransformers: [],
 	};
 	addStaticKeyMultiInstanceDiagnostics(registry);
 	validatePluginRequirements(registry, 'plugin');
@@ -420,6 +441,8 @@ export function cleanupPluginDynamicContributionMutations(
 	cleanupScopedContributions(registry.componentRemovals, record);
 	cleanupScopedContributions(registry.modals, record);
 	cleanupScopedContributions(registry.modalRemovals, record);
+	cleanupScopedContributions(registry.handlerCreators, record);
+	cleanupScopedContributions(registry.handlerTransformers, record);
 	cleanupScopedContributions(registry.middlewares, record);
 	cleanupScopedContributions(registry.middlewareRemovals, record);
 	cleanupScopedContributions(registry.langs, record);

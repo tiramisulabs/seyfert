@@ -24,6 +24,7 @@ import {
 	type PluginContextMapOf,
 	type PluginDiagnosticCode,
 	type PluginExtensionOf,
+	type PluginHandlerKind,
 	type PluginMiddlewaresMapOf,
 	type PluginCommandObserver,
 	type PluginCommandObserverContext,
@@ -212,6 +213,18 @@ const economy = createPlugin({
 		api.components.remove('contract-component');
 		api.modals.add(ContractModal);
 		api.modals.add(ContractModal, { override: true });
+		api.commands.add(new ContractCommand());
+		api.components.add(new ContractComponent());
+		api.modals.add(new ContractModal());
+		api.handlers.create((Ctor, next, metadata) => {
+			expectType<PluginHandlerKind>(metadata.kind);
+			expectType<unknown>(Ctor);
+			return next();
+		}, { kinds: ['command', 'component', 'modal'], order: PluginOrder.Before });
+		api.handlers.transform((instance, metadata) => {
+			expectType<PluginHandlerKind>(metadata.kind);
+			return instance;
+		}, { kinds: ['command'], order: PluginOrder.After });
 		api.modals.remove('contract-modal');
 		const disposeCommandsLoaded = api.events.once('commandsLoaded', metadata => {
 			expectType<number>(metadata.total);
@@ -231,8 +244,18 @@ const economy = createPlugin({
 			expectType<string>(name);
 		}, { order: PluginOrder.Before });
 		expectType<() => void>(disposeErrors);
-		expectType<Promise<void>>(
-			api.events.emit('commandsLoaded', {
+		api.events.on('commandsLoaded', (metadata, client) => {
+			expectType<void | Promise<void>>(
+				client.events.emit('commandsLoaded', {
+					kind: metadata.kind,
+					total: metadata.total,
+					items: metadata.items,
+					plugin: metadata.plugin,
+				}),
+			);
+		});
+		expectType<void | Promise<void>>(
+			new Client({ plugins: [] }).events.emit('commandsLoaded', {
 				kind: 'commands',
 				total: 0,
 				items: [],

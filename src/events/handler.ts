@@ -51,6 +51,7 @@ export type EventValues = {
 };
 
 export interface CustomEventRunner {
+	emit<T extends CustomEventsKeys>(name: T, ...args: ResolveEventRunParams<T>): Awaitable<void>;
 	runCustom<T extends CustomEventsKeys>(name: T, ...args: ResolveEventRunParams<T>): Awaitable<void>;
 }
 
@@ -86,6 +87,10 @@ export class CustomEventHandler extends BaseHandler implements CustomEventRunner
 		this.logger.warn('<Client>.events.onFail', err, event);
 
 	values: Partial<EventValues> = {};
+
+	emit<T extends CustomEventsKeys>(name: T, ...args: ResolveEventRunParams<T>) {
+		return this.runCustom(name, ...args);
+	}
 
 	async runCustom<T extends CustomEventsKeys>(name: T, ...args: ResolveEventRunParams<T>) {
 		const listeners = this.getPluginListeners(name);

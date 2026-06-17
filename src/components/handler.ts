@@ -235,7 +235,10 @@ export class ComponentHandler extends BaseHandler {
 		component.onBeforeMiddlewares ??= this.client.options?.[is]?.defaults?.onBeforeMiddlewares;
 	}
 
-	set(instances: SeteableComponentCommand[]) {
+	set(
+		instances: SeteableComponentCommand[],
+		transform?: (component: ComponentCommands) => ComponentCommands | false | void,
+	) {
 		const added: ComponentCommands[] = [];
 		for (const i of instances) {
 			let component: ReturnType<typeof this.callback>;
@@ -247,6 +250,10 @@ export class ComponentHandler extends BaseHandler {
 				continue;
 			}
 			this.stablishDefaults(component);
+			const wrapped = transform?.(component) ?? component;
+			if (!wrapped) continue;
+			if (wrapped !== component) this.stablishDefaults(wrapped);
+			component = wrapped;
 
 			this.commands.push(component);
 			added.push(component);
@@ -254,15 +261,15 @@ export class ComponentHandler extends BaseHandler {
 		return added;
 	}
 
-	async load(componentsDir: string) {
-		const paths = await this.loadFilesK<FileLoaded<new () => ComponentCommands>>(await this.getFiles(componentsDir));
+	async load(componentsDir: string, options: ComponentLoadOptions = {}) {
+		const paths = await this.loadFilesK<FileLoaded<HandleableComponentCommand>>(await this.getFiles(componentsDir));
 
 		for (const { components, file } of paths.map(x => ({ components: this.onFile(x.file), file: x }))) {
 			if (!components) continue;
 			for (const value of components) {
 				let component: ReturnType<typeof this.callback>;
 				try {
-					component = this.callback(value);
+					component = this.callback(value, options.create);
 					if (!component) continue;
 				} catch (e) {
 					if (e instanceof Error && e.message.includes('is not a constructor')) {
@@ -278,6 +285,14 @@ export class ComponentHandler extends BaseHandler {
 				if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) continue;
 				this.stablishDefaults(component);
 				component.__filePath = file.path;
+				const kind = component instanceof ModalCommand ? 'modal' : 'component';
+				const wrapped = options.transform?.(kind, component) ?? component;
+				if (!wrapped) continue;
+				if (wrapped !== component) {
+					component = wrapped;
+					component.__filePath ??= file.path;
+					this.stablishDefaults(component);
+				}
 				this.commands.push(component);
 			}
 		}
@@ -400,13 +415,32 @@ export class ComponentHandler extends BaseHandler {
 		}
 	}
 
-	onFile(file: FileLoaded<new () => ComponentCommands>): (new () => ComponentCommands)[] | undefined {
+	onFile(file: FileLoaded<HandleableComponentCommand>): HandleableComponentCommand[] | undefined {
 		return file.default ? [file.default] : undefined;
 	}
 
-	callback(file: SeteableComponentCommand): ComponentCommands | false {
-		return typeof file === 'function' ? new file() : file;
+	callback(file: SeteableComponentCommand, create?: ComponentLoadCreator): ComponentCommands | false {
+		if (typeof file !== 'function') return file;
+		const kind = file.prototype instanceof ModalCommand ? 'modal' : 'component';
+		return create?.(kind, file, () => new file()) ?? new file();
 	}
 }
 
-export type SeteableComponentCommand = (new () => ComponentCommands) | ComponentCommands;
+export type HandleableComponentCommand = (new () => ComponentCommand) | (new () => ModalCommand);
+export type SeteableComponentCommand = HandleableComponentCommand | ComponentCommands;
+export type ComponentLoadKind = 'component' | 'modal';
+export interface ComponentLoadCreator {
+	<T extends HandleableComponentCommand>(
+		kind: ComponentLoadKind,
+		constructor: T,
+		next: () => InstanceType<T>,
+	): InstanceType<T>;
+}
+export type ComponentLoadTransformer = (
+	kind: ComponentLoadKind,
+	component: ComponentCommands,
+) => ComponentCommands | false | void;
+export interface ComponentLoadOptions {
+	create?: ComponentLoadCreator;
+	transform?: ComponentLoadTransformer;
+}

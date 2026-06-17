@@ -88,6 +88,13 @@ export type {
 	PluginExtensionOf,
 	PluginGatewayPayload,
 	PluginGatewayPayloadWrapper,
+	PluginHandlerConstructor,
+	PluginHandlerCreator,
+	PluginHandlerInstance,
+	PluginHandlerKind,
+	PluginHandlerMetadata,
+	PluginHandlerOptions,
+	PluginHandlerTransformer,
 	PluginHookHandler,
 	PluginHookName,
 	PluginHookPayload,
@@ -355,24 +362,21 @@ export function resolveClientPlugins(
 	composeDefaults(
 		merged.commands?.defaults,
 		defaults.commands?.defaults,
-		optionFragments.map(fragment => fragment.commands?.defaults),
-		registry.pluginDefaults.filter(contribution => contribution.kind === 'commands'),
+		collectPluginDefaultContributions(pluginOptionContributions, registry.pluginDefaults, 'commands'),
 		userOptions.commands?.defaults,
 		commandHookKeys,
 	);
 	composeDefaults(
 		merged.components?.defaults,
 		defaults.components?.defaults,
-		optionFragments.map(fragment => fragment.components?.defaults),
-		registry.pluginDefaults.filter(contribution => contribution.kind === 'components'),
+		collectPluginDefaultContributions(pluginOptionContributions, registry.pluginDefaults, 'components'),
 		userOptions.components?.defaults,
 		componentHookKeys,
 	);
 	composeDefaults(
 		merged.modals?.defaults,
 		defaults.modals?.defaults,
-		optionFragments.map(fragment => fragment.modals?.defaults),
-		registry.pluginDefaults.filter(contribution => contribution.kind === 'modals'),
+		collectPluginDefaultContributions(pluginOptionContributions, registry.pluginDefaults, 'modals'),
 		userOptions.modals?.defaults,
 		modalHookKeys,
 	);
@@ -796,7 +800,6 @@ function suppressesDefault(flag: boolean | readonly string[] | undefined, key: s
 function composeDefaults<TDefaults extends object, TKey extends keyof TDefaults>(
 	target: TDefaults | undefined,
 	defaults: TDefaults | undefined,
-	declarativeDefaults: readonly (TDefaults | undefined)[],
 	contributions: readonly PluginDefaultsContribution[],
 	userDefaults: TDefaults | undefined,
 	keys: readonly TKey[],
@@ -805,9 +808,8 @@ function composeDefaults<TDefaults extends object, TKey extends keyof TDefaults>
 
 	const ordered = orderedPluginContributions(contributions);
 	for (const key of keys) {
-		const declarative = declarativeDefaults.map(fragment => fragment?.[key] as unknown).filter(isFunction);
 		const imperative = ordered.map(contribution => contribution.hooks?.[key as string] as unknown).filter(isFunction);
-		const additive = [...declarative, ...imperative];
+		const additive = [...imperative];
 		const userHook = userDefaults?.[key] as unknown;
 
 		if (!additive.length && typeof userHook !== 'function') continue;
@@ -834,6 +836,30 @@ function composeHooks(hooks: readonly AnyFunction[]) {
 	return async (...args: unknown[]) => {
 		for (const hook of hooks) await hook(...args);
 	};
+}
+
+function collectPluginDefaultContributions(
+	options: readonly PluginOptionContribution[],
+	contributions: readonly PluginDefaultsContribution[],
+	kind: PluginDefaultsContribution['kind'],
+) {
+	return [
+		...options.flatMap(contribution => {
+			const hooks = contribution.fragment[kind]?.defaults;
+			if (!hooks) return [];
+			return [
+				{
+					record: contribution.record,
+					kind,
+					hooks: hooks as Record<string, unknown>,
+					scope: contribution.scope,
+					order: contribution.order,
+					sequence: contribution.sequence,
+				} satisfies PluginDefaultsContribution,
+			];
+		}),
+		...contributions.filter(contribution => contribution.kind === kind),
+	];
 }
 
 function isFunction(value: unknown): value is AnyFunction {

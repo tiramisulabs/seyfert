@@ -244,9 +244,21 @@ export class CommandHandler extends BaseHandler {
 		return false;
 	}
 
-	set(commands: SeteableCommand[]) {
+	set(commands: SeteableCommand[], transform?: CommandLoadTransformer) {
 		const added: (Command | ContextMenuCommand | EntryPointCommand)[] = [];
 		this.values ??= [];
+		const prepare = (commandInstance: HandleableCommandInstance) => {
+			if (commandInstance instanceof SubCommand) return false;
+			commandInstance.props = this.client.options.commands?.defaults?.props ?? {};
+			const isCommand = this.stablishCommandDefaults(commandInstance);
+			if (isCommand) {
+				for (const option of isCommand.options ?? []) {
+					if (option instanceof SubCommand) this.stablishSubCommandDefaults(isCommand, option);
+				}
+			} else this.stablishContextCommandDefaults(commandInstance);
+			this.parseLocales(commandInstance);
+			return commandInstance;
+		};
 		for (const command of commands) {
 			let commandInstance: ReturnType<typeof this.onCommand>;
 			try {
@@ -257,15 +269,12 @@ export class CommandHandler extends BaseHandler {
 				this.logger.error(e);
 				continue;
 			}
-			if (commandInstance instanceof SubCommand) continue;
-			commandInstance.props = this.client.options.commands?.defaults?.props ?? {};
-			const isCommand = this.stablishCommandDefaults(commandInstance);
-			if (isCommand) {
-				for (const option of isCommand.options ?? []) {
-					if (option instanceof SubCommand) this.stablishSubCommandDefaults(isCommand, option);
-				}
-			} else this.stablishContextCommandDefaults(commandInstance);
-			this.parseLocales(commandInstance);
+			const prepared = prepare(commandInstance);
+			if (!prepared) continue;
+			const wrapped = transform?.(prepared) ?? prepared;
+			if (!wrapped) continue;
+			commandInstance = wrapped === prepared ? prepared : prepare(wrapped);
+			if (!commandInstance) continue;
 			if ('handler' in commandInstance && commandInstance.handler) {
 				this.entryPoint = commandInstance as EntryPointCommand;
 				added.push(commandInstance as EntryPointCommand);
@@ -277,7 +286,7 @@ export class CommandHandler extends BaseHandler {
 		return added;
 	}
 
-	async load(commandsDir: string, client: UsingClient) {
+	async load(commandsDir: string, client: UsingClient, options: CommandLoadOptions = {}) {
 		const result = await this.loadFilesK<FileLoaded<null>>(await this.getFiles(commandsDir));
 		this.values = [];
 
@@ -286,7 +295,7 @@ export class CommandHandler extends BaseHandler {
 			for (const command of commands) {
 				let commandInstance: ReturnType<typeof this.onCommand>;
 				try {
-					commandInstance = this.onCommand(command);
+					commandInstance = this.onCommand(command, options.create);
 					if (!commandInstance) continue;
 				} catch (e) {
 					if (e instanceof Error && e.message.includes('is not a constructor')) {
@@ -339,6 +348,22 @@ export class CommandHandler extends BaseHandler {
 				}
 				this.stablishContextCommandDefaults(commandInstance);
 				this.parseLocales(commandInstance);
+				const wrapped = options.transform?.(commandInstance) ?? commandInstance;
+				if (!wrapped) continue;
+				if (wrapped !== commandInstance) {
+					commandInstance = wrapped;
+					commandInstance.__filePath ??= file.path;
+					commandInstance.props ??= client.options.commands?.defaults?.props ?? {};
+					const wrappedCommand = this.stablishCommandDefaults(commandInstance);
+					if (wrappedCommand) {
+						commandInstance = wrappedCommand;
+						for (const option of commandInstance.options ?? []) {
+							if (option instanceof SubCommand) this.stablishSubCommandDefaults(commandInstance, option);
+						}
+					}
+					this.stablishContextCommandDefaults(commandInstance);
+					this.parseLocales(commandInstance);
+				}
 				if ('handler' in commandInstance && commandInstance.handler) {
 					this.entryPoint = commandInstance as EntryPointCommand;
 				} else this.values.push(commandInstance as Command);
@@ -564,8 +589,8 @@ export class CommandHandler extends BaseHandler {
 		return file.default ? [file.default] : undefined;
 	}
 
-	onCommand(file: SeteableCommand): HandleableCommandInstance | false {
-		return typeof file === 'function' ? new file() : file;
+	onCommand(file: SeteableCommand, create?: CommandLoadCreator): HandleableCommandInstance | false {
+		return typeof file === 'function' ? (create?.(file, () => new file()) ?? new file()) : file;
 	}
 
 	onSubCommand(file: HandleableSubCommand): SubCommand | false {
@@ -581,3 +606,11 @@ export type HandleableCommand = new () => Command | SubCommand | ContextMenuComm
 export type HandleableCommandInstance = Command | SubCommand | ContextMenuCommand | EntryPointCommand;
 export type SeteableCommand = HandleableCommand | HandleableCommandInstance;
 export type HandleableSubCommand = new () => SubCommand;
+export interface CommandLoadCreator {
+	<T extends HandleableCommand>(constructor: T, next: () => InstanceType<T>): InstanceType<T>;
+}
+export type CommandLoadTransformer = (command: HandleableCommandInstance) => HandleableCommandInstance | false | void;
+export interface CommandLoadOptions {
+	create?: CommandLoadCreator;
+	transform?: CommandLoadTransformer;
+}

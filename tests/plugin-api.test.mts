@@ -78,6 +78,57 @@ class PluginModal extends ModalCommand {
 	run() {}
 }
 
+class HandlerCommand extends Command {
+	name = 'handler-command';
+	description = 'Handler command';
+	run() {}
+}
+
+class HandlerInstanceCommand extends Command {
+	name = 'handler-instance-command';
+	description = 'Handler instance command';
+	run() {}
+}
+
+class HandlerButton extends ComponentCommand {
+	componentType = 'Button' as const;
+	customId = 'handler-button';
+	run() {}
+}
+
+class HandlerInstanceButton extends ComponentCommand {
+	componentType = 'Button' as const;
+	customId = 'handler-instance-button';
+	run() {}
+}
+
+class HandlerModal extends ModalCommand {
+	customId = 'handler-modal';
+	run() {}
+}
+
+class HandlerInstanceModal extends ModalCommand {
+	customId = 'handler-instance-modal';
+	run() {}
+}
+
+class LoadedHandlerCommand extends Command {
+	name = 'loaded-handler-command';
+	description = 'Loaded handler command';
+	run() {}
+}
+
+class LoadedHandlerButton extends ComponentCommand {
+	componentType = 'Button' as const;
+	customId = 'loaded-handler-button';
+	run() {}
+}
+
+class LoadedHandlerModal extends ModalCommand {
+	customId = 'loaded-handler-modal';
+	run() {}
+}
+
 class PluginCacheResource extends BaseResource<{ id: string }, { id: string }> {
 	namespace = 'plugin-resource';
 }
@@ -261,6 +312,128 @@ describe('plugin api v3', () => {
 		expect(client.components.commands.some(component => component.customId === 'plugin-modal')).toBe(true);
 	});
 
+	test('applies unified handler creators and transformers to plugin handlers', async () => {
+		const createKinds: string[] = [];
+		const transformed: string[] = [];
+		const commandInstance = new HandlerInstanceCommand();
+		const componentInstance = new HandlerInstanceButton();
+		const modalInstance = new HandlerInstanceModal();
+		const plugin = createPlugin({
+			name: 'handlers',
+			register(api) {
+				api.handlers.create((_constructor, next, metadata) => {
+					createKinds.push(metadata.kind);
+					return next();
+				});
+				api.handlers.transform((instance, metadata) => {
+					transformed.push(`${metadata.kind}:${'name' in instance ? instance.name : instance.customId}`);
+					instance.props ??= {};
+					instance.props.handlerKind = metadata.kind;
+				});
+				api.commands.add(HandlerCommand);
+				api.commands.add(commandInstance);
+				api.components.add(HandlerButton);
+				api.components.add(componentInstance);
+				api.modals.add(HandlerModal);
+				api.modals.add(modalInstance);
+			},
+		});
+		const client = createBaseClient([plugin]);
+		client.loadCommands = async () => {
+			client.commands.values = [];
+		};
+		client.loadComponents = async () => {};
+
+		await client.start();
+
+		expect(createKinds.sort()).toEqual(['command', 'component', 'modal']);
+		expect(transformed.sort()).toEqual([
+			'command:handler-command',
+			'command:handler-instance-command',
+			'component:handler-button',
+			'component:handler-instance-button',
+			'modal:handler-instance-modal',
+			'modal:handler-modal',
+		]);
+		expect(client.commands.values.find(command => command.name === 'handler-command')?.props.handlerKind).toBe('command');
+		expect(client.commands.values.find(command => command.name === 'handler-instance-command')).toBe(commandInstance);
+		expect(client.components.commands.find(component => component.customId === 'handler-button')?.props.handlerKind).toBe(
+			'component',
+		);
+		expect(client.components.commands.find(component => component.customId === 'handler-instance-modal')).toBe(
+			modalInstance,
+		);
+	});
+
+	test('applies unified handler creators and transformers to file-loaded handlers', async () => {
+		const createKinds: string[] = [];
+		const transformed: string[] = [];
+		const plugin = createPlugin({
+			name: 'loaded-handlers',
+			register(api) {
+				api.handlers.create((_constructor, next, metadata) => {
+					createKinds.push(metadata.kind);
+					return next();
+				});
+				api.handlers.transform((instance, metadata) => {
+					transformed.push(`${metadata.kind}:${'name' in instance ? instance.name : instance.customId}`);
+					instance.props ??= {};
+					instance.props.handlerKind = metadata.kind;
+				});
+			},
+		});
+		const client = new BaseClient({
+			getRC: () => ({
+				token: Buffer.from('bot').toString('base64'),
+				locations: { base: '', commands: '/commands', components: '/components' },
+				intents: 0,
+			}),
+			plugins: [plugin],
+		});
+		vi.spyOn(client.commands as never, 'getFiles').mockResolvedValue(['/commands/loaded-command.js']);
+		vi.spyOn(client.commands as never, 'loadFilesK').mockResolvedValue([
+			{
+				name: 'loaded-command.js',
+				path: '/commands/loaded-command.js',
+				file: { default: LoadedHandlerCommand },
+			},
+		]);
+		vi.spyOn(client.components as never, 'getFiles').mockResolvedValue([
+			'/components/loaded-button.js',
+			'/components/loaded-modal.js',
+		]);
+		vi.spyOn(client.components as never, 'loadFilesK').mockResolvedValue([
+			{
+				name: 'loaded-button.js',
+				path: '/components/loaded-button.js',
+				file: { default: LoadedHandlerButton },
+			},
+			{
+				name: 'loaded-modal.js',
+				path: '/components/loaded-modal.js',
+				file: { default: LoadedHandlerModal },
+			},
+		]);
+
+		await client.start();
+
+		expect(createKinds.sort()).toEqual(['command', 'component', 'modal']);
+		expect(transformed.sort()).toEqual([
+			'command:loaded-handler-command',
+			'component:loaded-handler-button',
+			'modal:loaded-handler-modal',
+		]);
+		expect(client.commands.values.find(command => command.name === 'loaded-handler-command')?.props.handlerKind).toBe(
+			'command',
+		);
+		expect(client.components.commands.find(component => component.customId === 'loaded-handler-button')?.props.handlerKind).toBe(
+			'component',
+		);
+		expect(client.components.commands.find(component => component.customId === 'loaded-handler-modal')?.props.handlerKind).toBe(
+			'modal',
+		);
+	});
+
 	test('throws attributed command conflicts', async () => {
 		const first = createPlugin({
 			name: 'first',
@@ -305,8 +478,8 @@ describe('plugin api v3', () => {
 		const plugin = createPlugin({
 			name: 'event-emitter',
 			register(api) {
-				api.events.on('botReady', () =>
-					api.events.emit('commandsLoaded', {
+				api.events.on('botReady', (_bot, client) =>
+					client.events.emit('commandsLoaded', {
 						kind: 'commands',
 						total: 0,
 						items: [],
