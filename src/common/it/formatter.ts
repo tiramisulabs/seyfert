@@ -13,7 +13,7 @@ export type OAuth2URLOptions = {
 	/**
 	 * Permissions to be granted to the application.
 	 */
-	permissions: BitFieldResolvable<typeof PermissionFlagsBits>;
+	permissions?: BitFieldResolvable<typeof PermissionFlagsBits>;
 	/**
 	 * Whether guild select must be disabled in oauth2 interface.
 	 */

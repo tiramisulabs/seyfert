@@ -52,6 +52,7 @@ import {
 	type MiddlewareContext,
 	type OnAutocompleteErrorCallback,
 	Options,
+	OAuth2Scopes,
 	type PluginContextOf,
 	type PluginContextInteraction,
 	type PluginContextMapOf,
@@ -139,6 +140,11 @@ expectType<true>(true as Equal<MakeRequired<{ flag?: boolean }, 'flag'>['flag'],
 expectType<true>(true as Equal<PickRequired<{ flag?: boolean }, 'flag'>['flag'], true | undefined>);
 expectType<true>(true as Equal<OptionResolvedWithValue['value'], string | number | boolean>);
 expectType<string>(Formatter.timestamp(Date.now()));
+expectType<string>(
+	Formatter.generateOAuth2URL('123', {
+		scopes: [OAuth2Scopes.Bot],
+	}),
+);
 
 const permissionsContract = new PermissionsBitField(['SendMessages']);
 type PermissionFlagKey = keyof typeof PermissionFlagsBits;
