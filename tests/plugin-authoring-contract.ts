@@ -46,6 +46,7 @@ import {
 	Groups,
 	GroupsT,
 	type MenuCommandContext,
+	type Message,
 	type MessageStructure,
 	type MetadataMiddleware,
 	type ModalContext,
@@ -169,6 +170,13 @@ expectType<MemberUnion | undefined>(collectionMembers.find(member => member.type
 
 type ChannelPinResult = Awaited<ReturnType<Client['channels']['pins']>>;
 expectType<true>(true as Equal<ChannelPinResult['items'][number]['pinnedAt'], number>);
+
+declare const replyableMessage: Message;
+expectType<Promise<MessageStructure>>(replyableMessage.reply({ content: 'body option', fail_if_not_exists: false }));
+expectType<Promise<MessageStructure>>(replyableMessage.reply({ content: 'positional option' }, false));
+expectType<Promise<MessageStructure>>(
+	replyableMessage.reply({ content: 'body wins', fail_if_not_exists: false }, true),
+);
 
 declare const webhookWriteClient: Client;
 declare const webhookWrite: Webhook;
