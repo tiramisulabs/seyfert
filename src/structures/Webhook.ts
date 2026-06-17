@@ -151,10 +151,15 @@ export class Webhook extends DiscordBase {
 	 * Static methods related to interacting with messages through webhooks.
 	 */
 	static messages({ client, webhookId, webhookToken }: MethodContext<{ webhookId: string; webhookToken: string }>) {
+		function write(payload: MessageWebhookMethodWriteWaitParams): Promise<WebhookMessageStructure>;
+		function write(payload: MessageWebhookMethodWriteParams): Promise<WebhookMessageStructure | null>;
+		function write(payload: MessageWebhookMethodWriteParams): Promise<WebhookMessageStructure | null> {
+			return client.webhooks.writeMessage(webhookId, webhookToken, payload);
+		}
+
 		return {
 			/** Writes a message through the webhook. */
-			write: (payload: MessageWebhookMethodWriteParams): Promise<WebhookMessageStructure | null> =>
-				client.webhooks.writeMessage(webhookId, webhookToken, payload),
+			write,
 			/** Edits a message sent through the webhook. */
 			edit: (payload: MessageWebhookMethodEditParams): Promise<WebhookMessageStructure> =>
 				client.webhooks.editMessage(webhookId, webhookToken, payload),
@@ -199,6 +204,10 @@ export type MessageWebhookMethodEditParams = MessageWebhookPayload<
 export type MessageWebhookMethodWriteParams = MessageWebhookPayload<
 	MessageWebhookCreateBodyRequest,
 	{ query?: RESTPostAPIWebhookWithTokenQuery }
+>;
+export type MessageWebhookMethodWriteWaitParams = MessageWebhookPayload<
+	MessageWebhookCreateBodyRequest,
+	{ query: RESTPostAPIWebhookWithTokenQuery & { wait: true } }
 >;
 
 export type MessageWebhookMethodDeleteParams = Omit<WebhookShorterMessageDeleteParams, 'token' | 'webhookId'>;

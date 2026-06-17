@@ -74,6 +74,7 @@ import {
 	StringSelectMenu,
 	StringSelectOption,
 	SubCommand,
+	type Webhook,
 	type ClientMiddlewares,
 	type OptionResolvedWithValue,
 	type SharedKey,
@@ -85,6 +86,7 @@ import {
 	WorkerManager,
 	type config,
 	ModalCommand,
+	type WebhookMessage,
 	type WebhookMessageStructure,
 	type APISelectMenuOption,
 	type APIEmbed,
@@ -155,6 +157,38 @@ expectType<MemberUnion | undefined>(collectionMembers.find(member => member.type
 
 type ChannelPinResult = Awaited<ReturnType<Client['channels']['pins']>>;
 expectType<true>(true as Equal<ChannelPinResult['items'][number]['pinnedAt'], number>);
+
+declare const webhookWriteClient: Client;
+declare const webhookWrite: Webhook;
+declare const webhookBackedMessage: WebhookMessage;
+declare const dynamicWebhookWait: boolean;
+expectType<Promise<WebhookMessageStructure>>(
+	webhookWriteClient.webhooks.writeMessage('123', 'token', { body: { content: 'wait' }, query: { wait: true } }),
+);
+expectType<Promise<WebhookMessageStructure | null>>(
+	webhookWriteClient.webhooks.writeMessage('123', 'token', { body: { content: 'default' } }),
+);
+expectType<Promise<WebhookMessageStructure | null>>(
+	webhookWriteClient.webhooks.writeMessage('123', 'token', { body: { content: 'no wait' }, query: { wait: false } }),
+);
+expectType<Promise<WebhookMessageStructure | null>>(
+	webhookWriteClient.webhooks.writeMessage('123', 'token', {
+		body: { content: 'dynamic wait' },
+		query: { wait: dynamicWebhookWait },
+	}),
+);
+expectType<Promise<WebhookMessageStructure>>(
+	webhookWrite.messages.write({ body: { content: 'wait' }, query: { wait: true } }),
+);
+expectType<Promise<WebhookMessageStructure | null>>(webhookWrite.messages.write({ body: { content: 'default' } }));
+expectType<Promise<WebhookMessageStructure | null>>(
+	webhookWrite.messages.write({ body: { content: 'no wait' }, query: { wait: false } }),
+);
+expectType<Promise<WebhookMessageStructure>>(webhookBackedMessage.write({ content: 'wait', query: { wait: true } }));
+expectType<Promise<WebhookMessageStructure | null>>(webhookBackedMessage.write({ content: 'default' }));
+expectType<Promise<WebhookMessageStructure | null>>(
+	webhookBackedMessage.write({ content: 'no wait', query: { wait: false } }),
+);
 
 const falseBooleanOption = {
 	name: 'hidden',

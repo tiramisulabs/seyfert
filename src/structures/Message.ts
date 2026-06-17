@@ -24,7 +24,11 @@ import type {
 	GatewayMessageCreateDispatchData,
 } from '../types';
 import { DiscordBase } from './extra/DiscordBase';
-import type { MessageWebhookMethodEditParams, MessageWebhookMethodWriteParams } from './Webhook';
+import type {
+	MessageWebhookMethodEditParams,
+	MessageWebhookMethodWriteParams,
+	MessageWebhookMethodWriteWaitParams,
+} from './Webhook';
 
 export type MessageData = APIMessage | GatewayMessageCreateDispatchData;
 
@@ -187,6 +191,8 @@ export type EditMessageWebhook = Omit<MessageWebhookMethodEditParams, 'messageId
 	Pick<MessageWebhookMethodEditParams, 'query'>;
 export type WriteMessageWebhook = MessageWebhookMethodWriteParams['body'] &
 	Pick<MessageWebhookMethodWriteParams, 'query'>;
+export type WriteMessageWebhookWait = MessageWebhookMethodWriteWaitParams['body'] &
+	Pick<MessageWebhookMethodWriteWaitParams, 'query'>;
 
 export class WebhookMessage extends BaseMessage {
 	constructor(
@@ -220,6 +226,8 @@ export class WebhookMessage extends BaseMessage {
 		});
 	}
 
+	write(body: WriteMessageWebhookWait): Promise<WebhookMessageStructure>;
+	write(body: WriteMessageWebhook): Promise<WebhookMessageStructure | null>;
 	write(body: WriteMessageWebhook): Promise<WebhookMessageStructure | null> {
 		const { query, ...rest } = body;
 		return this.client.webhooks.writeMessage(this.webhookId, this.webhookToken, {
