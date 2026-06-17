@@ -81,7 +81,7 @@ import {
 	type SemverRange,
 	type ShardManager,
 	WorkerManager,
-	config,
+	type config,
 	ModalCommand,
 	type WebhookMessageStructure,
 	type APIEmbed,
@@ -224,6 +224,9 @@ expectType<true>(true as Equal<ReturnType<typeof config.bot>['intents'], number>
 expectType<true>(true as Equal<ReturnType<typeof config.http>['port'], number>);
 expectType<true>(
 	true as Equal<Awaited<ReturnType<GuildMemberStructure['roles']['highest']>>, GuildRoleStructure | undefined>,
+);
+expectType<Promise<GuildRoleStructure>>(
+	({} as GuildRoleStructure).edit({ name: 'moderators' }, 'sync role name'),
 );
 expectType<true>(true as Equal<BanOptions, { deleteMessageSeconds?: number; reason?: string }>);
 declare const guildMember: GuildMember;
