@@ -1049,13 +1049,18 @@ export class BaseClient {
 					magicImport(join(process.cwd(), `seyfert.config${ext}`)).then(x => x.default ?? x),
 				),
 			).catch((e: AggregateError) => {
-				const errors = e.errors.map((err: Error) => {
-					err.message = err.message.replace(/seyfert\.config\.(js|mjs|cjs|ts|mts|cts)/g, 'seyfert.config');
-					return err;
-				});
+				const errors = e.errors.map((err: Error) => ({
+					error: err,
+					message: err.message.replace(/seyfert\.config\.(js|mjs|cjs|ts|mts|cts)/g, 'seyfert.config'),
+				}));
 
 				const uniqueError = errors.find(er => errors.filter(err => err.message === er.message).length === 1);
-				if (uniqueError) throw uniqueError;
+				if (uniqueError) {
+					throw new SeyfertError('SEYFERT_CONFIG_LOAD_ERROR', {
+						metadata: { detail: uniqueError.message },
+						cause: uniqueError.error,
+					});
+				}
 				throw new SeyfertError('NO_SEYFERT_CONFIG', {
 					metadata: { detail: 'No seyfert.config file found' },
 				});

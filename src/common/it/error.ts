@@ -80,6 +80,7 @@ export const SeyfertErrorMessages = {
 	INVALID_TOKEN: 'Invalid token.',
 	FUNCTION_NOT_IMPLEMENTED: 'Function not implemented.',
 	NO_SEYFERT_CONFIG: 'No seyfert.config file found.',
+	SEYFERT_CONFIG_LOAD_ERROR: 'Failed to load seyfert.config file.',
 	BAD_OPTION: 'Bad option.',
 	INVALID_EMOJI: 'Invalid emoji.',
 	EMOJI_NOT_RESOLVABLE: 'Emoji not resolvable.',
