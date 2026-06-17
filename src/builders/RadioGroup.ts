@@ -28,7 +28,7 @@ export class RadioGroup extends BaseComponentBuilder<APIRadioGroupComponent> {
 		return this;
 	}
 
-	setOptions(options: RestOrArray<RadioGroupOption>) {
+	setOptions(...options: RestOrArray<RadioGroupOption>) {
 		this.#options = options.flat();
 		return this;
 	}

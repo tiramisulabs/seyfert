@@ -73,6 +73,7 @@ import {
 	type RegisteredPluginMiddlewares,
 	type RegisteredPluginShared,
 	type ResolvedRegisteredMiddlewares,
+	RadioGroup,
 	RadioGroupOption,
 	StringSelectMenu,
 	StringSelectOption,
@@ -535,6 +536,10 @@ const radioGroupOptionContract = new RadioGroupOption({ value: 'yes', label: 'Ye
 expectType<RadioGroupOption>(
 	radioGroupOptionContract.setLabel('Absolutely').setValue('absolutely').setDescription('Confirm choice').setDefault(),
 );
+const radioGroupContract = new RadioGroup().setCustomId('choice');
+const secondRadioGroupOptionContract = new RadioGroupOption({ value: 'no', label: 'No' });
+expectType<RadioGroup>(radioGroupContract.setOptions([radioGroupOptionContract, secondRadioGroupOptionContract]));
+expectType<RadioGroup>(radioGroupContract.setOptions(radioGroupOptionContract, secondRadioGroupOptionContract));
 // @ts-expect-error RadioGroupOption requires both value and label at construction.
 new RadioGroupOption({ value: 'yes' });
 // @ts-expect-error RadioGroupOption requires option data at construction.
