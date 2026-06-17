@@ -13,6 +13,7 @@ import type {
 	GuildMemberStructure,
 	GuildStructure,
 	InteractionGuildMemberStructure,
+	MessageStructure,
 	UserStructure,
 	WebhookMessageStructure,
 } from '../client/transformers';
@@ -79,6 +80,10 @@ export class ComponentContext<
 	 */
 	get customId() {
 		return this.interaction.customId;
+	}
+
+	get message(): MessageStructure {
+		return this.interaction.message;
 	}
 
 	/**

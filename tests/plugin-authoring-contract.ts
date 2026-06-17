@@ -1115,6 +1115,7 @@ expectType<Promise<void>>(commandContext().editOrReply({ content: 'Done!' }, fal
 expectType<Promise<WebhookMessageStructure>>(commandContext().write({ content: 'Done!' }, true));
 expectType<Promise<WebhookMessageStructure>>(commandContext().editOrReply({ content: 'Done!' }, true));
 expectType<Promise<WebhookMessageStructure>>(commandContext().ephemeral({ content: 'Done!' }, true));
+expectType<MessageStructure>(componentContext().message);
 expectType<Promise<WebhookMessageStructure>>(componentContext().ephemeral({ content: 'Done!' }, true));
 expectType<Promise<WebhookMessageStructure>>(modalContext().ephemeral({ content: 'Done!' }, true));
 expectType<Promise<WebhookMessageStructure>>(menuCommandContext().ephemeral({ content: 'Done!' }, true));
