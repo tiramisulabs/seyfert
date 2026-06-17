@@ -1,5 +1,6 @@
 import {
 	ApplicationCommandOptionType,
+	type BaseInteraction,
 	BaseResource,
 	type Cache,
 	Client,
@@ -101,6 +102,9 @@ expectType<true>(true as Equal<ReturnType<typeof config.http>['port'], number>);
 expectType<true>(
 	true as Equal<Awaited<ReturnType<GuildMemberStructure['roles']['highest']>>, GuildRoleStructure | undefined>,
 );
+expectType<true>(true as Equal<BaseInteraction['replied'], boolean | undefined>);
+// @ts-expect-error BaseInteraction.replied is public reply state, not the pending reply operation.
+expectType<BaseInteraction['replied']>(Promise.resolve(true));
 
 class EconomyApi {
 	addCoins(_userId: string, _amount: number) {}
