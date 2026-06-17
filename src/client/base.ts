@@ -214,8 +214,8 @@ export class BaseClient {
 					onMiddlewaresError(context: ComponentContext, error: string): any {
 						context.client.logger.fatal('ComponentCommand.<onMiddlewaresError>', context.author.id, error);
 					},
-					onInternalError(client: UsingClient, error: unknown): any {
-						client.logger.fatal(error);
+					onInternalError(client: UsingClient, component: ComponentCommand, error: unknown): any {
+						client.logger.fatal(`[${component.customId ?? 'ComponentCommand'}].<onInternalError>`, error);
 					},
 				},
 			},
@@ -227,8 +227,8 @@ export class BaseClient {
 					onMiddlewaresError(context: ModalContext, error: string): any {
 						context.client.logger.fatal('ModalCommand.<onMiddlewaresError>', context.author.id, error);
 					},
-					onInternalError(client: UsingClient, error: unknown): any {
-						client.logger.fatal(error);
+					onInternalError(client: UsingClient, modal: ModalCommand, error: unknown): any {
+						client.logger.fatal(`[${modal.customId ?? 'ModalCommand'}].<onInternalError>`, error);
 					},
 				},
 			},

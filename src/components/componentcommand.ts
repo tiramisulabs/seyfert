@@ -42,5 +42,5 @@ export abstract class ComponentCommand {
 	onAfterRun?(context: ComponentContext, error: unknown | undefined): any;
 	onRunError?(context: ComponentContext, error: unknown): any;
 	onMiddlewaresError?(context: ComponentContext, error: string, metadata: PluginMiddlewareDenialMetadata): any;
-	onInternalError?(client: UsingClient, error?: unknown): any;
+	onInternalError?(client: UsingClient, component: ComponentCommand, error?: unknown): any;
 }

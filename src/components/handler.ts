@@ -377,7 +377,7 @@ export class ComponentHandler extends BaseHandler {
 				}
 			} catch (error) {
 				try {
-					await i.onInternalError?.(this.client, error);
+					await i.onInternalError?.(this.client, i as never, error);
 				} catch (err) {
 					this.client.logger.error(`[${i.customId ?? 'Component/Modal command'}] Internal error:`, err);
 				}

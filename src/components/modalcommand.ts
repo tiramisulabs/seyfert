@@ -32,5 +32,5 @@ export abstract class ModalCommand {
 	onAfterRun?(context: ModalContext, error: unknown | undefined): any;
 	onRunError?(context: ModalContext, error: unknown): any;
 	onMiddlewaresError?(context: ModalContext, error: string, metadata: PluginMiddlewareDenialMetadata): any;
-	onInternalError?(client: UsingClient, error?: unknown): any;
+	onInternalError?(client: UsingClient, modal: ModalCommand, error?: unknown): any;
 }

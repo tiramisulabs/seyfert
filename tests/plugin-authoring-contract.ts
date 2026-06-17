@@ -72,6 +72,7 @@ import {
 	ModalCommand,
 	type WebhookMessageStructure,
 	type APIEmbed,
+	type ClientOptions,
 } from 'seyfert';
 import type { MakePresent, MakeRequired, PickPresent, PickRequired } from '../lib/common';
 import type { BanShorter } from '../lib/common/shorters/bans';
@@ -264,6 +265,30 @@ class ContractModal extends ModalCommand {
 	customId = 'contract-modal';
 	run() {}
 }
+
+const componentDefaultsContract = {
+	components: {
+		defaults: {
+			onInternalError(_client, component, error) {
+				expectType<ComponentCommand>(component);
+				expectType<unknown | undefined>(error);
+			},
+		},
+	},
+} satisfies ClientOptions;
+expectType<ClientOptions>(componentDefaultsContract);
+
+const modalDefaultsContract = {
+	modals: {
+		defaults: {
+			onInternalError(_client, modal, error) {
+				expectType<ModalCommand>(modal);
+				expectType<unknown | undefined>(error);
+			},
+		},
+	},
+} satisfies ClientOptions;
+expectType<ClientOptions>(modalDefaultsContract);
 
 class ContractCacheResource extends BaseResource<{ id: string }, { id: string }> {
 	namespace = 'contract-cache';
