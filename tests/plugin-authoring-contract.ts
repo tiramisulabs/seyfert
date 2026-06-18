@@ -1261,6 +1261,7 @@ expectType<Promise<WebhookMessageStructure>>(commandContext().editOrReply({ cont
 expectType<Promise<WebhookMessageStructure>>(commandContext().ephemeral({ content: 'Done!' }, true));
 expectType<Promise<undefined>>(commandContext().modal(modalBodyContract));
 expectType<Promise<ModalSubmitInteraction | null>>(commandContext().modal(modalBodyContract, { waitFor: 1_000 }));
+expectType<true>(true as Equal<CommandContext['messageResponse'], undefined>);
 expectType<MessageStructure>(componentContext().message);
 expectType<Promise<WebhookMessageStructure>>(componentContext().ephemeral({ content: 'Done!' }, true));
 expectType<Promise<WebhookMessageStructure>>(modalContext().ephemeral({ content: 'Done!' }, true));

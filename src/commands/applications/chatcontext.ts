@@ -50,7 +50,7 @@ export class CommandContext<
 	message!: If<InferWithPrefix, MessageStructure | undefined, undefined>;
 	interaction!: If<InferWithPrefix, ChatInputCommandInteraction | undefined, ChatInputCommandInteraction>;
 
-	messageResponse?: If<InferWithPrefix, MessageStructure | undefined>;
+	messageResponse?: If<InferWithPrefix, MessageStructure | undefined, undefined>;
 	constructor(
 		readonly client: UsingClient,
 		data: ChatInputCommandInteraction | MessageStructure,
@@ -92,8 +92,8 @@ export class CommandContext<
 	): Promise<When<WR, WebhookMessageStructure | When<InferWithPrefix, MessageStructure, never>, void>> {
 		if (this.interaction) return this.interaction.write(body, withResponse);
 		const options = (this.client as Client | WorkerClient).options?.commands;
-		return (this.messageResponse = await (this.message! as Message)[
-			!this.messageResponse && (await options?.reply?.(this)) ? 'reply' : 'write'
+		return ((this.messageResponse as MessageStructure | undefined) = await (this.message! as Message)[
+			!(this.messageResponse as MessageStructure | undefined) && (await options?.reply?.(this)) ? 'reply' : 'write'
 		](body)) as never;
 	}
 
@@ -126,9 +126,9 @@ export class CommandContext<
 			return this.interaction.deferReply(ephemeral ? MessageFlags.Ephemeral : undefined, withResponse);
 		this.__deferred = true;
 		const options = (this.client as Client | WorkerClient).options?.commands;
-		return (this.messageResponse = await (this.message! as Message)[(await options?.reply?.(this)) ? 'reply' : 'write'](
-			(await options?.deferReplyResponse?.(this)) ?? { content: 'Thinking...' },
-		)) as never;
+		return ((this.messageResponse as MessageStructure | undefined) = await (this.message! as Message)[
+			(await options?.reply?.(this)) ? 'reply' : 'write'
+		]((await options?.deferReplyResponse?.(this)) ?? { content: 'Thinking...' })) as never;
 	}
 
 	async editResponse(
@@ -137,15 +137,17 @@ export class CommandContext<
 		if (this.interaction) return this.interaction.editResponse(body);
 		if (this.__deferred && !this.__edited) {
 			this.__edited = true;
-			if (this.messageResponse?.content) body.content ??= '';
-			if (this.messageResponse?.embeds.length) body.embeds ??= [];
+			if ((this.messageResponse as MessageStructure | undefined)?.content) body.content ??= '';
+			if ((this.messageResponse as MessageStructure | undefined)?.embeds.length) body.embeds ??= [];
 		}
-		return (this.messageResponse = await this.messageResponse!.edit(body)) as never;
+		return ((this.messageResponse as MessageStructure | undefined) = await (
+			this.messageResponse as unknown as MessageStructure
+		).edit(body)) as never;
 	}
 
 	deleteResponse() {
 		if (this.interaction) return this.interaction.deleteResponse();
-		return this.messageResponse!.delete();
+		return (this.messageResponse as unknown as MessageStructure).delete();
 	}
 
 	editOrReply<WR extends boolean = false>(
@@ -153,7 +155,7 @@ export class CommandContext<
 		withResponse?: WR,
 	): Promise<When<WR, WebhookMessageStructure | When<InferWithPrefix, MessageStructure, never>, void>> {
 		if (this.interaction) return this.interaction.editOrReply(body as InteractionCreateBodyRequest, withResponse);
-		if (this.messageResponse) {
+		if (this.messageResponse as MessageStructure | undefined) {
 			return this.editResponse(body) as never;
 		}
 		return this.write(body as InteractionCreateBodyRequest, withResponse);
@@ -163,14 +165,16 @@ export class CommandContext<
 		body: MessageWebhookCreateBodyRequest,
 	): Promise<If<InferWithPrefix, WebhookMessageStructure | MessageStructure, WebhookMessageStructure>> {
 		if (this.interaction) return this.interaction.followup(body);
-		return this.messageResponse!.reply(body) as never;
+		return (this.messageResponse as unknown as MessageStructure).reply(body) as never;
 	}
 
 	async fetchResponse(): Promise<
 		If<InferWithPrefix, WebhookMessageStructure | MessageStructure, WebhookMessageStructure>
 	> {
 		if (this.interaction) return this.interaction.fetchResponse();
-		return (this.messageResponse = (await this.messageResponse!.fetch()) as never);
+		return ((this.messageResponse as MessageStructure | undefined) = await (
+			this.messageResponse as unknown as MessageStructure
+		).fetch()) as never;
 	}
 
 	channel(mode?: 'rest' | 'flow'): Promise<AllChannels>;
