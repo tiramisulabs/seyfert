@@ -16,10 +16,12 @@ import {
 	type Cache,
 	Client,
 	Command,
+	Collectors,
 	ComponentCommand,
 	type CommandMetadata,
 	type CommandContext,
 	type ComponentCollectorStopReason,
+	type CollectorRunParameters,
 	ContextMenuCommand,
 	createIntegerOption,
 	createMiddleware,
@@ -1356,6 +1358,13 @@ collectorClient.collectors.create({
 	},
 	run() {},
 });
+const exportedCollectorsContract = new Collectors();
+expectType<Collectors>(exportedCollectorsContract);
+expectType<MessageStructure>(undefined as never as CollectorRunParameters<'messageCreate'>);
+// @ts-expect-error collector run parameters are keyed by camelCase event names.
+type ScreamingCollectorRunParameters = CollectorRunParameters<'MESSAGE_CREATE'>;
+// @ts-expect-error typo alias is intentionally not exported.
+type TypoCollectorRunPameters = import('seyfert').CollectorRunPameters<'messageCreate'>;
 type VoiceChannelStatusUpdatePayload = Parameters<CallbackEventHandler['voiceChannelStatusUpdate']>[0];
 expectType<
 	[
