@@ -59,6 +59,7 @@ import {
 	GroupsT,
 	type MenuCommandContext,
 	type MessageStructure,
+	type TextGuildChannelStructure,
 	type MetadataMiddleware,
 	type ModalContext,
 	type MiddlewareContext,
@@ -357,6 +358,11 @@ expectType<ComponentCollectorStopReason>('idle');
 expectType<ComponentCollectorStopReason>('timeout');
 expectType<ComponentCollectorStopReason>('custom-reason');
 expectType<ComponentCollectorStopReason>(undefined);
+
+declare const messageListClient: Client;
+declare const messageListChannel: TextGuildChannelStructure;
+expectType<Promise<MessageStructure[]>>(messageListClient.messages.list('123'));
+expectType<Promise<MessageStructure[]>>(messageListChannel.messages.list());
 
 const localizedGroups = defineGroups({
 	moderation: {

@@ -145,7 +145,7 @@ export class MessageShorter extends BaseShorter {
 			.then(data => data.users.map(user => Transformers.User(this.client, user)));
 	}
 
-	list(channelId: string, fetchOptions: RESTGetAPIChannelMessagesQuery): Promise<MessageStructure[]> {
+	list(channelId: string, fetchOptions?: RESTGetAPIChannelMessagesQuery): Promise<MessageStructure[]> {
 		return this.client.proxy
 			.channels(channelId)
 			.messages.get({ query: fetchOptions })

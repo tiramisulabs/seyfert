@@ -323,7 +323,7 @@ export class MessagesMethods extends DiscordBase {
 			fetch: (messageId: string, force = false): Promise<MessageStructure> =>
 				ctx.client.messages.fetch(messageId, ctx.channelId, force),
 			purge: (messages: string[], reason?: string) => ctx.client.messages.purge(messages, ctx.channelId, reason),
-			list: (fetchOptions: RESTGetAPIChannelMessagesQuery): Promise<MessageStructure[]> =>
+			list: (fetchOptions?: RESTGetAPIChannelMessagesQuery): Promise<MessageStructure[]> =>
 				ctx.client.messages.list(ctx.channelId, fetchOptions),
 		};
 	}
