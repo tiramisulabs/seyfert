@@ -116,6 +116,7 @@ import {
 	type CallbackEventHandler,
 	type ClientOptions,
 	type ClientEvent,
+	type RestArgumentsRequiredQuery,
 	type StringSelectMenuInteraction,
 	EntryPointCommandHandlerType,
 	type Collection,
@@ -1541,6 +1542,9 @@ expectType<() => void>(disposeApiHandlerObserver);
 expectType<ApiHandlerOptions>({ token: 'token' });
 // @ts-expect-error REST lifecycle callbacks are assigned on ApiHandler, not constructor options.
 expectType<ApiHandlerOptions>({ token: 'token', onRatelimit() {} });
+expectType<RestArgumentsRequiredQuery<{ query: string }>>({ query: { query: 'seyfert' } });
+// @ts-expect-error required query REST arguments must include query.
+expectType<RestArgumentsRequiredQuery<{ query: string }>>({});
 client.setServices({ middlewares: { localAudit: combinedAudit } });
 client.setServices({
 	middlewares: {

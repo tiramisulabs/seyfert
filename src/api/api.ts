@@ -717,6 +717,10 @@ export type RestArgumentsNoBody<Q extends never | Record<string, any> = never> =
 	files?: RawFile[];
 } & RequestOptions;
 
+export type RestArgumentsRequiredQuery<Q extends Record<string, any>> = Omit<RestArgumentsNoBody<Q>, 'query'> & {
+	query: Q;
+};
+
 function freezeRestPayload<T extends object>(payload: T): Readonly<T> {
 	return Object.freeze(payload);
 }

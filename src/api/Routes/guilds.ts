@@ -123,12 +123,8 @@ import type {
 	RESTPutAPIGuildMemberRoleResult,
 	RESTPutAPIGuildTemplateSyncResult,
 } from '../../types';
-import type { RestArguments, RestArgumentsNoBody } from '../api';
+import type { RestArguments, RestArgumentsNoBody, RestArgumentsRequiredQuery } from '../api';
 import type { RawFile } from '../shared';
-
-type RestArgumentsRequiredQuery<Q extends Record<string, any>> = Omit<RestArgumentsNoBody<Q>, 'query'> & {
-	query: Q;
-};
 
 export interface GuildRoutes {
 	guilds: {
