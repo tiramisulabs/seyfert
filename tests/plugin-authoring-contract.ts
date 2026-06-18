@@ -127,6 +127,7 @@ import {
 	type RuntimeConfig,
 	type RuntimeConfigHTTP,
 	type VoiceChannelStructure,
+	type VoiceStateStructure,
 	PresenceUpdateStatus,
 	createEvent,
 	type ModalSubmitInteraction,
@@ -364,6 +365,12 @@ declare const messageListClient: Client;
 declare const messageListChannel: TextGuildChannelStructure;
 expectType<Promise<MessageStructure[]>>(messageListClient.messages.list('123'));
 expectType<Promise<MessageStructure[]>>(messageListChannel.messages.list());
+
+declare const voiceStateContract: VoiceStateStructure;
+expectType<boolean>(voiceStateContract.isDeafened);
+expectType<boolean>(voiceStateContract.isCameraOn);
+expectType<boolean>(voiceStateContract.isStreaming);
+expectType<boolean>(voiceStateContract.isSuppressed);
 
 const localizedGroups = defineGroups({
 	moderation: {
