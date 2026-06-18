@@ -38,9 +38,13 @@ export abstract class ComponentCommand {
 		return ComponentType[this.componentType];
 	}
 
-	onBeforeMiddlewares?(context: ComponentContext): any;
-	onAfterRun?(context: ComponentContext, error: unknown | undefined): any;
-	onRunError?(context: ComponentContext, error: unknown): any;
-	onMiddlewaresError?(context: ComponentContext, error: string, metadata: PluginMiddlewareDenialMetadata): any;
+	onBeforeMiddlewares?(context: ComponentContext<typeof this.componentType>): any;
+	onAfterRun?(context: ComponentContext<typeof this.componentType>, error: unknown | undefined): any;
+	onRunError?(context: ComponentContext<typeof this.componentType>, error: unknown): any;
+	onMiddlewaresError?(
+		context: ComponentContext<typeof this.componentType>,
+		error: string,
+		metadata: PluginMiddlewareDenialMetadata,
+	): any;
 	onInternalError?(client: UsingClient, component: ComponentCommand, error?: unknown): any;
 }
