@@ -17,6 +17,7 @@ import {
 	ComponentCommand,
 	type CommandMetadata,
 	type CommandContext,
+	type ComponentCollectorStopReason,
 	ContextMenuCommand,
 	createIntegerOption,
 	createMiddleware,
@@ -231,6 +232,14 @@ expectType<true>(true as Equal<CommandsLoadedCallbackParams['length'], 2>);
 type BotReadyCallbackParams = Parameters<CallbackEventHandler['botReady']>;
 expectType<true>(true as Equal<BotReadyCallbackParams['length'], 3>);
 expectType<true>(true as Equal<BotReadyCallbackParams[2], number>);
+
+expectType<ComponentCollectorStopReason>('messageDelete');
+expectType<ComponentCollectorStopReason>('channelDelete');
+expectType<ComponentCollectorStopReason>('guildDelete');
+expectType<ComponentCollectorStopReason>('idle');
+expectType<ComponentCollectorStopReason>('timeout');
+expectType<ComponentCollectorStopReason>('custom-reason');
+expectType<ComponentCollectorStopReason>(undefined);
 
 const localizedGroups = defineGroups({
 	moderation: {
