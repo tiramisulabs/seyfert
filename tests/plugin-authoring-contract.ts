@@ -106,6 +106,7 @@ import {
 	type WebhookMessage,
 	type WebhookMessageStructure,
 	type APISelectMenuOption,
+	type APIStringSelectComponent,
 	type APIEmbed,
 	type ApiHandlerOptions,
 	type ApiRequestOptions,
@@ -705,6 +706,15 @@ expectType<StringSelectMenu>(stringSelectMenuContract.setOptions([rawStringSelec
 expectType<StringSelectMenu>(
 	stringSelectMenuContract.setOptions(new StringSelectOption({ label: 'News', value: 'news' }), rawStringSelectOptionContract),
 );
+const typedStringSelectMenuContract = new StringSelectMenu<'general' | 'news'>().setOptions(
+	{ label: 'General', value: 'general' },
+	{ label: 'News', value: 'news' },
+);
+expectType<StringSelectOption[]>(typedStringSelectMenuContract.data.options);
+expectType<APIStringSelectComponent<'general' | 'news'>>(typedStringSelectMenuContract.toJSON());
+expectType<APISelectMenuOption<'general' | 'news'>[]>(typedStringSelectMenuContract.toJSON().options);
+// @ts-expect-error typed StringSelectMenu rejects raw options outside the configured value union.
+new StringSelectMenu<'general'>({ options: [{ label: 'News', value: 'news' }] });
 
 class ContractCacheResource extends BaseResource<{ id: string }, { id: string }> {
 	namespace = 'contract-cache';
