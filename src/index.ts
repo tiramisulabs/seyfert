@@ -17,7 +17,7 @@ export * from './api';
 export * from './builders';
 export * from './cache';
 //
-export { Collection, LimitedCollection } from './collection';
+export { Collection, LimitedCollection, type LimitedCollectionData } from './collection';
 export * from './commands';
 export { type BanOptions, Formatter, Logger, PermissionStrings } from './common';
 export * from './components';

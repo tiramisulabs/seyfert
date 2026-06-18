@@ -101,6 +101,8 @@ import {
 	type ClientOptions,
 	EntryPointCommandHandlerType,
 	type Collection,
+	LimitedCollection,
+	type LimitedCollectionData,
 	type UsingClient,
 	type UserStructure,
 	PresenceUpdateStatus,
@@ -172,6 +174,13 @@ expectType<HumanMember[]>(collectionMembers.filter(isHuman));
 expectType<HumanMember | undefined>(collectionMembers.find(isHuman));
 expectType<MemberUnion[]>(collectionMembers.filter(member => member.type === 'human'));
 expectType<MemberUnion | undefined>(collectionMembers.find(member => member.type === 'human'));
+
+const limitedCollectionContract = new LimitedCollection<string, number>();
+expectType<IterableIterator<number>>(limitedCollectionContract.values());
+expectType<IterableIterator<[string, number]>>(limitedCollectionContract.entries());
+expectType<IterableIterator<LimitedCollectionData<number>>>(limitedCollectionContract.rawValues());
+expectType<IterableIterator<[string, LimitedCollectionData<number>]>>(limitedCollectionContract.rawEntries());
+expectType<IterableIterator<[string, number]>>(limitedCollectionContract[Symbol.iterator]());
 
 type ChannelPinResult = Awaited<ReturnType<Client['channels']['pins']>>;
 expectType<true>(true as Equal<ChannelPinResult['items'][number]['pinnedAt'], number>);
