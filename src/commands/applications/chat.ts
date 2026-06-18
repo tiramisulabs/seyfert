@@ -44,17 +44,17 @@ import type {
 } from './shared';
 
 export interface ReturnOptionsTypes {
-	1: never; // subcommand
-	2: never; // subcommandgroup
-	3: string;
-	4: number; // integer
-	5: boolean;
-	6: InteractionGuildMemberStructure | UserStructure;
-	7: AllChannels;
-	8: GuildRoleStructure;
-	9: GuildRoleStructure | InteractionGuildMemberStructure | GuildMemberStructure | UserStructure;
-	10: number; // number
-	11: Attachment;
+	[ApplicationCommandOptionType.Subcommand]: never;
+	[ApplicationCommandOptionType.SubcommandGroup]: never;
+	[ApplicationCommandOptionType.String]: string;
+	[ApplicationCommandOptionType.Integer]: number;
+	[ApplicationCommandOptionType.Boolean]: boolean;
+	[ApplicationCommandOptionType.User]: InteractionGuildMemberStructure | UserStructure;
+	[ApplicationCommandOptionType.Channel]: AllChannels;
+	[ApplicationCommandOptionType.Role]: GuildRoleStructure;
+	[ApplicationCommandOptionType.Mentionable]: GuildRoleStructure | InteractionGuildMemberStructure | GuildMemberStructure | UserStructure;
+	[ApplicationCommandOptionType.Number]: number;
+	[ApplicationCommandOptionType.Attachment]: Attachment;
 }
 
 export type AutocompleteCallback<ValueType extends string | number = string | number> = (

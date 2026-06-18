@@ -78,6 +78,7 @@ import {
 	type PluginUsingClient,
 	PermissionFlagsBits,
 	type ReturnCache,
+	type ReturnOptionsTypes,
 	type RegisteredPluginMiddlewares,
 	type RegisteredPluginShared,
 	type ResolvedRegisteredMiddlewares,
@@ -154,6 +155,19 @@ expectType<true>(true as Equal<PickPresentFixture['nil'], 'ok'>);
 expectType<true>(true as Equal<MakeRequired<{ flag?: boolean }, 'flag'>['flag'], true>);
 expectType<true>(true as Equal<PickRequired<{ flag?: boolean }, 'flag'>['flag'], true | undefined>);
 expectType<true>(true as Equal<OptionResolvedWithValue['value'], string | number | boolean>);
+type ExpectedReturnOptionsTypeKeys =
+	| ApplicationCommandOptionType.Subcommand
+	| ApplicationCommandOptionType.SubcommandGroup
+	| ApplicationCommandOptionType.String
+	| ApplicationCommandOptionType.Integer
+	| ApplicationCommandOptionType.Boolean
+	| ApplicationCommandOptionType.User
+	| ApplicationCommandOptionType.Channel
+	| ApplicationCommandOptionType.Role
+	| ApplicationCommandOptionType.Mentionable
+	| ApplicationCommandOptionType.Number
+	| ApplicationCommandOptionType.Attachment;
+expectType<true>(true as Equal<keyof ReturnOptionsTypes, ExpectedReturnOptionsTypeKeys>);
 expectType<string>(Formatter.timestamp(Date.now()));
 expectType<string>(
 	Formatter.generateOAuth2URL('123', {
