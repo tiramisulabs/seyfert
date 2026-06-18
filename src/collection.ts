@@ -247,6 +247,7 @@ export class LimitedCollection<K, V> {
 
 	constructor(options: Partial<LimitedCollectionOptions<K, V>> = {}) {
 		this.options = MergeOptions(LimitedCollection.default, options);
+		if (Number.isNaN(this.options.limit)) throw new TypeError('LimitedCollection limit cannot be NaN');
 	}
 
 	/**

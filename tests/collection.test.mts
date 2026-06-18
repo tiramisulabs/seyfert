@@ -21,6 +21,31 @@ describe('Collection', () => {
 });
 
 describe('LimitedCollection', () => {
+	test('rejects NaN limits but preserves zero and infinity behavior', () => {
+		let thrown: unknown;
+
+		try {
+			new LimitedCollection<string, number>({ limit: Number.NaN });
+		} catch (error) {
+			thrown = error;
+		}
+
+		assert.equal(thrown instanceof TypeError, true);
+		assert.equal((thrown as Error).message.includes('NaN'), true);
+
+		const zeroLimit = new LimitedCollection<string, number>({ limit: 0 });
+		zeroLimit.set('one', 1);
+		assert.equal(zeroLimit.size, 0);
+
+		const negativeLimit = new LimitedCollection<string, number>({ limit: -1 });
+		negativeLimit.set('one', 1);
+		assert.equal(negativeLimit.size, 0);
+
+		const infiniteLimit = new LimitedCollection<string, number>({ limit: Number.POSITIVE_INFINITY });
+		infiniteLimit.set('one', 1);
+		assert.equal(infiniteLimit.size, 1);
+	});
+
 	test('iterates plain values and exposes raw metadata separately', () => {
 		const collection = new LimitedCollection<string, number>();
 
