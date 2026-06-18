@@ -123,11 +123,9 @@ describe('REST retry request options', () => {
 				Date.now(),
 			);
 
-			await flushRetryContinuations();
-
+			await expect(retry).resolves.toBe(retried);
 			expect(next).toHaveBeenCalledTimes(1);
 			expectRequestOptionsPreserved(requestSpy, request);
-			await expect(retry).resolves.toBe(retried);
 		} finally {
 			vi.useRealTimers();
 		}

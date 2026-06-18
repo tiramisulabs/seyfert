@@ -21,11 +21,26 @@ import {
 	DefaultUserAgent,
 	type HttpMethods,
 	type RawFile,
+	type RestObserveOptions,
+	type RestObserver,
+	type RestObserverDisposer,
+	type RestObserverEntry,
 	type RequestHeaders,
 } from './shared';
 import { isBufferLike } from './utils/utils';
 
-export interface ApiHandler {
+export type {
+	RestObserveOptions,
+	RestObserver,
+	RestObserverDisposer,
+	RestObserverEntry,
+	RestObserverFailPayload,
+	RestObserverRatelimitPayload,
+	RestObserverRequestPayload,
+	RestObserverSuccessPayload,
+} from './shared';
+
+export interface ApiHandler<TClient = unknown> {
 	/* @internal */
 	_proxy_?: APIRoutes;
 	debugger?: Logger;
@@ -41,39 +56,7 @@ export type OnFailRequestCallback = (
 	error: unknown,
 	statusCode?: number,
 ) => Awaitable<any>;
-export interface RestObserverRequestPayload {
-	readonly client: unknown;
-	readonly method: HttpMethods;
-	readonly url: `/${string}`;
-	readonly request: Readonly<ApiRequestOptions>;
-}
-
-export interface RestObserverSuccessPayload extends RestObserverRequestPayload {
-	readonly response: Response;
-}
-
-export interface RestObserverFailPayload extends RestObserverRequestPayload {
-	readonly error: unknown;
-	readonly statusCode?: number;
-}
-
-export interface RestObserverRatelimitPayload extends RestObserverRequestPayload {
-	readonly response: Response;
-}
-
-export interface RestObserver {
-	onRequest?(payload: RestObserverRequestPayload): Awaitable<unknown>;
-	onSuccess?(payload: RestObserverSuccessPayload): Awaitable<unknown>;
-	onFail?(payload: RestObserverFailPayload): Awaitable<unknown>;
-	onRatelimit?(payload: RestObserverRatelimitPayload): Awaitable<unknown>;
-}
-
-export interface RestObserverEntry {
-	readonly plugin: string;
-	readonly observer: RestObserver;
-}
-
-export class ApiHandler {
+export class ApiHandler<TClient = unknown> {
 	options: ApiHandlerInternalOptions;
 	globalBlock = false;
 	ratelimits = new Map<string, Bucket>();
@@ -84,7 +67,8 @@ export class ApiHandler {
 	onSuccessRequest?: OnSuccessRequestCallback;
 	onFailRequest?: OnFailRequestCallback;
 	pluginRestObserverProvider?: () => readonly RestObserverEntry[];
-	pluginRestObserverClient?: unknown;
+	pluginRestObserverClient?: TClient;
+	private restObservers = new Map<symbol, RestObserverEntry<TClient>>();
 
 	constructor(options: ApiHandlerOptions) {
 		this.options = {
@@ -130,6 +114,18 @@ export class ApiHandler {
 		}
 	}
 
+	observe(observer: RestObserver<TClient>, _opts?: RestObserveOptions): RestObserverDisposer {
+		const id = Symbol('rest-observer');
+		this.restObservers.set(id, { observer });
+		let disposed = false;
+
+		return () => {
+			if (disposed) return;
+			disposed = true;
+			this.restObservers.delete(id);
+		};
+	}
+
 	set debug(active: boolean) {
 		this.debugger = active
 			? new Logger({
@@ -168,7 +164,7 @@ export class ApiHandler {
 	}
 
 	private async notifyRequest(method: HttpMethods, url: `/${string}`, request: ApiRequestOptions) {
-		await this.notifyPluginRestObservers(
+		await this.notifyRestObservers(
 			'onRequest',
 			freezeRestPayload({
 				client: this.pluginRestObserverClient,
@@ -185,7 +181,7 @@ export class ApiHandler {
 		response: Response,
 		request: ApiRequestOptions,
 	) {
-		await this.notifyPluginRestObservers(
+		await this.notifyRestObservers(
 			'onSuccess',
 			freezeRestPayload({
 				client: this.pluginRestObserverClient,
@@ -209,7 +205,7 @@ export class ApiHandler {
 		statusCode: number | undefined,
 		request: ApiRequestOptions,
 	) {
-		await this.notifyPluginRestObservers(
+		await this.notifyRestObservers(
 			'onFail',
 			freezeRestPayload({
 				client: this.pluginRestObserverClient,
@@ -233,7 +229,7 @@ export class ApiHandler {
 		method: HttpMethods,
 		url: `/${string}`,
 	) {
-		await this.notifyPluginRestObservers(
+		await this.notifyRestObservers(
 			'onRatelimit',
 			freezeRestPayload({
 				client: this.pluginRestObserverClient,
@@ -250,14 +246,24 @@ export class ApiHandler {
 		}
 	}
 
-	private async notifyPluginRestObservers(name: keyof RestObserver, payload: unknown) {
-		for (const entry of this.pluginRestObserverProvider?.() ?? []) {
+	private async notifyRestObservers(name: keyof RestObserver, payload: unknown) {
+		await this.notifyRestObserverEntries(name, payload, this.pluginRestObserverProvider?.() ?? []);
+		await this.notifyRestObserverEntries(name, payload, this.restObservers.values());
+	}
+
+	private async notifyRestObserverEntries(
+		name: keyof RestObserver,
+		payload: unknown,
+		entries: Iterable<RestObserverEntry>,
+	) {
+		for (const entry of entries) {
 			const observer = entry.observer[name];
 			if (!observer) continue;
 			try {
 				await (observer as (payload: unknown) => Awaitable<unknown>)(payload);
 			} catch (error) {
-				this.debugger?.warn(`[plugin:${entry.plugin}] REST observer "${name}" callback error`, error);
+				const source = entry.plugin ? `[plugin:${entry.plugin}] ` : '';
+				this.debugger?.warn(`${source}REST observer "${name}" callback error`, error);
 			}
 		}
 	}

@@ -11,6 +11,7 @@ import {
 	type BaseGuildChannelStructure,
 	type BaseInteraction,
 	BaseResource,
+	ApiHandler,
 	type BulkGetKey,
 	type Cache,
 	Client,
@@ -106,6 +107,8 @@ import {
 	type WebhookMessageStructure,
 	type APISelectMenuOption,
 	type APIEmbed,
+	type ApiHandlerOptions,
+	type ApiRequestOptions,
 	type CallbackEventHandler,
 	type ClientOptions,
 	type ClientEvent,
@@ -1427,6 +1430,22 @@ const clientWithLoggerOptions = new Client({
 	},
 });
 expectType<Client>(clientWithLoggerOptions);
+const disposeClientRestObserver = client.rest.observe({
+	onRequest(payload) {
+		expectType<Client>(payload.client);
+		expectType<Readonly<ApiRequestOptions>>(payload.request);
+	},
+});
+expectType<() => void>(disposeClientRestObserver);
+const disposeApiHandlerObserver = new ApiHandler({ token: 'token' }).observe({
+	onRequest(payload) {
+		expectType<unknown>(payload.client);
+	},
+});
+expectType<() => void>(disposeApiHandlerObserver);
+expectType<ApiHandlerOptions>({ token: 'token' });
+// @ts-expect-error REST lifecycle callbacks are assigned on ApiHandler, not constructor options.
+expectType<ApiHandlerOptions>({ token: 'token', onRatelimit() {} });
 client.setServices({ middlewares: { localAudit: combinedAudit } });
 client.setServices({
 	middlewares: {

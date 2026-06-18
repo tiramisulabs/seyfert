@@ -133,7 +133,7 @@ export type ClientMiddlewares<T extends Record<string, AnyMiddlewareContext> = R
 		};
 
 export class BaseClient {
-	rest = new ApiHandler({ token: 'INVALID' });
+	rest: ApiHandler<this> = new ApiHandler({ token: 'INVALID' });
 	cache = new Cache(0, new MemoryAdapter(), {}, this);
 
 	applications = new ApplicationShorter(this);
@@ -287,7 +287,7 @@ export class BaseClient {
 			rest.onRatelimit ??= this.rest.onRatelimit?.bind(rest);
 			rest.onSuccessRequest ??= this.rest.onSuccessRequest?.bind(rest);
 			rest.onFailRequest ??= this.rest.onFailRequest?.bind(rest);
-			this.rest = rest;
+			this.rest = rest as ApiHandler<this>;
 			this.bindPluginRestObserverProvider();
 		}
 		if (cache) {

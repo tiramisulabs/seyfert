@@ -1,4 +1,10 @@
-import type { ApiRequestOptions, HttpMethods } from '../../api/shared';
+import type {
+	RestObserver,
+	RestObserverFailPayload,
+	RestObserverRatelimitPayload,
+	RestObserverRequestPayload,
+	RestObserverSuccessPayload,
+} from '../../api/shared';
 import type { BaseResource, Cache } from '../../cache';
 import type {
 	AnyMiddlewareContext,
@@ -161,32 +167,11 @@ export type PluginGatewayPayloadWrapper = (
 	payload: PluginGatewayPayload,
 ) => Awaitable<GatewaySendPayload | null | undefined | void>;
 
-export interface PluginRestRequestPayload {
-	readonly client: BaseClient;
-	readonly method: HttpMethods;
-	readonly url: `/${string}`;
-	readonly request: Readonly<ApiRequestOptions>;
-}
-
-export interface PluginRestSuccessPayload extends PluginRestRequestPayload {
-	readonly response: Response;
-}
-
-export interface PluginRestFailPayload extends PluginRestRequestPayload {
-	readonly error: unknown;
-	readonly statusCode?: number;
-}
-
-export interface PluginRestRatelimitPayload extends PluginRestRequestPayload {
-	readonly response: Response;
-}
-
-export interface PluginRestObserver {
-	onRequest?(payload: PluginRestRequestPayload): Awaitable<unknown>;
-	onSuccess?(payload: PluginRestSuccessPayload): Awaitable<unknown>;
-	onFail?(payload: PluginRestFailPayload): Awaitable<unknown>;
-	onRatelimit?(payload: PluginRestRatelimitPayload): Awaitable<unknown>;
-}
+export type PluginRestRequestPayload = RestObserverRequestPayload<BaseClient>;
+export type PluginRestSuccessPayload = RestObserverSuccessPayload<BaseClient>;
+export type PluginRestFailPayload = RestObserverFailPayload<BaseClient>;
+export type PluginRestRatelimitPayload = RestObserverRatelimitPayload<BaseClient>;
+export type PluginRestObserver = RestObserver<BaseClient>;
 
 export type PluginCacheResourceConstructor<T extends BaseResource = BaseResource> = new (
 	cache: Cache,

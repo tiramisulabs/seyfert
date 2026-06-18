@@ -1232,6 +1232,64 @@ describe('plugin api v3', () => {
 		expect(warn).toHaveBeenCalledOnce();
 	});
 
+	test('runs direct REST observers after plugins before legacy callbacks', async () => {
+		const calls: string[] = [];
+		const warn = vi.fn();
+		const fetch = vi.fn(async () => new Response('{"ok":true}', { status: 200, headers: { 'content-type': 'json' } }));
+		vi.stubGlobal('fetch', fetch);
+		const plugin = createPlugin({
+			name: 'plugin-rest',
+			register(api) {
+				api.rest.observe({
+					onRequest(payload) {
+						calls.push(`plugin-request:${Object.isFrozen(payload)}`);
+					},
+					onSuccess() {
+						calls.push('plugin-success');
+					},
+				});
+			},
+		});
+		const client = createBaseClient([plugin]);
+		client.rest.debugger = { debug: vi.fn(), warn } as never;
+		client.rest.onSuccessRequest = () => {
+			calls.push('legacy-success');
+		};
+		const disposeRemoved = client.rest.observe({
+			onRequest() {
+				calls.push('removed');
+			},
+		});
+		disposeRemoved();
+		disposeRemoved();
+		client.rest.observe({
+			onRequest(payload) {
+				calls.push(`direct-request:${payload.client === client}:${Object.isFrozen(payload.request)}`);
+			},
+			onSuccess() {
+				calls.push('direct-success');
+			},
+		});
+		client.rest.observe({
+			onSuccess() {
+				calls.push('direct-bad');
+				throw new Error('direct observer failed');
+			},
+		});
+
+		await client.rest.request('GET', '/users/@me', { auth: false, query: { limit: 1 } });
+
+		expect(calls).toEqual([
+			'plugin-request:true',
+			'direct-request:true:true',
+			'plugin-success',
+			'direct-success',
+			'direct-bad',
+			'legacy-success',
+		]);
+		expect(warn).toHaveBeenCalledOnce();
+	});
+
 	test('runs hooks in order, supports disposers, and reports hook failures without skipping siblings', async () => {
 		const calls: string[] = [];
 		const errors: unknown[] = [];
