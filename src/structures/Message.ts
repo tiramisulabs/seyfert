@@ -1,3 +1,4 @@
+import type { ValidAnswerId } from '../api/Routes/channels';
 import type { ListenerOptions } from '../builders';
 import { Embed } from '../builders/Embed';
 import type { ReturnCache } from '../cache';
@@ -12,6 +13,7 @@ import {
 	type WebhookStructure,
 } from '../client/transformers';
 import type { UsingClient } from '../commands';
+import { SeyfertError } from '../common/it/error';
 import { Formatter } from '../common/it/formatter';
 import { toCamelCase } from '../common/it/utils';
 import type { EmojiResolvable } from '../common/types/resolvables';
@@ -189,6 +191,17 @@ export class Message extends BaseMessage {
 
 	crosspost(reason?: string): Promise<MessageStructure> {
 		return this.client.messages.crosspost(this.id, this.channelId, reason);
+	}
+
+	endPoll(): Promise<MessageStructure> {
+		return this.client.messages.endPoll(this.channelId, this.id);
+	}
+
+	async getAnswerVoters(answerId: ValidAnswerId, checkAnswer = false): Promise<UserStructure[]> {
+		if (checkAnswer && this.poll && !this.poll.answers.find(answer => answer.answerId === answerId)) {
+			throw new SeyfertError('INVALID_ANSWER_ID', { metadata: { detail: 'Invalid answer id' } });
+		}
+		return this.client.messages.getAnswerVoters(this.channelId, this.id, answerId);
 	}
 }
 

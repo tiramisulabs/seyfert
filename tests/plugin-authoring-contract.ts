@@ -366,6 +366,13 @@ declare const messageListChannel: TextGuildChannelStructure;
 expectType<Promise<MessageStructure[]>>(messageListClient.messages.list('123'));
 expectType<Promise<MessageStructure[]>>(messageListChannel.messages.list());
 
+declare const pollMessageContract: MessageStructure;
+expectType<Promise<MessageStructure>>(pollMessageContract.endPoll());
+expectType<Promise<UserStructure[]>>(pollMessageContract.getAnswerVoters(1));
+expectType<Promise<UserStructure[]>>(pollMessageContract.getAnswerVoters(1, true));
+// @ts-expect-error poll answer ids are limited to Discord's valid answer id range
+pollMessageContract.getAnswerVoters(11);
+
 declare const voiceStateContract: VoiceStateStructure;
 expectType<boolean>(voiceStateContract.isDeafened);
 expectType<boolean>(voiceStateContract.isCameraOn);
