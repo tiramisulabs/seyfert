@@ -175,8 +175,10 @@ declare const collectionMembers: Collection<string, MemberUnion>;
 declare function isHuman(member: MemberUnion): member is HumanMember;
 expectType<HumanMember[]>(collectionMembers.filter(isHuman));
 expectType<HumanMember | undefined>(collectionMembers.find(isHuman));
+expectType<Collection<string, HumanMember>>(collectionMembers.filterCollection(isHuman));
 expectType<MemberUnion[]>(collectionMembers.filter(member => member.type === 'human'));
 expectType<MemberUnion | undefined>(collectionMembers.find(member => member.type === 'human'));
+expectType<Collection<string, MemberUnion>>(collectionMembers.filterCollection(member => member.type === 'human'));
 
 const limitedCollectionContract = new LimitedCollection<string, number>();
 expectType<IterableIterator<number>>(limitedCollectionContract.values());

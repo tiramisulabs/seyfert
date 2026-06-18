@@ -1,5 +1,24 @@
 import { assert, describe, test } from 'vitest';
-import { LimitedCollection } from '../src/collection';
+import { Collection, LimitedCollection } from '../src/collection';
+
+describe('Collection', () => {
+	test('filterCollection preserves keys in a new collection', () => {
+		const collection = new Collection<string, { type: 'keep' | 'drop'; label: string }>([
+			['one', { type: 'keep', label: 'first' }],
+			['two', { type: 'drop', label: 'second' }],
+			['three', { type: 'keep', label: 'third' }],
+		]);
+
+		const filtered = collection.filterCollection(value => value.type === 'keep');
+
+		assert.instanceOf(filtered, Collection);
+		assert.notEqual(filtered, collection);
+		assert.deepEqual([...filtered.entries()], [
+			['one', { type: 'keep', label: 'first' }],
+			['three', { type: 'keep', label: 'third' }],
+		]);
+	});
+});
 
 describe('LimitedCollection', () => {
 	test('iterates plain values and exposes raw metadata separately', () => {

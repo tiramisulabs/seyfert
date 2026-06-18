@@ -76,6 +76,18 @@ export class Collection<K, V> extends Map<K, V> {
 		return result;
 	}
 
+	filterCollection<S extends V>(fn: (value: V, key: K, collection: this) => value is S): Collection<K, S>;
+	filterCollection(fn: (value: V, key: K, collection: this) => boolean): Collection<K, V>;
+	filterCollection(fn: (value: V, key: K, collection: this) => boolean): Collection<K, V> {
+		const result = new Collection<K, V>();
+
+		for (const [key, value] of this.entries()) {
+			if (fn(value, key, this)) result.set(key, value);
+		}
+
+		return result;
+	}
+
 	/**
 	 * Apply a function against an accumulator and each element in the collection (from left to right) to reduce it to a single value.
 	 * @param fn The function to execute on each element in the collection.
