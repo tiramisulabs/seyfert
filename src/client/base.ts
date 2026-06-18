@@ -82,6 +82,7 @@ import {
 	type LocaleString,
 	type RESTPostAPIChannelMessageJSONBody,
 } from '../types';
+import { type GatewayIntentInput, resolveGatewayIntents } from './intents';
 import {
 	type AnySeyfertPlugin,
 	bindClientPlugins,
@@ -112,7 +113,6 @@ import {
 	recordContributionMutationDiagnostic,
 } from './plugins/registry';
 import { createSharedRegistry } from './plugins/shared';
-import { type GatewayIntentInput, resolveGatewayIntents } from './intents';
 import type { MessageStructure } from './transformers';
 
 export type ContextScopeContext = BaseContext & ExtendContext;
@@ -1238,11 +1238,7 @@ export type RuntimeConfigHTTP = Omit<MakeRequired<RC, 'publicKey' | 'application
 };
 
 export type InternalRuntimeConfig = MakeRequired<RC, 'intents'>;
-export type RuntimeConfig = OmitInsert<
-	InternalRuntimeConfig,
-	'intents',
-	{ intents?: GatewayIntentInput }
->;
+export type RuntimeConfig = OmitInsert<InternalRuntimeConfig, 'intents', { intents?: GatewayIntentInput }>;
 export type BotConfig = InternalRuntimeConfig;
 export type HttpConfig = InternalRuntimeConfigHTTP;
 
@@ -1261,5 +1257,7 @@ export interface ServicesOptions {
 	/**
 	 * Custom command handler subclass constructor. Pass the class itself, not an instance.
 	 */
-	handleCommand?: new (client: UsingClient) => HandleCommand;
+	handleCommand?: new (
+		client: UsingClient,
+	) => HandleCommand;
 }

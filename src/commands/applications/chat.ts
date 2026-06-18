@@ -52,7 +52,11 @@ export interface ReturnOptionsTypes {
 	[ApplicationCommandOptionType.User]: InteractionGuildMemberStructure | UserStructure;
 	[ApplicationCommandOptionType.Channel]: AllChannels;
 	[ApplicationCommandOptionType.Role]: GuildRoleStructure;
-	[ApplicationCommandOptionType.Mentionable]: GuildRoleStructure | InteractionGuildMemberStructure | GuildMemberStructure | UserStructure;
+	[ApplicationCommandOptionType.Mentionable]:
+		| GuildRoleStructure
+		| InteractionGuildMemberStructure
+		| GuildMemberStructure
+		| UserStructure;
 	[ApplicationCommandOptionType.Number]: number;
 	[ApplicationCommandOptionType.Attachment]: Attachment;
 }

@@ -21,11 +21,11 @@ import {
 	DefaultUserAgent,
 	type HttpMethods,
 	type RawFile,
+	type RequestHeaders,
 	type RestObserveOptions,
 	type RestObserver,
 	type RestObserverDisposer,
 	type RestObserverEntry,
-	type RequestHeaders,
 } from './shared';
 import { isBufferLike } from './utils/utils';
 

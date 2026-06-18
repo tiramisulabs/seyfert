@@ -23,6 +23,7 @@ import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdat
 import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import { Collectors } from './collectors';
+import type { GatewayIntentInput } from './intents';
 import {
 	type AnySeyfertPlugin,
 	applyPluginGatewayPayloadWrappers,
@@ -31,7 +32,6 @@ import {
 	type RegisteredPlugins,
 	resolveClientPluginIntents,
 } from './plugins';
-import type { GatewayIntentInput } from './intents';
 import { type ClientUserStructure, type MessageStructure, Transformers } from './transformers';
 
 let parentPort: import('node:worker_threads').MessagePort;
