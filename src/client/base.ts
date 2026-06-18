@@ -112,8 +112,8 @@ import {
 	recordContributionMutationDiagnostic,
 } from './plugins/registry';
 import { createSharedRegistry } from './plugins/shared';
+import { type GatewayIntentInput, resolveGatewayIntents } from './intents';
 import type { MessageStructure } from './transformers';
-import type { GatewayIntentInput } from './intents';
 
 export type ContextScopeContext = BaseContext & ExtendContext;
 export type ContextScope = <T>(context: ContextScopeContext, run: () => Awaitable<T>) => Awaitable<T>;
@@ -359,7 +359,7 @@ export class BaseClient {
 		}
 
 		if (this.rest.options.token === 'INVALID') this.rest.options.token = token;
-		this.rest.debug = debug;
+		this.rest.debug = !!debug;
 
 		if (!this.handleCommand) this.handleCommand = new HandleCommand(this);
 
@@ -1096,9 +1096,11 @@ export class BaseClient {
 			debug: !!debug,
 			...env,
 			locations: locationsFullPaths,
-		};
+		} as T & { intents?: GatewayIntentInput };
 
-		return obj;
+		if ('intents' in obj) obj.intents = resolveGatewayIntents(obj.intents);
+
+		return obj as T;
 	}
 }
 
@@ -1161,7 +1163,7 @@ export interface BaseClientOptions {
 	};
 	allowedMentions?: RESTPostAPIChannelMessageJSONBody['allowed_mentions'];
 	logger?: LoggerOptions;
-	getRC?(): Awaitable<InternalRuntimeConfig | InternalRuntimeConfigHTTP>;
+	getRC?(): Awaitable<InternalRuntimeConfig | InternalRuntimeConfigHTTP | RuntimeConfig | RuntimeConfigHTTP>;
 }
 
 function createNestedLangValues(prefix: string, values: Record<string, unknown>) {

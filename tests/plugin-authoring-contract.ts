@@ -116,11 +116,13 @@ import {
 	type UsingClient,
 	type UserAvatarDefault,
 	type UserStructure,
+	type RuntimeConfig,
+	type RuntimeConfigHTTP,
 	PresenceUpdateStatus,
 	createEvent,
 	type ModalSubmitInteraction,
 } from 'seyfert';
-import type { StartOptions } from '../lib/client/base';
+import type { BaseClientOptions, StartOptions } from '../lib/client/base';
 import type {
 	Awaitable,
 	ComponentInteractionMessageUpdate,
@@ -402,6 +404,19 @@ expectType<StartOptions['connection']['intents']>(['Guilds']);
 expectType<StartOptions['connection']['intents']>([GatewayIntentBits.Guilds]);
 expectType<true>(true as Equal<ReturnType<typeof config.bot>['intents'], number>);
 expectType<true>(true as Equal<ReturnType<typeof config.http>['port'], number>);
+const publicRuntimeConfig = {
+	token: 'token',
+	locations: { base: 'src' },
+	intents: ['Guilds'],
+} satisfies RuntimeConfig;
+const publicHttpConfig = {
+	token: 'token',
+	applicationId: 'application-id',
+	publicKey: 'public-key',
+	locations: { base: 'src' },
+} satisfies RuntimeConfigHTTP;
+expectType<BaseClientOptions>({ getRC: () => publicRuntimeConfig });
+expectType<BaseClientOptions>({ getRC: () => publicHttpConfig });
 expectType<true>(
 	true as Equal<Awaited<ReturnType<GuildMemberStructure['roles']['highest']>>, GuildRoleStructure | undefined>,
 );

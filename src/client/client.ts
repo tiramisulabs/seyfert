@@ -105,7 +105,7 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	async loadEvents(dir?: string) {
-		dir ??= await this.getRC().then(x => x.locations.events);
+		dir ??= await this.getRC<InternalRuntimeConfig>().then(x => x.locations.events);
 		if (dir) {
 			await this.events.load(dir);
 			this.logger.info('EventHandler loaded');

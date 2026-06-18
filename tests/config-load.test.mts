@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import '../src';
+import { config, GatewayIntentBits } from '../src';
 import { BaseClient } from '../src/client/base';
 import * as Common from '../src/common';
 import { SeyfertError } from '../src/common/it/error';
@@ -53,5 +53,29 @@ describe('BaseClient config loading', () => {
 			code: 'NO_SEYFERT_CONFIG',
 			metadata: { detail: 'No seyfert.config file found' },
 		});
+	});
+
+	test('normalizes inline getRC string intents to numeric config', async () => {
+		const client = new BaseClient({
+			getRC: () => ({
+				token: 'token',
+				locations: { base: '' },
+				intents: ['Guilds'],
+			}),
+		});
+
+		const runtimeConfig = await client.getRC();
+
+		expect(runtimeConfig.intents).toBe(GatewayIntentBits.Guilds);
+	});
+
+	test('normalizes config.bot intents through the shared resolver', () => {
+		const runtimeConfig = config.bot({
+			token: 'token',
+			locations: { base: '' },
+			intents: ['Guilds'],
+		});
+
+		expect(runtimeConfig.intents).toBe(GatewayIntentBits.Guilds);
 	});
 });

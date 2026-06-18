@@ -46,7 +46,7 @@ import type {
 	WorkerStartResharding,
 } from '../websocket/discord/worker';
 import type { ManagerMessages, ManagerSpawnShards } from '../websocket/discord/workermanager';
-import type { BaseClientOptions, ServicesOptions, StartOptions } from './base';
+import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import type { Client, ClientOptions } from './client';
 import { Collectors } from './collectors';
@@ -187,7 +187,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	async loadEvents(dir?: string) {
-		dir ??= await this.getRC().then(x => x.locations.events);
+		dir ??= await this.getRC<InternalRuntimeConfig>().then(x => x.locations.events);
 		if (dir) {
 			await this.events.load(dir);
 			this.logger.info('EventHandler loaded');

@@ -8,9 +8,9 @@ import {
 	type RuntimeConfig,
 	type RuntimeConfigHTTP,
 } from './client/base';
+import { resolveGatewayIntents } from './client/intents';
 import { type Awaitable, isCloudfareWorker } from './common';
 import type { ClientNameEvents, CustomEventsKeys, ResolveEventParams } from './events';
-import { GatewayIntentBits } from './types';
 
 //
 export * from './api';
@@ -81,16 +81,7 @@ export const config = {
 	bot(data: RuntimeConfig) {
 		return {
 			...data,
-			intents:
-				'intents' in data
-					? typeof data.intents === 'number'
-						? data.intents
-						: (data.intents?.reduce<number>(
-								(pr, acc) =>
-									pr | (typeof acc === 'number' ? acc : GatewayIntentBits[acc as keyof typeof GatewayIntentBits]),
-								0,
-							) ?? 0)
-					: 0,
+			intents: resolveGatewayIntents(data.intents),
 		} as InternalRuntimeConfig;
 	},
 	/**
