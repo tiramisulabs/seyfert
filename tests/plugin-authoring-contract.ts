@@ -11,6 +11,7 @@ import {
 	type BaseGuildChannelStructure,
 	type BaseInteraction,
 	BaseResource,
+	type BulkGetKey,
 	type Cache,
 	Client,
 	Command,
@@ -183,6 +184,22 @@ expectType<IterableIterator<[string, number]>>(limitedCollectionContract.entries
 expectType<IterableIterator<LimitedCollectionData<number>>>(limitedCollectionContract.rawValues());
 expectType<IterableIterator<[string, LimitedCollectionData<number>]>>(limitedCollectionContract.rawEntries());
 expectType<IterableIterator<[string, number]>>(limitedCollectionContract[Symbol.iterator]());
+
+declare const cacheContract: Cache;
+const cacheBulkGetKeys = [
+	['users', 'user-id'],
+	['roles', 'role-id'],
+	['members', 'member-id', 'guild-id'],
+] as const satisfies readonly BulkGetKey[];
+const cacheBulkGetResult = cacheContract.bulkGet(cacheBulkGetKeys);
+type CacheBulkGetResult = Awaited<typeof cacheBulkGetResult>;
+expectType<true>(true as Equal<keyof CacheBulkGetResult, 'users' | 'roles' | 'members'>);
+// @ts-expect-error tuple-aware bulkGet results only include requested resource keys.
+expectType<CacheBulkGetResult['channels']>([]);
+declare const dynamicBulkGetKeys: BulkGetKey[];
+const dynamicBulkGetResult = cacheContract.bulkGet(dynamicBulkGetKeys);
+type DynamicBulkGetResult = Awaited<typeof dynamicBulkGetResult>;
+expectType<true>(true as ('channels' extends keyof DynamicBulkGetResult ? true : false));
 
 type ChannelPinResult = Awaited<ReturnType<Client['channels']['pins']>>;
 expectType<true>(true as Equal<ChannelPinResult['items'][number]['pinnedAt'], number>);
