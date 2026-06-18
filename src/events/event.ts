@@ -1,5 +1,6 @@
 import type { PluginLoadedMetadata, PluginUploadCommandsMetadata } from '../client/plugins';
 import type { Command, ContextMenuCommand, UsingClient } from '../commands';
+import type { Awaitable } from '../common';
 import type { ComponentCommands } from '../components/handler';
 import type { ClientEvents } from './hooks';
 
@@ -26,7 +27,7 @@ export type EventContext<T extends { data: { name: ClientNameEvents | CustomEven
 >;
 export interface ClientEvent {
 	data: ClientDataEvent;
-	run(...args: EventContext<any>): any;
+	run(...args: EventContext<any>): Awaitable<void>;
 	/**@internal */
 	__filePath?: string;
 }

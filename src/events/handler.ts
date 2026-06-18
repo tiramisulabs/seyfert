@@ -46,7 +46,7 @@ export type ResolveEventRunParams<T extends ClientNameEvents | CustomEventsKeys 
 
 export type EventValues = {
 	[K in CustomEventsKeys | GatewayEvents]: Omit<EventValue, 'run'> & {
-		run(...args: ResolveEventRunParams<K>): any;
+		run(...args: ResolveEventRunParams<K>): Awaitable<void>;
 	};
 };
 

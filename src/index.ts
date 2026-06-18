@@ -8,7 +8,7 @@ import {
 	type RuntimeConfig,
 	type RuntimeConfigHTTP,
 } from './client/base';
-import { isCloudfareWorker } from './common';
+import { type Awaitable, isCloudfareWorker } from './common';
 import type { ClientNameEvents, CustomEventsKeys, ResolveEventParams } from './events';
 import { GatewayIntentBits } from './types';
 
@@ -65,7 +65,7 @@ export { ShardManager, WorkerManager } from './websocket/discord';
  */
 export function createEvent<E extends ClientNameEvents | CustomEventsKeys>(data: {
 	data: { name: E; once?: boolean };
-	run: (...args: ResolveEventParams<E>) => any;
+	run: (...args: ResolveEventParams<E>) => Awaitable<void>;
 }) {
 	data.data.once ??= false;
 	return data;

@@ -108,6 +108,7 @@ import {
 	type APIEmbed,
 	type CallbackEventHandler,
 	type ClientOptions,
+	type ClientEvent,
 	EntryPointCommandHandlerType,
 	type Collection,
 	LimitedCollection,
@@ -116,8 +117,9 @@ import {
 	type UserAvatarDefault,
 	type UserStructure,
 	PresenceUpdateStatus,
+	createEvent,
 } from 'seyfert';
-import type { MakePresent, MakeRequired, PickPresent, PickRequired } from '../lib/common';
+import type { Awaitable, MakePresent, MakeRequired, PickPresent, PickRequired } from '../lib/common';
 import { snowflakeToTimestamp } from '../lib/common/it/utils';
 import type { BanShorter } from '../lib/common/shorters/bans';
 import type { MemberShorter } from '../lib/common/shorters/members';
@@ -318,6 +320,14 @@ expectType<true>(true as Equal<CommandsLoadedCallbackParams['length'], 2>);
 type BotReadyCallbackParams = Parameters<CallbackEventHandler['botReady']>;
 expectType<true>(true as Equal<BotReadyCallbackParams['length'], 3>);
 expectType<true>(true as Equal<BotReadyCallbackParams[2], number>);
+expectType<false>(false as IsAny<ReturnType<ClientEvent['run']>>);
+expectType<true>(true as Equal<ReturnType<ClientEvent['run']>, Awaitable<void>>);
+
+const asyncCreateEventContract = createEvent({
+	data: { name: 'botReady' },
+	async run() {},
+});
+expectType<true>(true as Equal<ReturnType<typeof asyncCreateEventContract.run>, Awaitable<void>>);
 
 expectType<ComponentCollectorStopReason>('messageDelete');
 expectType<ComponentCollectorStopReason>('channelDelete');
