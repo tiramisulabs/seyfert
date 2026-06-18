@@ -62,7 +62,7 @@ export class LangsHandler extends BaseHandler {
 
 	private applyParsedFile(file: LangInstance, result: LangFileResult) {
 		if (!result) return;
-		if ('path' in file) this.__paths[result.locale] = file.path as string;
+		if (file.path) this.__paths[result.locale] = file.path;
 		this.values[result.locale] = result.file;
 	}
 
@@ -148,4 +148,4 @@ export class LangsHandler extends BaseHandler {
 	}
 }
 
-export type LangInstance = { name: string; file: FileLoaded<Record<string, any>>; path: string };
+export type LangInstance = { name: string; file: FileLoaded<Record<string, any>>; path?: string };

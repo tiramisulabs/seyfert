@@ -41,6 +41,7 @@ import {
 	type GuildMemberStructure,
 	type GuildRoleStructure,
 	type InteractionGuildMemberStructure,
+	type LangInstance,
 	type ComponentContext,
 	type EntryPointContext,
 	EntryPointCommand,
@@ -349,6 +350,12 @@ banShorter.create('123', '456', { delete_message_seconds: 60 }, 'cleanup');
 expectType<true>(true as Equal<BaseInteraction['replied'], boolean | undefined>);
 // @ts-expect-error BaseInteraction.replied is public reply state, not the pending reply operation.
 expectType<BaseInteraction['replied']>(Promise.resolve(true));
+
+const inlineLangInstance: LangInstance = {
+	name: 'inline.ts',
+	file: { default: { greeting: 'Hello' } } as LangInstance['file'],
+};
+expectType<LangInstance>(inlineLangInstance);
 
 createIntegerOption({
 	description: 'Integer autocomplete',
