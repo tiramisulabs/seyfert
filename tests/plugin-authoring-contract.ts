@@ -1301,6 +1301,7 @@ declare const rawApiEmbed: APIEmbed;
 declare const modalBodyContract: ModalCreateBodyRequest;
 declare const modalUpdateBodyContract: ComponentInteractionMessageUpdate;
 declare const modalSubmitInteraction: ModalSubmitInteraction;
+declare const collectorClient: Client;
 
 expectType<Promise<void>>(commandContext().write({ content: 'Done!' }));
 expectType<Promise<void>>(commandContext().write({ embeds: messageWithEmbeds.embeds }));
@@ -1336,6 +1337,24 @@ const guildStringSelectContext = stringSelectComponentContext();
 if (guildStringSelectContext.inGuild()) {
 	expectType<['general', 'news']>(guildStringSelectContext.interaction.values);
 }
+collectorClient.collectors.create({
+	event: 'messageCreate',
+	filter(message) {
+		expectType<MessageStructure>(message);
+		return true;
+	},
+	run(message) {
+		expectType<MessageStructure>(message);
+	},
+});
+collectorClient.collectors.create({
+	// @ts-expect-error collector events expose camelCase gateway event names only.
+	event: 'MESSAGE_CREATE',
+	filter() {
+		return true;
+	},
+	run() {},
+});
 
 expectType<AllChannels[]>(modalContext().getChannels('channels', true));
 expectType<AllChannels[] | void>(modalContext().getChannels('channels'));
