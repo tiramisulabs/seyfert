@@ -131,6 +131,7 @@ import {
 	createEvent,
 	type ModalSubmitInteraction,
 } from 'seyfert';
+import type { APIRoutes } from '../lib/api/Routes';
 import type { BaseClientOptions, ServicesOptions, StartOptions } from '../lib/client/base';
 import { HandleCommand } from '../lib/commands/handle';
 import type {
@@ -462,8 +463,19 @@ guildMember.ban({ delete_message_seconds: 60 }, 'cleanup');
 
 const guildMemberMethods = GuildMember.methods({ client: {} as any, guildId: '123' });
 expectType<Promise<void>>(guildMemberMethods.ban('123', { deleteMessageSeconds: 60, reason: 'cleanup' }));
+declare const memberSearchClient: { members: MemberShorter; proxy: APIRoutes };
+expectType<Promise<GuildMemberStructure[]>>(
+	memberSearchClient.members.search('123', { query: 'alice', limit: 1 }),
+);
+expectType<Promise<GuildMemberStructure[]>>(guildMemberMethods.search({ query: 'alice', limit: 1 }));
 // @ts-expect-error BaseGuildMember.methods().ban no longer accepts positional body and reason arguments.
 guildMemberMethods.ban('123', { delete_message_seconds: 60 }, 'cleanup');
+// @ts-expect-error member search requires query options
+memberSearchClient.members.search('123');
+// @ts-expect-error guild-bound member search requires query options
+guildMemberMethods.search();
+// @ts-expect-error raw REST member search requires query args
+memberSearchClient.proxy.guilds('123').members.search.get({});
 
 declare const guildBan: GuildBan;
 expectType<Promise<void>>(guildBan.create({ deleteMessageSeconds: 60, reason: 'cleanup' }));

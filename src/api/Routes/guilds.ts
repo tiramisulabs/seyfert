@@ -126,6 +126,10 @@ import type {
 import type { RestArguments, RestArgumentsNoBody } from '../api';
 import type { RawFile } from '../shared';
 
+type RestArgumentsRequiredQuery<Q extends Record<string, any>> = Omit<RestArgumentsNoBody<Q>, 'query'> & {
+	query: Q;
+};
+
 export interface GuildRoutes {
 	guilds: {
 		templates(code: string): {
@@ -175,7 +179,7 @@ export interface GuildRoutes {
 				get(args?: RestArgumentsNoBody<RESTGetAPIGuildMembersQuery>): Promise<RESTGetAPIGuildMembersResult>;
 				search: {
 					get(
-						args: RestArgumentsNoBody<RESTGetAPIGuildMembersSearchQuery>,
+						args: RestArgumentsRequiredQuery<RESTGetAPIGuildMembersSearchQuery>,
 					): Promise<RESTGetAPIGuildMembersSearchResult>;
 				};
 				'@me': {

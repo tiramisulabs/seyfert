@@ -151,7 +151,7 @@ export class BaseGuildMember extends DiscordBase {
 		return {
 			resolve: (resolve: GuildMemberResolvable): Promise<GuildMemberStructure | undefined> =>
 				client.members.resolve(guildId, resolve),
-			search: (query?: RESTGetAPIGuildMembersSearchQuery): Promise<GuildMemberStructure[]> =>
+			search: (query: RESTGetAPIGuildMembersSearchQuery): Promise<GuildMemberStructure[]> =>
 				client.members.search(guildId, query),
 			unban: (id: string, reason?: string) => client.members.unban(guildId, id, reason),
 			ban: (id: string, options?: BanOptions) => client.members.ban(guildId, id, options),

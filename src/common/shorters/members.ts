@@ -56,7 +56,7 @@ export class MemberShorter extends BaseShorter {
 	 * @param query The query parameters for searching members.
 	 * @returns A Promise that resolves to an array of matched members.
 	 */
-	async search(guildId: string, query?: RESTGetAPIGuildMembersSearchQuery): Promise<GuildMemberStructure[]> {
+	async search(guildId: string, query: RESTGetAPIGuildMembersSearchQuery): Promise<GuildMemberStructure[]> {
 		const members = await this.client.proxy.guilds(guildId).members.search.get({
 			query,
 		});
