@@ -1,4 +1,21 @@
-import { Formatter, config, type BotConfig, type ChannelLink, type HttpConfig, type MessageLink, type Timestamp } from 'seyfert';
+import {
+	EmbedColors,
+	Formatter,
+	HeadingLevel,
+	OAuth2Scopes,
+	SeyfertError,
+	SeyfertErrorMessages,
+	TimestampStyle,
+	config,
+	createValidationMetadata,
+	type BotConfig,
+	type ChannelLink,
+	type HttpConfig,
+	type MessageLink,
+	type OAuth2URLOptions,
+	type SeyfertErrorCode,
+	type Timestamp,
+} from 'seyfert';
 
 declare function expectType<T>(value: T): void;
 
@@ -22,3 +39,14 @@ expectType<number>(rootHttpConfig.port);
 expectType<MessageLink>(Formatter.messageLink('guild-id', 'channel-id', 'message-id'));
 expectType<ChannelLink>(Formatter.channelLink('channel-id'));
 expectType<Timestamp>(Formatter.timestamp(Date.now()));
+expectType<SeyfertErrorCode>(new SeyfertError('INVALID_TOKEN').code);
+expectType<string>(SeyfertErrorMessages.INVALID_TOKEN);
+expectType<{
+	expected: unknown;
+	received: unknown;
+	receivedType: string;
+}>(createValidationMetadata('token', 'bad'));
+expectType<number>(EmbedColors.Default);
+expectType<TimestampStyle>(TimestampStyle.RelativeTime);
+expectType<HeadingLevel>(HeadingLevel.H1);
+expectType<OAuth2URLOptions>({ scopes: [OAuth2Scopes.Bot] });

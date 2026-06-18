@@ -22,11 +22,19 @@ export * from './commands';
 export {
 	type BanOptions,
 	type ChannelLink,
+	createValidationMetadata,
+	EmbedColors,
 	Formatter,
+	HeadingLevel,
 	Logger,
 	type MessageLink,
+	type OAuth2URLOptions,
 	PermissionStrings,
+	SeyfertError,
+	type SeyfertErrorCode,
+	SeyfertErrorMessages,
 	type Timestamp,
+	TimestampStyle,
 } from './common';
 export * from './components';
 export * from './events';
