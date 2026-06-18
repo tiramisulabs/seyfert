@@ -217,7 +217,7 @@ export class MemberShorter extends BaseShorter {
 		if (!force) {
 			const member = await this.client.cache.members?.get(memberId, guildId);
 			if (member) {
-				const roles = (await this.client.cache.roles?.bulk(member.roles.keys)) ?? [];
+				const roles = (await this.client.cache.roles?.bulk([...member.roles.keys])) ?? [];
 				if (roles.length) return roles;
 			}
 		}

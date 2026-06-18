@@ -313,6 +313,9 @@ expectType<Promise<GuildRoleStructure>>(
 );
 expectType<true>(true as Equal<BanOptions, { deleteMessageSeconds?: number; reason?: string }>);
 declare const guildMember: GuildMember;
+expectType<readonly string[]>(guildMember.roles.keys);
+// @ts-expect-error GuildMember.roles.keys reflects a frozen runtime array.
+guildMember.roles.keys.push('role');
 expectType<Promise<GuildMemberStructure>>(guildMember.timeout(1_000, 'one second'));
 expectType<Promise<GuildMemberStructure>>(guildMember.timeout(null, 'clear timeout'));
 expectType<false | number>(guildMember.hasTimeout);

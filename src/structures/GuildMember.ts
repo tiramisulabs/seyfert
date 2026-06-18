@@ -131,7 +131,7 @@ export class BaseGuildMember extends DiscordBase {
 
 	get roles() {
 		return {
-			keys: Object.freeze(this._roles.concat(this.guildId)) as string[],
+			keys: Object.freeze(this._roles.concat(this.guildId)) as readonly string[],
 			list: (force = false): Promise<GuildRoleStructure[]> =>
 				this.client.roles
 					.list(this.guildId, force)
