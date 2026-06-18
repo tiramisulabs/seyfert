@@ -1,5 +1,13 @@
 import { describe, expect, test } from 'vitest';
-import { MediaGalleryItem, Modal, PollBuilder, StringSelectMenu, StringSelectOption } from '../lib';
+import {
+	MediaGalleryItem,
+	Modal,
+	PollBuilder,
+	RadioGroup,
+	RadioGroupOption,
+	StringSelectMenu,
+	StringSelectOption,
+} from '../lib';
 import { SeyfertError } from '../lib/common';
 
 function expectSeyfertCode(run: () => unknown, code: string, component: string) {
@@ -63,6 +71,23 @@ describe('builder toJSON validation', () => {
 		const option = new StringSelectOption().setLabel('General');
 
 		expectSeyfertCode(() => option.toJSON(), 'MISSING_STRING_SELECT_OPTION_VALUE', 'StringSelectOption');
+	});
+
+	test('RadioGroupOption rejects missing label', () => {
+		const option = new RadioGroupOption({ value: 'general', label: 'General' });
+		delete (option.data as { label?: string }).label;
+
+		expectSeyfertCode(() => option.toJSON(), 'MISSING_RADIO_GROUP_OPTION_LABEL', 'RadioGroupOption');
+	});
+
+	test('RadioGroup validates builder options through option toJSON', () => {
+		const option = new RadioGroupOption({ value: 'general', label: 'General' });
+		delete (option.data as { value?: string }).value;
+		const menu = new RadioGroup()
+			.setCustomId('topics')
+			.setOptions(option, new RadioGroupOption({ label: 'Other', value: 'other' }));
+
+		expectSeyfertCode(() => menu.toJSON(), 'MISSING_RADIO_GROUP_OPTION_VALUE', 'RadioGroupOption');
 	});
 
 	test('StringSelectMenu addOption accepts raw API options', () => {
