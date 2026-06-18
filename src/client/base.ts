@@ -1258,5 +1258,8 @@ export interface ServicesOptions {
 		aliases?: Record<string, LocaleString[]>;
 	};
 	middlewares?: ClientMiddlewares;
-	handleCommand?: typeof HandleCommand;
+	/**
+	 * Custom command handler subclass constructor. Pass the class itself, not an instance.
+	 */
+	handleCommand?: new (client: UsingClient) => HandleCommand;
 }

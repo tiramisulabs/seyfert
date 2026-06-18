@@ -122,7 +122,8 @@ import {
 	createEvent,
 	type ModalSubmitInteraction,
 } from 'seyfert';
-import type { BaseClientOptions, StartOptions } from '../lib/client/base';
+import type { BaseClientOptions, ServicesOptions, StartOptions } from '../lib/client/base';
+import { HandleCommand } from '../lib/commands/handle';
 import type {
 	Awaitable,
 	ComponentInteractionMessageUpdate,
@@ -417,6 +418,12 @@ const publicHttpConfig = {
 } satisfies RuntimeConfigHTTP;
 expectType<BaseClientOptions>({ getRC: () => publicRuntimeConfig });
 expectType<BaseClientOptions>({ getRC: () => publicHttpConfig });
+declare const handleCommandConstructor: new (client: UsingClient) => HandleCommand;
+expectType<NonNullable<ServicesOptions['handleCommand']>>(handleCommandConstructor);
+class ContractHandleCommand extends HandleCommand {}
+expectType<ServicesOptions>({ handleCommand: ContractHandleCommand });
+// @ts-expect-error handleCommand option takes a constructor, not an instance.
+expectType<ServicesOptions>({ handleCommand: new ContractHandleCommand({} as UsingClient) });
 expectType<true>(
 	true as Equal<Awaited<ReturnType<GuildMemberStructure['roles']['highest']>>, GuildRoleStructure | undefined>,
 );
