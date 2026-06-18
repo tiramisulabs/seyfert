@@ -1,7 +1,9 @@
 import {
 	ApplicationCommandType,
 	ApplicationCommandOptionType,
+	type AllChannels,
 	type AllGuildChannels,
+	type Attachment,
 	type AutocompleteCallback,
 	type AutocompleteInteraction,
 	type BanOptions,
@@ -37,6 +39,7 @@ import {
 	GuildMember,
 	type GuildMemberStructure,
 	type GuildRoleStructure,
+	type InteractionGuildMemberStructure,
 	type ComponentContext,
 	type EntryPointContext,
 	EntryPointCommand,
@@ -98,6 +101,7 @@ import {
 	EntryPointCommandHandlerType,
 	type Collection,
 	type UsingClient,
+	type UserStructure,
 	PresenceUpdateStatus,
 } from 'seyfert';
 import type { MakePresent, MakeRequired, PickPresent, PickRequired } from '../lib/common';
@@ -1125,6 +1129,29 @@ expectType<Promise<WebhookMessageStructure>>(componentContext().ephemeral({ cont
 expectType<Promise<WebhookMessageStructure>>(modalContext().ephemeral({ content: 'Done!' }, true));
 expectType<Promise<WebhookMessageStructure>>(menuCommandContext().ephemeral({ content: 'Done!' }, true));
 expectType<Promise<WebhookMessageStructure>>(entryPointContext().ephemeral({ content: 'Done!' }, true));
+
+expectType<AllChannels[]>(modalContext().getChannels('channels', true));
+expectType<AllChannels[] | void>(modalContext().getChannels('channels'));
+expectType<GuildRoleStructure[]>(modalContext().getRoles('roles', true));
+expectType<GuildRoleStructure[] | void>(modalContext().getRoles('roles'));
+expectType<UserStructure[]>(modalContext().getUsers('users', true));
+expectType<UserStructure[] | void>(modalContext().getUsers('users'));
+expectType<(UserStructure | GuildRoleStructure | InteractionGuildMemberStructure)[]>(
+	modalContext().getMentionables('mentionables', true),
+);
+expectType<(UserStructure | GuildRoleStructure | InteractionGuildMemberStructure)[] | void>(
+	modalContext().getMentionables('mentionables'),
+);
+expectType<string>(modalContext().getRadioValues('choice', true));
+expectType<string | void>(modalContext().getRadioValues('choice'));
+expectType<string[]>(modalContext().getCheckboxValues('checks', true));
+expectType<string[] | void>(modalContext().getCheckboxValues('checks'));
+expectType<boolean>(modalContext().getCheckbox('enabled', true));
+expectType<boolean | void>(modalContext().getCheckbox('enabled'));
+expectType<string | string[]>(modalContext().getInputValue('input', true));
+expectType<string | string[] | undefined>(modalContext().getInputValue('input'));
+expectType<Attachment[]>(modalContext().getFiles('files', true));
+expectType<Attachment[] | undefined>(modalContext().getFiles('files'));
 
 expectType<Promise<GuildMemberStructure | undefined>>(commandContext().fetchMember());
 expectType<Promise<GuildMemberStructure | undefined>>(commandContext().fetchMember('flow'));
