@@ -81,6 +81,7 @@ import {
 	type RegisteredPluginMiddlewares,
 	type RegisteredPluginShared,
 	type ResolvedRegisteredMiddlewares,
+	calculateUserDefaultAvatarIndex,
 	RadioGroup,
 	RadioGroupOption,
 	StringSelectMenu,
@@ -109,6 +110,7 @@ import {
 	LimitedCollection,
 	type LimitedCollectionData,
 	type UsingClient,
+	type UserAvatarDefault,
 	type UserStructure,
 	PresenceUpdateStatus,
 } from 'seyfert';
@@ -225,6 +227,9 @@ cacheContract.voiceStates?.values(wildcardCacheSelector);
 
 type ChannelPinResult = Awaited<ReturnType<Client['channels']['pins']>>;
 expectType<true>(true as Equal<ChannelPinResult['items'][number]['pinnedAt'], number>);
+expectType<true>(true as Equal<UserAvatarDefault, 0 | 1 | 2 | 3 | 4 | 5>);
+expectType<UserAvatarDefault>(calculateUserDefaultAvatarIndex('123456789012345678', '0'));
+expectType<true>(true as Equal<ReturnType<typeof calculateUserDefaultAvatarIndex>, UserAvatarDefault>);
 
 declare const webhookWriteClient: Client;
 declare const webhookWrite: Webhook;
