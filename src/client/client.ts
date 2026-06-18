@@ -31,6 +31,7 @@ import {
 	type RegisteredPlugins,
 	resolveClientPluginIntents,
 } from './plugins';
+import type { GatewayIntentInput } from './intents';
 import { type ClientUserStructure, type MessageStructure, Transformers } from './transformers';
 
 let parentPort: import('node:worker_threads').MessagePort;
@@ -144,7 +145,8 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 
 		const { token: tokenRC, intents: intentsRC, debug: debugRC } = await this.getRC<InternalRuntimeConfig>();
 		const token = options?.token ?? tokenRC;
-		const intents = resolveClientPluginIntents(this, options?.connection?.intents ?? intentsRC);
+		const connectionIntents = options.connection?.intents as GatewayIntentInput | undefined;
+		const intents = resolveClientPluginIntents(this, connectionIntents ?? intentsRC);
 		this.cache.intents = intents;
 
 		if (!this.gateway) {
@@ -182,7 +184,7 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 		}
 
 		if (execute) {
-			await this.execute(options.connection);
+			await this.execute({ ...(options.connection ?? {}), intents });
 		} else {
 			await super.execute(options);
 		}

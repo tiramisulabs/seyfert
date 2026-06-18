@@ -957,8 +957,9 @@ describe('plugin api v3', () => {
 		});
 		const client = createGatewayClient([plugin]);
 
-		await client.start({}, false);
+		await client.start({ connection: { intents: ['GuildMessages'] } }, false);
 
+		expect(client.cache.intents & GatewayIntentBits.GuildMessages).toBe(GatewayIntentBits.GuildMessages);
 		expect(client.cache.intents & GatewayIntentBits.Guilds).toBe(GatewayIntentBits.Guilds);
 		expect(client.cache.intents & GatewayIntentBits.GuildMembers).toBe(GatewayIntentBits.GuildMembers);
 	});

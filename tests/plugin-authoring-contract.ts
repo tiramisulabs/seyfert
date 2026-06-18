@@ -120,6 +120,7 @@ import {
 	createEvent,
 	type ModalSubmitInteraction,
 } from 'seyfert';
+import type { StartOptions } from '../lib/client/base';
 import type {
 	Awaitable,
 	ComponentInteractionMessageUpdate,
@@ -397,6 +398,8 @@ Group(localizedGroups, 'moderaton')(GroupContractSubcommand);
 
 expectType<true>(true as Equal<ShardManager['options']['debug'], boolean>);
 expectType<true>(true as Equal<ShardManager['options']['intents'], number>);
+expectType<StartOptions['connection']['intents']>(['Guilds']);
+expectType<StartOptions['connection']['intents']>([GatewayIntentBits.Guilds]);
 expectType<true>(true as Equal<ReturnType<typeof config.bot>['intents'], number>);
 expectType<true>(true as Equal<ReturnType<typeof config.http>['port'], number>);
 expectType<true>(

@@ -56,7 +56,7 @@ import { toArrayBuffer } from '../common/it/utils';
 import { BanShorter } from '../common/shorters/bans';
 import { SoundboardShorter } from '../common/shorters/soundboard';
 import { VoiceStateShorter } from '../common/shorters/voiceStates';
-import type { Awaitable, DeepPartial, IntentStrings, OmitInsert, PermissionStrings, When } from '../common/types/util';
+import type { Awaitable, DeepPartial, OmitInsert, PermissionStrings, When } from '../common/types/util';
 import { type ComponentCommand, type ComponentContext, ModalCommand, type ModalContext } from '../components';
 import { type ComponentCommands, ComponentHandler } from '../components/handler';
 import {
@@ -113,6 +113,7 @@ import {
 } from './plugins/registry';
 import { createSharedRegistry } from './plugins/shared';
 import type { MessageStructure } from './transformers';
+import type { GatewayIntentInput } from './intents';
 
 export type ContextScopeContext = BaseContext & ExtendContext;
 export type ContextScope = <T>(context: ContextScopeContext, run: () => Awaitable<T>) => Awaitable<T>;
@@ -1200,7 +1201,7 @@ export interface StartOptions {
 	langsDir: string;
 	commandsDir: string;
 	componentsDir: string;
-	connection: { intents: number };
+	connection: { intents: GatewayIntentInput };
 	httpConnection: {
 		publicKey: string;
 		port: number;
@@ -1238,7 +1239,7 @@ export type InternalRuntimeConfig = MakeRequired<RC, 'intents'>;
 export type RuntimeConfig = OmitInsert<
 	InternalRuntimeConfig,
 	'intents',
-	{ intents?: IntentStrings | number[] | number }
+	{ intents?: GatewayIntentInput }
 >;
 export type BotConfig = InternalRuntimeConfig;
 export type HttpConfig = InternalRuntimeConfigHTTP;
