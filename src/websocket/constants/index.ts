@@ -27,6 +27,7 @@ const ShardManagerDefaults: DeepPartial<ShardManagerOptions> = {
 
 const WorkerManagerDefaults: DeepPartial<WorkerManagerOptions> = {
 	...ShardManagerDefaults,
+	mode: 'threads',
 	shardsPerWorker: 16,
 };
 

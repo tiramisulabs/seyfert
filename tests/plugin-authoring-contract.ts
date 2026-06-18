@@ -792,6 +792,15 @@ const threadedWorkerManagerOptions = {
 expectType<WorkerManagerOptions>(threadedWorkerManagerOptions);
 new WorkerManager(threadedWorkerManagerOptions);
 
+const defaultThreadedWorkerManagerOptions = {
+	path: 'worker.js',
+	token: 'token',
+	intents: GatewayIntentBits.Guilds,
+	info: workerManagerInfo,
+} satisfies WorkerManagerOptions;
+expectType<WorkerManagerOptions>(defaultThreadedWorkerManagerOptions);
+new WorkerManager(defaultThreadedWorkerManagerOptions);
+
 const clusteredWorkerManagerOptions = {
 	mode: 'clusters',
 	path: 'worker.js',

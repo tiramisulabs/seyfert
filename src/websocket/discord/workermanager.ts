@@ -23,7 +23,7 @@ type WorkerManagerConstructorOptions = WorkerManagerOptions extends infer Option
 		: never
 	: never;
 
-type WorkerManagerNativeOptions = Extract<WorkerManagerOptions, { mode: 'threads' | 'clusters' }>;
+type WorkerManagerNativeOptions = Exclude<WorkerManagerOptions, { mode: 'custom' }>;
 type WorkerManagerCustomOptions = Extract<WorkerManagerOptions, { mode: 'custom' }>;
 type WorkerManagerRuntimeOptionalKeys = 'adapter' | 'handleWorkerMessage' | 'handlePayload' | 'getRC';
 type WorkerManagerCustomRuntimeOptionalKeys = 'handleWorkerMessage' | 'handlePayload' | 'getRC';
@@ -81,7 +81,7 @@ export class WorkerManager extends Map<
 	constructor(options: WorkerManagerConstructorOptions) {
 		super();
 		// The constructor permits runtime config values that start() fills before use.
-		this.options = options as WorkerManager['options'];
+		this.options = { mode: 'threads', ...options } as WorkerManager['options'];
 		this.cacheAdapter = new MemoryAdapter();
 
 		if (this.options.handleWorkerMessage) {

@@ -98,7 +98,12 @@ interface WorkerManagerOptionsBase extends Omit<ShardManagerOptions, 'handlePayl
 
 export type WorkerManagerOptions =
 	| (WorkerManagerOptionsBase & {
-			mode: 'threads' | 'clusters';
+			mode?: 'threads';
+			path: string;
+			adapter?: CustomManagerAdapter;
+	  })
+	| (WorkerManagerOptionsBase & {
+			mode: 'clusters';
 			path: string;
 			adapter?: CustomManagerAdapter;
 	  })

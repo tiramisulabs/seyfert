@@ -171,6 +171,17 @@ describe('gateway send chokepoints', () => {
 		expect(manager.options.intents).toBe(0);
 	});
 
+	test('WorkerManager defaults omitted native mode to threads', () => {
+		const manager = new WorkerManager({
+			path: 'worker.js',
+			token: 'token',
+			intents: 0,
+			info: gatewayInfo(),
+		});
+
+		expect(manager.options.mode).toBe('threads');
+	});
+
 	test('WorkerManager preserves custom adapter paths when provided', () => {
 		const spawn = vi.fn();
 		const { manager } = createWorkerManager({
