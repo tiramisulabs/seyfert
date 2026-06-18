@@ -57,6 +57,12 @@ export type StructPropState<Prop, State extends StructStates, Select extends Str
 	Select
 >[State];
 
+export type PropWhen<Select extends StructStates, Prop, State extends StructStates = StructStates> = StructPropState<
+	Prop,
+	State,
+	Select
+>;
+
 export type WithID<More> = { id: string } & More;
 
 export type Tail<A> = A extends [unknown, ...infer rest]

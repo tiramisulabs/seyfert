@@ -13,7 +13,10 @@ import {
 	type HttpConfig,
 	type MessageLink,
 	type OAuth2URLOptions,
+	type PropWhen,
 	type SeyfertErrorCode,
+	type StructPropState,
+	type StructStates,
 	type Timestamp,
 } from 'seyfert';
 
@@ -50,3 +53,11 @@ expectType<number>(EmbedColors.Default);
 expectType<TimestampStyle>(TimestampStyle.RelativeTime);
 expectType<HeadingLevel>(HeadingLevel.H1);
 expectType<OAuth2URLOptions>({ scopes: [OAuth2Scopes.Bot] });
+declare const structState: StructStates;
+declare const cachedStructProp: StructPropState<number, 'cached', 'cached'>;
+declare const createdProp: PropWhen<'create', number, 'create'>;
+declare const missingCreatedProp: PropWhen<'create', number, 'api'>;
+expectType<'cached' | 'api' | 'create'>(structState);
+expectType<number | undefined>(cachedStructProp);
+expectType<number>(createdProp);
+expectType<undefined>(missingCreatedProp);

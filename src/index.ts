@@ -30,9 +30,12 @@ export {
 	type MessageLink,
 	type OAuth2URLOptions,
 	PermissionStrings,
+	type PropWhen,
 	SeyfertError,
 	type SeyfertErrorCode,
 	SeyfertErrorMessages,
+	type StructPropState,
+	type StructStates,
 	type Timestamp,
 	TimestampStyle,
 } from './common';
