@@ -1,6 +1,6 @@
 import { basename } from 'node:path';
 import type { FileLoaded } from '../commands/handler';
-import { BaseHandler, isCloudfareWorker, magicImport, SeyfertError } from '../common';
+import { BaseHandler, isCloudfareWorker, isObject, magicImport, SeyfertError } from '../common';
 import type { Locale, LocaleString } from '../types';
 import { LangRouter } from './router';
 
@@ -90,13 +90,49 @@ export class LangsHandler extends BaseHandler {
 		}
 	}
 
-	onFile(locale: string, { file }: LangInstance): { file: Record<string, any>; locale: string } | false {
-		return file.default
-			? {
-					file: file.default,
-					locale,
-				}
-			: false;
+	onFile(locale: string, { file, name, path }: LangInstance): { file: Record<string, any>; locale: string } | false {
+		const modulePath = path ?? name;
+		if (isObject(file.default)) {
+			return {
+				file: file.default,
+				locale,
+			};
+		}
+
+		if (!isObject(file)) {
+			this.logger.warn(`Lang file "${modulePath}" skipped: invalid module value.`, `exports: ${typeof file}`);
+			return false;
+		}
+
+		const module = file as Record<PropertyKey, unknown>;
+		const isModuleNamespace = module[Symbol.toStringTag] === 'Module' || 'default' in file || '__esModule' in file;
+		if (!isModuleNamespace) {
+			return { file, locale };
+		}
+
+		const exportNames = Object.keys(file).filter(key => key !== 'default' && key !== '__esModule');
+		const objectExportNames = exportNames.filter(key => isObject(file[key]));
+		if (objectExportNames.length === 1 && !('default' in file)) {
+			const exportName = objectExportNames[0];
+			this.logger.warn(
+				`Lang file "${modulePath}" has no default export; using named object export "${exportName}".`,
+				`exports: ${exportNames.join(', ') || '(none)'}`,
+			);
+			return {
+				file: file[exportName] as Record<string, any>,
+				locale,
+			};
+		}
+
+		const invalidDefault = 'default' in file ? 'default' : undefined;
+		const invalidExports = [invalidDefault, ...exportNames].filter((key): key is string => !!key);
+		this.logger.warn(
+			`Lang file "${modulePath}" skipped: ${
+				objectExportNames.length > 1 ? 'ambiguous named object exports' : 'no valid default export'
+			}.`,
+			`exports: ${invalidExports.join(', ') || '(none)'}`,
+		);
+		return false;
 	}
 }
 
