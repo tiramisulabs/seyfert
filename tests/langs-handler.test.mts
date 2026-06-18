@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, test, vi } from 'vitest';
 import { LangsHandler } from '../src/langs/handler';
 
@@ -89,5 +92,32 @@ describe('LangsHandler module loading', () => {
 			expect.stringContaining('/langs/invalid.ts'),
 			expect.stringContaining('value'),
 		);
+	});
+
+	test('awaits async onFile results while loading files', async () => {
+		const tempDir = mkdtempSync(join(tmpdir(), 'seyfert-langs-'));
+		try {
+			writeFileSync(join(tempDir, 'en-US.json'), JSON.stringify({ greeting: 'Hello' }));
+			const { handler } = createHandler();
+			const onFile = handler.onFile.bind(handler);
+
+			handler.onFile = vi.fn(async (locale, file) => {
+				await Promise.resolve();
+				return onFile(locale, file);
+			});
+
+			await handler.load(tempDir);
+
+			expect(handler.values['en-US']).toEqual({ greeting: 'Hello' });
+			expect(handler.onFile).toHaveBeenCalledWith(
+				'en-US',
+				expect.objectContaining({
+					name: 'en-US.json',
+					path: join(tempDir, 'en-US.json'),
+				}),
+			);
+		} finally {
+			rmSync(tempDir, { recursive: true, force: true });
+		}
 	});
 });

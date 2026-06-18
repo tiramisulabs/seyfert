@@ -1,8 +1,14 @@
 import { basename } from 'node:path';
 import type { FileLoaded } from '../commands/handler';
-import { BaseHandler, isCloudfareWorker, isObject, magicImport, SeyfertError } from '../common';
+import { type Awaitable, BaseHandler, isCloudfareWorker, isObject, magicImport, SeyfertError } from '../common';
 import type { Locale, LocaleString } from '../types';
 import { LangRouter } from './router';
+
+type LangFileResult = { file: Record<string, any>; locale: string } | false;
+
+function isPromiseLike<T>(value: Awaitable<T>): value is Promise<T> {
+	return !!value && typeof (value as Promise<T>).then === 'function';
+}
 
 export class LangsHandler extends BaseHandler {
 	values: Partial<Record<string, any>> = {};
@@ -42,13 +48,19 @@ export class LangsHandler extends BaseHandler {
 	async load(dir: string) {
 		const files = await this.loadFilesK<Record<string, any>>(await this.getFiles(dir));
 		for (const i of files) {
-			this.parse(i);
+			await this.parse(i);
 		}
 	}
 
-	parse(file: LangInstance) {
+	parse(file: LangInstance): void | Promise<void> {
 		const oldLocale = file.name.split('.').slice(0, -1).join('.') || file.name;
 		const result = this.onFile(oldLocale, file);
+		if (isPromiseLike(result)) return result.then(value => this.applyParsedFile(file, value));
+		this.applyParsedFile(file, result);
+		return;
+	}
+
+	private applyParsedFile(file: LangInstance, result: LangFileResult) {
 		if (!result) return;
 		if ('path' in file) this.__paths[result.locale] = file.path as string;
 		this.values[result.locale] = result.file;
@@ -90,7 +102,7 @@ export class LangsHandler extends BaseHandler {
 		}
 	}
 
-	onFile(locale: string, { file, name, path }: LangInstance): { file: Record<string, any>; locale: string } | false {
+	onFile(locale: string, { file, name, path }: LangInstance): Awaitable<LangFileResult> {
 		const modulePath = path ?? name;
 		if (isObject(file.default)) {
 			return {
