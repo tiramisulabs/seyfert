@@ -311,7 +311,7 @@ export class BaseClient {
 			}
 
 			if (cache.adapter) this.cache.adapter = cache.adapter;
-			if (cache.disabledCache) this.refreshPluginCacheResources(disabledCache);
+			if (cache.disabledCache !== undefined) this.refreshPluginCacheResources(disabledCache);
 		}
 		if (middlewares) {
 			this.middlewares = { ...(this.middlewares ?? {}), ...middlewares };
@@ -1228,6 +1228,8 @@ export type RuntimeConfig = OmitInsert<
 	'intents',
 	{ intents?: IntentStrings | number[] | number }
 >;
+export type BotConfig = InternalRuntimeConfig;
+export type HttpConfig = InternalRuntimeConfigHTTP;
 
 export interface ServicesOptions {
 	rest?: ApiHandler;
