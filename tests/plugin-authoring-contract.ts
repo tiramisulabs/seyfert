@@ -122,6 +122,7 @@ import {
 } from 'seyfert';
 import type {
 	Awaitable,
+	ComponentInteractionMessageUpdate,
 	MakePresent,
 	MakeRequired,
 	ModalCreateBodyRequest,
@@ -1248,6 +1249,8 @@ declare function entryPointContext(): EntryPointContext;
 declare const messageWithEmbeds: MessageStructure;
 declare const rawApiEmbed: APIEmbed;
 declare const modalBodyContract: ModalCreateBodyRequest;
+declare const modalUpdateBodyContract: ComponentInteractionMessageUpdate;
+declare const modalSubmitInteraction: ModalSubmitInteraction;
 
 expectType<Promise<void>>(commandContext().write({ content: 'Done!' }));
 expectType<Promise<void>>(commandContext().write({ embeds: messageWithEmbeds.embeds }));
@@ -1265,6 +1268,12 @@ expectType<true>(true as Equal<CommandContext['messageResponse'], undefined>);
 expectType<MessageStructure>(componentContext().message);
 expectType<Promise<WebhookMessageStructure>>(componentContext().ephemeral({ content: 'Done!' }, true));
 expectType<Promise<WebhookMessageStructure>>(modalContext().ephemeral({ content: 'Done!' }, true));
+expectType<Promise<undefined>>(modalContext().update(modalUpdateBodyContract));
+expectType<Promise<WebhookMessageStructure>>(modalContext().update(modalUpdateBodyContract, true));
+expectType<Promise<undefined>>(modalContext().deferUpdate());
+expectType<Promise<undefined>>(modalSubmitInteraction.deferUpdate());
+// @ts-expect-error ModalSubmitInteraction.deferUpdate no longer accepts withResponse.
+modalSubmitInteraction.deferUpdate(true);
 expectType<Promise<WebhookMessageStructure>>(menuCommandContext().ephemeral({ content: 'Done!' }, true));
 expectType<Promise<WebhookMessageStructure>>(entryPointContext().ephemeral({ content: 'Done!' }, true));
 

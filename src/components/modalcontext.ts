@@ -16,6 +16,7 @@ import type {
 } from '../commands';
 import { BaseContext } from '../commands/basecontext';
 import type {
+	ComponentInteractionMessageUpdate,
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
 	MakeRequired,
@@ -169,6 +170,17 @@ export class ModalContext<M extends keyof ResolvedRegisteredMiddlewares = never>
 		fetchReply?: FR,
 	): Promise<When<FR, WebhookMessageStructure, undefined>> {
 		return this.interaction.deferReply<FR>(ephemeral ? MessageFlags.Ephemeral : undefined, fetchReply);
+	}
+
+	update<WR extends boolean = false>(
+		body: ComponentInteractionMessageUpdate,
+		withResponse?: WR,
+	): Promise<When<WR, WebhookMessageStructure, undefined>> {
+		return this.interaction.update<WR>(body, withResponse);
+	}
+
+	deferUpdate(): Promise<undefined> {
+		return this.interaction.deferUpdate();
 	}
 
 	/**

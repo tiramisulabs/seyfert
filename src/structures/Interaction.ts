@@ -877,13 +877,10 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 		);
 	}
 
-	deferUpdate<WR extends boolean = false>(withResponse?: WR): Promise<When<WR, WebhookMessageStructure, undefined>> {
-		return this.reply<WR>(
-			{
-				type: InteractionResponseType.DeferredMessageUpdate,
-			},
-			withResponse,
-		);
+	deferUpdate(): Promise<undefined> {
+		return this.reply({
+			type: InteractionResponseType.DeferredMessageUpdate,
+		});
 	}
 
 	get customId() {
