@@ -309,7 +309,13 @@ export interface ClientOptions<TPlugins extends readonly AnySeyfertPlugin[] = Re
 	};
 	handlePayload?: ShardManagerOptions['handlePayload'];
 	handleSendPayload?: ShardManagerOptions['handleSendPayload'];
+	/**
+	 * @deprecated Use shard disconnect events instead. Injected ShardManager callbacks can double-fire.
+	 */
 	onShardDisconnect?: ShardManagerOptions['onShardDisconnect'];
+	/**
+	 * @deprecated Use shard reconnect events instead. Injected ShardManager callbacks can double-fire.
+	 */
 	onShardReconnect?: ShardManagerOptions['onShardReconnect'];
 	resharding?: PickPartial<NonNullable<ShardManagerOptions['resharding']>, 'getInfo'>;
 }
