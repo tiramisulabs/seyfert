@@ -15,6 +15,7 @@ import {
 	bindPluginClient,
 	cleanupPluginDynamicContributionMutations,
 	cleanupPluginEventListeners,
+	clonePluginOptions,
 	createPluginContextFragment,
 	createPluginRuntimeRegistry,
 	installPluginClientMaps,
@@ -23,6 +24,7 @@ import {
 	type PluginOptionContribution,
 	type PluginRuntimeRegistry,
 	pluginIdentity,
+	readonlyPluginOptions,
 	resolvePluginIntents,
 	runPluginRegister,
 	validatePluginRequirements,
@@ -33,6 +35,7 @@ import {
 	disposePluginSharedValues,
 } from './plugins/shared';
 
+export type { SeyfertPluginErrorCode } from './plugins/errors';
 export { SeyfertPluginAggregateError, SeyfertPluginError } from './plugins/errors';
 export { createSharedKey } from './plugins/shared';
 export { PluginOrder } from './plugins/types';
@@ -58,6 +61,7 @@ import type {
 	SeyfertPluginApi,
 	SeyfertPluginClient,
 	SeyfertPluginOptions,
+	SeyfertPluginTeardownApi,
 } from './plugins/types';
 
 export type {
@@ -74,6 +78,7 @@ export type {
 	PluginCacheResourceOptions,
 	PluginClientMap,
 	PluginCommandContributionOptions,
+	PluginCommandLoadable,
 	PluginCommandObserver,
 	PluginCommandObserverCommand,
 	PluginCommandObserverContext,
@@ -81,10 +86,13 @@ export type {
 	PluginContextMap,
 	PluginContextMapOf,
 	PluginContextOf,
+	PluginContributionOptions,
 	PluginDiagnosticCode,
 	PluginDiagnosticMessage,
 	PluginDiagnosticSeverity,
 	PluginDiagnostics,
+	PluginEventDisposer,
+	PluginEventErrorHandler,
 	PluginExtensionOf,
 	PluginGatewayPayload,
 	PluginGatewayPayloadWrapper,
@@ -100,10 +108,13 @@ export type {
 	PluginHookPayload,
 	PluginHookPayloadFor,
 	PluginIntentResolvable,
+	PluginLangOptions,
+	PluginLifecyclePhase,
 	PluginLifecycleStatus,
 	PluginLoadedMetadata,
 	PluginMiddlewareDenialMetadata,
 	PluginMiddlewareMap,
+	PluginMiddlewareOptions,
 	PluginMiddlewaresMapOf,
 	PluginMiddlewaresOf,
 	PluginOrderOpt,
@@ -134,6 +145,7 @@ export type {
 	SeyfertPluginClient,
 	SeyfertPluginHooks,
 	SeyfertPluginOptions,
+	SeyfertPluginTeardownApi,
 	SeyfertRegistry,
 	SharedKey,
 	SharedValue,
@@ -162,7 +174,7 @@ type CreatePluginInputBase<
 	options?(current: Readonly<BaseClientOptions>): SeyfertPluginOptions;
 	register?(api: SeyfertPluginApi<M, ExtendOf<I> & E>): void;
 	setup?(client: SeyfertPluginClient & ExtendOf<I> & E, api?: SeyfertPluginApi<M, ExtendOf<I> & E>): Awaitable<void>;
-	teardown?(client: SeyfertPluginClient & ExtendOf<I> & E, api?: SeyfertPluginApi<M, ExtendOf<I> & E>): Awaitable<void>;
+	teardown?(client: SeyfertPluginClient & ExtendOf<I> & E, api?: SeyfertPluginTeardownApi): Awaitable<void>;
 };
 
 type CreatePluginReservedKey =
@@ -255,7 +267,15 @@ export function definePlugin<O extends object, P extends AnySeyfertPlugin>(setup
 export function definePlugin<O extends object, P extends AnySeyfertPlugin>(
 	setup: ((options: O) => P) | { defaults: O; validate?: (options: O) => void; factory: (options: O) => P },
 ) {
-	if (typeof setup === 'function') return setup;
+	if (typeof setup === 'function') {
+		return (options: O) => {
+			try {
+				return setup(options);
+			} catch (error) {
+				throw wrapPluginError('<definePlugin>', 'options', -1, error);
+			}
+		};
+	}
 
 	return (options?: Partial<O>) => {
 		const resolved = { ...setup.defaults, ...options } as O;
@@ -318,7 +338,7 @@ export function resolveClientPlugins(
 	const addPluginOption = (record: PluginOptionContribution['record'], fragment: SeyfertPluginOptions) => {
 		pluginOptionContributions.push({
 			record,
-			fragment,
+			fragment: clonePluginOptions(fragment),
 			sequence: nextPluginContributionSequence(registry),
 			scope: 'register',
 		});
@@ -334,7 +354,7 @@ export function resolveClientPlugins(
 			addPluginOption(record, { globalMiddlewares: globalMiddlewares as never });
 		}
 
-		const current = MergeOptions<BaseClientOptions>(defaults, ...pluginOptions(), userOptions);
+		const current = readonlyPluginOptions(MergeOptions<BaseClientOptions>(defaults, ...pluginOptions(), userOptions));
 		try {
 			const fragment = record.plugin.options?.(current);
 			if (fragment) addPluginOption(record, fragment);
@@ -359,12 +379,23 @@ export function resolveClientPlugins(
 	composeContext(merged, defaults, optionFragments, userOptions);
 	composeContextScopes(merged, defaults, optionFragments, userOptions);
 	composeGlobalMiddlewares(merged, defaults, pluginOptionContributions, userOptions, registry);
+	const commandDefaultContributions = collectPluginDefaultContributions(
+		pluginOptionContributions,
+		registry.pluginDefaults,
+		'commands',
+	);
 	composeDefaults(
 		merged.commands?.defaults,
 		defaults.commands?.defaults,
-		collectPluginDefaultContributions(pluginOptionContributions, registry.pluginDefaults, 'commands'),
+		commandDefaultContributions,
 		userOptions.commands?.defaults,
 		commandHookKeys,
+	);
+	composeCommandProps(
+		merged.commands?.defaults,
+		defaults.commands?.defaults,
+		commandDefaultContributions,
+		userOptions.commands?.defaults,
 	);
 	composeDefaults(
 		merged.components?.defaults,
@@ -394,6 +425,51 @@ export function refreshClientPluginGlobalMiddlewares(client: BaseClient, registr
 	const sources = registry.globalMiddlewareOptions;
 	if (!sources) return;
 	composeGlobalMiddlewares(client.options, sources.defaults, sources.pluginOptions, sources.userOptions, registry);
+}
+
+export function refreshClientPluginOptions(client: BaseClient, registry: PluginRuntimeRegistry) {
+	const sources = registry.globalMiddlewareOptions;
+	if (!sources) return;
+
+	const optionFragments = sources.pluginOptions.map(contribution => contribution.fragment);
+	const merged = MergeOptions<BaseClientOptions>(sources.defaults, ...optionFragments, sources.userOptions);
+	merged.plugins = registry.plugins;
+	composeContext(merged, sources.defaults, optionFragments, sources.userOptions);
+	composeContextScopes(merged, sources.defaults, optionFragments, sources.userOptions);
+	composeGlobalMiddlewares(merged, sources.defaults, sources.pluginOptions, sources.userOptions, registry);
+	const commandDefaultContributions = collectPluginDefaultContributions(
+		sources.pluginOptions,
+		registry.pluginDefaults,
+		'commands',
+	);
+	composeDefaults(
+		merged.commands?.defaults,
+		sources.defaults.commands?.defaults,
+		commandDefaultContributions,
+		sources.userOptions.commands?.defaults,
+		commandHookKeys,
+	);
+	composeCommandProps(
+		merged.commands?.defaults,
+		sources.defaults.commands?.defaults,
+		commandDefaultContributions,
+		sources.userOptions.commands?.defaults,
+	);
+	composeDefaults(
+		merged.components?.defaults,
+		sources.defaults.components?.defaults,
+		collectPluginDefaultContributions(sources.pluginOptions, registry.pluginDefaults, 'components'),
+		sources.userOptions.components?.defaults,
+		componentHookKeys,
+	);
+	composeDefaults(
+		merged.modals?.defaults,
+		sources.defaults.modals?.defaults,
+		collectPluginDefaultContributions(sources.pluginOptions, registry.pluginDefaults, 'modals'),
+		sources.userOptions.modals?.defaults,
+		modalHookKeys,
+	);
+	client.options = merged;
 }
 
 export function resolveClientPluginIntents(client: BaseClient, base: number) {
@@ -550,16 +626,16 @@ export async function setupClientPlugins(
 				const registry = client.pluginRegistry;
 				if (registry) cleanupPluginEventListeners(registry, record);
 				const cleanupErrors = registry ? await disposePluginSharedValues(client.shared, registry, record) : [];
-				if (registry) cleanupPluginDynamicSharedContributions(registry, record);
+				const sharedMutationErrors = registry ? await cleanupPluginDynamicSharedContributions(registry, record) : [];
 				if (registry) cleanupPluginDynamicContributionMutations(registry, record);
 				refreshClientPluginContributions(client);
-				if (cleanupErrors.length) {
+				if (cleanupErrors.length || sharedMutationErrors.length) {
 					throw new SeyfertPluginAggregateError(
 						'PLUGIN_FAILED',
 						'<multiple>',
 						'setup',
 						-1,
-						[setupError, ...cleanupErrors],
+						[setupError, ...cleanupErrors, ...sharedMutationErrors],
 						'Seyfert plugin setup failed and cleanup also failed.',
 						setupError,
 					);
@@ -609,7 +685,7 @@ async function teardownPluginRecords(
 			try {
 				await plugin.teardown?.(
 					client as never,
-					registry ? (createPluginApi(record, registry, 'setup') as never) : undefined,
+					registry ? (createPluginApi(record, registry, 'teardown') as never) : undefined,
 				);
 			} catch (error) {
 				failed = true;
@@ -626,7 +702,11 @@ async function teardownPluginRecords(
 					failed = true;
 					errors.push(...sharedErrors);
 				}
-				cleanupPluginDynamicSharedContributions(registry, record);
+				const sharedMutationErrors = await cleanupPluginDynamicSharedContributions(registry, record);
+				if (sharedMutationErrors.length) {
+					failed = true;
+					errors.push(...sharedMutationErrors);
+				}
 				cleanupPluginDynamicContributionMutations(registry, record);
 			}
 
@@ -832,6 +912,25 @@ function composeDefaults<TDefaults extends object, TKey extends keyof TDefaults>
 	}
 }
 
+function composeCommandProps(
+	target: SeyfertCommandDefaults | undefined,
+	defaults: SeyfertCommandDefaults | undefined,
+	contributions: readonly PluginDefaultsContribution[],
+	userDefaults: SeyfertCommandDefaults | undefined,
+) {
+	if (!target) return;
+	const pluginProps = contributions
+		.map(contribution => contribution.hooks?.props)
+		.filter((props): props is Record<string, unknown> => isPlainObject(props));
+	const merged = MergeOptions<Record<string, unknown>>(
+		{},
+		isPlainObject(defaults?.props) ? defaults.props : {},
+		...pluginProps,
+		isPlainObject(userDefaults?.props) ? userDefaults.props : {},
+	);
+	if (Object.keys(merged).length) target.props = merged as SeyfertCommandDefaults['props'];
+}
+
 function composeHooks(hooks: readonly AnyFunction[]) {
 	return async (...args: unknown[]) => {
 		for (const hook of hooks) await hook(...args);
@@ -864,4 +963,10 @@ function collectPluginDefaultContributions(
 
 function isFunction(value: unknown): value is AnyFunction {
 	return typeof value === 'function';
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+	if (typeof value !== 'object' || value === null) return false;
+	const prototype = Object.getPrototypeOf(value);
+	return prototype === Object.prototype || prototype === null;
 }

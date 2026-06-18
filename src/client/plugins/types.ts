@@ -78,11 +78,12 @@ export type PluginDiagnosticCode =
 	| (string & {});
 export type PluginLifecycleStatus = 'registered' | 'setting-up' | 'ready' | 'closing' | 'closed' | 'failed';
 export type PluginRequirement = `plugin:${string}`;
-export type SemverRange = string;
+type SemverVersion = `${number}.${number}.${number}${string}`;
+export type SemverRange = SemverVersion | `>=${SemverVersion}` | `^${SemverVersion}` | `~${SemverVersion}`;
 export type PluginRequirementInput =
 	| PluginRequirement
-	| { req: PluginRequirement; range?: SemverRange; optional?: boolean }
-	| { capability: SharedKey<unknown, string>; optional?: boolean };
+	| { req: PluginRequirement; range?: SemverRange; optional?: boolean; capability?: never }
+	| { capability: SharedKey<unknown, string>; optional?: boolean; req?: never; range?: never };
 export type PluginIntentResolvable = keyof typeof GatewayIntentBits | GatewayIntentBits | number;
 export type PluginLifecyclePhase =
 	| 'resolve'
@@ -200,9 +201,13 @@ export interface PluginCacheResourceOptions {
 
 export interface SeyfertPluginHooks {
 	'plugins:ready': [client: BaseClient];
+	'plugins:setupComplete': [client: BaseClient];
 	'commands:beforeLoad': [client: BaseClient, dir: string | undefined];
 	'commands:afterLoad': [metadata: PluginLoadedMetadata<'commands'>];
+	'components:beforeLoad': [client: BaseClient, dir: string | undefined];
 	'components:afterLoad': [metadata: PluginLoadedMetadata<'components'>];
+	'events:beforeLoad': [client: BaseClient, dir: string | undefined];
+	'events:afterLoad': [client: BaseClient, dir: string | undefined];
 	'client:close': [client: BaseClient];
 }
 
@@ -262,16 +267,22 @@ export type PluginMiddlewaresOf<T> = T extends SeyfertPlugin<any, any, any, infe
 		? {}
 		: M
 	: {};
+type PluginImportsOf<T> = T extends SeyfertPlugin<any, any, infer I, any> ? I[number] : never;
+type PluginClosureDepth = [never, 0, 1, 2, 3, 4, 5];
+type PluginClosureOf<T, Depth extends number = 5> = [Depth] extends [0]
+	? T
+	: T | PluginClosureOf<PluginImportsOf<T>, PluginClosureDepth[Depth]>;
+type PluginTupleClosure<TPlugins extends readonly AnySeyfertPlugin[]> = PluginClosureOf<TPlugins[number]>;
 
 export type ExtendOf<TPlugins extends readonly AnySeyfertPlugin[]> = UnionToIntersection<
-	PluginExtensionOf<TPlugins[number]>
+	PluginExtensionOf<PluginTupleClosure<TPlugins>>
 >;
 
 export type ContextOf<TPlugins extends readonly AnySeyfertPlugin[]> = UnionToIntersection<
-	PluginContextOf<TPlugins[number]>
+	PluginContextOf<PluginTupleClosure<TPlugins>>
 >;
 export type MiddlewaresOf<TPlugins extends readonly AnySeyfertPlugin[]> = UnionToIntersection<
-	PluginMiddlewaresOf<TPlugins[number]>
+	PluginMiddlewaresOf<PluginTupleClosure<TPlugins>>
 >;
 
 export type RegisteredPlugins = SeyfertRegistry extends { plugins: infer T extends readonly AnySeyfertPlugin[] }
@@ -379,9 +390,14 @@ export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewa
 		): void;
 	};
 	rest: {
-		observe(observer: PluginRestObserver, order?: PluginOrderOpt): PluginEventDisposer;
+		observe(observer: PluginRestObserver, order?: PluginOrderOpt | { order?: PluginOrderOpt }): PluginEventDisposer;
 	};
 	hooks: {
+		on<K extends PluginHookName>(
+			name: K,
+			handler: PluginHookHandler<K, E>,
+			opts?: { order?: PluginOrderOpt },
+		): PluginEventDisposer;
 		tap<K extends PluginHookName>(
 			name: K,
 			handler: PluginHookHandler<K, E>,
@@ -389,6 +405,7 @@ export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewa
 		): PluginEventDisposer;
 	};
 	handlers: {
+		construct(creator: PluginHandlerCreator, opts?: PluginHandlerOptions): void;
 		create(creator: PluginHandlerCreator, opts?: PluginHandlerOptions): void;
 		transform(transformer: PluginHandlerTransformer, opts?: PluginHandlerOptions): void;
 	};
@@ -412,7 +429,11 @@ export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewa
 	};
 	middlewares: {
 		add<const Name extends keyof M & string>(name: Name, middleware: M[Name], opts?: PluginMiddlewareOptions): void;
-		add(name: string, middleware: MiddlewareContext, opts?: PluginMiddlewareOptions): void;
+		add<const Name extends string>(
+			name: Name extends keyof M & string ? never : Name,
+			middleware: MiddlewareContext,
+			opts?: PluginMiddlewareOptions,
+		): void;
 		remove(...names: string[]): void;
 	};
 	autocomplete: {
@@ -454,6 +475,10 @@ export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewa
 	};
 }
 
+export type SeyfertPluginTeardownApi = Pick<SeyfertPluginApi, 'has' | 'diagnostics'> & {
+	shared: Pick<SeyfertPluginApi['shared'], 'has'>;
+};
+
 export type ResolvedPluginList = readonly AnySeyfertPlugin[] & {
 	readonly resolved: readonly AnySeyfertPlugin[];
 	readonly diagnostics: readonly PluginDiagnostics[];
@@ -471,6 +496,7 @@ export interface SeyfertPlugin<
 > {
 	name: string;
 	instanceId?: string;
+	version?: string;
 	imports?: I;
 	requires?: readonly PluginRequirementInput[];
 	meta?: unknown;
@@ -481,7 +507,7 @@ export interface SeyfertPlugin<
 	options?(current: Readonly<BaseClientOptions>): SeyfertPluginOptions;
 	register?(api: SeyfertPluginApi<M, ExtendOf<I> & E>): void;
 	setup?(client: SeyfertPluginClient & ExtendOf<I> & E, api?: SeyfertPluginApi<M, ExtendOf<I> & E>): Awaitable<void>;
-	teardown?(client: SeyfertPluginClient & ExtendOf<I> & E, api?: SeyfertPluginApi<M, ExtendOf<I> & E>): Awaitable<void>;
+	teardown?(client: SeyfertPluginClient & ExtendOf<I> & E, api?: SeyfertPluginTeardownApi): Awaitable<void>;
 }
 
 export interface PluginDiagnostics {
@@ -496,10 +522,21 @@ export interface PluginDiagnostics {
 	components: number;
 	modals: number;
 	events: readonly string[];
+	anyEvents: number;
+	eventErrors: number;
 	middlewares: readonly string[];
 	requirements: readonly PluginRequirementDiagnostic[];
 	shared: readonly string[];
+	cacheResources: readonly string[];
+	langs: readonly string[];
+	hooks: readonly string[];
+	restObservers: number;
+	commandObservers: number;
 	autocompleteWrappers: number;
+	gatewayIntents: number;
 	gatewayPayloadWrappers: number;
+	handlerCreators: number;
+	handlerTransformers: number;
 	messages: readonly PluginDiagnosticMessage[];
+	truncated?: Readonly<Record<string, number>>;
 }

@@ -321,11 +321,23 @@ export class ApiHandler {
 			this.setRatelimitsBucket(route, response);
 			this.setResetBucket(route, response, now, headerNow);
 
+			const observerResponse = response.clone();
 			let result: string | Record<string, any> = await response.text();
 
 			if (response.status >= 300) {
 				if (response.status === 429) {
-					const result429 = await this.handle429(route, method, url, request, response, result, next, reject, now);
+					const result429 = await this.handle429(
+						route,
+						method,
+						url,
+						{ ...request, auth },
+						observerResponse,
+						result,
+						next,
+						reject,
+						now,
+						finalUrl,
+					);
 					if (result429 !== false) return resolve(result429);
 					await this.notifyFailRequest(method, finalUrl, result, response.status, { ...request, auth });
 					return this.clearResetInterval(route);
@@ -369,7 +381,7 @@ export class ApiHandler {
 				}
 			}
 
-			await this.notifySuccessRequest(method, finalUrl, response, { ...request, auth });
+			await this.notifySuccessRequest(method, finalUrl, observerResponse, { ...request, auth });
 			next();
 			return resolve(result || undefined);
 		};
@@ -485,8 +497,9 @@ export class ApiHandler {
 		next: () => void,
 		reject: (err: unknown) => void,
 		now: number,
+		notifyUrl: `/${string}`,
 	) {
-		await this.notifyRatelimit(response, request, method, url);
+		await this.notifyRatelimit(response, request, method, notifyUrl);
 
 		const bucket = this.ratelimits.get(route)!;
 		let retryAfter: number | undefined;
@@ -712,11 +725,33 @@ function freezeRestPayload<T extends object>(payload: T): Readonly<T> {
 }
 
 function readonlyRequestOptions(request: ApiRequestOptions): Readonly<ApiRequestOptions> {
-	const clone: ApiRequestOptions = {
+	const clone: ApiRequestOptions = deepClonePlain({
 		...request,
-		body: request.body ? { ...request.body } : undefined,
-		query: request.query ? { ...request.query } : undefined,
-		files: request.files?.map(file => ({ ...file })),
-	};
-	return Object.freeze(clone);
+		body: request.body ? deepClonePlain(request.body) : undefined,
+		query: request.query ? deepClonePlain(request.query) : undefined,
+		files: request.files?.map(file => deepClonePlain(file)),
+	});
+	return deepFreezePlain(clone);
+}
+
+function deepClonePlain<T>(value: T): T {
+	if (Array.isArray(value)) return value.map(deepClonePlain) as T;
+	if (!isPlainObject(value)) return value;
+	return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, deepClonePlain(entry)])) as T;
+}
+
+function deepFreezePlain<T>(value: T): Readonly<T> {
+	if (Array.isArray(value)) {
+		for (const entry of value) deepFreezePlain(entry);
+		return Object.freeze(value) as Readonly<T>;
+	}
+	if (!isPlainObject(value)) return value as Readonly<T>;
+	for (const entry of Object.values(value)) deepFreezePlain(entry);
+	return Object.freeze(value) as Readonly<T>;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+	if (typeof value !== 'object' || value === null) return false;
+	const prototype = Object.getPrototypeOf(value);
+	return prototype === Object.prototype || prototype === null;
 }

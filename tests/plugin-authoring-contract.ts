@@ -221,6 +221,11 @@ const economy = createPlugin({
 			expectType<unknown>(Ctor);
 			return next();
 		}, { kinds: ['command', 'component', 'modal'], order: PluginOrder.Before });
+		api.handlers.construct((Ctor, next, metadata) => {
+			expectType<PluginHandlerKind>(metadata.kind);
+			expectType<unknown>(Ctor);
+			return next();
+		});
 		api.handlers.transform((instance, metadata) => {
 			expectType<PluginHandlerKind>(metadata.kind);
 			return instance;
@@ -274,6 +279,10 @@ const economy = createPlugin({
 			expectType<unknown>(client.plugins);
 		}, { order: PluginOrder.After });
 		expectType<() => void>(disposeReadyHook);
+		const disposeSetupHook = api.hooks.on('plugins:setupComplete', client => {
+			expectType<unknown>(client.plugins);
+		});
+		expectType<() => void>(disposeSetupHook);
 		api.hooks.tap('commands:beforeLoad', (client, dir) => {
 			expectType<unknown>(client.commands);
 			expectType<string | undefined>(dir);
@@ -319,6 +328,8 @@ const auth: SeyfertPlugin<{}, {}, readonly [], { auth: AuthMiddleware; audit: Au
 	register(api) {
 		api.middlewares.add('auth', (({ next }) => next({ userId: '1' })) as AuthMiddleware);
 		api.middlewares.add('audit', (({ next }) => next()) as AuditMiddleware);
+		// @ts-expect-error known middleware names must use their declared payload
+		api.middlewares.add('auth', (({ next }) => next()) as AuditMiddleware);
 	},
 });
 
@@ -374,7 +385,6 @@ const combinedAtomic = createPlugin({
 	},
 	globalMiddlewares: ['combinedAudit'],
 	register(api) {
-		api.middlewares.add('combinedAudit', combinedAudit);
 		api.shared.set(combinedSharedKey, client => {
 			expectType<1>(client.importedCounter.count);
 			expectType<'combined-client'>(client.combinedClient.source);
@@ -418,6 +428,9 @@ const combinedAtomic = createPlugin({
 		expectType<'combined-client'>(client.combinedClient.source);
 		expectType<boolean | undefined>(api?.shared.has(combinedSharedKey));
 		expectType<boolean | undefined>(api?.has('plugin:combined-import'));
+		api?.diagnostics.warn('closing');
+		// @ts-expect-error teardown API is read-only except diagnostics
+		api?.commands.add(ContractCommand);
 	},
 });
 
@@ -480,6 +493,7 @@ const capabilityRequirementPlugin = createPlugin({
 const plugins = definePlugins(economy, storage, auth, combinedAtomic, combinedImport, optionsPlugin);
 const localPlugins = definePlugins(configuredPlugin, defaultedPlugin, capabilityRequirementPlugin);
 const arrayPlugins = definePlugins([economy, storage, combinedAtomic]);
+const transitiveOnlyPlugins = definePlugins(combinedAtomic);
 const emptyPlugins = definePlugins();
 
 declare module 'seyfert' {
@@ -507,6 +521,7 @@ type NoFifthPluginSlot = SeyfertPlugin<{}, {}, readonly [], {}, {}>;
 expectType<readonly [typeof economy, typeof storage, typeof auth, typeof combinedAtomic, typeof combinedImport, typeof optionsPlugin]>(plugins);
 expectType<readonly [typeof configuredPlugin, typeof defaultedPlugin, typeof capabilityRequirementPlugin]>(localPlugins);
 expectType<readonly [typeof economy, typeof storage, typeof combinedAtomic]>(arrayPlugins);
+expectType<readonly [typeof combinedAtomic]>(transitiveOnlyPlugins);
 expectType<readonly []>(emptyPlugins);
 expectType<string>(storage.meta.label);
 expectType<'atomic'>(combinedAtomic.meta.kind);
@@ -557,10 +572,18 @@ expectType<RegisteredPluginShared['ledger'] | undefined>(client.shared.get('ledg
 const localClient = new Client({ plugins: localPlugins });
 expectType<'coin' | 'gem'>(localClient.configuredEconomy.currency);
 expectType<string>(localClient.defaultedConfig.prefix);
+// @ts-expect-error local clients should not expose ambient registry plugins
+localClient.economy;
 
 declare const explicitLocalClient: Client<typeof localPlugins>;
 expectType<'coin' | 'gem'>(explicitLocalClient.configuredEconomy.currency);
 expectType<boolean>(explicitLocalClient.defaultedConfig.enabled);
+// @ts-expect-error explicit local clients should not expose ambient registry plugins
+explicitLocalClient.economy;
+
+declare const transitiveClient: Client<typeof transitiveOnlyPlugins>;
+expectType<1>(transitiveClient.importedCounter.count);
+expectType<'combined-client'>(transitiveClient.combinedClient.source);
 
 const ctx = commandContext();
 ctx.client.economy.addCoins('user', 3);

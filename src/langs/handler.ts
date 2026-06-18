@@ -11,6 +11,7 @@ export class LangsHandler extends BaseHandler {
 		path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts')) || path.endsWith('.json');
 	defaultLang?: string;
 	aliases: [string, LocaleString[]][] = [];
+	onReload?: (locale: string, value: Record<string, any>) => void;
 
 	getLocale(locale: string) {
 		return this.aliases.find(([_key, aliases]) => aliases.includes(locale as Locale))?.[0] ?? locale;
@@ -77,7 +78,9 @@ export class LangsHandler extends BaseHandler {
 			} satisfies LangInstance),
 		);
 		if (!value) return null;
-		return (this.values[lang] = value.file);
+		this.values[lang] = value.file;
+		this.onReload?.(lang, value.file);
+		return this.values[lang];
 	}
 
 	async reloadAll(stopIfFail = true) {

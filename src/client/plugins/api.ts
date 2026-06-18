@@ -5,6 +5,7 @@ import { nextPluginContributionSequence } from './order';
 import {
 	addPluginDiagnostic,
 	addPluginOptionFragment,
+	assertSafePluginResourceName,
 	hasPluginRequirement,
 	type PluginEventContributionScope,
 	type PluginRuntimeRecord,
@@ -29,12 +30,15 @@ import type {
 	PluginOrderOpt,
 	SeyfertPluginApi,
 	SeyfertPluginOptions,
+	SeyfertPluginTeardownApi,
 	SharedKey,
 } from './types';
 
 type PluginSharedName = string | SharedKey<unknown, string>;
 
 const reservedCacheResourceNames = new Set([
+	'__logger__',
+	'__proto__',
 	'adapter',
 	'bans',
 	'buildCache',
@@ -42,28 +46,66 @@ const reservedCacheResourceNames = new Set([
 	'bulkPatch',
 	'bulkSet',
 	'channels',
+	'constructor',
 	'emojis',
 	'flush',
 	'guilds',
+	'hasChannelsIntent',
+	'hasDirectMessages',
+	'hasGuildExpressionsIntent',
+	'hasGuildMembersIntent',
+	'hasGuildsIntent',
+	'hasIntent',
+	'hasModerationIntent',
+	'hasPrenseceUpdates',
+	'hasRolesIntent',
+	'hasVoiceStates',
 	'intents',
 	'members',
 	'messages',
 	'onPacket',
+	'onPacketDefault',
 	'overwrites',
+	'pluginResourceNames',
+	'pluginResourcePacketHandlers',
 	'presences',
+	'prototype',
 	'roles',
 	'stageInstances',
 	'stickers',
 	'users',
 	'voiceStates',
 ]);
+const noReservedPluginKeys = new Set<string>();
+const handlerKinds = new Set(['command', 'component', 'modal']);
 
 export function createPluginApi(
 	record: PluginRuntimeRecord,
 	registry: PluginRuntimeRegistry,
+	scope: 'teardown',
+): SeyfertPluginTeardownApi;
+export function createPluginApi(
+	record: PluginRuntimeRecord,
+	registry: PluginRuntimeRegistry,
+	scope?: Exclude<PluginEventContributionScope, 'teardown'>,
+): SeyfertPluginApi;
+export function createPluginApi(
+	record: PluginRuntimeRecord,
+	registry: PluginRuntimeRegistry,
 	scope: PluginEventContributionScope = 'register',
-): SeyfertPluginApi {
+): SeyfertPluginApi | SeyfertPluginTeardownApi {
+	const assertCanMutate = (phase: string) => {
+		if (scope !== 'teardown') return;
+		throw createPluginConflictError(
+			record.plugin.name,
+			phase,
+			record.index,
+			`Plugin "${record.plugin.name}" cannot mutate plugin contributions during teardown.`,
+			record.plugin.instanceId,
+		);
+	};
 	const addEvent: SeyfertPluginApi['events']['on'] = (name, handler, opts) => {
+		assertCanMutate(`events.${String(name)}`);
 		const contribution = {
 			record,
 			name: String(name),
@@ -90,6 +132,7 @@ export function createPluginApi(
 				return addEvent(name, handler, { once: true });
 			},
 			onAny(handler, opts) {
+				assertCanMutate('events.onAny');
 				const contribution = {
 					record,
 					handler,
@@ -102,6 +145,7 @@ export function createPluginApi(
 				return once(() => removePluginAnyEventContribution(registry, contribution));
 			},
 			onError(handler, opts) {
+				assertCanMutate('events.onError');
 				const contribution = {
 					record,
 					handler,
@@ -116,6 +160,7 @@ export function createPluginApi(
 		},
 		commands: {
 			add(...args) {
+				assertCanMutate('commands.add');
 				const [commands, opts] = splitContributionArgs<
 					InstanceType<HandleableCommand> | HandleableCommand,
 					PluginCommandContributionOptions
@@ -139,6 +184,7 @@ export function createPluginApi(
 				});
 			},
 			remove(...names) {
+				assertCanMutate('commands.remove');
 				registry.commandRemovals.push({
 					record,
 					names,
@@ -147,6 +193,7 @@ export function createPluginApi(
 				});
 			},
 			observe(observer, opts) {
+				assertCanMutate('commands.observe');
 				const contribution = {
 					record,
 					observer,
@@ -159,6 +206,7 @@ export function createPluginApi(
 				return once(() => removePluginCommandObserverContribution(registry, contribution));
 			},
 			defaults(hooks, opts) {
+				assertCanMutate('commands.defaults');
 				registry.pluginDefaults.push({
 					record,
 					kind: 'commands',
@@ -172,12 +220,13 @@ export function createPluginApi(
 		},
 		rest: {
 			observe(observer, order) {
+				assertCanMutate('rest.observe');
 				const contribution = {
 					record,
 					observer,
 					scope,
 					active: true,
-					order,
+					order: normalizeOrder(order),
 					sequence: nextPluginContributionSequence(registry),
 				};
 				registry.restObservers.push(contribution);
@@ -185,7 +234,8 @@ export function createPluginApi(
 			},
 		},
 		hooks: {
-			tap(name, handler, opts) {
+			on(name, handler, opts) {
+				assertCanMutate(`hooks.${name}`);
 				const contribution = {
 					record,
 					name,
@@ -198,24 +248,32 @@ export function createPluginApi(
 				registry.hooks.push(contribution);
 				return once(() => removePluginHookContribution(registry, contribution));
 			},
+			tap(name, handler, opts) {
+				return this.on(name, handler, opts);
+			},
 		},
 		handlers: {
-			create(creator, opts) {
+			construct(creator, opts) {
+				assertCanMutate('handlers.construct');
 				registry.handlerCreators.push({
 					record,
 					creator,
 					scope,
-					kinds: normalizeHandlerKinds(opts),
+					kinds: normalizeHandlerKinds(record, opts),
 					order: opts?.order,
 					sequence: nextPluginContributionSequence(registry),
 				});
 			},
+			create(creator, opts) {
+				this.construct(creator, opts);
+			},
 			transform(transformer, opts) {
+				assertCanMutate('handlers.transform');
 				registry.handlerTransformers.push({
 					record,
 					transformer,
 					scope,
-					kinds: normalizeHandlerKinds(opts),
+					kinds: normalizeHandlerKinds(record, opts),
 					order: opts?.order,
 					sequence: nextPluginContributionSequence(registry),
 				});
@@ -223,6 +281,7 @@ export function createPluginApi(
 		},
 		components: {
 			add(...args) {
+				assertCanMutate('components.add');
 				const [components, opts] = splitContributionArgs<InstanceType<HandleableComponent> | HandleableComponent>(args);
 				registry.components.push({
 					record,
@@ -233,6 +292,7 @@ export function createPluginApi(
 				});
 			},
 			remove(...customIds) {
+				assertCanMutate('components.remove');
 				registry.componentRemovals.push({
 					record,
 					customIds,
@@ -241,6 +301,7 @@ export function createPluginApi(
 				});
 			},
 			defaults(hooks, opts) {
+				assertCanMutate('components.defaults');
 				registry.pluginDefaults.push({
 					record,
 					kind: 'components',
@@ -254,6 +315,7 @@ export function createPluginApi(
 		},
 		modals: {
 			add(...args) {
+				assertCanMutate('modals.add');
 				const [modals, opts] = splitContributionArgs<InstanceType<HandleableModal> | HandleableModal>(args);
 				registry.modals.push({
 					record,
@@ -264,6 +326,7 @@ export function createPluginApi(
 				});
 			},
 			remove(...customIds) {
+				assertCanMutate('modals.remove');
 				registry.modalRemovals.push({
 					record,
 					customIds,
@@ -272,6 +335,7 @@ export function createPluginApi(
 				});
 			},
 			defaults(hooks, opts) {
+				assertCanMutate('modals.defaults');
 				registry.pluginDefaults.push({
 					record,
 					kind: 'modals',
@@ -289,6 +353,8 @@ export function createPluginApi(
 				middleware: MiddlewareContext,
 				opts?: { global?: boolean; order?: PluginOrderOpt; override?: boolean },
 			) {
+				assertCanMutate(`middlewares.${name}`);
+				assertSafePluginResourceName(record, `middlewares.${name}`, name, noReservedPluginKeys);
 				registry.middlewares.push({
 					record,
 					name,
@@ -311,6 +377,10 @@ export function createPluginApi(
 				}
 			},
 			remove(...names) {
+				assertCanMutate('middlewares.remove');
+				for (const name of names) {
+					assertSafePluginResourceName(record, `middlewares.${name}`, name, noReservedPluginKeys);
+				}
 				registry.middlewareRemovals.push({
 					record,
 					names,
@@ -321,9 +391,11 @@ export function createPluginApi(
 		},
 		autocomplete: {
 			wrap(wrapper, opts) {
+				assertCanMutate('autocomplete.wrap');
 				registry.autocompleteWrappers.push({
 					record,
 					wrapper,
+					scope,
 					order: opts?.order,
 					sequence: nextPluginContributionSequence(registry),
 				});
@@ -331,23 +403,40 @@ export function createPluginApi(
 		},
 		gateway: {
 			addIntents(...intents) {
+				assertCanMutate('gateway.addIntents');
+				const resolvedIntents: number[] = [];
 				for (const intent of intents) {
-					const unknownBits = unknownGatewayIntentBits(intent);
-					if (!unknownBits) continue;
-					addPluginDiagnostic(registry, record, {
-						phase: 'gateway.addIntents',
-						severity: 'warn',
-						code: 'unknown-intent-bits',
-						message: `Gateway intent value "${intent}" includes unknown bits "${unknownBits}".`,
-						data: { intent, unknownBits },
-					});
+					const resolved = resolveGatewayIntent(intent);
+					if (resolved === undefined) {
+						addPluginDiagnostic(registry, record, {
+							phase: 'gateway.addIntents',
+							severity: 'warn',
+							code: 'unknown-intent-bits',
+							message: `Gateway intent "${String(intent)}" is unknown.`,
+							data: { intent },
+						});
+						continue;
+					}
+					const unknownBits = unknownGatewayIntentBits(resolved);
+					if (unknownBits) {
+						addPluginDiagnostic(registry, record, {
+							phase: 'gateway.addIntents',
+							severity: 'warn',
+							code: 'unknown-intent-bits',
+							message: `Gateway intent value "${resolved}" includes unknown bits "${unknownBits}".`,
+							data: { intent: resolved, unknownBits },
+						});
+					}
+					resolvedIntents.push(resolved);
 				}
-				registry.gatewayIntents.push({ record, intents: intents.map(resolveGatewayIntent) });
+				if (resolvedIntents.length) registry.gatewayIntents.push({ record, intents: resolvedIntents, scope });
 			},
 			wrapPayload(wrapper, opts) {
+				assertCanMutate('gateway.wrapPayload');
 				registry.gatewayPayloadWrappers.push({
 					record,
 					wrapper,
+					scope,
 					order: opts?.order,
 					sequence: nextPluginContributionSequence(registry),
 				});
@@ -355,15 +444,8 @@ export function createPluginApi(
 		},
 		cache: {
 			resource(name: string, resource: PluginCacheResourceConstructor, opts) {
-				if (reservedCacheResourceNames.has(name)) {
-					throw createPluginConflictError(
-						record.plugin.name,
-						'cache.resource',
-						record.index,
-						`Cache resource "${name}" is reserved or already exists.`,
-						record.plugin.instanceId,
-					);
-				}
+				assertCanMutate('cache.resource');
+				assertSafePluginResourceName(record, 'cache.resource', name, reservedCacheResourceNames);
 				const existing = registry.cacheResources.find(contribution => contribution.name === name);
 				if (existing) {
 					throw createPluginConflictError(
@@ -375,18 +457,32 @@ export function createPluginApi(
 					);
 				}
 				if (opts?.intents?.length) {
+					const resolvedIntents: number[] = [];
 					for (const intent of opts.intents) {
-						const unknownBits = unknownGatewayIntentBits(intent);
-						if (!unknownBits) continue;
-						addPluginDiagnostic(registry, record, {
-							phase: 'cache.resource',
-							severity: 'warn',
-							code: 'unknown-intent-bits',
-							message: `Gateway intent value "${intent}" includes unknown bits "${unknownBits}".`,
-							data: { intent, unknownBits },
-						});
+						const resolved = resolveGatewayIntent(intent);
+						if (resolved === undefined) {
+							addPluginDiagnostic(registry, record, {
+								phase: 'cache.resource',
+								severity: 'warn',
+								code: 'unknown-intent-bits',
+								message: `Gateway intent "${String(intent)}" is unknown.`,
+								data: { intent },
+							});
+							continue;
+						}
+						const unknownBits = unknownGatewayIntentBits(resolved);
+						if (unknownBits) {
+							addPluginDiagnostic(registry, record, {
+								phase: 'cache.resource',
+								severity: 'warn',
+								code: 'unknown-intent-bits',
+								message: `Gateway intent value "${resolved}" includes unknown bits "${unknownBits}".`,
+								data: { intent: resolved, unknownBits },
+							});
+						}
+						resolvedIntents.push(resolved);
 					}
-					registry.gatewayIntents.push({ record, intents: opts.intents.map(resolveGatewayIntent) });
+					if (resolvedIntents.length) registry.gatewayIntents.push({ record, intents: resolvedIntents, scope });
 				}
 				registry.cacheResources.push({
 					record,
@@ -400,11 +496,16 @@ export function createPluginApi(
 		},
 		shared: {
 			set(name: PluginSharedName, factory: unknown, opts?: { dispose?: (value: unknown) => unknown }) {
+				assertCanMutate(`shared.${sharedName(name)}`);
 				const key = sharedName(name);
+				assertSafePluginResourceName(record, `shared.${key}`, key, noReservedPluginKeys);
 				addPluginShared(registry, record, key, factory as never, scope, opts as never);
 			},
 			remove(...names: PluginSharedName[]) {
-				removePluginShared(registry, record, names.map(sharedName));
+				assertCanMutate('shared.remove');
+				const keys = names.map(sharedName);
+				for (const key of keys) assertSafePluginResourceName(record, `shared.${key}`, key, noReservedPluginKeys);
+				removePluginShared(registry, record, keys, scope);
 			},
 			has(name: PluginSharedName) {
 				return registry.shared.has(sharedName(name));
@@ -412,12 +513,13 @@ export function createPluginApi(
 		},
 		langs: {
 			contribute(locale, values, options) {
-				if (!options?.prefix) {
+				assertCanMutate('langs.contribute');
+				if (!isValidLangPrefix(options?.prefix)) {
 					throw createPluginConflictError(
 						record.plugin.name,
 						'langs.contribute',
 						record.index,
-						'langs.contribute locale prefix is required.',
+						'langs.contribute locale prefix must contain at least one non-empty path segment.',
 						record.plugin.instanceId,
 					);
 				}
@@ -432,6 +534,7 @@ export function createPluginApi(
 			},
 		},
 		reload() {
+			assertCanMutate('reload');
 			const client = registry.client;
 			if (!client) {
 				throw createPluginConflictError(
@@ -457,6 +560,7 @@ export function createPluginApi(
 		},
 		options: {
 			set(fragment) {
+				assertCanMutate('options.set');
 				addPluginOptionFragment(registry, record, fragment, scope);
 			},
 		},
@@ -472,8 +576,28 @@ function once(dispose: () => void) {
 	};
 }
 
-function normalizeHandlerKinds(opts: PluginHandlerOptions | undefined) {
-	return opts?.kinds ? [...opts.kinds] : undefined;
+function normalizeHandlerKinds(record: PluginRuntimeRecord, opts: PluginHandlerOptions | undefined) {
+	if (!opts?.kinds) return undefined;
+	for (const kind of opts.kinds) {
+		if (handlerKinds.has(kind)) continue;
+		throw createPluginConflictError(
+			record.plugin.name,
+			'handlers.kinds',
+			record.index,
+			`Handler kind "${String(kind)}" is invalid.`,
+			record.plugin.instanceId,
+		);
+	}
+	return [...opts.kinds];
+}
+
+function isValidLangPrefix(prefix: string | undefined) {
+	if (!prefix) return false;
+	return prefix.split('.').some(segment => segment.length > 0);
+}
+
+function normalizeOrder(order: PluginOrderOpt | { order?: PluginOrderOpt } | undefined) {
+	return typeof order === 'object' && order !== null ? order.order : order;
 }
 
 function splitContributionArgs<T, O extends PluginContributionOptions = PluginContributionOptions>(

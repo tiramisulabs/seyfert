@@ -29,7 +29,7 @@ import {
 	type ExtendOf,
 	type RegisteredPluginExtension,
 	type RegisteredPlugins,
-	resolveClientPluginIntents,
+	runPluginHooks,
 } from './plugins';
 import { type ClientUserStructure, type MessageStructure, Transformers } from './transformers';
 
@@ -105,10 +105,12 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 
 	async loadEvents(dir?: string) {
 		dir ??= await this.getRC().then(x => x.locations.events);
+		await runPluginHooks(this, 'events:beforeLoad', this, dir);
 		if (dir) {
 			await this.events.load(dir);
 			this.logger.info('EventHandler loaded');
 		}
+		await runPluginHooks(this, 'events:afterLoad', this, dir);
 	}
 
 	protected async execute(options: { token?: string; intents?: number } = {}) {
@@ -144,8 +146,7 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 
 		const { token: tokenRC, intents: intentsRC, debug: debugRC } = await this.getRC<InternalRuntimeConfig>();
 		const token = options?.token ?? tokenRC;
-		const intents = resolveClientPluginIntents(this, options?.connection?.intents ?? intentsRC);
-		this.cache.intents = intents;
+		const intents = this.resolvePluginGatewayIntents(options?.connection?.intents ?? intentsRC);
 
 		if (!this.gateway) {
 			assertString(token, 'token is not a string');
@@ -267,6 +268,8 @@ type ClientReadyOf<
 	TPluginsOrReady extends readonly AnySeyfertPlugin[] | boolean,
 	Ready extends boolean,
 > = TPluginsOrReady extends boolean ? TPluginsOrReady : Ready;
+type ClientAmbientExtensionOf<TPluginsOrReady extends readonly AnySeyfertPlugin[] | boolean> =
+	TPluginsOrReady extends readonly AnySeyfertPlugin[] ? {} : RegisteredPluginExtension;
 type Materialize<T> = {
 	[K in keyof T]: T[K];
 };
@@ -275,7 +278,7 @@ export type Client<
 	TPluginsOrReady extends readonly AnySeyfertPlugin[] | boolean = RegisteredPlugins,
 	Ready extends boolean = boolean,
 > = ClientBase<ClientReadyOf<TPluginsOrReady, Ready>> &
-	RegisteredPluginExtension &
+	ClientAmbientExtensionOf<TPluginsOrReady> &
 	Materialize<ExtendOf<ClientPluginsOf<TPluginsOrReady>>>;
 
 export interface ClientConstructor {

@@ -63,6 +63,7 @@ type ReturnManagers = {
 
 type PluginCacheResourceContributionLike = {
 	name: string;
+	record?: { identity: string };
 	resource: new (cache: Cache, client: UsingClient) => unknown;
 	onPacket?: (event: GatewayDispatchPayload, cache: Cache) => Awaitable<void>;
 	sequence: number;
@@ -127,7 +128,11 @@ export class Cache {
 
 	__logger__?: Logger;
 	private pluginResourceNames = new Set<string>();
-	private pluginResourcePacketHandlers: ((event: GatewayDispatchPayload, cache: Cache) => Awaitable<void>)[] = [];
+	private pluginResourcePacketHandlers: {
+		handler: (event: GatewayDispatchPayload, cache: Cache) => Awaitable<void>;
+		plugin: string;
+	}[] = [];
+	private pluginResourcePacketErrorLogger?: (plugin: string, error: unknown) => void;
 
 	constructor(
 		public intents: number,
@@ -144,6 +149,13 @@ export class Cache {
 		}
 		this.pluginResourceNames.clear();
 		this.pluginResourcePacketHandlers = [];
+		this.pluginResourcePacketErrorLogger = (client as { logger?: Pick<Logger, 'error'> }).logger
+			? (plugin, error) =>
+					(client as { logger: Pick<Logger, 'error'> }).logger.error(
+						`[plugin:${plugin}] cache.resource.onPacket failed`,
+						error,
+					)
+			: undefined;
 
 		// non-guild based
 		this.users = disabledCache.users ? undefined : new Users(this, client);
@@ -177,7 +189,12 @@ export class Cache {
 		for (const contribution of pluginResources) {
 			(this as Record<string, unknown>)[contribution.name] = new contribution.resource(this, client);
 			this.pluginResourceNames.add(contribution.name);
-			if (contribution.onPacket) this.pluginResourcePacketHandlers.push(contribution.onPacket);
+			if (contribution.onPacket) {
+				this.pluginResourcePacketHandlers.push({
+					handler: contribution.onPacket,
+					plugin: contribution.record?.identity ?? contribution.name,
+				});
+			}
 		}
 	}
 
@@ -507,7 +524,13 @@ export class Cache {
 
 	private async onPacketWithPluginResources(event: GatewayDispatchPayload) {
 		await this.onPacketDefault(event);
-		for (const handler of this.pluginResourcePacketHandlers) await handler(event, this);
+		for (const contribution of this.pluginResourcePacketHandlers) {
+			try {
+				await contribution.handler(event, this);
+			} catch (error) {
+				this.pluginResourcePacketErrorLogger?.(contribution.plugin, error);
+			}
+		}
 	}
 
 	protected async onPacketDefault(event: GatewayDispatchPayload) {

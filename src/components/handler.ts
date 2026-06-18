@@ -17,6 +17,11 @@ import type { ComponentContext } from './componentcontext';
 import { ModalCommand } from './modalcommand';
 import type { ModalContext } from './modalcontext';
 
+type PluginComponentLoadOptionsProvider = {
+	createPluginComponentLoadOptions?: () => ComponentLoadOptions;
+};
+type ComponentSetTransformer = (component: ComponentCommands) => ComponentCommands | false | void;
+
 type UserMatches = string | string[] | RegExp;
 type COMPONENTS = {
 	components: { match: MatchCallback; callback: ComponentCallback }[];
@@ -235,26 +240,40 @@ export class ComponentHandler extends BaseHandler {
 		component.onBeforeMiddlewares ??= this.client.options?.[is]?.defaults?.onBeforeMiddlewares;
 	}
 
-	set(
-		instances: SeteableComponentCommand[],
-		transform?: (component: ComponentCommands) => ComponentCommands | false | void,
-	) {
+	private normalizeLoadOptions(options?: ComponentSetTransformer | ComponentLoadOptions): ComponentLoadOptions {
+		return typeof options === 'function' ? { transform: (_kind, component) => options(component) } : (options ?? {});
+	}
+
+	private materializeComponent(value: SeteableComponentCommand, options: ComponentLoadOptions = {}, filePath?: string) {
+		let component: ReturnType<typeof this.callback>;
+		component = this.callback(value, options.create);
+		if (!component) return false;
+		if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) return false;
+		this.stablishDefaults(component);
+		if (filePath) component.__filePath = filePath;
+		const kind = component instanceof ModalCommand ? 'modal' : 'component';
+		const wrapped = options.transform?.(kind, component) ?? component;
+		if (!wrapped) return false;
+		if (wrapped !== component) {
+			component = wrapped;
+			component.__filePath ??= filePath;
+			this.stablishDefaults(component);
+		}
+		return component;
+	}
+
+	set(instances: SeteableComponentCommand[], optionsOrTransform?: ComponentSetTransformer | ComponentLoadOptions) {
+		const options = this.normalizeLoadOptions(optionsOrTransform);
 		const added: ComponentCommands[] = [];
 		for (const i of instances) {
 			let component: ReturnType<typeof this.callback>;
 			try {
-				component = this.callback(i);
+				component = this.materializeComponent(i, options);
 				if (!component) continue;
 			} catch (e) {
 				this.logger.warn(e, i);
 				continue;
 			}
-			this.stablishDefaults(component);
-			const wrapped = transform?.(component) ?? component;
-			if (!wrapped) continue;
-			if (wrapped !== component) this.stablishDefaults(wrapped);
-			component = wrapped;
-
 			this.commands.push(component);
 			added.push(component);
 		}
@@ -318,9 +337,10 @@ export class ComponentHandler extends BaseHandler {
 		if (index === -1) return null;
 		this.client.components.commands.splice(index, 1);
 		const imported = await magicImport(component.__filePath).then(x => x.default ?? x);
-		const command = new imported();
-		command.__filePath = component.__filePath;
-		this.client.components.commands.push(command);
+		const options = (this.client as PluginComponentLoadOptionsProvider).createPluginComponentLoadOptions?.() ?? {};
+		const command = this.materializeComponent(imported, options, component.__filePath);
+		if (!command) return null;
+		this.client.components.commands.splice(index, 0, command);
 		return imported;
 	}
 

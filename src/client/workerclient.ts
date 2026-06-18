@@ -50,7 +50,7 @@ import type { BaseClientOptions, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import type { Client, ClientOptions } from './client';
 import { Collectors } from './collectors';
-import { type RegisteredPluginExtension, resolveClientPluginIntents } from './plugins';
+import { applyPluginGatewayPayloadWrappers, type RegisteredPluginExtension, runPluginHooks } from './plugins';
 import { type ClientUserStructure, Transformers } from './transformers';
 
 let workerData: WorkerData;
@@ -177,23 +177,25 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				}),
 			});
 		}
-		workerData.intents = resolveClientPluginIntents(this, workerData.intents);
-		this.cache.intents = workerData.intents;
+		this.resolvePluginGatewayIntents(workerData.intents);
 		this.rest.workerData = workerData;
+		await super.start(options);
+		workerData.intents = this.resolvePluginGatewayIntents(workerData.intents);
 		this.postMessage({
 			type: workerData.resharding ? 'WORKER_START_RESHARDING' : 'WORKER_START',
 			workerId: workerData.workerId,
 		} satisfies WorkerStart | WorkerStartResharding);
-		await super.start(options);
 		await this.loadEvents(options.eventsDir);
 	}
 
 	async loadEvents(dir?: string) {
 		dir ??= await this.getRC().then(x => x.locations.events);
+		await runPluginHooks(this, 'events:beforeLoad', this, dir);
 		if (dir) {
 			await this.events.load(dir);
 			this.logger.info('EventHandler loaded');
 		}
+		await runPluginHooks(this, 'events:afterLoad', this, dir);
 	}
 
 	postMessage(body: WorkerMessages | ClientHeartbeaterMessages): unknown {
@@ -225,9 +227,13 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						return;
 					}
 
-					await shard.send(true, {
-						...data,
-					} satisfies GatewaySendPayload);
+					const { nonce: _nonce, shardId: _shardId, type: _type, ...payload } = data;
+					const pluginPayload = await applyPluginGatewayPayloadWrappers(
+						this,
+						data.shardId,
+						payload as GatewaySendPayload,
+					);
+					if (pluginPayload !== null) await shard.send(true, pluginPayload);
 
 					this.postMessage({
 						type: 'RESULT_PAYLOAD',

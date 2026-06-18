@@ -44,6 +44,7 @@ export function addPluginShared(
 	opts?: { dispose?: SharedDispose; override?: boolean },
 ) {
 	const owner = registry.sharedOwners.get(name);
+	trackDynamicSharedMutation(registry, record, name, scope);
 	if (owner) {
 		if (!opts?.override) {
 			throw createPluginConflictError(
@@ -55,7 +56,7 @@ export function addPluginShared(
 			);
 		}
 		assertCanMutatePluginContribution(registry, record, 'override', 'shared', name, owner, `shared.${name}`);
-		disposeSharedInstance(registry, name);
+		queueSharedDisposal(registry, name);
 		recordSharedMutationDiagnostic(registry, record, 'override', name, owner);
 	}
 	registry.sharedOwners.set(name, record);
@@ -66,12 +67,14 @@ export function removePluginShared(
 	registry: PluginRuntimeRegistry,
 	record: PluginRuntimeRecord,
 	names: readonly string[],
+	scope: PluginEventContributionScope,
 ) {
 	for (const name of names) {
 		const owner = registry.sharedOwners.get(name);
 		if (!owner) continue;
+		trackDynamicSharedMutation(registry, record, name, scope);
 		assertCanMutatePluginContribution(registry, record, 'remove', 'shared', name, owner, `shared.${name}`);
-		disposeSharedInstance(registry, name);
+		queueSharedDisposal(registry, name);
 		registry.shared.delete(name);
 		if (registry.sharedOwners.get(name) === owner) registry.sharedOwners.delete(name);
 		recordSharedMutationDiagnostic(registry, record, 'remove', name, owner);
@@ -108,11 +111,10 @@ export function createSharedRegistry(client: BaseClient, registry: PluginRuntime
 		},
 		unwrap(name: string | SharedKey<unknown, string>) {
 			const key = sharedName(name as never);
-			const value = resolve(key);
-			if (value === undefined) {
+			if (!registry.shared.has(key)) {
 				throw createPluginConflictError('<shared>', `shared.${key}`, -1, `Shared value "${key}" is not registered.`);
 			}
-			return value;
+			return resolve(key);
 		},
 		has(name: string | SharedKey<unknown, string>) {
 			return registry.shared.has(sharedName(name));
@@ -151,6 +153,7 @@ export async function disposePluginSharedValues(
 			state.instances.delete(name);
 		}
 	}
+	errors.push(...(await drainQueuedSharedDisposals(registry)));
 	return errors;
 }
 
@@ -166,15 +169,49 @@ export function cleanupPluginSharedContributions(
 	}
 }
 
-export function cleanupPluginDynamicSharedContributions(registry: PluginRuntimeRegistry, record: PluginRuntimeRecord) {
+export async function cleanupPluginDynamicSharedContributions(
+	registry: PluginRuntimeRegistry,
+	record: PluginRuntimeRecord,
+) {
+	const errors: unknown[] = [];
+	for (let index = registry.sharedMutations.length - 1; index >= 0; index--) {
+		const mutation = registry.sharedMutations[index]!;
+		if (mutation.record !== record || mutation.scope === 'register') continue;
+		const error = await disposeSharedInstance(registry, mutation.name);
+		if (error) errors.push(error);
+		if (mutation.previous) {
+			registry.shared.set(mutation.name, mutation.previous);
+			if (mutation.previousOwner) registry.sharedOwners.set(mutation.name, mutation.previousOwner);
+			else registry.sharedOwners.delete(mutation.name);
+		} else {
+			registry.shared.delete(mutation.name);
+			registry.sharedOwners.delete(mutation.name);
+		}
+		registry.sharedMutations.splice(index, 1);
+	}
 	cleanupPluginSharedContributions(registry, record, contribution => contribution.scope !== 'register');
+	errors.push(...(await drainQueuedSharedDisposals(registry)));
+	return errors;
 }
 
 export function clearSharedRegistryInstances(shared: PluginSharedRegistry) {
 	sharedStates.get(shared)?.instances.clear();
 }
 
-function disposeSharedInstance(registry: PluginRuntimeRegistry, name: string) {
+function queueSharedDisposal(registry: PluginRuntimeRegistry, name: string) {
+	registry.sharedDisposals.push(disposeSharedInstance(registry, name));
+}
+
+async function drainQueuedSharedDisposals(registry: PluginRuntimeRegistry) {
+	const pending = registry.sharedDisposals.splice(0);
+	const errors: unknown[] = [];
+	for (const error of await Promise.all(pending)) {
+		if (error !== undefined) errors.push(error);
+	}
+	return errors;
+}
+
+async function disposeSharedInstance(registry: PluginRuntimeRegistry, name: string): Promise<unknown | undefined> {
 	const shared = registry.client?.shared;
 	if (!shared) return;
 	const state = sharedStates.get(shared);
@@ -182,21 +219,20 @@ function disposeSharedInstance(registry: PluginRuntimeRegistry, name: string) {
 	const value = state.instances.get(name);
 	const contribution = registry.shared.get(name);
 	try {
-		const pluginName = contribution?.record.plugin.name ?? '<unknown>';
-		const result = contribution?.dispose?.(value);
-		if (isPromiseLike(result)) {
-			result.catch(error => {
-				registry.client?.logger.error(`[plugin:${pluginName}] shared.${name} dispose failed`, error);
-			});
-		}
+		await contribution?.dispose?.(value);
 	} catch (error) {
-		registry.client?.logger.error(
-			`[plugin:${contribution?.record.plugin.name ?? '<unknown>'}] shared.${name} dispose failed`,
+		return wrapPluginError(
+			contribution?.record.plugin.name ?? '<unknown>',
+			`shared.${name}`,
+			contribution?.record.index ?? -1,
 			error,
+			'PLUGIN_TEARDOWN_FAILED',
+			contribution?.record.plugin.instanceId,
 		);
 	} finally {
 		state.instances.delete(name);
 	}
+	return undefined;
 }
 
 function recordSharedMutationDiagnostic(
@@ -217,11 +253,18 @@ function recordSharedMutationDiagnostic(
 	);
 }
 
-function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
-	return (
-		typeof value === 'object' &&
-		value !== null &&
-		'then' in value &&
-		typeof (value as { then?: unknown }).then === 'function'
-	);
+function trackDynamicSharedMutation(
+	registry: PluginRuntimeRegistry,
+	record: PluginRuntimeRecord,
+	name: string,
+	scope: PluginEventContributionScope,
+) {
+	if (scope === 'register') return;
+	registry.sharedMutations.push({
+		record,
+		name,
+		scope,
+		previous: registry.shared.get(name),
+		previousOwner: registry.sharedOwners.get(name),
+	});
 }
