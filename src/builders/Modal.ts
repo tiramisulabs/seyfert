@@ -15,10 +15,16 @@ import type { ModalBuilderComponents, ModalSubmitCallback } from './types';
  * @example
  * const modal = new Modal();
  * modal.setTitle("Sample Modal");
+ * modal.setCustomId("sample-modal");
  * modal.addComponents(
- *   new ActionRow<TextInput>()
- *   .addComponents(new TextInput().setLabel("Enter text"))
- * ));
+ *   new Label()
+ *     .setLabel("Enter text")
+ *     .setComponent(
+ *       new TextInput()
+ *         .setCustomId("sample-input")
+ *         .setStyle(TextInputStyle.Paragraph)
+ *     )
+ * );
  * modal.run((interaction) => {
  *   // Handle modal submission
  * });
@@ -121,10 +127,14 @@ export class Modal {
 /**
  * Represents a text input component builder.
  * @example
- * const textInput = new TextInput().setLabel("Enter text");
- * textInput.setStyle(TextInputStyle.Paragraph);
- * textInput.setPlaceholder("Type here");
- * const json = textInput.toJSON();
+ * const textInput = new TextInput()
+ *   .setCustomId("feedback")
+ *   .setStyle(TextInputStyle.Paragraph)
+ *   .setPlaceholder("Type here");
+ * const label = new Label()
+ *   .setLabel("Feedback")
+ *   .setComponent(textInput);
+ * const json = label.toJSON();
  */
 export class TextInput extends BaseComponentBuilder<APITextInputComponent> {
 	/**
