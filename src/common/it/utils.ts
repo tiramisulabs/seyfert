@@ -323,12 +323,12 @@ export function isCloudfareWorker() {
 
 /**
  *
- * Convert a timestamp to a snowflake.
- * @param id The timestamp to convert.
- * @returns The snowflake.
+ * Converts a Discord snowflake to its unix millisecond timestamp.
+ * @param id The snowflake to convert.
+ * @returns The unix millisecond timestamp.
  */
-export function snowflakeToTimestamp(id: string): bigint {
-	return (BigInt(id) >> 22n) + DiscordEpoch;
+export function snowflakeToTimestamp(id: string): number {
+	return Number((BigInt(id) >> 22n) + DiscordEpoch);
 }
 
 export function resolvePartialEmoji(emoji: EmojiResolvable): APIPartialEmoji | undefined {

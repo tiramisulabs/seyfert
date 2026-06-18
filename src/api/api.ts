@@ -667,7 +667,7 @@ export class ApiHandler {
 
 		if (method === 'DELETE' && route.endsWith('/messages/:id')) {
 			const messageID = url.slice(url.lastIndexOf('/') + 1);
-			const createdAt = Number(snowflakeToTimestamp(messageID));
+			const createdAt = snowflakeToTimestamp(messageID);
 			if (Date.now() - createdAt >= 1000 * 60 * 60 * 24 * 14) {
 				method += '_OLD';
 			} else if (Date.now() - createdAt <= 1000 * 10) {

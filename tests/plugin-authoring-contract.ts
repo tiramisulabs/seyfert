@@ -116,6 +116,7 @@ import {
 	PresenceUpdateStatus,
 } from 'seyfert';
 import type { MakePresent, MakeRequired, PickPresent, PickRequired } from '../lib/common';
+import { snowflakeToTimestamp } from '../lib/common/it/utils';
 import type { BanShorter } from '../lib/common/shorters/bans';
 import type { MemberShorter } from '../lib/common/shorters/members';
 import type { BitField } from '../lib/structures/extra/BitField';
@@ -155,6 +156,7 @@ expectType<true>(true as Equal<PickPresentFixture['nil'], 'ok'>);
 expectType<true>(true as Equal<MakeRequired<{ flag?: boolean }, 'flag'>['flag'], true>);
 expectType<true>(true as Equal<PickRequired<{ flag?: boolean }, 'flag'>['flag'], true | undefined>);
 expectType<true>(true as Equal<OptionResolvedWithValue['value'], string | number | boolean>);
+expectType<number>(snowflakeToTimestamp('123456789012345678'));
 type ExpectedReturnOptionsTypeKeys =
 	| ApplicationCommandOptionType.Subcommand
 	| ApplicationCommandOptionType.SubcommandGroup
