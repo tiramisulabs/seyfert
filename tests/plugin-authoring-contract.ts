@@ -112,6 +112,7 @@ import {
 	type CallbackEventHandler,
 	type ClientOptions,
 	type ClientEvent,
+	type StringSelectMenuInteraction,
 	EntryPointCommandHandlerType,
 	type Collection,
 	LimitedCollection,
@@ -1280,6 +1281,8 @@ declare module 'seyfert' {
 declare function commandContext(): CommandContext;
 declare function authCommandContext(): CommandContext<{}, 'auth'>;
 declare function componentContext(): ComponentContext;
+declare function stringSelectComponentContext(): ComponentContext<'StringSelect', never, ['general', 'news']>;
+declare function unionComponentContext(): ComponentContext<'Button' | 'StringSelect', never, ['general']>;
 declare function modalContext(): ModalContext;
 declare function menuCommandContext(): MenuCommandContext<any>;
 declare function entryPointContext(): EntryPointContext;
@@ -1313,6 +1316,16 @@ expectType<Promise<undefined>>(modalSubmitInteraction.deferUpdate());
 modalSubmitInteraction.deferUpdate(true);
 expectType<Promise<WebhookMessageStructure>>(menuCommandContext().ephemeral({ content: 'Done!' }, true));
 expectType<Promise<WebhookMessageStructure>>(entryPointContext().ephemeral({ content: 'Done!' }, true));
+expectType<StringSelectMenuInteraction<['general', 'news']>>(stringSelectComponentContext().interaction);
+expectType<['general', 'news']>(stringSelectComponentContext().interaction.values);
+const maybeStringSelectContext = unionComponentContext();
+if (maybeStringSelectContext.isStringSelectMenu()) {
+	expectType<['general']>(maybeStringSelectContext.interaction.values);
+}
+const guildStringSelectContext = stringSelectComponentContext();
+if (guildStringSelectContext.inGuild()) {
+	expectType<['general', 'news']>(guildStringSelectContext.interaction.values);
+}
 
 expectType<AllChannels[]>(modalContext().getChannels('channels', true));
 expectType<AllChannels[] | void>(modalContext().getChannels('channels'));
