@@ -42,6 +42,7 @@ import {
 	type GuildRoleStructure,
 	type InteractionGuildMemberStructure,
 	type LangInstance,
+	LangsHandler,
 	type ComponentContext,
 	type EntryPointContext,
 	EntryPointCommand,
@@ -356,6 +357,10 @@ const inlineLangInstance: LangInstance = {
 	file: { default: { greeting: 'Hello' } } as LangInstance['file'],
 };
 expectType<LangInstance>(inlineLangInstance);
+
+const langsHandlerContract = new LangsHandler({ warn() {} } as never);
+expectType<boolean>(langsHandlerContract.preferGuildLocale);
+new Client().setServices({ langs: { preferGuildLocale: true } });
 
 createIntegerOption({
 	description: 'Integer autocomplete',

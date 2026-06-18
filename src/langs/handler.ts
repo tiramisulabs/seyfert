@@ -16,6 +16,7 @@ export class LangsHandler extends BaseHandler {
 	filter = (path: string) =>
 		path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts')) || path.endsWith('.json');
 	defaultLang?: string;
+	preferGuildLocale = false;
 	aliases: [string, LocaleString[]][] = [];
 
 	getLocale(locale: string) {

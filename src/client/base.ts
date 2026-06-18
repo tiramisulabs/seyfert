@@ -329,6 +329,7 @@ export class BaseClient {
 		if (langs) {
 			this.langs ??= new LangsHandler(this.logger);
 			if (langs.default) this.langs.defaultLang = langs.default;
+			if (langs.preferGuildLocale !== undefined) this.langs.preferGuildLocale = langs.preferGuildLocale;
 			if (langs.aliases) this.langs.aliases = Object.entries(langs.aliases);
 		}
 
@@ -1250,6 +1251,7 @@ export interface ServicesOptions {
 	};
 	langs?: {
 		default?: string;
+		preferGuildLocale?: boolean;
 		aliases?: Record<string, LocaleString[]>;
 	};
 	middlewares?: ClientMiddlewares;
