@@ -85,6 +85,7 @@ import {
 	calculateUserDefaultAvatarIndex,
 	RadioGroup,
 	RadioGroupOption,
+	SeyfertError,
 	StringSelectMenu,
 	StringSelectOption,
 	SubCommand,
@@ -95,6 +96,7 @@ import {
 	type SeyfertPlugin,
 	type SeyfertPluginApi,
 	type SeyfertPluginOptions,
+	type SeyfertErrorCode,
 	type SemverRange,
 	type ShardManager,
 	WorkerManager,
@@ -157,6 +159,15 @@ expectType<true>(true as Equal<MakeRequired<{ flag?: boolean }, 'flag'>['flag'],
 expectType<true>(true as Equal<PickRequired<{ flag?: boolean }, 'flag'>['flag'], true | undefined>);
 expectType<true>(true as Equal<OptionResolvedWithValue['value'], string | number | boolean>);
 expectType<number>(snowflakeToTimestamp('123456789012345678'));
+declare const unknownContractError: unknown;
+if (SeyfertError.is(unknownContractError)) {
+	expectType<SeyfertError>(unknownContractError);
+	expectType<SeyfertErrorCode>(unknownContractError.code);
+}
+if (SeyfertError.is(unknownContractError, 'INVALID_TOKEN')) {
+	expectType<SeyfertError & { code: 'INVALID_TOKEN' }>(unknownContractError);
+	expectType<'INVALID_TOKEN'>(unknownContractError.code);
+}
 type ExpectedReturnOptionsTypeKeys =
 	| ApplicationCommandOptionType.Subcommand
 	| ApplicationCommandOptionType.SubcommandGroup

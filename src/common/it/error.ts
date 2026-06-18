@@ -34,6 +34,12 @@ export class SeyfertError extends Error {
 	 */
 	metadata?: Record<string, unknown>;
 
+	static is(error: unknown): error is SeyfertError;
+	static is<C extends SeyfertErrorCode>(error: unknown, code: C): error is SeyfertError & { code: C };
+	static is<C extends SeyfertErrorCode>(error: unknown, code?: C): error is SeyfertError & { code: C } {
+		return error instanceof SeyfertError && (code === undefined || error.code === code);
+	}
+
 	/**
 	 * Creates a SeyfertError instance.
 	 *
