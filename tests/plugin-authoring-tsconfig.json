@@ -12,5 +12,5 @@
 		"strict": true,
 		"target": "ESNext"
 	},
-	"files": ["./plugin-authoring-contract.ts"]
+	"files": ["./plugin-authoring-contract.ts", "./root-export-contract.ts"]
 }
