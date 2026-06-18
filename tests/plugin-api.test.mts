@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import {
+	ApiHandler,
 	BaseCommand,
 	BaseResource,
 	Client,
@@ -16,6 +17,7 @@ import {
 	runPluginCommandObservers,
 	runPluginHooks,
 	type Cache,
+	type ApiRequestOptions,
 	type GatewayDispatchPayload,
 	type GatewaySendPayload,
 	type MiddlewareContext,
@@ -1178,6 +1180,25 @@ describe('plugin api v3', () => {
 		expect((client.cache as Cache & { pluginResource?: PluginCacheResource }).pluginResource).toBeInstanceOf(
 			PluginCacheResource,
 		);
+	});
+
+	test('does not create REST observer payloads when no observers are registered', async () => {
+		const fetch = vi.fn(
+			async () => new Response('{"ok":true}', { status: 200, headers: { 'content-type': 'application/json' } }),
+		);
+		vi.stubGlobal('fetch', fetch);
+		const api = new ApiHandler({ token: 'token' });
+		vi.spyOn(api, 'parseRequest').mockReturnValue({ data: undefined, finalUrl: '/users/@me' });
+		const body = Object.defineProperty({}, 'content', {
+			enumerable: true,
+			get() {
+				throw new Error('observer payload should not clone request body');
+			},
+		});
+		const request = { auth: false, body } satisfies ApiRequestOptions;
+
+		await expect(api.request('GET', '/users/@me', request)).resolves.toEqual({ ok: true });
+		expect(fetch).toHaveBeenCalledOnce();
 	});
 
 	test('notifies REST observers with readonly request payloads and isolates observer failures', async () => {

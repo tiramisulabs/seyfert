@@ -164,8 +164,7 @@ export class ApiHandler<TClient = unknown> {
 	}
 
 	private async notifyRequest(method: HttpMethods, url: `/${string}`, request: ApiRequestOptions) {
-		await this.notifyRestObservers(
-			'onRequest',
+		await this.notifyRestObservers('onRequest', () =>
 			freezeRestPayload({
 				client: this.pluginRestObserverClient,
 				method,
@@ -181,8 +180,7 @@ export class ApiHandler<TClient = unknown> {
 		response: Response,
 		request: ApiRequestOptions,
 	) {
-		await this.notifyRestObservers(
-			'onSuccess',
+		await this.notifyRestObservers('onSuccess', () =>
 			freezeRestPayload({
 				client: this.pluginRestObserverClient,
 				method,
@@ -205,8 +203,7 @@ export class ApiHandler<TClient = unknown> {
 		statusCode: number | undefined,
 		request: ApiRequestOptions,
 	) {
-		await this.notifyRestObservers(
-			'onFail',
+		await this.notifyRestObservers('onFail', () =>
 			freezeRestPayload({
 				client: this.pluginRestObserverClient,
 				method,
@@ -229,8 +226,7 @@ export class ApiHandler<TClient = unknown> {
 		method: HttpMethods,
 		url: `/${string}`,
 	) {
-		await this.notifyRestObservers(
-			'onRatelimit',
+		await this.notifyRestObservers('onRatelimit', () =>
 			freezeRestPayload({
 				client: this.pluginRestObserverClient,
 				method,
@@ -246,19 +242,30 @@ export class ApiHandler<TClient = unknown> {
 		}
 	}
 
-	private async notifyRestObservers(name: keyof RestObserver, payload: unknown) {
-		await this.notifyRestObserverEntries(name, payload, this.pluginRestObserverProvider?.() ?? []);
-		await this.notifyRestObserverEntries(name, payload, this.restObservers.values());
+	private async notifyRestObservers(name: keyof RestObserver, createPayload: () => unknown) {
+		let payload: unknown;
+		let hasPayload = false;
+		const getPayload = () => {
+			if (!hasPayload) {
+				payload = createPayload();
+				hasPayload = true;
+			}
+			return payload;
+		};
+
+		await this.notifyRestObserverEntries(name, getPayload, this.pluginRestObserverProvider?.() ?? []);
+		await this.notifyRestObserverEntries(name, getPayload, this.restObservers.values());
 	}
 
 	private async notifyRestObserverEntries(
 		name: keyof RestObserver,
-		payload: unknown,
+		getPayload: () => unknown,
 		entries: Iterable<RestObserverEntry>,
 	) {
 		for (const entry of entries) {
 			const observer = entry.observer[name];
 			if (!observer) continue;
+			const payload = getPayload();
 			try {
 				await (observer as (payload: unknown) => Awaitable<unknown>)(payload);
 			} catch (error) {
