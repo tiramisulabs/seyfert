@@ -182,6 +182,10 @@ type ExpectedReturnOptionsTypeKeys =
 	| ApplicationCommandOptionType.Attachment;
 expectType<true>(true as Equal<keyof ReturnOptionsTypes, ExpectedReturnOptionsTypeKeys>);
 expectType<string>(Formatter.timestamp(Date.now()));
+expectType<`> ${string}`>(Formatter.quote('hello'));
+expectType<`>>> ${string}`>(Formatter.blockQuote('hello'));
+expectType<`<${'a' | ''}:${string}:${string}>`>(Formatter.emojiMention('123', 'wave'));
+expectType<`<${'a' | ''}:${string}:${string}>`>(Formatter.emojiMention('123', null, true));
 expectType<string>(
 	Formatter.generateOAuth2URL('123', {
 		scopes: [OAuth2Scopes.Bot],

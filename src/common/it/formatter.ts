@@ -187,7 +187,7 @@ export const Formatter = {
 	 * @param content The content to format.
 	 * @returns The formatted content.
 	 */
-	blockQuote(content: string): string {
+	blockQuote(content: string): `>>> ${string}` {
 		return `>>> ${content}`;
 	},
 
@@ -196,7 +196,7 @@ export const Formatter = {
 	 * @param content The content to format.
 	 * @returns The formatted content.
 	 */
-	quote(content: string): string {
+	quote(content: string): `> ${string}` {
 		return `> ${content}`;
 	},
 
@@ -281,7 +281,7 @@ export const Formatter = {
 	 * @param animated Whether the emoji is animated. Defaults to false.
 	 * @returns The formatted emoji.
 	 */
-	emojiMention(emojiId: string, name: string | null, animated = false): string {
+	emojiMention(emojiId: string, name: string | null, animated = false): `<${'a' | ''}:${string}:${string}>` {
 		return `<${animated ? 'a' : ''}:${name ?? '_'}:${emojiId}>`;
 	},
 
