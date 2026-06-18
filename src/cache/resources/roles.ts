@@ -32,7 +32,7 @@ export class Roles extends GuildRelatedResource<any, APIRole> {
 		return super.bulk(ids);
 	}
 
-	override values(guild: string): ReturnCache<GuildRoleStructure[]> {
+	override values(guild: '*' | (string & {})): ReturnCache<GuildRoleStructure[]> {
 		return fakePromise(super.values(guild)).then(roles =>
 			roles.map(rawRole => Transformers.GuildRole(this.client, rawRole, rawRole.guild_id)),
 		);

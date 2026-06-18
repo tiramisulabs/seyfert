@@ -34,6 +34,8 @@ import {
 	GatewayOpcodes,
 	type GatewayDispatchPayload,
 	type InferMiddlewares,
+	type GuildBasedResource,
+	type GuildRelatedResource,
 	Middlewares,
 	middlewares,
 	type GatewaySendPayload,
@@ -202,6 +204,24 @@ declare const dynamicBulkGetKeys: BulkGetKey[];
 const dynamicBulkGetResult = cacheContract.bulkGet(dynamicBulkGetKeys);
 type DynamicBulkGetResult = Awaited<typeof dynamicBulkGetResult>;
 expectType<true>(true as ('channels' extends keyof DynamicBulkGetResult ? true : false));
+
+declare const guildRelatedResourceContract: GuildRelatedResource;
+guildRelatedResourceContract.flush();
+declare const guildBasedResourceContract: GuildBasedResource;
+// @ts-expect-error GuildBasedResource.flush requires an explicit guild selector.
+guildBasedResourceContract.flush();
+const wildcardCacheSelector = '*' as const;
+declare const cacheResourceSelector: string & {};
+cacheContract.roles?.values(wildcardCacheSelector);
+cacheContract.channels?.values(wildcardCacheSelector);
+cacheContract.messages?.values(wildcardCacheSelector);
+cacheContract.messages?.keys(wildcardCacheSelector);
+cacheContract.emojis?.values(wildcardCacheSelector);
+cacheContract.stickers?.values(wildcardCacheSelector);
+cacheContract.overwrites?.values(wildcardCacheSelector);
+cacheContract.members?.values(cacheResourceSelector);
+cacheContract.bans?.values(cacheResourceSelector);
+cacheContract.voiceStates?.values(wildcardCacheSelector);
 
 type ChannelPinResult = Awaited<ReturnType<Client['channels']['pins']>>;
 expectType<true>(true as Equal<ChannelPinResult['items'][number]['pinnedAt'], number>);
