@@ -158,9 +158,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		if (workerData.mode !== 'custom')
 			(manager ?? process).on('message', (data: ManagerMessages) => this.handleManagerMessages(data));
 
-		this.logger = new Logger({
-			name: `[Worker #${workerData.workerId}]`,
-		});
+		this.configureLogger({ name: `[Worker #${workerData.workerId}]` }, this.options.logger);
 
 		if (workerData.debug) {
 			this.debugger = new Logger({

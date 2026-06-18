@@ -37,6 +37,7 @@ import {
 	InteractionShorter,
 	InvitesShorter,
 	Logger,
+	type LoggerOptions,
 	LogLevels,
 	type MakeRequired,
 	MemberShorter,
@@ -243,12 +244,21 @@ export class BaseClient {
 		const resolved = resolveClientPlugins(defaults, options);
 
 		this.options = resolved.options;
+		this.configureLogger({ name: '[Seyfert]' }, this.options.logger);
 		this.plugins = resolved.plugins;
 		this.pluginRegistry = resolved.registry;
 		this.shared = createSharedRegistry(this, this.pluginRegistry);
 		bindClientPlugins(this, this.pluginRegistry);
 		this.bindPluginRestObserverProvider();
 		this.refreshPluginCacheResources();
+	}
+
+	protected configureLogger(defaults: LoggerOptions, options?: LoggerOptions) {
+		const loggerOptions = MergeOptions<LoggerOptions>(defaults, options ?? {});
+		if (loggerOptions.active !== undefined) this.logger.active = loggerOptions.active;
+		if (loggerOptions.logLevel !== undefined) this.logger.level = loggerOptions.logLevel;
+		if (loggerOptions.name !== undefined) this.logger.name = loggerOptions.name;
+		if (loggerOptions.saveOnFile !== undefined) this.logger.saveOnFile = loggerOptions.saveOnFile;
 	}
 
 	get proxy() {
@@ -1148,6 +1158,7 @@ export interface BaseClientOptions {
 		};
 	};
 	allowedMentions?: RESTPostAPIChannelMessageJSONBody['allowed_mentions'];
+	logger?: LoggerOptions;
 	getRC?(): Awaitable<InternalRuntimeConfig | InternalRuntimeConfigHTTP>;
 }
 

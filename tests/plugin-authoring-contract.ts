@@ -1037,7 +1037,15 @@ const optionsPlugin: SeyfertPlugin = {
 	name: 'options',
 	options(current) {
 		expectType<Readonly<SeyfertPluginOptions>>(current);
-		return { allowedMentions: { parse: [] } };
+		return {
+			allowedMentions: { parse: [] },
+			logger: {
+				active: false,
+				logLevel: 3,
+				name: 'plugin',
+				saveOnFile: false,
+			},
+		};
 	},
 };
 
@@ -1246,6 +1254,15 @@ expectType<{ auditId: string }>(typedMiddlewareCommandContext().metadata.combine
 middlewares('missing');
 
 const client = new Client({ plugins });
+const clientWithLoggerOptions = new Client({
+	logger: {
+		active: false,
+		logLevel: 2,
+		name: 'client',
+		saveOnFile: false,
+	},
+});
+expectType<Client>(clientWithLoggerOptions);
 client.setServices({ middlewares: { localAudit: combinedAudit } });
 client.setServices({
 	middlewares: {
