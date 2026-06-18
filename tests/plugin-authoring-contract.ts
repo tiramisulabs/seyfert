@@ -118,8 +118,16 @@ import {
 	type UserStructure,
 	PresenceUpdateStatus,
 	createEvent,
+	type ModalSubmitInteraction,
 } from 'seyfert';
-import type { Awaitable, MakePresent, MakeRequired, PickPresent, PickRequired } from '../lib/common';
+import type {
+	Awaitable,
+	MakePresent,
+	MakeRequired,
+	ModalCreateBodyRequest,
+	PickPresent,
+	PickRequired,
+} from '../lib/common';
 import { snowflakeToTimestamp } from '../lib/common/it/utils';
 import type { BanShorter } from '../lib/common/shorters/bans';
 import type { MemberShorter } from '../lib/common/shorters/members';
@@ -1239,6 +1247,7 @@ declare function menuCommandContext(): MenuCommandContext<any>;
 declare function entryPointContext(): EntryPointContext;
 declare const messageWithEmbeds: MessageStructure;
 declare const rawApiEmbed: APIEmbed;
+declare const modalBodyContract: ModalCreateBodyRequest;
 
 expectType<Promise<void>>(commandContext().write({ content: 'Done!' }));
 expectType<Promise<void>>(commandContext().write({ embeds: messageWithEmbeds.embeds }));
@@ -1250,6 +1259,8 @@ expectType<Promise<void>>(commandContext().editOrReply({ content: 'Done!' }, fal
 expectType<Promise<WebhookMessageStructure>>(commandContext().write({ content: 'Done!' }, true));
 expectType<Promise<WebhookMessageStructure>>(commandContext().editOrReply({ content: 'Done!' }, true));
 expectType<Promise<WebhookMessageStructure>>(commandContext().ephemeral({ content: 'Done!' }, true));
+expectType<Promise<undefined>>(commandContext().modal(modalBodyContract));
+expectType<Promise<ModalSubmitInteraction | null>>(commandContext().modal(modalBodyContract, { waitFor: 1_000 }));
 expectType<MessageStructure>(componentContext().message);
 expectType<Promise<WebhookMessageStructure>>(componentContext().ephemeral({ content: 'Done!' }, true));
 expectType<Promise<WebhookMessageStructure>>(modalContext().ephemeral({ content: 'Done!' }, true));

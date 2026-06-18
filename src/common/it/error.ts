@@ -98,6 +98,7 @@ export const SeyfertErrorMessages = {
 	UNDEFINED_LOCALE: 'Undefined locale.',
 	INTERACTION_ALREADY_REPLIED: 'Interaction already replied.',
 	CANNOT_USE_REPLY: 'Cannot use reply in this interaction.',
+	CANNOT_USE_MODAL: 'Cannot use modal without an interaction.',
 	RELOAD_NOT_SUPPORTED: 'Reload in Cloudflare worker is not supported.',
 	API_WORKER_PROXY_PARENT_REQUIRED: 'Cannot use workerProxy without a parent.',
 	WORKER_TIMEOUT: 'Worker request timed out.',

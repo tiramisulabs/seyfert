@@ -10,14 +10,22 @@ import type {
 	UserStructure,
 	WebhookMessageStructure,
 } from '../../client/transformers';
-import type { If, MakeRequired, When } from '../../common';
+import { type If, type MakeRequired, SeyfertError, type When } from '../../common';
 import type {
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
 	MessageWebhookCreateBodyRequest,
+	ModalCreateBodyRequest,
+	ModalCreateOptions,
 } from '../../common/types/write';
 import { createEphemeralResponseBody } from '../../common/types/write';
-import { type AllChannels, type AllGuildChannels, ChatInputCommandInteraction, type Message } from '../../structures';
+import {
+	type AllChannels,
+	type AllGuildChannels,
+	ChatInputCommandInteraction,
+	type Message,
+	type ModalSubmitInteraction,
+} from '../../structures';
 import { MessageFlags, type RESTGetAPIGuildQuery } from '../../types';
 import { BaseContext } from '../basecontext';
 import type { ResolvedRegisteredMiddlewares } from '../decorators';
@@ -94,6 +102,14 @@ export class CommandContext<
 		withResponse?: WR,
 	): Promise<When<WR, WebhookMessageStructure | When<InferWithPrefix, MessageStructure, never>, void>> {
 		return this.write<WR>(this.interaction ? createEphemeralResponseBody(body) : body, withResponse);
+	}
+
+	modal(body: ModalCreateBodyRequest, options?: undefined): Promise<undefined>;
+	modal(body: ModalCreateBodyRequest, options: ModalCreateOptions): Promise<ModalSubmitInteraction | null>;
+	modal(body: ModalCreateBodyRequest, options?: ModalCreateOptions | undefined) {
+		if (!this.interaction) throw new SeyfertError('CANNOT_USE_MODAL');
+		if (options === undefined) return this.interaction.modal(body);
+		return this.interaction.modal(body, options);
 	}
 
 	async deferReply<WR extends boolean = false>(
