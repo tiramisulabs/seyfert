@@ -123,6 +123,7 @@ import {
 	type UserStructure,
 	type RuntimeConfig,
 	type RuntimeConfigHTTP,
+	type VoiceChannelStructure,
 	PresenceUpdateStatus,
 	createEvent,
 	type ModalSubmitInteraction,
@@ -1355,6 +1356,17 @@ collectorClient.collectors.create({
 	},
 	run() {},
 });
+type VoiceChannelStatusUpdatePayload = Parameters<CallbackEventHandler['voiceChannelStatusUpdate']>[0];
+expectType<
+	[
+		status: {
+			id: string;
+			guildId: string;
+			status?: string | null;
+		},
+		channel: VoiceChannelStructure | undefined,
+	]
+>(undefined as never as VoiceChannelStatusUpdatePayload);
 
 expectType<AllChannels[]>(modalContext().getChannels('channels', true));
 expectType<AllChannels[] | void>(modalContext().getChannels('channels'));
