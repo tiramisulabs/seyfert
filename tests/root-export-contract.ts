@@ -15,9 +15,15 @@ import {
 	type OAuth2URLOptions,
 	type PropWhen,
 	type SeyfertErrorCode,
+	type ShardData,
+	type ShardManagerOptions,
 	type StructPropState,
 	type StructStates,
 	type Timestamp,
+	type WorkerData,
+	type WorkerInfo,
+	type WorkerManagerOptions,
+	type WorkerShardInfo,
 } from 'seyfert';
 
 declare function expectType<T>(value: T): void;
@@ -61,3 +67,9 @@ expectType<'cached' | 'api' | 'create'>(structState);
 expectType<number | undefined>(cachedStructProp);
 expectType<number>(createdProp);
 expectType<undefined>(missingCreatedProp);
+expectType<ShardManagerOptions['intents']>(0);
+expectType<WorkerManagerOptions['intents']>(0);
+expectType<ShardData>({ resume_seq: null });
+expectType<WorkerData['mode']>('threads');
+expectType<WorkerInfo>({ shards: [] });
+expectType<WorkerShardInfo>({ shardId: 0, workerId: 0, open: false, latency: 0, resumable: false });

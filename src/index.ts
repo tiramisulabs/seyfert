@@ -48,6 +48,8 @@ export { GuildRole } from './structures/GuildRole';
 export * from './types';
 //
 export { ShardManager, WorkerManager } from './websocket/discord';
+export type { ShardData, ShardManagerOptions, WorkerData, WorkerManagerOptions } from './websocket/discord/shared';
+export type { WorkerInfo, WorkerShardInfo } from './websocket/discord/worker';
 
 /**
  * Creates an event with the specified data and run function.
