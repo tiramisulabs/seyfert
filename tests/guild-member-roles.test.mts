@@ -30,6 +30,14 @@ const memberData = (roles: string[]) =>
 const createMember = (client: any, id: string, roles: string[], bot = false) =>
 	new GuildMember(client, memberData(roles), userData(id, bot), guildId);
 
+const deferred = <T>() => {
+	let resolve!: (value: T) => void;
+	const promise = new Promise<T>(res => {
+		resolve = res;
+	});
+	return { promise, resolve };
+};
+
 describe('GuildMember roles', () => {
 	test('highest resolves undefined when a partial role list omits the member role', async () => {
 		const list = vi.fn().mockResolvedValue([{ id: 'unrelated-role', position: 99 }]);
@@ -82,6 +90,35 @@ describe('GuildMember roles', () => {
 
 		await expect(targetMember.manageable()).resolves.toBe(false);
 		expect(list.mock.calls.map(call => call[1])).toEqual([false, false, true, true]);
+	});
+
+	test('manageable starts self and guild fetches before waiting for either result', async () => {
+		const everyoneRole = { id: guildId, position: 0 };
+		const botRole = { id: botRoleId, position: 20 };
+		const targetRole = { id: targetRoleId, position: 10 };
+		const list = vi.fn().mockResolvedValue([everyoneRole, botRole, targetRole]);
+		const self = deferred<GuildMember>();
+		const guild = deferred<{ ownerId: string }>();
+		const client = {
+			botId,
+			roles: { list },
+			guilds: {
+				fetchSelf: vi.fn(() => self.promise),
+				fetch: vi.fn(() => guild.promise),
+			},
+		} as any;
+		const botMember = createMember(client, botId, [botRoleId], true);
+		const targetMember = createMember(client, targetId, [targetRoleId]);
+
+		const manageable = targetMember.manageable();
+		await Promise.resolve();
+
+		expect(client.guilds.fetchSelf).toHaveBeenCalledWith(guildId, false);
+		expect(client.guilds.fetch).toHaveBeenCalledWith(guildId, false);
+
+		self.resolve(botMember);
+		guild.resolve({ ownerId: '900000000000000009' });
+		await expect(manageable).resolves.toBe(true);
 	});
 });
 

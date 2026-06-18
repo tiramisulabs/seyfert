@@ -252,9 +252,12 @@ export class GuildMember extends BaseGuildMember {
 	}
 
 	async manageable(force = false) {
-		const me = await this.client.guilds.fetchSelf(this.guildId, force);
+		const [me, guild] = await Promise.all([
+			this.client.guilds.fetchSelf(this.guildId, force),
+			this.client.guilds.fetch(this.guildId, force),
+		]);
 		this.__me = me;
-		const ownerId = (await this.client.guilds.fetch(this.guildId, force)).ownerId;
+		const ownerId = guild.ownerId;
 		if (this.user.id === ownerId) return false;
 		if (this.user.id === this.client.botId) return false;
 		if (this.client.botId === ownerId) return true;
