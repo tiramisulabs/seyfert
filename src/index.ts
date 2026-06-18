@@ -19,7 +19,15 @@ export * from './cache';
 //
 export { Collection, LimitedCollection, type LimitedCollectionData } from './collection';
 export * from './commands';
-export { type BanOptions, Formatter, Logger, PermissionStrings } from './common';
+export {
+	type BanOptions,
+	type ChannelLink,
+	Formatter,
+	Logger,
+	type MessageLink,
+	PermissionStrings,
+	type Timestamp,
+} from './common';
 export * from './components';
 export * from './events';
 export * from './langs';

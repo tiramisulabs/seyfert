@@ -92,12 +92,17 @@ export enum TimestampStyle {
 /**
  * Represents a message link.
  */
-type MessageLink = `https://discord.com/channels/${string}/${string}/${string}`;
+export type MessageLink = `https://discord.com/channels/${string}/${string}/${string}`;
+
+/**
+ * Represents a channel link.
+ */
+export type ChannelLink = `https://discord.com/channels/${string}/${string}`;
 
 /**
  * Represents a timestamp.
  */
-type Timestamp = `<t:${number}:${TimestampStyle}>`;
+export type Timestamp = `<t:${number}:${TimestampStyle}>`;
 
 /**
  * Represents a formatter utility for formatting content.
@@ -286,7 +291,7 @@ export const Formatter = {
 	 * @param guildId The ID of the guild. Defaults to '@me'.
 	 * @returns The formatted channel link.
 	 */
-	channelLink(channelId: string, guildId?: string) {
+	channelLink(channelId: string, guildId?: string): ChannelLink {
 		return `https://discord.com/channels/${guildId ?? '@me'}/${channelId}`;
 	},
 

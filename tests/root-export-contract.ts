@@ -1,4 +1,4 @@
-import { config, type BotConfig, type HttpConfig } from 'seyfert';
+import { Formatter, config, type BotConfig, type ChannelLink, type HttpConfig, type MessageLink, type Timestamp } from 'seyfert';
 
 declare function expectType<T>(value: T): void;
 
@@ -18,3 +18,7 @@ const rootHttpConfig = config.http({
 });
 expectType<HttpConfig>(rootHttpConfig);
 expectType<number>(rootHttpConfig.port);
+
+expectType<MessageLink>(Formatter.messageLink('guild-id', 'channel-id', 'message-id'));
+expectType<ChannelLink>(Formatter.channelLink('channel-id'));
+expectType<Timestamp>(Formatter.timestamp(Date.now()));
