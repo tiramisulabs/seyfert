@@ -9,6 +9,19 @@ describe('PermissionsBitField', () => {
 		assert.equal(p.bits, PermissionFlagsBits.CreateEvents);
 	});
 
+	test('invalid permission errors include the offending key', () => {
+		let thrown: unknown;
+
+		try {
+			new PermissionsBitField(['NotAPermission' as never]);
+		} catch (error) {
+			thrown = error;
+		}
+
+		assert.equal(thrown instanceof TypeError, true);
+		assert.equal((thrown as Error).message.includes('NotAPermission'), true);
+	});
+
 	test('add', () => {
 		const p = new PermissionsBitField(['CreateEvents']);
 		p.add(['AttachFiles']);

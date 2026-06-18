@@ -33,7 +33,11 @@ export class PermissionsBitField extends BitField<typeof PermissionFlagsBits> {
 		for (const bit of Array.isArray(bits) ? bits : [bits]) {
 			switch (typeof bit) {
 				case 'string':
-					bitsResult |= PermissionsBitField.resolve(PermissionFlagsBits[bit as keyof typeof PermissionFlagsBits]);
+					{
+						const resolved = PermissionFlagsBits[bit as keyof typeof PermissionFlagsBits];
+						if (resolved === undefined) throw new TypeError(`Cannot resolve permission: ${bit}`);
+						bitsResult |= PermissionsBitField.resolve(resolved);
+					}
 					break;
 				case 'bigint':
 					bitsResult |= bit;
