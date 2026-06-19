@@ -8,7 +8,6 @@ import {
 	type WebhookMessageStructure,
 } from '../../client/transformers';
 import {
-	createEphemeralResponseBody,
 	type InteractionCreateBodyRequest,
 	type InteractionMessageUpdateBodyRequest,
 	type MakeRequired,
@@ -87,13 +86,6 @@ export class MenuCommandContext<
 		withResponse?: WR,
 	): Promise<When<WR, WebhookMessageStructure, void>> {
 		return this.interaction.write<WR>(body, withResponse);
-	}
-
-	ephemeral<WR extends boolean = false>(
-		body: InteractionCreateBodyRequest,
-		withResponse?: WR,
-	): Promise<When<WR, WebhookMessageStructure, void>> {
-		return this.write<WR>(createEphemeralResponseBody(body), withResponse);
 	}
 
 	modal(body: ModalCreateBodyRequest, options?: undefined): Promise<undefined>;

@@ -15,7 +15,6 @@ import type {
 	ModalCreateOptions,
 	When,
 } from '../../common';
-import { createEphemeralResponseBody } from '../../common';
 import type { AllChannels, EntryPointInteraction, ModalSubmitInteraction } from '../../structures';
 import { MessageFlags, type RESTGetAPIGuildQuery } from '../../types';
 import { BaseContext } from '../basecontext';
@@ -61,13 +60,6 @@ export class EntryPointContext<M extends keyof ResolvedRegisteredMiddlewares = n
 		withResponse?: WR,
 	): Promise<When<WR, WebhookMessageStructure, void>> {
 		return this.interaction.write<WR>(body, withResponse);
-	}
-
-	ephemeral<WR extends boolean = false>(
-		body: InteractionCreateBodyRequest,
-		withResponse?: WR,
-	): Promise<When<WR, WebhookMessageStructure, void>> {
-		return this.write<WR>(createEphemeralResponseBody(body), withResponse);
 	}
 
 	modal(body: ModalCreateBodyRequest, options?: undefined): Promise<undefined>;

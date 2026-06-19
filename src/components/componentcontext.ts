@@ -35,7 +35,6 @@ import type {
 	ModalCreateOptions,
 	When,
 } from '../common';
-import { createEphemeralResponseBody } from '../common';
 import type { ModalSubmitInteraction } from '../structures';
 import { ComponentType, MessageFlags, type RESTGetAPIGuildQuery } from '../types';
 
@@ -103,13 +102,6 @@ export class ComponentContext<
 		fetchReply?: FR,
 	): Promise<When<FR, WebhookMessageStructure, void>> {
 		return this.interaction.write<FR>(body, fetchReply);
-	}
-
-	ephemeral<FR extends boolean = false>(
-		body: InteractionCreateBodyRequest,
-		fetchReply?: FR,
-	): Promise<When<FR, WebhookMessageStructure, void>> {
-		return this.write<FR>(createEphemeralResponseBody(body), fetchReply);
 	}
 
 	/**

@@ -1,19 +1,19 @@
 import type { RawFile } from '../../api';
 import type { Attachment, AttachmentBuilder, Embed, Modal, PollBuilder, TopLevelBuilders } from '../../builders';
 import type { InMessageEmbed } from '../../structures/Message';
-import {
-	type APIEmbed,
-	type APIInteractionResponseCallbackData,
-	type APIInteractionResponseChannelMessageWithSource,
-	type APIModalInteractionResponse,
+import type {
+	APIEmbed,
+	APIInteractionResponseCallbackData,
+	APIInteractionResponseChannelMessageWithSource,
+	APIModalInteractionResponse,
 	MessageFlags,
-	type RESTAPIPollCreate,
-	type RESTPatchAPIChannelMessageJSONBody,
-	type RESTPatchAPIWebhookWithTokenMessageJSONBody,
-	type RESTPostAPIChannelMessageJSONBody,
-	type RESTPostAPIChannelThreadsJSONBody,
-	type RESTPostAPIGuildForumThreadsJSONBody,
-	type RESTPostAPIWebhookWithTokenJSONBody,
+	RESTAPIPollCreate,
+	RESTPatchAPIChannelMessageJSONBody,
+	RESTPatchAPIWebhookWithTokenMessageJSONBody,
+	RESTPostAPIChannelMessageJSONBody,
+	RESTPostAPIChannelThreadsJSONBody,
+	RESTPostAPIGuildForumThreadsJSONBody,
+	RESTPostAPIWebhookWithTokenJSONBody,
 } from '../../types';
 
 import type { OmitInsert, RequireAtLeastOne } from './util';
@@ -72,10 +72,6 @@ export type InteractionCreateBodyRequest = OmitInsert<
 	'components' | 'embeds' | 'poll' | 'content',
 	SendResolverProps
 >;
-
-export function createEphemeralResponseBody(body: InteractionCreateBodyRequest): InteractionCreateBodyRequest {
-	return { ...body, flags: (body.flags ?? 0) | MessageFlags.Ephemeral };
-}
 
 export type ModalCreateBodyRequest = APIModalInteractionResponse['data'] | Modal;
 

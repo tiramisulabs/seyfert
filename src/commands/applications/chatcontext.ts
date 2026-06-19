@@ -18,7 +18,6 @@ import type {
 	ModalCreateBodyRequest,
 	ModalCreateOptions,
 } from '../../common/types/write';
-import { createEphemeralResponseBody } from '../../common/types/write';
 import {
 	type AllChannels,
 	type AllGuildChannels,
@@ -95,13 +94,6 @@ export class CommandContext<
 		return ((this.messageResponse as MessageStructure | undefined) = await (this.message! as Message)[
 			!(this.messageResponse as MessageStructure | undefined) && (await options?.reply?.(this)) ? 'reply' : 'write'
 		](body)) as never;
-	}
-
-	async ephemeral<WR extends boolean = false>(
-		body: InteractionCreateBodyRequest,
-		withResponse?: WR,
-	): Promise<When<WR, WebhookMessageStructure | When<InferWithPrefix, MessageStructure, never>, void>> {
-		return this.write<WR>(this.interaction ? createEphemeralResponseBody(body) : body, withResponse);
 	}
 
 	modal(body: ModalCreateBodyRequest, options?: undefined): Promise<undefined>;
