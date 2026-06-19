@@ -1,5 +1,6 @@
 import { MergeOptions } from '../common';
 import type { Awaitable } from '../common/types/util';
+import type { GatewayDispatchPayload } from '../types';
 import type { BaseClient, BaseClientOptions, ContextScope, ContextScopeContext } from './base';
 import { createPluginApi } from './plugins/api';
 import { SeyfertPluginAggregateError, wrapPluginError } from './plugins/errors';
@@ -48,6 +49,7 @@ import type {
 	PluginClientMap,
 	PluginCommandObserver,
 	PluginContextMap,
+	PluginGatewayDispatchNext,
 	PluginGatewayPayload,
 	PluginHookName,
 	PluginHookPayload,
@@ -94,6 +96,9 @@ export type {
 	PluginEventDisposer,
 	PluginEventErrorHandler,
 	PluginExtensionOf,
+	PluginGatewayDispatchInterceptor,
+	PluginGatewayDispatchMeta,
+	PluginGatewayDispatchNext,
 	PluginGatewayPayload,
 	PluginGatewayPayloadWrapper,
 	PluginHandlerConstructor,
@@ -563,6 +568,67 @@ async function reportPluginHookFailure(client: BaseClient, name: string, error: 
 		}
 	}
 	client.logger.warn('<Client>.hooks.onFail', error, name);
+}
+
+export async function applyPluginGatewayDispatchInterceptors(
+	client: BaseClient,
+	shardId: number,
+	packet: GatewayDispatchPayload,
+): Promise<GatewayDispatchPayload | null> {
+	const interceptors = orderedPluginContributions(client.pluginRegistry.gatewayDispatchInterceptors);
+	if (!interceptors.length) return packet;
+
+	const run = async (index: number, current: GatewayDispatchPayload): Promise<GatewayDispatchPayload | null> => {
+		const contribution = interceptors[index];
+		if (!contribution) return current;
+
+		let nextCalled = false;
+		let nextResult: Promise<GatewayDispatchPayload | null> | undefined;
+		let nextValue: GatewayDispatchPayload | null | undefined;
+		const next: PluginGatewayDispatchNext = nextPacket => {
+			if (nextCalled) {
+				throw new Error('gateway.onDispatch next() was called multiple times.');
+			}
+			nextCalled = true;
+			nextResult = run(index + 1, nextPacket ?? current).then(value => {
+				nextValue = value;
+				return value;
+			});
+			return nextResult;
+		};
+
+		let result: Awaited<ReturnType<typeof contribution.interceptor>>;
+		try {
+			result = await contribution.interceptor(current, next, { client, shardId });
+			if (nextCalled) nextValue = await nextResult;
+		} catch (error) {
+			throw wrapPluginError(
+				contribution.record.plugin.name,
+				'gateway.onDispatch',
+				contribution.record.index,
+				error,
+				undefined,
+				contribution.record.plugin.instanceId,
+			);
+		}
+
+		if (nextCalled && nextValue === null) return null;
+		if (result === null) {
+			addPluginDiagnostic(client.pluginRegistry, contribution.record, {
+				phase: 'gateway.onDispatch',
+				severity: 'warn',
+				code: 'gateway-dispatch-veto',
+				message: `Gateway dispatch interceptor from plugin "${contribution.record.plugin.name}" vetoed a dispatch packet.`,
+				data: { shardId, op: current.op, event: current.t },
+			});
+			return null;
+		}
+
+		if (nextCalled) return result ?? nextValue ?? current;
+		return run(index + 1, result ?? current);
+	};
+
+	return run(0, packet);
 }
 
 export async function applyPluginGatewayPayloadWrappers(

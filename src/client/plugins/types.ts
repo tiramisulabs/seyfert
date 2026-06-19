@@ -71,6 +71,7 @@ export type PluginDiagnosticCode =
 	| 'missing-optional-requirement'
 	| 'unknown-intent-bits'
 	| 'gateway-payload-veto'
+	| 'gateway-dispatch-veto'
 	| 'contribution-override'
 	| 'contribution-removed'
 	| 'command-guild-scope'
@@ -161,6 +162,18 @@ export interface PluginGatewayPayload {
 export type PluginGatewayPayloadWrapper = (
 	payload: PluginGatewayPayload,
 ) => Awaitable<GatewaySendPayload | null | undefined | void>;
+
+export interface PluginGatewayDispatchMeta {
+	readonly client: BaseClient;
+	readonly shardId: number;
+}
+
+export type PluginGatewayDispatchNext = (packet?: GatewayDispatchPayload) => Awaitable<GatewayDispatchPayload | null>;
+export type PluginGatewayDispatchInterceptor = (
+	packet: GatewayDispatchPayload,
+	next: PluginGatewayDispatchNext,
+	meta: PluginGatewayDispatchMeta,
+) => Awaitable<GatewayDispatchPayload | null | undefined | void>;
 
 export interface PluginRestRequestPayload {
 	readonly client: BaseClient;
@@ -442,6 +455,7 @@ export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewa
 	gateway: {
 		addIntents(...intents: PluginIntentResolvable[]): void;
 		wrapPayload(wrapper: PluginGatewayPayloadWrapper, opts?: { order?: PluginOrderOpt }): void;
+		onDispatch(interceptor: PluginGatewayDispatchInterceptor, opts?: { order?: PluginOrderOpt }): () => void;
 	};
 	cache: {
 		resource(name: string, resource: PluginCacheResourceConstructor, opts?: PluginCacheResourceOptions): void;
@@ -535,6 +549,7 @@ export interface PluginDiagnostics {
 	autocompleteWrappers: number;
 	gatewayIntents: number;
 	gatewayPayloadWrappers: number;
+	gatewayDispatchInterceptors: number;
 	handlerCreators: number;
 	handlerTransformers: number;
 	messages: readonly PluginDiagnosticMessage[];

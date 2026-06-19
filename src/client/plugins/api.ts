@@ -14,6 +14,7 @@ import {
 	removePluginCommandObserverContribution,
 	removePluginEventContribution,
 	removePluginEventErrorContribution,
+	removePluginGatewayDispatchInterceptorContribution,
 	removePluginHookContribution,
 	removePluginRestObserverContribution,
 	resolveGatewayIntent,
@@ -440,6 +441,18 @@ export function createPluginApi(
 					order: opts?.order,
 					sequence: nextPluginContributionSequence(registry),
 				});
+			},
+			onDispatch(interceptor, opts) {
+				assertCanMutate('gateway.onDispatch');
+				const contribution = {
+					record,
+					interceptor,
+					scope,
+					order: opts?.order,
+					sequence: nextPluginContributionSequence(registry),
+				};
+				registry.gatewayDispatchInterceptors.push(contribution);
+				return once(() => removePluginGatewayDispatchInterceptorContribution(registry, contribution));
 			},
 		},
 		cache: {

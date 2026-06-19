@@ -24,6 +24,9 @@ import {
 	type PluginContextMapOf,
 	type PluginDiagnosticCode,
 	type PluginExtensionOf,
+	type PluginGatewayDispatchInterceptor,
+	type PluginGatewayDispatchMeta,
+	type PluginGatewayDispatchNext,
 	type PluginHandlerKind,
 	type PluginMiddlewaresMapOf,
 	type PluginCommandObserver,
@@ -154,6 +157,18 @@ const economy = createPlugin({
 			expectType<unknown>(client.shared.get(ledgerKey));
 			return payload;
 		}, { order: PluginOrder.After });
+		const disposeDispatchInterceptor = api.gateway.onDispatch((packet, next, meta) => {
+			expectType<GatewayDispatchPayload>(packet);
+			expectType<PluginGatewayDispatchNext>(next);
+			expectType<PluginGatewayDispatchMeta>(meta);
+			return next(packet);
+		}, { order: PluginOrder.Before });
+		expectType<() => void>(disposeDispatchInterceptor);
+		expectType<PluginGatewayDispatchInterceptor>((packet, next, meta) => {
+			expectType<GatewayDispatchPayload>(packet);
+			expectType<number>(meta.shardId);
+			return next();
+		});
 		const disposeRestObserver = api.rest.observe({
 			onRequest(payload) {
 				expectType<Readonly<{ method: 'GET' | 'DELETE' | 'PUT' | 'POST' | 'PATCH'; url: `/${string}` }>>(

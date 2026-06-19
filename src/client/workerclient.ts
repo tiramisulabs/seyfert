@@ -50,7 +50,12 @@ import type { BaseClientOptions, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import type { Client, ClientOptions } from './client';
 import { Collectors } from './collectors';
-import { applyPluginGatewayPayloadWrappers, type RegisteredPluginExtension, runPluginHooks } from './plugins';
+import {
+	applyPluginGatewayDispatchInterceptors,
+	applyPluginGatewayPayloadWrappers,
+	type RegisteredPluginExtension,
+	runPluginHooks,
+} from './plugins';
 import { type ClientUserStructure, Transformers } from './transformers';
 
 let workerData: WorkerData;
@@ -489,13 +494,13 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			},
 			async handlePayload(shardId, payload) {
 				await handlePayload?.(shardId, payload);
-				await onPacket(payload, shardId);
-				if (self.options.sendPayloadToParent)
+				const pluginPacket = await onPacket(payload, shardId);
+				if (self.options.sendPayloadToParent && pluginPacket !== null)
 					self.postMessage({
 						workerId: workerData.workerId,
 						shardId,
 						type: 'RECEIVE_PAYLOAD',
-						payload,
+						payload: pluginPacket,
 					} satisfies WorkerReceivePayload);
 			},
 		});
@@ -526,7 +531,11 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		});
 	}
 
-	protected async onPacket(packet: GatewayDispatchPayload, shardId: number) {
+	protected async onPacket(packet: GatewayDispatchPayload, shardId: number): Promise<GatewayDispatchPayload | null> {
+		const pluginPacket = await applyPluginGatewayDispatchInterceptors(this, shardId, packet);
+		if (pluginPacket === null) return null;
+		packet = pluginPacket;
+
 		Promise.allSettled([
 			this.events.runEvent('RAW', this, packet, shardId, false),
 			this.collectors.run('RAW', packet, this),
@@ -535,7 +544,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			case 'GUILD_MEMBER_UPDATE':
 				{
 					if (!this.memberUpdateHandler.check(packet.d)) {
-						return;
+						return packet;
 					}
 					await this.events.execute(packet, this as WorkerClient<true>, shardId);
 				}
@@ -543,7 +552,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			case 'PRESENCE_UPDATE':
 				{
 					if (!this.presenceUpdateHandler.check(packet.d)) {
-						return;
+						return packet;
 					}
 					await this.events.execute(packet, this as WorkerClient<true>, shardId);
 				}
@@ -596,6 +605,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			}
 		}
+		return packet;
 	}
 }
 

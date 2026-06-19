@@ -60,6 +60,32 @@ function createGatewayClient(plugins = [] as NonNullable<ConstructorParameters<t
 	return client;
 }
 
+function runGatewayPacket(client: Client, packet: GatewayDispatchPayload, shardId = 0) {
+	return (
+		client as unknown as {
+			onPacket(shardId: number, packet: GatewayDispatchPayload): Promise<GatewayDispatchPayload | null>;
+		}
+	).onPacket(shardId, packet);
+}
+
+function setWorkerData(client: WorkerClient, workerId = 1) {
+	client.setWorkerData({
+		compress: false,
+		debug: false,
+		info: gatewayInfo(),
+		intents: 0,
+		mode: 'custom',
+		path: '',
+		resharding: false,
+		shards: [],
+		token: 'token',
+		totalShards: 1,
+		totalWorkers: 1,
+		workerId,
+		workerProxy: false,
+	});
+}
+
 class PluginPing extends Command {
 	name = 'plugin-ping';
 	description = 'Plugin ping';
@@ -240,6 +266,7 @@ describe('plugin api v3', () => {
 				api?.gateway.addIntents('Guilds');
 				api?.autocomplete.wrap((_payload, next) => next());
 				api?.gateway.wrapPayload(({ payload }) => payload);
+				api?.gateway.onDispatch((packet, next) => next(packet));
 			},
 		});
 		const client = createBaseClient([plugin]);
@@ -251,6 +278,7 @@ describe('plugin api v3', () => {
 		expect(client.cache.intents & GatewayIntentBits.Guilds).toBe(GatewayIntentBits.Guilds);
 		expect(client.pluginRegistry.autocompleteWrappers).toHaveLength(1);
 		expect(client.pluginRegistry.gatewayPayloadWrappers).toHaveLength(1);
+		expect(client.pluginRegistry.gatewayDispatchInterceptors).toHaveLength(1);
 	});
 
 	test('resolves worker gateway intents after setup-scoped plugin contributions', async () => {
@@ -298,6 +326,7 @@ describe('plugin api v3', () => {
 				api?.gateway.addIntents('Guilds');
 				api?.autocomplete.wrap((_payload, next) => next());
 				api?.gateway.wrapPayload(({ payload }) => payload);
+				api?.gateway.onDispatch((packet, next) => next(packet));
 				throw new Error('setup boom');
 			},
 		});
@@ -310,6 +339,7 @@ describe('plugin api v3', () => {
 		expect(client.cache.intents & GatewayIntentBits.Guilds).toBe(0);
 		expect(client.pluginRegistry.autocompleteWrappers).toHaveLength(0);
 		expect(client.pluginRegistry.gatewayPayloadWrappers).toHaveLength(0);
+		expect(client.pluginRegistry.gatewayDispatchInterceptors).toHaveLength(0);
 		expect(client.pluginRegistry.gatewayIntents).toHaveLength(0);
 		expect(client.pluginRegistry.pluginDefaults).toHaveLength(0);
 	});
@@ -1233,6 +1263,263 @@ describe('plugin api v3', () => {
 		await client.gateway.send(0, { op: GatewayOpcodes.Heartbeat, d: null });
 
 		expect(sent).toEqual([{ op: GatewayOpcodes.Heartbeat, d: 'wrapped' }]);
+	});
+
+	test('runs gateway dispatch interceptors before cache and events', async () => {
+		const calls: string[] = [];
+		const packets: GatewayDispatchPayload[] = [];
+		const events: unknown[] = [];
+		const plugin = createPlugin({
+			name: 'gateway-dispatch',
+			register(api) {
+				api.cache.resource('pluginDispatchResource', PluginCacheResource, {
+					onPacket(event) {
+						packets.push(event);
+					},
+				});
+				api.events.onAny((name, data, _client, shardId) => {
+					if (name === 'PLUGIN_TEST_EVENT') events.push({ data, shardId });
+				});
+				api.gateway.onDispatch((packet, next, meta) => {
+					const data = packet.d as { value: string };
+					calls.push(`before:${data.value}:${meta.shardId}`);
+					return next({ ...packet, d: { value: 'middle' } });
+				}, { order: PluginOrder.Before });
+				api.gateway.onDispatch(packet => {
+					const data = packet.d as { value: string };
+					calls.push(`after:${data.value}`);
+					return { ...packet, d: { value: `${data.value}:after` } };
+				}, { order: PluginOrder.After });
+			},
+		});
+		const client = createGatewayClient([plugin]);
+
+		await runGatewayPacket(
+			client,
+			{ op: GatewayOpcodes.Dispatch, t: 'PLUGIN_TEST_EVENT', s: 1, d: { value: 'start' } } as never,
+			7,
+		);
+
+		expect(calls).toEqual(['before:start:7', 'after:middle']);
+		expect(packets).toEqual([
+			expect.objectContaining({
+				t: 'PLUGIN_TEST_EVENT',
+				d: { value: 'middle:after' },
+			}),
+		]);
+		expect(events).toEqual([{ data: { value: 'middle:after' }, shardId: 7 }]);
+		expect(client.plugins.diagnostics[0]?.gatewayDispatchInterceptors).toBe(2);
+	});
+
+	test('lets gateway dispatch interceptors veto inbound packets', async () => {
+		const packets: GatewayDispatchPayload[] = [];
+		const events: string[] = [];
+		const plugin = createPlugin({
+			name: 'gateway-veto',
+			register(api) {
+				api.cache.resource('pluginDispatchVetoResource', PluginCacheResource, {
+					onPacket(event) {
+						packets.push(event);
+					},
+				});
+				api.events.onAny(name => {
+					events.push(name);
+				});
+				api.gateway.onDispatch(() => null);
+			},
+		});
+		const client = createGatewayClient([plugin]);
+
+		await runGatewayPacket(
+			client,
+			{ op: GatewayOpcodes.Dispatch, t: 'PLUGIN_TEST_EVENT', s: 1, d: { value: 'start' } } as never,
+			7,
+		);
+
+		expect(packets).toEqual([]);
+		expect(events).toEqual([]);
+		expect(client.plugins.diagnostics[0]?.messages).toContainEqual(
+			expect.objectContaining({
+				phase: 'gateway.onDispatch',
+				code: 'gateway-dispatch-veto',
+				data: { shardId: 7, op: GatewayOpcodes.Dispatch, event: 'PLUGIN_TEST_EVENT' },
+			}),
+		);
+	});
+
+	test('keeps downstream gateway dispatch veto attribution when returning next', async () => {
+		const first = createPlugin({
+			name: 'first-gateway-dispatch-veto',
+			register(api) {
+				api.gateway.onDispatch((_packet, next) => next());
+			},
+		});
+		const veto = createPlugin({
+			name: 'downstream-gateway-dispatch-veto',
+			register(api) {
+				api.gateway.onDispatch(() => null);
+			},
+		});
+		const client = createGatewayClient([first, veto]);
+
+		await expect(
+			runGatewayPacket(
+				client,
+				{ op: GatewayOpcodes.Dispatch, t: 'PLUGIN_TEST_EVENT', s: 1, d: { value: 'start' } } as never,
+				7,
+			),
+		).resolves.toBeNull();
+
+		expect(client.plugins.diagnostics[0]?.messages).toEqual([]);
+		expect(client.plugins.diagnostics[1]?.messages).toEqual([
+			expect.objectContaining({
+				phase: 'gateway.onDispatch',
+				code: 'gateway-dispatch-veto',
+			}),
+		]);
+	});
+
+	test('keeps downstream gateway dispatch veto sticky after await next', async () => {
+		const packets: GatewayDispatchPayload[] = [];
+		const events: string[] = [];
+		const first = createPlugin({
+			name: 'first-gateway-dispatch-sticky',
+			register(api) {
+				api.cache.resource('pluginDispatchStickyResource', PluginCacheResource, {
+					onPacket(event) {
+						packets.push(event);
+					},
+				});
+				api.events.onAny(name => {
+					events.push(name);
+				});
+				api.gateway.onDispatch(async (packet, next) => {
+					await next(packet);
+					return packet;
+				});
+			},
+		});
+		const veto = createPlugin({
+			name: 'downstream-gateway-dispatch-sticky',
+			register(api) {
+				api.gateway.onDispatch(() => null);
+			},
+		});
+		const client = createGatewayClient([first, veto]);
+
+		await expect(
+			runGatewayPacket(
+				client,
+				{ op: GatewayOpcodes.Dispatch, t: 'PLUGIN_TEST_EVENT', s: 1, d: { value: 'start' } } as never,
+				7,
+			),
+		).resolves.toBeNull();
+
+		expect(packets).toEqual([]);
+		expect(events).toEqual([]);
+		expect(client.plugins.diagnostics[0]?.messages).toEqual([]);
+		expect(client.plugins.diagnostics[1]?.messages).toEqual([
+			expect.objectContaining({
+				phase: 'gateway.onDispatch',
+				code: 'gateway-dispatch-veto',
+			}),
+		]);
+	});
+
+	test('sends transformed worker gateway dispatch packets to the parent', async () => {
+		const messages: unknown[] = [];
+		const plugin = createPlugin({
+			name: 'worker-gateway-dispatch-transform',
+			register(api) {
+				api.gateway.onDispatch(packet => ({
+					...packet,
+					d: { value: 'worker' },
+				}));
+			},
+		});
+		const client = new WorkerClient({
+			getRC: runtimeConfig,
+			plugins: [plugin],
+			postMessage: body => messages.push(body),
+			sendPayloadToParent: true,
+		});
+		setWorkerData(client, 9);
+		const shard = client.createShard(0, { info: gatewayInfo(), compress: false });
+
+		await shard.options.handlePayload(0, {
+			op: GatewayOpcodes.Dispatch,
+			t: 'PLUGIN_TEST_EVENT',
+			s: 1,
+			d: { value: 'start' },
+		} as never);
+
+		expect(messages).toEqual([
+			{
+				workerId: 9,
+				shardId: 0,
+				type: 'RECEIVE_PAYLOAD',
+				payload: expect.objectContaining({
+					t: 'PLUGIN_TEST_EVENT',
+					d: { value: 'worker' },
+				}),
+			},
+		]);
+	});
+
+	test('does not send vetoed worker gateway dispatch packets to the parent', async () => {
+		const messages: unknown[] = [];
+		const plugin = createPlugin({
+			name: 'worker-gateway-dispatch-veto',
+			register(api) {
+				api.gateway.onDispatch(() => null);
+			},
+		});
+		const client = new WorkerClient({
+			getRC: runtimeConfig,
+			plugins: [plugin],
+			postMessage: body => messages.push(body),
+			sendPayloadToParent: true,
+		});
+		setWorkerData(client, 9);
+		const shard = client.createShard(0, { info: gatewayInfo(), compress: false });
+
+		await shard.options.handlePayload(0, {
+			op: GatewayOpcodes.Dispatch,
+			t: 'PLUGIN_TEST_EVENT',
+			s: 1,
+			d: { value: 'start' },
+		} as never);
+
+		expect(messages).toEqual([]);
+	});
+
+	test('attributes gateway dispatch interceptor failures to the failing plugin', async () => {
+		const first = createPlugin({
+			name: 'first-gateway-dispatch',
+			register(api) {
+				api.gateway.onDispatch((_packet, next) => next());
+			},
+		});
+		const bad = createPlugin({
+			name: 'bad-gateway-dispatch',
+			register(api) {
+				api.gateway.onDispatch(() => {
+					throw new Error('dispatch boom');
+				});
+			},
+		});
+		const client = createGatewayClient([first, bad]);
+
+		await expect(
+			runGatewayPacket(
+				client,
+				{ op: GatewayOpcodes.Dispatch, t: 'PLUGIN_TEST_EVENT', s: 1, d: { value: 'start' } } as never,
+				7,
+			),
+		).rejects.toMatchObject({
+			plugin: 'bad-gateway-dispatch',
+			phase: 'gateway.onDispatch',
+		});
 	});
 
 	test('registers plugin shared values and resolves them lazily through unwrap', () => {

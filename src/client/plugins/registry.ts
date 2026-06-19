@@ -23,6 +23,7 @@ import type {
 	PluginDiagnosticSeverity,
 	PluginDiagnostics,
 	PluginEventErrorHandler,
+	PluginGatewayDispatchInterceptor,
 	PluginGatewayPayloadWrapper,
 	PluginHandlerCreator,
 	PluginHandlerKind,
@@ -200,6 +201,12 @@ export interface PluginGatewayPayloadWrapperContribution extends PluginOrderedCo
 	scope: PluginEventContributionScope;
 }
 
+export interface PluginGatewayDispatchInterceptorContribution extends PluginOrderedContribution {
+	record: PluginRuntimeRecord;
+	interceptor: PluginGatewayDispatchInterceptor;
+	scope: PluginEventContributionScope;
+}
+
 export interface PluginRestObserverContribution extends PluginOrderedContribution {
 	record: PluginRuntimeRecord;
 	observer: PluginRestObserver;
@@ -281,6 +288,7 @@ export interface PluginRuntimeRegistry extends PluginOrderSequence {
 	autocompleteWrappers: PluginAutocompleteWrapperContribution[];
 	gatewayIntents: PluginGatewayIntentContribution[];
 	gatewayPayloadWrappers: PluginGatewayPayloadWrapperContribution[];
+	gatewayDispatchInterceptors: PluginGatewayDispatchInterceptorContribution[];
 	restObservers: PluginRestObserverContribution[];
 	hooks: PluginHookContribution[];
 	cacheResources: PluginCacheResourceContribution[];
@@ -333,6 +341,7 @@ export function createPluginRuntimeRegistry(plugins: readonly AnySeyfertPlugin[]
 		autocompleteWrappers: [],
 		gatewayIntents: [],
 		gatewayPayloadWrappers: [],
+		gatewayDispatchInterceptors: [],
 		restObservers: [],
 		hooks: [],
 		cacheResources: [],
@@ -423,6 +432,13 @@ export function removePluginRestObserverContribution(
 	removeContribution(registry.restObservers, contribution);
 }
 
+export function removePluginGatewayDispatchInterceptorContribution(
+	registry: PluginRuntimeRegistry,
+	contribution: PluginGatewayDispatchInterceptorContribution,
+) {
+	removeContribution(registry.gatewayDispatchInterceptors, contribution);
+}
+
 export function removePluginHookContribution(registry: PluginRuntimeRegistry, contribution: PluginHookContribution) {
 	removeContribution(registry.hooks, contribution);
 }
@@ -465,6 +481,7 @@ export function cleanupPluginDynamicContributionMutations(
 	cleanupScopedContributions(registry.handlerTransformers, record);
 	cleanupScopedContributions(registry.autocompleteWrappers, record);
 	cleanupScopedContributions(registry.gatewayPayloadWrappers, record);
+	cleanupScopedContributions(registry.gatewayDispatchInterceptors, record);
 	cleanupScopedContributions(registry.gatewayIntents, record);
 	cleanupScopedContributions(registry.pluginDefaults, record);
 	cleanupScopedContributions(registry.middlewares, record);
@@ -1010,6 +1027,9 @@ function createPluginDiagnostics(registry: PluginRuntimeRegistry): readonly Plug
 				gatewayIntents: registry.gatewayIntents.filter(contribution => contribution.record === record).length,
 				gatewayPayloadWrappers: registry.gatewayPayloadWrappers.filter(contribution => contribution.record === record)
 					.length,
+				gatewayDispatchInterceptors: registry.gatewayDispatchInterceptors.filter(
+					contribution => contribution.record === record,
+				).length,
 				requirements: snapshotDiagnosticList(requirements, truncated, 'requirements'),
 				shared: snapshotDiagnosticList(shared, truncated, 'shared'),
 				cacheResources: snapshotDiagnosticList(cacheResources, truncated, 'cacheResources'),

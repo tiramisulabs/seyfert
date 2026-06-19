@@ -25,6 +25,7 @@ import { BaseClient } from './base';
 import { Collectors } from './collectors';
 import {
 	type AnySeyfertPlugin,
+	applyPluginGatewayDispatchInterceptors,
 	applyPluginGatewayPayloadWrappers,
 	type ExtendOf,
 	type RegisteredPluginExtension,
@@ -187,7 +188,11 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 		}
 	}
 
-	protected async onPacket(shardId: number, packet: GatewayDispatchPayload) {
+	protected async onPacket(shardId: number, packet: GatewayDispatchPayload): Promise<GatewayDispatchPayload | null> {
+		const pluginPacket = await applyPluginGatewayDispatchInterceptors(this, shardId, packet);
+		if (pluginPacket === null) return null;
+		packet = pluginPacket;
+
 		Promise.allSettled([
 			this.events.runEvent('RAW', this, packet, shardId, false),
 			this.collectors.run('RAW', packet, this),
@@ -196,7 +201,7 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 			case 'GUILD_MEMBER_UPDATE':
 				{
 					if (!this.memberUpdateHandler.check(packet.d)) {
-						return;
+						return packet;
 					}
 					await this.events.execute(packet, this as Client<true>, shardId);
 				}
@@ -204,7 +209,7 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 			case 'PRESENCE_UPDATE':
 				{
 					if (!this.presenceUpdateHandler.check(packet.d)) {
-						return;
+						return packet;
 					}
 					await this.events.execute(packet, this as Client<true>, shardId);
 				}
@@ -247,6 +252,7 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			}
 		}
+		return packet;
 	}
 
 	private async handleGatewaySendPayload(
