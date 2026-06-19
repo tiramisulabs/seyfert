@@ -64,9 +64,21 @@ export class Logger {
 	 * Logger.customize((logger, level, args) => {
 	 *     // Custom logging implementation
 	 * });
+	 * @returns A disposer that restores the previous callback (no-op if a newer one replaced it).
 	 */
-	static customize(cb: CustomizeLoggerCallback) {
+	static customize(cb: CustomizeLoggerCallback): () => void {
+		const previous = Logger.__callback;
 		Logger.__callback = cb;
+		return () => {
+			if (Logger.__callback === cb) Logger.__callback = previous;
+		};
+	}
+
+	/**
+	 * Returns the current logging callback, so a customizer can chain the previous one.
+	 */
+	static getCustomizer(): CustomizeLoggerCallback {
+		return Logger.__callback;
 	}
 
 	/**
@@ -213,9 +225,10 @@ export class Logger {
 
 	private __write(log: unknown[]) {
 		if (this.saveOnFile || Logger.saveOnFile === 'all' || Logger.saveOnFile?.includes(this.name)) {
-			if (!(Logger.createdDir || existsSync(join(process.cwd(), Logger.dirname)))) {
+			const dirname = join(process.cwd(), Logger.dirname);
+			if (!Logger.createdDir) {
+				if (!existsSync(dirname)) mkdirSync(dirname, { recursive: true });
 				Logger.createdDir = true;
-				mkdirSync(join(process.cwd(), Logger.dirname), { recursive: true });
 			}
 
 			const fileName = (Logger.fileNames[this.name] ??= (() => {
@@ -223,7 +236,7 @@ export class Logger {
 			})());
 
 			if (!Logger.streams[fileName]) {
-				Logger.streams[fileName] = createWriteStream(join(process.cwd(), Logger.dirname, fileName));
+				Logger.streams[fileName] = createWriteStream(join(dirname, fileName));
 			}
 			Logger.streams[fileName]!.write(`${stripColor(log.join(' '))}\n`);
 		}

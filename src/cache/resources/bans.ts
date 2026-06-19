@@ -40,7 +40,7 @@ export class Bans extends GuildBasedResource<any, GatewayGuildBanModifyDispatchD
 		return super.bulk(ids, guild);
 	}
 
-	override values(guild: string): ReturnCache<GuildBanStructure[]> {
+	override values(guild: '*' | (string & {})): ReturnCache<GuildBanStructure[]> {
 		return fakePromise(super.values(guild)).then(bans =>
 			bans
 				.map(rawBan => {

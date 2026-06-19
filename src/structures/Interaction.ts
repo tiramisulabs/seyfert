@@ -1,5 +1,5 @@
 import type { RawFile } from '../api';
-import { ActionRow, Attachment, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
+import { ActionRow, Attachment, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
 import { Label } from '../builders/Label';
 import type { ReturnCache } from '../cache';
 import {
@@ -71,7 +71,6 @@ import {
 	type ModalSubmitInsideLabelData,
 	type RESTAPIAttachment,
 	type RESTPostAPIInteractionCallbackJSONBody,
-	type RESTPostAPIInteractionCallbackResult,
 } from '../types';
 import { type AllChannels, channelFrom } from './';
 import { DiscordBase } from './extra/DiscordBase';
@@ -104,7 +103,8 @@ export class BaseInteraction<
 	member!: When<FromGuild, InteractionGuildMemberStructure, undefined>;
 	channel?: AllChannels;
 	message?: MessageStructure;
-	replied?: Promise<boolean | RESTPostAPIInteractionCallbackResult | undefined> | boolean;
+	replied?: boolean;
+	private _repliedPromise?: Promise<unknown>;
 	deferred?: boolean;
 	appPermissions: PermissionsBitField;
 	entitlements: EntitlementStructure[];
@@ -190,7 +190,7 @@ export class BaseInteraction<
 			allowed_mentions: self.options?.allowedMentions,
 			...body,
 			components: body.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)),
-			embeds: body?.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)),
+			embeds: body?.embeds?.map(x => ('toJSON' in x ? x.toJSON() : x)),
 			poll: poll ? (poll instanceof PollBuilder ? poll.toJSON() : poll) : undefined,
 		};
 
@@ -225,24 +225,41 @@ export class BaseInteraction<
 			//@ts-expect-error
 			const data = body.data instanceof Modal ? body.data : rest;
 			const parsedFiles = files ? await resolveFiles(files) : undefined;
-			await (this.replied = this.__reply({
+			const repliedPromise = this.__reply({
 				body: BaseInteraction.transformBodyRequest({ data, type: body.type }, parsedFiles, this.client),
 				files: parsedFiles,
-			}).then(() => (this.replied = true)));
+			}).then(() => {
+				this.replied = true;
+				this._repliedPromise = undefined;
+			});
+			this._repliedPromise = repliedPromise;
+			await repliedPromise;
 			return;
 		}
-		const result = await (this.replied = this.client.interactions.reply(this.id, this.token, body, withResponse));
-		this.replied = true;
+		const repliedPromise = this.client.interactions.reply(this.id, this.token, body, withResponse).then(result => {
+			this.replied = true;
+			this._repliedPromise = undefined;
+			return result;
+		});
+		this._repliedPromise = repliedPromise;
+		const result = await repliedPromise;
 		return result?.resource?.message
 			? Transformers.WebhookMessage(this.client, result.resource.message as any, this.id, this.token)
 			: undefined;
+	}
+
+	protected async hasRepliedOrAwaitPendingReply() {
+		const repliedPromise = this._repliedPromise;
+		if (!this.replied && !repliedPromise) return false;
+		if (repliedPromise) await repliedPromise;
+		return true;
 	}
 
 	async reply<WR extends boolean = false>(
 		body: ReplyInteractionBody,
 		withResponse?: WR,
 	): Promise<When<WR, WebhookMessageStructure, undefined>> {
-		if (this.replied) {
+		if (this.replied || this._repliedPromise) {
 			throw new SeyfertError('INTERACTION_ALREADY_REPLIED', { metadata: { detail: 'Interaction already replied' } });
 		}
 		const result = await this.matchReplied(body, withResponse);
@@ -402,18 +419,20 @@ export type AllInteractions =
 	| EntryPointInteraction
 	| BaseInteraction;
 
-export interface AutocompleteInteraction
-	extends ObjectToLower<
+export interface AutocompleteInteraction<
+	FromGuild extends boolean = boolean,
+	ValueType extends string | number = string | number,
+> extends ObjectToLower<
 		Omit<
 			APIApplicationCommandAutocompleteInteraction,
 			'user' | 'member' | 'type' | 'data' | 'message' | 'channel' | 'app_permissions'
 		>
 	> {}
 
-export class AutocompleteInteraction<FromGuild extends boolean = boolean> extends BaseInteraction<
-	FromGuild,
-	APIApplicationCommandAutocompleteInteraction
-> {
+export class AutocompleteInteraction<
+	FromGuild extends boolean = boolean,
+	ValueType extends string | number = string | number,
+> extends BaseInteraction<FromGuild, APIApplicationCommandAutocompleteInteraction> {
 	declare type: InteractionType.ApplicationCommandAutocomplete;
 	declare data: ObjectToLower<APIApplicationCommandAutocompleteInteraction['data']>;
 	options: OptionResolverStructure;
@@ -441,11 +460,11 @@ export class AutocompleteInteraction<FromGuild extends boolean = boolean> extend
 		return this.options.getAutocompleteValue() ?? '';
 	}
 
-	respond(choices: APICommandAutocompleteInteractionResponseCallbackData['choices']) {
+	respond(choices: APICommandAutocompleteInteractionResponseCallbackData<ValueType>['choices']) {
 		return super.reply({ data: { choices }, type: InteractionResponseType.ApplicationCommandAutocompleteResult });
 	}
 
-	isAutocomplete(): this is AutocompleteInteraction {
+	isAutocomplete(): this is AutocompleteInteraction<FromGuild, ValueType> {
 		return true;
 	}
 
@@ -524,7 +543,7 @@ export class Interaction<
 		body: InteractionMessageUpdateBodyRequest,
 		fetchReply?: FR,
 	): Promise<WebhookMessageStructure> {
-		if (await this.replied) {
+		if (await this.hasRepliedOrAwaitPendingReply()) {
 			const { content, embeds, allowed_mentions, components, files, attachments, poll, flags } = body;
 			return this.editResponse({ content, embeds, allowed_mentions, components, files, attachments, poll, flags });
 		}
@@ -858,13 +877,10 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 		);
 	}
 
-	deferUpdate<WR extends boolean = false>(withResponse?: WR): Promise<When<WR, WebhookMessageStructure, undefined>> {
-		return this.reply<WR>(
-			{
-				type: InteractionResponseType.DeferredMessageUpdate,
-			},
-			withResponse,
-		);
+	deferUpdate(): Promise<undefined> {
+		return this.reply({
+			type: InteractionResponseType.DeferredMessageUpdate,
+		});
 	}
 
 	get customId() {

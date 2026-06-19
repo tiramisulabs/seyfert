@@ -49,7 +49,13 @@ export function resolveColor(color: ColorResolvable): number {
 		if (lookupColor) {
 			return lookupColor === -1 ? Math.floor(Math.random() * 0xffffff) : lookupColor;
 		}
-		return (color as string).startsWith('#') ? Number.parseInt((color as string).slice(1), 16) : EmbedColors.Default;
+		if ((color as string).startsWith('#')) {
+			const hex = (color as string).slice(1);
+			if (!/^[\da-f]+$/i.test(hex))
+				throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Invalid color: ${color}` } });
+			return Number.parseInt(hex, 16);
+		}
+		return EmbedColors.Default;
 	}
 
 	return Array.isArray(color) && color.length >= 3
@@ -317,12 +323,12 @@ export function isCloudfareWorker() {
 
 /**
  *
- * Convert a timestamp to a snowflake.
- * @param id The timestamp to convert.
- * @returns The snowflake.
+ * Converts a Discord snowflake to its unix millisecond timestamp.
+ * @param id The snowflake to convert.
+ * @returns The unix millisecond timestamp.
  */
-export function snowflakeToTimestamp(id: string): bigint {
-	return (BigInt(id) >> 22n) + DiscordEpoch;
+export function snowflakeToTimestamp(id: string): number {
+	return Number((BigInt(id) >> 22n) + DiscordEpoch);
 }
 
 export function resolvePartialEmoji(emoji: EmojiResolvable): APIPartialEmoji | undefined {

@@ -102,7 +102,7 @@ export class GuildRelatedResource<T = any, S = any> {
 		);
 	}
 
-	keys(guild: string): ReturnCache<string[]> {
+	keys(guild: '*' | (string & {})): ReturnCache<string[]> {
 		return guild === '*'
 			? (this.adapter.scan(this.hashId(guild), true) as string[])
 			: (fakePromise(this.adapter.getToRelationship(this.hashId(guild))).then(keys =>
@@ -110,7 +110,7 @@ export class GuildRelatedResource<T = any, S = any> {
 				) as string[]);
 	}
 
-	values(guild: string): ReturnCache<(T & { guild_id: string })[]> {
+	values(guild: '*' | (string & {})): ReturnCache<(T & { guild_id: string })[]> {
 		return guild === '*'
 			? (fakePromise(this.adapter.scan(this.hashId(guild))).then(x => x) as (T & { guild_id: string })[])
 			: (fakePromise(this.adapter.getToRelationship(this.hashId(guild))).then(keys =>
@@ -118,7 +118,7 @@ export class GuildRelatedResource<T = any, S = any> {
 				) as (T & { guild_id: string })[]);
 	}
 
-	count(to: string): ReturnCache<number> {
+	count(to: '*' | (string & {})): ReturnCache<number> {
 		return to === '*'
 			? fakePromise(this.keys(to)).then(x => x.length)
 			: (this.adapter.count(this.hashId(to)) as number);
@@ -148,7 +148,7 @@ export class GuildRelatedResource<T = any, S = any> {
 		return id.startsWith(this.namespace) ? id : `${this.namespace}.${id}`;
 	}
 
-	flush(guild: string) {
+	flush(guild: '*' | (string & {}) = '*') {
 		return fakePromise(this.keys(guild)).then(keys => {
 			return fakePromise(this.adapter.bulkRemove(keys)).then(() => {
 				return this.removeRelationship(guild);

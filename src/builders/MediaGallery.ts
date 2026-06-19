@@ -1,4 +1,4 @@
-import type { RestOrArray } from '../common';
+import { createValidationMetadata, type RestOrArray, SeyfertError } from '../common';
 import { type APIMediaGalleryComponent, type APIMediaGalleryItems, ComponentType } from '../types';
 import { BaseComponentBuilder } from './Base';
 
@@ -107,6 +107,15 @@ export class MediaGalleryItem {
 	 * @returns The JSON representation of the item data.
 	 */
 	toJSON() {
+		if (!this.data.media)
+			throw new SeyfertError('MISSING_MEDIA', {
+				metadata: {
+					...createValidationMetadata('media to be set before calling toJSON()', this.data.media, {
+						component: 'MediaGalleryItem',
+					}),
+					detail: 'Cannot convert to JSON without media.',
+				},
+			});
 		return { ...this.data };
 	}
 }

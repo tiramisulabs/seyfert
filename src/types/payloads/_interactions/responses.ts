@@ -108,8 +108,10 @@ export enum InteractionResponseType {
  */
 export type APIInteractionResponseCallbackData = Omit<RESTPostAPIWebhookWithTokenJSONBody, 'avatar_url' | 'username'>;
 
-export interface APICommandAutocompleteInteractionResponseCallbackData {
-	choices?: APIApplicationCommandOptionChoice[];
+export interface APICommandAutocompleteInteractionResponseCallbackData<
+	ValueType extends number | string = number | string,
+> {
+	choices?: APIApplicationCommandOptionChoice<ValueType>[];
 }
 
 /**

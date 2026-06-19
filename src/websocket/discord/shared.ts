@@ -5,6 +5,7 @@ import type {
 	GatewayDispatchPayload,
 	GatewayIntentBits,
 	GatewayPresenceUpdateData,
+	GatewaySendPayload,
 } from '../../types';
 import type { IdentifyProperties } from '../constants';
 import type { WorkerMessages } from './worker';
@@ -38,6 +39,10 @@ export interface ShardManagerOptions extends ShardDetails {
 	 * The payload handlers for messages on the shard.
 	 */
 	handlePayload(shardId: number, packet: GatewayDispatchPayload): unknown;
+	handleSendPayload?(
+		shardId: number,
+		payload: GatewaySendPayload,
+	): Awaitable<GatewaySendPayload | null | undefined | void>;
 	onShardDisconnect?(data: ShardDisconnectData): Awaitable<unknown>;
 	onShardReconnect?(data: ShardReconnectData): Awaitable<unknown>;
 	/**
@@ -47,7 +52,7 @@ export interface ShardManagerOptions extends ShardDetails {
 	/**
 	 * Set a presence.
 	 */
-	presence?: (shardId: number, workerId: number) => GatewayPresenceUpdateData;
+	presence?: (shardId: number) => GatewayPresenceUpdateData;
 
 	compress?: boolean;
 	resharding?: {
@@ -67,11 +72,7 @@ export interface CustomManagerAdapter {
 	spawn(workerData: WorkerData, env: Record<string, any>): Awaitable<unknown>;
 }
 
-export interface WorkerManagerOptions extends Omit<ShardManagerOptions, 'handlePayload' | 'properties'> {
-	mode: 'threads' | 'clusters' | 'custom';
-
-	adapter?: CustomManagerAdapter;
-
+interface WorkerManagerOptionsBase extends Omit<ShardManagerOptions, 'handlePayload' | 'presence' | 'properties'> {
 	workers?: number;
 
 	/**
@@ -84,9 +85,9 @@ export interface WorkerManagerOptions extends Omit<ShardManagerOptions, 'handleP
 	/** @default 15000 */
 	heartbeaterInterval?: number;
 
-	path: string;
-
 	handlePayload?(shardId: number, workerId: number, packet: GatewayDispatchPayload): any;
+
+	presence?: (shardId: number, workerId: number) => GatewayPresenceUpdateData;
 
 	handleWorkerMessage?(message: WorkerMessages): any;
 
@@ -94,6 +95,23 @@ export interface WorkerManagerOptions extends Omit<ShardManagerOptions, 'handleP
 
 	getRC?(): Awaitable<InternalRuntimeConfig | InternalRuntimeConfigHTTP>;
 }
+
+export type WorkerManagerOptions =
+	| (WorkerManagerOptionsBase & {
+			mode?: 'threads';
+			path: string;
+			adapter?: CustomManagerAdapter;
+	  })
+	| (WorkerManagerOptionsBase & {
+			mode: 'clusters';
+			path: string;
+			adapter?: CustomManagerAdapter;
+	  })
+	| (WorkerManagerOptionsBase & {
+			mode: 'custom';
+			adapter: CustomManagerAdapter;
+			path?: string;
+	  });
 
 export interface ShardData {
 	/** resume seq to resume connections */

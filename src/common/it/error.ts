@@ -34,6 +34,12 @@ export class SeyfertError extends Error {
 	 */
 	metadata?: Record<string, unknown>;
 
+	static is(error: unknown): error is SeyfertError;
+	static is<C extends SeyfertErrorCode>(error: unknown, code: C): error is SeyfertError & { code: C };
+	static is<C extends SeyfertErrorCode>(error: unknown, code?: C): error is SeyfertError & { code: C } {
+		return error instanceof SeyfertError && (code === undefined || error.code === code);
+	}
+
 	/**
 	 * Creates a SeyfertError instance.
 	 *
@@ -80,6 +86,7 @@ export const SeyfertErrorMessages = {
 	INVALID_TOKEN: 'Invalid token.',
 	FUNCTION_NOT_IMPLEMENTED: 'Function not implemented.',
 	NO_SEYFERT_CONFIG: 'No seyfert.config file found.',
+	SEYFERT_CONFIG_LOAD_ERROR: 'Failed to load seyfert.config file.',
 	BAD_OPTION: 'Bad option.',
 	INVALID_EMOJI: 'Invalid emoji.',
 	EMOJI_NOT_RESOLVABLE: 'Emoji not resolvable.',
@@ -91,10 +98,13 @@ export const SeyfertErrorMessages = {
 	UNDEFINED_LOCALE: 'Undefined locale.',
 	INTERACTION_ALREADY_REPLIED: 'Interaction already replied.',
 	CANNOT_USE_REPLY: 'Cannot use reply in this interaction.',
+	CANNOT_USE_MODAL: 'Cannot use modal without an interaction.',
 	RELOAD_NOT_SUPPORTED: 'Reload in Cloudflare worker is not supported.',
 	API_WORKER_PROXY_PARENT_REQUIRED: 'Cannot use workerProxy without a parent.',
 	WORKER_TIMEOUT: 'Worker request timed out.',
 	WORKER_THREADS_REQUIRED: 'worker_threads is required for this operation.',
+	PLUGIN_FAILED: 'Plugin failed.',
+	PLUGIN_TEARDOWN_FAILED: 'Plugin teardown failed.',
 	WORKER_AND_SHARD_ID_REQUIRED: 'workerId and shardId are required.',
 	WORKER_NOT_FOUND: 'Worker not found.',
 	INVALID_SHARD_ID: 'Invalid shardId.',

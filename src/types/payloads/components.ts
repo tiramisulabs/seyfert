@@ -258,11 +258,12 @@ export interface APIBaseAutoPopulatedSelectMenuComponent<
 /**
  * https://discord.com/developers/docs/interactions/message-components#select-menus
  */
-export interface APIStringSelectComponent extends APIBaseSelectMenuComponent<ComponentType.StringSelect> {
+export interface APIStringSelectComponent<Value extends string = string>
+	extends APIBaseSelectMenuComponent<ComponentType.StringSelect> {
 	/**
 	 * Specified choices in a select menu; max 25
 	 */
-	options: APISelectMenuOption[];
+	options: APISelectMenuOption<Value>[];
 	/**
 	 * Whether the string select is required to answer in a modal
 	 *
@@ -342,7 +343,7 @@ export type APISelectMenuComponent =
 /**
  * https://discord.com/developers/docs/interactions/message-components#select-menu-object-select-option-structure
  */
-export interface APISelectMenuOption {
+export interface APISelectMenuOption<Value extends string = string> {
 	/**
 	 * The user-facing name of the option (max 100 chars)
 	 */
@@ -350,7 +351,7 @@ export interface APISelectMenuOption {
 	/**
 	 * The dev-defined value of the option (max 100 chars)
 	 */
-	value: string;
+	value: Value;
 	/**
 	 * An additional description of the option (max 100 chars)
 	 */

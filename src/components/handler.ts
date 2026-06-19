@@ -8,7 +8,7 @@ import type {
 } from '../builders/types';
 import { runContextScopes } from '../client/plugins';
 import { LimitedCollection } from '../collection';
-import { BaseCommand, type RegisteredMiddlewares, type UsingClient } from '../commands';
+import { BaseCommand, type ResolvedRegisteredMiddlewares, type UsingClient } from '../commands';
 import type { FileLoaded } from '../commands/handler';
 import { BaseHandler, isCloudfareWorker, type Logger, magicImport, type OnFailCallback, SeyfertError } from '../common';
 import type { ComponentInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from '../structures';
@@ -16,6 +16,11 @@ import { ComponentCommand, InteractionCommandType } from './componentcommand';
 import type { ComponentContext } from './componentcontext';
 import { ModalCommand } from './modalcommand';
 import type { ModalContext } from './modalcontext';
+
+type PluginComponentLoadOptionsProvider = {
+	createPluginComponentLoadOptions?: () => ComponentLoadOptions;
+};
+type ComponentSetTransformer = (component: ComponentCommands) => ComponentCommands | false | void;
 
 type UserMatches = string | string[] | RegExp;
 type COMPONENTS = {
@@ -127,15 +132,29 @@ export class ComponentHandler extends BaseHandler {
 					if (!collector) return resolve(null);
 
 					let nodeTimeout: NodeJS.Timeout | undefined;
-
-					this.values.get(messageId)!.__run(customId, interaction => {
+					let cleaned = false;
+					const component: COMPONENTS['components'][number] = {
+						callback: interaction => {
+							cleanup();
+							//@ts-expect-error generic
+							resolve(interaction);
+						},
+						match: this.createMatchCallback(customId),
+					};
+					const cleanup = () => {
+						if (cleaned) return;
+						cleaned = true;
 						clearTimeout(nodeTimeout);
-						//@ts-expect-error generic
-						resolve(interaction);
-					});
+
+						const index = collector.components.indexOf(component);
+						if (index !== -1) collector.components.splice(index, 1);
+					};
+
+					collector.components.push(component);
 
 					if (timeout && timeout > 0)
 						nodeTimeout = setTimeout(() => {
+							cleanup();
 							resolve(null);
 							// by default 15 seconds in case user don't do anything
 						}, timeout);
@@ -235,31 +254,55 @@ export class ComponentHandler extends BaseHandler {
 		component.onBeforeMiddlewares ??= this.client.options?.[is]?.defaults?.onBeforeMiddlewares;
 	}
 
-	set(instances: (new () => ComponentCommands)[]) {
+	private normalizeLoadOptions(options?: ComponentSetTransformer | ComponentLoadOptions): ComponentLoadOptions {
+		return typeof options === 'function' ? { transform: (_kind, component) => options(component) } : (options ?? {});
+	}
+
+	private materializeComponent(value: SeteableComponentCommand, options: ComponentLoadOptions = {}, filePath?: string) {
+		let component: ReturnType<typeof this.callback>;
+		component = this.callback(value, options.create);
+		if (!component) return false;
+		if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) return false;
+		this.stablishDefaults(component);
+		if (filePath) component.__filePath = filePath;
+		const kind = component instanceof ModalCommand ? 'modal' : 'component';
+		const wrapped = options.transform?.(kind, component) ?? component;
+		if (!wrapped) return false;
+		if (wrapped !== component) {
+			component = wrapped;
+			component.__filePath ??= filePath;
+			this.stablishDefaults(component);
+		}
+		return component;
+	}
+
+	set(instances: SeteableComponentCommand[], optionsOrTransform?: ComponentSetTransformer | ComponentLoadOptions) {
+		const options = this.normalizeLoadOptions(optionsOrTransform);
+		const added: ComponentCommands[] = [];
 		for (const i of instances) {
 			let component: ReturnType<typeof this.callback>;
 			try {
-				component = this.callback(i);
+				component = this.materializeComponent(i, options);
 				if (!component) continue;
 			} catch (e) {
 				this.logger.warn(e, i);
 				continue;
 			}
-			this.stablishDefaults(component);
-
 			this.commands.push(component);
+			added.push(component);
 		}
+		return added;
 	}
 
-	async load(componentsDir: string) {
-		const paths = await this.loadFilesK<FileLoaded<new () => ComponentCommands>>(await this.getFiles(componentsDir));
+	async load(componentsDir: string, options: ComponentLoadOptions = {}) {
+		const paths = await this.loadFilesK<FileLoaded<HandleableComponentCommand>>(await this.getFiles(componentsDir));
 
 		for (const { components, file } of paths.map(x => ({ components: this.onFile(x.file), file: x }))) {
 			if (!components) continue;
 			for (const value of components) {
 				let component: ReturnType<typeof this.callback>;
 				try {
-					component = this.callback(value);
+					component = this.callback(value, options.create);
 					if (!component) continue;
 				} catch (e) {
 					if (e instanceof Error && e.message.includes('is not a constructor')) {
@@ -275,6 +318,14 @@ export class ComponentHandler extends BaseHandler {
 				if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) continue;
 				this.stablishDefaults(component);
 				component.__filePath = file.path;
+				const kind = component instanceof ModalCommand ? 'modal' : 'component';
+				const wrapped = options.transform?.(kind, component) ?? component;
+				if (!wrapped) continue;
+				if (wrapped !== component) {
+					component = wrapped;
+					component.__filePath ??= file.path;
+					this.stablishDefaults(component);
+				}
 				this.commands.push(component);
 			}
 		}
@@ -300,9 +351,10 @@ export class ComponentHandler extends BaseHandler {
 		if (index === -1) return null;
 		this.client.components.commands.splice(index, 1);
 		const imported = await magicImport(component.__filePath).then(x => x.default ?? x);
-		const command = new imported();
-		command.__filePath = component.__filePath;
-		this.client.components.commands.push(command);
+		const options = (this.client as PluginComponentLoadOptionsProvider).createPluginComponentLoadOptions?.() ?? {};
+		const command = this.materializeComponent(imported, options, component.__filePath);
+		if (!command) return null;
+		this.client.components.commands.splice(index, 0, command);
 		return imported;
 	}
 
@@ -324,14 +376,18 @@ export class ComponentHandler extends BaseHandler {
 				await i.onBeforeMiddlewares?.(context as never);
 				const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
 					context,
-					(context.client.options?.globalMiddlewares ?? []) as keyof RegisteredMiddlewares,
+					(context.client.options?.globalMiddlewares ?? []) as readonly (keyof ResolvedRegisteredMiddlewares)[],
 					true,
 				);
 				if (resultRunGlobalMiddlewares.pass) {
 					return;
 				}
 				if ('error' in resultRunGlobalMiddlewares) {
-					return await i.onMiddlewaresError?.(context as never, resultRunGlobalMiddlewares.error ?? 'Unknown error');
+					return await i.onMiddlewaresError?.(
+						context as never,
+						resultRunGlobalMiddlewares.error ?? 'Unknown error',
+						resultRunGlobalMiddlewares.metadata ?? { middleware: 'unknown', scope: 'global' },
+					);
 				}
 
 				const resultRunMiddlewares = await BaseCommand.__runMiddlewares(context, i.middlewares, false);
@@ -339,7 +395,11 @@ export class ComponentHandler extends BaseHandler {
 					return;
 				}
 				if ('error' in resultRunMiddlewares) {
-					return await i.onMiddlewaresError?.(context as never, resultRunMiddlewares.error ?? 'Unknown error');
+					return await i.onMiddlewaresError?.(
+						context as never,
+						resultRunMiddlewares.error ?? 'Unknown error',
+						resultRunMiddlewares.metadata ?? { middleware: 'unknown', scope: 'command' },
+					);
 				}
 
 				try {
@@ -351,7 +411,7 @@ export class ComponentHandler extends BaseHandler {
 				}
 			} catch (error) {
 				try {
-					await i.onInternalError?.(this.client, error);
+					await i.onInternalError?.(this.client, i as never, error);
 				} catch (err) {
 					this.client.logger.error(`[${i.customId ?? 'Component/Modal command'}] Internal error:`, err);
 				}
@@ -389,11 +449,32 @@ export class ComponentHandler extends BaseHandler {
 		}
 	}
 
-	onFile(file: FileLoaded<new () => ComponentCommands>): (new () => ComponentCommands)[] | undefined {
+	onFile(file: FileLoaded<HandleableComponentCommand>): HandleableComponentCommand[] | undefined {
 		return file.default ? [file.default] : undefined;
 	}
 
-	callback(file: { new (): ComponentCommands }): ComponentCommands | false {
-		return new file();
+	callback(file: SeteableComponentCommand, create?: ComponentLoadCreator): ComponentCommands | false {
+		if (typeof file !== 'function') return file;
+		const kind = file.prototype instanceof ModalCommand ? 'modal' : 'component';
+		return create?.(kind, file, () => new file()) ?? new file();
 	}
+}
+
+export type HandleableComponentCommand = (new () => ComponentCommand) | (new () => ModalCommand);
+export type SeteableComponentCommand = HandleableComponentCommand | ComponentCommands;
+export type ComponentLoadKind = 'component' | 'modal';
+export interface ComponentLoadCreator {
+	<T extends HandleableComponentCommand>(
+		kind: ComponentLoadKind,
+		constructor: T,
+		next: () => InstanceType<T>,
+	): InstanceType<T>;
+}
+export type ComponentLoadTransformer = (
+	kind: ComponentLoadKind,
+	component: ComponentCommands,
+) => ComponentCommands | false | void;
+export interface ComponentLoadOptions {
+	create?: ComponentLoadCreator;
+	transform?: ComponentLoadTransformer;
 }

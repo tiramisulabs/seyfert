@@ -38,7 +38,7 @@ export class Emojis extends GuildRelatedResource<any, APIEmoji | APIApplicationE
 		return super.bulk(ids);
 	}
 
-	override values(guild: string): ReturnCache<(GuildEmojiStructure | ApplicationEmojiStructure)[]> {
+	override values(guild: '*' | (string & {})): ReturnCache<(GuildEmojiStructure | ApplicationEmojiStructure)[]> {
 		return fakePromise(super.values(guild) as (APIEmoji & { id: string; guild_id: string })[]).then(emojis =>
 			emojis.map(rawEmoji => {
 				if (rawEmoji.guild_id === this.client.applicationId)

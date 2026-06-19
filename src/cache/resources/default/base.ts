@@ -34,7 +34,7 @@ export class BaseResource<T = any, S = any> {
 	}
 
 	get(id: string): ReturnCache<T | undefined> {
-		return this.adapter.get(this.hashId(id));
+		return fakePromise(this.adapter.get(this.hashId(id))).then(data => data ?? undefined) as ReturnCache<T | undefined>;
 	}
 
 	bulk(ids: string[]): ReturnCache<T[]> {

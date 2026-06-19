@@ -1,16 +1,16 @@
 import type { CommandContext, Message } from '..';
 import {
 	type Awaitable,
-	assertString,
 	type DeepPartial,
 	lazyLoadPackage,
 	type PickPartial,
+	SeyfertError,
 	type WatcherPayload,
 	type WatcherSendToShard,
 	type When,
 } from '../common';
 import { EventHandler } from '../events';
-import type { GatewayDispatchPayload, GatewayPresenceUpdateData } from '../types';
+import type { GatewayDispatchPayload, GatewayPresenceUpdateData, GatewaySendPayload } from '../types';
 import {
 	properties,
 	type ShardDisconnectData,
@@ -23,11 +23,21 @@ import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdat
 import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import { Collectors } from './collectors';
+import type { GatewayIntentInput } from './intents';
+import {
+	type AnySeyfertPlugin,
+	applyPluginGatewayDispatchInterceptors,
+	applyPluginGatewaySendPayloadWrappers,
+	type ExtendOf,
+	type RegisteredPluginExtension,
+	type RegisteredPlugins,
+	runPluginHooks,
+} from './plugins';
 import { type ClientUserStructure, type MessageStructure, Transformers } from './transformers';
 
 let parentPort: import('node:worker_threads').MessagePort;
 
-export class Client<Ready extends boolean = boolean> extends BaseClient {
+class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 	gateway!: ShardManager;
 	me!: When<Ready, ClientUserStructure>;
 	declare options: Omit<ClientOptions, 'commands'> & {
@@ -74,6 +84,9 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				await oldOnShardReconnect?.(data);
 				await this.onShardReconnect(data);
 			};
+			const oldHandleSendPayload = gateway.options.handleSendPayload;
+			gateway.options.handleSendPayload = (shardId, payload) =>
+				this.handleGatewaySendPayload(shardId, payload, oldHandleSendPayload);
 			this.gateway = gateway;
 		}
 	}
@@ -93,11 +106,13 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	async loadEvents(dir?: string) {
-		dir ??= await this.getRC().then(x => x.locations.events);
+		dir ??= await this.getRC<InternalRuntimeConfig>().then(x => x.locations.events);
+		await runPluginHooks(this, 'events:beforeLoad', this, dir);
 		if (dir) {
 			await this.events.load(dir);
 			this.logger.info('EventHandler loaded');
 		}
+		await runPluginHooks(this, 'events:afterLoad', this, dir);
 	}
 
 	protected async execute(options: { token?: string; intents?: number } = {}) {
@@ -116,7 +131,9 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 						this.gateway.options.handlePayload(data.shardId, data.payload);
 						break;
 					case 'SEND_TO_SHARD':
-						this.gateway.send(data.shardId, data.payload);
+						void this.gateway.send(data.shardId, data.payload).catch(error => {
+							this.logger.fatal('Watcher failed to send payload to shard', error);
+						});
 						break;
 				}
 			});
@@ -131,11 +148,13 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 
 		const { token: tokenRC, intents: intentsRC, debug: debugRC } = await this.getRC<InternalRuntimeConfig>();
 		const token = options?.token ?? tokenRC;
-		const intents = options?.connection?.intents ?? intentsRC;
-		this.cache.intents = intents;
+		const connectionIntents = options?.connection?.intents as GatewayIntentInput | undefined;
+		const intents = this.resolvePluginGatewayIntents(connectionIntents ?? intentsRC);
 
 		if (!this.gateway) {
-			assertString(token, 'token is not a string');
+			if (typeof token !== 'string' || token.length === 0) {
+				throw new SeyfertError('INVALID_TOKEN', { metadata: { detail: 'token is not a string' } });
+			}
 			this.gateway = new ShardManager({
 				token,
 				info: await this.proxy.gateway.bot.get(),
@@ -144,6 +163,8 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 					await this.options?.handlePayload?.(shardId, packet);
 					return this.onPacket(shardId, packet);
 				},
+				handleSendPayload: (shardId, payload) =>
+					this.handleGatewaySendPayload(shardId, payload, this.options?.handleSendPayload),
 				onShardDisconnect: this.onShardDisconnect.bind(this),
 				onShardReconnect: this.onShardReconnect.bind(this),
 				presence: this.options?.presence,
@@ -165,13 +186,17 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 		}
 
 		if (execute) {
-			await this.execute(options.connection);
+			await this.execute({ ...(options.connection ?? {}), intents });
 		} else {
 			await super.execute(options);
 		}
 	}
 
-	protected async onPacket(shardId: number, packet: GatewayDispatchPayload) {
+	protected async onPacket(shardId: number, packet: GatewayDispatchPayload): Promise<GatewayDispatchPayload | null> {
+		const pluginPacket = await applyPluginGatewayDispatchInterceptors(this, shardId, packet);
+		if (pluginPacket === null) return null;
+		packet = pluginPacket;
+
 		Promise.allSettled([
 			this.events.runEvent('RAW', this, packet, shardId, false),
 			this.collectors.run('RAW', packet, this),
@@ -180,7 +205,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			case 'GUILD_MEMBER_UPDATE':
 				{
 					if (!this.memberUpdateHandler.check(packet.d)) {
-						return;
+						return packet;
 					}
 					await this.events.execute(packet, this as Client<true>, shardId);
 				}
@@ -188,7 +213,7 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 			case 'PRESENCE_UPDATE':
 				{
 					if (!this.presenceUpdateHandler.check(packet.d)) {
-						return;
+						return packet;
 					}
 					await this.events.execute(packet, this as Client<true>, shardId);
 				}
@@ -231,10 +256,53 @@ export class Client<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			}
 		}
+		return packet;
+	}
+
+	private async handleGatewaySendPayload(
+		shardId: number,
+		payload: GatewaySendPayload,
+		handleSendPayload?: ShardManagerOptions['handleSendPayload'],
+	) {
+		const pluginPayload = await applyPluginGatewaySendPayloadWrappers(this, shardId, payload);
+		if (pluginPayload === null) return null;
+		const result = await handleSendPayload?.(shardId, pluginPayload);
+		if (result === null) return null;
+		return result ?? pluginPayload;
 	}
 }
 
-export interface ClientOptions extends BaseClientOptions {
+type ClientPluginsOf<TPluginsOrReady extends readonly AnySeyfertPlugin[] | boolean> =
+	TPluginsOrReady extends readonly AnySeyfertPlugin[] ? TPluginsOrReady : RegisteredPlugins;
+type ClientReadyOf<
+	TPluginsOrReady extends readonly AnySeyfertPlugin[] | boolean,
+	Ready extends boolean,
+> = TPluginsOrReady extends boolean ? TPluginsOrReady : Ready;
+type ClientAmbientExtensionOf<TPluginsOrReady extends readonly AnySeyfertPlugin[] | boolean> =
+	TPluginsOrReady extends readonly AnySeyfertPlugin[] ? {} : RegisteredPluginExtension;
+type Materialize<T> = {
+	[K in keyof T]: T[K];
+};
+
+export type Client<
+	TPluginsOrReady extends readonly AnySeyfertPlugin[] | boolean = RegisteredPlugins,
+	Ready extends boolean = boolean,
+> = ClientBase<ClientReadyOf<TPluginsOrReady, Ready>> &
+	ClientAmbientExtensionOf<TPluginsOrReady> &
+	Materialize<ExtendOf<ClientPluginsOf<TPluginsOrReady>>>;
+
+export interface ClientConstructor {
+	new <Ready extends boolean = boolean>(options?: ClientOptions<RegisteredPlugins>): Client<Ready>;
+	new <const TPlugins extends readonly AnySeyfertPlugin[] = RegisteredPlugins>(
+		options?: ClientOptions<TPlugins>,
+	): Client<TPlugins>;
+}
+
+export const Client = ClientBase as unknown as ClientConstructor;
+
+export interface ClientOptions<TPlugins extends readonly AnySeyfertPlugin[] = RegisteredPlugins>
+	extends BaseClientOptions {
+	plugins?: TPlugins;
 	presence?: (shardId: number) => GatewayPresenceUpdateData;
 	shards?: {
 		start: number;
@@ -251,7 +319,14 @@ export interface ClientOptions extends BaseClientOptions {
 		reply?: (ctx: CommandContext) => Awaitable<boolean>;
 	};
 	handlePayload?: ShardManagerOptions['handlePayload'];
+	handleSendPayload?: ShardManagerOptions['handleSendPayload'];
+	/**
+	 * @deprecated Use shard disconnect events instead. Injected ShardManager callbacks can double-fire.
+	 */
 	onShardDisconnect?: ShardManagerOptions['onShardDisconnect'];
+	/**
+	 * @deprecated Use shard reconnect events instead. Injected ShardManager callbacks can double-fire.
+	 */
 	onShardReconnect?: ShardManagerOptions['onShardReconnect'];
 	resharding?: PickPartial<NonNullable<ShardManagerOptions['resharding']>, 'getInfo'>;
 }

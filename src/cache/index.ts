@@ -1,5 +1,5 @@
 import type { InternalOptions, UsingClient } from '../commands';
-import { type If, Logger, SeyfertError } from '../common';
+import { type Awaitable, type If, Logger, SeyfertError } from '../common';
 import {
 	type APIChannel,
 	type APIEmoji,
@@ -61,6 +61,34 @@ type ReturnManagers = {
 	[K in NonGuildBased | GuildBased | GuildRelated]: NonNullable<Awaited<ReturnType<NonNullable<Cache[K]>['get']>>>;
 };
 
+export type BulkGetKey =
+	| readonly [
+			/* type */
+			NonGuildBased | GuildRelated,
+			/* source id */
+			string,
+	  ]
+	| readonly [
+			/* type */
+			GuildBased,
+			/* source id */
+			string,
+			/* guild id */
+			string,
+	  ];
+
+type BulkGetResult<K extends BulkGetKey[0] = BulkGetKey[0]> = Partial<{
+	[P in K]: ReturnManagers[P][];
+}>;
+
+type PluginCacheResourceContributionLike = {
+	name: string;
+	record?: { identity: string };
+	resource: new (cache: Cache, client: UsingClient) => unknown;
+	onPacket?: (event: GatewayDispatchPayload, cache: Cache) => Awaitable<void>;
+	sequence: number;
+};
+
 export * from './adapters/index';
 
 export type CachedEvents =
@@ -119,6 +147,12 @@ export class Cache {
 	bans?: Bans;
 
 	__logger__?: Logger;
+	private pluginResourceNames = new Set<string>();
+	private pluginResourcePacketHandlers: {
+		handler: (event: GatewayDispatchPayload, cache: Cache) => Awaitable<void>;
+		plugin: string;
+	}[] = [];
+	private pluginResourcePacketErrorLogger?: (plugin: string, error: unknown) => void;
 
 	constructor(
 		public intents: number,
@@ -130,6 +164,19 @@ export class Cache {
 	}
 
 	buildCache(disabledCache: DisabledCache, client: UsingClient) {
+		for (const name of this.pluginResourceNames) {
+			delete (this as Record<string, unknown>)[name];
+		}
+		this.pluginResourceNames.clear();
+		this.pluginResourcePacketHandlers = [];
+		this.pluginResourcePacketErrorLogger = (client as { logger?: Pick<Logger, 'error'> }).logger
+			? (plugin, error) =>
+					(client as { logger: Pick<Logger, 'error'> }).logger.error(
+						`[plugin:${plugin}] cache.resource.onPacket failed`,
+						error,
+					)
+			: undefined;
+
 		// non-guild based
 		this.users = disabledCache.users ? undefined : new Users(this, client);
 		this.guilds = disabledCache.guilds ? undefined : new Guilds(this, client);
@@ -153,7 +200,22 @@ export class Cache {
 			? ((() => {
 					//
 				}) as any as () => Promise<void>)
-			: this.onPacketDefault.bind(this);
+			: this.onPacketWithPluginResources.bind(this);
+
+		const pluginResources = [
+			...((client as { pluginRegistry?: { cacheResources?: PluginCacheResourceContributionLike[] } }).pluginRegistry
+				?.cacheResources ?? []),
+		].sort((left, right) => left.sequence - right.sequence);
+		for (const contribution of pluginResources) {
+			(this as Record<string, unknown>)[contribution.name] = new contribution.resource(this, client);
+			this.pluginResourceNames.add(contribution.name);
+			if (contribution.onPacket) {
+				this.pluginResourcePacketHandlers.push({
+					handler: contribution.onPacket,
+					plugin: contribution.record?.identity ?? contribution.name,
+				});
+			}
+		}
 	}
 
 	flush(): ReturnCache<void> {
@@ -201,41 +263,8 @@ export class Cache {
 		return this.hasIntent('GuildModeration');
 	}
 
-	async bulkGet(
-		keys: (
-			| readonly [
-					/* type */
-					NonGuildBased | GuildRelated,
-					/* source id */
-					string,
-			  ]
-			| readonly [
-					/* type */
-					GuildBased,
-					/* source id */
-					string,
-					/* guild id */
-					string,
-			  ]
-		)[],
-	): Promise<
-		Partial<{
-			messages: ReturnManagers['messages'][];
-			users: ReturnManagers['users'][];
-			guilds: ReturnManagers['guilds'][];
-			members: ReturnManagers['members'][];
-			voiceStates: ReturnManagers['voiceStates'][];
-			emojis: ReturnManagers['emojis'][];
-			roles: ReturnManagers['roles'][];
-			channels: ReturnManagers['channels'][];
-			stickers: ReturnManagers['stickers'][];
-			presences: ReturnManagers['presences'][];
-			stageInstances: ReturnManagers['stageInstances'][];
-			overwrites: ReturnManagers['overwrites'][];
-			bans: ReturnManagers['bans'][];
-		}>
-	> {
-		const allData: Partial<Record<NonGuildBased | GuildBased | GuildRelated, string[][]>> = {};
+	async bulkGet<const Keys extends readonly BulkGetKey[]>(keys: Keys): Promise<BulkGetResult<Keys[number][0]>> {
+		const allData: Partial<Record<BulkGetKey[0], string[][]>> = {};
 		for (const [type, id, guildId] of keys) {
 			switch (type) {
 				case 'voiceStates':
@@ -270,12 +299,10 @@ export class Cache {
 			}
 		}
 
-		const obj: Partial<{
-			[K in keyof ReturnManagers]: ReturnManagers[K][];
-		}> = {};
+		const obj: BulkGetResult = {};
 
 		for (const i in allData) {
-			const key = i as NonGuildBased | GuildBased | GuildRelated;
+			const key = i as BulkGetKey[0];
 			const values = allData[key]!;
 			obj[key] = [];
 			for (const value of values) {
@@ -287,7 +314,7 @@ export class Cache {
 			}
 		}
 
-		return obj;
+		return obj as BulkGetResult<Keys[number][0]>;
 	}
 
 	async bulkPatch(
@@ -477,7 +504,18 @@ export class Cache {
 	}
 
 	onPacket(event: GatewayDispatchPayload) {
-		return this.onPacketDefault(event);
+		return this.onPacketWithPluginResources(event);
+	}
+
+	private async onPacketWithPluginResources(event: GatewayDispatchPayload) {
+		await this.onPacketDefault(event);
+		for (const contribution of this.pluginResourcePacketHandlers) {
+			try {
+				await contribution.handler(event, this);
+			} catch (error) {
+				this.pluginResourcePacketErrorLogger?.(contribution.plugin, error);
+			}
+		}
 	}
 
 	protected async onPacketDefault(event: GatewayDispatchPayload) {

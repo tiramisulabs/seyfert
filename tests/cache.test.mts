@@ -1,5 +1,6 @@
 import { assert, describe, test } from 'vitest';
 import { Client, LimitedMemoryAdapter, MemoryAdapter } from '../lib/index';
+import { BaseResource } from '../lib/cache/resources/default/base';
 
 // all intents
 const intents = 53608447;
@@ -27,6 +28,19 @@ describe('test memory cache adapter', () => {
 	});
 });
 
+describe('base cache resource', () => {
+	test('normalizes adapter cache misses to undefined', () => {
+		const adapter = new MemoryAdapter();
+		const resource = new BaseResource<{ id: string }>({ adapter } as any, {} as any);
+
+		assert.strictEqual(adapter.get('base.missing'), null);
+		assert.strictEqual(resource.get('missing'), undefined);
+
+		adapter.set('base.present', { id: 'present' });
+		assert.deepEqual(resource.get('present'), { id: 'present' });
+	});
+});
+
 describe('test limited memory cache adapter', () => {
 	const adapter = new LimitedMemoryAdapter();
 
@@ -47,6 +61,25 @@ describe('test limited memory cache adapter', () => {
 			},
 		});
 		return client.cache.testAdapter();
+	});
+
+	test('rebuilds resources when disabledCache is explicitly false', () => {
+		const client = new Client({
+			getRC: () => ({
+				locations: {
+					base: '',
+					output: '',
+				},
+				intents,
+				token: '',
+			}),
+		});
+
+		client.setServices({ cache: { disabledCache: true } });
+		assert.equal(client.cache.users, undefined);
+
+		client.setServices({ cache: { disabledCache: false } });
+		assert.notEqual(client.cache.users, undefined);
 	});
 });
 

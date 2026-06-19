@@ -39,7 +39,7 @@ export class VoiceStates extends GuildBasedResource<any, APIVoiceState> {
 		return super.bulk(ids, guild);
 	}
 
-	override values(guildId: string): ReturnCache<VoiceStateStructure[]> {
+	override values(guildId: '*' | (string & {})): ReturnCache<VoiceStateStructure[]> {
 		return fakePromise(super.values(guildId)).then(states =>
 			states.map(state => Transformers.VoiceState(this.client, state)),
 		);

@@ -1,21 +1,28 @@
-import type { AllChannels, ModalCommand, ModalSubmitInteraction, ReturnCache } from '..';
+import type { AllChannels, Attachment, ModalCommand, ModalSubmitInteraction, ReturnCache } from '..';
 import type {
 	GuildMemberStructure,
+	GuildRoleStructure,
 	GuildStructure,
 	InteractionGuildMemberStructure,
 	UserStructure,
 	WebhookMessageStructure,
 } from '../client/transformers';
-import type { CommandMetadata, ExtendContext, GlobalMetadata, RegisteredMiddlewares, UsingClient } from '../commands';
+import type {
+	CommandMetadata,
+	ExtendContext,
+	GlobalMetadata,
+	ResolvedRegisteredMiddlewares,
+	UsingClient,
+} from '../commands';
 import { BaseContext } from '../commands/basecontext';
 import type {
+	ComponentInteractionMessageUpdate,
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
 	MakeRequired,
 	MessageWebhookCreateBodyRequest,
 	ModalCreateBodyRequest,
 	ModalCreateOptions,
-	UnionToTuple,
 	When,
 } from '../common';
 import { MessageFlags } from '../types';
@@ -26,7 +33,7 @@ export interface ModalContext extends BaseContext, ExtendContext {}
  * Represents a context for interacting with components in a Discord bot.
  * @template Type - The type of component interaction.
  */
-export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends BaseContext {
+export class ModalContext<M extends keyof ResolvedRegisteredMiddlewares = never> extends BaseContext {
 	/**
 	 * Creates a new instance of the ComponentContext class.
 	 * @param client - The UsingClient instance.
@@ -40,7 +47,7 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	}
 
 	command!: ModalCommand;
-	metadata: CommandMetadata<UnionToTuple<M>> = {} as never;
+	metadata: CommandMetadata<M> = {} as never;
 	globalMetadata: GlobalMetadata = {};
 
 	get customId() {
@@ -51,11 +58,87 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 		return this.interaction.components;
 	}
 
+	getChannels(customId: string, required: true): AllChannels[];
+	getChannels(customId: string, required?: false): AllChannels[] | void;
+	getChannels(customId: string, required?: boolean): AllChannels[] | void {
+		if (required) return this.interaction.getChannels(customId, true);
+		return this.interaction.getChannels(customId);
+	}
+
+	getRoles(customId: string, required: true): GuildRoleStructure[];
+	getRoles(customId: string, required?: false): GuildRoleStructure[] | void;
+	getRoles(customId: string, required?: boolean): GuildRoleStructure[] | void {
+		if (required) return this.interaction.getRoles(customId, true);
+		return this.interaction.getRoles(customId);
+	}
+
+	getUsers(customId: string, required: true): UserStructure[];
+	getUsers(customId: string, required?: false): UserStructure[] | void;
+	getUsers(customId: string, required?: boolean): UserStructure[] | void {
+		if (required) return this.interaction.getUsers(customId, true);
+		return this.interaction.getUsers(customId);
+	}
+
+	getMentionables(
+		customId: string,
+		required: true,
+	): (UserStructure | GuildRoleStructure | InteractionGuildMemberStructure)[];
+	getMentionables(
+		customId: string,
+		required?: false,
+	): (UserStructure | GuildRoleStructure | InteractionGuildMemberStructure)[] | void;
+	getMentionables(
+		customId: string,
+		required?: boolean,
+	): (UserStructure | GuildRoleStructure | InteractionGuildMemberStructure)[] | void {
+		if (required) return this.interaction.getMentionables(customId, true);
+		return this.interaction.getMentionables(customId);
+	}
+
+	getRadioValues(customId: string, required: true): string;
+	getRadioValues(customId: string, required?: false): string | void;
+	getRadioValues(customId: string, required?: boolean): string | void {
+		if (required) return this.interaction.getRadioValues(customId, true);
+		return this.interaction.getRadioValues(customId);
+	}
+
+	getCheckboxValues(customId: string, required: true): string[];
+	getCheckboxValues(customId: string, required?: false): string[] | void;
+	getCheckboxValues(customId: string, required?: boolean): string[] | void {
+		if (required) return this.interaction.getCheckboxValues(customId, true);
+		return this.interaction.getCheckboxValues(customId);
+	}
+
+	getCheckbox(customId: string, required: true): boolean;
+	getCheckbox(customId: string, required?: false): boolean | void;
+	getCheckbox(customId: string, required?: boolean): boolean | void {
+		if (required) return this.interaction.getCheckbox(customId, true);
+		return this.interaction.getCheckbox(customId);
+	}
+
+	getInputValue(customId: string, required: true): string | string[];
+	getInputValue(customId: string, required?: false): string | string[] | undefined;
+	getInputValue(customId: string, required?: boolean): string | string[] | undefined {
+		if (required) return this.interaction.getInputValue(customId, true);
+		return this.interaction.getInputValue(customId);
+	}
+
+	getFiles(customId: string, required: true): Attachment[];
+	getFiles(customId: string, required?: false): Attachment[] | undefined;
+	getFiles(customId: string, required?: boolean): Attachment[] | undefined {
+		if (required) return this.interaction.getFiles(customId, true);
+		return this.interaction.getFiles(customId);
+	}
+
 	/**
 	 * Gets the language object for the interaction's locale.
 	 */
 	get t() {
-		return this.client.t(this.interaction.locale ?? this.client.langs.defaultLang ?? 'en-US');
+		return this.client.t(
+			this.client.langs.preferGuildLocale
+				? (this.interaction.guildLocale ?? this.interaction.locale ?? this.client.langs.defaultLang ?? 'en-US')
+				: (this.interaction.locale ?? this.client.langs.defaultLang ?? 'en-US'),
+		);
 	}
 
 	/**
@@ -79,6 +162,17 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 		fetchReply?: FR,
 	): Promise<When<FR, WebhookMessageStructure, undefined>> {
 		return this.interaction.deferReply<FR>(ephemeral ? MessageFlags.Ephemeral : undefined, fetchReply);
+	}
+
+	update<WR extends boolean = false>(
+		body: ComponentInteractionMessageUpdate,
+		withResponse?: WR,
+	): Promise<When<WR, WebhookMessageStructure, undefined>> {
+		return this.interaction.update<WR>(body, withResponse);
+	}
+
+	deferUpdate(): Promise<undefined> {
+		return this.interaction.deferUpdate();
 	}
 
 	/**
@@ -215,7 +309,7 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	}
 }
 
-export interface GuildModalContext<M extends keyof RegisteredMiddlewares = never>
+export interface GuildModalContext<M extends keyof ResolvedRegisteredMiddlewares = never>
 	extends Omit<MakeRequired<ModalContext<M>, 'guildId' | 'member'>, 'guild' | 'me'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;

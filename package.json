@@ -2,6 +2,7 @@
 	"name": "seyfert",
 	"version": "4.3.0",
 	"description": "The most advanced framework for discord bots",
+	"packageManager": "pnpm@10.17.1",
 	"main": "./lib/index.js",
 	"module": "./lib/index.js",
 	"types": "./lib/index.d.ts",
@@ -16,7 +17,8 @@
 		"format": "biome format --write ./src",
 		"check-h": "biome check --write ./src",
 		"check": "biome check --verbose --write --no-errors-on-unmatched ./src",
-		"test": "vitest run --config ./tests/vitest.config.mts ./tests/"
+		"test:types": "pnpm run build && tsc --noEmit --project tests/plugin-authoring-tsconfig.json",
+		"test": "pnpm run test:types && vitest run --config ./tests/vitest.config.mts ./tests/"
 	},
 	"author": "MARCROCK22",
 	"license": "MIT",

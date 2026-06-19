@@ -1,4 +1,5 @@
-import type { ExtraProps, RegisteredMiddlewares, UsingClient } from '../commands';
+import type { PluginMiddlewareDenialMetadata } from '../client/plugins/types';
+import type { ExtraProps, ResolvedRegisteredMiddlewares, UsingClient } from '../commands';
 import { ComponentType } from '../types';
 import type { ComponentContext, ContextComponentCommandInteractionMap } from './componentcontext';
 
@@ -29,7 +30,7 @@ export abstract class ComponentCommand {
 		return true;
 	}
 
-	middlewares: (keyof RegisteredMiddlewares)[] = [];
+	middlewares: readonly (keyof ResolvedRegisteredMiddlewares)[] = [];
 
 	props!: ExtraProps;
 
@@ -37,9 +38,13 @@ export abstract class ComponentCommand {
 		return ComponentType[this.componentType];
 	}
 
-	onBeforeMiddlewares?(context: ComponentContext): any;
-	onAfterRun?(context: ComponentContext, error: unknown | undefined): any;
-	onRunError?(context: ComponentContext, error: unknown): any;
-	onMiddlewaresError?(context: ComponentContext, error: string): any;
-	onInternalError?(client: UsingClient, error?: unknown): any;
+	onBeforeMiddlewares?(context: ComponentContext<typeof this.componentType>): any;
+	onAfterRun?(context: ComponentContext<typeof this.componentType>, error: unknown | undefined): any;
+	onRunError?(context: ComponentContext<typeof this.componentType>, error: unknown): any;
+	onMiddlewaresError?(
+		context: ComponentContext<typeof this.componentType>,
+		error: string,
+		metadata: PluginMiddlewareDenialMetadata,
+	): any;
+	onInternalError?(client: UsingClient, component: ComponentCommand, error?: unknown): any;
 }

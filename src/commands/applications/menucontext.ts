@@ -15,7 +15,6 @@ import {
 	type ModalCreateBodyRequest,
 	type ModalCreateOptions,
 	toSnakeCase,
-	type UnionToTuple,
 	type When,
 } from '../../common';
 import type {
@@ -26,20 +25,20 @@ import type {
 } from '../../structures';
 import { type APIMessage, ApplicationCommandType, MessageFlags, type RESTGetAPIGuildQuery } from '../../types';
 import { BaseContext } from '../basecontext';
-import type { RegisteredMiddlewares } from '../decorators';
+import type { ResolvedRegisteredMiddlewares } from '../decorators';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
 
 export type InteractionTarget<T> = T extends MessageCommandInteraction ? MessageStructure : UserStructure;
 
 export interface MenuCommandContext<
 	T extends MessageCommandInteraction | UserCommandInteraction,
-	M extends keyof RegisteredMiddlewares = never,
+	M extends keyof ResolvedRegisteredMiddlewares = never,
 > extends BaseContext,
 		ExtendContext {}
 
 export class MenuCommandContext<
 	T extends MessageCommandInteraction | UserCommandInteraction,
-	M extends keyof RegisteredMiddlewares = never,
+	M extends keyof ResolvedRegisteredMiddlewares = never,
 > extends BaseContext {
 	constructor(
 		readonly client: UsingClient,
@@ -50,7 +49,7 @@ export class MenuCommandContext<
 		super(client);
 	}
 
-	metadata: CommandMetadata<UnionToTuple<M>> = {} as never;
+	metadata: CommandMetadata<M> = {} as never;
 	globalMetadata: GlobalMetadata = {};
 
 	get target(): InteractionTarget<T> {
@@ -67,7 +66,11 @@ export class MenuCommandContext<
 	}
 
 	get t() {
-		return this.client.t(this.interaction.locale ?? this.client.langs.defaultLang ?? 'en-US');
+		return this.client.t(
+			this.client.langs.preferGuildLocale
+				? (this.interaction.guildLocale ?? this.interaction.locale ?? this.client.langs.defaultLang ?? 'en-US')
+				: (this.interaction.locale ?? this.client.langs.defaultLang ?? 'en-US'),
+		);
 	}
 
 	get fullCommandName() {
@@ -194,7 +197,7 @@ export class MenuCommandContext<
 
 export interface GuildMenuCommandContext<
 	T extends MessageCommandInteraction | UserCommandInteraction,
-	M extends keyof RegisteredMiddlewares = never,
+	M extends keyof ResolvedRegisteredMiddlewares = never,
 > extends Omit<MakeRequired<MenuCommandContext<T, M>, 'guildId' | 'member'>, 'guild'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;

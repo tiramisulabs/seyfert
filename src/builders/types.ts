@@ -27,13 +27,16 @@ export type ComponentOnErrorCallback<
 	T extends ComponentInteraction | StringSelectMenuInteraction = ComponentInteraction | StringSelectMenuInteraction,
 > = (interaction: T, error: unknown, stop: ComponentStopCallback, refresh: ComponentRefreshCallback) => any;
 export type ComponentFilterCallback<T = ComponentInteraction> = (interaction: T) => any;
-export type ComponentOnStopCallback = (
-	reason: 'messageDelete' | 'channelDelete' | 'guildDelete' | 'idle' | 'timeout' | (string & {}) | undefined,
-	refresh: ComponentRefreshCallback,
-) => any;
-export type ComponentStopCallback = (
-	reason: 'messageDelete' | 'channelDelete' | 'guildDelete' | 'idle' | 'timeout' | (string & {}) | undefined,
-) => any;
+export type ComponentCollectorStopReason =
+	| 'messageDelete'
+	| 'channelDelete'
+	| 'guildDelete'
+	| 'idle'
+	| 'timeout'
+	| (string & {})
+	| undefined;
+export type ComponentOnStopCallback = (reason: ComponentCollectorStopReason, refresh: ComponentRefreshCallback) => any;
+export type ComponentStopCallback = (reason: ComponentCollectorStopReason) => any;
 export type ComponentRefreshCallback = () => any;
 export type ModalSubmitCallback<T = ModalSubmitInteraction> = (interaction: T) => any;
 export type ButtonLink = Omit<Button, 'setCustomId'>;

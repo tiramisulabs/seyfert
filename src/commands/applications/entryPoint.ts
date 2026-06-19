@@ -1,4 +1,5 @@
-import { magicImport, type PermissionStrings } from '../../common';
+import type { PluginMiddlewareDenialMetadata } from '../../client/plugins/types';
+import { type Awaitable, magicImport, type PermissionStrings } from '../../common';
 import {
 	ApplicationCommandType,
 	type ApplicationIntegrationType,
@@ -6,12 +7,12 @@ import {
 	type InteractionContextType,
 	type LocaleString,
 } from '../../types';
-import type { RegisteredMiddlewares } from '../decorators';
+import type { ResolvedRegisteredMiddlewares } from '../decorators';
 import type { EntryPointContext } from './entrycontext';
 import type { ExtraProps, UsingClient } from './shared';
 
 export abstract class EntryPointCommand {
-	middlewares: (keyof RegisteredMiddlewares)[] = [];
+	middlewares: readonly (keyof ResolvedRegisteredMiddlewares)[] = [];
 
 	__filePath?: string;
 	__t?: { name: string | undefined; description: string | undefined };
@@ -54,13 +55,14 @@ export abstract class EntryPointCommand {
 		Object.setPrototypeOf(this, __tempCommand.prototype);
 	}
 
+	filter?(context: EntryPointContext): Awaitable<boolean>;
 	onBeforeMiddlewares?(context: EntryPointContext): any;
 	abstract run?(context: EntryPointContext): any;
 	onAfterRun?(context: EntryPointContext, error: unknown | undefined): any;
 	onRunError(context: EntryPointContext<never>, error: unknown): any {
 		context.client.logger.fatal(`${this.name}.<onRunError>`, context.author.id, error);
 	}
-	onMiddlewaresError(context: EntryPointContext<never>, error: string): any {
+	onMiddlewaresError(context: EntryPointContext<never>, error: string, _metadata: PluginMiddlewareDenialMetadata): any {
 		context.client.logger.fatal(`${this.name}.<onMiddlewaresError>`, context.author.id, error);
 	}
 	onBotPermissionsFail(context: EntryPointContext<never>, permissions: PermissionStrings): any {

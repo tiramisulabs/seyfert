@@ -1,7 +1,7 @@
 import { promises } from 'node:fs';
 import { dirname } from 'node:path';
 import type { Logger, NulleableCoalising, OmitInsert } from '../common';
-import { BaseHandler, isCloudfareWorker, SeyfertError } from '../common';
+import { BaseHandler, isCloudfareWorker, magicImport, SeyfertError } from '../common';
 import { PermissionsBitField } from '../structures/extra/Permissions';
 import {
 	type APIApplicationCommandChannelOption,
@@ -20,6 +20,10 @@ import type { EntryPointCommand } from '.';
 import { Command, type CommandOption, SubCommand } from './applications/chat';
 import { ContextMenuCommand } from './applications/menu';
 import { IgnoreCommand, type UsingClient } from './applications/shared';
+
+type PluginCommandLoadOptionsProvider = {
+	createPluginCommandLoadOptions?: () => CommandLoadOptions;
+};
 
 export class CommandHandler extends BaseHandler {
 	values: (Command | ContextMenuCommand)[] = [];
@@ -40,10 +44,34 @@ export class CommandHandler extends BaseHandler {
 				metadata: { detail: 'Reload in Cloudflare worker is not supported' },
 			});
 		}
-		if (typeof resolve === 'string') {
-			return this.values.find(x => x.name === resolve)?.reload();
+		const command = typeof resolve === 'string' ? this.values.find(x => x.name === resolve) : resolve;
+		if (!command?.__filePath) return null;
+
+		delete require.cache[command.__filePath];
+		const imported = await magicImport(command.__filePath).then(x => x.default ?? x);
+		const options = (this.client as PluginCommandLoadOptionsProvider).createPluginCommandLoadOptions?.() ?? {};
+		let commandInstance = this.onCommand(imported, options.create);
+		if (!commandInstance || commandInstance instanceof SubCommand) return null;
+
+		commandInstance.__filePath = command.__filePath;
+		let prepared = this.prepareCommand(commandInstance);
+		if (!prepared) return null;
+
+		const wrapped = options.transform?.(prepared) ?? prepared;
+		if (!wrapped) return null;
+		if (wrapped !== prepared) {
+			wrapped.__filePath ??= command.__filePath;
+			prepared = this.prepareCommand(wrapped);
+			if (!prepared) return null;
 		}
-		return resolve.reload();
+
+		const index = this.values.indexOf(command);
+		if ('handler' in prepared && prepared.handler) {
+			this.entryPoint = prepared as EntryPointCommand;
+		} else if (index >= 0) {
+			this.values[index] = prepared as Command | ContextMenuCommand;
+		}
+		return prepared;
 	}
 
 	async reloadAll(stopIfFail = true) {
@@ -244,31 +272,55 @@ export class CommandHandler extends BaseHandler {
 		return false;
 	}
 
-	set(commands: SeteableCommand[]) {
+	private prepareCommand(commandInstance: HandleableCommandInstance) {
+		if (commandInstance instanceof SubCommand) return false;
+		commandInstance.props ??= this.client.options.commands?.defaults?.props ?? {};
+		const isCommand = this.stablishCommandDefaults(commandInstance);
+		if (isCommand) {
+			for (const option of isCommand.options ?? []) {
+				if (option instanceof SubCommand) this.stablishSubCommandDefaults(isCommand, option);
+			}
+		} else this.stablishContextCommandDefaults(commandInstance);
+		this.parseLocales(commandInstance);
+		return commandInstance;
+	}
+
+	private normalizeLoadOptions(options?: CommandLoadTransformer | CommandLoadOptions): CommandLoadOptions {
+		return typeof options === 'function' ? { transform: options } : (options ?? {});
+	}
+
+	set(commands: SeteableCommand[], optionsOrTransform?: CommandLoadTransformer | CommandLoadOptions) {
+		const options = this.normalizeLoadOptions(optionsOrTransform);
+		const added: (Command | ContextMenuCommand | EntryPointCommand)[] = [];
 		this.values ??= [];
 		for (const command of commands) {
-			let commandInstance: Command | undefined;
+			let commandInstance: ReturnType<typeof this.onCommand>;
 			try {
-				commandInstance = this.onCommand(command) as Command;
+				commandInstance = this.onCommand(command, options.create);
 				if (!commandInstance) continue;
 			} catch (e) {
 				this.logger.warn(`${command.name} ins't a resolvable command`);
 				this.logger.error(e);
 				continue;
 			}
-			commandInstance.props = this.client.options.commands?.defaults?.props ?? {};
-			const isCommand = this.stablishCommandDefaults(commandInstance);
-			if (isCommand) {
-				for (const option of commandInstance.options ?? []) {
-					if (option instanceof SubCommand) this.stablishSubCommandDefaults(commandInstance, option);
-				}
-			} else this.stablishContextCommandDefaults(commandInstance);
-			this.parseLocales(commandInstance);
-			this.values.push(commandInstance);
+			const prepared = this.prepareCommand(commandInstance);
+			if (!prepared) continue;
+			const wrapped = options.transform?.(prepared) ?? prepared;
+			if (!wrapped) continue;
+			commandInstance = wrapped === prepared ? prepared : this.prepareCommand(wrapped);
+			if (!commandInstance) continue;
+			if ('handler' in commandInstance && commandInstance.handler) {
+				this.entryPoint = commandInstance as EntryPointCommand;
+				added.push(commandInstance as EntryPointCommand);
+			} else {
+				this.values.push(commandInstance as Command | ContextMenuCommand);
+				added.push(commandInstance as Command | ContextMenuCommand);
+			}
 		}
+		return added;
 	}
 
-	async load(commandsDir: string, client: UsingClient) {
+	async load(commandsDir: string, client: UsingClient, options: CommandLoadOptions = {}) {
 		const result = await this.loadFilesK<FileLoaded<null>>(await this.getFiles(commandsDir));
 		this.values = [];
 
@@ -277,7 +329,7 @@ export class CommandHandler extends BaseHandler {
 			for (const command of commands) {
 				let commandInstance: ReturnType<typeof this.onCommand>;
 				try {
-					commandInstance = this.onCommand(command);
+					commandInstance = this.onCommand(command, options.create);
 					if (!commandInstance) continue;
 				} catch (e) {
 					if (e instanceof Error && e.message.includes('is not a constructor')) {
@@ -330,6 +382,22 @@ export class CommandHandler extends BaseHandler {
 				}
 				this.stablishContextCommandDefaults(commandInstance);
 				this.parseLocales(commandInstance);
+				const wrapped = options.transform?.(commandInstance) ?? commandInstance;
+				if (!wrapped) continue;
+				if (wrapped !== commandInstance) {
+					commandInstance = wrapped;
+					commandInstance.__filePath ??= file.path;
+					commandInstance.props ??= client.options.commands?.defaults?.props ?? {};
+					const wrappedCommand = this.stablishCommandDefaults(commandInstance);
+					if (wrappedCommand) {
+						commandInstance = wrappedCommand;
+						for (const option of commandInstance.options ?? []) {
+							if (option instanceof SubCommand) this.stablishSubCommandDefaults(commandInstance, option);
+						}
+					}
+					this.stablishContextCommandDefaults(commandInstance);
+					this.parseLocales(commandInstance);
+				}
 				if ('handler' in commandInstance && commandInstance.handler) {
 					this.entryPoint = commandInstance as EntryPointCommand;
 				} else this.values.push(commandInstance as Command);
@@ -353,7 +421,7 @@ export class CommandHandler extends BaseHandler {
 					this.parseSubCommandLocales(option);
 					continue;
 				}
-				this.parseCommandOptionLocales(option);
+				this.parseCommandOptionLocales(option, command.name);
 			}
 		}
 		if (command instanceof SubCommand) {
@@ -362,60 +430,76 @@ export class CommandHandler extends BaseHandler {
 		return command;
 	}
 
+	protected getLocales(locale: string) {
+		const locales = [...(this.client.langs.aliases.find(x => x[0] === locale)?.[1] ?? [])];
+		if (Object.values<string>(Locale).includes(locale) && !locales.includes(locale as LocaleString)) {
+			locales.push(locale as LocaleString);
+		}
+		return locales;
+	}
+
+	protected getLocaleKey(locale: string, key: string, context: string) {
+		const value = this.client.langs.getKey(locale, key);
+		if (typeof value === 'undefined') {
+			this.logger.warn(`Locale key "${key}" resolved to nothing for ${context} in locale "${locale}".`);
+		}
+		return value;
+	}
+
 	parseGlobalLocales(command: InstanceType<HandleableCommand>) {
 		if (command.__t) {
 			command.name_localizations ??= {};
 			command.description_localizations ??= {};
 			for (const locale of Object.keys(this.client.langs.values)) {
-				const locales = this.client.langs.aliases.find(x => x[0] === locale)?.[1] ?? [];
-				if (Object.values<string>(Locale).includes(locale)) locales.push(locale as LocaleString);
+				const locales = this.getLocales(locale);
 
 				if (command.__t.name) {
-					for (const i of locales) {
-						const valueName = this.client.langs.getKey(locale, command.__t.name!);
-						if (valueName) command.name_localizations[i] = valueName;
-					}
+					const valueName = this.getLocaleKey(locale, command.__t.name, `command "${command.name}" name`);
+					if (valueName) for (const i of locales) command.name_localizations[i] = valueName;
 				}
 
 				if (command.__t.description) {
-					for (const i of locales) {
-						const valueKey = this.client.langs.getKey(locale, command.__t.description!);
-						if (valueKey) command.description_localizations[i] = valueKey;
-					}
+					const valueKey = this.getLocaleKey(locale, command.__t.description, `command "${command.name}" description`);
+					if (valueKey) for (const i of locales) command.description_localizations[i] = valueKey;
 				}
 			}
 		}
 	}
 
-	parseCommandOptionLocales(option: CommandOption) {
+	parseCommandOptionLocales(option: CommandOption, commandName = 'unknown') {
 		option.name_localizations ??= {};
 		option.description_localizations ??= {};
 		for (const locale of Object.keys(this.client.langs.values)) {
-			const locales = this.client.langs.aliases.find(x => x[0] === locale)?.[1] ?? [];
-			if (Object.values<string>(Locale).includes(locale)) locales.push(locale as LocaleString);
+			const locales = this.getLocales(locale);
 
 			if (option.locales?.name) {
-				for (const i of locales) {
-					const valueName = this.client.langs.getKey(locale, option.locales.name);
-					if (valueName) option.name_localizations[i] = valueName;
-				}
+				const valueName = this.getLocaleKey(
+					locale,
+					option.locales.name,
+					`command "${commandName}" option "${option.name}" name`,
+				);
+				if (valueName) for (const i of locales) option.name_localizations[i] = valueName;
 			}
 
 			if (option.locales?.description) {
-				for (const i of locales) {
-					const valueKey = this.client.langs.getKey(locale, option.locales.description);
-					if (valueKey) option.description_localizations[i] = valueKey;
-				}
+				const valueKey = this.getLocaleKey(
+					locale,
+					option.locales.description,
+					`command "${commandName}" option "${option.name}" description`,
+				);
+				if (valueKey) for (const i of locales) option.description_localizations[i] = valueKey;
 			}
 
 			if ('choices' in option && option.choices?.length) {
 				for (const c of option.choices) {
 					c.name_localizations ??= {};
 					if (!c.locales) continue;
-					for (const i of locales) {
-						const valueKey = this.client.langs.getKey(locale, c.locales);
-						if (valueKey) c.name_localizations[i] = valueKey;
-					}
+					const valueKey = this.getLocaleKey(
+						locale,
+						c.locales,
+						`command "${commandName}" option "${option.name}" choice "${c.name}"`,
+					);
+					if (valueKey) for (const i of locales) c.name_localizations[i] = valueKey;
 				}
 			}
 		}
@@ -424,8 +508,7 @@ export class CommandHandler extends BaseHandler {
 	parseCommandLocales(command: Command) {
 		command.groups ??= {};
 		for (const locale of Object.keys(this.client.langs.values)) {
-			const locales = this.client.langs.aliases.find(x => x[0] === locale)?.[1] ?? [];
-			if (Object.values<string>(Locale).includes(locale)) locales.push(locale as LocaleString);
+			const locales = this.getLocales(locale);
 			for (const group in command.__tGroups) {
 				command.groups[group] ??= {
 					defaultDescription: command.__tGroups[group].defaultDescription,
@@ -434,21 +517,21 @@ export class CommandHandler extends BaseHandler {
 				};
 
 				if (command.__tGroups[group].name) {
-					for (const i of locales) {
-						const valueName = this.client.langs.getKey(locale, command.__tGroups[group].name!);
-						if (valueName) {
-							command.groups[group].name!.push([i, valueName]);
-						}
-					}
+					const valueName = this.getLocaleKey(
+						locale,
+						command.__tGroups[group].name!,
+						`command "${command.name}" group "${group}" name`,
+					);
+					if (valueName) for (const i of locales) command.groups[group].name!.push([i, valueName]);
 				}
 
 				if (command.__tGroups[group].description) {
-					for (const i of locales) {
-						const valueKey = this.client.langs.getKey(locale, command.__tGroups[group].description!);
-						if (valueKey) {
-							command.groups[group].description!.push([i, valueKey]);
-						}
-					}
+					const valueKey = this.getLocaleKey(
+						locale,
+						command.__tGroups[group].description!,
+						`command "${command.name}" group "${group}" description`,
+					);
+					if (valueKey) for (const i of locales) command.groups[group].description!.push([i, valueKey]);
 				}
 			}
 		}
@@ -461,7 +544,7 @@ export class CommandHandler extends BaseHandler {
 	parseSubCommandLocales(command: SubCommand) {
 		this.parseGlobalLocales(command);
 		for (const i of command.options ?? []) {
-			this.parseCommandOptionLocales(i);
+			this.parseCommandOptionLocales(i, command.name);
 		}
 		return command;
 	}
@@ -501,6 +584,7 @@ export class CommandHandler extends BaseHandler {
 
 	stablishSubCommandDefaults(commandInstance: Command, option: SubCommand): SubCommand {
 		option.middlewares = (commandInstance.middlewares ?? []).concat(option.middlewares ?? []);
+		option.filter = option.filter?.bind(option) ?? commandInstance.filter?.bind(commandInstance);
 		option.onBeforeMiddlewares =
 			option.onBeforeMiddlewares?.bind(option) ??
 			commandInstance.onBeforeMiddlewares?.bind(commandInstance) ??
@@ -555,8 +639,8 @@ export class CommandHandler extends BaseHandler {
 		return file.default ? [file.default] : undefined;
 	}
 
-	onCommand(file: HandleableCommand): InstanceType<HandleableCommand> | false {
-		return new file();
+	onCommand(file: SeteableCommand, create?: CommandLoadCreator): HandleableCommandInstance | false {
+		return typeof file === 'function' ? (create?.(file, () => new file()) ?? new file()) : file;
 	}
 
 	onSubCommand(file: HandleableSubCommand): SubCommand | false {
@@ -569,5 +653,14 @@ export type FileLoaded<T = null> = {
 } & Record<string, NulleableCoalising<T, HandleableCommand>>;
 
 export type HandleableCommand = new () => Command | SubCommand | ContextMenuCommand | EntryPointCommand;
-export type SeteableCommand = new () => Extract<InstanceType<HandleableCommand>, SubCommand>;
+export type HandleableCommandInstance = Command | SubCommand | ContextMenuCommand | EntryPointCommand;
+export type SeteableCommand = HandleableCommand | HandleableCommandInstance;
 export type HandleableSubCommand = new () => SubCommand;
+export interface CommandLoadCreator {
+	<T extends HandleableCommand>(constructor: T, next: () => InstanceType<T>): InstanceType<T>;
+}
+export type CommandLoadTransformer = (command: HandleableCommandInstance) => HandleableCommandInstance | false | void;
+export interface CommandLoadOptions {
+	create?: CommandLoadCreator;
+	transform?: CommandLoadTransformer;
+}

@@ -22,10 +22,25 @@ import {
 	type HttpMethods,
 	type RawFile,
 	type RequestHeaders,
+	type RestObserveOptions,
+	type RestObserver,
+	type RestObserverDisposer,
+	type RestObserverEntry,
 } from './shared';
 import { isBufferLike } from './utils/utils';
 
-export interface ApiHandler {
+export type {
+	RestObserveOptions,
+	RestObserver,
+	RestObserverDisposer,
+	RestObserverEntry,
+	RestObserverFailPayload,
+	RestObserverRatelimitPayload,
+	RestObserverRequestPayload,
+	RestObserverSuccessPayload,
+} from './shared';
+
+export interface ApiHandler<TClient = unknown> {
 	/* @internal */
 	_proxy_?: APIRoutes;
 	debugger?: Logger;
@@ -41,8 +56,7 @@ export type OnFailRequestCallback = (
 	error: unknown,
 	statusCode?: number,
 ) => Awaitable<any>;
-
-export class ApiHandler {
+export class ApiHandler<TClient = unknown> {
 	options: ApiHandlerInternalOptions;
 	globalBlock = false;
 	ratelimits = new Map<string, Bucket>();
@@ -52,6 +66,9 @@ export class ApiHandler {
 	onRatelimit?: OnRatelimitCallback;
 	onSuccessRequest?: OnSuccessRequestCallback;
 	onFailRequest?: OnFailRequestCallback;
+	pluginRestObserverProvider?: () => readonly RestObserverEntry[];
+	pluginRestObserverClient?: TClient;
+	private restObservers = new Map<symbol, RestObserverEntry<TClient>>();
 
 	constructor(options: ApiHandlerOptions) {
 		this.options = {
@@ -97,6 +114,18 @@ export class ApiHandler {
 		}
 	}
 
+	observe(observer: RestObserver<TClient>, _opts?: RestObserveOptions): RestObserverDisposer {
+		const id = Symbol('rest-observer');
+		this.restObservers.set(id, { observer });
+		let disposed = false;
+
+		return () => {
+			if (disposed) return;
+			disposed = true;
+			this.restObservers.delete(id);
+		};
+	}
+
 	set debug(active: boolean) {
 		this.debugger = active
 			? new Logger({
@@ -134,7 +163,32 @@ export class ApiHandler {
 		});
 	}
 
-	private async notifySuccessRequest(method: HttpMethods, url: `/${string}`, response: Response) {
+	private async notifyRequest(method: HttpMethods, url: `/${string}`, request: ApiRequestOptions) {
+		await this.notifyRestObservers('onRequest', () =>
+			freezeRestPayload({
+				client: this.pluginRestObserverClient,
+				method,
+				url,
+				request: readonlyRequestOptions(request),
+			}),
+		);
+	}
+
+	private async notifySuccessRequest(
+		method: HttpMethods,
+		url: `/${string}`,
+		response: Response,
+		request: ApiRequestOptions,
+	) {
+		await this.notifyRestObservers('onSuccess', () =>
+			freezeRestPayload({
+				client: this.pluginRestObserverClient,
+				method,
+				url,
+				request: readonlyRequestOptions(request),
+				response,
+			}),
+		);
 		try {
 			await this.onSuccessRequest?.(method, url, response);
 		} catch (error) {
@@ -142,11 +196,82 @@ export class ApiHandler {
 		}
 	}
 
-	private async notifyFailRequest(method: HttpMethods, url: `/${string}`, error: unknown, statusCode?: number) {
+	private async notifyFailRequest(
+		method: HttpMethods,
+		url: `/${string}`,
+		error: unknown,
+		statusCode: number | undefined,
+		request: ApiRequestOptions,
+	) {
+		await this.notifyRestObservers('onFail', () =>
+			freezeRestPayload({
+				client: this.pluginRestObserverClient,
+				method,
+				url,
+				request: readonlyRequestOptions(request),
+				error,
+				statusCode,
+			}),
+		);
 		try {
 			await this.onFailRequest?.(method, url, error, statusCode);
 		} catch (callbackError) {
 			this.debugger?.warn('onFailRequest callback error', callbackError);
+		}
+	}
+
+	private async notifyRatelimit(
+		response: Response,
+		request: ApiRequestOptions,
+		method: HttpMethods,
+		url: `/${string}`,
+	) {
+		await this.notifyRestObservers('onRatelimit', () =>
+			freezeRestPayload({
+				client: this.pluginRestObserverClient,
+				method,
+				url,
+				request: readonlyRequestOptions(request),
+				response,
+			}),
+		);
+		try {
+			await this.onRatelimit?.(response, request);
+		} catch (error) {
+			this.debugger?.warn('onRatelimit callback error', error);
+		}
+	}
+
+	private async notifyRestObservers(name: keyof RestObserver, createPayload: () => unknown) {
+		let payload: unknown;
+		let hasPayload = false;
+		const getPayload = () => {
+			if (!hasPayload) {
+				payload = createPayload();
+				hasPayload = true;
+			}
+			return payload;
+		};
+
+		await this.notifyRestObserverEntries(name, getPayload, this.pluginRestObserverProvider?.() ?? []);
+		await this.notifyRestObserverEntries(name, getPayload, this.restObservers.values());
+	}
+
+	private async notifyRestObserverEntries(
+		name: keyof RestObserver,
+		getPayload: () => unknown,
+		entries: Iterable<RestObserverEntry>,
+	) {
+		for (const entry of entries) {
+			const observer = entry.observer[name];
+			if (!observer) continue;
+			const payload = getPayload();
+			try {
+				await (observer as (payload: unknown) => Awaitable<unknown>)(payload);
+			} catch (error) {
+				const source = entry.plugin ? `[plugin:${entry.plugin}] ` : '';
+				this.debugger?.warn(`${source}REST observer "${name}" callback error`, error);
+			}
 		}
 	}
 
@@ -177,16 +302,26 @@ export class ApiHandler {
 				'User-Agent': this.options.userAgent,
 			} satisfies RequestHeaders;
 
-			const { data, finalUrl } = this.parseRequest({
-				url,
-				headers,
-				request: { ...request, auth },
-			});
+			let data: string | FormData | undefined;
+			let finalUrl: `/${string}`;
+
+			try {
+				({ data, finalUrl } = this.parseRequest({
+					url,
+					headers,
+					request: { ...request, auth },
+				}));
+			} catch (err) {
+				next();
+				reject(err);
+				return;
+			}
 
 			let response: Response;
 
 			try {
 				const requestUrl = `${this.options.domain}/${this.options.baseUrl}${finalUrl}`;
+				await this.notifyRequest(method, finalUrl, { ...request, auth });
 				this.debugger?.debug(`Sending, Method: ${method} | Url: [${finalUrl}](${route}) | Auth: ${auth}`);
 				response = await fetch(requestUrl, {
 					method,
@@ -196,7 +331,7 @@ export class ApiHandler {
 				this.debugger?.debug(`Received response: ${response.statusText}(${response.status})`);
 			} catch (err) {
 				this.debugger?.debug('Fetch error', err);
-				await this.notifyFailRequest(method, finalUrl, err);
+				await this.notifyFailRequest(method, finalUrl, err, undefined, { ...request, auth });
 				next();
 				reject(err);
 				return;
@@ -208,13 +343,25 @@ export class ApiHandler {
 			this.setRatelimitsBucket(route, response);
 			this.setResetBucket(route, response, now, headerNow);
 
+			const observerResponse = response.clone();
 			let result: string | Record<string, any> = await response.text();
 
 			if (response.status >= 300) {
 				if (response.status === 429) {
-					const result429 = await this.handle429(route, method, url, request, response, result, next, reject, now);
+					const result429 = await this.handle429(
+						route,
+						method,
+						url,
+						{ ...request, auth },
+						observerResponse,
+						result,
+						next,
+						reject,
+						now,
+						finalUrl,
+					);
 					if (result429 !== false) return resolve(result429);
-					await this.notifyFailRequest(method, finalUrl, result, response.status);
+					await this.notifyFailRequest(method, finalUrl, result, response.status, { ...request, auth });
 					return this.clearResetInterval(route);
 				}
 				if ([502, 503].includes(response.status) && ++attempts < 4) {
@@ -229,7 +376,7 @@ export class ApiHandler {
 							result = JSON.parse(result);
 						} catch (err) {
 							this.debugger?.warn('SeyfertError parsing result error (', result, ')', err);
-							await this.notifyFailRequest(method, finalUrl, err, response.status);
+							await this.notifyFailRequest(method, finalUrl, err, response.status, { ...request, auth });
 							reject(err);
 							return;
 						}
@@ -237,7 +384,7 @@ export class ApiHandler {
 				}
 				const parsedError = this.parseError(method, route, response, result, originTrace);
 				this.debugger?.warn(parsedError.message);
-				await this.notifyFailRequest(method, finalUrl, parsedError, response.status);
+				await this.notifyFailRequest(method, finalUrl, parsedError, response.status, { ...request, auth });
 				reject(parsedError);
 				return;
 			}
@@ -248,7 +395,7 @@ export class ApiHandler {
 						result = JSON.parse(result);
 					} catch (err) {
 						this.debugger?.warn('Failed parsing result (', result, ')', err);
-						await this.notifyFailRequest(method, finalUrl, err, response.status);
+						await this.notifyFailRequest(method, finalUrl, err, response.status, { ...request, auth });
 						next();
 						reject(err);
 						return;
@@ -256,7 +403,7 @@ export class ApiHandler {
 				}
 			}
 
-			await this.notifySuccessRequest(method, finalUrl, response);
+			await this.notifySuccessRequest(method, finalUrl, observerResponse, { ...request, auth });
 			next();
 			return resolve(result || undefined);
 		};
@@ -354,10 +501,7 @@ export class ApiHandler {
 		next();
 		await delay(wait);
 		return this.request(method, url, {
-			body: request.body,
-			auth: request.auth,
-			reason: request.reason,
-			route: request.route,
+			...request,
 			unshift: true,
 		});
 	}
@@ -372,8 +516,9 @@ export class ApiHandler {
 		next: () => void,
 		reject: (err: unknown) => void,
 		now: number,
+		notifyUrl: `/${string}`,
 	) {
-		await this.onRatelimit?.(response, request);
+		await this.notifyRatelimit(response, request, method, notifyUrl);
 
 		const bucket = this.ratelimits.get(route)!;
 		let retryAfter: number | undefined;
@@ -413,19 +558,13 @@ export class ApiHandler {
 			await delay(retryAfter);
 			next();
 			return this.request(method, url, {
-				body: request.body,
-				auth: request.auth,
-				reason: request.reason,
-				route: request.route,
+				...request,
 				unshift: true,
 			});
 		}
 		next();
 		return this.request(method, url, {
-			body: request.body,
-			auth: request.auth,
-			reason: request.reason,
-			route: request.route,
+			...request,
 			unshift: true,
 		});
 	}
@@ -484,7 +623,11 @@ export class ApiHandler {
 		let finalUrl = options.url;
 		let data: string | FormData | undefined;
 		if (options.request.auth) {
-			options.headers.Authorization = `${this.options.type} ${options.request.token || this.options.token}`;
+			const token = options.request.token || this.options.token;
+			if (token === 'INVALID' || typeof token !== 'string' || token.length === 0) {
+				throw new SeyfertError('INVALID_TOKEN', { metadata: { detail: 'token is not a string' } });
+			}
+			options.headers.Authorization = `${this.options.type} ${token}`;
 		}
 		if (options.request.query) {
 			const params = new URLSearchParams();
@@ -550,7 +693,7 @@ export class ApiHandler {
 
 		if (method === 'DELETE' && route.endsWith('/messages/:id')) {
 			const messageID = url.slice(url.lastIndexOf('/') + 1);
-			const createdAt = Number(snowflakeToTimestamp(messageID));
+			const createdAt = snowflakeToTimestamp(messageID);
 			if (Date.now() - createdAt >= 1000 * 60 * 60 * 24 * 14) {
 				method += '_OLD';
 			} else if (Date.now() - createdAt <= 1000 * 10) {
@@ -593,3 +736,43 @@ export type RestArgumentsNoBody<Q extends never | Record<string, any> = never> =
 	query?: Q;
 	files?: RawFile[];
 } & RequestOptions;
+
+export type RestArgumentsRequiredQuery<Q extends Record<string, any>> = Omit<RestArgumentsNoBody<Q>, 'query'> & {
+	query: Q;
+};
+
+function freezeRestPayload<T extends object>(payload: T): Readonly<T> {
+	return Object.freeze(payload);
+}
+
+function readonlyRequestOptions(request: ApiRequestOptions): Readonly<ApiRequestOptions> {
+	const clone: ApiRequestOptions = deepClonePlain({
+		...request,
+		body: request.body ? deepClonePlain(request.body) : undefined,
+		query: request.query ? deepClonePlain(request.query) : undefined,
+		files: request.files?.map(file => deepClonePlain(file)),
+	});
+	return deepFreezePlain(clone);
+}
+
+function deepClonePlain<T>(value: T): T {
+	if (Array.isArray(value)) return value.map(deepClonePlain) as T;
+	if (!isPlainObject(value)) return value;
+	return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, deepClonePlain(entry)])) as T;
+}
+
+function deepFreezePlain<T>(value: T): Readonly<T> {
+	if (Array.isArray(value)) {
+		for (const entry of value) deepFreezePlain(entry);
+		return Object.freeze(value) as Readonly<T>;
+	}
+	if (!isPlainObject(value)) return value as Readonly<T>;
+	for (const entry of Object.values(value)) deepFreezePlain(entry);
+	return Object.freeze(value) as Readonly<T>;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+	if (typeof value !== 'object' || value === null) return false;
+	const prototype = Object.getPrototypeOf(value);
+	return prototype === Object.prototype || prototype === null;
+}

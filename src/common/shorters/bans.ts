@@ -6,7 +6,21 @@ import type {
 	RESTPostAPIGuildBulkBanJSONBody,
 	RESTPutAPIGuildBanJSONBody,
 } from '../../types';
+import type { BanOptions } from '../types/options';
 import { BaseShorter } from './base';
+
+export function resolveBanOptions(options?: BanOptions): {
+	body: RESTPutAPIGuildBanJSONBody | undefined;
+	reason?: string;
+} {
+	return {
+		body:
+			options?.deleteMessageSeconds === undefined
+				? undefined
+				: { delete_message_seconds: options.deleteMessageSeconds },
+		reason: options?.reason,
+	};
+}
 
 export class BanShorter extends BaseShorter {
 	/**
@@ -37,11 +51,10 @@ export class BanShorter extends BaseShorter {
 	 * Bans a member from the guild.
 	 * @param guildId The ID of the guild.
 	 * @param memberId The ID of the member to ban.
-	 * @param body The request body for banning the member.
-	 * @param reason The reason for banning the member.
+	 * @param options The options for banning the member.
 	 */
-	async create(guildId: string, memberId: string, body?: RESTPutAPIGuildBanJSONBody, reason?: string) {
-		await this.client.proxy.guilds(guildId).bans(memberId).put({ reason, body });
+	async create(guildId: string, memberId: string, options?: BanOptions) {
+		await this.client.proxy.guilds(guildId).bans(memberId).put(resolveBanOptions(options));
 		await this.client.cache.members?.removeIfNI('GuildModeration', memberId, guildId);
 	}
 

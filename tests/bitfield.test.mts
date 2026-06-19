@@ -9,6 +9,19 @@ describe('PermissionsBitField', () => {
 		assert.equal(p.bits, PermissionFlagsBits.CreateEvents);
 	});
 
+	test('invalid permission errors include the offending key', () => {
+		let thrown: unknown;
+
+		try {
+			new PermissionsBitField(['NotAPermission' as never]);
+		} catch (error) {
+			thrown = error;
+		}
+
+		assert.equal(thrown instanceof TypeError, true);
+		assert.equal((thrown as Error).message.includes('NotAPermission'), true);
+	});
+
 	test('add', () => {
 		const p = new PermissionsBitField(['CreateEvents']);
 		p.add(['AttachFiles']);
@@ -61,5 +74,23 @@ describe('PermissionsBitField', () => {
 		p.add(['ChangeNickname']);
 		assert.deepEqual(p.equals(['ChangeNickname', 'CreateEvents']), true);
 		assert.deepEqual(p.equals(['Connect']), false);
+	});
+
+	test('has accepts scalar and array permissions', () => {
+		const p = new PermissionsBitField(['CreateEvents', 'SendMessages']);
+
+		assert.equal(p.has('CreateEvents'), true);
+		assert.equal(p.has('Connect'), false);
+		assert.equal(p.has(['CreateEvents', 'SendMessages']), true);
+		assert.equal(p.has(['CreateEvents', 'Connect']), false);
+	});
+
+	test('strictHas accepts scalar and array permissions', () => {
+		const p = new PermissionsBitField(['CreateEvents', 'SendMessages']);
+
+		assert.equal(p.strictHas('CreateEvents'), true);
+		assert.equal(p.strictHas('Connect'), false);
+		assert.equal(p.strictHas(['CreateEvents', 'SendMessages']), true);
+		assert.equal(p.strictHas(['CreateEvents', 'Connect']), false);
 	});
 });
