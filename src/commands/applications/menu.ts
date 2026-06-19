@@ -1,5 +1,5 @@
 import type { PluginMiddlewareDenialMetadata } from '../../client/plugins/types';
-import { magicImport, type PermissionStrings } from '../../common';
+import { type Awaitable, magicImport, type PermissionStrings } from '../../common';
 import type {
 	ApplicationCommandType,
 	ApplicationIntegrationType,
@@ -11,7 +11,7 @@ import type { MenuCommandContext } from './menucontext';
 import type { ExtraProps, UsingClient } from './shared';
 
 export abstract class ContextMenuCommand {
-	middlewares: (keyof ResolvedRegisteredMiddlewares)[] = [];
+	middlewares: readonly (keyof ResolvedRegisteredMiddlewares)[] = [];
 
 	__filePath?: string;
 	__t?: { name: string | undefined; description: string | undefined };
@@ -54,6 +54,7 @@ export abstract class ContextMenuCommand {
 		Object.setPrototypeOf(this, __tempCommand.prototype);
 	}
 
+	filter?(context: MenuCommandContext<any>): Awaitable<boolean>;
 	onBeforeMiddlewares?(context: MenuCommandContext<any>): any;
 	abstract run?(context: MenuCommandContext<any>): any;
 	onAfterRun?(context: MenuCommandContext<any>, error: unknown | undefined): any;

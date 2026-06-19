@@ -1,5 +1,5 @@
 import type { PluginMiddlewareDenialMetadata } from '../../client/plugins/types';
-import { magicImport, type PermissionStrings } from '../../common';
+import { type Awaitable, magicImport, type PermissionStrings } from '../../common';
 import {
 	ApplicationCommandType,
 	type ApplicationIntegrationType,
@@ -12,7 +12,7 @@ import type { EntryPointContext } from './entrycontext';
 import type { ExtraProps, UsingClient } from './shared';
 
 export abstract class EntryPointCommand {
-	middlewares: (keyof ResolvedRegisteredMiddlewares)[] = [];
+	middlewares: readonly (keyof ResolvedRegisteredMiddlewares)[] = [];
 
 	__filePath?: string;
 	__t?: { name: string | undefined; description: string | undefined };
@@ -55,6 +55,7 @@ export abstract class EntryPointCommand {
 		Object.setPrototypeOf(this, __tempCommand.prototype);
 	}
 
+	filter?(context: EntryPointContext): Awaitable<boolean>;
 	onBeforeMiddlewares?(context: EntryPointContext): any;
 	abstract run?(context: EntryPointContext): any;
 	onAfterRun?(context: EntryPointContext, error: unknown | undefined): any;

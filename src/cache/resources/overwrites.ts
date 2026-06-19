@@ -43,7 +43,7 @@ export class Overwrites extends GuildRelatedResource<any, APIOverwrite[]> {
 	}
 
 	override values(
-		guild: string,
+		guild: '*' | (string & {}),
 	): ReturnCache<
 		{ type: OverwriteType; id: string; deny: PermissionsBitField; allow: PermissionsBitField; guildId: string }[][]
 	> {

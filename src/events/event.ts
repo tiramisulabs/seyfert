@@ -1,5 +1,6 @@
 import type { PluginLoadedMetadata, PluginUploadCommandsMetadata } from '../client/plugins';
 import type { Command, ContextMenuCommand, EntryPointCommand, UsingClient } from '../commands';
+import type { Awaitable } from '../common';
 import type { ComponentCommands } from '../components/handler';
 import type { ClientEvents } from './hooks';
 
@@ -21,14 +22,14 @@ export interface ClientDataEvent {
 export type CallbackEventHandler = {
 	[K in keyof ClientEvents]: (...data: [Awaited<ClientEvents[K]>, UsingClient, number]) => unknown;
 } & {
-	[K in keyof CustomEvents]: (...data: [...Parameters<CustomEvents[K]>, UsingClient, number]) => unknown;
+	[K in keyof CustomEvents]: (...data: [...Parameters<CustomEvents[K]>, UsingClient]) => unknown;
 };
 export type EventContext<T extends { data: { name: ClientNameEvents | CustomEventsKeys } }> = Parameters<
 	CallbackEventHandler[T['data']['name']]
 >;
 export interface ClientEvent {
 	data: ClientDataEvent;
-	run(...args: EventContext<any>): any;
+	run(...args: EventContext<any>): Awaitable<void>;
 	/**@internal */
 	__filePath?: string;
 }

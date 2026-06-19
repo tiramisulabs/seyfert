@@ -2,6 +2,7 @@ import { MergeOptions } from '../common';
 import type { Awaitable } from '../common/types/util';
 import type { GatewayDispatchPayload } from '../types';
 import type { BaseClient, BaseClientOptions, ContextScope, ContextScopeContext } from './base';
+import { type GatewayIntentInput, resolveGatewayIntents } from './intents';
 import { createPluginApi } from './plugins/api';
 import { SeyfertPluginAggregateError, wrapPluginError } from './plugins/errors';
 import {
@@ -463,8 +464,8 @@ export function refreshClientPluginOptions(client: BaseClient, registry: PluginR
 	client.options = merged;
 }
 
-export function resolveClientPluginIntents(client: BaseClient, base: number) {
-	return resolvePluginIntents(client.pluginRegistry, base);
+export function resolveClientPluginIntents(client: BaseClient, base?: GatewayIntentInput) {
+	return resolvePluginIntents(client.pluginRegistry, resolveGatewayIntents(base));
 }
 
 export function runPluginAutocompleteWrappers(

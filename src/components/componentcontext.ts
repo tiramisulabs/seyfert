@@ -13,6 +13,7 @@ import type {
 	GuildMemberStructure,
 	GuildStructure,
 	InteractionGuildMemberStructure,
+	MessageStructure,
 	UserStructure,
 	WebhookMessageStructure,
 } from '../client/transformers';
@@ -39,6 +40,8 @@ import { ComponentType, MessageFlags, type RESTGetAPIGuildQuery } from '../types
 
 export interface ComponentContext<
 	Type extends keyof ContextComponentCommandInteractionMap = keyof ContextComponentCommandInteractionMap,
+	M extends keyof ResolvedRegisteredMiddlewares = never,
+	StringSelectValues extends string[] = string[],
 > extends BaseContext,
 		ExtendContext {}
 
@@ -49,6 +52,7 @@ export interface ComponentContext<
 export class ComponentContext<
 	Type extends keyof ContextComponentCommandInteractionMap,
 	M extends keyof ResolvedRegisteredMiddlewares = never,
+	StringSelectValues extends string[] = string[],
 > extends BaseContext {
 	/**
 	 * Creates a new instance of the ComponentContext class.
@@ -57,7 +61,7 @@ export class ComponentContext<
 	 */
 	constructor(
 		readonly client: UsingClient,
-		public interaction: ContextComponentCommandInteractionMap[Type],
+		public interaction: ContextComponentCommandInteractionMap<StringSelectValues>[Type],
 	) {
 		super(client);
 	}
@@ -70,7 +74,11 @@ export class ComponentContext<
 	 * Gets the language object for the interaction's locale.
 	 */
 	get t() {
-		return this.client.t(this.interaction.locale ?? this.client.langs?.defaultLang ?? 'en-US');
+		return this.client.t(
+			this.client.langs.preferGuildLocale
+				? (this.interaction.guildLocale ?? this.interaction.locale ?? this.client.langs.defaultLang ?? 'en-US')
+				: (this.interaction.locale ?? this.client.langs.defaultLang ?? 'en-US'),
+		);
 	}
 
 	/**
@@ -78,6 +86,10 @@ export class ComponentContext<
 	 */
 	get customId() {
 		return this.interaction.customId;
+	}
+
+	get message(): MessageStructure {
+		return this.interaction.message;
 	}
 
 	/**
@@ -244,42 +256,42 @@ export class ComponentContext<
 		return this.interaction.member;
 	}
 
-	isComponent(): this is ComponentContext<keyof ContextComponentCommandInteractionMap> {
+	isComponent(): this is ComponentContext<keyof ContextComponentCommandInteractionMap, M, StringSelectValues> {
 		return true;
 	}
 
-	isButton(): this is ComponentContext<'Button', M> {
-		return this.interaction.data.componentType === ComponentType.Button;
+	isButton(): this is ComponentContext<'Button', M, StringSelectValues> {
+		return this.interaction.componentType === ComponentType.Button;
 	}
 
-	isChannelSelectMenu(): this is ComponentContext<'ChannelSelect', M> {
+	isChannelSelectMenu(): this is ComponentContext<'ChannelSelect', M, StringSelectValues> {
 		return this.interaction.componentType === ComponentType.ChannelSelect;
 	}
 
-	isRoleSelectMenu(): this is ComponentContext<'RoleSelect', M> {
+	isRoleSelectMenu(): this is ComponentContext<'RoleSelect', M, StringSelectValues> {
 		return this.interaction.componentType === ComponentType.RoleSelect;
 	}
 
-	isMentionableSelectMenu(): this is ComponentContext<'MentionableSelect', M> {
+	isMentionableSelectMenu(): this is ComponentContext<'MentionableSelect', M, StringSelectValues> {
 		return this.interaction.componentType === ComponentType.MentionableSelect;
 	}
 
-	isUserSelectMenu(): this is ComponentContext<'UserSelect', M> {
+	isUserSelectMenu(): this is ComponentContext<'UserSelect', M, StringSelectValues> {
 		return this.interaction.componentType === ComponentType.UserSelect;
 	}
 
-	isStringSelectMenu(): this is ComponentContext<'StringSelect', M> {
+	isStringSelectMenu(): this is ComponentContext<'StringSelect', M, StringSelectValues> {
 		return this.interaction.componentType === ComponentType.StringSelect;
 	}
 
-	inGuild(): this is GuildComponentContext<Type, M> {
+	inGuild(): this is GuildComponentContext<Type, M, StringSelectValues> {
 		return !!this.guildId;
 	}
 }
 
-export interface ContextComponentCommandInteractionMap {
+export interface ContextComponentCommandInteractionMap<StringSelectValues extends string[] = string[]> {
 	Button: ButtonInteraction;
-	StringSelect: StringSelectMenuInteraction;
+	StringSelect: StringSelectMenuInteraction<StringSelectValues>;
 	UserSelect: UserSelectMenuInteraction;
 	RoleSelect: RoleSelectMenuInteraction;
 	MentionableSelect: MentionableSelectMenuInteraction;
@@ -289,7 +301,8 @@ export interface ContextComponentCommandInteractionMap {
 export interface GuildComponentContext<
 	Type extends keyof ContextComponentCommandInteractionMap,
 	M extends keyof ResolvedRegisteredMiddlewares = never,
-> extends Omit<MakeRequired<ComponentContext<Type, M>, 'guildId' | 'member'>, 'guild' | 'me'> {
+	StringSelectValues extends string[] = string[],
+> extends Omit<MakeRequired<ComponentContext<Type, M, StringSelectValues>, 'guildId' | 'member'>, 'guild' | 'me'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 

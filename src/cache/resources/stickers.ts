@@ -32,7 +32,7 @@ export class Stickers extends GuildRelatedResource<any, APISticker> {
 		return super.bulk(ids);
 	}
 
-	override values(guild: string): ReturnCache<StickerStructure[]> {
+	override values(guild: '*' | (string & {})): ReturnCache<StickerStructure[]> {
 		return fakePromise(super.values(guild) as APISticker[]).then(emojis =>
 			emojis.map(rawSticker => Transformers.Sticker(this.client, rawSticker)),
 		);

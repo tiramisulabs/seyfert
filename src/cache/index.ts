@@ -61,6 +61,26 @@ type ReturnManagers = {
 	[K in NonGuildBased | GuildBased | GuildRelated]: NonNullable<Awaited<ReturnType<NonNullable<Cache[K]>['get']>>>;
 };
 
+export type BulkGetKey =
+	| readonly [
+			/* type */
+			NonGuildBased | GuildRelated,
+			/* source id */
+			string,
+	  ]
+	| readonly [
+			/* type */
+			GuildBased,
+			/* source id */
+			string,
+			/* guild id */
+			string,
+	  ];
+
+type BulkGetResult<K extends BulkGetKey[0] = BulkGetKey[0]> = Partial<{
+	[P in K]: ReturnManagers[P][];
+}>;
+
 type PluginCacheResourceContributionLike = {
 	name: string;
 	record?: { identity: string };
@@ -243,41 +263,8 @@ export class Cache {
 		return this.hasIntent('GuildModeration');
 	}
 
-	async bulkGet(
-		keys: (
-			| readonly [
-					/* type */
-					NonGuildBased | GuildRelated,
-					/* source id */
-					string,
-			  ]
-			| readonly [
-					/* type */
-					GuildBased,
-					/* source id */
-					string,
-					/* guild id */
-					string,
-			  ]
-		)[],
-	): Promise<
-		Partial<{
-			messages: ReturnManagers['messages'][];
-			users: ReturnManagers['users'][];
-			guilds: ReturnManagers['guilds'][];
-			members: ReturnManagers['members'][];
-			voiceStates: ReturnManagers['voiceStates'][];
-			emojis: ReturnManagers['emojis'][];
-			roles: ReturnManagers['roles'][];
-			channels: ReturnManagers['channels'][];
-			stickers: ReturnManagers['stickers'][];
-			presences: ReturnManagers['presences'][];
-			stageInstances: ReturnManagers['stageInstances'][];
-			overwrites: ReturnManagers['overwrites'][];
-			bans: ReturnManagers['bans'][];
-		}>
-	> {
-		const allData: Partial<Record<NonGuildBased | GuildBased | GuildRelated, string[][]>> = {};
+	async bulkGet<const Keys extends readonly BulkGetKey[]>(keys: Keys): Promise<BulkGetResult<Keys[number][0]>> {
+		const allData: Partial<Record<BulkGetKey[0], string[][]>> = {};
 		for (const [type, id, guildId] of keys) {
 			switch (type) {
 				case 'voiceStates':
@@ -312,12 +299,10 @@ export class Cache {
 			}
 		}
 
-		const obj: Partial<{
-			[K in keyof ReturnManagers]: ReturnManagers[K][];
-		}> = {};
+		const obj: BulkGetResult = {};
 
 		for (const i in allData) {
-			const key = i as NonGuildBased | GuildBased | GuildRelated;
+			const key = i as BulkGetKey[0];
 			const values = allData[key]!;
 			obj[key] = [];
 			for (const value of values) {
@@ -329,7 +314,7 @@ export class Cache {
 			}
 		}
 
-		return obj;
+		return obj as BulkGetResult<Keys[number][0]>;
 	}
 
 	async bulkPatch(

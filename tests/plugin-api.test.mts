@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import {
+	ApiHandler,
 	BaseCommand,
 	BaseResource,
 	Client,
@@ -21,6 +22,7 @@ import {
 	runPluginHooks,
 	WorkerClient,
 	type Cache,
+	type ApiRequestOptions,
 	type GatewayDispatchPayload,
 	type GatewaySendPayload,
 	type MiddlewareContext,
@@ -58,6 +60,10 @@ function createGatewayClient(plugins = [] as NonNullable<ConstructorParameters<t
 	const client = new Client({ getRC: runtimeConfig, plugins });
 	(client as unknown as { gateway: unknown }).gateway = {};
 	return client;
+}
+
+async function flushMicrotasks(count = 3) {
+	for (let i = 0; i < count; i++) await Promise.resolve();
 }
 
 function runGatewayPacket(client: Client, packet: GatewayDispatchPayload, shardId = 0) {
@@ -904,6 +910,134 @@ describe('plugin api v3', () => {
 		await expect(client.start()).rejects.toThrow(/second.*commands|commands.*second/);
 	});
 
+	test('retries once custom events after their run fails', async () => {
+		const failures: unknown[] = [];
+		let attempts = 0;
+		const client = createGatewayClient();
+		client.events.onFail = async (_name, error) => failures.push(error);
+		client.events.set([
+			{
+				data: { name: 'commandsLoaded', once: true },
+				run() {
+					attempts++;
+					if (attempts === 1) throw new Error('custom boom');
+				},
+			},
+		]);
+
+		await client.events.runCustom('commandsLoaded', {
+			kind: 'commands',
+			total: 0,
+			items: [],
+			plugin: { total: 0, sources: {} },
+		});
+		await client.events.runCustom('commandsLoaded', {
+			kind: 'commands',
+			total: 0,
+			items: [],
+			plugin: { total: 0, sources: {} },
+		});
+
+		expect(attempts).toBe(2);
+		expect(failures).toHaveLength(1);
+	});
+
+	test('reserves once custom events while their run is unresolved', async () => {
+		const failures: unknown[] = [];
+		let attempts = 0;
+		let release!: () => void;
+		const holdRun = new Promise<void>(resolve => {
+			release = resolve;
+		});
+		const client = createGatewayClient();
+		client.events.onFail = async (_name, error) => failures.push(error);
+		client.events.set([
+			{
+				data: { name: 'commandsLoaded', once: true },
+				run() {
+					attempts++;
+					return holdRun;
+				},
+			},
+		]);
+
+		const firstDispatch = client.events.runCustom('commandsLoaded', {
+			kind: 'commands',
+			total: 0,
+			items: [],
+			plugin: { total: 0, sources: {} },
+		});
+		const secondDispatch = client.events.runCustom('commandsLoaded', {
+			kind: 'commands',
+			total: 0,
+			items: [],
+			plugin: { total: 0, sources: {} },
+		});
+
+		await flushMicrotasks();
+		expect(attempts).toBe(1);
+
+		release();
+		await Promise.all([firstDispatch, secondDispatch]);
+
+		expect(attempts).toBe(1);
+		expect(failures).toHaveLength(0);
+	});
+
+	test('retries once gateway events after their run fails', async () => {
+		const failures: unknown[] = [];
+		let attempts = 0;
+		const client = createGatewayClient();
+		client.events.onFail = async (_name, error) => failures.push(error);
+		client.events.set([
+			{
+				data: { name: 'botReady', once: true },
+				run() {
+					attempts++;
+					if (attempts === 1) throw new Error('gateway boom');
+				},
+			},
+		]);
+
+		await client.events.runEvent('BOT_READY' as never, client, {} as never, -1, false);
+		await client.events.runEvent('BOT_READY' as never, client, {} as never, -1, false);
+
+		expect(attempts).toBe(2);
+		expect(failures).toHaveLength(1);
+	});
+
+	test('reserves once gateway events while their run is unresolved', async () => {
+		const failures: unknown[] = [];
+		let attempts = 0;
+		let release!: () => void;
+		const holdRun = new Promise<void>(resolve => {
+			release = resolve;
+		});
+		const client = createGatewayClient();
+		client.events.onFail = async (_name, error) => failures.push(error);
+		client.events.set([
+			{
+				data: { name: 'botReady', once: true },
+				run() {
+					attempts++;
+					return holdRun;
+				},
+			},
+		]);
+
+		const firstDispatch = client.events.runEvent('BOT_READY' as never, client, {} as never, -1, false);
+		const secondDispatch = client.events.runEvent('BOT_READY' as never, client, {} as never, -1, false);
+
+		await flushMicrotasks();
+		expect(attempts).toBe(1);
+
+		release();
+		await Promise.all([firstDispatch, secondDispatch]);
+
+		expect(attempts).toBe(1);
+		expect(failures).toHaveLength(0);
+	});
+
 	test('runs multiple plugin event listeners without last-wins', async () => {
 		const calls: string[] = [];
 		const first = createPlugin({
@@ -1064,6 +1198,151 @@ describe('plugin api v3', () => {
 		});
 	});
 
+	test('returns middleware denial metadata when async middleware rejects before resolving', async () => {
+		const error = new Error('async denied');
+		const asyncReject = createMiddleware<void>(() => Promise.reject(error));
+		const logger = { error: vi.fn(), warn: vi.fn() };
+		const context = {
+			client: {
+				middlewares: {
+					asyncReject,
+				},
+				logger,
+			},
+			command: { name: 'secure' },
+			globalMetadata: {},
+			metadata: {},
+		} as never;
+		const timedOut = Symbol('timedOut');
+
+		const result = await Promise.race([
+			BaseCommand.__runMiddlewares(context, ['asyncReject' as never], false),
+			new Promise(resolve => setTimeout(() => resolve(timedOut), 25)),
+		]);
+
+		expect(result).toEqual({
+			error: 'async denied',
+			metadata: { middleware: 'asyncReject', scope: 'command' },
+		});
+		expect(logger.error).toHaveBeenCalledOnce();
+		expect(logger.error.mock.calls[0][0]).toContain('asyncReject');
+		expect(logger.error.mock.calls[0][0]).toContain('async denied');
+		expect(logger.error.mock.calls[0][1]).toBe(error);
+	});
+
+	test('keeps synchronous middleware throws as rejected runner promises', async () => {
+		const syncThrow = createMiddleware<void>(() => {
+			throw new Error('sync failed');
+		});
+		const logger = { error: vi.fn(), warn: vi.fn() };
+		const context = {
+			client: {
+				middlewares: {
+					syncThrow,
+				},
+				logger,
+			},
+			command: { name: 'secure' },
+			globalMetadata: {},
+			metadata: {},
+		} as never;
+
+		await expect(BaseCommand.__runMiddlewares(context, ['syncThrow' as never], false)).rejects.toThrow('sync failed');
+		expect(logger.error).not.toHaveBeenCalled();
+	});
+
+	test('keeps synchronous throws from middleware invoked after async next as rejected runner promises', async () => {
+		const asyncNext = createMiddleware<void>(async ({ next }) => {
+			await Promise.resolve();
+			next();
+		});
+		const syncThrow = createMiddleware<void>(() => {
+			throw new Error('sync failed after async next');
+		});
+		const logger = { error: vi.fn(), warn: vi.fn() };
+		const context = {
+			client: {
+				middlewares: {
+					asyncNext,
+					syncThrow,
+				},
+				logger,
+			},
+			command: { name: 'secure' },
+			globalMetadata: {},
+			metadata: {},
+		} as never;
+
+		await expect(BaseCommand.__runMiddlewares(context, ['asyncNext' as never, 'syncThrow' as never], false)).rejects.toThrow(
+			'sync failed after async next',
+		);
+		expect(logger.error).not.toHaveBeenCalled();
+	});
+
+	test('keeps synchronous throws from callback-scheduled next as rejected runner promises', async () => {
+		const callbackNext = createMiddleware<void>(({ next }) => {
+			setTimeout(next, 0);
+		});
+		const syncThrow = createMiddleware<void>(() => {
+			throw new Error('sync failed after callback next');
+		});
+		const logger = { error: vi.fn(), warn: vi.fn() };
+		const context = {
+			client: {
+				middlewares: {
+					callbackNext,
+					syncThrow,
+				},
+				logger,
+			},
+			command: { name: 'secure' },
+			globalMetadata: {},
+			metadata: {},
+		} as never;
+
+		await expect(BaseCommand.__runMiddlewares(context, ['callbackNext' as never, 'syncThrow' as never], false)).rejects.toThrow(
+			'sync failed after callback next',
+		);
+		expect(logger.error).not.toHaveBeenCalled();
+	});
+
+	test('attributes async rejection to the rejecting middleware after next advances', async () => {
+		const error = new Error('auth failed late');
+		let rejectAuth!: (error: Error) => void;
+		const auth = createMiddleware<void>(({ next }) => {
+			next();
+			return new Promise((_resolve, reject) => {
+				rejectAuth = reject;
+			});
+		});
+		const audit = createMiddleware<void>(() => undefined);
+		const logger = { error: vi.fn(), warn: vi.fn() };
+		const context = {
+			client: {
+				middlewares: {
+					auth,
+					audit,
+				},
+				logger,
+			},
+			command: { name: 'secure' },
+			globalMetadata: {},
+			metadata: {},
+		} as never;
+
+		const result = BaseCommand.__runMiddlewares(context, ['auth' as never, 'audit' as never], false);
+		rejectAuth(error);
+
+		await expect(result).resolves.toEqual({
+			error: 'auth failed late',
+			metadata: { middleware: 'auth', scope: 'command' },
+		});
+		expect(logger.error).toHaveBeenCalledOnce();
+		expect(logger.error.mock.calls[0][0]).toContain('auth');
+		expect(logger.error.mock.calls[0][0]).not.toContain('audit');
+		expect(logger.error.mock.calls[0][1]).toBe(error);
+	});
+
 	test('runs command observers with middleware denial metadata and isolates observer failures', async () => {
 		const calls: unknown[] = [];
 		const logger = { error: vi.fn() };
@@ -1179,8 +1458,9 @@ describe('plugin api v3', () => {
 		});
 		const client = createGatewayClient([plugin]);
 
-		await client.start({}, false);
+		await client.start({ connection: { intents: ['GuildMessages'] } }, false);
 
+		expect(client.cache.intents & GatewayIntentBits.GuildMessages).toBe(GatewayIntentBits.GuildMessages);
 		expect(client.cache.intents & GatewayIntentBits.Guilds).toBe(GatewayIntentBits.Guilds);
 		expect(client.cache.intents & GatewayIntentBits.GuildMembers).toBe(GatewayIntentBits.GuildMembers);
 	});
@@ -1792,6 +2072,25 @@ describe('plugin api v3', () => {
 		);
 	});
 
+	test('does not create REST observer payloads when no observers are registered', async () => {
+		const fetch = vi.fn(
+			async () => new Response('{"ok":true}', { status: 200, headers: { 'content-type': 'application/json' } }),
+		);
+		vi.stubGlobal('fetch', fetch);
+		const api = new ApiHandler({ token: 'token' });
+		vi.spyOn(api, 'parseRequest').mockReturnValue({ data: undefined, finalUrl: '/users/@me' });
+		const body = Object.defineProperty({}, 'content', {
+			enumerable: true,
+			get() {
+				throw new Error('observer payload should not clone request body');
+			},
+		});
+		const request = { auth: false, body } satisfies ApiRequestOptions;
+
+		await expect(api.request('GET', '/users/@me', request)).resolves.toEqual({ ok: true });
+		expect(fetch).toHaveBeenCalledOnce();
+	});
+
 	test('notifies REST observers with readonly request payloads and isolates observer failures', async () => {
 		const calls: unknown[] = [];
 		const warn = vi.fn();
@@ -1843,6 +2142,64 @@ describe('plugin api v3', () => {
 				url: '/users/@me?limit=1',
 			},
 			{ body: '{"ok":true}', status: 200 },
+		]);
+		expect(warn).toHaveBeenCalledOnce();
+	});
+
+	test('runs direct REST observers after plugins before legacy callbacks', async () => {
+		const calls: string[] = [];
+		const warn = vi.fn();
+		const fetch = vi.fn(async () => new Response('{"ok":true}', { status: 200, headers: { 'content-type': 'json' } }));
+		vi.stubGlobal('fetch', fetch);
+		const plugin = createPlugin({
+			name: 'plugin-rest',
+			register(api) {
+				api.rest.observe({
+					onRequest(payload) {
+						calls.push(`plugin-request:${Object.isFrozen(payload)}`);
+					},
+					onSuccess() {
+						calls.push('plugin-success');
+					},
+				});
+			},
+		});
+		const client = createBaseClient([plugin]);
+		client.rest.debugger = { debug: vi.fn(), warn } as never;
+		client.rest.onSuccessRequest = () => {
+			calls.push('legacy-success');
+		};
+		const disposeRemoved = client.rest.observe({
+			onRequest() {
+				calls.push('removed');
+			},
+		});
+		disposeRemoved();
+		disposeRemoved();
+		client.rest.observe({
+			onRequest(payload) {
+				calls.push(`direct-request:${payload.client === client}:${Object.isFrozen(payload.request)}`);
+			},
+			onSuccess() {
+				calls.push('direct-success');
+			},
+		});
+		client.rest.observe({
+			onSuccess() {
+				calls.push('direct-bad');
+				throw new Error('direct observer failed');
+			},
+		});
+
+		await client.rest.request('GET', '/users/@me', { auth: false, query: { limit: 1 } });
+
+		expect(calls).toEqual([
+			'plugin-request:true',
+			'direct-request:true:true',
+			'plugin-success',
+			'direct-success',
+			'direct-bad',
+			'legacy-success',
 		]);
 		expect(warn).toHaveBeenCalledOnce();
 	});

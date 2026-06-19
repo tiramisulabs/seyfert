@@ -40,7 +40,11 @@ export class EntryPointContext<M extends keyof ResolvedRegisteredMiddlewares = n
 	globalMetadata: GlobalMetadata = {};
 
 	get t() {
-		return this.client.t(this.interaction.locale ?? this.client.langs.defaultLang ?? 'en-US');
+		return this.client.t(
+			this.client.langs.preferGuildLocale
+				? (this.interaction.guildLocale ?? this.interaction.locale ?? this.client.langs.defaultLang ?? 'en-US')
+				: (this.interaction.locale ?? this.client.langs.defaultLang ?? 'en-US'),
+		);
 	}
 
 	get fullCommandName() {

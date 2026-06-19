@@ -6,7 +6,7 @@ import {
 	type GuildStructure,
 	Transformers,
 	type UserStructure,
-} from '../client';
+} from '../client/transformers';
 import type { UsingClient } from '../commands';
 import { type EmojiShorter, Formatter, type MethodContext, type ObjectToLower, type When } from '../common';
 import type {

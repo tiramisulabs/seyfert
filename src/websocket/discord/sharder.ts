@@ -3,6 +3,7 @@ import {
 	Logger,
 	LogLevels,
 	lazyLoadPackage,
+	type MakePresent,
 	type MakeRequired,
 	MergeOptions,
 	SeyfertError,
@@ -28,7 +29,7 @@ let workerData: WorkerData;
 
 export class ShardManager extends Map<number, Shard> {
 	connectQueue: ConnectQueue;
-	options: MakeRequired<ShardManagerOptions, keyof typeof ShardManagerDefaults>;
+	options: MakePresent<ShardManagerOptions, keyof typeof ShardManagerDefaults>;
 	debugger?: Logger;
 
 	constructor(options: MakeDeepPartial<ShardManagerOptions, 'resharding'>) {
@@ -103,7 +104,7 @@ export class ShardManager extends Map<number, Shard> {
 			properties: this.options.properties,
 			debugger: this.debugger,
 			compress: this.options.compress ?? false,
-			presence: this.options.presence?.(shardId, -1),
+			presence: this.options.presence?.(shardId),
 			connectionTimeout: this.options.connectionTimeout,
 			reconnectTimeout: this.options.reconnectTimeout,
 		});

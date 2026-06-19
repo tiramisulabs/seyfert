@@ -18,8 +18,9 @@ export class BitField<T extends object> {
 		return this.bit;
 	}
 
-	has(bits: BitFieldResolvable<T>[]) {
-		const bitsResolved = bits.map(bit => this.resolve(bit));
+	has(bits: BitFieldResolvable<T> | BitFieldResolvable<T>[]) {
+		const data = Array.isArray(bits) ? bits : [bits];
+		const bitsResolved = data.map(bit => this.resolve(bit));
 		return bitsResolved.every(bit => (this.bits & bit) === bit);
 	}
 
@@ -32,15 +33,18 @@ export class BitField<T extends object> {
 		return this.bits === this.resolve(other);
 	}
 
-	keys(bits: BitFieldResolvable<T>[] = [this.bits]) {
+	keys(bits: BitFieldResolvable<T>[] = [this.bits]): (keyof T)[] {
 		const bitsResolved = bits.map(bit => this.resolve(bit));
-		return Object.entries(this.Flags).reduce((acc, value) => {
-			if (bitsResolved.some(bit => (bit & value[1]) === value[1])) {
-				acc.push(value[0]);
+		return Object.entries(this.Flags).reduce(
+			(acc, value) => {
+				if (bitsResolved.some(bit => (bit & value[1]) === value[1])) {
+					acc.push(value[0] as keyof T);
+					return acc;
+				}
 				return acc;
-			}
-			return acc;
-		}, [] as string[]);
+			},
+			[] as (keyof T)[],
+		);
 	}
 
 	values(bits: BitFieldResolvable<T>[] = [this.bits]) {

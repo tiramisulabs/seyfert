@@ -1,5 +1,7 @@
-import { type AllChannels, componentFactory, Embed, type ReturnCache } from '..';
+import type { ValidAnswerId } from '../api/Routes/channels';
 import type { ListenerOptions } from '../builders';
+import { Embed } from '../builders/Embed';
+import type { ReturnCache } from '../cache';
 import {
 	type GuildMemberStructure,
 	type GuildStructure,
@@ -11,10 +13,14 @@ import {
 	type WebhookStructure,
 } from '../client/transformers';
 import type { UsingClient } from '../commands';
-import { Formatter, type ObjectToLower, toCamelCase } from '../common';
+import { SeyfertError } from '../common/it/error';
+import { Formatter } from '../common/it/formatter';
+import { toCamelCase } from '../common/it/utils';
 import type { EmojiResolvable } from '../common/types/resolvables';
+import type { ObjectToLower } from '../common/types/util';
 import type { MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../common/types/write';
 import type { TopLevelComponents } from '../components';
+import { componentFactory } from '../components';
 import type {
 	APIChannelMention,
 	APIEmbed,
@@ -23,8 +29,13 @@ import type {
 	APIUser,
 	GatewayMessageCreateDispatchData,
 } from '../types';
+import type { AllChannels } from './channels';
 import { DiscordBase } from './extra/DiscordBase';
-import type { MessageWebhookMethodEditParams, MessageWebhookMethodWriteParams } from './Webhook';
+import type {
+	MessageWebhookMethodEditParams,
+	MessageWebhookMethodWriteParams,
+	MessageWebhookMethodWriteWaitParams,
+} from './Webhook';
 
 export type MessageData = APIMessage | GatewayMessageCreateDispatchData;
 
@@ -181,12 +192,25 @@ export class Message extends BaseMessage {
 	crosspost(reason?: string): Promise<MessageStructure> {
 		return this.client.messages.crosspost(this.id, this.channelId, reason);
 	}
+
+	endPoll(): Promise<MessageStructure> {
+		return this.client.messages.endPoll(this.channelId, this.id);
+	}
+
+	async getAnswerVoters(answerId: ValidAnswerId, checkAnswer = false): Promise<UserStructure[]> {
+		if (checkAnswer && this.poll && !this.poll.answers.find(answer => answer.answerId === answerId)) {
+			throw new SeyfertError('INVALID_ANSWER_ID', { metadata: { detail: 'Invalid answer id' } });
+		}
+		return this.client.messages.getAnswerVoters(this.channelId, this.id, answerId);
+	}
 }
 
 export type EditMessageWebhook = Omit<MessageWebhookMethodEditParams, 'messageId'>['body'] &
 	Pick<MessageWebhookMethodEditParams, 'query'>;
 export type WriteMessageWebhook = MessageWebhookMethodWriteParams['body'] &
 	Pick<MessageWebhookMethodWriteParams, 'query'>;
+export type WriteMessageWebhookWait = MessageWebhookMethodWriteWaitParams['body'] &
+	Pick<MessageWebhookMethodWriteWaitParams, 'query'>;
 
 export class WebhookMessage extends BaseMessage {
 	constructor(
@@ -220,6 +244,8 @@ export class WebhookMessage extends BaseMessage {
 		});
 	}
 
+	write(body: WriteMessageWebhookWait): Promise<WebhookMessageStructure>;
+	write(body: WriteMessageWebhook): Promise<WebhookMessageStructure | null>;
 	write(body: WriteMessageWebhook): Promise<WebhookMessageStructure | null> {
 		const { query, ...rest } = body;
 		return this.client.webhooks.writeMessage(this.webhookId, this.webhookToken, {

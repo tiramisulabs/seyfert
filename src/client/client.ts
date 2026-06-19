@@ -1,10 +1,10 @@
 import type { CommandContext, Message } from '..';
 import {
 	type Awaitable,
-	assertString,
 	type DeepPartial,
 	lazyLoadPackage,
 	type PickPartial,
+	SeyfertError,
 	type WatcherPayload,
 	type WatcherSendToShard,
 	type When,
@@ -23,6 +23,7 @@ import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdat
 import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import { Collectors } from './collectors';
+import type { GatewayIntentInput } from './intents';
 import {
 	type AnySeyfertPlugin,
 	applyPluginGatewayDispatchInterceptors,
@@ -105,7 +106,7 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	async loadEvents(dir?: string) {
-		dir ??= await this.getRC().then(x => x.locations.events);
+		dir ??= await this.getRC<InternalRuntimeConfig>().then(x => x.locations.events);
 		await runPluginHooks(this, 'events:beforeLoad', this, dir);
 		if (dir) {
 			await this.events.load(dir);
@@ -147,10 +148,13 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 
 		const { token: tokenRC, intents: intentsRC, debug: debugRC } = await this.getRC<InternalRuntimeConfig>();
 		const token = options?.token ?? tokenRC;
-		const intents = this.resolvePluginGatewayIntents(options?.connection?.intents ?? intentsRC);
+		const connectionIntents = options?.connection?.intents as GatewayIntentInput | undefined;
+		const intents = this.resolvePluginGatewayIntents(connectionIntents ?? intentsRC);
 
 		if (!this.gateway) {
-			assertString(token, 'token is not a string');
+			if (typeof token !== 'string' || token.length === 0) {
+				throw new SeyfertError('INVALID_TOKEN', { metadata: { detail: 'token is not a string' } });
+			}
 			this.gateway = new ShardManager({
 				token,
 				info: await this.proxy.gateway.bot.get(),
@@ -182,7 +186,7 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 		}
 
 		if (execute) {
-			await this.execute(options.connection);
+			await this.execute({ ...(options.connection ?? {}), intents });
 		} else {
 			await super.execute(options);
 		}
@@ -316,7 +320,13 @@ export interface ClientOptions<TPlugins extends readonly AnySeyfertPlugin[] = Re
 	};
 	handlePayload?: ShardManagerOptions['handlePayload'];
 	handleSendPayload?: ShardManagerOptions['handleSendPayload'];
+	/**
+	 * @deprecated Use shard disconnect events instead. Injected ShardManager callbacks can double-fire.
+	 */
 	onShardDisconnect?: ShardManagerOptions['onShardDisconnect'];
+	/**
+	 * @deprecated Use shard reconnect events instead. Injected ShardManager callbacks can double-fire.
+	 */
 	onShardReconnect?: ShardManagerOptions['onShardReconnect'];
 	resharding?: PickPartial<NonNullable<ShardManagerOptions['resharding']>, 'getInfo'>;
 }

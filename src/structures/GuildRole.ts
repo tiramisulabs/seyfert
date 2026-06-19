@@ -43,8 +43,8 @@ export class GuildRole extends DiscordBase {
 		return this.client.roles.fetch(this.guildId, this.id, force);
 	}
 
-	edit(body: RESTPatchAPIGuildRoleJSONBody): Promise<GuildRoleStructure> {
-		return this.client.roles.edit(this.guildId, this.id, body);
+	edit(body: RESTPatchAPIGuildRoleJSONBody, reason?: string): Promise<GuildRoleStructure> {
+		return this.client.roles.edit(this.guildId, this.id, body, reason);
 	}
 
 	delete(reason?: string) {

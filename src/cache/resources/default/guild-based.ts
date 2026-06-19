@@ -103,15 +103,15 @@ export class GuildBasedResource<T = any, S = any> {
 		);
 	}
 
-	keys(guild: string): ReturnCache<string[]> {
+	keys(guild: '*' | (string & {})): ReturnCache<string[]> {
 		return this.adapter.scan(this.hashGuildId(guild, '*'), true) as string[];
 	}
 
-	values(guild: string): ReturnCache<(T & { guild_id: string })[]> {
+	values(guild: '*' | (string & {})): ReturnCache<(T & { guild_id: string })[]> {
 		return this.adapter.scan(this.hashGuildId(guild, '*')) as any[];
 	}
 
-	count(guild: string): ReturnCache<number> {
+	count(guild: '*' | (string & {})): ReturnCache<number> {
 		return fakePromise(this.adapter.scan(this.hashGuildId(guild, '*'), true)).then(data => data.length);
 	}
 
@@ -143,7 +143,7 @@ export class GuildBasedResource<T = any, S = any> {
 		return id.startsWith(this.namespace) ? id : `${this.namespace}.${guild}.${id}`;
 	}
 
-	flush(guild: '*' | (string & {}) = '*') {
+	flush(guild: '*' | (string & {})) {
 		return fakePromise(this.keys(guild)).then(keys => {
 			return fakePromise(this.adapter.bulkRemove(keys)).then(() => {
 				const maybePromises: (unknown | Promise<unknown>)[] = [];

@@ -1,4 +1,4 @@
-import type { MakeRequired } from '../common';
+import type { Awaitable, MakeRequired } from '../common';
 
 export * from './api';
 export * from './utils/constants';
@@ -40,3 +40,39 @@ export interface ApiRequestOptions {
 }
 
 export type HttpMethods = 'GET' | 'DELETE' | 'PUT' | 'POST' | 'PATCH';
+
+export interface RestObserverRequestPayload<TClient = unknown> {
+	readonly client: TClient;
+	readonly method: HttpMethods;
+	readonly url: `/${string}`;
+	readonly request: Readonly<ApiRequestOptions>;
+}
+
+export interface RestObserverSuccessPayload<TClient = unknown> extends RestObserverRequestPayload<TClient> {
+	readonly response: Response;
+}
+
+export interface RestObserverFailPayload<TClient = unknown> extends RestObserverRequestPayload<TClient> {
+	readonly error: unknown;
+	readonly statusCode?: number;
+}
+
+export interface RestObserverRatelimitPayload<TClient = unknown> extends RestObserverRequestPayload<TClient> {
+	readonly response: Response;
+}
+
+export interface RestObserver<TClient = unknown> {
+	onRequest?(payload: RestObserverRequestPayload<TClient>): Awaitable<unknown>;
+	onSuccess?(payload: RestObserverSuccessPayload<TClient>): Awaitable<unknown>;
+	onFail?(payload: RestObserverFailPayload<TClient>): Awaitable<unknown>;
+	onRatelimit?(payload: RestObserverRatelimitPayload<TClient>): Awaitable<unknown>;
+}
+
+export interface RestObserverEntry<TClient = unknown> {
+	readonly plugin?: string;
+	readonly observer: RestObserver<TClient>;
+}
+
+export interface RestObserveOptions {}
+
+export type RestObserverDisposer = () => void;

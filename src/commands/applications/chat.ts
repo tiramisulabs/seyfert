@@ -18,7 +18,7 @@ import type {
 	OptionResolverStructure,
 	UserStructure,
 } from '../../client/transformers';
-import { magicImport, SeyfertError } from '../../common';
+import { type Awaitable, magicImport, SeyfertError } from '../../common';
 import type { AllChannels, AutocompleteInteraction } from '../../structures';
 import {
 	type APIApplicationCommandBasicOption,
@@ -44,21 +44,30 @@ import type {
 } from './shared';
 
 export interface ReturnOptionsTypes {
-	1: never; // subcommand
-	2: never; // subcommandgroup
-	3: string;
-	4: number; // integer
-	5: boolean;
-	6: InteractionGuildMemberStructure | UserStructure;
-	7: AllChannels;
-	8: GuildRoleStructure;
-	9: GuildRoleStructure | InteractionGuildMemberStructure | GuildMemberStructure | UserStructure;
-	10: number; // number
-	11: Attachment;
+	[ApplicationCommandOptionType.Subcommand]: never;
+	[ApplicationCommandOptionType.SubcommandGroup]: never;
+	[ApplicationCommandOptionType.String]: string;
+	[ApplicationCommandOptionType.Integer]: number;
+	[ApplicationCommandOptionType.Boolean]: boolean;
+	[ApplicationCommandOptionType.User]: InteractionGuildMemberStructure | UserStructure;
+	[ApplicationCommandOptionType.Channel]: AllChannels;
+	[ApplicationCommandOptionType.Role]: GuildRoleStructure;
+	[ApplicationCommandOptionType.Mentionable]:
+		| GuildRoleStructure
+		| InteractionGuildMemberStructure
+		| GuildMemberStructure
+		| UserStructure;
+	[ApplicationCommandOptionType.Number]: number;
+	[ApplicationCommandOptionType.Attachment]: Attachment;
 }
 
-export type AutocompleteCallback = (interaction: AutocompleteInteraction) => any;
-export type OnAutocompleteErrorCallback = (interaction: AutocompleteInteraction, error: unknown) => any;
+export type AutocompleteCallback<ValueType extends string | number = string | number> = (
+	interaction: AutocompleteInteraction<boolean, ValueType>,
+) => any;
+export type OnAutocompleteErrorCallback<ValueType extends string | number = string | number> = (
+	interaction: AutocompleteInteraction<boolean, ValueType>,
+	error: unknown,
+) => any;
 export type CommandBaseOption =
 	| SeyfertBaseChoiceableOption<ApplicationCommandOptionType>
 	| SeyfertBasicOption<ApplicationCommandOptionType>;
@@ -109,7 +118,7 @@ type ContextOptionsAux<T extends OptionsRecord> = {
 export type ContextOptions<T extends OptionsRecord> = ContextOptionsAux<T>;
 
 export class BaseCommand {
-	middlewares: (keyof ResolvedRegisteredMiddlewares)[] = [];
+	middlewares: readonly (keyof ResolvedRegisteredMiddlewares)[] = [];
 
 	__filePath?: string;
 	__t?: { name: string | undefined; description: string | undefined };
@@ -191,7 +200,7 @@ export class BaseCommand {
 	/** @internal */
 	static __runMiddlewares(
 		context: CommandContext<{}, never> | ComponentContext | MenuCommandContext<any> | ModalContext | EntryPointContext,
-		middlewares: (keyof ResolvedRegisteredMiddlewares)[],
+		middlewares: readonly (keyof ResolvedRegisteredMiddlewares)[],
 		global: boolean,
 	): Promise<{ error?: string; metadata?: PluginMiddlewareDenialMetadata; pass?: boolean }> {
 		if (!middlewares.length) {
@@ -211,7 +220,7 @@ export class BaseCommand {
 		if (!activeMiddlewares.length) return Promise.resolve({});
 		let index = 0;
 
-		return new Promise(res => {
+		return new Promise((res, rej) => {
 			let running = true;
 			const pass: PassFunction = () => {
 				if (!running) {
@@ -231,19 +240,46 @@ export class BaseCommand {
 					running = false;
 					return res({});
 				}
-				context.client.middlewares![activeMiddlewares[index]]({ context, next, stop, pass });
+				invoke(activeMiddlewares[index]);
 			}
-			const stop: StopFunction = err => {
+			const deny = (err: string, middleware: keyof ResolvedRegisteredMiddlewares) => {
 				if (!running) {
 					return;
 				}
 				running = false;
 				return res({
 					error: err,
-					metadata: { middleware: String(activeMiddlewares[index]), scope: global ? 'global' : 'command' },
+					metadata: { middleware: String(middleware), scope: global ? 'global' : 'command' },
 				});
 			};
-			context.client.middlewares![activeMiddlewares[0]]({ context, next, stop, pass });
+			const stop: StopFunction = err => {
+				return deny(err, activeMiddlewares[index]);
+			};
+			const rejectRunner = (err: unknown) => {
+				if (!running) {
+					return;
+				}
+				running = false;
+				rej(err);
+			};
+			function invoke(middleware: keyof ResolvedRegisteredMiddlewares) {
+				let result: unknown;
+				try {
+					result = context.client.middlewares![middleware]({ context, next, stop, pass });
+				} catch (err) {
+					rejectRunner(err);
+					return;
+				}
+				Promise.resolve(result).catch(err => {
+					if (!running) {
+						return;
+					}
+					const message = err instanceof Error ? err.message : String(err);
+					context.client.logger.error(`Middleware "${String(middleware)}" rejected: ${message}`, err);
+					deny(message, middleware);
+				});
+			}
+			invoke(activeMiddlewares[0]);
 		});
 	}
 
@@ -258,14 +294,14 @@ export class BaseCommand {
 
 	/** @internal */
 	__runMiddlewares(context: CommandContext<{}, never>) {
-		return BaseCommand.__runMiddlewares(context, this.middlewares as (keyof ResolvedRegisteredMiddlewares)[], false);
+		return BaseCommand.__runMiddlewares(context, this.middlewares, false);
 	}
 
 	/** @internal */
 	__runGlobalMiddlewares(context: CommandContext<{}, never>) {
 		return BaseCommand.__runMiddlewares(
 			context,
-			(context.client.options?.globalMiddlewares ?? []) as (keyof ResolvedRegisteredMiddlewares)[],
+			(context.client.options?.globalMiddlewares ?? []) as readonly (keyof ResolvedRegisteredMiddlewares)[],
 			true,
 		);
 	}
@@ -311,6 +347,7 @@ export class BaseCommand {
 		Object.setPrototypeOf(this, __tempCommand.prototype);
 	}
 
+	filter?(context: CommandContext): Awaitable<boolean>;
 	onBeforeMiddlewares?(context: CommandContext): any;
 	onBeforeOptions?(context: CommandContext): any;
 	run?(context: CommandContext): any;

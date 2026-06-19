@@ -19,6 +19,7 @@ import {
 } from '../client/transformers';
 import type { UsingClient } from '../commands';
 import {
+	type BanOptions,
 	Formatter,
 	type GuildMemberResolvable,
 	type ImageOptions,
@@ -35,7 +36,6 @@ import type {
 	RESTGetAPIGuildMembersQuery,
 	RESTGetAPIGuildMembersSearchQuery,
 	RESTPatchAPIGuildMemberJSONBody,
-	RESTPutAPIGuildBanJSONBody,
 	RESTPutAPIGuildMemberJSONBody,
 } from '../types';
 import { PermissionsBitField } from './extra/Permissions';
@@ -76,8 +76,8 @@ export class BaseGuildMember extends DiscordBase {
 		return this.client.members.fetch(this.guildId, this.id, force);
 	}
 
-	ban(body?: RESTPutAPIGuildBanJSONBody, reason?: string) {
-		return this.client.members.ban(this.guildId, this.id, body, reason);
+	ban(options?: BanOptions) {
+		return this.client.members.ban(this.guildId, this.id, options);
 	}
 
 	kick(reason?: string) {
@@ -131,7 +131,7 @@ export class BaseGuildMember extends DiscordBase {
 
 	get roles() {
 		return {
-			keys: Object.freeze(this._roles.concat(this.guildId)) as string[],
+			keys: Object.freeze(this._roles.concat(this.guildId)) as readonly string[],
 			list: (force = false): Promise<GuildRoleStructure[]> =>
 				this.client.roles
 					.list(this.guildId, force)
@@ -142,7 +142,8 @@ export class BaseGuildMember extends DiscordBase {
 				this.roles.list(force).then(roles => new PermissionsBitField(roles.map(x => BigInt(x.permissions.bits)))),
 			sorted: (force = false): Promise<GuildRoleStructure[]> =>
 				this.roles.list(force).then(roles => roles.sort((a, b) => b.position - a.position)),
-			highest: (force = false): Promise<GuildRoleStructure> => this.roles.sorted(force).then(roles => roles[0]),
+			highest: (force = false): Promise<GuildRoleStructure | undefined> =>
+				this.roles.sorted(force).then(roles => roles.at(0)),
 		};
 	}
 
@@ -150,11 +151,10 @@ export class BaseGuildMember extends DiscordBase {
 		return {
 			resolve: (resolve: GuildMemberResolvable): Promise<GuildMemberStructure | undefined> =>
 				client.members.resolve(guildId, resolve),
-			search: (query?: RESTGetAPIGuildMembersSearchQuery): Promise<GuildMemberStructure[]> =>
+			search: (query: RESTGetAPIGuildMembersSearchQuery): Promise<GuildMemberStructure[]> =>
 				client.members.search(guildId, query),
 			unban: (id: string, reason?: string) => client.members.unban(guildId, id, reason),
-			ban: (id: string, body?: RESTPutAPIGuildBanJSONBody, reason?: string) =>
-				client.members.ban(guildId, id, body, reason),
+			ban: (id: string, options?: BanOptions) => client.members.ban(guildId, id, options),
 			kick: (id: string, reason?: string) => client.members.kick(guildId, id, reason),
 			edit: (id: string, body: RESTPatchAPIGuildMemberJSONBody, reason?: string): Promise<GuildMemberStructure> =>
 				client.members.edit(guildId, id, body, reason),
@@ -252,12 +252,33 @@ export class GuildMember extends BaseGuildMember {
 	}
 
 	async manageable(force = false) {
-		this.__me = await this.client.guilds.fetchSelf(this.guildId, force);
-		const ownerId = (await this.client.guilds.fetch(this.guildId, force)).ownerId;
+		const [me, guild] = await Promise.all([
+			this.client.guilds.fetchSelf(this.guildId, force),
+			this.client.guilds.fetch(this.guildId, force),
+		]);
+		this.__me = me;
+		const ownerId = guild.ownerId;
 		if (this.user.id === ownerId) return false;
 		if (this.user.id === this.client.botId) return false;
 		if (this.client.botId === ownerId) return true;
-		return (await this.__me!.roles.highest()).position > (await this.roles.highest(force)).position;
+		const highestFromCompleteRoles = async (member: Pick<GuildMemberStructure, 'roles'>, forceRoles: boolean) => {
+			const roles = await member.roles.sorted(forceRoles);
+			const roleIds = new Set(roles.map(role => role.id));
+			if (!member.roles.keys.every(roleId => roleIds.has(roleId))) return;
+
+			return roles.at(0);
+		};
+
+		const myHighest = await highestFromCompleteRoles(me, force);
+		const theirHighest = await highestFromCompleteRoles(this, force);
+		if (myHighest && theirHighest) return myHighest.position > theirHighest.position;
+		if (force) return false;
+
+		const forcedMyHighest = await highestFromCompleteRoles(me, true);
+		const forcedTheirHighest = await highestFromCompleteRoles(this, true);
+		if (!forcedMyHighest || !forcedTheirHighest) return false;
+
+		return forcedMyHighest.position > forcedTheirHighest.position;
 	}
 
 	async bannable(force = false) {

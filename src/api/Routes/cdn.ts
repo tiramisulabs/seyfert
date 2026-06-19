@@ -83,4 +83,4 @@ export interface CDNRoute {
 	};
 }
 
-export type UserAvatarDefault = 1 | 2 | 3 | 4 | 5 | number;
+export type UserAvatarDefault = 0 | 1 | 2 | 3 | 4 | 5;

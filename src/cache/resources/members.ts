@@ -61,7 +61,7 @@ export class Members extends GuildBasedResource<any, APIGuildMember> {
 		return super.bulk(ids, guild);
 	}
 
-	override values(guild: string): ReturnCache<GuildMemberStructure[]> {
+	override values(guild: '*' | (string & {})): ReturnCache<GuildMemberStructure[]> {
 		return fakePromise(super.values(guild)).then(members =>
 			fakePromise(this.client.cache.users?.bulkRaw(members.map(member => member.id))).then(users => {
 				if (!users) return [];

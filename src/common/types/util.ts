@@ -57,6 +57,12 @@ export type StructPropState<Prop, State extends StructStates, Select extends Str
 	Select
 >[State];
 
+export type PropWhen<Select extends StructStates, Prop, State extends StructStates = StructStates> = StructPropState<
+	Prop,
+	State,
+	Select
+>;
+
 export type WithID<More> = { id: string } & More;
 
 export type Tail<A> = A extends [unknown, ...infer rest]
@@ -97,8 +103,11 @@ export type TupleOr<A, T> = ValueOf<A> extends never ? A : TupleOr<ArrayFirsElem
 
 export type MakeRequired<T, K extends keyof T = keyof T> = T & { [P in K]-?: NonFalsy<T[P]> };
 export type PickRequired<T, K extends keyof T> = Omit<T, K> & { [P in K]: NonFalsy<T[P]> };
+export type MakePresent<T, K extends keyof T = keyof T> = T & { [P in K]-?: NonNullish<T[P]> };
+export type PickPresent<T, K extends keyof T> = Omit<T, K> & { [P in K]-?: NonNullish<T[P]> };
 
 export type NonFalsy<T> = T extends false | 0 | '' | null | undefined | 0n ? never : T;
+export type NonNullish<T> = T extends null | undefined ? never : T;
 
 export type CamelCase<S extends string> = S extends `${infer P1}_${infer P2}${infer P3}`
 	? `${Lowercase<P1>}${Uppercase<P2>}${CamelCase<P3>}`

@@ -1,5 +1,5 @@
-import { describe, expect, test } from 'vitest';
-import { GatewayIntentBits, GatewayOpcodes, type GatewaySendPayload } from '../src/types';
+import { describe, expect, test, vi } from 'vitest';
+import { GatewayIntentBits, GatewayOpcodes, type GatewaySendPayload, PresenceUpdateStatus } from '../src/types';
 import { ShardManager, WorkerManager } from '../src/websocket';
 
 function gatewayInfo() {
@@ -29,7 +29,6 @@ function createWorkerManager(options: Partial<ConstructorParameters<typeof Worke
 	const messages: unknown[] = [];
 	const manager = new WorkerManager({
 		mode: 'custom',
-		path: 'worker.js',
 		token: 'token',
 		intents: 0,
 		info: gatewayInfo(),
@@ -80,6 +79,21 @@ describe('gateway send chokepoints', () => {
 		expect(sent).toEqual([{ op: GatewayOpcodes.Heartbeat, d: 42 }]);
 	});
 
+	test('ShardManager.create calls presence with only the shard id', () => {
+		const presence = vi.fn(() => ({
+			activities: [],
+			afk: false,
+			since: null,
+			status: PresenceUpdateStatus.Online,
+		}));
+		const manager = createShardManager({ presence });
+
+		manager.create(0);
+
+		expect(presence).toHaveBeenCalledWith(0);
+		expect(presence.mock.calls[0]).toHaveLength(1);
+	});
+
 	test('WorkerManager rejects shard ids outside the configured shard range', () => {
 		const { manager } = createWorkerManager({
 			shardStart: 4,
@@ -105,11 +119,82 @@ describe('gateway send chokepoints', () => {
 		expect(messages).toEqual([]);
 	});
 
+	test('WorkerManager.spawn calls presence with the shard id and worker id', () => {
+		const presence = vi.fn(() => ({
+			activities: [],
+			afk: false,
+			since: null,
+			status: PresenceUpdateStatus.Online,
+		}));
+		const { manager, messages } = createWorkerManager({ presence });
+		manager.connectQueue = { push: (callback: () => unknown) => callback() } as never;
+		manager.set(1, {});
+
+		manager.spawn(1, 3);
+
+		expect(presence).toHaveBeenCalledWith(3, 1);
+		expect(messages).toEqual([
+			{
+				type: 'ALLOW_CONNECT',
+				shardId: 3,
+				presence: {
+					activities: [],
+					afk: false,
+					since: null,
+					status: PresenceUpdateStatus.Online,
+				},
+			},
+		]);
+	});
+
+	test('WorkerManager.spawn allows missing presence callbacks', () => {
+		const { manager, messages } = createWorkerManager();
+		manager.connectQueue = { push: (callback: () => unknown) => callback() } as never;
+		manager.set(0, {});
+
+		manager.spawn(0, 0);
+
+		expect(messages).toEqual([
+			{
+				type: 'ALLOW_CONNECT',
+				shardId: 0,
+				presence: undefined,
+			},
+		]);
+	});
+
 	test('WorkerManager.start respects an explicit zero intents option', async () => {
 		const { manager } = createWorkerManager({ intents: 0 });
 
 		await manager.start();
 
 		expect(manager.options.intents).toBe(0);
+	});
+
+	test('WorkerManager defaults omitted native mode to threads', () => {
+		const manager = new WorkerManager({
+			path: 'worker.js',
+			token: 'token',
+			intents: 0,
+			info: gatewayInfo(),
+		});
+
+		expect(manager.options.mode).toBe('threads');
+	});
+
+	test('WorkerManager preserves custom adapter paths when provided', () => {
+		const spawn = vi.fn();
+		const { manager } = createWorkerManager({
+			path: 'worker.js',
+			adapter: {
+				postMessage: () => {},
+				spawn,
+			},
+		});
+
+		manager.prepareWorkers([[0]]);
+		manager.workerQueue.shift()!();
+
+		expect(spawn).toHaveBeenCalledWith(expect.objectContaining({ path: 'worker.js' }), expect.any(Object));
 	});
 });

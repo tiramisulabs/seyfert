@@ -132,15 +132,29 @@ export class ComponentHandler extends BaseHandler {
 					if (!collector) return resolve(null);
 
 					let nodeTimeout: NodeJS.Timeout | undefined;
-
-					this.values.get(messageId)!.__run(customId, interaction => {
+					let cleaned = false;
+					const component: COMPONENTS['components'][number] = {
+						callback: interaction => {
+							cleanup();
+							//@ts-expect-error generic
+							resolve(interaction);
+						},
+						match: this.createMatchCallback(customId),
+					};
+					const cleanup = () => {
+						if (cleaned) return;
+						cleaned = true;
 						clearTimeout(nodeTimeout);
-						//@ts-expect-error generic
-						resolve(interaction);
-					});
+
+						const index = collector.components.indexOf(component);
+						if (index !== -1) collector.components.splice(index, 1);
+					};
+
+					collector.components.push(component);
 
 					if (timeout && timeout > 0)
 						nodeTimeout = setTimeout(() => {
+							cleanup();
 							resolve(null);
 							// by default 15 seconds in case user don't do anything
 						}, timeout);
@@ -362,7 +376,7 @@ export class ComponentHandler extends BaseHandler {
 				await i.onBeforeMiddlewares?.(context as never);
 				const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
 					context,
-					(context.client.options?.globalMiddlewares ?? []) as (keyof ResolvedRegisteredMiddlewares)[],
+					(context.client.options?.globalMiddlewares ?? []) as readonly (keyof ResolvedRegisteredMiddlewares)[],
 					true,
 				);
 				if (resultRunGlobalMiddlewares.pass) {
@@ -397,7 +411,7 @@ export class ComponentHandler extends BaseHandler {
 				}
 			} catch (error) {
 				try {
-					await i.onInternalError?.(this.client, error);
+					await i.onInternalError?.(this.client, i as never, error);
 				} catch (err) {
 					this.client.logger.error(`[${i.customId ?? 'Component/Modal command'}] Internal error:`, err);
 				}

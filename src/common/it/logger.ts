@@ -225,9 +225,10 @@ export class Logger {
 
 	private __write(log: unknown[]) {
 		if (this.saveOnFile || Logger.saveOnFile === 'all' || Logger.saveOnFile?.includes(this.name)) {
-			if (!(Logger.createdDir || existsSync(join(process.cwd(), Logger.dirname)))) {
+			const dirname = join(process.cwd(), Logger.dirname);
+			if (!Logger.createdDir) {
+				if (!existsSync(dirname)) mkdirSync(dirname, { recursive: true });
 				Logger.createdDir = true;
-				mkdirSync(join(process.cwd(), Logger.dirname), { recursive: true });
 			}
 
 			const fileName = (Logger.fileNames[this.name] ??= (() => {
@@ -235,7 +236,7 @@ export class Logger {
 			})());
 
 			if (!Logger.streams[fileName]) {
-				Logger.streams[fileName] = createWriteStream(join(process.cwd(), Logger.dirname, fileName));
+				Logger.streams[fileName] = createWriteStream(join(dirname, fileName));
 			}
 			Logger.streams[fileName]!.write(`${stripColor(log.join(' '))}\n`);
 		}

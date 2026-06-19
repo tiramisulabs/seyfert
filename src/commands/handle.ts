@@ -18,6 +18,7 @@ import {
 import type { PermissionsBitField } from '../structures/extra/Permissions';
 import {
 	type APIApplicationCommandInteraction,
+	type APIApplicationCommandInteractionDataBasicOption,
 	type APIApplicationCommandInteractionDataOption,
 	type APIInteraction,
 	type APIInteractionDataResolvedChannel,
@@ -115,6 +116,8 @@ export class HandleCommand {
 	) {
 		return runContextScopes(this.client.options.contextScopes, context, async () => {
 			try {
+				if ((await command.filter?.(context)) === false) return;
+
 				if (context.guildId && command.botPermissions) {
 					const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
 					if (permissions) return await command.onBotPermissionsFail?.(context, permissions);
@@ -167,6 +170,8 @@ export class HandleCommand {
 	async entryPoint(command: EntryPointCommand, interaction: EntryPointInteraction, context: EntryPointContext) {
 		return runContextScopes(this.client.options.contextScopes, context, async () => {
 			try {
+				if ((await command.filter?.(context)) === false) return;
+
 				if (context.guildId && command.botPermissions) {
 					const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
 					if (permissions) return await command.onBotPermissionsFail(context, permissions);
@@ -208,6 +213,8 @@ export class HandleCommand {
 	) {
 		return runContextScopes(this.client.options.contextScopes, context, async () => {
 			try {
+				if ((await command.filter?.(context)) === false) return;
+
 				if (context.guildId) {
 					if (command.botPermissions) {
 						const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
@@ -395,13 +402,33 @@ export class HandleCommand {
 		try {
 			const args = this.argsParser(argsContent, command, message);
 			const { options, errors } = await this.argsOptionsParser(command, rawMessage, args, resolved);
-			const optionsResolver = this.makeResolver(self, options, parent as Command, rawMessage.guild_id, resolved);
+			const resolverOptions: APIApplicationCommandInteractionDataOption[] =
+				command instanceof SubCommand
+					? [
+							command.group
+								? {
+										type: ApplicationCommandOptionType.SubcommandGroup,
+										name: command.group,
+										options: [{ type: ApplicationCommandOptionType.Subcommand, name: command.name, options }],
+									}
+								: { type: ApplicationCommandOptionType.Subcommand, name: command.name, options },
+						]
+					: options;
+			const optionsResolver = this.makeResolver(
+				self,
+				resolverOptions,
+				parent as Command,
+				rawMessage.guild_id,
+				resolved,
+			);
 			const context = new CommandContext(self, message, optionsResolver, shardId, command);
 			//@ts-expect-error
 			const extendContext = self.options?.context?.(message) ?? {};
 			Object.assign(context, extendContext);
 
 			return await runContextScopes(self.options.contextScopes, context, async () => {
+				if ((await command.filter?.(context)) === false) return;
+
 				if (errors.length) {
 					return await command.onOptionsError?.(
 						context,
@@ -426,7 +453,7 @@ export class HandleCommand {
 						const permissions = this.checkPermissions(memberPermissions, command.defaultMemberPermissions);
 						const guild = await this.client.guilds.raw(rawMessage.guild_id);
 						if (permissions && guild.owner_id !== rawMessage.author.id) {
-							return await command.onPermissionsFail?.(context, memberPermissions.keys(permissions));
+							return await command.onPermissionsFail?.(context, permissions);
 						}
 					}
 
@@ -648,7 +675,7 @@ export class HandleCommand {
 		try {
 			const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
 				context,
-				(this.client.options?.globalMiddlewares ?? []) as (keyof ResolvedRegisteredMiddlewares)[],
+				(this.client.options?.globalMiddlewares ?? []) as readonly (keyof ResolvedRegisteredMiddlewares)[],
 				true,
 			);
 			if (resultRunGlobalMiddlewares.pass) {
@@ -687,11 +714,7 @@ export class HandleCommand {
 		context: CommandContext<{}, never> | MenuCommandContext<any> | EntryPointContext,
 	) {
 		try {
-			const resultRunMiddlewares = await BaseCommand.__runMiddlewares(
-				context,
-				command.middlewares as (keyof ResolvedRegisteredMiddlewares)[],
-				false,
-			);
+			const resultRunMiddlewares = await BaseCommand.__runMiddlewares(context, command.middlewares, false);
 			if (resultRunMiddlewares.pass) {
 				return false;
 			}
@@ -749,7 +772,7 @@ export class HandleCommand {
 		args: Record<string, string>,
 		resolved: MakeRequired<ContextOptionsResolved>,
 	) {
-		const options: APIApplicationCommandInteractionDataOption[] = [];
+		const options: APIApplicationCommandInteractionDataBasicOption[] = [];
 		const errors: {
 			name: string;
 			error: string;
@@ -973,7 +996,7 @@ export class HandleCommand {
 						name: i.name,
 						type: i.type,
 						value,
-					} as APIApplicationCommandInteractionDataOption);
+					} as APIApplicationCommandInteractionDataBasicOption);
 				} else if (i.required)
 					if (!errors.some(x => x.name === i.name))
 						errors.push({

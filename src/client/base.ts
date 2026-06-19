@@ -18,7 +18,12 @@ import type {
 	UsingClient,
 } from '../commands';
 import { SubCommand } from '../commands';
-import { IgnoreCommand, type InferWithPrefix, type MiddlewareContext } from '../commands/applications/shared';
+import {
+	type AnyMiddlewareContext,
+	IgnoreCommand,
+	type InferWithPrefix,
+	type MiddlewareContext,
+} from '../commands/applications/shared';
 import type { BaseContext } from '../commands/basecontext';
 import { HandleCommand } from '../commands/handle';
 import {
@@ -37,6 +42,7 @@ import {
 	InteractionShorter,
 	InvitesShorter,
 	Logger,
+	type LoggerOptions,
 	LogLevels,
 	type MakeRequired,
 	MemberShorter,
@@ -55,7 +61,7 @@ import { toArrayBuffer } from '../common/it/utils';
 import { BanShorter } from '../common/shorters/bans';
 import { SoundboardShorter } from '../common/shorters/soundboard';
 import { VoiceStateShorter } from '../common/shorters/voiceStates';
-import type { Awaitable, DeepPartial, IntentStrings, OmitInsert, PermissionStrings, When } from '../common/types/util';
+import type { Awaitable, DeepPartial, OmitInsert, PermissionStrings, When } from '../common/types/util';
 import { ComponentCommand, type ComponentContext, ModalCommand, type ModalContext } from '../components';
 import { type ComponentCommands, ComponentHandler, type ComponentLoadOptions } from '../components/handler';
 import {
@@ -73,7 +79,15 @@ import type {
 	ModalSubmitInteraction,
 	UserCommandInteraction,
 } from '../structures';
-import type { APIInteraction, APIInteractionResponse, LocaleString, RESTPostAPIChannelMessageJSONBody } from '../types';
+import {
+	type APIInteraction,
+	type APIInteractionResponse,
+	InteractionResponseType,
+	InteractionType,
+	type LocaleString,
+	type RESTPostAPIChannelMessageJSONBody,
+} from '../types';
+import { type GatewayIntentInput, resolveGatewayIntents } from './intents';
 import {
 	type AnySeyfertPlugin,
 	bindClientPlugins,
@@ -113,6 +127,15 @@ const pluginSourceKey = '__seyfertPluginSource';
 type PluginSourced = {
 	[pluginSourceKey]?: string;
 };
+type ResolvedMiddlewareKey<T extends Record<string, AnyMiddlewareContext>> = Extract<keyof T, string>;
+
+export type ClientMiddlewares<T extends Record<string, AnyMiddlewareContext> = ResolvedRegisteredMiddlewares> = [
+	ResolvedMiddlewareKey<T>,
+] extends [never]
+	? Record<string, MiddlewareContext>
+	: {
+			[K in ResolvedMiddlewareKey<T>]?: T[K];
+		};
 
 function componentIdentity(kind: 'component' | 'modal', customId: string) {
 	return `${kind}:${customId}`;
@@ -129,7 +152,7 @@ function commandIdentity(command: Command | ContextMenuCommand | EntryPointComma
 }
 
 export class BaseClient {
-	rest = new ApiHandler({ token: 'INVALID' });
+	rest: ApiHandler<this> = new ApiHandler({ token: 'INVALID' });
 	cache = new Cache(0, new MemoryAdapter(), {}, this);
 
 	applications = new ApplicationShorter(this);
@@ -163,7 +186,7 @@ export class BaseClient {
 
 	private _applicationId?: string;
 	private _botId?: string;
-	middlewares?: Record<string, MiddlewareContext>;
+	middlewares?: ClientMiddlewares;
 
 	protected static getBotIdFromToken(token: string): string {
 		return Buffer.from(token.split('.')[0], 'base64').toString('ascii');
@@ -221,8 +244,8 @@ export class BaseClient {
 					onMiddlewaresError(context: ComponentContext, error: string): any {
 						context.client.logger.fatal('ComponentCommand.<onMiddlewaresError>', context.author.id, error);
 					},
-					onInternalError(client: UsingClient, error: unknown): any {
-						client.logger.fatal(error);
+					onInternalError(client: UsingClient, component: ComponentCommand, error: unknown): any {
+						client.logger.fatal(`[${component.customId ?? 'ComponentCommand'}].<onInternalError>`, error);
 					},
 				},
 			},
@@ -234,8 +257,8 @@ export class BaseClient {
 					onMiddlewaresError(context: ModalContext, error: string): any {
 						context.client.logger.fatal('ModalCommand.<onMiddlewaresError>', context.author.id, error);
 					},
-					onInternalError(client: UsingClient, error: unknown): any {
-						client.logger.fatal(error);
+					onInternalError(client: UsingClient, modal: ModalCommand, error: unknown): any {
+						client.logger.fatal(`[${modal.customId ?? 'ModalCommand'}].<onInternalError>`, error);
 					},
 				},
 			},
@@ -243,6 +266,7 @@ export class BaseClient {
 		const resolved = resolveClientPlugins(defaults, options);
 
 		this.options = resolved.options;
+		this.configureLogger({ name: '[Seyfert]' }, this.options.logger);
 		this.plugins = resolved.plugins;
 		this.pluginRegistry = resolved.registry;
 		this.shared = createSharedRegistry(this, this.pluginRegistry);
@@ -250,6 +274,14 @@ export class BaseClient {
 		bindClientPlugins(this, this.pluginRegistry);
 		this.bindPluginRestObserverProvider();
 		this.refreshPluginCacheResources();
+	}
+
+	protected configureLogger(defaults: LoggerOptions, options?: LoggerOptions) {
+		const loggerOptions = MergeOptions<LoggerOptions>(defaults, options ?? {});
+		if (loggerOptions.active !== undefined) this.logger.active = loggerOptions.active;
+		if (loggerOptions.logLevel !== undefined) this.logger.level = loggerOptions.logLevel;
+		if (loggerOptions.name !== undefined) this.logger.name = loggerOptions.name;
+		if (loggerOptions.saveOnFile !== undefined) this.logger.saveOnFile = loggerOptions.saveOnFile;
 	}
 
 	get proxy() {
@@ -277,7 +309,7 @@ export class BaseClient {
 			rest.onRatelimit ??= this.rest.onRatelimit?.bind(rest);
 			rest.onSuccessRequest ??= this.rest.onSuccessRequest?.bind(rest);
 			rest.onFailRequest ??= this.rest.onFailRequest?.bind(rest);
-			this.rest = rest;
+			this.rest = rest as ApiHandler<this>;
 			this.bindPluginRestObserverProvider();
 		}
 		if (cache) {
@@ -312,7 +344,7 @@ export class BaseClient {
 			}
 
 			if (cache.adapter) this.cache.adapter = cache.adapter;
-			if (cache.disabledCache) this.refreshPluginCacheResources(disabledCache);
+			if (cache.disabledCache !== undefined) this.refreshPluginCacheResources(disabledCache);
 		}
 		if (middlewares) {
 			this.middlewares = { ...(this.middlewares ?? {}), ...middlewares };
@@ -321,6 +353,7 @@ export class BaseClient {
 			this.langs ??= new LangsHandler(this.logger);
 			this.bindPluginLangReload();
 			if (langs.default) this.langs.defaultLang = langs.default;
+			if (langs.preferGuildLocale !== undefined) this.langs.preferGuildLocale = langs.preferGuildLocale;
 			if (langs.aliases) this.langs.aliases = Object.entries(langs.aliases);
 		}
 
@@ -344,10 +377,12 @@ export class BaseClient {
 	) {
 		const { token: tokenRC, debug } = await this.getRC();
 		const token = options.token ?? tokenRC;
-		assertString(token, 'token is not a string');
+		if (typeof token !== 'string' || token.length === 0) {
+			throw new SeyfertError('INVALID_TOKEN', { metadata: { detail: 'token is not a string' } });
+		}
 
 		if (this.rest.options.token === 'INVALID') this.rest.options.token = token;
-		this.rest.debug = debug;
+		this.rest.debug = !!debug;
 
 		if (!this.handleCommand) this.handleCommand = new HandleCommand(this);
 
@@ -418,9 +453,9 @@ export class BaseClient {
 		this.cache.buildCache(disabledCache, this);
 	}
 
-	protected resolvePluginGatewayIntents(base: number) {
-		this.pluginBaseGatewayIntents = base;
-		this.cache.intents = resolveClientPluginIntents(this, base);
+	protected resolvePluginGatewayIntents(base?: GatewayIntentInput) {
+		this.pluginBaseGatewayIntents = resolveGatewayIntents(base);
+		this.cache.intents = resolveClientPluginIntents(this, this.pluginBaseGatewayIntents);
 		return this.cache.intents;
 	}
 
@@ -925,6 +960,13 @@ export class BaseClient {
 		headers: { 'Content-Type'?: string };
 		response: APIInteractionResponse | FormData;
 	}> {
+		if (rawBody.type === InteractionType.Ping) {
+			return {
+				headers: { 'Content-Type': 'application/json' },
+				response: { type: InteractionResponseType.Pong },
+			};
+		}
+
 		return new Promise(async r => {
 			await this.handleCommand.interaction(rawBody, -1, async ({ body, files }) => {
 				let response: FormData | APIInteractionResponse;
@@ -1149,13 +1191,18 @@ export class BaseClient {
 					magicImport(join(process.cwd(), `seyfert.config${ext}`)).then(x => x.default ?? x),
 				),
 			).catch((e: AggregateError) => {
-				const errors = e.errors.map((err: Error) => {
-					err.message = err.message.replace(/seyfert\.config\.(js|mjs|cjs|ts|mts|cts)/g, 'seyfert.config');
-					return err;
-				});
+				const errors = e.errors.map((err: Error) => ({
+					error: err,
+					message: err.message.replace(/seyfert\.config\.(js|mjs|cjs|ts|mts|cts)/g, 'seyfert.config'),
+				}));
 
 				const uniqueError = errors.find(er => errors.filter(err => err.message === er.message).length === 1);
-				if (uniqueError) throw uniqueError;
+				if (uniqueError) {
+					throw new SeyfertError('SEYFERT_CONFIG_LOAD_ERROR', {
+						metadata: { detail: uniqueError.message },
+						cause: uniqueError.error,
+					});
+				}
 				throw new SeyfertError('NO_SEYFERT_CONFIG', {
 					metadata: { detail: 'No seyfert.config file found' },
 				});
@@ -1179,9 +1226,11 @@ export class BaseClient {
 			debug: !!debug,
 			...env,
 			locations: locationsFullPaths,
-		};
+		} as T & { intents?: GatewayIntentInput };
 
-		return obj;
+		if ('intents' in obj) obj.intents = resolveGatewayIntents(obj.intents);
+
+		return obj as T;
 	}
 }
 
@@ -1243,7 +1292,8 @@ export interface BaseClientOptions {
 		};
 	};
 	allowedMentions?: RESTPostAPIChannelMessageJSONBody['allowed_mentions'];
-	getRC?(): Awaitable<InternalRuntimeConfig | InternalRuntimeConfigHTTP>;
+	logger?: LoggerOptions;
+	getRC?(): Awaitable<InternalRuntimeConfig | InternalRuntimeConfigHTTP | RuntimeConfig | RuntimeConfigHTTP>;
 }
 
 function createNestedLangValues(prefix: string, values: Record<string, unknown>) {
@@ -1283,7 +1333,7 @@ export interface StartOptions {
 	langsDir: string;
 	commandsDir: string;
 	componentsDir: string;
-	connection: { intents: number };
+	connection: { intents: GatewayIntentInput };
 	httpConnection: {
 		publicKey: string;
 		port: number;
@@ -1318,11 +1368,9 @@ export type RuntimeConfigHTTP = Omit<MakeRequired<RC, 'publicKey' | 'application
 };
 
 export type InternalRuntimeConfig = MakeRequired<RC, 'intents'>;
-export type RuntimeConfig = OmitInsert<
-	InternalRuntimeConfig,
-	'intents',
-	{ intents?: IntentStrings | number[] | number }
->;
+export type RuntimeConfig = OmitInsert<InternalRuntimeConfig, 'intents', { intents?: GatewayIntentInput }>;
+export type BotConfig = InternalRuntimeConfig;
+export type HttpConfig = InternalRuntimeConfigHTTP;
 
 export interface ServicesOptions {
 	rest?: ApiHandler;
@@ -1332,8 +1380,14 @@ export interface ServicesOptions {
 	};
 	langs?: {
 		default?: string;
+		preferGuildLocale?: boolean;
 		aliases?: Record<string, LocaleString[]>;
 	};
-	middlewares?: Record<string, MiddlewareContext>;
-	handleCommand?: typeof HandleCommand;
+	middlewares?: ClientMiddlewares;
+	/**
+	 * Custom command handler subclass constructor. Pass the class itself, not an instance.
+	 */
+	handleCommand?: new (
+		client: UsingClient,
+	) => HandleCommand;
 }

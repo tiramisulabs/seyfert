@@ -1,13 +1,14 @@
 import { randomUUID, type UUID } from 'node:crypto';
 import type { UsingClient } from '../commands';
-import type { Awaitable, CamelCase } from '../common';
-import type { CallbackEventHandler, CustomEventsKeys, GatewayEvents } from '../events';
+import { type Awaitable, type CamelCase, ReplaceRegex } from '../common';
+import type { CallbackEventHandler, ClientNameEvents, CustomEventsKeys, GatewayEvents } from '../events';
 import { resolveRawEventData } from '../events/utils';
 
-export type AllClientEvents = CustomEventsKeys | GatewayEvents;
-export type ParseClientEventName<T extends AllClientEvents> = T extends CustomEventsKeys ? T : CamelCase<T>;
+export type AllClientEvents = CustomEventsKeys | ClientNameEvents;
+type ClientDispatchEvent = AllClientEvents | GatewayEvents;
+export type ParseClientEventName<T extends ClientDispatchEvent> = T extends GatewayEvents ? CamelCase<T> : T;
 
-export type CollectorRunPameters<T extends AllClientEvents> = Awaited<
+export type CollectorRunParameters<T extends AllClientEvents> = Awaited<
 	Parameters<CallbackEventHandler[ParseClientEventName<T>]>[0]
 >;
 
@@ -18,14 +19,18 @@ type RunData<T extends AllClientEvents> = {
 		timeout?: number;
 		onStop?: (reason: string) => unknown;
 		onStopError?: (reason: string, error: unknown) => unknown;
-		filter: (arg: CollectorRunPameters<T>) => Awaitable<boolean>;
-		run: (arg: CollectorRunPameters<T>, stop: (reason?: string) => void) => unknown;
-		onRunError?: (arg: CollectorRunPameters<T>, error: unknown, stop: (reason?: string) => void) => unknown;
+		filter: (arg: CollectorRunParameters<T>) => Awaitable<boolean>;
+		run: (arg: CollectorRunParameters<T>, stop: (reason?: string) => void) => unknown;
+		onRunError?: (arg: CollectorRunParameters<T>, error: unknown, stop: (reason?: string) => void) => unknown;
 	};
 	idle?: NodeJS.Timeout;
 	timeout?: NodeJS.Timeout;
 	nonce: string;
 };
+
+function normalizeCollectorEventName<T extends ClientDispatchEvent>(name: T): ParseClientEventName<T> {
+	return (name === name.toUpperCase() ? ReplaceRegex.camel(name.toLowerCase()) : name) as ParseClientEventName<T>;
+}
 
 export class Collectors {
 	readonly values = new Map<AllClientEvents, RunData<any>[]>();
@@ -44,27 +49,28 @@ export class Collectors {
 	}
 
 	create<T extends AllClientEvents>(options: RunData<T>['options']) {
-		const nonce = this.generateRandomUUID(options.event);
+		const event = options.event;
+		const nonce = this.generateRandomUUID(event);
 
-		if (!this.values.has(options.event)) {
-			this.values.set(options.event, []);
+		if (!this.values.has(event)) {
+			this.values.set(event, []);
 		}
 
-		this.values.get(options.event)!.push({
+		this.values.get(event)!.push({
 			options: {
 				...options,
-				name: options.event,
+				event,
 			} as RunData<any>['options'],
 			idle:
 				options.idle && options.idle > 0
 					? setTimeout(() => {
-							return this.delete(options.event, nonce, 'idle');
+							return this.delete(event, nonce, 'idle');
 						}, options.idle)
 					: undefined,
 			timeout:
 				options.timeout && options.timeout > 0
 					? setTimeout(() => {
-							return this.delete(options.event, nonce, 'timeout');
+							return this.delete(event, nonce, 'timeout');
 						}, options.timeout)
 					: undefined,
 			nonce,
@@ -94,12 +100,13 @@ export class Collectors {
 	}
 
 	/**@internal */
-	async run<T extends AllClientEvents>(
+	async run<T extends ClientDispatchEvent>(
 		name: T,
 		raw: Awaited<Parameters<CallbackEventHandler[ParseClientEventName<T>]>[0]>,
 		client: UsingClient,
 	) {
-		const collectors = this.values.get(name);
+		const event = normalizeCollectorEventName(name);
+		const collectors = this.values.get(event);
 		if (!collectors) return;
 
 		const data = (await resolveRawEventData(name, client, raw)) ?? raw;

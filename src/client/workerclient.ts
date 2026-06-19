@@ -46,7 +46,7 @@ import type {
 	WorkerStartResharding,
 } from '../websocket/discord/worker';
 import type { ManagerMessages, ManagerSpawnShards } from '../websocket/discord/workermanager';
-import type { BaseClientOptions, ServicesOptions, StartOptions } from './base';
+import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import type { Client, ClientOptions } from './client';
 import { Collectors } from './collectors';
@@ -163,9 +163,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		if (workerData.mode !== 'custom')
 			(manager ?? process).on('message', (data: ManagerMessages) => this.handleManagerMessages(data));
 
-		this.logger = new Logger({
-			name: `[Worker #${workerData.workerId}]`,
-		});
+		this.configureLogger({ name: `[Worker #${workerData.workerId}]` }, this.options.logger);
 
 		if (workerData.debug) {
 			this.debugger = new Logger({
@@ -194,7 +192,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	async loadEvents(dir?: string) {
-		dir ??= await this.getRC().then(x => x.locations.events);
+		dir ??= await this.getRC<InternalRuntimeConfig>().then(x => x.locations.events);
 		await runPluginHooks(this, 'events:beforeLoad', this, dir);
 		if (dir) {
 			await this.events.load(dir);
@@ -624,7 +622,13 @@ export function generateShardInfo(shard: Shard): WorkerShardInfo {
 export interface WorkerClientOptions extends BaseClientOptions {
 	commands?: NonNullable<Client['options']>['commands'];
 	handlePayload?: ShardManagerOptions['handlePayload'];
+	/**
+	 * @deprecated Use shard disconnect events instead. Injected ShardManager callbacks can double-fire.
+	 */
 	onShardDisconnect?: ShardManagerOptions['onShardDisconnect'];
+	/**
+	 * @deprecated Use shard reconnect events instead. Injected ShardManager callbacks can double-fire.
+	 */
 	onShardReconnect?: ShardManagerOptions['onShardReconnect'];
 	gateway?: ClientOptions['gateway'];
 	postMessage?: (body: unknown) => Awaitable<unknown>;

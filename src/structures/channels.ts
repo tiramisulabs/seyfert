@@ -1,5 +1,6 @@
-import { Collection, Formatter, type RawFile, type ReturnCache } from '..';
-import { Attachment, Embed, PollBuilder, resolveAttachment } from '../builders';
+import type { RawFile } from '../api/shared';
+import { Attachment, PollBuilder, resolveAttachment } from '../builders';
+import type { ReturnCache } from '../cache';
 import type { Overwrites } from '../cache/resources/overwrites';
 import {
 	type BaseChannelStructure,
@@ -21,21 +22,21 @@ import {
 	type VoiceChannelStructure,
 	type VoiceStateStructure,
 	type WebhookStructure,
-} from '../client';
+} from '../client/transformers';
+import { Collection } from '../collection';
 import type { SeyfertChannelMap, UsingClient } from '../commands';
-import {
-	type ChannelShorterOverwriteBody,
-	type CreateInviteFromChannel,
-	type EmojiResolvable,
-	fakePromise,
-	type MessageCreateBodyRequest,
-	type MessageUpdateBodyRequest,
-	type MethodContext,
-	type ObjectToLower,
-	type StringToNumber,
-	type ThreadOnlyCreateBodyRequest,
-	type ToClass,
-} from '../common';
+import { Formatter } from '../common/it/formatter';
+import { fakePromise } from '../common/it/utils';
+import type { ChannelShorterOverwriteBody } from '../common/shorters/channels';
+import type { CreateInviteFromChannel } from '../common/shorters/invites';
+import type { MethodContext } from '../common/types/options';
+import type { EmojiResolvable } from '../common/types/resolvables';
+import type { ObjectToLower, StringToNumber, ToClass } from '../common/types/util';
+import type {
+	MessageCreateBodyRequest,
+	MessageUpdateBodyRequest,
+	ThreadOnlyCreateBodyRequest,
+} from '../common/types/write';
 import { mix } from '../deps/mixer';
 import {
 	type APIChannelBase,
@@ -322,7 +323,7 @@ export class MessagesMethods extends DiscordBase {
 			fetch: (messageId: string, force = false): Promise<MessageStructure> =>
 				ctx.client.messages.fetch(messageId, ctx.channelId, force),
 			purge: (messages: string[], reason?: string) => ctx.client.messages.purge(messages, ctx.channelId, reason),
-			list: (fetchOptions: RESTGetAPIChannelMessagesQuery): Promise<MessageStructure[]> =>
+			list: (fetchOptions?: RESTGetAPIChannelMessagesQuery): Promise<MessageStructure[]> =>
 				ctx.client.messages.list(ctx.channelId, fetchOptions),
 		};
 	}
@@ -359,7 +360,7 @@ export class MessagesMethods extends DiscordBase {
 		const payload = {
 			allowed_mentions: self.options?.allowedMentions,
 			...body,
-			embeds: body.embeds?.map(x => (x instanceof Embed ? x.toJSON() : x)),
+			embeds: body.embeds?.map(x => ('toJSON' in x ? x.toJSON() : x)),
 			components: body.components?.map(x => ('toJSON' in x ? x.toJSON() : x)) ?? undefined,
 			poll: poll ? (poll instanceof PollBuilder ? poll.toJSON() : poll) : undefined,
 		};

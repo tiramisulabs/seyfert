@@ -17,6 +17,9 @@ export type RegisteredMiddlewares = SeyfertRegistry extends {
 	? M
 	: {};
 export type ResolvedRegisteredMiddlewares = RegisteredMiddlewares & RegisteredPluginMiddlewares;
+type MiddlewareKey = keyof ResolvedRegisteredMiddlewares;
+
+export type InferMiddlewares<T extends readonly MiddlewareKey[]> = T[number];
 
 export type CommandDeclareOptions =
 	| DecoratorDeclareOptions
@@ -62,17 +65,30 @@ export function LocalesT(name?: FlatObjectKeys<DefaultLocale>, description?: Fla
 		};
 }
 
-export function GroupsT(
-	groups: Record<
-		string /* name for group*/,
-		{
-			name?: FlatObjectKeys<DefaultLocale>;
-			description?: FlatObjectKeys<DefaultLocale>;
-			defaultDescription: string;
-			aliases?: string[];
-		}
-	>,
-) {
+export type TranslatedGroupDefinition = {
+	name?: FlatObjectKeys<DefaultLocale>;
+	description?: FlatObjectKeys<DefaultLocale>;
+	defaultDescription: string;
+	aliases?: string[];
+};
+
+export type LocalizedGroupDefinition = {
+	name?: [language: LocaleString, value: string][];
+	description?: [language: LocaleString, value: string][];
+	defaultDescription: string;
+	aliases?: string[];
+};
+
+export type GroupDefinition = TranslatedGroupDefinition | LocalizedGroupDefinition;
+export type GroupDefinitions = Record<string, LocalizedGroupDefinition> | Record<string, TranslatedGroupDefinition>;
+
+export function defineGroups<const T extends Record<string, LocalizedGroupDefinition>>(groups: T): T;
+export function defineGroups<const T extends Record<string, TranslatedGroupDefinition>>(groups: T): T;
+export function defineGroups(groups: GroupDefinitions): GroupDefinitions {
+	return groups;
+}
+
+export function GroupsT<const T extends Record<string /* name for group*/, TranslatedGroupDefinition>>(groups: T) {
 	return <T extends { new (...args: any[]): object }>(target: T) =>
 		class extends target {
 			__tGroups = groups;
@@ -88,17 +104,7 @@ export function GroupsT(
 		};
 }
 
-export function Groups(
-	groups: Record<
-		string /* name for group*/,
-		{
-			name?: [language: LocaleString, value: string][];
-			description?: [language: LocaleString, value: string][];
-			defaultDescription: string;
-			aliases?: string[];
-		}
-	>,
-) {
+export function Groups<const T extends Record<string /* name for group*/, LocalizedGroupDefinition>>(groups: T) {
 	return <T extends { new (...args: any[]): object }>(target: T) =>
 		class extends target {
 			groups = groups;
@@ -114,13 +120,34 @@ export function Groups(
 		};
 }
 
-export function Group(groupName: string) {
+type GroupDecorator = <T extends { new (...args: any[]): object }>(
+	target: T,
+) => {
+	new (...args: any[]): { group: string };
+} & T;
+
+type OptionsDecorator = <T extends { new (...args: any[]): object }>(
+	target: T,
+) => {
+	new (...args: any[]): { options: SubCommand[] | CommandOption[] };
+} & T;
+
+type LowercaseOptionsRecord<T extends OptionsRecord> = T & {
+	[K in keyof T as K extends string ? (K extends Lowercase<K> ? never : K) : never]: never;
+};
+
+export function Group(groupName: string): GroupDecorator;
+export function Group<const T extends GroupDefinitions>(_groupsDef: T, groupName: keyof T & string): GroupDecorator;
+export function Group(groupsDefOrGroupName: GroupDefinitions | string, groupName?: string) {
+	const resolvedGroupName = typeof groupsDefOrGroupName === 'string' ? groupsDefOrGroupName : groupName!;
 	return <T extends { new (...args: any[]): object }>(target: T) =>
 		class extends target {
-			group = groupName;
+			group = resolvedGroupName;
 		};
 }
 
+export function Options(options: (new () => SubCommand)[]): OptionsDecorator;
+export function Options<const T extends OptionsRecord>(options: LowercaseOptionsRecord<T>): OptionsDecorator;
 export function Options(options: (new () => SubCommand)[] | OptionsRecord) {
 	return <T extends { new (...args: any[]): object }>(target: T) =>
 		class extends target {
@@ -142,7 +169,11 @@ export function AutoLoad() {
 		};
 }
 
-export function Middlewares(cbs: readonly (keyof ResolvedRegisteredMiddlewares)[]) {
+export function middlewares<const T extends readonly MiddlewareKey[]>(...cbs: T) {
+	return cbs;
+}
+
+export function Middlewares(cbs: readonly MiddlewareKey[]) {
 	return <T extends { new (...args: any[]): object }>(target: T) =>
 		class extends target {
 			middlewares = cbs;

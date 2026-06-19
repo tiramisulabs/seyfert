@@ -1,5 +1,5 @@
 import { inflateSync } from 'node:zlib';
-import { delay, hasIntent, Logger, LogLevels, type MakeRequired, MergeOptions, SeyfertError } from '../../common';
+import { delay, hasIntent, Logger, LogLevels, type MakePresent, MergeOptions, SeyfertError } from '../../common';
 import {
 	type APIGuildMember,
 	GatewayCloseCodes,
@@ -50,7 +50,7 @@ export class Shard {
 	bucket: DynamicBucket;
 	offlineSendQueue: ((_?: unknown) => void)[] = [];
 	pendingGuilds?: Set<string>;
-	options: MakeRequired<ShardOptions, 'properties' | 'ratelimitOptions' | 'reconnectTimeout' | 'connectionTimeout'>;
+	options: MakePresent<ShardOptions, 'properties' | 'ratelimitOptions' | 'reconnectTimeout' | 'connectionTimeout'>;
 	isReady = false;
 
 	connectionTimeout?: NodeJS.Timeout;

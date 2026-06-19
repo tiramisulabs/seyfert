@@ -22,10 +22,25 @@ import {
 	type HttpMethods,
 	type RawFile,
 	type RequestHeaders,
+	type RestObserveOptions,
+	type RestObserver,
+	type RestObserverDisposer,
+	type RestObserverEntry,
 } from './shared';
 import { isBufferLike } from './utils/utils';
 
-export interface ApiHandler {
+export type {
+	RestObserveOptions,
+	RestObserver,
+	RestObserverDisposer,
+	RestObserverEntry,
+	RestObserverFailPayload,
+	RestObserverRatelimitPayload,
+	RestObserverRequestPayload,
+	RestObserverSuccessPayload,
+} from './shared';
+
+export interface ApiHandler<TClient = unknown> {
 	/* @internal */
 	_proxy_?: APIRoutes;
 	debugger?: Logger;
@@ -41,39 +56,7 @@ export type OnFailRequestCallback = (
 	error: unknown,
 	statusCode?: number,
 ) => Awaitable<any>;
-export interface RestObserverRequestPayload {
-	readonly client: unknown;
-	readonly method: HttpMethods;
-	readonly url: `/${string}`;
-	readonly request: Readonly<ApiRequestOptions>;
-}
-
-export interface RestObserverSuccessPayload extends RestObserverRequestPayload {
-	readonly response: Response;
-}
-
-export interface RestObserverFailPayload extends RestObserverRequestPayload {
-	readonly error: unknown;
-	readonly statusCode?: number;
-}
-
-export interface RestObserverRatelimitPayload extends RestObserverRequestPayload {
-	readonly response: Response;
-}
-
-export interface RestObserver {
-	onRequest?(payload: RestObserverRequestPayload): Awaitable<unknown>;
-	onSuccess?(payload: RestObserverSuccessPayload): Awaitable<unknown>;
-	onFail?(payload: RestObserverFailPayload): Awaitable<unknown>;
-	onRatelimit?(payload: RestObserverRatelimitPayload): Awaitable<unknown>;
-}
-
-export interface RestObserverEntry {
-	readonly plugin: string;
-	readonly observer: RestObserver;
-}
-
-export class ApiHandler {
+export class ApiHandler<TClient = unknown> {
 	options: ApiHandlerInternalOptions;
 	globalBlock = false;
 	ratelimits = new Map<string, Bucket>();
@@ -84,7 +67,8 @@ export class ApiHandler {
 	onSuccessRequest?: OnSuccessRequestCallback;
 	onFailRequest?: OnFailRequestCallback;
 	pluginRestObserverProvider?: () => readonly RestObserverEntry[];
-	pluginRestObserverClient?: unknown;
+	pluginRestObserverClient?: TClient;
+	private restObservers = new Map<symbol, RestObserverEntry<TClient>>();
 
 	constructor(options: ApiHandlerOptions) {
 		this.options = {
@@ -130,6 +114,18 @@ export class ApiHandler {
 		}
 	}
 
+	observe(observer: RestObserver<TClient>, _opts?: RestObserveOptions): RestObserverDisposer {
+		const id = Symbol('rest-observer');
+		this.restObservers.set(id, { observer });
+		let disposed = false;
+
+		return () => {
+			if (disposed) return;
+			disposed = true;
+			this.restObservers.delete(id);
+		};
+	}
+
 	set debug(active: boolean) {
 		this.debugger = active
 			? new Logger({
@@ -168,8 +164,7 @@ export class ApiHandler {
 	}
 
 	private async notifyRequest(method: HttpMethods, url: `/${string}`, request: ApiRequestOptions) {
-		await this.notifyPluginRestObservers(
-			'onRequest',
+		await this.notifyRestObservers('onRequest', () =>
 			freezeRestPayload({
 				client: this.pluginRestObserverClient,
 				method,
@@ -185,8 +180,7 @@ export class ApiHandler {
 		response: Response,
 		request: ApiRequestOptions,
 	) {
-		await this.notifyPluginRestObservers(
-			'onSuccess',
+		await this.notifyRestObservers('onSuccess', () =>
 			freezeRestPayload({
 				client: this.pluginRestObserverClient,
 				method,
@@ -209,8 +203,7 @@ export class ApiHandler {
 		statusCode: number | undefined,
 		request: ApiRequestOptions,
 	) {
-		await this.notifyPluginRestObservers(
-			'onFail',
+		await this.notifyRestObservers('onFail', () =>
 			freezeRestPayload({
 				client: this.pluginRestObserverClient,
 				method,
@@ -233,8 +226,7 @@ export class ApiHandler {
 		method: HttpMethods,
 		url: `/${string}`,
 	) {
-		await this.notifyPluginRestObservers(
-			'onRatelimit',
+		await this.notifyRestObservers('onRatelimit', () =>
 			freezeRestPayload({
 				client: this.pluginRestObserverClient,
 				method,
@@ -250,14 +242,35 @@ export class ApiHandler {
 		}
 	}
 
-	private async notifyPluginRestObservers(name: keyof RestObserver, payload: unknown) {
-		for (const entry of this.pluginRestObserverProvider?.() ?? []) {
+	private async notifyRestObservers(name: keyof RestObserver, createPayload: () => unknown) {
+		let payload: unknown;
+		let hasPayload = false;
+		const getPayload = () => {
+			if (!hasPayload) {
+				payload = createPayload();
+				hasPayload = true;
+			}
+			return payload;
+		};
+
+		await this.notifyRestObserverEntries(name, getPayload, this.pluginRestObserverProvider?.() ?? []);
+		await this.notifyRestObserverEntries(name, getPayload, this.restObservers.values());
+	}
+
+	private async notifyRestObserverEntries(
+		name: keyof RestObserver,
+		getPayload: () => unknown,
+		entries: Iterable<RestObserverEntry>,
+	) {
+		for (const entry of entries) {
 			const observer = entry.observer[name];
 			if (!observer) continue;
+			const payload = getPayload();
 			try {
 				await (observer as (payload: unknown) => Awaitable<unknown>)(payload);
 			} catch (error) {
-				this.debugger?.warn(`[plugin:${entry.plugin}] REST observer "${name}" callback error`, error);
+				const source = entry.plugin ? `[plugin:${entry.plugin}] ` : '';
+				this.debugger?.warn(`${source}REST observer "${name}" callback error`, error);
 			}
 		}
 	}
@@ -289,11 +302,20 @@ export class ApiHandler {
 				'User-Agent': this.options.userAgent,
 			} satisfies RequestHeaders;
 
-			const { data, finalUrl } = this.parseRequest({
-				url,
-				headers,
-				request: { ...request, auth },
-			});
+			let data: string | FormData | undefined;
+			let finalUrl: `/${string}`;
+
+			try {
+				({ data, finalUrl } = this.parseRequest({
+					url,
+					headers,
+					request: { ...request, auth },
+				}));
+			} catch (err) {
+				next();
+				reject(err);
+				return;
+			}
 
 			let response: Response;
 
@@ -479,10 +501,7 @@ export class ApiHandler {
 		next();
 		await delay(wait);
 		return this.request(method, url, {
-			body: request.body,
-			auth: request.auth,
-			reason: request.reason,
-			route: request.route,
+			...request,
 			unshift: true,
 		});
 	}
@@ -539,19 +558,13 @@ export class ApiHandler {
 			await delay(retryAfter);
 			next();
 			return this.request(method, url, {
-				body: request.body,
-				auth: request.auth,
-				reason: request.reason,
-				route: request.route,
+				...request,
 				unshift: true,
 			});
 		}
 		next();
 		return this.request(method, url, {
-			body: request.body,
-			auth: request.auth,
-			reason: request.reason,
-			route: request.route,
+			...request,
 			unshift: true,
 		});
 	}
@@ -610,7 +623,11 @@ export class ApiHandler {
 		let finalUrl = options.url;
 		let data: string | FormData | undefined;
 		if (options.request.auth) {
-			options.headers.Authorization = `${this.options.type} ${options.request.token || this.options.token}`;
+			const token = options.request.token || this.options.token;
+			if (token === 'INVALID' || typeof token !== 'string' || token.length === 0) {
+				throw new SeyfertError('INVALID_TOKEN', { metadata: { detail: 'token is not a string' } });
+			}
+			options.headers.Authorization = `${this.options.type} ${token}`;
 		}
 		if (options.request.query) {
 			const params = new URLSearchParams();
@@ -676,7 +693,7 @@ export class ApiHandler {
 
 		if (method === 'DELETE' && route.endsWith('/messages/:id')) {
 			const messageID = url.slice(url.lastIndexOf('/') + 1);
-			const createdAt = Number(snowflakeToTimestamp(messageID));
+			const createdAt = snowflakeToTimestamp(messageID);
 			if (Date.now() - createdAt >= 1000 * 60 * 60 * 24 * 14) {
 				method += '_OLD';
 			} else if (Date.now() - createdAt <= 1000 * 10) {
@@ -719,6 +736,10 @@ export type RestArgumentsNoBody<Q extends never | Record<string, any> = never> =
 	query?: Q;
 	files?: RawFile[];
 } & RequestOptions;
+
+export type RestArgumentsRequiredQuery<Q extends Record<string, any>> = Omit<RestArgumentsNoBody<Q>, 'query'> & {
+	query: Q;
+};
 
 function freezeRestPayload<T extends object>(payload: T): Readonly<T> {
 	return Object.freeze(payload);

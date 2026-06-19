@@ -62,6 +62,25 @@ describe('test limited memory cache adapter', () => {
 		});
 		return client.cache.testAdapter();
 	});
+
+	test('rebuilds resources when disabledCache is explicitly false', () => {
+		const client = new Client({
+			getRC: () => ({
+				locations: {
+					base: '',
+					output: '',
+				},
+				intents,
+				token: '',
+			}),
+		});
+
+		client.setServices({ cache: { disabledCache: true } });
+		assert.equal(client.cache.users, undefined);
+
+		client.setServices({ cache: { disabledCache: false } });
+		assert.notEqual(client.cache.users, undefined);
+	});
 });
 
 describe('test limited memory cache adapter indexing', () => {
