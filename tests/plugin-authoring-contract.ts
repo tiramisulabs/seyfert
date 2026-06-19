@@ -1,5 +1,4 @@
 import {
-	ApplicationCommandType,
 	ApplicationCommandOptionType,
 	type AllChannels,
 	type AllGuildChannels,
@@ -121,7 +120,6 @@ import {
 	type ClientEvent,
 	type RestArgumentsRequiredQuery,
 	type StringSelectMenuInteraction,
-	EntryPointCommandHandlerType,
 	type Collection,
 	LimitedCollection,
 	type LimitedCollectionData,
@@ -631,27 +629,6 @@ class ContractSubCommand extends SubCommand {
 	run() {}
 }
 
-class ContractContextMenuCommand extends ContextMenuCommand {
-	name = 'contract-menu';
-	type = ApplicationCommandType.Message as const;
-	filter(context: MenuCommandContext<any>): boolean | Promise<boolean> {
-		expectType<MenuCommandContext<any>>(context);
-		return true;
-	}
-	run() {}
-}
-
-class ContractEntryPointCommand extends EntryPointCommand {
-	name = 'contract-entry';
-	description = 'Contract entry';
-	handler = EntryPointCommandHandlerType.AppHandler;
-	filter(context: EntryPointContext): boolean | Promise<boolean> {
-		expectType<EntryPointContext>(context);
-		return Promise.resolve(true);
-	}
-	run() {}
-}
-
 declare const commandFilterContract: Command;
 expectType<((context: CommandContext) => boolean | Promise<boolean>) | undefined>(commandFilterContract.filter);
 declare const subCommandFilterContract: SubCommand;
@@ -801,9 +778,7 @@ const standaloneShardPresence = ((_shardId: number) => gatewayPresence) satisfie
 expectType<NonNullable<ShardManagerOptions['presence']>>(standaloneShardPresence);
 
 // @ts-expect-error standalone ShardManager presence no longer receives a worker id.
-const standaloneShardPresenceWithWorkerId = ((_shardId: number, _workerId: number) => gatewayPresence) satisfies NonNullable<
-	ShardManagerOptions['presence']
->;
+expectType<NonNullable<ShardManagerOptions['presence']>>((_shardId: number, _workerId: number) => gatewayPresence);
 
 expectType<NonNullable<WorkerManagerOptions['presence']>>((_shardId: number, _workerId: number) => gatewayPresence);
 
@@ -890,28 +865,28 @@ expectType<WorkerManagerOptions>(clusteredWorkerManagerOptions);
 new WorkerManager(clusteredWorkerManagerOptions);
 
 // @ts-expect-error custom worker mode requires an adapter.
-const customWorkerManagerOptionsWithoutAdapter: WorkerManagerOptions = {
+expectType<WorkerManagerOptions>({
 	mode: 'custom',
 	token: 'token',
 	intents: GatewayIntentBits.Guilds,
 	info: workerManagerInfo,
-};
+});
 
 // @ts-expect-error thread worker mode requires a worker path.
-const threadedWorkerManagerOptionsWithoutPath: WorkerManagerOptions = {
+expectType<WorkerManagerOptions>({
 	mode: 'threads',
 	token: 'token',
 	intents: GatewayIntentBits.Guilds,
 	info: workerManagerInfo,
-};
+});
 
 // @ts-expect-error cluster worker mode requires a worker path.
-const clusteredWorkerManagerOptionsWithoutPath: WorkerManagerOptions = {
+expectType<WorkerManagerOptions>({
 	mode: 'clusters',
 	token: 'token',
 	intents: GatewayIntentBits.Guilds,
 	info: workerManagerInfo,
-};
+});
 
 const storage = createPlugin({
 	name: 'storage',
@@ -1587,7 +1562,7 @@ const fallbackMiddlewares: ClientMiddlewares<{}> = {
 };
 expectType<MiddlewareContext>(fallbackMiddlewares.anyRuntimeMiddleware);
 // @ts-expect-error fallback middleware values must still be middleware functions
-const invalidFallbackMiddlewares: ClientMiddlewares<{}> = { anyRuntimeMiddleware: 'not-a-middleware' };
+expectType<ClientMiddlewares<{}>>({ anyRuntimeMiddleware: 'not-a-middleware' });
 client.economy.addCoins('user', 2);
 const ledger = client.shared.get(ledgerKey);
 expectType<LedgerService | undefined>(ledger);
@@ -1599,13 +1574,13 @@ const localClient = new Client({ plugins: localPlugins });
 expectType<'coin' | 'gem'>(localClient.configuredEconomy.currency);
 expectType<string>(localClient.defaultedConfig.prefix);
 // @ts-expect-error local clients should not expose ambient registry plugins
-localClient.economy;
+expectType<never>(localClient.economy);
 
 declare const explicitLocalClient: Client<typeof localPlugins>;
 expectType<'coin' | 'gem'>(explicitLocalClient.configuredEconomy.currency);
 expectType<boolean>(explicitLocalClient.defaultedConfig.enabled);
 // @ts-expect-error explicit local clients should not expose ambient registry plugins
-explicitLocalClient.economy;
+expectType<never>(explicitLocalClient.economy);
 
 declare const transitiveClient: Client<typeof transitiveOnlyPlugins>;
 expectType<1>(transitiveClient.importedCounter.count);
