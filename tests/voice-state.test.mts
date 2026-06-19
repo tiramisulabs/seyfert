@@ -20,8 +20,5 @@ describe('VoiceState', () => {
 		const voiceState = new VoiceState({} as any, voiceStateData);
 
 		expect(voiceState.isDeafened).toBe(true);
-		expect(voiceState.isCameraOn).toBe(true);
-		expect(voiceState.isStreaming).toBe(false);
-		expect(voiceState.isSuppressed).toBe(true);
 	});
 });

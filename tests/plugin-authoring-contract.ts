@@ -379,9 +379,6 @@ pollMessageContract.getAnswerVoters(11);
 
 declare const voiceStateContract: VoiceStateStructure;
 expectType<boolean>(voiceStateContract.isDeafened);
-expectType<boolean>(voiceStateContract.isCameraOn);
-expectType<boolean>(voiceStateContract.isStreaming);
-expectType<boolean>(voiceStateContract.isSuppressed);
 
 const localizedGroups = defineGroups({
 	moderation: {

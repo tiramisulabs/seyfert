@@ -32,18 +32,6 @@ export class VoiceState extends Base {
 		return this.deaf || this.selfDeaf;
 	}
 
-	get isCameraOn() {
-		return this.selfVideo;
-	}
-
-	get isStreaming() {
-		return this.selfStream ?? false;
-	}
-
-	get isSuppressed() {
-		return this.suppress;
-	}
-
 	async member(force?: boolean): Promise<GuildMemberStructure> {
 		return (this.withMember = await this.client.members.fetch(this.guildId, this.userId, force));
 	}
