@@ -649,6 +649,48 @@ describe('plugin api v3', () => {
 		).toThrow(/Handler kind "commands" is invalid/);
 	});
 
+	test('rejects the event kind on handlers.construct', () => {
+		expect(() =>
+			createBaseClient([
+				createPlugin({
+					name: 'bad-event-construct',
+					register(api) {
+						api.handlers.construct((_constructor, next) => next(), { kinds: ['event'] });
+					},
+				}),
+			]),
+		).toThrow(/Events have no construction step/);
+	});
+
+	test('normalizes loaded events through handlers.transform with kinds:["event"]', () => {
+		const kinds: string[] = [];
+		class InjectableEvent {
+			run() {
+				return 'di';
+			}
+		}
+		const plugin = createPlugin({
+			name: 'event-transform',
+			register(api) {
+				api.handlers.transform((loaded, metadata) => {
+					kinds.push(metadata.kind);
+					if (metadata.kind === 'event' && typeof loaded === 'function') {
+						return { data: { name: 'messageCreate' }, run: () => undefined };
+					}
+				}, { kinds: ['event'] });
+			},
+		});
+		const client = createBaseClient([plugin]);
+		const result = client.runPluginHandlerTransformers('event', InjectableEvent) as {
+			data?: { name?: string };
+			run?: unknown;
+		};
+
+		expect(kinds).toEqual(['event']);
+		expect(typeof result.run).toBe('function');
+		expect(result.data?.name).toBe('messageCreate');
+	});
+
 	test('applies unified handler creators and transformers to file-loaded handlers', async () => {
 		const createKinds: string[] = [];
 		const transformed: string[] = [];

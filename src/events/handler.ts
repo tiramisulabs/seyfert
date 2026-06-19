@@ -261,7 +261,7 @@ export class EventHandler extends CustomEventHandler {
 		}))) {
 			if (!events) continue;
 			for (const i of events) {
-				const instance = this.callback(i);
+				const instance = this.callback(this.client.runPluginHandlerTransformers('event', i));
 				if (!instance) continue;
 				if (typeof instance?.run !== 'function') {
 					this.logger.warn(
@@ -414,7 +414,10 @@ export class EventHandler extends CustomEventHandler {
 		const event = this.values[name];
 		if (!event?.__filePath) return null;
 		delete require.cache[event.__filePath];
-		const imported = await magicImport(event.__filePath).then(x => x.default ?? x);
+		const imported = this.client.runPluginHandlerTransformers(
+			'event',
+			await magicImport(event.__filePath).then(x => x.default ?? x),
+		);
 		imported.__filePath = event.__filePath;
 		this.values[name] = imported;
 		return imported;

@@ -78,7 +78,6 @@ import {
 	type AnySeyfertPlugin,
 	bindClientPlugins,
 	type PluginHandlerConstructor,
-	type PluginHandlerInstance,
 	type PluginHandlerKind,
 	type PluginLoadedMetadata,
 	type PluginMiddlewareDenialMetadata,
@@ -861,13 +860,15 @@ export class BaseClient {
 		)();
 	}
 
-	private runPluginHandlerTransformers<T extends PluginHandlerInstance>(kind: PluginHandlerKind, instance: T): T {
+	/** @internal */
+	runPluginHandlerTransformers<T>(kind: PluginHandlerKind, instance: T): T {
 		let current = instance;
 		const metadata = { kind };
 		for (const contribution of orderedPluginContributions(this.pluginRegistry.handlerTransformers)) {
 			if (!this.matchesPluginHandlerKind(contribution.kinds, kind)) continue;
 			try {
-				current = (contribution.transformer(current, metadata) ?? current) as T;
+				const transform = contribution.transformer as (value: unknown, meta: { kind: PluginHandlerKind }) => unknown;
+				current = (transform(current, metadata) ?? current) as T;
 			} catch (error) {
 				throw wrapPluginError(
 					contribution.record.plugin.name,

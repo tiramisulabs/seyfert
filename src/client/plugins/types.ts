@@ -16,7 +16,7 @@ import type { CommandAutocompleteOption } from '../../commands/applications/chat
 import type { HandleableCommand, HandleableCommandInstance } from '../../commands/handler';
 import type { Awaitable } from '../../common/types/util';
 import type { ComponentCommand, ModalCommand } from '../../components';
-import type { ClientNameEvents, CustomEventsKeys } from '../../events';
+import type { ClientEvent, ClientNameEvents, CustomEventsKeys } from '../../events';
 import type { GatewayEvents, ResolveEventParams } from '../../events/handler';
 import type { AutocompleteInteraction } from '../../structures';
 import type { GatewayDispatchPayload, GatewayIntentBits, GatewaySendPayload, LocaleString } from '../../types';
@@ -330,11 +330,19 @@ export type PluginModalInstance = ModalCommand;
 export type PluginCommandLoadable = HandleableCommand | PluginCommandInstance;
 export type PluginComponentLoadable = HandleableComponent | PluginComponentInstance;
 export type PluginModalLoadable = HandleableModal | PluginModalInstance;
-export type PluginHandlerKind = 'command' | 'component' | 'modal';
+export type PluginHandlerKind = 'command' | 'component' | 'modal' | 'event';
 export type PluginHandlerConstructor = HandleableCommand | HandleableComponent | HandleableModal;
 export type PluginHandlerInstance = PluginCommandInstance | PluginComponentInstance | PluginModalInstance;
-export interface PluginHandlerMetadata {
-	kind: PluginHandlerKind;
+/** Raw event module export: a `createEvent` object, or a class to be normalized into one (e.g. DI containers). */
+export type PluginEventLoadable = ClientEvent | object;
+export interface PluginHandlerValueByKind {
+	command: PluginCommandInstance;
+	component: PluginComponentInstance;
+	modal: PluginModalInstance;
+	event: PluginEventLoadable;
+}
+export interface PluginHandlerMetadata<K extends PluginHandlerKind = PluginHandlerKind> {
+	kind: K;
 }
 export interface PluginHandlerCreator {
 	<T extends PluginHandlerConstructor>(
@@ -344,7 +352,10 @@ export interface PluginHandlerCreator {
 	): InstanceType<T>;
 }
 export interface PluginHandlerTransformer {
-	<T extends PluginHandlerInstance>(instance: T, metadata: PluginHandlerMetadata): T | void;
+	<K extends PluginHandlerKind = PluginHandlerKind>(
+		instance: PluginHandlerValueByKind[K],
+		metadata: PluginHandlerMetadata<K>,
+	): PluginHandlerValueByKind[K] | void;
 }
 export interface PluginHandlerOptions {
 	kinds?: readonly PluginHandlerKind[];

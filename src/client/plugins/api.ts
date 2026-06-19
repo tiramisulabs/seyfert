@@ -78,7 +78,7 @@ const reservedCacheResourceNames = new Set([
 	'voiceStates',
 ]);
 const noReservedPluginKeys = new Set<string>();
-const handlerKinds = new Set(['command', 'component', 'modal']);
+const handlerKinds = new Set(['command', 'component', 'modal', 'event']);
 
 export function createPluginApi(
 	record: PluginRuntimeRecord,
@@ -257,7 +257,7 @@ export function createPluginApi(
 					record,
 					creator,
 					scope,
-					kinds: normalizeHandlerKinds(record, opts),
+					kinds: normalizeHandlerKinds(record, opts, false),
 					order: opts?.order,
 					sequence: nextPluginContributionSequence(registry),
 				});
@@ -583,9 +583,18 @@ function once(dispose: () => void) {
 	};
 }
 
-function normalizeHandlerKinds(record: PluginRuntimeRecord, opts: PluginHandlerOptions | undefined) {
+function normalizeHandlerKinds(record: PluginRuntimeRecord, opts: PluginHandlerOptions | undefined, allowEvent = true) {
 	if (!opts?.kinds) return undefined;
 	for (const kind of opts.kinds) {
+		if (kind === 'event' && !allowEvent) {
+			throw createPluginConflictError(
+				record.plugin.name,
+				'handlers.kinds',
+				record.index,
+				'Events have no construction step; use handlers.transform with kinds:["event"].',
+				record.plugin.instanceId,
+			);
+		}
 		if (handlerKinds.has(kind)) continue;
 		throw createPluginConflictError(
 			record.plugin.name,
