@@ -1,7 +1,7 @@
 import { promises } from 'node:fs';
 import { dirname } from 'node:path';
 import type { Logger, NulleableCoalising, OmitInsert } from '../common';
-import { BaseHandler, isCloudfareWorker, SeyfertError } from '../common';
+import { BaseHandler, isCloudfareWorker, magicImport, SeyfertError } from '../common';
 import { PermissionsBitField } from '../structures/extra/Permissions';
 import {
 	type APIApplicationCommandChannelOption,
@@ -20,6 +20,10 @@ import type { EntryPointCommand } from '.';
 import { Command, type CommandOption, SubCommand } from './applications/chat';
 import { ContextMenuCommand } from './applications/menu';
 import { IgnoreCommand, type UsingClient } from './applications/shared';
+
+type PluginCommandLoadOptionsProvider = {
+	createPluginCommandLoadOptions?: () => CommandLoadOptions;
+};
 
 export class CommandHandler extends BaseHandler {
 	values: (Command | ContextMenuCommand)[] = [];
@@ -40,10 +44,34 @@ export class CommandHandler extends BaseHandler {
 				metadata: { detail: 'Reload in Cloudflare worker is not supported' },
 			});
 		}
-		if (typeof resolve === 'string') {
-			return this.values.find(x => x.name === resolve)?.reload();
+		const command = typeof resolve === 'string' ? this.values.find(x => x.name === resolve) : resolve;
+		if (!command?.__filePath) return null;
+
+		delete require.cache[command.__filePath];
+		const imported = await magicImport(command.__filePath).then(x => x.default ?? x);
+		const options = (this.client as PluginCommandLoadOptionsProvider).createPluginCommandLoadOptions?.() ?? {};
+		let commandInstance = this.onCommand(imported, options.create);
+		if (!commandInstance || commandInstance instanceof SubCommand) return null;
+
+		commandInstance.__filePath = command.__filePath;
+		let prepared = this.prepareCommand(commandInstance);
+		if (!prepared) return null;
+
+		const wrapped = options.transform?.(prepared) ?? prepared;
+		if (!wrapped) return null;
+		if (wrapped !== prepared) {
+			wrapped.__filePath ??= command.__filePath;
+			prepared = this.prepareCommand(wrapped);
+			if (!prepared) return null;
 		}
-		return resolve.reload();
+
+		const index = this.values.indexOf(command);
+		if ('handler' in prepared && prepared.handler) {
+			this.entryPoint = prepared as EntryPointCommand;
+		} else if (index >= 0) {
+			this.values[index] = prepared as Command | ContextMenuCommand;
+		}
+		return prepared;
 	}
 
 	async reloadAll(stopIfFail = true) {
@@ -244,36 +272,42 @@ export class CommandHandler extends BaseHandler {
 		return false;
 	}
 
-	set(commands: SeteableCommand[], transform?: CommandLoadTransformer) {
+	private prepareCommand(commandInstance: HandleableCommandInstance) {
+		if (commandInstance instanceof SubCommand) return false;
+		commandInstance.props ??= this.client.options.commands?.defaults?.props ?? {};
+		const isCommand = this.stablishCommandDefaults(commandInstance);
+		if (isCommand) {
+			for (const option of isCommand.options ?? []) {
+				if (option instanceof SubCommand) this.stablishSubCommandDefaults(isCommand, option);
+			}
+		} else this.stablishContextCommandDefaults(commandInstance);
+		this.parseLocales(commandInstance);
+		return commandInstance;
+	}
+
+	private normalizeLoadOptions(options?: CommandLoadTransformer | CommandLoadOptions): CommandLoadOptions {
+		return typeof options === 'function' ? { transform: options } : (options ?? {});
+	}
+
+	set(commands: SeteableCommand[], optionsOrTransform?: CommandLoadTransformer | CommandLoadOptions) {
+		const options = this.normalizeLoadOptions(optionsOrTransform);
 		const added: (Command | ContextMenuCommand | EntryPointCommand)[] = [];
 		this.values ??= [];
-		const prepare = (commandInstance: HandleableCommandInstance) => {
-			if (commandInstance instanceof SubCommand) return false;
-			commandInstance.props = this.client.options.commands?.defaults?.props ?? {};
-			const isCommand = this.stablishCommandDefaults(commandInstance);
-			if (isCommand) {
-				for (const option of isCommand.options ?? []) {
-					if (option instanceof SubCommand) this.stablishSubCommandDefaults(isCommand, option);
-				}
-			} else this.stablishContextCommandDefaults(commandInstance);
-			this.parseLocales(commandInstance);
-			return commandInstance;
-		};
 		for (const command of commands) {
 			let commandInstance: ReturnType<typeof this.onCommand>;
 			try {
-				commandInstance = this.onCommand(command);
+				commandInstance = this.onCommand(command, options.create);
 				if (!commandInstance) continue;
 			} catch (e) {
 				this.logger.warn(`${command.name} ins't a resolvable command`);
 				this.logger.error(e);
 				continue;
 			}
-			const prepared = prepare(commandInstance);
+			const prepared = this.prepareCommand(commandInstance);
 			if (!prepared) continue;
-			const wrapped = transform?.(prepared) ?? prepared;
+			const wrapped = options.transform?.(prepared) ?? prepared;
 			if (!wrapped) continue;
-			commandInstance = wrapped === prepared ? prepared : prepare(wrapped);
+			commandInstance = wrapped === prepared ? prepared : this.prepareCommand(wrapped);
 			if (!commandInstance) continue;
 			if ('handler' in commandInstance && commandInstance.handler) {
 				this.entryPoint = commandInstance as EntryPointCommand;

@@ -166,6 +166,54 @@ describe('client plugins', () => {
 		assert.deepEqual(calls, ['plugin', 'fallback']);
 	});
 
+	test('api.commands.defaults composes props with user props last', () => {
+		const plugin: SeyfertPlugin = {
+			name: 'props',
+			register(api) {
+				api.commands.defaults({ props: { fromPlugin: true, winner: 'plugin' } });
+			},
+		};
+
+		const resolved = resolveClientPlugins(
+			{ commands: { defaults: { props: { fromDefault: true, winner: 'default' } } } },
+			{ plugins: [plugin], commands: { defaults: { props: { fromUser: true, winner: 'user' } } } },
+		);
+
+		assert.deepEqual(resolved.options.commands?.defaults?.props, {
+			fromDefault: true,
+			fromPlugin: true,
+			fromUser: true,
+			winner: 'user',
+		});
+	});
+
+	test('component and modal defaults compose plugin, user, and suppressed fallback hooks', async () => {
+		const calls: string[] = [];
+		const plugin: SeyfertPlugin = {
+			name: 'component-modal-defaults',
+			register(api) {
+				api.components.defaults({ onRunError: () => calls.push('component-plugin') });
+				api.modals.defaults({ onRunError: () => calls.push('modal-plugin') }, { suppressDefault: true });
+			},
+		};
+
+		const resolved = resolveClientPlugins(
+			{
+				components: { defaults: { onRunError: () => calls.push('component-fallback') } },
+				modals: { defaults: { onRunError: () => calls.push('modal-fallback') } },
+			},
+			{
+				plugins: [plugin],
+				components: { defaults: { onRunError: () => calls.push('component-user') } },
+			},
+		);
+
+		await resolved.options.components?.defaults?.onRunError?.({} as never, new Error('boom'));
+		await resolved.options.modals?.defaults?.onRunError?.({} as never, new Error('boom'));
+
+		assert.deepEqual(calls, ['component-plugin', 'component-user', 'modal-plugin']);
+	});
+
 	test('plugin teardown runs in LIFO order and collects errors', async () => {
 		const calls: string[] = [];
 		const firstError = new Error('first failed');

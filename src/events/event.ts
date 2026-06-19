@@ -1,11 +1,13 @@
 import type { PluginLoadedMetadata, PluginUploadCommandsMetadata } from '../client/plugins';
-import type { Command, ContextMenuCommand, UsingClient } from '../commands';
+import type { Command, ContextMenuCommand, EntryPointCommand, UsingClient } from '../commands';
 import type { Awaitable } from '../common';
 import type { ComponentCommands } from '../components/handler';
 import type { ClientEvents } from './hooks';
 
 export interface CustomEvents {
-	commandsLoaded: (metadata: PluginLoadedMetadata<'commands', Command | ContextMenuCommand>) => void;
+	commandsLoaded: (
+		metadata: PluginLoadedMetadata<'commands', Command | ContextMenuCommand | EntryPointCommand>,
+	) => void;
 	componentsLoaded: (metadata: PluginLoadedMetadata<'components', ComponentCommands>) => void;
 	uploadCommands: (metadata: PluginUploadCommandsMetadata) => void;
 }

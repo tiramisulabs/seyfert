@@ -1,5 +1,6 @@
 import { MergeOptions } from '../common';
 import type { Awaitable } from '../common/types/util';
+import type { GatewayDispatchPayload } from '../types';
 import type { BaseClient, BaseClientOptions, ContextScope, ContextScopeContext } from './base';
 import { type GatewayIntentInput, resolveGatewayIntents } from './intents';
 import { createPluginApi } from './plugins/api';
@@ -16,6 +17,7 @@ import {
 	bindPluginClient,
 	cleanupPluginDynamicContributionMutations,
 	cleanupPluginEventListeners,
+	clonePluginOptions,
 	createPluginContextFragment,
 	createPluginRuntimeRegistry,
 	installPluginClientMaps,
@@ -24,6 +26,7 @@ import {
 	type PluginOptionContribution,
 	type PluginRuntimeRegistry,
 	pluginIdentity,
+	readonlyPluginOptions,
 	resolvePluginIntents,
 	runPluginRegister,
 	validatePluginRequirements,
@@ -34,6 +37,7 @@ import {
 	disposePluginSharedValues,
 } from './plugins/shared';
 
+export type { SeyfertPluginErrorCode } from './plugins/errors';
 export { SeyfertPluginAggregateError, SeyfertPluginError } from './plugins/errors';
 export { createSharedKey } from './plugins/shared';
 export { PluginOrder } from './plugins/types';
@@ -46,7 +50,8 @@ import type {
 	PluginClientMap,
 	PluginCommandObserver,
 	PluginContextMap,
-	PluginGatewayPayload,
+	PluginGatewayDispatchNext,
+	PluginGatewaySendPayload,
 	PluginHookName,
 	PluginHookPayload,
 	PluginMiddlewareMap,
@@ -59,6 +64,7 @@ import type {
 	SeyfertPluginApi,
 	SeyfertPluginClient,
 	SeyfertPluginOptions,
+	SeyfertPluginTeardownApi,
 } from './plugins/types';
 
 export type {
@@ -75,6 +81,7 @@ export type {
 	PluginCacheResourceOptions,
 	PluginClientMap,
 	PluginCommandContributionOptions,
+	PluginCommandLoadable,
 	PluginCommandObserver,
 	PluginCommandObserverCommand,
 	PluginCommandObserverContext,
@@ -82,13 +89,19 @@ export type {
 	PluginContextMap,
 	PluginContextMapOf,
 	PluginContextOf,
+	PluginContributionOptions,
 	PluginDiagnosticCode,
 	PluginDiagnosticMessage,
 	PluginDiagnosticSeverity,
 	PluginDiagnostics,
+	PluginDisposer,
+	PluginEventErrorHandler,
 	PluginExtensionOf,
-	PluginGatewayPayload,
-	PluginGatewayPayloadWrapper,
+	PluginGatewayDispatchInterceptor,
+	PluginGatewayDispatchMeta,
+	PluginGatewayDispatchNext,
+	PluginGatewaySendPayload,
+	PluginGatewaySendPayloadWrapper,
 	PluginHandlerConstructor,
 	PluginHandlerCreator,
 	PluginHandlerInstance,
@@ -101,10 +114,13 @@ export type {
 	PluginHookPayload,
 	PluginHookPayloadFor,
 	PluginIntentResolvable,
+	PluginLangOptions,
+	PluginLifecyclePhase,
 	PluginLifecycleStatus,
 	PluginLoadedMetadata,
 	PluginMiddlewareDenialMetadata,
 	PluginMiddlewareMap,
+	PluginMiddlewareOptions,
 	PluginMiddlewaresMapOf,
 	PluginMiddlewaresOf,
 	PluginOrderOpt,
@@ -135,6 +151,7 @@ export type {
 	SeyfertPluginClient,
 	SeyfertPluginHooks,
 	SeyfertPluginOptions,
+	SeyfertPluginTeardownApi,
 	SeyfertRegistry,
 	SharedKey,
 	SharedValue,
@@ -163,7 +180,7 @@ type CreatePluginInputBase<
 	options?(current: Readonly<BaseClientOptions>): SeyfertPluginOptions;
 	register?(api: SeyfertPluginApi<M, ExtendOf<I> & E>): void;
 	setup?(client: SeyfertPluginClient & ExtendOf<I> & E, api?: SeyfertPluginApi<M, ExtendOf<I> & E>): Awaitable<void>;
-	teardown?(client: SeyfertPluginClient & ExtendOf<I> & E, api?: SeyfertPluginApi<M, ExtendOf<I> & E>): Awaitable<void>;
+	teardown?(client: SeyfertPluginClient & ExtendOf<I> & E, api?: SeyfertPluginTeardownApi): Awaitable<void>;
 };
 
 type CreatePluginReservedKey =
@@ -247,24 +264,18 @@ export function createPlugin(
 	return plugin;
 }
 
-export function definePlugin<O, P extends AnySeyfertPlugin>(factory: (options: O) => P): (options: O) => P;
-export function definePlugin<O extends object, P extends AnySeyfertPlugin>(setup: {
+export function createPluginFactory<O extends object, P extends AnySeyfertPlugin>(setup: {
 	defaults: O;
 	validate?: (options: O) => void;
 	factory: (options: O) => P;
-}): (options?: Partial<O>) => P;
-export function definePlugin<O extends object, P extends AnySeyfertPlugin>(
-	setup: ((options: O) => P) | { defaults: O; validate?: (options: O) => void; factory: (options: O) => P },
-) {
-	if (typeof setup === 'function') return setup;
-
+}): (options?: Partial<O>) => P {
 	return (options?: Partial<O>) => {
 		const resolved = { ...setup.defaults, ...options } as O;
 		try {
 			setup.validate?.(resolved);
 			return setup.factory(resolved);
 		} catch (error) {
-			throw wrapPluginError('<definePlugin>', 'options', -1, error);
+			throw wrapPluginError('<createPluginFactory>', 'options', -1, error);
 		}
 	};
 }
@@ -319,7 +330,7 @@ export function resolveClientPlugins(
 	const addPluginOption = (record: PluginOptionContribution['record'], fragment: SeyfertPluginOptions) => {
 		pluginOptionContributions.push({
 			record,
-			fragment,
+			fragment: clonePluginOptions(fragment),
 			sequence: nextPluginContributionSequence(registry),
 			scope: 'register',
 		});
@@ -335,7 +346,7 @@ export function resolveClientPlugins(
 			addPluginOption(record, { globalMiddlewares: globalMiddlewares as never });
 		}
 
-		const current = MergeOptions<BaseClientOptions>(defaults, ...pluginOptions(), userOptions);
+		const current = readonlyPluginOptions(MergeOptions<BaseClientOptions>(defaults, ...pluginOptions(), userOptions));
 		try {
 			const fragment = record.plugin.options?.(current);
 			if (fragment) addPluginOption(record, fragment);
@@ -360,12 +371,23 @@ export function resolveClientPlugins(
 	composeContext(merged, defaults, optionFragments, userOptions);
 	composeContextScopes(merged, defaults, optionFragments, userOptions);
 	composeGlobalMiddlewares(merged, defaults, pluginOptionContributions, userOptions, registry);
+	const commandDefaultContributions = collectPluginDefaultContributions(
+		pluginOptionContributions,
+		registry.pluginDefaults,
+		'commands',
+	);
 	composeDefaults(
 		merged.commands?.defaults,
 		defaults.commands?.defaults,
-		collectPluginDefaultContributions(pluginOptionContributions, registry.pluginDefaults, 'commands'),
+		commandDefaultContributions,
 		userOptions.commands?.defaults,
 		commandHookKeys,
+	);
+	composeCommandProps(
+		merged.commands?.defaults,
+		defaults.commands?.defaults,
+		commandDefaultContributions,
+		userOptions.commands?.defaults,
 	);
 	composeDefaults(
 		merged.components?.defaults,
@@ -395,6 +417,51 @@ export function refreshClientPluginGlobalMiddlewares(client: BaseClient, registr
 	const sources = registry.globalMiddlewareOptions;
 	if (!sources) return;
 	composeGlobalMiddlewares(client.options, sources.defaults, sources.pluginOptions, sources.userOptions, registry);
+}
+
+export function refreshClientPluginOptions(client: BaseClient, registry: PluginRuntimeRegistry) {
+	const sources = registry.globalMiddlewareOptions;
+	if (!sources) return;
+
+	const optionFragments = sources.pluginOptions.map(contribution => contribution.fragment);
+	const merged = MergeOptions<BaseClientOptions>(sources.defaults, ...optionFragments, sources.userOptions);
+	merged.plugins = registry.plugins;
+	composeContext(merged, sources.defaults, optionFragments, sources.userOptions);
+	composeContextScopes(merged, sources.defaults, optionFragments, sources.userOptions);
+	composeGlobalMiddlewares(merged, sources.defaults, sources.pluginOptions, sources.userOptions, registry);
+	const commandDefaultContributions = collectPluginDefaultContributions(
+		sources.pluginOptions,
+		registry.pluginDefaults,
+		'commands',
+	);
+	composeDefaults(
+		merged.commands?.defaults,
+		sources.defaults.commands?.defaults,
+		commandDefaultContributions,
+		sources.userOptions.commands?.defaults,
+		commandHookKeys,
+	);
+	composeCommandProps(
+		merged.commands?.defaults,
+		sources.defaults.commands?.defaults,
+		commandDefaultContributions,
+		sources.userOptions.commands?.defaults,
+	);
+	composeDefaults(
+		merged.components?.defaults,
+		sources.defaults.components?.defaults,
+		collectPluginDefaultContributions(sources.pluginOptions, registry.pluginDefaults, 'components'),
+		sources.userOptions.components?.defaults,
+		componentHookKeys,
+	);
+	composeDefaults(
+		merged.modals?.defaults,
+		sources.defaults.modals?.defaults,
+		collectPluginDefaultContributions(sources.pluginOptions, registry.pluginDefaults, 'modals'),
+		sources.userOptions.modals?.defaults,
+		modalHookKeys,
+	);
+	client.options = merged;
 }
 
 export function resolveClientPluginIntents(client: BaseClient, base?: GatewayIntentInput) {
@@ -490,20 +557,81 @@ async function reportPluginHookFailure(client: BaseClient, name: string, error: 
 	client.logger.warn('<Client>.hooks.onFail', error, name);
 }
 
-export async function applyPluginGatewayPayloadWrappers(
+export async function applyPluginGatewayDispatchInterceptors(
 	client: BaseClient,
 	shardId: number,
-	payload: PluginGatewayPayload['payload'],
+	packet: GatewayDispatchPayload,
+): Promise<GatewayDispatchPayload | null> {
+	const interceptors = orderedPluginContributions(client.pluginRegistry.gatewayDispatchInterceptors);
+	if (!interceptors.length) return packet;
+
+	const run = async (index: number, current: GatewayDispatchPayload): Promise<GatewayDispatchPayload | null> => {
+		const contribution = interceptors[index];
+		if (!contribution) return current;
+
+		let nextCalled = false;
+		let nextResult: Promise<GatewayDispatchPayload | null> | undefined;
+		let nextValue: GatewayDispatchPayload | null | undefined;
+		const next: PluginGatewayDispatchNext = nextPacket => {
+			if (nextCalled) {
+				throw new Error('gateway.onDispatch next() was called multiple times.');
+			}
+			nextCalled = true;
+			nextResult = run(index + 1, nextPacket ?? current).then(value => {
+				nextValue = value;
+				return value;
+			});
+			return nextResult;
+		};
+
+		let result: Awaited<ReturnType<typeof contribution.interceptor>>;
+		try {
+			result = await contribution.interceptor(current, next, { client, shardId });
+			if (nextCalled) nextValue = await nextResult;
+		} catch (error) {
+			throw wrapPluginError(
+				contribution.record.plugin.name,
+				'gateway.onDispatch',
+				contribution.record.index,
+				error,
+				undefined,
+				contribution.record.plugin.instanceId,
+			);
+		}
+
+		if (nextCalled && nextValue === null) return null;
+		if (result === null) {
+			addPluginDiagnostic(client.pluginRegistry, contribution.record, {
+				phase: 'gateway.onDispatch',
+				severity: 'warn',
+				code: 'gateway-dispatch-veto',
+				message: `Gateway dispatch interceptor from plugin "${contribution.record.plugin.name}" vetoed a dispatch packet.`,
+				data: { shardId, op: current.op, event: current.t },
+			});
+			return null;
+		}
+
+		if (nextCalled) return result ?? nextValue ?? current;
+		return run(index + 1, result ?? current);
+	};
+
+	return run(0, packet);
+}
+
+export async function applyPluginGatewaySendPayloadWrappers(
+	client: BaseClient,
+	shardId: number,
+	payload: PluginGatewaySendPayload['payload'],
 ) {
 	let current = payload;
-	for (const contribution of orderedPluginContributions(client.pluginRegistry.gatewayPayloadWrappers)) {
+	for (const contribution of orderedPluginContributions(client.pluginRegistry.gatewaySendPayloadWrappers)) {
 		let result: Awaited<ReturnType<typeof contribution.wrapper>>;
 		try {
 			result = await contribution.wrapper({ client, shardId, payload: current });
 		} catch (error) {
 			throw wrapPluginError(
 				contribution.record.plugin.name,
-				'gateway.wrapPayload',
+				'gateway.wrapSendPayload',
 				contribution.record.index,
 				error,
 				undefined,
@@ -512,10 +640,10 @@ export async function applyPluginGatewayPayloadWrappers(
 		}
 		if (result === null) {
 			addPluginDiagnostic(client.pluginRegistry, contribution.record, {
-				phase: 'gateway.wrapPayload',
+				phase: 'gateway.wrapSendPayload',
 				severity: 'warn',
-				code: 'gateway-payload-veto',
-				message: `Gateway payload wrapper from plugin "${contribution.record.plugin.name}" vetoed a payload.`,
+				code: 'gateway-send-payload-veto',
+				message: `Gateway send payload wrapper from plugin "${contribution.record.plugin.name}" vetoed a payload.`,
 				data: { shardId, op: current.op },
 			});
 			return null;
@@ -551,16 +679,16 @@ export async function setupClientPlugins(
 				const registry = client.pluginRegistry;
 				if (registry) cleanupPluginEventListeners(registry, record);
 				const cleanupErrors = registry ? await disposePluginSharedValues(client.shared, registry, record) : [];
-				if (registry) cleanupPluginDynamicSharedContributions(registry, record);
+				const sharedMutationErrors = registry ? await cleanupPluginDynamicSharedContributions(registry, record) : [];
 				if (registry) cleanupPluginDynamicContributionMutations(registry, record);
 				refreshClientPluginContributions(client);
-				if (cleanupErrors.length) {
+				if (cleanupErrors.length || sharedMutationErrors.length) {
 					throw new SeyfertPluginAggregateError(
 						'PLUGIN_FAILED',
 						'<multiple>',
 						'setup',
 						-1,
-						[setupError, ...cleanupErrors],
+						[setupError, ...cleanupErrors, ...sharedMutationErrors],
 						'Seyfert plugin setup failed and cleanup also failed.',
 						setupError,
 					);
@@ -610,7 +738,7 @@ async function teardownPluginRecords(
 			try {
 				await plugin.teardown?.(
 					client as never,
-					registry ? (createPluginApi(record, registry, 'setup') as never) : undefined,
+					registry ? (createPluginApi(record, registry, 'teardown') as never) : undefined,
 				);
 			} catch (error) {
 				failed = true;
@@ -627,7 +755,11 @@ async function teardownPluginRecords(
 					failed = true;
 					errors.push(...sharedErrors);
 				}
-				cleanupPluginDynamicSharedContributions(registry, record);
+				const sharedMutationErrors = await cleanupPluginDynamicSharedContributions(registry, record);
+				if (sharedMutationErrors.length) {
+					failed = true;
+					errors.push(...sharedMutationErrors);
+				}
 				cleanupPluginDynamicContributionMutations(registry, record);
 			}
 
@@ -833,6 +965,25 @@ function composeDefaults<TDefaults extends object, TKey extends keyof TDefaults>
 	}
 }
 
+function composeCommandProps(
+	target: SeyfertCommandDefaults | undefined,
+	defaults: SeyfertCommandDefaults | undefined,
+	contributions: readonly PluginDefaultsContribution[],
+	userDefaults: SeyfertCommandDefaults | undefined,
+) {
+	if (!target) return;
+	const pluginProps = contributions
+		.map(contribution => contribution.hooks?.props)
+		.filter((props): props is Record<string, unknown> => isPlainObject(props));
+	const merged = MergeOptions<Record<string, unknown>>(
+		{},
+		isPlainObject(defaults?.props) ? defaults.props : {},
+		...pluginProps,
+		isPlainObject(userDefaults?.props) ? userDefaults.props : {},
+	);
+	if (Object.keys(merged).length) target.props = merged as SeyfertCommandDefaults['props'];
+}
+
 function composeHooks(hooks: readonly AnyFunction[]) {
 	return async (...args: unknown[]) => {
 		for (const hook of hooks) await hook(...args);
@@ -865,4 +1016,10 @@ function collectPluginDefaultContributions(
 
 function isFunction(value: unknown): value is AnyFunction {
 	return typeof value === 'function';
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+	if (typeof value !== 'object' || value === null) return false;
+	const prototype = Object.getPrototypeOf(value);
+	return prototype === Object.prototype || prototype === null;
 }

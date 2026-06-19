@@ -23,7 +23,8 @@ import type {
 	PluginDiagnosticSeverity,
 	PluginDiagnostics,
 	PluginEventErrorHandler,
-	PluginGatewayPayloadWrapper,
+	PluginGatewayDispatchInterceptor,
+	PluginGatewaySendPayloadWrapper,
 	PluginHandlerCreator,
 	PluginHandlerKind,
 	PluginHandlerTransformer,
@@ -50,7 +51,7 @@ export interface PluginRuntimeRecord {
 	status: PluginLifecycleStatus;
 }
 
-export type PluginEventContributionScope = 'register' | 'setup';
+export type PluginEventContributionScope = 'register' | 'setup' | 'teardown';
 
 export interface PluginCommandContribution {
 	record: PluginRuntimeRecord;
@@ -165,6 +166,14 @@ export interface PluginSharedContribution {
 	scope: PluginEventContributionScope;
 }
 
+export interface PluginSharedMutation {
+	record: PluginRuntimeRecord;
+	name: string;
+	scope: PluginEventContributionScope;
+	previous?: PluginSharedContribution;
+	previousOwner?: PluginRuntimeRecord;
+}
+
 export interface PluginLangContribution {
 	record: PluginRuntimeRecord;
 	locale: string;
@@ -177,16 +186,25 @@ export interface PluginLangContribution {
 export interface PluginGatewayIntentContribution {
 	record: PluginRuntimeRecord;
 	intents: readonly number[];
+	scope: PluginEventContributionScope;
 }
 
 export interface PluginAutocompleteWrapperContribution extends PluginOrderedContribution {
 	record: PluginRuntimeRecord;
 	wrapper: PluginAutocompleteWrapper;
+	scope: PluginEventContributionScope;
 }
 
-export interface PluginGatewayPayloadWrapperContribution extends PluginOrderedContribution {
+export interface PluginGatewaySendPayloadWrapperContribution extends PluginOrderedContribution {
 	record: PluginRuntimeRecord;
-	wrapper: PluginGatewayPayloadWrapper;
+	wrapper: PluginGatewaySendPayloadWrapper;
+	scope: PluginEventContributionScope;
+}
+
+export interface PluginGatewayDispatchInterceptorContribution extends PluginOrderedContribution {
+	record: PluginRuntimeRecord;
+	interceptor: PluginGatewayDispatchInterceptor;
+	scope: PluginEventContributionScope;
 }
 
 export interface PluginRestObserverContribution extends PluginOrderedContribution {
@@ -269,7 +287,8 @@ export interface PluginRuntimeRegistry extends PluginOrderSequence {
 	contributionMutationDiagnostics: Set<string>;
 	autocompleteWrappers: PluginAutocompleteWrapperContribution[];
 	gatewayIntents: PluginGatewayIntentContribution[];
-	gatewayPayloadWrappers: PluginGatewayPayloadWrapperContribution[];
+	gatewaySendPayloadWrappers: PluginGatewaySendPayloadWrapperContribution[];
+	gatewayDispatchInterceptors: PluginGatewayDispatchInterceptorContribution[];
 	restObservers: PluginRestObserverContribution[];
 	hooks: PluginHookContribution[];
 	cacheResources: PluginCacheResourceContribution[];
@@ -279,6 +298,8 @@ export interface PluginRuntimeRegistry extends PluginOrderSequence {
 	handlerTransformers: PluginHandlerTransformerContribution[];
 	shared: Map<string, PluginSharedContribution>;
 	sharedOwners: Map<string, PluginRuntimeRecord>;
+	sharedMutations: PluginSharedMutation[];
+	sharedDisposals: Promise<unknown | undefined>[];
 	langs: PluginLangContribution[];
 	diagnostics: PluginDiagnosticMessage[];
 	requirements: PluginRequirementContribution[];
@@ -297,6 +318,9 @@ export function createPluginRuntimeRegistry(plugins: readonly AnySeyfertPlugin[]
 		optionFragments: [],
 		status: 'registered',
 	}));
+	assertSafePluginIdentities(records);
+	assertSafeStaticKeys(records, 'clientKeys', 'client');
+	assertSafeStaticKeys(records, 'ctxKeys', 'ctx');
 	assertUniqueStaticKeys(records, 'clientKeys', 'client');
 	assertUniqueStaticKeys(records, 'ctxKeys', 'ctx');
 
@@ -316,12 +340,15 @@ export function createPluginRuntimeRegistry(plugins: readonly AnySeyfertPlugin[]
 		contributionMutationDiagnostics: new Set(),
 		autocompleteWrappers: [],
 		gatewayIntents: [],
-		gatewayPayloadWrappers: [],
+		gatewaySendPayloadWrappers: [],
+		gatewayDispatchInterceptors: [],
 		restObservers: [],
 		hooks: [],
 		cacheResources: [],
 		shared: new Map(),
 		sharedOwners: new Map(),
+		sharedMutations: [],
+		sharedDisposals: [],
 		langs: [],
 		diagnostics: [],
 		requirements: [],
@@ -340,12 +367,13 @@ export function createPluginRuntimeRegistry(plugins: readonly AnySeyfertPlugin[]
 
 	Object.defineProperties(resolved, {
 		resolved: {
-			value: ordered,
+			value: Object.freeze(ordered.slice()),
 		},
 		diagnostics: {
 			get: () => createPluginDiagnostics(registry),
 		},
 	});
+	Object.freeze(resolved);
 
 	return registry;
 }
@@ -354,6 +382,7 @@ export function runPluginRegister(record: PluginRuntimeRecord, registry: PluginR
 	try {
 		const result = record.plugin.register?.(createPluginApi(record, registry));
 		if (isPromiseLike(result)) {
+			Promise.resolve(result).catch(() => undefined);
 			throw createPluginConflictError(
 				record.plugin.name,
 				'register',
@@ -403,6 +432,13 @@ export function removePluginRestObserverContribution(
 	removeContribution(registry.restObservers, contribution);
 }
 
+export function removePluginGatewayDispatchInterceptorContribution(
+	registry: PluginRuntimeRegistry,
+	contribution: PluginGatewayDispatchInterceptorContribution,
+) {
+	removeContribution(registry.gatewayDispatchInterceptors, contribution);
+}
+
 export function removePluginHookContribution(registry: PluginRuntimeRegistry, contribution: PluginHookContribution) {
 	removeContribution(registry.hooks, contribution);
 }
@@ -443,6 +479,11 @@ export function cleanupPluginDynamicContributionMutations(
 	cleanupScopedContributions(registry.modalRemovals, record);
 	cleanupScopedContributions(registry.handlerCreators, record);
 	cleanupScopedContributions(registry.handlerTransformers, record);
+	cleanupScopedContributions(registry.autocompleteWrappers, record);
+	cleanupScopedContributions(registry.gatewaySendPayloadWrappers, record);
+	cleanupScopedContributions(registry.gatewayDispatchInterceptors, record);
+	cleanupScopedContributions(registry.gatewayIntents, record);
+	cleanupScopedContributions(registry.pluginDefaults, record);
 	cleanupScopedContributions(registry.middlewares, record);
 	cleanupScopedContributions(registry.middlewareRemovals, record);
 	cleanupScopedContributions(registry.langs, record);
@@ -494,7 +535,7 @@ export function addPluginOptionFragment(
 ) {
 	const contribution = {
 		record,
-		fragment,
+		fragment: clonePluginOptions(fragment),
 		sequence: nextPluginContributionSequence(registry),
 		scope,
 	};
@@ -521,8 +562,33 @@ export function addPluginDiagnostic(
 	});
 }
 
+export function clonePluginOptions<T>(value: T): T {
+	return clonePlainValue(value) as T;
+}
+
+export function readonlyPluginOptions<T extends object>(value: T): Readonly<T> {
+	return deepFreezePlain(clonePlainValue(value)) as Readonly<T>;
+}
+
+export function assertSafePluginResourceName(
+	record: PluginRuntimeRecord,
+	phase: string,
+	name: string,
+	reserved: ReadonlySet<string>,
+) {
+	if (!isSafePluginKey(name) || reserved.has(name)) {
+		throw createPluginConflictError(
+			record.plugin.name,
+			phase,
+			record.index,
+			`Plugin key "${name}" is reserved or unsafe.`,
+			record.plugin.instanceId,
+		);
+	}
+}
+
 export function assertCanMutatePluginContribution(
-	_registry: PluginRuntimeRegistry,
+	registry: PluginRuntimeRegistry,
 	record: PluginRuntimeRecord,
 	action: 'override' | 'remove',
 	kind: string,
@@ -540,7 +606,7 @@ export function assertCanMutatePluginContribution(
 		);
 	}
 	if (owner === record) return;
-	if (declaresPluginRequirement(record, owner)) return;
+	if (hasSatisfiedPluginRequirement(registry, record, owner)) return;
 	throw createPluginConflictError(
 		record.plugin.name,
 		phase,
@@ -608,6 +674,28 @@ function addStaticKeyMultiInstanceDiagnostics(registry: PluginRuntimeRegistry) {
 				globalMiddlewares,
 			},
 		});
+	}
+}
+
+function assertSafePluginIdentities(records: readonly PluginRuntimeRecord[]) {
+	for (const record of records) {
+		assertSafePluginResourceName(record, 'resolve', record.plugin.name, emptyReservedKeys);
+		if (record.plugin.instanceId) {
+			assertSafePluginResourceName(record, 'resolve', record.plugin.instanceId, emptyReservedKeys);
+		}
+	}
+}
+
+function assertSafeStaticKeys(
+	records: readonly PluginRuntimeRecord[],
+	key: 'clientKeys' | 'ctxKeys',
+	phase: 'client' | 'ctx',
+) {
+	const reserved = phase === 'ctx' ? reservedContextKeys : emptyReservedKeys;
+	for (const record of records) {
+		for (const value of record[key]) {
+			assertSafePluginResourceName(record, `${phase}.${value}`, value, reserved);
+		}
 	}
 }
 
@@ -864,48 +952,105 @@ function assertUniqueStaticKeys(
 	}
 }
 
-function createPluginDiagnostics(registry: PluginRuntimeRegistry): readonly PluginDiagnostics[] {
-	return registry.records.map(record => ({
-		name: record.plugin.name,
-		instanceId: record.plugin.instanceId,
-		index: record.index,
-		status: record.status,
-		imports: record.imports.map(pluginIdentity),
-		clientKeys: record.clientKeys,
-		ctxKeys: record.ctxKeys,
-		commands: registry.commands.filter(contribution => contribution.record === record).flatMap(c => c.commands).length,
-		components: registry.components.filter(contribution => contribution.record === record).flatMap(c => c.components)
-			.length,
-		modals: registry.modals.filter(contribution => contribution.record === record).flatMap(c => c.modals).length,
-		events: registry.events
-			.filter(contribution => contribution.record === record)
-			.map(contribution => contribution.name),
-		middlewares: registry.middlewares
-			.filter(contribution => contribution.record === record)
-			.map(contribution => contribution.name)
-			.concat(Object.keys(record.plugin.middlewares ?? {})),
-		autocompleteWrappers: registry.autocompleteWrappers.filter(contribution => contribution.record === record).length,
-		gatewayPayloadWrappers: registry.gatewayPayloadWrappers.filter(contribution => contribution.record === record)
-			.length,
-		requirements: registry.requirements
-			.filter(contribution => contribution.record === record)
-			.map(({ kind, req, range, resolvedVersion, optional, satisfied }) => ({
-				kind,
-				req,
-				range,
-				resolvedVersion,
-				optional,
-				satisfied,
-			})),
-		shared: [...registry.shared.entries()]
-			.filter(([, contribution]) => contribution.record === record)
-			.map(([name]) => name),
-		messages: registry.diagnostics.filter(message => message.index === record.index),
-	}));
+const pluginDiagnosticsListLimit = 50;
+
+function snapshotDiagnosticList<T>(values: readonly T[], truncated: Record<string, number>, key: string): readonly T[] {
+	if (values.length > pluginDiagnosticsListLimit) truncated[key] = values.length - pluginDiagnosticsListLimit;
+	return Object.freeze(values.slice(0, pluginDiagnosticsListLimit));
 }
 
-export function resolveGatewayIntent(intent: PluginIntentResolvable): number {
-	return typeof intent === 'string' ? GatewayIntentBits[intent] : intent;
+function createPluginDiagnostics(registry: PluginRuntimeRegistry): readonly PluginDiagnostics[] {
+	return Object.freeze(
+		registry.records.map(record => {
+			const truncated: Record<string, number> = {};
+			const events = registry.events
+				.filter(contribution => contribution.record === record)
+				.map(contribution => contribution.name);
+			const eventErrors = registry.eventErrors.filter(contribution => contribution.record === record).length;
+			const middlewares = registry.middlewares
+				.filter(contribution => contribution.record === record)
+				.map(contribution => contribution.name)
+				.concat(Object.keys(record.plugin.middlewares ?? {}));
+			const requirements = registry.requirements
+				.filter(contribution => contribution.record === record)
+				.map(({ kind, req, range, resolvedVersion, optional, satisfied }) =>
+					Object.freeze({
+						kind,
+						req,
+						range,
+						resolvedVersion,
+						optional,
+						satisfied,
+					}),
+				);
+			const shared = [...registry.shared.entries()]
+				.filter(([, contribution]) => contribution.record === record)
+				.map(([name]) => name);
+			const cacheResources = registry.cacheResources
+				.filter(contribution => contribution.record === record)
+				.map(contribution => contribution.name);
+			const langs = registry.langs
+				.filter(contribution => contribution.record === record)
+				.map(contribution => `${contribution.locale}:${contribution.prefix}`);
+			const hooks = registry.hooks
+				.filter(contribution => contribution.record === record)
+				.map(contribution => contribution.name);
+			const messages = registry.diagnostics
+				.filter(message => message.index === record.index)
+				.map(message =>
+					Object.freeze({
+						...message,
+						data: message.data ? Object.freeze({ ...message.data }) : undefined,
+					}),
+				);
+
+			return Object.freeze({
+				name: record.plugin.name,
+				instanceId: record.plugin.instanceId,
+				index: record.index,
+				status: record.status,
+				imports: snapshotDiagnosticList(record.imports.map(pluginIdentity), truncated, 'imports'),
+				clientKeys: snapshotDiagnosticList(record.clientKeys, truncated, 'clientKeys'),
+				ctxKeys: snapshotDiagnosticList(record.ctxKeys, truncated, 'ctxKeys'),
+				commands: registry.commands.filter(contribution => contribution.record === record).flatMap(c => c.commands)
+					.length,
+				components: registry.components
+					.filter(contribution => contribution.record === record)
+					.flatMap(c => c.components).length,
+				modals: registry.modals.filter(contribution => contribution.record === record).flatMap(c => c.modals).length,
+				events: snapshotDiagnosticList(events, truncated, 'events'),
+				anyEvents: registry.anyEvents.filter(contribution => contribution.record === record).length,
+				eventErrors,
+				middlewares: snapshotDiagnosticList(middlewares, truncated, 'middlewares'),
+				autocompleteWrappers: registry.autocompleteWrappers.filter(contribution => contribution.record === record)
+					.length,
+				gatewayIntents: registry.gatewayIntents.filter(contribution => contribution.record === record).length,
+				gatewaySendPayloadWrappers: registry.gatewaySendPayloadWrappers.filter(
+					contribution => contribution.record === record,
+				).length,
+				gatewayDispatchInterceptors: registry.gatewayDispatchInterceptors.filter(
+					contribution => contribution.record === record,
+				).length,
+				requirements: snapshotDiagnosticList(requirements, truncated, 'requirements'),
+				shared: snapshotDiagnosticList(shared, truncated, 'shared'),
+				cacheResources: snapshotDiagnosticList(cacheResources, truncated, 'cacheResources'),
+				langs: snapshotDiagnosticList(langs, truncated, 'langs'),
+				hooks: snapshotDiagnosticList(hooks, truncated, 'hooks'),
+				restObservers: registry.restObservers.filter(contribution => contribution.record === record).length,
+				commandObservers: registry.commandObservers.filter(contribution => contribution.record === record).length,
+				handlerCreators: registry.handlerCreators.filter(contribution => contribution.record === record).length,
+				handlerTransformers: registry.handlerTransformers.filter(contribution => contribution.record === record).length,
+				messages: snapshotDiagnosticList(messages, truncated, 'messages'),
+				truncated: Object.keys(truncated).length ? Object.freeze({ ...truncated }) : undefined,
+			});
+		}),
+	);
+}
+
+export function resolveGatewayIntent(intent: PluginIntentResolvable): number | undefined {
+	if (typeof intent !== 'string') return intent;
+	const value = GatewayIntentBits[intent];
+	return typeof value === 'number' ? value : undefined;
 }
 
 export function unknownGatewayIntentBits(intent: PluginIntentResolvable): number {
@@ -913,15 +1058,34 @@ export function unknownGatewayIntentBits(intent: PluginIntentResolvable): number
 	return intent & ~knownGatewayIntentMask;
 }
 
-function normalizeRequirement(input: PluginRequirementInput): PluginRequirementDiagnostic {
+function normalizeRequirement(input: PluginRequirementInput, record: PluginRuntimeRecord): PluginRequirementDiagnostic {
 	if (typeof input === 'string') return { kind: 'plugin', req: input, optional: false, satisfied: false };
-	if ('capability' in input) {
+	if ('capability' in input && 'req' in input && input.req !== undefined) {
+		throw createPluginConflictError(
+			record.plugin.name,
+			'requires',
+			record.index,
+			'Plugin requirement objects must use either "req" or "capability", not both.',
+			record.plugin.instanceId,
+		);
+	}
+	const capability = 'capability' in input ? input.capability : undefined;
+	if (capability) {
 		return {
 			kind: 'capability',
-			req: input.capability.name,
+			req: capability.name,
 			optional: input.optional === true,
 			satisfied: false,
 		};
+	}
+	if (!input.req) {
+		throw createPluginConflictError(
+			record.plugin.name,
+			'requires',
+			record.index,
+			'Plugin requirement objects must include "req" or "capability".',
+			record.plugin.instanceId,
+		);
 	}
 	return {
 		kind: 'plugin',
@@ -938,11 +1102,23 @@ export function validatePluginRequirements(
 ) {
 	for (const record of registry.records) {
 		for (const input of record.plugin.requires ?? []) {
-			const requirement = normalizeRequirement(input);
+			const requirement = normalizeRequirement(input, record);
 			if (kind !== 'all' && requirement.kind !== kind) continue;
 			resolveRequirement(registry, requirement);
 			registry.requirements.push({ record, ...requirement });
-			if (requirement.satisfied) continue;
+			if (requirement.satisfied) {
+				const target = requiredPluginRecord(registry, requirement);
+				if (target && target.index > record.index) {
+					addPluginDiagnostic(registry, record, {
+						phase: 'requires',
+						severity: 'warn',
+						code: 'requires-unordered',
+						message: `Plugin requirement "${requirement.req}" is ordered after "${record.identity}". Add it to imports when mutating its contributions.`,
+						data: requirementDiagnosticData(requirement),
+					});
+				}
+				continue;
+			}
 			if (requirement.optional) {
 				addPluginDiagnostic(registry, record, {
 					phase: 'requires',
@@ -971,10 +1147,9 @@ function resolveRequirement(registry: PluginRuntimeRegistry, requirement: Plugin
 	}
 
 	if (!String(requirement.req).startsWith('plugin:')) return;
-	const identity = String(requirement.req).slice('plugin:'.length);
-	const target = registry.records.find(record => record.identity === identity);
+	const target = requiredPluginRecord(registry, requirement);
 	if (!target) return;
-	const version = pluginVersion(target.plugin.meta);
+	const version = pluginVersion(target.plugin);
 	requirement.resolvedVersion = version;
 	requirement.satisfied = requirement.range ? !!version && satisfiesSemverRange(version, requirement.range) : true;
 }
@@ -1015,10 +1190,19 @@ function requirementDiagnosticData(requirement: PluginRequirementDiagnostic): Re
 	};
 }
 
-function pluginVersion(meta: unknown) {
+function pluginVersion(plugin: AnySeyfertPlugin) {
+	if (typeof plugin.version === 'string') return plugin.version;
+	const meta = plugin.meta;
 	if (!meta || typeof meta !== 'object' || !('version' in meta)) return undefined;
 	const version = (meta as { version?: unknown }).version;
 	return typeof version === 'string' ? version : undefined;
+}
+
+function requiredPluginRecord(registry: PluginRuntimeRegistry, requirement: PluginRequirementDiagnostic) {
+	if (requirement.kind !== 'plugin') return undefined;
+	if (!String(requirement.req).startsWith('plugin:')) return undefined;
+	const identity = String(requirement.req).slice('plugin:'.length);
+	return registry.records.find(record => record.identity === identity);
 }
 
 function satisfiesSemverRange(version: string, range: string) {
@@ -1155,6 +1339,67 @@ function declaresPluginRequirement(record: PluginRuntimeRecord, owner: PluginRun
 		return false;
 	});
 }
+
+function hasSatisfiedPluginRequirement(
+	registry: PluginRuntimeRegistry,
+	record: PluginRuntimeRecord,
+	owner: PluginRuntimeRecord,
+) {
+	if (!declaresPluginRequirement(record, owner)) return false;
+	const requirement = `plugin:${owner.identity}`;
+	return registry.requirements.some(
+		contribution =>
+			contribution.record === record &&
+			contribution.kind === 'plugin' &&
+			contribution.req === requirement &&
+			contribution.satisfied &&
+			owner.index < record.index,
+	);
+}
+
+function clonePlainValue(value: unknown): unknown {
+	if (Array.isArray(value)) return value.map(clonePlainValue);
+	if (!isPlainObject(value)) return value;
+	return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, clonePlainValue(entry)]));
+}
+
+function deepFreezePlain<T>(value: T): T {
+	if (Array.isArray(value)) {
+		for (const entry of value) deepFreezePlain(entry);
+		return Object.freeze(value) as T;
+	}
+	if (!isPlainObject(value)) return value;
+	for (const entry of Object.values(value)) deepFreezePlain(entry);
+	return Object.freeze(value) as T;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+	if (typeof value !== 'object' || value === null) return false;
+	const prototype = Object.getPrototypeOf(value);
+	return prototype === Object.prototype || prototype === null;
+}
+
+function isSafePluginKey(key: string) {
+	return !!key && !unsafeObjectKeys.has(key) && !(key in Object.prototype);
+}
+
+const emptyReservedKeys = new Set<string>();
+const unsafeObjectKeys = new Set(['__proto__', 'constructor', 'prototype']);
+const reservedContextKeys = new Set([
+	'author',
+	'channel',
+	'channelId',
+	'client',
+	'command',
+	'constructor',
+	'guild',
+	'guildId',
+	'interaction',
+	'me',
+	'member',
+	'metadata',
+	'shardId',
+]);
 
 function capitalize(value: string) {
 	return value[0]?.toUpperCase() + value.slice(1);

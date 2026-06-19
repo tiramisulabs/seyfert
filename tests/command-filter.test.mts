@@ -165,13 +165,13 @@ describe('command filter', () => {
 		const client = createClient();
 		const command = new FilteredCommand();
 		const observer = vi.fn();
-		client.plugins.resolved.push({
+		const observerRecord = {
 			index: 0,
 			plugin: { name: 'observer' },
 			active: true,
-		} as never);
+		} as never;
 		client.pluginRegistry.commandObservers.push({
-			record: client.plugins.resolved[0],
+			record: observerRecord,
 			active: true,
 			observer: { onBeforeMiddlewares: observer },
 		} as never);

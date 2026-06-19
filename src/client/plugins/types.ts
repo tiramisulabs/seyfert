@@ -22,7 +22,7 @@ import type { CommandAutocompleteOption } from '../../commands/applications/chat
 import type { HandleableCommand, HandleableCommandInstance } from '../../commands/handler';
 import type { Awaitable } from '../../common/types/util';
 import type { ComponentCommand, ModalCommand } from '../../components';
-import type { ClientNameEvents, CustomEventsKeys } from '../../events';
+import type { ClientEvent, ClientNameEvents, CustomEventsKeys } from '../../events';
 import type { GatewayEvents, ResolveEventParams } from '../../events/handler';
 import type { AutocompleteInteraction } from '../../structures';
 import type { GatewayDispatchPayload, GatewayIntentBits, GatewaySendPayload, LocaleString } from '../../types';
@@ -76,7 +76,8 @@ export type PluginDiagnosticSeverity = 'info' | 'warn' | 'error';
 export type PluginDiagnosticCode =
 	| 'missing-optional-requirement'
 	| 'unknown-intent-bits'
-	| 'gateway-payload-veto'
+	| 'gateway-send-payload-veto'
+	| 'gateway-dispatch-veto'
 	| 'contribution-override'
 	| 'contribution-removed'
 	| 'command-guild-scope'
@@ -84,11 +85,12 @@ export type PluginDiagnosticCode =
 	| (string & {});
 export type PluginLifecycleStatus = 'registered' | 'setting-up' | 'ready' | 'closing' | 'closed' | 'failed';
 export type PluginRequirement = `plugin:${string}`;
-export type SemverRange = string;
+type SemverVersion = `${number}.${number}.${number}${string}`;
+export type SemverRange = SemverVersion | `>=${SemverVersion}` | `^${SemverVersion}` | `~${SemverVersion}`;
 export type PluginRequirementInput =
 	| PluginRequirement
-	| { req: PluginRequirement; range?: SemverRange; optional?: boolean }
-	| { capability: SharedKey<unknown, string>; optional?: boolean };
+	| { req: PluginRequirement; range?: SemverRange; optional?: boolean; capability?: never }
+	| { capability: SharedKey<unknown, string>; optional?: boolean; req?: never; range?: never };
 export type PluginIntentResolvable = keyof typeof GatewayIntentBits | GatewayIntentBits | number;
 export type PluginLifecyclePhase =
 	| 'resolve'
@@ -157,15 +159,27 @@ export type PluginAutocompleteWrapper = (
 	next: PluginAutocompleteNext,
 ) => Awaitable<void>;
 
-export interface PluginGatewayPayload {
+export interface PluginGatewaySendPayload {
 	client: BaseClient;
 	payload: GatewaySendPayload;
 	shardId: number;
 }
 
-export type PluginGatewayPayloadWrapper = (
-	payload: PluginGatewayPayload,
+export type PluginGatewaySendPayloadWrapper = (
+	payload: PluginGatewaySendPayload,
 ) => Awaitable<GatewaySendPayload | null | undefined | void>;
+
+export interface PluginGatewayDispatchMeta {
+	readonly client: BaseClient;
+	readonly shardId: number;
+}
+
+export type PluginGatewayDispatchNext = (packet?: GatewayDispatchPayload) => Awaitable<GatewayDispatchPayload | null>;
+export type PluginGatewayDispatchInterceptor = (
+	packet: GatewayDispatchPayload,
+	next: PluginGatewayDispatchNext,
+	meta: PluginGatewayDispatchMeta,
+) => Awaitable<GatewayDispatchPayload | null | undefined | void>;
 
 export type PluginRestRequestPayload = RestObserverRequestPayload<BaseClient>;
 export type PluginRestSuccessPayload = RestObserverSuccessPayload<BaseClient>;
@@ -185,9 +199,13 @@ export interface PluginCacheResourceOptions {
 
 export interface SeyfertPluginHooks {
 	'plugins:ready': [client: BaseClient];
+	'plugins:setupComplete': [client: BaseClient];
 	'commands:beforeLoad': [client: BaseClient, dir: string | undefined];
 	'commands:afterLoad': [metadata: PluginLoadedMetadata<'commands'>];
+	'components:beforeLoad': [client: BaseClient, dir: string | undefined];
 	'components:afterLoad': [metadata: PluginLoadedMetadata<'components'>];
+	'events:beforeLoad': [client: BaseClient, dir: string | undefined];
+	'events:afterLoad': [client: BaseClient, dir: string | undefined];
 	'client:close': [client: BaseClient];
 }
 
@@ -247,16 +265,22 @@ export type PluginMiddlewaresOf<T> = T extends SeyfertPlugin<any, any, any, infe
 		? {}
 		: M
 	: {};
+type PluginImportsOf<T> = T extends SeyfertPlugin<any, any, infer I, any> ? I[number] : never;
+type PluginClosureDepth = [never, 0, 1, 2, 3, 4, 5];
+type PluginClosureOf<T, Depth extends number = 5> = [Depth] extends [0]
+	? T
+	: T | PluginClosureOf<PluginImportsOf<T>, PluginClosureDepth[Depth]>;
+type PluginTupleClosure<TPlugins extends readonly AnySeyfertPlugin[]> = PluginClosureOf<TPlugins[number]>;
 
 export type ExtendOf<TPlugins extends readonly AnySeyfertPlugin[]> = UnionToIntersection<
-	PluginExtensionOf<TPlugins[number]>
+	PluginExtensionOf<PluginTupleClosure<TPlugins>>
 >;
 
 export type ContextOf<TPlugins extends readonly AnySeyfertPlugin[]> = UnionToIntersection<
-	PluginContextOf<TPlugins[number]>
+	PluginContextOf<PluginTupleClosure<TPlugins>>
 >;
 export type MiddlewaresOf<TPlugins extends readonly AnySeyfertPlugin[]> = UnionToIntersection<
-	PluginMiddlewaresOf<TPlugins[number]>
+	PluginMiddlewaresOf<PluginTupleClosure<TPlugins>>
 >;
 
 export type RegisteredPlugins = SeyfertRegistry extends { plugins: infer T extends readonly AnySeyfertPlugin[] }
@@ -291,11 +315,19 @@ export type PluginModalInstance = ModalCommand;
 export type PluginCommandLoadable = HandleableCommand | PluginCommandInstance;
 export type PluginComponentLoadable = HandleableComponent | PluginComponentInstance;
 export type PluginModalLoadable = HandleableModal | PluginModalInstance;
-export type PluginHandlerKind = 'command' | 'component' | 'modal';
+export type PluginHandlerKind = 'command' | 'component' | 'modal' | 'event';
 export type PluginHandlerConstructor = HandleableCommand | HandleableComponent | HandleableModal;
 export type PluginHandlerInstance = PluginCommandInstance | PluginComponentInstance | PluginModalInstance;
-export interface PluginHandlerMetadata {
-	kind: PluginHandlerKind;
+/** Raw event module export: a `createEvent` object, or a class to be normalized into one (e.g. DI containers). */
+export type PluginEventLoadable = ClientEvent | object;
+export interface PluginHandlerValueByKind {
+	command: PluginCommandInstance;
+	component: PluginComponentInstance;
+	modal: PluginModalInstance;
+	event: PluginEventLoadable;
+}
+export interface PluginHandlerMetadata<K extends PluginHandlerKind = PluginHandlerKind> {
+	kind: K;
 }
 export interface PluginHandlerCreator {
 	<T extends PluginHandlerConstructor>(
@@ -305,13 +337,16 @@ export interface PluginHandlerCreator {
 	): InstanceType<T>;
 }
 export interface PluginHandlerTransformer {
-	<T extends PluginHandlerInstance>(instance: T, metadata: PluginHandlerMetadata): T | void;
+	<K extends PluginHandlerKind = PluginHandlerKind>(
+		instance: PluginHandlerValueByKind[K],
+		metadata: PluginHandlerMetadata<K>,
+	): PluginHandlerValueByKind[K] | void;
 }
 export interface PluginHandlerOptions {
 	kinds?: readonly PluginHandlerKind[];
 	order?: PluginOrderOpt;
 }
-export type PluginEventDisposer = () => void;
+export type PluginDisposer = () => void;
 export type PluginEventErrorHandler = (error: unknown, name: string) => unknown;
 export interface PluginContributionOptions {
 	override?: boolean;
@@ -342,39 +377,36 @@ export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewa
 			name: E,
 			handler: (...args: ResolveEventParams<E>) => unknown,
 			opts?: { once?: boolean; order?: PluginOrderOpt },
-		): PluginEventDisposer;
+		): PluginDisposer;
 		once<E extends ClientNameEvents | CustomEventsKeys | GatewayEvents>(
 			name: E,
 			handler: (...args: ResolveEventParams<E>) => unknown,
-		): PluginEventDisposer;
-		onAny(
-			handler: (name: string, ...args: unknown[]) => unknown,
-			opts?: { order?: PluginOrderOpt },
-		): PluginEventDisposer;
-		onError(handler: PluginEventErrorHandler, opts?: { order?: PluginOrderOpt }): PluginEventDisposer;
+		): PluginDisposer;
+		onAny(handler: (name: string, ...args: unknown[]) => unknown, opts?: { order?: PluginOrderOpt }): PluginDisposer;
+		onError(handler: PluginEventErrorHandler, opts?: { order?: PluginOrderOpt }): PluginDisposer;
 	};
 	commands: {
 		add(...commands: PluginCommandLoadable[]): void;
 		add(...args: [...commands: PluginCommandLoadable[], opts: PluginCommandContributionOptions]): void;
 		remove(...names: string[]): void;
-		observe(observer: PluginCommandObserver, opts?: { order?: PluginOrderOpt }): PluginEventDisposer;
+		observe(observer: PluginCommandObserver, opts?: { order?: PluginOrderOpt }): PluginDisposer;
 		defaults(
 			hooks: Partial<SeyfertCommandDefaults>,
 			opts?: { suppressDefault?: boolean | readonly (keyof SeyfertCommandDefaults)[]; order?: PluginOrderOpt },
 		): void;
 	};
 	rest: {
-		observe(observer: PluginRestObserver, order?: PluginOrderOpt): PluginEventDisposer;
+		observe(observer: PluginRestObserver, opts?: { order?: PluginOrderOpt }): PluginDisposer;
 	};
 	hooks: {
-		tap<K extends PluginHookName>(
+		on<K extends PluginHookName>(
 			name: K,
 			handler: PluginHookHandler<K, E>,
 			opts?: { order?: PluginOrderOpt },
-		): PluginEventDisposer;
+		): PluginDisposer;
 	};
 	handlers: {
-		create(creator: PluginHandlerCreator, opts?: PluginHandlerOptions): void;
+		construct(creator: PluginHandlerCreator, opts?: PluginHandlerOptions): void;
 		transform(transformer: PluginHandlerTransformer, opts?: PluginHandlerOptions): void;
 	};
 	components: {
@@ -397,7 +429,11 @@ export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewa
 	};
 	middlewares: {
 		add<const Name extends keyof M & string>(name: Name, middleware: M[Name], opts?: PluginMiddlewareOptions): void;
-		add(name: string, middleware: MiddlewareContext, opts?: PluginMiddlewareOptions): void;
+		add<const Name extends string>(
+			name: Name extends keyof M & string ? never : Name,
+			middleware: MiddlewareContext,
+			opts?: PluginMiddlewareOptions,
+		): void;
 		remove(...names: string[]): void;
 	};
 	autocomplete: {
@@ -405,7 +441,8 @@ export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewa
 	};
 	gateway: {
 		addIntents(...intents: PluginIntentResolvable[]): void;
-		wrapPayload(wrapper: PluginGatewayPayloadWrapper, opts?: { order?: PluginOrderOpt }): void;
+		wrapSendPayload(wrapper: PluginGatewaySendPayloadWrapper, opts?: { order?: PluginOrderOpt }): void;
+		onDispatch(interceptor: PluginGatewayDispatchInterceptor, opts?: { order?: PluginOrderOpt }): PluginDisposer;
 	};
 	cache: {
 		resource(name: string, resource: PluginCacheResourceConstructor, opts?: PluginCacheResourceOptions): void;
@@ -439,6 +476,10 @@ export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewa
 	};
 }
 
+export type SeyfertPluginTeardownApi = Pick<SeyfertPluginApi, 'has' | 'diagnostics'> & {
+	shared: Pick<SeyfertPluginApi['shared'], 'has'>;
+};
+
 export type ResolvedPluginList = readonly AnySeyfertPlugin[] & {
 	readonly resolved: readonly AnySeyfertPlugin[];
 	readonly diagnostics: readonly PluginDiagnostics[];
@@ -456,6 +497,7 @@ export interface SeyfertPlugin<
 > {
 	name: string;
 	instanceId?: string;
+	version?: string;
 	imports?: I;
 	requires?: readonly PluginRequirementInput[];
 	meta?: unknown;
@@ -466,7 +508,7 @@ export interface SeyfertPlugin<
 	options?(current: Readonly<BaseClientOptions>): SeyfertPluginOptions;
 	register?(api: SeyfertPluginApi<M, ExtendOf<I> & E>): void;
 	setup?(client: SeyfertPluginClient & ExtendOf<I> & E, api?: SeyfertPluginApi<M, ExtendOf<I> & E>): Awaitable<void>;
-	teardown?(client: SeyfertPluginClient & ExtendOf<I> & E, api?: SeyfertPluginApi<M, ExtendOf<I> & E>): Awaitable<void>;
+	teardown?(client: SeyfertPluginClient & ExtendOf<I> & E, api?: SeyfertPluginTeardownApi): Awaitable<void>;
 }
 
 export interface PluginDiagnostics {
@@ -481,10 +523,22 @@ export interface PluginDiagnostics {
 	components: number;
 	modals: number;
 	events: readonly string[];
+	anyEvents: number;
+	eventErrors: number;
 	middlewares: readonly string[];
 	requirements: readonly PluginRequirementDiagnostic[];
 	shared: readonly string[];
+	cacheResources: readonly string[];
+	langs: readonly string[];
+	hooks: readonly string[];
+	restObservers: number;
+	commandObservers: number;
 	autocompleteWrappers: number;
-	gatewayPayloadWrappers: number;
+	gatewayIntents: number;
+	gatewaySendPayloadWrappers: number;
+	gatewayDispatchInterceptors: number;
+	handlerCreators: number;
+	handlerTransformers: number;
 	messages: readonly PluginDiagnosticMessage[];
+	truncated?: Readonly<Record<string, number>>;
 }

@@ -26,8 +26,8 @@ import {
 	createIntegerOption,
 	createMiddleware,
 	createNumberOption,
+	createPluginFactory,
 	defineGroups,
-	definePlugin,
 	createPlugin,
 	createStringOption,
 	createSharedKey,
@@ -71,6 +71,9 @@ import {
 	type PluginContextMapOf,
 	type PluginDiagnosticCode,
 	type PluginExtensionOf,
+	type PluginGatewayDispatchInterceptor,
+	type PluginGatewayDispatchMeta,
+	type PluginGatewayDispatchNext,
 	type PluginHandlerKind,
 	type PluginLoadedMetadata,
 	type PluginMiddlewaresMapOf,
@@ -335,7 +338,7 @@ expectType<true>(
 	true as Equal<
 		CommandsLoadedCallbackParams,
 		[
-			PluginLoadedMetadata<'commands', Command | ContextMenuCommand>,
+			PluginLoadedMetadata<'commands', Command | ContextMenuCommand | EntryPointCommand>,
 			UsingClient,
 		]
 	>,
@@ -957,11 +960,25 @@ const economy = createPlugin({
 		expectType<SeyfertPluginApi>(api);
 		expectType<boolean>(api.has('plugin:storage'));
 		api.gateway.addIntents('Guilds');
-		api.gateway.wrapPayload(({ client, payload, shardId }) => {
+		api.gateway.wrapSendPayload(({ client, payload, shardId }) => {
 			expectType<number>(shardId);
 			expectType<unknown>(client.shared.get(ledgerKey));
 			return payload;
 		}, { order: PluginOrder.After });
+		// @ts-expect-error use gateway.wrapSendPayload for outbound gateway payloads
+		api.gateway.wrapPayload(({ payload }) => payload);
+		const disposeDispatchInterceptor = api.gateway.onDispatch((packet, next, meta) => {
+			expectType<GatewayDispatchPayload>(packet);
+			expectType<PluginGatewayDispatchNext>(next);
+			expectType<PluginGatewayDispatchMeta>(meta);
+			return next(packet);
+		}, { order: PluginOrder.Before });
+		expectType<() => void>(disposeDispatchInterceptor);
+		expectType<PluginGatewayDispatchInterceptor>((packet, next, meta) => {
+			expectType<GatewayDispatchPayload>(packet);
+			expectType<number>(meta.shardId);
+			return next();
+		});
 		const disposeRestObserver = api.rest.observe({
 			onRequest(payload) {
 				expectType<Readonly<{ method: 'GET' | 'DELETE' | 'PUT' | 'POST' | 'PATCH'; url: `/${string}` }>>(
@@ -978,7 +995,9 @@ const economy = createPlugin({
 			onRatelimit(payload) {
 				expectType<Response>(payload.response);
 			},
-		}, PluginOrder.Before);
+		}, { order: PluginOrder.Before });
+		// @ts-expect-error rest observer order is passed with an options object
+		api.rest.observe({}, PluginOrder.Before);
 		expectType<() => void>(disposeRestObserver);
 		api.autocomplete.wrap(async ({ command, interaction, optionsResolver }, next) => {
 			expectType<string | undefined>(command?.name);
@@ -1024,11 +1043,13 @@ const economy = createPlugin({
 		api.commands.add(new ContractCommand());
 		api.components.add(new ContractComponent());
 		api.modals.add(new ContractModal());
-		api.handlers.create((Ctor, next, metadata) => {
+		api.handlers.construct((Ctor, next, metadata) => {
 			expectType<PluginHandlerKind>(metadata.kind);
 			expectType<unknown>(Ctor);
 			return next();
 		}, { kinds: ['command', 'component', 'modal'], order: PluginOrder.Before });
+		// @ts-expect-error handlers.create was removed before release
+		api.handlers.create((_Ctor, next) => next());
 		api.handlers.transform((instance, metadata) => {
 			expectType<PluginHandlerKind>(metadata.kind);
 			return instance;
@@ -1078,24 +1099,30 @@ const economy = createPlugin({
 				expectType<Cache>(cache);
 			},
 		});
-		const disposeReadyHook = api.hooks.tap('plugins:ready', client => {
+		const disposeReadyHook = api.hooks.on('plugins:ready', client => {
 			expectType<unknown>(client.plugins);
 		}, { order: PluginOrder.After });
 		expectType<() => void>(disposeReadyHook);
-		api.hooks.tap('commands:beforeLoad', (client, dir) => {
+		// @ts-expect-error hooks.tap was removed before release
+		api.hooks.tap('plugins:ready', () => {});
+		const disposeSetupHook = api.hooks.on('plugins:setupComplete', client => {
+			expectType<unknown>(client.plugins);
+		});
+		expectType<() => void>(disposeSetupHook);
+		api.hooks.on('commands:beforeLoad', (client, dir) => {
 			expectType<unknown>(client.commands);
 			expectType<string | undefined>(dir);
 		});
-		api.hooks.tap('commands:afterLoad', metadata => {
+		api.hooks.on('commands:afterLoad', metadata => {
 			expectType<'commands'>(metadata.kind);
 		});
-		api.hooks.tap('components:afterLoad', metadata => {
+		api.hooks.on('components:afterLoad', metadata => {
 			expectType<'components'>(metadata.kind);
 		});
-		api.hooks.tap('client:close', client => {
+		api.hooks.on('client:close', client => {
 			expectType<unknown>(client.plugins);
 		});
-		api.hooks.tap('economy:refresh', ledger => {
+		api.hooks.on('economy:refresh', ledger => {
 			expectType<LedgerService>(ledger);
 		});
 		api.options.set({ allowedMentions: { parse: [] } });
@@ -1127,6 +1154,8 @@ const auth: SeyfertPlugin<{}, {}, readonly [], { auth: AuthMiddleware; audit: Au
 	register(api) {
 		api.middlewares.add('auth', (({ next }) => next({ userId: '1' })) as AuthMiddleware);
 		api.middlewares.add('audit', (({ next }) => next()) as AuditMiddleware);
+		// @ts-expect-error known middleware names must use their declared payload
+		api.middlewares.add('auth', (({ next }) => next()) as AuditMiddleware);
 	},
 });
 
@@ -1182,7 +1211,6 @@ const combinedAtomic = createPlugin({
 	},
 	globalMiddlewares: ['combinedAudit'],
 	register(api) {
-		api.middlewares.add('combinedAudit', combinedAudit);
 		api.shared.set(combinedSharedKey, client => {
 			expectType<1>(client.importedCounter.count);
 			expectType<'combined-client'>(client.combinedClient.source);
@@ -1203,14 +1231,14 @@ const combinedAtomic = createPlugin({
 		);
 		// @ts-expect-error shared function values must be returned from a factory
 		api.shared.set(functionSharedKey, () => 'shared-fn');
-		api.hooks.tap('plugins:ready', client => {
+		api.hooks.on('plugins:ready', client => {
 			expectType<'combined-client'>(client.combinedClient.source);
 		});
-		api.hooks.tap('commands:beforeLoad', (client, dir) => {
+		api.hooks.on('commands:beforeLoad', (client, dir) => {
 			expectType<'combined-client'>(client.combinedClient.source);
 			expectType<string | undefined>(dir);
 		});
-		api.hooks.tap('client:close', client => {
+		api.hooks.on('client:close', client => {
 			expectType<'combined-client'>(client.combinedClient.source);
 		});
 	},
@@ -1226,6 +1254,9 @@ const combinedAtomic = createPlugin({
 		expectType<'combined-client'>(client.combinedClient.source);
 		expectType<boolean | undefined>(api?.shared.has(combinedSharedKey));
 		expectType<boolean | undefined>(api?.has('plugin:combined-import'));
+		api?.diagnostics.warn('closing');
+		// @ts-expect-error teardown API is read-only except diagnostics
+		api?.commands.add(ContractCommand);
 	},
 });
 
@@ -1251,17 +1282,16 @@ const optionsPlugin: SeyfertPlugin = {
 	},
 };
 
-const configuredPlugin = definePlugin((options: { currency: 'coin' | 'gem' }) =>
+const configuredPlugin = ((options: { currency: 'coin' | 'gem' }) =>
 	createPlugin({
 		name: 'configured',
 		client: {
 			configuredEconomy: () => ({ currency: options.currency }),
 		},
-	}),
-)({ currency: 'coin' });
+	}))({ currency: 'coin' });
 expectType<'coin' | 'gem'>({} as PluginExtensionOf<typeof configuredPlugin>['configuredEconomy']['currency']);
 
-const defaultedPluginFactory = definePlugin({
+const defaultedPluginFactory = createPluginFactory({
 	defaults: { prefix: 'default', enabled: true },
 	validate(options) {
 		expectType<string>(options.prefix);
@@ -1296,6 +1326,7 @@ const capabilityRequirementPlugin = createPlugin({
 const plugins = definePlugins(economy, storage, auth, combinedAtomic, combinedImport, optionsPlugin);
 const localPlugins = definePlugins(configuredPlugin, defaultedPlugin, capabilityRequirementPlugin);
 const arrayPlugins = definePlugins([economy, storage, combinedAtomic]);
+const transitiveOnlyPlugins = definePlugins(combinedAtomic);
 const emptyPlugins = definePlugins();
 
 declare module 'seyfert' {
@@ -1464,6 +1495,7 @@ type NoFifthPluginSlot = SeyfertPlugin<{}, {}, readonly [], {}, {}>;
 expectType<readonly [typeof economy, typeof storage, typeof auth, typeof combinedAtomic, typeof combinedImport, typeof optionsPlugin]>(plugins);
 expectType<readonly [typeof configuredPlugin, typeof defaultedPlugin, typeof capabilityRequirementPlugin]>(localPlugins);
 expectType<readonly [typeof economy, typeof storage, typeof combinedAtomic]>(arrayPlugins);
+expectType<readonly [typeof combinedAtomic]>(transitiveOnlyPlugins);
 expectType<readonly []>(emptyPlugins);
 expectType<string>(storage.meta.label);
 expectType<'atomic'>(combinedAtomic.meta.kind);
@@ -1572,10 +1604,18 @@ expectType<RegisteredPluginShared['ledger'] | undefined>(client.shared.get('ledg
 const localClient = new Client({ plugins: localPlugins });
 expectType<'coin' | 'gem'>(localClient.configuredEconomy.currency);
 expectType<string>(localClient.defaultedConfig.prefix);
+// @ts-expect-error local clients should not expose ambient registry plugins
+localClient.economy;
 
 declare const explicitLocalClient: Client<typeof localPlugins>;
 expectType<'coin' | 'gem'>(explicitLocalClient.configuredEconomy.currency);
 expectType<boolean>(explicitLocalClient.defaultedConfig.enabled);
+// @ts-expect-error explicit local clients should not expose ambient registry plugins
+explicitLocalClient.economy;
+
+declare const transitiveClient: Client<typeof transitiveOnlyPlugins>;
+expectType<1>(transitiveClient.importedCounter.count);
+expectType<'combined-client'>(transitiveClient.combinedClient.source);
 
 const ctx = commandContext();
 ctx.client.economy.addCoins('user', 3);

@@ -1,7 +1,7 @@
 import type { Client, WorkerClient } from '../client';
 import type { BaseClient } from '../client/base';
 import { wrapPluginError } from '../client/plugins/errors';
-import { orderedPluginContributions } from '../client/plugins/order';
+import { orderedPluginContributions, type PluginOrderedContribution } from '../client/plugins/order';
 import type { UsingClient } from '../commands';
 import type { FileLoaded } from '../commands/handler';
 import {
@@ -55,9 +55,9 @@ export interface CustomEventRunner {
 	runCustom<T extends CustomEventsKeys>(name: T, ...args: ResolveEventRunParams<T>): Awaitable<void>;
 }
 
-type PluginEventListener = {
+type PluginEventListener = PluginOrderedContribution & {
 	record: {
-		plugin: { name: string };
+		plugin: { name: string; instanceId?: string };
 		index: number;
 	};
 	name: string;
@@ -67,14 +67,18 @@ type PluginEventListener = {
 	fired?: boolean;
 };
 
-type PluginAnyEventListener = {
+type PluginAnyEventListener = PluginOrderedContribution & {
 	record: {
-		plugin: { name: string };
+		plugin: { name: string; instanceId?: string };
 		index: number;
 	};
 	handler: (name: string, ...args: unknown[]) => unknown;
 	active: boolean;
 };
+
+type OrderedPluginListener =
+	| (PluginOrderedContribution & { listenerKind: 'event'; listener: PluginEventListener })
+	| (PluginOrderedContribution & { listenerKind: 'any'; listener: PluginAnyEventListener });
 
 type ClientWithPluginRegistry = BaseClient;
 
@@ -121,7 +125,8 @@ export class CustomEventHandler extends BaseHandler implements CustomEventRunner
 					tasks.push(Promise.resolve((Event.run as any)(...args, this.client)));
 				}
 			}
-			tasks.push(...this.createPluginListenerTasks(name, listeners, anyListeners, [...args, this.client]));
+			const pluginTask = this.createPluginListenerTask(name, listeners, anyListeners, [...args, this.client]);
+			if (pluginTask) tasks.push(pluginTask);
 			await this.settleEventTasks(name, tasks);
 		} catch (e) {
 			await this.reportEventFailure(name, e);
@@ -159,35 +164,56 @@ export class CustomEventHandler extends BaseHandler implements CustomEventRunner
 		).collectors?.run(name as never, args, this.client as never);
 	}
 
-	// Plugin listeners are additive: build isolated tasks so one failure is attributed without skipping the rest.
-	protected createPluginListenerTasks(
+	// Plugin listeners are additive and ordered as one sequence across exact and onAny listeners.
+	protected createPluginListenerTask(
 		name: string,
 		listeners: readonly PluginEventListener[],
 		anyListeners: readonly PluginAnyEventListener[],
 		args: readonly unknown[],
 	) {
-		const tasks: Promise<unknown>[] = [];
-		for (const listener of listeners) {
-			if (listener.once && listener.fired) continue;
-			listener.fired = true;
-			tasks.push(
-				Promise.resolve()
-					.then(() => listener.handler(...args))
-					.catch(error => {
-						throw wrapPluginError(listener.record.plugin.name, `event:${name}`, listener.record.index, error);
-					}),
-			);
-		}
-		for (const listener of anyListeners) {
-			tasks.push(
-				Promise.resolve()
-					.then(() => listener.handler(name, ...args))
-					.catch(error => {
-						throw wrapPluginError(listener.record.plugin.name, `event:${name}`, listener.record.index, error);
-					}),
-			);
-		}
-		return tasks;
+		const entries: OrderedPluginListener[] = [
+			...listeners.map(listener => ({
+				listener,
+				listenerKind: 'event' as const,
+				order: listener.order,
+				sequence: listener.sequence,
+			})),
+			...anyListeners.map(listener => ({
+				listener,
+				listenerKind: 'any' as const,
+				order: listener.order,
+				sequence: listener.sequence,
+			})),
+		];
+		const ordered = orderedPluginContributions(entries) as OrderedPluginListener[];
+		if (!ordered.length) return;
+		return Promise.resolve().then(async () => {
+			for (const entry of ordered) {
+				try {
+					if (entry.listenerKind === 'event') {
+						const listener = entry.listener;
+						if (listener.once && listener.fired) continue;
+						listener.fired = true;
+						await listener.handler(...(args as unknown[]));
+					} else {
+						await entry.listener.handler(name, ...(args as unknown[]));
+					}
+				} catch (error) {
+					const listener = entry.listener;
+					await this.reportEventFailure(
+						name,
+						wrapPluginError(
+							listener.record.plugin.name,
+							`event:${name}`,
+							listener.record.index,
+							error,
+							undefined,
+							listener.record.plugin.instanceId,
+						),
+					);
+				}
+			}
+		});
 	}
 
 	protected async settleEventTasks(
@@ -246,7 +272,7 @@ export class EventHandler extends CustomEventHandler {
 		}))) {
 			if (!events) continue;
 			for (const i of events) {
-				const instance = this.callback(i);
+				const instance = this.callback(this.client.runPluginHandlerTransformers('event', i));
 				if (!instance) continue;
 				if (typeof instance?.run !== 'function') {
 					this.logger.warn(
@@ -391,7 +417,10 @@ export class EventHandler extends CustomEventHandler {
 					tasks.push(Promise.resolve((Event.run as any)(hook, client, shardId)));
 				}
 			}
-			tasks.push(...this.createPluginListenerTasks(name, listeners, anyListeners, [hook, client, shardId]));
+			if (transformed) {
+				const pluginTask = this.createPluginListenerTask(name, listeners, anyListeners, [hook, client, shardId]);
+				if (pluginTask) tasks.push(pluginTask);
+			}
 			await this.settleEventTasks(name, tasks);
 		} catch (e) {
 			await this.reportEventFailure(name, e);
@@ -407,7 +436,10 @@ export class EventHandler extends CustomEventHandler {
 		const event = this.values[name];
 		if (!event?.__filePath) return null;
 		delete require.cache[event.__filePath];
-		const imported = await magicImport(event.__filePath).then(x => x.default ?? x);
+		const imported = this.client.runPluginHandlerTransformers(
+			'event',
+			await magicImport(event.__filePath).then(x => x.default ?? x),
+		);
 		imported.__filePath = event.__filePath;
 		this.values[name] = imported;
 		return imported;

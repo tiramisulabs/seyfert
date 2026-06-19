@@ -26,11 +26,12 @@ import { Collectors } from './collectors';
 import type { GatewayIntentInput } from './intents';
 import {
 	type AnySeyfertPlugin,
-	applyPluginGatewayPayloadWrappers,
+	applyPluginGatewayDispatchInterceptors,
+	applyPluginGatewaySendPayloadWrappers,
 	type ExtendOf,
 	type RegisteredPluginExtension,
 	type RegisteredPlugins,
-	resolveClientPluginIntents,
+	runPluginHooks,
 } from './plugins';
 import { type ClientUserStructure, type MessageStructure, Transformers } from './transformers';
 
@@ -106,10 +107,12 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 
 	async loadEvents(dir?: string) {
 		dir ??= await this.getRC<InternalRuntimeConfig>().then(x => x.locations.events);
+		await runPluginHooks(this, 'events:beforeLoad', this, dir);
 		if (dir) {
 			await this.events.load(dir);
 			this.logger.info('EventHandler loaded');
 		}
+		await runPluginHooks(this, 'events:afterLoad', this, dir);
 	}
 
 	protected async execute(options: { token?: string; intents?: number } = {}) {
@@ -145,9 +148,8 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 
 		const { token: tokenRC, intents: intentsRC, debug: debugRC } = await this.getRC<InternalRuntimeConfig>();
 		const token = options?.token ?? tokenRC;
-		const connectionIntents = options.connection?.intents as GatewayIntentInput | undefined;
-		const intents = resolveClientPluginIntents(this, connectionIntents ?? intentsRC);
-		this.cache.intents = intents;
+		const connectionIntents = options?.connection?.intents as GatewayIntentInput | undefined;
+		const intents = this.resolvePluginGatewayIntents(connectionIntents ?? intentsRC);
 
 		if (!this.gateway) {
 			if (typeof token !== 'string' || token.length === 0) {
@@ -190,7 +192,11 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 		}
 	}
 
-	protected async onPacket(shardId: number, packet: GatewayDispatchPayload) {
+	protected async onPacket(shardId: number, packet: GatewayDispatchPayload): Promise<GatewayDispatchPayload | null> {
+		const pluginPacket = await applyPluginGatewayDispatchInterceptors(this, shardId, packet);
+		if (pluginPacket === null) return null;
+		packet = pluginPacket;
+
 		Promise.allSettled([
 			this.events.runEvent('RAW', this, packet, shardId, false),
 			this.collectors.run('RAW', packet, this),
@@ -199,7 +205,7 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 			case 'GUILD_MEMBER_UPDATE':
 				{
 					if (!this.memberUpdateHandler.check(packet.d)) {
-						return;
+						return packet;
 					}
 					await this.events.execute(packet, this as Client<true>, shardId);
 				}
@@ -207,7 +213,7 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 			case 'PRESENCE_UPDATE':
 				{
 					if (!this.presenceUpdateHandler.check(packet.d)) {
-						return;
+						return packet;
 					}
 					await this.events.execute(packet, this as Client<true>, shardId);
 				}
@@ -250,6 +256,7 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			}
 		}
+		return packet;
 	}
 
 	private async handleGatewaySendPayload(
@@ -257,7 +264,7 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 		payload: GatewaySendPayload,
 		handleSendPayload?: ShardManagerOptions['handleSendPayload'],
 	) {
-		const pluginPayload = await applyPluginGatewayPayloadWrappers(this, shardId, payload);
+		const pluginPayload = await applyPluginGatewaySendPayloadWrappers(this, shardId, payload);
 		if (pluginPayload === null) return null;
 		const result = await handleSendPayload?.(shardId, pluginPayload);
 		if (result === null) return null;
@@ -271,6 +278,8 @@ type ClientReadyOf<
 	TPluginsOrReady extends readonly AnySeyfertPlugin[] | boolean,
 	Ready extends boolean,
 > = TPluginsOrReady extends boolean ? TPluginsOrReady : Ready;
+type ClientAmbientExtensionOf<TPluginsOrReady extends readonly AnySeyfertPlugin[] | boolean> =
+	TPluginsOrReady extends readonly AnySeyfertPlugin[] ? {} : RegisteredPluginExtension;
 type Materialize<T> = {
 	[K in keyof T]: T[K];
 };
@@ -279,7 +288,7 @@ export type Client<
 	TPluginsOrReady extends readonly AnySeyfertPlugin[] | boolean = RegisteredPlugins,
 	Ready extends boolean = boolean,
 > = ClientBase<ClientReadyOf<TPluginsOrReady, Ready>> &
-	RegisteredPluginExtension &
+	ClientAmbientExtensionOf<TPluginsOrReady> &
 	Materialize<ExtendOf<ClientPluginsOf<TPluginsOrReady>>>;
 
 export interface ClientConstructor {
