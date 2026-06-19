@@ -849,7 +849,7 @@ export class BaseClient {
 				} catch (error) {
 					throw wrapPluginError(
 						contribution.record.plugin.name,
-						`handlers.create:${kind}`,
+						`handlers.construct:${kind}`,
 						contribution.record.index,
 						error,
 						undefined,

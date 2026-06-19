@@ -24,7 +24,7 @@ import type {
 	PluginDiagnostics,
 	PluginEventErrorHandler,
 	PluginGatewayDispatchInterceptor,
-	PluginGatewayPayloadWrapper,
+	PluginGatewaySendPayloadWrapper,
 	PluginHandlerCreator,
 	PluginHandlerKind,
 	PluginHandlerTransformer,
@@ -195,9 +195,9 @@ export interface PluginAutocompleteWrapperContribution extends PluginOrderedCont
 	scope: PluginEventContributionScope;
 }
 
-export interface PluginGatewayPayloadWrapperContribution extends PluginOrderedContribution {
+export interface PluginGatewaySendPayloadWrapperContribution extends PluginOrderedContribution {
 	record: PluginRuntimeRecord;
-	wrapper: PluginGatewayPayloadWrapper;
+	wrapper: PluginGatewaySendPayloadWrapper;
 	scope: PluginEventContributionScope;
 }
 
@@ -287,7 +287,7 @@ export interface PluginRuntimeRegistry extends PluginOrderSequence {
 	contributionMutationDiagnostics: Set<string>;
 	autocompleteWrappers: PluginAutocompleteWrapperContribution[];
 	gatewayIntents: PluginGatewayIntentContribution[];
-	gatewayPayloadWrappers: PluginGatewayPayloadWrapperContribution[];
+	gatewaySendPayloadWrappers: PluginGatewaySendPayloadWrapperContribution[];
 	gatewayDispatchInterceptors: PluginGatewayDispatchInterceptorContribution[];
 	restObservers: PluginRestObserverContribution[];
 	hooks: PluginHookContribution[];
@@ -340,7 +340,7 @@ export function createPluginRuntimeRegistry(plugins: readonly AnySeyfertPlugin[]
 		contributionMutationDiagnostics: new Set(),
 		autocompleteWrappers: [],
 		gatewayIntents: [],
-		gatewayPayloadWrappers: [],
+		gatewaySendPayloadWrappers: [],
 		gatewayDispatchInterceptors: [],
 		restObservers: [],
 		hooks: [],
@@ -480,7 +480,7 @@ export function cleanupPluginDynamicContributionMutations(
 	cleanupScopedContributions(registry.handlerCreators, record);
 	cleanupScopedContributions(registry.handlerTransformers, record);
 	cleanupScopedContributions(registry.autocompleteWrappers, record);
-	cleanupScopedContributions(registry.gatewayPayloadWrappers, record);
+	cleanupScopedContributions(registry.gatewaySendPayloadWrappers, record);
 	cleanupScopedContributions(registry.gatewayDispatchInterceptors, record);
 	cleanupScopedContributions(registry.gatewayIntents, record);
 	cleanupScopedContributions(registry.pluginDefaults, record);
@@ -1025,8 +1025,9 @@ function createPluginDiagnostics(registry: PluginRuntimeRegistry): readonly Plug
 				autocompleteWrappers: registry.autocompleteWrappers.filter(contribution => contribution.record === record)
 					.length,
 				gatewayIntents: registry.gatewayIntents.filter(contribution => contribution.record === record).length,
-				gatewayPayloadWrappers: registry.gatewayPayloadWrappers.filter(contribution => contribution.record === record)
-					.length,
+				gatewaySendPayloadWrappers: registry.gatewaySendPayloadWrappers.filter(
+					contribution => contribution.record === record,
+				).length,
 				gatewayDispatchInterceptors: registry.gatewayDispatchInterceptors.filter(
 					contribution => contribution.record === record,
 				).length,

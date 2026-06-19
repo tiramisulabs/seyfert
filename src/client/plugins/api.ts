@@ -220,14 +220,14 @@ export function createPluginApi(
 			},
 		},
 		rest: {
-			observe(observer, order) {
+			observe(observer, opts) {
 				assertCanMutate('rest.observe');
 				const contribution = {
 					record,
 					observer,
 					scope,
 					active: true,
-					order: normalizeOrder(order),
+					order: opts?.order,
 					sequence: nextPluginContributionSequence(registry),
 				};
 				registry.restObservers.push(contribution);
@@ -249,9 +249,6 @@ export function createPluginApi(
 				registry.hooks.push(contribution);
 				return once(() => removePluginHookContribution(registry, contribution));
 			},
-			tap(name, handler, opts) {
-				return this.on(name, handler, opts);
-			},
 		},
 		handlers: {
 			construct(creator, opts) {
@@ -264,9 +261,6 @@ export function createPluginApi(
 					order: opts?.order,
 					sequence: nextPluginContributionSequence(registry),
 				});
-			},
-			create(creator, opts) {
-				this.construct(creator, opts);
 			},
 			transform(transformer, opts) {
 				assertCanMutate('handlers.transform');
@@ -432,9 +426,9 @@ export function createPluginApi(
 				}
 				if (resolvedIntents.length) registry.gatewayIntents.push({ record, intents: resolvedIntents, scope });
 			},
-			wrapPayload(wrapper, opts) {
-				assertCanMutate('gateway.wrapPayload');
-				registry.gatewayPayloadWrappers.push({
+			wrapSendPayload(wrapper, opts) {
+				assertCanMutate('gateway.wrapSendPayload');
+				registry.gatewaySendPayloadWrappers.push({
 					record,
 					wrapper,
 					scope,
@@ -607,10 +601,6 @@ function normalizeHandlerKinds(record: PluginRuntimeRecord, opts: PluginHandlerO
 function isValidLangPrefix(prefix: string | undefined) {
 	if (!prefix) return false;
 	return prefix.split('.').some(segment => segment.length > 0);
-}
-
-function normalizeOrder(order: PluginOrderOpt | { order?: PluginOrderOpt } | undefined) {
-	return typeof order === 'object' && order !== null ? order.order : order;
 }
 
 function splitContributionArgs<T, O extends PluginContributionOptions = PluginContributionOptions>(

@@ -50,7 +50,7 @@ import type {
 	PluginCommandObserver,
 	PluginContextMap,
 	PluginGatewayDispatchNext,
-	PluginGatewayPayload,
+	PluginGatewaySendPayload,
 	PluginHookName,
 	PluginHookPayload,
 	PluginMiddlewareMap,
@@ -93,14 +93,14 @@ export type {
 	PluginDiagnosticMessage,
 	PluginDiagnosticSeverity,
 	PluginDiagnostics,
-	PluginEventDisposer,
+	PluginDisposer,
 	PluginEventErrorHandler,
 	PluginExtensionOf,
 	PluginGatewayDispatchInterceptor,
 	PluginGatewayDispatchMeta,
 	PluginGatewayDispatchNext,
-	PluginGatewayPayload,
-	PluginGatewayPayloadWrapper,
+	PluginGatewaySendPayload,
+	PluginGatewaySendPayloadWrapper,
 	PluginHandlerConstructor,
 	PluginHandlerCreator,
 	PluginHandlerInstance,
@@ -263,32 +263,18 @@ export function createPlugin(
 	return plugin;
 }
 
-export function definePlugin<O, P extends AnySeyfertPlugin>(factory: (options: O) => P): (options: O) => P;
-export function definePlugin<O extends object, P extends AnySeyfertPlugin>(setup: {
+export function createPluginFactory<O extends object, P extends AnySeyfertPlugin>(setup: {
 	defaults: O;
 	validate?: (options: O) => void;
 	factory: (options: O) => P;
-}): (options?: Partial<O>) => P;
-export function definePlugin<O extends object, P extends AnySeyfertPlugin>(
-	setup: ((options: O) => P) | { defaults: O; validate?: (options: O) => void; factory: (options: O) => P },
-) {
-	if (typeof setup === 'function') {
-		return (options: O) => {
-			try {
-				return setup(options);
-			} catch (error) {
-				throw wrapPluginError('<definePlugin>', 'options', -1, error);
-			}
-		};
-	}
-
+}): (options?: Partial<O>) => P {
 	return (options?: Partial<O>) => {
 		const resolved = { ...setup.defaults, ...options } as O;
 		try {
 			setup.validate?.(resolved);
 			return setup.factory(resolved);
 		} catch (error) {
-			throw wrapPluginError('<definePlugin>', 'options', -1, error);
+			throw wrapPluginError('<createPluginFactory>', 'options', -1, error);
 		}
 	};
 }
@@ -631,20 +617,20 @@ export async function applyPluginGatewayDispatchInterceptors(
 	return run(0, packet);
 }
 
-export async function applyPluginGatewayPayloadWrappers(
+export async function applyPluginGatewaySendPayloadWrappers(
 	client: BaseClient,
 	shardId: number,
-	payload: PluginGatewayPayload['payload'],
+	payload: PluginGatewaySendPayload['payload'],
 ) {
 	let current = payload;
-	for (const contribution of orderedPluginContributions(client.pluginRegistry.gatewayPayloadWrappers)) {
+	for (const contribution of orderedPluginContributions(client.pluginRegistry.gatewaySendPayloadWrappers)) {
 		let result: Awaited<ReturnType<typeof contribution.wrapper>>;
 		try {
 			result = await contribution.wrapper({ client, shardId, payload: current });
 		} catch (error) {
 			throw wrapPluginError(
 				contribution.record.plugin.name,
-				'gateway.wrapPayload',
+				'gateway.wrapSendPayload',
 				contribution.record.index,
 				error,
 				undefined,
@@ -653,10 +639,10 @@ export async function applyPluginGatewayPayloadWrappers(
 		}
 		if (result === null) {
 			addPluginDiagnostic(client.pluginRegistry, contribution.record, {
-				phase: 'gateway.wrapPayload',
+				phase: 'gateway.wrapSendPayload',
 				severity: 'warn',
-				code: 'gateway-payload-veto',
-				message: `Gateway payload wrapper from plugin "${contribution.record.plugin.name}" vetoed a payload.`,
+				code: 'gateway-send-payload-veto',
+				message: `Gateway send payload wrapper from plugin "${contribution.record.plugin.name}" vetoed a payload.`,
 				data: { shardId, op: current.op },
 			});
 			return null;

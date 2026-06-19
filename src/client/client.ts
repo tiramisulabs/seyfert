@@ -26,7 +26,7 @@ import { Collectors } from './collectors';
 import {
 	type AnySeyfertPlugin,
 	applyPluginGatewayDispatchInterceptors,
-	applyPluginGatewayPayloadWrappers,
+	applyPluginGatewaySendPayloadWrappers,
 	type ExtendOf,
 	type RegisteredPluginExtension,
 	type RegisteredPlugins,
@@ -260,7 +260,7 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 		payload: GatewaySendPayload,
 		handleSendPayload?: ShardManagerOptions['handleSendPayload'],
 	) {
-		const pluginPayload = await applyPluginGatewayPayloadWrappers(this, shardId, payload);
+		const pluginPayload = await applyPluginGatewaySendPayloadWrappers(this, shardId, payload);
 		if (pluginPayload === null) return null;
 		const result = await handleSendPayload?.(shardId, pluginPayload);
 		if (result === null) return null;

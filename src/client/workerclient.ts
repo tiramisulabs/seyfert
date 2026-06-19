@@ -52,7 +52,7 @@ import type { Client, ClientOptions } from './client';
 import { Collectors } from './collectors';
 import {
 	applyPluginGatewayDispatchInterceptors,
-	applyPluginGatewayPayloadWrappers,
+	applyPluginGatewaySendPayloadWrappers,
 	type RegisteredPluginExtension,
 	runPluginHooks,
 } from './plugins';
@@ -233,7 +233,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					}
 
 					const { nonce: _nonce, shardId: _shardId, type: _type, ...payload } = data;
-					const pluginPayload = await applyPluginGatewayPayloadWrappers(
+					const pluginPayload = await applyPluginGatewaySendPayloadWrappers(
 						this,
 						data.shardId,
 						payload as GatewaySendPayload,

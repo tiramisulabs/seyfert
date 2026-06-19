@@ -10,7 +10,7 @@ import {
 	ComponentCommand,
 	createMiddleware,
 	createPlugin,
-	definePlugin,
+	createPluginFactory,
 	createSharedKey,
 	definePlugins,
 	GatewayIntentBits,
@@ -185,12 +185,15 @@ describe('plugin api v3', () => {
 		expect(definePlugins()).toEqual([]);
 	});
 
-	test('wraps definePlugin function factory errors with attribution', () => {
-		const factory = definePlugin((_options: { enabled: boolean }) => {
-			throw new Error('invalid config');
+	test('wraps createPluginFactory factory errors with attribution', () => {
+		const factory = createPluginFactory({
+			defaults: { enabled: false },
+			factory: () => {
+				throw new Error('invalid config');
+			},
 		});
 
-		expect(() => factory({ enabled: true })).toThrow(/definePlugin.*options|options.*definePlugin/);
+		expect(() => factory({ enabled: true })).toThrow(/createPluginFactory.*options|options.*createPluginFactory/);
 	});
 
 	test('expands imports before importers and dedupes the same instance', () => {
@@ -265,7 +268,7 @@ describe('plugin api v3', () => {
 				api?.commands.defaults({ props: { fromSetup: true } });
 				api?.gateway.addIntents('Guilds');
 				api?.autocomplete.wrap((_payload, next) => next());
-				api?.gateway.wrapPayload(({ payload }) => payload);
+				api?.gateway.wrapSendPayload(({ payload }) => payload);
 				api?.gateway.onDispatch((packet, next) => next(packet));
 			},
 		});
@@ -277,7 +280,7 @@ describe('plugin api v3', () => {
 		expect(client.options.commands?.defaults?.props).toEqual({ fromSetup: true });
 		expect(client.cache.intents & GatewayIntentBits.Guilds).toBe(GatewayIntentBits.Guilds);
 		expect(client.pluginRegistry.autocompleteWrappers).toHaveLength(1);
-		expect(client.pluginRegistry.gatewayPayloadWrappers).toHaveLength(1);
+		expect(client.pluginRegistry.gatewaySendPayloadWrappers).toHaveLength(1);
 		expect(client.pluginRegistry.gatewayDispatchInterceptors).toHaveLength(1);
 	});
 
@@ -325,7 +328,7 @@ describe('plugin api v3', () => {
 				api?.commands.defaults({ props: { leaked: true } });
 				api?.gateway.addIntents('Guilds');
 				api?.autocomplete.wrap((_payload, next) => next());
-				api?.gateway.wrapPayload(({ payload }) => payload);
+				api?.gateway.wrapSendPayload(({ payload }) => payload);
 				api?.gateway.onDispatch((packet, next) => next(packet));
 				throw new Error('setup boom');
 			},
@@ -338,7 +341,7 @@ describe('plugin api v3', () => {
 		expect(client.options.commands?.defaults?.props).toBeUndefined();
 		expect(client.cache.intents & GatewayIntentBits.Guilds).toBe(0);
 		expect(client.pluginRegistry.autocompleteWrappers).toHaveLength(0);
-		expect(client.pluginRegistry.gatewayPayloadWrappers).toHaveLength(0);
+		expect(client.pluginRegistry.gatewaySendPayloadWrappers).toHaveLength(0);
 		expect(client.pluginRegistry.gatewayDispatchInterceptors).toHaveLength(0);
 		expect(client.pluginRegistry.gatewayIntents).toHaveLength(0);
 		expect(client.pluginRegistry.pluginDefaults).toHaveLength(0);
@@ -589,7 +592,7 @@ describe('plugin api v3', () => {
 		const plugin = createPlugin({
 			name: 'handlers',
 			register(api) {
-				api.handlers.create((_constructor, next, metadata) => {
+				api.handlers.construct((_constructor, next, metadata) => {
 					createKinds.push(metadata.kind);
 					return next();
 				});
@@ -639,7 +642,7 @@ describe('plugin api v3', () => {
 				createPlugin({
 					name: 'bad-handler-kind',
 					register(api) {
-						api.handlers.create((_constructor, next) => next(), { kinds: ['commands' as never] });
+						api.handlers.construct((_constructor, next) => next(), { kinds: ['commands' as never] });
 					},
 				}),
 			]),
@@ -652,7 +655,7 @@ describe('plugin api v3', () => {
 		const plugin = createPlugin({
 			name: 'loaded-handlers',
 			register(api) {
-				api.handlers.create((_constructor, next, metadata) => {
+				api.handlers.construct((_constructor, next, metadata) => {
 					createKinds.push(metadata.kind);
 					return next();
 				});
@@ -1239,7 +1242,7 @@ describe('plugin api v3', () => {
 		const plugin = createPlugin({
 			name: 'gateway-wrapper',
 			register(api) {
-				api.gateway.wrapPayload(({ payload }) => ({
+				api.gateway.wrapSendPayload(({ payload }) => ({
 					...payload,
 					d: 'wrapped',
 				}));
@@ -1810,12 +1813,12 @@ describe('plugin api v3', () => {
 			name: 'hooks',
 			register(api) {
 				api.events.onError((error, name) => errors.push({ error, name }));
-				api.hooks.tap('plugins:ready', () => calls.push('after'), { order: PluginOrder.After });
-				api.hooks.tap('plugins:ready', () => calls.push('before'), { order: PluginOrder.Before });
-				api.hooks.tap('plugins:ready', () => {
+				api.hooks.on('plugins:ready', () => calls.push('after'), { order: PluginOrder.After });
+				api.hooks.on('plugins:ready', () => calls.push('before'), { order: PluginOrder.Before });
+				api.hooks.on('plugins:ready', () => {
 					throw new Error('hook failed');
 				});
-				const dispose = api.hooks.tap('plugins:ready', () => calls.push('disposed'));
+				const dispose = api.hooks.on('plugins:ready', () => calls.push('disposed'));
 				dispose();
 			},
 		});
@@ -1848,12 +1851,12 @@ describe('plugin api v3', () => {
 			name: 'lifecycle-hooks',
 			register(api) {
 				api.hooks.on('plugins:setupComplete', () => calls.push('setup-complete'));
-				api.hooks.tap('plugins:ready', () => calls.push('ready'));
-				api.hooks.tap('commands:beforeLoad', (_client, dir) => calls.push(`before:${dir ?? ''}`));
-				api.hooks.tap('commands:afterLoad', metadata => calls.push(`commands:${metadata.kind}`));
-				api.hooks.tap('components:beforeLoad', (_client, dir) => calls.push(`components-before:${dir ?? ''}`));
-				api.hooks.tap('components:afterLoad', metadata => calls.push(`components:${metadata.kind}`));
-				api.hooks.tap('client:close', () => calls.push('close'));
+				api.hooks.on('plugins:ready', () => calls.push('ready'));
+				api.hooks.on('commands:beforeLoad', (_client, dir) => calls.push(`before:${dir ?? ''}`));
+				api.hooks.on('commands:afterLoad', metadata => calls.push(`commands:${metadata.kind}`));
+				api.hooks.on('components:beforeLoad', (_client, dir) => calls.push(`components-before:${dir ?? ''}`));
+				api.hooks.on('components:afterLoad', metadata => calls.push(`components:${metadata.kind}`));
+				api.hooks.on('client:close', () => calls.push('close'));
 			},
 		});
 		const client = createBaseClient([plugin]);

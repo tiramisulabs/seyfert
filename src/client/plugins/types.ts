@@ -70,7 +70,7 @@ export type PluginDiagnosticSeverity = 'info' | 'warn' | 'error';
 export type PluginDiagnosticCode =
 	| 'missing-optional-requirement'
 	| 'unknown-intent-bits'
-	| 'gateway-payload-veto'
+	| 'gateway-send-payload-veto'
 	| 'gateway-dispatch-veto'
 	| 'contribution-override'
 	| 'contribution-removed'
@@ -153,14 +153,14 @@ export type PluginAutocompleteWrapper = (
 	next: PluginAutocompleteNext,
 ) => Awaitable<void>;
 
-export interface PluginGatewayPayload {
+export interface PluginGatewaySendPayload {
 	client: BaseClient;
 	payload: GatewaySendPayload;
 	shardId: number;
 }
 
-export type PluginGatewayPayloadWrapper = (
-	payload: PluginGatewayPayload,
+export type PluginGatewaySendPayloadWrapper = (
+	payload: PluginGatewaySendPayload,
 ) => Awaitable<GatewaySendPayload | null | undefined | void>;
 
 export interface PluginGatewayDispatchMeta {
@@ -350,7 +350,7 @@ export interface PluginHandlerOptions {
 	kinds?: readonly PluginHandlerKind[];
 	order?: PluginOrderOpt;
 }
-export type PluginEventDisposer = () => void;
+export type PluginDisposer = () => void;
 export type PluginEventErrorHandler = (error: unknown, name: string) => unknown;
 export interface PluginContributionOptions {
 	override?: boolean;
@@ -381,45 +381,36 @@ export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewa
 			name: E,
 			handler: (...args: ResolveEventParams<E>) => unknown,
 			opts?: { once?: boolean; order?: PluginOrderOpt },
-		): PluginEventDisposer;
+		): PluginDisposer;
 		once<E extends ClientNameEvents | CustomEventsKeys | GatewayEvents>(
 			name: E,
 			handler: (...args: ResolveEventParams<E>) => unknown,
-		): PluginEventDisposer;
-		onAny(
-			handler: (name: string, ...args: unknown[]) => unknown,
-			opts?: { order?: PluginOrderOpt },
-		): PluginEventDisposer;
-		onError(handler: PluginEventErrorHandler, opts?: { order?: PluginOrderOpt }): PluginEventDisposer;
+		): PluginDisposer;
+		onAny(handler: (name: string, ...args: unknown[]) => unknown, opts?: { order?: PluginOrderOpt }): PluginDisposer;
+		onError(handler: PluginEventErrorHandler, opts?: { order?: PluginOrderOpt }): PluginDisposer;
 	};
 	commands: {
 		add(...commands: PluginCommandLoadable[]): void;
 		add(...args: [...commands: PluginCommandLoadable[], opts: PluginCommandContributionOptions]): void;
 		remove(...names: string[]): void;
-		observe(observer: PluginCommandObserver, opts?: { order?: PluginOrderOpt }): PluginEventDisposer;
+		observe(observer: PluginCommandObserver, opts?: { order?: PluginOrderOpt }): PluginDisposer;
 		defaults(
 			hooks: Partial<SeyfertCommandDefaults>,
 			opts?: { suppressDefault?: boolean | readonly (keyof SeyfertCommandDefaults)[]; order?: PluginOrderOpt },
 		): void;
 	};
 	rest: {
-		observe(observer: PluginRestObserver, order?: PluginOrderOpt | { order?: PluginOrderOpt }): PluginEventDisposer;
+		observe(observer: PluginRestObserver, opts?: { order?: PluginOrderOpt }): PluginDisposer;
 	};
 	hooks: {
 		on<K extends PluginHookName>(
 			name: K,
 			handler: PluginHookHandler<K, E>,
 			opts?: { order?: PluginOrderOpt },
-		): PluginEventDisposer;
-		tap<K extends PluginHookName>(
-			name: K,
-			handler: PluginHookHandler<K, E>,
-			opts?: { order?: PluginOrderOpt },
-		): PluginEventDisposer;
+		): PluginDisposer;
 	};
 	handlers: {
 		construct(creator: PluginHandlerCreator, opts?: PluginHandlerOptions): void;
-		create(creator: PluginHandlerCreator, opts?: PluginHandlerOptions): void;
 		transform(transformer: PluginHandlerTransformer, opts?: PluginHandlerOptions): void;
 	};
 	components: {
@@ -454,8 +445,8 @@ export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewa
 	};
 	gateway: {
 		addIntents(...intents: PluginIntentResolvable[]): void;
-		wrapPayload(wrapper: PluginGatewayPayloadWrapper, opts?: { order?: PluginOrderOpt }): void;
-		onDispatch(interceptor: PluginGatewayDispatchInterceptor, opts?: { order?: PluginOrderOpt }): () => void;
+		wrapSendPayload(wrapper: PluginGatewaySendPayloadWrapper, opts?: { order?: PluginOrderOpt }): void;
+		onDispatch(interceptor: PluginGatewayDispatchInterceptor, opts?: { order?: PluginOrderOpt }): PluginDisposer;
 	};
 	cache: {
 		resource(name: string, resource: PluginCacheResourceConstructor, opts?: PluginCacheResourceOptions): void;
@@ -548,7 +539,7 @@ export interface PluginDiagnostics {
 	commandObservers: number;
 	autocompleteWrappers: number;
 	gatewayIntents: number;
-	gatewayPayloadWrappers: number;
+	gatewaySendPayloadWrappers: number;
 	gatewayDispatchInterceptors: number;
 	handlerCreators: number;
 	handlerTransformers: number;
