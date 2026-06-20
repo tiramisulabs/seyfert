@@ -1,4 +1,4 @@
-import { fakePromise } from '../../common';
+import { fakePromise } from '../../common/it/fake-promise';
 import { type AllChannels, channelFrom } from '../../structures';
 import type { APIChannel } from '../../types';
 import type { CacheFrom, ReturnCache } from '../index';

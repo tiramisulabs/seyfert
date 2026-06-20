@@ -1,5 +1,5 @@
 import type { UsingClient } from '../../../commands';
-import { fakePromise } from '../../../common';
+import { fakePromise } from '../../../common/it/fake-promise';
 import type { GatewayIntentBits } from '../../../types';
 import type { Cache, CacheFrom, ReturnCache } from '../../index';
 

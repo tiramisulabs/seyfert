@@ -1,5 +1,5 @@
 import { type GuildStructure, Transformers } from '../../client/transformers';
-import { fakePromise } from '../../common';
+import { fakePromise } from '../../common/it/fake-promise';
 import type { APIGuild, GatewayGuildCreateDispatchData } from '../../types';
 import type { Cache, CacheFrom, ReturnCache } from '..';
 import { BaseResource } from './default/base';

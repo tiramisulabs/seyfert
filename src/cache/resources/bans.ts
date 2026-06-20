@@ -1,6 +1,6 @@
 import type { CacheFrom, ReturnCache } from '../..';
 import { type GuildBanStructure, Transformers } from '../../client/transformers';
-import { fakePromise } from '../../common';
+import { fakePromise } from '../../common/it/fake-promise';
 import type { APIBan, GatewayGuildBanModifyDispatchData } from '../../types';
 import { GuildBasedResource } from './default/guild-based';
 export class Bans extends GuildBasedResource<any, GatewayGuildBanModifyDispatchData | APIBan> {

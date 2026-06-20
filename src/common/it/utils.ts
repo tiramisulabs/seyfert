@@ -2,6 +2,9 @@ import { promises } from 'node:fs';
 import { basename, join } from 'node:path';
 import type { Cache } from '../../cache';
 import { type APIPartialEmoji, FormattingPatterns, GatewayIntentBits } from '../../types';
+
+export { type FakePromiseResult, fakePromise } from './fake-promise';
+
 import {
 	type ColorResolvable,
 	DiscordEpoch,
@@ -297,17 +300,6 @@ export async function magicImport(path: string) {
 }
 
 export type OnFailCallback = (error: unknown) => any;
-
-export function fakePromise<T = unknown | Promise<unknown>>(
-	value: T,
-): {
-	then<R>(callback: (arg: Awaited<T>) => R): R;
-} {
-	if (value instanceof Promise) return value as any;
-	return {
-		then: callback => callback(value as Awaited<T>),
-	};
-}
 
 export function lazyLoadPackage<T>(mod: string): T | undefined {
 	try {

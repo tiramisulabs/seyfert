@@ -1,6 +1,6 @@
 import type { CacheFrom, ReturnCache } from '../..';
 import { type StickerStructure, Transformers } from '../../client/transformers';
-import { fakePromise } from '../../common';
+import { fakePromise } from '../../common/it/fake-promise';
 import type { APISticker } from '../../types';
 import { GuildRelatedResource } from './default/guild-related';
 

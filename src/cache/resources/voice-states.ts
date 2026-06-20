@@ -1,6 +1,6 @@
 import type { CacheFrom, ReturnCache } from '../..';
 import { Transformers, type VoiceStateStructure } from '../../client/transformers';
-import { fakePromise } from '../../common';
+import { fakePromise } from '../../common/it/fake-promise';
 import type { APIVoiceState } from '../../types';
 import { GuildBasedResource } from './default/guild-based';
 
