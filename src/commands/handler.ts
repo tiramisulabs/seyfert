@@ -280,9 +280,26 @@ export class CommandHandler extends BaseHandler {
 			for (const option of isCommand.options ?? []) {
 				if (option instanceof SubCommand) this.stablishSubCommandDefaults(isCommand, option);
 			}
+			this.checkSubCommandsLimit(isCommand);
 		} else this.stablishContextCommandDefaults(commandInstance);
 		this.parseLocales(commandInstance);
 		return commandInstance;
+	}
+
+	checkSubCommandsLimit(command: Command) {
+		const counts: Record<string, number> = {};
+		for (const option of command.options ?? []) {
+			if (!(option instanceof SubCommand)) continue;
+			const group = option.group ?? '';
+			counts[group] = (counts[group] ?? 0) + 1;
+		}
+		for (const group in counts) {
+			if (counts[group] > 25) {
+				this.logger.warn(
+					`Command "${command.name}"${group ? ` group "${group}"` : ''} has ${counts[group]} subcommands, exceeding Discord's limit of 25.`,
+				);
+			}
+		}
 	}
 
 	private normalizeLoadOptions(options?: CommandLoadTransformer | CommandLoadOptions): CommandLoadOptions {
@@ -398,6 +415,7 @@ export class CommandHandler extends BaseHandler {
 					this.stablishContextCommandDefaults(commandInstance);
 					this.parseLocales(commandInstance);
 				}
+				if (commandInstance instanceof Command) this.checkSubCommandsLimit(commandInstance);
 				if ('handler' in commandInstance && commandInstance.handler) {
 					this.entryPoint = commandInstance as EntryPointCommand;
 				} else this.values.push(commandInstance as Command);
@@ -584,7 +602,6 @@ export class CommandHandler extends BaseHandler {
 
 	stablishSubCommandDefaults(commandInstance: Command, option: SubCommand): SubCommand {
 		option.middlewares = (commandInstance.middlewares ?? []).concat(option.middlewares ?? []);
-		option.filter = option.filter?.bind(option) ?? commandInstance.filter?.bind(commandInstance);
 		option.onBeforeMiddlewares =
 			option.onBeforeMiddlewares?.bind(option) ??
 			commandInstance.onBeforeMiddlewares?.bind(commandInstance) ??

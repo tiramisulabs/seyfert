@@ -116,8 +116,6 @@ export class HandleCommand {
 	) {
 		return runContextScopes(this.client.options.contextScopes, context, async () => {
 			try {
-				if ((await command.filter?.(context)) === false) return;
-
 				if (context.guildId && command.botPermissions) {
 					const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
 					if (permissions) return await command.onBotPermissionsFail?.(context, permissions);
@@ -170,8 +168,6 @@ export class HandleCommand {
 	async entryPoint(command: EntryPointCommand, interaction: EntryPointInteraction, context: EntryPointContext) {
 		return runContextScopes(this.client.options.contextScopes, context, async () => {
 			try {
-				if ((await command.filter?.(context)) === false) return;
-
 				if (context.guildId && command.botPermissions) {
 					const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
 					if (permissions) return await command.onBotPermissionsFail(context, permissions);
@@ -213,8 +209,6 @@ export class HandleCommand {
 	) {
 		return runContextScopes(this.client.options.contextScopes, context, async () => {
 			try {
-				if ((await command.filter?.(context)) === false) return;
-
 				if (context.guildId) {
 					if (command.botPermissions) {
 						const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
@@ -427,8 +421,6 @@ export class HandleCommand {
 			Object.assign(context, extendContext);
 
 			return await runContextScopes(self.options.contextScopes, context, async () => {
-				if ((await command.filter?.(context)) === false) return;
-
 				if (errors.length) {
 					return await command.onOptionsError?.(
 						context,

@@ -18,7 +18,7 @@ import type {
 	OptionResolverStructure,
 	UserStructure,
 } from '../../client/transformers';
-import { type Awaitable, magicImport, SeyfertError } from '../../common';
+import { magicImport, SeyfertError } from '../../common';
 import type { AllChannels, AutocompleteInteraction } from '../../structures';
 import {
 	type APIApplicationCommandBasicOption,
@@ -347,7 +347,6 @@ export class BaseCommand {
 		Object.setPrototypeOf(this, __tempCommand.prototype);
 	}
 
-	filter?(context: CommandContext): Awaitable<boolean>;
 	onBeforeMiddlewares?(context: CommandContext): any;
 	onBeforeOptions?(context: CommandContext): any;
 	run?(context: CommandContext): any;

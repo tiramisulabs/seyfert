@@ -1,5 +1,6 @@
 import {
 	ApplicationCommandOptionType,
+	ApplicationCommandType,
 	type AllChannels,
 	type AllGuildChannels,
 	type Attachment,
@@ -30,6 +31,7 @@ import {
 	createPlugin,
 	createStringOption,
 	createSharedKey,
+	Declare,
 	definePlugins,
 	type DMChannelStructure,
 	GatewayIntentBits,
@@ -612,33 +614,14 @@ class CooldownManager {
 class ContractCommand extends Command {
 	name = 'contract';
 	description = 'Contract';
-	filter(context: CommandContext): boolean | Promise<boolean> {
-		expectType<CommandContext>(context);
-		return true;
-	}
 	run() {}
 }
 
 class ContractSubCommand extends SubCommand {
 	name = 'contract-sub';
 	description = 'Contract subcommand';
-	filter(context: CommandContext): boolean | Promise<boolean> {
-		expectType<CommandContext>(context);
-		return Promise.resolve(true);
-	}
 	run() {}
 }
-
-declare const commandFilterContract: Command;
-expectType<((context: CommandContext) => boolean | Promise<boolean>) | undefined>(commandFilterContract.filter);
-declare const subCommandFilterContract: SubCommand;
-expectType<((context: CommandContext) => boolean | Promise<boolean>) | undefined>(subCommandFilterContract.filter);
-declare const contextMenuFilterContract: ContextMenuCommand;
-expectType<((context: MenuCommandContext<any>) => boolean | Promise<boolean>) | undefined>(
-	contextMenuFilterContract.filter,
-);
-declare const entryPointFilterContract: EntryPointCommand;
-expectType<((context: EntryPointContext) => boolean | Promise<boolean>) | undefined>(entryPointFilterContract.filter);
 
 const lowercaseOptionContract = {
 	username: createStringOption({
@@ -665,6 +648,16 @@ Options({
 });
 
 Options([ContractSubCommand])(class ArrayOptionsCommand {});
+
+Declare({ name: 'lowercase-name', description: 'Lowercase command name' })(class LowercaseNameCommand {});
+
+Declare({
+	// @ts-expect-error command name must be lowercase
+	name: 'Uppercase',
+	description: 'Uppercase command name',
+})(class UppercaseNameCommand {});
+
+Declare({ name: 'Context Menu', type: ApplicationCommandType.Message })(class ContextMenuNameCommand {});
 
 class ContractComponent extends ComponentCommand {
 	componentType = 'Button' as const;
