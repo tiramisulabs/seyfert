@@ -1,5 +1,5 @@
 import type { PluginMiddlewareDenialMetadata } from '../../client/plugins/types';
-import { type Awaitable, magicImport, type PermissionStrings } from '../../common';
+import { magicImport, type PermissionStrings } from '../../common';
 import {
 	ApplicationCommandType,
 	type ApplicationIntegrationType,
@@ -55,7 +55,6 @@ export abstract class EntryPointCommand {
 		Object.setPrototypeOf(this, __tempCommand.prototype);
 	}
 
-	filter?(context: EntryPointContext): Awaitable<boolean>;
 	onBeforeMiddlewares?(context: EntryPointContext): any;
 	abstract run?(context: EntryPointContext): any;
 	onAfterRun?(context: EntryPointContext, error: unknown | undefined): any;

@@ -1,5 +1,5 @@
 import type { PluginMiddlewareDenialMetadata } from '../../client/plugins/types';
-import { type Awaitable, magicImport, type PermissionStrings } from '../../common';
+import { magicImport, type PermissionStrings } from '../../common';
 import type {
 	ApplicationCommandType,
 	ApplicationIntegrationType,
@@ -54,7 +54,6 @@ export abstract class ContextMenuCommand {
 		Object.setPrototypeOf(this, __tempCommand.prototype);
 	}
 
-	filter?(context: MenuCommandContext<any>): Awaitable<boolean>;
 	onBeforeMiddlewares?(context: MenuCommandContext<any>): any;
 	abstract run?(context: MenuCommandContext<any>): any;
 	onAfterRun?(context: MenuCommandContext<any>, error: unknown | undefined): any;
