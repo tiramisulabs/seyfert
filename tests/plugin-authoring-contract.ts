@@ -1,5 +1,6 @@
 import {
 	ApplicationCommandOptionType,
+	ApplicationCommandType,
 	type AllChannels,
 	type AllGuildChannels,
 	type Attachment,
@@ -30,6 +31,7 @@ import {
 	createPlugin,
 	createStringOption,
 	createSharedKey,
+	Declare,
 	definePlugins,
 	type DMChannelStructure,
 	GatewayIntentBits,
@@ -646,6 +648,16 @@ Options({
 });
 
 Options([ContractSubCommand])(class ArrayOptionsCommand {});
+
+Declare({ name: 'lowercase-name', description: 'Lowercase command name' })(class LowercaseNameCommand {});
+
+Declare({
+	// @ts-expect-error command name must be lowercase
+	name: 'Uppercase',
+	description: 'Uppercase command name',
+})(class UppercaseNameCommand {});
+
+Declare({ name: 'Context Menu', type: ApplicationCommandType.Message })(class ContextMenuNameCommand {});
 
 class ContractComponent extends ComponentCommand {
 	componentType = 'Button' as const;

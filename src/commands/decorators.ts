@@ -136,6 +136,18 @@ type LowercaseOptionsRecord<T extends OptionsRecord> = T & {
 	[K in keyof T as K extends string ? (K extends Lowercase<K> ? never : K) : never]: never;
 };
 
+type LowercaseDeclareName<T extends CommandDeclareOptions> = {
+	[K in keyof T]: K extends 'name'
+		? T extends { type: ApplicationCommandType.User | ApplicationCommandType.Message }
+			? T[K]
+			: string extends T[K]
+				? T[K]
+				: T[K] extends Lowercase<T[K] & string>
+					? T[K]
+					: Lowercase<T[K] & string>
+		: T[K];
+};
+
 export function Group(groupName: string): GroupDecorator;
 export function Group<const T extends GroupDefinitions>(_groupsDef: T, groupName: keyof T & string): GroupDecorator;
 export function Group(groupsDefOrGroupName: GroupDefinitions | string, groupName?: string) {
@@ -180,8 +192,9 @@ export function Middlewares(cbs: readonly MiddlewareKey[]) {
 		};
 }
 
-export function Declare(declare: CommandDeclareOptions) {
-	return <T extends { new (...args: any[]): object }>(target: T) =>
+export function Declare<const T extends CommandDeclareOptions>(input: LowercaseDeclareName<T>) {
+	const declare = input as unknown as CommandDeclareOptions;
+	return <C extends { new (...args: any[]): object }>(target: C) =>
 		class extends target {
 			name = declare.name;
 			nsfw = declare.nsfw;
