@@ -20,34 +20,11 @@ export class PermissionsBitField extends BitField<typeof PermissionFlagsBits> {
 		return super.has(bits);
 	}
 
-	resolve<T extends typeof PermissionFlagsBits>(bits: BitFieldResolvable<T> | BitFieldResolvable<T>[]): bigint {
-		return (Array.isArray(bits) ? bits : [bits]).reduce<bigint>(
-			(acc, cur) => acc | PermissionsBitField.resolve([cur]),
-			BitField.None,
-		);
-	}
-
 	static resolve<T extends typeof PermissionFlagsBits>(bits: BitFieldResolvable<T> | BitFieldResolvable<T>[]): bigint {
-		let bitsResult = 0n;
-
-		for (const bit of Array.isArray(bits) ? bits : [bits]) {
-			switch (typeof bit) {
-				case 'string':
-					{
-						const resolved = PermissionFlagsBits[bit as keyof typeof PermissionFlagsBits];
-						if (resolved === undefined) throw new TypeError(`Cannot resolve permission: ${bit}`);
-						bitsResult |= PermissionsBitField.resolve(resolved);
-					}
-					break;
-				case 'bigint':
-					bitsResult |= bit;
-					break;
-				default:
-					throw new TypeError(`Cannot resolve permission: ${typeof bit === 'symbol' ? String(bit) : (bit as any)}`);
-			}
-		}
-
-		return bitsResult;
+		return BitField.prototype.resolve(
+			bits as BitFieldResolvable<typeof PermissionFlagsBits> | BitFieldResolvable<typeof PermissionFlagsBits>[],
+			PermissionFlagsBits,
+		);
 	}
 
 	toString() {

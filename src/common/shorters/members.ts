@@ -114,8 +114,8 @@ export class MemberShorter extends BaseShorter {
 		body: RESTPatchAPIGuildMemberJSONBody | RESTPatchAPICurrentGuildMemberJSONBody,
 		reason?: string,
 	): Promise<GuildMemberStructure> {
-		memberId = memberId === this.client.botId && 'nick' in body ? '@me' : memberId;
-		const member = await this.client.proxy.guilds(guildId).members(memberId).patch({ body, reason });
+		const apiMemberId = memberId === this.client.botId && 'nick' in body ? '@me' : memberId;
+		const member = await this.client.proxy.guilds(guildId).members(apiMemberId).patch({ body, reason });
 		await this.client.cache.members?.setIfNI(CacheFrom.Rest, 'GuildMembers', memberId, guildId, member);
 		return Transformers.GuildMember(this.client, member, member.user, guildId);
 	}
@@ -178,12 +178,12 @@ export class MemberShorter extends BaseShorter {
 	 * @returns A Promise that resolves to an array of listed members.
 	 */
 	async list(guildId: string, query?: RESTGetAPIGuildMembersQuery, force = false): Promise<GuildMemberStructure[]> {
-		let members: APIGuildMember[] | GuildMemberStructure[];
 		if (!force) {
-			members = (await this.client.cache.members?.values(guildId)) ?? [];
-			if (members.length) return members;
+			const cachedMembers = (await this.client.cache.members?.values(guildId)) ?? [];
+			if (cachedMembers.length) return cachedMembers;
 		}
-		members = await this.client.proxy.guilds(guildId).members.get({
+
+		const members = await this.client.proxy.guilds(guildId).members.get({
 			query,
 		});
 		await this.client.cache.members?.set(

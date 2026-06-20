@@ -1,7 +1,7 @@
-import { assert, describe, test } from 'vitest';
-import { BitField } from '../lib/structures/extra/BitField';
-import { PermissionsBitField } from '../lib/structures/extra/Permissions';
-import { PermissionFlagsBits } from '../lib/types';
+import { assert, describe, expect, test } from 'vitest';
+import { BitField } from '../src/structures/extra/BitField';
+import { PermissionsBitField } from '../src/structures/extra/Permissions';
+import { PermissionFlagsBits } from '../src/types';
 
 describe('PermissionsBitField', () => {
 	test('constructor', () => {
@@ -74,6 +74,41 @@ describe('PermissionsBitField', () => {
 		p.add(['ChangeNickname']);
 		assert.deepEqual(p.equals(['ChangeNickname', 'CreateEvents']), true);
 		assert.deepEqual(p.equals(['Connect']), false);
+	});
+
+	test('resolve numeric string', () => {
+		const p = new PermissionsBitField();
+		assert.equal(p.resolve('8'), 8n);
+	});
+
+	test('resolve bigint directly', () => {
+		const p = new PermissionsBitField();
+		assert.equal(p.resolve(8n), 8n);
+	});
+
+	test('resolve throws on invalid string', () => {
+		const p = new PermissionsBitField();
+		expect(() => p.resolve('not_a_flag' as any)).toThrow(TypeError);
+	});
+
+	test('resolve throws on NaN', () => {
+		const p = new PermissionsBitField();
+		expect(() => p.resolve(NaN as any)).toThrow(TypeError);
+	});
+
+	test('resolve throws on Infinity', () => {
+		const p = new PermissionsBitField();
+		expect(() => p.resolve(Infinity as any)).toThrow(TypeError);
+	});
+
+	test('resolve throws on float number', () => {
+		const p = new PermissionsBitField();
+		expect(() => p.resolve(1.5 as any)).toThrow(TypeError);
+	});
+
+	test('resolve throws on empty string', () => {
+		const p = new PermissionsBitField();
+		expect(() => p.resolve('' as any)).toThrow(TypeError);
 	});
 
 	test('has accepts scalar and array permissions', () => {

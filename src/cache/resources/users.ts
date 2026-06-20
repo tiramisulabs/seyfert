@@ -1,6 +1,6 @@
 import type { CacheFrom, ReturnCache } from '../..';
 import { Transformers, type UserStructure } from '../../client/transformers';
-import { fakePromise } from '../../common';
+import { fakePromise } from '../../common/it/fake-promise';
 import type { APIUser } from '../../types';
 import { BaseResource } from './default/base';
 

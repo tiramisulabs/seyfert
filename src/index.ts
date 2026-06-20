@@ -9,7 +9,7 @@ import {
 	type RuntimeConfigHTTP,
 } from './client/base';
 import { resolveGatewayIntents } from './client/intents';
-import { type Awaitable, isCloudfareWorker } from './common';
+import { type Awaitable, isCloudflareWorker } from './common';
 import type { ClientNameEvents, CustomEventsKeys, ResolveEventParams } from './events';
 
 //
@@ -97,7 +97,7 @@ export const config = {
 			port: 8080,
 			...data,
 		} as InternalRuntimeConfigHTTP;
-		if (isCloudfareWorker()) BaseClient._seyfertCfWorkerConfig = obj;
+		if (isCloudflareWorker()) BaseClient._seyfertCfWorkerConfig = obj;
 		return obj;
 	},
 };

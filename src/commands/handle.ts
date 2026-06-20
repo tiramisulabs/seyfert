@@ -978,7 +978,6 @@ export class HandleCommand {
 									});
 									break;
 								}
-								break;
 							}
 						}
 						break;

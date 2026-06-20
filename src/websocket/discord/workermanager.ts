@@ -11,7 +11,7 @@ import { DynamicBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';
 import { Heartbeater, type WorkerHeartbeaterMessages } from './heartbeater';
 import type { ShardOptions, WorkerData, WorkerManagerOptions } from './shared';
-import type { WorkerInfo, WorkerMessages, WorkerShardInfo } from './worker';
+import { WORKER_TIMEOUT_MS, type WorkerInfo, type WorkerMessages, type WorkerShardInfo } from './worker';
 
 type WorkerManagerConstructorOptionalKeys = 'token' | 'intents' | 'info' | 'handlePayload' | 'handleWorkerMessage';
 type WorkerManagerConstructorOptions = WorkerManagerOptions extends infer Options
@@ -150,6 +150,7 @@ export class WorkerManager extends Map<
 		}
 
 		const data = await this.getWorkerInfo(id);
+		if (!data.shards.length) return 0;
 
 		return data.shards.reduce((acc, prv) => acc + prv.latency, 0) / data.shards.length;
 	}
@@ -234,15 +235,19 @@ export class WorkerManager extends Map<
 					compress: this.options.compress,
 				});
 				this.set(i, worker);
+				return i;
+			};
+			const registerWorkerHeartbeat = (workerId: number, resharding: boolean) => {
+				this.heartbeater.register(workerId, deadWorkerId => {
+					this.heartbeater.unregister(deadWorkerId);
+					this.delete(deadWorkerId);
+					registerWorkerHeartbeat(registerWorker(resharding), resharding);
+				});
 			};
 			const workerExists = this.has(i);
 			if (rawResharding || !workerExists) {
 				this[rawResharding ? 'reshardingWorkerQueue' : 'workerQueue'].push(() => {
-					registerWorker(rawResharding);
-					this.heartbeater.register(i, () => {
-						this.delete(i);
-						registerWorker(false);
-					});
+					registerWorkerHeartbeat(registerWorker(rawResharding), rawResharding);
 				});
 			}
 		}
@@ -543,7 +548,7 @@ export class WorkerManager extends Map<
 			const timeout = setTimeout(() => {
 				this.promises.delete(nonce);
 				rej(new SeyfertError('WORKER_TIMEOUT', { metadata: { ...{ nonce }, detail: message } }));
-			}, 60e3);
+			}, WORKER_TIMEOUT_MS);
 			this.promises.set(nonce, { resolve: res, timeout });
 		});
 	}

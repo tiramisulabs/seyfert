@@ -1,6 +1,6 @@
 import type { ApplicationEmojiStructure, CacheFrom, ReturnCache } from '../..';
 import { type GuildEmojiStructure, Transformers } from '../../client/transformers';
-import { fakePromise } from '../../common';
+import { fakePromise } from '../../common/it/fake-promise';
 import type { APIApplicationEmoji, APIEmoji } from '../../types';
 import { GuildRelatedResource } from './default/guild-related';
 

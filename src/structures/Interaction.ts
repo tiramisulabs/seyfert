@@ -354,6 +354,8 @@ export class BaseInteraction<
 						return new MessageCommandInteraction(client, gateway as APIMessageApplicationCommandInteraction, __reply);
 					case ApplicationCommandType.PrimaryEntryPoint:
 						return new EntryPointInteraction(client, gateway as APIEntryPointCommandInteraction, __reply);
+					default:
+						return new BaseInteraction(client, gateway, __reply);
 				}
 			case InteractionType.MessageComponent:
 				switch (gateway.data.component_type) {
@@ -382,7 +384,7 @@ export class BaseInteraction<
 							__reply,
 						);
 					default:
-						return;
+						return new BaseInteraction(client, gateway, __reply);
 				}
 			case InteractionType.ModalSubmit:
 				return new ModalSubmitInteraction(client, gateway);
@@ -596,7 +598,7 @@ export class EntryPointInteraction<FromGuild extends boolean = boolean> extends 
 	APIEntryPointCommandInteraction
 > {
 	declare channel: AllChannels;
-	async withReponse(data?: InteractionCreateBodyRequest) {
+	async withResponse(data?: InteractionCreateBodyRequest) {
 		let body = { type: InteractionResponseType.LaunchActivity } as const;
 
 		if (data) {

@@ -207,6 +207,8 @@ export class BaseClient {
 
 	/**@internal */
 	static _seyfertCfWorkerConfig?: InternalRuntimeConfigHTTP | InternalRuntimeConfig;
+	/**@internal */
+	private _rcCache?: ResolvedRC;
 
 	constructor(options?: BaseClientOptions) {
 		const defaults = {
@@ -967,44 +969,46 @@ export class BaseClient {
 			};
 		}
 
-		return new Promise(async r => {
-			await this.handleCommand.interaction(rawBody, -1, async ({ body, files }) => {
-				let response: FormData | APIInteractionResponse;
-				const headers: { 'Content-Type'?: string } = {};
+		return new Promise((resolve, reject) => {
+			this.handleCommand
+				.interaction(rawBody, -1, async ({ body, files }) => {
+					let response: FormData | APIInteractionResponse;
+					const headers: { 'Content-Type'?: string } = {};
 
-				if (files) {
-					response = new FormData();
-					for (const [index, file] of files.entries()) {
-						const fileKey = file.key ?? `files[${index}]`;
-						if (isBufferLike(file.data)) {
-							let data: Exclude<typeof file.data, Uint8Array | Uint8ClampedArray>;
-							if (
-								Buffer.isBuffer(file.data) ||
-								file.data instanceof Uint8Array ||
-								file.data instanceof Uint8ClampedArray
-							) {
-								data = toArrayBuffer(file.data);
+					if (files) {
+						response = new FormData();
+						for (const [index, file] of files.entries()) {
+							const fileKey = file.key ?? `files[${index}]`;
+							if (isBufferLike(file.data)) {
+								let data: Exclude<typeof file.data, Uint8Array | Uint8ClampedArray>;
+								if (
+									Buffer.isBuffer(file.data) ||
+									file.data instanceof Uint8Array ||
+									file.data instanceof Uint8ClampedArray
+								) {
+									data = toArrayBuffer(file.data);
+								} else {
+									data = file.data;
+								}
+								response.append(fileKey, new Blob([data], { type: file.contentType }), file.filename);
 							} else {
-								data = file.data;
+								response.append(fileKey, new Blob([`${file.data}`], { type: file.contentType }), file.filename);
 							}
-							response.append(fileKey, new Blob([data], { type: file.contentType }), file.filename);
-						} else {
-							response.append(fileKey, new Blob([`${file.data}`], { type: file.contentType }), file.filename);
 						}
+						if (body) {
+							response.append('payload_json', JSON.stringify(body));
+						}
+					} else {
+						response = body ?? {};
+						headers['Content-Type'] = 'application/json';
 					}
-					if (body) {
-						response.append('payload_json', JSON.stringify(body));
-					}
-				} else {
-					response = body ?? {};
-					headers['Content-Type'] = 'application/json';
-				}
 
-				return r({
-					headers,
-					response,
-				});
-			});
+					resolve({
+						headers,
+						response,
+					});
+				})
+				.catch(reject);
 		});
 	}
 
@@ -1183,7 +1187,9 @@ export class BaseClient {
 
 	async getRC<
 		T extends InternalRuntimeConfigHTTP | InternalRuntimeConfig = InternalRuntimeConfigHTTP | InternalRuntimeConfig,
-	>() {
+	>(): Promise<ResolvedRC> {
+		if (this._rcCache) return this._rcCache;
+
 		const seyfertConfig = (BaseClient._seyfertCfWorkerConfig ||
 			(await this.options?.getRC?.()) ||
 			(await Promise.any(
@@ -1223,14 +1229,13 @@ export class BaseClient {
 		}
 
 		const obj = {
-			debug: !!debug,
 			...env,
+			debug: !!debug,
+			intents: resolveGatewayIntents('intents' in seyfertConfig ? (seyfertConfig.intents ?? 0) : 0),
 			locations: locationsFullPaths,
-		} as T & { intents?: GatewayIntentInput };
-
-		if ('intents' in obj) obj.intents = resolveGatewayIntents(obj.intents);
-
-		return obj as T;
+		} as unknown as ResolvedRC;
+		this._rcCache = obj;
+		return obj;
 	}
 }
 
@@ -1358,6 +1363,14 @@ interface RC extends ExtendedRC {
 	port?: number;
 	publicKey?: string;
 }
+
+export type ResolvedRC = Readonly<
+	Omit<RC, 'locations' | 'debug'> & {
+		locations: Readonly<MakeRequired<RC['locations'], 'base'>>;
+		debug: boolean;
+		intents: number;
+	}
+>;
 
 export type InternalRuntimeConfigHTTP = Omit<
 	MakeRequired<RC, 'publicKey' | 'port' | 'applicationId'>,

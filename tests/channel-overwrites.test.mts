@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from 'vitest';
-import { Cache, MemoryAdapter } from '../lib';
-import { ChannelShorter } from '../lib/common/shorters/channels';
-import { OverwriteType } from '../lib/types';
+import { Cache, CacheFrom, MemoryAdapter } from '../src';
+import { ChannelShorter } from '../src/common/shorters/channels';
+import { OverwriteType } from '../src/types';
 
 describe('channel overwrites endpoint', () => {
 	const channelId = '123';
@@ -58,4 +58,24 @@ describe('channel overwrites endpoint', () => {
 		expect(afterDelete ?? undefined).toBeUndefined();
 		expect(del).toHaveBeenCalledWith({ reason: 'remove overwrite' });
 	});
+	test('raw channel rehydrates overwrites without mutating cached channel data', async () => {
+		const client: any = {};
+		client.cache = new Cache(0, new MemoryAdapter(), {}, client);
+		client.proxy = {
+			channels: vi.fn(),
+		};
+		const channelShorter = new ChannelShorter(client);
+		const channel = { guild_id: guildId, id: channelId, name: 'general', type: 0 };
+		const overwrites = [{ allow: '2', deny: '4', id: overwriteId, type: OverwriteType.Member }];
+
+		await client.cache.channels?.set(CacheFrom.Rest, channelId, guildId, channel);
+		await client.cache.overwrites?.set(CacheFrom.Rest, channelId, guildId, overwrites);
+
+		const raw = await channelShorter.raw(channelId);
+		const cachedRaw = await client.cache.channels?.raw(channelId);
+
+		expect(raw).toMatchObject({ permission_overwrites: [{ guild_id: guildId, id: overwriteId }] });
+		expect(cachedRaw).not.toHaveProperty('permission_overwrites');
+	});
+
 });

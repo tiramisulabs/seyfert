@@ -37,7 +37,7 @@ export type InferAsyncCache = InternalOptions extends { asyncCache: infer P } ? 
 export type ReturnCache<T> = If<InferAsyncCache, Promise<T>, T>;
 
 // GuildBased
-export type GuildBased = 'members' | 'voiceStates';
+export type GuildBased = 'members' | 'voiceStates' | 'bans';
 
 // ClientGuildBased
 export type GuildRelated =
@@ -48,8 +48,7 @@ export type GuildRelated =
 	| 'presences'
 	| 'stageInstances'
 	| 'overwrites'
-	| 'messages'
-	| 'bans';
+	| 'messages';
 
 // ClientBased
 export type NonGuildBased = 'users' | 'guilds';
@@ -251,7 +250,7 @@ export class Cache {
 		return this.hasIntent('GuildVoiceStates');
 	}
 
-	get hasPrenseceUpdates() {
+	get hasPresenceUpdates() {
 		return this.hasIntent('GuildPresences');
 	}
 
@@ -267,13 +266,15 @@ export class Cache {
 		const allData: Partial<Record<BulkGetKey[0], string[][]>> = {};
 		for (const [type, id, guildId] of keys) {
 			switch (type) {
+				case 'messages':
+				case 'bans':
 				case 'voiceStates':
 				case 'members':
 					{
 						if (!allData[type]) {
 							allData[type] = [];
 						}
-						allData[type]!.push([id, guildId]);
+						allData[type]!.push([id, guildId!]);
 					}
 					break;
 				case 'roles':
@@ -285,8 +286,6 @@ export class Cache {
 				case 'users':
 				case 'guilds':
 				case 'overwrites':
-				case 'bans':
-				case 'messages':
 					{
 						if (!allData[type]) {
 							allData[type] = [];
@@ -352,7 +351,6 @@ export class Cache {
 				case 'stageInstances':
 				case 'emojis':
 				case 'overwrites':
-				case 'bans':
 				case 'messages':
 					{
 						if (!this[type]?.filter(data, id, guildId, from)) continue;
@@ -367,9 +365,18 @@ export class Cache {
 						if (type !== 'overwrites' && type !== 'messages') {
 							data.guild_id = guildId;
 						}
+						if (type === 'messages' && data?.author?.id && this.users?.filter(data.author, data.author.id, from)) {
+							const userHashId = this.users.namespace;
+							if (!(userHashId in relationshipsData)) {
+								relationshipsData[userHashId] = [];
+							}
+							relationshipsData[userHashId].push(data.author.id);
+							allData.push([this.users.hashId(data.author.id), data.author]);
+						}
 						allData.push([this[type]!.hashId(id), this[type]!.parse(data, id, guildId!)]);
 					}
 					break;
+				case 'bans':
 				case 'voiceStates':
 				case 'members':
 					{
@@ -458,6 +465,14 @@ export class Cache {
 						relationshipsData[hashId].push(id);
 						if (type !== 'overwrites' && type !== 'messages') {
 							data.guild_id = guildId;
+						}
+						if (type === 'messages' && data?.author?.id && this.users?.filter(data.author, data.author.id, from)) {
+							const userHashId = this.users.namespace;
+							if (!(userHashId in relationshipsData)) {
+								relationshipsData[userHashId] = [];
+							}
+							relationshipsData[userHashId].push(data.author.id);
+							allData.push([this.users.hashId(data.author.id), data.author]);
 						}
 						allData.push([this[type]!.hashId(id), this[type]!.parse(data, id, guildId!)]);
 					}

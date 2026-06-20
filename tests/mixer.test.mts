@@ -1,6 +1,6 @@
 // test written by claude 🩻
 import { describe, expect, it } from 'vitest';
-import { mix } from '../lib/deps/mixer';
+import { mix } from '../src/deps/mixer';
 
 describe('mix decorator', () => {
 	// Helper classes for testing

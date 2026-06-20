@@ -1,6 +1,6 @@
 import { basename } from 'node:path';
 import type { FileLoaded } from '../commands/handler';
-import { type Awaitable, BaseHandler, isCloudfareWorker, isObject, magicImport, SeyfertError } from '../common';
+import { type Awaitable, BaseHandler, isCloudflareWorker, isObject, magicImport, SeyfertError } from '../common';
 import type { Locale, LocaleString } from '../types';
 import { LangRouter } from './router';
 
@@ -75,7 +75,7 @@ export class LangsHandler extends BaseHandler {
 	}
 
 	async reload(lang: string) {
-		if (isCloudfareWorker()) {
+		if (isCloudflareWorker()) {
 			throw new SeyfertError('RELOAD_NOT_SUPPORTED', {
 				metadata: { detail: 'Reload in Cloudflare worker is not supported' },
 			});

@@ -203,6 +203,10 @@ export class SeyfertWebSocket {
 		this.socket?.removeAllListeners();
 		this.socket?.destroy();
 		this.socket = undefined;
+		for (const [, promise] of this.__promises) {
+			promise.reject(new Error('WebSocket closed'));
+		}
+		this.__promises.clear();
 		if (this.__closeCalled) return;
 		this.#emitClose(
 			this.__lastError ?? {
@@ -322,6 +326,7 @@ export class SeyfertWebSocket {
 			})
 			.finally(() => {
 				clearTimeout(timeout);
+				this.__promises.delete(id);
 			});
 	}
 

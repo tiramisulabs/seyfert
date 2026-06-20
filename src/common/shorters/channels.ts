@@ -5,14 +5,13 @@ import { type AllChannels, BaseChannel, channelFrom, type GuildMember, type Guil
 import { PermissionsBitField } from '../../structures/extra/Permissions';
 import type {
 	APIChannel,
-	APIGuildChannel,
 	APIOverwrite,
 	RESTGetAPIChannelMessagesPinsQuery,
 	RESTGetAPIChannelMessagesQuery,
 	RESTPatchAPIChannelJSONBody,
 	RESTPutAPIChannelPermissionJSONBody,
 } from '../../types';
-import { type ChannelType, PermissionFlagsBits } from '../../types';
+import { PermissionFlagsBits } from '../../types';
 import { MergeOptions } from '../it/utils';
 import type { MakeRequired, OmitInsert, PermissionStrings } from '../types/util';
 import type { ThreadCreateBodyRequest } from '../types/write';
@@ -34,8 +33,9 @@ export class ChannelShorter extends BaseShorter {
 			const channel = await this.client.cache.channels?.raw(id);
 			if (channel) {
 				const overwrites = await this.client.cache.overwrites?.raw(id);
-				if (overwrites) (channel as APIGuildChannel<ChannelType>).permission_overwrites = overwrites;
-				return channel as APIChannel;
+				return overwrites
+					? ({ ...channel, permission_overwrites: overwrites } as unknown as APIChannel)
+					: (channel as APIChannel);
 			}
 		}
 

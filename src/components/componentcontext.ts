@@ -4,11 +4,11 @@ import type {
 	ChannelSelectMenuInteraction,
 	ComponentCommand,
 	MentionableSelectMenuInteraction,
-	ReturnCache,
 	RoleSelectMenuInteraction,
 	StringSelectMenuInteraction,
 	UserSelectMenuInteraction,
 } from '..';
+import type { ReturnCache } from '../cache';
 import type {
 	GuildMemberStructure,
 	GuildStructure,
@@ -45,10 +45,6 @@ export interface ComponentContext<
 > extends BaseContext,
 		ExtendContext {}
 
-/**
- * Represents a context for interacting with components in a Discord bot.
- * @template Type - The type of component interaction.
- */
 export class ComponentContext<
 	Type extends keyof ContextComponentCommandInteractionMap,
 	M extends keyof ResolvedRegisteredMiddlewares = never,
@@ -122,18 +118,6 @@ export class ComponentContext<
 		return this.interaction.deferUpdate();
 	}
 
-	/**
-	 * Edits the response of the interaction.
-	 * @param body - The updated body of the response.
-	 */
-	editResponse(body: InteractionMessageUpdateBodyRequest): Promise<WebhookMessageStructure> {
-		return this.interaction.editResponse(body);
-	}
-
-	/**
-	 * Updates the interaction with new data.
-	 * @param body - The updated body of the interaction.
-	 */
 	update(body: ComponentInteractionMessageUpdate) {
 		return this.interaction.update(body);
 	}
@@ -210,6 +194,7 @@ export class ComponentContext<
 	/**
 	 * Gets the guild of the interaction.
 	 * @param mode - The mode to fetch the guild.
+	 * @param query - Optional query used in fetch mode.
 	 * @returns A promise that resolves to the guild.
 	 */
 	guild(mode?: 'rest' | 'flow', query?: RESTGetAPIGuildQuery): Promise<GuildStructure<'cached' | 'api'> | undefined>;

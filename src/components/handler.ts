@@ -10,7 +10,14 @@ import { runContextScopes } from '../client/plugins';
 import { LimitedCollection } from '../collection';
 import { BaseCommand, type ResolvedRegisteredMiddlewares, type UsingClient } from '../commands';
 import type { FileLoaded } from '../commands/handler';
-import { BaseHandler, isCloudfareWorker, type Logger, magicImport, type OnFailCallback, SeyfertError } from '../common';
+import {
+	BaseHandler,
+	isCloudflareWorker,
+	type Logger,
+	magicImport,
+	type OnFailCallback,
+	SeyfertError,
+} from '../common';
 import type { ComponentInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from '../structures';
 import { ComponentCommand, InteractionCommandType } from './componentcommand';
 import type { ComponentContext } from './componentcontext';
@@ -156,7 +163,6 @@ export class ComponentHandler extends BaseHandler {
 						nodeTimeout = setTimeout(() => {
 							cleanup();
 							resolve(null);
-							// by default 15 seconds in case user don't do anything
 						}, timeout);
 				}),
 			resetTimeouts: () => {
@@ -217,8 +223,9 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	onModalSubmit(interaction: ModalSubmitInteraction) {
-		setImmediate(() => this.modals.delete(interaction.user.id));
-		return this.modals.get(interaction.user.id)?.(interaction);
+		const callback = this.modals.get(interaction.user.id);
+		this.modals.delete(interaction.user.id);
+		return callback?.(interaction);
 	}
 
 	deleteValue(id: string, reason?: string) {
@@ -244,7 +251,7 @@ export class ComponentHandler extends BaseHandler {
 		return component;
 	}
 
-	stablishDefaults(component: ComponentCommands) {
+	establishDefaults(component: ComponentCommands) {
 		component.props ??= this.client.options.commands?.defaults?.props ?? {};
 		const is = component instanceof ModalCommand ? 'modals' : 'components';
 		component.onInternalError ??= this.client.options?.[is]?.defaults?.onInternalError;
@@ -263,7 +270,7 @@ export class ComponentHandler extends BaseHandler {
 		component = this.callback(value, options.create);
 		if (!component) return false;
 		if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) return false;
-		this.stablishDefaults(component);
+		this.establishDefaults(component);
 		if (filePath) component.__filePath = filePath;
 		const kind = component instanceof ModalCommand ? 'modal' : 'component';
 		const wrapped = options.transform?.(kind, component) ?? component;
@@ -271,7 +278,7 @@ export class ComponentHandler extends BaseHandler {
 		if (wrapped !== component) {
 			component = wrapped;
 			component.__filePath ??= filePath;
-			this.stablishDefaults(component);
+			this.establishDefaults(component);
 		}
 		return component;
 	}
@@ -316,7 +323,7 @@ export class ComponentHandler extends BaseHandler {
 					continue;
 				}
 				if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) continue;
-				this.stablishDefaults(component);
+				this.establishDefaults(component);
 				component.__filePath = file.path;
 				const kind = component instanceof ModalCommand ? 'modal' : 'component';
 				const wrapped = options.transform?.(kind, component) ?? component;
@@ -324,7 +331,7 @@ export class ComponentHandler extends BaseHandler {
 				if (wrapped !== component) {
 					component = wrapped;
 					component.__filePath ??= file.path;
-					this.stablishDefaults(component);
+					this.establishDefaults(component);
 				}
 				this.commands.push(component);
 			}
@@ -333,7 +340,7 @@ export class ComponentHandler extends BaseHandler {
 
 	async reload(path: string) {
 		if (!this.client.components) return;
-		if (isCloudfareWorker()) {
+		if (isCloudflareWorker()) {
 			throw new SeyfertError('RELOAD_NOT_SUPPORTED', {
 				metadata: { detail: 'Reload in Cloudflare worker is not supported' },
 			});

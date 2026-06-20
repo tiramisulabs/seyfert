@@ -36,16 +36,8 @@ export class Collectors {
 	readonly values = new Map<AllClientEvents, RunData<any>[]>();
 
 	private generateRandomUUID(name: AllClientEvents): UUID | '*' {
-		const collectors = this.values.get(name);
-		if (!collectors) return '*';
-
-		let nonce = randomUUID();
-
-		while (collectors.find(x => x.nonce === nonce)) {
-			nonce = randomUUID();
-		}
-
-		return nonce;
+		if (!this.values.has(name)) return '*';
+		return randomUUID();
 	}
 
 	create<T extends AllClientEvents>(options: RunData<T>['options']) {
@@ -111,7 +103,7 @@ export class Collectors {
 
 		const data = (await resolveRawEventData(name, client, raw)) ?? raw;
 
-		for (const i of collectors) {
+		for (const i of [...collectors]) {
 			if (await i.options.filter(data as never)) {
 				i.idle?.refresh();
 				const stop = (reason = 'unknown') => {
@@ -122,7 +114,6 @@ export class Collectors {
 				} catch (e) {
 					await i.options.onRunError?.(data as never, e, stop);
 				}
-				break;
 			}
 		}
 	}

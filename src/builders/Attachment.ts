@@ -2,7 +2,6 @@ import { randomBytes } from 'node:crypto';
 import { promises } from 'node:fs';
 import path from 'node:path';
 import type { RawFile, UsingClient } from '..';
-import { isBufferLike } from '../api/utils/utils';
 import { createValidationMetadata, type ImageResolvable, type ObjectToLower, SeyfertError } from '../common';
 import { Base } from '../structures/extra/Base';
 import type { APIAttachment, RESTAPIAttachment } from '../types';
@@ -209,6 +208,14 @@ export async function resolveAttachmentData(
 					},
 				});
 			const res = await fetch(data as string);
+			if (!res.ok) {
+				throw new SeyfertError('INVALID_ATTACHMENT_TYPE', {
+					metadata: {
+						...createValidationMetadata('successful HTTP response', `${res.status} ${res.statusText}`),
+						detail: `Failed to fetch attachment from URL: ${res.status} ${res.statusText}`,
+					},
+				});
+			}
 			return {
 				data: Buffer.from(await res.arrayBuffer()),
 				contentType: res.headers.get('content-type'),
@@ -227,7 +234,9 @@ export async function resolveAttachmentData(
 			return { data: await promises.readFile(file) };
 		}
 		case 'buffer': {
-			if (isBufferLike(data)) return { data };
+			if (Buffer.isBuffer(data)) return { data };
+			if (data instanceof ArrayBuffer) return { data: Buffer.from(data) };
+			if (data instanceof Uint8Array || data instanceof Uint8ClampedArray) return { data: Buffer.from(data) };
 			if (typeof (data as AsyncIterable<ArrayBuffer>)[Symbol.asyncIterator] === 'function') {
 				const buffers: Buffer[] = [];
 				for await (const resource of data as AsyncIterable<ArrayBuffer>) buffers.push(Buffer.from(resource));
@@ -256,8 +265,8 @@ export async function resolveAttachmentData(
  * @param data - The base64 data.
  * @returns The resolved data URL.
  */
-export function resolveBase64(data: string | Buffer) {
-	if (Buffer.isBuffer(data)) return `data:image/jpg;base64,${data.toString('base64')}`;
+export function resolveBase64(data: string | Buffer, contentType = 'image/jpeg') {
+	if (Buffer.isBuffer(data)) return `data:${contentType};base64,${data.toString('base64')}`;
 	return data;
 }
 
@@ -271,7 +280,10 @@ export async function resolveImage(image: ImageResolvable): Promise<string> {
 		const {
 			data: { type, resolvable },
 		} = image;
-		if (type && resolvable) return resolveBase64((await resolveAttachmentData(resolvable, type)).data as Buffer);
+		if (type && resolvable) {
+			const file = await resolveAttachmentData(resolvable, type);
+			return resolveBase64(file.data as Buffer, file.contentType ?? undefined);
+		}
 		throw new SeyfertError('INVALID_ATTACHMENT_TYPE', {
 			metadata: {
 				...createValidationMetadata('AttachmentBuilder with type and resolvable data', {
@@ -287,9 +299,18 @@ export async function resolveImage(image: ImageResolvable): Promise<string> {
 
 	if (image instanceof Attachment) {
 		const response = await fetch(image.url);
-		return resolveBase64((await resolveAttachmentData(await response.arrayBuffer(), 'buffer')).data as Buffer);
+		if (!response.ok) {
+			throw new SeyfertError('INVALID_ATTACHMENT_TYPE', {
+				metadata: {
+					...createValidationMetadata('successful HTTP response', `${response.status} ${response.statusText}`),
+					detail: `Failed to fetch attachment from URL: ${response.status} ${response.statusText}`,
+				},
+			});
+		}
+		const file = await resolveAttachmentData(await response.arrayBuffer(), 'buffer');
+		return resolveBase64(file.data as Buffer, response.headers.get('content-type') ?? file.contentType ?? undefined);
 	}
 
 	const file = await resolveAttachmentData(image.data, image.type);
-	return resolveBase64(file.data as Buffer);
+	return resolveBase64(file.data as Buffer, file.contentType ?? undefined);
 }

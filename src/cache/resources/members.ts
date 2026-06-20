@@ -1,6 +1,6 @@
 import type { CacheFrom, ReturnCache } from '../..';
 import { type GuildMemberStructure, Transformers } from '../../client/transformers';
-import { fakePromise } from '../../common';
+import { fakePromise } from '../../common/it/fake-promise';
 import type { APIGuildMember, APIUser } from '../../types';
 import { GuildBasedResource } from './default/guild-based';
 export class Members extends GuildBasedResource<any, APIGuildMember> {

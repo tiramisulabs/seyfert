@@ -80,8 +80,9 @@ export class ApplicationShorter extends BaseShorter {
 	 * Deletes an emoji for the application.
 	 * @param emojiId The ID of the emoji.
 	 */
-	deleteEmoji(emojiId: string) {
-		return this.client.proxy.applications(this.client.applicationId).emojis(emojiId).delete();
+	async deleteEmoji(emojiId: string) {
+		await this.client.proxy.applications(this.client.applicationId).emojis(emojiId).delete();
+		await this.client.cache.emojis?.remove(emojiId, this.client.applicationId);
 	}
 
 	/**

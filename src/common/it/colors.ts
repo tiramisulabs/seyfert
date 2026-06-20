@@ -33,12 +33,23 @@ export function getColorEnabled(): boolean {
  * @param open
  * @param close
  */
+const codeCache = new Map<string, Code>();
+
 function code(open: number[], close: number): Code {
-	return {
+	const createCode = () => ({
 		open: `\x1b[${open.join(';')}m`,
 		close: `\x1b[${close}m`,
 		regexp: new RegExp(`\\x1b\\[${close}m`, 'g'),
-	};
+	});
+	if ((open[0] === 38 || open[0] === 48) && open[1] === 2) return createCode();
+
+	const key = `${open.join(';')};${close}`;
+	let cached = codeCache.get(key);
+	if (!cached) {
+		cached = createCode();
+		codeCache.set(key, cached);
+	}
+	return cached;
 }
 
 /**

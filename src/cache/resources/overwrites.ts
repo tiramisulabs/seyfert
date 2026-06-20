@@ -1,5 +1,5 @@
 import type { CacheFrom, ReturnCache } from '../..';
-import { fakePromise } from '../../common/it/utils';
+import { fakePromise } from '../../common/it/fake-promise';
 import { PermissionsBitField } from '../../structures/extra/Permissions';
 import type { APIOverwrite, OverwriteType } from '../../types';
 import { GuildRelatedResource } from './default/guild-related';
@@ -13,10 +13,7 @@ export class Overwrites extends GuildRelatedResource<any, APIOverwrite[]> {
 	}
 
 	parse(data: any[], _id: string, guild_id: string) {
-		data.forEach(x => {
-			x.guild_id = guild_id;
-		});
-		return data;
+		return data.map(x => ({ ...x, guild_id }));
 	}
 
 	raw(id: string): ReturnCache<(APIOverwrite & { guild_id: string })[] | undefined> {

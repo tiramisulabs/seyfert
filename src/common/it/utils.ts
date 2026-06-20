@@ -2,6 +2,9 @@ import { promises } from 'node:fs';
 import { basename, join } from 'node:path';
 import type { Cache } from '../../cache';
 import { type APIPartialEmoji, FormattingPatterns, GatewayIntentBits } from '../../types';
+
+export { type FakePromiseResult, fakePromise } from './fake-promise';
+
 import {
 	type ColorResolvable,
 	DiscordEpoch,
@@ -46,7 +49,7 @@ export function resolveColor(color: ColorResolvable): number {
 
 	if (type === 'string') {
 		const lookupColor = ColorLookup[color as keyof typeof EmbedColors];
-		if (lookupColor) {
+		if (lookupColor != null) {
 			return lookupColor === -1 ? Math.floor(Math.random() * 0xffffff) : lookupColor;
 		}
 		if ((color as string).startsWith('#')) {
@@ -80,6 +83,12 @@ export function delay<T>(time: number, result?: T): Promise<T> {
  */
 export function isObject(o: any): o is Record<string, unknown> {
 	return o && typeof o === 'object' && !Array.isArray(o);
+}
+
+function isPlainObject(o: unknown): o is Record<string, unknown> {
+	if (!o || typeof o !== 'object') return false;
+	const proto = Object.getPrototypeOf(o);
+	return proto === Object.prototype || proto === null;
 }
 
 /**
@@ -214,21 +223,19 @@ export function toSnakeCase<Obj extends Record<string, any>>(target: Obj): Objec
 				result[ReplaceRegex.snake(key)] = value;
 				break;
 			case 'object': {
-				if (Array.isArray(value)) {
-					result[ReplaceRegex.snake(key)] = value.map(prop =>
-						typeof prop === 'object' && prop ? toSnakeCase(prop) : prop,
-					);
-					break;
-				}
-				if (isObject(value)) {
-					result[ReplaceRegex.snake(key)] = toSnakeCase(value);
-					break;
-				}
-				if (!Number.isNaN(value)) {
+				if (value === null) {
 					result[ReplaceRegex.snake(key)] = null;
 					break;
 				}
-				result[ReplaceRegex.snake(key)] = toSnakeCase(value);
+				if (Array.isArray(value)) {
+					result[ReplaceRegex.snake(key)] = value.map(prop => (isPlainObject(prop) ? toSnakeCase(prop) : prop));
+					break;
+				}
+				if (isPlainObject(value)) {
+					result[ReplaceRegex.snake(key)] = toSnakeCase(value);
+					break;
+				}
+				result[ReplaceRegex.snake(key)] = value;
 				break;
 			}
 		}
@@ -255,21 +262,19 @@ export function toCamelCase<Obj extends Record<string, any>>(target: Obj): Objec
 				result[ReplaceRegex.camel(key)] = value;
 				break;
 			case 'object': {
-				if (Array.isArray(value)) {
-					result[ReplaceRegex.camel(key)] = value.map(prop =>
-						typeof prop === 'object' && prop ? toCamelCase(prop) : prop,
-					);
-					break;
-				}
-				if (isObject(value)) {
-					result[ReplaceRegex.camel(key)] = toCamelCase(value);
-					break;
-				}
-				if (!Number.isNaN(value)) {
+				if (value === null) {
 					result[ReplaceRegex.camel(key)] = null;
 					break;
 				}
-				result[ReplaceRegex.camel(key)] = toCamelCase(value);
+				if (Array.isArray(value)) {
+					result[ReplaceRegex.camel(key)] = value.map(prop => (isPlainObject(prop) ? toCamelCase(prop) : prop));
+					break;
+				}
+				if (isPlainObject(value)) {
+					result[ReplaceRegex.camel(key)] = toCamelCase(value);
+					break;
+				}
+				result[ReplaceRegex.camel(key)] = value;
 				break;
 			}
 		}
@@ -296,17 +301,6 @@ export async function magicImport(path: string) {
 
 export type OnFailCallback = (error: unknown) => any;
 
-export function fakePromise<T = unknown | Promise<unknown>>(
-	value: T,
-): {
-	then<R>(callback: (arg: Awaited<T>) => R): R;
-} {
-	if (value instanceof Promise) return value as any;
-	return {
-		then: callback => callback(value as Awaited<T>),
-	};
-}
-
 export function lazyLoadPackage<T>(mod: string): T | undefined {
 	try {
 		return require(mod);
@@ -316,7 +310,7 @@ export function lazyLoadPackage<T>(mod: string): T | undefined {
 	}
 }
 
-export function isCloudfareWorker() {
+export function isCloudflareWorker() {
 	//@ts-expect-error
 	return process.platform === 'browser';
 }
@@ -404,22 +398,18 @@ export function hasIntent(intents: number, target: keyof typeof GatewayIntentBit
 	return (intents & intent) === intent;
 }
 
-export function toArrayBuffer(buffer: Buffer | Uint8ClampedArray | Uint8Array) {
-	const arrayBuffer = new ArrayBuffer(buffer.length);
-	const view = new Uint8Array(arrayBuffer);
-	for (let i = 0; i < buffer.length; ++i) {
-		view[i] = buffer[i];
+export function toArrayBuffer(buffer: Buffer | Uint8ClampedArray | Uint8Array): ArrayBuffer {
+	const { buffer: ab, byteOffset, byteLength } = buffer;
+	if (ab instanceof SharedArrayBuffer) {
+		const copy = new ArrayBuffer(byteLength);
+		new Uint8Array(copy).set(new Uint8Array(ab, byteOffset, byteLength));
+		return copy;
 	}
-	return arrayBuffer;
+	return ab.slice(byteOffset, byteOffset + byteLength);
 }
 
 export function toBuffer(arrayBuffer: ArrayBuffer) {
-	const buffer = Buffer.alloc(arrayBuffer.byteLength);
-	const view = new Uint8Array(arrayBuffer);
-	for (let i = 0; i < buffer.length; ++i) {
-		buffer[i] = view[i];
-	}
-	return buffer;
+	return Buffer.from(arrayBuffer);
 }
 
 export function assertString(value: unknown, message?: string): asserts value is string {

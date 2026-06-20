@@ -1,6 +1,6 @@
 import type { CacheFrom, MessageData, ReturnCache } from '../..';
 import { type MessageStructure, Transformers } from '../../client/transformers';
-import { fakePromise } from '../../common';
+import { fakePromise } from '../../common/it/fake-promise';
 import type { APIMessage, APIUser } from '../../types';
 import { GuildRelatedResource } from './default/guild-related';
 
@@ -36,19 +36,21 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 	}
 
 	override bulk(ids: string[]): ReturnCache<MessageStructure[]> {
-		return fakePromise(super.bulk(ids) as APIMessageResource[]).then(messages =>
-			messages
-				.map(rawMessage => {
-					return this.cache.users && rawMessage?.user_id
-						? fakePromise(
-								this.cache.adapter.get(this.cache.users.hashId(rawMessage.user_id)) as APIUser | undefined,
-							).then(user => {
-								return user ? Transformers.Message(this.client, { ...rawMessage, author: user }) : undefined;
-							})
-						: undefined;
-				})
-				.filter(x => x !== undefined),
-		);
+		return fakePromise(super.bulk(ids) as APIMessageResource[]).then(messages => {
+			const hashes: (string | undefined)[] = this.cache.users
+				? messages.map(x => (x.user_id ? this.cache.users?.hashId(x.user_id) : undefined))
+				: [];
+			return fakePromise(this.cache.adapter.bulkGet(hashes.filter(x => x !== undefined)) as APIUser[]).then(users => {
+				const userMap = new Map<string, APIUser>();
+				for (const user of users) userMap.set(user.id, user);
+				const result: MessageStructure[] = [];
+				for (const message of messages) {
+					const user = message.user_id ? userMap.get(message.user_id) : undefined;
+					if (user) result.push(Transformers.Message(this.client, { ...message, author: user }));
+				}
+				return result;
+			});
+		});
 	}
 
 	bulkRaw(ids: string[]): ReturnCache<APIMessageResource[]> {
@@ -61,12 +63,14 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 				? messages.map(x => (x.user_id ? this.cache.users?.hashId(x.user_id) : undefined))
 				: [];
 			return fakePromise(this.cache.adapter.bulkGet(hashes.filter(x => x !== undefined)) as APIUser[]).then(users => {
-				return messages
-					.map(message => {
-						const user = users.find(user => user.id === message.user_id);
-						return user ? Transformers.Message(this.client, { ...message, author: user }) : undefined;
-					})
-					.filter(x => x !== undefined);
+				const userMap = new Map<string, APIUser>();
+				for (const user of users) userMap.set(user.id, user);
+				const result: MessageStructure[] = [];
+				for (const message of messages) {
+					const user = message.user_id ? userMap.get(message.user_id) : undefined;
+					if (user) result.push(Transformers.Message(this.client, { ...message, author: user }));
+				}
+				return result;
 			});
 		});
 	}
@@ -77,6 +81,24 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 
 	keys(channel: '*' | (string & {})) {
 		return super.keys(channel);
+	}
+
+	private _buildCacheEntries(from: CacheFrom, keys: [string, any][], channelId: string) {
+		return keys.map(([id, value]) => [from, 'messages', value, id, channelId] as const);
+	}
+
+	override async set(from: CacheFrom, messageId: string, channelId: string, data: any): Promise<void>;
+	override async set(from: CacheFrom, messageDataArray: [string, any][], channelId: string): Promise<void>;
+	override async set(from: CacheFrom, __keys: string | [string, any][], channelId: string, data?: any) {
+		const keys: [string, any][] = Array.isArray(__keys) ? __keys : [[__keys, data]];
+		await this.cache.bulkSet(this._buildCacheEntries(from, keys, channelId));
+	}
+
+	override async patch(from: CacheFrom, messageId: string, channelId: string, data: any): Promise<void>;
+	override async patch(from: CacheFrom, messageDataArray: [string, any][], channelId: string): Promise<void>;
+	override async patch(from: CacheFrom, __keys: string | [string, any][], channelId: string, data?: any) {
+		const keys: [string, any][] = Array.isArray(__keys) ? __keys : [[__keys, data]];
+		await this.cache.bulkPatch(this._buildCacheEntries(from, keys, channelId));
 	}
 }
 

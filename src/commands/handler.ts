@@ -1,7 +1,7 @@
 import { promises } from 'node:fs';
 import { dirname } from 'node:path';
 import type { Logger, NulleableCoalising, OmitInsert } from '../common';
-import { BaseHandler, isCloudfareWorker, magicImport, SeyfertError } from '../common';
+import { BaseHandler, isCloudflareWorker, magicImport, SeyfertError } from '../common';
 import { PermissionsBitField } from '../structures/extra/Permissions';
 import {
 	type APIApplicationCommandChannelOption,
@@ -39,7 +39,7 @@ export class CommandHandler extends BaseHandler {
 	}
 
 	async reload(resolve: string | Command) {
-		if (isCloudfareWorker()) {
+		if (isCloudflareWorker()) {
 			throw new SeyfertError('RELOAD_NOT_SUPPORTED', {
 				metadata: { detail: 'Reload in Cloudflare worker is not supported' },
 			});
@@ -105,7 +105,7 @@ export class CommandHandler extends BaseHandler {
 		return false;
 	}
 
-	protected shoudUploadChoices(option: APIApplicationCommandOption, cached: APIApplicationCommandOption) {
+	protected shouldUploadChoices(option: APIApplicationCommandOption, cached: APIApplicationCommandOption) {
 		const optionChoiceable = option as
 			| APIApplicationCommandStringOption
 			| APIApplicationCommandIntegerOption
@@ -144,7 +144,7 @@ export class CommandHandler extends BaseHandler {
 					option.min_length !== (cached as APIApplicationCommandStringOption).min_length ||
 					option.max_length !== (cached as APIApplicationCommandStringOption).max_length ||
 					!!option.autocomplete !== !!(cached as APIApplicationCommandStringOption).autocomplete ||
-					this.shoudUploadChoices(option, cached)
+					this.shouldUploadChoices(option, cached)
 				);
 			case ApplicationCommandOptionType.Channel:
 				{
@@ -185,7 +185,7 @@ export class CommandHandler extends BaseHandler {
 					option.min_value !== (cached as APIApplicationCommandIntegerOption).min_value ||
 					option.max_value !== (cached as APIApplicationCommandIntegerOption).max_value ||
 					!!option.autocomplete !== !!(cached as APIApplicationCommandIntegerOption).autocomplete ||
-					this.shoudUploadChoices(option, cached)
+					this.shouldUploadChoices(option, cached)
 				);
 			case ApplicationCommandOptionType.Attachment:
 			case ApplicationCommandOptionType.Boolean:
@@ -670,6 +670,7 @@ export type FileLoaded<T = null> = {
 } & Record<string, NulleableCoalising<T, HandleableCommand>>;
 
 export type HandleableCommand = new () => Command | SubCommand | ContextMenuCommand | EntryPointCommand;
+export type SettableCommand = new () => Exclude<InstanceType<HandleableCommand>, SubCommand>;
 export type HandleableCommandInstance = Command | SubCommand | ContextMenuCommand | EntryPointCommand;
 export type SeteableCommand = HandleableCommand | HandleableCommandInstance;
 export type HandleableSubCommand = new () => SubCommand;

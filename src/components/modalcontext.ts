@@ -25,7 +25,7 @@ import type {
 	ModalCreateOptions,
 	When,
 } from '../common';
-import { MessageFlags } from '../types';
+import { MessageFlags, type RESTGetAPIGuildQuery } from '../types';
 
 export interface ModalContext extends BaseContext, ExtendContext {}
 
@@ -50,12 +50,23 @@ export class ModalContext<M extends keyof ResolvedRegisteredMiddlewares = never>
 	metadata: CommandMetadata<M> = {} as never;
 	globalMetadata: GlobalMetadata = {};
 
+	get components() {
+		return this.interaction.components;
+	}
+
 	get customId() {
 		return this.interaction.customId;
 	}
 
-	get components() {
-		return this.interaction.components;
+	/**
+	 * Gets the language object for the interaction's locale.
+	 */
+	get t() {
+		return this.client.t(
+			this.client.langs.preferGuildLocale
+				? (this.interaction.guildLocale ?? this.interaction.locale ?? this.client.langs.defaultLang ?? 'en-US')
+				: (this.interaction.locale ?? this.client.langs.defaultLang ?? 'en-US'),
+		);
 	}
 
 	getChannels(customId: string, required: true): AllChannels[];
@@ -128,17 +139,6 @@ export class ModalContext<M extends keyof ResolvedRegisteredMiddlewares = never>
 	getFiles(customId: string, required?: boolean): Attachment[] | undefined {
 		if (required) return this.interaction.getFiles(customId, true);
 		return this.interaction.getFiles(customId);
-	}
-
-	/**
-	 * Gets the language object for the interaction's locale.
-	 */
-	get t() {
-		return this.client.t(
-			this.client.langs.preferGuildLocale
-				? (this.interaction.guildLocale ?? this.interaction.locale ?? this.client.langs.defaultLang ?? 'en-US')
-				: (this.interaction.locale ?? this.client.langs.defaultLang ?? 'en-US'),
-		);
 	}
 
 	/**
@@ -257,9 +257,9 @@ export class ModalContext<M extends keyof ResolvedRegisteredMiddlewares = never>
 	 * @param mode - The mode to fetch the guild.
 	 * @returns A promise that resolves to the guild.
 	 */
-	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'> | undefined>;
+	guild(mode?: 'rest' | 'flow', query?: RESTGetAPIGuildQuery): Promise<GuildStructure<'cached' | 'api'> | undefined>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
-	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow', query?: RESTGetAPIGuildQuery) {
 		if (!this.guildId)
 			return (
 				mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve()
@@ -268,7 +268,7 @@ export class ModalContext<M extends keyof ResolvedRegisteredMiddlewares = never>
 			case 'cache':
 				return this.client.cache.guilds?.get(this.guildId);
 			default:
-				return this.client.guilds.fetch(this.guildId, mode === 'rest');
+				return this.client.guilds.fetch(this.guildId, { force: mode === 'rest', query });
 		}
 	}
 
@@ -311,7 +311,7 @@ export class ModalContext<M extends keyof ResolvedRegisteredMiddlewares = never>
 
 export interface GuildModalContext<M extends keyof ResolvedRegisteredMiddlewares = never>
 	extends Omit<MakeRequired<ModalContext<M>, 'guildId' | 'member'>, 'guild' | 'me'> {
-	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
+	guild(mode?: 'rest' | 'flow', query?: RESTGetAPIGuildQuery): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 
 	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;

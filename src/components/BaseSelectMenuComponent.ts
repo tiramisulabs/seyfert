@@ -13,7 +13,7 @@ export class BaseSelectMenuComponent<T extends APISelectMenuComponentTypes> exte
 		return this.data.custom_id;
 	}
 
-	get disabed() {
+	get disabled() {
 		return this.data.disabled;
 	}
 

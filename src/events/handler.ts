@@ -8,7 +8,7 @@ import {
 	type Awaitable,
 	BaseHandler,
 	type CamelCase,
-	isCloudfareWorker,
+	isCloudflareWorker,
 	type MakeRequired,
 	magicImport,
 	ReplaceRegex,
@@ -428,7 +428,7 @@ export class EventHandler extends CustomEventHandler {
 	}
 
 	async reload(name: GatewayEvents | CustomEventsKeys) {
-		if (isCloudfareWorker()) {
+		if (isCloudflareWorker()) {
 			throw new SeyfertError('RELOAD_NOT_SUPPORTED', {
 				metadata: { detail: 'Reload in Cloudflare worker is not supported' },
 			});
