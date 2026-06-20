@@ -58,7 +58,7 @@ const reservedCacheResourceNames = new Set([
 	'hasGuildsIntent',
 	'hasIntent',
 	'hasModerationIntent',
-	'hasPrenseceUpdates',
+	'hasPresenceUpdates',
 	'hasRolesIntent',
 	'hasVoiceStates',
 	'intents',

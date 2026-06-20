@@ -2,7 +2,6 @@ import { randomBytes } from 'node:crypto';
 import { promises } from 'node:fs';
 import path from 'node:path';
 import type { RawFile, UsingClient } from '..';
-import { isBufferLike } from '../api/utils/utils';
 import { createValidationMetadata, type ImageResolvable, type ObjectToLower, SeyfertError } from '../common';
 import { Base } from '../structures/extra/Base';
 import type { APIAttachment, RESTAPIAttachment } from '../types';
@@ -235,7 +234,9 @@ export async function resolveAttachmentData(
 			return { data: await promises.readFile(file) };
 		}
 		case 'buffer': {
-			if (isBufferLike(data)) return { data };
+			if (Buffer.isBuffer(data)) return { data };
+			if (data instanceof ArrayBuffer) return { data: Buffer.from(data) };
+			if (data instanceof Uint8Array || data instanceof Uint8ClampedArray) return { data: Buffer.from(data) };
 			if (typeof (data as AsyncIterable<ArrayBuffer>)[Symbol.asyncIterator] === 'function') {
 				const buffers: Buffer[] = [];
 				for await (const resource of data as AsyncIterable<ArrayBuffer>) buffers.push(Buffer.from(resource));
