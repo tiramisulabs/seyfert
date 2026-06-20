@@ -46,10 +46,16 @@ import type {
 	WorkerStartResharding,
 } from '../websocket/discord/worker';
 import type { ManagerMessages, ManagerSpawnShards } from '../websocket/discord/workermanager';
-import type { BaseClientOptions, ServicesOptions, StartOptions } from './base';
+import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import type { Client, ClientOptions } from './client';
 import { Collectors } from './collectors';
+import {
+	applyPluginGatewayDispatchInterceptors,
+	applyPluginGatewaySendPayloadWrappers,
+	type RegisteredPluginExtension,
+	runPluginHooks,
+} from './plugins';
 import { type ClientUserStructure, Transformers } from './transformers';
 
 let workerData: WorkerData;
@@ -158,9 +164,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		if (workerData.mode !== 'custom')
 			(manager ?? process).on('message', (data: ManagerMessages) => this.handleManagerMessages(data));
 
-		this.logger = new Logger({
-			name: `[Worker #${workerData.workerId}]`,
-		});
+		this.configureLogger({ name: `[Worker #${workerData.workerId}]` }, this.options.logger);
 
 		if (workerData.debug) {
 			this.debugger = new Logger({
@@ -177,22 +181,25 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				}),
 			});
 		}
-		this.cache.intents = workerData.intents;
+		this.resolvePluginGatewayIntents(workerData.intents);
 		this.rest.workerData = workerData;
+		await super.start(options);
+		workerData.intents = this.resolvePluginGatewayIntents(workerData.intents);
 		this.postMessage({
 			type: workerData.resharding ? 'WORKER_START_RESHARDING' : 'WORKER_START',
 			workerId: workerData.workerId,
 		} satisfies WorkerStart | WorkerStartResharding);
-		await super.start(options);
 		await this.loadEvents(options.eventsDir);
 	}
 
 	async loadEvents(dir?: string) {
-		dir ??= await this.getRC().then(x => x.locations.events);
+		dir ??= await this.getRC<InternalRuntimeConfig>().then(x => x.locations.events);
+		await runPluginHooks(this, 'events:beforeLoad', this, dir);
 		if (dir) {
 			await this.events.load(dir);
 			this.logger.info('EventHandler loaded');
 		}
+		await runPluginHooks(this, 'events:afterLoad', this, dir);
 	}
 
 	postMessage(body: WorkerMessages | ClientHeartbeaterMessages): unknown {
@@ -224,9 +231,13 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						return;
 					}
 
-					await shard.send(true, {
-						...data,
-					} satisfies GatewaySendPayload);
+					const { nonce: _nonce, shardId: _shardId, type: _type, ...payload } = data;
+					const pluginPayload = await applyPluginGatewaySendPayloadWrappers(
+						this,
+						data.shardId,
+						payload as GatewaySendPayload,
+					);
+					if (pluginPayload !== null) await shard.send(true, pluginPayload);
 
 					this.postMessage({
 						type: 'RESULT_PAYLOAD',
@@ -482,13 +493,13 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			},
 			async handlePayload(shardId, payload) {
 				await handlePayload?.(shardId, payload);
-				await onPacket(payload, shardId);
-				if (self.options.sendPayloadToParent)
+				const pluginPacket = await onPacket(payload, shardId);
+				if (self.options.sendPayloadToParent && pluginPacket !== null)
 					self.postMessage({
 						workerId: workerData.workerId,
 						shardId,
 						type: 'RECEIVE_PAYLOAD',
-						payload,
+						payload: pluginPacket,
 					} satisfies WorkerReceivePayload);
 			},
 		});
@@ -519,7 +530,11 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		});
 	}
 
-	protected async onPacket(packet: GatewayDispatchPayload, shardId: number) {
+	protected async onPacket(packet: GatewayDispatchPayload, shardId: number): Promise<GatewayDispatchPayload | null> {
+		const pluginPacket = await applyPluginGatewayDispatchInterceptors(this, shardId, packet);
+		if (pluginPacket === null) return null;
+		packet = pluginPacket;
+
 		Promise.allSettled([
 			this.events.runEvent('RAW', this, packet, shardId, false),
 			this.collectors.run('RAW', packet, this),
@@ -528,7 +543,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			case 'GUILD_MEMBER_UPDATE':
 				{
 					if (!this.memberUpdateHandler.check(packet.d)) {
-						return;
+						return packet;
 					}
 					await this.events.execute(packet, this as WorkerClient<true>, shardId);
 				}
@@ -536,7 +551,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			case 'PRESENCE_UPDATE':
 				{
 					if (!this.presenceUpdateHandler.check(packet.d)) {
-						return;
+						return packet;
 					}
 					await this.events.execute(packet, this as WorkerClient<true>, shardId);
 				}
@@ -589,8 +604,11 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			}
 		}
+		return packet;
 	}
 }
+
+export interface WorkerClient<Ready extends boolean = boolean> extends RegisteredPluginExtension {}
 
 export function generateShardInfo(shard: Shard): WorkerShardInfo {
 	return {
@@ -605,7 +623,13 @@ export function generateShardInfo(shard: Shard): WorkerShardInfo {
 export interface WorkerClientOptions extends BaseClientOptions {
 	commands?: NonNullable<Client['options']>['commands'];
 	handlePayload?: ShardManagerOptions['handlePayload'];
+	/**
+	 * @deprecated Use shard disconnect events instead. Injected ShardManager callbacks can double-fire.
+	 */
 	onShardDisconnect?: ShardManagerOptions['onShardDisconnect'];
+	/**
+	 * @deprecated Use shard reconnect events instead. Injected ShardManager callbacks can double-fire.
+	 */
 	onShardReconnect?: ShardManagerOptions['onShardReconnect'];
 	gateway?: ClientOptions['gateway'];
 	postMessage?: (body: unknown) => Awaitable<unknown>;

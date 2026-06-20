@@ -57,7 +57,7 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 		return super.bulk(ids);
 	}
 
-	override values(channel: string): ReturnCache<MessageStructure[]> {
+	override values(channel: '*' | (string & {})): ReturnCache<MessageStructure[]> {
 		return fakePromise(super.values(channel) as APIMessageResource[]).then(messages => {
 			const hashes: (string | undefined)[] = this.cache.users
 				? messages.map(x => (x.user_id ? this.cache.users?.hashId(x.user_id) : undefined))
@@ -79,7 +79,7 @@ export class Messages extends GuildRelatedResource<any, APIMessage> {
 		return super.values(channel);
 	}
 
-	keys(channel: string) {
+	keys(channel: '*' | (string & {})) {
 		return super.keys(channel);
 	}
 

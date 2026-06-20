@@ -2,6 +2,8 @@ import { assert, describe, test } from 'vitest';
 import { BaseClient, type BaseClientOptions } from '../lib/client/base';
 import {
 	resolveClientPlugins,
+	SeyfertPluginAggregateError,
+	SeyfertPluginError,
 	setupClientPlugins,
 	teardownClientPlugins,
 	type SeyfertPlugin,
@@ -9,6 +11,7 @@ import {
 } from '../lib/client/plugins';
 import { Command, SubCommand } from '../lib/commands';
 import { HandleCommand } from '../lib/commands/handle';
+import { SeyfertError } from '../lib/common';
 
 function createRuntimeConfig() {
 	return {
@@ -21,7 +24,7 @@ function createRuntimeConfig() {
 }
 
 describe('client plugins', () => {
-	test('plugin command defaults do not also run the built-in fallback', async () => {
+	test('plugin command defaults run before the built-in fallback', async () => {
 		const calls: string[] = [];
 		const plugin: SeyfertPlugin = {
 			name: 'test-plugin',
@@ -47,7 +50,7 @@ describe('client plugins', () => {
 
 		await resolved.options.commands?.defaults?.onRunError?.({} as never, new Error('boom'));
 
-		assert.deepEqual(calls, ['plugin']);
+		assert.deepEqual(calls, ['plugin', 'fallback']);
 	});
 
 	test('command error defaults compose plugin and user hooks without built-in fallback', async () => {
@@ -100,6 +103,117 @@ describe('client plugins', () => {
 		}
 	});
 
+	test('a plugin suppresses the framework default with api.commands.defaults({ suppressDefault })', async () => {
+		const calls: string[] = [];
+		const plugin: SeyfertPlugin = {
+			name: 'suppressor',
+			register(api) {
+				api.commands.defaults({ onRunError: () => calls.push('plugin') }, { suppressDefault: true });
+			},
+		};
+
+		const resolved = resolveClientPlugins(
+			{ commands: { defaults: { onRunError: () => calls.push('fallback') } } },
+			{ plugins: [plugin] },
+		);
+
+		await resolved.options.commands?.defaults?.onRunError?.({} as never, new Error('boom'));
+
+		assert.deepEqual(calls, ['plugin']);
+	});
+
+	test('suppressDefault drops only the framework floor; an additive peer still runs', async () => {
+		const calls: string[] = [];
+		const additivePlugin: SeyfertPlugin = {
+			name: 'additive',
+			register(api) {
+				api.commands.defaults({ onRunError: () => calls.push('additive') });
+			},
+		};
+		const suppressor: SeyfertPlugin = {
+			name: 'suppressor',
+			register(api) {
+				api.commands.defaults({ onRunError: () => calls.push('suppressor') }, { suppressDefault: true });
+			},
+		};
+
+		const resolved = resolveClientPlugins(
+			{ commands: { defaults: { onRunError: () => calls.push('fallback') } } },
+			{ plugins: [additivePlugin, suppressor] },
+		);
+
+		await resolved.options.commands?.defaults?.onRunError?.({} as never, new Error('boom'));
+
+		assert.deepEqual(calls, ['additive', 'suppressor']);
+	});
+
+	test('suppressDefault is ignored for a key the contribution does not actually handle', async () => {
+		const calls: string[] = [];
+		const plugin: SeyfertPlugin = {
+			name: 'partial',
+			register(api) {
+				api.commands.defaults({ onRunError: () => calls.push('plugin') }, { suppressDefault: ['onMiddlewaresError'] });
+			},
+		};
+
+		const resolved = resolveClientPlugins(
+			{ commands: { defaults: { onRunError: () => calls.push('fallback') } } },
+			{ plugins: [plugin] },
+		);
+
+		await resolved.options.commands?.defaults?.onRunError?.({} as never, new Error('boom'));
+
+		assert.deepEqual(calls, ['plugin', 'fallback']);
+	});
+
+	test('api.commands.defaults composes props with user props last', () => {
+		const plugin: SeyfertPlugin = {
+			name: 'props',
+			register(api) {
+				api.commands.defaults({ props: { fromPlugin: true, winner: 'plugin' } });
+			},
+		};
+
+		const resolved = resolveClientPlugins(
+			{ commands: { defaults: { props: { fromDefault: true, winner: 'default' } } } },
+			{ plugins: [plugin], commands: { defaults: { props: { fromUser: true, winner: 'user' } } } },
+		);
+
+		assert.deepEqual(resolved.options.commands?.defaults?.props, {
+			fromDefault: true,
+			fromPlugin: true,
+			fromUser: true,
+			winner: 'user',
+		});
+	});
+
+	test('component and modal defaults compose plugin, user, and suppressed fallback hooks', async () => {
+		const calls: string[] = [];
+		const plugin: SeyfertPlugin = {
+			name: 'component-modal-defaults',
+			register(api) {
+				api.components.defaults({ onRunError: () => calls.push('component-plugin') });
+				api.modals.defaults({ onRunError: () => calls.push('modal-plugin') }, { suppressDefault: true });
+			},
+		};
+
+		const resolved = resolveClientPlugins(
+			{
+				components: { defaults: { onRunError: () => calls.push('component-fallback') } },
+				modals: { defaults: { onRunError: () => calls.push('modal-fallback') } },
+			},
+			{
+				plugins: [plugin],
+				components: { defaults: { onRunError: () => calls.push('component-user') } },
+			},
+		);
+
+		await resolved.options.components?.defaults?.onRunError?.({} as never, new Error('boom'));
+		await resolved.options.modals?.defaults?.onRunError?.({} as never, new Error('boom'));
+
+		assert.deepEqual(calls, ['component-plugin', 'component-user', 'modal-plugin']);
+	});
+
 	test('plugin teardown runs in LIFO order and collects errors', async () => {
 		const calls: string[] = [];
 		const firstError = new Error('first failed');
@@ -126,19 +240,70 @@ describe('client plugins', () => {
 			},
 		];
 
-		let thrown: AggregateError | undefined;
+		let thrown: SeyfertPluginAggregateError | undefined;
 		try {
 			await teardownClientPlugins({ plugins } as SeyfertPluginClient, plugins);
 		} catch (error) {
-			thrown = error as AggregateError;
+			thrown = error as SeyfertPluginAggregateError;
 		}
 
-		assert.instanceOf(thrown, AggregateError);
+		assert.instanceOf(thrown, SeyfertPluginAggregateError);
+		assert.instanceOf(thrown, SeyfertError);
+		assert.equal(thrown.code, 'PLUGIN_TEARDOWN_FAILED');
+		assert.deepEqual(thrown.metadata, { plugin: '<multiple>', phase: 'teardown', index: -1 });
 		assert.equal(thrown.errors.length, 2);
-		assert.equal(thrown.errors[0].message, 'third failed');
-		assert.equal(thrown.errors[1], firstError);
+		assert.instanceOf(thrown.errors[0], SeyfertPluginError);
+		assert.match(thrown.errors[0].message, /third.*teardown|teardown.*third/);
+		assert.equal(thrown.errors[0].cause.message, 'third failed');
+		assert.instanceOf(thrown.errors[1], SeyfertPluginError);
+		assert.match(thrown.errors[1].message, /first.*teardown|teardown.*first/);
+		assert.equal(thrown.errors[1].cause, firstError);
 
 		assert.deepEqual(calls, ['third', 'second', 'first']);
+	});
+
+	test('plugin setup rollback wraps setup and teardown failures in plugin aggregate errors', async () => {
+		const calls: string[] = [];
+		const setupError = new Error('setup failed');
+		const teardownError = new Error('teardown failed');
+		const plugins: SeyfertPlugin[] = [
+			{
+				name: 'first',
+				setup: () => {
+					calls.push('setup first');
+				},
+				teardown: () => {
+					calls.push('teardown first');
+					throw teardownError;
+				},
+			},
+			{
+				name: 'second',
+				setup: () => {
+					calls.push('setup second');
+					throw setupError;
+				},
+			},
+		];
+
+		let thrown: SeyfertPluginAggregateError | undefined;
+		try {
+			await setupClientPlugins({ plugins } as SeyfertPluginClient, plugins);
+		} catch (error) {
+			thrown = error as SeyfertPluginAggregateError;
+		}
+
+		assert.instanceOf(thrown, SeyfertPluginAggregateError);
+		assert.instanceOf(thrown, SeyfertError);
+		assert.equal(thrown.code, 'PLUGIN_FAILED');
+		assert.deepEqual(thrown.metadata, { plugin: '<multiple>', phase: 'setup', index: -1 });
+		assert.equal(thrown.errors.length, 2);
+		assert.instanceOf(thrown.errors[0], SeyfertPluginError);
+		assert.match(thrown.errors[0].message, /second.*setup|setup.*second/);
+		assert.equal(thrown.errors[0].cause, setupError);
+		assert.instanceOf(thrown.errors[1], SeyfertPluginAggregateError);
+		assert.equal(thrown.errors[1].cause, teardownError);
+		assert.deepEqual(calls, ['setup first', 'setup second', 'teardown first']);
 	});
 
 	test('plugin setup failure tears down completed plugins in LIFO order', async () => {
@@ -182,7 +347,8 @@ describe('client plugins', () => {
 			thrown = error;
 		}
 
-		assert.equal(thrown, setupError);
+		assert.match((thrown as Error).message, /third.*setup|setup.*third/);
+		assert.equal((thrown as Error).cause, setupError);
 		assert.deepEqual(calls, ['setup first', 'setup second', 'setup third', 'teardown second', 'teardown first']);
 	});
 

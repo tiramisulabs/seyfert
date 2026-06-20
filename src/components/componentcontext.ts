@@ -1,4 +1,5 @@
 import type {
+	AllChannels,
 	ButtonInteraction,
 	ChannelSelectMenuInteraction,
 	ComponentCommand,
@@ -8,25 +9,111 @@ import type {
 	UserSelectMenuInteraction,
 } from '..';
 import type { ReturnCache } from '../cache';
-import type { GuildMemberStructure, GuildStructure, InteractionGuildMemberStructure } from '../client/transformers';
-import type { ExtendContext, RegisteredMiddlewares } from '../commands';
-import type { BaseContext } from '../commands/basecontext';
-import type { ComponentInteractionMessageUpdate } from '../common';
-import type { RESTGetAPIGuildQuery } from '../types';
-import { ComponentType } from '../types';
-import { InteractionResponseContext } from './interactioncontext';
+import type {
+	GuildMemberStructure,
+	GuildStructure,
+	InteractionGuildMemberStructure,
+	MessageStructure,
+	UserStructure,
+	WebhookMessageStructure,
+} from '../client/transformers';
+import type {
+	CommandMetadata,
+	ExtendContext,
+	GlobalMetadata,
+	ResolvedRegisteredMiddlewares,
+	UsingClient,
+} from '../commands';
+import { BaseContext } from '../commands/basecontext';
+import type {
+	ComponentInteractionMessageUpdate,
+	InteractionCreateBodyRequest,
+	InteractionMessageUpdateBodyRequest,
+	MakeRequired,
+	MessageWebhookCreateBodyRequest,
+	ModalCreateBodyRequest,
+	ModalCreateOptions,
+	When,
+} from '../common';
+import type { ModalSubmitInteraction } from '../structures';
+import { ComponentType, MessageFlags, type RESTGetAPIGuildQuery } from '../types';
 
 export interface ComponentContext<
 	Type extends keyof ContextComponentCommandInteractionMap = keyof ContextComponentCommandInteractionMap,
+	M extends keyof ResolvedRegisteredMiddlewares = never,
+	StringSelectValues extends string[] = string[],
 > extends BaseContext,
 		ExtendContext {}
 
 export class ComponentContext<
 	Type extends keyof ContextComponentCommandInteractionMap,
-	M extends keyof RegisteredMiddlewares = never,
-> extends InteractionResponseContext<ContextComponentCommandInteractionMap[Type], M> {
-	command!: ComponentCommand;
+	M extends keyof ResolvedRegisteredMiddlewares = never,
+	StringSelectValues extends string[] = string[],
+> extends BaseContext {
+	/**
+	 * Creates a new instance of the ComponentContext class.
+	 * @param client - The UsingClient instance.
+	 * @param interaction - The component interaction object.
+	 */
+	constructor(
+		readonly client: UsingClient,
+		public interaction: ContextComponentCommandInteractionMap<StringSelectValues>[Type],
+	) {
+		super(client);
+	}
 
+	command!: ComponentCommand;
+	metadata: CommandMetadata<M> = {} as never;
+	globalMetadata: GlobalMetadata = {};
+
+	/**
+	 * Gets the language object for the interaction's locale.
+	 */
+	get t() {
+		return this.client.t(
+			this.client.langs.preferGuildLocale
+				? (this.interaction.guildLocale ?? this.interaction.locale ?? this.client.langs.defaultLang ?? 'en-US')
+				: (this.interaction.locale ?? this.client.langs.defaultLang ?? 'en-US'),
+		);
+	}
+
+	/**
+	 * Gets the custom ID of the interaction.
+	 */
+	get customId() {
+		return this.interaction.customId;
+	}
+
+	get message(): MessageStructure {
+		return this.interaction.message;
+	}
+
+	/**
+	 * Writes a response to the interaction.
+	 * @param body - The body of the response.
+	 * @param fetchReply - Whether to fetch the reply or not.
+	 */
+	write<FR extends boolean = false>(
+		body: InteractionCreateBodyRequest,
+		fetchReply?: FR,
+	): Promise<When<FR, WebhookMessageStructure, void>> {
+		return this.interaction.write<FR>(body, fetchReply);
+	}
+
+	/**
+	 * Defers the reply to the interaction.
+	 * @param ephemeral - Whether the reply should be ephemeral or not.
+	 */
+	deferReply<FR extends boolean = false>(
+		ephemeral = false,
+		fetchReply?: FR,
+	): Promise<When<FR, WebhookMessageStructure, undefined>> {
+		return this.interaction.deferReply<FR>(ephemeral ? MessageFlags.Ephemeral : undefined, fetchReply);
+	}
+
+	/**
+	 * ACK an interaction and edit the original message later; the user does not see a loading state
+	 */
 	deferUpdate() {
 		return this.interaction.deferUpdate();
 	}
@@ -35,42 +122,161 @@ export class ComponentContext<
 		return this.interaction.update(body);
 	}
 
-	isComponent(): this is ComponentContext<keyof ContextComponentCommandInteractionMap> {
+	/**
+	 * Edits the response or replies to the interaction.
+	 * @param body - The body of the response or updated body of the interaction.
+	 * @param fetchReply - Whether to fetch the reply or not.
+	 */
+	editOrReply<FR extends boolean = false>(
+		body: InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest,
+		fetchReply?: FR,
+	): Promise<When<FR, WebhookMessageStructure, void>> {
+		return this.interaction.editOrReply<FR>(body as InteractionCreateBodyRequest, fetchReply);
+	}
+
+	followup(body: MessageWebhookCreateBodyRequest): Promise<WebhookMessageStructure> {
+		return this.interaction.followup(body);
+	}
+
+	/**
+	 * @returns A Promise that resolves to the fetched message
+	 */
+	fetchResponse(): Promise<WebhookMessageStructure> {
+		return this.interaction.fetchResponse();
+	}
+
+	/**
+	 * Deletes the response of the interaction.
+	 * @returns A promise that resolves when the response is deleted.
+	 */
+	deleteResponse() {
+		return this.interaction.deleteResponse();
+	}
+
+	modal(body: ModalCreateBodyRequest, options?: undefined): Promise<undefined>;
+	modal(body: ModalCreateBodyRequest, options: ModalCreateOptions): Promise<ModalSubmitInteraction | null>;
+	modal(body: ModalCreateBodyRequest, options?: ModalCreateOptions | undefined) {
+		if (options === undefined) return this.interaction.modal(body);
+		return this.interaction.modal(body, options);
+	}
+
+	/**
+	 * Gets the channel of the interaction.
+	 * @param mode - The mode to fetch the channel.
+	 * @returns A promise that resolves to the channel.
+	 */
+	channel(mode?: 'rest' | 'flow'): Promise<AllChannels>;
+	channel(mode: 'cache'): ReturnCache<AllChannels>;
+	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		if (mode === 'cache')
+			return this.client.cache.adapter.isAsync ? Promise.resolve(this.interaction.channel) : this.interaction.channel;
+		return this.client.channels.fetch(this.channelId, mode === 'rest');
+	}
+
+	/**
+	 * Gets the bot member in the guild of the interaction.
+	 * @param mode - The mode to fetch the member.
+	 * @returns A promise that resolves to the bot member.
+	 */
+	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure | undefined>;
+	me(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
+	me(mode: 'cache' | 'rest' | 'flow' = 'flow'): any {
+		if (!this.guildId)
+			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
+		switch (mode) {
+			case 'cache':
+				return this.client.cache.members?.get(this.client.botId, this.guildId);
+			default:
+				return this.client.members.fetch(this.guildId, this.client.botId, mode === 'rest');
+		}
+	}
+
+	/**
+	 * Gets the guild of the interaction.
+	 * @param mode - The mode to fetch the guild.
+	 * @param query - Optional query used in fetch mode.
+	 * @returns A promise that resolves to the guild.
+	 */
+	guild(mode?: 'rest' | 'flow', query?: RESTGetAPIGuildQuery): Promise<GuildStructure<'cached' | 'api'> | undefined>;
+	guild(mode: 'cache', query?: RESTGetAPIGuildQuery): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow', query?: RESTGetAPIGuildQuery) {
+		if (!this.guildId)
+			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
+		switch (mode) {
+			case 'cache':
+				return (
+					this.client.cache.guilds?.get(this.guildId) ||
+					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
+				);
+			default:
+				return this.client.guilds.fetch(this.guildId, { force: mode === 'rest', query });
+		}
+	}
+
+	/**
+	 * Gets the ID of the guild of the interaction.
+	 */
+	get guildId() {
+		return this.interaction.guildId;
+	}
+
+	/**
+	 * Gets the ID of the channel of the interaction.
+	 */
+	get channelId() {
+		return this.interaction.channel.id;
+	}
+
+	/**
+	 * Gets the author of the interaction.
+	 */
+	get author(): UserStructure {
+		return this.interaction.user;
+	}
+
+	/**
+	 * Gets the member of the interaction.
+	 */
+	get member(): InteractionGuildMemberStructure | undefined {
+		return this.interaction.member;
+	}
+
+	isComponent(): this is ComponentContext<keyof ContextComponentCommandInteractionMap, M, StringSelectValues> {
 		return true;
 	}
 
-	isButton(): this is ComponentContext<'Button', M> {
+	isButton(): this is ComponentContext<'Button', M, StringSelectValues> {
 		return this.interaction.componentType === ComponentType.Button;
 	}
 
-	isChannelSelectMenu(): this is ComponentContext<'ChannelSelect', M> {
+	isChannelSelectMenu(): this is ComponentContext<'ChannelSelect', M, StringSelectValues> {
 		return this.interaction.componentType === ComponentType.ChannelSelect;
 	}
 
-	isRoleSelectMenu(): this is ComponentContext<'RoleSelect', M> {
+	isRoleSelectMenu(): this is ComponentContext<'RoleSelect', M, StringSelectValues> {
 		return this.interaction.componentType === ComponentType.RoleSelect;
 	}
 
-	isMentionableSelectMenu(): this is ComponentContext<'MentionableSelect', M> {
+	isMentionableSelectMenu(): this is ComponentContext<'MentionableSelect', M, StringSelectValues> {
 		return this.interaction.componentType === ComponentType.MentionableSelect;
 	}
 
-	isUserSelectMenu(): this is ComponentContext<'UserSelect', M> {
+	isUserSelectMenu(): this is ComponentContext<'UserSelect', M, StringSelectValues> {
 		return this.interaction.componentType === ComponentType.UserSelect;
 	}
 
-	isStringSelectMenu(): this is ComponentContext<'StringSelect', M> {
+	isStringSelectMenu(): this is ComponentContext<'StringSelect', M, StringSelectValues> {
 		return this.interaction.componentType === ComponentType.StringSelect;
 	}
 
-	inGuild(): this is GuildComponentContext<Type, M> {
+	inGuild(): this is GuildComponentContext<Type, M, StringSelectValues> {
 		return !!this.guildId;
 	}
 }
 
-export interface ContextComponentCommandInteractionMap {
+export interface ContextComponentCommandInteractionMap<StringSelectValues extends string[] = string[]> {
 	Button: ButtonInteraction;
-	StringSelect: StringSelectMenuInteraction;
+	StringSelect: StringSelectMenuInteraction<StringSelectValues>;
 	UserSelect: UserSelectMenuInteraction;
 	RoleSelect: RoleSelectMenuInteraction;
 	MentionableSelect: MentionableSelectMenuInteraction;
@@ -79,12 +285,11 @@ export interface ContextComponentCommandInteractionMap {
 
 export interface GuildComponentContext<
 	Type extends keyof ContextComponentCommandInteractionMap,
-	M extends keyof RegisteredMiddlewares = never,
-> extends ComponentContext<Type, M> {
-	guildId: string;
-	member: InteractionGuildMemberStructure;
-	guild(mode?: 'rest' | 'flow', query?: RESTGetAPIGuildQuery): Promise<GuildStructure<'cached' | 'api'>>;
-	guild(mode: 'cache', query?: RESTGetAPIGuildQuery): ReturnCache<GuildStructure<'cached'> | undefined>;
+	M extends keyof ResolvedRegisteredMiddlewares = never,
+	StringSelectValues extends string[] = string[],
+> extends Omit<MakeRequired<ComponentContext<Type, M, StringSelectValues>, 'guildId' | 'member'>, 'guild' | 'me'> {
+	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
+	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 
 	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
 	me(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;

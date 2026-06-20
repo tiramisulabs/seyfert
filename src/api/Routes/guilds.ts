@@ -123,7 +123,7 @@ import type {
 	RESTPutAPIGuildMemberRoleResult,
 	RESTPutAPIGuildTemplateSyncResult,
 } from '../../types';
-import type { RestArguments, RestArgumentsNoBody } from '../api';
+import type { RestArguments, RestArgumentsNoBody, RestArgumentsRequiredQuery } from '../api';
 import type { RawFile } from '../shared';
 
 export interface GuildRoutes {
@@ -175,7 +175,7 @@ export interface GuildRoutes {
 				get(args?: RestArgumentsNoBody<RESTGetAPIGuildMembersQuery>): Promise<RESTGetAPIGuildMembersResult>;
 				search: {
 					get(
-						args: RestArgumentsNoBody<RESTGetAPIGuildMembersSearchQuery>,
+						args: RestArgumentsRequiredQuery<RESTGetAPIGuildMembersSearchQuery>,
 					): Promise<RESTGetAPIGuildMembersSearchResult>;
 				};
 				'@me': {

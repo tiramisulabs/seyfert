@@ -101,8 +101,8 @@ export type SeyfertStringOption<T = SeyfertChoice<string>[], R = boolean, VC = n
 	R,
 	VC
 > & {
-	autocomplete?: AutocompleteCallback;
-	onAutocompleteError?: OnAutocompleteErrorCallback;
+	autocomplete?: AutocompleteCallback<string>;
+	onAutocompleteError?: OnAutocompleteErrorCallback<string>;
 	min_length?: number;
 	max_length?: number;
 };
@@ -112,8 +112,8 @@ export type SeyfertIntegerOption<T = SeyfertChoice<number>[], R = boolean, VC = 
 	R,
 	VC
 > & {
-	autocomplete?: AutocompleteCallback;
-	onAutocompleteError?: OnAutocompleteErrorCallback;
+	autocomplete?: AutocompleteCallback<number>;
+	onAutocompleteError?: OnAutocompleteErrorCallback<number>;
 	min_value?: number;
 	max_value?: number;
 };
@@ -123,8 +123,8 @@ export type SeyfertNumberOption<T = SeyfertChoice<number>[], R = boolean, VC = n
 	R,
 	VC
 > & {
-	autocomplete?: AutocompleteCallback;
-	onAutocompleteError?: OnAutocompleteErrorCallback;
+	autocomplete?: AutocompleteCallback<number>;
+	onAutocompleteError?: OnAutocompleteErrorCallback<number>;
 	min_value?: number;
 	max_value?: number;
 };

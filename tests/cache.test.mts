@@ -1,4 +1,5 @@
 import { assert, describe, expect, test } from 'vitest';
+import { BaseResource } from '../src/cache/resources/default/base';
 import { Cache, CacheFrom, Client, LimitedMemoryAdapter, MemoryAdapter } from '../src/index';
 import { BaseClient } from '../src/client/base';
 
@@ -46,6 +47,19 @@ describe('test memory cache adapter', () => {
 		expect(primitiveAdapter.get('user.false')).toBe(false);
 		expect(primitiveAdapter.get('user.empty')).toBe('');
 		expect(primitiveAdapter.values('user')).toEqual([0, false, '']);
+	});
+});
+
+describe('base cache resource', () => {
+	test('normalizes adapter cache misses to undefined', () => {
+		const adapter = new MemoryAdapter();
+		const resource = new BaseResource<{ id: string }>({ adapter } as any, {} as any);
+
+		assert.strictEqual(adapter.get('base.missing'), null);
+		assert.strictEqual(resource.get('missing'), undefined);
+
+		adapter.set('base.present', { id: 'present' });
+		assert.deepEqual(resource.get('present'), { id: 'present' });
 	});
 });
 
@@ -117,6 +131,7 @@ describe('test limited memory cache adapter', () => {
 				token: '',
 			}),
 		});
+
 		client.setServices({
 			cache: {
 				adapter: new LimitedMemoryAdapter(),
@@ -157,6 +172,25 @@ describe('test limited memory cache adapter', () => {
 		expect(await client.cache.overwrites?.count(guildId)).toBe(0);
 		expect(await client.cache.overwrites?.keys(guildId)).toEqual([]);
 		expect(await client.cache.overwrites?.raw(channelId)).toBeNull();
+	});
+
+	test('rebuilds resources when disabledCache is explicitly false', () => {
+		const client = new Client({
+			getRC: () => ({
+				locations: {
+					base: '',
+					output: '',
+				},
+				intents,
+				token: '',
+			}),
+		});
+
+		client.setServices({ cache: { disabledCache: true } });
+		assert.equal(client.cache.users, undefined);
+
+		client.setServices({ cache: { disabledCache: false } });
+		assert.notEqual(client.cache.users, undefined);
 	});
 });
 
@@ -286,7 +320,6 @@ describe('test limited memory cache adapter indexing', () => {
 		assert.equal(rawMessage?.user_id, message.author.id);
 		assert.equal(await cache.users?.raw(message.author.id), message.author);
 	});
-
 });
 
 describe('base client runtime config cache', () => {

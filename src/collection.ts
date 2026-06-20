@@ -64,11 +64,25 @@ export class Collection<K, V> extends Map<K, V> {
 	 * const filteredArray = collection.filter((value, key) => key % 2 === 0);
 	 * console.log(filteredArray); // Output: ['two']
 	 */
+	filter<S extends V>(fn: (value: V, key: K, collection: this) => value is S): S[];
+	filter(fn: (value: V, key: K, collection: this) => boolean): V[];
 	filter(fn: (value: V, key: K, collection: this) => boolean): V[] {
 		const result: V[] = [];
 
 		for (const [key, value] of this.entries()) {
 			if (fn(value, key, this)) result.push(value);
+		}
+
+		return result;
+	}
+
+	filterCollection<S extends V>(fn: (value: V, key: K, collection: this) => value is S): Collection<K, S>;
+	filterCollection(fn: (value: V, key: K, collection: this) => boolean): Collection<K, V>;
+	filterCollection(fn: (value: V, key: K, collection: this) => boolean): Collection<K, V> {
+		const result = new Collection<K, V>();
+
+		for (const [key, value] of this.entries()) {
+			if (fn(value, key, this)) result.set(key, value);
 		}
 
 		return result;
@@ -159,6 +173,8 @@ export class Collection<K, V> extends Map<K, V> {
 	 * const firstEvenValue = collection.find(value => value % 2 === 0);
 	 * console.log(firstEvenValue); // Output: 2
 	 */
+	find<S extends V>(fn: (value: V, key: K, collection: this) => value is S): S | undefined;
+	find(fn: (value: V, key: K, collection: this) => boolean): V | undefined;
 	find(fn: (value: V, key: K, collection: this) => boolean): V | undefined {
 		for (const [key, value] of this.entries()) {
 			if (fn(value, key, this)) {
@@ -190,7 +206,7 @@ export class Collection<K, V> extends Map<K, V> {
 	}
 }
 
-type LimitedCollectionData<V> = { expire: number; expireOn: number; value: V };
+export type LimitedCollectionData<V> = { expire: number; expireOn: number; value: V };
 type LimitedCollectionExpiration = { expire: number; expireOn: number };
 type LimitedCollectionCloser<K> = LimitedCollectionExpiration & { key: K };
 
@@ -231,6 +247,7 @@ export class LimitedCollection<K, V> {
 
 	constructor(options: Partial<LimitedCollectionOptions<K, V>> = {}) {
 		this.options = MergeOptions(LimitedCollection.default, options);
+		if (Number.isNaN(this.options.limit)) throw new TypeError('LimitedCollection limit cannot be NaN');
 	}
 
 	/**
@@ -479,7 +496,11 @@ export class LimitedCollection<K, V> {
 		return this.data.keys();
 	}
 
-	values() {
+	values(): IterableIterator<V> {
+		return this.data.values();
+	}
+
+	rawValues(): IterableIterator<LimitedCollectionData<V>> {
 		return (function* (self: LimitedCollection<K, V>) {
 			for (const key of self.data.keys()) {
 				yield self.raw(key)!;
@@ -487,12 +508,20 @@ export class LimitedCollection<K, V> {
 		})(this);
 	}
 
-	entries() {
+	entries(): IterableIterator<[K, V]> {
+		return this.data.entries();
+	}
+
+	rawEntries(): IterableIterator<[K, LimitedCollectionData<V>]> {
 		return (function* (self: LimitedCollection<K, V>) {
 			for (const key of self.data.keys()) {
 				yield [key, self.raw(key)!] as [K, LimitedCollectionData<V>];
 			}
 		})(this);
+	}
+
+	[Symbol.iterator]() {
+		return this.entries();
 	}
 
 	clear() {

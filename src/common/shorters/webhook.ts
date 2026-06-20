@@ -4,6 +4,7 @@ import {
 	MessagesMethods,
 	type MessageWebhookMethodEditParams,
 	type MessageWebhookMethodWriteParams,
+	type MessageWebhookMethodWriteWaitParams,
 } from '../../structures';
 import type {
 	APIWebhook,
@@ -83,6 +84,16 @@ export class WebhookShorter extends BaseShorter {
 	 * @param data The data for writing the message.
 	 * @returns A Promise that resolves to the written message.
 	 */
+	writeMessage(
+		webhookId: string,
+		token: string,
+		payload: MessageWebhookMethodWriteWaitParams,
+	): Promise<WebhookMessageStructure>;
+	writeMessage(
+		webhookId: string,
+		token: string,
+		payload: MessageWebhookMethodWriteParams,
+	): Promise<WebhookMessageStructure | null>;
 	async writeMessage(
 		webhookId: string,
 		token: string,

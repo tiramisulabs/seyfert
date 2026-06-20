@@ -8,25 +8,48 @@ import {
 	type RuntimeConfig,
 	type RuntimeConfigHTTP,
 } from './client/base';
-import { isCloudflareWorker } from './common';
+import { resolveGatewayIntents } from './client/intents';
+import { type Awaitable, isCloudflareWorker } from './common';
 import type { ClientNameEvents, CustomEventsKeys, ResolveEventParams } from './events';
-import { GatewayIntentBits } from './types';
 
 //
 export * from './api';
 export * from './builders';
 export * from './cache';
 //
-export { Collection, LimitedCollection } from './collection';
+export { Collection, LimitedCollection, type LimitedCollectionData } from './collection';
 export * from './commands';
-export { Formatter, Logger, PermissionStrings } from './common';
+export {
+	type BanOptions,
+	type ChannelLink,
+	createValidationMetadata,
+	EmbedColors,
+	Formatter,
+	HeadingLevel,
+	Logger,
+	type MessageLink,
+	type OAuth2URLOptions,
+	PermissionStrings,
+	type PropWhen,
+	SeyfertError,
+	type SeyfertErrorCode,
+	SeyfertErrorMessages,
+	type StructPropState,
+	type StructStates,
+	type Timestamp,
+	TimestampStyle,
+} from './common';
 export * from './components';
 export * from './events';
 export * from './langs';
 //
 export * from './structures';
+export { GuildRole } from './structures/GuildRole';
+export * from './types';
 //
 export { ShardManager, WorkerManager } from './websocket/discord';
+export type { ShardData, ShardManagerOptions, WorkerData, WorkerManagerOptions } from './websocket/discord/shared';
+export type { WorkerInfo, WorkerShardInfo } from './websocket/discord/worker';
 
 /**
  * Creates an event with the specified data and run function.
@@ -44,7 +67,7 @@ export { ShardManager, WorkerManager } from './websocket/discord';
  */
 export function createEvent<E extends ClientNameEvents | CustomEventsKeys>(data: {
 	data: { name: E; once?: boolean };
-	run: (...args: ResolveEventParams<E>) => any;
+	run: (...args: ResolveEventParams<E>) => Awaitable<void>;
 }) {
 	data.data.once ??= false;
 	return data;
@@ -60,16 +83,7 @@ export const config = {
 	bot(data: RuntimeConfig) {
 		return {
 			...data,
-			intents:
-				'intents' in data
-					? typeof data.intents === 'number'
-						? data.intents
-						: (data.intents?.reduce<number>(
-								(pr, acc) =>
-									pr | (typeof acc === 'number' ? acc : GatewayIntentBits[acc as keyof typeof GatewayIntentBits]),
-								0,
-							) ?? 0)
-					: 0,
+			intents: resolveGatewayIntents(data.intents),
 		} as InternalRuntimeConfig;
 	},
 	/**

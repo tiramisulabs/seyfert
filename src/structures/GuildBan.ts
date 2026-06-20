@@ -1,7 +1,7 @@
 import type { ReturnCache } from '../cache';
 import type { GuildBanStructure, GuildStructure } from '../client';
 import type { UsingClient } from '../commands';
-import { Formatter, type MethodContext, type ObjectToLower } from '../common';
+import { type BanOptions, Formatter, type MethodContext, type ObjectToLower } from '../common';
 import type { BanShorter } from '../common/shorters/bans';
 import type { ActuallyBan, APIBan, RESTGetAPIGuildBansQuery } from '../types';
 import { DiscordBase } from './extra/DiscordBase';
@@ -18,8 +18,8 @@ export class GuildBan extends DiscordBase {
 		super(client, { ...data, id });
 	}
 
-	create(body?: Parameters<BanShorter['create']>[2], reason?: string) {
-		return this.client.bans.create(this.guildId, this.id, body, reason);
+	create(options?: BanOptions) {
+		return this.client.bans.create(this.guildId, this.id, options);
 	}
 
 	remove(reason?: string) {
@@ -53,8 +53,8 @@ export class GuildBan extends DiscordBase {
 			fetch: (userId: string, force = false): Promise<GuildBanStructure> => client.bans.fetch(guildId, userId, force),
 			list: (query?: RESTGetAPIGuildBansQuery, force = false): Promise<GuildBanStructure[]> =>
 				client.bans.list(guildId, query, force),
-			create: (memberId: string, body?: Parameters<BanShorter['create']>[2], reason?: string) =>
-				client.bans.create(guildId, memberId, body, reason),
+			create: (memberId: string, options?: Parameters<BanShorter['create']>[2]) =>
+				client.bans.create(guildId, memberId, options),
 			remove: (memberId: string, reason?: string) => client.bans.remove(guildId, memberId, reason),
 			bulkCreate: (body: Parameters<BanShorter['bulkCreate']>[1], reason?: string) =>
 				client.bans.bulkCreate(guildId, body, reason),

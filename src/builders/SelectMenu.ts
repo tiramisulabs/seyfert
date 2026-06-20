@@ -23,6 +23,8 @@ export type BuilderSelectMenus =
 	| ChannelSelectMenu
 	| StringSelectMenu;
 
+type StringSelectOptionResolvable<Value extends string = string> = StringSelectOption | APISelectMenuOption<Value>;
+
 /**
  * Maps default values for Select Menus.
  * @template T - The type of SelectMenuDefaultValueType.
@@ -35,6 +37,10 @@ function mappedDefault<T extends SelectMenuDefaultValueType>(
 	type: T,
 ): APISelectMenuDefaultValue<T>[] {
 	return ids.flat().map(id => ({ id, type }));
+}
+
+function resolveStringSelectOption(option: StringSelectOptionResolvable): StringSelectOption {
+	return option instanceof StringSelectOption ? option : new StringSelectOption(option);
 }
 
 /**
@@ -271,10 +277,10 @@ export class ChannelSelectMenu extends SelectMenu<APIChannelSelectComponent> {
  *   { label: "Option 3", value: "option_3" },
  * ]);
  */
-export class StringSelectMenu extends SelectMenu {
+export class StringSelectMenu<Value extends string = string> extends SelectMenu<APIStringSelectComponent<Value>> {
 	//@ts-expect-error
-	declare data: Omit<APIStringSelectComponent, 'options'> & { options: StringSelectOption[] };
-	constructor(data: Partial<APIStringSelectComponent> = {}) {
+	declare data: Omit<Partial<APIStringSelectComponent<Value>>, 'options'> & { options: StringSelectOption[] };
+	constructor(data: Partial<APIStringSelectComponent<Value>> = {}) {
 		super({ ...data, type: ComponentType.StringSelect });
 		this.data.options = data.options?.map(x => new StringSelectOption(x)) ?? [];
 	}
@@ -284,8 +290,8 @@ export class StringSelectMenu extends SelectMenu {
 	 * @param options - Options to be added.
 	 * @returns The current StringSelectMenu instance.
 	 */
-	addOption(...options: RestOrArray<StringSelectOption>): this {
-		this.data.options = this.data.options.concat(options.flat());
+	addOption(...options: RestOrArray<StringSelectOptionResolvable<Value>>): this {
+		this.data.options = this.data.options.concat(options.flat().map(resolveStringSelectOption));
 		return this;
 	}
 
@@ -294,8 +300,8 @@ export class StringSelectMenu extends SelectMenu {
 	 *  options - Options to be set.
 	 * @returns The current StringSelectMenu instance.
 	 */
-	setOptions(options: StringSelectOption[]): this {
-		this.data.options = options;
+	setOptions(...options: RestOrArray<StringSelectOptionResolvable<Value>>): this {
+		this.data.options = options.flat().map(resolveStringSelectOption);
 		return this;
 	}
 
@@ -309,12 +315,12 @@ export class StringSelectMenu extends SelectMenu {
 		return this;
 	}
 
-	toJSON(): APIStringSelectComponent {
+	toJSON(): APIStringSelectComponent<Value> {
 		const { options, ...raw } = this.data;
 		return {
 			...raw,
 			options: options.map(x => x.toJSON()),
-		};
+		} as APIStringSelectComponent<Value>;
 	}
 }
 
@@ -389,6 +395,24 @@ export class StringSelectOption {
 	 * @returns The option data in JSON format.
 	 */
 	toJSON(): APISelectMenuOption {
+		if (!this.data.label)
+			throw new SeyfertError('MISSING_STRING_SELECT_OPTION_LABEL', {
+				metadata: {
+					...createValidationMetadata('label to be set before calling toJSON()', this.data.label, {
+						component: 'StringSelectOption',
+					}),
+					detail: 'Cannot convert to JSON without a label.',
+				},
+			});
+		if (!this.data.value)
+			throw new SeyfertError('MISSING_STRING_SELECT_OPTION_VALUE', {
+				metadata: {
+					...createValidationMetadata('value to be set before calling toJSON()', this.data.value, {
+						component: 'StringSelectOption',
+					}),
+					detail: 'Cannot convert to JSON without a value.',
+				},
+			});
 		return { ...this.data } as APISelectMenuOption;
 	}
 }

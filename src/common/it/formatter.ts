@@ -13,7 +13,7 @@ export type OAuth2URLOptions = {
 	/**
 	 * Permissions to be granted to the application.
 	 */
-	permissions: BitFieldResolvable<typeof PermissionFlagsBits>;
+	permissions?: BitFieldResolvable<typeof PermissionFlagsBits>;
 	/**
 	 * Whether guild select must be disabled in oauth2 interface.
 	 */
@@ -92,12 +92,17 @@ export enum TimestampStyle {
 /**
  * Represents a message link.
  */
-type MessageLink = `https://discord.com/channels/${string}/${string}/${string}`;
+export type MessageLink = `https://discord.com/channels/${string}/${string}/${string}`;
+
+/**
+ * Represents a channel link.
+ */
+export type ChannelLink = `https://discord.com/channels/${string}/${string}`;
 
 /**
  * Represents a timestamp.
  */
-type Timestamp = `<t:${number}:${TimestampStyle}>`;
+export type Timestamp = `<t:${number}:${TimestampStyle}>`;
 
 /**
  * Represents a formatter utility for formatting content.
@@ -182,7 +187,7 @@ export const Formatter = {
 	 * @param content The content to format.
 	 * @returns The formatted content.
 	 */
-	blockQuote(content: string): string {
+	blockQuote(content: string): `>>> ${string}` {
 		return `>>> ${content}`;
 	},
 
@@ -191,7 +196,7 @@ export const Formatter = {
 	 * @param content The content to format.
 	 * @returns The formatted content.
 	 */
-	quote(content: string): string {
+	quote(content: string): `> ${string}` {
 		return `> ${content}`;
 	},
 
@@ -232,12 +237,15 @@ export const Formatter = {
 
 	/**
 	 * Formats the given timestamp into discord unix timestamp format.
-	 * @param timestamp The timestamp to format.
-	 * @param style The style of the timestamp. Defaults to 't'.
+	 * @param timestamp The Date or unix millisecond timestamp to format.
+	 * @param style The style of the timestamp. Defaults to 'R'.
 	 * @returns The formatted timestamp.
 	 */
-	timestamp(timestamp: Date, style: TimestampStyle = TimestampStyle.RelativeTime): Timestamp {
-		return `<t:${Math.floor(timestamp.getTime() / 1000)}:${style}>`;
+	timestamp(timestamp: Date | number, style: TimestampStyle = TimestampStyle.RelativeTime): Timestamp {
+		const timestampSeconds =
+			typeof timestamp === 'number' ? Math.floor(timestamp / 1000) : Math.floor(timestamp.getTime() / 1000);
+
+		return `<t:${timestampSeconds}:${style}>`;
 	},
 
 	/**
@@ -273,7 +281,7 @@ export const Formatter = {
 	 * @param animated Whether the emoji is animated. Defaults to false.
 	 * @returns The formatted emoji.
 	 */
-	emojiMention(emojiId: string, name: string | null, animated = false): string {
+	emojiMention(emojiId: string, name: string | null, animated = false): `<${'a' | ''}:${string}:${string}>` {
 		return `<${animated ? 'a' : ''}:${name ?? '_'}:${emojiId}>`;
 	},
 
@@ -283,7 +291,7 @@ export const Formatter = {
 	 * @param guildId The ID of the guild. Defaults to '@me'.
 	 * @returns The formatted channel link.
 	 */
-	channelLink(channelId: string, guildId?: string) {
+	channelLink(channelId: string, guildId?: string): ChannelLink {
 		return `https://discord.com/channels/${guildId ?? '@me'}/${channelId}`;
 	},
 

@@ -1,5 +1,5 @@
 import type { Client, WorkerClient } from '../client';
-import { runContextScopes } from '../client/plugins';
+import { runContextScopes, runPluginAutocompleteWrappers, runPluginCommandObservers } from '../client/plugins';
 import { type MessageStructure, type OptionResolverStructure, Transformers } from '../client/transformers';
 import type { MakeRequired } from '../common';
 import { INTEGER_OPTION_VALUE_LIMIT } from '../common/it/constants';
@@ -18,6 +18,7 @@ import {
 import type { PermissionsBitField } from '../structures/extra/Permissions';
 import {
 	type APIApplicationCommandInteraction,
+	type APIApplicationCommandInteractionDataBasicOption,
 	type APIApplicationCommandInteractionDataOption,
 	type APIInteraction,
 	type APIInteractionDataResolvedChannel,
@@ -41,7 +42,7 @@ import {
 	IgnoreCommand,
 	MenuCommandContext,
 	type MessageCommandOptionErrors,
-	type RegisteredMiddlewares,
+	type ResolvedRegisteredMiddlewares,
 	type SeyfertChannelOption,
 	type SeyfertIntegerOption,
 	type SeyfertNumberOption,
@@ -64,6 +65,18 @@ export class HandleCommand {
 	constructor(public client: UsingClient) {}
 
 	async autocomplete(
+		interaction: AutocompleteInteraction,
+		optionsResolver: OptionResolverStructure,
+		command?: CommandAutocompleteOption,
+	) {
+		return runPluginAutocompleteWrappers(
+			this.client,
+			{ client: this.client, command, interaction, optionsResolver },
+			() => this.runAutocomplete(interaction, optionsResolver, command),
+		);
+	}
+
+	private async runAutocomplete(
 		interaction: AutocompleteInteraction,
 		optionsResolver: OptionResolverStructure,
 		command?: CommandAutocompleteOption,
@@ -109,6 +122,7 @@ export class HandleCommand {
 				}
 
 				await command.onBeforeMiddlewares?.(context);
+				await runPluginCommandObservers(this.client, 'onBeforeMiddlewares', context);
 				const resultGlobal = await this.runGlobalMiddlewares(command, context);
 				if (typeof resultGlobal === 'boolean') return;
 				const resultMiddle = await this.runMiddlewares(command, context);
@@ -117,13 +131,17 @@ export class HandleCommand {
 				try {
 					await command.run!(context);
 					await command.onAfterRun?.(context, undefined);
+					await runPluginCommandObservers(this.client, 'onAfterRun', context, undefined);
 				} catch (error) {
 					await command.onRunError?.(context, error);
+					await runPluginCommandObservers(this.client, 'onRunError', context, error);
 					await command.onAfterRun?.(context, error);
+					await runPluginCommandObservers(this.client, 'onAfterRun', context, error);
 				}
 			} catch (error) {
 				try {
 					await command.onInternalError?.(this.client, command, error);
+					await runPluginCommandObservers(this.client, 'onInternalError', this.client, command, error);
 				} catch (err) {
 					this.client.logger.error(`[${command.name}] Internal error:`, err);
 				}
@@ -156,6 +174,7 @@ export class HandleCommand {
 				}
 
 				await command.onBeforeMiddlewares?.(context);
+				await runPluginCommandObservers(this.client, 'onBeforeMiddlewares', context);
 				const resultGlobal = await this.runGlobalMiddlewares(command, context);
 				if (typeof resultGlobal === 'boolean') return;
 				const resultMiddle = await this.runMiddlewares(command, context);
@@ -164,13 +183,17 @@ export class HandleCommand {
 				try {
 					await command.run!(context);
 					await command.onAfterRun?.(context, undefined);
+					await runPluginCommandObservers(this.client, 'onAfterRun', context, undefined);
 				} catch (error) {
 					await command.onRunError(context, error);
+					await runPluginCommandObservers(this.client, 'onRunError', context, error);
 					await command.onAfterRun?.(context, error);
+					await runPluginCommandObservers(this.client, 'onAfterRun', context, error);
 				}
 			} catch (error) {
 				try {
 					await command.onInternalError(this.client, command, error);
+					await runPluginCommandObservers(this.client, 'onInternalError', this.client, command, error);
 				} catch (err) {
 					this.client.logger.error(`[${command.name}] Internal error:`, err);
 				}
@@ -202,9 +225,11 @@ export class HandleCommand {
 				}
 
 				await command.onBeforeOptions?.(context);
+				await runPluginCommandObservers(this.client, 'onBeforeOptions', context);
 				if (!(await this.runOptions(command, context, resolver))) return;
 
 				await command.onBeforeMiddlewares?.(context);
+				await runPluginCommandObservers(this.client, 'onBeforeMiddlewares', context);
 				const resultGlobal = await this.runGlobalMiddlewares(command, context);
 				if (typeof resultGlobal === 'boolean') return;
 				const resultMiddle = await this.runMiddlewares(command, context);
@@ -213,13 +238,17 @@ export class HandleCommand {
 				try {
 					await command.run!(context);
 					await command.onAfterRun?.(context, undefined);
+					await runPluginCommandObservers(this.client, 'onAfterRun', context, undefined);
 				} catch (error) {
 					await command.onRunError?.(context, error);
+					await runPluginCommandObservers(this.client, 'onRunError', context, error);
 					await command.onAfterRun?.(context, error);
+					await runPluginCommandObservers(this.client, 'onAfterRun', context, error);
 				}
 			} catch (error) {
 				try {
 					await command.onInternalError?.(this.client, command, error);
+					await runPluginCommandObservers(this.client, 'onInternalError', this.client, command, error);
 				} catch (err) {
 					this.client.logger.error(`[${command.name}] Internal error:`, err);
 				}
@@ -367,7 +396,25 @@ export class HandleCommand {
 		try {
 			const args = this.argsParser(argsContent, command, message);
 			const { options, errors } = await this.argsOptionsParser(command, rawMessage, args, resolved);
-			const optionsResolver = this.makeResolver(self, options, parent as Command, rawMessage.guild_id, resolved);
+			const resolverOptions: APIApplicationCommandInteractionDataOption[] =
+				command instanceof SubCommand
+					? [
+							command.group
+								? {
+										type: ApplicationCommandOptionType.SubcommandGroup,
+										name: command.group,
+										options: [{ type: ApplicationCommandOptionType.Subcommand, name: command.name, options }],
+									}
+								: { type: ApplicationCommandOptionType.Subcommand, name: command.name, options },
+						]
+					: options;
+			const optionsResolver = this.makeResolver(
+				self,
+				resolverOptions,
+				parent as Command,
+				rawMessage.guild_id,
+				resolved,
+			);
 			const context = new CommandContext(self, message, optionsResolver, shardId, command);
 			//@ts-expect-error
 			const extendContext = self.options?.context?.(message) ?? {};
@@ -398,7 +445,7 @@ export class HandleCommand {
 						const permissions = this.checkPermissions(memberPermissions, command.defaultMemberPermissions);
 						const guild = await this.client.guilds.raw(rawMessage.guild_id);
 						if (permissions && guild.owner_id !== rawMessage.author.id) {
-							return await command.onPermissionsFail?.(context, memberPermissions.keys(permissions));
+							return await command.onPermissionsFail?.(context, permissions);
 						}
 					}
 
@@ -412,9 +459,11 @@ export class HandleCommand {
 				}
 
 				await command.onBeforeOptions?.(context);
+				await runPluginCommandObservers(this.client, 'onBeforeOptions', context);
 				if (!(await this.runOptions(command, context, optionsResolver))) return;
 
 				await command.onBeforeMiddlewares?.(context);
+				await runPluginCommandObservers(this.client, 'onBeforeMiddlewares', context);
 				const resultGlobal = await this.runGlobalMiddlewares(command, context);
 				if (typeof resultGlobal === 'boolean') return;
 				const resultMiddle = await this.runMiddlewares(command, context);
@@ -422,14 +471,18 @@ export class HandleCommand {
 				try {
 					await command.run!(context);
 					await command.onAfterRun?.(context, undefined);
+					await runPluginCommandObservers(this.client, 'onAfterRun', context, undefined);
 				} catch (error) {
 					await command.onRunError?.(context, error);
+					await runPluginCommandObservers(this.client, 'onRunError', context, error);
 					await command.onAfterRun?.(context, error);
+					await runPluginCommandObservers(this.client, 'onAfterRun', context, error);
 				}
 			});
 		} catch (error) {
 			try {
 				await command.onInternalError?.(this.client, command, error);
+				await runPluginCommandObservers(this.client, 'onInternalError', this.client, command, error);
 			} catch (err) {
 				this.client.logger.error(`[${command.name}] Internal error:`, err);
 			}
@@ -614,20 +667,33 @@ export class HandleCommand {
 		try {
 			const resultRunGlobalMiddlewares = await BaseCommand.__runMiddlewares(
 				context,
-				(this.client.options?.globalMiddlewares ?? []) as keyof RegisteredMiddlewares,
+				(this.client.options?.globalMiddlewares ?? []) as readonly (keyof ResolvedRegisteredMiddlewares)[],
 				true,
 			);
 			if (resultRunGlobalMiddlewares.pass) {
 				return false;
 			}
 			if ('error' in resultRunGlobalMiddlewares) {
-				await command.onMiddlewaresError?.(context as never, resultRunGlobalMiddlewares.error ?? 'Unknown error');
+				const metadata = resultRunGlobalMiddlewares.metadata ?? { middleware: 'unknown', scope: 'global' as const };
+				await command.onMiddlewaresError?.(
+					context as never,
+					resultRunGlobalMiddlewares.error ?? 'Unknown error',
+					metadata,
+				);
+				await runPluginCommandObservers(
+					this.client,
+					'onMiddlewaresError',
+					context as never,
+					resultRunGlobalMiddlewares.error ?? 'Unknown error',
+					metadata,
+				);
 				return false;
 			}
 			return resultRunGlobalMiddlewares;
 		} catch (e) {
 			try {
 				await command.onInternalError?.(this.client, command as never, e);
+				await runPluginCommandObservers(this.client, 'onInternalError', this.client, command as never, e);
 			} catch (err) {
 				this.client.logger.error(`[${command.name}] Internal error:`, err);
 			}
@@ -640,22 +706,27 @@ export class HandleCommand {
 		context: CommandContext<{}, never> | MenuCommandContext<any> | EntryPointContext,
 	) {
 		try {
-			const resultRunMiddlewares = await BaseCommand.__runMiddlewares(
-				context,
-				command.middlewares as keyof RegisteredMiddlewares,
-				false,
-			);
+			const resultRunMiddlewares = await BaseCommand.__runMiddlewares(context, command.middlewares, false);
 			if (resultRunMiddlewares.pass) {
 				return false;
 			}
 			if ('error' in resultRunMiddlewares) {
-				await command.onMiddlewaresError?.(context as never, resultRunMiddlewares.error ?? 'Unknown error');
+				const metadata = resultRunMiddlewares.metadata ?? { middleware: 'unknown', scope: 'command' as const };
+				await command.onMiddlewaresError?.(context as never, resultRunMiddlewares.error ?? 'Unknown error', metadata);
+				await runPluginCommandObservers(
+					this.client,
+					'onMiddlewaresError',
+					context as never,
+					resultRunMiddlewares.error ?? 'Unknown error',
+					metadata,
+				);
 				return false;
 			}
 			return resultRunMiddlewares;
 		} catch (e) {
 			try {
 				await command.onInternalError?.(this.client, command as never, e);
+				await runPluginCommandObservers(this.client, 'onInternalError', this.client, command as never, e);
 			} catch (err) {
 				this.client.logger.error(`[${command.name}] Internal error:`, err);
 			}
@@ -693,7 +764,7 @@ export class HandleCommand {
 		args: Record<string, string>,
 		resolved: MakeRequired<ContextOptionsResolved>,
 	) {
-		const options: APIApplicationCommandInteractionDataOption[] = [];
+		const options: APIApplicationCommandInteractionDataBasicOption[] = [];
 		const errors: {
 			name: string;
 			error: string;
@@ -916,7 +987,7 @@ export class HandleCommand {
 						name: i.name,
 						type: i.type,
 						value,
-					} as APIApplicationCommandInteractionDataOption);
+					} as APIApplicationCommandInteractionDataBasicOption);
 				} else if (i.required)
 					if (!errors.some(x => x.name === i.name))
 						errors.push({

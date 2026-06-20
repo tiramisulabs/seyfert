@@ -79,7 +79,7 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 		const values: (string | unknown)[] = [];
 
 		for (const storageEntry of this.storage.values()) {
-			for (const [key, entry] of storageEntry.entries()) {
+			for (const [key, entry] of storageEntry.rawEntries()) {
 				const keySplit = key.split('.');
 				if (
 					keySplit.length === sq.length &&

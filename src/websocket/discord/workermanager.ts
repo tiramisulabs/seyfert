@@ -13,6 +13,26 @@ import { Heartbeater, type WorkerHeartbeaterMessages } from './heartbeater';
 import type { ShardOptions, WorkerData, WorkerManagerOptions } from './shared';
 import { WORKER_TIMEOUT_MS, type WorkerInfo, type WorkerMessages, type WorkerShardInfo } from './worker';
 
+type WorkerManagerConstructorOptionalKeys = 'token' | 'intents' | 'info' | 'handlePayload' | 'handleWorkerMessage';
+type WorkerManagerConstructorOptions = WorkerManagerOptions extends infer Options
+	? Options extends WorkerManagerOptions
+		? Omit<Options, WorkerManagerConstructorOptionalKeys | 'resharding'> &
+				Partial<Pick<Options, WorkerManagerConstructorOptionalKeys>> & {
+					resharding?: PickPartial<NonNullable<WorkerManagerOptions['resharding']>, 'getInfo'>;
+				}
+		: never
+	: never;
+
+type WorkerManagerNativeOptions = Exclude<WorkerManagerOptions, { mode: 'custom' }>;
+type WorkerManagerCustomOptions = Extract<WorkerManagerOptions, { mode: 'custom' }>;
+type WorkerManagerRuntimeOptionalKeys = 'adapter' | 'handleWorkerMessage' | 'handlePayload' | 'getRC';
+type WorkerManagerCustomRuntimeOptionalKeys = 'handleWorkerMessage' | 'handlePayload' | 'getRC';
+type WorkerManagerRuntimeOptions =
+	| PickPartial<Required<WorkerManagerNativeOptions>, WorkerManagerRuntimeOptionalKeys>
+	| (PickPartial<Required<Omit<WorkerManagerCustomOptions, 'path'>>, WorkerManagerCustomRuntimeOptionalKeys> & {
+			path?: string;
+	  });
+
 export class WorkerManager extends Map<
 	number,
 	(ClusterWorker | WorkerThreadsWorker | { ready?: boolean }) & {
@@ -47,7 +67,7 @@ export class WorkerManager extends Map<
 		return chunks;
 	}
 
-	options: PickPartial<Required<WorkerManagerOptions>, 'adapter' | 'handleWorkerMessage' | 'handlePayload' | 'getRC'>;
+	options: WorkerManagerRuntimeOptions;
 	debugger?: Logger;
 	connectQueue!: ConnectQueue;
 	workerQueue: (() => void)[] = [];
@@ -58,16 +78,10 @@ export class WorkerManager extends Map<
 	private _info?: RESTGetAPIGatewayBotResult;
 	heartbeater: Heartbeater;
 
-	constructor(
-		options: Omit<
-			PickPartial<WorkerManagerOptions, 'token' | 'intents' | 'info' | 'handlePayload' | 'handleWorkerMessage'>,
-			'resharding'
-		> & {
-			resharding?: PickPartial<NonNullable<WorkerManagerOptions['resharding']>, 'getInfo'>;
-		},
-	) {
+	constructor(options: WorkerManagerConstructorOptions) {
 		super();
-		this.options = options as WorkerManager['options'];
+		// The constructor permits runtime config values that start() fills before use.
+		this.options = { mode: 'threads', ...options } as WorkerManager['options'];
 		this.cacheAdapter = new MemoryAdapter();
 
 		if (this.options.handleWorkerMessage) {
@@ -146,6 +160,20 @@ export class WorkerManager extends Map<
 	}
 
 	calculateWorkerId(shardId: number) {
+		if (shardId < this.shardStart || shardId >= this.shardEnd) {
+			throw new SeyfertError('INVALID_SHARD_ID', {
+				metadata: {
+					...{
+						shardId,
+						shardStart: this.shardStart,
+						shardEnd: this.shardEnd,
+						shardsPerWorker: this.shardsPerWorker,
+						totalWorkers: this.totalWorkers,
+					},
+					detail: 'Invalid shardId',
+				},
+			});
+		}
 		const workerId = Math.floor((shardId - this.shardStart) / this.shardsPerWorker);
 		if (workerId >= this.totalWorkers) {
 			throw new SeyfertError('INVALID_SHARD_ID', {
@@ -174,7 +202,7 @@ export class WorkerManager extends Map<
 				(worker as import('worker_threads').Worker).postMessage(body);
 				break;
 			case 'custom':
-				this.options.adapter!.postMessage(id, body);
+				this.options.adapter.postMessage(id, body);
 				break;
 		}
 	}
@@ -189,7 +217,7 @@ export class WorkerManager extends Map<
 		for (let i = 0; i < shards.length; i++) {
 			const registerWorker = (resharding: boolean) => {
 				const worker = this.createWorker({
-					path: this.options.path,
+					path: this.options.path ?? '',
 					debug: this.options.debug,
 					token: this.options.token,
 					shards: shards[i],
@@ -268,7 +296,7 @@ export class WorkerManager extends Map<
 				return worker;
 			}
 			case 'custom': {
-				this.options.adapter!.spawn(workerData, env);
+				this.options.adapter.spawn(workerData, env);
 				return {
 					ready: false,
 				};
@@ -533,16 +561,25 @@ export class WorkerManager extends Map<
 			throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Worker #${workerId} doesn't exist` } });
 		}
 
+		const payload = await this.resolveSendPayload(shardId, data);
+		if (!payload) return false;
+
 		const nonce = this.generateNonce();
 
 		this.postMessage(workerId, {
 			type: 'SEND_PAYLOAD',
 			shardId,
 			nonce,
-			...data,
+			...payload,
 		} satisfies ManagerSendPayload);
 
 		return this.generateSendPromise<true>(nonce, 'Shard send payload timeout');
+	}
+
+	private async resolveSendPayload(shardId: number, payload: GatewaySendPayload) {
+		const result = await this.options.handleSendPayload?.(shardId, payload);
+		if (result === null) return null;
+		return result ?? payload;
 	}
 
 	async getShardInfo(shardId: number) {
@@ -603,7 +640,7 @@ export class WorkerManager extends Map<
 			(await BaseClient.prototype.getRC<InternalRuntimeConfig>());
 
 		this.options.debug ||= rc.debug ?? false;
-		this.options.intents ||= rc.intents ?? 0;
+		this.options.intents ??= rc.intents ?? 0;
 		this.options.token ??= rc.token;
 		this.rest ??= new ApiHandler({
 			token: this.options.token,
@@ -614,7 +651,7 @@ export class WorkerManager extends Map<
 		this.options.info ??= await this.rest.proxy.gateway.bot.get();
 		this.options.shardEnd ??= this.options.totalShards ?? this.options.info.shards;
 		this.options.totalShards ??= this.options.shardEnd;
-		this.options = MergeOptions<Required<WorkerManagerOptions>>(WorkerManagerDefaults, this.options);
+		this.options = MergeOptions<WorkerManagerRuntimeOptions>(WorkerManagerDefaults, this.options);
 		this.options.resharding.getInfo ??= () => this.rest.proxy.gateway.bot.get();
 		this.options.workers ??= Math.ceil(this.options.totalShards / this.options.shardsPerWorker);
 		this.connectQueue = new ConnectQueue(5.5e3, this.concurrency);
@@ -687,11 +724,11 @@ type CreateManagerMessage<T extends string, D extends object = object> = { type:
 
 export type ManagerAllowConnect = CreateManagerMessage<
 	'ALLOW_CONNECT',
-	{ shardId: number; presence: GatewayPresenceUpdateData }
+	{ shardId: number; presence?: GatewayPresenceUpdateData }
 >;
 export type ManagerAllowConnectResharding = CreateManagerMessage<
 	'ALLOW_CONNECT_RESHARDING',
-	{ shardId: number; presence: GatewayPresenceUpdateData }
+	{ shardId: number; presence?: GatewayPresenceUpdateData }
 >;
 export type ManagerWorkerAlreadyExistsResharding = CreateManagerMessage<'WORKER_ALREADY_EXISTS_RESHARDING'>;
 export type ManagerSpawnShards = CreateManagerMessage<

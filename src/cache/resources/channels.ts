@@ -37,7 +37,7 @@ export class Channels extends GuildRelatedResource<any, APIChannel> {
 		return super.bulk(ids);
 	}
 
-	override values(guild: string): ReturnCache<ReturnType<typeof channelFrom>[]> {
+	override values(guild: '*' | (string & {})): ReturnCache<ReturnType<typeof channelFrom>[]> {
 		return fakePromise(super.values(guild)).then(channels =>
 			channels.map(rawChannel => channelFrom(rawChannel, this.client)),
 		);

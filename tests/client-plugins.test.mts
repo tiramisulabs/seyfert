@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { Client, type ClientOptions } from '../src/client/client';
 import { resolveClientPlugins, runContextScopes, type SeyfertPlugin } from '../src/client/plugins';
+import { createPlugin, GatewayIntentBits } from '../src';
 
 function runtimeConfig() {
 	return {
@@ -16,7 +17,40 @@ function createClient(options: ClientOptions = {}) {
 	});
 }
 
+class RecordingClient extends Client {
+	executeOptions?: { token?: string; intents?: number };
+
+	protected async execute(options: { token?: string; intents?: number } = {}) {
+		this.executeOptions = options;
+	}
+
+	async loadEvents() {}
+}
+
+function createRecordingClient(options: ClientOptions = {}) {
+	const client = new RecordingClient({
+		getRC: async () => ({ ...runtimeConfig(), intents: 0 }),
+		...options,
+	});
+	(client as unknown as { gateway: unknown }).gateway = {};
+	return client;
+}
+
 describe('client plugins', () => {
+	test('passes normalized start option intents to execute', async () => {
+		const plugin = createPlugin({
+			name: 'execute-intents',
+			register(api) {
+				api.gateway.addIntents('GuildMembers');
+			},
+		});
+		const client = createRecordingClient({ plugins: [plugin] });
+
+		await client.start({ connection: { intents: ['Guilds'] } });
+
+		expect(client.executeOptions?.intents).toBe(GatewayIntentBits.Guilds | GatewayIntentBits.GuildMembers);
+	});
+
 	test('composes context callbacks and global middlewares in plugin order before user options', () => {
 		const pluginA: SeyfertPlugin = {
 			name: 'plugin-a',
@@ -272,7 +306,9 @@ describe('client plugins', () => {
 
 		(client as unknown as { gateway: unknown }).gateway = {};
 
-		await expect(client.start({ token: 'header.payload.signature' }, false)).rejects.toThrow('setup failed');
+		await expect(client.start({ token: 'header.payload.signature' }, false)).rejects.toThrow(
+			/plugin.*setup|setup.*plugin/,
+		);
 		await expect(client.start({ token: 'header.payload.signature' }, false)).resolves.toBeUndefined();
 
 		expect(calls).toEqual(['plugin', 'plugin']);

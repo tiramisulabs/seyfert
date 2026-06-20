@@ -1,4 +1,3 @@
-import type { ReturnCache } from '../..';
 import { Transformers, type VoiceChannelStructure, type VoiceStateStructure } from '../../client/transformers';
 import type { UsingClient } from '../../commands';
 import { type ObjectToLower, toCamelCase } from '../../common';
@@ -30,13 +29,10 @@ export const VOICE_CHANNEL_STATUS_UPDATE = async (
 	self: UsingClient,
 	data: GatewayVoiceChannelStatusUpdateDispatchData,
 ): Promise<
-	| [status: ObjectToLower<GatewayVoiceChannelStatusUpdateDispatchData>]
-	| [
-			status: ObjectToLower<GatewayVoiceChannelStatusUpdateDispatchData>,
-			channel: ReturnCache<VoiceChannelStructure | undefined>,
-	  ]
+	[status: ObjectToLower<GatewayVoiceChannelStatusUpdateDispatchData>, channel: VoiceChannelStructure | undefined]
 > => {
-	return [toCamelCase(data), (await self.cache.channels?.get(data.id)) as never];
+	const channel = await self.cache.channels?.get(data.id);
+	return [toCamelCase(data), channel?.isVoice() ? channel : undefined];
 };
 
 export const VOICE_CHANNEL_START_TIME_UPDATE = (

@@ -1,5 +1,6 @@
 import type { RawFile } from '../../api';
 import type { Attachment, AttachmentBuilder, Embed, Modal, PollBuilder, TopLevelBuilders } from '../../builders';
+import type { InMessageEmbed } from '../../structures/Message';
 import type {
 	APIEmbed,
 	APIInteractionResponseCallbackData,
@@ -19,7 +20,7 @@ import type { OmitInsert, RequireAtLeastOne } from './util';
 
 export interface ResolverProps {
 	content?: string | undefined | null;
-	embeds?: Embed[] | APIEmbed[] | undefined;
+	embeds?: (Embed | APIEmbed | InMessageEmbed)[] | undefined;
 	components?: TopLevelBuilders[] | ReturnType<TopLevelBuilders['toJSON']>[];
 	files?: AttachmentBuilder[] | Attachment[] | RawFile[] | undefined;
 }

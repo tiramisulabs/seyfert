@@ -1,3 +1,4 @@
+import type { PluginMiddlewareDenialMetadata } from '../../client/plugins/types';
 import { magicImport, type PermissionStrings } from '../../common';
 import type {
 	ApplicationCommandType,
@@ -5,12 +6,12 @@ import type {
 	InteractionContextType,
 	LocaleString,
 } from '../../types';
-import type { RegisteredMiddlewares } from '../decorators';
+import type { ResolvedRegisteredMiddlewares } from '../decorators';
 import type { MenuCommandContext } from './menucontext';
 import type { ExtraProps, UsingClient } from './shared';
 
 export abstract class ContextMenuCommand {
-	middlewares: (keyof RegisteredMiddlewares)[] = [];
+	middlewares: readonly (keyof ResolvedRegisteredMiddlewares)[] = [];
 
 	__filePath?: string;
 	__t?: { name: string | undefined; description: string | undefined };
@@ -57,7 +58,11 @@ export abstract class ContextMenuCommand {
 	abstract run?(context: MenuCommandContext<any>): any;
 	onAfterRun?(context: MenuCommandContext<any>, error: unknown | undefined): any;
 	onRunError?(context: MenuCommandContext<any, never>, error: unknown): any;
-	onMiddlewaresError?(context: MenuCommandContext<any, never>, error: string): any;
+	onMiddlewaresError?(
+		context: MenuCommandContext<any, never>,
+		error: string,
+		metadata: PluginMiddlewareDenialMetadata,
+	): any;
 	onBotPermissionsFail?(context: MenuCommandContext<any, never>, permissions: PermissionStrings): any;
 	onInternalError?(client: UsingClient, command: ContextMenuCommand, error?: unknown): any;
 }

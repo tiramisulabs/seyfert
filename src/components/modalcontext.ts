@@ -1,20 +1,303 @@
-import type { ModalCommand, ModalSubmitInteraction, ReturnCache } from '..';
-import type { GuildMemberStructure, GuildStructure, InteractionGuildMemberStructure } from '../client/transformers';
-import type { ExtendContext, RegisteredMiddlewares } from '../commands';
-import type { BaseContext } from '../commands/basecontext';
-import type { RESTGetAPIGuildQuery } from '../types';
-import { InteractionResponseContext } from './interactioncontext';
+import type { AllChannels, Attachment, ModalCommand, ModalSubmitInteraction, ReturnCache } from '..';
+import type {
+	GuildMemberStructure,
+	GuildRoleStructure,
+	GuildStructure,
+	InteractionGuildMemberStructure,
+	UserStructure,
+	WebhookMessageStructure,
+} from '../client/transformers';
+import type {
+	CommandMetadata,
+	ExtendContext,
+	GlobalMetadata,
+	ResolvedRegisteredMiddlewares,
+	UsingClient,
+} from '../commands';
+import { BaseContext } from '../commands/basecontext';
+import type {
+	ComponentInteractionMessageUpdate,
+	InteractionCreateBodyRequest,
+	InteractionMessageUpdateBodyRequest,
+	MakeRequired,
+	MessageWebhookCreateBodyRequest,
+	ModalCreateBodyRequest,
+	ModalCreateOptions,
+	When,
+} from '../common';
+import { MessageFlags, type RESTGetAPIGuildQuery } from '../types';
 
 export interface ModalContext extends BaseContext, ExtendContext {}
 
-export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends InteractionResponseContext<
-	ModalSubmitInteraction,
-	M
-> {
+/**
+ * Represents a context for interacting with components in a Discord bot.
+ * @template Type - The type of component interaction.
+ */
+export class ModalContext<M extends keyof ResolvedRegisteredMiddlewares = never> extends BaseContext {
+	/**
+	 * Creates a new instance of the ComponentContext class.
+	 * @param client - The UsingClient instance.
+	 * @param interaction - The component interaction object.
+	 */
+	constructor(
+		readonly client: UsingClient,
+		public interaction: ModalSubmitInteraction,
+	) {
+		super(client);
+	}
+
 	command!: ModalCommand;
+	metadata: CommandMetadata<M> = {} as never;
+	globalMetadata: GlobalMetadata = {};
 
 	get components() {
 		return this.interaction.components;
+	}
+
+	get customId() {
+		return this.interaction.customId;
+	}
+
+	/**
+	 * Gets the language object for the interaction's locale.
+	 */
+	get t() {
+		return this.client.t(
+			this.client.langs.preferGuildLocale
+				? (this.interaction.guildLocale ?? this.interaction.locale ?? this.client.langs.defaultLang ?? 'en-US')
+				: (this.interaction.locale ?? this.client.langs.defaultLang ?? 'en-US'),
+		);
+	}
+
+	getChannels(customId: string, required: true): AllChannels[];
+	getChannels(customId: string, required?: false): AllChannels[] | void;
+	getChannels(customId: string, required?: boolean): AllChannels[] | void {
+		if (required) return this.interaction.getChannels(customId, true);
+		return this.interaction.getChannels(customId);
+	}
+
+	getRoles(customId: string, required: true): GuildRoleStructure[];
+	getRoles(customId: string, required?: false): GuildRoleStructure[] | void;
+	getRoles(customId: string, required?: boolean): GuildRoleStructure[] | void {
+		if (required) return this.interaction.getRoles(customId, true);
+		return this.interaction.getRoles(customId);
+	}
+
+	getUsers(customId: string, required: true): UserStructure[];
+	getUsers(customId: string, required?: false): UserStructure[] | void;
+	getUsers(customId: string, required?: boolean): UserStructure[] | void {
+		if (required) return this.interaction.getUsers(customId, true);
+		return this.interaction.getUsers(customId);
+	}
+
+	getMentionables(
+		customId: string,
+		required: true,
+	): (UserStructure | GuildRoleStructure | InteractionGuildMemberStructure)[];
+	getMentionables(
+		customId: string,
+		required?: false,
+	): (UserStructure | GuildRoleStructure | InteractionGuildMemberStructure)[] | void;
+	getMentionables(
+		customId: string,
+		required?: boolean,
+	): (UserStructure | GuildRoleStructure | InteractionGuildMemberStructure)[] | void {
+		if (required) return this.interaction.getMentionables(customId, true);
+		return this.interaction.getMentionables(customId);
+	}
+
+	getRadioValues(customId: string, required: true): string;
+	getRadioValues(customId: string, required?: false): string | void;
+	getRadioValues(customId: string, required?: boolean): string | void {
+		if (required) return this.interaction.getRadioValues(customId, true);
+		return this.interaction.getRadioValues(customId);
+	}
+
+	getCheckboxValues(customId: string, required: true): string[];
+	getCheckboxValues(customId: string, required?: false): string[] | void;
+	getCheckboxValues(customId: string, required?: boolean): string[] | void {
+		if (required) return this.interaction.getCheckboxValues(customId, true);
+		return this.interaction.getCheckboxValues(customId);
+	}
+
+	getCheckbox(customId: string, required: true): boolean;
+	getCheckbox(customId: string, required?: false): boolean | void;
+	getCheckbox(customId: string, required?: boolean): boolean | void {
+		if (required) return this.interaction.getCheckbox(customId, true);
+		return this.interaction.getCheckbox(customId);
+	}
+
+	getInputValue(customId: string, required: true): string | string[];
+	getInputValue(customId: string, required?: false): string | string[] | undefined;
+	getInputValue(customId: string, required?: boolean): string | string[] | undefined {
+		if (required) return this.interaction.getInputValue(customId, true);
+		return this.interaction.getInputValue(customId);
+	}
+
+	getFiles(customId: string, required: true): Attachment[];
+	getFiles(customId: string, required?: false): Attachment[] | undefined;
+	getFiles(customId: string, required?: boolean): Attachment[] | undefined {
+		if (required) return this.interaction.getFiles(customId, true);
+		return this.interaction.getFiles(customId);
+	}
+
+	/**
+	 * Writes a response to the interaction.
+	 * @param body - The body of the response.
+	 * @param fetchReply - Whether to fetch the reply or not.
+	 */
+	write<FR extends boolean = false>(
+		body: InteractionCreateBodyRequest,
+		fetchReply?: FR,
+	): Promise<When<FR, WebhookMessageStructure, void>> {
+		return this.interaction.write<FR>(body, fetchReply);
+	}
+
+	/**
+	 * Defers the reply to the interaction.
+	 * @param ephemeral - Whether the reply should be ephemeral or not.
+	 */
+	deferReply<FR extends boolean = false>(
+		ephemeral = false,
+		fetchReply?: FR,
+	): Promise<When<FR, WebhookMessageStructure, undefined>> {
+		return this.interaction.deferReply<FR>(ephemeral ? MessageFlags.Ephemeral : undefined, fetchReply);
+	}
+
+	update<WR extends boolean = false>(
+		body: ComponentInteractionMessageUpdate,
+		withResponse?: WR,
+	): Promise<When<WR, WebhookMessageStructure, undefined>> {
+		return this.interaction.update<WR>(body, withResponse);
+	}
+
+	deferUpdate(): Promise<undefined> {
+		return this.interaction.deferUpdate();
+	}
+
+	/**
+	 * Edits the response of the interaction.
+	 * @param body - The updated body of the response.
+	 */
+	editResponse(body: InteractionMessageUpdateBodyRequest): Promise<WebhookMessageStructure> {
+		return this.interaction.editResponse(body);
+	}
+
+	/**
+	 * Edits the response or replies to the interaction.
+	 * @param body - The body of the response or updated body of the interaction.
+	 * @param fetchReply - Whether to fetch the reply or not.
+	 */
+	editOrReply<FR extends boolean = false>(
+		body: InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest,
+		fetchReply?: FR,
+	): Promise<When<FR, WebhookMessageStructure, void>> {
+		return this.interaction.editOrReply<FR>(body as InteractionCreateBodyRequest, fetchReply);
+	}
+
+	followup(body: MessageWebhookCreateBodyRequest): Promise<WebhookMessageStructure> {
+		return this.interaction.followup(body);
+	}
+
+	/**
+	 * @returns A Promise that resolves to the fetched message
+	 */
+	fetchResponse(): Promise<WebhookMessageStructure> {
+		return this.interaction.fetchResponse();
+	}
+
+	/**
+	 * Deletes the response of the interaction.
+	 * @returns A promise that resolves when the response is deleted.
+	 */
+	deleteResponse() {
+		return this.interaction.deleteResponse();
+	}
+
+	modal(body: ModalCreateBodyRequest, options?: undefined): Promise<undefined>;
+	modal(body: ModalCreateBodyRequest, options: ModalCreateOptions): Promise<ModalSubmitInteraction | null>;
+	modal(body: ModalCreateBodyRequest, options?: ModalCreateOptions | undefined) {
+		// @ts-expect-error
+		return this.interaction.modal(body, options);
+	}
+
+	/**
+	 * Gets the channel of the interaction.
+	 * @param mode - The mode to fetch the channel.
+	 * @returns A promise that resolves to the channel.
+	 */
+	channel(mode?: 'rest' | 'flow'): Promise<AllChannels>;
+	channel(mode: 'cache'): ReturnCache<AllChannels>;
+	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		if (mode === 'cache')
+			return this.client.cache.adapter.isAsync ? Promise.resolve(this.interaction.channel) : this.interaction.channel;
+		return this.client.channels.fetch(this.channelId, mode === 'rest');
+	}
+
+	/**
+	 * Gets the bot member in the guild of the interaction.
+	 * @param mode - The mode to fetch the member.
+	 * @returns A promise that resolves to the bot member.
+	 */
+	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure | undefined>;
+	me(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
+	me(mode: 'cache' | 'rest' | 'flow' = 'flow'): any {
+		if (!this.guildId)
+			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
+		switch (mode) {
+			case 'cache':
+				return this.client.cache.members?.get(this.client.botId, this.guildId);
+			default:
+				return this.client.members.fetch(this.guildId, this.client.botId, mode === 'rest');
+		}
+	}
+
+	/**
+	 * Gets the guild of the interaction.
+	 * @param mode - The mode to fetch the guild.
+	 * @returns A promise that resolves to the guild.
+	 */
+	guild(mode?: 'rest' | 'flow', query?: RESTGetAPIGuildQuery): Promise<GuildStructure<'cached' | 'api'> | undefined>;
+	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache' | 'rest' | 'flow' = 'flow', query?: RESTGetAPIGuildQuery) {
+		if (!this.guildId)
+			return (
+				mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve()
+			) as any;
+		switch (mode) {
+			case 'cache':
+				return this.client.cache.guilds?.get(this.guildId);
+			default:
+				return this.client.guilds.fetch(this.guildId, { force: mode === 'rest', query });
+		}
+	}
+
+	/**
+	 * Gets the ID of the guild of the interaction.
+	 */
+	get guildId() {
+		return this.interaction.guildId;
+	}
+
+	/**
+	 * Gets the ID of the channel of the interaction.
+	 */
+	get channelId() {
+		return this.interaction.channel.id;
+	}
+
+	/**
+	 * Gets the author of the interaction.
+	 */
+	get author(): UserStructure {
+		return this.interaction.user;
+	}
+
+	/**
+	 * Gets the member of the interaction.
+	 */
+	get member(): InteractionGuildMemberStructure | undefined {
+		return this.interaction.member;
 	}
 
 	isModal(): this is ModalContext<M> {
@@ -26,11 +309,10 @@ export class ModalContext<M extends keyof RegisteredMiddlewares = never> extends
 	}
 }
 
-export interface GuildModalContext<M extends keyof RegisteredMiddlewares = never> extends ModalContext<M> {
-	guildId: string;
-	member: InteractionGuildMemberStructure;
+export interface GuildModalContext<M extends keyof ResolvedRegisteredMiddlewares = never>
+	extends Omit<MakeRequired<ModalContext<M>, 'guildId' | 'member'>, 'guild' | 'me'> {
 	guild(mode?: 'rest' | 'flow', query?: RESTGetAPIGuildQuery): Promise<GuildStructure<'cached' | 'api'>>;
-	guild(mode: 'cache', query?: RESTGetAPIGuildQuery): ReturnCache<GuildStructure<'cached'> | undefined>;
+	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 
 	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
 	me(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;

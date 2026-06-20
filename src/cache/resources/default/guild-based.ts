@@ -107,21 +107,21 @@ export class GuildBasedResource<T = any, S = any> {
 		);
 	}
 
-	keys(guild: string): ReturnCache<string[]> {
+	keys(guild: '*' | (string & {})): ReturnCache<string[]> {
 		if (guild === '*') return this.adapter.scan(this.hashGuildId(guild, '*'), true) as string[];
 		return fakePromise(this.adapter.getToRelationship(this.hashId(guild))).then(keys =>
 			keys.map(x => this.hashGuildId(guild, x)),
 		) as string[];
 	}
 
-	values(guild: string): ReturnCache<(T & { guild_id: string })[]> {
+	values(guild: '*' | (string & {})): ReturnCache<(T & { guild_id: string })[]> {
 		if (guild === '*') return this.adapter.scan(this.hashGuildId(guild, '*')) as any[];
 		return fakePromise(this.adapter.getToRelationship(this.hashId(guild))).then(keys =>
 			this.adapter.bulkGet(keys.map(x => this.hashGuildId(guild, x))),
 		) as (T & { guild_id: string })[];
 	}
 
-	count(guild: string): ReturnCache<number> {
+	count(guild: '*' | (string & {})): ReturnCache<number> {
 		if (guild === '*')
 			return fakePromise(this.adapter.scan(this.hashGuildId(guild, '*'), true)).then(data => data.length);
 		return this.adapter.count(this.hashId(guild)) as number;
@@ -155,7 +155,7 @@ export class GuildBasedResource<T = any, S = any> {
 		return id.startsWith(this.namespace) ? id : `${this.namespace}.${guild}.${id}`;
 	}
 
-	flush(guild: '*' | (string & {}) = '*') {
+	flush(guild: '*' | (string & {})) {
 		return fakePromise(this.keys(guild)).then(keys => {
 			return fakePromise(this.adapter.bulkRemove(keys)).then(() => {
 				const maybePromises: (unknown | Promise<unknown>)[] = [];

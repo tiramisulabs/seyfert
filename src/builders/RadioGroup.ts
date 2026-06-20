@@ -28,7 +28,7 @@ export class RadioGroup extends BaseComponentBuilder<APIRadioGroupComponent> {
 		return this;
 	}
 
-	setOptions(options: RestOrArray<RadioGroupOption>) {
+	setOptions(...options: RestOrArray<RadioGroupOption>) {
 		this.#options = options.flat();
 		return this;
 	}
@@ -48,8 +48,8 @@ export class RadioGroup extends BaseComponentBuilder<APIRadioGroupComponent> {
 		return this;
 	}
 
-	toJSON() {
-		const options = [...this.#options.map(option => option.data as APIRadioGroupOption), ...(this.data.options ?? [])];
+	toJSON(): APIRadioGroupComponent {
+		const options = [...this.#options.map(option => option.toJSON()), ...(this.data.options ?? [])];
 		const optionCount = options.length;
 		if (optionCount < 2 || optionCount > 10) {
 			throw new SeyfertError('INVALID_OPTIONS_LENGTH', {
@@ -69,7 +69,7 @@ export class RadioGroup extends BaseComponentBuilder<APIRadioGroupComponent> {
 }
 
 export class RadioGroupOption {
-	constructor(public data: Partial<APIRadioGroupOption> = {}) {}
+	constructor(public data: APIRadioGroupOption) {}
 
 	/**
 	 * Sets the label for the option.
@@ -109,5 +109,27 @@ export class RadioGroupOption {
 	setDefault(value = true): this {
 		this.data.default = value;
 		return this;
+	}
+
+	toJSON(): APIRadioGroupOption {
+		if (!this.data.label)
+			throw new SeyfertError('MISSING_RADIO_GROUP_OPTION_LABEL', {
+				metadata: {
+					...createValidationMetadata('label to be set before calling toJSON()', this.data.label, {
+						component: 'RadioGroupOption',
+					}),
+					detail: 'Cannot convert to JSON without a label.',
+				},
+			});
+		if (!this.data.value)
+			throw new SeyfertError('MISSING_RADIO_GROUP_OPTION_VALUE', {
+				metadata: {
+					...createValidationMetadata('value to be set before calling toJSON()', this.data.value, {
+						component: 'RadioGroupOption',
+					}),
+					detail: 'Cannot convert to JSON without a value.',
+				},
+			});
+		return { ...this.data };
 	}
 }
