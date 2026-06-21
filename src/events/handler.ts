@@ -256,7 +256,7 @@ export class EventHandler extends CustomEventHandler {
 			const instance = this.callback(event);
 			if (!instance) continue;
 			if (typeof instance?.run !== 'function') {
-				this.logger.warn('Missing event run function');
+				this.logger.warn(`Event "${instance.data?.name ?? 'unknown'}" is missing a 'run' function, ignoring it.`);
 				continue;
 			}
 			this.values[normalizeEventName(instance.data.name) as CustomEventsKeys | GatewayEvents] = instance as EventValue;

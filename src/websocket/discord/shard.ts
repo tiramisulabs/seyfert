@@ -311,7 +311,7 @@ export class Shard {
 			case GatewayOpcodes.InvalidSession: {
 				if (packet.d) {
 					if (!this.resumable) {
-						return this.logger.fatal('This is a completely unexpected error message.');
+						return this.logger.fatal(`Shard #${this.id} received a non-resumable InvalidSession, cannot resume.`);
 					}
 					return this.resume();
 				}
@@ -490,7 +490,7 @@ export class Shard {
 		clearInterval(this.heart.nodeInterval);
 		clearTimeout(this.heart.ackTimeout);
 		this.logger.warn(
-			`${ShardSocketCloseCodes[close.code] ?? GatewayCloseCodes[close.code] ?? close.code} (${close.code})`,
+			`Shard #${this.id} closed: ${ShardSocketCloseCodes[close.code] ?? GatewayCloseCodes[close.code] ?? close.code} (${close.code})`,
 			close.reason,
 		);
 
@@ -534,11 +534,11 @@ export class Shard {
 				case GatewayCloseCodes.InvalidIntents:
 				case GatewayCloseCodes.InvalidShard:
 				case GatewayCloseCodes.ShardingRequired:
-					this.logger.fatal('Cannot reconnect');
+					this.logger.fatal(`Shard #${this.id} cannot reconnect`);
 					break;
 				default:
 					{
-						this.logger.warn('Unknown close code, trying to reconnect anyways');
+						this.logger.warn(`Shard #${this.id} unknown close code (${close.code}), trying to reconnect anyways`);
 						await this.reconnect();
 					}
 					break;
