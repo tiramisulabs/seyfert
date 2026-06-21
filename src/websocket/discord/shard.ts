@@ -158,7 +158,7 @@ export class Shard {
 
 		this.websocket.onclose = (event: { code: number; reason: string }) => this.handleClosed(event);
 
-		this.websocket.onerror = (event: ErrorEvent) => this.logger.error(event);
+		this.websocket.onerror = (event: ErrorEvent) => this.logger.error(`Shard #${this.id}`, event);
 
 		this.websocket.onopen = () => {
 			this.isConnecting = false;

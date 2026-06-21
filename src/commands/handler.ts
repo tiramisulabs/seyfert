@@ -316,7 +316,7 @@ export class CommandHandler extends BaseHandler {
 				commandInstance = this.onCommand(command, options.create);
 				if (!commandInstance) continue;
 			} catch (e) {
-				this.logger.warn(`${command.name} ins't a resolvable command`);
+				this.logger.warn(`${command.name} isn't a resolvable command`);
 				this.logger.error(e);
 				continue;
 			}
