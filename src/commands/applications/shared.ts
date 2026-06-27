@@ -29,7 +29,7 @@ export interface ExtendContext extends RegisteredPluginContext {}
 export interface ExtraProps {}
 export type UsingClient = BaseClient &
 	RegisteredPluginExtension &
-	(SeyfertRegistry extends { client: infer C extends BaseClient } ? C : BaseClient);
+	(SeyfertRegistry extends { client: infer C } ? C : unknown);
 export interface CustomWorkerClientEvents {}
 export interface CustomWorkerManagerEvents {}
 export interface ExtendedRC {}
