@@ -3,6 +3,7 @@ import {
 	ApplicationCommandType,
 	type AllChannels,
 	type AllGuildChannels,
+	type AllNamedChannels,
 	type Attachment,
 	type AutocompleteCallback,
 	type AutocompleteInteraction,
@@ -34,6 +35,7 @@ import {
 	Declare,
 	definePlugins,
 	type DMChannelStructure,
+	type DirectoryChannelStructure,
 	GatewayIntentBits,
 	GatewayOpcodes,
 	type GatewayDispatchPayload,
@@ -1433,10 +1435,29 @@ expectType<Promise<GuildMemberStructure | undefined>>(commandContext().fetchMemb
 expectType<ReturnCache<GuildMemberStructure | undefined>>(commandContext().fetchMember('cache'));
 
 type GuildCommandChannel = AllGuildChannels | BaseGuildChannelStructure;
+type NamedChannel = GuildCommandChannel | (BaseChannelStructure & { name: string });
+expectType<true>(true as Equal<AllNamedChannels, NamedChannel>);
 expectType<true>(true as Equal<AllGuildChannels extends GuildCommandChannel ? true : false, true>);
 expectType<true>(true as Equal<BaseGuildChannelStructure extends GuildCommandChannel ? true : false, true>);
 expectType<true>(true as Equal<DMChannelStructure extends GuildCommandChannel ? true : false, false>);
 expectType<true>(true as Equal<BaseChannelStructure extends GuildCommandChannel ? true : false, false>);
+// @ts-expect-error AllEditableChannels duplicates the guild-channel contract and should not be exported.
+type NoEditableChannelsAlias = import('seyfert').AllEditableChannels;
+expectType<string>(undefined as never as DirectoryChannelStructure['name']);
+expectType<string>(undefined as never as DirectoryChannelStructure['guildId']);
+
+const maybeChannel = undefined as never as AllChannels;
+// @ts-expect-error Use isNamed() for named channels or isGuild() for guild channels.
+maybeChannel.isEditable();
+
+if (maybeChannel.isNamed()) {
+	expectType<AllNamedChannels>(maybeChannel);
+	expectType<string>(maybeChannel.name);
+}
+
+if (maybeChannel.isGuild()) {
+	expectType<GuildCommandChannel>(maybeChannel);
+}
 
 const guildCommandContext = commandContext();
 if (guildCommandContext.inGuild()) {

@@ -157,6 +157,14 @@ export class BaseNoEditableChannel<T extends ChannelType> extends DiscordBase<AP
 		return !this.isDM() && this.isTextable();
 	}
 
+	isNamed(): this is AllNamedChannels {
+		return typeof (this as { name?: unknown }).name === 'string';
+	}
+
+	isGuild(): this is AllGuildChannels | BaseGuildChannelStructure {
+		return !this.isDM();
+	}
+
 	isThreadOnly(): this is ForumChannel | MediaChannel {
 		return this.isForum() || this.isMedia();
 	}
@@ -679,6 +687,11 @@ export class NewsChannel extends BaseGuildChannel {
 	}
 }
 
+export interface DirectoryChannel
+	extends ObjectToLower<Omit<APIGuildChannel<ChannelType.GuildDirectory>, 'permission_overwrites' | 'guild_id'>> {
+	guildId: string;
+}
+
 export class DirectoryChannel extends BaseChannel<ChannelType.GuildDirectory> {}
 
 export type AllGuildChannels =
@@ -704,6 +717,7 @@ export type AllGuildTextableChannels =
 	| NewsChannelStructure
 	| ThreadChannelStructure;
 export type AllGuildVoiceChannels = VoiceChannelStructure | StageChannelStructure;
+export type AllNamedChannels = AllGuildChannels | BaseGuildChannelStructure | (BaseChannelStructure & { name: string });
 
 export type AllChannels =
 	| BaseChannelStructure
