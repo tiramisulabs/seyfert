@@ -24,6 +24,9 @@ const writeConsumerFixture = (root: string) => {
 import { middlewares } from "./middlewares";
 
 export let client: Client<true>;
+declare const typedClient: Client<true>;
+const parsedClient: ParseClient<Client<true>> = typedClient;
+void parsedClient;
 
 declare module "seyfert" {
 	interface SeyfertRegistry {
@@ -59,6 +62,117 @@ const options = {
 
 declare const ctx: GuildCommandContext<typeof options>;
 ctx.client.messages.write(ctx.channelId, { content: "ok" });
+`,
+	);
+};
+
+const writeInvalidClientFixture = (root: string) => {
+	mkdirSync(join(root, 'src'), { recursive: true });
+	mkdirSync(join(root, 'node_modules'), { recursive: true });
+	symlinkSync(process.cwd(), join(root, 'node_modules', 'seyfert'), 'dir');
+
+	writeFileSync(
+		join(root, 'src', 'start.ts'),
+		`import type { BaseClient } from "seyfert/lib/client/base";
+
+declare module "seyfert" {
+	interface SeyfertRegistry {
+		client: Pick<BaseClient, "messages" | "rest" | "logger"> & { fake: 1 };
+	}
+}
+`,
+	);
+	writeFileSync(
+		join(root, 'src', 'command.ts'),
+		`import "./start";
+import type { CommandContext } from "seyfert";
+
+declare const ctx: CommandContext;
+ctx.client.messages.write("123", { content: "ok" });
+ctx.client.fake;
+`,
+	);
+};
+
+const writeDirectClientFixture = (root: string) => {
+	mkdirSync(join(root, 'src'), { recursive: true });
+	mkdirSync(join(root, 'node_modules'), { recursive: true });
+	symlinkSync(process.cwd(), join(root, 'node_modules', 'seyfert'), 'dir');
+
+	writeFileSync(
+		join(root, 'src', 'start.ts'),
+		`import type { Client } from "seyfert";
+
+declare module "seyfert" {
+	interface SeyfertRegistry {
+		client: Client<true>;
+	}
+}
+`,
+	);
+	writeFileSync(
+		join(root, 'src', 'command.ts'),
+		`import "./start";
+import type { CommandContext } from "seyfert";
+
+declare const ctx: CommandContext;
+ctx.client.gateway.values();
+ctx.client.events.load("events");
+ctx.client.messages.write("123", { content: "ok" });
+`,
+	);
+};
+
+const writeDocumentedClientVariantFixture = (root: string) => {
+	mkdirSync(join(root, 'src'), { recursive: true });
+	mkdirSync(join(root, 'node_modules'), { recursive: true });
+	symlinkSync(process.cwd(), join(root, 'node_modules', 'seyfert'), 'dir');
+
+	writeFileSync(
+		join(root, 'src', 'gateway.ts'),
+		`import type { Client, CommandContext, ParseClient } from "seyfert";
+
+declare module "seyfert" {
+	interface SeyfertRegistry {
+		client: ParseClient<Client<true>>;
+	}
+}
+
+declare const ctx: CommandContext;
+ctx.client.gateway.values();
+ctx.client.events.load("events");
+ctx.client.messages.write("123", { content: "ok" });
+`,
+	);
+	writeFileSync(
+		join(root, 'src', 'http.ts'),
+		`import type { CommandContext, HttpClient, ParseClient } from "seyfert";
+
+declare module "seyfert" {
+	interface SeyfertRegistry {
+		client: ParseClient<HttpClient>;
+	}
+}
+
+declare const ctx: CommandContext;
+ctx.client.messages.write("123", { content: "ok" });
+ctx.client.rest;
+ctx.client.logger;
+`,
+	);
+	writeFileSync(
+		join(root, 'src', 'worker.ts'),
+		`import type { CommandContext, ParseClient, WorkerClient } from "seyfert";
+
+declare module "seyfert" {
+	interface SeyfertRegistry {
+		client: ParseClient<WorkerClient<true>>;
+	}
+}
+
+declare const ctx: CommandContext;
+ctx.client.events.load("events");
+ctx.client.messages.write("123", { content: "ok" });
 `,
 	);
 };
@@ -111,6 +225,87 @@ describe('command context client type', () => {
 			expect(clientTypes).toHaveLength(1);
 			expect(clientTypes[0]?.text).toBe('UsingClient');
 			expect(clientTypes[0]?.isAny).toBe(false);
+			expect(program.getSemanticDiagnostics()).toHaveLength(0);
+		} finally {
+			rmSync(root, { force: true, recursive: true });
+		}
+	});
+
+	test('ignores arbitrary client registry types not created with ParseClient', () => {
+		const root = mkdtempSync(join(tmpdir(), 'seyfert-invalid-client-'));
+
+		try {
+			writeInvalidClientFixture(root);
+
+			const commandFile = join(root, 'src', 'command.ts');
+			const program = ts.createProgram([commandFile], {
+				esModuleInterop: true,
+				module: ts.ModuleKind.CommonJS,
+				moduleResolution: ts.ModuleResolutionKind.Node10,
+				noEmit: true,
+				skipLibCheck: true,
+				strict: true,
+				target: ts.ScriptTarget.ESNext,
+				types: ['node'],
+			});
+			const diagnostics = program.getSemanticDiagnostics();
+
+			expect(
+				diagnostics.some(
+					(diagnostic) =>
+						diagnostic.code === 2339 &&
+						ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n').includes('fake'),
+				),
+			).toBe(true);
+		} finally {
+			rmSync(root, { force: true, recursive: true });
+		}
+	});
+
+	test('keeps direct Client registry types compatible', () => {
+		const root = mkdtempSync(join(tmpdir(), 'seyfert-direct-client-'));
+
+		try {
+			writeDirectClientFixture(root);
+
+			const commandFile = join(root, 'src', 'command.ts');
+			const program = ts.createProgram([commandFile], {
+				esModuleInterop: true,
+				module: ts.ModuleKind.CommonJS,
+				moduleResolution: ts.ModuleResolutionKind.Node10,
+				noEmit: true,
+				skipLibCheck: true,
+				strict: true,
+				target: ts.ScriptTarget.ESNext,
+				types: ['node'],
+			});
+
+			expect(program.getSemanticDiagnostics()).toHaveLength(0);
+		} finally {
+			rmSync(root, { force: true, recursive: true });
+		}
+	});
+
+	test('keeps documented ParseClient variants compatible', () => {
+		const root = mkdtempSync(join(tmpdir(), 'seyfert-client-variants-'));
+
+		try {
+			writeDocumentedClientVariantFixture(root);
+
+			for (const filename of ['gateway.ts', 'http.ts', 'worker.ts']) {
+				const program = ts.createProgram([join(root, 'src', filename)], {
+					esModuleInterop: true,
+					module: ts.ModuleKind.CommonJS,
+					moduleResolution: ts.ModuleResolutionKind.Node10,
+					noEmit: true,
+					skipLibCheck: true,
+					strict: true,
+					target: ts.ScriptTarget.ESNext,
+					types: ['node'],
+				});
+
+				expect(program.getSemanticDiagnostics()).toHaveLength(0);
+			}
 		} finally {
 			rmSync(root, { force: true, recursive: true });
 		}

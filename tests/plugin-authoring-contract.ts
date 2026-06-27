@@ -120,6 +120,7 @@ import {
 	type CallbackEventHandler,
 	type ClientOptions,
 	type ClientEvent,
+	type ParseClient,
 	type RestArgumentsRequiredQuery,
 	type StringSelectMenuInteraction,
 	type Collection,
@@ -1300,7 +1301,7 @@ const emptyPlugins = definePlugins();
 declare module 'seyfert' {
 	interface SeyfertRegistry {
 		plugins: typeof plugins;
-		client: Client<true>;
+		client: ParseClient<Client<true>>;
 		middlewares: { localAudit: typeof combinedAudit };
 		langs: {
 			commands: {

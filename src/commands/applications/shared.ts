@@ -27,14 +27,26 @@ export interface GlobalMetadata {}
 export type DefaultLocale = SeyfertRegistry extends { langs: infer L extends Record<string, any> } ? L : {};
 export interface ExtendContext extends RegisteredPluginContext {}
 export interface ExtraProps {}
-export type UsingClient = BaseClient &
-	RegisteredPluginExtension &
-	(SeyfertRegistry extends { client: infer C } ? C : unknown);
+declare const __seyfertClientType: unique symbol;
+type RegisteredClient = SeyfertRegistry extends { client: infer C }
+	? [C] extends [{ readonly [__seyfertClientType]?: infer T }]
+		? [T] extends [never]
+			? BaseClient
+			: unknown extends T
+				? C extends BaseClient
+					? C
+					: BaseClient
+				: T
+		: C extends BaseClient
+			? C
+			: BaseClient
+	: BaseClient;
+export type UsingClient = BaseClient & RegisteredPluginExtension & RegisteredClient;
 export interface CustomWorkerClientEvents {}
 export interface CustomWorkerManagerEvents {}
 export interface ExtendedRC {}
 export interface ExtendedRCLocations {}
-export type ParseClient<T extends BaseClient> = T;
+export type ParseClient<T extends BaseClient> = T & { readonly [__seyfertClientType]?: T };
 export type ParseGlobalMiddlewares<T extends Record<string, AnyMiddlewareContext>> = {
 	[K in keyof T]: MetadataMiddleware<T[K]>;
 };
