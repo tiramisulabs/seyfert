@@ -311,3 +311,124 @@ describe('command context client type', () => {
 		}
 	});
 });
+
+const writeLocaleFixture = (root: string) => {
+	mkdirSync(join(root, 'src', 'langs'), { recursive: true });
+	mkdirSync(join(root, 'node_modules'), { recursive: true });
+	symlinkSync(process.cwd(), join(root, 'node_modules', 'seyfert'), 'dir');
+
+	writeFileSync(join(root, 'src', 'index.ts'), 'export * from "./start";\n');
+	writeFileSync(join(root, 'src', 'middlewares.ts'), 'export const middlewares = {};\n');
+	writeFileSync(
+		join(root, 'src', 'langs', 'en.ts'),
+		`export default {
+	commands: {
+		ping: { content: "Pong" },
+	},
+	greeting: (name: string) => "Hi " + name,
+};
+`,
+	);
+	// Mirrors a real consumer entrypoint: a single SeyfertRegistry augmentation that registers a
+	// self-referential client AND langs, resolved through a circular module graph (index -> start,
+	// client-utils -> index, command -> client-utils). The self-referential client field is what
+	// previously made the constrained `infer L extends Record<string, any>` in DefaultLocale collapse
+	// to `{}`, leaving `ctx.t` untyped.
+	writeFileSync(
+		join(root, 'src', 'start.ts'),
+		`import { Client, type ParseClient, type ParseLocales } from "seyfert";
+import { middlewares } from "./middlewares";
+
+export let client: Client<true>;
+
+declare module "seyfert" {
+	interface SeyfertRegistry {
+		client: ParseClient<Client<true>>;
+		middlewares: typeof middlewares;
+		langs: ParseLocales<typeof import("./langs/en")["default"]>;
+	}
+}
+`,
+	);
+	writeFileSync(
+		join(root, 'src', 'client-utils.ts'),
+		`import { client } from "./index";
+
+export async function helper() {
+	await client.messages.write("123", { content: "ok" });
+}
+`,
+	);
+	writeFileSync(
+		join(root, 'src', 'command.ts'),
+		`import type { CommandContext } from "seyfert";
+import { helper } from "./client-utils";
+
+void helper;
+declare const ctx: CommandContext;
+const reply = ctx.t.commands.ping.content.get();
+const greeting = ctx.t.greeting("world").get();
+void reply;
+void greeting;
+`,
+	);
+};
+
+const getLocaleTypesBeforeDiagnostics = (sourceFile: ts.SourceFile, checker: ts.TypeChecker) => {
+	const localeTypes: TypeSnapshot[] = [];
+
+	const visit = (node: ts.Node) => {
+		if (ts.isPropertyAccessExpression(node) && node.name.text === 't') {
+			const type = checker.getTypeAtLocation(node);
+			localeTypes.push({
+				isAny: isAnyType(type),
+				text: checker.typeToString(type),
+			});
+		}
+
+		ts.forEachChild(node, visit);
+	};
+
+	visit(sourceFile);
+	return localeTypes;
+};
+
+describe('command context locale type', () => {
+	test('keeps ctx.t typed while resolving circular consumer module augmentation', () => {
+		const root = mkdtempSync(join(tmpdir(), 'seyfert-context-locale-'));
+
+		try {
+			writeLocaleFixture(root);
+
+			const commandFile = join(root, 'src', 'command.ts');
+			const program = ts.createProgram([commandFile], {
+				esModuleInterop: true,
+				module: ts.ModuleKind.CommonJS,
+				moduleResolution: ts.ModuleResolutionKind.Node10,
+				noEmit: true,
+				skipLibCheck: true,
+				strict: true,
+				target: ts.ScriptTarget.ESNext,
+				types: ['node'],
+			});
+			const checker = program.getTypeChecker();
+			const sourceFile = program.getSourceFile(commandFile);
+
+			expect(sourceFile).toBeDefined();
+			if (!sourceFile) throw new Error('Fixture command source was not loaded');
+
+			const localeTypes = getLocaleTypesBeforeDiagnostics(sourceFile, checker);
+
+			// ctx.t must resolve to the registered locale proxy, not collapse to `{}` (untyped).
+			expect(localeTypes.length).toBeGreaterThanOrEqual(1);
+			for (const localeType of localeTypes) {
+				expect(localeType.isAny).toBe(false);
+				expect(localeType.text).not.toBe('{}');
+			}
+			// Accessing ctx.t.commands.ping.content.get() and ctx.t.greeting(...).get() must typecheck.
+			expect(program.getSemanticDiagnostics()).toHaveLength(0);
+		} finally {
+			rmSync(root, { force: true, recursive: true });
+		}
+	});
+});
