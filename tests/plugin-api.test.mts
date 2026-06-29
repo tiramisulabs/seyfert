@@ -1139,7 +1139,7 @@ describe('plugin api v3', () => {
 	});
 
 	test('registers plugin middleware and global middleware option', () => {
-		const audit: MiddlewareContext = ({ pass }) => pass();
+		const audit: MiddlewareContext = ({ stop }) => stop();
 		const plugin = createPlugin({
 			name: 'middleware',
 			register(api) {
@@ -1195,6 +1195,31 @@ describe('plugin api v3', () => {
 		await expect(BaseCommand.__runMiddlewares(context, ['stopCommand' as never], false)).resolves.toEqual({
 			error: 'command denied',
 			metadata: { middleware: 'stopCommand', scope: 'command' },
+		});
+	});
+
+	test('treats stop() / stop(null) / stop(undefined) as pass', async () => {
+		const passNoArg = createMiddleware<void>(({ stop }) => stop());
+		const passNull = createMiddleware<void>(({ stop }) => stop(null));
+		const passUndefined = createMiddleware<void>(({ stop }) => stop(undefined));
+		const context = {
+			client: {
+				middlewares: { passNoArg, passNull, passUndefined },
+				logger: { warn: vi.fn() },
+			},
+			command: { name: 'secure' },
+			globalMetadata: {},
+			metadata: {},
+		} as never;
+
+		await expect(BaseCommand.__runMiddlewares(context, ['passNoArg' as never], false)).resolves.toEqual({
+			pass: true,
+		});
+		await expect(BaseCommand.__runMiddlewares(context, ['passNull' as never], false)).resolves.toEqual({
+			pass: true,
+		});
+		await expect(BaseCommand.__runMiddlewares(context, ['passUndefined' as never], false)).resolves.toEqual({
+			pass: true,
 		});
 	});
 

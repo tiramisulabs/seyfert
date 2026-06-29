@@ -17,9 +17,8 @@ import type { ChannelType } from '../../types';
 import type { ResolvedRegisteredMiddlewares } from '../decorators';
 
 export type OKFunction<T> = (value: T) => void;
-export type StopFunction = (error: string) => void;
+export type StopFunction = (error?: string | null) => void;
 export type NextFunction<T = unknown> = IsStrictlyUndefined<T> extends true ? () => void : (data: T) => void;
-export type PassFunction = () => void;
 
 export type InferWithPrefix = InternalOptions extends { withPrefix: infer P } ? P : false;
 
@@ -57,14 +56,8 @@ export type MiddlewareContext<T = any, C = any> = (context: {
 	context: C;
 	next: NextFunction<T>;
 	stop: StopFunction;
-	pass: PassFunction;
 }) => any;
-export type AnyMiddlewareContext = (context: {
-	context: any;
-	next: any;
-	stop: StopFunction;
-	pass: PassFunction;
-}) => any;
+export type AnyMiddlewareContext = (context: { context: any; next: any; stop: StopFunction }) => any;
 export type MetadataMiddleware<T extends AnyMiddlewareContext> = T extends (context: infer Payload) => any
 	? Payload extends { next: (...args: infer Args) => unknown }
 		? IsStrictlyUndefined<Args[0]> extends true
@@ -111,7 +104,7 @@ export type CommandMetadata<
 			: {};
 
 export type MessageCommandOptionErrors =
-	| ['CHANNEL_TYPES', type: ChannelType[]]
+	| ['CHANNEL_TYPES', type: readonly ChannelType[]]
 	| ['STRING_MIN_LENGTH', min: number]
 	| ['STRING_MAX_LENGTH', max: number]
 	| ['STRING_INVALID_CHOICE', choices: readonly { name: string; value: string }[]]
