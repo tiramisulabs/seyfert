@@ -280,6 +280,10 @@ type ClientReadyOf<
 > = TPluginsOrReady extends boolean ? TPluginsOrReady : Ready;
 type ClientAmbientExtensionOf<TPluginsOrReady extends readonly AnySeyfertPlugin[] | boolean> =
 	TPluginsOrReady extends readonly AnySeyfertPlugin[] ? {} : RegisteredPluginExtension;
+type ClientOptionsOf<TPluginsOrReady extends readonly AnySeyfertPlugin[] | boolean> =
+	TPluginsOrReady extends readonly AnySeyfertPlugin[]
+		? ClientOptions<TPluginsOrReady>
+		: ClientOptions<RegisteredPlugins>;
 type Materialize<T> = {
 	[K in keyof T]: T[K];
 };
@@ -291,12 +295,17 @@ export type Client<
 	ClientAmbientExtensionOf<TPluginsOrReady> &
 	Materialize<ExtendOf<ClientPluginsOf<TPluginsOrReady>>>;
 
-export interface ClientConstructor {
-	new <Ready extends boolean = boolean>(options?: ClientOptions<RegisteredPlugins>): Client<Ready>;
-	new <const TPlugins extends readonly AnySeyfertPlugin[] = RegisteredPlugins>(
-		options?: ClientOptions<TPlugins>,
-	): Client<TPlugins>;
-}
+type ClientBaseStatics = Omit<typeof ClientBase, 'prototype'>;
+
+export type ClientConstructor = ClientBaseStatics & {
+	new <
+		TPluginsOrReady extends readonly AnySeyfertPlugin[] | boolean = RegisteredPlugins,
+		Ready extends boolean = boolean,
+	>(
+		options?: ClientOptionsOf<TPluginsOrReady>,
+	): Client<TPluginsOrReady, Ready>;
+	prototype: Client;
+};
 
 export const Client = ClientBase as unknown as ClientConstructor;
 
