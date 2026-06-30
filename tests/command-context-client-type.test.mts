@@ -175,6 +175,22 @@ ctx.client.events.load("events");
 ctx.client.messages.write("123", { content: "ok" });
 `,
 	);
+	writeFileSync(
+		join(root, 'src', 'extended.ts'),
+		`import type { Client, CommandContext, ParseClient } from "seyfert";
+
+declare module "seyfert" {
+	interface SeyfertRegistry {
+		client: { custom: number } & ParseClient<Client<true>>;
+	}
+}
+
+declare const ctx: CommandContext;
+ctx.client.custom;
+ctx.client.gateway.values();
+ctx.client.messages.write("123", { content: "ok" });
+`,
+	);
 };
 
 const getClientTypesBeforeDiagnostics = (sourceFile: ts.SourceFile, checker: ts.TypeChecker) => {
@@ -292,7 +308,7 @@ describe('command context client type', () => {
 		try {
 			writeDocumentedClientVariantFixture(root);
 
-			for (const filename of ['gateway.ts', 'http.ts', 'worker.ts']) {
+			for (const filename of ['gateway.ts', 'http.ts', 'worker.ts', 'extended.ts']) {
 				const program = ts.createProgram([join(root, 'src', filename)], {
 					esModuleInterop: true,
 					module: ts.ModuleKind.CommonJS,

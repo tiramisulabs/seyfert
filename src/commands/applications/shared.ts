@@ -35,7 +35,7 @@ type RegisteredClient = SeyfertRegistry extends { client: infer C }
 				? C extends BaseClient
 					? C
 					: BaseClient
-				: T
+				: T & Omit<C, typeof __seyfertClientType>
 		: C extends BaseClient
 			? C
 			: BaseClient
