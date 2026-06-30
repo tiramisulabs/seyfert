@@ -101,8 +101,8 @@ export class BaseNoEditableChannel<T extends ChannelType> extends DiscordBase<AP
 		}
 	}
 
-	delete(reason?: string): Promise<AllChannels> {
-		return this.client.channels.delete(this.id, { reason });
+	delete(reason?: string): Promise<this> {
+		return this.client.channels.delete(this.id, { reason }) as unknown as Promise<this>;
 	}
 
 	toString() {
@@ -594,7 +594,7 @@ export class MediaChannel extends BaseGuildChannel {
 
 export interface ForumChannel
 	extends ObjectToLower<Omit<APIGuildForumChannel, 'permission_overwrites' | 'guild_id'>>,
-		Omit<ThreadOnlyMethods, 'type' | 'edit'>,
+		Omit<ThreadOnlyMethods, 'type' | 'edit' | 'delete'>,
 		WebhookChannelMethods {}
 @mix(ThreadOnlyMethods, WebhookChannelMethods)
 export class ForumChannel extends BaseGuildChannel {
@@ -603,7 +603,7 @@ export class ForumChannel extends BaseGuildChannel {
 
 export interface ThreadChannel
 	extends ObjectToLower<Omit<APIThreadChannel, 'permission_overwrites' | 'guild_id'>>,
-		Omit<TextBaseGuildChannel, 'edit' | 'parentId'> {
+		Omit<TextBaseGuildChannel, 'edit' | 'parentId' | 'delete'> {
 	parentId: string;
 }
 @mix(TextBaseGuildChannel)
