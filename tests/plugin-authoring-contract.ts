@@ -352,13 +352,13 @@ type BotReadyCallbackParams = Parameters<CallbackEventHandler['botReady']>;
 expectType<true>(true as Equal<BotReadyCallbackParams['length'], 3>);
 expectType<true>(true as Equal<BotReadyCallbackParams[2], number>);
 expectType<false>(false as IsAny<ReturnType<ClientEvent['run']>>);
-expectType<true>(true as Equal<ReturnType<ClientEvent['run']>, Awaitable<void>>);
+expectType<true>(true as Equal<ReturnType<ClientEvent['run']>, Awaitable<unknown>>);
 
 const asyncCreateEventContract = createEvent({
 	data: { name: 'botReady' },
 	async run() {},
 });
-expectType<true>(true as Equal<ReturnType<typeof asyncCreateEventContract.run>, Awaitable<void>>);
+expectType<true>(true as Equal<ReturnType<typeof asyncCreateEventContract.run>, Awaitable<unknown>>);
 
 expectType<ComponentCollectorStopReason>('messageDelete');
 expectType<ComponentCollectorStopReason>('channelDelete');

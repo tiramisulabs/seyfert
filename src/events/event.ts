@@ -29,7 +29,7 @@ export type EventContext<T extends { data: { name: ClientNameEvents | CustomEven
 >;
 export interface ClientEvent {
 	data: ClientDataEvent;
-	run(...args: EventContext<any>): Awaitable<void>;
+	run(...args: EventContext<any>): Awaitable<unknown>;
 	/**@internal */
 	__filePath?: string;
 }

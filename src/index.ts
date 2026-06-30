@@ -67,7 +67,7 @@ export type { WorkerInfo, WorkerShardInfo } from './websocket/discord/worker';
  */
 export function createEvent<E extends ClientNameEvents | CustomEventsKeys>(data: {
 	data: { name: E; once?: boolean };
-	run: (...args: ResolveEventParams<E>) => Awaitable<void>;
+	run: (...args: ResolveEventParams<E>) => Awaitable<unknown>;
 }) {
 	data.data.once ??= false;
 	return data;
