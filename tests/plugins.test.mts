@@ -6,6 +6,7 @@ import {
 	SeyfertPluginError,
 	setupClientPlugins,
 	teardownClientPlugins,
+	type ResolvedPluginList,
 	type SeyfertPlugin,
 	type SeyfertPluginClient,
 } from '../lib/client/plugins';
@@ -242,7 +243,7 @@ describe('client plugins', () => {
 
 		let thrown: SeyfertPluginAggregateError | undefined;
 		try {
-			await teardownClientPlugins({ plugins } as SeyfertPluginClient, plugins);
+			await teardownClientPlugins({ plugins } as unknown as SeyfertPluginClient, plugins);
 		} catch (error) {
 			thrown = error as SeyfertPluginAggregateError;
 		}
@@ -254,7 +255,7 @@ describe('client plugins', () => {
 		assert.equal(thrown.errors.length, 2);
 		assert.instanceOf(thrown.errors[0], SeyfertPluginError);
 		assert.match(thrown.errors[0].message, /third.*teardown|teardown.*third/);
-		assert.equal(thrown.errors[0].cause.message, 'third failed');
+		assert.equal((thrown.errors[0].cause as Error).message, 'third failed');
 		assert.instanceOf(thrown.errors[1], SeyfertPluginError);
 		assert.match(thrown.errors[1].message, /first.*teardown|teardown.*first/);
 		assert.equal(thrown.errors[1].cause, firstError);
@@ -288,7 +289,7 @@ describe('client plugins', () => {
 
 		let thrown: SeyfertPluginAggregateError | undefined;
 		try {
-			await setupClientPlugins({ plugins } as SeyfertPluginClient, plugins);
+			await setupClientPlugins({ plugins } as unknown as SeyfertPluginClient, plugins as unknown as ResolvedPluginList);
 		} catch (error) {
 			thrown = error as SeyfertPluginAggregateError;
 		}
@@ -342,7 +343,7 @@ describe('client plugins', () => {
 
 		let thrown: unknown;
 		try {
-			await setupClientPlugins({ plugins } as SeyfertPluginClient, plugins);
+			await setupClientPlugins({ plugins } as unknown as SeyfertPluginClient, plugins as unknown as ResolvedPluginList);
 		} catch (error) {
 			thrown = error;
 		}
@@ -356,8 +357,8 @@ describe('client plugins', () => {
 		const states: boolean[] = [];
 		const plugin: SeyfertPlugin = {
 			name: 'lifecycle',
-			setup: client => states.push('initialized' in client),
-			teardown: client => states.push('initialized' in client),
+			setup: client => states.push('initialized' in client) as unknown as void,
+			teardown: client => states.push('initialized' in client) as unknown as void,
 		};
 		const client = new BaseClient({
 			getRC: createRuntimeConfig,

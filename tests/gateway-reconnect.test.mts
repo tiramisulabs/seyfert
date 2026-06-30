@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { describe, expect, test, vi, afterEach } from 'vitest';
-import { ShardSocketCloseCodes } from '../src/websocket/discord/shared';
+import { ShardSocketCloseCodes, type ShardOptions } from '../src/websocket/discord/shared';
 
 afterEach(() => {
 	vi.clearAllTimers();
@@ -27,7 +27,7 @@ describe('gateway reconnect stability', () => {
 				},
 			},
 			handlePayload: vi.fn(),
-		});
+		} as unknown as ShardOptions);
 		const close = vi.fn();
 
 		shard.websocket = {

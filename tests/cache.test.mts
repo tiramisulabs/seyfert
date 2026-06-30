@@ -1,6 +1,7 @@
 import { assert, describe, expect, test } from 'vitest';
 import { BaseResource } from '../src/cache/resources/default/base';
 import { Cache, CacheFrom, Client, LimitedMemoryAdapter, MemoryAdapter } from '../src/index';
+import type { APIUser } from '../src/index';
 import { BaseClient } from '../src/client/base';
 
 // all intents
@@ -318,7 +319,7 @@ describe('test limited memory cache adapter indexing', () => {
 
 		assert.equal(cachedMessage?.author.id, message.author.id);
 		assert.equal(rawMessage?.user_id, message.author.id);
-		assert.equal(await cache.users?.raw(message.author.id), message.author);
+		assert.equal(await cache.users?.raw(message.author.id), message.author as APIUser);
 	});
 });
 

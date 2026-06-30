@@ -48,7 +48,7 @@ function createWorkerManager(options: Partial<ConstructorParameters<typeof Worke
 			locations: { base: '' },
 		}),
 		...options,
-	});
+	} as ConstructorParameters<typeof WorkerManager>[0]);
 	return { manager, messages };
 }
 
@@ -64,7 +64,7 @@ describe('gateway send chokepoints', () => {
 	test('ShardManager.send applies payload hooks and reports consumed payloads', async () => {
 		const sent: GatewaySendPayload[] = [];
 		const manager = createShardManager({
-			handleSendPayload: (_shardId, payload) => ({ ...payload, d: 42 }),
+			handleSendPayload: (_shardId, payload) => ({ ...payload, d: 42 }) as GatewaySendPayload,
 		});
 		manager.set(0, {
 			send: async (_force: boolean, payload: GatewaySendPayload) => sent.push(payload),

@@ -26,6 +26,7 @@ import {
 	type GatewayDispatchPayload,
 	type GatewaySendPayload,
 	type MiddlewareContext,
+	type PluginHandlerTransformer,
 } from '../src';
 import { BaseClient } from '../src/client/base';
 import { resolveRawEventData } from '../src/events/utils';
@@ -256,7 +257,7 @@ describe('plugin api v3', () => {
 				calls.push('register parent');
 				api.options.set({ allowedMentions: { parse: [] } });
 			},
-			setup: () => calls.push('setup parent'),
+			setup: (() => calls.push('setup parent')) as () => void,
 		});
 		const client = createBaseClient([parent]);
 
@@ -602,11 +603,11 @@ describe('plugin api v3', () => {
 					createKinds.push(metadata.kind);
 					return next();
 				});
-				api.handlers.transform((instance, metadata) => {
+				api.handlers.transform(((instance: { name?: string; customId?: string | RegExp; props?: Record<string, unknown> }, metadata) => {
 					transformed.push(`${metadata.kind}:${'name' in instance ? instance.name : instance.customId}`);
 					instance.props ??= {};
 					instance.props.handlerKind = metadata.kind;
-				});
+				}) as PluginHandlerTransformer);
 				api.commands.add(HandlerCommand);
 				api.commands.add(commandInstance);
 				api.components.add(HandlerButton);
@@ -632,11 +633,13 @@ describe('plugin api v3', () => {
 			'modal:handler-instance-modal',
 			'modal:handler-modal',
 		]);
-		expect(client.commands.values.find(command => command.name === 'handler-command')?.props.handlerKind).toBe('command');
+		expect(
+			(client.commands.values.find(command => command.name === 'handler-command') as { props: { handlerKind?: string } } | undefined)?.props.handlerKind,
+		).toBe('command');
 		expect(client.commands.values.find(command => command.name === 'handler-instance-command')).toBe(commandInstance);
-		expect(client.components.commands.find(component => component.customId === 'handler-button')?.props.handlerKind).toBe(
-			'component',
-		);
+		expect(
+			(client.components.commands.find(component => component.customId === 'handler-button') as { props: { handlerKind?: string } } | undefined)?.props.handlerKind,
+		).toBe('component');
 		expect(client.components.commands.find(component => component.customId === 'handler-instance-modal')).toBe(
 			modalInstance,
 		);
@@ -678,10 +681,10 @@ describe('plugin api v3', () => {
 		const plugin = createPlugin({
 			name: 'event-transform',
 			register(api) {
-				api.handlers.transform((loaded, metadata) => {
+				api.handlers.transform((loaded, metadata): void => {
 					kinds.push(metadata.kind);
 					if (metadata.kind === 'event' && typeof loaded === 'function') {
-						return { data: { name: 'messageCreate' }, run: () => undefined };
+						return { data: { name: 'messageCreate' }, run: () => undefined } as never;
 					}
 				}, { kinds: ['event'] });
 			},
@@ -707,11 +710,11 @@ describe('plugin api v3', () => {
 					createKinds.push(metadata.kind);
 					return next();
 				});
-				api.handlers.transform((instance, metadata) => {
+				api.handlers.transform(((instance: { name?: string; customId?: string | RegExp; props?: Record<string, unknown> }, metadata) => {
 					transformed.push(`${metadata.kind}:${'name' in instance ? instance.name : instance.customId}`);
 					instance.props ??= {};
 					instance.props.handlerKind = metadata.kind;
-				});
+				}) as PluginHandlerTransformer);
 			},
 		});
 		const client = new BaseClient({
@@ -755,15 +758,15 @@ describe('plugin api v3', () => {
 			'component:loaded-handler-button',
 			'modal:loaded-handler-modal',
 		]);
-		expect(client.commands.values.find(command => command.name === 'loaded-handler-command')?.props.handlerKind).toBe(
-			'command',
-		);
-		expect(client.components.commands.find(component => component.customId === 'loaded-handler-button')?.props.handlerKind).toBe(
-			'component',
-		);
-		expect(client.components.commands.find(component => component.customId === 'loaded-handler-modal')?.props.handlerKind).toBe(
-			'modal',
-		);
+		expect(
+			(client.commands.values.find(command => command.name === 'loaded-handler-command') as { props: { handlerKind?: string } } | undefined)?.props.handlerKind,
+		).toBe('command');
+		expect(
+			(client.components.commands.find(component => component.customId === 'loaded-handler-button') as { props: { handlerKind?: string } } | undefined)?.props.handlerKind,
+		).toBe('component');
+		expect(
+			(client.components.commands.find(component => component.customId === 'loaded-handler-modal') as { props: { handlerKind?: string } } | undefined)?.props.handlerKind,
+		).toBe('modal');
 	});
 
 	test('applies unified handler creators and transformers during reload', async () => {
@@ -790,11 +793,11 @@ describe('plugin api v3', () => {
 					createKinds.push(metadata.kind);
 					return next();
 				});
-				api.handlers.transform((instance, metadata) => {
+				api.handlers.transform(((instance: { name?: string; customId?: string | RegExp; props?: Record<string, unknown> }, metadata) => {
 					transformed.push(metadata.kind);
 					instance.props ??= {};
 					instance.props.reloadKind = metadata.kind;
-				});
+				}) as PluginHandlerTransformer);
 			},
 		});
 		const client = createBaseClient([plugin]);
@@ -854,13 +857,13 @@ describe('plugin api v3', () => {
 
 		expect(createKinds.sort()).toEqual(['command', 'component', 'modal']);
 		expect(transformed.sort()).toEqual(['command', 'component', 'modal']);
-		expect(client.commands.values[0]?.props.reloadKind).toBe('command');
-		expect(client.components.commands.find(component => component.customId === 'reload-button')?.props.reloadKind).toBe(
-			'component',
-		);
-		expect(client.components.commands.find(component => component.customId === 'reload-modal')?.props.reloadKind).toBe(
-			'modal',
-		);
+		expect((client.commands.values[0] as { props: { reloadKind?: string } } | undefined)?.props.reloadKind).toBe('command');
+		expect(
+			(client.components.commands.find(component => component.customId === 'reload-button') as { props: { reloadKind?: string } } | undefined)?.props.reloadKind,
+		).toBe('component');
+		expect(
+			(client.components.commands.find(component => component.customId === 'reload-modal') as { props: { reloadKind?: string } } | undefined)?.props.reloadKind,
+		).toBe('modal');
 	});
 
 	test('keeps plugin lang overlays after lang reload', async () => {
@@ -1591,7 +1594,7 @@ describe('plugin api v3', () => {
 			register(api) {
 				api.gateway.wrapSendPayload(({ payload }) => ({
 					...payload,
-					d: 'wrapped',
+					d: 'wrapped' as never,
 				}));
 			},
 		});
@@ -1631,14 +1634,14 @@ describe('plugin api v3', () => {
 					if (name === 'PLUGIN_TEST_EVENT') events.push({ data, shardId });
 				});
 				api.gateway.onDispatch((packet, next, meta) => {
-					const data = packet.d as { value: string };
+					const data = packet.d as unknown as { value: string };
 					calls.push(`before:${data.value}:${meta.shardId}`);
-					return next({ ...packet, d: { value: 'middle' } });
+					return next({ ...packet, d: { value: 'middle' } as never });
 				}, { order: PluginOrder.Before });
 				api.gateway.onDispatch(packet => {
-					const data = packet.d as { value: string };
+					const data = packet.d as unknown as { value: string };
 					calls.push(`after:${data.value}`);
-					return { ...packet, d: { value: `${data.value}:after` } };
+					return { ...packet, d: { value: `${data.value}:after` } as never };
 				}, { order: PluginOrder.After });
 			},
 		});
@@ -1783,7 +1786,7 @@ describe('plugin api v3', () => {
 			register(api) {
 				api.gateway.onDispatch(packet => ({
 					...packet,
-					d: { value: 'worker' },
+					d: { value: 'worker' } as never,
 				}));
 			},
 		});
@@ -2016,7 +2019,7 @@ describe('plugin api v3', () => {
 		expect((client.cache as Cache & { pluginResource?: PluginCacheResource }).pluginResource).toBeInstanceOf(
 			PluginCacheResource,
 		);
-		await client.cache.onPacket({ t: 'RESUMED', op: GatewayOpcodes.Dispatch, s: 1, d: {} });
+		await client.cache.onPacket({ t: 'RESUMED', op: GatewayOpcodes.Dispatch, s: 1, d: {} } as never);
 
 		expect(packets).toEqual([expect.objectContaining({ t: 'RESUMED' })]);
 	});
@@ -2070,7 +2073,7 @@ describe('plugin api v3', () => {
 		client.logger = logger as never;
 		client.refreshPluginContributions();
 
-		await client.cache.onPacket({ t: 'RESUMED', op: GatewayOpcodes.Dispatch, s: 1, d: {} });
+		await client.cache.onPacket({ t: 'RESUMED', op: GatewayOpcodes.Dispatch, s: 1, d: {} } as never);
 
 		expect(calls).toEqual(['good']);
 		expect(logger.error).toHaveBeenCalledWith(

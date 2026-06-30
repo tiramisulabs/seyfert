@@ -1,4 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
+import type { MockInstance } from 'vitest';
 import { ApiHandler } from '../src/api/api';
 import { Bucket } from '../src/api/bucket';
 import type { ApiRequestOptions, HttpMethods } from '../src/api/shared';
@@ -32,7 +33,7 @@ function createRetryRequest(): ApiRequestOptions {
 }
 
 function expectRequestOptionsPreserved(
-	requestSpy: ReturnType<typeof vi.spyOn<ApiHandler, 'request'>>,
+	requestSpy: MockInstance<ApiHandler['request']>,
 	request: ApiRequestOptions,
 ) {
 	expect(requestSpy).toHaveBeenCalledWith(method, url, {
@@ -89,6 +90,7 @@ describe('REST retry request options', () => {
 				next,
 				vi.fn(),
 				Date.now(),
+				url,
 			);
 
 			await flushRetryContinuations();
@@ -121,6 +123,7 @@ describe('REST retry request options', () => {
 				next,
 				vi.fn(),
 				Date.now(),
+				url,
 			);
 
 			await expect(retry).resolves.toBe(retried);

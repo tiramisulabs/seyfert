@@ -1,5 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
-import { Command } from '../src/commands';
+import { Command, type SeyfertChoice } from '../src/commands';
+import type { CommandOptionWithType } from '../src/commands/handle';
 import { CommandHandler } from '../src/commands/handler';
 import { LangsHandler } from '../src/langs/handler';
 import { ApplicationCommandOptionType } from '../src/types';
@@ -71,7 +72,7 @@ class LocalizedCommand extends Command {
 				},
 			],
 		},
-	];
+	] as unknown as (CommandOptionWithType & { choices?: SeyfertChoice<string>[] })[];
 	run() {}
 }
 

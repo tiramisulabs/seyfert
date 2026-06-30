@@ -57,7 +57,7 @@ describe('invalid token handling', () => {
 	});
 
 	test('auth false REST requests omit Authorization and still call fetch with INVALID token', async () => {
-		const fetchMock = vi.fn(
+		const fetchMock = vi.fn<typeof fetch>(
 			async () => new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }),
 		);
 		vi.stubGlobal('fetch', fetchMock);

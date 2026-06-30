@@ -35,12 +35,12 @@ export interface DecoratorDeclareOptions {
 	description: string;
 	botPermissions?: PermissionStrings;
 	defaultMemberPermissions?: PermissionStrings;
-	guildId?: string[];
+	guildId?: readonly string[];
 	nsfw?: boolean;
 	integrationTypes?: (keyof typeof ApplicationIntegrationType)[] | ApplicationIntegrationType[];
 	contexts?: (keyof typeof InteractionContextType)[] | InteractionContextType[];
 	ignore?: IgnoreCommand;
-	aliases?: string[];
+	aliases?: readonly string[];
 	props?: ExtraProps;
 }
 
@@ -221,9 +221,9 @@ export function Declare<const T extends CommandDeclareOptions>(input: LowercaseD
 				super(...args);
 				if ('description' in declare) this.description = declare.description;
 				if ('type' in declare) this.type = declare.type;
-				if ('guildId' in declare) this.guildId = declare.guildId;
+				if ('guildId' in declare) this.guildId = declare.guildId?.slice();
 				if ('ignore' in declare) this.ignore = declare.ignore;
-				if ('aliases' in declare) this.aliases = declare.aliases;
+				if ('aliases' in declare) this.aliases = declare.aliases?.slice();
 				if ('handler' in declare) this.handler = declare.handler;
 				// check if all properties are valid
 			}

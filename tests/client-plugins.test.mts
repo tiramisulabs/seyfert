@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { Client, type ClientOptions } from '../src/client/client';
-import { resolveClientPlugins, runContextScopes, type SeyfertPlugin } from '../src/client/plugins';
+import { type AnySeyfertPlugin, resolveClientPlugins, runContextScopes, type SeyfertPlugin } from '../src/client/plugins';
 import { createPlugin, GatewayIntentBits } from '../src';
 
 function runtimeConfig() {
@@ -10,11 +10,13 @@ function runtimeConfig() {
 	};
 }
 
-function createClient(options: ClientOptions = {}) {
+function createClient<const TPlugins extends readonly AnySeyfertPlugin[] = readonly []>(
+	options: ClientOptions<TPlugins> = {},
+) {
 	return new Client({
 		getRC: async () => runtimeConfig(),
 		...options,
-	});
+	} as ClientOptions);
 }
 
 class RecordingClient extends Client {
@@ -27,11 +29,13 @@ class RecordingClient extends Client {
 	async loadEvents() {}
 }
 
-function createRecordingClient(options: ClientOptions = {}) {
+function createRecordingClient<const TPlugins extends readonly AnySeyfertPlugin[] = readonly []>(
+	options: ClientOptions<TPlugins> = {},
+) {
 	const client = new RecordingClient({
 		getRC: async () => ({ ...runtimeConfig(), intents: 0 }),
 		...options,
-	});
+	} as ClientOptions);
 	(client as unknown as { gateway: unknown }).gateway = {};
 	return client;
 }
@@ -189,7 +193,7 @@ describe('client plugins', () => {
 			],
 		});
 
-		const result = await runContextScopes(client.options.contextScopes, {}, async () => {
+		const result = await runContextScopes(client.options.contextScopes, {} as never, async () => {
 			calls.push('handler');
 			return 'done';
 		});

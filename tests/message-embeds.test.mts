@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { BaseInteraction, Embed, InMessageEmbed, MessagesMethods } from '../lib';
+import { BaseInteraction, Embed, InMessageEmbed, MessagesMethods, type RESTPostAPIChannelMessageJSONBody } from '../lib';
 
 describe('message embed body serialization', () => {
 	test('serializes received embeds in channel message bodies', () => {
@@ -8,7 +8,7 @@ describe('message embed body serialization', () => {
 		const receivedEmbedData = { title: 'Forwarded', description: 'from a received message' };
 		const receivedEmbed = new InMessageEmbed(receivedEmbedData);
 
-		const body = MessagesMethods.transformMessageBody(
+		const body = MessagesMethods.transformMessageBody<RESTPostAPIChannelMessageJSONBody>(
 			{ embeds: [builderEmbed, rawApiEmbed, receivedEmbed] },
 			undefined,
 			{ options: {} } as never,
@@ -24,7 +24,7 @@ describe('message embed body serialization', () => {
 		const receivedEmbedData = { title: 'Forwarded', description: 'from an interaction message' };
 		const receivedEmbed = new InMessageEmbed(receivedEmbedData);
 
-		const body = BaseInteraction.transformBody(
+		const body = BaseInteraction.transformBody<RESTPostAPIChannelMessageJSONBody>(
 			{ embeds: [builderEmbed, rawApiEmbed, receivedEmbed] },
 			undefined,
 			{ options: {} } as never,

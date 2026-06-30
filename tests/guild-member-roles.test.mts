@@ -30,7 +30,7 @@ const memberData = (roles: string[]) =>
 const createMember = (client: any, id: string, roles: string[], bot = false) =>
 	new GuildMember(client, memberData(roles), userData(id, bot), guildId);
 
-const deferred = <T>() => {
+const deferred = <T,>() => {
 	let resolve!: (value: T) => void;
 	const promise = new Promise<T>(res => {
 		resolve = res;

@@ -20,7 +20,7 @@ const roleData = {
 	permissions: '0',
 	managed: false,
 	mentionable: false,
-	flags: 0,
+	flags: 0 as APIRole['flags'],
 } satisfies APIRole;
 
 describe('GuildRole', () => {
