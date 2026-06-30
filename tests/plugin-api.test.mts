@@ -1226,7 +1226,7 @@ describe('plugin api v3', () => {
 		});
 	});
 
-	test('returns middleware denial metadata when async middleware rejects before resolving', async () => {
+	test('rejects the runner promise when an async middleware rejects', async () => {
 		const error = new Error('async denied');
 		const asyncReject = createMiddleware<void>(() => Promise.reject(error));
 		const logger = { error: vi.fn(), warn: vi.fn() };
@@ -1241,21 +1241,11 @@ describe('plugin api v3', () => {
 			globalMetadata: {},
 			metadata: {},
 		} as never;
-		const timedOut = Symbol('timedOut');
 
-		const result = await Promise.race([
-			BaseCommand.__runMiddlewares(context, ['asyncReject' as never], false),
-			new Promise(resolve => setTimeout(() => resolve(timedOut), 25)),
-		]);
-
-		expect(result).toEqual({
-			error: 'async denied',
-			metadata: { middleware: 'asyncReject', scope: 'command' },
-		});
-		expect(logger.error).toHaveBeenCalledOnce();
-		expect(logger.error.mock.calls[0][0]).toContain('asyncReject');
-		expect(logger.error.mock.calls[0][0]).toContain('async denied');
-		expect(logger.error.mock.calls[0][1]).toBe(error);
+		// An exception (async rejection) is an internal error, not a denial: it rejects the
+		// runner so it lands on onInternalError, identical to a synchronous throw.
+		await expect(BaseCommand.__runMiddlewares(context, ['asyncReject' as never], false)).rejects.toBe(error);
+		expect(logger.error).not.toHaveBeenCalled();
 	});
 
 	test('keeps synchronous middleware throws as rejected runner promises', async () => {
@@ -1334,7 +1324,7 @@ describe('plugin api v3', () => {
 		expect(logger.error).not.toHaveBeenCalled();
 	});
 
-	test('attributes async rejection to the rejecting middleware after next advances', async () => {
+	test('rejects with the async error even after next has advanced', async () => {
 		const error = new Error('auth failed late');
 		let rejectAuth!: (error: Error) => void;
 		const auth = createMiddleware<void>(({ next }) => {
@@ -1361,14 +1351,10 @@ describe('plugin api v3', () => {
 		const result = BaseCommand.__runMiddlewares(context, ['auth' as never, 'audit' as never], false);
 		rejectAuth(error);
 
-		await expect(result).resolves.toEqual({
-			error: 'auth failed late',
-			metadata: { middleware: 'auth', scope: 'command' },
-		});
-		expect(logger.error).toHaveBeenCalledOnce();
-		expect(logger.error.mock.calls[0][0]).toContain('auth');
-		expect(logger.error.mock.calls[0][0]).not.toContain('audit');
-		expect(logger.error.mock.calls[0][1]).toBe(error);
+		// Even though `auth` already called next(), its later rejection still rejects the runner
+		// (the chain had not resolved) and surfaces the original error to onInternalError.
+		await expect(result).rejects.toBe(error);
+		expect(logger.error).not.toHaveBeenCalled();
 	});
 
 	test('runs command observers with middleware denial metadata and isolates observer failures', async () => {

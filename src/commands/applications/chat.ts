@@ -232,7 +232,7 @@ export class BaseCommand {
 					running = false;
 					return res({});
 				}
-				invoke(activeMiddlewares[index]);
+				void invoke(activeMiddlewares[index]);
 			}
 			const deny = (err: string, middleware: keyof ResolvedRegisteredMiddlewares) => {
 				if (!running) {
@@ -254,31 +254,18 @@ export class BaseCommand {
 				}
 				return deny(err, activeMiddlewares[index]);
 			};
-			const rejectRunner = (err: unknown) => {
-				if (!running) {
-					return;
-				}
-				running = false;
-				rej(err);
-			};
-			function invoke(middleware: keyof ResolvedRegisteredMiddlewares) {
-				let result: unknown;
+			async function invoke(middleware: keyof ResolvedRegisteredMiddlewares) {
 				try {
-					result = context.client.middlewares![middleware]({ context, next, stop });
+					await context.client.middlewares![middleware]({ context, next, stop });
 				} catch (err) {
-					rejectRunner(err);
-					return;
-				}
-				Promise.resolve(result).catch(err => {
 					if (!running) {
 						return;
 					}
-					const message = err instanceof Error ? err.message : String(err);
-					context.client.logger.error(`Middleware "${String(middleware)}" rejected: ${message}`, err);
-					deny(message, middleware);
-				});
+					running = false;
+					rej(err);
+				}
 			}
-			invoke(activeMiddlewares[0]);
+			void invoke(activeMiddlewares[0]);
 		});
 	}
 
