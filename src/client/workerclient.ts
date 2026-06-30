@@ -227,7 +227,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				{
 					const shard = this.shards.get(data.shardId);
 					if (!shard) {
-						this.logger.fatal('Worker trying send payload by non-existent shard');
+						this.logger.fatal(`Worker trying to send payload by non-existent shard (#${data.shardId})`);
 						return;
 					}
 
@@ -250,7 +250,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				{
 					const shard = this.resharding.get(data.shardId);
 					if (!shard) {
-						this.logger.fatal('Worker trying reshard non-existent shard');
+						this.logger.fatal(`Worker trying to reshard non-existent shard (#${data.shardId})`);
 						return;
 					}
 					shard.options.presence = data.presence;
@@ -261,7 +261,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				{
 					const shard = this.shards.get(data.shardId);
 					if (!shard) {
-						this.logger.fatal('Worker trying connect non-existent shard');
+						this.logger.fatal(`Worker trying to connect non-existent shard (#${data.shardId})`);
 						return;
 					}
 					shard.options.presence = data.presence;
@@ -333,7 +333,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				{
 					const shard = this.shards.get(data.shardId);
 					if (!shard) {
-						this.logger.fatal('Worker trying get non-existent shard');
+						this.logger.fatal(`Worker trying to get non-existent shard (#${data.shardId})`);
 						return;
 					}
 

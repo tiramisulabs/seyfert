@@ -37,7 +37,6 @@ import type {
 	ExtraProps,
 	IgnoreCommand,
 	OnOptionsReturnObject,
-	PassFunction,
 	SeyfertChannelMap,
 	StopFunction,
 	UsingClient,
@@ -96,13 +95,13 @@ type ContextOptionsAuxInternal<
 	: NonNullable<T['value']> extends (...args: any) => any
 		? Parameters<Parameters<NonNullable<T['value']>>[1]>[0] extends never
 			? T extends { channel_types?: infer C }
-				? C extends any[]
+				? C extends readonly any[]
 					? C[number] extends keyof SeyfertChannelMap
 						? SeyfertChannelMap[C[number]]
 						: never
 					: never
 				: T extends { choices?: infer C }
-					? C extends SeyfertChoice<string | number>[]
+					? C extends readonly SeyfertChoice<string | number>[]
 						? C[number]['value']
 						: never
 					: never
@@ -222,13 +221,6 @@ export class BaseCommand {
 
 		return new Promise((res, rej) => {
 			let running = true;
-			const pass: PassFunction = () => {
-				if (!running) {
-					return;
-				}
-				running = false;
-				return res({ pass: true });
-			};
 			function next(...args: unknown[]) {
 				if (!running) {
 					return;
@@ -253,6 +245,13 @@ export class BaseCommand {
 				});
 			};
 			const stop: StopFunction = err => {
+				if (err == null) {
+					if (!running) {
+						return;
+					}
+					running = false;
+					return res({ pass: true });
+				}
 				return deny(err, activeMiddlewares[index]);
 			};
 			const rejectRunner = (err: unknown) => {
@@ -265,7 +264,7 @@ export class BaseCommand {
 			function invoke(middleware: keyof ResolvedRegisteredMiddlewares) {
 				let result: unknown;
 				try {
-					result = context.client.middlewares![middleware]({ context, next, stop, pass });
+					result = context.client.middlewares![middleware]({ context, next, stop });
 				} catch (err) {
 					rejectRunner(err);
 					return;

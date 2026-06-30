@@ -101,8 +101,8 @@ export class BaseNoEditableChannel<T extends ChannelType> extends DiscordBase<AP
 		}
 	}
 
-	delete(reason?: string): Promise<AllChannels> {
-		return this.client.channels.delete(this.id, { reason });
+	delete(reason?: string): Promise<this> {
+		return this.client.channels.delete(this.id, { reason }) as unknown as Promise<this>;
 	}
 
 	toString() {
@@ -155,6 +155,14 @@ export class BaseNoEditableChannel<T extends ChannelType> extends DiscordBase<AP
 
 	isGuildTextable(): this is AllGuildTextableChannels {
 		return !this.isDM() && this.isTextable();
+	}
+
+	isNamed(): this is AllNamedChannels {
+		return typeof (this as { name?: unknown }).name === 'string';
+	}
+
+	isGuild(): this is AllGuildChannels | BaseGuildChannelStructure {
+		return !this.isDM();
 	}
 
 	isThreadOnly(): this is ForumChannel | MediaChannel {
@@ -586,7 +594,7 @@ export class MediaChannel extends BaseGuildChannel {
 
 export interface ForumChannel
 	extends ObjectToLower<Omit<APIGuildForumChannel, 'permission_overwrites' | 'guild_id'>>,
-		Omit<ThreadOnlyMethods, 'type' | 'edit'>,
+		Omit<ThreadOnlyMethods, 'type' | 'edit' | 'delete'>,
 		WebhookChannelMethods {}
 @mix(ThreadOnlyMethods, WebhookChannelMethods)
 export class ForumChannel extends BaseGuildChannel {
@@ -595,7 +603,7 @@ export class ForumChannel extends BaseGuildChannel {
 
 export interface ThreadChannel
 	extends ObjectToLower<Omit<APIThreadChannel, 'permission_overwrites' | 'guild_id'>>,
-		Omit<TextBaseGuildChannel, 'edit' | 'parentId'> {
+		Omit<TextBaseGuildChannel, 'edit' | 'parentId' | 'delete'> {
 	parentId: string;
 }
 @mix(TextBaseGuildChannel)
@@ -679,6 +687,11 @@ export class NewsChannel extends BaseGuildChannel {
 	}
 }
 
+export interface DirectoryChannel
+	extends ObjectToLower<Omit<APIGuildChannel<ChannelType.GuildDirectory>, 'permission_overwrites' | 'guild_id'>> {
+	guildId: string;
+}
+
 export class DirectoryChannel extends BaseChannel<ChannelType.GuildDirectory> {}
 
 export type AllGuildChannels =
@@ -704,6 +717,7 @@ export type AllGuildTextableChannels =
 	| NewsChannelStructure
 	| ThreadChannelStructure;
 export type AllGuildVoiceChannels = VoiceChannelStructure | StageChannelStructure;
+export type AllNamedChannels = AllGuildChannels | BaseGuildChannelStructure | (BaseChannelStructure & { name: string });
 
 export type AllChannels =
 	| BaseChannelStructure

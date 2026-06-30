@@ -316,7 +316,7 @@ export class CommandHandler extends BaseHandler {
 				commandInstance = this.onCommand(command, options.create);
 				if (!commandInstance) continue;
 			} catch (e) {
-				this.logger.warn(`${command.name} ins't a resolvable command`);
+				this.logger.warn(`${command.name} isn't a resolvable command`);
 				this.logger.error(e);
 				continue;
 			}
@@ -374,9 +374,12 @@ export class CommandHandler extends BaseHandler {
 								continue;
 							}
 							try {
+								const relativePath = option.split(process.cwd()).slice(1).join(process.cwd());
 								const fileSubCommands = this.onFile(result.find(x => x.path === option)!.file);
 								if (!fileSubCommands) {
-									this.logger.warn(`SubCommand returned (${fileSubCommands}) ignoring.`);
+									this.logger.warn(
+										`Command "${commandInstance.name}": no default export found in "${relativePath}", ignoring it as a SubCommand.`,
+									);
 									continue;
 								}
 								for (const fileSubCommand of fileSubCommands) {
@@ -385,7 +388,10 @@ export class CommandHandler extends BaseHandler {
 										subCommand.__filePath = option;
 										commandInstance.options!.push(subCommand);
 									} else {
-										this.logger.warn(subCommand ? 'SubCommand expected' : 'Invalid SubCommand', subCommand);
+										this.logger.warn(
+											`Command "${commandInstance.name}": expected a SubCommand from "${relativePath}", got (${subCommand}); ignoring it.`,
+											subCommand,
+										);
 									}
 								}
 							} catch {

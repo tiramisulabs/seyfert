@@ -36,7 +36,7 @@ export interface SeyfertBasicOption<T extends keyof ReturnOptionsTypes, R = true
 
 export interface SeyfertBaseChoiceableOption<
 	T extends keyof ReturnOptionsTypes,
-	C = T extends ChoiceableTypes ? SeyfertChoice<ChoiceableValues[T]>[] : never,
+	C = T extends ChoiceableTypes ? readonly SeyfertChoice<ChoiceableValues[T]>[] : never,
 	R = true | false,
 	VC = never,
 > {
@@ -76,13 +76,13 @@ export interface ChoiceableValues {
 
 export type ValueCallback<
 	T extends keyof ReturnOptionsTypes,
-	C = T extends ChoiceableTypes ? SeyfertChoice<ChoiceableValues[T]>[] : keyof SeyfertChannelMap,
+	C = T extends ChoiceableTypes ? readonly SeyfertChoice<ChoiceableValues[T]>[] : keyof SeyfertChannelMap,
 	I = any,
 > = (
 	data: {
 		context: CommandContext;
 		value: T extends ChoiceableTypes
-			? C extends SeyfertChoice<ChoiceableValues[T]>[]
+			? C extends readonly SeyfertChoice<ChoiceableValues[T]>[]
 				? C[number]['value'] extends ReturnOptionsTypes[T]
 					? C[number]['value']
 					: never
@@ -95,34 +95,31 @@ export type ValueCallback<
 	fail: StopFunction,
 ) => Awaitable<void>;
 
-export type SeyfertStringOption<T = SeyfertChoice<string>[], R = boolean, VC = never> = SeyfertBaseChoiceableOption<
-	ApplicationCommandOptionType.String,
-	T,
-	R,
-	VC
-> & {
+export type SeyfertStringOption<
+	T = readonly SeyfertChoice<string>[],
+	R = boolean,
+	VC = never,
+> = SeyfertBaseChoiceableOption<ApplicationCommandOptionType.String, T, R, VC> & {
 	autocomplete?: AutocompleteCallback<string>;
 	onAutocompleteError?: OnAutocompleteErrorCallback<string>;
 	min_length?: number;
 	max_length?: number;
 };
-export type SeyfertIntegerOption<T = SeyfertChoice<number>[], R = boolean, VC = never> = SeyfertBaseChoiceableOption<
-	ApplicationCommandOptionType.Integer,
-	T,
-	R,
-	VC
-> & {
+export type SeyfertIntegerOption<
+	T = readonly SeyfertChoice<number>[],
+	R = boolean,
+	VC = never,
+> = SeyfertBaseChoiceableOption<ApplicationCommandOptionType.Integer, T, R, VC> & {
 	autocomplete?: AutocompleteCallback<number>;
 	onAutocompleteError?: OnAutocompleteErrorCallback<number>;
 	min_value?: number;
 	max_value?: number;
 };
-export type SeyfertNumberOption<T = SeyfertChoice<number>[], R = boolean, VC = never> = SeyfertBaseChoiceableOption<
-	ApplicationCommandOptionType.Number,
-	T,
-	R,
-	VC
-> & {
+export type SeyfertNumberOption<
+	T = readonly SeyfertChoice<number>[],
+	R = boolean,
+	VC = never,
+> = SeyfertBaseChoiceableOption<ApplicationCommandOptionType.Number, T, R, VC> & {
 	autocomplete?: AutocompleteCallback<number>;
 	onAutocompleteError?: OnAutocompleteErrorCallback<number>;
 	min_value?: number;
@@ -140,7 +137,7 @@ export type SeyfertChannelOption<C = keyof SeyfertChannelMap, R = true | false, 
 		name?: FlatObjectKeys<DefaultLocale>;
 		description?: FlatObjectKeys<DefaultLocale>;
 	};
-	channel_types?: C[];
+	channel_types?: readonly C[];
 };
 export type SeyfertRoleOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.Role, R>;
 export type SeyfertMentionableOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.Mentionable, R>;
@@ -148,7 +145,7 @@ export type SeyfertAttachmentOption<R = boolean> = SeyfertBasicOption<Applicatio
 
 export function createStringOption<
 	R extends boolean,
-	C extends SeyfertChoice<string>[] = SeyfertChoice<string>[],
+	C extends readonly SeyfertChoice<string>[] = readonly SeyfertChoice<string>[],
 	VC = never,
 >(data: SeyfertStringOption<C, R, VC>) {
 	return { ...data, type: ApplicationCommandOptionType.String } as const;
@@ -156,7 +153,7 @@ export function createStringOption<
 
 export function createIntegerOption<
 	R extends boolean,
-	C extends SeyfertChoice<number>[] = SeyfertChoice<number>[],
+	C extends readonly SeyfertChoice<number>[] = readonly SeyfertChoice<number>[],
 	VC = never,
 >(data: SeyfertIntegerOption<C, R, VC>) {
 	return { ...data, type: ApplicationCommandOptionType.Integer } as const;
@@ -164,7 +161,7 @@ export function createIntegerOption<
 
 export function createNumberOption<
 	R extends boolean,
-	C extends SeyfertChoice<number>[] = SeyfertChoice<number>[],
+	C extends readonly SeyfertChoice<number>[] = readonly SeyfertChoice<number>[],
 	VC = never,
 >(data: SeyfertNumberOption<C, R, VC>) {
 	return { ...data, type: ApplicationCommandOptionType.Number } as const;

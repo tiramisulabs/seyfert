@@ -2,10 +2,7 @@ import type { DefaultLocale } from '../commands';
 import { SeyfertError } from '../common';
 
 export const LangRouter = (userLocale: string, defaultLang: string, langs: Partial<Record<string, any>>) => {
-	function createProxy(
-		route = [] as string[],
-		args: any[] = [],
-	): __InternalParseLocale<DefaultLocale> & { get(locale?: string): DefaultLocale } {
+	function createProxy(route = [] as string[], args: any[] = []): SeyfertLocale {
 		const noop = () => {
 			return;
 		};
@@ -53,6 +50,14 @@ export type __InternalParseLocale<T extends Record<string, any>> = {
 					? __InternalParseLocale<T[K]> & { get(locale?: string): T[K] }
 					: never;
 };
+
+/**
+ * The `ctx.t` / `client.t(...)` accessor type. Kept as a named alias so that inferred return
+ * types (BaseClient.t, the context `t` getters, ...) emit a reference to `DefaultLocale` instead
+ * of eagerly baking it to `{}` at build time (where `SeyfertRegistry` has no `langs`), which left
+ * consumers with an untyped `ctx.t`.
+ */
+export type SeyfertLocale = __InternalParseLocale<DefaultLocale> & { get(locale?: string): DefaultLocale };
 
 export type ParseLocales<T extends Record<string, any>> = T;
 /**Idea inspiration from: FreeAoi | Fixed by: Drylozu */

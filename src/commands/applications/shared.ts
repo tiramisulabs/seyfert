@@ -17,9 +17,8 @@ import type { ChannelType } from '../../types';
 import type { ResolvedRegisteredMiddlewares } from '../decorators';
 
 export type OKFunction<T> = (value: T) => void;
-export type StopFunction = (error: string) => void;
+export type StopFunction = (error?: string | null) => void;
 export type NextFunction<T = unknown> = IsStrictlyUndefined<T> extends true ? () => void : (data: T) => void;
-export type PassFunction = () => void;
 
 export type InferWithPrefix = InternalOptions extends { withPrefix: infer P } ? P : false;
 
@@ -27,14 +26,26 @@ export interface GlobalMetadata {}
 export type DefaultLocale = SeyfertRegistry extends { langs: infer L extends Record<string, any> } ? L : {};
 export interface ExtendContext extends RegisteredPluginContext {}
 export interface ExtraProps {}
-export type UsingClient = BaseClient &
-	RegisteredPluginExtension &
-	(SeyfertRegistry extends { client: infer C } ? C : unknown);
+declare const __seyfertClientType: unique symbol;
+type RegisteredClient = SeyfertRegistry extends { client: infer C }
+	? [C] extends [{ readonly [__seyfertClientType]?: infer T }]
+		? [T] extends [never]
+			? BaseClient
+			: unknown extends T
+				? C extends BaseClient
+					? C
+					: BaseClient
+				: T
+		: C extends BaseClient
+			? C
+			: BaseClient
+	: BaseClient;
+export type UsingClient = BaseClient & RegisteredPluginExtension & RegisteredClient;
 export interface CustomWorkerClientEvents {}
 export interface CustomWorkerManagerEvents {}
 export interface ExtendedRC {}
 export interface ExtendedRCLocations {}
-export type ParseClient<T extends BaseClient> = T;
+export type ParseClient<T extends BaseClient> = T & { readonly [__seyfertClientType]?: T };
 export type ParseGlobalMiddlewares<T extends Record<string, AnyMiddlewareContext>> = {
 	[K in keyof T]: MetadataMiddleware<T[K]>;
 };
@@ -45,14 +56,8 @@ export type MiddlewareContext<T = any, C = any> = (context: {
 	context: C;
 	next: NextFunction<T>;
 	stop: StopFunction;
-	pass: PassFunction;
 }) => any;
-export type AnyMiddlewareContext = (context: {
-	context: any;
-	next: any;
-	stop: StopFunction;
-	pass: PassFunction;
-}) => any;
+export type AnyMiddlewareContext = (context: { context: any; next: any; stop: StopFunction }) => any;
 export type MetadataMiddleware<T extends AnyMiddlewareContext> = T extends (context: infer Payload) => any
 	? Payload extends { next: (...args: infer Args) => unknown }
 		? IsStrictlyUndefined<Args[0]> extends true
@@ -99,7 +104,7 @@ export type CommandMetadata<
 			: {};
 
 export type MessageCommandOptionErrors =
-	| ['CHANNEL_TYPES', type: ChannelType[]]
+	| ['CHANNEL_TYPES', type: readonly ChannelType[]]
 	| ['STRING_MIN_LENGTH', min: number]
 	| ['STRING_MAX_LENGTH', max: number]
 	| ['STRING_INVALID_CHOICE', choices: readonly { name: string; value: string }[]]
