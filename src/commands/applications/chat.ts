@@ -198,7 +198,7 @@ export class BaseCommand {
 		}
 		let index = 0;
 
-		return new Promise(res => {
+		return new Promise((res, rej) => {
 			let running = true;
 			const pass: PassFunction = () => {
 				if (!running) {
@@ -218,7 +218,7 @@ export class BaseCommand {
 					running = false;
 					return res({});
 				}
-				context.client.middlewares![middlewares[index]]({ context, next, stop, pass });
+				void invoke(middlewares[index]);
 			}
 			const stop: StopFunction = err => {
 				if (!running) {
@@ -227,7 +227,18 @@ export class BaseCommand {
 				running = false;
 				return res({ error: err });
 			};
-			context.client.middlewares![middlewares[0]]({ context, next, stop, pass });
+			async function invoke(middleware: keyof RegisteredMiddlewares) {
+				try {
+					await context.client.middlewares![middleware]({ context, next, stop, pass });
+				} catch (err) {
+					if (!running) {
+						return;
+					}
+					running = false;
+					rej(err);
+				}
+			}
+			void invoke(middlewares[0]);
 		});
 	}
 
