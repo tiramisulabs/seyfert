@@ -19,7 +19,15 @@ export * from './cache';
 //
 export { Collection, LimitedCollection } from './collection';
 export * from './commands';
-export { Formatter, Logger, PermissionStrings } from './common';
+export {
+	type AssignFilenameCallback,
+	type CustomizeLoggerCallback,
+	Formatter,
+	Logger,
+	type LoggerOptions,
+	LogLevels,
+	PermissionStrings,
+} from './common';
 export * from './components';
 export * from './events';
 export * from './langs';
