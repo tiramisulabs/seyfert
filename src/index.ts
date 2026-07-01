@@ -20,13 +20,17 @@ export * from './cache';
 export { Collection, LimitedCollection, type LimitedCollectionData } from './collection';
 export * from './commands';
 export {
+	type AssignFilenameCallback,
 	type BanOptions,
 	type ChannelLink,
+	type CustomizeLoggerCallback,
 	createValidationMetadata,
 	EmbedColors,
 	Formatter,
 	HeadingLevel,
 	Logger,
+	type LoggerOptions,
+	LogLevels,
 	type MessageLink,
 	type OAuth2URLOptions,
 	PermissionStrings,
