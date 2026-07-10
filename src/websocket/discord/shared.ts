@@ -68,8 +68,57 @@ export interface ShardManagerOptions extends ShardDetails {
 }
 
 export interface CustomManagerAdapter {
-	postMessage(workerId: number, body: unknown): Awaitable<unknown>;
-	spawn(workerData: WorkerData, env: Record<string, any>): Awaitable<unknown>;
+	postMessage(workerId: number, body: unknown, context?: WorkerGenerationContext): Awaitable<unknown>;
+	spawn(workerData: WorkerData, env: Record<string, any>, context?: WorkerGenerationContext): Awaitable<unknown>;
+	/** Required when using WorkerManager's generation transition APIs. */
+	terminate?(workerId: number, context?: WorkerGenerationContext): Awaitable<unknown>;
+}
+
+/** Identifies one physical allocation of a logical worker. */
+export interface WorkerGenerationTarget {
+	generation: number;
+	allocationId: string;
+}
+
+/** A generation target together with its stable logical worker id. */
+export interface WorkerGenerationContext extends WorkerGenerationTarget {
+	workerId: number;
+}
+
+export type WorkerGenerationStatus =
+	| 'preparing'
+	| 'ready'
+	| 'activating'
+	| 'active'
+	| 'draining'
+	| 'drained'
+	| 'aborting'
+	| 'aborted';
+
+export type WorkerGenerationReadiness = 'app' | 'shards' | 'ready' | 'cutover' | 'active' | 'drained' | 'aborted';
+
+/** Read-only lifecycle state reported by WorkerManager. */
+export interface WorkerGenerationState extends WorkerGenerationContext {
+	status: WorkerGenerationStatus;
+	appReady: boolean;
+	shardsReady: boolean;
+	/** The candidate is buffering dispatches for an at-least-once cutover. */
+	cutoverReady: boolean;
+	shadow: boolean;
+}
+
+/** Effective runtime shard topology resolved before WorkerManager creates any workers. */
+export interface ResolvedWorkerShardTopology {
+	readonly info: Readonly<
+		Omit<APIGatewayBotInfo, 'session_start_limit'> & {
+			readonly session_start_limit: Readonly<APIGatewayBotInfo['session_start_limit']>;
+		}
+	>;
+	readonly totalShards: number;
+	readonly shardStart: number;
+	readonly shardEnd: number;
+	readonly shardsPerWorker: number;
+	readonly workers: number;
 }
 
 interface WorkerManagerOptionsBase extends Omit<ShardManagerOptions, 'handlePayload' | 'presence' | 'properties'> {
@@ -84,6 +133,23 @@ interface WorkerManagerOptionsBase extends Omit<ShardManagerOptions, 'handlePayl
 
 	/** @default 15000 */
 	heartbeaterInterval?: number;
+
+	/**
+	 * `eager` loads the application while the candidate is shadowed, providing the strongest pre-drain readiness.
+	 * `deferred` waits until activation, avoiding duplicate application side effects at the cost of post-drain failure risk.
+	 * Deferred generations cannot use plugin gateway dispatch interceptors because their cache hydration begins before plugin setup.
+	 * @default 'eager'
+	 */
+	generationLifecycle?: 'eager' | 'deferred';
+
+	/** Maximum user-facing dispatches retained between the cutover barrier and activation. @default 10000 */
+	maxCutoverBufferEvents?: number;
+
+	/** Maximum pre-cutover packets journaled by deferred shadows for plugin cache hydration. @default 50000 */
+	maxShadowHydrationEvents?: number;
+
+	/** Maximum manager-to-worker messages retained while a logical worker has no active generation. @default 10000 */
+	maxGenerationMessageQueueEvents?: number;
 
 	handlePayload?(shardId: number, workerId: number, packet: GatewayDispatchPayload): any;
 
@@ -193,4 +259,25 @@ export interface WorkerData {
 	compress: boolean;
 	__USING_WATCHER__?: boolean;
 	resharding: boolean;
+	/** Physical generation of this logical worker. Omitted by legacy workers. */
+	generation?: number;
+	/** Unique allocation attempt within a generation. Omitted by legacy workers. */
+	allocationId?: string;
+	/** Keep gateway dispatch gated until the manager activates this allocation. */
+	shadow?: boolean;
+	/** Application lifecycle policy for a shadow allocation. Deferred shadows cannot use gateway dispatch interceptors. */
+	generationLifecycle?: 'eager' | 'deferred';
+	/** Bound for user-facing dispatches retained during cutover. */
+	maxCutoverBufferEvents?: number;
+	/** Bound for deferred plugin cache hydration packets. */
+	maxShadowHydrationEvents?: number;
+	/** Exit fail-closed if the local supervisor IPC channel disappears. */
+	requireSupervisor?: boolean;
+	/**
+	 * Initial monotonic supervisor lease TTL. The worker exits unless ordered renewals from its local supervisor extend it.
+	 * This is a secondary in-process watchdog and does not replace supervisor hard-kill or allocation lease fencing.
+	 */
+	supervisorTimeoutMs?: number;
+	/** Same-host `process.hrtime` milliseconds captured by the local supervisor when the initial TTL was issued. */
+	supervisorIssuedAtMonotonicMs?: number;
 }

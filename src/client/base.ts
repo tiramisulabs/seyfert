@@ -203,6 +203,7 @@ export class BaseClient {
 	private pluginCacheDisabledCache: DisabledCache = {};
 	private pluginBaseGatewayIntents = this.cache.intents;
 	private pluginComponentsBeforeLoadDepth = 0;
+	private startedCacheAdapter?: Adapter;
 	options: BaseClientOptions;
 
 	/**@internal */
@@ -371,7 +372,7 @@ export class BaseClient {
 		}
 	}
 
-	async start(
+	protected async prepareStart(
 		options: Pick<
 			DeepPartial<StartOptions>,
 			'langsDir' | 'commandsDir' | 'connection' | 'token' | 'componentsDir'
@@ -387,7 +388,20 @@ export class BaseClient {
 		this.rest.debug = !!debug;
 
 		if (!this.handleCommand) this.handleCommand = new HandleCommand(this);
+	}
 
+	protected async startCacheAdapter() {
+		if (this.startedCacheAdapter === this.cache.adapter) return;
+		await this.cache.adapter.start();
+		this.startedCacheAdapter = this.cache.adapter;
+	}
+
+	protected async startApplication(
+		options: Pick<
+			DeepPartial<StartOptions>,
+			'langsDir' | 'commandsDir' | 'connection' | 'token' | 'componentsDir'
+		> = {},
+	) {
 		await this.setupPlugins();
 		this.refreshPluginCacheResources();
 		this.reloadPluginMiddlewares();
@@ -396,7 +410,7 @@ export class BaseClient {
 
 		// The reason of this method is so for adapters that need to connect somewhere, have time to connect.
 		// Or maybe clear cache?
-		await this.cache.adapter.start();
+		await this.startCacheAdapter();
 
 		await this.loadLangs(options.langsDir);
 		await runPluginHooks(this, 'commands:beforeLoad', this, options.commandsDir);
@@ -410,6 +424,16 @@ export class BaseClient {
 			this.pluginComponentsBeforeLoadDepth--;
 		}
 		await this.reloadPluginComponents();
+	}
+
+	async start(
+		options: Pick<
+			DeepPartial<StartOptions>,
+			'langsDir' | 'commandsDir' | 'connection' | 'token' | 'componentsDir'
+		> = {},
+	) {
+		await this.prepareStart(options);
+		await this.startApplication(options);
 	}
 
 	async reloadPluginContributions() {

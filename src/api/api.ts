@@ -307,6 +307,8 @@ export class ApiHandler<TClient = unknown> {
 				url,
 				type: 'WORKER_API_REQUEST',
 				workerId: this.workerData!.workerId,
+				generation: this.workerData!.generation,
+				allocationId: this.workerData!.allocationId,
 				nonce,
 				requestOptions: { auth, ...requestOptions },
 			});

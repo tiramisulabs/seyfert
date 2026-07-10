@@ -3,6 +3,7 @@ import {
 	Formatter,
 	HeadingLevel,
 	OAuth2Scopes,
+	type ResolvedWorkerShardTopology,
 	SeyfertError,
 	SeyfertErrorMessages,
 	TimestampStyle,
@@ -10,6 +11,7 @@ import {
 	createValidationMetadata,
 	type BotConfig,
 	type ChannelLink,
+	type CustomManagerAdapter,
 	type HttpConfig,
 	type MessageLink,
 	type OAuth2URLOptions,
@@ -21,7 +23,11 @@ import {
 	type StructStates,
 	type Timestamp,
 	type WorkerData,
+	type WorkerGenerationContext,
+	type WorkerGenerationState,
+	type WorkerGenerationTarget,
 	type WorkerInfo,
+	WorkerManager,
 	type WorkerManagerOptions,
 	type WorkerShardInfo,
 } from 'seyfert';
@@ -71,5 +77,20 @@ expectType<ShardManagerOptions['intents']>(0);
 expectType<WorkerManagerOptions['intents']>(0);
 expectType<ShardData>({ resume_seq: null });
 expectType<WorkerData['mode']>('threads');
+expectType<WorkerGenerationTarget>({ generation: 1, allocationId: 'allocation' });
+expectType<WorkerGenerationContext>({ workerId: 0, generation: 1, allocationId: 'allocation' });
+expectType<WorkerGenerationState>({
+	workerId: 0,
+	generation: 1,
+	allocationId: 'allocation',
+	status: 'ready',
+	appReady: true,
+	shardsReady: true,
+	cutoverReady: false,
+	shadow: true,
+});
+declare const rootWorkerManager: WorkerManager;
+expectType<Promise<ResolvedWorkerShardTopology>>(rootWorkerManager.resolveShardTopology());
+expectType<CustomManagerAdapter>({ postMessage() {}, spawn() {} });
 expectType<WorkerInfo>({ shards: [] });
 expectType<WorkerShardInfo>({ shardId: 0, workerId: 0, open: false, latency: 0, resumable: false });

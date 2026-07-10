@@ -95,6 +95,7 @@ import {
 	calculateUserDefaultAvatarIndex,
 	RadioGroup,
 	RadioGroupOption,
+	type ResolvedWorkerShardTopology,
 	SeyfertError,
 	StringSelectMenu,
 	StringSelectOption,
@@ -156,7 +157,13 @@ import type { BanShorter } from '../lib/common/shorters/bans';
 import type { MemberShorter } from '../lib/common/shorters/members';
 import type { BitField } from '../lib/structures/extra/BitField';
 import { PermissionsBitField } from '../lib/structures/extra/Permissions';
-import type { ShardManagerOptions, WorkerManagerOptions } from '../lib/websocket/discord/shared';
+import type {
+	CustomManagerAdapter,
+	ShardManagerOptions,
+	WorkerGenerationContext,
+	WorkerGenerationState,
+	WorkerManagerOptions,
+} from '../lib/websocket/discord/shared';
 import type { ManagerAllowConnect, ManagerAllowConnectResharding } from '../lib/websocket/discord/workermanager';
 
 declare function expectType<T>(value: T): void;
@@ -830,6 +837,48 @@ const customWorkerManagerOptionsWithPath = {
 } satisfies WorkerManagerOptions;
 expectType<WorkerManagerOptions>(customWorkerManagerOptionsWithPath);
 new WorkerManager(customWorkerManagerOptionsWithPath);
+
+const generationAwareAdapter = {
+	postMessage(_workerId, _body, context) {
+		expectType<WorkerGenerationContext | undefined>(context);
+	},
+	spawn(workerData, _env, context) {
+		expectType<number | undefined>(workerData.generation);
+		expectType<string | undefined>(workerData.allocationId);
+		expectType<boolean | undefined>(workerData.shadow);
+		expectType<WorkerGenerationContext | undefined>(context);
+	},
+	terminate(_workerId, context) {
+		expectType<WorkerGenerationContext | undefined>(context);
+	},
+} satisfies CustomManagerAdapter;
+
+const generationWorkerManager = new WorkerManager({
+	...customWorkerManagerOptions,
+	adapter: generationAwareAdapter,
+});
+expectType<Promise<ResolvedWorkerShardTopology>>(generationWorkerManager.resolveShardTopology());
+declare const resolvedWorkerShardTopology: ResolvedWorkerShardTopology;
+// @ts-expect-error resolved shard topology gateway information is immutable.
+resolvedWorkerShardTopology.info.shards = 2;
+// @ts-expect-error resolved shard topology session limits are immutable.
+resolvedWorkerShardTopology.info.session_start_limit.remaining = 0;
+declare const workerGeneration: WorkerGenerationContext;
+expectType<Promise<WorkerGenerationContext>>(generationWorkerManager.prepareWorkerGeneration(0));
+expectType<WorkerGenerationState | undefined>(generationWorkerManager.getActiveWorkerGeneration(0));
+expectType<Promise<WorkerGenerationState>>(generationWorkerManager.waitForWorkerGeneration(workerGeneration));
+expectType<Promise<WorkerGenerationState>>(generationWorkerManager.beginWorkerGenerationCutover(workerGeneration, 5_000));
+expectType<Promise<WorkerGenerationState>>(generationWorkerManager.drainWorkerGeneration(workerGeneration, 5_000));
+expectType<WorkerGenerationState>(generationWorkerManager.fenceWorkerGeneration(workerGeneration));
+expectType<Promise<WorkerGenerationState>>(generationWorkerManager.activateWorkerGeneration(workerGeneration, 5_000));
+expectType<Promise<WorkerGenerationState>>(generationWorkerManager.abortWorkerGeneration(workerGeneration, 5_000));
+expectType<Promise<WorkerGenerationState>>(generationWorkerManager.commitWorkerGeneration(workerGeneration));
+generationWorkerManager.postMessage(0, { type: 'BOT_READY' }, workerGeneration);
+generationWorkerManager.postMessage(
+	0,
+	{ type: 'RENEW_WORKER_SUPERVISOR_LEASE', expiresInMs: 15_000, issuedAtMonotonicMs: 1_000, sequence: 1 },
+	workerGeneration,
+);
 
 const threadedWorkerManagerOptions = {
 	mode: 'threads',

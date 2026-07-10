@@ -52,7 +52,19 @@ export { GuildRole } from './structures/GuildRole';
 export * from './types';
 //
 export { ShardManager, WorkerManager } from './websocket/discord';
-export type { ShardData, ShardManagerOptions, WorkerData, WorkerManagerOptions } from './websocket/discord/shared';
+export type {
+	CustomManagerAdapter,
+	ResolvedWorkerShardTopology,
+	ShardData,
+	ShardManagerOptions,
+	WorkerData,
+	WorkerGenerationContext,
+	WorkerGenerationReadiness,
+	WorkerGenerationState,
+	WorkerGenerationStatus,
+	WorkerGenerationTarget,
+	WorkerManagerOptions,
+} from './websocket/discord/shared';
 export type { WorkerInfo, WorkerShardInfo } from './websocket/discord/worker';
 
 /**

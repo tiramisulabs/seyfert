@@ -1,6 +1,7 @@
 import type { ApiRequestOptions, CustomWorkerClientEvents, HttpMethods } from '../..';
 import type { Identify } from '../../common';
 import type { GatewayDispatchPayload } from '../../types';
+import type { WorkerGenerationTarget } from './shared';
 
 export const WORKER_TIMEOUT_MS = 60_000;
 
@@ -17,7 +18,8 @@ export type WorkerInfo = { shards: WorkerShardInfo[] };
 type CreateWorkerMessage<T extends string, D extends object = object> = {
 	type: T;
 	workerId: number;
-} & D;
+} & D &
+	Partial<WorkerGenerationTarget>;
 
 export type WorkerRequestConnect = CreateWorkerMessage<'CONNECT_QUEUE', { shardId: number }>;
 export type WorkerRequestConnectResharding = CreateWorkerMessage<'CONNECT_QUEUE_RESHARDING', { shardId: number }>;
@@ -61,6 +63,15 @@ export type WorkerShardsConnected = CreateWorkerMessage<'WORKER_SHARDS_CONNECTED
 export type WorkerStart = CreateWorkerMessage<'WORKER_START'>;
 export type WorkerStartResharding = CreateWorkerMessage<'WORKER_START_RESHARDING'>;
 export type WorkerDisconnectedAllShardsResharding = CreateWorkerMessage<'DISCONNECTED_ALL_SHARDS_RESHARDING'>;
+export type WorkerReshardingComplete = CreateWorkerMessage<'WORKER_RESHARDING_COMPLETE'>;
+export type WorkerGenerationStart = CreateWorkerMessage<'WORKER_GENERATION_START'>;
+export type WorkerGenerationAppReady = CreateWorkerMessage<'WORKER_GENERATION_APP_READY', { intents: number }>;
+export type WorkerGenerationShardsReady = CreateWorkerMessage<'WORKER_GENERATION_SHARDS_READY'>;
+export type WorkerGenerationCutoverReady = CreateWorkerMessage<'WORKER_GENERATION_CUTOVER_READY'>;
+export type WorkerGenerationFailed = CreateWorkerMessage<'WORKER_GENERATION_FAILED', { message: string }>;
+export type WorkerGenerationActivated = CreateWorkerMessage<'WORKER_GENERATION_ACTIVATED'>;
+export type WorkerGenerationDrained = CreateWorkerMessage<'WORKER_GENERATION_DRAINED'>;
+export type WorkerGenerationAborted = CreateWorkerMessage<'WORKER_GENERATION_ABORTED'>;
 export type WorkerSendApiRequest = CreateWorkerMessage<
 	'WORKER_API_REQUEST',
 	{
@@ -105,14 +116,24 @@ export type BaseWorkerMessage =
 	| WorkerStartResharding
 	| WorkerRequestConnectResharding
 	| WorkerReadyResharding
-	| WorkerDisconnectedAllShardsResharding;
+	| WorkerDisconnectedAllShardsResharding
+	| WorkerReshardingComplete
+	| WorkerGenerationStart
+	| WorkerGenerationAppReady
+	| WorkerGenerationShardsReady
+	| WorkerGenerationCutoverReady
+	| WorkerGenerationFailed
+	| WorkerGenerationActivated
+	| WorkerGenerationDrained
+	| WorkerGenerationAborted;
 
 export type CustomWorkerClientMessages = {
 	[K in keyof CustomWorkerClientEvents]: Identify<
 		{
 			type: K;
 			workerId: number;
-		} & Identify<CustomWorkerClientEvents[K] extends never ? {} : CustomWorkerClientEvents[K]>
+		} & Partial<WorkerGenerationTarget> &
+			Identify<CustomWorkerClientEvents[K] extends never ? {} : CustomWorkerClientEvents[K]>
 	>;
 };
 

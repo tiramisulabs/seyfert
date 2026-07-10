@@ -1,8 +1,10 @@
 import type { Awaitable } from '../../common';
+import type { WorkerGenerationTarget } from './shared';
 
 export type WorkerHeartbeaterMessages = SendHeartbeat;
 
-export type CreateHeartbeaterMessage<T extends string, D extends object = object> = { type: T } & D;
+export type CreateHeartbeaterMessage<T extends string, D extends object = object> = { type: T } & D &
+	Partial<WorkerGenerationTarget>;
 
 export type SendHeartbeat = CreateHeartbeaterMessage<'HEARTBEAT'>;
 
@@ -21,6 +23,7 @@ export class Heartbeater {
 
 	register(workerId: number, recreate: (workerId: number) => Awaitable<void>) {
 		if (this.interval <= 0) return;
+		this.unregister(workerId);
 		this.store.set(workerId, {
 			ack: true,
 			interval: setInterval(() => {

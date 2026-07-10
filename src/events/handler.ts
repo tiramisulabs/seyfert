@@ -288,7 +288,12 @@ export class EventHandler extends CustomEventHandler {
 		}
 	}
 
-	async execute(raw: GatewayDispatchPayload, client: Client<true> | WorkerClient<true>, shardId: number) {
+	async execute(
+		raw: GatewayDispatchPayload,
+		client: Client<true> | WorkerClient<true>,
+		shardId: number,
+		runCache = true,
+	) {
 		switch (raw.t) {
 			case 'MESSAGE_DELETE':
 				{
@@ -362,7 +367,7 @@ export class EventHandler extends CustomEventHandler {
 		}
 
 		await Promise.all([
-			this.runEvent(raw.t as never, client, raw.d, shardId),
+			this.runEvent(raw.t as never, client, raw.d, shardId, runCache),
 			this.client.collectors.run(raw.t as never, raw.d as never, this.client),
 		]);
 	}

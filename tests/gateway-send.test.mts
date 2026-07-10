@@ -171,6 +171,83 @@ describe('gateway send chokepoints', () => {
 		expect(manager.options.intents).toBe(0);
 	});
 
+	test('WorkerManager.start rejects and removes initial state when custom spawn rejects asynchronously', async () => {
+		const spawnError = new Error('initial remote spawn failed');
+		const { manager } = createWorkerManager({
+			adapter: {
+				postMessage() {},
+				spawn: () => Promise.reject(spawnError),
+				terminate() {},
+			},
+		});
+
+		await expect(manager.start()).rejects.toBe(spawnError);
+		expect(manager.size).toBe(0);
+		expect(manager.getActiveWorkerGeneration(0)).toBeUndefined();
+	});
+
+	test('WorkerManager.start retries from the first worker without retaining stale queue entries', async () => {
+		const spawnError = new Error('initial remote spawn failed');
+		const spawn = vi.fn().mockRejectedValueOnce(spawnError).mockResolvedValue(undefined);
+		const { manager } = createWorkerManager({
+			info: { ...gatewayInfo(), shards: 2 },
+			shardEnd: 2,
+			totalShards: 2,
+			workers: 2,
+			adapter: {
+				postMessage() {},
+				spawn,
+				terminate() {},
+			},
+		});
+
+		await expect(manager.start()).rejects.toBe(spawnError);
+		expect(spawn.mock.calls.map(([data]) => data.workerId)).toEqual([0]);
+		expect(manager.workerQueue).toHaveLength(0);
+
+		await expect(manager.start()).resolves.toBeUndefined();
+		expect(spawn.mock.calls.map(([data]) => data.workerId)).toEqual([0, 0]);
+		expect(manager.workerQueue).toHaveLength(1);
+		expect(manager.getActiveWorkerGeneration(0)).toBeDefined();
+		expect(manager.getActiveWorkerGeneration(1)).toBeUndefined();
+	});
+
+	test('WorkerManager.start shares one in-flight startup', async () => {
+		let releaseSpawn!: () => void;
+		const spawnPending = new Promise<void>(resolve => {
+			releaseSpawn = resolve;
+		});
+		const spawn = vi.fn((_workerData: unknown, _env: unknown, _context: unknown) => spawnPending);
+		const { manager } = createWorkerManager({
+			info: { ...gatewayInfo(), shards: 2 },
+			shardEnd: 2,
+			totalShards: 2,
+			workers: 2,
+			adapter: {
+				postMessage() {},
+				spawn,
+				terminate() {},
+			},
+		});
+
+		const first = manager.start();
+		const second = manager.start();
+		expect(second).toBe(first);
+		await vi.waitFor(() => expect(spawn).toHaveBeenCalledOnce());
+		expect(spawn).toHaveBeenCalledWith(
+			expect.objectContaining({ workerId: 0 }),
+			expect.any(Object),
+			expect.objectContaining({ workerId: 0 }),
+		);
+
+		releaseSpawn();
+		await Promise.all([first, second]);
+		expect(manager.workerQueue).toHaveLength(1);
+		expect(manager.start()).toBe(first);
+		await manager.start();
+		expect(spawn).toHaveBeenCalledOnce();
+	});
+
 	test('WorkerManager defaults omitted native mode to threads', () => {
 		const manager = new WorkerManager({
 			path: 'worker.js',
@@ -195,6 +272,10 @@ describe('gateway send chokepoints', () => {
 		manager.prepareWorkers([[0]]);
 		manager.workerQueue.shift()!();
 
-		expect(spawn).toHaveBeenCalledWith(expect.objectContaining({ path: 'worker.js' }), expect.any(Object));
+		expect(spawn).toHaveBeenCalledWith(
+			expect.objectContaining({ path: 'worker.js' }),
+			expect.any(Object),
+			expect.objectContaining({ workerId: 0, generation: 0 }),
+		);
 	});
 });
