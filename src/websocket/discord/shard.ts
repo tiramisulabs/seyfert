@@ -342,7 +342,7 @@ export class Shard {
 							this.data.session_id = packet.d.session_id;
 							this.flushOfflineSendQueue();
 							this.options.handlePayload(this.id, packet);
-							if (this.pendingGuilds?.size === 0) {
+							if (!this.pendingGuilds?.size) {
 								this.isReady = true;
 								this.options.handlePayload(this.id, {
 									t: GatewayDispatchEvents.GuildsReady,

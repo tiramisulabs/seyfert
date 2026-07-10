@@ -10,7 +10,12 @@ import {
 	type When,
 } from '../common';
 import { EventHandler } from '../events';
-import type { GatewayDispatchPayload, GatewayPresenceUpdateData, GatewaySendPayload } from '../types';
+import {
+	GatewayDispatchEvents,
+	type GatewayDispatchPayload,
+	type GatewayPresenceUpdateData,
+	type GatewaySendPayload,
+} from '../types';
 import {
 	properties,
 	type ShardDisconnectData,
@@ -221,19 +226,19 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 			//rest of the events
 			default: {
 				switch (packet.t) {
-					case 'INTERACTION_CREATE':
+					case GatewayDispatchEvents.InteractionCreate:
 						{
 							await this.events.execute(packet, this as Client<true>, shardId);
 							await this.handleCommand.interaction(packet.d, shardId);
 						}
 						break;
-					case 'MESSAGE_CREATE':
+					case GatewayDispatchEvents.MessageCreate:
 						{
 							await this.events.execute(packet, this as Client<true>, shardId);
 							await this.handleCommand.message(packet.d, shardId);
 						}
 						break;
-					case 'READY': {
+					case GatewayDispatchEvents.Ready: {
 						this.botId = packet.d.user.id;
 						this.applicationId = packet.d.application.id;
 						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
@@ -241,7 +246,7 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 						await this.events.execute(packet, this as Client<true>, shardId);
 						break;
 					}
-					case 'GUILDS_READY':
+					case GatewayDispatchEvents.GuildsReady:
 						{
 							await this.events.execute(packet, this as Client<true>, shardId);
 							if ([...this.gateway.values()].every(shard => shard.isReady)) {

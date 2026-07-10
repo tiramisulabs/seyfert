@@ -11,6 +11,7 @@ import {
 } from '../../common';
 import type { DeepPartial, MakeDeepPartial } from '../../common/types/util';
 import {
+	GatewayDispatchEvents,
 	type GatewayDispatchPayload,
 	GatewayOpcodes,
 	type GatewayRequestChannelInfo,
@@ -156,7 +157,7 @@ export class ShardManager extends Map<number, Shard> {
 			let shardsConnected = 0;
 
 			let handlePayload = (sharder: ShardManager, _: number, packet: GatewayDispatchPayload) => {
-				if (packet.t !== 'GUILDS_READY') return;
+				if (packet.t !== GatewayDispatchEvents.GuildsReady) return;
 				if (++shardsConnected !== info.shards) return;
 				cleanProcess(sharder);
 				// dont listen more events when all shards are ready
