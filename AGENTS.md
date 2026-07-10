@@ -7,8 +7,10 @@ checkout; this is not a bot tutorial.
 
 ## Required instruction routing
 
-Codex auto-loads one guide per directory from project root to cwd, under its
-default 32 KiB combined cap. A root-started agent may not receive nested guides.
+Agent runners may load one guide per directory from the project root to the
+current working directory, and some impose a combined instruction-size cap. An
+agent started at the repository root may not receive nested guides.
+
 **Before editing, read this guide plus every guide routed below for every
 affected path, whether auto-loaded or not.** Subsystem guides add to, never
 replace, `src/AGENTS.md`.
@@ -70,15 +72,13 @@ low-risk fixes use main-thread review and targeted validation. The reviewer is
 a different, non-participant, read-only agent.
 
 - After implementation/validation stabilizes, spawn one reviewer. Context and
-  independence are separate. State its initial mode and exact `fork_turns` in
-  the spawn prompt; default to `fresh`.
-  - `fresh`: `fork_turns="none"`; use for unbiased/anchoring-resistant,
-    public/high-risk/ambiguous, or requested context-free review. Reveal no
-    rationale, intended solution, or suspected weaknesses.
-  - `contextual`: `fork_turns="all"` or a positive window; reuse prior
-    readings/decisions, but require challenge, not defense. It may improve
-    exact-prefix prompt-cache reuse; never promise host/model-dependent hits,
-    and confirm through exposed usage telemetry.
+  independence are separate. State its initial mode; default to `fresh`.
+  - `fresh`: start without prior task conversation or implementation context;
+    use for unbiased/anchoring-resistant, public/high-risk/ambiguous, or
+    requested context-free review. Reveal no rationale, intended solution, or
+    suspected weaknesses.
+  - `contextual`: provide the relevant prior readings and decisions when they
+    avoid repeated discovery, but require challenge, not defense.
 - Both modes read applicable instructions and inspect `git status`, staged,
   unstaged, and full relevant untracked files (`git diff` is insufficient),
   then report correctness/regression risks without editing.
