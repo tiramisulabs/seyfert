@@ -25,7 +25,6 @@ import {
 	type WorkerData,
 	type WorkerGenerationContext,
 	type WorkerGenerationState,
-	type WorkerGenerationTarget,
 	type WorkerInfo,
 	WorkerManager,
 	type WorkerManagerOptions,
@@ -77,7 +76,6 @@ expectType<ShardManagerOptions['intents']>(0);
 expectType<WorkerManagerOptions['intents']>(0);
 expectType<ShardData>({ resume_seq: null });
 expectType<WorkerData['mode']>('threads');
-expectType<WorkerGenerationTarget>({ generation: 1, allocationId: 'allocation' });
 expectType<WorkerGenerationContext>({ workerId: 0, generation: 1, allocationId: 'allocation' });
 expectType<WorkerGenerationState>({
 	workerId: 0,

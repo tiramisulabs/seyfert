@@ -217,7 +217,7 @@ describe('gateway send chokepoints', () => {
 		const spawnPending = new Promise<void>(resolve => {
 			releaseSpawn = resolve;
 		});
-		const spawn = vi.fn((_workerData: unknown, _env: unknown, _context: unknown) => spawnPending);
+		const spawn = vi.fn((_workerData: unknown, _env: unknown) => spawnPending);
 		const { manager } = createWorkerManager({
 			info: { ...gatewayInfo(), shards: 2 },
 			shardEnd: 2,
@@ -237,7 +237,6 @@ describe('gateway send chokepoints', () => {
 		expect(spawn).toHaveBeenCalledWith(
 			expect.objectContaining({ workerId: 0 }),
 			expect.any(Object),
-			expect.objectContaining({ workerId: 0 }),
 		);
 
 		releaseSpawn();
@@ -275,7 +274,6 @@ describe('gateway send chokepoints', () => {
 		expect(spawn).toHaveBeenCalledWith(
 			expect.objectContaining({ path: 'worker.js' }),
 			expect.any(Object),
-			expect.objectContaining({ workerId: 0, generation: 0 }),
 		);
 	});
 });

@@ -64,7 +64,6 @@ export type WorkerStart = CreateWorkerMessage<'WORKER_START'>;
 export type WorkerStartResharding = CreateWorkerMessage<'WORKER_START_RESHARDING'>;
 export type WorkerDisconnectedAllShardsResharding = CreateWorkerMessage<'DISCONNECTED_ALL_SHARDS_RESHARDING'>;
 export type WorkerReshardingComplete = CreateWorkerMessage<'WORKER_RESHARDING_COMPLETE'>;
-export type WorkerGenerationStart = CreateWorkerMessage<'WORKER_GENERATION_START'>;
 export type WorkerGenerationAppReady = CreateWorkerMessage<'WORKER_GENERATION_APP_READY', { intents: number }>;
 export type WorkerGenerationShardsReady = CreateWorkerMessage<'WORKER_GENERATION_SHARDS_READY'>;
 export type WorkerGenerationCutoverReady = CreateWorkerMessage<'WORKER_GENERATION_CUTOVER_READY'>;
@@ -118,7 +117,6 @@ export type BaseWorkerMessage =
 	| WorkerReadyResharding
 	| WorkerDisconnectedAllShardsResharding
 	| WorkerReshardingComplete
-	| WorkerGenerationStart
 	| WorkerGenerationAppReady
 	| WorkerGenerationShardsReady
 	| WorkerGenerationCutoverReady

@@ -58,6 +58,8 @@ type WorkerHandle = (ClusterWorker | WorkerThreadsWorker | { ready?: boolean }) 
 	resharded?: boolean;
 };
 
+const GENERATION_MESSAGE_QUEUE_LIMIT = 10_000;
+
 interface WorkerGenerationWaiter {
 	readiness: WorkerGenerationReadiness;
 	resolve(state: WorkerGenerationState): void;
@@ -74,7 +76,6 @@ interface WorkerGenerationRecord {
 	shardsReady: boolean;
 	cutoverRequested: boolean;
 	cutoverReady: boolean;
-	shadow: boolean;
 	externallyFenced: boolean;
 	spawnPromise: Promise<void>;
 	waiters: Set<WorkerGenerationWaiter>;
@@ -283,7 +284,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 			appReady: record.appReady,
 			shardsReady: record.shardsReady,
 			cutoverReady: record.cutoverReady,
-			shadow: record.shadow,
+			shadow: Boolean(record.workerData.shadow),
 		};
 	}
 
@@ -403,15 +404,10 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 		const record = context ? this.getWorkerGenerationRecord(context) : undefined;
 		if (!target && record && record.status !== 'active') {
 			const queue = this.generationMessageQueues.get(id) ?? [];
-			const maximum = this.options.maxGenerationMessageQueueEvents ?? 10_000;
-			if (!Number.isSafeInteger(maximum) || maximum <= 0)
-				throw new SeyfertError('INTERNAL_ERROR', {
-					metadata: { detail: `maxGenerationMessageQueueEvents must be a positive safe integer` },
-				});
-			if (queue.length >= maximum)
+			if (queue.length >= GENERATION_MESSAGE_QUEUE_LIMIT)
 				throw new SeyfertError('INTERNAL_ERROR', {
 					metadata: {
-						detail: `Worker generation message queue for worker #${id} exceeded ${maximum} events`,
+						detail: `Worker generation message queue for worker #${id} exceeded ${GENERATION_MESSAGE_QUEUE_LIMIT} events`,
 					},
 				});
 			queue.push(body);
@@ -457,7 +453,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 		return [...this.workerGenerations.values()].some(
 			record =>
 				(workerId === undefined || record.context.workerId === workerId) &&
-				(record.shadow || !['active', 'aborted'].includes(record.status)),
+				(record.workerData.shadow || !['active', 'aborted'].includes(record.status)),
 		);
 	}
 
@@ -468,15 +464,14 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 		if (generation && this.hasWorkerGenerationTransition(workerId)) return;
 		this.generationRecoveries.add(workerId);
 		try {
-			if (this.options.mode === 'custom' && this.generationFencing.has(workerId) && generation && context) {
-				if (!this.options.adapter.terminate) return;
+			const canTerminate = this.options.mode !== 'custom' || this.generationFencing.has(workerId);
+			if (generation && context && canTerminate) {
 				try {
-					// A successful supervisor termination acknowledgement is the fencing proof.
 					// Never create a replacement while the previous allocation may still be alive.
-					await this.options.adapter.terminate(workerId, context);
+					await this.terminateWorkerGeneration(generation);
 				} catch (error) {
 					this.debugger?.error(
-						`[Worker #${workerId}] Failed to fence unresponsive allocation ${context.allocationId}`,
+						`[Worker #${workerId}] Failed to terminate unresponsive allocation ${context.allocationId}`,
 						error,
 					);
 					return;
@@ -528,9 +523,6 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 						shards: this.totalShards,
 					},
 					compress: this.options.compress,
-					generationLifecycle: this.options.generationLifecycle,
-					maxCutoverBufferEvents: this.options.maxCutoverBufferEvents,
-					maxShadowHydrationEvents: this.options.maxShadowHydrationEvents,
 				});
 				this.set(i, worker);
 				const context = this.activeWorkerGenerations.get(i);
@@ -603,7 +595,6 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 			shardsReady: false,
 			cutoverRequested: false,
 			cutoverReady: false,
-			shadow: Boolean(normalizedWorkerData.shadow),
 			externallyFenced: false,
 			spawnPromise: Promise.resolve(),
 			waiters: new Set(),
@@ -613,7 +604,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 			// Generation-aware custom adapters own liveness through external fencing from the first allocation.
 			this.generationFencing.add(context.workerId);
 		}
-		if (!record.shadow) {
+		if (!record.workerData.shadow) {
 			this.activeWorkerGenerations.set(context.workerId, context);
 			this.set(context.workerId, record.worker);
 		}
@@ -637,7 +628,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 					break;
 				}
 				case 'custom': {
-					const spawned = this.options.adapter.spawn(normalizedWorkerData, env, context);
+					const spawned = this.options.adapter.spawn(normalizedWorkerData, env);
 					record.spawnPromise = Promise.resolve(spawned).then(
 						() => undefined,
 						error => {
@@ -645,7 +636,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 							throw error;
 						},
 					);
-					if (!record.shadow)
+					if (!record.workerData.shadow)
 						void record.spawnPromise.catch(error => {
 							this.debugger?.error(
 								`[Worker #${context.workerId}] Failed to spawn allocation ${context.allocationId}`,
@@ -655,7 +646,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 					break;
 				}
 			}
-			if (!record.shadow) this.set(context.workerId, record.worker);
+			if (!record.workerData.shadow) this.set(context.workerId, record.worker);
 			return record.worker;
 		} catch (error) {
 			this.cleanupFailedWorkerSpawn(record, error);
@@ -698,7 +689,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 			record =>
 				record.context.workerId === workerId &&
 				record !== active &&
-				record.shadow &&
+				record.workerData.shadow &&
 				!['aborted', 'drained'].includes(record.status),
 		);
 		if (pendingCandidate)
@@ -774,7 +765,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 				metadata: { detail: `Worker generation ${this.generationKey(context)} doesn't exist` },
 			});
 		if (record.cutoverReady) return this.snapshotWorkerGeneration(record);
-		if (!record.shadow || record.status !== 'ready' || !record.appReady || !record.shardsReady)
+		if (!record.workerData.shadow || record.status !== 'ready' || !record.appReady || !record.shardsReady)
 			throw new SeyfertError('INTERNAL_ERROR', {
 				metadata: { detail: `Only a ready shadow worker generation can begin cutover` },
 			});
@@ -804,7 +795,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 			throw new SeyfertError('INTERNAL_ERROR', {
 				metadata: { detail: `Worker generation ${this.generationKey(context)} is not ready` },
 			});
-		if (record.shadow && !record.cutoverReady)
+		if (record.workerData.shadow && !record.cutoverReady)
 			throw new SeyfertError('INTERNAL_ERROR', {
 				metadata: { detail: `Begin worker generation cutover before activation` },
 			});
@@ -851,7 +842,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 			candidate =>
 				candidate.context.workerId === context.workerId &&
 				candidate !== record &&
-				candidate.shadow &&
+				candidate.workerData.shadow &&
 				candidate.status === 'ready' &&
 				!candidate.cutoverReady,
 		);
@@ -984,9 +975,32 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 			case 'threads':
 				await (record.worker as WorkerThreadsWorker).terminate();
 				break;
-			case 'clusters':
-				(record.worker as ClusterWorker).kill();
+			case 'clusters': {
+				const worker = record.worker as ClusterWorker;
+				if (worker.isDead()) break;
+				await new Promise<void>((resolve, reject) => {
+					const cleanup = () => {
+						worker.off('exit', onExit);
+						worker.off('error', onError);
+					};
+					const onExit = () => {
+						cleanup();
+						resolve();
+					};
+					const onError = (error: Error) => {
+						cleanup();
+						reject(error);
+					};
+					worker.once('exit', onExit);
+					worker.once('error', onError);
+					try {
+						worker.kill('SIGKILL');
+					} catch (error) {
+						onError(error instanceof Error ? error : new Error(String(error)));
+					}
+				});
 				break;
+			}
 		}
 	}
 
@@ -1038,8 +1052,8 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 	private acceptsWorkerGenerationMessage(record: WorkerGenerationRecord | undefined, type: WorkerMessages['type']) {
 		if (!record) return true;
 		switch (type) {
-			case 'WORKER_GENERATION_START':
-				return record.status === 'preparing';
+			case 'WORKER_START':
+				return record.status === 'preparing' || record.status === 'active';
 			case 'WORKER_GENERATION_APP_READY':
 				return record.status === 'preparing' || record.status === 'ready' || record.status === 'active';
 			case 'WORKER_GENERATION_SHARDS_READY':
@@ -1047,7 +1061,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 			case 'WORKER_GENERATION_CUTOVER_READY':
 				return record.status === 'ready' && record.cutoverRequested;
 			case 'WORKER_GENERATION_FAILED':
-				return record.shadow && ['preparing', 'ready', 'activating', 'aborting'].includes(record.status);
+				return record.workerData.shadow && ['preparing', 'ready', 'activating', 'aborting'].includes(record.status);
 			case 'WORKER_GENERATION_ACTIVATED':
 				return record.status === 'activating';
 			case 'WORKER_GENERATION_DRAINED':
@@ -1069,18 +1083,6 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 		await this.options.handleWorkerMessage?.(message);
 		const target = incoming.context;
 		switch (message.type) {
-			case 'WORKER_GENERATION_START':
-				this.postMessage(
-					message.workerId,
-					{
-						type: 'SPAWN_SHARDS',
-						compress: this.options.compress ?? false,
-						info: { ...this.options.info, shards: this.totalShards },
-						properties: { ...properties, ...this.options.properties },
-					} satisfies ManagerSpawnShards,
-					target,
-				);
-				break;
 			case 'WORKER_GENERATION_APP_READY':
 				if (incoming.record) {
 					incoming.record.appReady = true;
@@ -1136,7 +1138,6 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 						this.previousWorkerGenerations.set(message.workerId, previousGenerations);
 					}
 					incoming.record.status = 'active';
-					incoming.record.shadow = false;
 					incoming.record.workerData.shadow = false;
 					this.activeWorkerGenerations.set(message.workerId, incoming.record.context);
 					this.set(message.workerId, incoming.record.worker);
@@ -1574,40 +1575,24 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 			throw new SeyfertError('INTERNAL_ERROR', {
 				metadata: { detail: `shardEnd must be greater than shardStart and no greater than totalShards` },
 			});
-		if (!['eager', 'deferred'].includes(this.options.generationLifecycle))
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `generationLifecycle must be eager or deferred` },
-			});
-		for (const [name, value] of [
-			['maxCutoverBufferEvents', this.options.maxCutoverBufferEvents],
-			['maxShadowHydrationEvents', this.options.maxShadowHydrationEvents],
-			['maxGenerationMessageQueueEvents', this.options.maxGenerationMessageQueueEvents],
-		] as const) {
-			if (!Number.isSafeInteger(value) || value <= 0)
-				throw new SeyfertError('INTERNAL_ERROR', {
-					metadata: { detail: `${name} must be a positive safe integer` },
-				});
-		}
 		this.options.resharding.getInfo ??= () => this.rest.proxy.gateway.bot.get();
-		this.options.workers ??= Math.ceil(this.options.totalShards / this.options.shardsPerWorker);
+		const expectedWorkers = Math.ceil((this.options.shardEnd - this.options.shardStart) / this.options.shardsPerWorker);
+		this.options.workers ??= expectedWorkers;
 		if (!Number.isSafeInteger(this.options.workers) || this.options.workers <= 0)
 			throw new SeyfertError('INTERNAL_ERROR', {
 				metadata: { detail: `workers must be a positive safe integer` },
+			});
+		if (this.options.workers !== expectedWorkers)
+			throw new SeyfertError('INTERNAL_ERROR', {
+				metadata: {
+					detail: `workers must be ${expectedWorkers} for shard range ${this.options.shardStart}-${this.options.shardEnd} with ${this.options.shardsPerWorker} shards per worker`,
+				},
 			});
 		this.connectQueue = new ConnectQueue(5.5e3, this.concurrency);
 
 		if (this.options.debug) {
 			this.debugger = new Logger({
 				name: '[WorkerManager]',
-			});
-		}
-		if (this.totalShards / this.shardsPerWorker > this.totalWorkers) {
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: {
-					detail: `Cannot create enough shards in the specified workers, minimum: ${Math.ceil(
-						this.totalShards / this.shardsPerWorker,
-					)}`,
-				},
 			});
 		}
 		const info = Object.freeze({

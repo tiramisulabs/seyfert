@@ -842,11 +842,10 @@ const generationAwareAdapter = {
 	postMessage(_workerId, _body, context) {
 		expectType<WorkerGenerationContext | undefined>(context);
 	},
-	spawn(workerData, _env, context) {
+	spawn(workerData, _env) {
 		expectType<number | undefined>(workerData.generation);
 		expectType<string | undefined>(workerData.allocationId);
 		expectType<boolean | undefined>(workerData.shadow);
-		expectType<WorkerGenerationContext | undefined>(context);
 	},
 	terminate(_workerId, context) {
 		expectType<WorkerGenerationContext | undefined>(context);

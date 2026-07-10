@@ -62,7 +62,6 @@ export type {
 	WorkerGenerationReadiness,
 	WorkerGenerationState,
 	WorkerGenerationStatus,
-	WorkerGenerationTarget,
 	WorkerManagerOptions,
 } from './websocket/discord/shared';
 export type { WorkerInfo, WorkerShardInfo } from './websocket/discord/worker';

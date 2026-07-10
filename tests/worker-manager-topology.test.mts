@@ -186,4 +186,34 @@ describe('WorkerManager.resolveShardTopology', () => {
 		});
 		expect(spawn).not.toHaveBeenCalled();
 	});
+
+	test('derives workers from the effective partial shard range', async () => {
+		const { manager } = createManager(vi.fn(async () => gatewayInfo(16)));
+		manager.options.shardStart = 8;
+		manager.options.shardEnd = 16;
+		manager.options.totalShards = 16;
+		manager.options.shardsPerWorker = 4;
+
+		await expect(manager.resolveShardTopology()).resolves.toMatchObject({
+			shardStart: 8,
+			shardEnd: 16,
+			totalShards: 16,
+			shardsPerWorker: 4,
+			workers: 2,
+		});
+	});
+
+	test('rejects an explicit worker count that cannot match the effective shard buckets', async () => {
+		const { manager, spawn } = createManager(vi.fn(async () => gatewayInfo(16)));
+		manager.options.shardStart = 8;
+		manager.options.shardEnd = 16;
+		manager.options.totalShards = 16;
+		manager.options.shardsPerWorker = 4;
+		manager.options.workers = 4;
+
+		await expect(manager.resolveShardTopology()).rejects.toMatchObject({
+			metadata: { detail: expect.stringMatching(/workers must be 2/) },
+		});
+		expect(spawn).not.toHaveBeenCalled();
+	});
 });

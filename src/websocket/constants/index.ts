@@ -29,10 +29,6 @@ const WorkerManagerDefaults: DeepPartial<WorkerManagerOptions> = {
 	...ShardManagerDefaults,
 	mode: 'threads',
 	shardsPerWorker: 16,
-	generationLifecycle: 'eager',
-	maxCutoverBufferEvents: 10_000,
-	maxShadowHydrationEvents: 50_000,
-	maxGenerationMessageQueueEvents: 10_000,
 };
 
 export interface IdentifyProperties {

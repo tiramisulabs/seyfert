@@ -36,7 +36,6 @@ import type {
 	WorkerGenerationDrained,
 	WorkerGenerationFailed,
 	WorkerGenerationShardsReady,
-	WorkerGenerationStart,
 	WorkerMessages,
 	WorkerReady,
 	WorkerReadyResharding,
@@ -87,14 +86,6 @@ try {
 		generation: process.env.SEYFERT_WORKER_GENERATION ? Number(process.env.SEYFERT_WORKER_GENERATION) : undefined,
 		allocationId: process.env.SEYFERT_WORKER_ALLOCATIONID,
 		shadow: String(process.env.SEYFERT_WORKER_SHADOW) === 'true',
-		generationLifecycle: process.env.SEYFERT_WORKER_GENERATIONLIFECYCLE as 'eager' | 'deferred' | undefined,
-		maxCutoverBufferEvents: process.env.SEYFERT_WORKER_MAXCUTOVERBUFFEREVENTS
-			? Number(process.env.SEYFERT_WORKER_MAXCUTOVERBUFFEREVENTS)
-			: undefined,
-		maxShadowHydrationEvents: process.env.SEYFERT_WORKER_MAXSHADOWHYDRATIONEVENTS
-			? Number(process.env.SEYFERT_WORKER_MAXSHADOWHYDRATIONEVENTS)
-			: undefined,
-		requireSupervisor: String(process.env.SEYFERT_WORKER_REQUIRE_SUPERVISOR) === 'true',
 		supervisorTimeoutMs: process.env.SEYFERT_WORKER_SUPERVISORTIMEOUTMS
 			? Number(process.env.SEYFERT_WORKER_SUPERVISORTIMEOUTMS)
 			: undefined,
@@ -105,6 +96,8 @@ try {
 } catch {
 	//
 }
+
+const CUTOVER_BUFFER_LIMIT = 10_000;
 
 export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	memberUpdateHandler = new MemberUpdateHandler();
@@ -127,17 +120,12 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	private generationCutoverBuffering = false;
 	private generationCutoverBuffer: { shardId: number; packet: GatewayDispatchPayload }[] = [];
 	private generationCutoverBufferHead = 0;
-	private generationShadowHydrationJournal: GatewayDispatchPayload[] = [];
 	private generationBootstrapPackets: { shardId: number; packet: GatewayDispatchPayload }[] = [];
-	private generationApplicationStarted = false;
 	private generationReadyEventsRun = false;
 	private generationAborted = false;
 	private generationFailure?: Error;
-	private generationActivationPromise?: Promise<void>;
 	private generationActivationInFlight?: Promise<void>;
 	private generationActivationAcknowledged = false;
-	private resolveGenerationActivation?: () => void;
-	private rejectGenerationActivation?: (error: unknown) => void;
 	private supervisorFenceInstalled = false;
 	private supervisorFailedClosed = false;
 	private supervisorLeaseTimer?: NodeJS.Timeout;
@@ -145,7 +133,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	private supervisorLeaseSequence = 0;
 	private supervisorExitProcess: (code: number) => void = code => process.exit(code);
 	private supervisorMonotonicNow = () => Number(process.hrtime.bigint() / 1_000_000n);
-	private generationStartOptions: Omit<DeepPartial<StartOptions>, 'httpConnection' | 'token' | 'connection'> = {};
 
 	declare options: WorkerClientOptions;
 
@@ -158,14 +145,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	get workerId() {
 		return workerData.workerId;
-	}
-
-	get generation() {
-		return workerData.generation;
-	}
-
-	get allocationId() {
-		return workerData.allocationId;
 	}
 
 	get latency() {
@@ -204,19 +183,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			throw new SeyfertError('INTERNAL_ERROR', {
 				metadata: { detail: `Worker generation allocationId must be a non-empty string` },
 			});
-		if (data.generationLifecycle && !['eager', 'deferred'].includes(data.generationLifecycle))
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `generationLifecycle must be eager or deferred` },
-			});
-		for (const [name, value] of [
-			['maxCutoverBufferEvents', data.maxCutoverBufferEvents],
-			['maxShadowHydrationEvents', data.maxShadowHydrationEvents],
-		] as const) {
-			if (value !== undefined && (!Number.isSafeInteger(value) || value <= 0))
-				throw new SeyfertError('INTERNAL_ERROR', {
-					metadata: { detail: `${name} must be a positive safe integer` },
-				});
-		}
 		const hasSupervisorTimeout = data.supervisorTimeoutMs !== undefined;
 		const hasSupervisorIssuedAt = data.supervisorIssuedAtMonotonicMs !== undefined;
 		if (hasSupervisorTimeout !== hasSupervisorIssuedAt)
@@ -241,16 +207,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			throw new SeyfertError('INTERNAL_ERROR', {
 				metadata: { detail: `supervisorIssuedAtMonotonicMs must be a non-negative safe integer` },
 			});
-	}
-
-	private assertDeferredGenerationDispatchInterceptors() {
-		if (!this.pluginRegistry.gatewayDispatchInterceptors.length) return;
-		throw new SeyfertError('INTERNAL_ERROR', {
-			metadata: {
-				detail:
-					'Deferred worker generations cannot use gateway dispatch interceptors because cache hydration starts before plugin setup; use the eager generation lifecycle instead',
-			},
-		});
 	}
 
 	get applicationId(): When<Ready, string, ''> {
@@ -282,22 +238,16 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		this.generationCutoverBuffering = false;
 		this.generationCutoverBuffer = [];
 		this.generationCutoverBufferHead = 0;
-		this.generationShadowHydrationJournal = [];
 		this.generationBootstrapPackets = [];
-		this.generationApplicationStarted = false;
 		this.generationReadyEventsRun = false;
 		this.generationAborted = false;
 		this.generationFailure = undefined;
-		this.generationActivationPromise = undefined;
 		this.generationActivationInFlight = undefined;
 		this.generationActivationAcknowledged = false;
-		this.resolveGenerationActivation = undefined;
-		this.rejectGenerationActivation = undefined;
 		this.supervisorFailedClosed = false;
 		this.supervisorLeaseTimer = undefined;
 		this.supervisorLeaseDeadline = undefined;
 		this.supervisorLeaseSequence = 0;
-		this.generationStartOptions = {};
 	}
 
 	get workerData() {
@@ -306,21 +256,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	async start(options: Omit<DeepPartial<StartOptions>, 'httpConnection' | 'token' | 'connection'> = {}) {
 		this.assertGenerationWorkerData(workerData);
-		const deferredShadow = workerData.shadow && (workerData.generationLifecycle ?? 'eager') === 'deferred';
-		if (deferredShadow) this.assertDeferredGenerationDispatchInterceptors();
 		if (!this.installSupervisorFence())
 			throw new SeyfertError('INTERNAL_ERROR', {
 				metadata: { detail: 'Worker supervisor IPC channel is unavailable' },
 			});
-		this.generationStartOptions = options;
-		if (deferredShadow) {
-			this.generationActivationPromise = new Promise<void>((resolve, reject) => {
-				this.resolveGenerationActivation = resolve;
-				this.rejectGenerationActivation = reject;
-			});
-			// The supervisor or shadow hydration can fail before start() reaches its final await.
-			void this.generationActivationPromise.catch(() => undefined);
-		}
 		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
 
 		if (worker_threads?.parentPort) {
@@ -349,32 +288,19 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		}
 		this.resolvePluginGatewayIntents(workerData.intents);
 		this.rest.workerData = workerData;
-		if (deferredShadow) {
-			await this.prepareStart(options);
-			await this.startCacheAdapter();
-		} else {
-			await super.start(options);
-		}
+		await super.start(options);
 		workerData.intents = this.resolvePluginGatewayIntents(workerData.intents);
-		this.postMessage(
-			workerData.shadow
-				? ({ type: 'WORKER_GENERATION_START', workerId: workerData.workerId } satisfies WorkerGenerationStart)
-				: ({
-						type: workerData.resharding ? 'WORKER_START_RESHARDING' : 'WORKER_START',
-						workerId: workerData.workerId,
-					} satisfies WorkerStart | WorkerStartResharding),
-		);
-		if (!deferredShadow) {
-			await this.loadEvents(options.eventsDir);
-			this.generationApplicationStarted = true;
-		}
+		this.postMessage({
+			type: workerData.resharding ? 'WORKER_START_RESHARDING' : 'WORKER_START',
+			workerId: workerData.workerId,
+		} satisfies WorkerStart | WorkerStartResharding);
+		await this.loadEvents(options.eventsDir);
 		if (workerData.generation !== undefined && workerData.allocationId)
 			this.postMessage({
 				type: 'WORKER_GENERATION_APP_READY',
 				workerId: workerData.workerId,
 				intents: workerData.intents,
 			} satisfies WorkerGenerationAppReady);
-		if (deferredShadow) await this.generationActivationPromise;
 	}
 
 	async loadEvents(dir?: string) {
@@ -440,10 +366,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						return;
 					}
 					try {
-						this.generationActivationInFlight ??= this.activateShadowApplication();
+						this.generationActivationInFlight ??= this.activateShadowGeneration();
 						await this.generationActivationInFlight;
 					} catch (error) {
-						this.failWorkerGeneration(error, 'Worker generation application activation failed');
+						this.failWorkerGeneration(error, 'Worker generation activation failed');
 						return;
 					}
 				}
@@ -459,7 +385,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					this.generationActivationAcknowledged = false;
 					throw error;
 				}
-				this.resolveGenerationActivation?.();
 				break;
 			case 'DRAIN_WORKER_GENERATION':
 				this.generationActive = false;
@@ -476,13 +401,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				this.generationCutoverBuffering = false;
 				this.generationCutoverBuffer = [];
 				this.generationCutoverBufferHead = 0;
-				this.generationShadowHydrationJournal = [];
 				this.generationBootstrapPackets = [];
-				this.rejectGenerationActivation?.(
-					new SeyfertError('INTERNAL_ERROR', {
-						metadata: { detail: 'Worker generation was aborted before activation' },
-					}),
-				);
 				for (const shard of this.shards.values()) shard.disconnect(ShardSocketCloseCodes.Resharding);
 				for (const shard of this.resharding.values()) shard.disconnect(ShardSocketCloseCodes.Resharding);
 				this.shards.clear();
@@ -771,12 +690,9 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	private async handleShadowPacket(shardId: number, packet: GatewayDispatchPayload) {
 		if (!workerData.shadow || this.generationAborted || this.generationFailure) return;
 		if (this.generationCutoverBuffering) {
-			if (
-				this.generationCutoverBuffer.length - this.generationCutoverBufferHead >=
-				(workerData.maxCutoverBufferEvents ?? 10_000)
-			) {
+			if (this.generationCutoverBuffer.length - this.generationCutoverBufferHead >= CUTOVER_BUFFER_LIMIT) {
 				this.failWorkerGeneration(
-					new Error(`Worker generation cutover buffer exceeded ${workerData.maxCutoverBufferEvents ?? 10_000} events`),
+					new Error(`Worker generation cutover buffer exceeded ${CUTOVER_BUFFER_LIMIT} events`),
 					'Worker generation cutover buffer limit exceeded',
 				);
 				return;
@@ -784,28 +700,12 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			this.generationCutoverBuffer.push({ shardId, packet });
 			return;
 		}
-		const deferredLifecycle = (workerData.generationLifecycle ?? 'eager') === 'deferred';
-		if (deferredLifecycle) {
-			if (this.generationShadowHydrationJournal.length >= (workerData.maxShadowHydrationEvents ?? 50_000)) {
-				this.failWorkerGeneration(
-					new Error(
-						`Worker generation hydration journal exceeded ${workerData.maxShadowHydrationEvents ?? 50_000} events`,
-					),
-					'Worker generation hydration journal limit exceeded',
-				);
-				return;
-			}
-			this.generationShadowHydrationJournal.push(packet);
-		}
-
 		this.generationShadowHydrations++;
 		let shadowPacket = packet;
 		try {
-			if (!deferredLifecycle) {
-				const pluginPacket = await applyPluginGatewayDispatchInterceptors(this, shardId, packet);
-				if (pluginPacket === null) return;
-				shadowPacket = pluginPacket;
-			}
+			const pluginPacket = await applyPluginGatewayDispatchInterceptors(this, shardId, packet);
+			if (pluginPacket === null) return;
+			shadowPacket = pluginPacket;
 			if (shadowPacket.t === 'READY' || shadowPacket.t === 'GUILDS_READY')
 				this.rememberGenerationBootstrapPacket(shardId, shadowPacket);
 			if (shadowPacket.t === 'READY') {
@@ -814,7 +714,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				this.me = Transformers.ClientUser(this, shadowPacket.d.user, shadowPacket.d.application) as never;
 				this.debugger?.debug(`#${shardId}[${shadowPacket.d.user.username}](${this.botId}) shadow is online...`);
 			}
-			await (deferredLifecycle ? this.cache.hydratePacket(shadowPacket) : this.cache.onPacket(shadowPacket));
+			await this.cache.onPacket(shadowPacket);
 		} catch (error) {
 			this.generationShadowError ??= error;
 			this.failWorkerGeneration(error, 'Worker generation shadow cache hydration failed');
@@ -856,7 +756,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		exitProcess: (code: number) => void = code => process.exit(code),
 	) {
 		this.supervisorExitProcess = exitProcess;
-		if (workerData.requireSupervisor && !this.supervisorFenceInstalled) {
+		if (workerData.supervisorTimeoutMs !== undefined && !this.supervisorFenceInstalled) {
 			if (typeof supervisor.send !== 'function' || supervisor.connected === false) {
 				this.failClosedWithoutSupervisor(exitProcess);
 				return false;
@@ -945,9 +845,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		this.generationCutoverBuffering = false;
 		this.generationCutoverBuffer = [];
 		this.generationCutoverBufferHead = 0;
-		this.generationShadowHydrationJournal = [];
 		this.generationBootstrapPackets = [];
-		this.rejectGenerationActivation?.(failure);
 		for (const shard of this.shards.values()) shard.disconnect(ShardSocketCloseCodes.ShutdownAll);
 		for (const shard of this.resharding.values()) shard.disconnect(ShardSocketCloseCodes.ShutdownAll);
 		this.shards.clear();
@@ -955,23 +853,9 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		exitProcess(1);
 	}
 
-	private async activateShadowApplication() {
+	private async activateShadowGeneration() {
 		await this.waitForShadowHydrations();
 		if (this.generationShadowError) throw this.generationShadowError;
-		if (!this.generationApplicationStarted) {
-			const gatewayIntents = workerData.intents;
-			await this.startApplication(this.generationStartOptions);
-			this.assertDeferredGenerationDispatchInterceptors();
-			await this.loadEvents(this.generationStartOptions.eventsDir);
-			const resolvedIntents = this.resolvePluginGatewayIntents(gatewayIntents);
-			if (resolvedIntents !== gatewayIntents)
-				throw new Error(
-					`Deferred worker generation resolved gateway intents ${resolvedIntents}, but connected with ${gatewayIntents}`,
-				);
-			for (const packet of this.generationShadowHydrationJournal) await this.cache.hydratePluginPacket(packet);
-			this.generationShadowHydrationJournal = [];
-			this.generationApplicationStarted = true;
-		}
 		await this.replayGenerationBootstrapPackets();
 		if (!this.generationReadyEventsRun) {
 			await this.events.runEvent('WORKER_SHARDS_CONNECTED', this, this.me, -1);
@@ -1037,7 +921,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		this.generationCutoverBuffering = false;
 		this.generationCutoverBuffer = [];
 		this.generationCutoverBufferHead = 0;
-		this.generationShadowHydrationJournal = [];
 		this.generationBootstrapPackets = [];
 		this.logger.fatal(message, this.generationFailure);
 		try {
@@ -1051,7 +934,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		} catch (postError) {
 			this.logger.error('Cannot report worker generation failure', postError);
 		}
-		this.rejectGenerationActivation?.(this.generationFailure);
 	}
 
 	private async runGenerationDispatch<T>(dispatch: () => Promise<T>): Promise<T | undefined> {

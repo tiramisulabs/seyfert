@@ -117,10 +117,9 @@ describe('WorkerManager generations', () => {
 		expect(spawn).toHaveBeenLastCalledWith(
 			expect.objectContaining({ generation: 1, allocationId: 'candidate-1', shadow: true, shards: [0] }),
 			expect.any(Object),
-			candidate,
 		);
 
-		await manager.handleWorkerMessage(lifecycle(candidate, 'WORKER_GENERATION_START'));
+		await manager.handleWorkerMessage(lifecycle(candidate, 'WORKER_START'));
 		expect(sent.at(-1)).toMatchObject({
 			context: candidate,
 			body: { type: 'SPAWN_SHARDS', generation: 1, allocationId: 'candidate-1' },
@@ -263,14 +262,15 @@ describe('WorkerManager generations', () => {
 
 	test('bounds manager messages during the cutover gap and fails the next operation immediately', async () => {
 		const { manager, sent } = createManager();
-		manager.options.maxGenerationMessageQueueEvents = 1;
 		const source = manager.getActiveWorkerGeneration(0)!;
 		const candidate = await manager.prepareWorkerGeneration(0, { generation: 1, allocationId: 'queue-bound-1' });
 		await readyCandidate(manager, candidate);
 		await armCandidate(manager, candidate);
 		const drained = manager.drainWorkerGeneration(source);
 
-		manager.postMessage(0, { type: 'BOT_READY' });
+		const queues = (manager as unknown as { generationMessageQueues: Map<number, { type: 'BOT_READY' }[]> })
+			.generationMessageQueues;
+		queues.set(0, Array.from({ length: 10_000 }, () => ({ type: 'BOT_READY' })));
 		let overflow: unknown;
 		try {
 			manager.postMessage(0, { type: 'BOT_READY' });
@@ -278,8 +278,9 @@ describe('WorkerManager generations', () => {
 			overflow = error;
 		}
 		expect(overflow).toMatchObject({
-			metadata: expect.objectContaining({ detail: expect.stringMatching(/message queue.*exceeded 1 events/) }),
+			metadata: expect.objectContaining({ detail: expect.stringMatching(/message queue.*exceeded 10000 events/) }),
 		});
+		queues.set(0, [{ type: 'BOT_READY' }]);
 		await manager.handleWorkerMessage(lifecycle(source, 'WORKER_GENERATION_DRAINED'));
 		await drained;
 		const activated = manager.activateWorkerGeneration(candidate);
@@ -488,18 +489,53 @@ describe('WorkerManager generations', () => {
 
 	test('suspends native worker recreation during a generation transition and restores it afterwards', async () => {
 		const { manager } = createManager();
+		const active = manager.getActiveWorkerGeneration(0)!;
 		await manager.prepareWorkerGeneration(0, { generation: 1, allocationId: 'native-shadow-1' });
 		(manager.options as { mode: string }).mode = 'threads';
+		const terminate = vi.fn().mockResolvedValue(0);
 		const recreate = vi.fn();
 		const internals = manager as unknown as {
+			getWorkerGenerationRecord(context: WorkerGenerationContext): { worker: { terminate(): Promise<number> } };
 			recoverDeadWorkerGeneration(workerId: number, recreateWorker: () => void): Promise<void>;
 		};
+		internals.getWorkerGenerationRecord(active).worker = { terminate };
 
 		await internals.recoverDeadWorkerGeneration(0, recreate);
 		expect(recreate).not.toHaveBeenCalled();
 		manager.fenceWorkerGeneration({ workerId: 0, generation: 1, allocationId: 'native-shadow-1' });
 		await internals.recoverDeadWorkerGeneration(0, recreate);
+		expect(terminate).toHaveBeenCalledOnce();
 		expect(recreate).toHaveBeenCalledOnce();
+		expect(terminate.mock.invocationCallOrder[0]).toBeLessThan(recreate.mock.invocationCallOrder[0]);
+	});
+
+	test('waits for a cluster allocation to exit before confirming termination', async () => {
+		const { manager } = createManager();
+		const active = manager.getActiveWorkerGeneration(0)!;
+		const listeners = new Map<string, (...args: unknown[]) => void>();
+		const worker = {
+			isDead: () => false,
+			kill: vi.fn(),
+			once: (event: string, listener: (...args: unknown[]) => void) => listeners.set(event, listener),
+			off: (event: string) => listeners.delete(event),
+		};
+		const internals = manager as unknown as {
+			getWorkerGenerationRecord(context: WorkerGenerationContext): { worker: typeof worker };
+			terminateWorkerGeneration(record: { worker: typeof worker }): Promise<void>;
+		};
+		const record = internals.getWorkerGenerationRecord(active);
+		record.worker = worker;
+		(manager.options as { mode: string }).mode = 'clusters';
+		let terminated = false;
+		const termination = internals.terminateWorkerGeneration(record).then(() => {
+			terminated = true;
+		});
+		await Promise.resolve();
+		expect(worker.kill).toHaveBeenCalledWith('SIGKILL');
+		expect(terminated).toBe(false);
+		listeners.get('exit')?.();
+		await termination;
+		expect(terminated).toBe(true);
 	});
 
 	test('aborts candidates and surfaces asynchronous custom spawn failures', async () => {
@@ -645,25 +681,6 @@ describe('WorkerManager generations', () => {
 	});
 
 describe('WorkerClient generation gate', () => {
-	test('rejects invalid generation buffer configuration before accepting worker data', () => {
-		const client = new WorkerClient();
-		let error: unknown;
-		try {
-			client.setWorkerData({
-				...workerData(),
-				generation: 1,
-				allocationId: 'invalid-bounds',
-				shadow: true,
-				maxCutoverBufferEvents: Number.NaN,
-			});
-		} catch (thrown) {
-			error = thrown;
-		}
-		expect(error).toMatchObject({
-			metadata: expect.objectContaining({ detail: expect.stringMatching(/maxCutoverBufferEvents/) }),
-		});
-	});
-
 	test('hydrates READY identity while shadowed and acknowledges activation only after shard readiness', async () => {
 		const messages: Record<string, unknown>[] = [];
 		const handleManagerMessages = vi.fn();
@@ -739,7 +756,6 @@ describe('WorkerClient generation gate', () => {
 
 		const runEvent = vi.spyOn(client.events, 'runEvent');
 		const executeEvent = vi.spyOn(client.events, 'execute');
-		(client as unknown as { generationApplicationStarted: boolean }).generationApplicationStarted = true;
 		await client.handleManagerMessages({
 			type: 'BEGIN_WORKER_GENERATION_CUTOVER',
 			generation: 1,
@@ -789,7 +805,6 @@ describe('WorkerClient generation gate', () => {
 			generation: 1,
 			allocationId: 'intercepted-shadow',
 			shadow: true,
-			generationLifecycle: 'eager',
 		});
 		await client.start();
 		const cacheOnPacket = vi.spyOn(client.cache, 'onPacket').mockResolvedValue(undefined);
@@ -853,78 +868,6 @@ describe('WorkerClient generation gate', () => {
 		).toEqual([102, 103]);
 	});
 
-	test('rejects deferred shadows with dispatch interceptors before connecting', async () => {
-		const plugin = createPlugin({
-			name: 'deferred-shadow-dispatch-interceptor',
-			register(api) {
-				api.gateway.onDispatch((packet, next) => next(packet));
-			},
-		});
-		const messages: Record<string, unknown>[] = [];
-		const client = new WorkerClient({
-			getRC: async () => ({ token: 'token', intents: 0, locations: { base: '' } }),
-			plugins: [plugin],
-			postMessage: body => messages.push(body as Record<string, unknown>),
-		});
-		client.setWorkerData({
-			...workerData(),
-			generation: 1,
-			allocationId: 'deferred-interceptor',
-			shadow: true,
-			generationLifecycle: 'deferred',
-		});
-
-		await expect(client.start()).rejects.toMatchObject({
-			metadata: { detail: expect.stringMatching(/cannot use gateway dispatch interceptors/i) },
-		});
-		expect(messages).toHaveLength(0);
-	});
-
-	test('fails deferred activation if plugin setup adds a dispatch interceptor', async () => {
-		const plugin = createPlugin({
-			name: 'deferred-shadow-setup-interceptor',
-			setup(_client, api) {
-				api!.gateway.onDispatch((packet, next) => next(packet));
-			},
-		});
-		const messages: Record<string, unknown>[] = [];
-		const client = new WorkerClient({
-			getRC: async () => ({ token: 'token', intents: 0, locations: { base: '' } }),
-			plugins: [plugin],
-			postMessage: body => messages.push(body as Record<string, unknown>),
-		});
-		client.setWorkerData({
-			...workerData(),
-			generation: 1,
-			allocationId: 'deferred-setup-interceptor',
-			shadow: true,
-			generationLifecycle: 'deferred',
-		});
-		const start = client.start();
-		await vi.waitFor(() => expect(messages.some(message => message.type === 'WORKER_GENERATION_APP_READY')).toBe(true));
-		(client as unknown as { generationShardsReady: boolean }).generationShardsReady = true;
-
-		await client.handleManagerMessages({
-			type: 'BEGIN_WORKER_GENERATION_CUTOVER',
-			generation: 1,
-			allocationId: 'deferred-setup-interceptor',
-		});
-		await client.handleManagerMessages({
-			type: 'ACTIVATE_WORKER_GENERATION',
-			generation: 1,
-			allocationId: 'deferred-setup-interceptor',
-		});
-
-		await expect(start).rejects.toMatchObject({
-			metadata: { detail: expect.stringMatching(/cannot use gateway dispatch interceptors/i) },
-		});
-		expect(messages.at(-1)).toMatchObject({
-			type: 'WORKER_GENERATION_FAILED',
-			generation: 1,
-			allocationId: 'deferred-setup-interceptor',
-		});
-	});
-
 	test('buffers cutover dispatches and replays them before acknowledging activation', async () => {
 		const messages: Record<string, unknown>[] = [];
 		const handlePayload = vi.fn();
@@ -939,11 +882,9 @@ describe('WorkerClient generation gate', () => {
 			shadow: true,
 		});
 		const internals = client as unknown as {
-			generationApplicationStarted: boolean;
 			generationShardsReady: boolean;
 			waitForGenerationDispatches(): Promise<void>;
 		};
-		internals.generationApplicationStarted = true;
 		internals.generationShardsReady = true;
 		const shard = client.createShard(0, {
 			compress: false,
@@ -989,7 +930,7 @@ describe('WorkerClient generation gate', () => {
 		expect(messages.at(-1)).toMatchObject({ type: 'WORKER_GENERATION_ACTIVATED' });
 	});
 
-	test('serializes duplicate activation commands through one application activation', async () => {
+	test('serializes duplicate activation commands through one activation', async () => {
 		const messages: Record<string, unknown>[] = [];
 		const client = new WorkerClient({ postMessage: body => messages.push(body as Record<string, unknown>) });
 		client.setWorkerData({
@@ -1002,13 +943,13 @@ describe('WorkerClient generation gate', () => {
 		const blocked = new Promise<void>(resolve => {
 			release = resolve;
 		});
-		const activateShadowApplication = vi.fn(() => blocked);
+		const activateShadowGeneration = vi.fn(() => blocked);
 		const internals = client as unknown as {
 			generationShardsReady: boolean;
-			activateShadowApplication: typeof activateShadowApplication;
+			activateShadowGeneration: typeof activateShadowGeneration;
 		};
 		internals.generationShardsReady = true;
-		internals.activateShadowApplication = activateShadowApplication;
+		internals.activateShadowGeneration = activateShadowGeneration;
 		await client.handleManagerMessages({
 			type: 'BEGIN_WORKER_GENERATION_CUTOVER',
 			generation: 1,
@@ -1022,13 +963,13 @@ describe('WorkerClient generation gate', () => {
 		const first = client.handleManagerMessages(command);
 		const second = client.handleManagerMessages(command);
 		await Promise.resolve();
-		expect(activateShadowApplication).toHaveBeenCalledOnce();
+		expect(activateShadowGeneration).toHaveBeenCalledOnce();
 		release();
 		await Promise.all([first, second]);
 		expect(messages.filter(message => message.type === 'WORKER_GENERATION_ACTIVATED')).toHaveLength(1);
 	});
 
-	test('fails a candidate instead of growing the cutover buffer past its configured bound', async () => {
+	test('fails a candidate instead of growing the cutover buffer past its internal bound', async () => {
 		const messages: Record<string, unknown>[] = [];
 		const client = new WorkerClient({ postMessage: body => messages.push(body as Record<string, unknown>) });
 		client.logger.fatal = vi.fn();
@@ -1037,13 +978,11 @@ describe('WorkerClient generation gate', () => {
 			generation: 1,
 			allocationId: 'bounded-1',
 			shadow: true,
-			maxCutoverBufferEvents: 1,
 		});
 		const internals = client as unknown as {
-			generationApplicationStarted: boolean;
 			generationShardsReady: boolean;
+			generationCutoverBuffer: { shardId: number; packet: GatewayDispatchPayload }[];
 		};
-		internals.generationApplicationStarted = true;
 		internals.generationShardsReady = true;
 		const shard = client.createShard(0, {
 			compress: false,
@@ -1056,6 +995,10 @@ describe('WorkerClient generation gate', () => {
 			generation: 1,
 			allocationId: 'bounded-1',
 		});
+		internals.generationCutoverBuffer = Array.from({ length: 10_000 }, () => ({
+			shardId: 0,
+			packet: { op: 0, s: 0, t: 'GUILD_DELETE', d: { id: 'queued', unavailable: true } } as GatewayDispatchPayload,
+		}));
 		const packet = {
 			op: 0,
 			s: 1,
@@ -1063,12 +1006,10 @@ describe('WorkerClient generation gate', () => {
 			d: { id: 'guild-id', unavailable: true },
 		} as GatewayDispatchPayload;
 		await shard.options.handlePayload(0, packet);
-		await shard.options.handlePayload(0, { ...packet, s: 2 });
-		await shard.options.handlePayload(0, { ...packet, s: 3 });
 
 		expect(messages.at(-1)).toMatchObject({
 			type: 'WORKER_GENERATION_FAILED',
-			message: expect.stringMatching(/cutover buffer exceeded 1 events/),
+			message: expect.stringMatching(/cutover buffer exceeded 10000 events/),
 		});
 		expect(messages.filter(message => message.type === 'WORKER_GENERATION_FAILED')).toHaveLength(1);
 		await client.handleManagerMessages({
@@ -1079,68 +1020,12 @@ describe('WorkerClient generation gate', () => {
 		expect(messages.some(message => message.type === 'WORKER_GENERATION_ACTIVATED')).toBe(false);
 	});
 
-	test('keeps deferred start pending until lifecycle and hydration journal replay complete', async () => {
-		const messages: Record<string, unknown>[] = [];
-		const client = new WorkerClient({ postMessage: body => messages.push(body as Record<string, unknown>) });
-		client.setWorkerData({
-			...workerData(),
-			generation: 1,
-			allocationId: 'deferred-1',
-			shadow: true,
-			generationLifecycle: 'deferred',
-		});
-		const prepareStart = vi.fn();
-		const startCacheAdapter = vi.fn();
-		const startApplication = vi.fn();
-		const loadEvents = vi.fn();
-		const hydratePacket = vi.spyOn(client.cache, 'hydratePacket').mockResolvedValue(undefined);
-		const hydratePluginPacket = vi.spyOn(client.cache, 'hydratePluginPacket').mockResolvedValue(undefined);
-		const internals = client as unknown as {
-			prepareStart: typeof prepareStart;
-			startCacheAdapter: typeof startCacheAdapter;
-			startApplication: typeof startApplication;
-			loadEvents: typeof loadEvents;
-			generationShardsReady: boolean;
-			handleShadowPacket(shardId: number, packet: GatewayDispatchPayload): Promise<void>;
-		};
-		internals.prepareStart = prepareStart;
-		internals.startCacheAdapter = startCacheAdapter;
-		internals.startApplication = startApplication;
-		internals.loadEvents = loadEvents;
-		let started = false;
-		const start = client.start().then(() => {
-			started = true;
-		});
-		await vi.waitFor(() => expect(messages.some(message => message.type === 'WORKER_GENERATION_APP_READY')).toBe(true));
-		expect(startApplication).not.toHaveBeenCalled();
-		expect(started).toBe(false);
-
-		const prewarmPacket = { op: 0, s: 1, t: 'CUSTOM_CACHE_EVENT', d: {} } as unknown as GatewayDispatchPayload;
-		await internals.handleShadowPacket(0, prewarmPacket);
-		expect(hydratePacket).toHaveBeenCalledWith(prewarmPacket);
-		internals.generationShardsReady = true;
-		await client.handleManagerMessages({
-			type: 'BEGIN_WORKER_GENERATION_CUTOVER',
-			generation: 1,
-			allocationId: 'deferred-1',
-		});
-		await client.handleManagerMessages({
-			type: 'ACTIVATE_WORKER_GENERATION',
-			generation: 1,
-			allocationId: 'deferred-1',
-		});
-		await start;
-		expect(startApplication).toHaveBeenCalledOnce();
-		expect(loadEvents).toHaveBeenCalledOnce();
-		expect(hydratePluginPacket).toHaveBeenCalledWith(prewarmPacket);
-		expect(started).toBe(true);
-	});
-
 	test('fails closed before startup when required supervisor IPC is already disconnected', () => {
 		const client = new WorkerClient();
 		client.setWorkerData({
 			...workerData(),
-			requireSupervisor: true,
+			supervisorTimeoutMs: 100,
+			supervisorIssuedAtMonotonicMs: 0,
 		});
 		const shard = client.createShard(0, {
 			compress: false,
@@ -1173,7 +1058,6 @@ describe('WorkerClient generation gate', () => {
 				...workerData(),
 				generation: 1,
 				allocationId: 'supervisor-lease-1',
-				requireSupervisor: true,
 				supervisorTimeoutMs: 100,
 				supervisorIssuedAtMonotonicMs: 0,
 			});

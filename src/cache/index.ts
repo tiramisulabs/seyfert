@@ -522,18 +522,8 @@ export class Cache {
 		return this.onPacketWithPluginResources(event);
 	}
 
-	/** @internal Hydrates only Seyfert's built-in cache resources. */
-	hydratePacket(event: GatewayDispatchPayload) {
-		return this.onPacketDefault(event);
-	}
-
 	private async onPacketWithPluginResources(event: GatewayDispatchPayload) {
 		await this.onPacketDefault(event);
-		await this.hydratePluginPacket(event);
-	}
-
-	/** @internal Replays a packet only into plugin-defined cache resources. */
-	async hydratePluginPacket(event: GatewayDispatchPayload) {
 		for (const contribution of this.pluginResourcePacketHandlers) {
 			try {
 				await contribution.handler(event, this);
