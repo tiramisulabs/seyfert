@@ -33,8 +33,10 @@ export interface ShardManagerOptions extends ShardDetails {
 	 * @default 1
 	 */
 	totalShards?: number;
+	/** First shard in the managed range. Defaults to 0. */
 	shardStart?: number;
-	shardEndExclusive?: number;
+	/** Exclusive upper boundary of the managed shard range. Defaults to totalShards. */
+	shardEnd?: number;
 	/**
 	 * The payload handlers for messages on the shard.
 	 */
@@ -121,7 +123,8 @@ export interface ResolvedWorkerShardTopology {
 	>;
 	readonly totalShards: number;
 	readonly shardStart: number;
-	readonly shardEndExclusive: number;
+	/** Exclusive upper boundary of the resolved shard range. */
+	readonly shardEnd: number;
 	readonly shardsPerWorker: number;
 	readonly workers: number;
 }

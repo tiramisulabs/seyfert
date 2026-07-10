@@ -33,7 +33,7 @@ function createWorkerManager(options: Partial<ConstructorParameters<typeof Worke
 		intents: 0,
 		info: gatewayInfo(),
 		shardStart: 0,
-		shardEndExclusive: 1,
+		shardEnd: 1,
 		totalShards: 1,
 		workers: 1,
 		shardsPerWorker: 1,
@@ -97,7 +97,7 @@ describe('gateway send chokepoints', () => {
 	test('WorkerManager rejects shard ids outside the configured shard range', () => {
 		const { manager } = createWorkerManager({
 			shardStart: 4,
-			shardEndExclusive: 6,
+			shardEnd: 6,
 			totalShards: 6,
 			workers: 1,
 			shardsPerWorker: 2,
@@ -191,7 +191,7 @@ describe('gateway send chokepoints', () => {
 		const spawn = vi.fn().mockRejectedValueOnce(spawnError).mockResolvedValue(undefined);
 		const { manager } = createWorkerManager({
 			info: { ...gatewayInfo(), shards: 2 },
-			shardEndExclusive: 2,
+			shardEnd: 2,
 			totalShards: 2,
 			workers: 2,
 			adapter: {
@@ -220,7 +220,7 @@ describe('gateway send chokepoints', () => {
 		const spawn = vi.fn((_workerData: unknown, _env: unknown) => spawnPending);
 		const { manager } = createWorkerManager({
 			info: { ...gatewayInfo(), shards: 2 },
-			shardEndExclusive: 2,
+			shardEnd: 2,
 			totalShards: 2,
 			workers: 2,
 			adapter: {

@@ -43,13 +43,13 @@ export class WorkerTopologyResolver {
 				metadata: { detail: 'info.shards must be a positive safe integer' },
 			});
 		manager.options.info ??= gatewayInfo;
-		manager.options.shardEndExclusive ??= manager.options.totalShards ?? manager.options.info.shards;
-		manager.options.totalShards ??= manager.options.shardEndExclusive;
+		manager.options.shardEnd ??= manager.options.totalShards ?? manager.options.info.shards;
+		manager.options.totalShards ??= manager.options.shardEnd;
 		manager.options = MergeOptions(WorkerManagerDefaults, manager.options) as WorkerManager['options'];
 
 		for (const [name, value] of [
 			['totalShards', manager.options.totalShards],
-			['shardEndExclusive', manager.options.shardEndExclusive],
+			['shardEnd', manager.options.shardEnd],
 			['shardsPerWorker', manager.options.shardsPerWorker],
 		] as const) {
 			if (!Number.isSafeInteger(value) || value <= 0)
@@ -62,16 +62,16 @@ export class WorkerTopologyResolver {
 				metadata: { detail: 'shardStart must be a non-negative safe integer' },
 			});
 		if (
-			manager.options.shardEndExclusive <= manager.options.shardStart ||
-			manager.options.shardEndExclusive > manager.options.totalShards
+			manager.options.shardEnd <= manager.options.shardStart ||
+			manager.options.shardEnd > manager.options.totalShards
 		)
 			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: 'shardEndExclusive must be greater than shardStart and no greater than totalShards' },
+				metadata: { detail: 'shardEnd must be greater than shardStart and no greater than totalShards' },
 			});
 
 		manager.options.resharding.getInfo ??= () => manager.rest.proxy.gateway.bot.get();
 		const expectedWorkers = Math.ceil(
-			(manager.options.shardEndExclusive - manager.options.shardStart) / manager.options.shardsPerWorker,
+			(manager.options.shardEnd - manager.options.shardStart) / manager.options.shardsPerWorker,
 		);
 		manager.options.workers ??= expectedWorkers;
 		if (!Number.isSafeInteger(manager.options.workers) || manager.options.workers <= 0)
@@ -81,7 +81,7 @@ export class WorkerTopologyResolver {
 		if (manager.options.workers !== expectedWorkers)
 			throw new SeyfertError('INTERNAL_ERROR', {
 				metadata: {
-					detail: `workers must be ${expectedWorkers} for shard range ${manager.options.shardStart}-${manager.options.shardEndExclusive} with ${manager.options.shardsPerWorker} shards per worker`,
+					detail: `workers must be ${expectedWorkers} for shard range ${manager.options.shardStart}-${manager.options.shardEnd} with ${manager.options.shardsPerWorker} shards per worker`,
 				},
 			});
 
@@ -95,7 +95,7 @@ export class WorkerTopologyResolver {
 			info,
 			totalShards: manager.totalShards,
 			shardStart: manager.shardStart,
-			shardEndExclusive: manager.shardEndExclusive,
+			shardEnd: manager.shardEnd,
 			shardsPerWorker: manager.shardsPerWorker,
 			workers: manager.totalWorkers,
 		});

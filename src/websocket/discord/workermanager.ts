@@ -63,7 +63,8 @@ export class WorkerManager extends Map<number, WorkerGenerationHandle> {
 	static prepareSpaces(
 		options: {
 			shardStart: number;
-			shardEndExclusive: number;
+			/** Exclusive upper boundary of the shard range. */
+			shardEnd: number;
 			shardsPerWorker: number;
 		},
 		logger?: Logger,
@@ -71,7 +72,7 @@ export class WorkerManager extends Map<number, WorkerGenerationHandle> {
 		logger?.info('Preparing buckets');
 
 		const chunks = DynamicBucket.chunk<number>(
-			new Array(options.shardEndExclusive - options.shardStart),
+			new Array(options.shardEnd - options.shardStart),
 			options.shardsPerWorker,
 		);
 
@@ -183,8 +184,8 @@ export class WorkerManager extends Map<number, WorkerGenerationHandle> {
 		return this.options.shardStart ?? 0;
 	}
 
-	get shardEndExclusive() {
-		return this.options.shardEndExclusive ?? this.totalShards;
+	get shardEnd() {
+		return this.options.shardEnd ?? this.totalShards;
 	}
 
 	get shardsPerWorker() {
@@ -220,13 +221,13 @@ export class WorkerManager extends Map<number, WorkerGenerationHandle> {
 	}
 
 	calculateWorkerId(shardId: number) {
-		if (shardId < this.shardStart || shardId >= this.shardEndExclusive) {
+		if (shardId < this.shardStart || shardId >= this.shardEnd) {
 			throw new SeyfertError('INVALID_SHARD_ID', {
 				metadata: {
 					...{
 						shardId,
 						shardStart: this.shardStart,
-						shardEndExclusive: this.shardEndExclusive,
+						shardEnd: this.shardEnd,
 						shardsPerWorker: this.shardsPerWorker,
 						totalWorkers: this.totalWorkers,
 					},
@@ -462,7 +463,7 @@ export class WorkerManager extends Map<number, WorkerGenerationHandle> {
 					this.get(message.workerId)!.disconnected = true;
 					if ([...this.values()].every(w => w.disconnected)) {
 						this.options.totalShards = this._info!.shards;
-						this.options.shardEndExclusive = this.options.totalShards = this.options.info.shards = this._info!.shards;
+						this.options.shardEnd = this.options.totalShards = this.options.info.shards = this._info!.shards;
 						this.options.workers = this.size;
 						for (const [id] of this.entries()) {
 							this.postMessage(id, {
@@ -796,7 +797,7 @@ export class WorkerManager extends Map<number, WorkerGenerationHandle> {
 			topology.info.shards !== this.options.info.shards ||
 			topology.totalShards !== this.totalShards ||
 			topology.shardStart !== this.shardStart ||
-			topology.shardEndExclusive !== this.shardEndExclusive ||
+			topology.shardEnd !== this.shardEnd ||
 			topology.shardsPerWorker !== this.shardsPerWorker ||
 			topology.workers !== this.totalWorkers
 		)
@@ -822,7 +823,7 @@ export class WorkerManager extends Map<number, WorkerGenerationHandle> {
 		const spaces = WorkerManager.prepareSpaces(
 			{
 				shardStart: topology.shardStart,
-				shardEndExclusive: topology.shardEndExclusive,
+				shardEnd: topology.shardEnd,
 				shardsPerWorker: topology.shardsPerWorker,
 			},
 			this.debugger,
@@ -869,7 +870,7 @@ export class WorkerManager extends Map<number, WorkerGenerationHandle> {
 			const spaces = WorkerManager.prepareSpaces(
 				{
 					shardsPerWorker: this.shardsPerWorker,
-					shardEndExclusive: info.shards,
+					shardEnd: info.shards,
 					shardStart: 0,
 				},
 				this.debugger,
@@ -888,7 +889,7 @@ export class WorkerManager extends Map<number, WorkerGenerationHandle> {
 
 	async startResharding() {
 		if (this.options.resharding.interval <= 0) return;
-		if (this.shardStart !== 0 || this.shardEndExclusive !== this.totalShards)
+		if (this.shardStart !== 0 || this.shardEnd !== this.totalShards)
 			return this.debugger?.debug('Cannot start resharder');
 		setInterval(() => {
 			void this.checkForResharding().catch(error => {

@@ -67,8 +67,8 @@ export class ShardManager extends Map<number, Shard> {
 		return this.options.shardStart ?? 0;
 	}
 
-	get shardEndExclusive() {
-		return this.options.shardEndExclusive ?? this.totalShards;
+	get shardEnd() {
+		return this.options.shardEnd ?? this.totalShards;
 	}
 
 	get remaining() {
@@ -133,7 +133,7 @@ export class ShardManager extends Map<number, Shard> {
 
 	async startResharder() {
 		if (this.options.resharding.interval <= 0) return;
-		if (this.shardStart !== 0 || this.shardEndExclusive !== this.totalShards)
+		if (this.shardStart !== 0 || this.shardEnd !== this.totalShards)
 			return this.debugger?.debug('Cannot start resharder');
 
 		this.debugger?.debug('Resharder enabled');
@@ -170,7 +170,7 @@ export class ShardManager extends Map<number, Shard> {
 				this.disconnectAll(ShardSocketCloseCodes.Resharding);
 				this.clear();
 
-				this.options.totalShards = this.options.shardEndExclusive = this.options.info.shards = info.shards;
+				this.options.totalShards = this.options.shardEnd = this.options.info.shards = info.shards;
 				for (const [id, shard] of sharder) {
 					shard.options.handlePayload = (shardId, packet) => {
 						return this.options.handlePayload(shardId, packet);
@@ -183,7 +183,7 @@ export class ShardManager extends Map<number, Shard> {
 
 			const options = MergeOptions<ShardManagerOptions>(this.options, {
 				totalShards: info.shards,
-				shardEndExclusive: info.shards,
+				shardEnd: info.shards,
 			} satisfies DeepPartial<ShardManagerOptions>);
 
 			const resharder = new ShardManager({
@@ -212,7 +212,7 @@ export class ShardManager extends Map<number, Shard> {
 	 */
 	spawnBuckets(): Shard[][] {
 		this.debugger?.info('#0 Preparing buckets');
-		const chunks = DynamicBucket.chunk(new Array(this.shardEndExclusive - this.shardStart), this.concurrency);
+		const chunks = DynamicBucket.chunk(new Array(this.shardEnd - this.shardStart), this.concurrency);
 		chunks.forEach((arr: any[], index: number) => {
 			for (let i = 0; i < arr.length; i++) {
 				const id = i + (index > 0 ? index * this.concurrency : 0) + this.shardStart;

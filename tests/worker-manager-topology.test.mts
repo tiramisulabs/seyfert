@@ -18,7 +18,7 @@ function gatewayInfo(shards = 4): RESTGetAPIGatewayBotResult {
 function resolvedTopology(shards = 4) {
 	return {
 		info: gatewayInfo(shards),
-		shardEndExclusive: shards,
+		shardEnd: shards,
 		shardsPerWorker: 16,
 		shardStart: 0,
 		totalShards: shards,
@@ -95,7 +95,7 @@ describe('WorkerManager.resolveShardTopology', () => {
 		expect(manager.options.intents).toBe(GatewayIntentBits.Guilds);
 		expect(manager.totalShards).toBe(4);
 		expect(manager.shardStart).toBe(0);
-		expect(manager.shardEndExclusive).toBe(4);
+		expect(manager.shardEnd).toBe(4);
 		expect(manager.shardsPerWorker).toBe(16);
 		expect(manager.totalWorkers).toBe(1);
 		expect(manager.remaining).toBe(999);
@@ -210,13 +210,13 @@ describe('WorkerManager.resolveShardTopology', () => {
 	test('derives workers from the effective partial shard range', async () => {
 		const { manager } = createManager(vi.fn(async () => gatewayInfo(16)));
 		manager.options.shardStart = 8;
-		manager.options.shardEndExclusive = 16;
+		manager.options.shardEnd = 16;
 		manager.options.totalShards = 16;
 		manager.options.shardsPerWorker = 4;
 
 		await expect(manager.resolveShardTopology()).resolves.toMatchObject({
 			shardStart: 8,
-			shardEndExclusive: 16,
+			shardEnd: 16,
 			totalShards: 16,
 			shardsPerWorker: 4,
 			workers: 2,
@@ -226,7 +226,7 @@ describe('WorkerManager.resolveShardTopology', () => {
 	test('rejects an explicit worker count that cannot match the effective shard buckets', async () => {
 		const { manager, spawn } = createManager(vi.fn(async () => gatewayInfo(16)));
 		manager.options.shardStart = 8;
-		manager.options.shardEndExclusive = 16;
+		manager.options.shardEnd = 16;
 		manager.options.totalShards = 16;
 		manager.options.shardsPerWorker = 4;
 		manager.options.workers = 4;

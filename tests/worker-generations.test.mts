@@ -59,7 +59,7 @@ function createManager() {
 		info: gatewayInfo(),
 		intents: 0,
 		resharding: { getInfo: async () => gatewayInfo(), interval: 0, percentage: 0 },
-		shardEndExclusive: 1,
+		shardEnd: 1,
 		shardStart: 0,
 		shardsPerWorker: 1,
 		token: 'token',
