@@ -3,9 +3,14 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   linter:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: check out code
@@ -56,6 +61,8 @@ jobs:
   test:
     name: Test (${{ matrix.runtime }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
