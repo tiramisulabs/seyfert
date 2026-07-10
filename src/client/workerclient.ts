@@ -12,7 +12,7 @@ import {
 	type When,
 } from '../common';
 import { EventHandler } from '../events';
-import type { GatewayDispatchPayload, GatewaySendPayload } from '../types';
+import { GatewayDispatchEvents, type GatewayDispatchPayload, type GatewaySendPayload } from '../types';
 import {
 	properties,
 	Shard,
@@ -280,7 +280,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 								...this.options.gateway?.properties,
 							},
 							handlePayload(_, payload) {
-								if (payload.t !== 'GUILDS_READY') return;
+								if (payload.t !== GatewayDispatchEvents.GuildsReady) return;
 								if (++shardsConnected === workerData.shards.length) {
 									self.postMessage({
 										type: 'WORKER_READY_RESHARDING',
@@ -542,19 +542,19 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			default: {
 				switch (packet.t) {
-					case 'INTERACTION_CREATE':
+					case GatewayDispatchEvents.InteractionCreate:
 						{
 							await this.events.execute(packet, this, shardId);
 							await this.handleCommand.interaction(packet.d, shardId);
 						}
 						break;
-					case 'MESSAGE_CREATE':
+					case GatewayDispatchEvents.MessageCreate:
 						{
 							await this.events.execute(packet, this, shardId);
 							await this.handleCommand.message(packet.d, shardId);
 						}
 						break;
-					case 'READY': {
+					case GatewayDispatchEvents.Ready: {
 						this.botId = packet.d.user.id;
 						this.applicationId = packet.d.application.id;
 						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
@@ -569,7 +569,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						this.debugger?.debug(`#${shardId}[${packet.d.user.username}](${this.botId}) is online...`);
 						break;
 					}
-					case 'GUILDS_READY':
+					case GatewayDispatchEvents.GuildsReady:
 						{
 							if ([...this.shards.values()].every(shard => shard.isReady)) {
 								this.postMessage({
