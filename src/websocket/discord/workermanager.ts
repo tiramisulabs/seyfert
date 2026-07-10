@@ -1,35 +1,43 @@
-import cluster, { type Worker as ClusterWorker } from 'node:cluster';
+import type { Worker as ClusterWorker } from 'node:cluster';
 import { randomUUID, type UUID } from 'node:crypto';
-import type { Worker as WorkerThreadsWorker } from 'node:worker_threads';
-import { ApiHandler, type CustomWorkerManagerEvents, Logger, type UsingClient, type WorkerClient } from '../..';
+import type { ApiHandler, Logger, UsingClient, WorkerClient } from '../..';
 import { type Adapter, MemoryAdapter } from '../../cache';
-import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
-import {
-	type Awaitable,
-	BASE_HOST,
-	type Identify,
-	lazyLoadPackage,
-	MergeOptions,
-	type PickPartial,
-	SeyfertError,
-} from '../../common';
-import type { GatewayPresenceUpdateData, GatewaySendPayload, RESTGetAPIGatewayBotResult } from '../../types';
-import { properties, WorkerManagerDefaults } from '../constants';
+import { type Awaitable, lazyLoadPackage, type PickPartial, SeyfertError } from '../../common';
+import type { GatewaySendPayload, RESTGetAPIGatewayBotResult } from '../../types';
+import { properties } from '../constants';
 import { DynamicBucket } from '../structures';
-import { ConnectQueue } from '../structures/timeout';
+import type { ConnectQueue } from '../structures/timeout';
 import { Heartbeater, type WorkerHeartbeaterMessages } from './heartbeater';
 import type {
+	ConnnectAllShardsResharding,
+	DisconnectAllShardsResharding,
+	ManagerAllowConnect,
+	ManagerAllowConnectResharding,
+	ManagerExecuteEval,
+	ManagerExecuteEvalToWorker,
+	ManagerMessages,
+	ManagerRequestShardInfo,
+	ManagerRequestWorkerInfo,
+	ManagerSendApiResponse,
+	ManagerSendBotReady,
+	ManagerSendCacheResult,
+	ManagerSendEvalResponse,
+	ManagerSendPayload,
+	ManagerSpawnShards,
+	ManagerSpawnShardsResharding,
+	ManagerWorkerAlreadyExistsResharding,
+} from './manager-messages';
+import type {
 	ResolvedWorkerShardTopology,
-	ShardOptions,
 	WorkerData,
 	WorkerGenerationContext,
 	WorkerGenerationReadiness,
-	WorkerGenerationState,
-	WorkerGenerationStatus,
 	WorkerGenerationTarget,
 	WorkerManagerOptions,
 } from './shared';
 import { WORKER_TIMEOUT_MS, type WorkerInfo, type WorkerMessages, type WorkerShardInfo } from './worker';
+import { WorkerGenerationCoordinator, type WorkerGenerationHandle } from './worker-generation-coordinator';
+import { WorkerTopologyResolver } from './worker-topology-resolver';
 
 type WorkerManagerConstructorOptionalKeys = 'token' | 'intents' | 'info' | 'handlePayload' | 'handleWorkerMessage';
 type WorkerManagerConstructorOptions = WorkerManagerOptions extends infer Options
@@ -51,41 +59,11 @@ type WorkerManagerRuntimeOptions =
 			path?: string;
 	  });
 
-type WorkerHandle = (ClusterWorker | WorkerThreadsWorker | { ready?: boolean }) & {
-	ready?: boolean;
-	disconnected?: boolean;
-	reshardingComplete?: boolean;
-	resharded?: boolean;
-};
-
-const GENERATION_MESSAGE_QUEUE_LIMIT = 10_000;
-
-interface WorkerGenerationWaiter {
-	readiness: WorkerGenerationReadiness;
-	resolve(state: WorkerGenerationState): void;
-	reject(error: unknown): void;
-	timeout: NodeJS.Timeout;
-}
-
-interface WorkerGenerationRecord {
-	context: WorkerGenerationContext;
-	workerData: WorkerData;
-	worker: WorkerHandle;
-	status: WorkerGenerationStatus;
-	appReady: boolean;
-	shardsReady: boolean;
-	cutoverRequested: boolean;
-	cutoverReady: boolean;
-	externallyFenced: boolean;
-	spawnPromise: Promise<void>;
-	waiters: Set<WorkerGenerationWaiter>;
-}
-
-export class WorkerManager extends Map<number, WorkerHandle> {
+export class WorkerManager extends Map<number, WorkerGenerationHandle> {
 	static prepareSpaces(
 		options: {
 			shardStart: number;
-			shardEnd: number;
+			shardEndExclusive: number;
 			shardsPerWorker: number;
 		},
 		logger?: Logger,
@@ -93,7 +71,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 		logger?.info('Preparing buckets');
 
 		const chunks = DynamicBucket.chunk<number>(
-			new Array(options.shardEnd - options.shardStart),
+			new Array(options.shardEndExclusive - options.shardStart),
 			options.shardsPerWorker,
 		);
 
@@ -119,21 +97,57 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 	private _info?: RESTGetAPIGatewayBotResult;
 	private reshardingState: 'idle' | 'checking' | 'running' = 'idle';
 	heartbeater: Heartbeater;
-	private workerGenerations = new Map<string, WorkerGenerationRecord>();
-	private activeWorkerGenerations = new Map<number, WorkerGenerationContext>();
-	private previousWorkerGenerations = new Map<number, WorkerGenerationContext[]>();
-	private generationFencing = new Set<number>();
-	private generationRecoveries = new Set<number>();
-	private generationMessageQueues = new Map<number, (ManagerMessages | WorkerHeartbeaterMessages)[]>();
-	private latestWorkerGenerations = new Map<number, number>();
-	private shardTopologyResolution?: Promise<ResolvedWorkerShardTopology>;
+	private readonly generations: WorkerGenerationCoordinator;
+	private readonly topology: WorkerTopologyResolver;
 	private startPromise?: Promise<void>;
 
 	constructor(options: WorkerManagerConstructorOptions) {
 		super();
+		if (
+			options.mode === 'custom' &&
+			options.adapter.managesWorkerGenerations &&
+			options.resharding?.interval !== undefined &&
+			options.resharding.interval !== 0
+		) {
+			throw new TypeError('Generation-aware custom adapters cannot enable WorkerManager native resharding');
+		}
 		// The constructor permits runtime config values that start() fills before use.
 		this.options = { mode: 'threads', ...options } as WorkerManager['options'];
+		if (this.options.mode === 'custom' && this.options.adapter.managesWorkerGenerations) {
+			this.options.resharding = { ...this.options.resharding, interval: 0 } as WorkerManager['options']['resharding'];
+		}
 		this.cacheAdapter = new MemoryAdapter();
+		const manager = this;
+		this.generations = new WorkerGenerationCoordinator({
+			get mode() {
+				return manager.options.mode;
+			},
+			get canTerminateCustomWorker() {
+				return manager.options.mode === 'custom' && typeof manager.options.adapter.terminate === 'function';
+			},
+			get isResharding() {
+				return manager.reshardingState !== 'idle';
+			},
+			hasActiveWorker: workerId => this.has(workerId),
+			getActiveWorker: workerId => this.get(workerId),
+			setActiveWorker: (workerId, worker) => this.set(workerId, worker),
+			deleteActiveWorker: workerId => void this.delete(workerId),
+			unregisterHeartbeat: workerId => this.heartbeater.unregister(workerId),
+			spawnCustomWorker: (workerData, env) => {
+				if (this.options.mode !== 'custom') throw new Error('Custom worker spawning requires custom mode');
+				return this.options.adapter.spawn(workerData, env);
+			},
+			terminateCustomWorker: (workerId, context) => {
+				if (this.options.mode !== 'custom' || !this.options.adapter.terminate)
+					throw new Error('Custom worker termination requires adapter.terminate()');
+				return this.options.adapter.terminate(workerId, context);
+			},
+			sendWorkerMessage: (workerId, worker, message, context) =>
+				this.sendWorkerMessage(workerId, worker, message, context),
+			handleWorkerMessage: (message, source) => this.handleWorkerMessage(message, source),
+			logError: (message, error) => this.debugger?.error(message, error),
+		});
+		this.topology = new WorkerTopologyResolver(this);
 
 		this.heartbeater = new Heartbeater(
 			(workerId, message) => this.postWorkerHeartbeat(workerId, message),
@@ -169,8 +183,8 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 		return this.options.shardStart ?? 0;
 	}
 
-	get shardEnd() {
-		return this.options.shardEnd ?? this.totalShards;
+	get shardEndExclusive() {
+		return this.options.shardEndExclusive ?? this.totalShards;
 	}
 
 	get shardsPerWorker() {
@@ -206,13 +220,13 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 	}
 
 	calculateWorkerId(shardId: number) {
-		if (shardId < this.shardStart || shardId >= this.shardEnd) {
+		if (shardId < this.shardStart || shardId >= this.shardEndExclusive) {
 			throw new SeyfertError('INVALID_SHARD_ID', {
 				metadata: {
 					...{
 						shardId,
 						shardStart: this.shardStart,
-						shardEnd: this.shardEnd,
+						shardEndExclusive: this.shardEndExclusive,
 						shardsPerWorker: this.shardsPerWorker,
 						totalWorkers: this.totalWorkers,
 					},
@@ -237,186 +251,37 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 		return workerId;
 	}
 
-	private generationKey(context: WorkerGenerationContext) {
-		return `${context.workerId}:${context.generation}:${context.allocationId}`;
-	}
-
-	private assertWorkerId(workerId: number) {
-		if (!Number.isSafeInteger(workerId) || workerId < 0)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Worker generation workerId must be a non-negative safe integer` },
-			});
-	}
-
-	private assertWorkerGenerationContext(context: WorkerGenerationContext) {
-		this.assertWorkerId(context.workerId);
-		if (!Number.isSafeInteger(context.generation) || context.generation < 0)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Worker generation must be a non-negative safe integer` },
-			});
-		if (typeof context.allocationId !== 'string' || context.allocationId.trim().length === 0)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Worker generation allocationId must be a non-empty string` },
-			});
-	}
-
-	private generationContext(workerData: WorkerData): WorkerGenerationContext {
-		const latest = this.latestWorkerGenerations.get(workerData.workerId);
-		const generation = workerData.generation ?? (latest === undefined ? 0 : latest + 1);
-		const context = {
-			workerId: workerData.workerId,
-			generation,
-			allocationId: workerData.allocationId ?? randomUUID(),
-		};
-		this.assertWorkerGenerationContext(context);
-		this.latestWorkerGenerations.set(workerData.workerId, Math.max(latest ?? generation, generation));
-		return context;
-	}
-
-	private getWorkerGenerationRecord(context: WorkerGenerationContext) {
-		return this.workerGenerations.get(this.generationKey(context));
-	}
-
-	private snapshotWorkerGeneration(record: WorkerGenerationRecord): WorkerGenerationState {
-		return {
-			...record.context,
-			status: record.status,
-			appReady: record.appReady,
-			shardsReady: record.shardsReady,
-			cutoverReady: record.cutoverReady,
-			shadow: Boolean(record.workerData.shadow),
-		};
-	}
-
-	getWorkerGeneration(context: WorkerGenerationContext): WorkerGenerationState | undefined {
-		const record = this.getWorkerGenerationRecord(context);
-		return record && this.snapshotWorkerGeneration(record);
-	}
-
-	getActiveWorkerGeneration(workerId: number): WorkerGenerationState | undefined {
-		const context = this.activeWorkerGenerations.get(workerId);
-		return context && this.getWorkerGeneration(context);
-	}
-
-	private readinessReached(record: WorkerGenerationRecord, readiness: WorkerGenerationReadiness) {
-		switch (readiness) {
-			case 'app':
-				return record.appReady;
-			case 'shards':
-				return record.shardsReady;
-			case 'ready':
-				return record.appReady && record.shardsReady;
-			case 'cutover':
-				return record.cutoverReady;
-			case 'active':
-				return record.status === 'active';
-			case 'drained':
-				return record.status === 'drained';
-			case 'aborted':
-				return record.status === 'aborted';
-		}
-	}
-
-	private notifyWorkerGeneration(record: WorkerGenerationRecord) {
-		if (record.status === 'preparing' && record.appReady && record.shardsReady) record.status = 'ready';
-		for (const waiter of record.waiters) {
-			if (!this.readinessReached(record, waiter.readiness)) continue;
-			clearTimeout(waiter.timeout);
-			record.waiters.delete(waiter);
-			waiter.resolve(this.snapshotWorkerGeneration(record));
-		}
-	}
-
-	private rejectWorkerGenerationWaiters(record: WorkerGenerationRecord, error: unknown) {
-		for (const waiter of record.waiters) {
-			clearTimeout(waiter.timeout);
-			record.waiters.delete(waiter);
-			waiter.reject(error);
-		}
-	}
-
-	private assertWorkerGenerationTimeout(timeoutMs: number) {
-		if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0 || timeoutMs > 2_147_483_647)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: {
-					detail: `Worker generation timeout must be a positive safe integer no greater than 2147483647 milliseconds`,
-				},
-			});
-	}
-
-	private assertWorkerGenerationReadiness(readiness: WorkerGenerationReadiness) {
-		if (!['app', 'shards', 'ready', 'cutover', 'active', 'drained', 'aborted'].includes(readiness))
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Invalid worker generation readiness ${String(readiness)}` },
-			});
-	}
-
 	waitForWorkerGeneration(
 		context: WorkerGenerationContext,
 		readiness: WorkerGenerationReadiness = 'ready',
 		timeoutMs = WORKER_TIMEOUT_MS,
-	): Promise<WorkerGenerationState> {
-		try {
-			this.assertWorkerGenerationContext(context);
-			this.assertWorkerGenerationReadiness(readiness);
-			this.assertWorkerGenerationTimeout(timeoutMs);
-		} catch (error) {
-			return Promise.reject(error);
-		}
-		const record = this.getWorkerGenerationRecord(context);
-		if (!record)
-			return Promise.reject(
-				new SeyfertError('WORKER_NOT_FOUND', {
-					metadata: { detail: `Worker generation ${this.generationKey(context)} doesn't exist` },
-				}),
-			);
-		if (this.readinessReached(record, readiness)) return Promise.resolve(this.snapshotWorkerGeneration(record));
-
-		return new Promise((resolve, reject) => {
-			const waiter: WorkerGenerationWaiter = {
-				readiness,
-				resolve,
-				reject,
-				timeout: setTimeout(() => {
-					record.waiters.delete(waiter);
-					reject(
-						new SeyfertError('WORKER_TIMEOUT', {
-							metadata: { detail: `Worker generation ${this.generationKey(context)} did not reach ${readiness}` },
-						}),
-					);
-				}, timeoutMs),
-			};
-			record.waiters.add(waiter);
-		});
+	) {
+		return this.generations.wait(context, readiness, timeoutMs);
 	}
 
-	private resolveWorkerGenerationContext(workerId: number, target?: WorkerGenerationTarget) {
-		return target ? { workerId, ...target } : this.activeWorkerGenerations.get(workerId);
+	getWorkerGeneration(context: WorkerGenerationContext) {
+		return this.generations.get(context);
 	}
 
-	private postWorkerHeartbeat(workerId: number, message: WorkerHeartbeaterMessages) {
-		const active = this.activeWorkerGenerations.get(workerId);
-		return this.postMessage(workerId, message, active);
+	getActiveWorkerGeneration(workerId: number) {
+		return this.generations.getActive(workerId);
 	}
 
 	postMessage(id: number, body: ManagerMessages | WorkerHeartbeaterMessages, target?: WorkerGenerationTarget) {
-		const context = this.resolveWorkerGenerationContext(id, target);
-		const record = context ? this.getWorkerGenerationRecord(context) : undefined;
-		if (!target && record && record.status !== 'active') {
-			const queue = this.generationMessageQueues.get(id) ?? [];
-			if (queue.length >= GENERATION_MESSAGE_QUEUE_LIMIT)
-				throw new SeyfertError('INTERNAL_ERROR', {
-					metadata: {
-						detail: `Worker generation message queue for worker #${id} exceeded ${GENERATION_MESSAGE_QUEUE_LIMIT} events`,
-					},
-				});
-			queue.push(body);
-			this.generationMessageQueues.set(id, queue);
-			return;
-		}
-		const worker = target ? record?.worker : this.get(id);
-		if (!worker) return this.debugger?.error(`Worker ${id} does not exists.`);
-		const message = context ? { ...body, generation: context.generation, allocationId: context.allocationId } : body;
+		return this.generations.postMessage(id, body, target);
+	}
+
+	private postWorkerHeartbeat(workerId: number, message: WorkerHeartbeaterMessages) {
+		const active = this.generations.getActiveContext(workerId);
+		return this.generations.postMessage(workerId, message, active);
+	}
+
+	private sendWorkerMessage(
+		id: number,
+		worker: WorkerGenerationHandle,
+		message: ManagerMessages | WorkerHeartbeaterMessages,
+		context?: WorkerGenerationContext,
+	) {
 		switch (this.options.mode) {
 			case 'clusters':
 				if ((worker as ClusterWorker).isConnected()) (worker as ClusterWorker).send(message);
@@ -439,61 +304,6 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 					);
 				}
 				break;
-		}
-	}
-
-	private flushWorkerGenerationMessages(workerId: number) {
-		const queue = this.generationMessageQueues.get(workerId);
-		if (!queue) return;
-		this.generationMessageQueues.delete(workerId);
-		for (const message of queue) this.postMessage(workerId, message);
-	}
-
-	private hasWorkerGenerationTransition(workerId?: number) {
-		return [...this.workerGenerations.values()].some(
-			record =>
-				(workerId === undefined || record.context.workerId === workerId) &&
-				(record.workerData.shadow || !['active', 'aborted'].includes(record.status)),
-		);
-	}
-
-	private async recoverDeadWorkerGeneration(workerId: number, recreate: () => Awaitable<void>) {
-		if (this.generationRecoveries.has(workerId)) return;
-		const context = this.activeWorkerGenerations.get(workerId);
-		const generation = context && this.getWorkerGenerationRecord(context);
-		if (generation && this.hasWorkerGenerationTransition(workerId)) return;
-		this.generationRecoveries.add(workerId);
-		try {
-			const canTerminate = this.options.mode !== 'custom' || this.generationFencing.has(workerId);
-			if (generation && context && canTerminate) {
-				try {
-					// Never create a replacement while the previous allocation may still be alive.
-					await this.terminateWorkerGeneration(generation);
-				} catch (error) {
-					this.debugger?.error(
-						`[Worker #${workerId}] Failed to terminate unresponsive allocation ${context.allocationId}`,
-						error,
-					);
-					return;
-				}
-			}
-			this.heartbeater.unregister(workerId);
-			if (context && generation) {
-				this.rejectWorkerGenerationWaiters(
-					generation,
-					new SeyfertError('WORKER_NOT_FOUND', {
-						metadata: { detail: `Worker generation ${this.generationKey(context)} stopped responding` },
-					}),
-				);
-				this.workerGenerations.delete(this.generationKey(context));
-			}
-			this.activeWorkerGenerations.delete(workerId);
-			this.delete(workerId);
-			await recreate();
-		} catch (error) {
-			this.debugger?.error(`[Worker #${workerId}] Failed to recreate unresponsive worker generation`, error);
-		} finally {
-			this.generationRecoveries.delete(workerId);
 		}
 	}
 
@@ -525,15 +335,14 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 					compress: this.options.compress,
 				});
 				this.set(i, worker);
-				const context = this.activeWorkerGenerations.get(i);
 				return {
 					workerId: i,
-					spawnPromise: context ? this.getWorkerGenerationRecord(context)?.spawnPromise : undefined,
+					spawnPromise: this.generations.getActiveSpawnPromise(i),
 				};
 			};
 			const registerWorkerHeartbeat = (workerId: number, resharding: boolean) => {
 				this.heartbeater.register(workerId, deadWorkerId => {
-					return this.recoverDeadWorkerGeneration(deadWorkerId, async () => {
+					return this.generations.recoverDead(deadWorkerId, async () => {
 						const replacement = registerWorker(resharding);
 						registerWorkerHeartbeat(replacement.workerId, resharding);
 						await replacement.spawnPromise;
@@ -558,456 +367,46 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 					type: 'WORKER_ALREADY_EXISTS_RESHARDING',
 				} satisfies ManagerWorkerAlreadyExistsResharding);
 			}
-			const worker = this.get(workerData.workerId)!;
-			return worker;
+			return this.get(workerData.workerId)!;
 		}
-
-		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
-		if (!worker_threads)
-			throw new SeyfertError('WORKER_THREADS_REQUIRED', {
-				metadata: { detail: 'Cannot create worker without worker_threads.' },
-			});
-
-		const context = this.generationContext(workerData);
-		const existing = this.getWorkerGenerationRecord(context);
-		if (existing) return existing.worker;
-		const normalizedWorkerData: WorkerData = {
-			...workerData,
-			generation: context.generation,
-			allocationId: context.allocationId,
-			shadow: workerData.shadow ?? false,
-		};
-		const env: Record<string, any> = {
-			SEYFERT_SPAWNING: 'true',
-		};
-		if (normalizedWorkerData.resharding) env.SEYFERT_WORKER_RESHARDING = 'true';
-		for (const i in normalizedWorkerData) {
-			const data = normalizedWorkerData[i as keyof WorkerData];
-			env[`SEYFERT_WORKER_${i.toUpperCase()}`] = typeof data === 'object' && data ? JSON.stringify(data) : data;
-		}
-
-		const record: WorkerGenerationRecord = {
-			context,
-			workerData: normalizedWorkerData,
-			worker: { ready: false },
-			status: normalizedWorkerData.shadow ? 'preparing' : 'active',
-			appReady: false,
-			shardsReady: false,
-			cutoverRequested: false,
-			cutoverReady: false,
-			externallyFenced: false,
-			spawnPromise: Promise.resolve(),
-			waiters: new Set(),
-		};
-		this.workerGenerations.set(this.generationKey(context), record);
-		if (this.options.mode === 'custom' && typeof this.options.adapter.terminate === 'function') {
-			// Generation-aware custom adapters own liveness through external fencing from the first allocation.
-			this.generationFencing.add(context.workerId);
-		}
-		if (!record.workerData.shadow) {
-			this.activeWorkerGenerations.set(context.workerId, context);
-			this.set(context.workerId, record.worker);
-		}
-
-		try {
-			switch (this.options.mode) {
-				case 'threads': {
-					const worker = new worker_threads.Worker(normalizedWorkerData.path, { env });
-					worker.on('message', data => this.handleWorkerMessage(data as WorkerMessages, context));
-					worker.on('error', err => {
-						this.debugger?.error(`[Worker #${normalizedWorkerData.workerId}]`, err);
-					});
-					record.worker = worker;
-					break;
-				}
-				case 'clusters': {
-					cluster.setupPrimary({ exec: normalizedWorkerData.path });
-					const worker = cluster.fork(env);
-					worker.on('message', data => this.handleWorkerMessage(data as WorkerMessages, context));
-					record.worker = worker;
-					break;
-				}
-				case 'custom': {
-					const spawned = this.options.adapter.spawn(normalizedWorkerData, env);
-					record.spawnPromise = Promise.resolve(spawned).then(
-						() => undefined,
-						error => {
-							this.cleanupFailedWorkerSpawn(record, error);
-							throw error;
-						},
-					);
-					if (!record.workerData.shadow)
-						void record.spawnPromise.catch(error => {
-							this.debugger?.error(
-								`[Worker #${context.workerId}] Failed to spawn allocation ${context.allocationId}`,
-								error,
-							);
-						});
-					break;
-				}
-			}
-			if (!record.workerData.shadow) this.set(context.workerId, record.worker);
-			return record.worker;
-		} catch (error) {
-			this.cleanupFailedWorkerSpawn(record, error);
-			throw error;
-		}
+		return this.generations.create(workerData);
 	}
 
-	private cleanupFailedWorkerSpawn(record: WorkerGenerationRecord, error: unknown) {
-		if (this.getWorkerGenerationRecord(record.context) !== record) return;
-		this.rejectWorkerGenerationWaiters(record, error);
-		this.workerGenerations.delete(this.generationKey(record.context));
-		const active = this.activeWorkerGenerations.get(record.context.workerId);
-		if (active?.generation === record.context.generation && active.allocationId === record.context.allocationId) {
-			this.activeWorkerGenerations.delete(record.context.workerId);
-			this.delete(record.context.workerId);
-			this.heartbeater.unregister(record.context.workerId);
-		}
+	prepareWorkerGeneration(workerId: number, options: { generation?: number; allocationId?: string } = {}) {
+		return this.generations.prepare(workerId, options);
 	}
 
-	async prepareWorkerGeneration(
-		workerId: number,
-		options: { generation?: number; allocationId?: string } = {},
-	): Promise<WorkerGenerationContext> {
-		this.assertWorkerId(workerId);
-		if (this.reshardingState !== 'idle')
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Cannot prepare a worker generation while resharding` },
-			});
-		if (this.options.mode === 'custom' && typeof this.options.adapter.terminate !== 'function')
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Custom generation transitions require adapter.terminate()` },
-			});
-		const activeContext = this.activeWorkerGenerations.get(workerId);
-		const active = activeContext && this.getWorkerGenerationRecord(activeContext);
-		if (!active)
-			throw new SeyfertError('WORKER_NOT_FOUND', {
-				metadata: { detail: `Cannot prepare a generation for unavailable worker #${workerId}` },
-			});
-		const pendingCandidate = [...this.workerGenerations.values()].find(
-			record =>
-				record.context.workerId === workerId &&
-				record !== active &&
-				record.workerData.shadow &&
-				!['aborted', 'drained'].includes(record.status),
-		);
-		if (pendingCandidate)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Worker #${workerId} already has a candidate generation in ${pendingCandidate.status}` },
-			});
-
-		const generation =
-			options.generation ?? (this.latestWorkerGenerations.get(workerId) ?? active.context.generation) + 1;
-		if (!Number.isSafeInteger(generation))
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Generation ${String(generation)} must be a safe integer` },
-			});
-		if (generation <= active.context.generation)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: {
-					detail: `Generation ${generation} must be newer than active generation ${active.context.generation}`,
-				},
-			});
-
-		const allocationId = options.allocationId ?? randomUUID();
-		if (typeof allocationId !== 'string' || allocationId.trim().length === 0)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Worker generation allocationId must be a non-empty string` },
-			});
-
-		const context: WorkerGenerationContext = {
-			workerId,
-			generation,
-			allocationId,
-		};
-		if (this.getWorkerGenerationRecord(context))
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Worker generation ${this.generationKey(context)} already exists` },
-			});
-
-		this.generationFencing.add(workerId);
-		// Shadow allocations deliberately stay out of the legacy workerId-keyed Heartbeater.
-		// Distributed adapters own their allocation leases until activation, preventing ACK cross-talk.
-		this.createWorker({
-			...active.workerData,
-			...context,
-			resharding: false,
-			shadow: true,
-		});
-		const prepared = this.getWorkerGenerationRecord(context)!;
-		try {
-			await prepared.spawnPromise;
-			return context;
-		} catch (error) {
-			prepared.status = 'aborted';
-			this.notifyWorkerGeneration(prepared);
-			this.rejectWorkerGenerationWaiters(prepared, error);
-			try {
-				await this.terminateWorkerGeneration(prepared);
-			} catch (terminateError) {
-				this.debugger?.error(
-					`Failed to clean up worker allocation ${context.allocationId} after spawn failure`,
-					terminateError,
-				);
-			}
-			this.workerGenerations.delete(this.generationKey(context));
-			throw error;
-		}
+	beginWorkerGenerationCutover(context: WorkerGenerationContext, timeoutMs = WORKER_TIMEOUT_MS) {
+		return this.generations.beginCutover(context, timeoutMs);
 	}
 
-	async beginWorkerGenerationCutover(context: WorkerGenerationContext, timeoutMs = WORKER_TIMEOUT_MS) {
-		this.assertWorkerGenerationContext(context);
-		this.assertWorkerGenerationTimeout(timeoutMs);
-		const record = this.getWorkerGenerationRecord(context);
-		if (!record)
-			throw new SeyfertError('WORKER_NOT_FOUND', {
-				metadata: { detail: `Worker generation ${this.generationKey(context)} doesn't exist` },
-			});
-		if (record.cutoverReady) return this.snapshotWorkerGeneration(record);
-		if (!record.workerData.shadow || record.status !== 'ready' || !record.appReady || !record.shardsReady)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Only a ready shadow worker generation can begin cutover` },
-			});
-		record.cutoverRequested = true;
-		this.postMessage(context.workerId, { type: 'BEGIN_WORKER_GENERATION_CUTOVER' }, context);
-		return this.waitForWorkerGeneration(context, 'cutover', timeoutMs);
+	activateWorkerGeneration(context: WorkerGenerationContext, timeoutMs = WORKER_TIMEOUT_MS) {
+		return this.generations.activate(context, timeoutMs);
 	}
 
-	async activateWorkerGeneration(context: WorkerGenerationContext, timeoutMs = WORKER_TIMEOUT_MS) {
-		this.assertWorkerGenerationContext(context);
-		this.assertWorkerGenerationTimeout(timeoutMs);
-		const record = this.getWorkerGenerationRecord(context);
-		if (!record)
-			throw new SeyfertError('WORKER_NOT_FOUND', {
-				metadata: { detail: `Worker generation ${this.generationKey(context)} doesn't exist` },
-			});
-		if (record.status === 'active') return this.snapshotWorkerGeneration(record);
-		if (record.status === 'activating') {
-			this.postMessage(context.workerId, { type: 'ACTIVATE_WORKER_GENERATION' }, context);
-			return this.waitForWorkerGeneration(context, 'active', timeoutMs);
-		}
-		if (record.status !== 'ready')
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Worker generation ${this.generationKey(context)} cannot activate from ${record.status}` },
-			});
-		if (!record.appReady || !record.shardsReady)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Worker generation ${this.generationKey(context)} is not ready` },
-			});
-		if (record.workerData.shadow && !record.cutoverReady)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Begin worker generation cutover before activation` },
-			});
-
-		const activeContext = this.activeWorkerGenerations.get(context.workerId);
-		const active = activeContext && this.getWorkerGenerationRecord(activeContext);
-		if (
-			active &&
-			(active.context.generation !== context.generation || active.context.allocationId !== context.allocationId) &&
-			(active.status !== 'drained' || context.generation <= active.context.generation)
-		)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: {
-					detail:
-						active.status !== 'drained'
-							? `Drain active worker generation ${this.generationKey(active.context)} before activation`
-							: `Generation ${context.generation} must be newer than drained generation ${active.context.generation}`,
-				},
-			});
-
-		record.status = 'activating';
-		this.postMessage(context.workerId, { type: 'ACTIVATE_WORKER_GENERATION' }, context);
-		return this.waitForWorkerGeneration(context, 'active', timeoutMs);
-	}
-
-	async drainWorkerGeneration(context: WorkerGenerationContext, timeoutMs = WORKER_TIMEOUT_MS) {
-		this.assertWorkerGenerationContext(context);
-		this.assertWorkerGenerationTimeout(timeoutMs);
-		const record = this.getWorkerGenerationRecord(context);
-		if (!record)
-			throw new SeyfertError('WORKER_NOT_FOUND', {
-				metadata: { detail: `Worker generation ${this.generationKey(context)} doesn't exist` },
-			});
-		if (record.status === 'drained') return this.snapshotWorkerGeneration(record);
-		if (record.status === 'draining') {
-			this.postMessage(context.workerId, { type: 'DRAIN_WORKER_GENERATION' }, context);
-			return this.waitForWorkerGeneration(context, 'drained', timeoutMs);
-		}
-		if (record.status !== 'active')
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Only an active worker generation can be drained` },
-			});
-		const unarmedCandidate = [...this.workerGenerations.values()].find(
-			candidate =>
-				candidate.context.workerId === context.workerId &&
-				candidate !== record &&
-				candidate.workerData.shadow &&
-				candidate.status === 'ready' &&
-				!candidate.cutoverReady,
-		);
-		if (unarmedCandidate)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Begin candidate cutover before draining the active worker generation` },
-			});
-
-		record.status = 'draining';
-		this.postMessage(context.workerId, { type: 'DRAIN_WORKER_GENERATION' }, context);
-		return this.waitForWorkerGeneration(context, 'drained', timeoutMs);
+	drainWorkerGeneration(context: WorkerGenerationContext, timeoutMs = WORKER_TIMEOUT_MS) {
+		return this.generations.drain(context, timeoutMs);
 	}
 
 	/**
 	 * Fences an unreachable allocation without an acknowledgement.
-	 * Active allocations become drained; inactive candidates become aborted and are forgotten.
-	 * Only call this after the transport has externally fenced the allocation (for example, after its lease expires).
+	 * Only call this after the transport has externally fenced the allocation.
 	 */
 	fenceWorkerGeneration(context: WorkerGenerationContext) {
-		this.assertWorkerGenerationContext(context);
-		const record = this.getWorkerGenerationRecord(context);
-		if (!record)
-			throw new SeyfertError('WORKER_NOT_FOUND', {
-				metadata: { detail: `Cannot fence unavailable worker generation ${this.generationKey(context)}` },
-			});
-		const active = this.activeWorkerGenerations.get(context.workerId);
-		this.generationFencing.add(context.workerId);
-		if (active?.generation !== context.generation || active.allocationId !== context.allocationId) {
-			record.externallyFenced = true;
-			record.status = 'aborted';
-			const state = this.snapshotWorkerGeneration(record);
-			this.notifyWorkerGeneration(record);
-			this.rejectWorkerGenerationWaiters(
-				record,
-				new SeyfertError('WORKER_NOT_FOUND', {
-					metadata: { detail: `Worker generation ${this.generationKey(context)} was externally fenced` },
-				}),
-			);
-			this.workerGenerations.delete(this.generationKey(context));
-			const previous = this.previousWorkerGenerations.get(context.workerId);
-			if (previous) {
-				const remaining = previous.filter(
-					candidate => candidate.generation !== context.generation || candidate.allocationId !== context.allocationId,
-				);
-				if (remaining.length) this.previousWorkerGenerations.set(context.workerId, remaining);
-				else this.previousWorkerGenerations.delete(context.workerId);
-			}
-			return state;
-		}
-		record.externallyFenced = true;
-		record.status = 'drained';
-		this.notifyWorkerGeneration(record);
-		return this.snapshotWorkerGeneration(record);
+		return this.generations.fence(context);
 	}
 
-	async abortWorkerGeneration(context: WorkerGenerationContext, timeoutMs = WORKER_TIMEOUT_MS) {
-		this.assertWorkerGenerationContext(context);
-		this.assertWorkerGenerationTimeout(timeoutMs);
-		const record = this.getWorkerGenerationRecord(context);
-		if (!record)
-			throw new SeyfertError('WORKER_NOT_FOUND', {
-				metadata: { detail: `Worker generation ${this.generationKey(context)} doesn't exist` },
-			});
-		const active = this.activeWorkerGenerations.get(context.workerId);
-		if (active?.generation === context.generation && active.allocationId === context.allocationId)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Cannot abort the active worker generation` },
-			});
-		if (record.status === 'aborted') {
-			const state = this.snapshotWorkerGeneration(record);
-			await this.terminateWorkerGeneration(record);
-			this.workerGenerations.delete(this.generationKey(context));
-			return state;
-		}
-
-		record.status = 'aborting';
-		this.postMessage(context.workerId, { type: 'ABORT_WORKER_GENERATION' }, context);
-		let state: WorkerGenerationState;
-		try {
-			state = await this.waitForWorkerGeneration(context, 'aborted', timeoutMs);
-		} catch (error) {
-			try {
-				await this.terminateWorkerGeneration(record);
-				record.status = 'aborted';
-				this.rejectWorkerGenerationWaiters(record, error);
-				this.workerGenerations.delete(this.generationKey(context));
-			} catch (terminateError) {
-				throw new AggregateError([error, terminateError], `Failed to force-terminate aborted worker generation`);
-			}
-			throw error;
-		}
-		await this.terminateWorkerGeneration(record);
-		this.workerGenerations.delete(this.generationKey(context));
-		return state;
+	abortWorkerGeneration(context: WorkerGenerationContext, timeoutMs = WORKER_TIMEOUT_MS) {
+		return this.generations.abort(context, timeoutMs);
 	}
 
-	async commitWorkerGeneration(context: WorkerGenerationContext) {
-		this.assertWorkerGenerationContext(context);
-		const record = this.getWorkerGenerationRecord(context);
-		if (!record || record.status !== 'active')
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Only the active worker generation can be committed` },
-			});
-		const previousContexts = this.previousWorkerGenerations.get(context.workerId) ?? [];
-		const previousGenerations = previousContexts
-			.map(previousContext => this.getWorkerGenerationRecord(previousContext))
-			.filter(previous => previous !== undefined);
-		if (previousGenerations.some(previous => previous.status !== 'drained'))
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Previous worker generations must be drained before commit` },
-			});
-		for (const previous of previousGenerations) {
-			if (!previous.externallyFenced) await this.terminateWorkerGeneration(previous);
-			this.workerGenerations.delete(this.generationKey(previous.context));
-		}
-		this.previousWorkerGenerations.delete(context.workerId);
-		return this.snapshotWorkerGeneration(record);
-	}
-
-	private async terminateWorkerGeneration(record: WorkerGenerationRecord) {
-		switch (this.options.mode) {
-			case 'custom': {
-				if (!this.options.adapter.terminate)
-					throw new SeyfertError('INTERNAL_ERROR', {
-						metadata: { detail: `Custom generation transitions require adapter.terminate()` },
-					});
-				await this.options.adapter.terminate(record.context.workerId, record.context);
-				break;
-			}
-			case 'threads':
-				await (record.worker as WorkerThreadsWorker).terminate();
-				break;
-			case 'clusters': {
-				const worker = record.worker as ClusterWorker;
-				if (worker.isDead()) break;
-				await new Promise<void>((resolve, reject) => {
-					const cleanup = () => {
-						worker.off('exit', onExit);
-						worker.off('error', onError);
-					};
-					const onExit = () => {
-						cleanup();
-						resolve();
-					};
-					const onError = (error: Error) => {
-						cleanup();
-						reject(error);
-					};
-					worker.once('exit', onExit);
-					worker.once('error', onError);
-					try {
-						worker.kill('SIGKILL');
-					} catch (error) {
-						onError(error instanceof Error ? error : new Error(String(error)));
-					}
-				});
-				break;
-			}
-		}
+	commitWorkerGeneration(context: WorkerGenerationContext) {
+		return this.generations.commit(context);
 	}
 
 	spawn(workerId: number, shardId: number, resharding = false, target?: WorkerGenerationTarget) {
 		this.connectQueue.push(() => {
-			const context = this.resolveWorkerGenerationContext(workerId, target);
-			const worker = context ? this.getWorkerGenerationRecord(context) : this.has(workerId);
+			const worker = target ? this.generations.get({ workerId, ...target }) : this.has(workerId);
 			if (!worker) {
 				this.debugger?.fatal(`Trying ${resharding ? 'reshard' : 'spawn'} with worker that doesn't exist`);
 				return;
@@ -1024,145 +423,14 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 		});
 	}
 
-	private resolveIncomingWorkerGeneration(message: WorkerMessages, source?: WorkerGenerationContext) {
-		const generation = message.generation;
-		const allocationId = message.allocationId;
-		if (source && source.workerId !== message.workerId) return;
-		if (source && generation !== undefined && generation !== source.generation) return;
-		if (source && allocationId !== undefined && allocationId !== source.allocationId) return;
-		if ((generation === undefined) !== (allocationId === undefined)) return;
-
-		const context =
-			source ??
-			(generation !== undefined && allocationId !== undefined
-				? { workerId: message.workerId, generation, allocationId }
-				: undefined);
-		if (context) {
-			const record = this.getWorkerGenerationRecord(context);
-			if (!record) return;
-			return { context, record };
-		}
-		if (this.generationFencing.has(message.workerId)) return;
-		const active = this.activeWorkerGenerations.get(message.workerId);
-		if (active) return { context: active, record: this.getWorkerGenerationRecord(active) };
-		if (this.has(message.workerId)) return {};
-		return;
-	}
-
-	private acceptsWorkerGenerationMessage(record: WorkerGenerationRecord | undefined, type: WorkerMessages['type']) {
-		if (!record) return true;
-		switch (type) {
-			case 'WORKER_START':
-				return record.status === 'preparing' || record.status === 'active';
-			case 'WORKER_GENERATION_APP_READY':
-				return record.status === 'preparing' || record.status === 'ready' || record.status === 'active';
-			case 'WORKER_GENERATION_SHARDS_READY':
-				return record.status === 'preparing' || record.status === 'ready';
-			case 'WORKER_GENERATION_CUTOVER_READY':
-				return record.status === 'ready' && record.cutoverRequested;
-			case 'WORKER_GENERATION_FAILED':
-				return record.workerData.shadow && ['preparing', 'ready', 'activating', 'aborting'].includes(record.status);
-			case 'WORKER_GENERATION_ACTIVATED':
-				return record.status === 'activating';
-			case 'WORKER_GENERATION_DRAINED':
-				return record.status === 'draining';
-			case 'WORKER_GENERATION_ABORTED':
-				return record.status === 'aborting';
-		}
-		if (record.status === 'active') return true;
-		if (record.status === 'draining') return true;
-		if (record.status === 'activating') return true;
-		if (record.status === 'preparing' || record.status === 'ready')
-			return type === 'CONNECT_QUEUE' || type === 'WORKER_API_REQUEST' || type === 'CACHE_REQUEST';
-		return false;
-	}
-
 	async handleWorkerMessage(message: WorkerMessages, source?: WorkerGenerationContext) {
-		const incoming = this.resolveIncomingWorkerGeneration(message, source);
-		if (!incoming || !this.acceptsWorkerGenerationMessage(incoming.record, message.type)) return false;
-		await this.options.handleWorkerMessage?.(message);
-		const target = incoming.context;
+		const incoming = await this.generations.interceptMessage(message, source, () =>
+			this.options.handleWorkerMessage?.(message),
+		);
+		if (!incoming.accepted) return false;
+		if (incoming.handled) return true;
+		const target = incoming.target;
 		switch (message.type) {
-			case 'WORKER_GENERATION_APP_READY':
-				if (incoming.record) {
-					incoming.record.appReady = true;
-					if (Number.isSafeInteger(message.intents) && message.intents >= 0)
-						incoming.record.workerData.intents = message.intents;
-					this.notifyWorkerGeneration(incoming.record);
-				}
-				break;
-			case 'WORKER_GENERATION_SHARDS_READY':
-				if (incoming.record) {
-					incoming.record.shardsReady = true;
-					this.notifyWorkerGeneration(incoming.record);
-				}
-				break;
-			case 'WORKER_GENERATION_CUTOVER_READY':
-				if (incoming.record) {
-					incoming.record.cutoverReady = true;
-					this.notifyWorkerGeneration(incoming.record);
-				}
-				break;
-			case 'WORKER_GENERATION_FAILED':
-				if (incoming.record) {
-					const abortOwnsTermination = incoming.record.status === 'aborting';
-					const failure = new SeyfertError('INTERNAL_ERROR', {
-						metadata: {
-							detail: `Worker generation ${this.generationKey(incoming.record.context)} failed: ${message.message}`,
-						},
-					});
-					incoming.record.status = 'aborted';
-					this.notifyWorkerGeneration(incoming.record);
-					this.rejectWorkerGenerationWaiters(incoming.record, failure);
-					if (!abortOwnsTermination) {
-						await this.terminateWorkerGeneration(incoming.record);
-						this.workerGenerations.delete(this.generationKey(incoming.record.context));
-					}
-				}
-				break;
-			case 'WORKER_GENERATION_ACTIVATED':
-				if (incoming.record?.status === 'activating') {
-					const previous = this.activeWorkerGenerations.get(message.workerId);
-					if (
-						previous &&
-						(previous.generation !== incoming.record.context.generation ||
-							previous.allocationId !== incoming.record.context.allocationId)
-					) {
-						const previousGenerations = this.previousWorkerGenerations.get(message.workerId) ?? [];
-						if (
-							!previousGenerations.some(
-								context => context.generation === previous.generation && context.allocationId === previous.allocationId,
-							)
-						)
-							previousGenerations.push(previous);
-						this.previousWorkerGenerations.set(message.workerId, previousGenerations);
-					}
-					incoming.record.status = 'active';
-					incoming.record.workerData.shadow = false;
-					this.activeWorkerGenerations.set(message.workerId, incoming.record.context);
-					this.set(message.workerId, incoming.record.worker);
-					this.flushWorkerGenerationMessages(message.workerId);
-					this.notifyWorkerGeneration(incoming.record);
-				}
-				break;
-			case 'WORKER_GENERATION_DRAINED':
-				if (incoming.record?.status === 'draining') {
-					incoming.record.status = 'drained';
-					this.notifyWorkerGeneration(incoming.record);
-				}
-				break;
-			case 'WORKER_GENERATION_ABORTED':
-				if (incoming.record?.status === 'aborting') {
-					incoming.record.status = 'aborted';
-					this.notifyWorkerGeneration(incoming.record);
-					this.rejectWorkerGenerationWaiters(
-						incoming.record,
-						new SeyfertError('INTERNAL_ERROR', {
-							metadata: { detail: `Worker generation ${this.generationKey(incoming.record.context)} was aborted` },
-						}),
-					);
-				}
-				break;
 			case 'ACK_HEARTBEAT':
 				this.heartbeater.acknowledge(message.workerId);
 				break;
@@ -1194,7 +462,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 					this.get(message.workerId)!.disconnected = true;
 					if ([...this.values()].every(w => w.disconnected)) {
 						this.options.totalShards = this._info!.shards;
-						this.options.shardEnd = this.options.totalShards = this.options.info.shards = this._info!.shards;
+						this.options.shardEndExclusive = this.options.totalShards = this.options.info.shards = this._info!.shards;
 						this.options.workers = this.size;
 						for (const [id] of this.entries()) {
 							this.postMessage(id, {
@@ -1330,10 +598,6 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 				break;
 			case 'WORKER_READY':
 				{
-					if (incoming.record) {
-						incoming.record.shardsReady = true;
-						this.notifyWorkerGeneration(incoming.record);
-					}
 					this.get(message.workerId)!.ready = true;
 					if (this.size === this.totalWorkers && [...this.values()].every(w => w.ready)) {
 						this.postMessage(this.keys().next().value!, {
@@ -1523,90 +787,8 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 	 * Discord's recommendation is fetched when gateway information was not supplied in the manager options.
 	 * Concurrent and subsequent calls share the same successful resolution; failed attempts may be retried.
 	 */
-	resolveShardTopology(): Promise<ResolvedWorkerShardTopology> {
-		if (this.shardTopologyResolution) return this.shardTopologyResolution;
-
-		const resolution = Promise.resolve().then(() => this.resolveShardTopologyRuntime());
-		this.shardTopologyResolution = resolution;
-		void resolution.catch(() => {
-			if (this.shardTopologyResolution === resolution) this.shardTopologyResolution = undefined;
-		});
-		return resolution;
-	}
-
-	private async resolveShardTopologyRuntime(): Promise<ResolvedWorkerShardTopology> {
-		const rc =
-			((await this.options.getRC?.()) as InternalRuntimeConfig | undefined) ??
-			(await BaseClient.prototype.getRC<InternalRuntimeConfig>());
-
-		this.options.debug ||= rc.debug ?? false;
-		this.options.intents ??= rc.intents ?? 0;
-		this.options.token ??= rc.token;
-		this.rest ??= new ApiHandler({
-			token: this.options.token,
-			baseUrl: 'api/v10',
-			domain: BASE_HOST,
-			debug: this.options.debug,
-		});
-		const gatewayInfo = this.options.info ?? (await this.rest.proxy.gateway.bot.get());
-		if (!Number.isSafeInteger(gatewayInfo.shards) || gatewayInfo.shards <= 0)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `info.shards must be a positive safe integer` },
-			});
-		this.options.info ??= gatewayInfo;
-		this.options.shardEnd ??= this.options.totalShards ?? this.options.info.shards;
-		this.options.totalShards ??= this.options.shardEnd;
-		this.options = MergeOptions<WorkerManagerRuntimeOptions>(WorkerManagerDefaults, this.options);
-		for (const [name, value] of [
-			['totalShards', this.options.totalShards],
-			['shardEnd', this.options.shardEnd],
-			['shardsPerWorker', this.options.shardsPerWorker],
-		] as const) {
-			if (!Number.isSafeInteger(value) || value <= 0)
-				throw new SeyfertError('INTERNAL_ERROR', {
-					metadata: { detail: `${name} must be a positive safe integer` },
-				});
-		}
-		if (!Number.isSafeInteger(this.options.shardStart) || this.options.shardStart < 0)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `shardStart must be a non-negative safe integer` },
-			});
-		if (this.options.shardEnd <= this.options.shardStart || this.options.shardEnd > this.options.totalShards)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `shardEnd must be greater than shardStart and no greater than totalShards` },
-			});
-		this.options.resharding.getInfo ??= () => this.rest.proxy.gateway.bot.get();
-		const expectedWorkers = Math.ceil((this.options.shardEnd - this.options.shardStart) / this.options.shardsPerWorker);
-		this.options.workers ??= expectedWorkers;
-		if (!Number.isSafeInteger(this.options.workers) || this.options.workers <= 0)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `workers must be a positive safe integer` },
-			});
-		if (this.options.workers !== expectedWorkers)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: {
-					detail: `workers must be ${expectedWorkers} for shard range ${this.options.shardStart}-${this.options.shardEnd} with ${this.options.shardsPerWorker} shards per worker`,
-				},
-			});
-		this.connectQueue = new ConnectQueue(5.5e3, this.concurrency);
-
-		if (this.options.debug) {
-			this.debugger = new Logger({
-				name: '[WorkerManager]',
-			});
-		}
-		const info = Object.freeze({
-			...this.options.info,
-			session_start_limit: Object.freeze({ ...this.options.info.session_start_limit }),
-		});
-		return Object.freeze({
-			info,
-			totalShards: this.totalShards,
-			shardStart: this.shardStart,
-			shardEnd: this.shardEnd,
-			shardsPerWorker: this.shardsPerWorker,
-			workers: this.totalWorkers,
-		});
+	resolveShardTopology() {
+		return this.topology.resolve();
 	}
 
 	private assertShardTopologyCurrent(topology: ResolvedWorkerShardTopology) {
@@ -1614,7 +796,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 			topology.info.shards !== this.options.info.shards ||
 			topology.totalShards !== this.totalShards ||
 			topology.shardStart !== this.shardStart ||
-			topology.shardEnd !== this.shardEnd ||
+			topology.shardEndExclusive !== this.shardEndExclusive ||
 			topology.shardsPerWorker !== this.shardsPerWorker ||
 			topology.workers !== this.totalWorkers
 		)
@@ -1640,7 +822,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 		const spaces = WorkerManager.prepareSpaces(
 			{
 				shardStart: topology.shardStart,
-				shardEnd: topology.shardEnd,
+				shardEndExclusive: topology.shardEndExclusive,
 				shardsPerWorker: topology.shardsPerWorker,
 			},
 			this.debugger,
@@ -1664,7 +846,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 
 	private async checkForResharding() {
 		if (this.reshardingState !== 'idle') return;
-		if (this.hasWorkerGenerationTransition())
+		if (this.generations.hasTransition())
 			return this.debugger?.debug('Cannot reshard while worker generations are transitioning');
 		this.reshardingState = 'checking';
 		try {
@@ -1687,7 +869,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 			const spaces = WorkerManager.prepareSpaces(
 				{
 					shardsPerWorker: this.shardsPerWorker,
-					shardEnd: info.shards,
+					shardEndExclusive: info.shards,
 					shardStart: 0,
 				},
 				this.debugger,
@@ -1706,7 +888,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 
 	async startResharding() {
 		if (this.options.resharding.interval <= 0) return;
-		if (this.shardStart !== 0 || this.shardEnd !== this.totalShards)
+		if (this.shardStart !== 0 || this.shardEndExclusive !== this.totalShards)
 			return this.debugger?.debug('Cannot start resharder');
 		setInterval(() => {
 			void this.checkForResharding().catch(error => {
@@ -1716,118 +898,4 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 	}
 }
 
-type CreateManagerMessage<T extends string, D extends object = object> = { type: T } & D &
-	Partial<WorkerGenerationTarget>;
-
-export type ManagerAllowConnect = CreateManagerMessage<
-	'ALLOW_CONNECT',
-	{ shardId: number; presence?: GatewayPresenceUpdateData }
->;
-export type ManagerAllowConnectResharding = CreateManagerMessage<
-	'ALLOW_CONNECT_RESHARDING',
-	{ shardId: number; presence?: GatewayPresenceUpdateData }
->;
-export type ManagerWorkerAlreadyExistsResharding = CreateManagerMessage<'WORKER_ALREADY_EXISTS_RESHARDING'>;
-export type ManagerSpawnShards = CreateManagerMessage<
-	'SPAWN_SHARDS',
-	Pick<ShardOptions, 'info' | 'properties' | 'compress'>
->;
-export type ManagerSpawnShardsResharding = CreateManagerMessage<
-	'SPAWN_SHARDS_RESHARDING',
-	Pick<ShardOptions, 'info' | 'properties' | 'compress'>
->;
-export type DisconnectAllShardsResharding = CreateManagerMessage<'DISCONNECT_ALL_SHARDS_RESHARDING'>;
-export type ConnnectAllShardsResharding = CreateManagerMessage<
-	'CONNECT_ALL_SHARDS_RESHARDING',
-	{
-		totalShards: number;
-	}
->;
-export type ManagerActivateWorkerGeneration = CreateManagerMessage<'ACTIVATE_WORKER_GENERATION'>;
-export type ManagerBeginWorkerGenerationCutover = CreateManagerMessage<'BEGIN_WORKER_GENERATION_CUTOVER'>;
-export type ManagerDrainWorkerGeneration = CreateManagerMessage<'DRAIN_WORKER_GENERATION'>;
-export type ManagerAbortWorkerGeneration = CreateManagerMessage<'ABORT_WORKER_GENERATION'>;
-export type ManagerRenewWorkerSupervisorLease = CreateManagerMessage<
-	'RENEW_WORKER_SUPERVISOR_LEASE',
-	{ expiresInMs: number; issuedAtMonotonicMs: number; sequence: number }
->;
-export type ManagerSendPayload = CreateManagerMessage<
-	'SEND_PAYLOAD',
-	GatewaySendPayload & { shardId: number; nonce: string }
->;
-export type ManagerRequestShardInfo = CreateManagerMessage<'SHARD_INFO', { nonce: string; shardId: number }>;
-export type ManagerRequestWorkerInfo = CreateManagerMessage<'WORKER_INFO', { nonce: string }>;
-export type ManagerSendCacheResult = CreateManagerMessage<'CACHE_RESULT', { nonce: string; result: any }>;
-export type ManagerSendBotReady = CreateManagerMessage<'BOT_READY'>;
-export type ManagerSendApiResponse = CreateManagerMessage<
-	'API_RESPONSE',
-	{
-		response: any;
-		error?: any;
-		nonce: string;
-	}
->;
-export type ManagerExecuteEvalToWorker = CreateManagerMessage<
-	'EXECUTE_EVAL_TO_WORKER',
-	{
-		func: string;
-		nonce: string;
-		vars: string;
-		toWorkerId: number;
-	}
->;
-
-export type ManagerExecuteEval = CreateManagerMessage<
-	'EXECUTE_EVAL',
-	{
-		func: string;
-		vars: string;
-		nonce: string;
-	}
->;
-
-export type ManagerSendEvalResponse = CreateManagerMessage<
-	'EVAL_RESPONSE',
-	{
-		response: any;
-		nonce: string;
-	}
->;
-
-export type BaseManagerMessages =
-	| ManagerAllowConnect
-	| ManagerSpawnShards
-	| ManagerSendPayload
-	| ManagerRequestShardInfo
-	| ManagerRequestWorkerInfo
-	| ManagerSendCacheResult
-	| ManagerSendBotReady
-	| ManagerSendApiResponse
-	| ManagerSendEvalResponse
-	| ManagerExecuteEvalToWorker
-	| ManagerWorkerAlreadyExistsResharding
-	| ManagerSpawnShardsResharding
-	| ManagerAllowConnectResharding
-	| DisconnectAllShardsResharding
-	| ConnnectAllShardsResharding
-	| ManagerActivateWorkerGeneration
-	| ManagerBeginWorkerGenerationCutover
-	| ManagerDrainWorkerGeneration
-	| ManagerAbortWorkerGeneration
-	| ManagerRenewWorkerSupervisorLease
-	| ManagerExecuteEval;
-
-export type CustomManagerMessages = {
-	[K in keyof CustomWorkerManagerEvents]: Identify<
-		{
-			type: K;
-		} & Partial<WorkerGenerationTarget> &
-			Identify<CustomWorkerManagerEvents[K] extends never ? {} : CustomWorkerManagerEvents[K]>
-	>;
-};
-
-export type ManagerMessages =
-	| {
-			[K in BaseManagerMessages['type']]: Identify<Extract<BaseManagerMessages, { type: K }>>;
-	  }[BaseManagerMessages['type']]
-	| CustomManagerMessages[keyof CustomManagerMessages];
+export * from './manager-messages';

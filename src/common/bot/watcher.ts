@@ -8,7 +8,7 @@ export interface WatcherOptions
 		| 'compress'
 		| 'presence'
 		| 'properties'
-		| 'shardEnd'
+		| 'shardEndExclusive'
 		| 'shardStart'
 		| 'spawnShardDelay'
 		| 'totalShards'

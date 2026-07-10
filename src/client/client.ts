@@ -175,8 +175,8 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 				presence: this.options?.presence,
 				debug: debugRC,
 				shardStart: this.options?.shards?.start,
-				shardEnd: this.options?.shards?.end ?? this.options?.shards?.total,
-				totalShards: this.options?.shards?.total ?? this.options?.shards?.end,
+				shardEndExclusive: this.options?.shards?.endExclusive ?? this.options?.shards?.total,
+				totalShards: this.options?.shards?.total ?? this.options?.shards?.endExclusive,
 				properties: {
 					...properties,
 					...this.options?.gateway?.properties,
@@ -320,7 +320,7 @@ export interface ClientOptions<TPlugins extends readonly AnySeyfertPlugin[] = Re
 	presence?: (shardId: number) => GatewayPresenceUpdateData;
 	shards?: {
 		start: number;
-		end: number;
+		endExclusive: number;
 		total?: number;
 	};
 	gateway?: {

@@ -29,12 +29,12 @@ export interface ShardManagerOptions extends ShardDetails {
 	 */
 	spawnShardDelay?: number;
 	/**
-	 * Total amount of shards your bot uses. Useful for zero-downtime updates or resharding.
+	 * Total amount of shards your bot uses. Useful for coordinated updates or resharding.
 	 * @default 1
 	 */
 	totalShards?: number;
 	shardStart?: number;
-	shardEnd?: number;
+	shardEndExclusive?: number;
 	/**
 	 * The payload handlers for messages on the shard.
 	 */
@@ -68,6 +68,11 @@ export interface ShardManagerOptions extends ShardDetails {
 }
 
 export interface CustomManagerAdapter {
+	/**
+	 * Declares that this adapter coordinates worker generations externally.
+	 * WorkerManager disables its native total-shard resharder while this contract is active.
+	 */
+	readonly managesWorkerGenerations?: true;
 	postMessage(workerId: number, body: unknown, context?: WorkerGenerationContext): Awaitable<unknown>;
 	spawn(workerData: WorkerData, env: Record<string, any>): Awaitable<unknown>;
 	/** Required when using WorkerManager's generation transition APIs. */
@@ -102,7 +107,7 @@ export interface WorkerGenerationState extends WorkerGenerationContext {
 	status: WorkerGenerationStatus;
 	appReady: boolean;
 	shardsReady: boolean;
-	/** The candidate is buffering dispatches for an at-least-once cutover. */
+	/** The candidate is buffering dispatches for bounded replay during a healthy cutover. */
 	cutoverReady: boolean;
 	shadow: boolean;
 }
@@ -116,7 +121,7 @@ export interface ResolvedWorkerShardTopology {
 	>;
 	readonly totalShards: number;
 	readonly shardStart: number;
-	readonly shardEnd: number;
+	readonly shardEndExclusive: number;
 	readonly shardsPerWorker: number;
 	readonly workers: number;
 }
