@@ -89,11 +89,8 @@ export type When<T extends boolean, A, B = never> = T extends true ? A : B;
 
 export type AuxIsStrictlyUndefined<T> = T extends undefined | null | never | void ? true : false;
 
-export type IsStrictlyUndefined<T> = AuxIsStrictlyUndefined<T> extends true
-	? true
-	: AuxIsStrictlyUndefined<T> extends false
-		? false
-		: false;
+export type IsStrictlyUndefined<T> =
+	AuxIsStrictlyUndefined<T> extends true ? true : AuxIsStrictlyUndefined<T> extends false ? false : false;
 
 export type If<T extends boolean, A, B = null> = T extends true ? A : B extends null ? A | null : B;
 

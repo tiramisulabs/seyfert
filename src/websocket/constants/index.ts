@@ -47,4 +47,4 @@ export interface IdentifyProperties {
 	device: string;
 }
 
-export { COMPRESS, ShardManagerDefaults, WorkerManagerDefaults, properties };
+export { COMPRESS, properties, ShardManagerDefaults, WorkerManagerDefaults };

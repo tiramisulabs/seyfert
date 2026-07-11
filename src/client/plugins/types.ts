@@ -260,11 +260,8 @@ export type AnySeyfertPlugin = SeyfertPlugin<any, any, readonly AnySeyfertPlugin
 
 export type PluginExtensionOf<T> = T extends SeyfertPlugin<infer E, any, any, any> ? E : {};
 export type PluginContextOf<T> = T extends SeyfertPlugin<any, infer C, any, any> ? C : {};
-export type PluginMiddlewaresOf<T> = T extends SeyfertPlugin<any, any, any, infer M>
-	? IsOpenPluginMiddlewareMap<M> extends true
-		? {}
-		: M
-	: {};
+export type PluginMiddlewaresOf<T> =
+	T extends SeyfertPlugin<any, any, any, infer M> ? (IsOpenPluginMiddlewareMap<M> extends true ? {} : M) : {};
 type PluginImportsOf<T> = T extends SeyfertPlugin<any, any, infer I, any> ? I[number] : never;
 type PluginClosureDepth = [never, 0, 1, 2, 3, 4, 5];
 type PluginClosureOf<T, Depth extends number = 5> = [Depth] extends [0]
