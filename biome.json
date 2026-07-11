@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.3.4/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.5.3/schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -37,11 +37,12 @@
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"recommended": false,
+			"preset": "recommended",
 			"security": {
 				"noGlobalEval": "off"
 			},
 			"suspicious": {
+				"preset": "none",
 				"noExplicitAny": "off",
 				"noAssignInExpressions": "off",
 				"useAwait": "off",
@@ -49,11 +50,15 @@
 				"noAsyncPromiseExecutor": "off",
 				"noUnsafeDeclarationMerging": "off",
 				"noEmptyInterface": "off",
-				"noThenProperty": "off"
+				"noThenProperty": "off",
+				"noShadowRestrictedNames": "off",
+				"useIterableCallbackReturn": "off"
 			},
 			"correctness": {
+				"noUnusedVariables": "off",
 				"noNodejsModules": "off",
-				"useImportExtensions": "off"
+				"useImportExtensions": "off",
+				"noUnusedFunctionParameters": "off"
 			},
 			"style": {
 				"noDefaultExport": "off",
@@ -78,6 +83,7 @@
 			"performance": {
 				"noBarrelFile": "off",
 				"noDelete": "off",
+				"noDynamicNamespaceImportAccess": "off",
 				"noReExportAll": "off",
 				"useTopLevelRegex": "off",
 				"noNamespaceImport": "off"

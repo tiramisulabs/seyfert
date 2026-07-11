@@ -1,18 +1,17 @@
 import { EventEmitter } from 'node:events';
-import { describe, expect, test, vi, afterEach } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
+import { Shard } from '../src/websocket/discord/shard';
 import { ShardSocketCloseCodes, type ShardOptions } from '../src/websocket/discord/shared';
 
 afterEach(() => {
 	vi.clearAllTimers();
 	vi.resetModules();
 	vi.restoreAllMocks();
-	vi.unmock('node:https');
 	vi.useRealTimers();
 });
 
 describe('gateway reconnect stability', () => {
-	test('disconnect closes sockets that are still handshaking', async () => {
-		const { Shard } = await import('../src/websocket/discord/shard');
+	test('disconnect closes sockets that are still handshaking', () => {
 		const shard = new Shard(0, {
 			token: 'token',
 			intents: 0,

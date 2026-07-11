@@ -470,13 +470,11 @@ export class ComponentHandler extends BaseHandler {
 export type HandleableComponentCommand = (new () => ComponentCommand) | (new () => ModalCommand);
 export type SeteableComponentCommand = HandleableComponentCommand | ComponentCommands;
 export type ComponentLoadKind = 'component' | 'modal';
-export interface ComponentLoadCreator {
-	<T extends HandleableComponentCommand>(
-		kind: ComponentLoadKind,
-		constructor: T,
-		next: () => InstanceType<T>,
-	): InstanceType<T>;
-}
+export type ComponentLoadCreator = <T extends HandleableComponentCommand>(
+	kind: ComponentLoadKind,
+	constructor: T,
+	next: () => InstanceType<T>,
+) => InstanceType<T>;
 export type ComponentLoadTransformer = (
 	kind: ComponentLoadKind,
 	component: ComponentCommands,

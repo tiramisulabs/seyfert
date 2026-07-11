@@ -80,7 +80,7 @@ export class BitField<T extends object> {
 		for (const bit of Array.isArray(bits) ? bits : [bits]) {
 			switch (typeof bit) {
 				case 'string':
-					if (Object.prototype.hasOwnProperty.call(flags, bit)) {
+					if (Object.hasOwn(flags, bit)) {
 						bitsResult |= flags[bit];
 					} else if (/^\d+$/.test(bit)) {
 						bitsResult |= BigInt(bit);

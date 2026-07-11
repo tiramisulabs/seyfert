@@ -326,19 +326,15 @@ export interface PluginHandlerValueByKind {
 export interface PluginHandlerMetadata<K extends PluginHandlerKind = PluginHandlerKind> {
 	kind: K;
 }
-export interface PluginHandlerCreator {
-	<T extends PluginHandlerConstructor>(
-		constructor: T,
-		next: () => InstanceType<T>,
-		metadata: PluginHandlerMetadata,
-	): InstanceType<T>;
-}
-export interface PluginHandlerTransformer {
-	<K extends PluginHandlerKind = PluginHandlerKind>(
-		instance: PluginHandlerValueByKind[K],
-		metadata: PluginHandlerMetadata<K>,
-	): PluginHandlerValueByKind[K] | void;
-}
+export type PluginHandlerCreator = <T extends PluginHandlerConstructor>(
+	constructor: T,
+	next: () => InstanceType<T>,
+	metadata: PluginHandlerMetadata,
+) => InstanceType<T>;
+export type PluginHandlerTransformer = <K extends PluginHandlerKind = PluginHandlerKind>(
+	instance: PluginHandlerValueByKind[K],
+	metadata: PluginHandlerMetadata<K>,
+) => PluginHandlerValueByKind[K] | void;
 export interface PluginHandlerOptions {
 	kinds?: readonly PluginHandlerKind[];
 	order?: PluginOrderOpt;

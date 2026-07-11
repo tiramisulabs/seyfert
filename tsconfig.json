@@ -2,7 +2,7 @@
 	"compilerOptions": {
 		"module": "CommonJS",
 		"target": "ESNext",
-		"moduleResolution": "node",
+		"moduleResolution": "bundler",
 		"declaration": true,
 		"sourceMap": false,
 		"strict": true,
@@ -21,6 +21,7 @@
 		"noFallthroughCasesInSwitch": true,
 		"skipLibCheck": true,
 		"noErrorTruncation": true,
+		"rootDir": "./src",
 		"outDir": "./lib",
 		"stripInternal": true,
 		"strictBindCallApply": true,

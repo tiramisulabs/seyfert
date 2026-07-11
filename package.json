@@ -2,7 +2,7 @@
 	"name": "seyfert",
 	"version": "5.0.0",
 	"description": "The most advanced framework for discord bots",
-	"packageManager": "pnpm@11.10.0",
+	"packageManager": "pnpm@11.11.0",
 	"main": "./lib/index.js",
 	"module": "./lib/index.js",
 	"types": "./lib/index.d.ts",
@@ -23,14 +23,14 @@
 	"author": "MARCROCK22",
 	"license": "MIT",
 	"devDependencies": {
-		"@biomejs/biome": "2.3.4",
-		"@changesets/cli": "^2.29.7",
-		"@commitlint/cli": "^19.8.1",
-		"@commitlint/config-conventional": "^19.8.1",
-		"@types/node": "^24.10.0",
+		"@biomejs/biome": "2.5.3",
+		"@changesets/cli": "^2.31.0",
+		"@commitlint/cli": "^21.2.1",
+		"@commitlint/config-conventional": "^21.2.0",
+		"@types/node": "^26.1.1",
 		"husky": "^9.1.7",
-		"typescript": "^5.9.3",
-		"vitest": "^3.2.4"
+		"typescript": "^6.0.3",
+		"vitest": "^4.1.10"
 	},
 	"homepage": "https://seyfert.dev",
 	"repository": {
@@ -65,11 +65,5 @@
 			"name": "David",
 			"url": "https://github.com/Drylozu"
 		}
-	],
-	"pnpm": {
-		"onlyBuiltDependencies": [
-			"@biomejs/biome",
-			"esbuild"
-		]
-	}
+	]
 }

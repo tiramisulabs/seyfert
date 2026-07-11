@@ -41,7 +41,7 @@ For a new regression:
 
 ## Commands
 
-The repository pins `pnpm@11.10.0`. CI uses Node 22 and runs the suite under
+The repository pins `pnpm@11.11.0`. CI uses Node 22 and runs the suite under
 Node, Bun, and Deno.
 
 ```sh

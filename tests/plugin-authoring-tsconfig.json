@@ -1,20 +1,22 @@
 {
 	"compilerOptions": {
-		"baseUrl": "..",
 		"lib": [
 			"ESNext"
 		],
 		"module": "CommonJS",
-		"moduleResolution": "node",
+		"moduleResolution": "bundler",
 		"noEmit": true,
 		"paths": {
 			"seyfert": [
-				"./lib/index.d.ts"
+				"../lib/index.d.ts"
 			]
 		},
 		"skipLibCheck": true,
 		"strict": true,
-		"target": "ESNext"
+		"target": "ESNext",
+		"types": [
+			"node"
+		]
 	},
 	"files": [
 		"./plugin-authoring-contract.ts",

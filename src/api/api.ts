@@ -96,7 +96,7 @@ export class ApiHandler<TClient = unknown> {
 					body,
 					body.requestOptions.files
 						?.filter(x => !['string', 'boolean', 'number'].includes(typeof x.data))
-						.map(x => (x.data instanceof Buffer ? toArrayBuffer(x.data) : (x.data as ArrayBuffer))),
+						.map(x => (x.data instanceof Buffer ? toArrayBuffer(x.data) : (x.data as ArrayBuffer))) ?? [],
 				);
 			};
 		} else if (process.send) {

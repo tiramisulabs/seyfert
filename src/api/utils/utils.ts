@@ -8,7 +8,7 @@ import type { UserAvatarDefault } from '../Routes/cdn';
  */
 export function calculateUserDefaultAvatarIndex(userId: Snowflake, discriminator: string): UserAvatarDefault {
 	return (
-		discriminator === '0' ? Number(BigInt(userId) >> 22n) % 6 : Number.parseInt(discriminator) % 5
+		discriminator === '0' ? Number(BigInt(userId) >> 22n) % 6 : Number.parseInt(discriminator, 10) % 5
 	) as UserAvatarDefault;
 }
 

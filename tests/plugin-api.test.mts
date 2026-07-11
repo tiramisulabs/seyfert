@@ -725,19 +725,31 @@ describe('plugin api v3', () => {
 			}),
 			plugins: [plugin],
 		});
-		vi.spyOn(client.commands as never, 'getFiles').mockResolvedValue(['/commands/loaded-command.js']);
-		vi.spyOn(client.commands as never, 'loadFilesK').mockResolvedValue([
+		vi.spyOn(client.commands as unknown as { getFiles: () => Promise<string[]> }, 'getFiles').mockResolvedValue([
+			'/commands/loaded-command.js',
+		]);
+		vi.spyOn(
+			client.commands as unknown as {
+				loadFilesK: () => Promise<{ name: string; path: string; file: { default: unknown } }[]>;
+			},
+			'loadFilesK',
+		).mockResolvedValue([
 			{
 				name: 'loaded-command.js',
 				path: '/commands/loaded-command.js',
 				file: { default: LoadedHandlerCommand },
 			},
 		]);
-		vi.spyOn(client.components as never, 'getFiles').mockResolvedValue([
+		vi.spyOn(client.components as unknown as { getFiles: () => Promise<string[]> }, 'getFiles').mockResolvedValue([
 			'/components/loaded-button.js',
 			'/components/loaded-modal.js',
 		]);
-		vi.spyOn(client.components as never, 'loadFilesK').mockResolvedValue([
+		vi.spyOn(
+			client.components as unknown as {
+				loadFilesK: () => Promise<{ name: string; path: string; file: { default: unknown } }[]>;
+			},
+			'loadFilesK',
+		).mockResolvedValue([
 			{
 				name: 'loaded-button.js',
 				path: '/components/loaded-button.js',
@@ -878,8 +890,15 @@ describe('plugin api v3', () => {
 		tempDirs.push(dir);
 		const langPath = join(dir, 'en.cjs');
 		await writeFile(langPath, "module.exports = { default: { root: 'reloaded' } };\n");
-		vi.spyOn(client.langs as never, 'getFiles').mockResolvedValue([langPath]);
-		vi.spyOn(client.langs as never, 'loadFilesK').mockResolvedValue([
+		vi.spyOn(client.langs as unknown as { getFiles: () => Promise<string[]> }, 'getFiles').mockResolvedValue([
+			langPath,
+		]);
+		vi.spyOn(
+			client.langs as unknown as {
+				loadFilesK: () => Promise<{ name: string; path: string; file: { default: Record<string, string> } }[]>;
+			},
+			'loadFilesK',
+		).mockResolvedValue([
 			{
 				name: 'en.cjs',
 				path: langPath,

@@ -50,7 +50,7 @@ export class CommandHandler extends BaseHandler {
 		delete require.cache[command.__filePath];
 		const imported = await magicImport(command.__filePath).then(x => x.default ?? x);
 		const options = (this.client as PluginCommandLoadOptionsProvider).createPluginCommandLoadOptions?.() ?? {};
-		let commandInstance = this.onCommand(imported, options.create);
+		const commandInstance = this.onCommand(imported, options.create);
 		if (!commandInstance || commandInstance instanceof SubCommand) return null;
 
 		commandInstance.__filePath = command.__filePath;
@@ -680,9 +680,10 @@ export type SettableCommand = new () => Exclude<InstanceType<HandleableCommand>,
 export type HandleableCommandInstance = Command | SubCommand | ContextMenuCommand | EntryPointCommand;
 export type SeteableCommand = HandleableCommand | HandleableCommandInstance;
 export type HandleableSubCommand = new () => SubCommand;
-export interface CommandLoadCreator {
-	<T extends HandleableCommand>(constructor: T, next: () => InstanceType<T>): InstanceType<T>;
-}
+export type CommandLoadCreator = <T extends HandleableCommand>(
+	constructor: T,
+	next: () => InstanceType<T>,
+) => InstanceType<T>;
 export type CommandLoadTransformer = (command: HandleableCommandInstance) => HandleableCommandInstance | false | void;
 export interface CommandLoadOptions {
 	create?: CommandLoadCreator;

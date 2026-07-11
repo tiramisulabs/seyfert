@@ -147,7 +147,7 @@ export class BaseInteraction<
 				return body;
 			case InteractionResponseType.ChannelMessageWithSource:
 			case InteractionResponseType.UpdateMessage: {
-				//@ts-ignore
+				//@ts-expect-error
 				return {
 					type: body.type,
 					// @ts-expect-error

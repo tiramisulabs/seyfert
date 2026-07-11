@@ -14,12 +14,12 @@ export interface InviteRoutes {
 	invites(id: string): {
 		get(args?: RestArguments<RESTGetAPIInviteQuery>): Promise<RESTGetAPIInviteResult>;
 		delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIInviteResult>;
-		['target-users']: {
+		'target-users': {
 			get(args?: RestArgumentsNoBody): Promise<RESTGetTargetUsersResult>;
 			put(
 				args: MakeRequired<RestArguments<RESTPutUpdateTargetUsers>, 'appendToFormData'>,
 			): Promise<RESTPutUpdateTargetUsersResult>;
-			['job-status']: {
+			'job-status': {
 				get(args?: RestArgumentsNoBody): Promise<RESTGetTargetUsersJobStatusResult>;
 			};
 		};
