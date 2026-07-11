@@ -71,4 +71,10 @@ For validation errors, metadata follows this convention:
 - [Website](https://seyfert.dev)
 - [Documentation](https://seyfert.dev/guide)
 
-![Seyfert star history](https://api.star-history.com/svg?repos=tiramisulabs/seyfert&type=Date)
+<a href="https://www.star-history.com/?repos=tiramisulabs%2Fseyfert&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=tiramisulabs/seyfert&type=date&theme=dark&legend=top-left&sealed_token=UNrJ9iHEmmnlVRygDYxO2q0eWbqNUrt2kUF-SYwj3laAXxzq7eXDFXQzWAZc8uovRAdLFcDUjWqz7gpb1Nf8J0I9JzVfcsnjT4rBcMPO46-6t4msr0kZwwxDgbhwcK07h4U_-i1Q80fEaA-V9gc27ZHUf646ucLdm8QeOT0AIshgiALFD7C5HUjY1do7" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=tiramisulabs/seyfert&type=date&legend=top-left&sealed_token=UNrJ9iHEmmnlVRygDYxO2q0eWbqNUrt2kUF-SYwj3laAXxzq7eXDFXQzWAZc8uovRAdLFcDUjWqz7gpb1Nf8J0I9JzVfcsnjT4rBcMPO46-6t4msr0kZwwxDgbhwcK07h4U_-i1Q80fEaA-V9gc27ZHUf646ucLdm8QeOT0AIshgiALFD7C5HUjY1do7" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=tiramisulabs/seyfert&type=date&legend=top-left&sealed_token=UNrJ9iHEmmnlVRygDYxO2q0eWbqNUrt2kUF-SYwj3laAXxzq7eXDFXQzWAZc8uovRAdLFcDUjWqz7gpb1Nf8J0I9JzVfcsnjT4rBcMPO46-6t4msr0kZwwxDgbhwcK07h4U_-i1Q80fEaA-V9gc27ZHUf646ucLdm8QeOT0AIshgiALFD7C5HUjY1do7" />
+ </picture>
+</a>
