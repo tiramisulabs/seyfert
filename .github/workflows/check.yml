@@ -1,7 +1,11 @@
 name: Build, Lint, Format & Publish
 on:
   push:
+    paths:
+      - 'src/**'
   pull_request:
+    paths:
+      - 'src/**'
 
 jobs:
   linter:
