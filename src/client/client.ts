@@ -10,11 +10,7 @@ import {
 	type When,
 } from '../common';
 import { EventHandler } from '../events';
-import {
-	GatewayDispatchEvents,
-	type GatewayDispatchPayload,
-	type GatewayPresenceUpdateData,
-} from '../types';
+import { GatewayDispatchEvents, type GatewayDispatchPayload, type GatewayPresenceUpdateData } from '../types';
 import {
 	properties,
 	type ShardDisconnectData,
