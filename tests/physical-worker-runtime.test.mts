@@ -456,6 +456,40 @@ describe('WorkerClient physical IPC', () => {
 		});
 	});
 
+	test('runs typed handling while RAW is pending but delays dispatch ACK until RAW settles', async () => {
+		let releaseRaw!: () => void;
+		const rawPending = new Promise<void>(resolve => {
+			releaseRaw = resolve;
+		});
+		const { client, messages } = await createPhysicalClient();
+		const runEvent = vi.spyOn(client.events, 'runEvent').mockImplementation(async name => {
+			if (name === 'RAW') await rawPending;
+		});
+		const execute = vi.spyOn(client.events, 'execute').mockResolvedValue(undefined);
+
+		const applying = client.handleManagerMessages({
+			type: 'SEYFERT_PHYSICAL_APPLY_DISPATCH',
+			...identity,
+			dispatchId: 'raw-concurrency',
+			body: { shardId: 0, payload: packet(1) },
+		});
+		await vi.waitFor(() => expect(execute).toHaveBeenCalledOnce());
+		expect(runEvent).toHaveBeenCalledWith('RAW', client, packet(1), 0, false);
+		expect(messages.some(message => message.type === 'SEYFERT_PHYSICAL_DISPATCH_ACK')).toBe(false);
+
+		let settled = false;
+		void applying.then(() => (settled = true));
+		await Promise.resolve();
+		expect(settled).toBe(false);
+		releaseRaw();
+		await applying;
+		expect(messages.at(-1)).toEqual({
+			type: 'SEYFERT_PHYSICAL_DISPATCH_ACK',
+			...identity,
+			dispatchId: 'raw-concurrency',
+		});
+	});
+
 	test('gates disconnect callbacks until port-authorized traffic starts', async () => {
 		const { client, onShardDisconnect, shard } = await createPhysicalClient();
 		const disconnected = { shardId: 0, code: 3000, reason: 'test' };
