@@ -1,10 +1,8 @@
 import type { Awaitable } from '../../common';
-import type { WorkerGenerationTarget } from './shared';
 
 export type WorkerHeartbeaterMessages = SendHeartbeat;
 
-export type CreateHeartbeaterMessage<T extends string, D extends object = object> = { type: T } & D &
-	Partial<WorkerGenerationTarget>;
+export type CreateHeartbeaterMessage<T extends string, D extends object = object> = { type: T } & D;
 
 export type SendHeartbeat = CreateHeartbeaterMessage<'HEARTBEAT'>;
 

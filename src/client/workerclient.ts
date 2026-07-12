@@ -25,18 +25,21 @@ import {
 import { MemberUpdateHandler } from '../websocket/discord/events/memberUpdate';
 import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdate';
 import type { WorkerHeartbeaterMessages } from '../websocket/discord/heartbeater';
+import type {
+	PhysicalHostToWorkerMessage,
+	PhysicalWorkerIdentity,
+	PhysicalWorkerToHostMessage,
+} from '../websocket/discord/physical-worker-port';
 import type { ShardData } from '../websocket/discord/shared';
 import type {
 	ClientHeartbeaterMessages,
 	WorkerDisconnectedAllShardsResharding,
-	WorkerGenerationAppReady,
 	WorkerMessages,
 	WorkerReady,
 	WorkerReadyResharding,
 	WorkerReceivePayload,
 	WorkerRequestConnect,
 	WorkerRequestConnectResharding,
-	WorkerReshardingComplete,
 	WorkerSendEvalResponse,
 	WorkerSendInfo,
 	WorkerSendResultPayload,
@@ -52,6 +55,7 @@ import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOp
 import { BaseClient } from './base';
 import type { Client, ClientOptions } from './client';
 import { Collectors } from './collectors';
+import { PhysicalWorkerRuntime } from './physical-worker-runtime';
 import {
 	applyPluginGatewayDispatchInterceptors,
 	applyPluginGatewaySendPayloadWrappers,
@@ -59,7 +63,6 @@ import {
 	runPluginHooks,
 } from './plugins';
 import { type ClientUserStructure, Transformers } from './transformers';
-import { WorkerGenerationRuntime } from './worker-generation-runtime';
 
 let workerData: WorkerData;
 let manager: import('node:worker_threads').MessagePort;
@@ -78,15 +81,6 @@ try {
 		totalWorkers: Number(process.env.SEYFERT_WORKER_TOTALWORKERS),
 		info: JSON.parse(process.env.SEYFERT_WORKER_INFO!),
 		compress: String(process.env.SEYFERT_WORKER_COMPRESS) === 'true',
-		generation: process.env.SEYFERT_WORKER_GENERATION ? Number(process.env.SEYFERT_WORKER_GENERATION) : undefined,
-		allocationId: process.env.SEYFERT_WORKER_ALLOCATIONID,
-		shadow: String(process.env.SEYFERT_WORKER_SHADOW) === 'true',
-		supervisorTimeoutMs: process.env.SEYFERT_WORKER_SUPERVISORTIMEOUTMS
-			? Number(process.env.SEYFERT_WORKER_SUPERVISORTIMEOUTMS)
-			: undefined,
-		supervisorIssuedAtMonotonicMs: process.env.SEYFERT_WORKER_SUPERVISORISSUEDATMONOTONICMS
-			? Number(process.env.SEYFERT_WORKER_SUPERVISORISSUEDATMONOTONICMS)
-			: undefined,
 	} satisfies WorkerData;
 } catch {
 	//
@@ -102,16 +96,17 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	shards = new Map<number, Shard>();
 	resharding = new Map<number, Shard>();
-	private sendToManager?: (body: unknown) => Awaitable<unknown>;
-	private readonly generation = new WorkerGenerationRuntime(this, () => workerData);
 
 	declare options: WorkerClientOptions;
+	private readonly physicalRuntime?: PhysicalWorkerRuntime;
 
 	constructor(options?: WorkerClientOptions) {
 		super(options);
 		if (options?.postMessage) {
-			this.sendToManager = options.postMessage;
+			this.postMessage = options.postMessage;
 		}
+		const physicalIdentity = resolvePhysicalIdentity(options?.physicalWorker);
+		if (physicalIdentity) this.physicalRuntime = new PhysicalWorkerRuntime(this, physicalIdentity);
 	}
 
 	get workerId() {
@@ -128,56 +123,16 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	private async onShardDisconnect(data: ShardDisconnectData) {
-		if (workerData.shadow || !this.generation.isActive) return;
+		this.physicalRuntime?.markShardDisconnected(data.shardId);
+		if (this.physicalRuntime && !this.physicalRuntime.allowsUserEvents) return;
 		await this.options?.onShardDisconnect?.(data);
 		await this.events.runEvent('SHARD_DISCONNECT', this, data, data.shardId, false);
 	}
 
 	private async onShardReconnect(data: ShardReconnectData) {
-		if (workerData.shadow || !this.generation.isActive) return;
+		if (this.physicalRuntime && !this.physicalRuntime.allowsUserEvents) return;
 		await this.options?.onShardReconnect?.(data);
 		await this.events.runEvent('SHARD_RECONNECT', this, data, data.shardId, false);
-	}
-
-	private assertGenerationWorkerData(data: WorkerData) {
-		const hasGeneration = data.generation !== undefined;
-		const hasAllocation = data.allocationId !== undefined;
-		if (hasGeneration !== hasAllocation || (data.shadow && !hasGeneration))
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Worker generation and allocationId must be provided together for shadow allocations` },
-			});
-		if (hasGeneration && (!Number.isSafeInteger(data.generation) || data.generation! < 0))
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Worker generation must be a non-negative safe integer` },
-			});
-		if (hasAllocation && (typeof data.allocationId !== 'string' || data.allocationId.trim().length === 0))
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `Worker generation allocationId must be a non-empty string` },
-			});
-		const hasSupervisorTimeout = data.supervisorTimeoutMs !== undefined;
-		const hasSupervisorIssuedAt = data.supervisorIssuedAtMonotonicMs !== undefined;
-		if (hasSupervisorTimeout !== hasSupervisorIssuedAt)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `supervisorTimeoutMs and supervisorIssuedAtMonotonicMs must be provided together` },
-			});
-		if (
-			hasSupervisorTimeout &&
-			(!Number.isSafeInteger(data.supervisorTimeoutMs) ||
-				data.supervisorTimeoutMs! <= 0 ||
-				data.supervisorTimeoutMs! > 2_147_483_647)
-		)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: {
-					detail: `supervisorTimeoutMs must be a positive safe integer no greater than 2147483647 milliseconds`,
-				},
-			});
-		if (
-			hasSupervisorIssuedAt &&
-			(!Number.isSafeInteger(data.supervisorIssuedAtMonotonicMs) || data.supervisorIssuedAtMonotonicMs! < 0)
-		)
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: `supervisorIssuedAtMonotonicMs must be a non-negative safe integer` },
-			});
 	}
 
 	get applicationId(): When<Ready, string, ''> {
@@ -196,9 +151,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	setWorkerData(data: WorkerData) {
-		this.assertGenerationWorkerData(data);
 		workerData = data;
-		this.generation.reset(data);
 	}
 
 	get workerData() {
@@ -206,11 +159,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	async start(options: Omit<DeepPartial<StartOptions>, 'httpConnection' | 'token' | 'connection'> = {}) {
-		this.assertGenerationWorkerData(workerData);
-		if (!this.generation.installSupervisorFence())
-			throw new SeyfertError('INTERNAL_ERROR', {
-				metadata: { detail: 'Worker supervisor IPC channel is unavailable' },
-			});
 		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
 
 		if (worker_threads?.parentPort) {
@@ -218,7 +166,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		}
 
 		if (workerData.mode !== 'custom')
-			(manager ?? process).on('message', (data: ManagerMessages) => this.handleManagerMessages(data));
+			(manager ?? process).on('message', (data: unknown) => this.handleManagerMessages(data as ManagerMessages));
 
 		this.configureLogger({ name: `[Worker #${workerData.workerId}]` }, this.options.logger);
 
@@ -241,17 +189,22 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		this.rest.workerData = workerData;
 		await super.start(options);
 		workerData.intents = this.resolvePluginGatewayIntents(workerData.intents);
-		this.postMessage({
-			type: workerData.resharding ? 'WORKER_START_RESHARDING' : 'WORKER_START',
-			workerId: workerData.workerId,
-		} satisfies WorkerStart | WorkerStartResharding);
-		await this.loadEvents(options.eventsDir);
-		if (workerData.generation !== undefined && workerData.allocationId)
+		if (!this.physicalRuntime) {
 			this.postMessage({
-				type: 'WORKER_GENERATION_APP_READY',
+				type: workerData.resharding ? 'WORKER_START_RESHARDING' : 'WORKER_START',
 				workerId: workerData.workerId,
-				intents: workerData.intents,
-			} satisfies WorkerGenerationAppReady);
+			} satisfies WorkerStart | WorkerStartResharding);
+		}
+		await this.loadEvents(options.eventsDir);
+		if (this.physicalRuntime) {
+			await this.physicalRuntime.markApplicationReady();
+			this.physicalRuntime.startGateway();
+		}
+	}
+
+	async close() {
+		this.physicalRuntime?.close();
+		await super.close();
 	}
 
 	async loadEvents(dir?: string) {
@@ -264,21 +217,14 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		await runPluginHooks(this, 'events:afterLoad', this, dir);
 	}
 
-	postMessage(body: WorkerMessages | ClientHeartbeaterMessages): unknown {
-		const message =
-			workerData?.generation !== undefined && workerData.allocationId
-				? { ...body, generation: workerData.generation, allocationId: workerData.allocationId }
-				: body;
-		if (this.sendToManager) return this.sendToManager(message);
-		if (manager) return manager.postMessage(message);
-		return process.send!(message);
+	postMessage(body: WorkerMessages | ClientHeartbeaterMessages | PhysicalWorkerToHostMessage): unknown {
+		if (manager) return manager.postMessage(body);
+		return process.send!(body);
 	}
 
-	async handleManagerMessages(data: ManagerMessages | WorkerHeartbeaterMessages) {
-		if (!this.generation.acceptsMessage(data)) return;
-		if (this.generation.handleSupervisorMessage(data)) return;
-		if (!workerData.shadow) await this.options.handleManagerMessages?.(data);
-		if (await this.generation.handleControlMessage(data)) return;
+	async handleManagerMessages(data: ManagerMessages | WorkerHeartbeaterMessages | PhysicalHostToWorkerMessage) {
+		if (await this.physicalRuntime?.handleMessage(data)) return;
+		await this.options.handleManagerMessages?.(data as ManagerMessages | WorkerHeartbeaterMessages);
 		switch (data.type) {
 			case 'HEARTBEAT':
 				this.postMessage({
@@ -296,27 +242,25 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			case 'SEND_PAYLOAD':
 				{
-					await this.generation.runOperation(async () => {
-						const shard = this.shards.get(data.shardId);
-						if (!shard) {
-							this.logger.fatal(`Worker trying to send payload by non-existent shard (#${data.shardId})`);
-							return;
-						}
+					const shard = this.shards.get(data.shardId);
+					if (!shard) {
+						this.logger.fatal(`Worker trying to send payload by non-existent shard (#${data.shardId})`);
+						return;
+					}
 
-						const { nonce: _nonce, shardId: _shardId, type: _type, ...payload } = data;
-						const pluginPayload = await applyPluginGatewaySendPayloadWrappers(
-							this,
-							data.shardId,
-							payload as GatewaySendPayload,
-						);
-						if (pluginPayload !== null) await shard.send(true, pluginPayload);
+					const { nonce: _nonce, shardId: _shardId, type: _type, ...payload } = data;
+					const pluginPayload = await applyPluginGatewaySendPayloadWrappers(
+						this,
+						data.shardId,
+						payload as GatewaySendPayload,
+					);
+					if (pluginPayload !== null) await shard.send(true, pluginPayload);
 
-						await this.postMessage({
-							type: 'RESULT_PAYLOAD',
-							nonce: data.nonce,
-							workerId: this.workerId,
-						} satisfies WorkerSendResultPayload);
-					});
+					this.postMessage({
+						type: 'RESULT_PAYLOAD',
+						nonce: data.nonce,
+						workerId: this.workerId,
+					} satisfies WorkerSendResultPayload);
 				}
 				break;
 			case 'ALLOW_CONNECT_RESHARDING':
@@ -404,38 +348,32 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			case 'SHARD_INFO':
 				{
-					await this.generation.runOperation(async () => {
-						const shard = this.shards.get(data.shardId);
-						if (!shard) {
-							this.logger.fatal(`Worker trying to get non-existent shard (#${data.shardId})`);
-							return;
-						}
+					const shard = this.shards.get(data.shardId);
+					if (!shard) {
+						this.logger.fatal(`Worker trying to get non-existent shard (#${data.shardId})`);
+						return;
+					}
 
-						await this.postMessage({
-							...generateShardInfo(shard),
-							nonce: data.nonce,
-							type: 'SHARD_INFO',
-							workerId: this.workerId,
-						} satisfies WorkerSendShardInfo);
-					});
+					this.postMessage({
+						...generateShardInfo(shard),
+						nonce: data.nonce,
+						type: 'SHARD_INFO',
+						workerId: this.workerId,
+					} satisfies WorkerSendShardInfo);
 				}
 				break;
 			case 'WORKER_INFO':
 				{
-					await this.generation.runOperation(() =>
-						Promise.resolve(
-							this.postMessage({
-								shards: [...this.shards.values()].map(generateShardInfo),
-								workerId: workerData.workerId,
-								type: 'WORKER_INFO',
-								nonce: data.nonce,
-							} satisfies WorkerSendInfo),
-						),
-					);
+					this.postMessage({
+						shards: [...this.shards.values()].map(generateShardInfo),
+						workerId: workerData.workerId,
+						type: 'WORKER_INFO',
+						nonce: data.nonce,
+					} satisfies WorkerSendInfo);
 				}
 				break;
 			case 'BOT_READY':
-				await this.generation.runOperation(() => this.events.runEvent('BOT_READY', this, this.me, -1));
+				await this.events.runEvent('BOT_READY', this, this.me, -1);
 				break;
 			case 'API_RESPONSE':
 				{
@@ -449,22 +387,20 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			case 'EXECUTE_EVAL':
 			case 'EXECUTE_EVAL_TO_WORKER':
 				{
-					await this.generation.runOperation(async () => {
-						let result: unknown;
-						try {
-							result = await eval(`
+					let result: unknown;
+					try {
+						result = await eval(`
 					(${data.func})(this, ${data.vars})
 					`);
-						} catch (e) {
-							result = e;
-						}
-						await this.postMessage({
-							type: 'EVAL_RESPONSE',
-							response: result,
-							workerId: workerData.workerId,
-							nonce: data.nonce,
-						} satisfies WorkerSendEvalResponse);
-					});
+					} catch (e) {
+						result = e;
+					}
+					this.postMessage({
+						type: 'EVAL_RESPONSE',
+						response: result,
+						workerId: workerData.workerId,
+						nonce: data.nonce,
+					} satisfies WorkerSendEvalResponse);
 				}
 				break;
 			case 'EVAL_RESPONSE':
@@ -501,15 +437,13 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					for (const [id, shard] of this.resharding) {
 						this.shards.set(id, shard);
 						shard.options.handlePayload = (shardId, packet) =>
-							this.generation.runDispatch(() => this.dispatchGatewayPacket(shardId, packet));
+							this.physicalRuntime
+								? this.physicalRuntime.capture(shardId, packet)
+								: this.dispatchGatewayPacket(shardId, packet);
 					}
 					workerData.totalShards = data.totalShards;
 					workerData.shards = [...this.shards.keys()];
 					this.resharding.clear();
-					this.postMessage({
-						type: 'WORKER_RESHARDING_COMPLETE',
-						workerId: workerData.workerId,
-					} satisfies WorkerReshardingComplete);
 				}
 				break;
 		}
@@ -556,22 +490,19 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		return Promise.all(promises);
 	}
 
-	dispatchGatewayPacket(shardId: number, payload: GatewayDispatchPayload) {
-		return this.generation.runOperation(async () => {
-			await this.options?.handlePayload?.call(this, shardId, payload);
-			const pluginPacket = await this.onPacket(payload, shardId);
-			if (this.options.sendPayloadToParent && pluginPacket !== null)
-				await this.postMessage({
-					workerId: workerData.workerId,
-					shardId,
-					type: 'RECEIVE_PAYLOAD',
-					payload: pluginPacket,
-				} satisfies WorkerReceivePayload);
-		});
+	async dispatchGatewayPacket(shardId: number, payload: GatewayDispatchPayload) {
+		await this.options?.handlePayload?.call(this, shardId, payload);
+		const pluginPacket = await this.onPacket(payload, shardId);
+		if (this.options.sendPayloadToParent && pluginPacket !== null)
+			await this.postMessage({
+				workerId: workerData.workerId,
+				shardId,
+				type: 'RECEIVE_PAYLOAD',
+				payload: pluginPacket,
+			} satisfies WorkerReceivePayload);
 	}
 
 	createShard(id: number, data: Pick<ManagerSpawnShards, 'info' | 'compress' | 'properties'>) {
-		const self = this;
 		const shard = new Shard(id, {
 			token: workerData.token,
 			intents: workerData.intents,
@@ -585,10 +516,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				...data.properties,
 				...this.options.gateway?.properties,
 			},
-			async handlePayload(shardId, payload) {
-				if (!self.generation.isActive) return self.generation.handleShadowPacket(shardId, payload);
-				return self.dispatchGatewayPacket(shardId, payload);
-			},
+			handlePayload: (shardId, payload) =>
+				this.physicalRuntime
+					? this.physicalRuntime.capture(shardId, payload)
+					: this.dispatchGatewayPacket(shardId, payload),
 		});
 
 		return shard;
@@ -622,12 +553,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		if (pluginPacket === null) return null;
 		packet = pluginPacket;
 
-		this.generation.track(
-			Promise.allSettled([
-				this.events.runEvent('RAW', this, packet, shardId, false),
-				this.collectors.run('RAW', packet, this),
-			]),
-		);
+		await Promise.allSettled([
+			this.events.runEvent('RAW', this, packet, shardId, false),
+			this.collectors.run('RAW', packet, this),
+		]);
 		switch (packet.t) {
 			case 'GUILD_MEMBER_UPDATE':
 				{
@@ -663,11 +592,16 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						this.botId = packet.d.user.id;
 						this.applicationId = packet.d.application.id;
 						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
-						if ([...this.shards.values()].every(shard => shard.data.session_id)) {
-							this.postMessage({
-								type: 'WORKER_SHARDS_CONNECTED',
-								workerId: this.workerId,
-							} as WorkerShardsConnected);
+						if (
+							this.physicalRuntime
+								? this.physicalRuntime.claimShardsConnected(shardId)
+								: [...this.shards.values()].every(shard => shard.data.session_id)
+						) {
+							if (!this.physicalRuntime)
+								this.postMessage({
+									type: 'WORKER_SHARDS_CONNECTED',
+									workerId: this.workerId,
+								} as WorkerShardsConnected);
 							await this.events.runEvent('WORKER_SHARDS_CONNECTED', this, this.me, -1);
 						}
 						await this.events.execute(packet, this, shardId);
@@ -676,11 +610,16 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					}
 					case GatewayDispatchEvents.GuildsReady:
 						{
-							if ([...this.shards.values()].every(shard => shard.isReady)) {
-								this.postMessage({
-									type: 'WORKER_READY',
-									workerId: this.workerId,
-								} as WorkerReady);
+							if (
+								this.physicalRuntime
+									? this.physicalRuntime.claimWorkerReady(shardId)
+									: [...this.shards.values()].every(shard => shard.isReady)
+							) {
+								if (!this.physicalRuntime)
+									this.postMessage({
+										type: 'WORKER_READY',
+										workerId: this.workerId,
+									} as WorkerReady);
 								await this.events.runEvent('WORKER_READY', this, this.me, -1);
 							}
 							await this.events.execute(packet, this, shardId);
@@ -711,6 +650,11 @@ export function generateShardInfo(shard: Shard): WorkerShardInfo {
 
 export interface WorkerClientOptions extends BaseClientOptions {
 	commands?: NonNullable<Client['options']>['commands'];
+	/**
+	 * Enables the worker-local physical IPC seam. When omitted, the same
+	 * identity is read from SEYFERT_PHYSICAL_SLOT and SEYFERT_PHYSICAL_TOKEN.
+	 */
+	physicalWorker?: Readonly<PhysicalWorkerIdentity>;
 	handlePayload?: ShardManagerOptions['handlePayload'];
 	/**
 	 * @deprecated Use shard disconnect events instead. Injected ShardManager callbacks can double-fire.
@@ -725,4 +669,15 @@ export interface WorkerClientOptions extends BaseClientOptions {
 	/** can have perfomance issues in big bots if the client sends every event, specially in startup (false by default) */
 	sendPayloadToParent?: boolean;
 	handleManagerMessages?(message: ManagerMessages | WorkerHeartbeaterMessages): Awaitable<unknown>;
+}
+
+function resolvePhysicalIdentity(
+	configured: Readonly<PhysicalWorkerIdentity> | undefined,
+): Readonly<PhysicalWorkerIdentity> | undefined {
+	const slot = configured?.slot ?? process.env.SEYFERT_PHYSICAL_SLOT;
+	const token = configured?.token ?? process.env.SEYFERT_PHYSICAL_TOKEN;
+	if (slot === undefined && token === undefined) return;
+	if (typeof slot !== 'string' || !slot.trim() || typeof token !== 'string' || !token.trim())
+		throw new TypeError('Physical worker slot and token must both be non-empty strings');
+	return Object.freeze({ slot, token });
 }

@@ -63,4 +63,11 @@ export class ConnectQueue {
 			}
 		}, this.intervalTime / this.concurrency);
 	}
+
+	clear() {
+		clearInterval(this.interval);
+		this.interval = undefined;
+		this.queue.length = 0;
+		this.remaining = this.concurrency;
+	}
 }

@@ -34,8 +34,6 @@ export class WorkerAdapter implements Adapter {
 			nonce,
 			method,
 			workerId: this.workerData.workerId,
-			generation: this.workerData.generation,
-			allocationId: this.workerData.allocationId,
 		} satisfies WorkerSendCacheRequest);
 
 		return new Promise<any>((res, rej) => {

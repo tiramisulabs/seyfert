@@ -51,17 +51,28 @@ export * from './structures';
 export { GuildRole } from './structures/GuildRole';
 export * from './types';
 //
-export { ShardManager, WorkerManager } from './websocket/discord';
+export { PhysicalWorkerPort, ShardManager, WorkerManager } from './websocket/discord';
+export type {
+	PhysicalGatewayDispatch,
+	PhysicalHostToWorkerMessage,
+	PhysicalShardTopology,
+	PhysicalWorkerCommand,
+	PhysicalWorkerConnection,
+	PhysicalWorkerIdentity,
+	PhysicalWorkerIpcMessage,
+	PhysicalWorkerPortAdapter,
+	PhysicalWorkerPortOptions,
+	PhysicalWorkerReceipt,
+	PhysicalWorkerRejection,
+	PhysicalWorkerSignal,
+	PhysicalWorkerToHostMessage,
+} from './websocket/discord/physical-worker-port';
 export type {
 	CustomManagerAdapter,
 	ResolvedWorkerShardTopology,
 	ShardData,
 	ShardManagerOptions,
 	WorkerData,
-	WorkerGenerationContext,
-	WorkerGenerationReadiness,
-	WorkerGenerationState,
-	WorkerGenerationStatus,
 	WorkerManagerOptions,
 } from './websocket/discord/shared';
 export type { WorkerInfo, WorkerShardInfo } from './websocket/discord/worker';

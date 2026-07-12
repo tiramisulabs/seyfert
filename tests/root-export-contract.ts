@@ -3,7 +3,7 @@ import {
 	Formatter,
 	HeadingLevel,
 	OAuth2Scopes,
-	type ResolvedWorkerShardTopology,
+	PhysicalWorkerPort,
 	SeyfertError,
 	SeyfertErrorMessages,
 	TimestampStyle,
@@ -11,11 +11,16 @@ import {
 	createValidationMetadata,
 	type BotConfig,
 	type ChannelLink,
-	type CustomManagerAdapter,
 	type HttpConfig,
 	type MessageLink,
 	type OAuth2URLOptions,
+	type PhysicalGatewayDispatch,
+	type PhysicalHostToWorkerMessage,
+	type PhysicalShardTopology,
+	type PhysicalWorkerIdentity,
+	type PhysicalWorkerReceipt,
 	type PropWhen,
+	type ResolvedWorkerShardTopology,
 	type SeyfertErrorCode,
 	type ShardData,
 	type ShardManagerOptions,
@@ -23,8 +28,6 @@ import {
 	type StructStates,
 	type Timestamp,
 	type WorkerData,
-	type WorkerGenerationContext,
-	type WorkerGenerationState,
 	type WorkerInfo,
 	WorkerManager,
 	type WorkerManagerOptions,
@@ -76,19 +79,37 @@ expectType<ShardManagerOptions['intents']>(0);
 expectType<WorkerManagerOptions['intents']>(0);
 expectType<ShardData>({ resume_seq: null });
 expectType<WorkerData['mode']>('threads');
-expectType<WorkerGenerationContext>({ workerId: 0, generation: 1, allocationId: 'allocation' });
-expectType<WorkerGenerationState>({
-	workerId: 0,
-	generation: 1,
-	allocationId: 'allocation',
-	status: 'ready',
-	appReady: true,
-	shardsReady: true,
-	cutoverReady: false,
-	shadow: true,
+expectType<WorkerInfo>({ shards: [] });
+expectType<WorkerShardInfo>({ shardId: 0, workerId: 0, open: false, latency: 0, resumable: false });
+
+const physicalIdentity = { slot: 'worker-0', token: 'opaque-token' } satisfies PhysicalWorkerIdentity;
+const physicalTopology = {
+	shardStart: 0,
+	shardEnd: 1,
+	totalShards: 1,
+} satisfies PhysicalShardTopology;
+const physicalPort = new PhysicalWorkerPort<PhysicalGatewayDispatch>({
+	adapter: {
+		launch: async () => ({ ready: Promise.resolve(), close() {} }),
+		dispatch() {},
+	},
+});
+expectType<Promise<PhysicalWorkerReceipt>>(
+	physicalPort.control({
+		kind: 'launch',
+		commandId: 'launch',
+		identity: physicalIdentity,
+		topology: physicalTopology,
+		maxBufferedDispatches: 10,
+	}),
+);
+declare const physicalDispatch: PhysicalGatewayDispatch;
+expectType<PhysicalHostToWorkerMessage>({
+	type: 'SEYFERT_PHYSICAL_APPLY_DISPATCH',
+	...physicalIdentity,
+	dispatchId: 'dispatch',
+	body: physicalDispatch,
+	snapshot: {},
 });
 declare const rootWorkerManager: WorkerManager;
 expectType<Promise<ResolvedWorkerShardTopology>>(rootWorkerManager.resolveShardTopology());
-expectType<CustomManagerAdapter>({ postMessage() {}, spawn() {} });
-expectType<WorkerInfo>({ shards: [] });
-expectType<WorkerShardInfo>({ shardId: 0, workerId: 0, open: false, latency: 0, resumable: false });

@@ -61,26 +61,6 @@ function createManager(
 }
 
 describe('WorkerManager.resolveShardTopology', () => {
-	test('gives generation-aware custom adapters ownership over native resharding', () => {
-		const adapter = {
-			managesWorkerGenerations: true as const,
-			postMessage() {},
-			spawn() {},
-			terminate() {},
-		};
-		const manager = new WorkerManager({ mode: 'custom', adapter });
-
-		expect(manager.options.resharding?.interval).toBe(0);
-		expect(
-			() =>
-				new WorkerManager({
-					mode: 'custom',
-					adapter,
-					resharding: { interval: 1, percentage: 80 },
-				}),
-		).toThrow(/cannot enable WorkerManager native resharding/);
-	});
-
 	test('resolves runtime defaults and gateway information without creating workers', async () => {
 		const { gatewayGet, getRC, manager, spawn } = createManager();
 
@@ -125,6 +105,29 @@ describe('WorkerManager.resolveShardTopology', () => {
 		expect(getRC).toHaveBeenCalledTimes(1);
 		expect(gatewayGet).toHaveBeenCalledTimes(1);
 		expect(spawn).toHaveBeenCalledTimes(1);
+	});
+
+	test('shares one in-flight start and retries cleanly after an asynchronous spawn failure', async () => {
+		const error = new Error('remote spawn failed');
+		const { manager, spawn } = createManager(vi.fn(async () => gatewayInfo(2)));
+		manager.options.shardEnd = 2;
+		manager.options.totalShards = 2;
+		manager.options.shardsPerWorker = 1;
+		manager.options.workers = 2;
+		spawn.mockRejectedValueOnce(error).mockResolvedValue(undefined);
+
+		const first = manager.start();
+		const concurrent = manager.start();
+		expect(concurrent).toBe(first);
+		await expect(first).rejects.toBe(error);
+		expect(manager.size).toBe(0);
+		expect(manager.workerQueue).toHaveLength(0);
+
+		await expect(manager.start()).resolves.toBeUndefined();
+		expect(spawn.mock.calls.map(([worker]) => worker.workerId)).toEqual([0, 0]);
+		expect(manager.has(0)).toBe(true);
+		expect(manager.has(1)).toBe(false);
+		expect(manager.workerQueue).toHaveLength(1);
 	});
 
 	test('allows retrying after a failed gateway request', async () => {
@@ -223,6 +226,24 @@ describe('WorkerManager.resolveShardTopology', () => {
 		});
 	});
 
+	test('uses an exclusive shardEnd for partial worker buckets and routing', async () => {
+		const { manager } = createManager(vi.fn(async () => gatewayInfo(16)));
+		manager.options.shardStart = 8;
+		manager.options.shardEnd = 12;
+		manager.options.totalShards = 16;
+		manager.options.shardsPerWorker = 2;
+		manager.options.workers = 2;
+		await manager.resolveShardTopology();
+
+		expect(WorkerManager.prepareSpaces(manager.options)).toEqual([
+			[8, 9],
+			[10, 11],
+		]);
+		expect(manager.calculateWorkerId(8)).toBe(0);
+		expect(manager.calculateWorkerId(11)).toBe(1);
+		expect(() => manager.calculateWorkerId(12)).toThrow(/Invalid shardId/);
+	});
+
 	test('rejects an explicit worker count that cannot match the effective shard buckets', async () => {
 		const { manager, spawn } = createManager(vi.fn(async () => gatewayInfo(16)));
 		manager.options.shardStart = 8;
@@ -235,5 +256,43 @@ describe('WorkerManager.resolveShardTopology', () => {
 			metadata: { detail: expect.stringMatching(/workers must be 2/) },
 		});
 		expect(spawn).not.toHaveBeenCalled();
+	});
+
+	test('serializes interval checks, catches failures, and retries after resetting local reshard state', async () => {
+		vi.useFakeTimers();
+		try {
+			let rejectFirst!: (error: Error) => void;
+			const firstCheck = new Promise<RESTGetAPIGatewayBotResult>((_resolve, reject) => {
+				rejectFirst = reject;
+			});
+			const getInfo = vi
+				.fn<() => Promise<RESTGetAPIGatewayBotResult>>()
+				.mockReturnValueOnce(firstCheck)
+				.mockResolvedValue(gatewayInfo());
+			const { manager } = createManager();
+			await manager.resolveShardTopology();
+			manager.options.resharding.interval = 10;
+			manager.options.resharding.getInfo = getInfo;
+			const error = vi.fn();
+			manager.debugger = { debug: vi.fn(), error, info: vi.fn() } as never;
+
+			await manager.startResharding();
+			await manager.startResharding();
+			await vi.advanceTimersByTimeAsync(10);
+			expect(getInfo).toHaveBeenCalledOnce();
+			await vi.advanceTimersByTimeAsync(50);
+			expect(getInfo).toHaveBeenCalledOnce();
+
+			const failure = new Error('reshard probe failed');
+			rejectFirst(failure);
+			await vi.advanceTimersByTimeAsync(0);
+			expect(error).toHaveBeenCalledWith('WorkerManager resharding check failed', failure);
+
+			await vi.advanceTimersByTimeAsync(10);
+			expect(getInfo).toHaveBeenCalledTimes(2);
+		} finally {
+			vi.clearAllTimers();
+			vi.useRealTimers();
+		}
 	});
 });

@@ -29,13 +29,11 @@ export interface ShardManagerOptions extends ShardDetails {
 	 */
 	spawnShardDelay?: number;
 	/**
-	 * Total amount of shards your bot uses. Useful for coordinated updates or resharding.
+	 * Total amount of shards your bot uses. Useful for zero-downtime updates or resharding.
 	 * @default 1
 	 */
 	totalShards?: number;
-	/** First shard in the managed range. Defaults to 0. */
 	shardStart?: number;
-	/** Exclusive upper boundary of the managed shard range. Defaults to totalShards. */
 	shardEnd?: number;
 	/**
 	 * The payload handlers for messages on the shard.
@@ -70,51 +68,11 @@ export interface ShardManagerOptions extends ShardDetails {
 }
 
 export interface CustomManagerAdapter {
-	/**
-	 * Declares that this adapter coordinates worker generations externally.
-	 * WorkerManager disables its native total-shard resharder while this contract is active.
-	 */
-	readonly managesWorkerGenerations?: true;
-	postMessage(workerId: number, body: unknown, context?: WorkerGenerationContext): Awaitable<unknown>;
+	postMessage(workerId: number, body: unknown): Awaitable<unknown>;
 	spawn(workerData: WorkerData, env: Record<string, any>): Awaitable<unknown>;
-	/** Required when using WorkerManager's generation transition APIs. */
-	terminate?(workerId: number, context?: WorkerGenerationContext): Awaitable<unknown>;
 }
 
-/** Identifies one physical allocation of a logical worker. */
-export interface WorkerGenerationTarget {
-	generation: number;
-	allocationId: string;
-}
-
-/** A generation target together with its stable logical worker id. */
-export interface WorkerGenerationContext extends WorkerGenerationTarget {
-	workerId: number;
-}
-
-export type WorkerGenerationStatus =
-	| 'preparing'
-	| 'ready'
-	| 'activating'
-	| 'active'
-	| 'draining'
-	| 'drained'
-	| 'aborting'
-	| 'aborted';
-
-export type WorkerGenerationReadiness = 'app' | 'shards' | 'ready' | 'cutover' | 'active' | 'drained' | 'aborted';
-
-/** Read-only lifecycle state reported by WorkerManager. */
-export interface WorkerGenerationState extends WorkerGenerationContext {
-	status: WorkerGenerationStatus;
-	appReady: boolean;
-	shardsReady: boolean;
-	/** The candidate is buffering dispatches for bounded replay during a healthy cutover. */
-	cutoverReady: boolean;
-	shadow: boolean;
-}
-
-/** Effective runtime shard topology resolved before WorkerManager creates any workers. */
+/** Effective Discord shard topology resolved before any worker is created. */
 export interface ResolvedWorkerShardTopology {
 	readonly info: Readonly<
 		Omit<APIGatewayBotInfo, 'session_start_limit'> & {
@@ -250,17 +208,4 @@ export interface WorkerData {
 	compress: boolean;
 	__USING_WATCHER__?: boolean;
 	resharding: boolean;
-	/** Physical generation of this logical worker. Omitted by legacy workers. */
-	generation?: number;
-	/** Unique allocation attempt within a generation. Omitted by legacy workers. */
-	allocationId?: string;
-	/** Keep gateway dispatch gated until the manager activates this allocation. */
-	shadow?: boolean;
-	/**
-	 * Initial monotonic supervisor lease TTL. The worker exits unless ordered renewals from its local supervisor extend it.
-	 * This is a secondary in-process watchdog and does not replace supervisor hard-kill or allocation lease fencing.
-	 */
-	supervisorTimeoutMs?: number;
-	/** Same-host `process.hrtime` milliseconds captured by the local supervisor when the initial TTL was issued. */
-	supervisorIssuedAtMonotonicMs?: number;
 }

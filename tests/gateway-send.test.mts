@@ -1,5 +1,12 @@
 import { describe, expect, test, vi } from 'vitest';
-import { GatewayIntentBits, GatewayOpcodes, type GatewaySendPayload, PresenceUpdateStatus } from '../src/types';
+import { WorkerClient } from '../src/client/workerclient';
+import {
+	type GatewayDispatchPayload,
+	GatewayIntentBits,
+	GatewayOpcodes,
+	type GatewaySendPayload,
+	PresenceUpdateStatus,
+} from '../src/types';
 import { ShardManager, WorkerManager } from '../src/websocket';
 
 function gatewayInfo() {
@@ -171,82 +178,6 @@ describe('gateway send chokepoints', () => {
 		expect(manager.options.intents).toBe(0);
 	});
 
-	test('WorkerManager.start rejects and removes initial state when custom spawn rejects asynchronously', async () => {
-		const spawnError = new Error('initial remote spawn failed');
-		const { manager } = createWorkerManager({
-			adapter: {
-				postMessage() {},
-				spawn: () => Promise.reject(spawnError),
-				terminate() {},
-			},
-		});
-
-		await expect(manager.start()).rejects.toBe(spawnError);
-		expect(manager.size).toBe(0);
-		expect(manager.getActiveWorkerGeneration(0)).toBeUndefined();
-	});
-
-	test('WorkerManager.start retries from the first worker without retaining stale queue entries', async () => {
-		const spawnError = new Error('initial remote spawn failed');
-		const spawn = vi.fn().mockRejectedValueOnce(spawnError).mockResolvedValue(undefined);
-		const { manager } = createWorkerManager({
-			info: { ...gatewayInfo(), shards: 2 },
-			shardEnd: 2,
-			totalShards: 2,
-			workers: 2,
-			adapter: {
-				postMessage() {},
-				spawn,
-				terminate() {},
-			},
-		});
-
-		await expect(manager.start()).rejects.toBe(spawnError);
-		expect(spawn.mock.calls.map(([data]) => data.workerId)).toEqual([0]);
-		expect(manager.workerQueue).toHaveLength(0);
-
-		await expect(manager.start()).resolves.toBeUndefined();
-		expect(spawn.mock.calls.map(([data]) => data.workerId)).toEqual([0, 0]);
-		expect(manager.workerQueue).toHaveLength(1);
-		expect(manager.getActiveWorkerGeneration(0)).toBeDefined();
-		expect(manager.getActiveWorkerGeneration(1)).toBeUndefined();
-	});
-
-	test('WorkerManager.start shares one in-flight startup', async () => {
-		let releaseSpawn!: () => void;
-		const spawnPending = new Promise<void>(resolve => {
-			releaseSpawn = resolve;
-		});
-		const spawn = vi.fn((_workerData: unknown, _env: unknown) => spawnPending);
-		const { manager } = createWorkerManager({
-			info: { ...gatewayInfo(), shards: 2 },
-			shardEnd: 2,
-			totalShards: 2,
-			workers: 2,
-			adapter: {
-				postMessage() {},
-				spawn,
-				terminate() {},
-			},
-		});
-
-		const first = manager.start();
-		const second = manager.start();
-		expect(second).toBe(first);
-		await vi.waitFor(() => expect(spawn).toHaveBeenCalledOnce());
-		expect(spawn).toHaveBeenCalledWith(
-			expect.objectContaining({ workerId: 0 }),
-			expect.any(Object),
-		);
-
-		releaseSpawn();
-		await Promise.all([first, second]);
-		expect(manager.workerQueue).toHaveLength(1);
-		expect(manager.start()).toBe(first);
-		await manager.start();
-		expect(spawn).toHaveBeenCalledOnce();
-	});
-
 	test('WorkerManager defaults omitted native mode to threads', () => {
 		const manager = new WorkerManager({
 			path: 'worker.js',
@@ -258,7 +189,7 @@ describe('gateway send chokepoints', () => {
 		expect(manager.options.mode).toBe('threads');
 	});
 
-	test('WorkerManager preserves custom adapter paths when provided', () => {
+	test('WorkerManager preserves custom adapter paths when provided', async () => {
 		const spawn = vi.fn();
 		const { manager } = createWorkerManager({
 			path: 'worker.js',
@@ -269,11 +200,55 @@ describe('gateway send chokepoints', () => {
 		});
 
 		manager.prepareWorkers([[0]]);
-		manager.workerQueue.shift()!();
+		await manager.workerQueue.shift()!();
 
-		expect(spawn).toHaveBeenCalledWith(
-			expect.objectContaining({ path: 'worker.js' }),
-			expect.any(Object),
-		);
+		expect(spawn).toHaveBeenCalledWith(expect.objectContaining({ path: 'worker.js' }), expect.any(Object));
+	});
+
+	test('WorkerClient reshard swap preserves ordinary parent payload forwarding', async () => {
+		const messages: unknown[] = [];
+		const handlePayload = vi.fn();
+		const client = new WorkerClient({
+			getRC: async () => ({ token: 'token', intents: 0, locations: { base: '' } }),
+			handlePayload,
+			postMessage: body => messages.push(body),
+			sendPayloadToParent: true,
+		});
+		client.setWorkerData({
+			compress: false,
+			debug: false,
+			info: gatewayInfo(),
+			intents: 0,
+			mode: 'custom',
+			path: '',
+			resharding: false,
+			shards: [0],
+			token: 'token',
+			totalShards: 1,
+			totalWorkers: 1,
+			workerId: 7,
+			workerProxy: false,
+		});
+		const shard = client.createShard(0, { info: gatewayInfo(), compress: false });
+		client.resharding.set(0, shard);
+		await client.handleManagerMessages({ type: 'CONNECT_ALL_SHARDS_RESHARDING', totalShards: 1 });
+		const payload = {
+			op: GatewayOpcodes.Dispatch,
+			t: 'RESHARD_TEST_EVENT',
+			s: 1,
+			d: { value: 'after-swap' },
+		} as unknown as GatewayDispatchPayload;
+
+		await shard.options.handlePayload(0, payload);
+
+		expect(handlePayload).toHaveBeenCalledWith(0, payload);
+		expect(messages).toEqual([
+			{
+				workerId: 7,
+				shardId: 0,
+				type: 'RECEIVE_PAYLOAD',
+				payload,
+			},
+		]);
 	});
 });
