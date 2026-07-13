@@ -67,9 +67,14 @@ export interface ShardManagerOptions extends ShardDetails {
 	connectionTimeout?: number;
 }
 
+export interface CustomManagerWorkerResource {
+	/** Stops the exact worker resource created by the corresponding spawn call. */
+	terminate(): Awaitable<unknown>;
+}
+
 export interface CustomManagerAdapter {
 	postMessage(workerId: number, body: unknown): Awaitable<unknown>;
-	spawn(workerData: WorkerData, env: Record<string, any>): Awaitable<unknown>;
+	spawn(workerData: WorkerData, env: Record<string, any>): Awaitable<CustomManagerWorkerResource>;
 }
 
 /** Effective Discord shard topology resolved before any worker is created. */

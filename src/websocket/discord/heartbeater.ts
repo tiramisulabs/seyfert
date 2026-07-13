@@ -2,9 +2,14 @@ import type { Awaitable } from '../../common';
 
 export type WorkerHeartbeaterMessages = SendHeartbeat;
 
-export type CreateHeartbeaterMessage<T extends string, D extends object = object> = { type: T } & D;
+export type CreateHeartbeaterMessage<T extends string, D extends object = object> = {
+	type: T;
+	incarnationId: string;
+} & D;
 
 export type SendHeartbeat = CreateHeartbeaterMessage<'HEARTBEAT'>;
+
+type HeartbeaterCommand = Omit<WorkerHeartbeaterMessages, 'incarnationId'>;
 
 export class Heartbeater {
 	store = new Map<
@@ -15,7 +20,7 @@ export class Heartbeater {
 		}
 	>();
 	constructor(
-		public sendMethod: (workerId: number, data: WorkerHeartbeaterMessages) => Awaitable<void>,
+		public sendMethod: (workerId: number, data: HeartbeaterCommand) => Awaitable<void>,
 		public interval: number,
 	) {}
 

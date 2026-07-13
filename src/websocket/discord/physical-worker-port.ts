@@ -97,6 +97,7 @@ export interface PhysicalWorkerDispatchContext {
 }
 
 export interface PhysicalWorkerPortAdapter<Dispatch = unknown> {
+	/** Reject only after any partially created physical resource can no longer remain live. */
 	launch(input: {
 		identity: Readonly<PhysicalWorkerIdentity>;
 		topology: Readonly<PhysicalShardTopology>;
@@ -400,22 +401,12 @@ export class PhysicalWorkerPort<Dispatch = unknown> {
 			record.state = 'closing';
 			record.resolveClosed();
 			record.buffer.length = 0;
-			if (!record.connection && record.connectionPromise) {
-				void record.connectionPromise
-					.then(
-						connection => connection.close(),
-						() => undefined,
-					)
-					.catch(error =>
-						this.options.onSignal?.({
-							kind: 'fault',
-							commandId: record.dispatchCommandId,
-							identity: record.identity,
-							error: toError(error),
-						}),
-					);
-			}
-			record.closePromise = Promise.resolve(record.connection?.close())
+			const connection = record.connectionPromise ?? Promise.resolve(record.connection);
+			record.closePromise = connection
+				.then(
+					value => value?.close(),
+					() => undefined,
+				)
 				.then(() => Promise.allSettled(record.inFlight))
 				.then(
 					() => {

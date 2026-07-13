@@ -11,6 +11,36 @@ afterEach(() => {
 });
 
 describe('gateway reconnect stability', () => {
+	test('terminal disconnect cancels a reconnect delayed before connect', async () => {
+		vi.useFakeTimers();
+		const { Shard } = await import('../src/websocket/discord/shard');
+		const shard = new Shard(0, {
+			token: 'token',
+			intents: 0,
+			info: {
+				url: 'wss://gateway.discord.gg',
+				shards: 1,
+				session_start_limit: {
+					total: 1,
+					remaining: 1,
+					reset_after: 0,
+					max_concurrency: 1,
+				},
+			},
+			handlePayload: vi.fn(),
+			reconnectTimeout: 100,
+		} as unknown as ShardOptions);
+		const connect = vi.spyOn(shard, 'connect').mockResolvedValue(undefined);
+
+		const reconnecting = shard.reconnect();
+		await vi.advanceTimersByTimeAsync(50);
+		shard.disconnect(ShardSocketCloseCodes.ShutdownAll);
+		await vi.advanceTimersByTimeAsync(50);
+		await reconnecting;
+
+		expect(connect).not.toHaveBeenCalled();
+	});
+
 	test('disconnect closes sockets that are still handshaking', async () => {
 		const { Shard } = await import('../src/websocket/discord/shard');
 		const shard = new Shard(0, {

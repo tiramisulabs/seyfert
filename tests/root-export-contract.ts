@@ -11,12 +11,15 @@ import {
 	createValidationMetadata,
 	type BotConfig,
 	type ChannelLink,
+	type CustomManagerAdapter,
+	type CustomManagerWorkerResource,
 	type HttpConfig,
 	type MessageLink,
 	type OAuth2URLOptions,
 	type PhysicalGatewayDispatch,
 	type PhysicalHostToWorkerMessage,
 	type PhysicalShardTopology,
+	type PhysicalWorkerDispatchContext,
 	type PhysicalWorkerIdentity,
 	type PhysicalWorkerReceipt,
 	type PropWhen,
@@ -77,6 +80,11 @@ expectType<number>(createdProp);
 expectType<undefined>(missingCreatedProp);
 expectType<ShardManagerOptions['intents']>(0);
 expectType<WorkerManagerOptions['intents']>(0);
+const customManagerWorkerResource = { terminate() {} } satisfies CustomManagerWorkerResource;
+expectType<CustomManagerAdapter>({
+	postMessage() {},
+	spawn: () => customManagerWorkerResource,
+});
 expectType<ShardData>({ resume_seq: null });
 expectType<WorkerData['mode']>('threads');
 expectType<WorkerInfo>({ shards: [] });
@@ -88,6 +96,7 @@ const physicalTopology = {
 	shardEnd: 1,
 	totalShards: 1,
 } satisfies PhysicalShardTopology;
+expectType<PhysicalWorkerDispatchContext>({ identity: physicalIdentity, topology: physicalTopology });
 const physicalPort = new PhysicalWorkerPort<PhysicalGatewayDispatch>({
 	adapter: {
 		launch: async () => ({ ready: Promise.resolve(), close() {} }),

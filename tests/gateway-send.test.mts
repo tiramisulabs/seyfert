@@ -8,6 +8,7 @@ import {
 	PresenceUpdateStatus,
 } from '../src/types';
 import { ShardManager, WorkerManager } from '../src/websocket';
+import type { WorkerData } from '../src/websocket/discord/shared';
 
 function gatewayInfo() {
 	return {
@@ -47,7 +48,7 @@ function createWorkerManager(options: Partial<ConstructorParameters<typeof Worke
 		resharding: { interval: 0, percentage: 0, getInfo: async () => gatewayInfo() },
 		adapter: {
 			postMessage: (_workerId, body) => messages.push(body),
-			spawn: () => {},
+			spawn: () => ({ terminate() {} }),
 		},
 		getRC: async () => ({
 			token: 'token',
@@ -59,7 +60,37 @@ function createWorkerManager(options: Partial<ConstructorParameters<typeof Worke
 	return { manager, messages };
 }
 
+function legacyWorkerData(): WorkerData {
+	return {
+		compress: false,
+		debug: false,
+		info: gatewayInfo(),
+		intents: 0,
+		mode: 'custom',
+		path: '',
+		resharding: false,
+		shards: [0],
+		token: 'token',
+		totalShards: 1,
+		totalWorkers: 1,
+		workerId: 0,
+		workerProxy: false,
+	};
+}
+
 describe('gateway send chokepoints', () => {
+	test('WorkerClient rejects missing legacy incarnation during configuration and start', async () => {
+		const client = new WorkerClient({ postMessage() {} });
+		const data = legacyWorkerData();
+		expect(() => client.setWorkerData(data)).toThrow(/legacy worker data requires a non-empty incarnationId/i);
+
+		data.incarnationId = 'configured-incarnation';
+		client.setWorkerData(data);
+		delete data.incarnationId;
+		await expect(client.start()).rejects.toThrow(/legacy worker data requires a non-empty incarnationId/i);
+		data.incarnationId = 'configured-incarnation';
+	});
+
 	test('ShardManager.send rejects missing shards instead of silently dropping payloads', async () => {
 		const manager = createShardManager();
 
@@ -126,6 +157,39 @@ describe('gateway send chokepoints', () => {
 		expect(messages).toEqual([]);
 	});
 
+	test('WorkerClient does not forward manager routing identity to Discord', async () => {
+		const send = vi.fn();
+		const client = new WorkerClient({ postMessage() {} });
+		client.setWorkerData({
+			compress: false,
+			debug: false,
+			incarnationId: 'send-target',
+			info: gatewayInfo(),
+			intents: 0,
+			mode: 'custom',
+			path: '',
+			resharding: false,
+			shards: [0],
+			token: 'token',
+			totalShards: 1,
+			totalWorkers: 1,
+			workerId: 0,
+			workerProxy: false,
+		});
+		client.shards.set(0, { send } as never);
+
+		await client.handleManagerMessages({
+			type: 'SEND_PAYLOAD',
+			incarnationId: 'send-target',
+			nonce: 'send-nonce',
+			shardId: 0,
+			op: GatewayOpcodes.Heartbeat,
+			d: null,
+		});
+
+		expect(send).toHaveBeenCalledWith(true, { op: GatewayOpcodes.Heartbeat, d: null });
+	});
+
 	test('WorkerManager.spawn calls presence with the shard id and worker id', () => {
 		const presence = vi.fn(() => ({
 			activities: [],
@@ -135,7 +199,7 @@ describe('gateway send chokepoints', () => {
 		}));
 		const { manager, messages } = createWorkerManager({ presence });
 		manager.connectQueue = { push: (callback: () => unknown) => callback() } as never;
-		manager.set(1, {});
+		manager.set(1, { incarnationId: 'presence-worker' });
 
 		manager.spawn(1, 3);
 
@@ -143,6 +207,7 @@ describe('gateway send chokepoints', () => {
 		expect(messages).toEqual([
 			{
 				type: 'ALLOW_CONNECT',
+				incarnationId: 'presence-worker',
 				shardId: 3,
 				presence: {
 					activities: [],
@@ -157,13 +222,14 @@ describe('gateway send chokepoints', () => {
 	test('WorkerManager.spawn allows missing presence callbacks', () => {
 		const { manager, messages } = createWorkerManager();
 		manager.connectQueue = { push: (callback: () => unknown) => callback() } as never;
-		manager.set(0, {});
+		manager.set(0, { incarnationId: 'no-presence-worker' });
 
 		manager.spawn(0, 0);
 
 		expect(messages).toEqual([
 			{
 				type: 'ALLOW_CONNECT',
+				incarnationId: 'no-presence-worker',
 				shardId: 0,
 				presence: undefined,
 			},
@@ -190,7 +256,7 @@ describe('gateway send chokepoints', () => {
 	});
 
 	test('WorkerManager preserves custom adapter paths when provided', async () => {
-		const spawn = vi.fn();
+		const spawn = vi.fn(() => ({ terminate() {} }));
 		const { manager } = createWorkerManager({
 			path: 'worker.js',
 			adapter: {
@@ -219,6 +285,7 @@ describe('gateway send chokepoints', () => {
 			debug: false,
 			info: gatewayInfo(),
 			intents: 0,
+			incarnationId: 'gateway-send-cutover',
 			mode: 'custom',
 			path: '',
 			resharding: false,
@@ -234,6 +301,7 @@ describe('gateway send chokepoints', () => {
 		client.resharding.set(0, shard);
 		await client.handleManagerMessages({
 			type: 'CONNECT_ALL_SHARDS_RESHARDING',
+			incarnationId: 'gateway-send-cutover',
 			info: gatewayInfo(),
 			totalShards: 1,
 			totalWorkers: 1,
@@ -251,9 +319,61 @@ describe('gateway send chokepoints', () => {
 		expect(handlePayload).toHaveBeenCalledWith(0, payload);
 		expect(messages.at(-1)).toEqual({
 			workerId: 7,
+			incarnationId: 'gateway-send-cutover',
 			shardId: 0,
 			type: 'RECEIVE_PAYLOAD',
 			payload,
 		});
+	});
+
+	test('WorkerClient RAW hooks do not block semantic gateway dispatch', async () => {
+		let releaseRaw!: () => void;
+		const rawBlocked = new Promise<void>(resolve => (releaseRaw = resolve));
+		const client = new WorkerClient({
+			getRC: async () => ({ token: 'token', intents: 0, locations: { base: '' } }),
+		});
+		client.setWorkerData({
+			compress: false,
+			debug: false,
+			incarnationId: 'raw-hooks',
+			info: gatewayInfo(),
+			intents: 0,
+			mode: 'custom',
+			path: '',
+			resharding: false,
+			shards: [0],
+			token: 'token',
+			totalShards: 1,
+			totalWorkers: 1,
+			workerId: 0,
+			workerProxy: false,
+		});
+		vi.spyOn(client.events, 'runEvent').mockImplementation(event =>
+			event === 'RAW' ? rawBlocked : Promise.resolve(),
+		);
+		const execute = vi.spyOn(client.events, 'execute').mockResolvedValue(undefined);
+		const packet = {
+			op: GatewayOpcodes.Dispatch,
+			t: 'RAW_NON_BLOCKING_TEST',
+			s: 1,
+			d: {},
+		} as unknown as GatewayDispatchPayload;
+		let settled = false;
+		const processing = (
+			client as unknown as {
+				onPacket(packet: GatewayDispatchPayload, shardId: number): Promise<GatewayDispatchPayload | null>;
+			}
+		)
+			.onPacket(packet, 0)
+			.then(result => {
+				settled = true;
+				return result;
+			});
+
+		await vi.waitFor(() => expect(execute).toHaveBeenCalledOnce());
+		await Promise.resolve();
+		expect(settled).toBe(true);
+		releaseRaw();
+		await expect(processing).resolves.toBe(packet);
 	});
 });

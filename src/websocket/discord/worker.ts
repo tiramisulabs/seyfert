@@ -72,6 +72,7 @@ export type WorkerCutoverAppliedResharding = CreateWorkerMessage<
 	'WORKER_CUTOVER_APPLIED_RESHARDING',
 	{ reshardId: string }
 >;
+export type WorkerReshardAborted = CreateWorkerMessage<'WORKER_RESHARD_ABORTED', { reshardId: string }>;
 export type WorkerSendApiRequest = CreateWorkerMessage<
 	'WORKER_API_REQUEST',
 	{
@@ -117,7 +118,8 @@ export type BaseWorkerMessage =
 	| WorkerRequestConnectResharding
 	| WorkerReadyResharding
 	| WorkerDisconnectedAllShardsResharding
-	| WorkerCutoverAppliedResharding;
+	| WorkerCutoverAppliedResharding
+	| WorkerReshardAborted;
 
 export type CustomWorkerClientMessages = {
 	[K in keyof CustomWorkerClientEvents]: Identify<

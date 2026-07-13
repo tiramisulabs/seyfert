@@ -157,8 +157,18 @@ import type { BanShorter } from '../lib/common/shorters/bans';
 import type { MemberShorter } from '../lib/common/shorters/members';
 import type { BitField } from '../lib/structures/extra/BitField';
 import { PermissionsBitField } from '../lib/structures/extra/Permissions';
-import type { ShardManagerOptions, WorkerManagerOptions } from '../lib/websocket/discord/shared';
-import type { ManagerAllowConnect, ManagerAllowConnectResharding } from '../lib/websocket/discord/workermanager';
+import type {
+	CustomManagerAdapter,
+	CustomManagerWorkerResource,
+	ShardManagerOptions,
+	WorkerManagerOptions,
+} from '../lib/websocket/discord/shared';
+import type {
+	ManagerAbortResharding,
+	ManagerAllowConnect,
+	ManagerAllowConnectResharding,
+} from '../lib/websocket/discord/workermanager';
+import type { WorkerReshardAborted } from '../lib/websocket/discord/worker';
 
 declare function expectType<T>(value: T): void;
 type IsAny<T> = 0 extends 1 & T ? true : false;
@@ -781,12 +791,14 @@ expectType<NonNullable<WorkerManagerOptions['presence']>>((_shardId: number, _wo
 
 const workerAllowConnectWithoutPresence = {
 	type: 'ALLOW_CONNECT',
+	incarnationId: 'opaque-incarnation',
 	shardId: 0,
 } satisfies ManagerAllowConnect;
 expectType<ManagerAllowConnect>(workerAllowConnectWithoutPresence);
 
 const workerAllowConnectWithUndefinedPresence = {
 	type: 'ALLOW_CONNECT',
+	incarnationId: 'opaque-incarnation',
 	shardId: 0,
 	presence: undefined,
 } satisfies ManagerAllowConnect;
@@ -794,6 +806,7 @@ expectType<ManagerAllowConnect>(workerAllowConnectWithUndefinedPresence);
 
 const workerAllowConnectReshardingWithoutPresence = {
 	type: 'ALLOW_CONNECT_RESHARDING',
+	incarnationId: 'opaque-incarnation',
 	shardId: 0,
 	reshardId: 'opaque-attempt',
 } satisfies ManagerAllowConnectResharding;
@@ -801,11 +814,24 @@ expectType<ManagerAllowConnectResharding>(workerAllowConnectReshardingWithoutPre
 
 const workerAllowConnectReshardingWithUndefinedPresence = {
 	type: 'ALLOW_CONNECT_RESHARDING',
+	incarnationId: 'opaque-incarnation',
 	shardId: 0,
 	presence: undefined,
 	reshardId: 'opaque-attempt',
 } satisfies ManagerAllowConnectResharding;
 expectType<ManagerAllowConnectResharding>(workerAllowConnectReshardingWithUndefinedPresence);
+
+expectType<ManagerAbortResharding>({
+	type: 'ABORT_RESHARDING',
+	incarnationId: 'opaque-incarnation',
+	reshardId: 'opaque-attempt',
+});
+expectType<WorkerReshardAborted>({
+	type: 'WORKER_RESHARD_ABORTED',
+	workerId: 0,
+	incarnationId: 'opaque-incarnation',
+	reshardId: 'opaque-attempt',
+});
 
 const customWorkerManagerOptions = {
 	mode: 'custom',
@@ -814,7 +840,7 @@ const customWorkerManagerOptions = {
 	info: workerManagerInfo,
 	adapter: {
 		postMessage() {},
-		spawn() {},
+		spawn: () => ({ terminate() {} }) satisfies CustomManagerWorkerResource,
 	},
 } satisfies WorkerManagerOptions;
 expectType<WorkerManagerOptions>(customWorkerManagerOptions);
@@ -829,11 +855,18 @@ const customWorkerManagerOptionsWithPath = {
 	info: workerManagerInfo,
 	adapter: {
 		postMessage() {},
-		spawn() {},
+		spawn: () => ({ terminate() {} }) satisfies CustomManagerWorkerResource,
 	},
 } satisfies WorkerManagerOptions;
 expectType<WorkerManagerOptions>(customWorkerManagerOptionsWithPath);
 new WorkerManager(customWorkerManagerOptionsWithPath);
+
+const invalidCustomManagerAdapter: CustomManagerAdapter = {
+	postMessage() {},
+	// @ts-expect-error custom spawns must return an owned termination resource
+	spawn() {},
+};
+expectType<CustomManagerAdapter>(invalidCustomManagerAdapter);
 
 const threadedWorkerManagerOptions = {
 	mode: 'threads',

@@ -1,17 +1,40 @@
 import cluster, { type Worker as ClusterWorker } from 'node:cluster';
 import { randomUUID, type UUID } from 'node:crypto';
+import { once } from 'node:events';
 import type { Worker as WorkerThreadsWorker } from 'node:worker_threads';
-import type { ApiHandler, CustomWorkerManagerEvents, Logger, UsingClient, WorkerClient } from '../..';
+import type { ApiHandler, Logger, UsingClient, WorkerClient } from '../..';
 import { type Adapter, MemoryAdapter } from '../../cache';
-import { type Awaitable, type Identify, lazyLoadPackage, type PickPartial, SeyfertError } from '../../common';
-import type { GatewayPresenceUpdateData, GatewaySendPayload, RESTGetAPIGatewayBotResult } from '../../types';
+import { type Awaitable, lazyLoadPackage, type PickPartial, SeyfertError } from '../../common';
+import type { GatewaySendPayload, RESTGetAPIGatewayBotResult } from '../../types';
 import { properties } from '../constants';
 import { DynamicBucket } from '../structures';
 import type { ConnectQueue } from '../structures/timeout';
 import { Heartbeater, type WorkerHeartbeaterMessages } from './heartbeater';
-import type { ResolvedWorkerShardTopology, ShardOptions, WorkerData, WorkerManagerOptions } from './shared';
+import type { ResolvedWorkerShardTopology, WorkerData, WorkerManagerOptions } from './shared';
 import { WORKER_TIMEOUT_MS, type WorkerInfo, type WorkerMessages, type WorkerShardInfo } from './worker';
+import type {
+	ConnnectAllShardsResharding,
+	DisconnectAllShardsResharding,
+	ManagerAbortResharding,
+	ManagerAllowConnect,
+	ManagerAllowConnectResharding,
+	ManagerExecuteEval,
+	ManagerExecuteEvalToWorker,
+	ManagerMessages,
+	ManagerRequestShardInfo,
+	ManagerRequestWorkerInfo,
+	ManagerSendApiResponse,
+	ManagerSendBotReady,
+	ManagerSendCacheResult,
+	ManagerSendEvalResponse,
+	ManagerSendPayload,
+	ManagerSpawnShards,
+	ManagerSpawnShardsResharding,
+	ManagerWorkerAlreadyExistsResharding,
+} from './worker-manager-messages';
 import { WorkerTopologyResolver } from './worker-topology-resolver';
+
+export type * from './worker-manager-messages';
 
 type WorkerManagerConstructorOptionalKeys = 'token' | 'intents' | 'info' | 'handlePayload' | 'handleWorkerMessage';
 type WorkerManagerConstructorOptions = WorkerManagerOptions extends infer Options
@@ -39,7 +62,12 @@ type WorkerHandle = (ClusterWorker | WorkerThreadsWorker | { ready?: boolean }) 
 	disconnected?: boolean;
 	resharded?: boolean;
 	cutoverApplied?: boolean;
+	terminateReshardWorker?: () => Awaitable<unknown>;
 };
+
+type ManagerTransportMessage = ManagerMessages | WorkerHeartbeaterMessages;
+type OutboundManagerMessage<Message extends ManagerTransportMessage = ManagerTransportMessage> =
+	Message extends ManagerTransportMessage ? Omit<Message, 'incarnationId'> : never;
 
 export class WorkerManager extends Map<number, WorkerHandle> {
 	static prepareSpaces(
@@ -77,9 +105,13 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 	rest!: ApiHandler;
 	reshardingWorkerQueue: (() => Awaitable<void>)[] = [];
 	private _info?: RESTGetAPIGatewayBotResult;
-	private reshardingState: 'idle' | 'checking' | 'running' = 'idle';
+	private reshardingState: 'idle' | 'checking' | 'running' | 'aborting' | 'failed' = 'idle';
 	private reshardId?: string;
 	private reshardingInterval?: ReturnType<typeof setInterval>;
+	private readonly reshardingParticipants = new Map<number, string>();
+	private readonly reshardingAbortAcks = new Set<number>();
+	private readonly reshardingCreatedWorkers = new Map<number, string>();
+	private readonly reshardingTerminationTasks = new Map<number, { incarnationId: string; task: Promise<void> }>();
 	private readonly spawnPromises = new Map<number, Promise<void>>();
 	private readonly topology: WorkerTopologyResolver;
 	private startPromise?: Promise<void>;
@@ -93,14 +125,6 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 		this.options = { mode: 'threads', ...options } as WorkerManager['options'];
 		this.cacheAdapter = new MemoryAdapter();
 		this.topology = new WorkerTopologyResolver(this);
-
-		if (this.options.handleWorkerMessage) {
-			const oldFn = this.handleWorkerMessage.bind(this);
-			this.handleWorkerMessage = async message => {
-				await this.options.handleWorkerMessage!(message);
-				return oldFn(message);
-			};
-		}
 
 		this.heartbeater = new Heartbeater(this.postMessage.bind(this), options.heartbeaterInterval ?? 15e3);
 	}
@@ -201,18 +225,20 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 		return workerId;
 	}
 
-	postMessage(id: number, body: ManagerMessages | WorkerHeartbeaterMessages) {
+	postMessage(id: number, body: OutboundManagerMessage) {
 		const worker = this.get(id);
 		if (!worker) return this.debugger?.error(`Worker ${id} does not exists.`);
+		if (!worker.incarnationId) return this.debugger?.error(`Worker ${id} is missing its incarnation identity.`);
+		const message = { ...body, incarnationId: worker.incarnationId } as ManagerTransportMessage;
 		switch (this.options.mode) {
 			case 'clusters':
-				if ((worker as ClusterWorker).isConnected()) (worker as ClusterWorker).send(body);
+				if ((worker as ClusterWorker).isConnected()) (worker as ClusterWorker).send(message);
 				break;
 			case 'threads':
-				(worker as import('worker_threads').Worker).postMessage(body);
+				(worker as import('worker_threads').Worker).postMessage(message);
 				break;
 			case 'custom':
-				this.options.adapter.postMessage(id, body);
+				this.options.adapter.postMessage(id, message);
 				break;
 		}
 	}
@@ -226,7 +252,8 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 						metadata: { detail: 'Cannot create a resharding worker without a current reshard attempt' },
 					});
 				}
-				this.createWorker({
+				const workerExists = this.has(i);
+				const worker = this.createWorker({
 					path: this.options.path ?? '',
 					debug: this.options.debug,
 					token: this.options.token,
@@ -245,8 +272,17 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 					},
 					compress: this.options.compress,
 					...(reshardId ? { reshardId } : {}),
+				}) as WorkerHandle;
+				const spawned = this.spawnPromises.get(i) ?? Promise.resolve();
+				return spawned.then(() => {
+					const isCurrentWorker =
+						resharding &&
+						!workerExists &&
+						this.reshardingState === 'running' &&
+						this.reshardId === reshardId &&
+						this.get(i) === worker;
+					if (isCurrentWorker && worker.incarnationId) this.reshardingCreatedWorkers.set(i, worker.incarnationId);
 				});
-				return this.spawnPromises.get(i) ?? Promise.resolve();
 			};
 			const registerWorkerHeartbeat = (workerId: number) => {
 				this.heartbeater.register(workerId, async deadWorkerId => {
@@ -286,13 +322,99 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 	}
 
 	private failWorkerLifecycle(error: unknown) {
+		if (this.reshardingState === 'aborting' || this.reshardingState === 'failed') return;
 		this.lifecycleError = error;
 		this.workerQueue = [];
 		this.reshardingWorkerQueue = [];
+		this.connectQueue?.clear();
+		this.debugger?.error('WorkerManager lifecycle failed', error);
+		const reshardId = this.reshardId;
+		if (this.reshardingState !== 'running' || !reshardId) {
+			this.clearReshardState('idle');
+			return;
+		}
+		if (this.reshardingInterval) clearInterval(this.reshardingInterval);
+		this.reshardingInterval = undefined;
+		for (const workerId of [...this.heartbeater.store.keys()]) this.heartbeater.unregister(workerId);
+		this.reshardingState = 'aborting';
+		this.reshardingAbortAcks.clear();
+		for (const [workerId, incarnationId] of this.reshardingParticipants) {
+			if (this.get(workerId)?.incarnationId !== incarnationId) continue;
+			try {
+				this.postMessage(workerId, {
+					type: 'ABORT_RESHARDING',
+					reshardId,
+				} satisfies OutboundManagerMessage<ManagerAbortResharding>);
+			} catch (abortError) {
+				this.debugger?.error(`Failed to abort resharding worker ${workerId}`, abortError);
+			}
+		}
+		if (!this.reshardingParticipants.size) this.clearReshardState('failed');
+	}
+
+	private clearReshardState(state: 'idle' | 'failed') {
+		this.forEach(worker => {
+			delete worker.resharded;
+			delete worker.disconnected;
+			delete worker.cutoverApplied;
+		});
 		delete this._info;
 		this.reshardId = undefined;
-		this.reshardingState = 'idle';
-		this.debugger?.error('WorkerManager lifecycle failed', error);
+		this.reshardingParticipants.clear();
+		this.reshardingAbortAcks.clear();
+		this.reshardingCreatedWorkers.clear();
+		this.reshardingTerminationTasks.clear();
+		this.reshardingState = state;
+	}
+
+	private terminateCreatedReshardWorker(workerId: number, incarnationId: string) {
+		if (this.reshardingCreatedWorkers.get(workerId) !== incarnationId) return;
+		const current = this.reshardingTerminationTasks.get(workerId);
+		if (current && current.incarnationId !== incarnationId)
+			return Promise.reject(new TypeError(`Resharding worker ${workerId} termination identity changed`));
+		if (current) return current.task;
+		const task = this.runReshardWorkerTermination(workerId, incarnationId);
+		this.reshardingTerminationTasks.set(workerId, { incarnationId, task });
+		return task;
+	}
+
+	private async runReshardWorkerTermination(workerId: number, incarnationId: string) {
+		const worker = this.get(workerId);
+		if (!worker || worker.incarnationId !== incarnationId) {
+			throw new TypeError(`Cannot terminate replaced resharding worker ${workerId}`);
+		}
+		let lastError: unknown;
+		// Keep cleanup finite while absorbing transient process-runner failures locally.
+		for (let attempt = 0; attempt < 3; attempt++) {
+			try {
+				switch (this.options.mode) {
+					case 'threads':
+						await (worker as WorkerThreadsWorker).terminate();
+						break;
+					case 'clusters': {
+						const clusterWorker = worker as ClusterWorker;
+						if (!clusterWorker.isDead()) {
+							const exit = once(clusterWorker, 'exit');
+							clusterWorker.kill();
+							await exit;
+						}
+						break;
+					}
+					case 'custom':
+						await worker.terminateReshardWorker!();
+						break;
+				}
+				lastError = undefined;
+				break;
+			} catch (error) {
+				lastError = error;
+			}
+		}
+		if (lastError) throw new AggregateError([lastError], `Could not terminate resharding worker ${workerId}`);
+		if (this.get(workerId) !== worker) throw new TypeError(`Resharding worker ${workerId} changed while terminating`);
+		this.heartbeater.unregister(workerId);
+		this.delete(workerId);
+		this.reshardingCreatedWorkers.delete(workerId);
 	}
 
 	createWorker(workerData: WorkerData) {
@@ -301,7 +423,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 				this.postMessage(workerData.workerId, {
 					type: 'WORKER_ALREADY_EXISTS_RESHARDING',
 					reshardId: workerData.reshardId!,
-				} satisfies ManagerWorkerAlreadyExistsResharding);
+				} satisfies OutboundManagerMessage<ManagerWorkerAlreadyExistsResharding>);
 			}
 			const worker = this.get(workerData.workerId)!;
 			return worker;
@@ -348,11 +470,11 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 				const worker = {
 					ready: false,
 					incarnationId: workerData.incarnationId,
-				};
+				} as WorkerHandle;
 				this.set(workerData.workerId, worker);
 				const spawned = Promise.resolve()
 					.then(() => adapter.spawn(workerData, env))
-					.then(() => undefined)
+					.then(resource => void (worker.terminateReshardWorker = () => resource.terminate()))
 					.catch(error => {
 						if (this.get(workerData.workerId) === worker) this.delete(workerData.workerId);
 						throw error;
@@ -369,6 +491,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 
 	spawn(workerId: number, shardId: number, reshardId?: string) {
 		this.connectQueue.push(() => {
+			if (reshardId && (this.reshardingState !== 'running' || this.reshardId !== reshardId)) return;
 			const worker = this.has(workerId);
 			if (!worker) {
 				this.debugger?.fatal(`Trying ${reshardId ? 'reshard' : 'spawn'} with worker that doesn't exist`);
@@ -381,9 +504,13 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 					shardId,
 					presence,
 					reshardId,
-				} satisfies ManagerAllowConnectResharding);
+				} satisfies OutboundManagerMessage<ManagerAllowConnectResharding>);
 			} else {
-				this.postMessage(workerId, { type: 'ALLOW_CONNECT', shardId, presence } satisfies ManagerAllowConnect);
+				this.postMessage(workerId, {
+					type: 'ALLOW_CONNECT',
+					shardId,
+					presence,
+				} satisfies OutboundManagerMessage<ManagerAllowConnect>);
 			}
 		});
 	}
@@ -394,6 +521,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 			this.get(message.workerId)?.incarnationId !== message.incarnationId
 		)
 			return;
+		await this.options.handleWorkerMessage?.(message);
 		switch (message.type) {
 			case 'ACK_HEARTBEAT':
 				this.heartbeater.acknowledge(message.workerId);
@@ -410,11 +538,8 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 							this.postMessage(id, {
 								type: 'DISCONNECT_ALL_SHARDS_RESHARDING',
 								reshardId: message.reshardId,
-							} satisfies DisconnectAllShardsResharding);
+							} satisfies OutboundManagerMessage<DisconnectAllShardsResharding>);
 						}
-						this.forEach(w => {
-							delete w.resharded;
-						});
 					} else {
 						const nextWorker = this.reshardingWorkerQueue.shift();
 						if (nextWorker) {
@@ -439,9 +564,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 						this.options.totalShards = info.shards;
 						this.options.shardEnd = this.options.totalShards = this.options.info.shards = info.shards;
 						this.options.workers = this.size;
-						this.forEach(w => {
-							w.cutoverApplied = false;
-						});
+						this.forEach(w => (w.cutoverApplied ??= false));
 						for (const [id] of this.entries()) {
 							this.postMessage(id, {
 								type: 'CONNECT_ALL_SHARDS_RESHARDING',
@@ -449,11 +572,8 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 								totalWorkers: this.options.workers,
 								info: { ...this.options.info, shards: this.options.totalShards },
 								reshardId: message.reshardId,
-							} satisfies ConnnectAllShardsResharding);
+							} satisfies OutboundManagerMessage<ConnnectAllShardsResharding>);
 						}
-						this.forEach(w => {
-							delete w.disconnected;
-						});
 					}
 				}
 				break;
@@ -463,18 +583,14 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 					const worker = this.get(message.workerId);
 					if (!worker) break;
 					worker.cutoverApplied = true;
-					if ([...this.values()].every(w => w.cutoverApplied)) {
-						this.forEach(w => delete w.cutoverApplied);
-						delete this._info;
-						this.reshardId = undefined;
-						this.reshardingState = 'idle';
-					}
+					if ([...this.values()].every(w => w.cutoverApplied)) this.clearReshardState('idle');
 				}
 				break;
 			case 'WORKER_START_RESHARDING':
 				{
 					const info = this._info;
 					if (!info || this.reshardingState !== 'running' || message.reshardId !== this.reshardId) break;
+					this.reshardingParticipants.set(message.workerId, message.incarnationId);
 					this.postMessage(message.workerId, {
 						type: 'SPAWN_SHARDS_RESHARDING',
 						reshardId: message.reshardId,
@@ -487,7 +603,17 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 							...properties,
 							...this.options.properties,
 						},
-					} satisfies ManagerSpawnShardsResharding);
+					} satisfies OutboundManagerMessage<ManagerSpawnShardsResharding>);
+				}
+				break;
+			case 'WORKER_RESHARD_ABORTED':
+				{
+					if (this.reshardingState !== 'aborting' || message.reshardId !== this.reshardId) break;
+					if (this.reshardingParticipants.get(message.workerId) !== message.incarnationId) break;
+					if (!this.reshardingAbortAcks.has(message.workerId)) this.reshardingAbortAcks.add(message.workerId);
+					await this.terminateCreatedReshardWorker(message.workerId, message.incarnationId);
+					if (!this.reshardingCreatedWorkers.size && this.reshardingAbortAcks.size === this.reshardingParticipants.size)
+						this.clearReshardState('failed');
 				}
 				break;
 			case 'WORKER_START':
@@ -503,7 +629,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 							...properties,
 							...this.options.properties,
 						},
-					} satisfies ManagerSpawnShards);
+					} satisfies OutboundManagerMessage<ManagerSpawnShards>);
 				}
 				break;
 
@@ -528,7 +654,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 						type: 'CACHE_RESULT',
 						nonce: message.nonce,
 						result,
-					} as ManagerSendCacheResult);
+					} as OutboundManagerMessage<ManagerSendCacheResult>);
 				}
 				break;
 			case 'RECEIVE_PAYLOAD':
@@ -547,7 +673,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 				break;
 			case 'SHARD_INFO':
 				{
-					const { nonce, type, ...data } = message;
+					const { incarnationId: _incarnationId, nonce, type, ...data } = message;
 					const shardInfo = this.promises.get(nonce);
 					if (!shardInfo) {
 						return;
@@ -559,7 +685,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 				break;
 			case 'WORKER_INFO':
 				{
-					const { nonce, type, ...data } = message;
+					const { incarnationId: _incarnationId, nonce, type, ...data } = message;
 					const workerInfo = this.promises.get(nonce);
 					if (!workerInfo) {
 						return;
@@ -575,7 +701,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 					if (this.size === this.totalWorkers && [...this.values()].every(w => w.ready)) {
 						this.postMessage(this.keys().next().value!, {
 							type: 'BOT_READY',
-						} satisfies ManagerSendBotReady);
+						} satisfies OutboundManagerMessage<ManagerSendBotReady>);
 						this.forEach(w => {
 							delete w.ready;
 						});
@@ -608,7 +734,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 						nonce: message.nonce,
 						response,
 						type: 'API_RESPONSE',
-					} satisfies ManagerSendApiResponse);
+					} satisfies OutboundManagerMessage<ManagerSendApiResponse>);
 				}
 				break;
 			case 'EVAL_RESPONSE':
@@ -632,13 +758,13 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 						type: 'EXECUTE_EVAL_TO_WORKER',
 						toWorkerId: message.toWorkerId,
 						vars: message.vars,
-					} satisfies ManagerExecuteEvalToWorker);
+					} satisfies OutboundManagerMessage<ManagerExecuteEvalToWorker>);
 					this.generateSendPromise(nonce, 'Eval timeout').then(val =>
 						this.postMessage(message.workerId, {
 							nonce: message.nonce,
 							response: val,
 							type: 'EVAL_RESPONSE',
-						} satisfies ManagerSendEvalResponse),
+						} satisfies OutboundManagerMessage<ManagerSendEvalResponse>),
 					);
 				}
 				break;
@@ -679,7 +805,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 			shardId,
 			nonce,
 			...payload,
-		} satisfies ManagerSendPayload);
+		} satisfies OutboundManagerMessage<ManagerSendPayload>);
 
 		return this.generateSendPromise<true>(nonce, 'Shard send payload timeout');
 	}
@@ -700,7 +826,11 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 
 		const nonce = this.generateNonce();
 
-		this.postMessage(workerId, { shardId, nonce, type: 'SHARD_INFO' } satisfies ManagerRequestShardInfo);
+		this.postMessage(workerId, {
+			shardId,
+			nonce,
+			type: 'SHARD_INFO',
+		} satisfies OutboundManagerMessage<ManagerRequestShardInfo>);
 
 		return this.generateSendPromise<WorkerShardInfo>(nonce, 'Get shard info timeout');
 	}
@@ -714,7 +844,10 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 
 		const nonce = this.generateNonce();
 
-		this.postMessage(workerId, { nonce, type: 'WORKER_INFO' } satisfies ManagerRequestWorkerInfo);
+		this.postMessage(workerId, {
+			nonce,
+			type: 'WORKER_INFO',
+		} satisfies OutboundManagerMessage<ManagerRequestWorkerInfo>);
 
 		return this.generateSendPromise<WorkerInfo>(nonce, 'Get worker info timeout');
 	}
@@ -730,7 +863,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 			func: func.toString(),
 			nonce,
 			vars: JSON.stringify(vars),
-		} satisfies ManagerExecuteEval);
+		} satisfies OutboundManagerMessage<ManagerExecuteEval>);
 		return this.generateSendPromise<R>(nonce);
 	}
 
@@ -765,6 +898,8 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 	}
 
 	start(): Promise<void> {
+		if (this.reshardingState === 'aborting' || this.reshardingState === 'failed')
+			return Promise.reject(this.lifecycleError);
 		if (this.startPromise) return this.startPromise;
 		const start = this.startRuntime();
 		this.startPromise = start;
@@ -818,6 +953,10 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 			this.debugger?.info(`Starting resharding process to ${info.shards}`);
 			this.reshardingState = 'running';
 			this.reshardId = randomUUID();
+			this.reshardingParticipants.clear();
+			this.reshardingAbortAcks.clear();
+			this.reshardingCreatedWorkers.clear();
+			this.reshardingTerminationTasks.clear();
 			this._info = info;
 			this.connectQueue.concurrency = info.session_start_limit.max_concurrency;
 			this.options.info.session_start_limit.max_concurrency = info.session_start_limit.max_concurrency;
@@ -838,10 +977,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 				});
 			await firstWorker();
 		} catch (error) {
-			this.reshardingWorkerQueue = [];
-			delete this._info;
-			this.reshardId = undefined;
-			this.reshardingState = 'idle';
+			if (this.reshardingState === 'running') this.failWorkerLifecycle(error);
 			throw error;
 		} finally {
 			if (this.reshardingState === 'checking') this.reshardingState = 'idle';
@@ -849,6 +985,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 	}
 
 	async startResharding() {
+		if (this.reshardingState === 'aborting' || this.reshardingState === 'failed') return;
 		if (this.options.resharding.interval <= 0) return;
 		if (this.shardStart !== 0 || this.shardEnd !== this.totalShards)
 			return this.debugger?.debug('Cannot start resharder');
@@ -860,113 +997,3 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 		}, this.options.resharding.interval);
 	}
 }
-
-type CreateManagerMessage<T extends string, D extends object = object> = { type: T } & D;
-
-export type ManagerAllowConnect = CreateManagerMessage<
-	'ALLOW_CONNECT',
-	{ shardId: number; presence?: GatewayPresenceUpdateData }
->;
-export type ManagerAllowConnectResharding = CreateManagerMessage<
-	'ALLOW_CONNECT_RESHARDING',
-	{ shardId: number; presence?: GatewayPresenceUpdateData; reshardId: string }
->;
-export type ManagerWorkerAlreadyExistsResharding = CreateManagerMessage<
-	'WORKER_ALREADY_EXISTS_RESHARDING',
-	{ reshardId: string }
->;
-export type ManagerSpawnShards = CreateManagerMessage<
-	'SPAWN_SHARDS',
-	Pick<ShardOptions, 'info' | 'properties' | 'compress'>
->;
-export type ManagerSpawnShardsResharding = CreateManagerMessage<
-	'SPAWN_SHARDS_RESHARDING',
-	Pick<ShardOptions, 'info' | 'properties' | 'compress'> & { reshardId: string }
->;
-export type DisconnectAllShardsResharding = CreateManagerMessage<
-	'DISCONNECT_ALL_SHARDS_RESHARDING',
-	{ reshardId: string }
->;
-export type ConnnectAllShardsResharding = CreateManagerMessage<
-	'CONNECT_ALL_SHARDS_RESHARDING',
-	{
-		info: ShardOptions['info'];
-		totalShards: number;
-		totalWorkers: number;
-		reshardId: string;
-	}
->;
-export type ManagerSendPayload = CreateManagerMessage<
-	'SEND_PAYLOAD',
-	GatewaySendPayload & { shardId: number; nonce: string }
->;
-export type ManagerRequestShardInfo = CreateManagerMessage<'SHARD_INFO', { nonce: string; shardId: number }>;
-export type ManagerRequestWorkerInfo = CreateManagerMessage<'WORKER_INFO', { nonce: string }>;
-export type ManagerSendCacheResult = CreateManagerMessage<'CACHE_RESULT', { nonce: string; result: any }>;
-export type ManagerSendBotReady = CreateManagerMessage<'BOT_READY'>;
-export type ManagerSendApiResponse = CreateManagerMessage<
-	'API_RESPONSE',
-	{
-		response: any;
-		error?: any;
-		nonce: string;
-	}
->;
-export type ManagerExecuteEvalToWorker = CreateManagerMessage<
-	'EXECUTE_EVAL_TO_WORKER',
-	{
-		func: string;
-		nonce: string;
-		vars: string;
-		toWorkerId: number;
-	}
->;
-
-export type ManagerExecuteEval = CreateManagerMessage<
-	'EXECUTE_EVAL',
-	{
-		func: string;
-		vars: string;
-		nonce: string;
-	}
->;
-
-export type ManagerSendEvalResponse = CreateManagerMessage<
-	'EVAL_RESPONSE',
-	{
-		response: any;
-		nonce: string;
-	}
->;
-
-export type BaseManagerMessages =
-	| ManagerAllowConnect
-	| ManagerSpawnShards
-	| ManagerSendPayload
-	| ManagerRequestShardInfo
-	| ManagerRequestWorkerInfo
-	| ManagerSendCacheResult
-	| ManagerSendBotReady
-	| ManagerSendApiResponse
-	| ManagerSendEvalResponse
-	| ManagerExecuteEvalToWorker
-	| ManagerWorkerAlreadyExistsResharding
-	| ManagerSpawnShardsResharding
-	| ManagerAllowConnectResharding
-	| DisconnectAllShardsResharding
-	| ConnnectAllShardsResharding
-	| ManagerExecuteEval;
-
-export type CustomManagerMessages = {
-	[K in keyof CustomWorkerManagerEvents]: Identify<
-		{
-			type: K;
-		} & Identify<CustomWorkerManagerEvents[K] extends never ? {} : CustomWorkerManagerEvents[K]>
-	>;
-};
-
-export type ManagerMessages =
-	| {
-			[K in BaseManagerMessages['type']]: Identify<Extract<BaseManagerMessages, { type: K }>>;
-	  }[BaseManagerMessages['type']]
-	| CustomManagerMessages[keyof CustomManagerMessages];

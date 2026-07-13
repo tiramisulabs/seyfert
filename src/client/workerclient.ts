@@ -41,6 +41,7 @@ import type {
 	WorkerReceivePayload,
 	WorkerRequestConnect,
 	WorkerRequestConnectResharding,
+	WorkerReshardAborted,
 	WorkerSendEvalResponse,
 	WorkerSendInfo,
 	WorkerSendResultPayload,
@@ -157,6 +158,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	setWorkerData(data: WorkerData) {
+		this.assertWorkerData(data);
 		workerData = data;
 		this.reshardId = data.reshardId;
 	}
@@ -166,6 +168,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	async start(options: Omit<DeepPartial<StartOptions>, 'httpConnection' | 'token' | 'connection'> = {}) {
+		this.assertWorkerData(workerData);
 		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
 
 		if (worker_threads?.parentPort) {
@@ -242,6 +245,13 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	async handleManagerMessages(data: ManagerMessages | WorkerHeartbeaterMessages | PhysicalHostToWorkerMessage) {
 		if (await this.physicalRuntime?.handleMessage(data)) return;
+		if (
+			typeof workerData.incarnationId !== 'string' ||
+			!('incarnationId' in data) ||
+			typeof data.incarnationId !== 'string' ||
+			data.incarnationId !== workerData.incarnationId
+		)
+			return;
 		await this.options.handleManagerMessages?.(data as ManagerMessages | WorkerHeartbeaterMessages);
 		switch (data.type) {
 			case 'HEARTBEAT':
@@ -267,7 +277,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						return;
 					}
 
-					const { nonce: _nonce, shardId: _shardId, type: _type, ...payload } = data;
+					const { incarnationId: _incarnationId, nonce: _nonce, shardId: _shardId, type: _type, ...payload } = data;
 					const pluginPayload = await applyPluginGatewaySendPayloadWrappers(
 						this,
 						data.shardId,
@@ -475,6 +485,22 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					} satisfies WorkerDisconnectedAllShardsResharding);
 				}
 				break;
+			case 'ABORT_RESHARDING':
+				{
+					if (data.reshardId !== this.reshardId) break;
+					for (const shard of this.resharding.values()) shard.disconnect(ShardSocketCloseCodes.ShutdownAll);
+					this.resharding.clear();
+					this.reshardReadyShards.delete(data.reshardId);
+					this.reshardReadinessSent.delete(data.reshardId);
+					this.reshardId = undefined;
+					await this.postMessage({
+						type: 'WORKER_RESHARD_ABORTED',
+						workerId: workerData.workerId,
+						incarnationId: workerData.incarnationId!,
+						reshardId: data.reshardId,
+					} satisfies WorkerReshardAborted);
+				}
+				break;
 			case 'CONNECT_ALL_SHARDS_RESHARDING':
 				{
 					if (data.reshardId !== this.reshardId) break;
@@ -505,6 +531,12 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				}
 				break;
 		}
+	}
+
+	private assertWorkerData(data: WorkerData | undefined): asserts data is WorkerData {
+		if (!data) throw new TypeError('Worker data must be configured before starting a worker client');
+		if (!this.physicalRuntime && (typeof data.incarnationId !== 'string' || data.incarnationId.trim().length === 0))
+			throw new TypeError('Legacy worker data requires a non-empty incarnationId');
 	}
 
 	calculateShardId(guildId: string) {
@@ -614,92 +646,88 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		if (pluginPacket === null) return null;
 		packet = pluginPacket;
 
-		const rawTasks = Promise.allSettled([
+		void Promise.allSettled([
 			this.events.runEvent('RAW', this, packet, shardId, false),
 			this.collectors.run('RAW', packet, this),
 		]);
-		try {
-			switch (packet.t) {
-				case 'GUILD_MEMBER_UPDATE':
-					{
-						if (!this.memberUpdateHandler.check(packet.d)) {
-							return packet;
-						}
-						await this.events.execute(packet, this as WorkerClient<true>, shardId);
+		switch (packet.t) {
+			case 'GUILD_MEMBER_UPDATE':
+				{
+					if (!this.memberUpdateHandler.check(packet.d)) {
+						return packet;
 					}
-					break;
-				case 'PRESENCE_UPDATE':
-					{
-						if (!this.presenceUpdateHandler.check(packet.d)) {
-							return packet;
-						}
-						await this.events.execute(packet, this as WorkerClient<true>, shardId);
+					await this.events.execute(packet, this as WorkerClient<true>, shardId);
+				}
+				break;
+			case 'PRESENCE_UPDATE':
+				{
+					if (!this.presenceUpdateHandler.check(packet.d)) {
+						return packet;
 					}
-					break;
-				default: {
-					switch (packet.t) {
-						case GatewayDispatchEvents.InteractionCreate:
-							{
-								await this.events.execute(packet, this, shardId);
-								await this.handleCommand.interaction(packet.d, shardId);
-							}
-							break;
-						case GatewayDispatchEvents.MessageCreate:
-							{
-								await this.events.execute(packet, this, shardId);
-								await this.handleCommand.message(packet.d, shardId);
-							}
-							break;
-						case GatewayDispatchEvents.Ready: {
-							this.botId = packet.d.user.id;
-							this.applicationId = packet.d.application.id;
-							this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
+					await this.events.execute(packet, this as WorkerClient<true>, shardId);
+				}
+				break;
+			default: {
+				switch (packet.t) {
+					case GatewayDispatchEvents.InteractionCreate:
+						{
+							await this.events.execute(packet, this, shardId);
+							await this.handleCommand.interaction(packet.d, shardId);
+						}
+						break;
+					case GatewayDispatchEvents.MessageCreate:
+						{
+							await this.events.execute(packet, this, shardId);
+							await this.handleCommand.message(packet.d, shardId);
+						}
+						break;
+					case GatewayDispatchEvents.Ready: {
+						this.botId = packet.d.user.id;
+						this.applicationId = packet.d.application.id;
+						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
+						if (
+							this.physicalRuntime
+								? this.physicalRuntime.claimShardsConnected(shardId)
+								: [...this.shards.values()].every(shard => shard.data.session_id)
+						) {
+							if (!this.physicalRuntime)
+								this.postMessage({
+									type: 'WORKER_SHARDS_CONNECTED',
+									workerId: this.workerId,
+									incarnationId: workerData.incarnationId!,
+								} as WorkerShardsConnected);
+							await this.events.runEvent('WORKER_SHARDS_CONNECTED', this, this.me, -1);
+						}
+						await this.events.execute(packet, this, shardId);
+						this.debugger?.debug(`#${shardId}[${packet.d.user.username}](${this.botId}) is online...`);
+						break;
+					}
+					case GatewayDispatchEvents.GuildsReady:
+						{
 							if (
 								this.physicalRuntime
-									? this.physicalRuntime.claimShardsConnected(shardId)
-									: [...this.shards.values()].every(shard => shard.data.session_id)
+									? this.physicalRuntime.claimWorkerReady(shardId)
+									: [...this.shards.values()].every(shard => shard.isReady)
 							) {
 								if (!this.physicalRuntime)
 									this.postMessage({
-										type: 'WORKER_SHARDS_CONNECTED',
+										type: 'WORKER_READY',
 										workerId: this.workerId,
 										incarnationId: workerData.incarnationId!,
-									} as WorkerShardsConnected);
-								await this.events.runEvent('WORKER_SHARDS_CONNECTED', this, this.me, -1);
+									} as WorkerReady);
+								await this.events.runEvent('WORKER_READY', this, this.me, -1);
 							}
 							await this.events.execute(packet, this, shardId);
-							this.debugger?.debug(`#${shardId}[${packet.d.user.username}](${this.botId}) is online...`);
-							break;
 						}
-						case GatewayDispatchEvents.GuildsReady:
-							{
-								if (
-									this.physicalRuntime
-										? this.physicalRuntime.claimWorkerReady(shardId)
-										: [...this.shards.values()].every(shard => shard.isReady)
-								) {
-									if (!this.physicalRuntime)
-										this.postMessage({
-											type: 'WORKER_READY',
-											workerId: this.workerId,
-											incarnationId: workerData.incarnationId!,
-										} as WorkerReady);
-									await this.events.runEvent('WORKER_READY', this, this.me, -1);
-								}
-								await this.events.execute(packet, this, shardId);
-							}
-							break;
-						default:
-							await this.events.execute(packet, this, shardId);
-							break;
-					}
-					break;
+						break;
+					default:
+						await this.events.execute(packet, this, shardId);
+						break;
 				}
+				break;
 			}
-			return packet;
-		} finally {
-			await rawTasks;
 		}
+		return packet;
 	}
 }
 

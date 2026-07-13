@@ -58,6 +58,7 @@ export type {
 	PhysicalShardTopology,
 	PhysicalWorkerCommand,
 	PhysicalWorkerConnection,
+	PhysicalWorkerDispatchContext,
 	PhysicalWorkerIdentity,
 	PhysicalWorkerIpcMessage,
 	PhysicalWorkerPortAdapter,
@@ -69,6 +70,7 @@ export type {
 } from './websocket/discord/physical-worker-port';
 export type {
 	CustomManagerAdapter,
+	CustomManagerWorkerResource,
 	ResolvedWorkerShardTopology,
 	ShardData,
 	ShardManagerOptions,

@@ -163,6 +163,9 @@ export class PhysicalWorkerRuntime {
 				canonicalFingerprint({ body, snapshot: message.snapshot }),
 				() =>
 					this.serializeDispatch(body.shardId, async () => {
+						if (this.closed || !this.isAssignedShard(body.shardId)) {
+							throw new TypeError('Invalid physical gateway dispatch');
+						}
 						if (message.snapshot) {
 							snapshotFingerprint = canonicalFingerprint(message.snapshot);
 							hydrationTask = this.hydrate(message.snapshot, snapshotFingerprint);

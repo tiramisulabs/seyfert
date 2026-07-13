@@ -112,6 +112,7 @@ describe('client logger options', () => {
 		client.setWorkerData({
 			compress: false,
 			debug: false,
+			incarnationId: 'logger-worker',
 			info: {} as WorkerData['info'],
 			intents: 0,
 			mode: 'custom',

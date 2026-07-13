@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from 'vitest';
 import { GatewayIntentBits, type RESTGetAPIGatewayBotResult } from '../src/types';
 import { WorkerManager } from '../src/websocket';
+import type { WorkerData } from '../src/websocket/discord/shared';
 
 function gatewayInfo(shards = 4): RESTGetAPIGatewayBotResult {
 	return {
@@ -30,7 +31,7 @@ function createManager(
 	gatewayGet = vi.fn(async () => gatewayInfo()),
 	info?: RESTGetAPIGatewayBotResult,
 ) {
-	const spawn = vi.fn();
+	const spawn = vi.fn((_worker: WorkerData, _env: Record<string, unknown>) => ({ terminate() {} }));
 	const getRC = vi.fn(async () => ({
 		debug: false,
 		intents: GatewayIntentBits.Guilds,
@@ -114,7 +115,7 @@ describe('WorkerManager.resolveShardTopology', () => {
 		manager.options.totalShards = 2;
 		manager.options.shardsPerWorker = 1;
 		manager.options.workers = 2;
-		spawn.mockRejectedValueOnce(error).mockResolvedValue(undefined);
+		spawn.mockRejectedValueOnce(error).mockResolvedValue({ terminate() {} });
 
 		const first = manager.start();
 		const concurrent = manager.start();

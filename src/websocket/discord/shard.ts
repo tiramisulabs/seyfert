@@ -265,7 +265,9 @@ export class Shard {
 		return (this.reconnectPromise ??= (async () => {
 			this.debugger?.info(`[Shard #${this.id}] Reconnecting`);
 			this.disconnect(code);
+			const generation = this.connectGeneration;
 			await delay(this.options.reconnectTimeout);
+			if (generation !== this.connectGeneration) return;
 			await this.connect();
 		})().finally(() => {
 			this.reconnectPromise = undefined;

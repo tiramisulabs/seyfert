@@ -493,18 +493,22 @@ describe('PhysicalWorkerPort', () => {
 		expect(closeCalls).toBe(1);
 	});
 
-	test('closes and releases a slot without waiting for a pending launch hook', async () => {
+	test('keeps a pending launch fenced until its physical connection closes', async () => {
 		let launches = 0;
+		let resolveLaunch!: (connection: { ready: Promise<void>; close(): Promise<void> }) => void;
+		let releaseClose!: () => void;
+		const closeBarrier = new Promise<void>(resolve => (releaseClose = resolve));
+		const pendingLaunch = new Promise<{ ready: Promise<void>; close(): Promise<void> }>(
+			resolve => (resolveLaunch = resolve),
+		);
+		const close = vi.fn(() => closeBarrier);
 		const port = new PhysicalWorkerPort({
 			adapter: {
-				launch: () =>
-					launches++ === 0
-						? new Promise<never>(() => undefined)
-						: Promise.resolve({ ready: Promise.resolve(), close() {} }),
+				launch: () => (launches++ === 0 ? pendingLaunch : Promise.resolve({ ready: Promise.resolve(), close() {} })),
 				dispatch() {},
 			},
 		});
-		void port.control(
+		const launching = port.control(
 			command({
 				commandId: 'pending-launch',
 				kind: 'launch',
@@ -514,12 +518,32 @@ describe('PhysicalWorkerPort', () => {
 		);
 		await Promise.resolve();
 		await Promise.resolve();
-		await expect(port.control(command({ commandId: 'close-pending', kind: 'close' }))).resolves.toMatchObject({
-			state: 'closed',
+		let closeSettled = false;
+		const closing = port.control(command({ commandId: 'close-pending', kind: 'close' })).then(receipt => {
+			closeSettled = true;
+			return receipt;
 		});
+		await Promise.resolve();
+		expect(closeSettled).toBe(false);
 		await expect(
 			port.control({
-				commandId: 'replacement',
+				commandId: 'replacement-before-close',
+				kind: 'launch',
+				identity: { slot: id.slot, token: 'replacement' },
+				topology: { shardStart: 0, shardEnd: 1, totalShards: 1 },
+				maxBufferedDispatches: 1,
+			}),
+		).resolves.toMatchObject({ kind: 'rejected', reason: 'stale-token' });
+
+		resolveLaunch({ ready: Promise.resolve(), close });
+		await vi.waitFor(() => expect(close).toHaveBeenCalledOnce());
+		expect(closeSettled).toBe(false);
+		releaseClose();
+		await expect(closing).resolves.toMatchObject({ kind: 'accepted', state: 'closed' });
+		await expect(launching).resolves.toMatchObject({ kind: 'rejected', reason: 'invalid-state' });
+		await expect(
+			port.control({
+				commandId: 'replacement-after-close',
 				kind: 'launch',
 				identity: { slot: id.slot, token: 'replacement' },
 				topology: { shardStart: 0, shardEnd: 1, totalShards: 1 },

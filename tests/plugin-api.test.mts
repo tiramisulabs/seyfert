@@ -79,6 +79,7 @@ function setWorkerData(client: WorkerClient, workerId = 1) {
 	client.setWorkerData({
 		compress: false,
 		debug: false,
+		incarnationId: `plugin-worker-${workerId}`,
 		info: gatewayInfo(),
 		intents: 0,
 		mode: 'custom',
@@ -307,6 +308,7 @@ describe('plugin api v3', () => {
 		client.setWorkerData({
 			compress: false,
 			debug: false,
+			incarnationId: 'worker-intents',
 			info: gatewayInfo(),
 			intents: GatewayIntentBits.GuildMembers,
 			mode: 'custom',
@@ -324,7 +326,7 @@ describe('plugin api v3', () => {
 
 		expect(client.workerData.intents & GatewayIntentBits.GuildMembers).toBe(GatewayIntentBits.GuildMembers);
 		expect(client.workerData.intents & GatewayIntentBits.Guilds).toBe(GatewayIntentBits.Guilds);
-		expect(messages[0]).toEqual({ type: 'WORKER_START', workerId: 1 });
+		expect(messages[0]).toEqual({ type: 'WORKER_START', workerId: 1, incarnationId: 'worker-intents' });
 	});
 
 	test('cleans setup-scoped options defaults wrappers and intents after setup failure', async () => {
@@ -1795,6 +1797,7 @@ describe('plugin api v3', () => {
 		expect(messages).toEqual([
 			{
 				workerId: 9,
+				incarnationId: 'plugin-worker-9',
 				shardId: 0,
 				type: 'RECEIVE_PAYLOAD',
 				payload: expect.objectContaining({

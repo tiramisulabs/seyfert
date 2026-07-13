@@ -190,6 +190,35 @@ describe('WorkerClient physical IPC', () => {
 		});
 	});
 
+	test('fences same-identity dispatches queued before runtime close', async () => {
+		let release!: () => void;
+		const blocked = new Promise<void>(resolve => (release = resolve));
+		const handlePayload = vi.fn((_shardId: number, payload: GatewayDispatchPayload) =>
+			payload.s === 1 ? blocked : undefined,
+		);
+		const { client, messages } = await createPhysicalClient(handlePayload);
+		const apply = (dispatchId: string, sequence: number) =>
+			client.handleManagerMessages({
+				type: 'SEYFERT_PHYSICAL_APPLY_DISPATCH',
+				...identity,
+				dispatchId,
+				body: { shardId: 0, payload: packet(sequence) },
+			});
+		const first = apply('before-close-active', 1);
+		await vi.waitFor(() => expect(handlePayload).toHaveBeenCalledTimes(1));
+		const queued = apply('before-close-queued', 2);
+
+		await client.close();
+		release();
+		await Promise.all([first, queued]);
+
+		expect(handlePayload).toHaveBeenCalledTimes(1);
+		expect(messages.find(message => message.dispatchId === 'before-close-queued')).toMatchObject({
+			type: 'SEYFERT_PHYSICAL_DISPATCH_ACK',
+			error: expect.stringMatching(/invalid physical gateway dispatch/i),
+		});
+	});
+
 	test('bootstraps exactly its physical shards through the local identify queue without a legacy manager', async () => {
 		vi.useFakeTimers();
 		const messages: Record<string, any>[] = [];
@@ -527,7 +556,7 @@ describe('WorkerClient physical IPC', () => {
 		});
 	});
 
-	test('runs typed handling while RAW is pending but delays dispatch ACK until RAW settles', async () => {
+	test('runs typed handling and acknowledges while isolated RAW work is pending', async () => {
 		let releaseRaw!: () => void;
 		const rawPending = new Promise<void>(resolve => {
 			releaseRaw = resolve;
@@ -546,19 +575,13 @@ describe('WorkerClient physical IPC', () => {
 		});
 		await vi.waitFor(() => expect(execute).toHaveBeenCalledOnce());
 		expect(runEvent).toHaveBeenCalledWith('RAW', client, packet(1), 0, false);
-		expect(messages.some(message => message.type === 'SEYFERT_PHYSICAL_DISPATCH_ACK')).toBe(false);
-
-		let settled = false;
-		void applying.then(() => (settled = true));
-		await Promise.resolve();
-		expect(settled).toBe(false);
-		releaseRaw();
 		await applying;
 		expect(messages.at(-1)).toEqual({
 			type: 'SEYFERT_PHYSICAL_DISPATCH_ACK',
 			...identity,
 			dispatchId: 'raw-concurrency',
 		});
+		releaseRaw();
 	});
 
 	test('gates disconnect callbacks until port-authorized traffic starts', async () => {
