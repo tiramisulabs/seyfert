@@ -1,5 +1,6 @@
 import type { GatewayDispatchPayload } from '../types';
 import { properties } from '../websocket/constants';
+import { canonicalFingerprint } from '../websocket/discord/physical-worker-codec';
 import type {
 	PhysicalGatewayDispatch,
 	PhysicalHostToWorkerMessage,
@@ -152,17 +153,21 @@ export class PhysicalWorkerRuntime {
 		let task: Promise<void>;
 		try {
 			if (!valid) throw new TypeError('Invalid physical gateway dispatch');
-			task = this.memoized(this.applied, message.dispatchId, fingerprint({ body, snapshot: message.snapshot }), () =>
-				this.serializeDispatch(body.shardId, async () => {
-					if (message.snapshot) {
-						snapshotFingerprint = fingerprint(message.snapshot);
-						hydrationTask = this.hydrate(message.snapshot, snapshotFingerprint);
-						await hydrationTask;
-					}
-					this.userTrafficStarted = true;
-					await this.client.dispatchGatewayPacket(body.shardId, body.payload);
-					if (body.payload.t === 'RESUMED') this.restoreResumedShard(body.shardId);
-				}),
+			task = this.memoized(
+				this.applied,
+				message.dispatchId,
+				canonicalFingerprint({ body, snapshot: message.snapshot }),
+				() =>
+					this.serializeDispatch(body.shardId, async () => {
+						if (message.snapshot) {
+							snapshotFingerprint = canonicalFingerprint(message.snapshot);
+							hydrationTask = this.hydrate(message.snapshot, snapshotFingerprint);
+							await hydrationTask;
+						}
+						this.userTrafficStarted = true;
+						await this.client.dispatchGatewayPacket(body.shardId, body.payload);
+						if (body.payload.t === 'RESUMED') this.restoreResumedShard(body.shardId);
+					}),
 			);
 		} catch (error) {
 			task = Promise.reject(error);
@@ -318,10 +323,6 @@ function isGatewayDispatch(value: unknown): value is PhysicalGatewayDispatch {
 
 function isObject(value: unknown): value is Record<string, any> {
 	return typeof value === 'object' && value !== null;
-}
-
-function fingerprint(value: unknown) {
-	return JSON.stringify(value);
 }
 
 function toError(error: unknown) {

@@ -1,5 +1,6 @@
 import type { Awaitable } from '../../common';
 import type { GatewayDispatchPayload } from '../../types';
+import { canonicalFingerprint, identityKey, operationKey } from './physical-worker-codec';
 
 export interface PhysicalWorkerIdentity {
 	/** Stable local slot. It has no placement or lifecycle meaning. */
@@ -252,7 +253,7 @@ export class PhysicalWorkerPort<Dispatch = unknown> {
 	private launch(command: Extract<PhysicalWorkerCommand, { kind: 'launch' }>) {
 		const current = this.slots.get(command.identity.slot);
 		if (current?.identity.token === command.identity.token) return Promise.resolve(this.invalidState(current, command));
-		if (this.closedIdentities.has(identityKey(command.identity))) {
+		if (this.closedIdentities.has(identityKey(command.identity.slot, command.identity.token))) {
 			return Promise.resolve(this.reject(command, 'stale-token', 'The opaque physical identity was already closed'));
 		}
 		if (current) {
@@ -415,7 +416,7 @@ export class PhysicalWorkerPort<Dispatch = unknown> {
 	}
 
 	private replay(command: PhysicalWorkerCommand, inputFingerprint: string) {
-		const key = operationKey(command.identity, command.commandId);
+		const key = operationKey(command.identity.slot, command.identity.token, command.commandId);
 		const previous = this.recent.get(key);
 		if (!previous) return;
 		this.recent.delete(key);
@@ -437,7 +438,7 @@ export class PhysicalWorkerPort<Dispatch = unknown> {
 			task: Promise.resolve().then(run),
 			settled: false,
 		};
-		this.recent.set(operationKey(command.identity, command.commandId), entry);
+		this.recent.set(operationKey(command.identity.slot, command.identity.token, command.commandId), entry);
 		void entry.task.then(
 			() => (entry.settled = true),
 			() => (entry.settled = true),
@@ -455,7 +456,7 @@ export class PhysicalWorkerPort<Dispatch = unknown> {
 
 	private release(record: PhysicalWorkerRecord<Dispatch>) {
 		if (this.slots.get(record.identity.slot) === record) this.slots.delete(record.identity.slot);
-		const key = identityKey(record.identity);
+		const key = identityKey(record.identity.slot, record.identity.token);
 		this.closedIdentities.delete(key);
 		this.closedIdentities.set(key, true);
 		while (this.closedIdentities.size > CLOSED_IDENTITY_LIMIT) {
@@ -464,7 +465,7 @@ export class PhysicalWorkerPort<Dispatch = unknown> {
 	}
 
 	private retireIdentity(identity: PhysicalWorkerIdentity) {
-		const prefix = `${identityKey(identity)}\0`;
+		const prefix = identityKey(identity.slot, identity.token);
 		for (const [key, entry] of this.recent) {
 			if (key.startsWith(prefix) && entry.operation !== 'close') this.recent.delete(key);
 		}
@@ -560,7 +561,7 @@ function prepareCommand(input: unknown): PreparedCommand {
 			default:
 				command = Object.freeze({ kind: input.kind, commandId: input.commandId, identity });
 		}
-		return { command, fingerprint: fingerprint(command) };
+		return { command, fingerprint: canonicalFingerprint(command) };
 	} catch (error) {
 		return { detail: `Command could not be read safely: ${toError(error).message}` };
 	}
@@ -589,20 +590,6 @@ function isCommandKind(value: unknown): value is PhysicalWorkerCommand['kind'] {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function fingerprint(value: unknown) {
-	const result = JSON.stringify(value);
-	if (result === undefined) throw new TypeError('Command must be serializable');
-	return result;
-}
-
-function identityKey(identity: PhysicalWorkerIdentity) {
-	return `${identity.slot}\0${identity.token}`;
-}
-
-function operationKey(identity: PhysicalWorkerIdentity, commandId: string) {
-	return `${identityKey(identity)}\0${commandId}`;
 }
 
 function isClosed(record: PhysicalWorkerRecord<unknown>) {

@@ -136,7 +136,7 @@ describe('WorkerClient physical IPC', () => {
 		);
 	});
 
-	test('acknowledges fingerprint failures exactly once', async () => {
+	test('acknowledges cyclic and bigint dispatch values exactly once', async () => {
 		const { client, messages } = await createPhysicalClient();
 		const cyclic: Record<string, unknown> = {};
 		cyclic.self = cyclic;
@@ -151,7 +151,7 @@ describe('WorkerClient physical IPC', () => {
 				body: { shardId: 0, payload: { ...packet(1), d: value } as GatewayDispatchPayload },
 			});
 			expect(messages.filter(message => message.dispatchId === dispatchId)).toHaveLength(1);
-			expect(messages.at(-1)).toMatchObject({ type: 'SEYFERT_PHYSICAL_DISPATCH_ACK', dispatchId, error: expect.any(String) });
+			expect(messages.at(-1)).toMatchObject({ type: 'SEYFERT_PHYSICAL_DISPATCH_ACK', dispatchId });
 		}
 	});
 

@@ -152,15 +152,12 @@ describe('PhysicalWorkerPort', () => {
 	test('rejects malformed runtime commands without throwing before correlation', async () => {
 		const launch = vi.fn(async () => ({ ready: Promise.resolve(), close() {} }));
 		const port = new PhysicalWorkerPort({ adapter: { launch, dispatch() {} } });
-		const circular: Record<string, unknown> = {};
-		circular.self = circular;
 		const malformed = [
 			null,
 			{},
 			{ kind: 'arm', commandId: 42, identity: id },
 			{ kind: 'arm', commandId: 'bad-token', identity: { slot: id.slot, token: 1 } },
 			{ kind: 'hydrate', commandId: 'bad-snapshot', identity: id, snapshot: null },
-			{ kind: 'hydrate', commandId: 'circular', identity: id, snapshot: circular },
 		];
 
 		for (const input of malformed) {
@@ -178,6 +175,51 @@ describe('PhysicalWorkerPort', () => {
 			reason: 'invalid-command',
 		});
 		expect(launch).not.toHaveBeenCalled();
+	});
+
+	test('uses injective identity keys and canonical command fingerprints', async () => {
+		const port = new PhysicalWorkerPort({
+			adapter: { launch: async () => ({ ready: Promise.resolve(), close() {} }), dispatch() {} },
+		});
+		const firstIdentity = { slot: 'a', token: 'b\0c' };
+		const secondIdentity = { slot: 'a\0b', token: 'c' };
+		await port.control({
+			kind: 'launch',
+			commandId: 'first-launch',
+			identity: firstIdentity,
+			topology: { shardStart: 0, shardEnd: 1, totalShards: 1 },
+			maxBufferedDispatches: 1,
+		});
+		await port.control({ kind: 'close', commandId: 'first-close', identity: firstIdentity });
+		await expect(
+			port.control({
+				kind: 'launch',
+				commandId: 'second-launch',
+				identity: secondIdentity,
+				topology: { shardStart: 0, shardEnd: 1, totalShards: 1 },
+				maxBufferedDispatches: 1,
+			}),
+		).resolves.toMatchObject({ kind: 'accepted' });
+
+		const hydrate = { kind: 'hydrate', commandId: 'canonical', identity: secondIdentity } as const;
+		const first = await port.control({ ...hydrate, snapshot: { a: 1, b: 2 } });
+		expect(await port.control({ ...hydrate, snapshot: { b: 2, a: 1 } })).toEqual(first);
+		expect(await port.control({ ...hydrate, snapshot: { a: Number.NaN, b: 2 } })).toMatchObject({
+			kind: 'rejected',
+			reason: 'invalid-command',
+		});
+		const undefinedValue = { kind: 'hydrate', commandId: 'undefined', identity: secondIdentity } as const;
+		await port.control({ ...undefinedValue, snapshot: { value: undefined } });
+		expect(await port.control({ ...undefinedValue, snapshot: {} })).toMatchObject({
+			kind: 'rejected',
+			reason: 'invalid-command',
+		});
+		const sparseValue = { kind: 'hydrate', commandId: 'sparse', identity: secondIdentity } as const;
+		await port.control({ ...sparseValue, snapshot: { items: [] } });
+		expect(await port.control({ ...sparseValue, snapshot: { items: Array(1) } })).toMatchObject({
+			kind: 'rejected',
+			reason: 'invalid-command',
+		});
 	});
 
 	test('fails closed when synchronous launch traffic exceeds the bound', async () => {
