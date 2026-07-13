@@ -45,6 +45,7 @@ export class Shard {
 	};
 
 	private isConnecting = false;
+	private connectGeneration = 0;
 	private reconnectPromise: Promise<void> | undefined;
 
 	bucket: DynamicBucket;
@@ -133,7 +134,9 @@ export class Shard {
 		}
 
 		this.isConnecting = true;
+		const generation = this.connectGeneration;
 		await this.connectTimeout.wait();
+		if (generation !== this.connectGeneration) return;
 		if (this.isOpen) {
 			this.debugger?.debug(`[Shard #${this.id}] Attempted to connect while open`);
 			this.isConnecting = false;
@@ -249,6 +252,7 @@ export class Shard {
 	}
 
 	disconnect(code = ShardSocketCloseCodes.Shutdown) {
+		this.connectGeneration++;
 		clearTimeout(this.connectionTimeout);
 		this.connectionTimeout = undefined;
 		clearTimeout(this.heart.ackTimeout);

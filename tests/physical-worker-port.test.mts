@@ -493,6 +493,41 @@ describe('PhysicalWorkerPort', () => {
 		expect(closeCalls).toBe(1);
 	});
 
+	test('closes and releases a slot without waiting for a pending launch hook', async () => {
+		let launches = 0;
+		const port = new PhysicalWorkerPort({
+			adapter: {
+				launch: () =>
+					launches++ === 0
+						? new Promise<never>(() => undefined)
+						: Promise.resolve({ ready: Promise.resolve(), close() {} }),
+				dispatch() {},
+			},
+		});
+		void port.control(
+			command({
+				commandId: 'pending-launch',
+				kind: 'launch',
+				topology: { shardStart: 0, shardEnd: 1, totalShards: 1 },
+				maxBufferedDispatches: 1,
+			}),
+		);
+		await Promise.resolve();
+		await Promise.resolve();
+		await expect(port.control(command({ commandId: 'close-pending', kind: 'close' }))).resolves.toMatchObject({
+			state: 'closed',
+		});
+		await expect(
+			port.control({
+				commandId: 'replacement',
+				kind: 'launch',
+				identity: { slot: id.slot, token: 'replacement' },
+				topology: { shardStart: 0, shardEnd: 1, totalShards: 1 },
+				maxBufferedDispatches: 1,
+			}),
+		).resolves.toMatchObject({ kind: 'accepted', state: 'standby' });
+	});
+
 	test('blocks slot reuse when physical close fails', async () => {
 		const signals: unknown[] = [];
 		const port = new PhysicalWorkerPort({

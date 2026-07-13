@@ -172,6 +172,24 @@ describe('WorkerClient physical IPC', () => {
 		});
 	});
 
+	test('fences delayed same-identity dispatches after runtime close', async () => {
+		const handlePayload = vi.fn();
+		const { client, messages } = await createPhysicalClient(handlePayload);
+		await client.close();
+		await client.handleManagerMessages({
+			type: 'SEYFERT_PHYSICAL_APPLY_DISPATCH',
+			...identity,
+			dispatchId: 'after-close',
+			body: { shardId: 0, payload: packet(1) },
+		});
+		expect(handlePayload).not.toHaveBeenCalled();
+		expect(messages.at(-1)).toMatchObject({
+			type: 'SEYFERT_PHYSICAL_DISPATCH_ACK',
+			dispatchId: 'after-close',
+			error: expect.any(String),
+		});
+	});
+
 	test('bootstraps exactly its physical shards through the local identify queue without a legacy manager', async () => {
 		vi.useFakeTimers();
 		const messages: Record<string, any>[] = [];

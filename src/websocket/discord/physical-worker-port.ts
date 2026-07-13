@@ -206,7 +206,12 @@ export class PhysicalWorkerPort<Dispatch = unknown> {
 				else {
 					if (record.state !== 'active') return this.invalidState(record, command);
 					record.state = 'draining';
-					await Promise.all(record.inFlight);
+					try {
+						await Promise.all(record.inFlight);
+					} catch (error) {
+						record.state = 'failed';
+						throw error;
+					}
 					if (!this.isCurrent(record, 'draining')) return this.invalidState(record, command);
 					record.state = 'drained';
 					receipt = this.accept(command, 'drained');
@@ -219,10 +224,15 @@ export class PhysicalWorkerPort<Dispatch = unknown> {
 					record.dispatchCommandId = command.commandId;
 					record.state = 'replaying';
 					let replayed = 0;
-					while (record.buffer.length) {
-						await this.deliver(record, record.buffer.shift()!);
-						if (!this.isCurrent(record, 'replaying')) return this.invalidState(record, command);
-						replayed++;
+					try {
+						while (record.buffer.length) {
+							await this.deliver(record, record.buffer.shift()!);
+							if (!this.isCurrent(record, 'replaying')) return this.invalidState(record, command);
+							replayed++;
+						}
+					} catch (error) {
+						record.state = 'failed';
+						throw error;
 					}
 					if (!this.isCurrent(record, 'replaying')) return this.invalidState(record, command);
 					record.state = 'active';
@@ -390,12 +400,22 @@ export class PhysicalWorkerPort<Dispatch = unknown> {
 			record.state = 'closing';
 			record.resolveClosed();
 			record.buffer.length = 0;
-			const connection = record.connectionPromise ?? Promise.resolve(record.connection);
-			record.closePromise = connection
-				.then(
-					value => value?.close(),
-					() => undefined,
-				)
+			if (!record.connection && record.connectionPromise) {
+				void record.connectionPromise
+					.then(
+						connection => connection.close(),
+						() => undefined,
+					)
+					.catch(error =>
+						this.options.onSignal?.({
+							kind: 'fault',
+							commandId: record.dispatchCommandId,
+							identity: record.identity,
+							error: toError(error),
+						}),
+					);
+			}
+			record.closePromise = Promise.resolve(record.connection?.close())
 				.then(() => Promise.allSettled(record.inFlight))
 				.then(
 					() => {

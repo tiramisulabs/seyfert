@@ -34,6 +34,7 @@ export class PhysicalWorkerRuntime {
 	private shardsReady = false;
 	private readySent = false;
 	private launchFaultSent = false;
+	private closed = false;
 	private readyTask?: Promise<void>;
 	private userTrafficStarted = false;
 	private userShardsConnected = false;
@@ -102,12 +103,15 @@ export class PhysicalWorkerRuntime {
 	}
 
 	close() {
+		if (this.closed) return;
+		this.closed = true;
 		this.connectQueue?.clear();
 		this.connectQueue = undefined;
 		for (const shard of this.client.shards.values()) shard.disconnect(ShardSocketCloseCodes.ShutdownAll);
 	}
 
 	async capture(shardId: number, payload: GatewayDispatchPayload) {
+		if (this.closed) return;
 		if (this.isAssignedShard(shardId)) {
 			if (payload.t === 'READY') {
 				this.appliedConnectedShards.delete(shardId);
@@ -147,7 +151,7 @@ export class PhysicalWorkerRuntime {
 	private async handleDispatch(message: PhysicalHostToWorkerMessage) {
 		if (message.type !== 'SEYFERT_PHYSICAL_APPLY_DISPATCH') return;
 		const body = message.body;
-		const valid = isGatewayDispatch(body) && this.isAssignedShard(body.shardId);
+		const valid = !this.closed && isGatewayDispatch(body) && this.isAssignedShard(body.shardId);
 		let hydrationTask: Promise<void> | undefined;
 		let snapshotFingerprint: string | undefined;
 		let task: Promise<void>;
@@ -185,7 +189,7 @@ export class PhysicalWorkerRuntime {
 	}
 
 	private failLaunch(error: unknown) {
-		if (this.launchFaultSent) return;
+		if (this.closed || this.launchFaultSent) return;
 		this.launchFaultSent = true;
 		const failure = toError(error);
 		this.client.logger.error(failure);
