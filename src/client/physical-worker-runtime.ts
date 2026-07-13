@@ -32,6 +32,7 @@ export class PhysicalWorkerRuntime {
 	private applicationReady = false;
 	private shardsReady = false;
 	private readySent = false;
+	private launchFaultSent = false;
 	private readyTask?: Promise<void>;
 	private userTrafficStarted = false;
 	private userShardsConnected = false;
@@ -94,7 +95,7 @@ export class PhysicalWorkerRuntime {
 		for (const shard of shards) this.client.shards.set(shard.id, shard);
 		for (const round of identifyRounds(shards, concurrency)) {
 			queue.push(() => {
-				void Promise.all(round.map(shard => shard.connect())).catch(error => this.client.logger.error(error));
+				void Promise.all(round.map(shard => shard.connect())).catch(error => this.failLaunch(error));
 			});
 		}
 	}
@@ -148,20 +149,24 @@ export class PhysicalWorkerRuntime {
 		const valid = isGatewayDispatch(body) && this.isAssignedShard(body.shardId);
 		let hydrationTask: Promise<void> | undefined;
 		let snapshotFingerprint: string | undefined;
-		const task = valid
-			? this.memoized(this.applied, message.dispatchId, fingerprint({ body, snapshot: message.snapshot }), () =>
-					this.serializeDispatch(body.shardId, async () => {
-						if (message.snapshot) {
-							snapshotFingerprint = fingerprint(message.snapshot);
-							hydrationTask = this.hydrate(message.snapshot, snapshotFingerprint);
-							await hydrationTask;
-						}
-						this.userTrafficStarted = true;
-						await this.client.dispatchGatewayPacket(body.shardId, body.payload);
-						if (body.payload.t === 'RESUMED') this.restoreResumedShard(body.shardId);
-					}),
-				)
-			: Promise.reject(new TypeError('Invalid physical gateway dispatch'));
+		let task: Promise<void>;
+		try {
+			if (!valid) throw new TypeError('Invalid physical gateway dispatch');
+			task = this.memoized(this.applied, message.dispatchId, fingerprint({ body, snapshot: message.snapshot }), () =>
+				this.serializeDispatch(body.shardId, async () => {
+					if (message.snapshot) {
+						snapshotFingerprint = fingerprint(message.snapshot);
+						hydrationTask = this.hydrate(message.snapshot, snapshotFingerprint);
+						await hydrationTask;
+					}
+					this.userTrafficStarted = true;
+					await this.client.dispatchGatewayPacket(body.shardId, body.payload);
+					if (body.payload.t === 'RESUMED') this.restoreResumedShard(body.shardId);
+				}),
+			);
+		} catch (error) {
+			task = Promise.reject(error);
+		}
 		await this.acknowledge(task, error => ({
 			type: 'SEYFERT_PHYSICAL_DISPATCH_ACK',
 			...this.identity,
@@ -172,6 +177,18 @@ export class PhysicalWorkerRuntime {
 		if (snapshotFingerprint && hydrationTask) {
 			this.markAcknowledged(this.hydratedSnapshots, snapshotFingerprint, hydrationTask);
 		}
+	}
+
+	private failLaunch(error: unknown) {
+		if (this.launchFaultSent) return;
+		this.launchFaultSent = true;
+		const failure = toError(error);
+		this.client.logger.error(failure);
+		void this.post({
+			type: 'SEYFERT_PHYSICAL_FAULT',
+			...this.identity,
+			error: failure.message,
+		});
 	}
 
 	private serializeDispatch(shardId: number, run: () => Promise<void>) {

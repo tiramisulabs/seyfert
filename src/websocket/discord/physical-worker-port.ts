@@ -27,6 +27,7 @@ interface PhysicalWorkerIpcIdentity {
 
 export type PhysicalWorkerToHostMessage<Dispatch = PhysicalGatewayDispatch> =
 	| (PhysicalWorkerIpcIdentity & { type: 'SEYFERT_PHYSICAL_READY' })
+	| (PhysicalWorkerIpcIdentity & { type: 'SEYFERT_PHYSICAL_FAULT'; error: string })
 	| (PhysicalWorkerIpcIdentity & { type: 'SEYFERT_PHYSICAL_RAW_DISPATCH'; body: Dispatch })
 	| (PhysicalWorkerIpcIdentity & {
 			type: 'SEYFERT_PHYSICAL_DISPATCH_ACK';

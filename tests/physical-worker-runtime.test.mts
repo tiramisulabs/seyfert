@@ -119,6 +119,42 @@ async function startPhysicalClient(client: WorkerClient) {
 }
 
 describe('WorkerClient physical IPC', () => {
+	test('reports shard connection failure as one terminal physical launch fault', async () => {
+		connect.mockRejectedValueOnce(new Error('connect failed'));
+		const messages: Record<string, any>[] = [];
+		const client = new WorkerClient({
+			getRC: async () => ({ token: 'discord-token', intents: 0, locations: { base: '' } }),
+			physicalWorker: identity,
+			postMessage: body => messages.push(body as Record<string, any>),
+		});
+		client.setWorkerData(data());
+		await startPhysicalClient(client);
+		await vi.waitFor(() =>
+			expect(messages.filter(message => message.type === 'SEYFERT_PHYSICAL_FAULT')).toEqual([
+				expect.objectContaining({ error: 'connect failed', ...identity }),
+			]),
+		);
+	});
+
+	test('acknowledges fingerprint failures exactly once', async () => {
+		const { client, messages } = await createPhysicalClient();
+		const cyclic: Record<string, unknown> = {};
+		cyclic.self = cyclic;
+		for (const [dispatchId, value] of [
+			['cyclic', cyclic],
+			['bigint', { value: 1n }],
+		] as const) {
+			await client.handleManagerMessages({
+				type: 'SEYFERT_PHYSICAL_APPLY_DISPATCH',
+				...identity,
+				dispatchId,
+				body: { shardId: 0, payload: { ...packet(1), d: value } as GatewayDispatchPayload },
+			});
+			expect(messages.filter(message => message.dispatchId === dispatchId)).toHaveLength(1);
+			expect(messages.at(-1)).toMatchObject({ type: 'SEYFERT_PHYSICAL_DISPATCH_ACK', dispatchId, error: expect.any(String) });
+		}
+	});
+
 	test('rejects a same-identity dispatch outside the assigned shard topology', async () => {
 		const handlePayload = vi.fn();
 		const { client, messages } = await createPhysicalClient(handlePayload);
