@@ -649,7 +649,7 @@ describe('WorkerClient physical IPC', () => {
 					body: { shardId: 0, payload: packet(index + 1) },
 				}),
 			);
-			await vi.waitFor(() => expect(handlePayload).toHaveBeenCalledTimes(8));
+			await vi.waitFor(() => expect(handlePayload).toHaveBeenCalledTimes(1));
 
 			await client.handleManagerMessages({
 				type: 'SEYFERT_PHYSICAL_APPLY_DISPATCH',
@@ -657,7 +657,7 @@ describe('WorkerClient physical IPC', () => {
 				dispatchId: 'blocked-overflow',
 				body: { shardId: 0, payload: packet(9) },
 			});
-			expect(handlePayload).toHaveBeenCalledTimes(8);
+			expect(handlePayload).toHaveBeenCalledTimes(1);
 			expect(messages.at(-1)).toMatchObject({
 				type: 'SEYFERT_PHYSICAL_DISPATCH_ACK',
 				dispatchId: 'blocked-overflow',

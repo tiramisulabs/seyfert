@@ -121,6 +121,7 @@ interface PhysicalWorkerRecord<Dispatch> {
 	maxBufferedDispatches: number;
 	buffer: Dispatch[];
 	inFlight: Set<Promise<void>>;
+	deliveryTail?: Promise<void>;
 	overflowed: boolean;
 	dispatchCommandId: string;
 	snapshot?: Readonly<Record<string, unknown>>;
@@ -350,7 +351,10 @@ export class PhysicalWorkerPort<Dispatch = unknown> {
 
 	private deliver(record: PhysicalWorkerRecord<Dispatch>, value: Dispatch) {
 		const commandId = record.dispatchCommandId;
-		const task = Promise.resolve().then(() => this.options.adapter.dispatch(value, record.snapshot));
+		const task = record.deliveryTail
+			? record.deliveryTail.catch(() => undefined).then(() => this.options.adapter.dispatch(value, record.snapshot))
+			: Promise.resolve().then(() => this.options.adapter.dispatch(value, record.snapshot));
+		record.deliveryTail = task;
 		record.inFlight.add(task);
 		task.catch(error =>
 			this.options.onSignal?.({ kind: 'fault', commandId, identity: record.identity, error: toError(error) }),

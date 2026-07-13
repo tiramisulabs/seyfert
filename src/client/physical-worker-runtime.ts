@@ -41,6 +41,7 @@ export class PhysicalWorkerRuntime {
 	private connectQueue?: ConnectQueue;
 	private readonly applied = new Map<string, AppliedTask>();
 	private readonly hydratedSnapshots = new Map<string, AppliedTask>();
+	private readonly dispatchTails = new Map<number, Promise<void>>();
 	private readonly recentDispatchLimit: number;
 
 	constructor(
@@ -148,16 +149,18 @@ export class PhysicalWorkerRuntime {
 		let hydrationTask: Promise<void> | undefined;
 		let snapshotFingerprint: string | undefined;
 		const task = valid
-			? this.memoized(this.applied, message.dispatchId, fingerprint({ body, snapshot: message.snapshot }), async () => {
-					if (message.snapshot) {
-						snapshotFingerprint = fingerprint(message.snapshot);
-						hydrationTask = this.hydrate(message.snapshot, snapshotFingerprint);
-						await hydrationTask;
-					}
-					this.userTrafficStarted = true;
-					await this.client.dispatchGatewayPacket(body.shardId, body.payload);
-					if (body.payload.t === 'RESUMED') this.restoreResumedShard(body.shardId);
-				})
+			? this.memoized(this.applied, message.dispatchId, fingerprint({ body, snapshot: message.snapshot }), () =>
+					this.serializeDispatch(body.shardId, async () => {
+						if (message.snapshot) {
+							snapshotFingerprint = fingerprint(message.snapshot);
+							hydrationTask = this.hydrate(message.snapshot, snapshotFingerprint);
+							await hydrationTask;
+						}
+						this.userTrafficStarted = true;
+						await this.client.dispatchGatewayPacket(body.shardId, body.payload);
+						if (body.payload.t === 'RESUMED') this.restoreResumedShard(body.shardId);
+					}),
+				)
 			: Promise.reject(new TypeError('Invalid physical gateway dispatch'));
 		await this.acknowledge(task, error => ({
 			type: 'SEYFERT_PHYSICAL_DISPATCH_ACK',
@@ -169,6 +172,16 @@ export class PhysicalWorkerRuntime {
 		if (snapshotFingerprint && hydrationTask) {
 			this.markAcknowledged(this.hydratedSnapshots, snapshotFingerprint, hydrationTask);
 		}
+	}
+
+	private serializeDispatch(shardId: number, run: () => Promise<void>) {
+		const task = (this.dispatchTails.get(shardId) ?? Promise.resolve()).catch(() => undefined).then(run);
+		this.dispatchTails.set(shardId, task);
+		const cleanup = () => {
+			if (this.dispatchTails.get(shardId) === task) this.dispatchTails.delete(shardId);
+		};
+		void task.then(cleanup, cleanup);
+		return task;
 	}
 
 	private memoized(store: Map<string, AppliedTask>, id: string, inputFingerprint: string, run: () => Promise<void>) {
