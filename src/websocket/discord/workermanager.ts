@@ -215,7 +215,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 
 	prepareWorkers(shards: number[][], rawResharding = false) {
 		for (let i = 0; i < shards.length; i++) {
-			const registerWorker = (resharding: boolean) => {
+			const registerWorker = (resharding: boolean, assignedShards = shards[i], totalWorkers = shards.length) => {
 				const reshardId = resharding ? this.reshardId : undefined;
 				if (resharding && (!this._info || !reshardId)) {
 					throw new SeyfertError('INTERNAL_ERROR', {
@@ -226,14 +226,14 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 					path: this.options.path ?? '',
 					debug: this.options.debug,
 					token: this.options.token,
-					shards: shards[i],
+					shards: assignedShards,
 					intents: this.options.intents,
 					workerId: i,
 					workerProxy: this.options.workerProxy,
 					totalShards: resharding ? this._info!.shards : this.totalShards,
 					mode: this.options.mode,
 					resharding,
-					totalWorkers: shards.length,
+					totalWorkers,
 					info: {
 						...this.options.info,
 						shards: this.totalShards,
@@ -249,7 +249,15 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 					this.delete(deadWorkerId);
 					const resharding =
 						this.reshardingState === 'running' && this._info !== undefined && this.reshardId !== undefined;
-					await registerWorker(resharding);
+					const currentShards = WorkerManager.prepareSpaces(
+						{
+							shardsPerWorker: this.shardsPerWorker,
+							shardStart: resharding ? 0 : this.shardStart,
+							shardEnd: resharding ? this._info!.shards : this.shardEnd,
+						},
+						this.debugger,
+					);
+					await registerWorker(resharding, currentShards[deadWorkerId], currentShards.length);
 					registerWorkerHeartbeat(deadWorkerId);
 				});
 			};
