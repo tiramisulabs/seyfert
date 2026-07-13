@@ -446,6 +446,8 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 							this.postMessage(id, {
 								type: 'CONNECT_ALL_SHARDS_RESHARDING',
 								totalShards: this.options.totalShards,
+								totalWorkers: this.options.workers,
+								info: { ...this.options.info, shards: this.options.totalShards },
 								reshardId: message.reshardId,
 							} satisfies ConnnectAllShardsResharding);
 						}
@@ -888,7 +890,9 @@ export type DisconnectAllShardsResharding = CreateManagerMessage<
 export type ConnnectAllShardsResharding = CreateManagerMessage<
 	'CONNECT_ALL_SHARDS_RESHARDING',
 	{
+		info: ShardOptions['info'];
 		totalShards: number;
+		totalWorkers: number;
 		reshardId: string;
 	}
 >;

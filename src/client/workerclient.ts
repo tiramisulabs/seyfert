@@ -486,8 +486,12 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 								? this.physicalRuntime.capture(shardId, packet)
 								: this.dispatchGatewayPacket(shardId, packet);
 					}
-					workerData.totalShards = data.totalShards;
-					workerData.shards = [...this.shards.keys()];
+					Object.assign(workerData, {
+						shards: [...this.shards.keys()],
+						totalShards: data.totalShards,
+						totalWorkers: data.totalWorkers,
+						info: { ...data.info, shards: data.totalShards },
+					});
 					this.resharding.clear();
 					this.reshardReadyShards.delete(data.reshardId);
 					this.reshardReadinessSent.delete(data.reshardId);

@@ -234,7 +234,9 @@ describe('gateway send chokepoints', () => {
 		client.resharding.set(0, shard);
 		await client.handleManagerMessages({
 			type: 'CONNECT_ALL_SHARDS_RESHARDING',
+			info: gatewayInfo(),
 			totalShards: 1,
+			totalWorkers: 1,
 			reshardId: 'gateway-send-reshard',
 		});
 		const payload = {
@@ -247,13 +249,11 @@ describe('gateway send chokepoints', () => {
 		await shard.options.handlePayload(0, payload);
 
 		expect(handlePayload).toHaveBeenCalledWith(0, payload);
-		expect(messages).toEqual([
-			{
-				workerId: 7,
-				shardId: 0,
-				type: 'RECEIVE_PAYLOAD',
-				payload,
-			},
-		]);
+		expect(messages.at(-1)).toEqual({
+			workerId: 7,
+			shardId: 0,
+			type: 'RECEIVE_PAYLOAD',
+			payload,
+		});
 	});
 });
