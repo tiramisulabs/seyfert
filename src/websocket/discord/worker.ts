@@ -68,6 +68,10 @@ export type WorkerDisconnectedAllShardsResharding = CreateWorkerMessage<
 	'DISCONNECTED_ALL_SHARDS_RESHARDING',
 	{ reshardId: string }
 >;
+export type WorkerCutoverAppliedResharding = CreateWorkerMessage<
+	'WORKER_CUTOVER_APPLIED_RESHARDING',
+	{ reshardId: string }
+>;
 export type WorkerSendApiRequest = CreateWorkerMessage<
 	'WORKER_API_REQUEST',
 	{
@@ -112,7 +116,8 @@ export type BaseWorkerMessage =
 	| WorkerStartResharding
 	| WorkerRequestConnectResharding
 	| WorkerReadyResharding
-	| WorkerDisconnectedAllShardsResharding;
+	| WorkerDisconnectedAllShardsResharding
+	| WorkerCutoverAppliedResharding;
 
 export type CustomWorkerClientMessages = {
 	[K in keyof CustomWorkerClientEvents]: Identify<

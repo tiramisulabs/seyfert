@@ -66,15 +66,37 @@ async function beginReshard(manager: WorkerManager) {
 	return (manager as unknown as { reshardId?: string }).reshardId!;
 }
 
+function incarnationId(manager: WorkerManager, workerId: number) {
+	return (manager.get(workerId) as { incarnationId?: string } | undefined)?.incarnationId!;
+}
+
 async function readyEveryWorker(manager: WorkerManager, count: number, reshardId: string) {
 	for (let workerId = 0; workerId < count; workerId++) {
-		await manager.handleWorkerMessage({ type: 'WORKER_READY_RESHARDING', workerId, reshardId });
+		await manager.handleWorkerMessage({
+			type: 'WORKER_READY_RESHARDING',
+			workerId,
+			incarnationId: incarnationId(manager, workerId),
+			reshardId,
+		});
 	}
 }
 
 async function disconnectEveryWorker(manager: WorkerManager, count: number, reshardId: string) {
 	for (let workerId = 0; workerId < count; workerId++) {
-		await manager.handleWorkerMessage({ type: 'DISCONNECTED_ALL_SHARDS_RESHARDING', workerId, reshardId });
+		await manager.handleWorkerMessage({
+			type: 'DISCONNECTED_ALL_SHARDS_RESHARDING',
+			workerId,
+			incarnationId: incarnationId(manager, workerId),
+			reshardId,
+		});
+	}
+	for (let workerId = 0; workerId < count; workerId++) {
+		await manager.handleWorkerMessage({
+			type: 'WORKER_CUTOVER_APPLIED_RESHARDING',
+			workerId,
+			incarnationId: incarnationId(manager, workerId),
+			reshardId,
+		});
 	}
 }
 
@@ -101,9 +123,19 @@ async function staleNoise(manager: WorkerManager, reshardId: string, random: () 
 	for (let index = 0; index < count; index++) {
 		const workerId = Math.floor(random() * 4);
 		if (random() < 0.5) {
-			await manager.handleWorkerMessage({ type: 'WORKER_READY_RESHARDING', workerId, reshardId });
+			await manager.handleWorkerMessage({
+				type: 'WORKER_READY_RESHARDING',
+				workerId,
+				incarnationId: incarnationId(manager, workerId),
+				reshardId,
+			});
 		} else {
-			await manager.handleWorkerMessage({ type: 'DISCONNECTED_ALL_SHARDS_RESHARDING', workerId, reshardId });
+			await manager.handleWorkerMessage({
+				type: 'DISCONNECTED_ALL_SHARDS_RESHARDING',
+				workerId,
+				incarnationId: incarnationId(manager, workerId),
+				reshardId,
+			});
 		}
 	}
 }
@@ -307,9 +339,19 @@ describe('WorkerManager legacy reshard protocol stress', () => {
 
 			for (let workerId = 0; workerId < 6; workerId++) {
 				await staleNoise(manager, attemptA, random);
-				await manager.handleWorkerMessage({ type: 'WORKER_READY_RESHARDING', workerId, reshardId: attemptB });
+				await manager.handleWorkerMessage({
+					type: 'WORKER_READY_RESHARDING',
+					workerId,
+					incarnationId: incarnationId(manager, workerId),
+					reshardId: attemptB,
+				});
 				if (random() < 0.75) {
-					await manager.handleWorkerMessage({ type: 'WORKER_READY_RESHARDING', workerId, reshardId: attemptB });
+					await manager.handleWorkerMessage({
+						type: 'WORKER_READY_RESHARDING',
+						workerId,
+						incarnationId: incarnationId(manager, workerId),
+						reshardId: attemptB,
+					});
 				}
 				if (workerId < 5) {
 					expect(
@@ -326,12 +368,14 @@ describe('WorkerManager legacy reshard protocol stress', () => {
 				await manager.handleWorkerMessage({
 					type: 'DISCONNECTED_ALL_SHARDS_RESHARDING',
 					workerId,
+					incarnationId: incarnationId(manager, workerId),
 					reshardId: attemptB,
 				});
 				if (random() < 0.75) {
 					await manager.handleWorkerMessage({
 						type: 'DISCONNECTED_ALL_SHARDS_RESHARDING',
 						workerId,
+						incarnationId: incarnationId(manager, workerId),
 						reshardId: attemptB,
 					});
 				}

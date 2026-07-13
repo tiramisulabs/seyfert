@@ -38,6 +38,7 @@ type WorkerHandle = (ClusterWorker | WorkerThreadsWorker | { ready?: boolean }) 
 	ready?: boolean;
 	disconnected?: boolean;
 	resharded?: boolean;
+	cutoverApplied?: boolean;
 };
 
 export class WorkerManager extends Map<number, WorkerHandle> {
@@ -438,7 +439,9 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 						this.options.totalShards = info.shards;
 						this.options.shardEnd = this.options.totalShards = this.options.info.shards = info.shards;
 						this.options.workers = this.size;
-						delete this._info;
+						this.forEach(w => {
+							w.cutoverApplied = false;
+						});
 						for (const [id] of this.entries()) {
 							this.postMessage(id, {
 								type: 'CONNECT_ALL_SHARDS_RESHARDING',
@@ -449,6 +452,18 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 						this.forEach(w => {
 							delete w.disconnected;
 						});
+					}
+				}
+				break;
+			case 'WORKER_CUTOVER_APPLIED_RESHARDING':
+				{
+					if (this.reshardingState !== 'running' || message.reshardId !== this.reshardId) break;
+					const worker = this.get(message.workerId);
+					if (!worker) break;
+					worker.cutoverApplied = true;
+					if ([...this.values()].every(w => w.cutoverApplied)) {
+						this.forEach(w => delete w.cutoverApplied);
+						delete this._info;
 						this.reshardId = undefined;
 						this.reshardingState = 'idle';
 					}

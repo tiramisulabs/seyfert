@@ -33,6 +33,7 @@ import type {
 import type { ShardData } from '../websocket/discord/shared';
 import type {
 	ClientHeartbeaterMessages,
+	WorkerCutoverAppliedResharding,
 	WorkerDisconnectedAllShardsResharding,
 	WorkerMessages,
 	WorkerReady,
@@ -450,10 +451,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			case 'WORKER_ALREADY_EXISTS_RESHARDING':
 				{
-					if (this.reshardId && this.reshardId !== data.reshardId) {
-						for (const shard of this.resharding.values()) await shard.disconnect(ShardSocketCloseCodes.Resharding);
-						this.resharding.clear();
-					}
+					if (this.reshardId && this.reshardId !== data.reshardId) break;
 					this.reshardId = data.reshardId;
 					this.postMessage({
 						type: 'WORKER_START_RESHARDING',
@@ -494,6 +492,12 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					this.reshardReadyShards.delete(data.reshardId);
 					this.reshardReadinessSent.delete(data.reshardId);
 					this.reshardId = undefined;
+					this.postMessage({
+						type: 'WORKER_CUTOVER_APPLIED_RESHARDING',
+						workerId: workerData.workerId,
+						incarnationId: workerData.incarnationId!,
+						reshardId: data.reshardId,
+					} satisfies WorkerCutoverAppliedResharding);
 				}
 				break;
 		}
