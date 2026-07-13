@@ -102,6 +102,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	declare options: WorkerClientOptions;
 	private readonly physicalRuntime?: PhysicalWorkerRuntime;
 	private reshardId = workerData?.reshardId;
+	private readonly reshardReadyShards = new Map<string, Set<number>>();
+	private readonly reshardReadinessSent = new Set<string>();
 
 	constructor(options?: WorkerClientOptions) {
 		super(options);
@@ -307,7 +309,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				{
 					if (data.reshardId !== this.reshardId) break;
 					const reshardId = data.reshardId;
-					let shardsConnected = 0;
+					const readyShards = this.reshardReadyShards.get(reshardId) ?? new Set<number>();
+					this.reshardReadyShards.set(reshardId, readyShards);
 					const self = this;
 					for (const id of workerData.shards) {
 						const existsShard = this.resharding.has(id);
@@ -330,7 +333,12 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							},
 							handlePayload(_, payload) {
 								if (payload.t !== GatewayDispatchEvents.GuildsReady) return;
-								if (++shardsConnected === workerData.shards.length) {
+								readyShards.add(id);
+								if (
+									!self.reshardReadinessSent.has(reshardId) &&
+									workerData.shards.every(shardId => readyShards.has(shardId))
+								) {
+									self.reshardReadinessSent.add(reshardId);
 									self.postMessage({
 										type: 'WORKER_READY_RESHARDING',
 										workerId: workerData.workerId,
@@ -483,6 +491,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					workerData.totalShards = data.totalShards;
 					workerData.shards = [...this.shards.keys()];
 					this.resharding.clear();
+					this.reshardReadyShards.delete(data.reshardId);
+					this.reshardReadinessSent.delete(data.reshardId);
 					this.reshardId = undefined;
 				}
 				break;

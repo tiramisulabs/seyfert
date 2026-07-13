@@ -286,11 +286,10 @@ describe('WorkerManager legacy reshard protocol stress', () => {
 		expect(posted.filter(message => message.type === 'CONNECT_QUEUE_RESHARDING')).toHaveLength(1);
 		posted.length = 0;
 
-		await client.handleManagerMessages({ type: 'WORKER_ALREADY_EXISTS_RESHARDING', reshardId: 'attempt-b' });
-		posted.length = 0;
-		await client.handleManagerMessages(stage('attempt-b'));
-
-		expect(posted.filter(message => message.type === 'CONNECT_QUEUE_RESHARDING')).toHaveLength(1);
+		await client.handleManagerMessages(stage('attempt-a'));
+		const staged = client.resharding.get(0)!;
+		await staged.options.handlePayload(0, { op: 0, s: 1, t: 'GUILDS_READY', d: null } as never);
+		expect(posted.filter(message => message.type === 'WORKER_READY_RESHARDING')).toHaveLength(1);
 	});
 
 	test('128 seeded duplicate and reordered stale schedules cannot cross the attempt boundary', async () => {
