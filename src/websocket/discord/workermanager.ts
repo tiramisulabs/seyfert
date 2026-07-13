@@ -76,6 +76,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 	reshardingWorkerQueue: (() => Awaitable<void>)[] = [];
 	private _info?: RESTGetAPIGatewayBotResult;
 	private reshardingState: 'idle' | 'checking' | 'running' = 'idle';
+	private reshardId?: string;
 	private reshardingInterval?: ReturnType<typeof setInterval>;
 	private readonly spawnPromises = new Map<number, Promise<void>>();
 	private readonly topology: WorkerTopologyResolver;
@@ -215,6 +216,12 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 	prepareWorkers(shards: number[][], rawResharding = false) {
 		for (let i = 0; i < shards.length; i++) {
 			const registerWorker = (resharding: boolean) => {
+				const reshardId = resharding ? this.reshardId : undefined;
+				if (resharding && (!this._info || !reshardId)) {
+					throw new SeyfertError('INTERNAL_ERROR', {
+						metadata: { detail: 'Cannot create a resharding worker without a current reshard attempt' },
+					});
+				}
 				this.createWorker({
 					path: this.options.path ?? '',
 					debug: this.options.debug,
@@ -232,22 +239,25 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 						shards: this.totalShards,
 					},
 					compress: this.options.compress,
+					...(reshardId ? { reshardId } : {}),
 				});
 				return this.spawnPromises.get(i) ?? Promise.resolve();
 			};
-			const registerWorkerHeartbeat = (workerId: number, resharding: boolean) => {
+			const registerWorkerHeartbeat = (workerId: number) => {
 				this.heartbeater.register(workerId, async deadWorkerId => {
 					this.heartbeater.unregister(deadWorkerId);
 					this.delete(deadWorkerId);
+					const resharding =
+						this.reshardingState === 'running' && this._info !== undefined && this.reshardId !== undefined;
 					await registerWorker(resharding);
-					registerWorkerHeartbeat(deadWorkerId, resharding);
+					registerWorkerHeartbeat(deadWorkerId);
 				});
 			};
 			const workerExists = this.has(i);
 			if (rawResharding || !workerExists) {
 				this[rawResharding ? 'reshardingWorkerQueue' : 'workerQueue'].push(async () => {
 					await registerWorker(rawResharding);
-					registerWorkerHeartbeat(i, rawResharding);
+					registerWorkerHeartbeat(i);
 				});
 			}
 		}
@@ -258,6 +268,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 			if (workerData.resharding) {
 				this.postMessage(workerData.workerId, {
 					type: 'WORKER_ALREADY_EXISTS_RESHARDING',
+					reshardId: workerData.reshardId!,
 				} satisfies ManagerWorkerAlreadyExistsResharding);
 			}
 			const worker = this.get(workerData.workerId)!;
@@ -320,18 +331,24 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 		}
 	}
 
-	spawn(workerId: number, shardId: number, resharding = false) {
+	spawn(workerId: number, shardId: number, reshardId?: string) {
 		this.connectQueue.push(() => {
 			const worker = this.has(workerId);
 			if (!worker) {
-				this.debugger?.fatal(`Trying ${resharding ? 'reshard' : 'spawn'} with worker that doesn't exist`);
+				this.debugger?.fatal(`Trying ${reshardId ? 'reshard' : 'spawn'} with worker that doesn't exist`);
 				return;
 			}
-			this.postMessage(workerId, {
-				type: resharding ? 'ALLOW_CONNECT_RESHARDING' : 'ALLOW_CONNECT',
-				shardId,
-				presence: this.options.presence?.(shardId, workerId),
-			} satisfies ManagerAllowConnect | ManagerAllowConnectResharding);
+			const presence = this.options.presence?.(shardId, workerId);
+			if (reshardId) {
+				this.postMessage(workerId, {
+					type: 'ALLOW_CONNECT_RESHARDING',
+					shardId,
+					presence,
+					reshardId,
+				} satisfies ManagerAllowConnectResharding);
+			} else {
+				this.postMessage(workerId, { type: 'ALLOW_CONNECT', shardId, presence } satisfies ManagerAllowConnect);
+			}
 		});
 	}
 
@@ -342,14 +359,16 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 				break;
 			case 'WORKER_READY_RESHARDING':
 				{
-					if (this.reshardingState !== 'running') break;
+					if (this.reshardingState !== 'running' || message.reshardId !== this.reshardId) break;
 					const worker = this.get(message.workerId);
 					if (!worker) break;
+					if (worker.resharded) break;
 					worker.resharded = true;
 					if (!this.reshardingWorkerQueue.length && [...this.values()].every(w => w.resharded)) {
 						for (const [id] of this.entries()) {
 							this.postMessage(id, {
 								type: 'DISCONNECT_ALL_SHARDS_RESHARDING',
+								reshardId: message.reshardId,
 							} satisfies DisconnectAllShardsResharding);
 						}
 						this.forEach(w => {
@@ -368,9 +387,10 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 				break;
 			case 'DISCONNECTED_ALL_SHARDS_RESHARDING':
 				{
-					if (this.reshardingState !== 'running') break;
+					if (this.reshardingState !== 'running' || message.reshardId !== this.reshardId) break;
 					const worker = this.get(message.workerId);
 					if (!worker) break;
+					if (worker.disconnected) break;
 					worker.disconnected = true;
 					if ([...this.values()].every(w => w.disconnected)) {
 						const info = this._info;
@@ -383,11 +403,13 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 							this.postMessage(id, {
 								type: 'CONNECT_ALL_SHARDS_RESHARDING',
 								totalShards: this.options.totalShards,
+								reshardId: message.reshardId,
 							} satisfies ConnnectAllShardsResharding);
 						}
 						this.forEach(w => {
 							delete w.disconnected;
 						});
+						this.reshardId = undefined;
 						this.reshardingState = 'idle';
 					}
 				}
@@ -395,9 +417,10 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 			case 'WORKER_START_RESHARDING':
 				{
 					const info = this._info;
-					if (!info || this.reshardingState !== 'running') break;
+					if (!info || this.reshardingState !== 'running' || message.reshardId !== this.reshardId) break;
 					this.postMessage(message.workerId, {
 						type: 'SPAWN_SHARDS_RESHARDING',
+						reshardId: message.reshardId,
 						compress: this.options.compress ?? false,
 						info: {
 							...this.options.info,
@@ -428,7 +451,8 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 				break;
 
 			case 'CONNECT_QUEUE_RESHARDING':
-				this.spawn(message.workerId, message.shardId, true);
+				if (this.reshardingState === 'running' && message.reshardId === this.reshardId)
+					this.spawn(message.workerId, message.shardId, message.reshardId);
 				break;
 			case 'CONNECT_QUEUE':
 				this.spawn(message.workerId, message.shardId);
@@ -736,6 +760,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 
 			this.debugger?.info(`Starting resharding process to ${info.shards}`);
 			this.reshardingState = 'running';
+			this.reshardId = randomUUID();
 			this._info = info;
 			this.connectQueue.concurrency = info.session_start_limit.max_concurrency;
 			this.options.info.session_start_limit.max_concurrency = info.session_start_limit.max_concurrency;
@@ -758,6 +783,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 		} catch (error) {
 			this.reshardingWorkerQueue = [];
 			delete this._info;
+			this.reshardId = undefined;
 			this.reshardingState = 'idle';
 			throw error;
 		} finally {
@@ -786,22 +812,29 @@ export type ManagerAllowConnect = CreateManagerMessage<
 >;
 export type ManagerAllowConnectResharding = CreateManagerMessage<
 	'ALLOW_CONNECT_RESHARDING',
-	{ shardId: number; presence?: GatewayPresenceUpdateData }
+	{ shardId: number; presence?: GatewayPresenceUpdateData; reshardId: string }
 >;
-export type ManagerWorkerAlreadyExistsResharding = CreateManagerMessage<'WORKER_ALREADY_EXISTS_RESHARDING'>;
+export type ManagerWorkerAlreadyExistsResharding = CreateManagerMessage<
+	'WORKER_ALREADY_EXISTS_RESHARDING',
+	{ reshardId: string }
+>;
 export type ManagerSpawnShards = CreateManagerMessage<
 	'SPAWN_SHARDS',
 	Pick<ShardOptions, 'info' | 'properties' | 'compress'>
 >;
 export type ManagerSpawnShardsResharding = CreateManagerMessage<
 	'SPAWN_SHARDS_RESHARDING',
-	Pick<ShardOptions, 'info' | 'properties' | 'compress'>
+	Pick<ShardOptions, 'info' | 'properties' | 'compress'> & { reshardId: string }
 >;
-export type DisconnectAllShardsResharding = CreateManagerMessage<'DISCONNECT_ALL_SHARDS_RESHARDING'>;
+export type DisconnectAllShardsResharding = CreateManagerMessage<
+	'DISCONNECT_ALL_SHARDS_RESHARDING',
+	{ reshardId: string }
+>;
 export type ConnnectAllShardsResharding = CreateManagerMessage<
 	'CONNECT_ALL_SHARDS_RESHARDING',
 	{
 		totalShards: number;
+		reshardId: string;
 	}
 >;
 export type ManagerSendPayload = CreateManagerMessage<

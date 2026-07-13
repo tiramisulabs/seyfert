@@ -495,4 +495,47 @@ describe('PhysicalWorkerPort', () => {
 			}),
 		).resolves.toMatchObject({ kind: 'rejected', reason: 'stale-token' });
 	});
+
+	test('close dominates replay across 128 seeded exclusive shard topologies', async () => {
+		for (let seed = 0; seed < 128; seed++) {
+			const totalShards = [1, 2, 8, 32][seed % 4]!;
+			const shardStart = seed % totalShards;
+			const shardEnd = shardStart + 1 + (seed % (totalShards - shardStart));
+			const topology = { shardStart, shardEnd, totalShards };
+			let emit!: (value: number) => void;
+			let releaseDispatch!: () => void;
+			let markStarted!: () => void;
+			const blocked = new Promise<void>(resolve => (releaseDispatch = resolve));
+			const started = new Promise<void>(resolve => (markStarted = resolve));
+			let observedTopology: typeof topology | undefined;
+			const port = new PhysicalWorkerPort<number>({
+				adapter: {
+					async launch(input) {
+						observedTopology = { ...input.topology };
+						emit = input.dispatch;
+						return { ready: Promise.resolve(), close() {} };
+					},
+					async dispatch() {
+						markStarted();
+						await blocked;
+					},
+				},
+			});
+
+			await port.control(command({ commandId: 'launch', kind: 'launch', topology, maxBufferedDispatches: 2 }));
+			expect(observedTopology, `seed ${seed}`).toEqual(topology);
+			emit(seed);
+			await port.control(command({ commandId: 'arm', kind: 'arm' }));
+			const activating = port.control(command({ commandId: 'activate', kind: 'activate' }));
+			await started;
+			const closing = port.control(command({ commandId: 'close', kind: 'close' }));
+			releaseDispatch();
+
+			await expect(closing, `seed ${seed}`).resolves.toMatchObject({ kind: 'accepted', state: 'closed' });
+			await expect(activating, `seed ${seed}`).resolves.toMatchObject({
+				kind: 'rejected',
+				reason: 'invalid-state',
+			});
+		}
+	});
 });

@@ -193,6 +193,7 @@ export class PhysicalWorkerPort<Dispatch = unknown> {
 					if (record.state !== 'active') return this.invalidState(record, command);
 					record.state = 'draining';
 					await Promise.all(record.inFlight);
+					if (!this.isCurrent(record, 'draining')) return this.invalidState(record, command);
 					record.state = 'drained';
 					receipt = this.accept(command, 'drained');
 				}
@@ -206,8 +207,10 @@ export class PhysicalWorkerPort<Dispatch = unknown> {
 					let replayed = 0;
 					while (record.buffer.length) {
 						await this.deliver(record, record.buffer.shift()!);
+						if (!this.isCurrent(record, 'replaying')) return this.invalidState(record, command);
 						replayed++;
 					}
+					if (!this.isCurrent(record, 'replaying')) return this.invalidState(record, command);
 					record.state = 'active';
 					receipt = this.accept(command, 'active', replayed);
 				}
@@ -383,6 +386,10 @@ export class PhysicalWorkerPort<Dispatch = unknown> {
 				);
 		}
 		return record.closePromise;
+	}
+
+	private isCurrent(record: PhysicalWorkerRecord<Dispatch>, state: LocalState) {
+		return this.slots.get(record.identity.slot) === record && record.state === state;
 	}
 
 	private replay(command: PhysicalWorkerCommand, inputFingerprint: string) {

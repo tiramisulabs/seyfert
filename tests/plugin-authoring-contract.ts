@@ -795,6 +795,7 @@ expectType<ManagerAllowConnect>(workerAllowConnectWithUndefinedPresence);
 const workerAllowConnectReshardingWithoutPresence = {
 	type: 'ALLOW_CONNECT_RESHARDING',
 	shardId: 0,
+	reshardId: 'opaque-attempt',
 } satisfies ManagerAllowConnectResharding;
 expectType<ManagerAllowConnectResharding>(workerAllowConnectReshardingWithoutPresence);
 
@@ -802,6 +803,7 @@ const workerAllowConnectReshardingWithUndefinedPresence = {
 	type: 'ALLOW_CONNECT_RESHARDING',
 	shardId: 0,
 	presence: undefined,
+	reshardId: 'opaque-attempt',
 } satisfies ManagerAllowConnectResharding;
 expectType<ManagerAllowConnectResharding>(workerAllowConnectReshardingWithUndefinedPresence);
 

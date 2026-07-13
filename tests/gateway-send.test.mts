@@ -222,6 +222,7 @@ describe('gateway send chokepoints', () => {
 			mode: 'custom',
 			path: '',
 			resharding: false,
+			reshardId: 'gateway-send-reshard',
 			shards: [0],
 			token: 'token',
 			totalShards: 1,
@@ -231,7 +232,11 @@ describe('gateway send chokepoints', () => {
 		});
 		const shard = client.createShard(0, { info: gatewayInfo(), compress: false });
 		client.resharding.set(0, shard);
-		await client.handleManagerMessages({ type: 'CONNECT_ALL_SHARDS_RESHARDING', totalShards: 1 });
+		await client.handleManagerMessages({
+			type: 'CONNECT_ALL_SHARDS_RESHARDING',
+			totalShards: 1,
+			reshardId: 'gateway-send-reshard',
+		});
 		const payload = {
 			op: GatewayOpcodes.Dispatch,
 			t: 'RESHARD_TEST_EVENT',

@@ -208,4 +208,6 @@ export interface WorkerData {
 	compress: boolean;
 	__USING_WATCHER__?: boolean;
 	resharding: boolean;
+	/** Opaque correlation for one in-process legacy reshard attempt. */
+	reshardId?: string;
 }

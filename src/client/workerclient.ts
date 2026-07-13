@@ -78,6 +78,7 @@ try {
 		totalShards: Number(process.env.SEYFERT_WORKER_TOTALSHARDS),
 		mode: process.env.SEYFERT_WORKER_MODE as 'custom' | 'threads' | 'clusters',
 		resharding: String(process.env.SEYFERT_WORKER_RESHARDING) === 'true',
+		reshardId: process.env.SEYFERT_WORKER_RESHARDID,
 		totalWorkers: Number(process.env.SEYFERT_WORKER_TOTALWORKERS),
 		info: JSON.parse(process.env.SEYFERT_WORKER_INFO!),
 		compress: String(process.env.SEYFERT_WORKER_COMPRESS) === 'true',
@@ -99,6 +100,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	declare options: WorkerClientOptions;
 	private readonly physicalRuntime?: PhysicalWorkerRuntime;
+	private reshardId = workerData?.reshardId;
 
 	constructor(options?: WorkerClientOptions) {
 		super(options);
@@ -152,6 +154,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	setWorkerData(data: WorkerData) {
 		workerData = data;
+		this.reshardId = data.reshardId;
 	}
 
 	get workerData() {
@@ -190,10 +193,16 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		await super.start(options);
 		workerData.intents = this.resolvePluginGatewayIntents(workerData.intents);
 		if (!this.physicalRuntime) {
-			this.postMessage({
-				type: workerData.resharding ? 'WORKER_START_RESHARDING' : 'WORKER_START',
-				workerId: workerData.workerId,
-			} satisfies WorkerStart | WorkerStartResharding);
+			if (workerData.resharding) {
+				if (!this.reshardId) throw new Error('Resharding worker requires an opaque reshard attempt id');
+				this.postMessage({
+					type: 'WORKER_START_RESHARDING',
+					workerId: workerData.workerId,
+					reshardId: this.reshardId,
+				} satisfies WorkerStartResharding);
+			} else {
+				this.postMessage({ type: 'WORKER_START', workerId: workerData.workerId } satisfies WorkerStart);
+			}
 		}
 		await this.loadEvents(options.eventsDir);
 		if (this.physicalRuntime) {
@@ -265,6 +274,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			case 'ALLOW_CONNECT_RESHARDING':
 				{
+					if (data.reshardId !== this.reshardId) break;
 					const shard = this.resharding.get(data.shardId);
 					if (!shard) {
 						this.logger.fatal(`Worker trying to reshard non-existent shard (#${data.shardId})`);
@@ -287,6 +297,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			case 'SPAWN_SHARDS_RESHARDING':
 				{
+					if (data.reshardId !== this.reshardId) break;
+					const reshardId = data.reshardId;
 					let shardsConnected = 0;
 					const self = this;
 					for (const id of workerData.shards) {
@@ -314,6 +326,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 									self.postMessage({
 										type: 'WORKER_READY_RESHARDING',
 										workerId: workerData.workerId,
+										reshardId,
 									} satisfies WorkerReadyResharding);
 								}
 							},
@@ -323,6 +336,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							type: 'CONNECT_QUEUE_RESHARDING',
 							shardId: id,
 							workerId: workerData.workerId,
+							reshardId,
 						} satisfies WorkerRequestConnectResharding);
 					}
 				}
@@ -414,25 +428,34 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			case 'WORKER_ALREADY_EXISTS_RESHARDING':
 				{
+					if (this.reshardId && this.reshardId !== data.reshardId) {
+						for (const shard of this.resharding.values()) await shard.disconnect(ShardSocketCloseCodes.Resharding);
+						this.resharding.clear();
+					}
+					this.reshardId = data.reshardId;
 					this.postMessage({
 						type: 'WORKER_START_RESHARDING',
 						workerId: workerData.workerId,
+						reshardId: data.reshardId,
 					} satisfies WorkerStartResharding);
 				}
 				break;
 			case 'DISCONNECT_ALL_SHARDS_RESHARDING':
 				{
+					if (data.reshardId !== this.reshardId) break;
 					for (const i of this.shards.values()) {
 						await i.disconnect(ShardSocketCloseCodes.Resharding);
 					}
 					this.postMessage({
 						type: 'DISCONNECTED_ALL_SHARDS_RESHARDING',
 						workerId: workerData.workerId,
+						reshardId: data.reshardId,
 					} satisfies WorkerDisconnectedAllShardsResharding);
 				}
 				break;
 			case 'CONNECT_ALL_SHARDS_RESHARDING':
 				{
+					if (data.reshardId !== this.reshardId) break;
 					this.shards.clear();
 					for (const [id, shard] of this.resharding) {
 						this.shards.set(id, shard);
@@ -444,6 +467,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					workerData.totalShards = data.totalShards;
 					workerData.shards = [...this.shards.keys()];
 					this.resharding.clear();
+					this.reshardId = undefined;
 				}
 				break;
 		}
