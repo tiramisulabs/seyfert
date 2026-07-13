@@ -81,6 +81,8 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 	private readonly spawnPromises = new Map<number, Promise<void>>();
 	private readonly topology: WorkerTopologyResolver;
 	private startPromise?: Promise<void>;
+	/** Terminal failure from an asynchronous worker lifecycle transition. */
+	lifecycleError?: unknown;
 	heartbeater: Heartbeater;
 
 	constructor(options: WorkerManagerConstructorOptions) {
@@ -257,18 +259,37 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 						},
 						this.debugger,
 					);
-					await registerWorker(resharding, currentShards[deadWorkerId], currentShards.length);
-					registerWorkerHeartbeat(deadWorkerId);
+					try {
+						await registerWorker(resharding, currentShards[deadWorkerId], currentShards.length);
+						registerWorkerHeartbeat(deadWorkerId);
+					} catch (error) {
+						this.failWorkerLifecycle(error);
+					}
 				});
 			};
 			const workerExists = this.has(i);
 			if (rawResharding || !workerExists) {
 				this[rawResharding ? 'reshardingWorkerQueue' : 'workerQueue'].push(async () => {
-					await registerWorker(rawResharding);
-					registerWorkerHeartbeat(i);
+					try {
+						await registerWorker(rawResharding);
+						registerWorkerHeartbeat(i);
+					} catch (error) {
+						this.failWorkerLifecycle(error);
+						throw error;
+					}
 				});
 			}
 		}
+	}
+
+	private failWorkerLifecycle(error: unknown) {
+		this.lifecycleError = error;
+		this.workerQueue = [];
+		this.reshardingWorkerQueue = [];
+		delete this._info;
+		this.reshardId = undefined;
+		this.reshardingState = 'idle';
+		this.debugger?.error('WorkerManager lifecycle failed', error);
 	}
 
 	createWorker(workerData: WorkerData) {
