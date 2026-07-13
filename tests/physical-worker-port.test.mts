@@ -13,6 +13,49 @@ const command = (command: LocalCommand) => ({
 }) as PhysicalWorkerCommand;
 
 describe('PhysicalWorkerPort', () => {
+	test('attributes identical dispatches to their immutable physical identity and topology', async () => {
+		const emits = new Map<string, (value: number) => void>();
+		const contexts: unknown[] = [];
+		const port = new PhysicalWorkerPort<number>({
+			adapter: {
+				async launch(input) {
+					emits.set(input.identity.slot, input.dispatch);
+					return { ready: Promise.resolve(), close() {} };
+				},
+				dispatch(_value, _snapshot, context) {
+					contexts.push(context);
+				},
+			},
+		});
+		for (const [slot, shardStart] of [
+			['one', 0],
+			['two', 1],
+		] as const) {
+			const identity = { slot, token: `token-${slot}` };
+			await port.control({
+				kind: 'launch',
+				commandId: `launch-${slot}`,
+				identity,
+				topology: { shardStart, shardEnd: shardStart + 1, totalShards: 2 },
+				maxBufferedDispatches: 1,
+			});
+			await port.control({ kind: 'arm', commandId: `arm-${slot}`, identity });
+			await port.control({ kind: 'activate', commandId: `activate-${slot}`, identity });
+			emits.get(slot)!(1);
+		}
+		await vi.waitFor(() => expect(contexts).toHaveLength(2));
+		expect(contexts).toEqual([
+			expect.objectContaining({
+				identity: { slot: 'one', token: 'token-one' },
+				topology: expect.objectContaining({ shardStart: 0 }),
+			}),
+			expect.objectContaining({
+				identity: { slot: 'two', token: 'token-two' },
+				topology: expect.objectContaining({ shardStart: 1 }),
+			}),
+		]);
+	});
+
 	test('hydrates without dispatch, replays in order, drains in-flight work, and rejects stale tokens', async () => {
 		const delivered: number[] = [];
 		let emit!: (value: number) => void;

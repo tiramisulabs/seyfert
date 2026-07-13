@@ -89,13 +89,22 @@ export interface PhysicalWorkerConnection {
 	close(): Awaitable<void>;
 }
 
+export interface PhysicalWorkerDispatchContext {
+	identity: Readonly<PhysicalWorkerIdentity>;
+	topology: Readonly<PhysicalShardTopology>;
+}
+
 export interface PhysicalWorkerPortAdapter<Dispatch = unknown> {
 	launch(input: {
 		identity: Readonly<PhysicalWorkerIdentity>;
 		topology: Readonly<PhysicalShardTopology>;
 		dispatch: (value: Dispatch) => void;
 	}): Awaitable<PhysicalWorkerConnection>;
-	dispatch(value: Dispatch, snapshot: Readonly<Record<string, unknown>> | undefined): Awaitable<void>;
+	dispatch(
+		value: Dispatch,
+		snapshot: Readonly<Record<string, unknown>> | undefined,
+		context: Readonly<PhysicalWorkerDispatchContext>,
+	): Awaitable<void>;
 }
 
 export interface PhysicalWorkerPortOptions<Dispatch = unknown> {
@@ -117,6 +126,8 @@ type LocalState =
 
 interface PhysicalWorkerRecord<Dispatch> {
 	identity: PhysicalWorkerIdentity;
+	topology: Readonly<PhysicalShardTopology>;
+	dispatchContext: Readonly<PhysicalWorkerDispatchContext>;
 	state: LocalState;
 	maxBufferedDispatches: number;
 	buffer: Dispatch[];
@@ -250,8 +261,12 @@ export class PhysicalWorkerPort<Dispatch = unknown> {
 		}
 		let resolveClosed!: () => void;
 		const closedSignal = new Promise<void>(resolve => (resolveClosed = resolve));
+		const identity = Object.freeze({ ...command.identity });
+		const topology = Object.freeze({ ...command.topology });
 		const record: PhysicalWorkerRecord<Dispatch> = {
-			identity: Object.freeze({ ...command.identity }),
+			identity,
+			topology,
+			dispatchContext: Object.freeze({ identity, topology }),
 			state: 'launching',
 			maxBufferedDispatches: command.maxBufferedDispatches,
 			buffer: [],
@@ -352,8 +367,10 @@ export class PhysicalWorkerPort<Dispatch = unknown> {
 	private deliver(record: PhysicalWorkerRecord<Dispatch>, value: Dispatch) {
 		const commandId = record.dispatchCommandId;
 		const task = record.deliveryTail
-			? record.deliveryTail.catch(() => undefined).then(() => this.options.adapter.dispatch(value, record.snapshot))
-			: Promise.resolve().then(() => this.options.adapter.dispatch(value, record.snapshot));
+			? record.deliveryTail
+					.catch(() => undefined)
+					.then(() => this.options.adapter.dispatch(value, record.snapshot, record.dispatchContext))
+			: Promise.resolve().then(() => this.options.adapter.dispatch(value, record.snapshot, record.dispatchContext));
 		record.deliveryTail = task;
 		record.inFlight.add(task);
 		task.catch(error =>

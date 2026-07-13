@@ -119,6 +119,23 @@ async function startPhysicalClient(client: WorkerClient) {
 }
 
 describe('WorkerClient physical IPC', () => {
+	test('rejects a same-identity dispatch outside the assigned shard topology', async () => {
+		const handlePayload = vi.fn();
+		const { client, messages } = await createPhysicalClient(handlePayload);
+		await client.handleManagerMessages({
+			type: 'SEYFERT_PHYSICAL_APPLY_DISPATCH',
+			...identity,
+			dispatchId: 'outside-topology',
+			body: { shardId: 1, payload: packet(1) },
+		});
+		expect(handlePayload).not.toHaveBeenCalled();
+		expect(messages.at(-1)).toMatchObject({
+			type: 'SEYFERT_PHYSICAL_DISPATCH_ACK',
+			dispatchId: 'outside-topology',
+			error: expect.stringMatching(/invalid physical gateway dispatch/i),
+		});
+	});
+
 	test('bootstraps exactly its physical shards through the local identify queue without a legacy manager', async () => {
 		vi.useFakeTimers();
 		const messages: Record<string, any>[] = [];

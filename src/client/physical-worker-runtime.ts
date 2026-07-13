@@ -145,7 +145,7 @@ export class PhysicalWorkerRuntime {
 	private async handleDispatch(message: PhysicalHostToWorkerMessage) {
 		if (message.type !== 'SEYFERT_PHYSICAL_APPLY_DISPATCH') return;
 		const body = message.body;
-		const valid = isGatewayDispatch(body);
+		const valid = isGatewayDispatch(body) && this.isAssignedShard(body.shardId);
 		let hydrationTask: Promise<void> | undefined;
 		let snapshotFingerprint: string | undefined;
 		const task = valid
