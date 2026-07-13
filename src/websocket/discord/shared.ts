@@ -208,6 +208,8 @@ export interface WorkerData {
 	compress: boolean;
 	__USING_WATCHER__?: boolean;
 	resharding: boolean;
+	/** Opaque identity for this concrete worker process. */
+	incarnationId?: string;
 	/** Opaque correlation for one in-process legacy reshard attempt. */
 	reshardId?: string;
 }

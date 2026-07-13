@@ -1,3 +1,5 @@
+import { fork } from 'node:child_process';
+import { join } from 'node:path';
 import { describe, expect, test } from 'vitest';
 import { WorkerClient } from '../src/client';
 import { GatewayIntentBits, type RESTGetAPIGatewayBotResult } from '../src/types';
@@ -20,6 +22,7 @@ function gatewayInfo(shards: number): RESTGetAPIGatewayBotResult {
 function createHarness(recommendations: readonly number[], heartbeaterInterval = 0) {
 	const outbound: { workerId: number; message: { type: string; totalShards?: number; reshardId?: string } }[] = [];
 	const spawned: { workerId: number; shards: number[]; totalShards: number; resharding: boolean }[] = [];
+	const spawnEnvironments: Record<string, string>[] = [];
 	let recommendation = 0;
 	const manager = new WorkerManager({
 		mode: 'custom',
@@ -27,7 +30,8 @@ function createHarness(recommendations: readonly number[], heartbeaterInterval =
 			postMessage(workerId, message) {
 				outbound.push({ workerId, message: message as never });
 			},
-			spawn(worker) {
+			spawn(worker, environment) {
+				spawnEnvironments.push(environment as Record<string, string>);
 				spawned.push({
 					workerId: worker.workerId,
 					shards: [...worker.shards],
@@ -54,7 +58,7 @@ function createHarness(recommendations: readonly number[], heartbeaterInterval =
 			getInfo: async () => gatewayInfo(recommendations[recommendation++]!),
 		},
 	});
-	return { manager, outbound, spawned };
+	return { manager, outbound, spawned, spawnEnvironments };
 }
 
 async function beginReshard(manager: WorkerManager) {
@@ -105,11 +109,82 @@ async function staleNoise(manager: WorkerManager, reshardId: string, random: () 
 }
 
 describe('WorkerManager legacy reshard protocol stress', () => {
+	test('rejects stale and missing incarnation on worker data-plane traffic', async () => {
+		const { manager } = createHarness([4]);
+		manager.set(0, { incarnationId: 'current' });
+		let received = 0;
+		manager.options.handlePayload = () => received++;
+		const message = {
+			type: 'RECEIVE_PAYLOAD' as const,
+			workerId: 0,
+			shardId: 0,
+			payload: { op: 0, s: 1, t: 'TEST', d: {} } as never,
+		};
+		await manager.handleWorkerMessage({ ...message, incarnationId: 'stale' });
+		await manager.handleWorkerMessage(message as never);
+		expect(received).toBe(0);
+		await manager.handleWorkerMessage({ ...message, incarnationId: 'current' });
+		expect(received).toBe(1);
+	});
+
+	test('assigns one incarnation when direct createWorker callers omit it', async () => {
+		const { manager, spawnEnvironments } = createHarness([4]);
+		const data: WorkerData = {
+			intents: 0,
+			token: 'stress-token',
+			path: 'worker.js',
+			shards: [0],
+			totalShards: 1,
+			totalWorkers: 1,
+			mode: 'custom',
+			workerId: 0,
+			debug: false,
+			workerProxy: false,
+			info: gatewayInfo(1),
+			compress: false,
+			resharding: false,
+		};
+		manager.createWorker(data);
+		expect(data.incarnationId).toEqual(expect.any(String));
+		expect((manager.get(0) as { incarnationId?: string }).incarnationId).toBe(data.incarnationId);
+		await Promise.resolve();
+		await Promise.resolve();
+		expect(spawnEnvironments).toHaveLength(1);
+		expect(spawnEnvironments[0]!.SEYFERT_WORKER_INCARNATIONID).toBe(data.incarnationId);
+		const child = fork(join(process.cwd(), 'tests/worker-incarnation-bootstrap.cjs'), [], {
+			env: { ...process.env, ...spawnEnvironments[0] },
+			silent: true,
+		});
+		const bootstrapMessage = await new Promise<Record<string, unknown>>((resolve, reject) => {
+			child.once('message', message => resolve(message as Record<string, unknown>));
+			child.once('error', reject);
+			child.once('exit', code => {
+				if (code && code !== 0) reject(new Error(`Bootstrap child exited with ${code}`));
+			});
+		});
+		child.kill();
+		expect(bootstrapMessage).toMatchObject({
+			type: 'ACK_HEARTBEAT',
+			workerId: 0,
+			incarnationId: data.incarnationId,
+		});
+		let received = 0;
+		manager.options.handlePayload = () => received++;
+		await manager.handleWorkerMessage({
+			type: 'RECEIVE_PAYLOAD',
+			workerId: 0,
+			incarnationId: data.incarnationId!,
+			shardId: 0,
+			payload: { op: 0, s: 1, t: 'TEST', d: {} } as never,
+		});
+		expect(received).toBe(1);
+	});
+
 	test('delayed disconnect evidence from attempt A cannot commit attempt B', async () => {
 		const { manager, outbound } = createHarness([4, 6]);
 		await manager.resolveShardTopology();
-		manager.set(0, {});
-		manager.set(1, {});
+		manager.set(0, { incarnationId: 'initial-0' });
+		manager.set(1, { incarnationId: 'initial-1' });
 
 		const attemptA = await beginReshard(manager);
 		await readyEveryWorker(manager, 4, attemptA);
@@ -132,8 +207,8 @@ describe('WorkerManager legacy reshard protocol stress', () => {
 	test('delayed readiness from attempt A cannot advance attempt B', async () => {
 		const { manager, outbound } = createHarness([4, 6]);
 		await manager.resolveShardTopology();
-		manager.set(0, {});
-		manager.set(1, {});
+		manager.set(0, { incarnationId: 'initial-0' });
+		manager.set(1, { incarnationId: 'initial-1' });
 		const attemptA = await beginReshard(manager);
 		await readyEveryWorker(manager, 4, attemptA);
 		await disconnectEveryWorker(manager, 4, attemptA);
@@ -151,8 +226,8 @@ describe('WorkerManager legacy reshard protocol stress', () => {
 		const { manager, spawned } = createHarness([4], 1_000_000);
 		try {
 			await manager.resolveShardTopology();
-			manager.set(0, {});
-			manager.set(1, {});
+			manager.set(0, { incarnationId: 'initial-0' });
+			manager.set(1, { incarnationId: 'initial-1' });
 			const attempt = await beginReshard(manager);
 			await readyEveryWorker(manager, 4, attempt);
 			await disconnectEveryWorker(manager, 4, attempt);
@@ -223,8 +298,8 @@ describe('WorkerManager legacy reshard protocol stress', () => {
 			const random = seeded(seed);
 			const { manager, outbound } = createHarness([4, 6]);
 			await manager.resolveShardTopology();
-			manager.set(0, {});
-			manager.set(1, {});
+			manager.set(0, { incarnationId: 'initial-0' });
+			manager.set(1, { incarnationId: 'initial-1' });
 			const attemptA = await beginReshard(manager);
 			await readyEveryWorker(manager, 4, attemptA);
 			await disconnectEveryWorker(manager, 4, attemptA);

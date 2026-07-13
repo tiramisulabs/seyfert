@@ -79,6 +79,7 @@ try {
 		mode: process.env.SEYFERT_WORKER_MODE as 'custom' | 'threads' | 'clusters',
 		resharding: String(process.env.SEYFERT_WORKER_RESHARDING) === 'true',
 		reshardId: process.env.SEYFERT_WORKER_RESHARDID,
+		incarnationId: process.env.SEYFERT_WORKER_INCARNATIONID,
 		totalWorkers: Number(process.env.SEYFERT_WORKER_TOTALWORKERS),
 		info: JSON.parse(process.env.SEYFERT_WORKER_INFO!),
 		compress: String(process.env.SEYFERT_WORKER_COMPRESS) === 'true',
@@ -198,10 +199,15 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				this.postMessage({
 					type: 'WORKER_START_RESHARDING',
 					workerId: workerData.workerId,
+					incarnationId: workerData.incarnationId!,
 					reshardId: this.reshardId,
 				} satisfies WorkerStartResharding);
 			} else {
-				this.postMessage({ type: 'WORKER_START', workerId: workerData.workerId } satisfies WorkerStart);
+				this.postMessage({
+					type: 'WORKER_START',
+					workerId: workerData.workerId,
+					incarnationId: workerData.incarnationId!,
+				} satisfies WorkerStart);
 			}
 		}
 		await this.loadEvents(options.eventsDir);
@@ -239,6 +245,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				this.postMessage({
 					type: 'ACK_HEARTBEAT',
 					workerId: workerData.workerId,
+					incarnationId: workerData.incarnationId!,
 				});
 				break;
 			case 'CACHE_RESULT':
@@ -269,6 +276,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						type: 'RESULT_PAYLOAD',
 						nonce: data.nonce,
 						workerId: this.workerId,
+						incarnationId: workerData.incarnationId!,
 					} satisfies WorkerSendResultPayload);
 				}
 				break;
@@ -326,6 +334,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 									self.postMessage({
 										type: 'WORKER_READY_RESHARDING',
 										workerId: workerData.workerId,
+										incarnationId: workerData.incarnationId!,
 										reshardId,
 									} satisfies WorkerReadyResharding);
 								}
@@ -336,6 +345,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							type: 'CONNECT_QUEUE_RESHARDING',
 							shardId: id,
 							workerId: workerData.workerId,
+							incarnationId: workerData.incarnationId!,
 							reshardId,
 						} satisfies WorkerRequestConnectResharding);
 					}
@@ -356,6 +366,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							type: 'CONNECT_QUEUE',
 							shardId: id,
 							workerId: workerData.workerId,
+							incarnationId: workerData.incarnationId!,
 						} satisfies WorkerRequestConnect);
 					}
 				}
@@ -373,6 +384,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						nonce: data.nonce,
 						type: 'SHARD_INFO',
 						workerId: this.workerId,
+						incarnationId: workerData.incarnationId!,
 					} satisfies WorkerSendShardInfo);
 				}
 				break;
@@ -381,6 +393,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					this.postMessage({
 						shards: [...this.shards.values()].map(generateShardInfo),
 						workerId: workerData.workerId,
+						incarnationId: workerData.incarnationId!,
 						type: 'WORKER_INFO',
 						nonce: data.nonce,
 					} satisfies WorkerSendInfo);
@@ -413,6 +426,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						type: 'EVAL_RESPONSE',
 						response: result,
 						workerId: workerData.workerId,
+						incarnationId: workerData.incarnationId!,
 						nonce: data.nonce,
 					} satisfies WorkerSendEvalResponse);
 				}
@@ -436,6 +450,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					this.postMessage({
 						type: 'WORKER_START_RESHARDING',
 						workerId: workerData.workerId,
+						incarnationId: workerData.incarnationId!,
 						reshardId: data.reshardId,
 					} satisfies WorkerStartResharding);
 				}
@@ -449,6 +464,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					this.postMessage({
 						type: 'DISCONNECTED_ALL_SHARDS_RESHARDING',
 						workerId: workerData.workerId,
+						incarnationId: workerData.incarnationId!,
 						reshardId: data.reshardId,
 					} satisfies WorkerDisconnectedAllShardsResharding);
 				}
@@ -500,6 +516,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			func: func.toString(),
 			toWorkerId: workerId,
 			workerId: workerData.workerId,
+			incarnationId: workerData.incarnationId!,
 			nonce,
 			vars: JSON.stringify(vars),
 		} satisfies WorkerSendToWorkerEval);
@@ -520,6 +537,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		if (this.options.sendPayloadToParent && pluginPacket !== null)
 			await this.postMessage({
 				workerId: workerData.workerId,
+				incarnationId: workerData.incarnationId!,
 				shardId,
 				type: 'RECEIVE_PAYLOAD',
 				payload: pluginPacket,
@@ -567,6 +585,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		this.shards.set(shardId, shard);
 		return this.postMessage({
 			workerId: this.workerId,
+			incarnationId: workerData.incarnationId!,
 			shardId,
 			type: 'CONNECT_QUEUE',
 		});
@@ -626,6 +645,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 									this.postMessage({
 										type: 'WORKER_SHARDS_CONNECTED',
 										workerId: this.workerId,
+										incarnationId: workerData.incarnationId!,
 									} as WorkerShardsConnected);
 								await this.events.runEvent('WORKER_SHARDS_CONNECTED', this, this.me, -1);
 							}
@@ -644,6 +664,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 										this.postMessage({
 											type: 'WORKER_READY',
 											workerId: this.workerId,
+											incarnationId: workerData.incarnationId!,
 										} as WorkerReady);
 									await this.events.runEvent('WORKER_READY', this, this.me, -1);
 								}

@@ -34,6 +34,7 @@ type WorkerManagerRuntimeOptions =
 	  });
 
 type WorkerHandle = (ClusterWorker | WorkerThreadsWorker | { ready?: boolean }) & {
+	incarnationId?: string;
 	ready?: boolean;
 	disconnected?: boolean;
 	resharded?: boolean;
@@ -235,6 +236,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 					totalShards: resharding ? this._info!.shards : this.totalShards,
 					mode: this.options.mode,
 					resharding,
+					incarnationId: randomUUID(),
 					totalWorkers,
 					info: {
 						...this.options.info,
@@ -303,6 +305,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 			const worker = this.get(workerData.workerId)!;
 			return worker;
 		}
+		workerData.incarnationId ??= randomUUID();
 		const env: Record<string, any> = {
 			SEYFERT_SPAWNING: 'true',
 		};
@@ -321,6 +324,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 				const worker = new worker_threads.Worker(workerData.path, {
 					env,
 				});
+				Object.assign(worker, { incarnationId: workerData.incarnationId });
 				worker.on('message', data => this.handleWorkerMessage(data));
 				worker.on('error', err => {
 					this.debugger?.error(`[Worker #${workerData.workerId}]`, err);
@@ -333,6 +337,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 					exec: workerData.path,
 				});
 				const worker = cluster.fork(env);
+				Object.assign(worker, { incarnationId: workerData.incarnationId });
 				worker.on('message', data => this.handleWorkerMessage(data));
 				this.set(workerData.workerId, worker);
 				return worker;
@@ -341,6 +346,7 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 				const adapter = this.options.adapter;
 				const worker = {
 					ready: false,
+					incarnationId: workerData.incarnationId,
 				};
 				this.set(workerData.workerId, worker);
 				const spawned = Promise.resolve()
@@ -382,6 +388,11 @@ export class WorkerManager extends Map<number, WorkerHandle> {
 	}
 
 	async handleWorkerMessage(message: WorkerMessages) {
+		if (
+			typeof message.incarnationId !== 'string' ||
+			this.get(message.workerId)?.incarnationId !== message.incarnationId
+		)
+			return;
 		switch (message.type) {
 			case 'ACK_HEARTBEAT':
 				this.heartbeater.acknowledge(message.workerId);

@@ -17,6 +17,7 @@ export type WorkerInfo = { shards: WorkerShardInfo[] };
 type CreateWorkerMessage<T extends string, D extends object = object> = {
 	type: T;
 	workerId: number;
+	incarnationId: string;
 } & D;
 
 export type WorkerRequestConnect = CreateWorkerMessage<'CONNECT_QUEUE', { shardId: number }>;
@@ -118,6 +119,7 @@ export type CustomWorkerClientMessages = {
 		{
 			type: K;
 			workerId: number;
+			incarnationId: string;
 		} & Identify<CustomWorkerClientEvents[K] extends never ? {} : CustomWorkerClientEvents[K]>
 	>;
 };
