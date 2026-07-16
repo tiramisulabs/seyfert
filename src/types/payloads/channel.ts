@@ -1478,6 +1478,10 @@ export enum AttachmentFlags {
 	 * This attachment has been edited using the remix feature on mobile
 	 */
 	IsRemix = 1 << 2,
+	/**
+	 * This attachment was marked as a spoiler
+	 */
+	IsSpoiler = 1 << 3,
 }
 
 /**
