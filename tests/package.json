@@ -1,0 +1,9 @@
+{
+	"name": "@seyfert/tests",
+	"version": "0.0.0",
+	"private": true,
+	"devDependencies": {
+		"@slipher/testing": "1.0.0",
+		"seyfert": "workspace:*"
+	}
+}

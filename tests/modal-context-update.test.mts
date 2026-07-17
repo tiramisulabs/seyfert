@@ -1,30 +1,63 @@
-import { describe, expect, test, vi } from 'vitest';
-import { ModalContext } from '../src/components/modalcontext';
+import { createMockBot, outcome } from '@slipher/testing';
+import { describe, expect, test } from 'vitest';
+import {
+	Command,
+	Declare,
+	Label,
+	Modal,
+	ModalCommand,
+	TextInput,
+	TextInputStyle,
+	type CommandContext,
+	type ModalContext,
+} from '../lib';
 
-function createModalContext(interaction: unknown) {
-	const ctx = Object.create(ModalContext.prototype);
-	ctx.interaction = interaction;
-	return ctx as ModalContext;
+@Declare({ name: 'open-update', description: 'Open an update modal' })
+class OpenUpdateModal extends Command {
+	async run(ctx: CommandContext) {
+		await ctx.modal(
+			new Modal()
+				.setCustomId('update-modal')
+				.setTitle('Update')
+				.addComponents(
+					new Label()
+						.setLabel('Mode')
+						.setComponent(new TextInput().setCustomId('mode').setStyle(TextInputStyle.Short)),
+				),
+		);
+	}
+}
+
+class UpdateModal extends ModalCommand {
+	customId = 'update-modal';
+
+	async run(ctx: ModalContext) {
+		if (ctx.getInputValue('mode', true) === 'defer') {
+			await ctx.deferUpdate();
+			return;
+		}
+		await ctx.update({ content: 'updated' }, true);
+	}
 }
 
 describe('ModalContext update proxies', () => {
 	test('proxies update to the modal submit interaction', async () => {
-		const body = { content: 'updated' };
-		const updated = { id: '100000000000000001' };
-		const update = vi.fn(() => Promise.resolve(updated));
-		const ctx = createModalContext({ update });
+		await using bot = await createMockBot({ commands: [OpenUpdateModal], components: [UpdateModal] });
 
-		await expect(ctx.update(body as never, true)).resolves.toBe(updated);
+		await bot.slash({ name: 'open-update' });
+		const result = await bot.fillModal('update-modal', { mode: 'update' });
 
-		expect(update).toHaveBeenCalledWith(body, true);
+		expect(result.content).toBe('updated');
+		outcome(result).get.response({ kind: 'update' });
 	});
 
 	test('proxies deferUpdate without arguments', async () => {
-		const deferUpdate = vi.fn(() => Promise.resolve(undefined));
-		const ctx = createModalContext({ deferUpdate });
+		await using bot = await createMockBot({ commands: [OpenUpdateModal], components: [UpdateModal] });
 
-		await expect(ctx.deferUpdate()).resolves.toBeUndefined();
+		await bot.slash({ name: 'open-update' });
+		const result = await bot.fillModal('update-modal', { mode: 'defer' });
 
-		expect(deferUpdate).toHaveBeenCalledWith();
+		expect(result.deferredUpdate).toBe(true);
+		outcome(result).get.response({ kind: 'defer' });
 	});
 });

@@ -1,7 +1,6 @@
+import { Routes, apiMember, apiUser, createMockBot, mockWorld } from '@slipher/testing';
 import { describe, expect, test, vi } from 'vitest';
 import { GuildMember } from '../lib';
-import { BanShorter } from '../lib/common/shorters/bans';
-import { MemberShorter } from '../lib/common/shorters/members';
 
 const guildId = '100000000000000001';
 const botId = '200000000000000002';
@@ -10,22 +9,17 @@ const botRoleId = '400000000000000004';
 const targetRoleId = '500000000000000005';
 
 const userData = (id: string, bot = false) =>
-	({
+	apiUser({
 		id,
 		username: `user-${id}`,
-		discriminator: '0000',
-		avatar: null,
 		bot,
-		global_name: null,
-	}) as any;
+		globalName: null,
+	});
 
 const memberData = (roles: string[]) =>
-	({
+	apiMember({
 		roles,
-		joined_at: null,
-		deaf: false,
-		mute: false,
-	}) as any;
+	});
 
 const createMember = (client: any, id: string, roles: string[], bot = false) =>
 	new GuildMember(client, memberData(roles), userData(id, bot), guildId);
@@ -124,71 +118,60 @@ describe('GuildMember roles', () => {
 
 describe('GuildMember moderation helpers', () => {
 	test('timeout treats numbers as milliseconds', async () => {
-		vi.useFakeTimers();
+		const world = mockWorld();
+		const guild = world.registerGuild({ everyonePermissions: ['ModerateMembers'] });
+		const target = world.registerMember(guild.id);
+		await using bot = await createMockBot({ world });
+		vi.useFakeTimers({ toFake: ['Date'] });
 		vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
 		try {
-			const memberShorter = new MemberShorter({} as any);
-			const edit = vi.spyOn(memberShorter, 'edit').mockResolvedValue({} as any);
+			await bot.client.members.timeout(guild.id, target.user.id, 1_500, 'brief timeout');
 
-			await memberShorter.timeout(guildId, targetId, 1_500, 'brief timeout');
-
-			expect(edit).toHaveBeenCalledWith(
-				guildId,
-				targetId,
-				{ communication_disabled_until: '2026-01-01T00:00:01.500Z' },
-				'brief timeout',
-			);
+			const action = bot.rest.requireAction(Routes.editMember, {
+				guildId: guild.id,
+				userId: target.user.id,
+			});
+			expect(action.body).toEqual({ communication_disabled_until: '2026-01-01T00:00:01.500Z' });
+			expect(action.reason).toBe('brief timeout');
 		} finally {
 			vi.useRealTimers();
 		}
 	});
 
 	test('ban shorters convert options to Discord ban body and audit reason', async () => {
-		const createClient = () => {
-			const put = vi.fn().mockResolvedValue(undefined);
-			const removeIfNI = vi.fn().mockResolvedValue(undefined);
-			const client = {
-				proxy: {
-					guilds(id: string) {
-						expect(id).toBe(guildId);
-						return {
-							bans(memberId: string) {
-								expect(memberId).toBe(targetId);
-								return { put };
-							},
-						};
-					},
-				},
-				cache: {
-					members: { removeIfNI },
-				},
-			};
+		const memberWorld = mockWorld();
+		const memberGuild = memberWorld.registerGuild({ everyonePermissions: ['BanMembers'] });
+		const memberTarget = memberWorld.registerMember(memberGuild.id);
+		await using memberBot = await createMockBot({ world: memberWorld });
 
-			return { client, put, removeIfNI };
-		};
-
-		const memberClient = createClient();
-		await new MemberShorter(memberClient.client as any).ban(guildId, targetId, {
+		await memberBot.client.members.ban(memberGuild.id, memberTarget.user.id, {
 			deleteMessageSeconds: 60,
 			reason: 'cleanup',
 		});
 
-		expect(memberClient.put).toHaveBeenCalledWith({
-			body: { delete_message_seconds: 60 },
-			reason: 'cleanup',
+		const memberAction = memberBot.rest.requireAction(Routes.ban, {
+			guildId: memberGuild.id,
+			userId: memberTarget.user.id,
 		});
-		expect(memberClient.removeIfNI).toHaveBeenCalledWith('GuildModeration', targetId, guildId);
+		expect(memberAction.body).toEqual({ delete_message_seconds: 60 });
+		expect(memberAction.reason).toBe('cleanup');
+		expect(memberBot.world.get.ban({ guildId: memberGuild.id, userId: memberTarget.user.id })).toBeDefined();
 
-		const banClient = createClient();
-		await new BanShorter(banClient.client as any).create(guildId, targetId, {
+		const banWorld = mockWorld();
+		const banGuild = banWorld.registerGuild({ everyonePermissions: ['BanMembers'] });
+		const banTarget = banWorld.registerMember(banGuild.id);
+		await using banBot = await createMockBot({ world: banWorld });
+		await banBot.client.bans.create(banGuild.id, banTarget.user.id, {
 			deleteMessageSeconds: 120,
 			reason: 'cleanup more',
 		});
 
-		expect(banClient.put).toHaveBeenCalledWith({
-			body: { delete_message_seconds: 120 },
-			reason: 'cleanup more',
+		const banAction = banBot.rest.requireAction(Routes.ban, {
+			guildId: banGuild.id,
+			userId: banTarget.user.id,
 		});
-		expect(banClient.removeIfNI).toHaveBeenCalledWith('GuildModeration', targetId, guildId);
+		expect(banAction.body).toEqual({ delete_message_seconds: 120 });
+		expect(banAction.reason).toBe('cleanup more');
+		expect(banBot.world.get.ban({ guildId: banGuild.id, userId: banTarget.user.id })).toBeDefined();
 	});
 });

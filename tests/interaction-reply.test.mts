@@ -1,12 +1,26 @@
+import { Routes, createMockBot } from '@slipher/testing';
 import { describe, expect, test, vi } from 'vitest';
 import {
 	ApplicationCommandType,
 	BaseInteraction,
 	ChannelType,
+	Command,
+	Declare,
 	type __InternalReplyFunction,
+	type CommandContext,
 	type Interaction,
 	InteractionType,
 } from '../lib';
+
+@Declare({ name: 'ordered-reply', description: 'Reply and then edit' })
+class OrderedReplyCommand extends Command {
+	async run(ctx: CommandContext) {
+		const initial = ctx.write({ content: 'initial' });
+		const edit = ctx.editOrReply({ content: 'edited' }, true);
+		await initial;
+		await edit;
+	}
+}
 
 function createDeferred<T>() {
 	let resolve!: (value: T | PromiseLike<T>) => void;
@@ -93,40 +107,20 @@ describe('interaction reply state', () => {
 	});
 
 	test('keeps constructor replies private while editOrReply waits to edit the original response', async () => {
-		const pendingReply = createDeferred<void>();
-		const editedMessage = { id: '100000000000000007' };
-		const restReply = vi.fn();
-		const editMessage = vi.fn(() => Promise.resolve(editedMessage));
-		const __reply = vi.fn(() => pendingReply.promise);
-		const interaction = createInteraction(
-			{
-				options: {},
-				interactions: {
-					reply: restReply,
-					editMessage,
-				},
-			},
-			__reply,
-		);
+		await using bot = await createMockBot({ commands: [OrderedReplyCommand] });
+		const callback = bot.rest.gateNext(Routes.interactionCallback);
+		const dispatch = bot.slash({ name: 'ordered-reply' });
+		// Dispatch is lazy; attaching then starts it before this test waits for the REST gate.
+		const completed = dispatch.then(result => result);
 
-		const initialReply = interaction.write({ content: 'initial' });
+		await callback.hit;
+		expect(bot.rest.findActions(Routes.editOriginalResponse)).toHaveLength(0);
 
-		expect(__reply).toHaveBeenCalledTimes(1);
-		expect(restReply).not.toHaveBeenCalled();
-		expect(interaction.replied).toBeUndefined();
+		callback.release();
+		const result = await completed;
 
-		const edit = interaction.editOrReply({ content: 'edited' }, true);
-
-		await Promise.resolve();
-
-		expect(editMessage).not.toHaveBeenCalled();
-
-		pendingReply.resolve();
-
-		await expect(initialReply).resolves.toBeUndefined();
-		await expect(edit).resolves.toBe(editedMessage);
-		expect(interaction.replied).toBe(true);
-		expect(restReply).not.toHaveBeenCalled();
-		expect(editMessage).toHaveBeenCalledTimes(1);
+		expect(result.content).toBe('edited');
+		expect(bot.rest.findActions(Routes.interactionCallback)).toHaveLength(1);
+		expect(bot.rest.findActions(Routes.editOriginalResponse)).toHaveLength(1);
 	});
 });

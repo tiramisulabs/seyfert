@@ -1,38 +1,22 @@
-import { describe, expect, test, vi } from 'vitest';
-import { GuildRole, type APIRole } from '../src';
-
-const guildId = '100000000000000001';
-const roleId = '200000000000000002';
-
-const roleData = {
-	id: roleId,
-	name: 'moderator',
-	color: 0,
-	colors: {
-		primary_color: 0,
-		secondary_color: null,
-		tertiary_color: null,
-	},
-	hoist: false,
-	icon: null,
-	unicode_emoji: null,
-	position: 1,
-	permissions: '0',
-	managed: false,
-	mentionable: false,
-	flags: 0 as APIRole['flags'],
-} satisfies APIRole;
+import { Routes, createMockBot, mockWorld } from '@slipher/testing';
+import { describe, expect, test } from 'vitest';
+import { GuildRole } from '../lib';
 
 describe('GuildRole', () => {
-	test('edit forwards an audit-log reason to the role shorter', async () => {
-		const body = { name: 'moderators' };
-		const reason = 'sync role name';
-		const edit = vi.fn().mockResolvedValue(undefined);
-		const client = { roles: { edit } } as any;
-		const role = new GuildRole(client, roleData, guildId);
+	test('edit forwards the body and audit-log reason through the role shorter', async () => {
+		const world = mockWorld();
+		const guild = world.registerGuild({ everyonePermissions: ['ManageRoles'] });
+		const role = world.registerRole(guild.id, { name: 'moderator', position: 1 });
+		await using bot = await createMockBot({ world });
+		const structure = await bot.client.roles.fetch(guild.id, role.id);
 
-		await role.edit(body, reason);
+		const edited = await structure.edit({ name: 'moderators' }, 'sync role name');
 
-		expect(edit).toHaveBeenCalledWith(guildId, roleId, body, reason);
+		expect(structure).toBeInstanceOf(GuildRole);
+		expect(edited.name).toBe('moderators');
+		expect(bot.world.get.role({ guildId: guild.id, id: role.id }).name).toBe('moderators');
+		const action = bot.rest.requireAction(Routes.editRole, { guildId: guild.id, roleId: role.id });
+		expect(action.body).toEqual({ name: 'moderators' });
+		expect(action.reason).toBe('sync role name');
 	});
 });
