@@ -1,14 +1,16 @@
 import { Routes, apiUser, createMockBot, mockWorld } from '@slipher/testing';
 import { describe, expect, test, vi } from 'vitest';
-import { Command, Declare, type CommandContext } from '../lib';
+import { Command, Declare, GuildMember, type CommandContext } from '../lib';
 import { CommandContext as InternalCommandContext } from '../src/commands/applications/chatcontext';
 
 type FetchMode = 'cache' | 'flow' | 'rest';
 
-function fetchMemberCommand(fetchMode: FetchMode) {
+function fetchMemberCommand(fetchMode: FetchMode, onFetch?: (member: unknown) => void) {
 	class FetchMemberCommand extends Command {
 		async run(ctx: CommandContext) {
-			const member = fetchMode === 'cache' ? await ctx.fetchMember('cache') : await ctx.fetchMember(fetchMode);
+			const fetched = fetchMode === 'cache' ? ctx.fetchMember('cache') : ctx.fetchMember(fetchMode);
+			onFetch?.(fetched);
+			const member = await fetched;
 			await ctx.write({ content: member?.user.id ?? 'none' });
 		}
 	}
@@ -41,10 +43,17 @@ function createAsyncContext(guildId?: string) {
 describe('CommandContext.fetchMember', () => {
 	test('returns the invoking author member from the real cache', async () => {
 		const { guild, member, user, world } = memberWorld();
-		await using bot = await createMockBot({ commands: [fetchMemberCommand('cache')], world });
+		let fetchedFromCache: unknown;
+		await using bot = await createMockBot({
+			commands: [fetchMemberCommand('cache', member => (fetchedFromCache = member))],
+			world,
+		});
 
 		const result = await bot.slash({ name: 'fetch-member', guildId: guild.id, user, member });
 
+		expect(fetchedFromCache).toBeInstanceOf(GuildMember);
+		expect(fetchedFromCache).not.toBeInstanceOf(Promise);
+		expect((fetchedFromCache as GuildMember).user.id).toBe(user.id);
 		expect(result.content).toBe(user.id);
 		expect(bot.rest.findActions(Routes.fetchMember)).toHaveLength(0);
 	});

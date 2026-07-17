@@ -143,6 +143,7 @@ describe('GuildMember moderation helpers', () => {
 		const memberGuild = memberWorld.registerGuild({ everyonePermissions: ['BanMembers'] });
 		const memberTarget = memberWorld.registerMember(memberGuild.id);
 		await using memberBot = await createMockBot({ world: memberWorld });
+		const removeMember = vi.spyOn(memberBot.client.cache.members!, 'removeIfNI');
 
 		await memberBot.client.members.ban(memberGuild.id, memberTarget.user.id, {
 			deleteMessageSeconds: 60,
@@ -155,12 +156,14 @@ describe('GuildMember moderation helpers', () => {
 		});
 		expect(memberAction.body).toEqual({ delete_message_seconds: 60 });
 		expect(memberAction.reason).toBe('cleanup');
+		expect(removeMember).toHaveBeenCalledWith('GuildModeration', memberTarget.user.id, memberGuild.id);
 		expect(memberBot.world.get.ban({ guildId: memberGuild.id, userId: memberTarget.user.id })).toBeDefined();
 
 		const banWorld = mockWorld();
 		const banGuild = banWorld.registerGuild({ everyonePermissions: ['BanMembers'] });
 		const banTarget = banWorld.registerMember(banGuild.id);
 		await using banBot = await createMockBot({ world: banWorld });
+		const removeBannedMember = vi.spyOn(banBot.client.cache.members!, 'removeIfNI');
 		await banBot.client.bans.create(banGuild.id, banTarget.user.id, {
 			deleteMessageSeconds: 120,
 			reason: 'cleanup more',
@@ -172,6 +175,7 @@ describe('GuildMember moderation helpers', () => {
 		});
 		expect(banAction.body).toEqual({ delete_message_seconds: 120 });
 		expect(banAction.reason).toBe('cleanup more');
+		expect(removeBannedMember).toHaveBeenCalledWith('GuildModeration', banTarget.user.id, banGuild.id);
 		expect(banBot.world.get.ban({ guildId: banGuild.id, userId: banTarget.user.id })).toBeDefined();
 	});
 });
