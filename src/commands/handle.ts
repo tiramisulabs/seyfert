@@ -866,10 +866,11 @@ export class HandleCommand {
 								value = raw.id;
 								resolved.users[raw.id] = raw;
 								if (message.guild_id) {
+									// A User option remains valid when optional guild-member enrichment fails.
 									const member =
 										message.mentions.find(x => args[i.name]?.includes(x.id))?.member ??
 										(await this.client.cache.members?.raw(value, message.guild_id)) ??
-										(await this.fetchMember(i, value, message.guild_id));
+										(await this.fetchMember(i, value, message.guild_id)?.catch(() => null));
 									if (member) resolved.members[value] = member;
 								}
 							}
