@@ -8,6 +8,7 @@ import {
 	TimestampStyle,
 	config,
 	createValidationMetadata,
+	type APIInteractionDataResolvedChannel,
 	type BotConfig,
 	type ChannelLink,
 	type HttpConfig,
@@ -73,3 +74,6 @@ expectType<ShardData>({ resume_seq: null });
 expectType<WorkerData['mode']>('threads');
 expectType<WorkerInfo>({ shards: [] });
 expectType<WorkerShardInfo>({ shardId: 0, workerId: 0, open: false, latency: 0, resumable: false });
+
+declare const resolvedChannel: APIInteractionDataResolvedChannel;
+expectType<string | undefined>(resolvedChannel.app_permissions);
