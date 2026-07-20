@@ -66,14 +66,25 @@ import {
 	VideoQualityMode,
 } from '../types';
 import { DiscordBase } from './extra/DiscordBase';
+import { PermissionsBitField } from './extra/Permissions';
 import type { GuildMember } from './GuildMember';
 import type { GuildRole } from './GuildRole';
 
 export class BaseNoEditableChannel<T extends ChannelType> extends DiscordBase<APIChannelBase<ChannelType>> {
 	declare type: T;
+	/** Computed permissions for the invoking user when the channel was resolved from an interaction. */
+	declare permissions?: PermissionsBitField;
+	/** Computed permissions for the bot user when the channel was resolved from an interaction. */
+	declare appPermissions?: PermissionsBitField;
 
 	constructor(client: UsingClient, data: APIChannelBase<ChannelType>) {
 		super(client, data);
+		if ('permissions' in data && typeof data.permissions === 'string') {
+			this.permissions = new PermissionsBitField(BigInt(data.permissions));
+		}
+		if ('app_permissions' in data && typeof data.app_permissions === 'string') {
+			this.appPermissions = new PermissionsBitField(BigInt(data.app_permissions));
+		}
 	}
 
 	static __intent__(id: '@me'): 'DirectMessages';

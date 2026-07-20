@@ -20,6 +20,7 @@ import {
 	type ShardManagerOptions,
 	type StructPropState,
 	type StructStates,
+	type TextGuildChannelStructure,
 	type Timestamp,
 	type WorkerData,
 	type WorkerInfo,
@@ -77,3 +78,7 @@ expectType<WorkerShardInfo>({ shardId: 0, workerId: 0, open: false, latency: 0, 
 
 declare const resolvedChannel: APIInteractionDataResolvedChannel;
 expectType<string | undefined>(resolvedChannel.app_permissions);
+
+declare const resolvedChannelStructure: TextGuildChannelStructure;
+expectType<bigint | undefined>(resolvedChannelStructure.permissions?.bits);
+expectType<bigint | undefined>(resolvedChannelStructure.appPermissions?.bits);
