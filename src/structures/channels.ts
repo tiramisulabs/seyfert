@@ -454,10 +454,9 @@ export function channelFrom(data: APIChannelBase<ChannelType>, client: UsingClie
 		}
 	}
 	if (channel.isGuild() && 'permissions' in data && typeof data.permissions === 'string') {
-		const rawAppPermissions = 'app_permissions' in data ? data.app_permissions : undefined;
 		const appPermissions =
-			typeof rawAppPermissions === 'string'
-				? rawAppPermissions
+			'app_permissions' in data && typeof data.app_permissions === 'string'
+				? data.app_permissions
 				: 'appPermissions' in data
 					? (data.appPermissions as unknown)
 					: undefined;
