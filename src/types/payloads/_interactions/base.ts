@@ -7,6 +7,7 @@ import type {
 	APIMessage,
 	APIPartialChannel,
 	APIThreadChannel,
+	GuildChannelType,
 	ThreadChannelType,
 } from '../channel';
 import type { APIGuildMember, APIPartialInteractionGuild } from '../guild';
@@ -198,7 +199,7 @@ export type APIGuildInteractionWrapper<Original extends APIBaseInteraction<Inter
 > &
 	Required<Pick<Original, 'guild_id' | 'member'>>;
 
-export interface APIInteractionDataResolvedChannelBase<T extends ChannelType> extends Required<APIPartialChannel> {
+export interface APIInteractionDataResolvedChannelBase<T extends GuildChannelType> extends Required<APIPartialChannel> {
 	type: T;
 	permissions: Permissions;
 	/**
@@ -213,7 +214,12 @@ export interface APIInteractionDataResolvedChannelBase<T extends ChannelType> ex
  * https://discord.com/developers/docs/resources/channel#channel-object
  */
 export type APIInteractionDataResolvedChannel =
-	| APIInteractionDataResolvedChannelBase<Exclude<ChannelType, ThreadChannelType>>
+	| (Required<APIPartialChannel> & {
+			type: ChannelType.DM | ChannelType.GroupDM;
+			permissions?: never;
+			app_permissions?: never;
+	  })
+	| APIInteractionDataResolvedChannelBase<Exclude<GuildChannelType, ThreadChannelType>>
 	| (APIInteractionDataResolvedChannelBase<ThreadChannelType> &
 			Pick<APIThreadChannel, 'parent_id' | 'thread_metadata'>);
 

@@ -48,10 +48,12 @@ import {
 	GuildBan,
 	GuildMember,
 	type GuildMemberStructure,
+	type GroupDMChannelStructure,
 	type GuildRoleStructure,
 	type InteractionGuildMemberStructure,
 	type LangInstance,
 	LangsHandler,
+	type ResolvedChannel,
 	type ComponentContext,
 	type EntryPointContext,
 	EntryPointCommand,
@@ -1406,8 +1408,8 @@ expectType<
 	]
 >(undefined as never as VoiceChannelStatusUpdatePayload);
 
-expectType<AllChannels[]>(modalContext().getChannels('channels', true));
-expectType<AllChannels[] | void>(modalContext().getChannels('channels'));
+expectType<ResolvedChannel[]>(modalContext().getChannels('channels', true));
+expectType<ResolvedChannel[] | void>(modalContext().getChannels('channels'));
 expectType<GuildRoleStructure[]>(modalContext().getRoles('roles', true));
 expectType<GuildRoleStructure[] | void>(modalContext().getRoles('roles'));
 expectType<UserStructure[]>(modalContext().getUsers('users', true));
@@ -1435,7 +1437,10 @@ expectType<Promise<GuildMemberStructure | undefined>>(commandContext().fetchMemb
 expectType<ReturnCache<GuildMemberStructure | undefined>>(commandContext().fetchMember('cache'));
 
 type GuildCommandChannel = AllGuildChannels | BaseGuildChannelStructure;
-type NamedChannel = GuildCommandChannel | (BaseChannelStructure & { name: string });
+type NamedChannel =
+	| GuildCommandChannel
+	| (GroupDMChannelStructure & { name: string })
+	| (BaseChannelStructure & { name: string });
 expectType<true>(true as Equal<AllNamedChannels, NamedChannel>);
 expectType<true>(true as Equal<AllGuildChannels extends GuildCommandChannel ? true : false, true>);
 expectType<true>(true as Equal<BaseGuildChannelStructure extends GuildCommandChannel ? true : false, true>);

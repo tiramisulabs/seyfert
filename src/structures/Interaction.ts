@@ -72,7 +72,7 @@ import {
 	type RESTAPIAttachment,
 	type RESTPostAPIInteractionCallbackJSONBody,
 } from '../types';
-import { type AllChannels, channelFrom } from './';
+import { type AllChannels, channelFrom, type ResolvedChannel } from './';
 import { DiscordBase } from './extra/DiscordBase';
 import { PermissionsBitField } from './extra/Permissions';
 
@@ -728,7 +728,7 @@ export class StringSelectMenuInteraction<
 }
 
 export class ChannelSelectMenuInteraction extends SelectMenuInteraction {
-	channels: AllChannels[];
+	channels: ResolvedChannel[];
 	declare channel: AllChannels;
 	constructor(
 		client: UsingClient,
@@ -899,9 +899,9 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 			.find(c => c.component!.customId === customId)?.component;
 	}
 
-	getChannels(customId: string, required: true): AllChannels[];
-	getChannels(customId: string, required?: false): AllChannels[] | void;
-	getChannels(customId: string, required?: boolean): AllChannels[] | void {
+	getChannels(customId: string, required: true): ResolvedChannel[];
+	getChannels(customId: string, required?: false): ResolvedChannel[] | void;
+	getChannels(customId: string, required?: boolean): ResolvedChannel[] | void {
 		const component = this.getComponent(customId, [ComponentType.ChannelSelect]);
 		if (!component && required)
 			throw new SeyfertError('INTERNAL_ERROR', {

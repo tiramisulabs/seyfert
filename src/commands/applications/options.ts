@@ -1,7 +1,7 @@
-import type { Awaitable, FlatObjectKeys } from '../../common';
+import type { Awaitable, FlatObjectKeys, If } from '../../common';
 import type { ModalContext } from '../../components';
 import type { ComponentContext } from '../../components/componentcontext';
-import type { MessageCommandInteraction, UserCommandInteraction } from '../../structures';
+import type { MessageCommandInteraction, ResolvedChannel, UserCommandInteraction } from '../../structures';
 import {
 	type APIApplicationCommandBasicOption,
 	type APIApplicationCommandOptionChoice,
@@ -16,7 +16,14 @@ import type {
 	ReturnOptionsTypes,
 } from '..';
 import type { CommandContext } from './chatcontext';
-import type { DefaultLocale, MiddlewareContext, OKFunction, SeyfertChannelMap, StopFunction } from './shared';
+import type {
+	DefaultLocale,
+	InferWithPrefix,
+	MiddlewareContext,
+	OKFunction,
+	SeyfertChannelMap,
+	StopFunction,
+} from './shared';
 
 export interface SeyfertBasicOption<T extends keyof ReturnOptionsTypes, R = true | false> {
 	required?: R;
@@ -88,7 +95,7 @@ export type ValueCallback<
 					: never
 				: never
 			: C extends keyof SeyfertChannelMap
-				? SeyfertChannelMap[C]
+				? If<InferWithPrefix, SeyfertChannelMap[C], ResolvedChannel<SeyfertChannelMap[C]>>
 				: never;
 	},
 	ok: OKFunction<I>,

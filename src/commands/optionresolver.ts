@@ -6,8 +6,8 @@ import {
 	Transformers,
 	type UserStructure,
 } from '../client/transformers';
-import { type MakePresent, SeyfertError } from '../common';
-import { type AllChannels, channelFrom } from '../structures';
+import { type If, type MakePresent, SeyfertError } from '../common';
+import { type AllChannels, channelFrom, type ResolvedChannel } from '../structures';
 import {
 	type APIApplicationCommandInteractionDataOption,
 	type APIAttachment,
@@ -19,7 +19,9 @@ import {
 	ApplicationCommandOptionType,
 } from '../types';
 import type { Command, CommandAutocompleteOption, CommandOption, SubCommand } from './applications/chat';
-import type { UsingClient } from './applications/shared';
+import type { InferWithPrefix, UsingClient } from './applications/shared';
+
+type ResolvedOptionChannel = If<InferWithPrefix, AllChannels, ResolvedChannel>;
 
 export type ContextOptionsResolved = {
 	members?: Record<string, APIGuildMember | Omit<APIGuildMember, 'user'> | APIInteractionGuildMember>;
@@ -102,7 +104,7 @@ export class OptionResolver {
 	getValue(
 		name: string,
 	):
-		| AllChannels
+		| ResolvedOptionChannel
 		| Attachment
 		| boolean
 		| number
@@ -151,8 +153,8 @@ export class OptionResolver {
 		return option;
 	}
 
-	getChannel(name: string, required?: true): AllChannels;
-	getChannel(name: string): AllChannels | undefined {
+	getChannel(name: string, required?: true): ResolvedOptionChannel;
+	getChannel(name: string): ResolvedOptionChannel | undefined {
 		const option = this.getTypedOption(name, [ApplicationCommandOptionType.Channel]);
 		return option.channel;
 	}
@@ -218,7 +220,7 @@ export interface OptionResolved {
 	user?: UserStructure;
 	member?: GuildMemberStructure | InteractionGuildMemberStructure;
 	attachment?: Attachment;
-	channel?: AllChannels;
+	channel?: ResolvedOptionChannel;
 	role?: GuildRoleStructure;
 	focused?: boolean;
 }
