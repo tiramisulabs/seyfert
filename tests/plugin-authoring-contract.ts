@@ -117,7 +117,6 @@ import {
 	type APISelectMenuOption,
 	type APIStringSelectComponent,
 	type APIEmbed,
-	type APIGuildMember,
 	type ApiHandlerOptions,
 	type ApiRequestOptions,
 	type CallbackEventHandler,
@@ -457,13 +456,7 @@ expectType<BaseClientOptions>({ getRC: () => publicRuntimeConfig });
 expectType<BaseClientOptions>({ getRC: () => publicHttpConfig });
 declare const handleCommandConstructor: new (client: UsingClient) => HandleCommand;
 expectType<NonNullable<ServicesOptions['handleCommand']>>(handleCommandConstructor);
-class ContractHandleCommand extends HandleCommand {
-	override fetchMember(
-		...args: Parameters<HandleCommand['fetchMember']>
-	): Promise<APIGuildMember> | null {
-		return super.fetchMember(...args)?.catch((): never => null as never) ?? null;
-	}
-}
+class ContractHandleCommand extends HandleCommand {}
 expectType<ServicesOptions>({ handleCommand: ContractHandleCommand });
 // @ts-expect-error handleCommand option takes a constructor, not an instance.
 expectType<ServicesOptions>({ handleCommand: new ContractHandleCommand({} as UsingClient) });

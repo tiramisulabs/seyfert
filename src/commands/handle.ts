@@ -1,7 +1,7 @@
 import type { Client, WorkerClient } from '../client';
 import { runContextScopes, runPluginAutocompleteWrappers, runPluginCommandObservers } from '../client/plugins';
 import { type MessageStructure, type OptionResolverStructure, Transformers } from '../client/transformers';
-import type { MakeRequired } from '../common';
+import { type MakeRequired, SeyfertError } from '../common';
 import { INTEGER_OPTION_VALUE_LIMIT } from '../common/it/constants';
 import { ComponentContext, ModalContext } from '../components';
 import {
@@ -20,6 +20,7 @@ import {
 	type APIApplicationCommandInteraction,
 	type APIApplicationCommandInteractionDataBasicOption,
 	type APIApplicationCommandInteractionDataOption,
+	type APIGuildMember,
 	type APIInteraction,
 	type APIInteractionDataResolvedChannel,
 	ApplicationCommandOptionType,
@@ -28,6 +29,7 @@ import {
 	type GatewayMessageCreateDispatchData,
 	InteractionContextType,
 	InteractionType,
+	RESTJSONErrorCodes,
 } from '../types';
 import {
 	BaseCommand,
@@ -648,10 +650,24 @@ export class HandleCommand {
 		return null;
 	}
 
-	fetchMember(_option: CommandOptionWithType, query: string, guildId: string) {
+	async fetchMember(_option: CommandOptionWithType, query: string, guildId: string): Promise<APIGuildMember | null> {
 		const id = query.match(/[0-9]{17,19}/g)?.[0];
-		if (id) return this.client.members.raw(guildId, id);
-		return null;
+		if (!id) return null;
+
+		try {
+			return await this.client.members.raw(guildId, id);
+		} catch (error) {
+			const response = SeyfertError.is(error) ? error.metadata?.response : undefined;
+			if (
+				typeof response === 'object' &&
+				response !== null &&
+				'code' in response &&
+				response.code === RESTJSONErrorCodes.UnknownMember
+			) {
+				return null;
+			}
+			throw error;
+		}
 	}
 
 	fetchRole(_option: CommandOptionWithType, query: string, guildId?: string) {
@@ -866,11 +882,10 @@ export class HandleCommand {
 								value = raw.id;
 								resolved.users[raw.id] = raw;
 								if (message.guild_id) {
-									// A User option remains valid when optional guild-member enrichment fails.
 									const member =
 										message.mentions.find(x => args[i.name]?.includes(x.id))?.member ??
 										(await this.client.cache.members?.raw(value, message.guild_id)) ??
-										(await this.fetchMember(i, value, message.guild_id)?.catch(() => null));
+										(await this.fetchMember(i, value, message.guild_id));
 									if (member) resolved.members[value] = member;
 								}
 							}
