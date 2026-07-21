@@ -779,17 +779,16 @@ export interface ResolvedChannelPermissions {
 	appPermissions?: PermissionsBitField;
 }
 
-export type ResolvedChannel<T extends AllChannels = SeyfertChannelMap[keyof SeyfertChannelMap]> = T extends
-	| AllGuildChannels
-	| BaseGuildChannelStructure
-	? T & ResolvedChannelPermissions
-	: T;
+type WithResolvedChannelPermissions<
+	T extends AllChannels,
+	Permissions extends Partial<ResolvedChannelPermissions>,
+> = T extends AllGuildChannels | BaseGuildChannelStructure ? T & Permissions : T;
 
-export type MaybeResolvedChannel<T extends AllChannels = SeyfertChannelMap[keyof SeyfertChannelMap]> = T extends
-	| AllGuildChannels
-	| BaseGuildChannelStructure
-	? T & Partial<ResolvedChannelPermissions>
-	: T;
+export type ResolvedChannel<T extends AllChannels = SeyfertChannelMap[keyof SeyfertChannelMap]> =
+	WithResolvedChannelPermissions<T, ResolvedChannelPermissions>;
+
+export type MaybeResolvedChannel<T extends AllChannels = SeyfertChannelMap[keyof SeyfertChannelMap]> =
+	WithResolvedChannelPermissions<T, Partial<ResolvedChannelPermissions>>;
 
 export type GuildChannelTypes =
 	| ChannelType.GuildAnnouncement

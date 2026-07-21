@@ -43,6 +43,12 @@ import type {
 	UsingClient,
 } from './shared';
 
+export type CommandOptionChannel<C extends keyof SeyfertChannelMap = keyof SeyfertChannelMap> = If<
+	InferWithPrefix,
+	MaybeResolvedChannel<SeyfertChannelMap[C]>,
+	ResolvedChannel<SeyfertChannelMap[C]>
+>;
+
 export interface ReturnOptionsTypes {
 	[ApplicationCommandOptionType.Subcommand]: never;
 	[ApplicationCommandOptionType.SubcommandGroup]: never;
@@ -50,7 +56,7 @@ export interface ReturnOptionsTypes {
 	[ApplicationCommandOptionType.Integer]: number;
 	[ApplicationCommandOptionType.Boolean]: boolean;
 	[ApplicationCommandOptionType.User]: InteractionGuildMemberStructure | UserStructure;
-	[ApplicationCommandOptionType.Channel]: If<InferWithPrefix, MaybeResolvedChannel, ResolvedChannel>;
+	[ApplicationCommandOptionType.Channel]: CommandOptionChannel;
 	[ApplicationCommandOptionType.Role]: GuildRoleStructure;
 	[ApplicationCommandOptionType.Mentionable]:
 		| GuildRoleStructure
@@ -98,11 +104,7 @@ type ContextOptionsAuxInternal<
 			? T extends { channel_types?: infer C }
 				? C extends readonly any[]
 					? C[number] extends keyof SeyfertChannelMap
-						? If<
-								InferWithPrefix,
-								MaybeResolvedChannel<SeyfertChannelMap[C[number]]>,
-								ResolvedChannel<SeyfertChannelMap[C[number]]>
-							>
+						? CommandOptionChannel<C[number]>
 						: never
 					: never
 				: T extends { choices?: infer C }

@@ -6,8 +6,8 @@ import {
 	Transformers,
 	type UserStructure,
 } from '../client/transformers';
-import { type If, type MakePresent, SeyfertError } from '../common';
-import { channelFrom, type MaybeResolvedChannel, type ResolvedChannel } from '../structures';
+import { type MakePresent, SeyfertError } from '../common';
+import { channelFrom } from '../structures';
 import {
 	type APIApplicationCommandInteractionDataOption,
 	type APIAttachment,
@@ -18,10 +18,14 @@ import {
 	type APIUser,
 	ApplicationCommandOptionType,
 } from '../types';
-import type { Command, CommandAutocompleteOption, CommandOption, SubCommand } from './applications/chat';
-import type { InferWithPrefix, UsingClient } from './applications/shared';
-
-type ResolvedOptionChannel = If<InferWithPrefix, MaybeResolvedChannel, ResolvedChannel>;
+import type {
+	Command,
+	CommandAutocompleteOption,
+	CommandOption,
+	CommandOptionChannel,
+	SubCommand,
+} from './applications/chat';
+import type { UsingClient } from './applications/shared';
 
 export type ContextOptionsResolved = {
 	members?: Record<string, APIGuildMember | Omit<APIGuildMember, 'user'> | APIInteractionGuildMember>;
@@ -104,7 +108,7 @@ export class OptionResolver {
 	getValue(
 		name: string,
 	):
-		| ResolvedOptionChannel
+		| CommandOptionChannel
 		| Attachment
 		| boolean
 		| number
@@ -153,8 +157,8 @@ export class OptionResolver {
 		return option;
 	}
 
-	getChannel(name: string, required?: true): ResolvedOptionChannel;
-	getChannel(name: string): ResolvedOptionChannel | undefined {
+	getChannel(name: string, required?: true): CommandOptionChannel;
+	getChannel(name: string): CommandOptionChannel | undefined {
 		const option = this.getTypedOption(name, [ApplicationCommandOptionType.Channel]);
 		return option.channel;
 	}
@@ -220,7 +224,7 @@ export interface OptionResolved {
 	user?: UserStructure;
 	member?: GuildMemberStructure | InteractionGuildMemberStructure;
 	attachment?: Attachment;
-	channel?: ResolvedOptionChannel;
+	channel?: CommandOptionChannel;
 	role?: GuildRoleStructure;
 	focused?: boolean;
 }

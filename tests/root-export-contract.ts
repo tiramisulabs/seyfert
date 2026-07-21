@@ -12,6 +12,7 @@ import {
 	type APIInteractionDataResolvedChannel,
 	type BotConfig,
 	type ChannelLink,
+	type CommandOptionChannel,
 	type DMChannelStructure,
 	type GroupDMChannelStructure,
 	type HttpConfig,
@@ -110,6 +111,10 @@ expectType<bigint | undefined>(resolvedChannelStructure.appPermissions?.bits);
 declare const maybeResolvedChannelStructure: MaybeResolvedChannel<TextGuildChannelStructure>;
 expectType<bigint | undefined>(maybeResolvedChannelStructure.permissions?.bits);
 expectType<bigint | undefined>(maybeResolvedChannelStructure.appPermissions?.bits);
+
+declare const commandOptionChannelStructure: CommandOptionChannel<ChannelType.GuildText>;
+expectType<bigint>(commandOptionChannelStructure.permissions.bits);
+expectType<bigint | undefined>(commandOptionChannelStructure.appPermissions?.bits);
 
 declare const dmChannelStructure: DMChannelStructure;
 // @ts-expect-error Resolved user permissions are not part of DM channel structures.
