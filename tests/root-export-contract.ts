@@ -15,6 +15,7 @@ import {
 	type DMChannelStructure,
 	type GroupDMChannelStructure,
 	type HttpConfig,
+	type MaybeResolvedChannel,
 	type MessageLink,
 	type OAuth2URLOptions,
 	type PropWhen,
@@ -106,6 +107,10 @@ declare const resolvedChannelStructure: ResolvedChannel<TextGuildChannelStructur
 expectType<bigint>(resolvedChannelStructure.permissions.bits);
 expectType<bigint | undefined>(resolvedChannelStructure.appPermissions?.bits);
 
+declare const maybeResolvedChannelStructure: MaybeResolvedChannel<TextGuildChannelStructure>;
+expectType<bigint | undefined>(maybeResolvedChannelStructure.permissions?.bits);
+expectType<bigint | undefined>(maybeResolvedChannelStructure.appPermissions?.bits);
+
 declare const dmChannelStructure: DMChannelStructure;
 // @ts-expect-error Resolved user permissions are not part of DM channel structures.
 dmChannelStructure.permissions;
@@ -117,6 +122,12 @@ declare const resolvedDmChannelStructure: ResolvedChannel<DMChannelStructure>;
 resolvedDmChannelStructure.permissions;
 // @ts-expect-error Resolving a DM does not add guild app permission fields.
 resolvedDmChannelStructure.appPermissions;
+
+declare const maybeResolvedDmChannelStructure: MaybeResolvedChannel<DMChannelStructure>;
+// @ts-expect-error Prefix support does not add guild permission fields to DMs.
+maybeResolvedDmChannelStructure.permissions;
+// @ts-expect-error Prefix support does not add guild app permission fields to DMs.
+maybeResolvedDmChannelStructure.appPermissions;
 
 declare const resolvedGroupDmChannelStructure: ResolvedChannel<GroupDMChannelStructure>;
 expectType<ChannelType.GroupDM>(resolvedGroupDmChannelStructure.type);

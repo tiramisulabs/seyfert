@@ -785,6 +785,12 @@ export type ResolvedChannel<T extends AllChannels = SeyfertChannelMap[keyof Seyf
 	? T & ResolvedChannelPermissions
 	: T;
 
+export type MaybeResolvedChannel<T extends AllChannels = SeyfertChannelMap[keyof SeyfertChannelMap]> = T extends
+	| AllGuildChannels
+	| BaseGuildChannelStructure
+	? T & Partial<ResolvedChannelPermissions>
+	: T;
+
 export type GuildChannelTypes =
 	| ChannelType.GuildAnnouncement
 	| ChannelType.GuildVoice

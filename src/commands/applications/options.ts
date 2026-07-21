@@ -1,7 +1,12 @@
 import type { Awaitable, FlatObjectKeys, If } from '../../common';
 import type { ModalContext } from '../../components';
 import type { ComponentContext } from '../../components/componentcontext';
-import type { MessageCommandInteraction, ResolvedChannel, UserCommandInteraction } from '../../structures';
+import type {
+	MaybeResolvedChannel,
+	MessageCommandInteraction,
+	ResolvedChannel,
+	UserCommandInteraction,
+} from '../../structures';
 import {
 	type APIApplicationCommandBasicOption,
 	type APIApplicationCommandOptionChoice,
@@ -95,7 +100,7 @@ export type ValueCallback<
 					: never
 				: never
 			: C extends keyof SeyfertChannelMap
-				? If<InferWithPrefix, SeyfertChannelMap[C], ResolvedChannel<SeyfertChannelMap[C]>>
+				? If<InferWithPrefix, MaybeResolvedChannel<SeyfertChannelMap[C]>, ResolvedChannel<SeyfertChannelMap[C]>>
 				: never;
 	},
 	ok: OKFunction<I>,

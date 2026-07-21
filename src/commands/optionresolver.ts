@@ -7,7 +7,7 @@ import {
 	type UserStructure,
 } from '../client/transformers';
 import { type If, type MakePresent, SeyfertError } from '../common';
-import { type AllChannels, channelFrom, type ResolvedChannel } from '../structures';
+import { channelFrom, type MaybeResolvedChannel, type ResolvedChannel } from '../structures';
 import {
 	type APIApplicationCommandInteractionDataOption,
 	type APIAttachment,
@@ -21,7 +21,7 @@ import {
 import type { Command, CommandAutocompleteOption, CommandOption, SubCommand } from './applications/chat';
 import type { InferWithPrefix, UsingClient } from './applications/shared';
 
-type ResolvedOptionChannel = If<InferWithPrefix, AllChannels, ResolvedChannel>;
+type ResolvedOptionChannel = If<InferWithPrefix, MaybeResolvedChannel, ResolvedChannel>;
 
 export type ContextOptionsResolved = {
 	members?: Record<string, APIGuildMember | Omit<APIGuildMember, 'user'> | APIInteractionGuildMember>;

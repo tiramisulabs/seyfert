@@ -19,7 +19,7 @@ import type {
 	UserStructure,
 } from '../../client/transformers';
 import { type If, magicImport, SeyfertError } from '../../common';
-import type { AllChannels, AutocompleteInteraction, ResolvedChannel } from '../../structures';
+import type { AutocompleteInteraction, MaybeResolvedChannel, ResolvedChannel } from '../../structures';
 import {
 	type APIApplicationCommandBasicOption,
 	type APIApplicationCommandOption,
@@ -50,7 +50,7 @@ export interface ReturnOptionsTypes {
 	[ApplicationCommandOptionType.Integer]: number;
 	[ApplicationCommandOptionType.Boolean]: boolean;
 	[ApplicationCommandOptionType.User]: InteractionGuildMemberStructure | UserStructure;
-	[ApplicationCommandOptionType.Channel]: If<InferWithPrefix, AllChannels, ResolvedChannel>;
+	[ApplicationCommandOptionType.Channel]: If<InferWithPrefix, MaybeResolvedChannel, ResolvedChannel>;
 	[ApplicationCommandOptionType.Role]: GuildRoleStructure;
 	[ApplicationCommandOptionType.Mentionable]:
 		| GuildRoleStructure
@@ -98,7 +98,11 @@ type ContextOptionsAuxInternal<
 			? T extends { channel_types?: infer C }
 				? C extends readonly any[]
 					? C[number] extends keyof SeyfertChannelMap
-						? If<InferWithPrefix, SeyfertChannelMap[C[number]], ResolvedChannel<SeyfertChannelMap[C[number]]>>
+						? If<
+								InferWithPrefix,
+								MaybeResolvedChannel<SeyfertChannelMap[C[number]]>,
+								ResolvedChannel<SeyfertChannelMap[C[number]]>
+							>
 						: never
 					: never
 				: T extends { choices?: infer C }
