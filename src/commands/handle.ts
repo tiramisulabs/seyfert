@@ -662,7 +662,7 @@ export class HandleCommand {
 				typeof response === 'object' &&
 				response !== null &&
 				'code' in response &&
-				response.code === RESTJSONErrorCodes.UnknownMember
+				[RESTJSONErrorCodes.UnknownMember, RESTJSONErrorCodes.UnknownUser].includes(response.code as RESTJSONErrorCodes)
 			) {
 				return null;
 			}
