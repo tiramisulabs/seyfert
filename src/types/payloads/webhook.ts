@@ -1,12 +1,12 @@
 /**
- * Types extracted from https://discord.com/developers/docs/resources/webhook
+ * Types extracted from https://docs.discord.com/developers/resources/webhook
  */
 
 import type { Snowflake } from '../index';
 import type { APIPartialChannel, APIPartialGuild, APIUser } from './index';
 
 /**
- * https://discord.com/developers/docs/resources/webhook#webhook-object
+ * https://docs.discord.com/developers/resources/webhook#webhook-object
  */
 export interface APIWebhook {
 	/**
@@ -16,7 +16,7 @@ export interface APIWebhook {
 	/**
 	 * The type of the webhook
 	 *
-	 * See https://discord.com/developers/docs/resources/webhook#webhook-object-webhook-types
+	 * See https://docs.discord.com/developers/resources/webhook#webhook-object-webhook-types
 	 */
 	type: WebhookType;
 	/**
@@ -30,7 +30,7 @@ export interface APIWebhook {
 	/**
 	 * The user this webhook was created by (not returned when getting a webhook with its token)
 	 *
-	 * See https://discord.com/developers/docs/resources/user#user-object
+	 * See https://docs.discord.com/developers/resources/user#user-object
 	 */
 	user?: APIUser;
 	/**

@@ -45,7 +45,7 @@ export type GuildScheduledEventCoverFormat = Exclude<ImageFormat, ImageFormat.GI
 export type GuildMemberBannerFormat = Exclude<ImageFormat, ImageFormat.Lottie>;
 
 /**
- * https://discord.com/developers/docs/topics/opcodes-and-status-codes#json-json-error-codes
+ * https://docs.discord.com/developers/topics/opcodes-and-status-codes#json-json-error-codes
  */
 export enum RESTJSONErrorCodes {
 	GeneralError = 0,
@@ -404,7 +404,7 @@ export enum RESTJSONErrorCodes {
 }
 
 /**
- * https://discord.com/developers/docs/reference#locales
+ * https://docs.discord.com/developers/reference#locales
  */
 export enum Locale {
 	Indonesian = 'id',

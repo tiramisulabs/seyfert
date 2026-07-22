@@ -20,7 +20,7 @@ export class BaseGuild extends DiscordBase<APIPartialGuild> {
 
 	/**
 	 * If the guild is verified.
-	 * @link https://discord.com/developers/docs/resources/guild#guild-object-guild-features
+	 * @link https://docs.discord.com/developers/resources/guild#guild-object-guild-features
 	 */
 	get verified(): boolean {
 		if (!this.features) {
@@ -55,7 +55,7 @@ export class BaseGuild extends DiscordBase<APIPartialGuild> {
 
 	/**
 	 * iconURL gets the current guild icon.
-	 * @link https://discord.com/developers/docs/reference#image-formatting
+	 * @link https://docs.discord.com/developers/reference#image-formatting
 	 */
 	iconURL(options?: ImageOptions): string | undefined {
 		if (!this.icon) return;
@@ -65,7 +65,7 @@ export class BaseGuild extends DiscordBase<APIPartialGuild> {
 
 	/**
 	 * splashURL gets the current guild splash as a string.
-	 * @link https://discord.com/developers/docs/reference#image-formatting
+	 * @link https://docs.discord.com/developers/reference#image-formatting
 	 * @param options - Image options for the splash url.
 	 * @returns Splash url or void.
 	 */
@@ -77,7 +77,7 @@ export class BaseGuild extends DiscordBase<APIPartialGuild> {
 
 	/**
 	 * bannerURL gets the current guild banner as a string.
-	 * @link https://discord.com/developers/docs/reference#image-formatting
+	 * @link https://docs.discord.com/developers/reference#image-formatting
 	 * @param options - Image options for the banner url.
 	 * @returns Banner url or void
 	 */
