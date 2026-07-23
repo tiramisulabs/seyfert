@@ -5,7 +5,7 @@ import type { APILabelComponent, APITextDisplayComponent, MessageFlags } from '.
 import type { APIApplicationCommandOptionChoice } from './applicationCommands';
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-interaction-type
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-interaction-type
  */
 export enum InteractionType {
 	Ping = 1,
@@ -16,7 +16,7 @@ export enum InteractionType {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-response-object
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-response-object
  */
 export type APIInteractionResponse =
 	| APIApplicationCommandAutocompleteResponse
@@ -66,7 +66,7 @@ export interface APIInteractionResponseLaunchActivity {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-response-object-interaction-callback-type
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-response-object-interaction-callback-type
  */
 export enum InteractionResponseType {
 	/**
@@ -104,7 +104,7 @@ export enum InteractionResponseType {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-response-object-interaction-callback-data-structure
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-response-object-interaction-callback-data-structure
  */
 export type APIInteractionResponseCallbackData = Omit<RESTPostAPIWebhookWithTokenJSONBody, 'avatar_url' | 'username'>;
 
@@ -113,7 +113,7 @@ export interface APICommandAutocompleteInteractionResponseCallbackData {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-response-object-modal
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-response-object-modal
  */
 export interface APIModalInteractionResponseCallbackData {
 	/**
@@ -131,7 +131,7 @@ export interface APIModalInteractionResponseCallbackData {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback-interaction-callback-object
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-callback-interaction-callback-object
  */
 export interface InteractionCallbackData<T extends InteractionType = InteractionType> {
 	id: string;
@@ -155,7 +155,7 @@ export interface InteractionCallbackData<T extends InteractionType = Interaction
 }
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback-interaction-callback-resource-object
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-callback-interaction-callback-resource-object
  */
 export interface InteractionCallbackResourceActivity {
 	/**
@@ -165,7 +165,7 @@ export interface InteractionCallbackResourceActivity {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback-interaction-callback-activity-instance-resource
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-callback-interaction-callback-activity-instance-resource
  */
 export interface InteractionCallbackResource<T extends InteractionResponseType = InteractionResponseType> {
 	type: T;
@@ -180,7 +180,7 @@ export interface InteractionCallbackResource<T extends InteractionResponseType =
 }
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback-interaction-callback-response-object
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-callback-interaction-callback-response-object
  */
 export interface InteractionCallbackResponse {
 	interaction: InteractionCallbackData;
@@ -188,7 +188,7 @@ export interface InteractionCallbackResponse {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback-interaction-callback-response-object
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-callback-interaction-callback-response-object
  */
 export type APIInteractionCallbackLaunchActivity = InteractionCallbackResponse & {
 	resource?: Omit<MakeRequired<InteractionCallbackResource, 'activity_instance'>, 'message'>;

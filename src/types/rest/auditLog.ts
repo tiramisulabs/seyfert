@@ -2,7 +2,7 @@ import type { Snowflake } from '..';
 import type { APIAuditLog, AuditLogEvent } from '../payloads';
 
 /**
- * https://discord.com/developers/docs/resources/audit-log#get-guild-audit-log
+ * https://docs.discord.com/developers/resources/audit-log#get-guild-audit-log
  */
 export interface RESTGetAPIAuditLogQuery {
 	/**

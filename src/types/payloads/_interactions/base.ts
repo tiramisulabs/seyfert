@@ -16,7 +16,7 @@ import type { APIUser } from '../user';
 import type { InteractionType } from './responses';
 
 /**
- * https://discord.com/developers/docs/resources/channel#message-interaction-metadata-object
+ * https://docs.discord.com/developers/resources/channel#message-interaction-metadata-object
  */
 export interface APIMessageInteractionMetadata {
 	/**
@@ -63,7 +63,7 @@ export type PartialAPIMessageInteractionGuildMember = Pick<
 >;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#message-interaction-object
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#message-interaction-object
  */
 export interface APIMessageInteraction {
 	/**
@@ -89,7 +89,7 @@ export interface APIMessageInteraction {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#guild-member-object
+ * https://docs.discord.com/developers/resources/guild#guild-member-object
  */
 export interface APIInteractionGuildMember extends APIGuildMember {
 	permissions: Permissions;
@@ -99,7 +99,7 @@ export interface APIInteractionGuildMember extends APIGuildMember {
 // INTERACTIONS RECEIVED
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object
  */
 export interface APIBaseInteraction<Type extends InteractionType, Data> {
 	/**
@@ -210,7 +210,7 @@ export interface APIInteractionDataResolvedChannelBase<T extends ChannelType> ex
 }
 
 /**
- * https://discord.com/developers/docs/resources/channel#channel-object
+ * https://docs.discord.com/developers/resources/channel#channel-object
  */
 export type APIInteractionDataResolvedChannel =
 	| APIInteractionDataResolvedChannelBase<Exclude<ChannelType, ThreadChannelType>>
@@ -218,14 +218,14 @@ export type APIInteractionDataResolvedChannel =
 			Pick<APIThreadChannel, 'parent_id' | 'thread_metadata'>);
 
 /**
- * https://discord.com/developers/docs/resources/guild#guild-member-object
+ * https://docs.discord.com/developers/resources/guild#guild-member-object
  */
 export interface APIInteractionDataResolvedGuildMember extends Omit<APIGuildMember, 'deaf' | 'mute' | 'user'> {
 	permissions: Permissions;
 }
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-resolved-data-structure
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-resolved-data-structure
  */
 export interface APIInteractionDataResolved {
 	users?: Record<Snowflake, APIUser>;

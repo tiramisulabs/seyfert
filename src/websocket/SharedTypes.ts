@@ -68,7 +68,7 @@ import type {
 } from '../types';
 import type { APISoundboardSound } from '../types/payloads/soundboard';
 
-/** https://discord.com/developers/docs/topics/gateway-events#update-presence */
+/** https://docs.discord.com/developers/topics/gateway-events#update-presence */
 export interface StatusUpdate {
 	/** The user's activities */
 	activities?: Omit<GatewayActivity, 'created_at' | 'id'>[];
@@ -76,7 +76,7 @@ export interface StatusUpdate {
 	status: PresenceUpdateStatus;
 }
 
-/** https://discord.com/developers/docs/topics/gateway#update-voice-state */
+/** https://docs.discord.com/developers/topics/gateway#update-voice-state */
 export interface UpdateVoiceState {
 	/** id of the guild */
 	guild_id: string;
