@@ -1,11 +1,11 @@
 /**
- * Types extracted from https://discord.com/developers/docs/resources/auto-moderation
+ * Types extracted from https://docs.discord.com/developers/resources/auto-moderation
  */
 
 import type { Snowflake } from '../index';
 
 /**
- * https://discord.com/developers/docs/resources/auto-moderation#auto-moderation-rule-object-auto-moderation-rule-structure
+ * https://docs.discord.com/developers/resources/auto-moderation#auto-moderation-rule-object-auto-moderation-rule-structure
  */
 export interface APIAutoModerationRule {
 	/**
@@ -55,7 +55,7 @@ export interface APIAutoModerationRule {
 }
 
 /**
- * https://discord.com/developers/docs/resources/auto-moderation#auto-moderation-rule-object-trigger-types
+ * https://docs.discord.com/developers/resources/auto-moderation#auto-moderation-rule-object-trigger-types
  */
 export enum AutoModerationRuleTriggerType {
 	/**
@@ -81,14 +81,14 @@ export enum AutoModerationRuleTriggerType {
 }
 
 /**
- * https://discord.com/developers/docs/resources/auto-moderation#auto-moderation-rule-object-trigger-metadata
+ * https://docs.discord.com/developers/resources/auto-moderation#auto-moderation-rule-object-trigger-metadata
  */
 export interface APIAutoModerationRuleTriggerMetadata {
 	/**
 	 * Substrings which will be searched for in content (Maximum of 1000)
 	 *
 	 * A keyword can be a phrase which contains multiple words. Wildcard symbols can be used to customize how each string will be matched. Each keyword must be 60 characters or less
-	 * See [keyword matching strategies](https://discord.com/developers/docs/resources/auto-moderation#auto-moderation-rule-object-keyword-matching-strategies)
+	 * See [keyword matching strategies](https://docs.discord.com/developers/resources/auto-moderation#auto-moderation-rule-object-keyword-matching-strategies)
 	 *
 	 * Associated trigger types: {@link AutoModerationRuleTriggerType.Keyword}, {@link AutoModerationRuleTriggerType.MemberProfile}
 	 */
@@ -103,7 +103,7 @@ export interface APIAutoModerationRuleTriggerMetadata {
 	 * Substrings which will be exempt from triggering the preset trigger type (Maximum of 1000)
 	 *
 	 * A allowed-word can be a phrase which contains multiple words. Wildcard symbols can be used to customize how each string will be matched. Each keyword must be 60 characters or less
-	 * See [keyword matching strategies](https://discord.com/developers/docs/resources/auto-moderation#auto-moderation-rule-object-keyword-matching-strategies)
+	 * See [keyword matching strategies](https://docs.discord.com/developers/resources/auto-moderation#auto-moderation-rule-object-keyword-matching-strategies)
 	 *
 	 * Associated trigger types: {@link AutoModerationRuleTriggerType.Keyword}, {@link AutoModerationRuleTriggerType.KeywordPreset}, {@link AutoModerationRuleTriggerType.MemberProfile}
 	 */
@@ -131,7 +131,7 @@ export interface APIAutoModerationRuleTriggerMetadata {
 }
 
 /**
- * https://discord.com/developers/docs/resources/auto-moderation#auto-moderation-rule-object-keyword-preset-types
+ * https://docs.discord.com/developers/resources/auto-moderation#auto-moderation-rule-object-keyword-preset-types
  */
 export enum AutoModerationRuleKeywordPresetType {
 	/**
@@ -149,7 +149,7 @@ export enum AutoModerationRuleKeywordPresetType {
 }
 
 /**
- * https://discord.com/developers/docs/resources/auto-moderation#auto-moderation-rule-object-event-types
+ * https://docs.discord.com/developers/resources/auto-moderation#auto-moderation-rule-object-event-types
  */
 export enum AutoModerationRuleEventType {
 	/**
@@ -163,7 +163,7 @@ export enum AutoModerationRuleEventType {
 }
 
 /**
- * https://discord.com/developers/docs/resources/auto-moderation#auto-moderation-action-object-auto-moderation-action-structure
+ * https://docs.discord.com/developers/resources/auto-moderation#auto-moderation-action-object-auto-moderation-action-structure
  */
 export interface APIAutoModerationAction {
 	/**
@@ -179,7 +179,7 @@ export interface APIAutoModerationAction {
 }
 
 /**
- * https://discord.com/developers/docs/resources/auto-moderation#auto-moderation-action-object-action-types
+ * https://docs.discord.com/developers/resources/auto-moderation#auto-moderation-action-object-action-types
  */
 export enum AutoModerationActionType {
 	/**
@@ -202,7 +202,7 @@ export enum AutoModerationActionType {
 }
 
 /**
- * https://discord.com/developers/docs/resources/auto-moderation#auto-moderation-action-object-action-metadata
+ * https://docs.discord.com/developers/resources/auto-moderation#auto-moderation-action-object-action-metadata
  */
 export interface APIAutoModerationActionMetadata {
 	/**
