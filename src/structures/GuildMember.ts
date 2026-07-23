@@ -173,7 +173,7 @@ export class BaseGuildMember extends DiscordBase {
 export interface GuildMember extends ObjectToLower<Omit<APIGuildMember, 'user' | 'roles'>> {}
 /**
  * Represents a guild member
- * @link https://discord.com/developers/docs/resources/guild#guild-member-object
+ * @link https://docs.discord.com/developers/resources/guild#guild-member-object
  */
 export class GuildMember extends BaseGuildMember {
 	user: UserStructure;
@@ -308,7 +308,7 @@ export interface InteractionGuildMember
 	extends ObjectToLower<Omit<APIInteractionDataResolvedGuildMember, 'roles' | 'deaf' | 'mute' | 'permissions'>> {}
 /**
  * Represents a guild member
- * @link https://discord.com/developers/docs/resources/guild#guild-member-object
+ * @link https://docs.discord.com/developers/resources/guild#guild-member-object
  */
 export class InteractionGuildMember extends GuildMember {
 	permissions: PermissionsBitField;
