@@ -18,8 +18,8 @@ import type {
 	OptionResolverStructure,
 	UserStructure,
 } from '../../client/transformers';
-import { magicImport, SeyfertError } from '../../common';
-import type { AllChannels, AutocompleteInteraction } from '../../structures';
+import { type If, magicImport, SeyfertError } from '../../common';
+import type { AutocompleteInteraction, MaybeResolvedChannel, ResolvedChannel } from '../../structures';
 import {
 	type APIApplicationCommandBasicOption,
 	type APIApplicationCommandOption,
@@ -36,11 +36,18 @@ import type { CommandContext } from './chatcontext';
 import type {
 	ExtraProps,
 	IgnoreCommand,
+	InferWithPrefix,
 	OnOptionsReturnObject,
 	SeyfertChannelMap,
 	StopFunction,
 	UsingClient,
 } from './shared';
+
+export type CommandOptionChannel<C extends keyof SeyfertChannelMap = keyof SeyfertChannelMap> = If<
+	InferWithPrefix,
+	MaybeResolvedChannel<SeyfertChannelMap[C]>,
+	ResolvedChannel<SeyfertChannelMap[C]>
+>;
 
 export interface ReturnOptionsTypes {
 	[ApplicationCommandOptionType.Subcommand]: never;
@@ -49,7 +56,7 @@ export interface ReturnOptionsTypes {
 	[ApplicationCommandOptionType.Integer]: number;
 	[ApplicationCommandOptionType.Boolean]: boolean;
 	[ApplicationCommandOptionType.User]: InteractionGuildMemberStructure | UserStructure;
-	[ApplicationCommandOptionType.Channel]: AllChannels;
+	[ApplicationCommandOptionType.Channel]: CommandOptionChannel;
 	[ApplicationCommandOptionType.Role]: GuildRoleStructure;
 	[ApplicationCommandOptionType.Mentionable]:
 		| GuildRoleStructure
@@ -97,7 +104,7 @@ type ContextOptionsAuxInternal<
 			? T extends { channel_types?: infer C }
 				? C extends readonly any[]
 					? C[number] extends keyof SeyfertChannelMap
-						? SeyfertChannelMap[C[number]]
+						? CommandOptionChannel<C[number]>
 						: never
 					: never
 				: T extends { choices?: infer C }
