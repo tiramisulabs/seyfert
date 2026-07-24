@@ -1,7 +1,35 @@
 import { describe, expect, test } from 'vitest';
-import { BaseInteraction, Embed, InMessageEmbed, MessagesMethods, type RESTPostAPIChannelMessageJSONBody } from '../lib';
+import {
+	AttachmentBuilder,
+	BaseInteraction,
+	Embed,
+	InMessageEmbed,
+	MessagesMethods,
+	type RESTAPIAttachment,
+	type RESTPostAPIChannelMessageJSONBody,
+} from '../lib';
 
 describe('message embed body serialization', () => {
+	test('serializes attachment request metadata for uploaded files', () => {
+		const file = new AttachmentBuilder().setName('image.png').setDescription('alt text').setSpoiler(true);
+		const expected = [{ id: '0', filename: 'image.png', description: 'alt text', is_spoiler: true }];
+		const channelBody = MessagesMethods.transformMessageBody<RESTPostAPIChannelMessageJSONBody>(
+			{},
+			[file],
+			{ options: {} } as never,
+		);
+		const interactionBody = BaseInteraction.transformBody<RESTPostAPIChannelMessageJSONBody>(
+			{},
+			[file],
+			{ options: {} } as never,
+		);
+		const publicRequestContract = { id: '0', is_spoiler: true } satisfies RESTAPIAttachment;
+
+		expect(channelBody.attachments).toEqual(expected);
+		expect(interactionBody.attachments).toEqual(expected);
+		expect(publicRequestContract.is_spoiler).toBe(true);
+	});
+
 	test('serializes received embeds in channel message bodies', () => {
 		const builderEmbed = new Embed({ title: 'Builder' });
 		const rawApiEmbed = { title: 'Raw' };

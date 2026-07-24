@@ -1,12 +1,12 @@
 /**
- * Types extracted from https://discord.com/developers/docs/resources/sticker
+ * Types extracted from https://docs.discord.com/developers/resources/sticker
  */
 
 import type { Snowflake } from '../index';
 import type { APIUser } from './user';
 
 /**
- * https://discord.com/developers/docs/resources/sticker#sticker-object
+ * https://docs.discord.com/developers/resources/sticker#sticker-object
  */
 export interface APISticker {
 	/**
@@ -32,13 +32,13 @@ export interface APISticker {
 	/**
 	 * Type of sticker
 	 *
-	 * See https://discord.com/developers/docs/resources/sticker#sticker-object-sticker-types
+	 * See https://docs.discord.com/developers/resources/sticker#sticker-object-sticker-types
 	 */
 	type: StickerType;
 	/**
 	 * Type of sticker format
 	 *
-	 * See https://discord.com/developers/docs/resources/sticker#sticker-object-sticker-format-types
+	 * See https://docs.discord.com/developers/resources/sticker#sticker-object-sticker-format-types
 	 */
 	format_type: StickerFormatType;
 	/**
@@ -60,7 +60,7 @@ export interface APISticker {
 }
 
 /**
- * https://discord.com/developers/docs/resources/sticker#sticker-object-sticker-types
+ * https://docs.discord.com/developers/resources/sticker#sticker-object-sticker-types
  */
 export enum StickerType {
 	/**
@@ -74,7 +74,7 @@ export enum StickerType {
 }
 
 /**
- * https://discord.com/developers/docs/resources/sticker#sticker-object-sticker-format-types
+ * https://docs.discord.com/developers/resources/sticker#sticker-object-sticker-format-types
  */
 export enum StickerFormatType {
 	PNG = 1,
@@ -84,12 +84,12 @@ export enum StickerFormatType {
 }
 
 /**
- * https://discord.com/developers/docs/resources/sticker#sticker-item-object
+ * https://docs.discord.com/developers/resources/sticker#sticker-item-object
  */
 export type APIStickerItem = Pick<APISticker, 'format_type' | 'id' | 'name'>;
 
 /**
- * https://discord.com/developers/docs/resources/sticker#sticker-pack-object
+ * https://docs.discord.com/developers/resources/sticker#sticker-pack-object
  */
 export interface APIStickerPack {
 	/**
