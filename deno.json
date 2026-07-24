@@ -1,0 +1,5 @@
+{
+	"lock": false,
+	"nodeModulesDir": "auto",
+	"links": ["./tests/deno-seyfert"]
+}
