@@ -1,5 +1,4 @@
-import type { RawFile } from '../api/shared';
-import { Attachment, PollBuilder, resolveAttachment } from '../builders';
+import { Attachment, AttachmentBuilder, PollBuilder, resolveAttachment } from '../builders';
 import type { ReturnCache } from '../cache';
 import type { Overwrites } from '../cache/resources/overwrites';
 import {
@@ -34,6 +33,7 @@ import type { ObjectToLower, StringToNumber, ToClass } from '../common/types/uti
 import type {
 	MessageCreateBodyRequest,
 	MessageUpdateBodyRequest,
+	ResolverProps,
 	ThreadOnlyCreateBodyRequest,
 } from '../common/types/write';
 import { mix } from '../deps/mixer';
@@ -53,7 +53,6 @@ import {
 	type APIThreadChannel,
 	ChannelFlags,
 	ChannelType,
-	type RESTAPIAttachment,
 	type RESTGetAPIChannelMessageReactionUsersQuery,
 	type RESTGetAPIChannelMessagesPinsQuery,
 	type RESTGetAPIChannelMessagesQuery,
@@ -360,7 +359,7 @@ export class MessagesMethods extends DiscordBase {
 
 	static transformMessageBody<T>(
 		body: MessageCreateBodyRequest | MessageUpdateBodyRequest,
-		files: RawFile[] | undefined,
+		files: ResolverProps['files'],
 		self: UsingClient,
 	) {
 		const poll = (body as MessageCreateBodyRequest).poll;
@@ -381,6 +380,7 @@ export class MessagesMethods extends DiscordBase {
 							title: x.title,
 							description: x.description,
 							filename: x.filename,
+							is_spoiler: x.spoiler,
 						};
 					}
 					return {
@@ -389,10 +389,19 @@ export class MessagesMethods extends DiscordBase {
 					};
 				}) ?? undefined;
 		} else if (files?.length) {
-			payload.attachments = files?.map(({ filename }, i) => ({
-				id: i.toString(),
-				filename,
-			})) as RESTAPIAttachment[];
+			payload.attachments = files.map((file, i) => {
+				if (file instanceof AttachmentBuilder) return { id: i.toString(), ...resolveAttachment(file) };
+				if (file instanceof Attachment) {
+					return {
+						id: i.toString(),
+						title: file.title,
+						description: file.description,
+						filename: file.filename,
+						is_spoiler: file.spoiler,
+					};
+				}
+				return { id: i.toString(), filename: file.filename };
+			});
 		}
 		return payload as T;
 	}
