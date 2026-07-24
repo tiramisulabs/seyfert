@@ -27,7 +27,7 @@ const ShardManagerDefaults: DeepPartial<ShardManagerOptions> = {
 
 const WorkerManagerDefaults: DeepPartial<WorkerManagerOptions> = {
 	...ShardManagerDefaults,
-	shardsPerWorker: 16,
+	shardsPerWorker: 8,
 };
 
 export interface IdentifyProperties {
