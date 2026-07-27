@@ -90,6 +90,14 @@ describe('builder toJSON validation', () => {
 		expectSeyfertCode(() => menu.toJSON(), 'MISSING_RADIO_GROUP_OPTION_VALUE', 'RadioGroupOption');
 	});
 
+	test('RadioGroup reports its received options length', () => {
+		const menu = new RadioGroup().setCustomId('topics');
+
+		expect(() => menu.toJSON()).toThrow(
+			'RadioGroup has an invalid options length: expected number of options between 2 and 10, received 0.',
+		);
+	});
+
 	test('StringSelectMenu addOption accepts raw API options', () => {
 		const menu = new StringSelectMenu().setCustomId('topics').addOption({ label: 'General', value: 'general' });
 

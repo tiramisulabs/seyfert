@@ -443,11 +443,15 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		return uuid;
 	}
 
-	private generateSendPromise<T = unknown>(nonce: string, message = 'Timeout'): Promise<T> {
+	private generateSendPromise<T = unknown>(nonce: string, operation = 'Worker request'): Promise<T> {
 		return new Promise<T>((res, rej) => {
 			const timeout = setTimeout(() => {
 				this.promises.delete(nonce);
-				rej(new SeyfertError('WORKER_TIMEOUT', { metadata: { ...{ nonce }, detail: message } }));
+				rej(
+					new SeyfertError('WORKER_TIMEOUT', {
+						metadata: { nonce, operation, detail: `${operation} timed out (nonce: ${nonce}).` },
+					}),
+				);
 			}, 60e3);
 			this.promises.set(nonce, { resolve: res, timeout });
 		});
