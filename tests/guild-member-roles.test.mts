@@ -48,6 +48,16 @@ describe('GuildMember roles', () => {
 		expect(list).toHaveBeenCalledWith(guildId, false);
 	});
 
+	test('member shorter sorts equal role positions by snowflake id', async () => {
+		const olderRole = { id: botRoleId, position: 10 };
+		const newerRole = { id: targetRoleId, position: 10 };
+		const memberShorter = new MemberShorter({} as any);
+		const listRoles = vi.spyOn(memberShorter, 'listRoles').mockResolvedValue([newerRole, olderRole] as any);
+
+		await expect(memberShorter.sortRoles(guildId, targetId, true)).resolves.toEqual([olderRole, newerRole]);
+		expect(listRoles).toHaveBeenCalledWith(guildId, targetId, true);
+	});
+
 	test('manageable retries forced role lookups and returns false when highest role data is missing', async () => {
 		const botRole = { id: botRoleId, position: 10 };
 		const list = vi.fn().mockResolvedValue([botRole]);
@@ -90,6 +100,32 @@ describe('GuildMember roles', () => {
 
 		await expect(targetMember.manageable()).resolves.toBe(false);
 		expect(list.mock.calls.map(call => call[1])).toEqual([false, false, true, true]);
+	});
+
+	test('manageable uses snowflake ids to resolve equal role positions', async () => {
+		const everyoneRole = { id: guildId, position: 0 };
+		const olderRole = { id: botRoleId, position: 10 };
+		const newerRole = { id: targetRoleId, position: 10 };
+		const list = vi.fn().mockResolvedValue([everyoneRole, newerRole, olderRole]);
+		const client = {
+			botId,
+			roles: { list },
+			guilds: {
+				fetchSelf: vi.fn(),
+				fetch: vi.fn().mockResolvedValue({ ownerId: '900000000000000009' }),
+			},
+		} as any;
+		const botMember = createMember(client, botId, [botRoleId], true);
+		const targetMember = createMember(client, targetId, [targetRoleId]);
+		client.guilds.fetchSelf.mockResolvedValue(botMember);
+
+		await expect(targetMember.manageable()).resolves.toBe(true);
+
+		const lowerBotMember = createMember(client, botId, [targetRoleId], true);
+		const higherTargetMember = createMember(client, targetId, [botRoleId]);
+		client.guilds.fetchSelf.mockResolvedValue(lowerBotMember);
+
+		await expect(higherTargetMember.manageable()).resolves.toBe(false);
 	});
 
 	test('manageable starts self and guild fetches before waiting for either result', async () => {
