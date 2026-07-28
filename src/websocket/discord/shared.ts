@@ -119,7 +119,7 @@ export interface ShardData {
 
 	/**
 	 * resume_gateway_url is the url to resume the connection
-	 * @link https://discord.com/developers/docs/topics/gateway#ready-event
+	 * @link https://docs.discord.com/developers/topics/gateway#ready-event
 	 */
 	resume_gateway_url?: string;
 

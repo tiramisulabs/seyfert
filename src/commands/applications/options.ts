@@ -10,6 +10,7 @@ import {
 import type { LocalizationMap } from '../../types/payloads';
 import type {
 	AutocompleteCallback,
+	CommandOptionChannel,
 	EntryPointContext,
 	MenuCommandContext,
 	OnAutocompleteErrorCallback,
@@ -88,7 +89,7 @@ export type ValueCallback<
 					: never
 				: never
 			: C extends keyof SeyfertChannelMap
-				? SeyfertChannelMap[C]
+				? CommandOptionChannel<C>
 				: never;
 	},
 	ok: OKFunction<I>,

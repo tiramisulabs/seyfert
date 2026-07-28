@@ -1,7 +1,7 @@
 import type { Client, WorkerClient } from '../client';
 import { runContextScopes, runPluginAutocompleteWrappers, runPluginCommandObservers } from '../client/plugins';
 import { type MessageStructure, type OptionResolverStructure, Transformers } from '../client/transformers';
-import type { MakeRequired } from '../common';
+import { type MakeRequired, SeyfertError } from '../common';
 import { INTEGER_OPTION_VALUE_LIMIT } from '../common/it/constants';
 import { ComponentContext, ModalContext } from '../components';
 import {
@@ -20,6 +20,7 @@ import {
 	type APIApplicationCommandInteraction,
 	type APIApplicationCommandInteractionDataBasicOption,
 	type APIApplicationCommandInteractionDataOption,
+	type APIGuildMember,
 	type APIInteraction,
 	type APIInteractionDataResolvedChannel,
 	ApplicationCommandOptionType,
@@ -28,6 +29,7 @@ import {
 	type GatewayMessageCreateDispatchData,
 	InteractionContextType,
 	InteractionType,
+	RESTJSONErrorCodes,
 } from '../types';
 import {
 	BaseCommand,
@@ -648,10 +650,24 @@ export class HandleCommand {
 		return null;
 	}
 
-	fetchMember(_option: CommandOptionWithType, query: string, guildId: string) {
+	async fetchMember(_option: CommandOptionWithType, query: string, guildId: string): Promise<APIGuildMember | null> {
 		const id = query.match(/[0-9]{17,19}/g)?.[0];
-		if (id) return this.client.members.raw(guildId, id);
-		return null;
+		if (!id) return null;
+
+		try {
+			return await this.client.members.raw(guildId, id);
+		} catch (error) {
+			const response = SeyfertError.is(error) ? error.metadata?.response : undefined;
+			if (
+				typeof response === 'object' &&
+				response !== null &&
+				'code' in response &&
+				[RESTJSONErrorCodes.UnknownMember, RESTJSONErrorCodes.UnknownUser].includes(response.code as RESTJSONErrorCodes)
+			) {
+				return null;
+			}
+			throw error;
+		}
 	}
 
 	fetchRole(_option: CommandOptionWithType, query: string, guildId?: string) {

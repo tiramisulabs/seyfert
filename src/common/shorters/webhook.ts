@@ -103,7 +103,7 @@ export class WebhookShorter extends BaseShorter {
 		const parsedFiles = files ? await resolveFiles(files) : undefined;
 		const transformedBody = MessagesMethods.transformMessageBody<RESTPostAPIWebhookWithTokenJSONBody>(
 			body,
-			parsedFiles,
+			files,
 			this.client,
 		);
 		return this.client.proxy
@@ -129,7 +129,7 @@ export class WebhookShorter extends BaseShorter {
 		const parsedFiles = files ? await resolveFiles(files) : undefined;
 		const transformedBody = MessagesMethods.transformMessageBody<RESTPostAPIWebhookWithTokenJSONBody>(
 			body,
-			parsedFiles,
+			files,
 			this.client,
 		);
 		return this.client.proxy
