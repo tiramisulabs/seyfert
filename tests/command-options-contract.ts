@@ -26,6 +26,7 @@ import {
 	type GuildRoleStructure,
 	type InteractionGuildMemberStructure,
 	type OKFunction,
+	type ResolvedChannel,
 	type TextGuildChannelStructure,
 	type UserStructure,
 	type VoiceChannelStructure,
@@ -37,6 +38,8 @@ type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ?
 		? true
 		: false
 	: false;
+type ResolvedTextChannel = ResolvedChannel<TextGuildChannelStructure>;
+type ResolvedTextOrVoiceChannel = ResolvedChannel<TextGuildChannelStructure | VoiceChannelStructure>;
 
 // Distinct marker type so "the `ok` type flows to ctx.options" is unambiguous for every helper.
 interface Resolved {
@@ -149,13 +152,13 @@ const channelOptions = {
 } as const;
 
 declare const channelCtx: CommandContext<typeof channelOptions>;
-expectType<true>(true as Equal<typeof channelCtx.options.constOne, TextGuildChannelStructure>);
+expectType<true>(true as Equal<typeof channelCtx.options.constOne, ResolvedTextChannel>);
 expectType<true>(
-	true as Equal<typeof channelCtx.options.constMany, TextGuildChannelStructure | VoiceChannelStructure>,
+	true as Equal<typeof channelCtx.options.constMany, ResolvedTextOrVoiceChannel>,
 );
-expectType<true>(true as Equal<typeof channelCtx.options.mutableOne, TextGuildChannelStructure>);
+expectType<true>(true as Equal<typeof channelCtx.options.mutableOne, ResolvedTextChannel>);
 expectType<true>(
-	true as Equal<typeof channelCtx.options.mutableMany, TextGuildChannelStructure | VoiceChannelStructure>,
+	true as Equal<typeof channelCtx.options.mutableMany, ResolvedTextOrVoiceChannel>,
 );
 
 // ───────────── every create*Option — SIN callback (tipo base) ─────────────
@@ -185,7 +188,7 @@ expectType<true>(
 	>,
 );
 expectType<true>(true as Equal<typeof baseCtx.options.attachment, Attachment>);
-expectType<true>(true as Equal<typeof baseCtx.options.channel, TextGuildChannelStructure>);
+expectType<true>(true as Equal<typeof baseCtx.options.channel, ResolvedTextChannel>);
 
 // ───────────── every create*Option — CON callback `value` + `ok` ─────────────
 // `data.value` receives the option's input type; `ok: OKFunction<Resolved>` makes ctx.options `Resolved`.
@@ -264,7 +267,7 @@ const withCallback = {
 		required: true,
 		channel_types: [ChannelType.GuildText],
 		value(data, ok: OKFunction<Resolved>) {
-			expectType<true>(true as Equal<typeof data.value, TextGuildChannelStructure>);
+			expectType<true>(true as Equal<typeof data.value, ResolvedTextChannel>);
 			ok({ rid: '1' });
 		},
 	}),

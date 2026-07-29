@@ -1,5 +1,13 @@
 import type { RawFile } from '../api';
-import { ActionRow, Attachment, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
+import {
+	ActionRow,
+	Attachment,
+	AttachmentBuilder,
+	Modal,
+	PollBuilder,
+	resolveAttachment,
+	resolveFiles,
+} from '../builders';
 import { Label } from '../builders/Label';
 import type { ReturnCache } from '../cache';
 import {
@@ -25,6 +33,7 @@ import {
 	type ModalCreateOptions,
 	type ObjectToLower,
 	type OmitInsert,
+	type ResolverProps,
 	SeyfertError,
 	type ToClass,
 	toCamelCase,
@@ -69,10 +78,9 @@ import {
 	InteractionType,
 	type MessageFlags,
 	type ModalSubmitInsideLabelData,
-	type RESTAPIAttachment,
 	type RESTPostAPIInteractionCallbackJSONBody,
 } from '../types';
-import { type AllChannels, channelFrom } from './';
+import { type AllChannels, channelFrom, type ResolvedChannel } from './';
 import { DiscordBase } from './extra/DiscordBase';
 import { PermissionsBitField } from './extra/Permissions';
 
@@ -137,7 +145,7 @@ export class BaseInteraction<
 
 	static transformBodyRequest(
 		body: ReplyInteractionBody,
-		files: RawFile[] | undefined,
+		files: ResolverProps['files'],
 		self: UsingClient,
 	): APIInteractionResponse {
 		switch (body.type) {
@@ -181,7 +189,7 @@ export class BaseInteraction<
 			| MessageUpdateBodyRequest
 			| MessageCreateBodyRequest
 			| MessageWebhookCreateBodyRequest,
-		files: RawFile[] | undefined,
+		files: ResolverProps['files'],
 		self: UsingClient,
 	) {
 		const poll = (body as MessageWebhookCreateBodyRequest).poll;
@@ -202,6 +210,7 @@ export class BaseInteraction<
 						title: x.title,
 						description: x.description,
 						filename: x.filename,
+						is_spoiler: x.spoiler,
 					};
 				}
 				return {
@@ -210,10 +219,19 @@ export class BaseInteraction<
 				};
 			});
 		} else if (files?.length) {
-			payload.attachments = files?.map(({ filename }, i) => ({
-				id: i.toString(),
-				filename,
-			})) as RESTAPIAttachment[];
+			payload.attachments = files.map((file, i) => {
+				if (file instanceof AttachmentBuilder) return { id: i.toString(), ...resolveAttachment(file) };
+				if (file instanceof Attachment) {
+					return {
+						id: i.toString(),
+						title: file.title,
+						description: file.description,
+						filename: file.filename,
+						is_spoiler: file.spoiler,
+					};
+				}
+				return { id: i.toString(), filename: file.filename };
+			});
 		}
 		return payload as T;
 	}
@@ -226,7 +244,7 @@ export class BaseInteraction<
 			const data = body.data instanceof Modal ? body.data : rest;
 			const parsedFiles = files ? await resolveFiles(files) : undefined;
 			const repliedPromise = this.__reply({
-				body: BaseInteraction.transformBodyRequest({ data, type: body.type }, parsedFiles, this.client),
+				body: BaseInteraction.transformBodyRequest({ data, type: body.type }, files, this.client),
 				files: parsedFiles,
 			}).then(() => {
 				this.replied = true;
@@ -728,7 +746,7 @@ export class StringSelectMenuInteraction<
 }
 
 export class ChannelSelectMenuInteraction extends SelectMenuInteraction {
-	channels: AllChannels[];
+	channels: ResolvedChannel[];
 	declare channel: AllChannels;
 	constructor(
 		client: UsingClient,
@@ -899,9 +917,9 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 			.find(c => c.component!.customId === customId)?.component;
 	}
 
-	getChannels(customId: string, required: true): AllChannels[];
-	getChannels(customId: string, required?: false): AllChannels[] | void;
-	getChannels(customId: string, required?: boolean): AllChannels[] | void {
+	getChannels(customId: string, required: true): ResolvedChannel[];
+	getChannels(customId: string, required?: false): ResolvedChannel[] | void;
+	getChannels(customId: string, required?: boolean): ResolvedChannel[] | void {
 		const component = this.getComponent(customId, [ComponentType.ChannelSelect]);
 		if (!component && required)
 			throw new SeyfertError('INTERNAL_ERROR', {

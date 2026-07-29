@@ -1,5 +1,5 @@
 /**
- * Types extracted from https://discord.com/developers/docs/resources/guild-template
+ * Types extracted from https://docs.discord.com/developers/resources/guild-template
  */
 
 import type { Snowflake } from '../index';
@@ -7,7 +7,7 @@ import type { LocaleString, RESTPostAPIGuildsJSONBody } from '../rest';
 import type { APIUser } from './user';
 
 /**
- * https://discord.com/developers/docs/resources/guild-template#guild-template-object
+ * https://docs.discord.com/developers/resources/guild-template#guild-template-object
  */
 export interface APITemplate {
 	/**
@@ -33,7 +33,7 @@ export interface APITemplate {
 	/**
 	 * The user who created the template
 	 *
-	 * See https://discord.com/developers/docs/resources/user#user-object
+	 * See https://docs.discord.com/developers/resources/user#user-object
 	 */
 	creator: APIUser;
 	/**

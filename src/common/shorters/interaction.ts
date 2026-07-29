@@ -19,7 +19,7 @@ export class InteractionShorter extends BaseShorter {
 						type: body.type,
 						data,
 					},
-					parsedFiles,
+					files,
 					this.client,
 				),
 				files: parsedFiles,
@@ -51,7 +51,7 @@ export class InteractionShorter extends BaseShorter {
 			.webhooks(this.client.applicationId)(token)
 			.messages(messageId)
 			.patch({
-				body: BaseInteraction.transformBody(data, parsedFiles, this.client),
+				body: BaseInteraction.transformBody(data, files, this.client),
 				files: parsedFiles,
 			});
 		return Transformers.WebhookMessage(this.client, apiMessage, this.client.applicationId, token);
@@ -78,7 +78,7 @@ export class InteractionShorter extends BaseShorter {
 		const apiMessage = (await this.client.proxy
 			.webhooks(this.client.applicationId)(token)
 			.post({
-				body: BaseInteraction.transformBody(body, parsedFiles, this.client),
+				body: BaseInteraction.transformBody(body, files, this.client),
 				files: parsedFiles,
 			})) as RESTPostAPIWebhookWithTokenWaitResult;
 		return Transformers.WebhookMessage(this.client, apiMessage, this.client.applicationId, token);

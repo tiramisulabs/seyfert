@@ -2,12 +2,12 @@ import type { Permissions, Snowflake } from '..';
 import type { APIApplication, APIGuild, APIUser, APIWebhook, OAuth2Scopes } from '../payloads';
 
 /**
- * https://discord.com/developers/docs/topics/oauth2#get-current-bot-application-information
+ * https://docs.discord.com/developers/topics/oauth2#get-current-bot-application-information
  */
 export type RESTGetAPIOAuth2CurrentApplicationResult = Omit<APIApplication, 'flags'>;
 
 /**
- * https://discord.com/developers/docs/topics/oauth2#get-current-authorization-information
+ * https://docs.discord.com/developers/topics/oauth2#get-current-authorization-information
  */
 export interface RESTGetAPIOAuth2CurrentAuthorizationResult {
 	/**
@@ -29,7 +29,7 @@ export interface RESTGetAPIOAuth2CurrentAuthorizationResult {
 }
 
 /**
- * https://discord.com/developers/docs/topics/oauth2#authorization-code-grant
+ * https://docs.discord.com/developers/topics/oauth2#authorization-code-grant
  */
 export interface RESTOAuth2AuthorizationQuery {
 	response_type: 'code';
@@ -41,7 +41,7 @@ export interface RESTOAuth2AuthorizationQuery {
 }
 
 /**
- * https://discord.com/developers/docs/topics/oauth2#authorization-code-grant-redirect-url-example
+ * https://docs.discord.com/developers/topics/oauth2#authorization-code-grant-redirect-url-example
  */
 export interface RESTOAuth2AuthorizationQueryResult {
 	code: string;
@@ -49,7 +49,7 @@ export interface RESTOAuth2AuthorizationQueryResult {
 }
 
 /**
- * https://discord.com/developers/docs/topics/oauth2#authorization-code-grant-redirect-url-example
+ * https://docs.discord.com/developers/topics/oauth2#authorization-code-grant-redirect-url-example
  */
 export interface RESTPostOAuth2AccessTokenURLEncodedData {
 	client_id: Snowflake;
@@ -60,7 +60,7 @@ export interface RESTPostOAuth2AccessTokenURLEncodedData {
 }
 
 /**
- * https://discord.com/developers/docs/topics/oauth2#authorization-code-grant-access-token-response
+ * https://docs.discord.com/developers/topics/oauth2#authorization-code-grant-access-token-response
  */
 export interface RESTPostOAuth2AccessTokenResult {
 	access_token: string;
@@ -71,7 +71,7 @@ export interface RESTPostOAuth2AccessTokenResult {
 }
 
 /**
- * https://discord.com/developers/docs/topics/oauth2#authorization-code-grant-refresh-token-exchange-example
+ * https://docs.discord.com/developers/topics/oauth2#authorization-code-grant-refresh-token-exchange-example
  */
 export interface RESTPostOAuth2RefreshTokenURLEncodedData {
 	client_id: Snowflake;
@@ -83,7 +83,7 @@ export interface RESTPostOAuth2RefreshTokenURLEncodedData {
 export type RESTPostOAuth2RefreshTokenResult = RESTPostOAuth2AccessTokenResult;
 
 /**
- * https://discord.com/developers/docs/topics/oauth2#implicit-grant
+ * https://docs.discord.com/developers/topics/oauth2#implicit-grant
  */
 export interface RESTOAuth2ImplicitAuthorizationQuery {
 	response_type: 'token';
@@ -95,12 +95,12 @@ export interface RESTOAuth2ImplicitAuthorizationQuery {
 }
 
 /**
- * https://discord.com/developers/docs/topics/oauth2#implicit-grant-redirect-url-example
+ * https://docs.discord.com/developers/topics/oauth2#implicit-grant-redirect-url-example
  */
 export type RESTOAuth2ImplicitAuthorizationURLFragmentResult = Omit<RESTPostOAuth2AccessTokenResult, 'refresh_token'>;
 
 /**
- * https://discord.com/developers/docs/topics/oauth2#client-credentials-grant
+ * https://docs.discord.com/developers/topics/oauth2#client-credentials-grant
  */
 export interface RESTPostOAuth2ClientCredentialsURLEncodedData {
 	grant_type: 'client_credentials';
@@ -110,7 +110,7 @@ export interface RESTPostOAuth2ClientCredentialsURLEncodedData {
 export type RESTPostOAuth2ClientCredentialsResult = RESTOAuth2ImplicitAuthorizationURLFragmentResult;
 
 /**
- * https://discord.com/developers/docs/topics/oauth2#bot-authorization-flow-bot-auth-parameters
+ * https://docs.discord.com/developers/topics/oauth2#bot-authorization-flow-bot-auth-parameters
  */
 export interface RESTOAuth2BotAuthorizationQuery {
 	/**
@@ -128,7 +128,7 @@ export interface RESTOAuth2BotAuthorizationQuery {
 	/**
 	 * The permissions you're requesting
 	 *
-	 * See https://discord.com/developers/docs/topics/permissions
+	 * See https://docs.discord.com/developers/topics/permissions
 	 */
 	permissions?: Permissions;
 	/**
@@ -142,7 +142,7 @@ export interface RESTOAuth2BotAuthorizationQuery {
 }
 
 /**
- * https://discord.com/developers/docs/topics/oauth2#advanced-bot-authorization
+ * https://docs.discord.com/developers/topics/oauth2#advanced-bot-authorization
  */
 export interface RESTOAuth2AdvancedBotAuthorizationQuery {
 	client_id: Snowflake;
@@ -172,7 +172,7 @@ export interface RESTOAuth2AdvancedBotAuthorizationQueryResult {
 }
 
 /**
- * https://discord.com/developers/docs/topics/oauth2#advanced-bot-authorization-extended-bot-authorization-access-token-example
+ * https://docs.discord.com/developers/topics/oauth2#advanced-bot-authorization-extended-bot-authorization-access-token-example
  */
 export interface RESTPostOAuth2AccessTokenWithBotAndGuildsScopeResult {
 	access_token: string;
@@ -184,7 +184,7 @@ export interface RESTPostOAuth2AccessTokenWithBotAndGuildsScopeResult {
 }
 
 /**
- * https://discord.com/developers/docs/topics/oauth2#webhooks-webhook-token-response-example
+ * https://docs.discord.com/developers/topics/oauth2#webhooks-webhook-token-response-example
  */
 export interface RESTPostOAuth2AccessTokenWithBotAndWebhookIncomingScopeResult {
 	access_token: string;
