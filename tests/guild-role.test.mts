@@ -24,6 +24,18 @@ const roleData = {
 } satisfies APIRole;
 
 describe('GuildRole', () => {
+	test('compares role hierarchy by position before snowflake id', () => {
+		const client = {} as any;
+		const higherPosition = new GuildRole(client, { ...roleData, id: '300000000000000003', position: 2 }, guildId);
+		const olderTiedRole = new GuildRole(client, { ...roleData, id: '200000000000000002', position: 1 }, guildId);
+		const newerTiedRole = new GuildRole(client, { ...roleData, id: '400000000000000004', position: 1 }, guildId);
+
+		expect(higherPosition.comparePositionTo(olderTiedRole)).toBeGreaterThan(0);
+		expect(olderTiedRole.comparePositionTo(newerTiedRole)).toBeGreaterThan(0);
+		expect(newerTiedRole.comparePositionTo(olderTiedRole)).toBeLessThan(0);
+		expect(olderTiedRole.comparePositionTo(olderTiedRole)).toBe(0);
+	});
+
 	test('edit forwards an audit-log reason to the role shorter', async () => {
 		const body = { name: 'moderators' };
 		const reason = 'sync role name';
