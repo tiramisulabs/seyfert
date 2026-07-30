@@ -165,7 +165,15 @@ export class ApiHandler<TClient = unknown> {
 		return new Promise<T>((res, rej) => {
 			const timeout = setTimeout(() => {
 				this.workerPromises!.delete(body.nonce);
-				rej(new SeyfertError('WORKER_TIMEOUT', { metadata: { detail: `nonce: ${body.nonce}` } }));
+				rej(
+					new SeyfertError('WORKER_TIMEOUT', {
+						metadata: {
+							nonce: body.nonce,
+							operation: 'API worker request',
+							detail: `API worker request timed out (nonce: ${body.nonce}).`,
+						},
+					}),
+				);
 			}, WORKER_TIMEOUT_MS);
 			this.workerPromises!.set(body.nonce, {
 				resolve: value => {

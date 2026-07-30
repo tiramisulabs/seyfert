@@ -144,9 +144,7 @@ export class WorkerManager extends Map<
 		const id = workerId ?? this.calculateWorkerId(shardId!);
 
 		if (!this.has(id)) {
-			throw new SeyfertError('WORKER_NOT_FOUND', {
-				metadata: { ...{ workerId: id }, detail: `Worker #${id} doesn't exist` },
-			});
+			throw this.createWorkerNotFoundError(id);
 		}
 
 		const data = await this.getWorkerInfo(id);
@@ -159,36 +157,28 @@ export class WorkerManager extends Map<
 		return Number((BigInt(guildId) >> 22n) % BigInt(this.totalShards));
 	}
 
+	private createWorkerNotFoundError(workerId: number) {
+		return new SeyfertError('WORKER_NOT_FOUND', {
+			metadata: { workerId, detail: `Worker #${workerId} doesn't exist` },
+		});
+	}
+
 	calculateWorkerId(shardId: number) {
-		if (shardId < this.shardStart || shardId >= this.shardEnd) {
+		const minimumShardId = this.shardStart;
+		const maximumShardId = this.shardEnd - 1;
+
+		if (shardId < minimumShardId || shardId > maximumShardId) {
 			throw new SeyfertError('INVALID_SHARD_ID', {
 				metadata: {
-					...{
-						shardId,
-						shardStart: this.shardStart,
-						shardEnd: this.shardEnd,
-						shardsPerWorker: this.shardsPerWorker,
-						totalWorkers: this.totalWorkers,
-					},
-					detail: 'Invalid shardId',
+					shardId,
+					minimumShardId,
+					maximumShardId,
+					detail: `Invalid shardId ${shardId}: expected ${minimumShardId}..${maximumShardId}.`,
 				},
 			});
 		}
-		const workerId = Math.floor((shardId - this.shardStart) / this.shardsPerWorker);
-		if (workerId >= this.totalWorkers) {
-			throw new SeyfertError('INVALID_SHARD_ID', {
-				metadata: {
-					...{
-						shardId,
-						shardStart: this.shardStart,
-						shardsPerWorker: this.shardsPerWorker,
-						totalWorkers: this.totalWorkers,
-					},
-					detail: 'Invalid shardId',
-				},
-			});
-		}
-		return workerId;
+
+		return Math.floor((shardId - minimumShardId) / this.shardsPerWorker);
 	}
 
 	postMessage(id: number, body: ManagerMessages | WorkerHeartbeaterMessages) {
@@ -525,7 +515,7 @@ export class WorkerManager extends Map<
 						toWorkerId: message.toWorkerId,
 						vars: message.vars,
 					} satisfies ManagerExecuteEvalToWorker);
-					this.generateSendPromise(nonce, 'Eval timeout').then(val =>
+					this.generateSendPromise(nonce, 'Worker evaluation').then(val =>
 						this.postMessage(message.workerId, {
 							nonce: message.nonce,
 							response: val,
@@ -543,11 +533,15 @@ export class WorkerManager extends Map<
 		return uuid;
 	}
 
-	private generateSendPromise<T = unknown>(nonce: string, message = 'Timeout'): Promise<T> {
+	private generateSendPromise<T = unknown>(nonce: string, operation = 'Worker request'): Promise<T> {
 		return new Promise<T>((res, rej) => {
 			const timeout = setTimeout(() => {
 				this.promises.delete(nonce);
-				rej(new SeyfertError('WORKER_TIMEOUT', { metadata: { ...{ nonce }, detail: message } }));
+				rej(
+					new SeyfertError('WORKER_TIMEOUT', {
+						metadata: { nonce, operation, detail: `${operation} timed out (nonce: ${nonce}).` },
+					}),
+				);
 			}, WORKER_TIMEOUT_MS);
 			this.promises.set(nonce, { resolve: res, timeout });
 		});
@@ -558,7 +552,7 @@ export class WorkerManager extends Map<
 		const worker = this.has(workerId);
 
 		if (!worker) {
-			throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Worker #${workerId} doesn't exist` } });
+			throw this.createWorkerNotFoundError(workerId);
 		}
 
 		const payload = await this.resolveSendPayload(shardId, data);
@@ -573,7 +567,7 @@ export class WorkerManager extends Map<
 			...payload,
 		} satisfies ManagerSendPayload);
 
-		return this.generateSendPromise<true>(nonce, 'Shard send payload timeout');
+		return this.generateSendPromise<true>(nonce, 'Shard payload send');
 	}
 
 	private async resolveSendPayload(shardId: number, payload: GatewaySendPayload) {
@@ -587,28 +581,28 @@ export class WorkerManager extends Map<
 		const worker = this.has(workerId);
 
 		if (!worker) {
-			throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Worker #${workerId} doesn't exist` } });
+			throw this.createWorkerNotFoundError(workerId);
 		}
 
 		const nonce = this.generateNonce();
 
 		this.postMessage(workerId, { shardId, nonce, type: 'SHARD_INFO' } satisfies ManagerRequestShardInfo);
 
-		return this.generateSendPromise<WorkerShardInfo>(nonce, 'Get shard info timeout');
+		return this.generateSendPromise<WorkerShardInfo>(nonce, 'Shard info request');
 	}
 
 	async getWorkerInfo(workerId: number) {
 		const worker = this.has(workerId);
 
 		if (!worker) {
-			throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Worker #${workerId} doesn't exist` } });
+			throw this.createWorkerNotFoundError(workerId);
 		}
 
 		const nonce = this.generateNonce();
 
 		this.postMessage(workerId, { nonce, type: 'WORKER_INFO' } satisfies ManagerRequestWorkerInfo);
 
-		return this.generateSendPromise<WorkerInfo>(nonce, 'Get worker info timeout');
+		return this.generateSendPromise<WorkerInfo>(nonce, 'Worker info request');
 	}
 
 	tellWorker<R, V extends Record<string, unknown>>(

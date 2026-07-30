@@ -57,6 +57,8 @@ expectType<MessageLink>(Formatter.messageLink('guild-id', 'channel-id', 'message
 expectType<ChannelLink>(Formatter.channelLink('channel-id'));
 expectType<Timestamp>(Formatter.timestamp(Date.now()));
 expectType<SeyfertErrorCode>(new SeyfertError('INVALID_TOKEN').code);
+declare const dynamicSeyfertErrorCode: string;
+expectType<SeyfertErrorCode>(new SeyfertError(dynamicSeyfertErrorCode).code);
 expectType<string>(SeyfertErrorMessages.INVALID_TOKEN);
 expectType<{
 	expected: unknown;
