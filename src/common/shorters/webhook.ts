@@ -108,7 +108,7 @@ export class WebhookShorter extends BaseShorter {
 		);
 		return this.client.proxy
 			.webhooks(webhookId)(token)
-			.post({ ...payload, files: parsedFiles, body: transformedBody })
+			.post({ ...payload, auth: false, files: parsedFiles, body: transformedBody })
 			.then(m => (m?.id ? Transformers.WebhookMessage(this.client, m, webhookId, token) : null));
 	}
 

@@ -12,7 +12,7 @@ import type { RestArguments, RestArgumentsNoBody } from '../api';
 
 export interface InviteRoutes {
 	invites(id: string): {
-		get(args?: RestArguments<RESTGetAPIInviteQuery>): Promise<RESTGetAPIInviteResult>;
+		get(args?: RestArgumentsNoBody<RESTGetAPIInviteQuery>): Promise<RESTGetAPIInviteResult>;
 		delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIInviteResult>;
 		'target-users': {
 			get(args?: RestArgumentsNoBody): Promise<RESTGetTargetUsersResult>;

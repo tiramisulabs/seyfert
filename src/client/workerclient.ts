@@ -364,7 +364,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					if (!promise) return;
 					this.rest.workerPromises!.delete(data.nonce);
 					if (data.error) return promise.reject(data.error);
-					promise.resolve(data.response);
+					promise.resolve(data.responseType === 'arrayBuffer' ? Uint8Array.from(data.response).buffer : data.response);
 				}
 				break;
 			case 'EXECUTE_EVAL':
