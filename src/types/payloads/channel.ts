@@ -48,6 +48,10 @@ export interface APIPartialChannel {
 export interface APIChannelBase<T extends ChannelType> extends APIPartialChannel {
 	type: T;
 	flags?: ChannelFlags;
+	/**
+	 * Application id associated with the channel
+	 */
+	application_id?: Snowflake | null;
 }
 
 export type TextChannelType =
@@ -771,6 +775,7 @@ export enum MessageActivityType {
 	Spectate,
 	Listen,
 	JoinRequest = 5,
+	StreamRequest = 6,
 }
 
 /**

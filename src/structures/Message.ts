@@ -28,6 +28,7 @@ import type {
 	APIMessage,
 	APIUser,
 	GatewayMessageCreateDispatchData,
+	TextChannelType,
 } from '../types';
 import type { AllChannels } from './channels';
 import { DiscordBase } from './extra/DiscordBase';
@@ -44,6 +45,7 @@ export interface BaseMessage
 		ObjectToLower<Omit<MessageData, 'timestamp' | 'author' | 'mentions' | 'components' | 'poll' | 'embeds'>> {
 	timestamp?: number;
 	guildId?: string;
+	channelType?: TextChannelType;
 	author: UserStructure;
 	member?: GuildMemberStructure;
 	components: TopLevelComponents[];

@@ -348,11 +348,13 @@ export enum ConnectionService {
 	Facebook = 'facebook',
 	GitHub = 'github',
 	Instagram = 'instagram',
+	/** @deprecated Riot Games and League of Legends connections are no longer returned by Discord. */
 	LeagueOfLegends = 'leagueoflegends',
 	Mastodon = 'mastodon',
 	PayPal = 'paypal',
 	PlayStationNetwork = 'playstation',
 	Reddit = 'reddit',
+	/** @deprecated Riot Games connections are no longer returned by Discord. */
 	RiotGames = 'riotgames',
 	Spotify = 'spotify',
 	Skype = 'skype',
