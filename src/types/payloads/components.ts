@@ -624,6 +624,11 @@ export interface APILabelComponent extends APIBaseComponent<ComponentType.Label>
 }
 
 /**
+ * https://docs.discord.com/developers/reference#file-type-filtering
+ */
+export type FileUploadType = 'audio' | 'image' | 'video' | `.${string}`;
+
+/**
  * https://docs.discord.com/developers/components/reference#file-upload
  */
 export interface APIFileUploadComponent extends APIBaseComponent<ComponentType.FileUpload> {
@@ -637,6 +642,8 @@ export interface APIFileUploadComponent extends APIBaseComponent<ComponentType.F
 	max_values?: number;
 	/** Whether the file upload is required (defaults to false) */
 	required?: boolean;
+	/** File types to accept; can contain media groups or dot-prefixed file extensions (maximum of 10) */
+	file_types?: FileUploadType[];
 }
 
 /**
