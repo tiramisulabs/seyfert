@@ -10,6 +10,8 @@
 //     the fix), so these are the cases that turn red if the fix is reverted. Do not inline them.
 //   • SIN `as const` → behaves exactly as before the fix: the value type is widened.
 import {
+	ApplicationCommandOptionType,
+	type APIApplicationCommandAttachmentOption,
 	type Attachment,
 	ChannelType,
 	type CommandContext,
@@ -22,11 +24,13 @@ import {
 	createRoleOption,
 	createStringOption,
 	createUserOption,
+	type FileUploadType,
 	type GuildMemberStructure,
 	type GuildRoleStructure,
 	type InteractionGuildMemberStructure,
 	type OKFunction,
 	type ResolvedChannel,
+	type SeyfertAttachmentOption,
 	type TextGuildChannelStructure,
 	type UserStructure,
 	type VoiceChannelStructure,
@@ -160,6 +164,24 @@ expectType<true>(true as Equal<typeof channelCtx.options.mutableOne, ResolvedTex
 expectType<true>(
 	true as Equal<typeof channelCtx.options.mutableMany, ResolvedTextOrVoiceChannel>,
 );
+
+// ─────────────────────────── attachment file_types ───────────────────────────
+const attachmentFileTypes = ['image', '.pdf'] as const satisfies readonly FileUploadType[];
+
+expectType<APIApplicationCommandAttachmentOption>({
+	type: ApplicationCommandOptionType.Attachment,
+	name: 'document',
+	description: 'Upload a document',
+	file_types: [...attachmentFileTypes],
+});
+expectType<SeyfertAttachmentOption>({
+	description: 'Upload a document',
+	file_types: attachmentFileTypes,
+});
+createAttachmentOption({ description: 'Upload a document', file_types: attachmentFileTypes });
+
+// @ts-expect-error File extension filters must be dot-prefixed.
+expectType<FileUploadType>('pdf');
 
 // ───────────── every create*Option — SIN callback (tipo base) ─────────────
 const withoutCallback = {
