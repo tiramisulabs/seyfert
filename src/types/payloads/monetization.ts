@@ -179,9 +179,9 @@ export interface APISubscription {
 
 export enum SubscriptionStatus {
 	/**	Subscription is active and scheduled to renew. */
-	Active,
-	/** Subscription is active but will not renew. */
-	Ending,
+	Active = 0,
 	/**	Subscription is inactive and not being charged. */
-	Inactive,
+	Inactive = 1,
+	/** Subscription is active but will not renew. */
+	Ending = 2,
 }

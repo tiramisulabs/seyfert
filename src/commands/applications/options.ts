@@ -6,6 +6,7 @@ import {
 	type APIApplicationCommandBasicOption,
 	type APIApplicationCommandOptionChoice,
 	ApplicationCommandOptionType,
+	type FileUploadType,
 } from '../../types';
 import type { LocalizationMap } from '../../types/payloads';
 import type {
@@ -142,7 +143,9 @@ export type SeyfertChannelOption<C = keyof SeyfertChannelMap, R = true | false, 
 };
 export type SeyfertRoleOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.Role, R>;
 export type SeyfertMentionableOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.Mentionable, R>;
-export type SeyfertAttachmentOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.Attachment, R>;
+export type SeyfertAttachmentOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.Attachment, R> & {
+	file_types?: readonly FileUploadType[];
+};
 
 export function createStringOption<
 	R extends boolean,
