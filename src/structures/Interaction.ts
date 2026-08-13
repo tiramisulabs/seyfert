@@ -627,6 +627,7 @@ export class EntryPointInteraction<FromGuild extends boolean = boolean> extends 
 		const response = await this.client.proxy
 			.interactions(this.id)(this.token)
 			.callback.post({
+				auth: false,
 				body,
 				query: { with_response: true },
 			});

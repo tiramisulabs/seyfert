@@ -139,6 +139,7 @@ import {
 	type VoiceStateStructure,
 	PresenceUpdateStatus,
 	createEvent,
+	WorkerClient,
 	type ModalSubmitInteraction,
 } from 'seyfert';
 import type { APIRoutes } from '../lib/api/Routes';
@@ -162,6 +163,10 @@ import type { ShardManagerOptions, WorkerManagerOptions } from '../lib/websocket
 import type { ManagerAllowConnect, ManagerAllowConnectResharding } from '../lib/websocket/discord/workermanager';
 
 declare function expectType<T>(value: T): void;
+declare const publicWorkerClient: WorkerClient;
+declare const publicGatewayPayload: GatewaySendPayload;
+expectType<Promise<boolean>>(publicWorkerClient.sendGatewayPayload(0, publicGatewayPayload));
+
 type IsAny<T> = 0 extends 1 & T ? true : false;
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
 	? (<T>() => T extends B ? 1 : 2) extends <T>() => T extends A ? 1 : 2
