@@ -14,6 +14,7 @@ export class InteractionShorter extends BaseShorter {
 		return this.client.proxy
 			.interactions(id)(token)
 			.callback.post({
+				auth: false,
 				body: BaseInteraction.transformBodyRequest(
 					{
 						type: body.type,
@@ -51,6 +52,7 @@ export class InteractionShorter extends BaseShorter {
 			.webhooks(this.client.applicationId)(token)
 			.messages(messageId)
 			.patch({
+				auth: false,
 				body: BaseInteraction.transformBody(data, files, this.client),
 				files: parsedFiles,
 			});
@@ -65,7 +67,7 @@ export class InteractionShorter extends BaseShorter {
 		return this.client.proxy
 			.webhooks(this.client.applicationId)(token)
 			.messages(messageId)
-			.delete()
+			.delete({ auth: false })
 			.then(() => this.client.components.deleteValue(messageId, 'messageDelete'));
 	}
 
@@ -78,6 +80,7 @@ export class InteractionShorter extends BaseShorter {
 		const apiMessage = (await this.client.proxy
 			.webhooks(this.client.applicationId)(token)
 			.post({
+				auth: false,
 				body: BaseInteraction.transformBody(body, files, this.client),
 				files: parsedFiles,
 			})) as RESTPostAPIWebhookWithTokenWaitResult;

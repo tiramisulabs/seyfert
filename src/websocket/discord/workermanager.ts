@@ -486,9 +486,12 @@ export class WorkerManager extends Map<
 						});
 					}
 					const response = await this.rest.request(message.method, message.url, message.requestOptions);
+					const encodedResponse = response instanceof ArrayBuffer ? Array.from(new Uint8Array(response)) : response;
+					const responseType = response instanceof ArrayBuffer ? 'arrayBuffer' : undefined;
 					this.postMessage(message.workerId, {
 						nonce: message.nonce,
-						response,
+						response: encodedResponse,
+						responseType,
 						type: 'API_RESPONSE',
 					} satisfies ManagerSendApiResponse);
 				}
@@ -752,6 +755,7 @@ export type ManagerSendApiResponse = CreateManagerMessage<
 	'API_RESPONSE',
 	{
 		response: any;
+		responseType?: 'arrayBuffer';
 		error?: any;
 		nonce: string;
 	}
