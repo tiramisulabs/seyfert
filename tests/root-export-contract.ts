@@ -1,31 +1,48 @@
 import {
+	ApplicationIntegrationType,
+	AuditLogEvent,
 	ChannelType,
 	EmbedColors,
 	Formatter,
 	HeadingLevel,
+	MessageActivityType,
 	OAuth2Scopes,
+	PresenceUpdateReceiveStatus,
 	SeyfertError,
 	SeyfertErrorMessages,
+	SubscriptionStatus,
 	TimestampStyle,
 	config,
 	createValidationMetadata,
+	type APIApplication,
+	type APIChannelBase,
+	type APIGroupDMChannel,
 	type APIInteractionDataResolvedChannel,
+	type APIRoutes,
+	type ApplicationStructure,
 	type BotConfig,
 	type ChannelLink,
 	type CommandOptionChannel,
 	type DMChannelStructure,
+	type GatewayMessageCreateDispatchData,
+	type GatewayPresenceClientStatus,
 	type GroupDMChannelStructure,
 	type HttpConfig,
 	type MaybeResolvedChannel,
 	type MessageLink,
+	type MessageStructure,
 	type OAuth2URLOptions,
 	type PropWhen,
+	type RESTDeleteAPICurrentUserApplicationRoleConnectionResult,
+	type RESTOAuth2BotAuthorizationQuery,
+	type RESTPatchCurrentApplicationJSONBody,
 	type ResolvedChannel,
 	type SeyfertErrorCode,
 	type ShardData,
 	type ShardManagerOptions,
 	type StructPropState,
 	type StructStates,
+	type TextChannelType,
 	type TextGuildChannelStructure,
 	type Timestamp,
 	type WorkerData,
@@ -155,3 +172,47 @@ expectType<APIInteractionDataResolvedChannel>({
 	type: ChannelType.DM,
 	permissions: '0',
 });
+
+expectType<0>(SubscriptionStatus.Active);
+expectType<1>(SubscriptionStatus.Inactive);
+expectType<2>(SubscriptionStatus.Ending);
+expectType<192>(AuditLogEvent.VoiceChannelStatusCreate);
+expectType<192>(AuditLogEvent.VoiceChannelStatusUpdate);
+expectType<6>(MessageActivityType.StreamRequest);
+expectType<'identify.premium'>(OAuth2Scopes.IdentifyPremium);
+
+expectType<RESTOAuth2BotAuthorizationQuery>({ client_id: 'application-id' });
+expectType<RESTOAuth2BotAuthorizationQuery>({
+	client_id: 'application-id',
+	integration_type: ApplicationIntegrationType.GuildInstall,
+});
+
+declare const application: APIApplication;
+expectType<string | undefined>(application.flags_new);
+
+declare const applicationStructure: ApplicationStructure;
+expectType<string | undefined>(applicationStructure.flagsNew);
+
+// @ts-expect-error flags_new is response-only; application writes continue to use flags.
+expectType<RESTPatchCurrentApplicationJSONBody>({ flags_new: '8192' });
+
+declare const gatewayMessage: GatewayMessageCreateDispatchData;
+expectType<TextChannelType | undefined>(gatewayMessage.channel_type);
+
+declare const messageStructure: MessageStructure;
+expectType<TextChannelType | undefined>(messageStructure.channelType);
+
+declare const clientStatus: GatewayPresenceClientStatus;
+expectType<PresenceUpdateReceiveStatus | undefined>(clientStatus.vr);
+
+declare const guildChannel: APIChannelBase<ChannelType.GuildText>;
+expectType<string | null | undefined>(guildChannel.application_id);
+expectType<string | null | undefined>(guildChannelStructure.applicationId);
+
+declare const groupDM: APIGroupDMChannel;
+expectType<string | undefined>(groupDM.application_id);
+
+declare const routes: APIRoutes;
+expectType<Promise<RESTDeleteAPICurrentUserApplicationRoleConnectionResult>>(
+	routes.users('@me').applications('application-id')['role-connection'].delete(),
+);
