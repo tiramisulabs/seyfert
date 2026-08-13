@@ -568,13 +568,30 @@ export class ApiHandler<TClient = unknown> {
 		const bucket = this.ratelimits.get(route)!;
 		let retryAfter: number | undefined;
 
-		const data = JSON.parse(result);
-		if (data.retry_after) retryAfter = Math.ceil(data.retry_after * 1000);
+		try {
+			const data: unknown = JSON.parse(result);
+			if (
+				typeof data === 'object' &&
+				data !== null &&
+				'retry_after' in data &&
+				typeof data.retry_after === 'number' &&
+				Number.isFinite(data.retry_after) &&
+				data.retry_after >= 0
+			) {
+				retryAfter = Math.ceil(data.retry_after * 1000);
+			}
+		} catch (error) {
+			this.debugger?.warn('Failed parsing 429 result (', result, ')', error);
+		}
 
-		retryAfter ??=
-			Number(response.headers.get('x-ratelimit-reset-after') || response.headers.get('retry-after')) * 1000;
+		if (retryAfter === undefined) {
+			const retryAfterHeader = response.headers.get('x-ratelimit-reset-after') ?? response.headers.get('retry-after');
+			if (retryAfterHeader !== null && retryAfterHeader.trim() !== '') {
+				retryAfter = Number(retryAfterHeader) * 1000;
+			}
+		}
 
-		if (Number.isNaN(retryAfter)) {
+		if (retryAfter === undefined || !Number.isFinite(retryAfter) || retryAfter < 0) {
 			this.debugger?.warn(`${route} Could not extract retry_after from 429 response. ${result}`);
 			next();
 			reject(

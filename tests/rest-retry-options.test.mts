@@ -133,4 +133,57 @@ describe('REST retry request options', () => {
 			vi.useRealTimers();
 		}
 	});
+
+	test('handle429 falls back to the Retry-After header for a non-JSON response', async () => {
+		vi.useFakeTimers();
+		try {
+			const { api, next, request, requestSpy, retried } = createRetryScenario();
+			api.ratelimits.set(route, new Bucket(1));
+			const response = new Response('rate limited', {
+				status: 429,
+				headers: { 'retry-after': '0.001' },
+			});
+			const retry = api.handle429(
+				route,
+				method,
+				url,
+				request,
+				response,
+				'rate limited',
+				next,
+				vi.fn(),
+				Date.now(),
+				url,
+			);
+
+			await flushRetryContinuations();
+			expect(requestSpy).not.toHaveBeenCalled();
+			expect(next).not.toHaveBeenCalled();
+
+			await vi.advanceTimersByTimeAsync(1);
+
+			await expect(retry).resolves.toBe(retried);
+			expect(next).toHaveBeenCalledTimes(1);
+			expectRequestOptionsPreserved(requestSpy, request);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	test('handle429 rejects cleanly when a non-JSON response has no retry delay', async () => {
+		const { api, next, request } = createRetryScenario();
+		api.ratelimits.set(route, new Bucket(1));
+		const reject = vi.fn();
+		const response = new Response('', { status: 429 });
+		const retry = api.handle429(route, method, url, request, response, '', next, reject, Date.now(), url);
+
+		await expect(retry).resolves.toBe(false);
+		expect(next).toHaveBeenCalledTimes(1);
+		expect(reject).toHaveBeenCalledOnce();
+		expect(reject).toHaveBeenCalledWith(
+			expect.objectContaining({
+				code: 'INVALID_RETRY_AFTER',
+			}),
+		);
+	});
 });
