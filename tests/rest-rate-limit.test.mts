@@ -393,4 +393,30 @@ describe('Discord REST rate limits', () => {
 		expect(next).toHaveBeenCalledOnce();
 		expect(reject).toHaveBeenCalledWith(expect.objectContaining({ code: 'INVALID_RETRY_AFTER' }));
 	});
+
+	test('rejects an empty 429 response without a retry delay', async () => {
+		const api = createApi();
+		const route = 'GET:/channels/100000000000000001/messages';
+		const url = '/channels/100000000000000001/messages' as const;
+		const next = vi.fn();
+		const reject = vi.fn();
+		api.ratelimits.set(route, new Bucket(1));
+
+		const result = await api.handle429(
+			route,
+			'GET',
+			url,
+			{},
+			new Response('', { status: 429 }),
+			'',
+			next,
+			reject,
+			Date.now(),
+			url,
+		);
+
+		expect(result).toBe(false);
+		expect(next).toHaveBeenCalledOnce();
+		expect(reject).toHaveBeenCalledWith(expect.objectContaining({ code: 'INVALID_RETRY_AFTER' }));
+	});
 });
