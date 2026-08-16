@@ -1,7 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { ComponentCommand } from '../src/components/componentcommand';
 import { ComponentHandler } from '../src/components/handler';
-import { ModalCommand } from '../src/components/modalcommand';
 
 function createHandler() {
 	const logger = {
@@ -76,39 +74,36 @@ describe('component collectors', () => {
 		expect(vi.getTimerCount()).toBe(0);
 	});
 
-	test('matches global regular expressions repeatedly in collectors', async () => {
+	test.each(['g', 'y'])('matches stateful regular expressions with the %s flag repeatedly', async flag => {
 		const handler = createHandler();
 		const collector = handler.createComponentCollector('message-id', 'channel-id', undefined);
 		const onRun = vi.fn();
-		collector.run(/^confirm$/g, onRun);
+		const customId = new RegExp('^confirm$', flag);
+		customId.lastIndex = 3;
+		collector.run(customId, onRun);
 		const interaction = createInteraction('confirm');
 
-		expect(handler.hasComponent('message-id', 'confirm')).toBe(true);
-		await handler.onComponent('message-id', interaction);
-		await handler.onComponent('message-id', interaction);
+		for (let index = 0; index < 2; index++) {
+			expect(handler.hasComponent('message-id', 'confirm')).toBe(true);
+			await handler.onComponent('message-id', interaction);
+		}
 
 		expect(onRun).toHaveBeenCalledTimes(2);
+		expect(customId.lastIndex).toBe(3);
 	});
 
-	test('matches global regular expressions repeatedly in component and modal commands', () => {
-		class ButtonCommand extends ComponentCommand {
-			componentType = 'Button' as const;
-			run() {}
+	test('matches frozen non-stateful regular expressions repeatedly', async () => {
+		const handler = createHandler();
+		const collector = handler.createComponentCollector('message-id', 'channel-id', undefined);
+		const onRun = vi.fn();
+		collector.run(Object.freeze(/^confirm$/), onRun);
+		const interaction = createInteraction('confirm');
+
+		for (let index = 0; index < 2; index++) {
+			expect(handler.hasComponent('message-id', 'confirm')).toBe(true);
+			await handler.onComponent('message-id', interaction);
 		}
 
-		class FormCommand extends ModalCommand {
-			run() {}
-		}
-
-		const component = new ButtonCommand();
-		component.customId = /^confirm$/g;
-		const modal = new FormCommand();
-		modal.customId = /^confirm$/g;
-		const context = { customId: 'confirm' } as never;
-
-		expect(component._filter(context)).toBe(true);
-		expect(component._filter(context)).toBe(true);
-		expect(modal._filter(context)).toBe(true);
-		expect(modal._filter(context)).toBe(true);
+		expect(onRun).toHaveBeenCalledTimes(2);
 	});
 });

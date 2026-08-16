@@ -2,7 +2,7 @@ import type { PluginMiddlewareDenialMetadata } from '../client/plugins/types';
 import type { ExtraProps, ResolvedRegisteredMiddlewares, UsingClient } from '../commands';
 import { ComponentType } from '../types';
 import type { ComponentContext, ContextComponentCommandInteractionMap } from './componentcontext';
-import { matchesCustomId } from './utils';
+import { matchesCustomId } from './customId';
 
 export const InteractionCommandType = {
 	COMPONENT: 0,

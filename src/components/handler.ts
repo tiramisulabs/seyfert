@@ -21,9 +21,9 @@ import {
 import type { ComponentInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from '../structures';
 import { ComponentCommand, InteractionCommandType } from './componentcommand';
 import type { ComponentContext } from './componentcontext';
+import { matchesCustomId } from './customId';
 import { ModalCommand } from './modalcommand';
 import type { ModalContext } from './modalcontext';
-import { matchesCustomId } from './utils';
 
 type PluginComponentLoadOptionsProvider = {
 	createPluginComponentLoadOptions?: () => ComponentLoadOptions;

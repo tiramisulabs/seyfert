@@ -1,8 +1,8 @@
 import type { PluginMiddlewareDenialMetadata } from '../client/plugins/types';
 import type { ExtraProps, ResolvedRegisteredMiddlewares, UsingClient } from '../commands';
 import { InteractionCommandType } from './componentcommand';
+import { matchesCustomId } from './customId';
 import type { ModalContext } from './modalcontext';
-import { matchesCustomId } from './utils';
 
 export interface ModalCommand {
 	__filePath?: string;
