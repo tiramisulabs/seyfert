@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
+import { ComponentCommand } from '../src/components/componentcommand';
 import { ComponentHandler } from '../src/components/handler';
+import { ModalCommand } from '../src/components/modalcommand';
 
 function createHandler() {
 	const logger = {
@@ -72,5 +74,41 @@ describe('component collectors', () => {
 		await expect(result).resolves.toBe(interaction);
 		expect(handler.hasComponent('message-id', 'confirm')).toBe(false);
 		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	test('matches global regular expressions repeatedly in collectors', async () => {
+		const handler = createHandler();
+		const collector = handler.createComponentCollector('message-id', 'channel-id', undefined);
+		const onRun = vi.fn();
+		collector.run(/^confirm$/g, onRun);
+		const interaction = createInteraction('confirm');
+
+		expect(handler.hasComponent('message-id', 'confirm')).toBe(true);
+		await handler.onComponent('message-id', interaction);
+		await handler.onComponent('message-id', interaction);
+
+		expect(onRun).toHaveBeenCalledTimes(2);
+	});
+
+	test('matches global regular expressions repeatedly in component and modal commands', () => {
+		class ButtonCommand extends ComponentCommand {
+			componentType = 'Button' as const;
+			run() {}
+		}
+
+		class FormCommand extends ModalCommand {
+			run() {}
+		}
+
+		const component = new ButtonCommand();
+		component.customId = /^confirm$/g;
+		const modal = new FormCommand();
+		modal.customId = /^confirm$/g;
+		const context = { customId: 'confirm' } as never;
+
+		expect(component._filter(context)).toBe(true);
+		expect(component._filter(context)).toBe(true);
+		expect(modal._filter(context)).toBe(true);
+		expect(modal._filter(context)).toBe(true);
 	});
 });

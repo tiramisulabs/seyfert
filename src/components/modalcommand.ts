@@ -2,6 +2,7 @@ import type { PluginMiddlewareDenialMetadata } from '../client/plugins/types';
 import type { ExtraProps, ResolvedRegisteredMiddlewares, UsingClient } from '../commands';
 import { InteractionCommandType } from './componentcommand';
 import type { ModalContext } from './modalcontext';
+import { matchesCustomId } from './utils';
 
 export interface ModalCommand {
 	__filePath?: string;
@@ -16,9 +17,7 @@ export abstract class ModalCommand {
 	/** @internal */
 	_filter(context: ModalContext) {
 		if (this.customId) {
-			const matches =
-				typeof this.customId === 'string' ? this.customId === context.customId : context.customId.match(this.customId);
-			if (!matches) return false;
+			if (!matchesCustomId(this.customId, context.customId)) return false;
 		}
 		if (this.filter) return this.filter(context);
 		return true;
