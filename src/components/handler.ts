@@ -21,6 +21,7 @@ import {
 import type { ComponentInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from '../structures';
 import { ComponentCommand, InteractionCommandType } from './componentcommand';
 import type { ComponentContext } from './componentcontext';
+import { matchesCustomId } from './customId';
 import { ModalCommand } from './modalcommand';
 import type { ModalContext } from './modalcontext';
 
@@ -74,9 +75,8 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	private createMatchCallback(match: UserMatches): MatchCallback {
-		if (typeof match === 'string') return str => str === match;
 		if (Array.isArray(match)) return str => match.includes(str);
-		return str => match.test(str);
+		return str => matchesCustomId(match, str);
 	}
 
 	createComponentCollector(
