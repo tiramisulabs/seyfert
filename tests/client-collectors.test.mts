@@ -1,4 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
+import { Client } from '../src/client';
 import { Collectors } from '../src/client/collectors';
 import type { GatewayDispatchPayload } from '../src/types';
 
@@ -31,5 +32,27 @@ describe('client collectors', () => {
 		expect(run).toHaveBeenCalledWith(packet, expect.any(Function));
 		expect(collectors.values.get('raw')).toHaveLength(0);
 		expect(collectors.values.has('RAW' as never)).toBe(false);
+	});
+
+	test('passes the first argument to custom-event collectors', async () => {
+		const client = new Client({ getRC: async () => ({ locations: {} }), plugins: [] } as never);
+		const seen: unknown[] = [];
+		client.collectors.create({
+			event: 'commandsLoaded',
+			filter(arg) {
+				seen.push(arg);
+				return true;
+			},
+			run: () => {},
+		});
+		await client.events.runCustom('commandsLoaded', {
+			kind: 'commands',
+			total: 0,
+			items: [],
+			plugin: { total: 0, sources: {} },
+		});
+		expect(seen).toEqual([
+			{ kind: 'commands', total: 0, items: [], plugin: { total: 0, sources: {} } },
+		]);
 	});
 });
