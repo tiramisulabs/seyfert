@@ -365,34 +365,37 @@ describe('Discord REST rate limits', () => {
 		expect(queuedDispatch).toHaveBeenCalledOnce();
 	});
 
-	test('rejects a 429 without a valid retry delay and releases the bucket', async () => {
-		const api = createApi();
-		const route = 'GET:/channels/100000000000000001/messages';
-		const url = '/channels/100000000000000001/messages' as const;
-		const next = vi.fn();
-		const reject = vi.fn();
-		api.ratelimits.set(route, new Bucket(1));
+	test.each(['not-a-number', String(Number.MAX_VALUE)])(
+		'rejects a 429 without a valid retry delay (%s) and releases the bucket',
+		async retryAfter => {
+			const api = createApi();
+			const route = 'GET:/channels/100000000000000001/messages';
+			const url = '/channels/100000000000000001/messages' as const;
+			const next = vi.fn();
+			const reject = vi.fn();
+			api.ratelimits.set(route, new Bucket(1));
 
-		const result = await api.handle429(
-			route,
-			'GET',
-			url,
-			{},
-			new Response('<html>rate limited</html>', {
-				status: 429,
-				headers: { 'retry-after': 'not-a-number' },
-			}),
-			'<html>rate limited</html>',
-			next,
-			reject,
-			Date.now(),
-			url,
-		);
+			const result = await api.handle429(
+				route,
+				'GET',
+				url,
+				{},
+				new Response('<html>rate limited</html>', {
+					status: 429,
+					headers: { 'retry-after': retryAfter },
+				}),
+				'<html>rate limited</html>',
+				next,
+				reject,
+				Date.now(),
+				url,
+			);
 
-		expect(result).toBe(false);
-		expect(next).toHaveBeenCalledOnce();
-		expect(reject).toHaveBeenCalledWith(expect.objectContaining({ code: 'INVALID_RETRY_AFTER' }));
-	});
+			expect(result).toBe(false);
+			expect(next).toHaveBeenCalledOnce();
+			expect(reject).toHaveBeenCalledWith(expect.objectContaining({ code: 'INVALID_RETRY_AFTER' }));
+		},
+	);
 
 	test('rejects an empty 429 response without a retry delay', async () => {
 		const api = createApi();
@@ -418,5 +421,160 @@ describe('Discord REST rate limits', () => {
 		expect(result).toBe(false);
 		expect(next).toHaveBeenCalledOnce();
 		expect(reject).toHaveBeenCalledWith(expect.objectContaining({ code: 'INVALID_RETRY_AFTER' }));
+	});
+
+	test('keeps queued requests throttled when bucket counts are malformed', async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(1_700_000_000_000);
+		const fetchMock = vi
+			.fn<typeof fetch>()
+			.mockResolvedValueOnce(
+				new Response('{}', {
+					headers: {
+						'content-type': 'application/json',
+						'x-ratelimit-limit': 'not-a-number',
+						'x-ratelimit-remaining': 'not-a-number',
+						'x-ratelimit-reset-after': '0.05',
+					},
+				}),
+			)
+			.mockResolvedValue(new Response('{}', { headers: { 'content-type': 'application/json' } }));
+		vi.stubGlobal('fetch', fetchMock);
+		const api = createApi();
+		const route = '/channels/100000000000000001/messages' as const;
+
+		const first = api.request('GET', route);
+		const queued = api.request('GET', route);
+		await first;
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+
+		await vi.advanceTimersByTimeAsync(50);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+
+		await vi.advanceTimersByTimeAsync(1);
+		await expect(queued).resolves.toEqual({});
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+	});
+
+	test.each([
+		['2', 'not-a-number', 2, 2],
+		['1.5', '0', 10, 0],
+		['2', '', 2, 2],
+		[String(Number.MAX_SAFE_INTEGER + 1), '0', 10, 0],
+	])('applies the valid rate-limit counts from (%s, %s)', (limit, remaining, expectedLimit, expectedRemaining) => {
+		const api = createApi();
+		const route = 'GET:/channels/100000000000000001/messages';
+		const bucket = new Bucket(10);
+		bucket.remaining = 8;
+		api.ratelimits.set(route, bucket);
+
+		api.setRatelimitsBucket(
+			route,
+			new Response('{}', {
+				headers: {
+					'x-ratelimit-limit': limit,
+					'x-ratelimit-remaining': remaining,
+				},
+			}),
+		);
+
+		expect(bucket.limit).toBe(expectedLimit);
+		expect(bucket.remaining).toBe(expectedRemaining);
+	});
+
+	test('honors an exhausted remaining count when its limit is malformed', () => {
+		vi.useFakeTimers();
+		const now = 1_700_000_000_000;
+		vi.setSystemTime(now);
+		const api = createApi();
+		const route = 'GET:/channels/100000000000000001/messages';
+		const bucket = new Bucket(10);
+		const dispatch = vi.fn((next: () => void) => next());
+		bucket.remaining = 8;
+		bucket.reset = now + 100;
+		api.ratelimits.set(route, bucket);
+
+		api.setRatelimitsBucket(
+			route,
+			new Response('{}', {
+				headers: {
+					'x-ratelimit-limit': 'not-a-number',
+					'x-ratelimit-remaining': '0',
+				},
+			}),
+		);
+		bucket.push({ next: dispatch, resolve: vi.fn(), reject: vi.fn() });
+
+		expect(dispatch).not.toHaveBeenCalled();
+		vi.advanceTimersByTime(100);
+		expect(dispatch).not.toHaveBeenCalled();
+		vi.advanceTimersByTime(1);
+		expect(dispatch).toHaveBeenCalledOnce();
+	});
+
+	test('caps a remaining count above the advertised limit', () => {
+		const api = createApi();
+		const route = 'GET:/channels/100000000000000001/messages';
+		const bucket = new Bucket(1);
+		api.ratelimits.set(route, bucket);
+
+		api.setRatelimitsBucket(
+			route,
+			new Response('{}', {
+				headers: {
+					'x-ratelimit-limit': '2',
+					'x-ratelimit-remaining': '99',
+				},
+			}),
+		);
+
+		expect(bucket.limit).toBe(2);
+		expect(bucket.remaining).toBe(2);
+	});
+
+	test('ignores smart-bucket reset durations that overflow the timer range', () => {
+		const api = new ApiHandler({ token: 'bot-token', domain: 'https://discord.example', smartBucket: true });
+		const route = 'GET:/channels/100000000000000001/messages';
+		const bucket = new Bucket(1);
+		bucket.remaining = 0;
+		api.ratelimits.set(route, bucket);
+
+		api.setRatelimitsBucket(
+			route,
+			new Response('{}', {
+				headers: {
+					'x-ratelimit-limit': '1',
+					'x-ratelimit-remaining': '0',
+					'x-ratelimit-reset-after': String(Number.MAX_VALUE),
+				},
+			}),
+		);
+
+		expect(bucket.resetAfter).toBe(0);
+	});
+
+	test('preserves malformed absolute resets and caps oversized timestamps', () => {
+		const api = createApi();
+		const route = 'GET:/channels/100000000000000001/messages';
+		const now = 1_700_000_000_000;
+		const bucket = new Bucket(1);
+		bucket.reset = now + 100;
+		api.ratelimits.set(route, bucket);
+
+		api.setResetBucket(
+			route,
+			new Response('{}', { headers: { 'x-ratelimit-reset': 'not-a-number' } }),
+			now,
+			Number.NaN,
+		);
+		expect(bucket.reset).toBe(now + 100);
+
+		api.setResetBucket(
+			route,
+			new Response('{}', { headers: { 'x-ratelimit-reset': String(Number.MAX_SAFE_INTEGER) } }),
+			now,
+			Number.NaN,
+		);
+		expect(bucket.reset).toBe(now + 2_147_483_646);
 	});
 });

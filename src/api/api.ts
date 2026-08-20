@@ -59,6 +59,24 @@ export type OnFailRequestCallback = (
 ) => Awaitable<any>;
 type InternalApiRequestOptions = ApiRequestOptions & { _50xRetries?: number };
 
+// JavaScript timers use a signed 32-bit millisecond delay.
+const MAX_TIMER_DELAY_MS = 2_147_483_647;
+const MAX_BUCKET_RESET_DELAY_MS = MAX_TIMER_DELAY_MS - 1;
+const MAX_SMART_BUCKET_RESET_AFTER_MS = Math.floor(MAX_TIMER_DELAY_MS / 1.5);
+
+function parseRateLimitCount(raw: string | null, minimum: number): null | number | undefined {
+	if (raw === null) return;
+	if (!/^\d+$/.test(raw)) return null;
+	const value = Number(raw);
+	return Number.isSafeInteger(value) && value >= minimum ? value : null;
+}
+
+function parseRateLimitDelay(value: number | string | null): number | undefined {
+	if (value === null || (typeof value === 'string' && value.trim() === '')) return;
+	const milliseconds = Number(value) * 1000;
+	return Number.isFinite(milliseconds) && milliseconds >= 0 ? milliseconds : undefined;
+}
+
 export class ApiHandler<TClient = unknown> {
 	options: ApiHandlerInternalOptions;
 	globalBlock = false;
@@ -618,15 +636,14 @@ export class ApiHandler<TClient = unknown> {
 			const parsed: unknown = JSON.parse(result);
 			if (isPlainObject(parsed)) data = parsed;
 		} catch {}
-		if (typeof data?.retry_after === 'number' && Number.isFinite(data.retry_after) && data.retry_after >= 0) {
-			retryAfter = Math.ceil(data.retry_after * 1000);
+		if (typeof data?.retry_after === 'number') {
+			const value = parseRateLimitDelay(data.retry_after);
+			if (value !== undefined && value <= MAX_TIMER_DELAY_MS) retryAfter = Math.ceil(value);
 		}
 		for (const header of ['retry-after', 'x-ratelimit-reset-after']) {
 			if (retryAfter !== undefined) break;
-			const raw = response.headers.get(header);
-			if (raw === null || raw.trim() === '') continue;
-			const value = Number(raw) * 1000;
-			if (Number.isFinite(value) && value >= 0) retryAfter = value;
+			const value = parseRateLimitDelay(response.headers.get(header));
+			if (value !== undefined && value <= MAX_TIMER_DELAY_MS) retryAfter = value;
 		}
 
 		if (retryAfter === undefined) {
@@ -679,44 +696,52 @@ export class ApiHandler<TClient = unknown> {
 	}
 
 	setResetBucket(route: string, resp: Response, now: number, headerNow: number, normalizedRoute = route) {
+		const bucket = this.ratelimits.get(route)!;
 		const retryAfterHeader = resp.headers.get('x-ratelimit-reset-after') ?? resp.headers.get('retry-after');
-		const retryAfter = retryAfterHeader === null ? undefined : Number(retryAfterHeader) * 1000;
+		const retryAfter = parseRateLimitDelay(retryAfterHeader);
 
-		if (retryAfter !== undefined && Number.isFinite(retryAfter) && retryAfter >= 0) {
-			this.ratelimits.get(route)!.reset = (retryAfter || 1) + now;
-		} else if (resp.headers.get('x-ratelimit-reset')) {
-			let resetTime = +resp.headers.get('x-ratelimit-reset')! * 1000;
-			if (
-				normalizedRoute.endsWith('/reactions/:id') &&
-				+resp.headers.get('x-ratelimit-reset')! * 1000 - headerNow === 1000
-			) {
+		if (retryAfter !== undefined) {
+			bucket.reset = Math.min(retryAfter || 1, MAX_BUCKET_RESET_DELAY_MS) + now;
+		} else {
+			const resetHeader = resp.headers.get('x-ratelimit-reset');
+			const parsedReset = parseRateLimitDelay(resetHeader);
+			if (parsedReset === undefined) {
+				if (retryAfterHeader === null && resetHeader === null) bucket.reset = now;
+				return;
+			}
+
+			let resetTime = parsedReset;
+			if (normalizedRoute.endsWith('/reactions/:id') && resetTime - headerNow === 1000) {
 				resetTime = now + 250;
 			}
-			this.ratelimits.get(route)!.reset = Math.max(resetTime, now);
-		} else {
-			this.ratelimits.get(route)!.reset = now;
+			bucket.reset = Math.min(Math.max(resetTime, now), now + MAX_BUCKET_RESET_DELAY_MS);
 		}
 	}
 
 	setRatelimitsBucket(route: string, resp: Response) {
-		if (resp.headers.has('x-ratelimit-limit')) {
-			this.ratelimits.get(route)!.limit = +resp.headers.get('x-ratelimit-limit')!;
+		const bucket = this.ratelimits.get(route)!;
+		const limit = parseRateLimitCount(resp.headers.get('x-ratelimit-limit'), 1);
+		const remaining = parseRateLimitCount(resp.headers.get('x-ratelimit-remaining'), 0);
+		if (limit !== null && limit !== undefined) {
+			bucket.limit = limit;
+			bucket.remaining = Math.min(bucket.remaining, limit);
+		}
+		if (remaining === undefined) {
+			bucket.remaining = Math.min(1, bucket.limit);
+		} else if (remaining !== null) {
+			bucket.remaining = Math.min(remaining, bucket.limit);
 		}
 
-		const raw = resp.headers.get('x-ratelimit-remaining');
-		this.ratelimits.get(route)!.remaining = raw != null ? +raw : 1;
-
 		if (this.options.smartBucket) {
-			if (
-				resp.headers.has('x-ratelimit-reset-after') &&
-				!this.ratelimits.get(route)!.resetAfter &&
-				Number(resp.headers.get('x-ratelimit-limit')) === Number(resp.headers.get('x-ratelimit-remaining')) + 1
-			) {
-				this.ratelimits.get(route)!.resetAfter = +resp.headers.get('x-ratelimit-reset-after')! * 1000;
+			if (typeof limit === 'number' && typeof remaining === 'number' && !bucket.resetAfter && limit === remaining + 1) {
+				const resetAfter = parseRateLimitDelay(resp.headers.get('x-ratelimit-reset-after'));
+				if (resetAfter !== undefined && resetAfter <= MAX_SMART_BUCKET_RESET_AFTER_MS) {
+					bucket.resetAfter = resetAfter;
+				}
 			}
 
-			if (this.ratelimits.get(route)!.resetAfter && !this.ratelimits.get(route)!.remaining) {
-				this.ratelimits.get(route)!.triggerResetAfter();
+			if (bucket.resetAfter && !bucket.remaining) {
+				bucket.triggerResetAfter();
 			}
 		}
 	}
