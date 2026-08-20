@@ -1,7 +1,13 @@
 import { randomUUID, type UUID } from 'node:crypto';
 import type { UsingClient } from '../commands';
 import { type Awaitable, type CamelCase, ReplaceRegex } from '../common';
-import type { CallbackEventHandler, ClientNameEvents, CustomEventsKeys, GatewayEvents } from '../events';
+import type {
+	CallbackEventHandler,
+	ClientNameEvents,
+	CustomEventsKeys,
+	GatewayEvents,
+	ResolveEventRunParams,
+} from '../events';
 import { resolveRawEventData } from '../events/utils';
 
 export type AllClientEvents = CustomEventsKeys | ClientNameEvents;
@@ -94,14 +100,19 @@ export class Collectors {
 	/**@internal */
 	async run<T extends ClientDispatchEvent>(
 		name: T,
-		raw: Awaited<Parameters<CallbackEventHandler[ParseClientEventName<T>]>[0]>,
+		raw: T extends CustomEventsKeys
+			? ResolveEventRunParams<T>
+			: Awaited<Parameters<CallbackEventHandler[ParseClientEventName<T>]>[0]>,
 		client: UsingClient,
 	) {
 		const event = normalizeCollectorEventName(name);
 		const collectors = this.values.get(event);
 		if (!collectors) return;
 
-		const data = (await resolveRawEventData(name, client, raw)) ?? raw;
+		const resolved = (await resolveRawEventData(name, client, raw)) ?? raw;
+		// Custom events are dispatched as a rest tuple; collectors receive the first argument,
+		// matching CollectorRunParameters. Gateway/raw events pass a single payload object.
+		const data = Array.isArray(resolved) ? resolved[0] : resolved;
 
 		for (const i of [...collectors]) {
 			if (await i.options.filter(data as never)) {

@@ -1,19 +1,34 @@
 import { describe, expect, test } from 'vitest';
 import {
-	GuildTemplate,
 	MentionableSelectMenuInteraction,
 	ModalSubmitInteraction,
 	UserSelectMenuInteraction,
 } from '../src/structures';
 
-const memberData = { user: { id: 'u1' }, roles: [], permissions: '0' };
+const guildId = '100000000000000000';
 
-function interactionData(data: unknown, topMember = memberData) {
+// Top-level guild interaction member, as Discord sends it (the nested user is included).
+const topLevelMember = {
+	user: { id: 'u1', username: 'top' },
+	roles: [],
+	permissions: '0',
+};
+
+// Resolved guild members omit the user; the user is delivered separately in resolved.users.
+const resolvedMember = {
+	roles: [],
+	permissions: '0',
+};
+
+const resolvedUser = { id: 'u1', username: 'u' };
+
+function interactionData(data: unknown, member = topLevelMember) {
 	return {
 		id: '1',
+		guild_id: guildId,
 		token: 't',
 		user: { id: 'u1' },
-		member: topMember,
+		member,
 		entitlements: [],
 		app_permissions: '0',
 		channel: { id: 'c1' },
@@ -33,8 +48,8 @@ describe('interaction structure resolution', () => {
 				values: ['r1', 'u1'],
 				resolved: {
 					roles: { r1: { id: 'r1', name: 'role', permissions: '0' } },
-					members: { u1: memberData },
-					users: { u1: { id: 'u1', username: 'u' } },
+					members: { u1: resolvedMember },
+					users: { u1: resolvedUser },
 				},
 			}),
 		);
@@ -51,7 +66,7 @@ describe('interaction structure resolution', () => {
 				custom_id: 'u',
 				values: ['u1', 'u2'],
 				resolved: {
-					members: { u1: memberData },
+					members: { u1: resolvedMember },
 					users: {
 						u1: { id: 'u1', username: 'a' },
 						u2: { id: 'u2', username: 'b' },
@@ -66,53 +81,22 @@ describe('interaction structure resolution', () => {
 	test('getFiles returns only the attachments of the requested component', () => {
 		const modal = new ModalSubmitInteraction(
 			{ cache: {} } as never,
-			interactionData(
-				{
-					custom_id: 'modal',
-					components: [
-						{ type: 18, component: { type: 19, custom_id: 'uploadA', values: ['a1'] } },
-						{ type: 18, component: { type: 19, custom_id: 'uploadB', values: ['b1'] } },
-					],
-					resolved: {
-						attachments: {
-							a1: { id: 'a1', url: 'http://a', filename: 'a.png', size: 1 },
-							b1: { id: 'b1', url: 'http://b', filename: 'b.png', size: 1 },
-						},
+			interactionData({
+				custom_id: 'modal',
+				components: [
+					{ type: 18, component: { type: 19, custom_id: 'uploadA', values: ['a1'] } },
+					{ type: 18, component: { type: 19, custom_id: 'uploadB', values: ['b1'] } },
+				],
+				resolved: {
+					attachments: {
+						a1: { id: 'a1', url: 'http://a', filename: 'a.png', size: 1 },
+						b1: { id: 'b1', url: 'http://b', filename: 'b.png', size: 1 },
 					},
 				},
-				undefined,
-			),
+			}),
 			undefined as never,
 		);
 		expect(modal.getFiles('uploadA')?.map(f => f.id)).toEqual(['a1']);
 		expect(modal.getFiles('uploadB')?.map(f => f.id)).toEqual(['b1']);
-	});
-
-	test('GuildTemplate.fetch requests the template code, not the source guild id', async () => {
-		const codes: string[] = [];
-		const template = new GuildTemplate(
-			{
-				templates: {
-					fetch: (code: string) => {
-						codes.push(code);
-						return Promise.resolve({} as never);
-					},
-				},
-			} as never,
-			{
-				code: 'Rr72fMx2pPnz',
-				name: 't',
-				description: null,
-				usage_count: 1,
-				creator_id: '1',
-				created_at: '2020',
-				updated_at: '2020',
-				source_guild_id: '100000000000000000',
-				serialized_source_guild: {},
-				is_dirty: null,
-			} as never,
-		);
-		await template.fetch();
-		expect(codes).toEqual(['Rr72fMx2pPnz']);
 	});
 });

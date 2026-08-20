@@ -102,13 +102,13 @@ export class CustomEventHandler extends BaseHandler implements CustomEventRunner
 		const Event = this.values[name];
 		try {
 			if ((!Event || (Event.data.once && Event.fired)) && !listeners.length && !anyListeners.length) {
-				await this.runCollectors(name, args[0]);
+				await this.runCollectors(name, args);
 				return;
 			}
 			this.client.debugger?.debug(`executed a custom event [${name}]`, Event?.data.once ? 'once' : '');
 
 			const tasks: Promise<unknown>[] = [];
-			const collectors = this.runCollectors(name, args[0]);
+			const collectors = this.runCollectors(name, args);
 			if (collectors) tasks.push(Promise.resolve(collectors));
 			if (Event && !(Event.data.once && Event.fired)) {
 				if (Event.data.once) {

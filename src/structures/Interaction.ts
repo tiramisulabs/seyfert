@@ -1050,11 +1050,11 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 	getFiles(customId: string, required: true): Attachment[];
 	getFiles(customId: string, required?: false): Attachment[] | undefined;
 	getFiles(customId: string, required?: boolean): Attachment[] | undefined {
-		const value = this.getComponent(customId, [ComponentType.FileUpload]);
-		if (value && 'values' in value) {
+		const component = this.getComponent(customId, [ComponentType.FileUpload]);
+		if (component && 'values' in component) {
 			const attachments = this.data.resolved?.attachments;
 			if (attachments) {
-				return value.values
+				return component.values
 					.map(x => attachments[x])
 					.filter((x): x is (typeof attachments)[string] => !!x)
 					.map(x => new Attachment(this.client, { ...x, proxy_url: x.url }));
