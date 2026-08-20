@@ -419,4 +419,47 @@ describe('Discord REST rate limits', () => {
 		expect(next).toHaveBeenCalledOnce();
 		expect(reject).toHaveBeenCalledWith(expect.objectContaining({ code: 'INVALID_RETRY_AFTER' }));
 	});
+
+	test('does not disable throttling when rate-limit headers are malformed', () => {
+		const api = createApi();
+		const route = 'GET:/channels/100000000000000001/messages';
+		const bucket = new Bucket(1);
+		bucket.remaining = 0;
+		api.ratelimits.set(route, bucket);
+
+		api.setRatelimitsBucket(
+			route,
+			new Response('{}', {
+				headers: {
+					'x-ratelimit-limit': 'not-a-number',
+					'x-ratelimit-remaining': 'not-a-number',
+					'x-ratelimit-reset-after': 'not-a-number',
+				},
+			}),
+		);
+
+		expect(bucket.limit).toBe(1);
+		expect(bucket.remaining).toBe(0);
+		expect(bucket.resetAfter).toBe(0);
+	});
+
+	test('caps an invalid remaining value above the advertised limit', () => {
+		const api = createApi();
+		const route = 'GET:/channels/100000000000000001/messages';
+		const bucket = new Bucket(1);
+		api.ratelimits.set(route, bucket);
+
+		api.setRatelimitsBucket(
+			route,
+			new Response('{}', {
+				headers: {
+					'x-ratelimit-limit': '2',
+					'x-ratelimit-remaining': '99',
+				},
+			}),
+		);
+
+		expect(bucket.limit).toBe(2);
+		expect(bucket.remaining).toBe(2);
+	});
 });

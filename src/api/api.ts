@@ -699,24 +699,35 @@ export class ApiHandler<TClient = unknown> {
 	}
 
 	setRatelimitsBucket(route: string, resp: Response) {
-		if (resp.headers.has('x-ratelimit-limit')) {
-			this.ratelimits.get(route)!.limit = +resp.headers.get('x-ratelimit-limit')!;
+		const bucket = this.ratelimits.get(route)!;
+		const rawLimit = resp.headers.get('x-ratelimit-limit');
+		const limit = rawLimit === null ? undefined : Number(rawLimit);
+		if (limit !== undefined && Number.isFinite(limit) && limit > 0) {
+			bucket.limit = limit;
 		}
 
 		const raw = resp.headers.get('x-ratelimit-remaining');
-		this.ratelimits.get(route)!.remaining = raw != null ? +raw : 1;
+		if (raw === null) {
+			bucket.remaining = 1;
+		} else {
+			const remaining = Number(raw);
+			if (Number.isFinite(remaining) && remaining >= 0) {
+				bucket.remaining = Math.min(remaining, bucket.limit);
+			}
+		}
 
 		if (this.options.smartBucket) {
 			if (
 				resp.headers.has('x-ratelimit-reset-after') &&
-				!this.ratelimits.get(route)!.resetAfter &&
+				!bucket.resetAfter &&
 				Number(resp.headers.get('x-ratelimit-limit')) === Number(resp.headers.get('x-ratelimit-remaining')) + 1
 			) {
-				this.ratelimits.get(route)!.resetAfter = +resp.headers.get('x-ratelimit-reset-after')! * 1000;
+				const resetAfter = Number(resp.headers.get('x-ratelimit-reset-after'));
+				if (Number.isFinite(resetAfter) && resetAfter >= 0) bucket.resetAfter = resetAfter * 1000;
 			}
 
-			if (this.ratelimits.get(route)!.resetAfter && !this.ratelimits.get(route)!.remaining) {
-				this.ratelimits.get(route)!.triggerResetAfter();
+			if (bucket.resetAfter && !bucket.remaining) {
+				bucket.triggerResetAfter();
 			}
 		}
 	}
@@ -828,7 +839,7 @@ export type RestArguments<
 	| {
 			body: B;
 			files?: F;
-	  }
+		}
 	| (Q extends never | undefined
 			? {}
 			: {
