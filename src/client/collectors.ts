@@ -14,9 +14,9 @@ export type AllClientEvents = CustomEventsKeys | ClientNameEvents;
 type ClientDispatchEvent = AllClientEvents | GatewayEvents;
 export type ParseClientEventName<T extends ClientDispatchEvent> = T extends GatewayEvents ? CamelCase<T> : T;
 
-export type CollectorRunParameters<T extends AllClientEvents> = Awaited<
-	Parameters<CallbackEventHandler[ParseClientEventName<T>]>[0]
->;
+export type CollectorRunParameters<T extends AllClientEvents> = T extends CustomEventsKeys
+	? ResolveEventRunParams<T>
+	: Awaited<Parameters<CallbackEventHandler[ParseClientEventName<T>]>[0]>;
 
 type RunData<T extends AllClientEvents> = {
 	options: {
@@ -109,10 +109,7 @@ export class Collectors {
 		const collectors = this.values.get(event);
 		if (!collectors) return;
 
-		const resolved = (await resolveRawEventData(name, client, raw)) ?? raw;
-		// Custom events are dispatched as a rest tuple; collectors receive the first argument,
-		// matching CollectorRunParameters. Gateway/raw events pass a single payload object.
-		const data = Array.isArray(resolved) ? resolved[0] : resolved;
+		const data = (await resolveRawEventData(name, client, raw)) ?? raw;
 
 		for (const i of [...collectors]) {
 			if (await i.options.filter(data as never)) {

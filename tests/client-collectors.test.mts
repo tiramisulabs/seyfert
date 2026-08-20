@@ -34,7 +34,7 @@ describe('client collectors', () => {
 		expect(collectors.values.has('RAW' as never)).toBe(false);
 	});
 
-	test('passes the first argument to custom-event collectors', async () => {
+	test('passes custom-event arguments as a tuple', async () => {
 		const client = new Client({ getRC: async () => ({ locations: {} }), plugins: [] } as never);
 		const seen: unknown[] = [];
 		client.collectors.create({
@@ -52,7 +52,27 @@ describe('client collectors', () => {
 			plugin: { total: 0, sources: {} },
 		});
 		expect(seen).toEqual([
-			{ kind: 'commands', total: 0, items: [], plugin: { total: 0, sources: {} } },
+			[{ kind: 'commands', total: 0, items: [], plugin: { total: 0, sources: {} } }],
 		]);
+	});
+
+	test('preserves tuple payloads from gateway event transformers', async () => {
+		const collectors = new Collectors();
+		const oldUser = { id: 'u1' };
+		const seen: unknown[] = [];
+		collectors.create({
+			event: 'userUpdate',
+			filter(value) {
+				seen.push(value);
+				return true;
+			},
+			run: () => {},
+		});
+		await collectors.run(
+			'USER_UPDATE',
+			{ id: 'u1', username: 'updated', discriminator: '0', avatar: null } as never,
+			{ cache: { users: { get: async () => oldUser } } } as never,
+		);
+		expect(seen).toEqual([[expect.objectContaining({ id: 'u1', username: 'updated' }), oldUser]]);
 	});
 });

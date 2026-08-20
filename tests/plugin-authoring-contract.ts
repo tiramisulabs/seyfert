@@ -1397,6 +1397,12 @@ collectorClient.collectors.create({
 const exportedCollectorsContract = new Collectors();
 expectType<Collectors>(exportedCollectorsContract);
 expectType<MessageStructure>(undefined as never as CollectorRunParameters<'messageCreate'>);
+expectType<CollectorRunParameters<'commandsLoaded'>>(
+	undefined as never as [CommandsLoadedCallbackParams[0]],
+);
+expectType<[CommandsLoadedCallbackParams[0]]>(
+	undefined as never as CollectorRunParameters<'commandsLoaded'>,
+);
 // @ts-expect-error collector run parameters are keyed by camelCase event names.
 type ScreamingCollectorRunParameters = CollectorRunParameters<'MESSAGE_CREATE'>;
 // @ts-expect-error typo alias is intentionally not exported.

@@ -27,7 +27,6 @@ function interactionData(data: unknown, member = topLevelMember) {
 		id: '1',
 		guild_id: guildId,
 		token: 't',
-		user: { id: 'u1' },
 		member,
 		entitlements: [],
 		app_permissions: '0',
