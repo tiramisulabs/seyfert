@@ -776,20 +776,17 @@ export class MentionableSelectMenuInteraction extends SelectMenuInteraction {
 	) {
 		super(client, interaction);
 		const resolved = (interaction.data as APIMessageMentionableSelectInteractionData).resolved;
-		this.roles = resolved.roles
-			? this.values.map(x => Transformers.GuildRole(this.client, resolved.roles![x], this.guildId!))
-			: [];
-		this.members = resolved.members
-			? this.values.map(x =>
-					Transformers.InteractionGuildMember(
-						this.client,
-						resolved.members![x],
-						resolved.users![this.values!.find(u => u === x)!]!,
-						this.guildId!,
-					),
-				)
-			: [];
-		this.users = resolved.users ? this.values.map(x => Transformers.User(this.client, resolved.users![x])) : [];
+		this.roles = this.values
+			.filter(x => resolved.roles?.[x])
+			.map(x => Transformers.GuildRole(this.client, resolved.roles![x]!, this.guildId!));
+		this.members = this.values
+			.filter(x => resolved.members?.[x])
+			.map(x =>
+				Transformers.InteractionGuildMember(this.client, resolved.members![x]!, resolved.users![x]!, this.guildId!),
+			);
+		this.users = this.values
+			.filter(x => resolved.users?.[x])
+			.map(x => Transformers.User(this.client, resolved.users![x]!));
 	}
 
 	isMentionableSelectMenu(): this is MentionableSelectMenuInteraction {
@@ -827,16 +824,11 @@ export class UserSelectMenuInteraction extends SelectMenuInteraction {
 		super(client, interaction);
 		const resolved = (interaction.data as APIMessageUserSelectInteractionData).resolved;
 		this.users = this.values.map(x => Transformers.User(this.client, resolved.users[x]));
-		this.members = resolved.members
-			? this.values.map(x =>
-					Transformers.InteractionGuildMember(
-						this.client,
-						resolved.members![x],
-						resolved.users[this.values!.find(u => u === x)!]!,
-						this.guildId!,
-					),
-				)
-			: [];
+		this.members = this.values
+			.filter(x => resolved.members?.[x])
+			.map(x =>
+				Transformers.InteractionGuildMember(this.client, resolved.members![x]!, resolved.users[x]!, this.guildId!),
+			);
 	}
 
 	isUserSelectMenu(): this is UserSelectMenuInteraction {
@@ -1058,17 +1050,14 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 	getFiles(customId: string, required: true): Attachment[];
 	getFiles(customId: string, required?: false): Attachment[] | undefined;
 	getFiles(customId: string, required?: boolean): Attachment[] | undefined {
-		const value = this.getComponent(customId, [ComponentType.FileUpload]);
-		if (value) {
+		const component = this.getComponent(customId, [ComponentType.FileUpload]);
+		if (component && 'values' in component) {
 			const attachments = this.data.resolved?.attachments;
 			if (attachments) {
-				return Object.values(attachments).map(
-					x =>
-						new Attachment(this.client, {
-							...x,
-							proxy_url: x.url,
-						}),
-				);
+				return component.values
+					.map(x => attachments[x])
+					.filter((x): x is (typeof attachments)[string] => !!x)
+					.map(x => new Attachment(this.client, { ...x, proxy_url: x.url }));
 			}
 			if (required)
 				throw new SeyfertError('INTERNAL_ERROR', {

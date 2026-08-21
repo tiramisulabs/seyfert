@@ -28,7 +28,7 @@ export class GuildTemplate extends Base {
 	}
 
 	fetch(): Promise<GuildTemplateStructure> {
-		return this.client.templates.fetch(this.sourceGuildId);
+		return this.client.templates.fetch(this.code);
 	}
 
 	sync(): Promise<GuildTemplateStructure> {
