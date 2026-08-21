@@ -723,9 +723,8 @@ export class Shard {
 			this.options.ratelimitOptions.maxRequestsPerRateLimitTick -
 			Math.ceil(this.options.ratelimitOptions.rateLimitResetInterval / this.heart.interval) * 2;
 
-		if (safeRequests < 0) {
-			return 0;
-		}
-		return safeRequests;
+		// A shard must retain capacity for at least one gateway request. A zero
+		// capacity bucket leaves every send promise queued indefinitely.
+		return Math.max(safeRequests, 1);
 	}
 }

@@ -14,6 +14,26 @@ afterEach(() => {
 });
 
 describe('gateway reconnect stability', () => {
+	test('keeps the gateway request bucket usable when the safe budget is exhausted', async () => {
+		const shard = new Shard(
+			0,
+			{
+				token: 'token',
+				intents: 0,
+				info: gatewayInfo(),
+				handlePayload: vi.fn(),
+				ratelimitOptions: {
+					maxRequestsPerRateLimitTick: 1,
+					rateLimitResetInterval: 60_000,
+				},
+			} as unknown as ShardOptions,
+		);
+
+		await expect(shard.bucket.acquire()).resolves.toBeUndefined();
+		expect(shard.bucket.options.limit).toBe(1);
+		shard.bucket.refill();
+	});
+
 	test('disconnect closes sockets that are still handshaking', () => {
 		const shard = new Shard(0, {
 			token: 'token',
