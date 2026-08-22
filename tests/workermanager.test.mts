@@ -1,8 +1,59 @@
+import { resolve } from 'node:path';
+import type { Worker } from 'node:worker_threads';
 import { describe, expect, test } from 'vitest';
 import { WorkerClient } from '../lib/client/workerclient';
 import { WorkerManager } from '../lib/websocket/discord/workermanager';
 
 describe('WorkerManager', () => {
+	test('thread workers inherit parent environment variables', async () => {
+		const previousValue = process.env.SEYFERT_WORKER_ENV_TEST;
+		let worker: Worker | undefined;
+
+		try {
+			process.env.SEYFERT_WORKER_ENV_TEST = 'available';
+			const path = resolve('tests/fixtures/workermanager-env.mjs');
+			const info = gatewayInfo();
+			const manager = new WorkerManager({ mode: 'threads', path, token: 'token', intents: 0, info });
+			let resolveMessage!: (message: unknown) => void;
+			let rejectMessage!: (error: Error) => void;
+			const message = new Promise<unknown>((resolve, reject) => {
+				resolveMessage = resolve;
+				rejectMessage = reject;
+			});
+			manager.handleWorkerMessage = async workerMessage => {
+				resolveMessage(workerMessage);
+			};
+			worker = manager.createWorker({
+				intents: 0,
+				token: 'token',
+				path,
+				shards: [0],
+				totalShards: 1,
+				totalWorkers: 1,
+				mode: 'threads',
+				workerId: 0,
+				debug: false,
+				workerProxy: false,
+				info,
+				compress: false,
+				resharding: false,
+			}) as Worker;
+			worker.once('error', rejectMessage);
+			worker.once('exit', code =>
+				rejectMessage(new Error(`Worker exited with code ${code} before reporting its environment.`)),
+			);
+
+			await expect(message).resolves.toEqual({
+				inherited: 'available',
+				spawning: 'true',
+			});
+		} finally {
+			await worker?.terminate();
+			if (previousValue === undefined) delete process.env.SEYFERT_WORKER_ENV_TEST;
+			else process.env.SEYFERT_WORKER_ENV_TEST = previousValue;
+		}
+	});
+
 	test('calculateWorkerId reports the effective shard range', () => {
 		const manager = createWorkerManager({
 			shardStart: 2,
@@ -69,6 +120,19 @@ describe('WorkerManager', () => {
 		expect([...new Uint8Array(await response)]).toEqual([...bytes]);
 	});
 });
+
+function gatewayInfo() {
+	return {
+		shards: 1,
+		url: 'wss://gateway.discord.gg',
+		session_start_limit: {
+			total: 1,
+			remaining: 1,
+			reset_after: 0,
+			max_concurrency: 1,
+		},
+	};
+}
 
 function createWorkerManager(options: {
 	shardStart: number;

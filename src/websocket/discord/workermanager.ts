@@ -269,7 +269,7 @@ export class WorkerManager extends Map<
 		switch (this.options.mode) {
 			case 'threads': {
 				const worker = new worker_threads.Worker(workerData.path, {
-					env,
+					env: { ...process.env, ...env },
 				});
 				worker.on('message', data => this.handleWorkerMessage(data));
 				worker.on('error', err => {
