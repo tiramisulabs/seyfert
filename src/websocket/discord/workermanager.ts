@@ -259,6 +259,7 @@ export class WorkerManager extends Map<
 				metadata: { detail: 'Cannot create worker without worker_threads.' },
 			});
 		const env: Record<string, any> = {
+			...process.env,
 			SEYFERT_SPAWNING: 'true',
 		};
 		if (workerData.resharding) env.SEYFERT_WORKER_RESHARDING = 'true';
