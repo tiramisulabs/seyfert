@@ -25,8 +25,8 @@ type WorkerManagerConstructorOptions = WorkerManagerOptions extends infer Option
 
 type WorkerManagerNativeOptions = Exclude<WorkerManagerOptions, { mode: 'custom' }>;
 type WorkerManagerCustomOptions = Extract<WorkerManagerOptions, { mode: 'custom' }>;
-type WorkerManagerRuntimeOptionalKeys = 'adapter' | 'handleWorkerMessage' | 'handlePayload' | 'getRC';
-type WorkerManagerCustomRuntimeOptionalKeys = 'handleWorkerMessage' | 'handlePayload' | 'getRC';
+type WorkerManagerRuntimeOptionalKeys = 'adapter' | 'handleWorkerMessage' | 'handlePayload' | 'getRC' | 'workerEnv';
+type WorkerManagerCustomRuntimeOptionalKeys = 'handleWorkerMessage' | 'handlePayload' | 'getRC' | 'workerEnv';
 type WorkerManagerRuntimeOptions =
 	| PickPartial<Required<WorkerManagerNativeOptions>, WorkerManagerRuntimeOptionalKeys>
 	| (PickPartial<Required<Omit<WorkerManagerCustomOptions, 'path'>>, WorkerManagerCustomRuntimeOptionalKeys> & {
@@ -259,6 +259,7 @@ export class WorkerManager extends Map<
 				metadata: { detail: 'Cannot create worker without worker_threads.' },
 			});
 		const env: Record<string, any> = {
+			...this.options.workerEnv,
 			SEYFERT_SPAWNING: 'true',
 		};
 		if (workerData.resharding) env.SEYFERT_WORKER_RESHARDING = 'true';
@@ -269,7 +270,7 @@ export class WorkerManager extends Map<
 		switch (this.options.mode) {
 			case 'threads': {
 				const worker = new worker_threads.Worker(workerData.path, {
-					env,
+					env: { ...process.env, ...env },
 				});
 				worker.on('message', data => this.handleWorkerMessage(data));
 				worker.on('error', err => {

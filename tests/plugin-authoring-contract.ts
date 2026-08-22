@@ -824,6 +824,9 @@ const customWorkerManagerOptions = {
 expectType<WorkerManagerOptions>(customWorkerManagerOptions);
 new WorkerManager(customWorkerManagerOptions);
 
+type CustomWorkerManagerRuntimeOptions = Extract<WorkerManager['options'], { mode: 'custom' }>;
+expectType<CustomWorkerManagerRuntimeOptions['workerEnv']>(undefined);
+
 const customWorkerManagerOptionsWithPath = {
 	mode: 'custom',
 	path: 'worker.js',
@@ -844,9 +847,15 @@ const threadedWorkerManagerOptions = {
 	token: 'token',
 	intents: GatewayIntentBits.Guilds,
 	info: workerManagerInfo,
+	workerEnv: {
+		DATABASE_URL: 'postgres://localhost/seyfert',
+	},
 } satisfies WorkerManagerOptions;
 expectType<WorkerManagerOptions>(threadedWorkerManagerOptions);
 new WorkerManager(threadedWorkerManagerOptions);
+
+type NativeWorkerManagerRuntimeOptions = Exclude<WorkerManager['options'], { mode: 'custom' }>;
+expectType<NativeWorkerManagerRuntimeOptions['workerEnv']>(undefined);
 
 const defaultThreadedWorkerManagerOptions = {
 	path: 'worker.js',
@@ -863,9 +872,24 @@ const clusteredWorkerManagerOptions = {
 	token: 'token',
 	intents: GatewayIntentBits.Guilds,
 	info: workerManagerInfo,
+	workerEnv: {
+		DATABASE_URL: 'postgres://localhost/seyfert',
+	},
 } satisfies WorkerManagerOptions;
 expectType<WorkerManagerOptions>(clusteredWorkerManagerOptions);
 new WorkerManager(clusteredWorkerManagerOptions);
+
+expectType<WorkerManagerOptions>({
+	mode: 'threads',
+	path: 'worker.js',
+	token: 'token',
+	intents: GatewayIntentBits.Guilds,
+	info: workerManagerInfo,
+	workerEnv: {
+		// @ts-expect-error Worker environment values must be strings.
+		PORT: 3000,
+	},
+});
 
 // @ts-expect-error custom worker mode requires an adapter.
 expectType<WorkerManagerOptions>({
