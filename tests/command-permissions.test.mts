@@ -1,159 +1,159 @@
-import { assert, describe, test, vi } from 'vitest';
-import { Client } from '../lib/client/client';
-import { Command, ContextMenuCommand, EntryPointCommand } from '../lib/commands';
+import { apiUser, createMockBot, mockWorld, rendered } from '@slipher/testing';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
+import {
+	ApplicationCommandType,
+	Command,
+	type CommandContext,
+	ContextMenuCommand,
+	Declare,
+	EntryPointCommand,
+	type EntryPointContext,
+	EntryPointCommandHandlerType,
+	type MenuCommandContext,
+	type UserCommandInteraction,
+} from '../lib';
 import { HandleCommand } from '../lib/commands/handle';
 import { PermissionsBitField } from '../lib/structures/extra/Permissions';
-import { InteractionContextType } from '../lib/types';
 
-function createRuntimeConfig() {
-	return {
-		locations: { base: '' },
-		token: Buffer.from('bot').toString('base64'),
-		intents: 0,
-	};
-}
+const developer = apiUser({ id: 'developer' });
+const restrictedRun = vi.fn();
+const memberPermissionsFail = vi.fn();
 
-function createClient() {
-	return new Client({
-		getRC: createRuntimeConfig,
-		commands: { prefix: async () => ['!'] },
+function createPermissionWorld() {
+	const world = mockWorld();
+	const guild = world.registerGuild({
+		id: 'guild',
+		ownerId: 'owner',
+		everyonePermissions: [],
 	});
-}
-
-function createRestrictedCommand<T extends Command>(command: T) {
-	command.name = 'restricted';
-	command.description = 'Restricted command';
-	command.contexts = [InteractionContextType.Guild];
-	command.integrationTypes = [];
-	command.defaultMemberPermissions = PermissionsBitField.resolve(['ManageGuild']);
-	command.options = [];
-	return command;
-}
-
-function createMessage(authorId = 'user') {
-	return {
-		attachments: [],
-		author: { avatar: null, discriminator: '0', id: authorId, username: 'User' },
-		channel_id: 'channel',
-		components: [],
-		content: '!restricted',
-		edited_timestamp: null,
-		embeds: [],
-		guild_id: 'guild',
-		id: 'message',
-		mention_everyone: false,
-		mention_roles: [],
-		mentions: [],
-		pinned: false,
-		timestamp: new Date(0).toISOString(),
-		tts: false,
-		type: 0,
-	};
-}
-
-function createInteractionContext(client: Client, command: unknown, authorId = 'user') {
-	return {
-		author: { id: authorId },
-		client,
-		command,
-		globalMetadata: {},
-		guildId: 'guild',
-		metadata: {},
-	} as never;
+	const channel = guild.registerChannel({ id: 'channel' });
+	const member = guild.registerMember({ roles: [], user: developer });
+	guild.registerBotMember({ roles: [] });
+	return { channel, guild, member, world };
 }
 
 describe('command permissions', () => {
-	test('preserves declared permissions in application command payloads', () => {
-		const client = createClient();
-		const command = createRestrictedCommand(new Command());
-		client.commands.set([command]);
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
 
-		assert.equal(command.defaultMemberPermissions, PermissionsBitField.resolve(['ManageGuild']));
-		assert.equal(command.toJSON().default_member_permissions, PermissionsBitField.resolve(['ManageGuild']).toString());
+	test('preserves declared permissions in application command payloads', () => {
+		const command = new RestrictedCommand();
+
+		expect(command.defaultMemberPermissions).toBe(PermissionsBitField.resolve(['ManageGuild']));
+		expect(command.toJSON().default_member_permissions).toBe(
+			PermissionsBitField.resolve(['ManageGuild']).toString(),
+		);
 	});
 
 	test('checks declared permissions for slash and prefix commands by default', async () => {
-		const client = createClient();
-		const command = createRestrictedCommand(new Command());
-		const run = vi.fn();
-		const onPermissionsFail = vi.fn();
-		command.run = run;
-		command.onPermissionsFail = onPermissionsFail;
-		client.commands.set([command]);
-		vi.spyOn(client.members, 'permissions').mockResolvedValue(new PermissionsBitField());
-		vi.spyOn(client.guilds, 'raw').mockResolvedValue({ owner_id: 'owner' } as never);
-		const handle = new HandleCommand(client as never);
+		const { channel, guild, member, world } = createPermissionWorld();
+		await using bot = await createMockBot({ commands: [RestrictedCommand], prefixes: ['!'], world });
 
-		await handle.chatInput(
-			command,
-			{ member: { permissions: new PermissionsBitField() } } as never,
-			{} as never,
-			createInteractionContext(client, command),
-		);
-		await handle.message(createMessage() as never, 0);
+		const slash = await bot.slash({
+			name: 'restricted',
+			channel,
+			guildId: guild.id,
+			memberPermissions: [],
+			user: member.user,
+		});
+		await bot.say('!restricted', { channel, guildId: guild.id, user: member.user });
 
-		assert.equal(run.mock.calls.length, 0);
-		assert.equal(onPermissionsFail.mock.calls.length, 2);
-		assert.deepEqual(onPermissionsFail.mock.calls[0]?.[1], ['ManageGuild']);
-		assert.deepEqual(onPermissionsFail.mock.calls[1]?.[1], ['ManageGuild']);
+		rendered(slash).get.denial({ kind: 'permissions', missing: 'ManageGuild' });
+		expect(memberPermissionsFail).toHaveBeenCalledTimes(2);
+		expect(memberPermissionsFail.mock.calls.map(([, permissions]) => permissions)).toEqual([
+			['ManageGuild'],
+			['ManageGuild'],
+		]);
+		expect(restrictedRun).not.toHaveBeenCalled();
 	});
 
 	test('lets custom command handlers override member and bot permission checks', async () => {
-		const client = createClient();
-		const command = createRestrictedCommand(new Command());
-		command.botPermissions = PermissionsBitField.resolve(['SendMessages']);
-		const run = vi.fn();
-		const menuRun = vi.fn();
-		const entryPointRun = vi.fn();
-		command.run = run;
-		client.commands.set([command]);
-		vi.spyOn(client.members, 'permissions').mockResolvedValue(new PermissionsBitField());
-		vi.spyOn(client.guilds, 'raw').mockResolvedValue({ owner_id: 'owner' } as never);
-		const handle = new DeveloperHandleCommand(client as never);
+		const { channel, guild, member, world } = createPermissionWorld();
+		await using bot = await createMockBot({
+			commands: [RestrictedCommand, RestrictedMenuCommand, RestrictedEntryPointCommand],
+			prefixes: ['!'],
+			world,
+		});
+		bot.client.setServices({ handleCommand: DeveloperHandleCommand });
+		const handle = bot.client.handleCommand as DeveloperHandleCommand;
+		const interaction = {
+			channel,
+			guildId: guild.id,
+			permissions: [],
+			user: member.user,
+		};
 
-		await handle.chatInput(
-			command,
-			{ appPermissions: new PermissionsBitField(), member: { permissions: new PermissionsBitField() } } as never,
-			{} as never,
-			createInteractionContext(client, command, 'developer'),
-		);
-		await handle.message(createMessage('developer') as never, 0);
+		const slash = await bot.slash({ name: 'restricted', memberPermissions: [], ...interaction });
+		const prefix = await bot.say('!restricted', { channel, guildId: guild.id, user: member.user });
+		const menu = await bot.userMenu({ name: 'Restricted menu', target: developer, ...interaction });
+		const entryPoint = await bot.entryPoint({ name: 'restricted-entry-point', ...interaction });
 
-		const menu = new TestContextMenuCommand();
-		menu.name = 'Restricted menu';
-		menu.botPermissions = PermissionsBitField.resolve(['SendMessages']);
-		menu.run = menuRun;
-		await handle.contextMenu(
-			menu,
-			{ appPermissions: new PermissionsBitField() } as never,
-			createInteractionContext(client, menu, 'developer'),
-		);
-
-		const entryPoint = new TestEntryPointCommand();
-		entryPoint.name = 'restricted-entry-point';
-		entryPoint.botPermissions = PermissionsBitField.resolve(['SendMessages']);
-		entryPoint.run = entryPointRun;
-		await handle.entryPoint(
-			entryPoint,
-			{ appPermissions: new PermissionsBitField() } as never,
-			createInteractionContext(client, entryPoint, 'developer'),
-		);
-
-		assert.equal(handle.checkedMemberAuthors.mock.calls.length, 2);
-		assert.deepEqual(
-			handle.checkedMemberAuthors.mock.calls.map(([authorId]) => authorId),
-			['developer', 'developer'],
-		);
-		assert.equal(handle.checkedBotAuthors.mock.calls.length, 4);
-		assert.deepEqual(
-			handle.checkedBotAuthors.mock.calls.map(([authorId]) => authorId),
-			['developer', 'developer', 'developer', 'developer'],
-		);
-		assert.equal(run.mock.calls.length, 2);
-		assert.equal(menuRun.mock.calls.length, 1);
-		assert.equal(entryPointRun.mock.calls.length, 1);
+		expect(handle.checkedMemberAuthors).toHaveBeenCalledTimes(2);
+		expect(handle.checkedMemberAuthors.mock.calls.map(([authorId]) => authorId)).toEqual([
+			'developer',
+			'developer',
+		]);
+		expect(handle.checkedBotAuthors).toHaveBeenCalledTimes(4);
+		expect(handle.checkedBotAuthors.mock.calls.map(([authorId]) => authorId)).toEqual([
+			'developer',
+			'developer',
+			'developer',
+			'developer',
+		]);
+		expect([slash.content, prefix.content, menu.content, entryPoint.content]).toEqual([
+			'restricted ran',
+			'restricted ran',
+			'menu ran',
+			'entry point ran',
+		]);
 	});
 });
+
+@Declare({
+	name: 'restricted',
+	description: 'Restricted command',
+	contexts: ['Guild'],
+	integrationTypes: [],
+	defaultMemberPermissions: ['ManageGuild'],
+	botPermissions: ['SendMessages'],
+})
+class RestrictedCommand extends Command {
+	run(context: CommandContext) {
+		restrictedRun();
+		return context.write({ content: 'restricted ran' });
+	}
+
+	onPermissionsFail(...args: Parameters<NonNullable<Command['onPermissionsFail']>>) {
+		memberPermissionsFail(...args);
+	}
+}
+
+@Declare({
+	name: 'Restricted menu',
+	type: ApplicationCommandType.User,
+	integrationTypes: [],
+	botPermissions: ['SendMessages'],
+})
+class RestrictedMenuCommand extends ContextMenuCommand {
+	run(context: MenuCommandContext<UserCommandInteraction>) {
+		return context.write({ content: 'menu ran' });
+	}
+}
+
+@Declare({
+	name: 'restricted-entry-point',
+	description: 'Restricted entry point',
+	type: ApplicationCommandType.PrimaryEntryPoint,
+	handler: EntryPointCommandHandlerType.AppHandler,
+	integrationTypes: [],
+	botPermissions: ['SendMessages'],
+})
+class RestrictedEntryPointCommand extends EntryPointCommand {
+	run(context: EntryPointContext) {
+		return context.write({ content: 'entry point ran' });
+	}
+}
 
 class DeveloperHandleCommand extends HandleCommand {
 	checkedMemberAuthors = vi.fn<(authorId: string) => void>();
@@ -161,21 +161,13 @@ class DeveloperHandleCommand extends HandleCommand {
 
 	override async checkMemberPermissions(...args: Parameters<HandleCommand['checkMemberPermissions']>) {
 		this.checkedMemberAuthors(args[1].author.id);
-		if (args[1].author.id === 'developer') return;
+		if (args[1].author.id === developer.id) return;
 		return super.checkMemberPermissions(...args);
 	}
 
 	override async checkBotPermissions(...args: Parameters<HandleCommand['checkBotPermissions']>) {
 		this.checkedBotAuthors(args[1].author.id);
-		if (args[1].author.id === 'developer') return;
+		if (args[1].author.id === developer.id) return;
 		return super.checkBotPermissions(...args);
 	}
-}
-
-class TestContextMenuCommand extends ContextMenuCommand {
-	run() {}
-}
-
-class TestEntryPointCommand extends EntryPointCommand {
-	run() {}
 }

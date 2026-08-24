@@ -33,6 +33,17 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@26.1.1)(vite@7.3.6(@types/node@26.1.1)(jiti@2.6.1)(yaml@2.8.0))
 
+  tests:
+    devDependencies:
+      '@slipher/testing':
+        specifier: https://pkg.pr.new/tiramisulabs/extra/@slipher/testing@4f85d93
+        version: https://pkg.pr.new/tiramisulabs/extra/@slipher/testing@4f85d93(seyfert@tests+local-seyfert)
+      seyfert:
+        specifier: workspace:*
+        version: link:local-seyfert
+
+  tests/local-seyfert: {}
+
 packages:
 
   '@babel/code-frame@7.29.7':
@@ -575,6 +586,12 @@ packages:
   '@simple-libs/stream-utils@2.0.0':
     resolution: {integrity: sha512-fCTuZK4QBa+39Oz9l4OGfJfz+GpwCp3AqO7Zch3to99xHPgstVsRFpeQ8LNd2o1Gv8raL2mCFwiaHh7bFSp5DQ==}
     engines: {node: '>=22'}
+
+  '@slipher/testing@https://pkg.pr.new/tiramisulabs/extra/@slipher/testing@4f85d93':
+    resolution: {integrity: sha512-IopH2hcOS7STyJvyRzDDJYBtuTofICBozPL6OgaFPeLnIn90AAO7UV3K5FPUBtG0w6e30HCn5FuVq0rgte44Wg==, tarball: https://pkg.pr.new/tiramisulabs/extra/@slipher/testing@4f85d93}
+    version: 1.0.0
+    peerDependencies:
+      seyfert: '>=5.0.0'
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
@@ -1768,6 +1785,10 @@ snapshots:
       '@simple-libs/stream-utils': 2.0.0
 
   '@simple-libs/stream-utils@2.0.0': {}
+
+  '@slipher/testing@https://pkg.pr.new/tiramisulabs/extra/@slipher/testing@4f85d93(seyfert@tests+local-seyfert)':
+    dependencies:
+      seyfert: link:tests/local-seyfert
 
   '@standard-schema/spec@1.1.0': {}
 

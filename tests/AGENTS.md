@@ -28,6 +28,14 @@ Compile-time contract files are real tests even though they do not use Vitest.
 `tests/tsconfig.json` maps `seyfert` to the freshly built `lib/index.d.ts`, so
 type verification checks the consumer-facing declaration surface.
 
+Runtime suites load `tests/setup.mts`, which resets `@slipher/testing` IDs
+before every test. Use its factories and mock bot for observable Discord-facing
+flows; keep focused Vitest units for internal algorithms that do not cross that
+boundary. The private workspace-linked `local-seyfert` package makes the
+toolkit's `seyfert` peer resolve to this checkout's freshly built `lib/` under
+pnpm, Bun, and Deno. Deno uses pnpm's installed graph in manual node-modules
+mode. Run the test matrix from the repository root.
+
 For a new regression:
 
 - prefer adding it to the owning file rather than creating a broad
@@ -77,7 +85,7 @@ bun run build
 bun --bun ./node_modules/vitest/vitest.mjs run --config ./tests/vitest.config.mts ./tests/
 
 # Deno
-HUSKY=0 deno install
+HUSKY=0 pnpm install --frozen-lockfile
 deno run -A npm:typescript/tsc --outDir ./lib
 deno run -A npm:vitest run --config ./tests/vitest.config.mts ./tests/
 ```

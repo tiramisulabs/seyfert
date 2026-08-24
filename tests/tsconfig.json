@@ -4,7 +4,8 @@
 		"noEmit": true,
 		"rootDir": "..",
 		"paths": {
-			"seyfert": ["../lib/index.d.ts"]
+			"seyfert": ["../lib/index.d.ts"],
+			"seyfert/*": ["../lib/*"]
 		}
 	},
 	"include": ["./**/*.ts", "./**/*.test.mts"]
