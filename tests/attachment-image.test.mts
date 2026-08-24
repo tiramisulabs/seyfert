@@ -1,3 +1,4 @@
+import { apiAttachment } from '@slipher/testing';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { AttachmentFlags } from '../src/types';
 import { Attachment, AttachmentBuilder, resolveAttachment, resolveImage } from '../src/builders/Attachment';
@@ -59,14 +60,16 @@ describe('resolveImage', () => {
 				});
 			}),
 		);
-		const attachment = new Attachment({} as never, {
-			id: '1',
-			filename: 'image.png',
-			size: 3,
-			url: 'https://cdn.example/image.png',
-			proxy_url: 'https://cdn.example/image.png',
-			content_type: 'image/png',
-		} as never);
+		const attachment = new Attachment(
+			{} as never,
+			apiAttachment({
+				id: '1',
+				filename: 'image.png',
+				size: 3,
+				url: 'https://cdn.example/image.png',
+				contentType: 'image/png',
+			}),
+		);
 
 		await expect(resolveImage(attachment)).resolves.toBe('data:image/png;base64,YWJj');
 	});

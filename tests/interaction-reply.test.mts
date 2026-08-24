@@ -1,12 +1,6 @@
+import { chatInputInteraction } from '@slipher/testing';
 import { describe, expect, test, vi } from 'vitest';
-import {
-	ApplicationCommandType,
-	BaseInteraction,
-	ChannelType,
-	type __InternalReplyFunction,
-	type Interaction,
-	InteractionType,
-} from '../lib';
+import { BaseInteraction, type __InternalReplyFunction, type Interaction } from '../lib';
 
 function createDeferred<T>() {
 	let resolve!: (value: T | PromiseLike<T>) => void;
@@ -20,32 +14,7 @@ function createDeferred<T>() {
 function createInteraction(client: unknown, __reply?: __InternalReplyFunction) {
 	const interaction = BaseInteraction.from(
 		client as never,
-		{
-			id: '100000000000000001',
-			application_id: '100000000000000002',
-			type: InteractionType.ApplicationCommand,
-			data: {
-				id: '100000000000000003',
-				type: ApplicationCommandType.ChatInput,
-				name: 'ping',
-			},
-			channel: {
-				id: '100000000000000004',
-				type: ChannelType.DM,
-			},
-			user: {
-				id: '100000000000000005',
-				username: 'tester',
-				discriminator: '0001',
-				avatar: null,
-			},
-			token: 'interaction-token',
-			version: 1,
-			app_permissions: '0',
-			locale: 'en-US',
-			entitlements: [],
-			authorizing_integration_owners: {},
-		} as never,
+		chatInputInteraction({ name: 'ping', guildId: null }) as never,
 		__reply,
 	) as Interaction;
 
@@ -86,7 +55,7 @@ describe('interaction reply state', () => {
 		expect(reply).toHaveBeenCalledTimes(1);
 		expect(editMessage).toHaveBeenCalledTimes(1);
 		expect(editMessage).toHaveBeenCalledWith(
-			'interaction-token',
+			interaction.token,
 			'@original',
 			expect.objectContaining({ content: 'edited' }),
 		);
