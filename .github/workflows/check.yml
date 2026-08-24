@@ -145,8 +145,8 @@ jobs:
 
       - name: Build (Deno)
         if: matrix.runtime == 'deno'
-        run: deno run --node-modules-dir=manual -A npm:typescript/tsc --outDir ./lib
+        run: deno run -A npm:typescript/tsc --outDir ./lib
 
       - name: Test suites (Deno)
         if: matrix.runtime == 'deno'
-        run: deno run --node-modules-dir=manual -A npm:vitest run --config ./tests/vitest.config.mts ./tests/
+        run: deno run -A npm:vitest run --config ./tests/vitest.config.mts ./tests/

@@ -31,14 +31,10 @@ type verification checks the consumer-facing declaration surface.
 Runtime suites load `tests/setup.mts`, which resets `@slipher/testing` IDs
 before every test. Use its factories and mock bot for observable Discord-facing
 flows; keep focused Vitest units for internal algorithms that do not cross that
-boundary. The private `local-seyfert` and `deno-seyfert` packages make the
+boundary. The private workspace-linked `local-seyfert` package makes the
 toolkit's `seyfert` peer resolve to this checkout's freshly built `lib/` under
-pnpm, Bun, and Deno. Bun follows the workspace-linked `local-seyfert`; Deno
-copies linked packages, so `deno-seyfert` proxies each toolkit import back to
-`lib/` through `process.cwd()`. Run the test matrix from the repository root.
-When updating `@slipher/testing`, keep the Deno package exports and proxy files
-aligned with every `seyfert` subpath imported by the toolkit;
-`testing-harness.test.mts` enforces that list and the checkout identity.
+pnpm, Bun, and Deno. Deno uses pnpm's installed graph in manual node-modules
+mode. Run the test matrix from the repository root.
 
 For a new regression:
 
@@ -90,8 +86,8 @@ bun --bun ./node_modules/vitest/vitest.mjs run --config ./tests/vitest.config.mt
 
 # Deno
 HUSKY=0 pnpm install --frozen-lockfile
-deno run --node-modules-dir=manual -A npm:typescript/tsc --outDir ./lib
-deno run --node-modules-dir=manual -A npm:vitest run --config ./tests/vitest.config.mts ./tests/
+deno run -A npm:typescript/tsc --outDir ./lib
+deno run -A npm:vitest run --config ./tests/vitest.config.mts ./tests/
 ```
 
 ## Verification ladder
