@@ -80,7 +80,7 @@ export interface ModalSubmitInsideLabel<C extends ModalSubmitInsideLabelData = M
 }
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-modal-submit-data-structure
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-modal-submit-data-structure
  */
 export interface APIModalSubmission {
 	/**
@@ -119,17 +119,17 @@ export interface APIModalSubmission {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object
  */
 export type APIModalSubmitInteraction = APIBaseInteraction<InteractionType.ModalSubmit, APIModalSubmission> &
 	Required<Pick<APIBaseInteraction<InteractionType.ModalSubmit, APIModalSubmission>, 'data'>>;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object
  */
 export type APIModalSubmitDMInteraction = APIDMInteractionWrapper<APIModalSubmitInteraction>;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object
  */
 export type APIModalSubmitGuildInteraction = APIGuildInteractionWrapper<APIModalSubmitInteraction>;

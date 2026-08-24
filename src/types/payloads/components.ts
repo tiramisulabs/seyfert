@@ -3,7 +3,7 @@ import type { APIAttachment, Snowflake } from '..';
 import type { ChannelType } from '../utils';
 
 /**
- * https://discord.com/developers/docs/interactions/message-components#component-object
+ * https://docs.discord.com/developers/interactions/message-components#component-object
  */
 export interface APIBaseComponent<T extends ComponentType> {
 	/**
@@ -13,7 +13,7 @@ export interface APIBaseComponent<T extends ComponentType> {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/message-components#component-object-component-types
+ * https://docs.discord.com/developers/interactions/message-components#component-object-component-types
  */
 export enum ComponentType {
 	/**
@@ -99,7 +99,7 @@ export enum ComponentType {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/message-components#action-rows
+ * https://docs.discord.com/developers/interactions/message-components#action-rows
  */
 export interface APIActionRowComponent<T extends APIActionRowComponentTypes>
 	extends APIBaseComponent<ComponentType.ActionRow> {
@@ -110,7 +110,7 @@ export interface APIActionRowComponent<T extends APIActionRowComponentTypes>
 }
 
 /**
- * https://discord.com/developers/docs/interactions/message-components#buttons
+ * https://docs.discord.com/developers/interactions/message-components#buttons
  */
 export interface APIButtonComponentBase<Style extends ButtonStyle> extends APIBaseComponent<ComponentType.Button> {
 	/**
@@ -177,7 +177,7 @@ export type APIButtonComponent =
 	| APIButtonComponentWithURL;
 
 /**
- * https://discord.com/developers/docs/interactions/message-components#button-object-button-styles
+ * https://docs.discord.com/developers/interactions/message-components#button-object-button-styles
  */
 export enum ButtonStyle {
 	Primary = 1,
@@ -189,7 +189,7 @@ export enum ButtonStyle {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/message-components#text-inputs-text-input-styles
+ * https://docs.discord.com/developers/interactions/message-components#text-inputs-text-input-styles
  */
 export enum TextInputStyle {
 	Short = 1,
@@ -197,7 +197,7 @@ export enum TextInputStyle {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/message-components#select-menus
+ * https://docs.discord.com/developers/interactions/message-components#select-menus
  */
 export interface APIBaseSelectMenuComponent<
 	T extends
@@ -256,7 +256,7 @@ export interface APIBaseAutoPopulatedSelectMenuComponent<
 }
 
 /**
- * https://discord.com/developers/docs/interactions/message-components#select-menus
+ * https://docs.discord.com/developers/interactions/message-components#select-menus
  */
 export interface APIStringSelectComponent<Value extends string = string>
 	extends APIBaseSelectMenuComponent<ComponentType.StringSelect> {
@@ -273,7 +273,7 @@ export interface APIStringSelectComponent<Value extends string = string>
 }
 
 /**
- * https://discord.com/developers/docs/interactions/message-components#select-menus
+ * https://docs.discord.com/developers/interactions/message-components#select-menus
  */
 export type APIUserSelectComponent = APIBaseAutoPopulatedSelectMenuComponent<
 	ComponentType.UserSelect,
@@ -281,7 +281,7 @@ export type APIUserSelectComponent = APIBaseAutoPopulatedSelectMenuComponent<
 >;
 
 /**
- * https://discord.com/developers/docs/interactions/message-components#select-menus
+ * https://docs.discord.com/developers/interactions/message-components#select-menus
  */
 export type APIRoleSelectComponent = APIBaseAutoPopulatedSelectMenuComponent<
 	ComponentType.RoleSelect,
@@ -289,7 +289,7 @@ export type APIRoleSelectComponent = APIBaseAutoPopulatedSelectMenuComponent<
 >;
 
 /**
- * https://discord.com/developers/docs/interactions/message-components#select-menus
+ * https://docs.discord.com/developers/interactions/message-components#select-menus
  */
 export type APIMentionableSelectComponent = APIBaseAutoPopulatedSelectMenuComponent<
 	ComponentType.MentionableSelect,
@@ -297,7 +297,7 @@ export type APIMentionableSelectComponent = APIBaseAutoPopulatedSelectMenuCompon
 >;
 
 /**
- * https://discord.com/developers/docs/interactions/message-components#select-menus
+ * https://docs.discord.com/developers/interactions/message-components#select-menus
  */
 export interface APIChannelSelectComponent
 	extends APIBaseAutoPopulatedSelectMenuComponent<ComponentType.ChannelSelect, SelectMenuDefaultValueType.Channel> {
@@ -308,7 +308,7 @@ export interface APIChannelSelectComponent
 }
 
 /**
- * https://discord.com/developers/docs/interactions/message-components#select-menu-object-select-default-value-structure
+ * https://docs.discord.com/developers/interactions/message-components#select-menu-object-select-default-value-structure
  */
 export enum SelectMenuDefaultValueType {
 	Channel = 'channel',
@@ -317,7 +317,7 @@ export enum SelectMenuDefaultValueType {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/message-components#select-menu-object-select-default-value-structure
+ * https://docs.discord.com/developers/interactions/message-components#select-menu-object-select-default-value-structure
  */
 export interface APISelectMenuDefaultValue<T extends SelectMenuDefaultValueType> {
 	type: T;
@@ -331,7 +331,7 @@ export type APIAutoPopulatedSelectMenuComponent =
 	| APIUserSelectComponent;
 
 /**
- * https://discord.com/developers/docs/interactions/message-components#select-menus
+ * https://docs.discord.com/developers/interactions/message-components#select-menus
  */
 export type APISelectMenuComponent =
 	| APIChannelSelectComponent
@@ -341,7 +341,7 @@ export type APISelectMenuComponent =
 	| APIUserSelectComponent;
 
 /**
- * https://discord.com/developers/docs/interactions/message-components#select-menu-object-select-option-structure
+ * https://docs.discord.com/developers/interactions/message-components#select-menu-object-select-option-structure
  */
 export interface APISelectMenuOption<Value extends string = string> {
 	/**
@@ -367,7 +367,7 @@ export interface APISelectMenuOption<Value extends string = string> {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/message-components#text-inputs-text-input-structure
+ * https://docs.discord.com/developers/interactions/message-components#text-inputs-text-input-structure
  */
 export interface APITextInputComponent extends APIBaseComponent<ComponentType.TextInput> {
 	id?: number;
@@ -402,7 +402,7 @@ export interface APITextInputComponent extends APIBaseComponent<ComponentType.Te
 }
 
 /**
- * https://discord.com/developers/docs/resources/channel#channel-object-channel-flags
+ * https://docs.discord.com/developers/resources/channel#channel-object-channel-flags
  */
 export enum ChannelFlags {
 	/**
@@ -449,7 +449,7 @@ export enum ChannelFlags {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/message-components#message-components
+ * https://docs.discord.com/developers/interactions/message-components#message-components
  */
 export type APIMessageComponent = APIActionRowComponent<APIMessageActionRowComponent> | APIMessageActionRowComponent;
 export type APIModalComponent = APIActionRowComponent<APIModalActionRowComponent> | APIModalActionRowComponent;
@@ -457,7 +457,7 @@ export type APIModalComponent = APIActionRowComponent<APIModalActionRowComponent
 export type APIActionRowComponentTypes = APIMessageActionRowComponent | APIModalActionRowComponent;
 
 /**
- * https://discord.com/developers/docs/interactions/message-components#message-components
+ * https://docs.discord.com/developers/interactions/message-components#message-components
  */
 export type APIMessageActionRowComponent = APIButtonComponent | APISelectMenuComponent;
 
@@ -477,7 +477,7 @@ export type APIComponents =
 export type APIModalActionRowComponent = APITextInputComponent;
 
 /**
- * https://discord.com/developers/docs/components/reference#section
+ * https://docs.discord.com/developers/components/reference#section
  *
  * A Section is a top-level layout component that allows you to join text contextually with an accessory.
  */
@@ -491,7 +491,7 @@ export interface APISectionComponent extends APIBaseComponent<ComponentType.Sect
 }
 
 /**
- * https://discord.com/developers/docs/components/reference#text-display
+ * https://docs.discord.com/developers/components/reference#text-display
  *
  * A Text Display is a top-level content component that allows you to add text to your message formatted with markdown and mention users and roles. This is similar to the content field of a message, but allows you to add multiple text components, controlling the layout of your message.
  * Text Displays are only available in messages.
@@ -504,7 +504,7 @@ export interface APITextDisplayComponent extends APIBaseComponent<ComponentType.
 }
 
 /**
- * https://discord.com/developers/docs/components/reference#thumbnail
+ * https://docs.discord.com/developers/components/reference#thumbnail
  *
  * A Thumbnail is a content component that is a small image only usable as an accessory in a section. The preview comes from an url or attachment through the unfurled media item structure.
  * Thumbnails are only available in messages as an accessory in a section.
@@ -521,7 +521,7 @@ export interface APIThumbnailComponent extends APIBaseComponent<ComponentType.Th
 }
 
 /**
- * https://discord.com/developers/docs/components/reference#media-gallery
+ * https://docs.discord.com/developers/components/reference#media-gallery
  *
  * A Media Gallery is a top-level content component that allows you to display 1-10 media attachments in an organized gallery format. Each item can have optional descriptions and can be marked as spoilers.
  * Media Galleries are only available in messages.
@@ -543,7 +543,7 @@ export interface APIMediaGalleryItems {
 }
 
 /**
- * https://discord.com/developers/docs/components/reference#file
+ * https://docs.discord.com/developers/components/reference#file
  *
  * A File is a top-level component that allows you to display an uploaded file as an attachment to the message and reference it in the component. Each file component can only display 1 attached file, but you can upload multiple files and add them to different file components within your payload. This is similar to the embeds field of a message but allows you to control the layout of your message by using this anywhere as a component.
  * Files are only available in messages.
@@ -558,7 +558,7 @@ export interface APIFileComponent extends APIBaseComponent<ComponentType.File> {
 }
 
 /**
- * https://discord.com/developers/docs/components/reference#separator
+ * https://docs.discord.com/developers/components/reference#separator
  *
  * A Separator is a top-level layout component that adds vertical padding and visual division between other components.
  */
@@ -588,7 +588,7 @@ export type APIContainerComponents =
 	| APIThumbnailComponent;
 
 /**
- * https://discord.com/developers/docs/components/reference#container
+ * https://docs.discord.com/developers/components/reference#container
  */
 export interface APIContainerComponent extends APIBaseComponent<ComponentType.Container> {
 	/** Optional identifier for component */
@@ -610,7 +610,7 @@ export type APILabelComponents =
 	| APICheckboxComponent;
 
 /**
- * https://discord.com/developers/docs/components/reference#label
+ * https://docs.discord.com/developers/components/reference#label
  */
 export interface APILabelComponent extends APIBaseComponent<ComponentType.Label> {
 	/** Optional identifier for component */
@@ -624,7 +624,12 @@ export interface APILabelComponent extends APIBaseComponent<ComponentType.Label>
 }
 
 /**
- * https://discord.com/developers/docs/components/reference#file-upload
+ * https://docs.discord.com/developers/reference#file-type-filtering
+ */
+export type FileUploadType = 'audio' | 'image' | 'video' | `.${string}`;
+
+/**
+ * https://docs.discord.com/developers/components/reference#file-upload
  */
 export interface APIFileUploadComponent extends APIBaseComponent<ComponentType.FileUpload> {
 	/** Optional identifier for component */
@@ -637,6 +642,8 @@ export interface APIFileUploadComponent extends APIBaseComponent<ComponentType.F
 	max_values?: number;
 	/** Whether the file upload is required (defaults to false) */
 	required?: boolean;
+	/** File types to accept; can contain media groups or dot-prefixed file extensions (maximum of 10) */
+	file_types?: FileUploadType[];
 }
 
 /**
@@ -712,7 +719,7 @@ export interface APICheckboxComponent extends APIBaseComponent<ComponentType.Che
 }
 
 /**
- * https://discord.com/developers/docs/components/reference#unfurled-media-item-structure
+ * https://docs.discord.com/developers/components/reference#unfurled-media-item-structure
  */
 export interface APIUnfurledMediaItem
 	extends Identify<

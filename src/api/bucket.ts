@@ -37,7 +37,7 @@ export class Bucket {
 					this.processing = false;
 					this.process(true);
 				},
-				this.resetAfter ? 0.5 : Math.max(0, (this.reset || 0) - now) + 1,
+				Math.max(0, (this.reset || 0) - now) + 1,
 			);
 			return;
 		}
@@ -68,11 +68,16 @@ export class Bucket {
 	}
 
 	triggerResetAfter() {
-		if (!this.processingResetAfter && this.resetAfter) {
-			this.processingResetAfter = setTimeout(() => {
-				this.remaining++;
-				this.processingResetAfter = undefined;
-			}, this.resetAfter * 1.5);
-		}
+		if (this.processingResetAfter || !this.resetAfter) return;
+
+		this.processingResetAfter = setTimeout(() => {
+			this.remaining++;
+			this.processingResetAfter = undefined;
+			const resetTimer = this.processing;
+			if (!this.queue.length || !resetTimer || resetTimer === true) return;
+			clearTimeout(resetTimer);
+			this.processing = false;
+			this.process(true);
+		}, this.resetAfter * 1.5);
 	}
 }

@@ -27,9 +27,14 @@ describe('ChannelShorter.pins', () => {
 			timestamp: Date.parse(message.timestamp),
 		});
 		expect(bot.world.get.pin({ channelId: channel.id, messageId: message.id }).content).toBe('pinned message');
-		expect(bot.rest.requireAction(Routes.pinMessage, { channelId: channel.id, messageId: message.id }).reason).toBe(
-			'keep this',
+		expect(bot.restCalls(Routes.pinMessage)).toContainEqual(
+			expect.objectContaining({
+				params: { channelId: channel.id, messageId: message.id },
+				reason: 'keep this',
+			}),
 		);
-		bot.rest.requireAction(Routes.fetchPins, { channelId: channel.id });
+		expect(bot.restCalls(Routes.fetchPins)).toContainEqual(
+			expect.objectContaining({ params: { channelId: channel.id } }),
+		);
 	});
 });

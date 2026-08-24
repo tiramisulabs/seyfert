@@ -3,6 +3,8 @@
  *
  * It supports optional machine-readable metadata and preserves the original
  * cause when wrapping lower-level errors.
+ * A non-empty `metadata.detail` becomes the message captured at construction
+ * when it adds information beyond the catalog message.
  *
  * @remarks
  * For validation errors, prefer structured metadata (you can use
@@ -49,7 +51,7 @@ export class SeyfertError extends Error {
 	 * @param options.cause Original error that caused this error.
 	 */
 	constructor(code: SeyfertErrorCode, options?: { metadata?: Record<string, unknown>; cause?: unknown }) {
-		super(resolveSeyfertErrorMessage(code), { cause: options?.cause });
+		super(resolveSeyfertErrorMessage(code, options?.metadata), { cause: options?.cause });
 		this.code = code;
 		this.metadata = options?.metadata;
 		Error.captureStackTrace?.(this, SeyfertError);
@@ -93,6 +95,15 @@ export const SeyfertErrorMessages = {
 	INVALID_OPTIONS_LENGTH: 'Invalid options length.',
 	MISSING_COMPONENT: 'Cannot convert to JSON without a component.',
 	MISSING_ACCESSORY: 'Cannot convert to JSON without an accessory.',
+	MISSING_MEDIA: 'Cannot convert to JSON without media.',
+	MISSING_MODAL_CUSTOM_ID: 'Cannot convert to JSON without a custom_id.',
+	MISSING_MODAL_TITLE: 'Cannot convert to JSON without a title.',
+	MISSING_POLL_QUESTION: 'Cannot convert to JSON without a question.',
+	MISSING_POLL_ANSWERS: 'Cannot convert to JSON without answers.',
+	MISSING_RADIO_GROUP_OPTION_LABEL: 'Cannot convert to JSON without a label.',
+	MISSING_RADIO_GROUP_OPTION_VALUE: 'Cannot convert to JSON without a value.',
+	MISSING_STRING_SELECT_OPTION_LABEL: 'Cannot convert to JSON without a label.',
+	MISSING_STRING_SELECT_OPTION_VALUE: 'Cannot convert to JSON without a value.',
 	INVALID_ATTACHMENT_TYPE: 'Invalid attachment type.',
 	INVALID_ANSWER_ID: 'Invalid answer id.',
 	UNDEFINED_LOCALE: 'Undefined locale.',
@@ -141,9 +152,22 @@ export const SeyfertErrorMessages = {
 
 export type SeyfertErrorCode = keyof typeof SeyfertErrorMessages | (string & {});
 
-function resolveSeyfertErrorMessage(code: SeyfertErrorCode) {
-	const preset = SeyfertErrorMessages[code as keyof typeof SeyfertErrorMessages];
-	if (preset) return preset;
+function resolveSeyfertErrorMessage(code: SeyfertErrorCode, metadata?: Record<string, unknown>) {
+	const catalogMessage = Object.hasOwn(SeyfertErrorMessages, code)
+		? SeyfertErrorMessages[code as keyof typeof SeyfertErrorMessages]
+		: undefined;
+	const detail = typeof metadata?.detail === 'string' ? metadata.detail.trim() : '';
+
+	if (!detail) return catalogMessage ?? titleizeErrorCode(code);
+	if (!catalogMessage) return detail;
+	return normalizeErrorMessage(detail) === normalizeErrorMessage(catalogMessage) ? catalogMessage : detail;
+}
+
+function normalizeErrorMessage(message: string) {
+	return message.trim().replace(/\s+/g, ' ').replace(/\.$/, '').toLowerCase();
+}
+
+function titleizeErrorCode(code: string) {
 	return code
 		.toLowerCase()
 		.split('_')

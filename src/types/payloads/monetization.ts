@@ -1,7 +1,7 @@
 import type { Snowflake } from '../index';
 
 /**
- * https://discord.com/developers/docs/monetization/entitlements#entitlement-object-entitlement-structure
+ * https://docs.discord.com/developers/monetization/entitlements#entitlement-object-entitlement-structure
  */
 export interface APIEntitlement {
 	/**
@@ -47,7 +47,7 @@ export interface APIEntitlement {
 }
 
 /**
- * https://discord.com/developers/docs/monetization/entitlements#entitlement-object-entitlement-types
+ * https://docs.discord.com/developers/monetization/entitlements#entitlement-object-entitlement-types
  */
 export enum EntitlementType {
 	/**
@@ -85,7 +85,7 @@ export enum EntitlementType {
 }
 
 /**
- * https://discord.com/developers/docs/monetization/skus#sku-object-sku-structure
+ * https://docs.discord.com/developers/monetization/skus#sku-object-sku-structure
  */
 export interface APISKU {
 	/**
@@ -117,7 +117,7 @@ export interface APISKU {
 }
 
 /**
- * https://discord.com/developers/docs/monetization/skus#sku-object-sku-flags
+ * https://docs.discord.com/developers/monetization/skus#sku-object-sku-flags
  */
 export enum SKUFlags {
 	/**
@@ -179,9 +179,9 @@ export interface APISubscription {
 
 export enum SubscriptionStatus {
 	/**	Subscription is active and scheduled to renew. */
-	Active,
-	/** Subscription is active but will not renew. */
-	Ending,
+	Active = 0,
 	/**	Subscription is inactive and not being charged. */
-	Inactive,
+	Inactive = 1,
+	/** Subscription is active but will not renew. */
+	Ending = 2,
 }

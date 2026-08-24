@@ -23,12 +23,13 @@ describe('channel overwrites endpoint', () => {
 		expect(bot.world.get.channel({ id: channel.id }).overwrites).toEqual([
 			{ allow: '2', deny: '4', id: member.user.id, type: OverwriteType.Member },
 		]);
-		const edit = bot.rest.requireAction(Routes.editChannelPermissions, {
-			channelId: channel.id,
-			overwriteId: member.user.id,
-		});
-		expect(edit.body).toEqual({ allow: '2', deny: '4', type: OverwriteType.Member });
-		expect(edit.reason).toBe('set overwrite');
+		expect(bot.restCalls(Routes.editChannelPermissions)).toContainEqual(
+			expect.objectContaining({
+				params: { channelId: channel.id, overwriteId: member.user.id },
+				body: { allow: '2', deny: '4', type: OverwriteType.Member },
+				reason: 'set overwrite',
+			}),
+		);
 
 		await bot.client.channels.deleteOverwrite(channel.id, member.user.id, {
 			guildId: guild.id,
@@ -37,11 +38,12 @@ describe('channel overwrites endpoint', () => {
 
 		expect((await bot.client.cache.overwrites?.raw(channel.id)) ?? undefined).toBeUndefined();
 		expect(bot.world.get.channel({ id: channel.id }).overwrites).toEqual([]);
-		const removed = bot.rest.requireAction(Routes.deleteChannelPermission, {
-			channelId: channel.id,
-			overwriteId: member.user.id,
-		});
-		expect(removed.reason).toBe('remove overwrite');
+		expect(bot.restCalls(Routes.deleteChannelPermission)).toContainEqual(
+			expect.objectContaining({
+				params: { channelId: channel.id, overwriteId: member.user.id },
+				reason: 'remove overwrite',
+			}),
+		);
 	});
 
 	test('raw channel rehydrates overwrites without mutating cached channel data', async () => {

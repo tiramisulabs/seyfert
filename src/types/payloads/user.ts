@@ -1,12 +1,12 @@
 /**
- * Types extracted from https://discord.com/developers/docs/resources/user
+ * Types extracted from https://docs.discord.com/developers/resources/user
  */
 
 import type { Snowflake } from '../index';
 import type { APIGuildIntegration } from './guild';
 
 /**
- * https://discord.com/developers/docs/resources/user#user-object
+ * https://docs.discord.com/developers/resources/user#user-object
  */
 export interface APIUser {
 	/**
@@ -28,7 +28,7 @@ export interface APIUser {
 	/**
 	 * The user's avatar hash
 	 *
-	 * See https://discord.com/developers/docs/reference#image-formatting
+	 * See https://docs.discord.com/developers/reference#image-formatting
 	 */
 	avatar: string | null;
 	/**
@@ -46,7 +46,7 @@ export interface APIUser {
 	/**
 	 * The user's banner hash
 	 *
-	 * See https://discord.com/developers/docs/reference#image-formatting
+	 * See https://docs.discord.com/developers/reference#image-formatting
 	 */
 	banner?: string | null;
 	/**
@@ -68,43 +68,43 @@ export interface APIUser {
 	/**
 	 * The flags on a user's account
 	 *
-	 * See https://discord.com/developers/docs/resources/user#user-object-user-flags
+	 * See https://docs.discord.com/developers/resources/user#user-object-user-flags
 	 */
 	flags?: UserFlags;
 	/**
 	 * The type of Nitro subscription on a user's account
 	 *
-	 * See https://discord.com/developers/docs/resources/user#user-object-premium-types
+	 * See https://docs.discord.com/developers/resources/user#user-object-premium-types
 	 */
 	premium_type?: UserPremiumType;
 	/**
 	 * The public flags on a user's account
 	 *
-	 * See https://discord.com/developers/docs/resources/user#user-object-user-flags
+	 * See https://docs.discord.com/developers/resources/user#user-object-user-flags
 	 */
 	public_flags?: UserFlags;
 	/**
 	 * The data for the user's avatar decoration
 	 *
-	 * See https://discord.com/developers/docs/resources/user#avatar-decoration-data-object
+	 * See https://docs.discord.com/developers/resources/user#avatar-decoration-data-object
 	 */
 	avatar_decoration_data?: APIAvatarDecorationData | null;
 	/**
 	 * The data for the user's collectibles
 	 *
-	 * See https://discord.com/developers/docs/resources/user#collectibles
+	 * See https://docs.discord.com/developers/resources/user#collectibles
 	 */
 	collectibles?: APICollectibles | null;
 	/**
 	 * The user's primary guild
 	 *
-	 * See https://discord.com/developers/docs/resources/user#user-object-user-primary-guild
+	 * See https://docs.discord.com/developers/resources/user#user-object-user-primary-guild
 	 */
 	primary_guild?: APIUserPrimaryGuild | null;
 }
 
 /**
- * https://discord.com/developers/docs/resources/user#user-object-user-flags
+ * https://docs.discord.com/developers/resources/user#user-object-user-flags
  */
 export enum UserFlags {
 	/**
@@ -148,7 +148,7 @@ export enum UserFlags {
 	 */
 	PremiumEarlySupporter = 1 << 9,
 	/**
-	 * User is a [team](https://discord.com/developers/docs/topics/teams)
+	 * User is a [team](https://docs.discord.com/developers/topics/teams)
 	 */
 	TeamPseudoUser = 1 << 10,
 	/**
@@ -172,7 +172,7 @@ export enum UserFlags {
 	 */
 	CertifiedModerator = 1 << 18,
 	/**
-	 * Bot uses only [HTTP interactions](https://discord.com/developers/docs/interactions/receiving-and-responding#receiving-an-interaction) and is shown in the online member list
+	 * Bot uses only [HTTP interactions](https://docs.discord.com/developers/interactions/receiving-and-responding#receiving-an-interaction) and is shown in the online member list
 	 */
 	BotHTTPInteractions = 1 << 19,
 	/**
@@ -211,7 +211,7 @@ export enum UserFlags {
 }
 
 /**
- * https://discord.com/developers/docs/resources/user#user-object-premium-types
+ * https://docs.discord.com/developers/resources/user#user-object-premium-types
  */
 export enum UserPremiumType {
 	None,
@@ -221,7 +221,7 @@ export enum UserPremiumType {
 }
 
 /**
- * https://discord.com/developers/docs/resources/user#user-object-user-primary-guild
+ * https://docs.discord.com/developers/resources/user#user-object-user-primary-guild
  */
 export interface APICollectibles {
 	/**
@@ -285,7 +285,7 @@ export interface APIUserPrimaryGuild {
 }
 
 /**
- * https://discord.com/developers/docs/resources/user#connection-object
+ * https://docs.discord.com/developers/resources/user#connection-object
  */
 export interface APIConnection {
 	/**
@@ -299,7 +299,7 @@ export interface APIConnection {
 	/**
 	 * The service of the connection
 	 *
-	 * See https://discord.com/developers/docs/resources/user#connection-object-services
+	 * See https://docs.discord.com/developers/resources/user#connection-object-services
 	 */
 	type: ConnectionService;
 	/**
@@ -309,7 +309,7 @@ export interface APIConnection {
 	/**
 	 * An array of partial server integrations
 	 *
-	 * See https://discord.com/developers/docs/resources/guild#integration-object
+	 * See https://docs.discord.com/developers/resources/guild#integration-object
 	 */
 	integrations?: Partial<APIGuildIntegration>[];
 	/**
@@ -331,7 +331,7 @@ export interface APIConnection {
 	/**
 	 * Visibility of this connection
 	 *
-	 * See https://discord.com/developers/docs/resources/user#connection-object-visibility-types
+	 * See https://docs.discord.com/developers/resources/user#connection-object-visibility-types
 	 */
 	visibility: ConnectionVisibility;
 }
@@ -348,11 +348,13 @@ export enum ConnectionService {
 	Facebook = 'facebook',
 	GitHub = 'github',
 	Instagram = 'instagram',
+	/** @deprecated Riot Games and League of Legends connections are no longer returned by Discord. */
 	LeagueOfLegends = 'leagueoflegends',
 	Mastodon = 'mastodon',
 	PayPal = 'paypal',
 	PlayStationNetwork = 'playstation',
 	Reddit = 'reddit',
+	/** @deprecated Riot Games connections are no longer returned by Discord. */
 	RiotGames = 'riotgames',
 	Spotify = 'spotify',
 	Skype = 'skype',
@@ -376,7 +378,7 @@ export enum ConnectionVisibility {
 }
 
 /**
- * https://discord.com/developers/docs/resources/user#application-role-connection-object-application-role-connection-structure
+ * https://docs.discord.com/developers/resources/user#application-role-connection-object-application-role-connection-structure
  */
 export interface APIApplicationRoleConnection {
 	/**
@@ -394,13 +396,13 @@ export interface APIApplicationRoleConnection {
 }
 
 /**
- * https://discord.com/developers/docs/resources/user#avatar-decoration-data-object
+ * https://docs.discord.com/developers/resources/user#avatar-decoration-data-object
  */
 export interface APIAvatarDecorationData {
 	/**
 	 * The avatar decoration hash
 	 *
-	 * See https://discord.com/developers/docs/reference#image-formatting
+	 * See https://docs.discord.com/developers/reference#image-formatting
 	 */
 	asset: string;
 	/**

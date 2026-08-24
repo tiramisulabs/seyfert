@@ -1,4 +1,4 @@
-import { createMockBot, outcome } from '@slipher/testing';
+import { createMockBot } from '@slipher/testing';
 import { describe, expect, test } from 'vitest';
 import {
 	Command,
@@ -45,19 +45,17 @@ describe('ModalContext update proxies', () => {
 		await using bot = await createMockBot({ commands: [OpenUpdateModal], components: [UpdateModal] });
 
 		await bot.slash({ name: 'open-update' });
-		const result = await bot.fillModal('update-modal', { mode: 'update' });
+		const result = await bot.submitModal('update-modal', { mode: 'update' });
 
 		expect(result.content).toBe('updated');
-		outcome(result).get.response({ kind: 'update' });
 	});
 
 	test('proxies deferUpdate without arguments', async () => {
 		await using bot = await createMockBot({ commands: [OpenUpdateModal], components: [UpdateModal] });
 
 		await bot.slash({ name: 'open-update' });
-		const result = await bot.fillModal('update-modal', { mode: 'defer' });
+		const result = await bot.submitModal('update-modal', { mode: 'defer' });
 
 		expect(result.deferredUpdate).toBe(true);
-		outcome(result).get.response({ kind: 'defer' });
 	});
 });

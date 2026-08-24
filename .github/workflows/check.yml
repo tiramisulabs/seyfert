@@ -94,19 +94,19 @@ jobs:
         with:
           ref: ${{ github.ref }}
 
-      # --- Node (pnpm) ---
+      # --- Node and shared pnpm install ---
       - name: Install Node
-        if: matrix.runtime == 'node'
+        if: matrix.runtime != 'bun'
         uses: actions/setup-node@v4
         with:
           node-version: '22.x'
 
       - name: Install pnpm
-        if: matrix.runtime == 'node'
+        if: matrix.runtime != 'bun'
         uses: pnpm/action-setup@v4
 
-      - name: Install dependencies (Node)
-        if: matrix.runtime == 'node'
+      - name: Install dependencies (Node and Deno)
+        if: matrix.runtime != 'bun'
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck
@@ -143,16 +143,10 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Install dependencies (Deno)
-        if: matrix.runtime == 'deno'
-        run: deno install
-        env:
-          HUSKY: 0
-
       - name: Build (Deno)
         if: matrix.runtime == 'deno'
-        run: deno run -A npm:typescript/tsc --outDir ./lib
+        run: deno run --node-modules-dir=manual -A npm:typescript/tsc --outDir ./lib
 
       - name: Test suites (Deno)
         if: matrix.runtime == 'deno'
-        run: deno run -A npm:vitest run --config ./tests/vitest.config.mts ./tests/
+        run: deno run --node-modules-dir=manual -A npm:vitest run --config ./tests/vitest.config.mts ./tests/

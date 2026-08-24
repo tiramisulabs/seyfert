@@ -11,4 +11,8 @@ for every affected path and verification step.
 - Declaration merging used by structures and mixins is deliberate. Preserve
   the mixins, align runtime fields with merged public interfaces, and do not
   simplify the contract based only on the apparent class declaration.
+- A merged public interface may intentionally omit properties that still exist
+  on the runtime instance. Shape contextual availability through interfaces,
+  overloads, and narrowed types; do not delete runtime properties solely to
+  make the unrestricted structure type omit them.
 - Apply the wire-name and transformation boundary owned by `src/AGENTS.md`.

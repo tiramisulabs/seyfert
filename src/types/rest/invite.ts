@@ -2,7 +2,7 @@ import type { Snowflake } from '..';
 import type { APIInvite } from '../payloads';
 
 /**
- * https://discord.com/developers/docs/resources/invite#get-invite
+ * https://docs.discord.com/developers/resources/invite#get-invite
  */
 export interface RESTGetAPIInviteQuery {
 	/**
@@ -22,17 +22,17 @@ export interface RESTGetAPIInviteQuery {
 export type RESTGetAPIInviteResult = APIInvite;
 
 /**
- * https://discord.com/developers/docs/resources/invite#delete-invite
+ * https://docs.discord.com/developers/resources/invite#delete-invite
  */
 export type RESTDeleteAPIInviteResult = APIInvite;
 
 /**
- * https://discord.com/developers/docs/resources/invite#get-target-users
+ * https://docs.discord.com/developers/resources/invite#get-target-users
  */
 export type RESTGetTargetUsersResult = string;
 
 /**
- * https://discord.com/developers/docs/resources/invite#get-target-users
+ * https://docs.discord.com/developers/resources/invite#get-target-users
  *
  * Updates the users allowed to see and accept this invite.
  * Uploading a file with invalid user IDs will result in a 400 with the invalid IDs described.
@@ -58,7 +58,7 @@ export enum TargetUsersJobStatusCode {
 }
 
 /**
- * https://discord.com/developers/docs/resources/invite#get-target-users-job-status
+ * https://docs.discord.com/developers/resources/invite#get-target-users-job-status
  * Processing target users from a CSV when creating or updating an invite is done asynchronously.
  * This endpoint allows you to check the status of that job.
  */

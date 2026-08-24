@@ -225,19 +225,12 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			case 'SEND_PAYLOAD':
 				{
-					const shard = this.shards.get(data.shardId);
-					if (!shard) {
+					const { nonce: _nonce, shardId: _shardId, type: _type, ...payload } = data;
+					const result = await this.sendGatewayPayloadOnShard(data.shardId, payload as GatewaySendPayload, true);
+					if (result === 'missing') {
 						this.logger.fatal(`Worker trying to send payload by non-existent shard (#${data.shardId})`);
 						return;
 					}
-
-					const { nonce: _nonce, shardId: _shardId, type: _type, ...payload } = data;
-					const pluginPayload = await applyPluginGatewaySendPayloadWrappers(
-						this,
-						data.shardId,
-						payload as GatewaySendPayload,
-					);
-					if (pluginPayload !== null) await shard.send(true, pluginPayload);
 
 					this.postMessage({
 						type: 'RESULT_PAYLOAD',
@@ -364,7 +357,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					if (!promise) return;
 					this.rest.workerPromises!.delete(data.nonce);
 					if (data.error) return promise.reject(data.error);
-					promise.resolve(data.response);
+					promise.resolve(data.responseType === 'arrayBuffer' ? Uint8Array.from(data.response).buffer : data.response);
 				}
 				break;
 			case 'EXECUTE_EVAL':
@@ -437,17 +430,47 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		return calculateShardId(guildId, this.workerData.totalShards);
 	}
 
+	/**
+	 * Sends a Gateway payload through the worker client's plugin wrappers and shard rate limiter.
+	 *
+	 * @returns `false` when a plugin wrapper vetoes the payload, otherwise `true` after it is sent.
+	 */
+	async sendGatewayPayload<T extends GatewaySendPayload>(shardId: number, payload: T): Promise<boolean> {
+		const result = await this.sendGatewayPayloadOnShard(shardId, payload, false);
+		if (result === 'missing') {
+			throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Shard #${shardId} doesn't exist` } });
+		}
+		return result === 'sent';
+	}
+
+	private async sendGatewayPayloadOnShard(
+		shardId: number,
+		payload: GatewaySendPayload,
+		force: boolean,
+	): Promise<'missing' | 'sent' | 'vetoed'> {
+		const pluginPayload = await applyPluginGatewaySendPayloadWrappers(this, shardId, payload);
+		if (pluginPayload === null) return 'vetoed';
+		const shard = this.shards.get(shardId);
+		if (!shard) return 'missing';
+		await shard.send(force, pluginPayload);
+		return 'sent';
+	}
+
 	private generateNonce(): UUID {
 		const uuid = randomUUID();
 		if (this.promises.has(uuid)) return this.generateNonce();
 		return uuid;
 	}
 
-	private generateSendPromise<T = unknown>(nonce: string, message = 'Timeout'): Promise<T> {
+	private generateSendPromise<T = unknown>(nonce: string, operation = 'Worker request'): Promise<T> {
 		return new Promise<T>((res, rej) => {
 			const timeout = setTimeout(() => {
 				this.promises.delete(nonce);
-				rej(new SeyfertError('WORKER_TIMEOUT', { metadata: { ...{ nonce }, detail: message } }));
+				rej(
+					new SeyfertError('WORKER_TIMEOUT', {
+						metadata: { nonce, operation, detail: `${operation} timed out (nonce: ${nonce}).` },
+					}),
+				);
 			}, 60e3);
 			this.promises.set(nonce, { resolve: res, timeout });
 		});

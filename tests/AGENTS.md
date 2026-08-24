@@ -89,9 +89,9 @@ bun run build
 bun --bun ./node_modules/vitest/vitest.mjs run --config ./tests/vitest.config.mts ./tests/
 
 # Deno
-HUSKY=0 deno install
-deno run -A npm:typescript/tsc --outDir ./lib
-deno run -A npm:vitest run --config ./tests/vitest.config.mts ./tests/
+HUSKY=0 pnpm install --frozen-lockfile
+deno run --node-modules-dir=manual -A npm:typescript/tsc --outDir ./lib
+deno run --node-modules-dir=manual -A npm:vitest run --config ./tests/vitest.config.mts ./tests/
 ```
 
 ## Verification ladder

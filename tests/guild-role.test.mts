@@ -1,8 +1,41 @@
 import { Routes, createMockBot, mockWorld } from '@slipher/testing';
 import { describe, expect, test } from 'vitest';
-import { GuildRole } from '../lib';
+import { GuildRole, type APIRole } from '../lib';
+
+const guildId = '100000000000000001';
+
+const roleData = {
+	id: '200000000000000002',
+	name: 'moderator',
+	color: 0,
+	colors: {
+		primary_color: 0,
+		secondary_color: null,
+		tertiary_color: null,
+	},
+	hoist: false,
+	icon: null,
+	unicode_emoji: null,
+	position: 1,
+	permissions: '0',
+	managed: false,
+	mentionable: false,
+	flags: 0 as APIRole['flags'],
+} satisfies APIRole;
 
 describe('GuildRole', () => {
+	test('compares role hierarchy by position before snowflake id', () => {
+		const client = {} as any;
+		const higherPosition = new GuildRole(client, { ...roleData, id: '300000000000000003', position: 2 }, guildId);
+		const olderTiedRole = new GuildRole(client, { ...roleData, id: '200000000000000002', position: 1 }, guildId);
+		const newerTiedRole = new GuildRole(client, { ...roleData, id: '400000000000000004', position: 1 }, guildId);
+
+		expect(higherPosition.comparePositionTo(olderTiedRole)).toBeGreaterThan(0);
+		expect(olderTiedRole.comparePositionTo(newerTiedRole)).toBeGreaterThan(0);
+		expect(newerTiedRole.comparePositionTo(olderTiedRole)).toBeLessThan(0);
+		expect(olderTiedRole.comparePositionTo(olderTiedRole)).toBe(0);
+	});
+
 	test('edit forwards the body and audit-log reason through the role shorter', async () => {
 		const world = mockWorld();
 		const guild = world.registerGuild({ everyonePermissions: ['ManageRoles'] });
@@ -15,8 +48,12 @@ describe('GuildRole', () => {
 		expect(structure).toBeInstanceOf(GuildRole);
 		expect(edited.name).toBe('moderators');
 		expect(bot.world.get.role({ guildId: guild.id, id: role.id }).name).toBe('moderators');
-		const action = bot.rest.requireAction(Routes.editRole, { guildId: guild.id, roleId: role.id });
-		expect(action.body).toEqual({ name: 'moderators' });
-		expect(action.reason).toBe('sync role name');
+		expect(bot.restCalls(Routes.editRole)).toContainEqual(
+			expect.objectContaining({
+				params: { guildId: guild.id, roleId: role.id },
+				body: { name: 'moderators' },
+				reason: 'sync role name',
+			}),
+		);
 	});
 });

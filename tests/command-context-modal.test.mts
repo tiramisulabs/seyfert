@@ -38,7 +38,8 @@ describe('CommandContext.modal', () => {
 		const opened = await bot.slash({ name: 'open-profile' });
 		expect(opened.modal).toEqual({ customId: 'profile', title: 'Profile' });
 
-		const submitted = await bot.slash({ name: 'await-profile' }).fillModal('profile', { name: 'socram' });
+		await bot.slash({ name: 'await-profile' });
+		const submitted = await bot.submitModal('profile', { name: 'socram' });
 		expect(submitted.content).toBe('socram');
 	});
 

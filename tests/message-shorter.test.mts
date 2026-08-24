@@ -13,7 +13,8 @@ describe('MessageShorter', () => {
 
 		expect(result).toHaveLength(1);
 		expect(result[0]).toMatchObject({ id: message.id, channelId: channel.id, content: 'hello' });
-		const action = bot.rest.requireAction(Routes.fetchMessages, { channelId: channel.id });
-		expect(action.query).toBeUndefined();
+		expect(bot.restCalls(Routes.fetchMessages)).toContainEqual(
+			expect.objectContaining({ params: { channelId: channel.id }, query: undefined }),
+		);
 	});
 });

@@ -1,4 +1,5 @@
-import { type APIFileUploadComponent, ComponentType } from '../types';
+import type { RestOrArray } from '../common';
+import { type APIFileUploadComponent, ComponentType, type FileUploadType } from '../types';
 import { BaseComponentBuilder } from './Base';
 
 export class FileUpload extends BaseComponentBuilder<APIFileUploadComponent> {
@@ -53,6 +54,16 @@ export class FileUpload extends BaseComponentBuilder<APIFileUploadComponent> {
 	 */
 	setRequired(required: boolean) {
 		this.data.required = required;
+		return this;
+	}
+
+	/**
+	 * Sets the file types accepted by the file upload.
+	 * @param fileTypes - Media groups or dot-prefixed file extensions to accept (maximum of 10).
+	 * @returns The current FileUpload instance.
+	 */
+	setFileTypes(...fileTypes: RestOrArray<FileUploadType>) {
+		this.data.file_types = fileTypes.flat() as FileUploadType[];
 		return this;
 	}
 }

@@ -27,7 +27,7 @@ import type { LocaleString } from '../rest';
 export type LocalizationMap = Partial<Record<LocaleString, string | null>>;
 
 /**
- * https://discord.com/developers/docs/topics/opcodes-and-status-codes#json
+ * https://docs.discord.com/developers/topics/opcodes-and-status-codes#json
  */
 export interface RESTError {
 	code: number;
@@ -47,7 +47,7 @@ export interface RESTErrorGroupWrapper {
 export type RESTErrorData = RESTErrorFieldInformation | RESTErrorGroupWrapper | string | { [k: string]: RESTErrorData };
 
 /**
- * https://discord.com/developers/docs/topics/rate-limits#exceeding-a-rate-limit-rate-limit-response-structure
+ * https://docs.discord.com/developers/topics/rate-limits#exceeding-a-rate-limit-rate-limit-response-structure
  */
 export interface RESTRateLimit {
 	/**

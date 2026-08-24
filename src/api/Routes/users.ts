@@ -1,5 +1,6 @@
 import type {
 	APIDMChannel,
+	RESTDeleteAPICurrentUserApplicationRoleConnectionResult,
 	RESTDeleteAPIGuildResult,
 	RESTGetAPICurrentUserApplicationRoleConnectionResult,
 	RESTGetAPICurrentUserConnectionsResult,
@@ -48,6 +49,7 @@ export interface UserRoutes {
 			applications(applicationId: string): {
 				'role-connection': {
 					get(args?: RestArgumentsNoBody): Promise<RESTGetAPICurrentUserApplicationRoleConnectionResult>;
+					delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPICurrentUserApplicationRoleConnectionResult>;
 					put(
 						args: RestArguments<RESTPutAPICurrentUserApplicationRoleConnectionJSONBody>,
 					): Promise<RESTPutAPICurrentUserApplicationRoleConnectionResult>;

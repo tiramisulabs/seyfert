@@ -3,7 +3,7 @@
 	"version": "0.0.0",
 	"private": true,
 	"devDependencies": {
-		"@slipher/testing": "1.0.0",
+		"@slipher/testing": "https://pkg.pr.new/tiramisulabs/extra/@slipher/testing@4f85d93",
 		"seyfert": "workspace:*"
 	}
 }

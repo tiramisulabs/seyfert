@@ -48,10 +48,12 @@ import {
 	GuildBan,
 	GuildMember,
 	type GuildMemberStructure,
+	type GroupDMChannelStructure,
 	type GuildRoleStructure,
 	type InteractionGuildMemberStructure,
 	type LangInstance,
 	LangsHandler,
+	type ResolvedChannel,
 	type ComponentContext,
 	type EntryPointContext,
 	EntryPointCommand,
@@ -137,6 +139,7 @@ import {
 	type VoiceStateStructure,
 	PresenceUpdateStatus,
 	createEvent,
+	WorkerClient,
 	type ModalSubmitInteraction,
 } from 'seyfert';
 import type { APIRoutes } from '../lib/api/Routes';
@@ -160,6 +163,10 @@ import type { ShardManagerOptions, WorkerManagerOptions } from '../lib/websocket
 import type { ManagerAllowConnect, ManagerAllowConnectResharding } from '../lib/websocket/discord/workermanager';
 
 declare function expectType<T>(value: T): void;
+declare const publicWorkerClient: WorkerClient;
+declare const publicGatewayPayload: GatewaySendPayload;
+expectType<Promise<boolean>>(publicWorkerClient.sendGatewayPayload(0, publicGatewayPayload));
+
 type IsAny<T> = 0 extends 1 & T ? true : false;
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
 	? (<T>() => T extends B ? 1 : 2) extends <T>() => T extends A ? 1 : 2
@@ -817,6 +824,9 @@ const customWorkerManagerOptions = {
 expectType<WorkerManagerOptions>(customWorkerManagerOptions);
 new WorkerManager(customWorkerManagerOptions);
 
+type CustomWorkerManagerRuntimeOptions = Extract<WorkerManager['options'], { mode: 'custom' }>;
+expectType<CustomWorkerManagerRuntimeOptions['workerEnv']>(undefined);
+
 const customWorkerManagerOptionsWithPath = {
 	mode: 'custom',
 	path: 'worker.js',
@@ -837,9 +847,15 @@ const threadedWorkerManagerOptions = {
 	token: 'token',
 	intents: GatewayIntentBits.Guilds,
 	info: workerManagerInfo,
+	workerEnv: {
+		DATABASE_URL: 'postgres://localhost/seyfert',
+	},
 } satisfies WorkerManagerOptions;
 expectType<WorkerManagerOptions>(threadedWorkerManagerOptions);
 new WorkerManager(threadedWorkerManagerOptions);
+
+type NativeWorkerManagerRuntimeOptions = Exclude<WorkerManager['options'], { mode: 'custom' }>;
+expectType<NativeWorkerManagerRuntimeOptions['workerEnv']>(undefined);
 
 const defaultThreadedWorkerManagerOptions = {
 	path: 'worker.js',
@@ -856,9 +872,24 @@ const clusteredWorkerManagerOptions = {
 	token: 'token',
 	intents: GatewayIntentBits.Guilds,
 	info: workerManagerInfo,
+	workerEnv: {
+		DATABASE_URL: 'postgres://localhost/seyfert',
+	},
 } satisfies WorkerManagerOptions;
 expectType<WorkerManagerOptions>(clusteredWorkerManagerOptions);
 new WorkerManager(clusteredWorkerManagerOptions);
+
+expectType<WorkerManagerOptions>({
+	mode: 'threads',
+	path: 'worker.js',
+	token: 'token',
+	intents: GatewayIntentBits.Guilds,
+	info: workerManagerInfo,
+	workerEnv: {
+		// @ts-expect-error Worker environment values must be strings.
+		PORT: 3000,
+	},
+});
 
 // @ts-expect-error custom worker mode requires an adapter.
 expectType<WorkerManagerOptions>({
@@ -1390,6 +1421,12 @@ collectorClient.collectors.create({
 const exportedCollectorsContract = new Collectors();
 expectType<Collectors>(exportedCollectorsContract);
 expectType<MessageStructure>(undefined as never as CollectorRunParameters<'messageCreate'>);
+expectType<CollectorRunParameters<'commandsLoaded'>>(
+	undefined as never as [CommandsLoadedCallbackParams[0]],
+);
+expectType<[CommandsLoadedCallbackParams[0]]>(
+	undefined as never as CollectorRunParameters<'commandsLoaded'>,
+);
 // @ts-expect-error collector run parameters are keyed by camelCase event names.
 type ScreamingCollectorRunParameters = CollectorRunParameters<'MESSAGE_CREATE'>;
 // @ts-expect-error typo alias is intentionally not exported.
@@ -1406,8 +1443,8 @@ expectType<
 	]
 >(undefined as never as VoiceChannelStatusUpdatePayload);
 
-expectType<AllChannels[]>(modalContext().getChannels('channels', true));
-expectType<AllChannels[] | void>(modalContext().getChannels('channels'));
+expectType<ResolvedChannel[]>(modalContext().getChannels('channels', true));
+expectType<ResolvedChannel[] | void>(modalContext().getChannels('channels'));
 expectType<GuildRoleStructure[]>(modalContext().getRoles('roles', true));
 expectType<GuildRoleStructure[] | void>(modalContext().getRoles('roles'));
 expectType<UserStructure[]>(modalContext().getUsers('users', true));
@@ -1435,7 +1472,10 @@ expectType<Promise<GuildMemberStructure | undefined>>(commandContext().fetchMemb
 expectType<ReturnCache<GuildMemberStructure | undefined>>(commandContext().fetchMember('cache'));
 
 type GuildCommandChannel = AllGuildChannels | BaseGuildChannelStructure;
-type NamedChannel = GuildCommandChannel | (BaseChannelStructure & { name: string });
+type NamedChannel =
+	| GuildCommandChannel
+	| (GroupDMChannelStructure & { name: string })
+	| (BaseChannelStructure & { name: string });
 expectType<true>(true as Equal<AllNamedChannels, NamedChannel>);
 expectType<true>(true as Equal<AllGuildChannels extends GuildCommandChannel ? true : false, true>);
 expectType<true>(true as Equal<BaseGuildChannelStructure extends GuildCommandChannel ? true : false, true>);

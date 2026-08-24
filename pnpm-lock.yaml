@@ -36,8 +36,8 @@ importers:
   tests:
     devDependencies:
       '@slipher/testing':
-        specifier: 1.0.0
-        version: 1.0.0(seyfert@tests+local-seyfert)
+        specifier: https://pkg.pr.new/tiramisulabs/extra/@slipher/testing@4f85d93
+        version: https://pkg.pr.new/tiramisulabs/extra/@slipher/testing@4f85d93(seyfert@tests+local-seyfert)
       seyfert:
         specifier: workspace:*
         version: link:local-seyfert
@@ -587,8 +587,9 @@ packages:
     resolution: {integrity: sha512-fCTuZK4QBa+39Oz9l4OGfJfz+GpwCp3AqO7Zch3to99xHPgstVsRFpeQ8LNd2o1Gv8raL2mCFwiaHh7bFSp5DQ==}
     engines: {node: '>=22'}
 
-  '@slipher/testing@1.0.0':
-    resolution: {integrity: sha512-hgyCcK+LQ582K6TdDua1VdJ9saP626KiLFCQR9++H2TD3gaSR9/aAr9u/57C33cG0ZRspN9OMO0X0vpgvcaJKA==}
+  '@slipher/testing@https://pkg.pr.new/tiramisulabs/extra/@slipher/testing@4f85d93':
+    resolution: {integrity: sha512-IopH2hcOS7STyJvyRzDDJYBtuTofICBozPL6OgaFPeLnIn90AAO7UV3K5FPUBtG0w6e30HCn5FuVq0rgte44Wg==, tarball: https://pkg.pr.new/tiramisulabs/extra/@slipher/testing@4f85d93}
+    version: 1.0.0
     peerDependencies:
       seyfert: '>=5.0.0'
 
@@ -1785,7 +1786,7 @@ snapshots:
 
   '@simple-libs/stream-utils@2.0.0': {}
 
-  '@slipher/testing@1.0.0(seyfert@tests+local-seyfert)':
+  '@slipher/testing@https://pkg.pr.new/tiramisulabs/extra/@slipher/testing@4f85d93(seyfert@tests+local-seyfert)':
     dependencies:
       seyfert: link:tests/local-seyfert
 

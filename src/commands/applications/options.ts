@@ -6,10 +6,12 @@ import {
 	type APIApplicationCommandBasicOption,
 	type APIApplicationCommandOptionChoice,
 	ApplicationCommandOptionType,
+	type FileUploadType,
 } from '../../types';
 import type { LocalizationMap } from '../../types/payloads';
 import type {
 	AutocompleteCallback,
+	CommandOptionChannel,
 	EntryPointContext,
 	MenuCommandContext,
 	OnAutocompleteErrorCallback,
@@ -88,7 +90,7 @@ export type ValueCallback<
 					: never
 				: never
 			: C extends keyof SeyfertChannelMap
-				? SeyfertChannelMap[C]
+				? CommandOptionChannel<C>
 				: never;
 	},
 	ok: OKFunction<I>,
@@ -141,7 +143,9 @@ export type SeyfertChannelOption<C = keyof SeyfertChannelMap, R = true | false, 
 };
 export type SeyfertRoleOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.Role, R>;
 export type SeyfertMentionableOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.Mentionable, R>;
-export type SeyfertAttachmentOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.Attachment, R>;
+export type SeyfertAttachmentOption<R = boolean> = SeyfertBasicOption<ApplicationCommandOptionType.Attachment, R> & {
+	file_types?: readonly FileUploadType[];
+};
 
 export function createStringOption<
 	R extends boolean,

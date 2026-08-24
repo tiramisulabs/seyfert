@@ -1,11 +1,11 @@
 /**
- * Types extracted from https://discord.com/developers/docs/topics/permissions
+ * Types extracted from https://docs.discord.com/developers/topics/permissions
  */
 
 import type { Permissions, Snowflake } from '../index';
 
 /**
- * https://discord.com/developers/docs/topics/permissions#role-object
+ * https://docs.discord.com/developers/topics/permissions#role-object
  */
 export interface APIRole {
 	/**
@@ -66,7 +66,7 @@ export interface APIRole {
 }
 
 /**
- * https://discord.com/developers/docs/topics/permissions#role-object-role-colors-object
+ * https://docs.discord.com/developers/topics/permissions#role-object-role-colors-object
  */
 export interface APIRoleColors {
 	/**
@@ -85,7 +85,7 @@ export interface APIRoleColors {
 	tertiary_color: number | null;
 }
 /**
- * https://discord.com/developers/docs/topics/permissions#role-object-role-tags-structure
+ * https://docs.discord.com/developers/topics/permissions#role-object-role-tags-structure
  */
 export interface APIRoleTags {
 	/**
@@ -115,7 +115,7 @@ export interface APIRoleTags {
 }
 
 /**
- * https://discord.com/developers/docs/topics/permissions#role-object-role-flags
+ * https://docs.discord.com/developers/topics/permissions#role-object-role-flags
  */
 export enum RoleFlags {
 	/**

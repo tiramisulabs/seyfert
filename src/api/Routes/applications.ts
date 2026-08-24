@@ -1,5 +1,6 @@
 import type {
 	RESTDeleteAPIApplicationEmojiResult,
+	RESTGetAPIApplicationCommandPermissionsResult,
 	RESTGetAPIApplicationCommandResult,
 	RESTGetAPIApplicationCommandsQuery,
 	RESTGetAPIApplicationCommandsResult,
@@ -32,13 +33,13 @@ import type {
 	RESTPostAPIEntitlementBody,
 	RESTPostAPIEntitlementResult,
 	RESTPutAPIApplicationCommandPermissionsJSONBody,
+	RESTPutAPIApplicationCommandPermissionsResult,
 	RESTPutAPIApplicationCommandsJSONBody,
 	RESTPutAPIApplicationCommandsResult,
 	RESTPutAPIApplicationGuildCommandsJSONBody,
 	RESTPutAPIApplicationGuildCommandsResult,
 	RESTPutAPIApplicationRoleConnectionMetadataJSONBody,
 	RESTPutAPIApplicationRoleConnectionMetadataResult,
-	RESTPutAPIGuildApplicationCommandsPermissionsResult,
 	RestGetAPIApplicationActivityInstanceResult,
 } from '../../types';
 import type { RestArguments, RestArgumentsNoBody } from '../api';
@@ -73,10 +74,10 @@ export interface ApplicationRoutes {
 					): Promise<RESTPatchAPIApplicationGuildCommandResult>;
 					delete(args?: RestArgumentsNoBody): Promise<undefined>;
 					permissions: {
-						get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildApplicationCommandsPermissionsResult>;
+						get(args?: RestArgumentsNoBody): Promise<RESTGetAPIApplicationCommandPermissionsResult>;
 						put(
-							args?: RestArguments<RESTPutAPIApplicationCommandPermissionsJSONBody>,
-						): Promise<RESTPutAPIGuildApplicationCommandsPermissionsResult>;
+							args: RestArguments<RESTPutAPIApplicationCommandPermissionsJSONBody>,
+						): Promise<RESTPutAPIApplicationCommandPermissionsResult>;
 					};
 				};
 			};

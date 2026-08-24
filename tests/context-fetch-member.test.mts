@@ -55,7 +55,7 @@ describe('CommandContext.fetchMember', () => {
 		expect(fetchedFromCache).not.toBeInstanceOf(Promise);
 		expect((fetchedFromCache as GuildMember).user.id).toBe(user.id);
 		expect(result.content).toBe(user.id);
-		expect(bot.rest.findActions(Routes.fetchMember)).toHaveLength(0);
+		expect(bot.restCalls(Routes.fetchMember)).toHaveLength(0);
 	});
 
 	test('fetches the invoking author member through flow mode after a cache miss', async () => {
@@ -66,7 +66,9 @@ describe('CommandContext.fetchMember', () => {
 		const result = await bot.slash({ name: 'fetch-member', guildId: guild.id, user, member });
 
 		expect(result.content).toBe(user.id);
-		bot.rest.requireAction(Routes.fetchMember, { guildId: guild.id, userId: user.id });
+		expect(bot.restCalls(Routes.fetchMember)).toContainEqual(
+			expect.objectContaining({ params: { guildId: guild.id, userId: user.id } }),
+		);
 	});
 
 	test('fetches the invoking author member through rest mode even with a cache hit', async () => {
@@ -76,7 +78,9 @@ describe('CommandContext.fetchMember', () => {
 		const result = await bot.slash({ name: 'fetch-member', guildId: guild.id, user, member });
 
 		expect(result.content).toBe(user.id);
-		bot.rest.requireAction(Routes.fetchMember, { guildId: guild.id, userId: user.id });
+		expect(bot.restCalls(Routes.fetchMember)).toContainEqual(
+			expect.objectContaining({ params: { guildId: guild.id, userId: user.id } }),
+		);
 	});
 
 	test('returns undefined outside guilds without fetching', async () => {
@@ -85,7 +89,7 @@ describe('CommandContext.fetchMember', () => {
 		const result = await bot.slash({ name: 'fetch-member', guildId: null });
 
 		expect(result.content).toBe('none');
-		expect(bot.rest.findActions(Routes.fetchMember)).toHaveLength(0);
+		expect(bot.restCalls(Routes.fetchMember)).toHaveLength(0);
 	});
 
 	test('returns promise fallbacks for async cache misses', async () => {

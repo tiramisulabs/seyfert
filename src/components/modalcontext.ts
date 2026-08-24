@@ -1,4 +1,4 @@
-import type { AllChannels, Attachment, ModalCommand, ModalSubmitInteraction, ReturnCache } from '..';
+import type { AllChannels, Attachment, ModalCommand, ModalSubmitInteraction, ResolvedChannel, ReturnCache } from '..';
 import type {
 	GuildMemberStructure,
 	GuildRoleStructure,
@@ -69,9 +69,9 @@ export class ModalContext<M extends keyof ResolvedRegisteredMiddlewares = never>
 		);
 	}
 
-	getChannels(customId: string, required: true): AllChannels[];
-	getChannels(customId: string, required?: false): AllChannels[] | void;
-	getChannels(customId: string, required?: boolean): AllChannels[] | void {
+	getChannels(customId: string, required: true): ResolvedChannel[];
+	getChannels(customId: string, required?: false): ResolvedChannel[] | void;
+	getChannels(customId: string, required?: boolean): ResolvedChannel[] | void {
 		if (required) return this.interaction.getChannels(customId, true);
 		return this.interaction.getChannels(customId);
 	}

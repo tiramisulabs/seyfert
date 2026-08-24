@@ -1,4 +1,4 @@
-import { createMockBot } from '@slipher/testing';
+import { createMockBot, rendered } from '@slipher/testing';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import {
 	ActionRow,
@@ -8,6 +8,24 @@ import {
 	Declare,
 	type CommandContext,
 } from '../lib';
+import { ComponentHandler } from '../src/components/handler';
+
+function createHandler() {
+	const logger = {
+		error: vi.fn(),
+		fatal: vi.fn(),
+		warn: vi.fn(),
+	};
+	const client = {
+		logger,
+		options: {},
+	};
+	return new ComponentHandler(logger as never, client as never);
+}
+
+function createInteraction(customId: string) {
+	return { customId } as never;
+}
 
 function createCollectorFixture(registerAfterTimeout = false) {
 	let waitResult: Promise<unknown | null> | undefined;
@@ -68,41 +86,84 @@ async function createCollectorBot(
 describe('component collectors', () => {
 	afterEach(() => {
 		vi.useRealTimers();
+		vi.restoreAllMocks();
 	});
 
 	test('removes a waitFor entry after it times out without removing sibling handlers', async () => {
 		const { bot: collectorBot, fixture } = await createCollectorBot();
 		await using bot = collectorBot;
 		const opened = await bot.slash({ name: 'collect' });
+		const source = bot.lastSentMessage()?.id;
+		if (!source) throw new Error('Collector command did not render a source message.');
 
 		await bot.advanceTime(100);
 
 		await expect(fixture.result()).resolves.toBeNull();
-		await expect(opened.component('keep')!.click()).resolves.toMatchObject({ content: 'kept' });
-		await expect(opened.component('confirm')!.click()).rejects.toThrow(/no component/i);
+		rendered(opened).get.button('keep');
+		await expect(bot.clickButton('keep', { source })).resolves.toMatchObject({ content: 'kept' });
+		await expect(bot.clickButton('confirm', { source })).rejects.toThrow(/no component/i);
 	});
 
 	test('leaves run entries active when registered after waitFor times out for the same custom id', async () => {
 		const { bot: collectorBot, fixture } = await createCollectorBot({ registerAfterTimeout: true });
 		await using bot = collectorBot;
 		const opened = await bot.slash({ name: 'collect' });
+		const source = bot.lastSentMessage()?.id;
+		if (!source) throw new Error('Collector command did not render a source message.');
 
 		await bot.advanceTime(100);
 		await expect(fixture.result()).resolves.toBeNull();
 		await fixture.waitForHandlerRegistration();
 
-		await expect(opened.component('confirm')!.click()).resolves.toMatchObject({ content: 'late handler' });
+		rendered(opened).get.button('confirm');
+		await expect(bot.clickButton('confirm', { source })).resolves.toMatchObject({ content: 'late handler' });
 	});
 
 	test('removes a waitFor entry after it resolves successfully', async () => {
 		const { bot: collectorBot, fixture } = await createCollectorBot();
 		await using bot = collectorBot;
 		const opened = await bot.slash({ name: 'collect' });
+		const source = bot.lastSentMessage()?.id;
+		if (!source) throw new Error('Collector command did not render a source message.');
 
-		await opened.component('confirm')!.click();
+		rendered(opened).get.button('confirm');
+		await bot.clickButton('confirm', { source });
 
 		await expect(fixture.result()).resolves.not.toBeNull();
-		await expect(opened.component('confirm')!.click()).rejects.toThrow(/no component/i);
+		await expect(bot.clickButton('confirm', { source })).rejects.toThrow(/no component/i);
 		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	test.each(['g', 'y'])('matches stateful regular expressions with the %s flag repeatedly', async flag => {
+		const handler = createHandler();
+		const collector = handler.createComponentCollector('message-id', 'channel-id', undefined);
+		const onRun = vi.fn();
+		const customId = new RegExp('^confirm$', flag);
+		customId.lastIndex = 3;
+		collector.run(customId, onRun);
+		const interaction = createInteraction('confirm');
+
+		for (let index = 0; index < 2; index++) {
+			expect(handler.hasComponent('message-id', 'confirm')).toBe(true);
+			await handler.onComponent('message-id', interaction);
+		}
+
+		expect(onRun).toHaveBeenCalledTimes(2);
+		expect(customId.lastIndex).toBe(3);
+	});
+
+	test('matches frozen non-stateful regular expressions repeatedly', async () => {
+		const handler = createHandler();
+		const collector = handler.createComponentCollector('message-id', 'channel-id', undefined);
+		const onRun = vi.fn();
+		collector.run(Object.freeze(/^confirm$/), onRun);
+		const interaction = createInteraction('confirm');
+
+		for (let index = 0; index < 2; index++) {
+			expect(handler.hasComponent('message-id', 'confirm')).toBe(true);
+			await handler.onComponent('message-id', interaction);
+		}
+
+		expect(onRun).toHaveBeenCalledTimes(2);
 	});
 });

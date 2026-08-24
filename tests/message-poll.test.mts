@@ -27,7 +27,9 @@ describe('Message poll helpers', () => {
 
 		expect(ended.id).toBe(message.id);
 		expect(ended.poll?.results?.isFinalized).toBe(true);
-		bot.rest.requireAction(Routes.endPoll, { channelId: channel.id, messageId: message.id });
+		expect(bot.restCalls(Routes.endPoll)).toContainEqual(
+			expect.objectContaining({ params: { channelId: channel.id, messageId: message.id } }),
+		);
 	});
 
 	test('getAnswerVoters validates known answers before calling REST', async () => {
@@ -37,10 +39,10 @@ describe('Message poll helpers', () => {
 		const structure = await bot.client.messages.fetch(message.id, channel.id);
 
 		await expect(structure.getAnswerVoters(1, true)).resolves.toEqual([expect.objectContaining({ id: voter.id })]);
-		expect(bot.rest.findActions(Routes.getPollAnswerVoters)).toHaveLength(1);
+		expect(bot.restCalls(Routes.getPollAnswerVoters)).toHaveLength(1);
 
 		await expect(structure.getAnswerVoters(3, true)).rejects.toMatchObject({ code: 'INVALID_ANSWER_ID' });
-		expect(bot.rest.findActions(Routes.getPollAnswerVoters)).toHaveLength(1);
+		expect(bot.restCalls(Routes.getPollAnswerVoters)).toHaveLength(1);
 	});
 
 	test('getAnswerVoters delegates when local answer validation is not possible', async () => {
@@ -54,10 +56,10 @@ describe('Message poll helpers', () => {
 		const structure = await bot.client.messages.fetch(message.id, channel.id);
 
 		await expect(structure.getAnswerVoters(3, true)).resolves.toEqual([expect.objectContaining({ id: voter.id })]);
-		bot.rest.requireAction(Routes.getPollAnswerVoters, {
-			channelId: channel.id,
-			messageId: message.id,
-			answerId: '3',
-		});
+		expect(bot.restCalls(Routes.getPollAnswerVoters)).toContainEqual(
+			expect.objectContaining({
+				params: { channelId: channel.id, messageId: message.id, answerId: '3' },
+			}),
+		);
 	});
 });

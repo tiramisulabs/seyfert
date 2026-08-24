@@ -1,6 +1,17 @@
 import { Routes, createMockBot, mockWorld } from '@slipher/testing';
 import { describe, expect, test } from 'vitest';
-import { Command, Declare, Embed, InMessageEmbed, type CommandContext } from '../lib';
+import {
+	AttachmentBuilder,
+	BaseInteraction,
+	Command,
+	Declare,
+	Embed,
+	InMessageEmbed,
+	MessagesMethods,
+	type CommandContext,
+	type RESTAPIAttachment,
+	type RESTPostAPIChannelMessageJSONBody,
+} from '../lib';
 
 const channelEmbedData = { title: 'Forwarded', description: 'from a received message' };
 const interactionEmbedData = { title: 'Forwarded', description: 'from an interaction message' };
@@ -17,6 +28,26 @@ class ForwardEmbedsCommand extends Command {
 }
 
 describe('message embed body serialization', () => {
+	test('serializes attachment request metadata for uploaded files', () => {
+		const file = new AttachmentBuilder().setName('image.png').setDescription('alt text').setSpoiler(true);
+		const expected = [{ id: '0', filename: 'image.png', description: 'alt text', is_spoiler: true }];
+		const channelBody = MessagesMethods.transformMessageBody<RESTPostAPIChannelMessageJSONBody>(
+			{},
+			[file],
+			{ options: {} } as never,
+		);
+		const interactionBody = BaseInteraction.transformBody<RESTPostAPIChannelMessageJSONBody>(
+			{},
+			[file],
+			{ options: {} } as never,
+		);
+		const publicRequestContract = { id: '0', is_spoiler: true } satisfies RESTAPIAttachment;
+
+		expect(channelBody.attachments).toEqual(expected);
+		expect(interactionBody.attachments).toEqual(expected);
+		expect(publicRequestContract.is_spoiler).toBe(true);
+	});
+
 	test('serializes received embeds in channel message bodies', async () => {
 		const world = mockWorld();
 		const guild = world.registerGuild();
@@ -27,9 +58,10 @@ describe('message embed body serialization', () => {
 			embeds: forwardedEmbeds(new InMessageEmbed(channelEmbedData)),
 		});
 
-		const action = bot.rest.requireAction(Routes.createMessage, { channelId: channel.id });
-		expect(action.body?.embeds).toEqual([{ title: 'Builder', fields: [] }, { title: 'Raw' }, channelEmbedData]);
-		expect(action.body?.embeds).not.toContainEqual({ data: channelEmbedData });
+		const [action] = bot.restCalls(Routes.createMessage);
+		expect(action).toMatchObject({ params: { channelId: channel.id } });
+		expect(action?.body?.embeds).toEqual([{ title: 'Builder', fields: [] }, { title: 'Raw' }, channelEmbedData]);
+		expect(action?.body?.embeds).not.toContainEqual({ data: channelEmbedData });
 	});
 
 	test('serializes received embeds in interaction message bodies', async () => {

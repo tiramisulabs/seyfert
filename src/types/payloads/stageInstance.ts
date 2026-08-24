@@ -2,7 +2,7 @@ import type { Snowflake } from '../index';
 import type { APIGuildMember } from './guild';
 
 /**
- * https://discord.com/developers/docs/resources/stage-instance#stage-instance-object
+ * https://docs.discord.com/developers/resources/stage-instance#stage-instance-object
  */
 export interface APIStageInstance {
 	/**
@@ -24,7 +24,7 @@ export interface APIStageInstance {
 	/**
 	 * The privacy level of the stage instance
 	 *
-	 * See https://discord.com/developers/docs/resources/stage-instance#stage-instance-object-privacy-level
+	 * See https://docs.discord.com/developers/resources/stage-instance#stage-instance-object-privacy-level
 	 */
 	privacy_level: StageInstancePrivacyLevel;
 	/**
@@ -34,7 +34,7 @@ export interface APIStageInstance {
 }
 
 /**
- * https://discord.com/developers/docs/resources/stage-instance#stage-instance-object-privacy-level
+ * https://docs.discord.com/developers/resources/stage-instance#stage-instance-object-privacy-level
  */
 export enum StageInstancePrivacyLevel {
 	/**
@@ -44,7 +44,7 @@ export enum StageInstancePrivacyLevel {
 }
 
 /**
- * https://discord.com/developers/docs/resources/invite#invite-stage-instance-object-invite-stage-instance-structure
+ * https://docs.discord.com/developers/resources/invite#invite-stage-instance-object-invite-stage-instance-structure
  */
 export interface APIInviteStageInstance {
 	/**
@@ -62,7 +62,7 @@ export interface APIInviteStageInstance {
 	/**
 	 * The members speaking in the stage
 	 *
-	 * See https://discord.com/developers/docs/resources/guild#guild-member-object-guild-member-structure
+	 * See https://docs.discord.com/developers/resources/guild#guild-member-object-guild-member-structure
 	 */
 	members: APIGuildMember[];
 }

@@ -22,7 +22,7 @@ export * from './_applicationCommands/contextMenu';
 export * from './_applicationCommands/permissions';
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#application-command-object
+ * https://docs.discord.com/developers/interactions/application-commands#application-command-object
  */
 export interface APIApplicationCommand {
 	/**
@@ -99,7 +99,7 @@ export interface APIApplicationCommand {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-types
+ * https://docs.discord.com/developers/interactions/application-commands#application-command-object-application-command-types
  */
 export enum ApplicationCommandType {
 	/**
@@ -121,7 +121,7 @@ export enum ApplicationCommandType {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#application-command-object-entry-point-command-handler-types
+ * https://docs.discord.com/developers/interactions/application-commands#application-command-object-entry-point-command-handler-types
  */
 export enum EntryPointCommandHandlerType {
 	/**
@@ -135,7 +135,7 @@ export enum EntryPointCommandHandlerType {
 }
 
 /**
- * https://discord.com/developers/docs/resources/application#application-object-application-integration-types
+ * https://docs.discord.com/developers/resources/application#application-object-application-integration-types
  */
 export enum ApplicationIntegrationType {
 	/**
@@ -149,7 +149,7 @@ export enum ApplicationIntegrationType {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-interaction-context-types
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-interaction-context-types
  */
 export enum InteractionContextType {
 	/**
@@ -174,7 +174,7 @@ export interface APIEntryPointInteractionData
 	extends APIBaseApplicationCommandInteractionData<ApplicationCommandType.PrimaryEntryPoint> {}
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-interaction-data
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-interaction-data
  */
 export type APIApplicationCommandInteractionData =
 	| APIChatInputApplicationCommandInteractionData
@@ -182,7 +182,7 @@ export type APIApplicationCommandInteractionData =
 	| APIEntryPointInteractionData;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object
  */
 export type APIApplicationCommandInteractionWrapper<Data extends APIApplicationCommandInteractionData> =
 	APIBaseInteraction<InteractionType.ApplicationCommand, Data> &
@@ -191,7 +191,7 @@ export type APIApplicationCommandInteractionWrapper<Data extends APIApplicationC
 		>;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object
  */
 export type APIApplicationCommandInteraction =
 	| APIChatInputApplicationCommandInteraction
@@ -199,14 +199,14 @@ export type APIApplicationCommandInteraction =
 	| APIEntryPointCommandInteraction;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object
  */
 export type APIApplicationCommandDMInteraction =
 	| APIChatInputApplicationCommandDMInteraction
 	| APIContextMenuDMInteraction;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object
  */
 export type APIApplicationCommandGuildInteraction =
 	| APIChatInputApplicationCommandGuildInteraction

@@ -83,7 +83,7 @@ describe('component command internal errors', () => {
 		});
 		await bot.slash({ name: 'open-failing-modal' });
 
-		await bot.fillModal('modal-internal-error', { value: 'test' });
+		await bot.submitModal('modal-internal-error', { value: 'test' });
 
 		expect(modalRunError).not.toHaveBeenCalled();
 		expect(modalRun).not.toHaveBeenCalled();

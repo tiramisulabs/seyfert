@@ -55,7 +55,7 @@ export enum ImageFormat {
 }
 
 /**
- * https://discord.com/developers/docs/reference#message-formatting-formats
+ * https://docs.discord.com/developers/reference#message-formatting-formats
  */
 export const FormattingPatterns = {
 	/**
@@ -159,7 +159,7 @@ Object.freeze(FormattingPatterns);
 export const GatewayVersion = '10';
 
 /**
- * https://discord.com/developers/docs/topics/opcodes-and-status-codes#gateway-gateway-opcodes
+ * https://docs.discord.com/developers/topics/opcodes-and-status-codes#gateway-gateway-opcodes
  */
 export enum GatewayOpcodes {
 	/**
@@ -218,7 +218,7 @@ export enum GatewayOpcodes {
 }
 
 /**
- * https://discord.com/developers/docs/topics/opcodes-and-status-codes#gateway-gateway-close-event-codes
+ * https://docs.discord.com/developers/topics/opcodes-and-status-codes#gateway-gateway-close-event-codes
  */
 export enum GatewayCloseCodes {
 	/**
@@ -228,25 +228,25 @@ export enum GatewayCloseCodes {
 	/**
 	 * You sent an invalid Gateway opcode or an invalid payload for an opcode. Don't do that!
 	 *
-	 * See https://discord.com/developers/docs/topics/gateway-events#payload-structure
+	 * See https://docs.discord.com/developers/topics/gateway-events#payload-structure
 	 */
 	UnknownOpcode,
 	/**
 	 * You sent an invalid payload to us. Don't do that!
 	 *
-	 * See https://discord.com/developers/docs/topics/gateway#sending-events
+	 * See https://docs.discord.com/developers/topics/gateway#sending-events
 	 */
 	DecodeError,
 	/**
 	 * You sent us a payload prior to identifying
 	 *
-	 * See https://discord.com/developers/docs/topics/gateway-events#identify
+	 * See https://docs.discord.com/developers/topics/gateway-events#identify
 	 */
 	NotAuthenticated,
 	/**
 	 * The account token sent with your identify payload is incorrect
 	 *
-	 * See https://discord.com/developers/docs/topics/gateway-events#identify
+	 * See https://docs.discord.com/developers/topics/gateway-events#identify
 	 */
 	AuthenticationFailed,
 	/**
@@ -256,7 +256,7 @@ export enum GatewayCloseCodes {
 	/**
 	 * The sequence sent when resuming the session was invalid. Reconnect and start a new session
 	 *
-	 * See https://discord.com/developers/docs/topics/gateway-events#resume
+	 * See https://docs.discord.com/developers/topics/gateway-events#resume
 	 */
 	InvalidSeq = 4_007,
 	/**
@@ -270,13 +270,13 @@ export enum GatewayCloseCodes {
 	/**
 	 * You sent us an invalid shard when identifying
 	 *
-	 * See https://discord.com/developers/docs/topics/gateway#sharding
+	 * See https://docs.discord.com/developers/topics/gateway#sharding
 	 */
 	InvalidShard,
 	/**
 	 * The session would have handled too many guilds - you are required to shard your connection in order to connect
 	 *
-	 * See https://discord.com/developers/docs/topics/gateway#sharding
+	 * See https://docs.discord.com/developers/topics/gateway#sharding
 	 */
 	ShardingRequired,
 	/**
@@ -286,22 +286,22 @@ export enum GatewayCloseCodes {
 	/**
 	 * You sent an invalid intent for a Gateway Intent. You may have incorrectly calculated the bitwise value
 	 *
-	 * See https://discord.com/developers/docs/topics/gateway#gateway-intents
+	 * See https://docs.discord.com/developers/topics/gateway#gateway-intents
 	 */
 	InvalidIntents,
 	/**
 	 * You sent a disallowed intent for a Gateway Intent. You may have tried to specify an intent that you have not
 	 * enabled or are not whitelisted for
 	 *
-	 * See https://discord.com/developers/docs/topics/gateway#gateway-intents
+	 * See https://docs.discord.com/developers/topics/gateway#gateway-intents
 	 *
-	 * See https://discord.com/developers/docs/topics/gateway#privileged-intents
+	 * See https://docs.discord.com/developers/topics/gateway#privileged-intents
 	 */
 	DisallowedIntents,
 }
 
 /**
- * https://discord.com/developers/docs/topics/gateway#list-of-intents
+ * https://docs.discord.com/developers/topics/gateway#list-of-intents
  */
 export enum GatewayIntentBits {
 	Guilds = 1 << 0,
@@ -330,7 +330,7 @@ export enum GatewayIntentBits {
 }
 
 /**
- * https://discord.com/developers/docs/topics/gateway-events#receive-events
+ * https://docs.discord.com/developers/topics/gateway-events#receive-events
  */
 export enum GatewayDispatchEvents {
 	ApplicationCommandPermissionsUpdate = 'APPLICATION_COMMAND_PERMISSIONS_UPDATE',
@@ -418,7 +418,7 @@ export enum GatewayDispatchEvents {
 }
 
 /**
- * https://discord.com/developers/docs/topics/permissions#permissions-bitwise-permission-flags
+ * https://docs.discord.com/developers/topics/permissions#permissions-bitwise-permission-flags
  *
  * These flags are exported as `BigInt`s and NOT numbers. Wrapping them in `Number()`
  * may cause issues, try to use BigInts as much as possible or modules that can
@@ -726,7 +726,7 @@ export const PermissionFlagsBits = {
 Object.freeze(PermissionFlagsBits);
 
 /**
- * https://discord.com/developers/docs/resources/channel#channel-object-channel-types
+ * https://docs.discord.com/developers/resources/channel#channel-object-channel-types
  */
 export enum ChannelType {
 	/**
@@ -805,7 +805,7 @@ export enum VideoQualityMode {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#guild-member-object-guild-member-flags
+ * https://docs.discord.com/developers/resources/guild#guild-member-object-guild-member-flags
  */
 export enum GuildMemberFlags {
 	/**
@@ -856,7 +856,7 @@ export enum OverwriteType {
 }
 
 /**
- * https://discord.com/developers/docs/topics/gateway-events#voice-channel-effect-send-animation-types
+ * https://docs.discord.com/developers/topics/gateway-events#voice-channel-effect-send-animation-types
  */
 export enum AnimationTypes {
 	/** A fun animation, sent by a Nitro subscriber */

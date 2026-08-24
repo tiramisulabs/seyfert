@@ -10,6 +10,8 @@
 //     the fix), so these are the cases that turn red if the fix is reverted. Do not inline them.
 //   • SIN `as const` → behaves exactly as before the fix: the value type is widened.
 import {
+	ApplicationCommandOptionType,
+	type APIApplicationCommandAttachmentOption,
 	type Attachment,
 	ChannelType,
 	type CommandContext,
@@ -22,10 +24,13 @@ import {
 	createRoleOption,
 	createStringOption,
 	createUserOption,
+	type FileUploadType,
 	type GuildMemberStructure,
 	type GuildRoleStructure,
 	type InteractionGuildMemberStructure,
 	type OKFunction,
+	type ResolvedChannel,
+	type SeyfertAttachmentOption,
 	type TextGuildChannelStructure,
 	type UserStructure,
 	type VoiceChannelStructure,
@@ -37,6 +42,8 @@ type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ?
 		? true
 		: false
 	: false;
+type ResolvedTextChannel = ResolvedChannel<TextGuildChannelStructure>;
+type ResolvedTextOrVoiceChannel = ResolvedChannel<TextGuildChannelStructure | VoiceChannelStructure>;
 
 // Distinct marker type so "the `ok` type flows to ctx.options" is unambiguous for every helper.
 interface Resolved {
@@ -149,14 +156,32 @@ const channelOptions = {
 } as const;
 
 declare const channelCtx: CommandContext<typeof channelOptions>;
-expectType<true>(true as Equal<typeof channelCtx.options.constOne, TextGuildChannelStructure>);
+expectType<true>(true as Equal<typeof channelCtx.options.constOne, ResolvedTextChannel>);
 expectType<true>(
-	true as Equal<typeof channelCtx.options.constMany, TextGuildChannelStructure | VoiceChannelStructure>,
+	true as Equal<typeof channelCtx.options.constMany, ResolvedTextOrVoiceChannel>,
 );
-expectType<true>(true as Equal<typeof channelCtx.options.mutableOne, TextGuildChannelStructure>);
+expectType<true>(true as Equal<typeof channelCtx.options.mutableOne, ResolvedTextChannel>);
 expectType<true>(
-	true as Equal<typeof channelCtx.options.mutableMany, TextGuildChannelStructure | VoiceChannelStructure>,
+	true as Equal<typeof channelCtx.options.mutableMany, ResolvedTextOrVoiceChannel>,
 );
+
+// ─────────────────────────── attachment file_types ───────────────────────────
+const attachmentFileTypes = ['image', '.pdf'] as const satisfies readonly FileUploadType[];
+
+expectType<APIApplicationCommandAttachmentOption>({
+	type: ApplicationCommandOptionType.Attachment,
+	name: 'document',
+	description: 'Upload a document',
+	file_types: [...attachmentFileTypes],
+});
+expectType<SeyfertAttachmentOption>({
+	description: 'Upload a document',
+	file_types: attachmentFileTypes,
+});
+createAttachmentOption({ description: 'Upload a document', file_types: attachmentFileTypes });
+
+// @ts-expect-error File extension filters must be dot-prefixed.
+expectType<FileUploadType>('pdf');
 
 // ───────────── every create*Option — SIN callback (tipo base) ─────────────
 const withoutCallback = {
@@ -185,7 +210,7 @@ expectType<true>(
 	>,
 );
 expectType<true>(true as Equal<typeof baseCtx.options.attachment, Attachment>);
-expectType<true>(true as Equal<typeof baseCtx.options.channel, TextGuildChannelStructure>);
+expectType<true>(true as Equal<typeof baseCtx.options.channel, ResolvedTextChannel>);
 
 // ───────────── every create*Option — CON callback `value` + `ok` ─────────────
 // `data.value` receives the option's input type; `ok: OKFunction<Resolved>` makes ctx.options `Resolved`.
@@ -264,7 +289,7 @@ const withCallback = {
 		required: true,
 		channel_types: [ChannelType.GuildText],
 		value(data, ok: OKFunction<Resolved>) {
-			expectType<true>(true as Equal<typeof data.value, TextGuildChannelStructure>);
+			expectType<true>(true as Equal<typeof data.value, ResolvedTextChannel>);
 			ok({ rid: '1' });
 		},
 	}),

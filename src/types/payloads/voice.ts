@@ -1,12 +1,12 @@
 /**
- * Types extracted from https://discord.com/developers/docs/resources/voice
+ * Types extracted from https://docs.discord.com/developers/resources/voice
  */
 
 import type { Snowflake } from '../index';
 import type { APIGuildMember } from './guild';
 
 /**
- * https://discord.com/developers/docs/resources/voice#voice-state-object
+ * https://docs.discord.com/developers/resources/voice#voice-state-object
  */
 export interface APIVoiceState {
 	/**
@@ -24,7 +24,7 @@ export interface APIVoiceState {
 	/**
 	 * The guild member this voice state is for
 	 *
-	 * See https://discord.com/developers/docs/resources/guild#guild-member-object
+	 * See https://docs.discord.com/developers/resources/guild#guild-member-object
 	 */
 	member?: APIGuildMember;
 	/**
@@ -66,7 +66,7 @@ export interface APIVoiceState {
 }
 
 /**
- * https://discord.com/developers/docs/resources/voice#voice-region-object
+ * https://docs.discord.com/developers/resources/voice#voice-region-object
  */
 export interface APIVoiceRegion {
 	/**

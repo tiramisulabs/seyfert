@@ -143,7 +143,11 @@ export class GuildShorter extends BaseShorter {
 		if ('code' in result && result.code === 110_000) {
 			if (!wait)
 				throw new SeyfertError('GUILD_SEARCH_INDEX_NOT_READY', {
-					metadata: { guildId, retryAfter: result.retry_after },
+					metadata: {
+						guildId,
+						retryAfter: result.retry_after,
+						detail: `Guild search index for ${guildId} is not ready; retry after ${result.retry_after} seconds.`,
+					},
 				});
 			await delay(result.retry_after * 1000);
 			return this.searchMessages(guildId, query, wait);

@@ -1,6 +1,7 @@
 import { Routes, apiMember, apiUser, createMockBot, mockWorld } from '@slipher/testing';
 import { describe, expect, test, vi } from 'vitest';
 import { GuildMember } from '../lib';
+import { MemberShorter } from '../lib/common/shorters/members';
 
 const guildId = '100000000000000001';
 const botId = '200000000000000002';
@@ -40,6 +41,16 @@ describe('GuildMember roles', () => {
 
 		await expect(member.roles.highest()).resolves.toBeUndefined();
 		expect(list).toHaveBeenCalledWith(guildId, false);
+	});
+
+	test('member shorter sorts equal role positions by snowflake id', async () => {
+		const olderRole = { id: botRoleId, position: 10 };
+		const newerRole = { id: targetRoleId, position: 10 };
+		const memberShorter = new MemberShorter({} as any);
+		const listRoles = vi.spyOn(memberShorter, 'listRoles').mockResolvedValue([newerRole, olderRole] as any);
+
+		await expect(memberShorter.sortRoles(guildId, targetId, true)).resolves.toEqual([olderRole, newerRole]);
+		expect(listRoles).toHaveBeenCalledWith(guildId, targetId, true);
 	});
 
 	test('manageable retries forced role lookups and returns false when highest role data is missing', async () => {
@@ -86,6 +97,32 @@ describe('GuildMember roles', () => {
 		expect(list.mock.calls.map(call => call[1])).toEqual([false, false, true, true]);
 	});
 
+	test('manageable uses snowflake ids to resolve equal role positions', async () => {
+		const everyoneRole = { id: guildId, position: 0 };
+		const olderRole = { id: botRoleId, position: 10 };
+		const newerRole = { id: targetRoleId, position: 10 };
+		const list = vi.fn().mockResolvedValue([everyoneRole, newerRole, olderRole]);
+		const client = {
+			botId,
+			roles: { list },
+			guilds: {
+				fetchSelf: vi.fn(),
+				fetch: vi.fn().mockResolvedValue({ ownerId: '900000000000000009' }),
+			},
+		} as any;
+		const botMember = createMember(client, botId, [botRoleId], true);
+		const targetMember = createMember(client, targetId, [targetRoleId]);
+		client.guilds.fetchSelf.mockResolvedValue(botMember);
+
+		await expect(targetMember.manageable()).resolves.toBe(true);
+
+		const lowerBotMember = createMember(client, botId, [targetRoleId], true);
+		const higherTargetMember = createMember(client, targetId, [botRoleId]);
+		client.guilds.fetchSelf.mockResolvedValue(lowerBotMember);
+
+		await expect(higherTargetMember.manageable()).resolves.toBe(false);
+	});
+
 	test('manageable starts self and guild fetches before waiting for either result', async () => {
 		const everyoneRole = { id: guildId, position: 0 };
 		const botRole = { id: botRoleId, position: 20 };
@@ -127,12 +164,13 @@ describe('GuildMember moderation helpers', () => {
 		try {
 			await bot.client.members.timeout(guild.id, target.user.id, 1_500, 'brief timeout');
 
-			const action = bot.rest.requireAction(Routes.editMember, {
-				guildId: guild.id,
-				userId: target.user.id,
-			});
-			expect(action.body).toEqual({ communication_disabled_until: '2026-01-01T00:00:01.500Z' });
-			expect(action.reason).toBe('brief timeout');
+			expect(bot.restCalls(Routes.editMember)).toContainEqual(
+				expect.objectContaining({
+					params: { guildId: guild.id, userId: target.user.id },
+					body: { communication_disabled_until: '2026-01-01T00:00:01.500Z' },
+					reason: 'brief timeout',
+				}),
+			);
 		} finally {
 			vi.useRealTimers();
 		}
@@ -150,12 +188,13 @@ describe('GuildMember moderation helpers', () => {
 			reason: 'cleanup',
 		});
 
-		const memberAction = memberBot.rest.requireAction(Routes.ban, {
-			guildId: memberGuild.id,
-			userId: memberTarget.user.id,
-		});
-		expect(memberAction.body).toEqual({ delete_message_seconds: 60 });
-		expect(memberAction.reason).toBe('cleanup');
+		expect(memberBot.restCalls(Routes.ban)).toContainEqual(
+			expect.objectContaining({
+				params: { guildId: memberGuild.id, userId: memberTarget.user.id },
+				body: { delete_message_seconds: 60 },
+				reason: 'cleanup',
+			}),
+		);
 		expect(removeMember).toHaveBeenCalledWith('GuildModeration', memberTarget.user.id, memberGuild.id);
 		expect(memberBot.world.get.ban({ guildId: memberGuild.id, userId: memberTarget.user.id })).toBeDefined();
 
@@ -169,12 +208,13 @@ describe('GuildMember moderation helpers', () => {
 			reason: 'cleanup more',
 		});
 
-		const banAction = banBot.rest.requireAction(Routes.ban, {
-			guildId: banGuild.id,
-			userId: banTarget.user.id,
-		});
-		expect(banAction.body).toEqual({ delete_message_seconds: 120 });
-		expect(banAction.reason).toBe('cleanup more');
+		expect(banBot.restCalls(Routes.ban)).toContainEqual(
+			expect.objectContaining({
+				params: { guildId: banGuild.id, userId: banTarget.user.id },
+				body: { delete_message_seconds: 120 },
+				reason: 'cleanup more',
+			}),
+		);
 		expect(removeBannedMember).toHaveBeenCalledWith('GuildModeration', banTarget.user.id, banGuild.id);
 		expect(banBot.world.get.ban({ guildId: banGuild.id, userId: banTarget.user.id })).toBeDefined();
 	});
