@@ -1,7 +1,7 @@
 import type { Client, WorkerClient } from '../client';
 import { runContextScopes, runPluginAutocompleteWrappers, runPluginCommandObservers } from '../client/plugins';
 import { type MessageStructure, type OptionResolverStructure, Transformers } from '../client/transformers';
-import { type MakeRequired, SeyfertError } from '../common';
+import { type Awaitable, type MakeRequired, type PermissionStrings, SeyfertError } from '../common';
 import { INTEGER_OPTION_VALUE_LIMIT } from '../common/it/constants';
 import { ComponentContext, ModalContext } from '../components';
 import {
@@ -119,7 +119,7 @@ export class HandleCommand {
 		return runContextScopes(this.client.options.contextScopes, context, async () => {
 			try {
 				if (context.guildId && command.botPermissions) {
-					const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
+					const permissions = await this.checkBotPermissions(command, context, interaction.appPermissions);
 					if (permissions) return await command.onBotPermissionsFail?.(context, permissions);
 				}
 
@@ -171,7 +171,7 @@ export class HandleCommand {
 		return runContextScopes(this.client.options.contextScopes, context, async () => {
 			try {
 				if (context.guildId && command.botPermissions) {
-					const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
+					const permissions = await this.checkBotPermissions(command, context, interaction.appPermissions);
 					if (permissions) return await command.onBotPermissionsFail(context, permissions);
 				}
 
@@ -213,15 +213,12 @@ export class HandleCommand {
 			try {
 				if (context.guildId) {
 					if (command.botPermissions) {
-						const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
+						const permissions = await this.checkBotPermissions(command, context, interaction.appPermissions);
 						if (permissions) return await command.onBotPermissionsFail?.(context, permissions);
 					}
 
 					if (command.defaultMemberPermissions) {
-						const permissions = this.checkPermissions(
-							interaction.member!.permissions,
-							command.defaultMemberPermissions,
-						);
+						const permissions = await this.checkMemberPermissions(command, context, interaction.member!.permissions);
 						if (permissions) return await command.onPermissionsFail?.(context, permissions);
 					}
 				}
@@ -444,7 +441,7 @@ export class HandleCommand {
 				if (rawMessage.guild_id) {
 					if (command.defaultMemberPermissions) {
 						const memberPermissions = await self.members.permissions(rawMessage.guild_id, rawMessage.author.id);
-						const permissions = this.checkPermissions(memberPermissions, command.defaultMemberPermissions);
+						const permissions = await this.checkMemberPermissions(command, context, memberPermissions);
 						const guild = await this.client.guilds.raw(rawMessage.guild_id);
 						if (permissions && guild.owner_id !== rawMessage.author.id) {
 							return await command.onPermissionsFail?.(context, permissions);
@@ -453,7 +450,7 @@ export class HandleCommand {
 
 					if (command.botPermissions) {
 						const appPermissions = await self.members.permissions(rawMessage.guild_id, self.botId);
-						const permissions = this.checkPermissions(appPermissions, command.botPermissions);
+						const permissions = await this.checkBotPermissions(command, context, appPermissions);
 						if (permissions) {
 							return await command.onBotPermissionsFail?.(context, permissions);
 						}
@@ -626,6 +623,50 @@ export class HandleCommand {
 			}
 			return command.name === data.name;
 		}) as T;
+	}
+
+	/**
+	 * Checks the member permissions required by a command.
+	 *
+	 * @remarks
+	 * This method runs for guild executions when the command declares `defaultMemberPermissions`.
+	 * Override it to customize member permission checks; overrides can return synchronously or asynchronously.
+	 * Thrown errors and rejected promises are routed through the command's internal error handler.
+	 *
+	 * @param command - The command whose member permissions are being checked.
+	 * @param _context - The context of the command execution.
+	 * @param permissions - The permissions currently held by the member.
+	 * @returns The missing permission names, or `undefined` when command execution can continue.
+	 */
+	checkMemberPermissions(
+		command: Command | SubCommand,
+		_context: CommandContext,
+		permissions: PermissionsBitField,
+	): Awaitable<PermissionStrings | undefined> {
+		if (!command.defaultMemberPermissions) return;
+		return this.checkPermissions(permissions, command.defaultMemberPermissions);
+	}
+
+	/**
+	 * Checks the bot permissions required by a command.
+	 *
+	 * @remarks
+	 * This method runs for guild executions when the command declares `botPermissions`.
+	 * Override it to customize bot permission checks; overrides can return synchronously or asynchronously.
+	 * Thrown errors and rejected promises are routed through the command's internal error handler.
+	 *
+	 * @param command - The command whose bot permissions are being checked.
+	 * @param _context - The context of the command execution.
+	 * @param permissions - The permissions currently held by the bot.
+	 * @returns The missing permission names, or `undefined` when command execution can continue.
+	 */
+	checkBotPermissions(
+		command: Command | SubCommand | ContextMenuCommand | EntryPointCommand,
+		_context: CommandContext | MenuCommandContext<any> | EntryPointContext,
+		permissions: PermissionsBitField,
+	): Awaitable<PermissionStrings | undefined> {
+		if (!command.botPermissions) return;
+		return this.checkPermissions(permissions, command.botPermissions);
 	}
 
 	checkPermissions(app: PermissionsBitField, bot: bigint) {
