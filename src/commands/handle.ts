@@ -576,7 +576,7 @@ export class HandleCommand {
 		try {
 			return await this.client.members.raw(guildId, id);
 		} catch (error) {
-			const response = error instanceof SeyfertError ? error.metadata?.response : undefined;
+			const response = SeyfertError.is(error) ? error.metadata?.response : undefined;
 			if (
 				typeof response === 'object' &&
 				response !== null &&
