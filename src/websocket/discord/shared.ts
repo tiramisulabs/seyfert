@@ -81,7 +81,7 @@ export interface WorkerManagerOptions extends Omit<ShardManagerOptions, 'handleP
 	workerEnv?: Readonly<Record<string, string>>;
 
 	/**
-	 * @default 16
+	 * @default 8
 	 */
 	shardsPerWorker?: number;
 

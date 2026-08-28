@@ -2,9 +2,14 @@ import { resolve } from 'node:path';
 import type { Worker } from 'node:worker_threads';
 import { describe, expect, test, vi } from 'vitest';
 import { WorkerClient } from '../src/client/workerclient';
+import { WorkerManagerDefaults } from '../src/websocket/constants';
 import { WorkerManager } from '../src/websocket/discord/workermanager';
 
 describe('WorkerManager diagnostics', () => {
+	test('uses eight shards per worker by default', () => {
+		expect(WorkerManagerDefaults.shardsPerWorker).toBe(8);
+	});
+
 	test('forwards environment variables to custom adapters', () => {
 		const spawn = vi.fn();
 		const info = gatewayInfo();
