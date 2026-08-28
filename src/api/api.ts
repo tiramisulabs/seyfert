@@ -17,6 +17,7 @@ import type { APIRoutes } from './Routes';
 import {
 	type ApiHandlerInternalOptions,
 	type ApiHandlerOptions,
+	type ApiRequestBody,
 	type ApiRequestOptions,
 	DefaultUserAgent,
 	type HttpMethods,
@@ -41,12 +42,34 @@ export type OnFailRequestCallback = (
 	error: unknown,
 	statusCode?: number,
 ) => Awaitable<any>;
+type InternalApiRequestOptions = ApiRequestOptions & { _50xRetries?: number };
+
+// JavaScript timers use a signed 32-bit millisecond delay.
+const MAX_TIMER_DELAY_MS = 2_147_483_647;
+const MAX_BUCKET_RESET_DELAY_MS = MAX_TIMER_DELAY_MS - 1;
+const MAX_SMART_BUCKET_RESET_AFTER_MS = Math.floor(MAX_TIMER_DELAY_MS / 1.5);
+
+function parseRateLimitCount(raw: string | null, minimum: number): null | number | undefined {
+	if (raw === null) return;
+	if (!/^\d+$/.test(raw)) return null;
+	const value = Number(raw);
+	return Number.isSafeInteger(value) && value >= minimum ? value : null;
+}
+
+function parseRateLimitDelay(value: number | string | null): number | undefined {
+	if (value === null || (typeof value === 'string' && value.trim() === '')) return;
+	const milliseconds = Number(value) * 1000;
+	return Number.isFinite(milliseconds) && milliseconds >= 0 ? milliseconds : undefined;
+}
 
 export class ApiHandler {
 	options: ApiHandlerInternalOptions;
 	globalBlock = false;
 	ratelimits = new Map<string, Bucket>();
 	readyQueue: (() => void)[] = [];
+	private bucketAliases = new Map<string, string>();
+	private globalBlocks = new Map<string, (() => void)[]>();
+	private globalTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	cdn = CDNRouter.createProxy();
 	workerPromises?: Map<string, { resolve: (value: any) => any; reject: (error: any) => any }>;
 	onRatelimit?: OnRatelimitCallback;
@@ -110,6 +133,12 @@ export class ApiHandler {
 	}
 
 	globalUnblock() {
+		for (const timer of this.globalTimers.values()) clearTimeout(timer);
+		this.globalTimers.clear();
+		for (const queue of this.globalBlocks.values()) {
+			for (const callback of queue) callback();
+		}
+		this.globalBlocks.clear();
 		this.globalBlock = false;
 		let cb: (() => void) | undefined;
 		while ((cb = this.readyQueue.shift())) {
@@ -150,11 +179,11 @@ export class ApiHandler {
 		}
 	}
 
-	async request<T = unknown>(
-		method: HttpMethods,
-		url: `/${string}`,
-		{ auth = true, ...request }: ApiRequestOptions = {},
-	): Promise<T> {
+	async request<T = unknown>(method: HttpMethods, url: `/${string}`, request: ApiRequestOptions = {}): Promise<T> {
+		const requestOptions = { ...request } as InternalApiRequestOptions;
+		const { auth = true } = requestOptions;
+		let attempts = requestOptions._50xRetries ?? 0;
+		delete requestOptions._50xRetries;
 		const originTrace: { stack?: string } = {};
 		Error.captureStackTrace(originTrace, this.request);
 
@@ -166,11 +195,12 @@ export class ApiHandler {
 				type: 'WORKER_API_REQUEST',
 				workerId: this.workerData!.workerId,
 				nonce,
-				requestOptions: { auth, ...request },
+				requestOptions: { auth, ...requestOptions },
 			});
 		}
-		const route = request.route || this.routefy(url, method);
-		let attempts = 0;
+		const route = requestOptions.route || this.routefy(url, method);
+		const provisionalRoute = requestOptions.route || `${method}:${route}`;
+		let bucketRoute = this.bucketAliases.get(provisionalRoute) ?? provisionalRoute;
 
 		const callback = async (next: () => void, resolve: (data: any) => void, reject: (err: unknown) => void) => {
 			const headers = {
@@ -180,7 +210,7 @@ export class ApiHandler {
 			const { data, finalUrl } = this.parseRequest({
 				url,
 				headers,
-				request: { ...request, auth },
+				request: { ...requestOptions, auth },
 			});
 
 			let response: Response;
@@ -205,77 +235,126 @@ export class ApiHandler {
 			const now = Date.now();
 			const headerNow = Date.parse(response.headers.get('date') ?? '');
 
-			this.setRatelimitsBucket(route, response);
-			this.setResetBucket(route, response, now, headerNow);
+			bucketRoute = this.learnBucket(provisionalRoute, bucketRoute, url, response, requestOptions.route !== undefined);
+			this.setRatelimitsBucket(bucketRoute, response);
+			this.setResetBucket(bucketRoute, response, now, headerNow, route);
+			this.ratelimits.get(bucketRoute)!.process();
 
-			let result: string | Record<string, any> = await response.text();
+			const needsObserverBody =
+				(response.status < 300 && this.onSuccessRequest !== undefined) ||
+				(response.status === 429 && this.onRatelimit !== undefined);
+			const observerResponse = needsObserverBody ? response.clone() : response;
+			let result: unknown;
+			try {
+				result = await decodeResponse(response);
+			} catch (error) {
+				await this.notifyFailRequest(method, finalUrl, error, response.status);
+				next();
+				reject(error);
+				return;
+			}
 
 			if (response.status >= 300) {
+				const errorResult = normalizeErrorResult(result);
 				if (response.status === 429) {
-					const result429 = await this.handle429(route, method, url, request, response, result, next, reject, now);
+					const result429 = await this.handle429(
+						bucketRoute,
+						method,
+						url,
+						{ ...requestOptions, auth },
+						observerResponse,
+						typeof errorResult === 'string' ? errorResult : JSON.stringify(errorResult),
+						next,
+						reject,
+						now,
+					);
 					if (result429 !== false) return resolve(result429);
-					await this.notifyFailRequest(method, finalUrl, result, response.status);
-					return this.clearResetInterval(route);
+					await this.notifyFailRequest(method, finalUrl, errorResult, response.status);
+					return this.clearResetInterval(bucketRoute);
 				}
 				if ([502, 503].includes(response.status) && ++attempts < 4) {
-					this.clearResetInterval(route);
-					return this.handle50X(method, url, request, next);
+					this.clearResetInterval(bucketRoute);
+					return this.handle50X(method, url, requestOptions, attempts, next, resolve, reject);
 				}
-				this.clearResetInterval(route);
+				this.clearResetInterval(bucketRoute);
 				next();
-				if (result.length > 0) {
-					if (response.headers.get('content-type')?.includes('application/json')) {
-						try {
-							result = JSON.parse(result);
-						} catch (err) {
-							this.debugger?.warn('SeyfertError parsing result error (', result, ')', err);
-							await this.notifyFailRequest(method, finalUrl, err, response.status);
-							reject(err);
-							return;
-						}
-					}
-				}
-				const parsedError = this.parseError(method, route, response, result, originTrace);
+				const parsedError = this.parseError(method, route, response, errorResult, originTrace);
 				this.debugger?.warn(parsedError.message);
 				await this.notifyFailRequest(method, finalUrl, parsedError, response.status);
 				reject(parsedError);
 				return;
 			}
 
-			if (result.length > 0) {
-				if (response.headers.get('content-type')?.includes('application/json')) {
-					try {
-						result = JSON.parse(result);
-					} catch (err) {
-						this.debugger?.warn('Failed parsing result (', result, ')', err);
-						await this.notifyFailRequest(method, finalUrl, err, response.status);
-						next();
-						reject(err);
-						return;
-					}
-				}
-			}
-
-			await this.notifySuccessRequest(method, finalUrl, response);
+			await this.notifySuccessRequest(method, finalUrl, observerResponse);
 			next();
-			return resolve(result || undefined);
+			return resolve(result);
 		};
 
 		return new Promise((resolve, reject) => {
-			if (this.globalBlock && auth) {
-				this.readyQueue.push(() => {
-					if (!this.ratelimits.has(route)) {
-						this.ratelimits.set(route, new Bucket(1));
-					}
-					this.ratelimits.get(route)!.push({ next: callback, resolve, reject }, request.unshift);
-				});
-			} else {
-				if (!this.ratelimits.has(route)) {
-					this.ratelimits.set(route, new Bucket(1));
+			const dispatch = () => {
+				bucketRoute = this.bucketAliases.get(provisionalRoute) ?? bucketRoute;
+				if (!this.ratelimits.has(bucketRoute)) {
+					this.ratelimits.set(bucketRoute, new Bucket(1));
 				}
-				this.ratelimits.get(route)!.push({ next: callback, resolve, reject }, request.unshift);
+				this.ratelimits.get(bucketRoute)!.push({ next: callback, resolve, reject }, requestOptions.unshift);
+			};
+			const globalQueue = this.globalBlocks.get(this.globalRateLimitKey({ ...requestOptions, auth }));
+			if (globalQueue && !url.startsWith('/interactions/')) {
+				globalQueue.push(dispatch);
+			} else {
+				dispatch();
 			}
 		});
+	}
+
+	private learnBucket(
+		provisionalRoute: string,
+		currentRoute: string,
+		url: `/${string}`,
+		response: Response,
+		hasRouteOverride: boolean,
+	) {
+		const hash = response.headers.get('x-ratelimit-bucket');
+		if (!hash || hasRouteOverride) return currentRoute;
+
+		const learnedRoute = `${hash}:${majorParameter(url)}`;
+		this.bucketAliases.set(provisionalRoute, learnedRoute);
+
+		const currentBucket = this.ratelimits.get(currentRoute)!;
+		const learnedBucket = this.ratelimits.get(learnedRoute);
+		if (!learnedBucket) {
+			this.ratelimits.set(learnedRoute, currentBucket);
+			return learnedRoute;
+		}
+		if (learnedBucket !== currentBucket && currentBucket.queue.length) {
+			learnedBucket.queue.push(...currentBucket.queue.splice(0));
+		}
+		return learnedRoute;
+	}
+
+	private globalRateLimitKey(request: ApiRequestOptions) {
+		if (request.auth === false) return 'unauthenticated';
+		return `${this.options.type}:${request.token || this.options.token}`;
+	}
+
+	private blockGlobal(request: ApiRequestOptions, retryAfter: number) {
+		const key = this.globalRateLimitKey(request);
+		if (!this.globalBlocks.has(key)) this.globalBlocks.set(key, []);
+		const previousTimer = this.globalTimers.get(key);
+		if (previousTimer) clearTimeout(previousTimer);
+		this.globalBlock = true;
+		this.globalTimers.set(
+			key,
+			setTimeout(() => this.unblockGlobal(key), retryAfter || 1),
+		);
+	}
+
+	private unblockGlobal(key: string) {
+		this.globalTimers.delete(key);
+		const queue = this.globalBlocks.get(key) ?? [];
+		this.globalBlocks.delete(key);
+		this.globalBlock = this.globalBlocks.size > 0;
+		for (const callback of queue) callback();
 	}
 
 	parseError(
@@ -348,18 +427,35 @@ export class ApiHandler {
 		return errors;
 	}
 
-	async handle50X(method: HttpMethods, url: `/${string}`, request: ApiRequestOptions, next: () => void) {
+	async handle50X(
+		method: HttpMethods,
+		url: `/${string}`,
+		request: ApiRequestOptions,
+		attempts: number | (() => void),
+		next: () => void = () => {},
+		resolve?: (value: unknown) => void,
+		reject?: (err: unknown) => void,
+	) {
+		const retryAttempt = typeof attempts === 'number' ? attempts : 0;
+		const callback = typeof attempts === 'function' ? attempts : next;
+		const requestOptions = {
+			...request,
+			unshift: true,
+			...(retryAttempt > 0 ? { _50xRetries: retryAttempt } : {}),
+		};
+
 		const wait = Math.floor(Math.random() * 1900 + 100);
 		this.debugger?.warn(`Handling a 50X status, retrying in ${wait}ms`);
-		next();
+		callback();
 		await delay(wait);
-		return this.request(method, url, {
-			body: request.body,
-			auth: request.auth,
-			reason: request.reason,
-			route: request.route,
-			unshift: true,
-		});
+		return this.request(method, url, requestOptions as ApiRequestOptions)
+			.then(value => {
+				resolve?.(value);
+				return value;
+			})
+			.catch(error => {
+				reject?.(error);
+			});
 	}
 
 	async handle429(
@@ -373,18 +469,25 @@ export class ApiHandler {
 		reject: (err: unknown) => void,
 		now: number,
 	) {
-		await this.onRatelimit?.(response, request);
-
 		const bucket = this.ratelimits.get(route)!;
 		let retryAfter: number | undefined;
 
-		const data = JSON.parse(result);
-		if (data.retry_after) retryAfter = Math.ceil(data.retry_after * 1000);
+		let data: Record<string, unknown> | undefined;
+		try {
+			const parsed: unknown = JSON.parse(result);
+			if (isPlainObject(parsed)) data = parsed;
+		} catch {}
+		if (typeof data?.retry_after === 'number') {
+			const value = parseRateLimitDelay(data.retry_after);
+			if (value !== undefined && value <= MAX_TIMER_DELAY_MS) retryAfter = Math.ceil(value);
+		}
+		for (const header of ['retry-after', 'x-ratelimit-reset-after']) {
+			if (retryAfter !== undefined) break;
+			const value = parseRateLimitDelay(response.headers.get(header));
+			if (value !== undefined && value <= MAX_TIMER_DELAY_MS) retryAfter = value;
+		}
 
-		retryAfter ??=
-			Number(response.headers.get('x-ratelimit-reset-after') || response.headers.get('retry-after')) * 1000;
-
-		if (Number.isNaN(retryAfter)) {
+		if (retryAfter === undefined) {
 			this.debugger?.warn(`${route} Could not extract retry_after from 429 response. ${result}`);
 			next();
 			reject(
@@ -402,32 +505,27 @@ export class ApiHandler {
 			);
 			return false;
 		}
-
+		if (
+			data?.global === true ||
+			response.headers.has('x-ratelimit-global') ||
+			response.headers.get('x-ratelimit-scope') === 'global'
+		) {
+			this.blockGlobal(request, retryAfter);
+		}
+		await this.onRatelimit?.(response, request);
 		if (this.debugger) {
 			const content = `${JSON.stringify(request)} `;
 			this.debugger.info(
 				`${response.headers.get('x-ratelimit-global') ? 'Global' : 'Unexpected'} 429: ${result.slice(0, 256)}\n${content} ${now} ${route} ${response.status}: ${bucket.remaining}/${bucket.limit} left | Reset ${retryAfter} (${bucket.reset - now}ms left) | Scope ${response.headers.get('x-ratelimit-scope')}`,
 			);
 		}
-		if (retryAfter) {
-			await delay(retryAfter);
-			next();
-			return this.request(method, url, {
-				body: request.body,
-				auth: request.auth,
-				reason: request.reason,
-				route: request.route,
-				unshift: true,
-			});
-		}
-		next();
-		return this.request(method, url, {
-			body: request.body,
-			auth: request.auth,
-			reason: request.reason,
-			route: request.route,
+		if (retryAfter) await delay(retryAfter);
+		const retry = this.request(method, url, {
+			...request,
 			unshift: true,
 		});
+		next();
+		return retry.catch(reject);
 	}
 
 	clearResetInterval(route: string) {
@@ -436,46 +534,53 @@ export class ApiHandler {
 		this.ratelimits.get(route)!.resetAfter = 0;
 	}
 
-	setResetBucket(route: string, resp: Response, now: number, headerNow: number) {
-		const retryAfter = Number(resp.headers.get('x-ratelimit-reset-after') || resp.headers.get('retry-after')) * 1000;
+	setResetBucket(route: string, resp: Response, now: number, headerNow: number, normalizedRoute = route) {
+		const bucket = this.ratelimits.get(route)!;
+		const retryAfterHeader = resp.headers.get('x-ratelimit-reset-after') ?? resp.headers.get('retry-after');
+		const retryAfter = parseRateLimitDelay(retryAfterHeader);
 
-		if (retryAfter >= 0) {
-			if (resp.headers.get('x-ratelimit-global')) {
-				this.globalBlock = true;
-				setTimeout(() => this.globalUnblock(), retryAfter || 1);
-			} else {
-				this.ratelimits.get(route)!.reset = (retryAfter || 1) + now;
+		if (retryAfter !== undefined) {
+			bucket.reset = Math.min(retryAfter || 1, MAX_BUCKET_RESET_DELAY_MS) + now;
+		} else {
+			const resetHeader = resp.headers.get('x-ratelimit-reset');
+			const parsedReset = parseRateLimitDelay(resetHeader);
+			if (parsedReset === undefined) {
+				if (retryAfterHeader === null && resetHeader === null) bucket.reset = now;
+				return;
 			}
-		} else if (resp.headers.get('x-ratelimit-reset')) {
-			let resetTime = +resp.headers.get('x-ratelimit-reset')! * 1000;
-			if (route.endsWith('/reactions/:id') && +resp.headers.get('x-ratelimit-reset')! * 1000 - headerNow === 1000) {
+
+			let resetTime = parsedReset;
+			if (normalizedRoute.endsWith('/reactions/:id') && resetTime - headerNow === 1000) {
 				resetTime = now + 250;
 			}
-			this.ratelimits.get(route)!.reset = Math.max(resetTime, now);
-		} else {
-			this.ratelimits.get(route)!.reset = now;
+			bucket.reset = Math.min(Math.max(resetTime, now), now + MAX_BUCKET_RESET_DELAY_MS);
 		}
 	}
 
 	setRatelimitsBucket(route: string, resp: Response) {
-		if (resp.headers.has('x-ratelimit-limit')) {
-			this.ratelimits.get(route)!.limit = +resp.headers.get('x-ratelimit-limit')!;
+		const bucket = this.ratelimits.get(route)!;
+		const limit = parseRateLimitCount(resp.headers.get('x-ratelimit-limit'), 1);
+		const remaining = parseRateLimitCount(resp.headers.get('x-ratelimit-remaining'), 0);
+		if (limit !== null && limit !== undefined) {
+			bucket.limit = limit;
+			bucket.remaining = Math.min(bucket.remaining, limit);
+		}
+		if (remaining === undefined) {
+			bucket.remaining = Math.min(1, bucket.limit);
+		} else if (remaining !== null) {
+			bucket.remaining = Math.min(remaining, bucket.limit);
 		}
 
-		this.ratelimits.get(route)!.remaining =
-			resp.headers.get('x-ratelimit-remaining') === undefined ? 1 : +resp.headers.get('x-ratelimit-remaining')!;
-
 		if (this.options.smartBucket) {
-			if (
-				resp.headers.has('x-ratelimit-reset-after') &&
-				!this.ratelimits.get(route)!.resetAfter &&
-				Number(resp.headers.get('x-ratelimit-limit')) === Number(resp.headers.get('x-ratelimit-remaining')) + 1
-			) {
-				this.ratelimits.get(route)!.resetAfter = +resp.headers.get('x-ratelimit-reset-after')! * 1000;
+			if (typeof limit === 'number' && typeof remaining === 'number' && !bucket.resetAfter && limit === remaining + 1) {
+				const resetAfter = parseRateLimitDelay(resp.headers.get('x-ratelimit-reset-after'));
+				if (resetAfter !== undefined && resetAfter <= MAX_SMART_BUCKET_RESET_AFTER_MS) {
+					bucket.resetAfter = resetAfter;
+				}
 			}
 
-			if (this.ratelimits.get(route)!.resetAfter && !this.ratelimits.get(route)!.remaining) {
-				this.ratelimits.get(route)!.triggerResetAfter();
+			if (bucket.resetAfter && !bucket.remaining) {
+				bucket.triggerResetAfter();
 			}
 		}
 	}
@@ -489,15 +594,18 @@ export class ApiHandler {
 		if (options.request.query) {
 			const params = new URLSearchParams();
 			for (const [key, value] of Object.entries(options.request.query)) {
+				if (value === null || value === undefined) continue;
 				if (Array.isArray(value)) {
 					for (const item of value) {
+						if (item === null || item === undefined) continue;
 						params.append(key, String(item));
 					}
 				} else {
 					params.append(key, String(value));
 				}
 			}
-			finalUrl += `?${params}`;
+			const query = params.toString();
+			if (query) finalUrl += `${finalUrl.includes('?') ? '&' : '?'}${query}`;
 		}
 
 		if (options.request.files?.length || options.request.appendToFormData) {
@@ -573,7 +681,7 @@ export class ApiHandler {
 export type RequestOptions = Pick<ApiRequestOptions, 'reason' | 'auth' | 'appendToFormData' | 'token'>;
 
 export type RestArguments<
-	B extends Record<string, any> | undefined,
+	B extends ApiRequestBody | undefined,
 	Q extends never | Record<string, any> = never,
 	F extends RawFile[] = RawFile[],
 > = (
@@ -593,3 +701,42 @@ export type RestArgumentsNoBody<Q extends never | Record<string, any> = never> =
 	query?: Q;
 	files?: RawFile[];
 } & RequestOptions;
+
+export type RestArgumentsRequiredQuery<Q extends Record<string, any>> = Omit<RestArgumentsNoBody<Q>, 'query'> & {
+	query: Q;
+};
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+	if (typeof value !== 'object' || value === null) return false;
+	const prototype = Object.getPrototypeOf(value);
+	return prototype === Object.prototype || prototype === null;
+}
+
+function normalizeErrorResult(result: unknown): string | Record<string, any> {
+	if (typeof result === 'string' || isPlainObject(result)) return result;
+	return JSON.stringify(result) ?? String(result);
+}
+
+async function decodeResponse(response: Response) {
+	const contentType = response.headers.get('content-type')?.split(';', 1)[0]?.trim().toLowerCase();
+	if (response.status < 300 && contentType && !contentType.startsWith('text/') && !isJsonContentType(contentType)) {
+		return response.arrayBuffer();
+	}
+	const text = await response.text();
+	if (!text.length) return undefined;
+	return isJsonContentType(contentType) ? JSON.parse(text) : text;
+}
+
+function isJsonContentType(contentType: string | undefined) {
+	return contentType === 'application/json' || contentType?.endsWith('+json') === true;
+}
+
+function majorParameter(url: string) {
+	const channel = url.match(/^\/channels\/([^/]+)/)?.[1];
+	if (channel) return `channels:${channel}`;
+	const guild = url.match(/^\/guilds\/([^/]+)/)?.[1];
+	if (guild) return `guilds:${guild}`;
+	const webhook = url.match(/^\/webhooks\/([^/]+)(?:\/([^/?]+))?/)?.slice(1);
+	if (webhook?.[0]) return `webhooks:${webhook.filter(Boolean).join(':')}`;
+	return '';
+}

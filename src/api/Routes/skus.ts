@@ -5,11 +5,20 @@ import type {
 } from '../../types';
 import type { RestArguments, RestArgumentsNoBody } from '../api';
 
-export interface SKuRoutes {
+export interface SKURoutes {
 	skus(id: string): {
-		get: (args?: RestArguments<RESTGetAPISKUSubscriptionsQuery>) => Promise<RESTGetAPISKUSubscriptionsResult>;
-		subscriptions(id: string): {
-			get: (args?: RestArgumentsNoBody) => Promise<RESTGetAPISKUSubscriptionResult>;
+		/** @deprecated Use `subscriptions.get(...)` to list subscriptions. */
+		get(args?: RestArguments<RESTGetAPISKUSubscriptionsQuery>): Promise<RESTGetAPISKUSubscriptionsResult>;
+		subscriptions: {
+			get(args?: RestArgumentsNoBody<RESTGetAPISKUSubscriptionsQuery>): Promise<RESTGetAPISKUSubscriptionsResult>;
+			(
+				id: string,
+			): {
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPISKUSubscriptionResult>;
+			};
 		};
 	};
 }
+
+/** @deprecated Use {@link SKURoutes}. */
+export interface SKuRoutes extends SKURoutes {}

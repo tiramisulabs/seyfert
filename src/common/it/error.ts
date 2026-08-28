@@ -34,6 +34,12 @@ export class SeyfertError extends Error {
 	 */
 	metadata?: Record<string, unknown>;
 
+	static is(error: unknown): error is SeyfertError;
+	static is<C extends SeyfertErrorCode>(error: unknown, code: C): error is SeyfertError & { code: C };
+	static is<C extends SeyfertErrorCode>(error: unknown, code?: C): error is SeyfertError & { code: C } {
+		return error instanceof SeyfertError && (code === undefined || error.code === code);
+	}
+
 	/**
 	 * Creates a SeyfertError instance.
 	 *
@@ -86,6 +92,15 @@ export const SeyfertErrorMessages = {
 	INVALID_OPTIONS_LENGTH: 'Invalid options length.',
 	MISSING_COMPONENT: 'Cannot convert to JSON without a component.',
 	MISSING_ACCESSORY: 'Cannot convert to JSON without an accessory.',
+	MISSING_MEDIA: 'Cannot convert to JSON without media.',
+	MISSING_MODAL_CUSTOM_ID: 'Cannot convert to JSON without a custom_id.',
+	MISSING_MODAL_TITLE: 'Cannot convert to JSON without a title.',
+	MISSING_POLL_QUESTION: 'Cannot convert to JSON without a question.',
+	MISSING_POLL_ANSWERS: 'Cannot convert to JSON without answers.',
+	MISSING_RADIO_GROUP_OPTION_LABEL: 'Cannot convert to JSON without a label.',
+	MISSING_RADIO_GROUP_OPTION_VALUE: 'Cannot convert to JSON without a value.',
+	MISSING_STRING_SELECT_OPTION_LABEL: 'Cannot convert to JSON without a label.',
+	MISSING_STRING_SELECT_OPTION_VALUE: 'Cannot convert to JSON without a value.',
 	INVALID_ATTACHMENT_TYPE: 'Invalid attachment type.',
 	INVALID_ANSWER_ID: 'Invalid answer id.',
 	UNDEFINED_LOCALE: 'Undefined locale.',
@@ -131,7 +146,9 @@ export const SeyfertErrorMessages = {
 export type SeyfertErrorCode = keyof typeof SeyfertErrorMessages | (string & {});
 
 function resolveSeyfertErrorMessage(code: SeyfertErrorCode) {
-	const preset = SeyfertErrorMessages[code as keyof typeof SeyfertErrorMessages];
+	const preset = Object.hasOwn(SeyfertErrorMessages, code)
+		? SeyfertErrorMessages[code as keyof typeof SeyfertErrorMessages]
+		: undefined;
 	if (preset) return preset;
 	return code
 		.toLowerCase()

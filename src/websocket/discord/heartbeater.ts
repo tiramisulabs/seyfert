@@ -21,6 +21,7 @@ export class Heartbeater {
 
 	register(workerId: number, recreate: (workerId: number) => Awaitable<void>) {
 		if (this.interval <= 0) return;
+		this.unregister(workerId);
 		this.store.set(workerId, {
 			ack: true,
 			interval: setInterval(() => {
@@ -39,5 +40,12 @@ export class Heartbeater {
 		const heartbeat = this.store.get(workerId);
 		if (!heartbeat) return;
 		heartbeat.ack = true;
+	}
+
+	unregister(workerId: number) {
+		const heartbeat = this.store.get(workerId);
+		if (!heartbeat) return;
+		clearInterval(heartbeat.interval);
+		this.store.delete(workerId);
 	}
 }

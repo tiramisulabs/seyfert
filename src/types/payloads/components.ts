@@ -441,6 +441,10 @@ export enum ChannelFlags {
 	 * Whether media download options are hidden.
 	 */
 	HideMediaDownloadOptions = 1 << 15,
+	/**
+	 * This channel is a Spoiler Channel i.e. users must opt in to view its contents.
+	 */
+	IsSpoilerChannel = 1 << 21,
 }
 
 /**
@@ -619,7 +623,12 @@ export interface APILabelComponent extends APIBaseComponent<ComponentType.Label>
 }
 
 /**
- * https://discord.com/developers/docs/components/reference#file-upload
+ * https://docs.discord.com/developers/reference#file-type-filtering
+ */
+export type FileUploadType = 'audio' | 'image' | 'video' | `.${string}`;
+
+/**
+ * https://docs.discord.com/developers/components/reference#file-upload
  */
 export interface APIFileUploadComponent extends APIBaseComponent<ComponentType.FileUpload> {
 	/** Optional identifier for component */
@@ -632,6 +641,8 @@ export interface APIFileUploadComponent extends APIBaseComponent<ComponentType.F
 	max_values?: number;
 	/** Whether the file upload is required (defaults to false) */
 	required?: boolean;
+	/** File types to accept; can contain media groups or dot-prefixed file extensions (maximum of 10) */
+	file_types?: FileUploadType[];
 }
 
 /**

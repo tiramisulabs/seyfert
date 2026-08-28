@@ -4,6 +4,8 @@ import type { GatewayRoutes } from './gateway';
 import type { GuildRoutes } from './guilds';
 import type { InteractionRoutes } from './interactions';
 import type { InviteRoutes } from './invites';
+import type { OAuth2Routes } from './oauth2';
+import type { SKURoutes } from './skus';
 import type { SoundboardRoutes } from './soundboard';
 import type { StageInstanceRoutes } from './stage-instances';
 import type { StickerRoutes } from './stickers';
@@ -20,6 +22,8 @@ export interface APIRoutes
 		GuildRoutes,
 		InteractionRoutes,
 		InviteRoutes,
+		OAuth2Routes,
+		SKURoutes,
 		StageInstanceRoutes,
 		StickerRoutes,
 		UserRoutes,

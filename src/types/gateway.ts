@@ -35,6 +35,7 @@ import type {
 	GatewayPresenceUpdate as RawGatewayPresenceUpdate,
 	GatewayThreadListSync as RawGatewayThreadListSync,
 	GatewayThreadMembersUpdate as RawGatewayThreadMembersUpdate,
+	TextChannelType,
 } from './payloads/index';
 import type { APISoundboardSound } from './payloads/soundboard';
 import type { ReactionType } from './rest/index';
@@ -1288,6 +1289,10 @@ export interface GatewayMessageEventExtraFields {
 	 * ID of the guild the message was sent in
 	 */
 	guild_id?: Snowflake;
+	/**
+	 * The type of channel the message was sent in
+	 */
+	channel_type?: TextChannelType;
 	/**
 	 * Member properties for this message's author
 	 *

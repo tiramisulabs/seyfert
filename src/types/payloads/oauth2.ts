@@ -31,6 +31,10 @@ export enum OAuth2Scopes {
 	 */
 	Identify = 'identify',
 	/**
+	 * Allows your app to read a user's Nitro subscription type. Requires Discord approval.
+	 */
+	IdentifyPremium = 'identify.premium',
+	/**
 	 * Allows [/users/@me/guilds](https://discord.com/developers/docs/resources/user#get-current-user-guilds)
 	 * to return basic information about all of a user's guilds
 	 *

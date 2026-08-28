@@ -100,6 +100,12 @@ export interface APIApplication {
 	 */
 	flags: ApplicationFlags;
 	/**
+	 * The application's public flags, including bits beyond bit 30, serialized as a string
+	 *
+	 * This field is only returned in responses. Requests that accept application flags use `flags`.
+	 */
+	flags_new?: string;
+	/**
 	 * Approximate count of guilds the application has been added to
 	 */
 	approximate_guild_count?: number;

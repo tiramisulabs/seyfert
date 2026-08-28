@@ -4,6 +4,7 @@ import type { Logger, NulleableCoalising, OmitInsert } from '../common';
 import { BaseHandler, isCloudfareWorker, SeyfertError } from '../common';
 import { PermissionsBitField } from '../structures/extra/Permissions';
 import {
+	type APIApplicationCommandAttachmentOption,
 	type APIApplicationCommandChannelOption,
 	type APIApplicationCommandIntegerOption,
 	type APIApplicationCommandNumberOption,
@@ -160,6 +161,16 @@ export class CommandHandler extends BaseHandler {
 					this.shoudUploadChoices(option, cached)
 				);
 			case ApplicationCommandOptionType.Attachment:
+				{
+					const cachedAttachment = cached as APIApplicationCommandAttachmentOption;
+					if (option.file_types?.length !== cachedAttachment.file_types?.length) return true;
+					if (option.file_types && cachedAttachment.file_types) {
+						const fileTypes = [...option.file_types].sort();
+						const cachedFileTypes = [...cachedAttachment.file_types].sort();
+						return fileTypes.some((fileType, index) => fileType !== cachedFileTypes[index]);
+					}
+				}
+				break;
 			case ApplicationCommandOptionType.Boolean:
 			case ApplicationCommandOptionType.Mentionable:
 			case ApplicationCommandOptionType.Role:

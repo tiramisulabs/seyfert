@@ -1,5 +1,6 @@
 import type { ExtraProps, RegisteredMiddlewares, UsingClient } from '../commands';
 import { InteractionCommandType } from './componentcommand';
+import { matchesCustomId } from './customId';
 import type { ModalContext } from './modalcontext';
 
 export interface ModalCommand {
@@ -15,9 +16,7 @@ export abstract class ModalCommand {
 	/** @internal */
 	_filter(context: ModalContext) {
 		if (this.customId) {
-			const matches =
-				typeof this.customId === 'string' ? this.customId === context.customId : context.customId.match(this.customId);
-			if (!matches) return false;
+			if (!matchesCustomId(this.customId, context.customId)) return false;
 		}
 		if (this.filter) return this.filter(context);
 		return true;

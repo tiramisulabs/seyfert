@@ -39,6 +39,7 @@ import type {
 	RESTPutAPIGuildMemberJSONBody,
 } from '../types';
 import { PermissionsBitField } from './extra/Permissions';
+import { GuildRole } from './GuildRole';
 
 export interface BaseGuildMember extends DiscordBase, ObjectToLower<Omit<APIGuildMember, 'user' | 'roles'>> {}
 export class BaseGuildMember extends DiscordBase {
@@ -141,7 +142,7 @@ export class BaseGuildMember extends DiscordBase {
 			permissions: (force = false) =>
 				this.roles.list(force).then(roles => new PermissionsBitField(roles.map(x => BigInt(x.permissions.bits)))),
 			sorted: (force = false): Promise<GuildRoleStructure[]> =>
-				this.roles.list(force).then(roles => roles.sort((a, b) => b.position - a.position)),
+				this.roles.list(force).then(roles => roles.sort((a, b) => GuildRole.comparePositions(b, a))),
 			highest: (force = false): Promise<GuildRoleStructure> => this.roles.sorted(force).then(roles => roles[0]),
 		};
 	}
@@ -257,7 +258,24 @@ export class GuildMember extends BaseGuildMember {
 		if (this.user.id === ownerId) return false;
 		if (this.user.id === this.client.botId) return false;
 		if (this.client.botId === ownerId) return true;
-		return (await this.__me!.roles.highest()).position > (await this.roles.highest(force)).position;
+		const highestFromCompleteRoles = async (member: Pick<GuildMemberStructure, 'roles'>, forceRoles: boolean) => {
+			const roles = await member.roles.sorted(forceRoles);
+			const roleIds = new Set(roles.map(role => role.id));
+			if (!member.roles.keys.every(roleId => roleIds.has(roleId))) return;
+
+			return roles.at(0);
+		};
+
+		const myHighest = await highestFromCompleteRoles(this.__me!, force);
+		const theirHighest = await highestFromCompleteRoles(this, force);
+		if (myHighest && theirHighest) return GuildRole.comparePositions(myHighest, theirHighest) > 0;
+		if (force) return false;
+
+		const forcedMyHighest = await highestFromCompleteRoles(this.__me!, true);
+		const forcedTheirHighest = await highestFromCompleteRoles(this, true);
+		if (!forcedMyHighest || !forcedTheirHighest) return false;
+
+		return GuildRole.comparePositions(forcedMyHighest, forcedTheirHighest) > 0;
 	}
 
 	async bannable(force = false) {

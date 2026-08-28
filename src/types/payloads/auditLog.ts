@@ -220,8 +220,13 @@ export enum AuditLogEvent {
 	HomeSettingsCreate = 190,
 	HomeSettingsUpdate,
 
-	VoiceChannelStatusUpdate = 192,
-	VoiceChannelStatusDelete,
+	VoiceChannelStatusCreate = 192,
+	/**
+	 * @deprecated Use {@link VoiceChannelStatusCreate} instead.
+	 * Declared after the canonical name to preserve the v4 reverse lookup for value 192.
+	 */
+	VoiceChannelStatusUpdate = VoiceChannelStatusCreate,
+	VoiceChannelStatusDelete = 193,
 }
 
 /**

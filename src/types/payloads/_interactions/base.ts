@@ -201,6 +201,12 @@ export type APIGuildInteractionWrapper<Original extends APIBaseInteraction<Inter
 export interface APIInteractionDataResolvedChannelBase<T extends ChannelType> extends Required<APIPartialChannel> {
 	type: T;
 	permissions: Permissions;
+	/**
+	 * Computed permissions for the bot user in the channel.
+	 *
+	 * **This is only sent when the application's bot user is in the guild**
+	 */
+	app_permissions?: Permissions;
 }
 
 /**

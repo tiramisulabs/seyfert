@@ -255,7 +255,12 @@ export type RESTAPIMessageReference = AddUndefinedToPossiblyUndefinedPropertiesO
  */
 export type RESTAPIAttachment = Partial<
 	Pick<APIAttachment, 'description' | 'duration_secs' | 'filename' | 'title' | 'waveform' | 'id'>
->;
+> & {
+	/**
+	 * Whether the attachment should be marked as a spoiler
+	 */
+	is_spoiler?: boolean | undefined;
+};
 
 /**
  * https://discord.com/developers/docs/resources/channel#create-message

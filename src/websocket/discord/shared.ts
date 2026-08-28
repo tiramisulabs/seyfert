@@ -75,6 +75,12 @@ export interface WorkerManagerOptions extends Omit<ShardManagerOptions, 'handleP
 	workers?: number;
 
 	/**
+	 * Environment variables to add to each worker.
+	 * Variables managed by Seyfert take precedence over matching keys.
+	 */
+	workerEnv?: Readonly<Record<string, string>>;
+
+	/**
 	 * @default 16
 	 */
 	shardsPerWorker?: number;

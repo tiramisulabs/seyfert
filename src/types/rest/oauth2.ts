@@ -1,10 +1,18 @@
 import type { Permissions, Snowflake } from '..';
-import type { APIApplication, APIGuild, APIUser, APIWebhook, OAuth2Scopes } from '../payloads';
+import type {
+	APIApplication,
+	APIGuild,
+	APIUser,
+	APIWebhook,
+	ApplicationIntegrationType,
+	OAuth2Scopes,
+} from '../payloads';
 
 /**
  * https://discord.com/developers/docs/topics/oauth2#get-current-bot-application-information
  */
-export type RESTGetAPIOAuth2CurrentApplicationResult = Omit<APIApplication, 'flags'>;
+export type RESTGetAPIOAuth2CurrentApplicationResult = Omit<APIApplication, 'flags'> &
+	Partial<Pick<APIApplication, 'flags'>>;
 
 /**
  * https://discord.com/developers/docs/topics/oauth2#get-current-authorization-information
@@ -120,7 +128,7 @@ export interface RESTOAuth2BotAuthorizationQuery {
 	/**
 	 * Needs to include bot for the bot flow
 	 */
-	scope:
+	scope?:
 		| OAuth2Scopes.Bot
 		| `${OAuth2Scopes.Bot}${' ' | '%20'}${string}`
 		| `${string}${' ' | '%20'}${OAuth2Scopes.Bot}`
@@ -139,6 +147,10 @@ export interface RESTOAuth2BotAuthorizationQuery {
 	 * `true` or `false`—disallows the user from changing the guild dropdown
 	 */
 	disable_guild_select?: boolean;
+	/**
+	 * The installation context for the authorization
+	 */
+	integration_type?: ApplicationIntegrationType;
 }
 
 /**

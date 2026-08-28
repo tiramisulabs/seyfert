@@ -5,7 +5,7 @@ import type { RawFile, UsingClient } from '..';
 import { isBufferLike } from '../api/utils/utils';
 import { createValidationMetadata, type ImageResolvable, type ObjectToLower, SeyfertError } from '../common';
 import { Base } from '../structures/extra/Base';
-import type { APIAttachment, RESTAPIAttachment } from '../types';
+import { type APIAttachment, AttachmentFlags, type RESTAPIAttachment } from '../types';
 
 export interface AttachmentResolvableMap {
 	url: string;
@@ -20,6 +20,7 @@ export type AttachmentDataType = keyof AttachmentResolvableMap;
 export interface AttachmentData {
 	filename: string;
 	description: string;
+	is_spoiler?: boolean;
 	resolvable: AttachmentResolvable;
 	type: AttachmentDataType;
 }
@@ -36,6 +37,13 @@ export class Attachment extends Base {
 
 	toJSON(): APIAttachment {
 		return { ...this.data };
+	}
+
+	/**
+	 * Gets whether the attachment is a spoiler.
+	 */
+	get spoiler(): boolean {
+		return Boolean((this.data.flags ?? 0) & AttachmentFlags.IsSpoiler) || this.data.filename.startsWith('SPOILER_');
 	}
 }
 
@@ -98,12 +106,10 @@ export class AttachmentBuilder {
 	 * attachment.setSpoiler(true);
 	 */
 	setSpoiler(spoiler: boolean): this {
-		if (spoiler === this.spoiler) return this;
-		if (!spoiler) {
+		this.data.is_spoiler = spoiler;
+		if (!spoiler && this.data.filename?.startsWith('SPOILER_')) {
 			this.data.filename = this.data.filename!.slice('SPOILER_'.length);
-			return this;
 		}
-		this.data.filename = `SPOILER_${this.data.filename}`;
 		return this;
 	}
 
@@ -111,7 +117,7 @@ export class AttachmentBuilder {
 	 * Gets whether the attachment is a spoiler.
 	 */
 	get spoiler(): boolean {
-		return this.data.filename?.startsWith('SPOILER_') ?? false;
+		return this.data.is_spoiler ?? this.data.filename?.startsWith('SPOILER_') ?? false;
 	}
 
 	/**
@@ -134,11 +140,11 @@ export function resolveAttachment(
 	if ('id' in resolve) return resolve;
 
 	if (resolve instanceof AttachmentBuilder) {
-		const { filename, description } = resolve.toJSON();
-		return { filename, description };
+		const { filename, description, is_spoiler } = resolve.toJSON();
+		return { filename, description, is_spoiler };
 	}
 
-	return { filename: resolve.filename, description: resolve.description };
+	return { filename: resolve.filename, description: resolve.description, is_spoiler: resolve.is_spoiler };
 }
 
 /**
