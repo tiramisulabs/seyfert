@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
-import { BaseClient } from '../src/client/base';
-import { InteractionResponseType } from '../src/types/payloads/_interactions/responses';
+import { BaseClient } from '../lib/client/base';
+import { InteractionResponseType } from '../lib/types/payloads/_interactions/responses';
 
 const responseMessage = {
 	id: 'message-id',
