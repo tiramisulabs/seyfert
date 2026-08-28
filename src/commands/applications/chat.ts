@@ -17,8 +17,8 @@ import type {
 	OptionResolverStructure,
 	UserStructure,
 } from '../../client/transformers';
-import { magicImport, SeyfertError } from '../../common';
-import type { AllChannels, AutocompleteInteraction } from '../../structures';
+import { type If, magicImport, SeyfertError } from '../../common';
+import type { AutocompleteInteraction, MaybeResolvedChannel, ResolvedChannel } from '../../structures';
 import {
 	type APIApplicationCommandBasicOption,
 	type APIApplicationCommandOption,
@@ -35,12 +35,19 @@ import type { CommandContext } from './chatcontext';
 import type {
 	ExtraProps,
 	IgnoreCommand,
+	InferWithPrefix,
 	OnOptionsReturnObject,
 	PassFunction,
 	SeyfertChannelMap,
 	StopFunction,
 	UsingClient,
 } from './shared';
+
+export type CommandOptionChannel<C extends keyof SeyfertChannelMap = keyof SeyfertChannelMap> = If<
+	InferWithPrefix,
+	MaybeResolvedChannel<SeyfertChannelMap[C]>,
+	ResolvedChannel<SeyfertChannelMap[C]>
+>;
 
 export interface ReturnOptionsTypes {
 	1: never; // subcommand
@@ -49,7 +56,7 @@ export interface ReturnOptionsTypes {
 	4: number; // integer
 	5: boolean;
 	6: InteractionGuildMemberStructure | UserStructure;
-	7: AllChannels;
+	7: CommandOptionChannel;
 	8: GuildRoleStructure;
 	9: GuildRoleStructure | InteractionGuildMemberStructure | GuildMemberStructure | UserStructure;
 	10: number; // number
@@ -88,7 +95,7 @@ type ContextOptionsAuxInternal<
 			? T extends { channel_types?: infer C }
 				? C extends any[]
 					? C[number] extends keyof SeyfertChannelMap
-						? SeyfertChannelMap[C[number]]
+						? CommandOptionChannel<C[number]>
 						: never
 					: never
 				: T extends { choices?: infer C }

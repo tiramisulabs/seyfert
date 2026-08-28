@@ -22,6 +22,7 @@ import type {
 	APIMessage,
 	APIUser,
 	GatewayMessageCreateDispatchData,
+	TextChannelType,
 } from '../types';
 import { DiscordBase } from './extra/DiscordBase';
 import type { MessageWebhookMethodEditParams, MessageWebhookMethodWriteParams } from './Webhook';
@@ -33,6 +34,7 @@ export interface BaseMessage
 		ObjectToLower<Omit<MessageData, 'timestamp' | 'author' | 'mentions' | 'components' | 'poll' | 'embeds'>> {
 	timestamp?: number;
 	guildId?: string;
+	channelType?: TextChannelType;
 	author: UserStructure;
 	member?: GuildMemberStructure;
 	components: TopLevelComponents[];

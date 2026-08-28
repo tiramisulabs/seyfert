@@ -1,15 +1,18 @@
 import { randomUUID, type UUID } from 'node:crypto';
 import type { UsingClient } from '../commands';
 import type { Awaitable, CamelCase } from '../common';
-import type { CallbackEventHandler, CustomEventsKeys, GatewayEvents } from '../events';
+import type { CallbackEventHandler, CustomEventsKeys, GatewayEvents, ResolveEventRunParams } from '../events';
 import * as RawEvents from '../events/hooks';
 
 export type AllClientEvents = CustomEventsKeys | GatewayEvents;
 export type ParseClientEventName<T extends AllClientEvents> = T extends CustomEventsKeys ? T : CamelCase<T>;
 
-export type CollectorRunPameters<T extends AllClientEvents> = Awaited<
-	Parameters<CallbackEventHandler[ParseClientEventName<T>]>[0]
->;
+export type CollectorRunParameters<T extends AllClientEvents> = T extends CustomEventsKeys
+	? ResolveEventRunParams<T>
+	: Awaited<Parameters<CallbackEventHandler[ParseClientEventName<T>]>[0]>;
+
+/** @deprecated Use {@link CollectorRunParameters}. */
+export type CollectorRunPameters<T extends AllClientEvents> = CollectorRunParameters<T>;
 
 type RunData<T extends AllClientEvents> = {
 	options: {
@@ -18,9 +21,9 @@ type RunData<T extends AllClientEvents> = {
 		timeout?: number;
 		onStop?: (reason: string) => unknown;
 		onStopError?: (reason: string, error: unknown) => unknown;
-		filter: (arg: CollectorRunPameters<T>) => Awaitable<boolean>;
-		run: (arg: CollectorRunPameters<T>, stop: (reason?: string) => void) => unknown;
-		onRunError?: (arg: CollectorRunPameters<T>, error: unknown, stop: (reason?: string) => void) => unknown;
+		filter: (arg: CollectorRunParameters<T>) => Awaitable<boolean>;
+		run: (arg: CollectorRunParameters<T>, stop: (reason?: string) => void) => unknown;
+		onRunError?: (arg: CollectorRunParameters<T>, error: unknown, stop: (reason?: string) => void) => unknown;
 	};
 	idle?: NodeJS.Timeout;
 	timeout?: NodeJS.Timeout;
@@ -96,7 +99,9 @@ export class Collectors {
 	/**@internal */
 	async run<T extends AllClientEvents>(
 		name: T,
-		raw: Awaited<Parameters<CallbackEventHandler[ParseClientEventName<T>]>[0]>,
+		raw: T extends CustomEventsKeys
+			? ResolveEventRunParams<T>
+			: Awaited<Parameters<CallbackEventHandler[ParseClientEventName<T>]>[0]>,
 		client: UsingClient,
 	) {
 		const collectors = this.values.get(name);

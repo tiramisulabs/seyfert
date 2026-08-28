@@ -3,6 +3,7 @@ import {
 	Logger,
 	LogLevels,
 	lazyLoadPackage,
+	type MakePresent,
 	type MakeRequired,
 	MergeOptions,
 	SeyfertError,
@@ -29,7 +30,7 @@ let workerData: WorkerData;
 
 export class ShardManager extends Map<number, Shard> {
 	connectQueue: ConnectQueue;
-	options: MakeRequired<ShardManagerOptions, keyof typeof ShardManagerDefaults>;
+	options: MakePresent<ShardManagerOptions, keyof typeof ShardManagerDefaults>;
 	debugger?: Logger;
 
 	constructor(options: MakeDeepPartial<ShardManagerOptions, 'resharding'>) {
@@ -207,7 +208,7 @@ export class ShardManager extends Map<number, Shard> {
 
 	/*
 	 * spawns buckets in order
-	 * https://discord.com/developers/docs/topics/gateway#sharding-max-concurrency
+	 * https://docs.discord.com/developers/topics/gateway#sharding-max-concurrency
 	 */
 	spawnBuckets(): Shard[][] {
 		this.debugger?.info('#0 Preparing buckets');

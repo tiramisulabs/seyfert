@@ -9,22 +9,22 @@ import type {
 } from '../payloads';
 
 /**
- * https://discord.com/developers/docs/resources/user#get-current-user
+ * https://docs.discord.com/developers/resources/user#get-current-user
  */
 export type RESTGetAPICurrentUserResult = APIUser;
 
 /**
- * https://discord.com/developers/docs/resources/user#get-user
+ * https://docs.discord.com/developers/resources/user#get-user
  */
 export type RESTGetAPIUserResult = APIUser;
 
 /**
- * https://discord.com/developers/docs/resources/user#get-current-user-guild-member
+ * https://docs.discord.com/developers/resources/user#get-current-user-guild-member
  */
 export type RESTGetCurrentUserGuildMemberResult = APIGuildMember;
 
 /**
- * https://discord.com/developers/docs/resources/user#modify-current-user
+ * https://docs.discord.com/developers/resources/user#modify-current-user
  */
 export interface RESTPatchAPICurrentUserJSONBody {
 	/**
@@ -42,12 +42,12 @@ export interface RESTPatchAPICurrentUserJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/user#modify-current-user
+ * https://docs.discord.com/developers/resources/user#modify-current-user
  */
 export type RESTPatchAPICurrentUserResult = APIUser;
 
 /**
- * https://discord.com/developers/docs/resources/user#get-current-user-guilds
+ * https://docs.discord.com/developers/resources/user#get-current-user-guilds
  */
 export interface RESTGetAPICurrentUserGuildsQuery {
 	/**
@@ -84,17 +84,17 @@ export interface RESTAPIPartialCurrentUserGuild {
 }
 
 /**
- * https://discord.com/developers/docs/resources/user#get-current-user-guilds
+ * https://docs.discord.com/developers/resources/user#get-current-user-guilds
  */
 export type RESTGetAPICurrentUserGuildsResult = RESTAPIPartialCurrentUserGuild[];
 
 /**
- * https://discord.com/developers/docs/resources/user#leave-guild
+ * https://docs.discord.com/developers/resources/user#leave-guild
  */
 export type RESTDeleteAPICurrentUserGuildResult = undefined;
 
 /**
- * https://discord.com/developers/docs/resources/user#create-dm
+ * https://docs.discord.com/developers/resources/user#create-dm
  */
 export interface RESTPostAPICurrentUserCreateDMChannelJSONBody {
 	/**
@@ -104,22 +104,22 @@ export interface RESTPostAPICurrentUserCreateDMChannelJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/user#create-dm
+ * https://docs.discord.com/developers/resources/user#create-dm
  */
 export type RESTPostAPICurrentUserCreateDMChannelResult = APIChannel;
 
 /**
- * https://discord.com/developers/docs/resources/user#get-user-connections
+ * https://docs.discord.com/developers/resources/user#get-user-connections
  */
 export type RESTGetAPICurrentUserConnectionsResult = APIConnection[];
 
 /**
- * https://discord.com/developers/docs/resources/user#get-user-application-role-connection
+ * https://docs.discord.com/developers/resources/user#get-user-application-role-connection
  */
 export type RESTGetAPICurrentUserApplicationRoleConnectionResult = APIApplicationRoleConnection;
 
 /**
- * https://discord.com/developers/docs/resources/user#update-user-application-role-connection
+ * https://docs.discord.com/developers/resources/user#update-user-application-role-connection
  */
 export interface RESTPutAPICurrentUserApplicationRoleConnectionJSONBody {
 	/**
@@ -137,6 +137,11 @@ export interface RESTPutAPICurrentUserApplicationRoleConnectionJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/user#update-user-application-role-connection
+ * https://docs.discord.com/developers/resources/user#update-user-application-role-connection
  */
 export type RESTPutAPICurrentUserApplicationRoleConnectionResult = APIApplicationRoleConnection;
+
+/**
+ * https://docs.discord.com/developers/resources/user#delete-current-user-application-role-connection
+ */
+export type RESTDeleteAPICurrentUserApplicationRoleConnectionResult = undefined;

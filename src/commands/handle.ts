@@ -1,6 +1,6 @@
 import type { Client, WorkerClient } from '../client';
 import { type MessageStructure, type OptionResolverStructure, Transformers } from '../client/transformers';
-import type { MakeRequired } from '../common';
+import { type Awaitable, type MakeRequired, type PermissionStrings, SeyfertError } from '../common';
 import { INTEGER_OPTION_VALUE_LIMIT } from '../common/it/constants';
 import { ComponentContext, ModalContext } from '../components';
 import {
@@ -18,6 +18,7 @@ import type { PermissionsBitField } from '../structures/extra/Permissions';
 import {
 	type APIApplicationCommandInteraction,
 	type APIApplicationCommandInteractionDataOption,
+	type APIGuildMember,
 	type APIInteraction,
 	type APIInteractionDataResolvedChannel,
 	ApplicationCommandOptionType,
@@ -26,6 +27,7 @@ import {
 	type GatewayMessageCreateDispatchData,
 	InteractionContextType,
 	InteractionType,
+	RESTJSONErrorCodes,
 } from '../types';
 import {
 	BaseCommand,
@@ -102,7 +104,7 @@ export class HandleCommand {
 	) {
 		try {
 			if (context.guildId && command.botPermissions) {
-				const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
+				const permissions = await this.checkBotPermissions(command, context, interaction.appPermissions);
 				if (permissions) return await command.onBotPermissionsFail?.(context, permissions);
 			}
 
@@ -147,7 +149,7 @@ export class HandleCommand {
 	async entryPoint(command: EntryPointCommand, interaction: EntryPointInteraction, context: EntryPointContext) {
 		try {
 			if (context.guildId && command.botPermissions) {
-				const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
+				const permissions = await this.checkBotPermissions(command, context, interaction.appPermissions);
 				if (permissions) return await command.onBotPermissionsFail(context, permissions);
 			}
 
@@ -182,12 +184,12 @@ export class HandleCommand {
 		try {
 			if (context.guildId) {
 				if (command.botPermissions) {
-					const permissions = this.checkPermissions(interaction.appPermissions, command.botPermissions);
+					const permissions = await this.checkBotPermissions(command, context, interaction.appPermissions);
 					if (permissions) return await command.onBotPermissionsFail?.(context, permissions);
 				}
 
 				if (command.defaultMemberPermissions) {
-					const permissions = this.checkPermissions(interaction.member!.permissions, command.defaultMemberPermissions);
+					const permissions = await this.checkMemberPermissions(command, context, interaction.member!.permissions);
 					if (permissions) return await command.onPermissionsFail?.(context, permissions);
 				}
 			}
@@ -384,16 +386,16 @@ export class HandleCommand {
 			if (rawMessage.guild_id) {
 				if (command.defaultMemberPermissions) {
 					const memberPermissions = await self.members.permissions(rawMessage.guild_id, rawMessage.author.id);
-					const permissions = this.checkPermissions(memberPermissions, command.defaultMemberPermissions);
+					const permissions = await this.checkMemberPermissions(command, context, memberPermissions);
 					const guild = await this.client.guilds.raw(rawMessage.guild_id);
 					if (permissions && guild.owner_id !== rawMessage.author.id) {
-						return await command.onPermissionsFail?.(context, memberPermissions.keys(permissions));
+						return await command.onPermissionsFail?.(context, permissions);
 					}
 				}
 
 				if (command.botPermissions) {
 					const appPermissions = await self.members.permissions(rawMessage.guild_id, self.botId);
-					const permissions = this.checkPermissions(appPermissions, command.botPermissions);
+					const permissions = await this.checkBotPermissions(command, context, appPermissions);
 					if (permissions) {
 						return await command.onBotPermissionsFail?.(context, permissions);
 					}
@@ -525,6 +527,26 @@ export class HandleCommand {
 		}) as T;
 	}
 
+	/** Checks the member permissions required by a command. */
+	checkMemberPermissions(
+		command: Command | SubCommand,
+		_context: CommandContext,
+		permissions: PermissionsBitField,
+	): Awaitable<PermissionStrings | undefined> {
+		if (!command.defaultMemberPermissions) return;
+		return this.checkPermissions(permissions, command.defaultMemberPermissions);
+	}
+
+	/** Checks the bot permissions required by a command. */
+	checkBotPermissions(
+		command: Command | SubCommand | ContextMenuCommand | EntryPointCommand,
+		_context: CommandContext | MenuCommandContext<any> | EntryPointContext,
+		permissions: PermissionsBitField,
+	): Awaitable<PermissionStrings | undefined> {
+		if (!command.botPermissions) return;
+		return this.checkPermissions(permissions, command.botPermissions);
+	}
+
 	checkPermissions(app: PermissionsBitField, bot: bigint) {
 		if (app.has(['Administrator'])) return;
 
@@ -547,10 +569,24 @@ export class HandleCommand {
 		return null;
 	}
 
-	fetchMember(_option: CommandOptionWithType, query: string, guildId: string) {
+	async fetchMember(_option: CommandOptionWithType, query: string, guildId: string): Promise<APIGuildMember | null> {
 		const id = query.match(/[0-9]{17,19}/g)?.[0];
-		if (id) return this.client.members.raw(guildId, id);
-		return null;
+		if (!id) return null;
+
+		try {
+			return await this.client.members.raw(guildId, id);
+		} catch (error) {
+			const response = SeyfertError.is(error) ? error.metadata?.response : undefined;
+			if (
+				typeof response === 'object' &&
+				response !== null &&
+				'code' in response &&
+				[RESTJSONErrorCodes.UnknownMember, RESTJSONErrorCodes.UnknownUser].includes(response.code as RESTJSONErrorCodes)
+			) {
+				return null;
+			}
+			throw error;
+		}
 	}
 
 	fetchRole(_option: CommandOptionWithType, query: string, guildId?: string) {

@@ -69,7 +69,7 @@ export class CheckboxGroup extends BaseComponentBuilder<APICheckboxGroupComponen
 					...createValidationMetadata('number of options between 2 and 10', optionCount, {
 						component: 'CheckboxGroup',
 					}),
-					detail: 'CheckboxGroup must have between 2 and 10 options.',
+					detail: `CheckboxGroup has an invalid options length: expected number of options between 2 and 10, received ${optionCount}.`,
 				},
 			});
 		}

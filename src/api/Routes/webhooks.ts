@@ -58,7 +58,7 @@ export interface WebhookRoutes {
 					args?: RestArgumentsNoBody<RESTGetAPIWebhookWithTokenMessageQuery>,
 				): Promise<RESTGetAPIWebhookWithTokenMessageResult>;
 				patch(
-					args: RestArguments<RESTPatchAPIWebhookWithTokenMessageJSONBody>,
+					args: RestArguments<RESTPatchAPIWebhookWithTokenMessageJSONBody, RESTPatchAPIWebhookWithTokenMessageQuery>,
 				): Promise<RESTPatchAPIWebhookWithTokenMessageResult>;
 				delete(
 					args?: RestArgumentsNoBody<RESTDeleteAPIWebhookWithTokenMessageQuery>,

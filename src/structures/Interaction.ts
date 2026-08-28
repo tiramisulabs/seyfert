@@ -1,5 +1,14 @@
 import type { RawFile } from '../api';
-import { ActionRow, Attachment, Embed, Modal, PollBuilder, resolveAttachment, resolveFiles } from '../builders';
+import {
+	ActionRow,
+	Attachment,
+	AttachmentBuilder,
+	Embed,
+	Modal,
+	PollBuilder,
+	resolveAttachment,
+	resolveFiles,
+} from '../builders';
 import { Label } from '../builders/Label';
 import type { ReturnCache } from '../cache';
 import {
@@ -25,6 +34,7 @@ import {
 	type ModalCreateOptions,
 	type ObjectToLower,
 	type OmitInsert,
+	type ResolverProps,
 	SeyfertError,
 	type ToClass,
 	toCamelCase,
@@ -69,11 +79,10 @@ import {
 	InteractionType,
 	type MessageFlags,
 	type ModalSubmitInsideLabelData,
-	type RESTAPIAttachment,
 	type RESTPostAPIInteractionCallbackJSONBody,
 	type RESTPostAPIInteractionCallbackResult,
 } from '../types';
-import { type AllChannels, channelFrom } from './';
+import { type AllChannels, channelFrom, type ResolvedChannel } from './';
 import { DiscordBase } from './extra/DiscordBase';
 import { PermissionsBitField } from './extra/Permissions';
 
@@ -137,7 +146,7 @@ export class BaseInteraction<
 
 	static transformBodyRequest(
 		body: ReplyInteractionBody,
-		files: RawFile[] | undefined,
+		files: ResolverProps['files'],
 		self: UsingClient,
 	): APIInteractionResponse {
 		switch (body.type) {
@@ -181,7 +190,7 @@ export class BaseInteraction<
 			| MessageUpdateBodyRequest
 			| MessageCreateBodyRequest
 			| MessageWebhookCreateBodyRequest,
-		files: RawFile[] | undefined,
+		files: ResolverProps['files'],
 		self: UsingClient,
 	) {
 		const poll = (body as MessageWebhookCreateBodyRequest).poll;
@@ -202,6 +211,7 @@ export class BaseInteraction<
 						title: x.title,
 						description: x.description,
 						filename: x.filename,
+						is_spoiler: x.spoiler,
 					};
 				}
 				return {
@@ -210,10 +220,19 @@ export class BaseInteraction<
 				};
 			});
 		} else if (files?.length) {
-			payload.attachments = files?.map(({ filename }, i) => ({
-				id: i.toString(),
-				filename,
-			})) as RESTAPIAttachment[];
+			payload.attachments = files.map((file, i) => {
+				if (file instanceof AttachmentBuilder) return { id: i.toString(), ...resolveAttachment(file) };
+				if (file instanceof Attachment) {
+					return {
+						id: i.toString(),
+						title: file.title,
+						description: file.description,
+						filename: file.filename,
+						is_spoiler: file.spoiler,
+					};
+				}
+				return { id: i.toString(), filename: file.filename };
+			});
 		}
 		return payload as T;
 	}
@@ -226,7 +245,7 @@ export class BaseInteraction<
 			const data = body.data instanceof Modal ? body.data : rest;
 			const parsedFiles = files ? await resolveFiles(files) : undefined;
 			await (this.replied = this.__reply({
-				body: BaseInteraction.transformBodyRequest({ data, type: body.type }, parsedFiles, this.client),
+				body: BaseInteraction.transformBodyRequest({ data, type: body.type }, files, this.client),
 				files: parsedFiles,
 			}).then(() => (this.replied = true)));
 			return;
@@ -588,6 +607,7 @@ export class EntryPointInteraction<FromGuild extends boolean = boolean> extends 
 		const response = await this.client.proxy
 			.interactions(this.id)(this.token)
 			.callback.post({
+				auth: false,
 				body,
 				query: { with_response: true },
 			});
@@ -707,7 +727,7 @@ export class StringSelectMenuInteraction<
 }
 
 export class ChannelSelectMenuInteraction extends SelectMenuInteraction {
-	channels: AllChannels[];
+	channels: ResolvedChannel[];
 	declare channel: AllChannels;
 	constructor(
 		client: UsingClient,
@@ -736,20 +756,17 @@ export class MentionableSelectMenuInteraction extends SelectMenuInteraction {
 	) {
 		super(client, interaction);
 		const resolved = (interaction.data as APIMessageMentionableSelectInteractionData).resolved;
-		this.roles = resolved.roles
-			? this.values.map(x => Transformers.GuildRole(this.client, resolved.roles![x], this.guildId!))
-			: [];
-		this.members = resolved.members
-			? this.values.map(x =>
-					Transformers.InteractionGuildMember(
-						this.client,
-						resolved.members![x],
-						resolved.users![this.values!.find(u => u === x)!]!,
-						this.guildId!,
-					),
-				)
-			: [];
-		this.users = resolved.users ? this.values.map(x => Transformers.User(this.client, resolved.users![x])) : [];
+		this.roles = this.values
+			.filter(x => resolved.roles?.[x])
+			.map(x => Transformers.GuildRole(this.client, resolved.roles![x]!, this.guildId!));
+		this.members = this.values
+			.filter(x => resolved.members?.[x])
+			.map(x =>
+				Transformers.InteractionGuildMember(this.client, resolved.members![x]!, resolved.users![x]!, this.guildId!),
+			);
+		this.users = this.values
+			.filter(x => resolved.users?.[x])
+			.map(x => Transformers.User(this.client, resolved.users![x]!));
 	}
 
 	isMentionableSelectMenu(): this is MentionableSelectMenuInteraction {
@@ -787,16 +804,11 @@ export class UserSelectMenuInteraction extends SelectMenuInteraction {
 		super(client, interaction);
 		const resolved = (interaction.data as APIMessageUserSelectInteractionData).resolved;
 		this.users = this.values.map(x => Transformers.User(this.client, resolved.users[x]));
-		this.members = resolved.members
-			? this.values.map(x =>
-					Transformers.InteractionGuildMember(
-						this.client,
-						resolved.members![x],
-						resolved.users[this.values!.find(u => u === x)!]!,
-						this.guildId!,
-					),
-				)
-			: [];
+		this.members = this.values
+			.filter(x => resolved.members?.[x])
+			.map(x =>
+				Transformers.InteractionGuildMember(this.client, resolved.members![x]!, resolved.users[x]!, this.guildId!),
+			);
 	}
 
 	isUserSelectMenu(): this is UserSelectMenuInteraction {
@@ -881,9 +893,9 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 			.find(c => c.component!.customId === customId)?.component;
 	}
 
-	getChannels(customId: string, required: true): AllChannels[];
-	getChannels(customId: string, required?: false): AllChannels[] | void;
-	getChannels(customId: string, required?: boolean): AllChannels[] | void {
+	getChannels(customId: string, required: true): ResolvedChannel[];
+	getChannels(customId: string, required?: false): ResolvedChannel[] | void;
+	getChannels(customId: string, required?: boolean): ResolvedChannel[] | void {
 		const component = this.getComponent(customId, [ComponentType.ChannelSelect]);
 		if (!component && required)
 			throw new SeyfertError('INTERNAL_ERROR', {
@@ -1021,17 +1033,14 @@ export class ModalSubmitInteraction<FromGuild extends boolean = boolean> extends
 	getFiles(customId: string, required: true): Attachment[];
 	getFiles(customId: string, required?: false): Attachment[] | undefined;
 	getFiles(customId: string, required?: boolean): Attachment[] | undefined {
-		const value = this.getComponent(customId, [ComponentType.FileUpload]);
-		if (value) {
+		const component = this.getComponent(customId, [ComponentType.FileUpload]);
+		if (component && 'values' in component) {
 			const attachments = this.data.resolved?.attachments;
 			if (attachments) {
-				return Object.values(attachments).map(
-					x =>
-						new Attachment(this.client, {
-							...x,
-							proxy_url: x.url,
-						}),
-				);
+				return component.values
+					.map(x => attachments[x])
+					.filter((x): x is (typeof attachments)[string] => !!x)
+					.map(x => new Attachment(this.client, { ...x, proxy_url: x.url }));
 			}
 			if (required)
 				throw new SeyfertError('INTERNAL_ERROR', {

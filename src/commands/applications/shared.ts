@@ -3,6 +3,7 @@ import type {
 	DirectoryChannelStructure,
 	DMChannelStructure,
 	ForumChannelStructure,
+	GroupDMChannelStructure,
 	MediaChannelStructure,
 	NewsChannelStructure,
 	StageChannelStructure,
@@ -99,7 +100,7 @@ export interface SeyfertChannelMap {
 	[ChannelType.GuildText]: TextGuildChannelStructure;
 	[ChannelType.DM]: DMChannelStructure;
 	[ChannelType.GuildVoice]: VoiceChannelStructure;
-	[ChannelType.GroupDM]: DMChannelStructure;
+	[ChannelType.GroupDM]: GroupDMChannelStructure;
 	[ChannelType.GuildCategory]: CategoryChannelStructure;
 	[ChannelType.GuildAnnouncement]: NewsChannelStructure;
 	[ChannelType.AnnouncementThread]: ThreadChannelStructure;

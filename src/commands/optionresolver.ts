@@ -6,8 +6,8 @@ import {
 	Transformers,
 	type UserStructure,
 } from '../client/transformers';
-import { type MakeRequired, SeyfertError } from '../common';
-import { type AllChannels, channelFrom } from '../structures';
+import { type MakePresent, SeyfertError } from '../common';
+import { channelFrom } from '../structures';
 import {
 	type APIApplicationCommandInteractionDataOption,
 	type APIAttachment,
@@ -18,7 +18,13 @@ import {
 	type APIUser,
 	ApplicationCommandOptionType,
 } from '../types';
-import type { Command, CommandAutocompleteOption, CommandOption, SubCommand } from './applications/chat';
+import type {
+	Command,
+	CommandAutocompleteOption,
+	CommandOption,
+	CommandOptionChannel,
+	SubCommand,
+} from './applications/chat';
 import type { UsingClient } from './applications/shared';
 
 export type ContextOptionsResolved = {
@@ -102,7 +108,7 @@ export class OptionResolver {
 	getValue(
 		name: string,
 	):
-		| AllChannels
+		| CommandOptionChannel
 		| Attachment
 		| boolean
 		| number
@@ -151,8 +157,8 @@ export class OptionResolver {
 		return option;
 	}
 
-	getChannel(name: string, required?: true): AllChannels;
-	getChannel(name: string): AllChannels | undefined {
+	getChannel(name: string, required?: true): CommandOptionChannel;
+	getChannel(name: string): CommandOptionChannel | undefined {
 		const option = this.getTypedOption(name, [ApplicationCommandOptionType.Channel]);
 		return option.channel;
 	}
@@ -218,12 +224,12 @@ export interface OptionResolved {
 	user?: UserStructure;
 	member?: GuildMemberStructure | InteractionGuildMemberStructure;
 	attachment?: Attachment;
-	channel?: AllChannels;
+	channel?: CommandOptionChannel;
 	role?: GuildRoleStructure;
 	focused?: boolean;
 }
 
-export type OptionResolvedWithValue = MakeRequired<Pick<OptionResolved, 'name' | 'value' | 'focused'>, 'value'> & {
+export type OptionResolvedWithValue = MakePresent<Pick<OptionResolved, 'name' | 'value' | 'focused'>, 'value'> & {
 	type:
 		| ApplicationCommandOptionType.Boolean
 		| ApplicationCommandOptionType.Integer

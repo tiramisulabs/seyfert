@@ -3,7 +3,7 @@ import type { ShardManagerOptions, WorkerManagerOptions } from '../discord';
 
 const COMPRESS = false;
 
-const propertiesVersion = 'Seyfert v4.5.0 (https://seyfert.dev)';
+const propertiesVersion = 'Seyfert v4.6.0 (https://seyfert.dev)';
 
 const properties = {
 	os: process.platform,
@@ -27,7 +27,7 @@ const ShardManagerDefaults: DeepPartial<ShardManagerOptions> = {
 
 const WorkerManagerDefaults: DeepPartial<WorkerManagerOptions> = {
 	...ShardManagerDefaults,
-	shardsPerWorker: 16,
+	shardsPerWorker: 8,
 };
 
 export interface IdentifyProperties {
