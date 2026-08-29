@@ -63,6 +63,19 @@ export interface CommandFromContent {
 	fullCommandName: string;
 }
 
+type MessageCommandOptionParseError = {
+	name: string;
+	error: string;
+	fullError: MessageCommandOptionErrors;
+};
+
+type BotPermissionCheckCommand = Command | SubCommand | ContextMenuCommand | EntryPointCommand;
+type BotPermissionCheckContext<C extends BotPermissionCheckCommand> = C extends Command | SubCommand
+	? CommandContext
+	: C extends ContextMenuCommand
+		? MenuCommandContext<MessageCommandInteraction | UserCommandInteraction>
+		: EntryPointContext;
+
 export class HandleCommand {
 	constructor(public client: UsingClient) {}
 
@@ -119,8 +132,8 @@ export class HandleCommand {
 		return runContextScopes(this.client.options.contextScopes, context, async () => {
 			try {
 				if (context.guildId && command.botPermissions) {
-					const permissions = await this.checkBotPermissions(command, context, interaction.appPermissions);
-					if (permissions) return await command.onBotPermissionsFail?.(context, permissions);
+					const missingPermissions = await this.checkBotPermissions(command, context, interaction.appPermissions);
+					if (missingPermissions) return await command.onBotPermissionsFail?.(context, missingPermissions);
 				}
 
 				await command.onBeforeMiddlewares?.(context);
@@ -171,8 +184,8 @@ export class HandleCommand {
 		return runContextScopes(this.client.options.contextScopes, context, async () => {
 			try {
 				if (context.guildId && command.botPermissions) {
-					const permissions = await this.checkBotPermissions(command, context, interaction.appPermissions);
-					if (permissions) return await command.onBotPermissionsFail(context, permissions);
+					const missingPermissions = await this.checkBotPermissions(command, context, interaction.appPermissions);
+					if (missingPermissions) return await command.onBotPermissionsFail(context, missingPermissions);
 				}
 
 				await command.onBeforeMiddlewares?.(context);
@@ -213,13 +226,17 @@ export class HandleCommand {
 			try {
 				if (context.guildId) {
 					if (command.botPermissions) {
-						const permissions = await this.checkBotPermissions(command, context, interaction.appPermissions);
-						if (permissions) return await command.onBotPermissionsFail?.(context, permissions);
+						const missingPermissions = await this.checkBotPermissions(command, context, interaction.appPermissions);
+						if (missingPermissions) return await command.onBotPermissionsFail?.(context, missingPermissions);
 					}
 
 					if (command.defaultMemberPermissions) {
-						const permissions = await this.checkMemberPermissions(command, context, interaction.member!.permissions);
-						if (permissions) return await command.onPermissionsFail?.(context, permissions);
+						const missingPermissions = await this.checkMemberPermissions(
+							command,
+							context,
+							interaction.member!.permissions,
+						);
+						if (missingPermissions) return await command.onPermissionsFail?.(context, missingPermissions);
 					}
 				}
 
@@ -263,8 +280,7 @@ export class HandleCommand {
 	}
 
 	async messageComponent(interaction: ComponentInteraction) {
-		//@ts-expect-error
-		const context = new ComponentContext(this.client, interaction);
+		const context = new ComponentContext(this.client, interaction as never);
 		const extended = this.client.options?.context?.(interaction) ?? {};
 		Object.assign(context, extended);
 		await this.client.components.executeComponent(context);
@@ -346,7 +362,10 @@ export class HandleCommand {
 					const interaction = BaseInteraction.from(this.client, body, __reply) as ModalSubmitInteraction;
 					if (this.client.components.hasModal(interaction)) {
 						await this.client.components.onModalSubmit(interaction);
-					} else await this.modal(interaction);
+					} else {
+						this.client.components.restoreModalCustomId(interaction);
+						await this.modal(interaction);
+					}
 				}
 				break;
 			case InteractionType.MessageComponent:
@@ -415,8 +434,7 @@ export class HandleCommand {
 				resolved,
 			);
 			const context = new CommandContext(self, message, optionsResolver, shardId, command);
-			//@ts-expect-error
-			const extendContext = self.options?.context?.(message) ?? {};
+			const extendContext = self.options?.context?.(message as never) ?? {};
 			Object.assign(context, extendContext);
 
 			return await runContextScopes(self.options.contextScopes, context, async () => {
@@ -441,18 +459,18 @@ export class HandleCommand {
 				if (rawMessage.guild_id) {
 					if (command.defaultMemberPermissions) {
 						const memberPermissions = await self.members.permissions(rawMessage.guild_id, rawMessage.author.id);
-						const permissions = await this.checkMemberPermissions(command, context, memberPermissions);
+						const missingPermissions = await this.checkMemberPermissions(command, context, memberPermissions);
 						const guild = await this.client.guilds.raw(rawMessage.guild_id);
-						if (permissions && guild.owner_id !== rawMessage.author.id) {
-							return await command.onPermissionsFail?.(context, permissions);
+						if (missingPermissions && guild.owner_id !== rawMessage.author.id) {
+							return await command.onPermissionsFail?.(context, missingPermissions);
 						}
 					}
 
 					if (command.botPermissions) {
 						const appPermissions = await self.members.permissions(rawMessage.guild_id, self.botId);
-						const permissions = await this.checkBotPermissions(command, context, appPermissions);
-						if (permissions) {
-							return await command.onBotPermissionsFail?.(context, permissions);
+						const missingPermissions = await this.checkBotPermissions(command, context, appPermissions);
+						if (missingPermissions) {
+							return await command.onBotPermissionsFail?.(context, missingPermissions);
 						}
 					}
 				}
@@ -635,16 +653,16 @@ export class HandleCommand {
 	 *
 	 * @param command - The command whose member permissions are being checked.
 	 * @param _context - The context of the command execution.
-	 * @param permissions - The permissions currently held by the member.
+	 * @param heldPermissions - The permissions currently held by the member.
 	 * @returns The missing permission names, or `undefined` when command execution can continue.
 	 */
 	checkMemberPermissions(
 		command: Command | SubCommand,
 		_context: CommandContext,
-		permissions: PermissionsBitField,
+		heldPermissions: PermissionsBitField,
 	): Awaitable<PermissionStrings | undefined> {
 		if (!command.defaultMemberPermissions) return;
-		return this.checkPermissions(permissions, command.defaultMemberPermissions);
+		return this.checkPermissions(heldPermissions, command.defaultMemberPermissions);
 	}
 
 	/**
@@ -657,24 +675,24 @@ export class HandleCommand {
 	 *
 	 * @param command - The command whose bot permissions are being checked.
 	 * @param _context - The context of the command execution.
-	 * @param permissions - The permissions currently held by the bot.
+	 * @param heldPermissions - The permissions currently held by the bot.
 	 * @returns The missing permission names, or `undefined` when command execution can continue.
 	 */
-	checkBotPermissions(
-		command: Command | SubCommand | ContextMenuCommand | EntryPointCommand,
-		_context: CommandContext | MenuCommandContext<any> | EntryPointContext,
-		permissions: PermissionsBitField,
+	checkBotPermissions<C extends BotPermissionCheckCommand>(
+		command: C,
+		_context: BotPermissionCheckContext<C>,
+		heldPermissions: PermissionsBitField,
 	): Awaitable<PermissionStrings | undefined> {
 		if (!command.botPermissions) return;
-		return this.checkPermissions(permissions, command.botPermissions);
+		return this.checkPermissions(heldPermissions, command.botPermissions);
 	}
 
-	checkPermissions(app: PermissionsBitField, bot: bigint) {
-		if (app.has(['Administrator'])) return;
+	checkPermissions(heldPermissions: PermissionsBitField, requiredPermissions: bigint) {
+		if (heldPermissions.has(['Administrator'])) return;
 
-		const permissions = app.missings(app.values([bot]));
-		if (permissions.length) {
-			return app.keys(permissions);
+		const missingPermissions = heldPermissions.missings(heldPermissions.values([requiredPermissions]));
+		if (missingPermissions.length) {
+			return heldPermissions.keys(missingPermissions);
 		}
 		return;
 	}
@@ -815,6 +833,199 @@ export class HandleCommand {
 		return true;
 	}
 
+	private async resolveChannelOption(
+		option: CommandOptionWithType,
+		message: GatewayMessageCreateDispatchData,
+		argument: string,
+		resolved: MakeRequired<ContextOptionsResolved>,
+		errors: MessageCommandOptionParseError[],
+	) {
+		const rawQuery = message.content.match(/(?<=<#)[0-9]{17,19}(?=>)/g)?.find(id => argument.includes(id)) || argument;
+		const channel = (await this.client.cache.channels?.raw(rawQuery)) ?? (await this.fetchChannel(option, rawQuery));
+		if (!channel) return;
+
+		if ('channel_types' in option) {
+			const channelTypes = (option as SeyfertChannelOption).channel_types!;
+			if (!channelTypes.includes(channel.type)) {
+				errors.push({
+					name: option.name,
+					error: `The entered channel type is not one of ${channelTypes.map(type => ChannelType[type]).join(', ')}`,
+					fullError: ['CHANNEL_TYPES', channelTypes],
+				});
+				return;
+			}
+		}
+
+		//discord funny memoentnt!!!!!!!!
+		resolved.channels[channel.id] = channel as APIInteractionDataResolvedChannel;
+		return channel.id;
+	}
+
+	private async resolveMentionableOption(
+		option: CommandOptionWithType,
+		message: GatewayMessageCreateDispatchData,
+		argument: string,
+		resolved: MakeRequired<ContextOptionsResolved>,
+	) {
+		const matches = argument.match(/<@[0-9]{17,19}(?=>)|<@&[0-9]{17,19}(?=>)/g) ?? [];
+		for (const match of matches) {
+			if (match.includes('&')) {
+				const rawId = match.slice(3);
+				if (rawId) {
+					const role =
+						(await this.client.cache.roles?.raw(rawId)) ?? (await this.fetchRole(option, rawId, message.guild_id));
+					if (role) {
+						resolved.roles[rawId] = role;
+						return rawId;
+					}
+				}
+			} else {
+				const rawId = match.slice(2);
+				const raw = message.mentions.find(mention => rawId === mention.id);
+				if (raw) {
+					const { member, ...user } = raw;
+					resolved.users[raw.id] = user;
+					if (member) resolved.members[raw.id] = member;
+					return raw.id;
+				}
+			}
+		}
+		return;
+	}
+
+	private async resolveRoleOption(
+		option: CommandOptionWithType,
+		message: GatewayMessageCreateDispatchData,
+		argument: string,
+		resolved: MakeRequired<ContextOptionsResolved>,
+	) {
+		const rawQuery = message.mention_roles.find(id => argument.includes(id)) || argument;
+		const role =
+			(await this.client.cache.roles?.raw(rawQuery)) ?? (await this.fetchRole(option, rawQuery, message.guild_id));
+		if (!role) return;
+
+		resolved.roles[role.id] = role;
+		return role.id;
+	}
+
+	private async resolveUserOption(
+		option: CommandOptionWithType,
+		message: GatewayMessageCreateDispatchData,
+		argument: string,
+		resolved: MakeRequired<ContextOptionsResolved>,
+	) {
+		const mentionedUser = message.mentions.find(mention => argument.includes(mention.id));
+		const rawQuery = mentionedUser?.id || argument;
+		const raw =
+			mentionedUser ?? (await this.client.cache.users?.raw(rawQuery)) ?? (await this.fetchUser(option, rawQuery));
+		if (!raw) return;
+
+		resolved.users[raw.id] = raw;
+		if (message.guild_id) {
+			const member =
+				mentionedUser?.member ??
+				(await this.client.cache.members?.raw(raw.id, message.guild_id)) ??
+				(await this.fetchMember(option, raw.id, message.guild_id));
+			if (member) resolved.members[raw.id] = member;
+		}
+		return raw.id;
+	}
+
+	private resolveStringOption(
+		option: SeyfertStringOption & { name: string },
+		argument: string,
+		errors: MessageCommandOptionParseError[],
+	) {
+		if (option.choices?.length) {
+			const choice = option.choices.find(choice => choice.name === argument);
+			if (!choice) {
+				errors.push({
+					name: option.name,
+					error: `The entered choice is invalid. Please choose one of the following options: ${option.choices
+						.map(choice => choice.name)
+						.join(', ')}`,
+					fullError: ['STRING_INVALID_CHOICE', option.choices],
+				});
+				return;
+			}
+			return choice.value;
+		}
+		if (option.min_length !== undefined && argument.length < option.min_length) {
+			errors.push({
+				name: option.name,
+				error: `The entered string has less than ${option.min_length} characters. The minimum required is ${option.min_length} characters`,
+				fullError: ['STRING_MIN_LENGTH', option.min_length],
+			});
+			return;
+		}
+		if (option.max_length !== undefined && argument.length > option.max_length) {
+			errors.push({
+				name: option.name,
+				error: `The entered string has more than ${option.max_length} characters. The maximum required is ${option.max_length} characters`,
+				fullError: ['STRING_MAX_LENGTH', option.max_length],
+			});
+			return;
+		}
+		return argument;
+	}
+
+	private resolveNumericOption(
+		option: (SeyfertNumberOption | SeyfertIntegerOption) & { name: string; type: ApplicationCommandOptionType },
+		argument: string,
+		errors: MessageCommandOptionParseError[],
+	) {
+		if (option.choices?.length) {
+			const choice = option.choices.find(choice => choice.name === argument);
+			if (!choice) {
+				errors.push({
+					name: option.name,
+					error: `The entered choice is invalid. Please choose one of the following options: ${option.choices
+						.map(choice => choice.name)
+						.join(', ')}`,
+					fullError: ['NUMBER_INVALID_CHOICE', option.choices],
+				});
+				return;
+			}
+			return choice.value;
+		}
+
+		const value =
+			option.type === ApplicationCommandOptionType.Integer ? Math.trunc(Number(argument)) : Number(argument);
+		if (Number.isNaN(value)) {
+			errors.push({
+				name: option.name,
+				error: 'The entered choice is an invalid number',
+				fullError: ['NUMBER_NAN', argument],
+			});
+			return;
+		}
+		if (value <= -INTEGER_OPTION_VALUE_LIMIT || value >= INTEGER_OPTION_VALUE_LIMIT) {
+			errors.push({
+				name: option.name,
+				error: 'The entered number must be between -2^53 and 2^53',
+				fullError: ['NUMBER_OUT_OF_BOUNDS', INTEGER_OPTION_VALUE_LIMIT],
+			});
+			return;
+		}
+		if (option.min_value !== undefined && value < option.min_value) {
+			errors.push({
+				name: option.name,
+				error: `The entered number is less than ${option.min_value}. The minimum allowed is ${option.min_value}`,
+				fullError: ['NUMBER_MIN_VALUE', option.min_value],
+			});
+			return;
+		}
+		if (option.max_value !== undefined && value > option.max_value) {
+			errors.push({
+				name: option.name,
+				error: `The entered number is greater than ${option.max_value}. The maximum allowed is ${option.max_value}`,
+				fullError: ['NUMBER_MAX_VALUE', option.max_value],
+			});
+			return;
+		}
+		return value;
+	}
+
 	async argsOptionsParser(
 		command: Command | SubCommand,
 		message: GatewayMessageCreateDispatchData,
@@ -822,17 +1033,14 @@ export class HandleCommand {
 		resolved: MakeRequired<ContextOptionsResolved>,
 	) {
 		const options: APIApplicationCommandInteractionDataBasicOption[] = [];
-		const errors: {
-			name: string;
-			error: string;
-			fullError: MessageCommandOptionErrors;
-		}[] = [];
+		const errors: MessageCommandOptionParseError[] = [];
 		let indexAttachment = -1;
 		for (const i of (command.options ?? []) as (CommandOption & {
 			type: ApplicationCommandOptionType;
 		})[]) {
 			try {
 				if (!args[i.name] && i.type !== ApplicationCommandOptionType.Attachment) continue;
+				const argument = args[i.name];
 				let value: string | boolean | number | undefined;
 				switch (i.type) {
 					case ApplicationCommandOptionType.Attachment:
@@ -842,201 +1050,33 @@ export class HandleCommand {
 						}
 						break;
 					case ApplicationCommandOptionType.Boolean:
-						value = ['yes', 'y', 'true', 'treu'].includes(args[i.name].toLowerCase());
+						value = ['yes', 'y', 'true', 'treu'].includes(argument.toLowerCase());
 						break;
 					case ApplicationCommandOptionType.Channel:
-						{
-							const rawQuery =
-								message.content.match(/(?<=<#)[0-9]{17,19}(?=>)/g)?.find(x => args[i.name]?.includes(x)) ||
-								args[i.name];
-							if (!rawQuery) continue;
-							const channel =
-								(await this.client.cache.channels?.raw(rawQuery)) ?? (await this.fetchChannel(i, rawQuery));
-							if (!channel) break;
-							if ('channel_types' in i) {
-								if (!(i as SeyfertChannelOption).channel_types!.includes(channel.type)) {
-									errors.push({
-										name: i.name,
-										error: `The entered channel type is not one of ${(i as SeyfertChannelOption)
-											.channel_types!.map(t => ChannelType[t])
-											.join(', ')}`,
-										fullError: ['CHANNEL_TYPES', (i as SeyfertChannelOption).channel_types!],
-									});
-									break;
-								}
-							}
-							value = channel.id;
-							//discord funny memoentnt!!!!!!!!
-							resolved.channels[channel.id] = channel as APIInteractionDataResolvedChannel;
-						}
+						value = await this.resolveChannelOption(i, message, argument, resolved, errors);
 						break;
 					case ApplicationCommandOptionType.Mentionable:
-						{
-							const matches = args[i.name]?.match(/<@[0-9]{17,19}(?=>)|<@&[0-9]{17,19}(?=>)/g) ?? [];
-							for (const match of matches) {
-								if (match.includes('&')) {
-									const rawId = match.slice(3);
-									if (rawId) {
-										const role =
-											(await this.client.cache.roles?.raw(rawId)) ?? (await this.fetchRole(i, rawId, message.guild_id));
-										if (role) {
-											value = rawId;
-											resolved.roles[rawId] = role;
-											break;
-										}
-									}
-								} else {
-									const rawId = match.slice(2);
-									const raw = message.mentions.find(x => rawId === x.id);
-									if (raw) {
-										const { member, ...user } = raw;
-										value = raw.id;
-										resolved.users[raw.id] = user;
-										if (member) resolved.members[raw.id] = member;
-										break;
-									}
-								}
-							}
-						}
+						value = await this.resolveMentionableOption(i, message, argument, resolved);
 						break;
 					case ApplicationCommandOptionType.Role:
-						{
-							const rawQuery = message.mention_roles.find(x => args[i.name]?.includes(x)) || args[i.name];
-							if (!rawQuery) continue;
-							const role =
-								(await this.client.cache.roles?.raw(rawQuery)) ?? (await this.fetchRole(i, rawQuery, message.guild_id));
-							if (role) {
-								value = role.id;
-								resolved.roles[role.id] = role;
-							}
-						}
+						value = await this.resolveRoleOption(i, message, argument, resolved);
 						break;
 					case ApplicationCommandOptionType.User:
-						{
-							const rawQuery = message.mentions.find(x => args[i.name]?.includes(x.id))?.id || args[i.name];
-							if (!rawQuery) continue;
-							const raw =
-								message.mentions.find(x => args[i.name]?.includes(x.id)) ??
-								(await this.client.cache.users?.raw(rawQuery)) ??
-								(await this.fetchUser(i, rawQuery));
-							if (raw) {
-								value = raw.id;
-								resolved.users[raw.id] = raw;
-								if (message.guild_id) {
-									const member =
-										message.mentions.find(x => args[i.name]?.includes(x.id))?.member ??
-										(await this.client.cache.members?.raw(value, message.guild_id)) ??
-										(await this.fetchMember(i, value, message.guild_id));
-									if (member) resolved.members[value] = member;
-								}
-							}
-						}
+						value = await this.resolveUserOption(i, message, argument, resolved);
 						break;
 					case ApplicationCommandOptionType.String:
-						{
-							const option = i as SeyfertStringOption;
-							if (option.choices?.length) {
-								const choice = option.choices.find(x => x.name === args[i.name]);
-								if (!choice) {
-									errors.push({
-										name: i.name,
-										error: `The entered choice is invalid. Please choose one of the following options: ${option.choices
-											.map(x => x.name)
-											.join(', ')}`,
-										fullError: ['STRING_INVALID_CHOICE', option.choices],
-									});
-									break;
-								}
-								value = choice.value;
-								break;
-							}
-							if (option.min_length !== undefined) {
-								if (args[i.name].length < option.min_length) {
-									errors.push({
-										name: i.name,
-										error: `The entered string has less than ${option.min_length} characters. The minimum required is ${option.min_length} characters`,
-										fullError: ['STRING_MIN_LENGTH', option.min_length],
-									});
-									break;
-								}
-							}
-							if (option.max_length !== undefined) {
-								if (args[i.name].length > option.max_length) {
-									errors.push({
-										name: i.name,
-										error: `The entered string has more than ${option.max_length} characters. The maximum required is ${option.max_length} characters`,
-										fullError: ['STRING_MAX_LENGTH', option.max_length],
-									});
-									break;
-								}
-							}
-							value = args[i.name];
-						}
+						value = this.resolveStringOption(i as SeyfertStringOption & { name: string }, argument, errors);
 						break;
 					case ApplicationCommandOptionType.Number:
 					case ApplicationCommandOptionType.Integer:
-						{
-							const option = i as SeyfertNumberOption | SeyfertIntegerOption;
-							if (option.choices?.length) {
-								const choice = option.choices.find(x => x.name === args[i.name]);
-								if (!choice) {
-									errors.push({
-										name: i.name,
-										error: `The entered choice is invalid. Please choose one of the following options: ${option.choices
-											.map(x => x.name)
-											.join(', ')}`,
-										fullError: ['NUMBER_INVALID_CHOICE', option.choices],
-									});
-									break;
-								}
-								value = choice.value;
-								break;
-							}
-							value =
-								i.type === ApplicationCommandOptionType.Integer
-									? Math.trunc(Number(args[i.name]))
-									: Number(args[i.name]);
-							if (Number.isNaN(value)) {
-								value = undefined;
-								errors.push({
-									name: i.name,
-									error: 'The entered choice is an invalid number',
-									fullError: ['NUMBER_NAN', args[i.name]],
-								});
-								break;
-							}
-							if (value <= -INTEGER_OPTION_VALUE_LIMIT || value >= INTEGER_OPTION_VALUE_LIMIT) {
-								value = undefined;
-								errors.push({
-									name: i.name,
-									error: 'The entered number must be between -2^53 and 2^53',
-									fullError: ['NUMBER_OUT_OF_BOUNDS', INTEGER_OPTION_VALUE_LIMIT],
-								});
-								break;
-							}
-							if (option.min_value !== undefined) {
-								if (value < option.min_value) {
-									value = undefined;
-									errors.push({
-										name: i.name,
-										error: `The entered number is less than ${option.min_value}. The minimum allowed is ${option.min_value}`,
-										fullError: ['NUMBER_MIN_VALUE', option.min_value],
-									});
-									break;
-								}
-							}
-							if (option.max_value !== undefined) {
-								if (value > option.max_value) {
-									value = undefined;
-									errors.push({
-										name: i.name,
-										error: `The entered number is greater than ${option.max_value}. The maximum allowed is ${option.max_value}`,
-										fullError: ['NUMBER_MAX_VALUE', option.max_value],
-									});
-									break;
-								}
-							}
-						}
+						value = this.resolveNumericOption(
+							i as (SeyfertNumberOption | SeyfertIntegerOption) & {
+								name: string;
+								type: ApplicationCommandOptionType;
+							},
+							argument,
+							errors,
+						);
 						break;
 				}
 				if (value !== undefined) {

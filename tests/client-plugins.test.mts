@@ -1,7 +1,12 @@
 import { describe, expect, test } from 'vitest';
-import { Client, type ClientOptions } from '../src/client/client';
-import { type AnySeyfertPlugin, resolveClientPlugins, runContextScopes, type SeyfertPlugin } from '../src/client/plugins';
 import { createPlugin, GatewayIntentBits } from '../src';
+import { Client, type ClientOptions } from '../src/client/client';
+import {
+	type AnySeyfertPlugin,
+	resolveClientPlugins,
+	runContextScopes,
+	type SeyfertPlugin,
+} from '../src/client/plugins';
 
 function runtimeConfig() {
 	return {
@@ -280,10 +285,25 @@ describe('client plugins', () => {
 		const client = createClient({ plugins: [plugin] });
 
 		(client as unknown as { gateway: unknown }).gateway = {};
+		client.cache.adapter.start = async () => {
+			calls.push('cache');
+		};
+		client.loadLangs = async () => {
+			calls.push('langs');
+		};
+		client.loadCommands = async directory => {
+			calls.push(`commands:${directory}`);
+		};
+		client.loadComponents = async () => {
+			calls.push('components');
+		};
+		client.loadEvents = async () => {
+			calls.push('events');
+		};
 
 		const starts = [
-			client.start({ token: 'header.payload.signature' }, false),
-			client.start({ token: 'header.payload.signature' }, false),
+			client.start({ commandsDir: 'first', token: 'header.payload.signature' }, false),
+			client.start({ commandsDir: 'second', token: 'header.payload.signature' }, false),
 		];
 
 		try {
@@ -294,7 +314,22 @@ describe('client plugins', () => {
 			await Promise.allSettled(starts);
 		}
 
-		expect(calls).toEqual(['plugin']);
+		expect(calls).toEqual(['plugin', 'cache', 'langs', 'commands:first', 'components', 'events']);
+
+		await client.start({ commandsDir: 'third', token: 'header.payload.signature' }, false);
+		expect(calls).toEqual([
+			'plugin',
+			'cache',
+			'langs',
+			'commands:first',
+			'components',
+			'events',
+			'cache',
+			'langs',
+			'commands:third',
+			'components',
+			'events',
+		]);
 	});
 
 	test('retries setup after plugin setup fails', async () => {

@@ -1,607 +1,100 @@
 import {
-	ApplicationCommandOptionType,
-	ApplicationCommandType,
 	type AllChannels,
 	type AllGuildChannels,
 	type AllNamedChannels,
+	type APIEmbed,
+	ApiHandler,
+	type ApiHandlerOptions,
+	type ApiRequestOptions,
 	type Attachment,
-	type AutocompleteCallback,
-	type AutocompleteInteraction,
-	type BanOptions,
 	type BaseChannelStructure,
 	type BaseGuildChannelStructure,
-	type BaseInteraction,
 	BaseResource,
-	ApiHandler,
-	type BulkGetKey,
 	type Cache,
+	type CallbackEventHandler,
 	Client,
-	Command,
-	Collectors,
-	ComponentCommand,
-	type CommandMetadata,
-	type CommandContext,
-	type ComponentCollectorStopReason,
+	type ClientMiddlewares,
 	type CollectorRunParameters,
-	ContextMenuCommand,
-	createIntegerOption,
+	Collectors,
+	Command,
+	type CommandContext,
+	type CommandMetadata,
+	ComponentCommand,
+	type ComponentContext,
 	createMiddleware,
-	createNumberOption,
-	createPluginFactory,
-	defineGroups,
 	createPlugin,
-	createStringOption,
+	createPluginFactory,
 	createSharedKey,
-	Declare,
-	definePlugins,
-	type DMChannelStructure,
 	type DirectoryChannelStructure,
+	type DMChannelStructure,
+	definePlugins,
+	Embed,
+	type EntryPointContext,
+	type GatewayDispatchPayload,
 	GatewayIntentBits,
 	GatewayOpcodes,
-	type GatewayDispatchPayload,
-	type InferMiddlewares,
-	type GuildBasedResource,
-	type GuildRelatedResource,
-	Middlewares,
-	middlewares,
 	type GatewaySendPayload,
-	GuildBan,
-	GuildMember,
-	type GuildMemberStructure,
 	type GroupDMChannelStructure,
+	type GuildMemberStructure,
 	type GuildRoleStructure,
+	type InferMiddlewares,
 	type InteractionGuildMemberStructure,
-	type LangInstance,
-	LangsHandler,
-	type ResolvedChannel,
-	type ComponentContext,
-	type EntryPointContext,
-	EntryPointCommand,
-	Embed,
-	Formatter,
-	Group,
-	Groups,
-	GroupsT,
 	type MenuCommandContext,
 	type MessageStructure,
-	type TextGuildChannelStructure,
 	type MetadataMiddleware,
-	type ModalContext,
 	type MiddlewareContext,
-	type OnAutocompleteErrorCallback,
-	Options,
-	OAuth2Scopes,
-	type PluginContextOf,
+	Middlewares,
+	ModalCommand,
+	type ModalContext,
+	type ModalSubmitInteraction,
+	middlewares,
+	type ParseClient,
+	type PluginCommandObserver,
+	type PluginCommandObserverContext,
 	type PluginContextInteraction,
 	type PluginContextMapOf,
+	type PluginContextOf,
 	type PluginDiagnosticCode,
 	type PluginExtensionOf,
 	type PluginGatewayDispatchInterceptor,
 	type PluginGatewayDispatchMeta,
 	type PluginGatewayDispatchNext,
 	type PluginHandlerKind,
-	type PluginLoadedMetadata,
 	type PluginMiddlewaresMapOf,
-	type PluginCommandObserver,
-	type PluginCommandObserverContext,
 	PluginOrder,
 	type PluginOrderOpt,
-	type SeyfertPluginHooks,
 	type PluginUsingClient,
-	PermissionFlagsBits,
-	type ReturnCache,
-	type ReturnOptionsTypes,
+	PresenceUpdateStatus,
 	type RegisteredPluginMiddlewares,
 	type RegisteredPluginShared,
+	type ResolvedChannel,
 	type ResolvedRegisteredMiddlewares,
-	calculateUserDefaultAvatarIndex,
-	RadioGroup,
-	RadioGroupOption,
-	SeyfertError,
-	StringSelectMenu,
-	StringSelectOption,
-	SubCommand,
-	type Webhook,
-	type ClientMiddlewares,
-	type OptionResolvedWithValue,
-	type SharedKey,
+	type RestArgumentsRequiredQuery,
+	type ReturnCache,
+	type SemverRange,
 	type SeyfertPlugin,
 	type SeyfertPluginApi,
+	type SeyfertPluginHooks,
 	type SeyfertPluginOptions,
-	type SeyfertErrorCode,
-	type SemverRange,
-	type ShardManager,
-	WorkerManager,
-	type config,
-	ModalCommand,
-	type WebhookMessage,
-	type WebhookMessageStructure,
-	type APISelectMenuOption,
-	type APIStringSelectComponent,
-	type APIEmbed,
-	type ApiHandlerOptions,
-	type ApiRequestOptions,
-	type CallbackEventHandler,
-	type ClientOptions,
-	type ClientEvent,
-	type ParseClient,
-	type RestArgumentsRequiredQuery,
+	type SharedKey,
 	type StringSelectMenuInteraction,
-	type Collection,
-	LimitedCollection,
-	type LimitedCollectionData,
-	type UsingClient,
-	type UserAvatarDefault,
 	type UserStructure,
-	type RuntimeConfig,
-	type RuntimeConfigHTTP,
 	type VoiceChannelStructure,
-	type VoiceStateStructure,
-	PresenceUpdateStatus,
-	createEvent,
-	WorkerClient,
-	type ModalSubmitInteraction,
+	type WebhookMessageStructure,
+	WorkerManager,
 } from 'seyfert';
-import type { APIRoutes } from '../lib/api/Routes';
-import type { BaseClientOptions, ServicesOptions, StartOptions } from '../lib/client/base';
-import { HandleCommand } from '../lib/commands/handle';
-import type {
-	Awaitable,
-	ComponentInteractionMessageUpdate,
-	MakePresent,
-	MakeRequired,
-	ModalCreateBodyRequest,
-	PickPresent,
-	PickRequired,
-} from '../lib/common';
-import { snowflakeToTimestamp } from '../lib/common/it/utils';
-import type { BanShorter } from '../lib/common/shorters/bans';
-import type { MemberShorter } from '../lib/common/shorters/members';
-import type { BitField } from '../lib/structures/extra/BitField';
-import { PermissionsBitField } from '../lib/structures/extra/Permissions';
+import type { ComponentInteractionMessageUpdate, ModalCreateBodyRequest } from '../lib/common';
 import type { ShardManagerOptions, WorkerManagerOptions } from '../lib/websocket/discord/shared';
 import type { ManagerAllowConnect, ManagerAllowConnectResharding } from '../lib/websocket/discord/workermanager';
 
 declare function expectType<T>(value: T): void;
-declare const publicWorkerClient: WorkerClient;
-declare const publicGatewayPayload: GatewaySendPayload;
-expectType<Promise<boolean>>(publicWorkerClient.sendGatewayPayload(0, publicGatewayPayload));
-
 type IsAny<T> = 0 extends 1 & T ? true : false;
-type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
-	? (<T>() => T extends B ? 1 : 2) extends <T>() => T extends A ? 1 : 2
-		? true
-		: false
-	: false;
-
-type PresentFixture = {
-	flag?: boolean;
-	count?: 0 | 1;
-	text?: '' | 'x';
-	big?: 0n | 1n;
-	nil?: null | 'ok';
-};
-
-type PresentFixtureAll = MakePresent<PresentFixture, 'flag' | 'count' | 'text' | 'big' | 'nil'>;
-expectType<true>(true as Equal<PresentFixtureAll['flag'], boolean>);
-expectType<true>(true as Equal<PresentFixtureAll['count'], 0 | 1>);
-expectType<true>(true as Equal<PresentFixtureAll['text'], '' | 'x'>);
-expectType<true>(true as Equal<PresentFixtureAll['big'], 0n | 1n>);
-expectType<true>(true as Equal<PresentFixtureAll['nil'], 'ok'>);
-
-type PickPresentFixture = PickPresent<PresentFixture, 'flag' | 'count' | 'text' | 'big' | 'nil'>;
-expectType<true>(true as Equal<PickPresentFixture['flag'], boolean>);
-expectType<true>(true as Equal<PickPresentFixture['count'], 0 | 1>);
-expectType<true>(true as Equal<PickPresentFixture['text'], '' | 'x'>);
-expectType<true>(true as Equal<PickPresentFixture['big'], 0n | 1n>);
-expectType<true>(true as Equal<PickPresentFixture['nil'], 'ok'>);
-expectType<true>(true as Equal<MakeRequired<{ flag?: boolean }, 'flag'>['flag'], true>);
-expectType<true>(true as Equal<PickRequired<{ flag?: boolean }, 'flag'>['flag'], true | undefined>);
-expectType<true>(true as Equal<OptionResolvedWithValue['value'], string | number | boolean>);
-expectType<number>(snowflakeToTimestamp('123456789012345678'));
-declare const unknownContractError: unknown;
-if (SeyfertError.is(unknownContractError)) {
-	expectType<SeyfertError>(unknownContractError);
-	expectType<SeyfertErrorCode>(unknownContractError.code);
-}
-if (SeyfertError.is(unknownContractError, 'INVALID_TOKEN')) {
-	expectType<SeyfertError & { code: 'INVALID_TOKEN' }>(unknownContractError);
-	expectType<'INVALID_TOKEN'>(unknownContractError.code);
-}
-type ExpectedReturnOptionsTypeKeys =
-	| ApplicationCommandOptionType.Subcommand
-	| ApplicationCommandOptionType.SubcommandGroup
-	| ApplicationCommandOptionType.String
-	| ApplicationCommandOptionType.Integer
-	| ApplicationCommandOptionType.Boolean
-	| ApplicationCommandOptionType.User
-	| ApplicationCommandOptionType.Channel
-	| ApplicationCommandOptionType.Role
-	| ApplicationCommandOptionType.Mentionable
-	| ApplicationCommandOptionType.Number
-	| ApplicationCommandOptionType.Attachment;
-expectType<true>(true as Equal<keyof ReturnOptionsTypes, ExpectedReturnOptionsTypeKeys>);
-expectType<string>(Formatter.timestamp(Date.now()));
-expectType<`> ${string}`>(Formatter.quote('hello'));
-expectType<`>>> ${string}`>(Formatter.blockQuote('hello'));
-expectType<`<${'a' | ''}:${string}:${string}>`>(Formatter.emojiMention('123', 'wave'));
-expectType<`<${'a' | ''}:${string}:${string}>`>(Formatter.emojiMention('123', null, true));
-expectType<string>(
-	Formatter.generateOAuth2URL('123', {
-		scopes: [OAuth2Scopes.Bot],
-	}),
-);
-
-const permissionsContract = new PermissionsBitField(['SendMessages']);
-type PermissionFlagKey = keyof typeof PermissionFlagsBits;
-expectType<boolean>(permissionsContract.has('SendMessages'));
-expectType<boolean>(permissionsContract.strictHas('SendMessages'));
-expectType<boolean>(permissionsContract.has(['SendMessages']));
-expectType<boolean>(permissionsContract.strictHas(['SendMessages']));
-declare const bitfieldContract: BitField<typeof PermissionFlagsBits>;
-expectType<PermissionFlagKey[]>(bitfieldContract.keys());
-expectType<PermissionFlagKey[]>(permissionsContract.keys());
-
-type HumanMember = { type: 'human'; username: string };
-type BotMember = { type: 'bot'; applicationId: string };
-type MemberUnion = HumanMember | BotMember;
-
-declare const collectionMembers: Collection<string, MemberUnion>;
-declare function isHuman(member: MemberUnion): member is HumanMember;
-expectType<HumanMember[]>(collectionMembers.filter(isHuman));
-expectType<HumanMember | undefined>(collectionMembers.find(isHuman));
-expectType<Collection<string, HumanMember>>(collectionMembers.filterCollection(isHuman));
-expectType<MemberUnion[]>(collectionMembers.filter(member => member.type === 'human'));
-expectType<MemberUnion | undefined>(collectionMembers.find(member => member.type === 'human'));
-expectType<Collection<string, MemberUnion>>(collectionMembers.filterCollection(member => member.type === 'human'));
-
-const limitedCollectionContract = new LimitedCollection<string, number>();
-expectType<IterableIterator<number>>(limitedCollectionContract.values());
-expectType<IterableIterator<[string, number]>>(limitedCollectionContract.entries());
-expectType<IterableIterator<LimitedCollectionData<number>>>(limitedCollectionContract.rawValues());
-expectType<IterableIterator<[string, LimitedCollectionData<number>]>>(limitedCollectionContract.rawEntries());
-expectType<IterableIterator<[string, number]>>(limitedCollectionContract[Symbol.iterator]());
-
-declare const cacheContract: Cache;
-const cacheBulkGetKeys = [
-	['users', 'user-id'],
-	['roles', 'role-id'],
-	['members', 'member-id', 'guild-id'],
-] as const satisfies readonly BulkGetKey[];
-const cacheBulkGetResult = cacheContract.bulkGet(cacheBulkGetKeys);
-type CacheBulkGetResult = Awaited<typeof cacheBulkGetResult>;
-expectType<true>(true as Equal<keyof CacheBulkGetResult, 'users' | 'roles' | 'members'>);
-// @ts-expect-error tuple-aware bulkGet results only include requested resource keys.
-expectType<CacheBulkGetResult['channels']>([]);
-declare const dynamicBulkGetKeys: BulkGetKey[];
-const dynamicBulkGetResult = cacheContract.bulkGet(dynamicBulkGetKeys);
-type DynamicBulkGetResult = Awaited<typeof dynamicBulkGetResult>;
-expectType<true>(true as ('channels' extends keyof DynamicBulkGetResult ? true : false));
-
-declare const guildRelatedResourceContract: GuildRelatedResource;
-guildRelatedResourceContract.flush();
-declare const guildBasedResourceContract: GuildBasedResource;
-// @ts-expect-error GuildBasedResource.flush requires an explicit guild selector.
-guildBasedResourceContract.flush();
-const wildcardCacheSelector = '*' as const;
-declare const cacheResourceSelector: string & {};
-cacheContract.roles?.values(wildcardCacheSelector);
-cacheContract.channels?.values(wildcardCacheSelector);
-cacheContract.messages?.values(wildcardCacheSelector);
-cacheContract.messages?.keys(wildcardCacheSelector);
-cacheContract.emojis?.values(wildcardCacheSelector);
-cacheContract.stickers?.values(wildcardCacheSelector);
-cacheContract.overwrites?.values(wildcardCacheSelector);
-cacheContract.members?.values(cacheResourceSelector);
-cacheContract.bans?.values(cacheResourceSelector);
-cacheContract.voiceStates?.values(wildcardCacheSelector);
-
-type ChannelPinResult = Awaited<ReturnType<Client['channels']['pins']>>;
-expectType<true>(true as Equal<ChannelPinResult['items'][number]['pinnedAt'], number>);
-expectType<true>(true as Equal<UserAvatarDefault, 0 | 1 | 2 | 3 | 4 | 5>);
-expectType<UserAvatarDefault>(calculateUserDefaultAvatarIndex('123456789012345678', '0'));
-expectType<true>(true as Equal<ReturnType<typeof calculateUserDefaultAvatarIndex>, UserAvatarDefault>);
-
-declare const webhookWriteClient: Client;
-declare const webhookWrite: Webhook;
-declare const webhookBackedMessage: WebhookMessage;
-declare const dynamicWebhookWait: boolean;
-expectType<Promise<WebhookMessageStructure>>(
-	webhookWriteClient.webhooks.writeMessage('123', 'token', { body: { content: 'wait' }, query: { wait: true } }),
-);
-expectType<Promise<WebhookMessageStructure | null>>(
-	webhookWriteClient.webhooks.writeMessage('123', 'token', { body: { content: 'default' } }),
-);
-expectType<Promise<WebhookMessageStructure | null>>(
-	webhookWriteClient.webhooks.writeMessage('123', 'token', { body: { content: 'no wait' }, query: { wait: false } }),
-);
-expectType<Promise<WebhookMessageStructure | null>>(
-	webhookWriteClient.webhooks.writeMessage('123', 'token', {
-		body: { content: 'dynamic wait' },
-		query: { wait: dynamicWebhookWait },
-	}),
-);
-expectType<Promise<WebhookMessageStructure>>(
-	webhookWrite.messages.write({ body: { content: 'wait' }, query: { wait: true } }),
-);
-expectType<Promise<WebhookMessageStructure | null>>(webhookWrite.messages.write({ body: { content: 'default' } }));
-expectType<Promise<WebhookMessageStructure | null>>(
-	webhookWrite.messages.write({ body: { content: 'no wait' }, query: { wait: false } }),
-);
-expectType<Promise<WebhookMessageStructure>>(webhookBackedMessage.write({ content: 'wait', query: { wait: true } }));
-expectType<Promise<WebhookMessageStructure | null>>(webhookBackedMessage.write({ content: 'default' }));
-expectType<Promise<WebhookMessageStructure | null>>(
-	webhookBackedMessage.write({ content: 'no wait', query: { wait: false } }),
-);
-
-const falseBooleanOption = {
-	name: 'hidden',
-	type: ApplicationCommandOptionType.Boolean,
-	value: false,
-	focused: false,
-} satisfies OptionResolvedWithValue;
-expectType<false>(falseBooleanOption.value);
-expectType<false>(falseBooleanOption.focused);
-
-type CommandsLoadedCallbackParams = Parameters<CallbackEventHandler['commandsLoaded']>;
-expectType<true>(
-	true as Equal<
-		CommandsLoadedCallbackParams,
-		[
-			PluginLoadedMetadata<'commands', Command | ContextMenuCommand | EntryPointCommand>,
-			UsingClient,
-		]
-	>,
-);
-expectType<true>(true as Equal<CommandsLoadedCallbackParams['length'], 2>);
-
-type BotReadyCallbackParams = Parameters<CallbackEventHandler['botReady']>;
-expectType<true>(true as Equal<BotReadyCallbackParams['length'], 3>);
-expectType<true>(true as Equal<BotReadyCallbackParams[2], number>);
-expectType<false>(false as IsAny<ReturnType<ClientEvent['run']>>);
-expectType<true>(true as Equal<ReturnType<ClientEvent['run']>, Awaitable<unknown>>);
-
-const asyncCreateEventContract = createEvent({
-	data: { name: 'botReady' },
-	async run() {},
-});
-expectType<true>(true as Equal<ReturnType<typeof asyncCreateEventContract.run>, Awaitable<unknown>>);
-
-expectType<ComponentCollectorStopReason>('messageDelete');
-expectType<ComponentCollectorStopReason>('channelDelete');
-expectType<ComponentCollectorStopReason>('guildDelete');
-expectType<ComponentCollectorStopReason>('idle');
-expectType<ComponentCollectorStopReason>('timeout');
-expectType<ComponentCollectorStopReason>('custom-reason');
-expectType<ComponentCollectorStopReason>(undefined);
-
-declare const messageListClient: Client;
-declare const messageListChannel: TextGuildChannelStructure;
-expectType<Promise<MessageStructure[]>>(messageListClient.messages.list('123'));
-expectType<Promise<MessageStructure[]>>(messageListChannel.messages.list());
-
-declare const pollMessageContract: MessageStructure;
-expectType<Promise<MessageStructure>>(pollMessageContract.endPoll());
-expectType<Promise<UserStructure[]>>(pollMessageContract.getAnswerVoters(1));
-expectType<Promise<UserStructure[]>>(pollMessageContract.getAnswerVoters(1, true));
-// @ts-expect-error poll answer ids are limited to Discord's valid answer id range
-pollMessageContract.getAnswerVoters(11);
-
-declare const voiceStateContract: VoiceStateStructure;
-expectType<boolean>(voiceStateContract.isDeafened);
-expectType<boolean>(voiceStateContract.isCameraOn);
-expectType<boolean>(voiceStateContract.isStreaming);
-expectType<boolean>(voiceStateContract.isSuppressed);
-
-const localizedGroups = defineGroups({
-	moderation: {
-		name: [['en-US', 'Moderation']],
-		description: [['en-US', 'Moderation tools']],
-		defaultDescription: 'Moderation tools',
-		aliases: ['mod'],
-	},
-	economy: {
-		defaultDescription: 'Economy tools',
-	},
-});
-expectType<true>(true as Equal<keyof typeof localizedGroups & string, 'moderation' | 'economy'>);
-
-const translatedGroups = defineGroups({
-	admin: {
-		name: 'commands.groups.admin.name',
-		description: 'commands.groups.admin.description',
-		defaultDescription: 'Admin tools',
-		aliases: ['adm'],
-	},
-	reports: {
-		defaultDescription: 'Report tools',
-	},
-});
-expectType<true>(true as Equal<keyof typeof translatedGroups & string, 'admin' | 'reports'>);
-
-// @ts-expect-error group definitions must be either all localized or all translated
-defineGroups({
-	localized: {
-		name: [['en-US', 'Localized']],
-		defaultDescription: 'Localized group',
-	},
-	translated: {
-		name: 'commands.groups.admin.name',
-		defaultDescription: 'Translated group',
-	},
-});
-
-class GroupContractParent {}
-class GroupContractSubcommand {}
-
-Groups(localizedGroups)(GroupContractParent);
-GroupsT(translatedGroups)(GroupContractParent);
-Group(localizedGroups, 'moderation')(GroupContractSubcommand);
-Group(translatedGroups, 'admin')(GroupContractSubcommand);
-Group('legacyString')(GroupContractSubcommand);
-// @ts-expect-error group names passed with a group definition must match declared keys
-Group(localizedGroups, 'moderaton')(GroupContractSubcommand);
-
-expectType<true>(true as Equal<ShardManager['options']['debug'], boolean>);
-expectType<true>(true as Equal<ShardManager['options']['intents'], number>);
-expectType<StartOptions['connection']['intents']>(['Guilds']);
-expectType<StartOptions['connection']['intents']>([GatewayIntentBits.Guilds]);
-expectType<true>(true as Equal<ReturnType<typeof config.bot>['intents'], number>);
-expectType<true>(true as Equal<ReturnType<typeof config.http>['port'], number>);
-const publicRuntimeConfig = {
-	token: 'token',
-	locations: { base: 'src' },
-	intents: ['Guilds'],
-} satisfies RuntimeConfig;
-const publicHttpConfig = {
-	token: 'token',
-	applicationId: 'application-id',
-	publicKey: 'public-key',
-	locations: { base: 'src' },
-} satisfies RuntimeConfigHTTP;
-expectType<BaseClientOptions>({ getRC: () => publicRuntimeConfig });
-expectType<BaseClientOptions>({ getRC: () => publicHttpConfig });
-declare const handleCommandConstructor: new (client: UsingClient) => HandleCommand;
-expectType<NonNullable<ServicesOptions['handleCommand']>>(handleCommandConstructor);
-class ContractHandleCommand extends HandleCommand {}
-expectType<ServicesOptions>({ handleCommand: ContractHandleCommand });
-// @ts-expect-error handleCommand option takes a constructor, not an instance.
-expectType<ServicesOptions>({ handleCommand: new ContractHandleCommand({} as UsingClient) });
-expectType<true>(
-	true as Equal<Awaited<ReturnType<GuildMemberStructure['roles']['highest']>>, GuildRoleStructure | undefined>,
-);
-expectType<Promise<GuildRoleStructure>>(
-	({} as GuildRoleStructure).edit({ name: 'moderators' }, 'sync role name'),
-);
-expectType<true>(true as Equal<BanOptions, { deleteMessageSeconds?: number; reason?: string }>);
-declare const guildMember: GuildMember;
-expectType<readonly string[]>(guildMember.roles.keys);
-// @ts-expect-error GuildMember.roles.keys reflects a frozen runtime array.
-guildMember.roles.keys.push('role');
-expectType<Promise<GuildMemberStructure>>(guildMember.timeout(1_000, 'one second'));
-expectType<Promise<GuildMemberStructure>>(guildMember.timeout(null, 'clear timeout'));
-expectType<false | number>(guildMember.hasTimeout);
-expectType<Promise<void>>(guildMember.ban({ deleteMessageSeconds: 60, reason: 'cleanup' }));
-// @ts-expect-error GuildMember.timeout accepts milliseconds as a number, not duration objects.
-guildMember.timeout({ seconds: 1 });
-// @ts-expect-error GuildMember.ban uses the public deleteMessageSeconds option.
-guildMember.ban({ delete_message_seconds: 60 });
-// @ts-expect-error GuildMember.ban no longer accepts positional body and reason arguments.
-guildMember.ban({ delete_message_seconds: 60 }, 'cleanup');
-
-const guildMemberMethods = GuildMember.methods({ client: {} as any, guildId: '123' });
-expectType<Promise<void>>(guildMemberMethods.ban('123', { deleteMessageSeconds: 60, reason: 'cleanup' }));
-declare const memberSearchClient: { members: MemberShorter; proxy: APIRoutes };
-expectType<Promise<GuildMemberStructure[]>>(
-	memberSearchClient.members.search('123', { query: 'alice', limit: 1 }),
-);
-expectType<Promise<GuildMemberStructure[]>>(guildMemberMethods.search({ query: 'alice', limit: 1 }));
-// @ts-expect-error BaseGuildMember.methods().ban no longer accepts positional body and reason arguments.
-guildMemberMethods.ban('123', { delete_message_seconds: 60 }, 'cleanup');
-// @ts-expect-error member search requires query options
-memberSearchClient.members.search('123');
-// @ts-expect-error guild-bound member search requires query options
-guildMemberMethods.search();
-// @ts-expect-error raw REST member search requires query args
-memberSearchClient.proxy.guilds('123').members.search.get({});
-
-declare const guildBan: GuildBan;
-expectType<Promise<void>>(guildBan.create({ deleteMessageSeconds: 60, reason: 'cleanup' }));
-// @ts-expect-error GuildBan.create uses the public deleteMessageSeconds option.
-guildBan.create({ delete_message_seconds: 60 });
-
-const guildBanMethods = GuildBan.methods({ client: {} as any, guildId: '123' });
-expectType<Promise<void>>(guildBanMethods.create('456', { deleteMessageSeconds: 60, reason: 'cleanup' }));
-// @ts-expect-error GuildBan.methods().create no longer accepts positional body and reason arguments.
-guildBanMethods.create('456', { delete_message_seconds: 60 }, 'cleanup');
-
-declare const memberShorter: MemberShorter;
-expectType<Promise<void>>(memberShorter.ban('123', '456', { deleteMessageSeconds: 60, reason: 'cleanup' }));
-// @ts-expect-error MemberShorter.ban no longer accepts positional body and reason arguments.
-memberShorter.ban('123', '456', { delete_message_seconds: 60 }, 'cleanup');
-
-declare const banShorter: BanShorter;
-expectType<Promise<void>>(banShorter.create('123', '456', { deleteMessageSeconds: 60, reason: 'cleanup' }));
-// @ts-expect-error BanShorter.create no longer accepts positional body and reason arguments.
-banShorter.create('123', '456', { delete_message_seconds: 60 }, 'cleanup');
-expectType<true>(true as Equal<BaseInteraction['replied'], boolean | undefined>);
-// @ts-expect-error BaseInteraction.replied is public reply state, not the pending reply operation.
-expectType<BaseInteraction['replied']>(Promise.resolve(true));
-
-const inlineLangInstance: LangInstance = {
-	name: 'inline.ts',
-	file: { default: { greeting: 'Hello' } } as LangInstance['file'],
-};
-expectType<LangInstance>(inlineLangInstance);
-
-const langsHandlerContract = new LangsHandler({ warn() {} } as never);
-expectType<boolean>(langsHandlerContract.preferGuildLocale);
-new Client().setServices({ langs: { preferGuildLocale: true } });
-
-createIntegerOption({
-	description: 'Integer autocomplete',
-	autocomplete(interaction) {
-		interaction.respond([{ name: 'D6', value: 6 }]);
-		// @ts-expect-error integer autocomplete rejects string choices
-		interaction.respond([{ name: 'D4', value: 'four' }]);
-	},
-	onAutocompleteError(interaction) {
-		interaction.respond([{ name: 'D8', value: 8 }]);
-		// @ts-expect-error integer autocomplete errors reject string choices
-		interaction.respond([{ name: 'D10', value: 'ten' }]);
-	},
-});
-
-createNumberOption({
-	description: 'Number autocomplete',
-	autocomplete(interaction) {
-		interaction.respond([{ name: 'Half', value: 0.5 }]);
-		// @ts-expect-error number autocomplete rejects string choices
-		interaction.respond([{ name: 'Whole', value: 'one' }]);
-	},
-});
-
-createStringOption({
-	description: 'String autocomplete',
-	autocomplete(interaction) {
-		interaction.respond([{ name: 'Four', value: 'four' }]);
-		// @ts-expect-error string autocomplete rejects numeric choices
-		interaction.respond([{ name: 'D4', value: 4 }]);
-	},
-	onAutocompleteError(interaction) {
-		interaction.respond([{ name: 'Six', value: 'six' }]);
-		// @ts-expect-error string autocomplete errors reject numeric choices
-		interaction.respond([{ name: 'D6', value: 6 }]);
-	},
-});
-
-const bareAutocompleteCallback: AutocompleteCallback = interaction => {
-	interaction.respond([{ name: 'D6', value: 6 }]);
-	interaction.respond([{ name: 'Four', value: 'four' }]);
-};
-expectType<AutocompleteCallback>(bareAutocompleteCallback);
-
-const numberAutocompleteCallback: AutocompleteCallback<number> = interaction => {
-	interaction.respond([{ name: 'D6', value: 6 }]);
-	// @ts-expect-error explicit numeric autocomplete rejects string choices
-	interaction.respond([{ name: 'D4', value: 'four' }]);
-};
-expectType<AutocompleteCallback<number>>(numberAutocompleteCallback);
-
-const bareOnAutocompleteErrorCallback: OnAutocompleteErrorCallback = interaction => {
-	interaction.respond([{ name: 'D8', value: 8 }]);
-	interaction.respond([{ name: 'Eight', value: 'eight' }]);
-};
-expectType<OnAutocompleteErrorCallback>(bareOnAutocompleteErrorCallback);
-
-declare const bareAutocompleteInteraction: AutocompleteInteraction;
-bareAutocompleteInteraction.respond([{ name: 'D6', value: 6 }]);
-bareAutocompleteInteraction.respond([{ name: 'Four', value: 'four' }]);
-
-declare const stringAutocompleteInteraction: AutocompleteInteraction<boolean, string>;
-stringAutocompleteInteraction.respond([{ name: 'Four', value: 'four' }]);
-// @ts-expect-error explicit string autocomplete interaction rejects numeric choices
-stringAutocompleteInteraction.respond([{ name: 'D4', value: 4 }]);
+type Equal<A, B> =
+	(<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
+		? (<T>() => T extends B ? 1 : 2) extends <T>() => T extends A ? 1 : 2
+			? true
+			: false
+		: false;
 
 class EconomyApi {
 	addCoins(_userId: string, _amount: number) {}
@@ -627,48 +120,6 @@ class ContractCommand extends Command {
 	run() {}
 }
 
-class ContractSubCommand extends SubCommand {
-	name = 'contract-sub';
-	description = 'Contract subcommand';
-	run() {}
-}
-
-const lowercaseOptionContract = {
-	username: createStringOption({
-		description: 'User name',
-		required: true,
-	}),
-	page: createIntegerOption({
-		description: 'Page',
-		required: false,
-	}),
-} as const;
-
-Options(lowercaseOptionContract)(class LowercaseOptionsCommand {});
-
-declare function lowercaseOptionsCommandContext(): CommandContext<typeof lowercaseOptionContract>;
-expectType<string>(lowercaseOptionsCommandContext().options.username);
-expectType<number | undefined>(lowercaseOptionsCommandContext().options.page);
-
-Options({
-	// @ts-expect-error option record keys must be lowercase
-	UserName: createStringOption({
-		description: 'User name',
-	}),
-});
-
-Options([ContractSubCommand])(class ArrayOptionsCommand {});
-
-Declare({ name: 'lowercase-name', description: 'Lowercase command name' })(class LowercaseNameCommand {});
-
-Declare({
-	// @ts-expect-error command name must be lowercase
-	name: 'Uppercase',
-	description: 'Uppercase command name',
-})(class UppercaseNameCommand {});
-
-Declare({ name: 'Context Menu', type: ApplicationCommandType.Message })(class ContextMenuNameCommand {});
-
 class ContractComponent extends ComponentCommand {
 	componentType = 'Button' as const;
 	customId = 'contract-component';
@@ -680,60 +131,7 @@ class ContractModal extends ModalCommand {
 	run() {}
 }
 
-const componentDefaultsContract = {
-	components: {
-		defaults: {
-			onInternalError(_client, component, error) {
-				expectType<ComponentCommand>(component);
-				expectType<unknown | undefined>(error);
-			},
-		},
-	},
-} satisfies ClientOptions;
-expectType<ClientOptions>(componentDefaultsContract);
-
-const modalDefaultsContract = {
-	modals: {
-		defaults: {
-			onInternalError(_client, modal, error) {
-				expectType<ModalCommand>(modal);
-				expectType<unknown | undefined>(error);
-			},
-		},
-	},
-} satisfies ClientOptions;
-expectType<ClientOptions>(modalDefaultsContract);
-
-const radioGroupOptionContract = new RadioGroupOption({ value: 'yes', label: 'Yes' });
-expectType<RadioGroupOption>(
-	radioGroupOptionContract.setLabel('Absolutely').setValue('absolutely').setDescription('Confirm choice').setDefault(),
-);
-const radioGroupContract = new RadioGroup().setCustomId('choice');
-const secondRadioGroupOptionContract = new RadioGroupOption({ value: 'no', label: 'No' });
-expectType<RadioGroup>(radioGroupContract.setOptions([radioGroupOptionContract, secondRadioGroupOptionContract]));
-expectType<RadioGroup>(radioGroupContract.setOptions(radioGroupOptionContract, secondRadioGroupOptionContract));
-// @ts-expect-error RadioGroupOption requires both value and label at construction.
-new RadioGroupOption({ value: 'yes' });
-// @ts-expect-error RadioGroupOption requires option data at construction.
-new RadioGroupOption();
-
-const rawStringSelectOptionContract = { label: 'General', value: 'general' } satisfies APISelectMenuOption;
-const stringSelectMenuContract = new StringSelectMenu().setCustomId('topics');
-expectType<StringSelectMenu>(stringSelectMenuContract.addOption(rawStringSelectOptionContract));
-expectType<StringSelectMenu>(stringSelectMenuContract.addOption([rawStringSelectOptionContract]));
-expectType<StringSelectMenu>(stringSelectMenuContract.setOptions([rawStringSelectOptionContract]));
-expectType<StringSelectMenu>(
-	stringSelectMenuContract.setOptions(new StringSelectOption({ label: 'News', value: 'news' }), rawStringSelectOptionContract),
-);
-const typedStringSelectMenuContract = new StringSelectMenu<'general' | 'news'>().setOptions(
-	{ label: 'General', value: 'general' },
-	{ label: 'News', value: 'news' },
-);
-expectType<StringSelectOption[]>(typedStringSelectMenuContract.data.options);
-expectType<APIStringSelectComponent<'general' | 'news'>>(typedStringSelectMenuContract.toJSON());
-expectType<APISelectMenuOption<'general' | 'news'>[]>(typedStringSelectMenuContract.toJSON().options);
-// @ts-expect-error typed StringSelectMenu rejects raw options outside the configured value union.
-new StringSelectMenu<'general'>({ options: [{ label: 'News', value: 'news' }] });
+type CommandsLoadedCallbackParams = Parameters<CallbackEventHandler['commandsLoaded']>;
 
 class ContractCacheResource extends BaseResource<{ id: string }, { id: string }> {
 	namespace = 'contract-cache';
@@ -962,51 +360,61 @@ const economy = createPlugin({
 		expectType<SeyfertPluginApi>(api);
 		expectType<boolean>(api.has('plugin:storage'));
 		api.gateway.addIntents('Guilds');
-		api.gateway.wrapSendPayload(({ client, payload, shardId }) => {
-			expectType<number>(shardId);
-			expectType<unknown>(client.shared.get(ledgerKey));
-			return payload;
-		}, { order: PluginOrder.After });
+		api.gateway.wrapSendPayload(
+			({ client, payload, shardId }) => {
+				expectType<number>(shardId);
+				expectType<unknown>(client.shared.get(ledgerKey));
+				return payload;
+			},
+			{ order: PluginOrder.After },
+		);
 		// @ts-expect-error use gateway.wrapSendPayload for outbound gateway payloads
 		api.gateway.wrapPayload(({ payload }) => payload);
-		const disposeDispatchInterceptor = api.gateway.onDispatch((packet, next, meta) => {
-			expectType<GatewayDispatchPayload>(packet);
-			expectType<PluginGatewayDispatchNext>(next);
-			expectType<PluginGatewayDispatchMeta>(meta);
-			return next(packet);
-		}, { order: PluginOrder.Before });
+		const disposeDispatchInterceptor = api.gateway.onDispatch(
+			(packet, next, meta) => {
+				expectType<GatewayDispatchPayload>(packet);
+				expectType<PluginGatewayDispatchNext>(next);
+				expectType<PluginGatewayDispatchMeta>(meta);
+				return next(packet);
+			},
+			{ order: PluginOrder.Before },
+		);
 		expectType<() => void>(disposeDispatchInterceptor);
 		expectType<PluginGatewayDispatchInterceptor>((packet, next, meta) => {
 			expectType<GatewayDispatchPayload>(packet);
 			expectType<number>(meta.shardId);
 			return next();
 		});
-		const disposeRestObserver = api.rest.observe({
-			onRequest(payload) {
-				expectType<Readonly<{ method: 'GET' | 'DELETE' | 'PUT' | 'POST' | 'PATCH'; url: `/${string}` }>>(
-					payload,
-				);
+		const disposeRestObserver = api.rest.observe(
+			{
+				onRequest(payload) {
+					expectType<Readonly<{ method: 'GET' | 'DELETE' | 'PUT' | 'POST' | 'PATCH'; url: `/${string}` }>>(payload);
+				},
+				onSuccess(payload) {
+					expectType<Response>(payload.response);
+				},
+				onFail(payload) {
+					expectType<unknown>(payload.error);
+					expectType<number | undefined>(payload.statusCode);
+				},
+				onRatelimit(payload) {
+					expectType<Response>(payload.response);
+				},
 			},
-			onSuccess(payload) {
-				expectType<Response>(payload.response);
-			},
-			onFail(payload) {
-				expectType<unknown>(payload.error);
-				expectType<number | undefined>(payload.statusCode);
-			},
-			onRatelimit(payload) {
-				expectType<Response>(payload.response);
-			},
-		}, { order: PluginOrder.Before });
+			{ order: PluginOrder.Before },
+		);
 		// @ts-expect-error rest observer order is passed with an options object
 		api.rest.observe({}, PluginOrder.Before);
 		expectType<() => void>(disposeRestObserver);
-		api.autocomplete.wrap(async ({ command, interaction, optionsResolver }, next) => {
-			expectType<string | undefined>(command?.name);
-			expectType<unknown>(interaction);
-			expectType<string>(optionsResolver.fullCommandName);
-			await next();
-		}, { order: 1 });
+		api.autocomplete.wrap(
+			async ({ command, interaction, optionsResolver }, next) => {
+				expectType<string | undefined>(command?.name);
+				expectType<unknown>(interaction);
+				expectType<string>(optionsResolver.fullCommandName);
+				await next();
+			},
+			{ order: 1 },
+		);
 		api.shared.set(ledgerKey, () => new LedgerService(), {
 			dispose(value) {
 				expectType<LedgerService>(value);
@@ -1017,25 +425,28 @@ const economy = createPlugin({
 		api.commands.add(ContractCommand);
 		api.commands.add(ContractCommand, { override: true });
 		api.commands.add(ContractCommand, { guilds: ['guild-1'] });
-		const disposeObserver = api.commands.observe({
-			onBeforeOptions(context) {
-				expectType<CommandContext>(context);
+		const disposeObserver = api.commands.observe(
+			{
+				onBeforeOptions(context) {
+					expectType<CommandContext>(context);
+				},
+				onMiddlewaresError(context, error, metadata) {
+					expectType<PluginCommandObserverContext>(context);
+					expectType<string>(error);
+					expectType<{ middleware: string; scope: 'global' | 'command' }>(metadata);
+				},
+				onRunError(context, error) {
+					expectType<PluginCommandObserverContext>(context);
+					expectType<unknown>(error);
+				},
+				onInternalError(client, command, error) {
+					expectType<unknown>(client);
+					expectType<unknown>(command);
+					expectType<unknown>(error);
+				},
 			},
-			onMiddlewaresError(context, error, metadata) {
-				expectType<PluginCommandObserverContext>(context);
-				expectType<string>(error);
-				expectType<{ middleware: string; scope: 'global' | 'command' }>(metadata);
-			},
-			onRunError(context, error) {
-				expectType<PluginCommandObserverContext>(context);
-				expectType<unknown>(error);
-			},
-			onInternalError(client, command, error) {
-				expectType<unknown>(client);
-				expectType<unknown>(command);
-				expectType<unknown>(error);
-			},
-		}, { order: PluginOrder.After });
+			{ order: PluginOrder.After },
+		);
 		expectType<() => void>(disposeObserver);
 		api.components.add(ContractComponent);
 		api.components.add(ContractComponent, { override: true });
@@ -1045,35 +456,51 @@ const economy = createPlugin({
 		api.commands.add(new ContractCommand());
 		api.components.add(new ContractComponent());
 		api.modals.add(new ContractModal());
-		api.handlers.construct((Ctor, next, metadata) => {
-			expectType<PluginHandlerKind>(metadata.kind);
-			expectType<unknown>(Ctor);
-			return next();
-		}, { kinds: ['command', 'component', 'modal'], order: PluginOrder.Before });
+		api.handlers.construct(
+			(Ctor, next, metadata) => {
+				expectType<PluginHandlerKind>(metadata.kind);
+				expectType<unknown>(Ctor);
+				return next();
+			},
+			{ kinds: ['command', 'component', 'modal'], order: PluginOrder.Before },
+		);
 		// @ts-expect-error handlers.create was removed before release
 		api.handlers.create((_Ctor, next) => next());
-		api.handlers.transform((instance, metadata) => {
-			expectType<PluginHandlerKind>(metadata.kind);
-			return instance;
-		}, { kinds: ['command'], order: PluginOrder.After });
+		api.handlers.transform(
+			(instance, metadata) => {
+				expectType<PluginHandlerKind>(metadata.kind);
+				return instance;
+			},
+			{ kinds: ['command'], order: PluginOrder.After },
+		);
 		api.modals.remove('contract-modal');
 		const disposeCommandsLoaded = api.events.once('commandsLoaded', metadata => {
 			expectType<number>(metadata.total);
 		});
 		expectType<() => void>(disposeCommandsLoaded);
-		const disposeComponentsLoaded = api.events.on('componentsLoaded', metadata => {
-			expectType<number>(metadata.total);
-		}, { order: PluginOrder.Before });
+		const disposeComponentsLoaded = api.events.on(
+			'componentsLoaded',
+			metadata => {
+				expectType<number>(metadata.total);
+			},
+			{ order: PluginOrder.Before },
+		);
 		expectType<() => void>(disposeComponentsLoaded);
-		const disposeAny = api.events.onAny((name, ...payload) => {
-			expectType<string>(name);
-			expectType<unknown[]>(payload);
-		}, { order: PluginOrder.After });
+		const disposeAny = api.events.onAny(
+			(name, ...payload) => {
+				expectType<string>(name);
+				expectType<unknown[]>(payload);
+			},
+			{ order: PluginOrder.After },
+		);
 		expectType<() => void>(disposeAny);
-		const disposeErrors = api.events.onError((error, name) => {
-			expectType<unknown>(error);
-			expectType<string>(name);
-		}, { order: PluginOrder.Before });
+		const disposeErrors = api.events.onError(
+			(error, name) => {
+				expectType<unknown>(error);
+				expectType<string>(name);
+			},
+			{ order: PluginOrder.Before },
+		);
 		expectType<() => void>(disposeErrors);
 		api.events.on('commandsLoaded', (metadata, client) => {
 			expectType<void | Promise<void>>(
@@ -1101,9 +528,13 @@ const economy = createPlugin({
 				expectType<Cache>(cache);
 			},
 		});
-		const disposeReadyHook = api.hooks.on('plugins:ready', client => {
-			expectType<unknown>(client.plugins);
-		}, { order: PluginOrder.After });
+		const disposeReadyHook = api.hooks.on(
+			'plugins:ready',
+			client => {
+				expectType<unknown>(client.plugins);
+			},
+			{ order: PluginOrder.After },
+		);
 		expectType<() => void>(disposeReadyHook);
 		// @ts-expect-error hooks.tap was removed before release
 		api.hooks.tap('plugins:ready', () => {});
@@ -1421,12 +852,8 @@ collectorClient.collectors.create({
 const exportedCollectorsContract = new Collectors();
 expectType<Collectors>(exportedCollectorsContract);
 expectType<MessageStructure>(undefined as never as CollectorRunParameters<'messageCreate'>);
-expectType<CollectorRunParameters<'commandsLoaded'>>(
-	undefined as never as [CommandsLoadedCallbackParams[0]],
-);
-expectType<[CommandsLoadedCallbackParams[0]]>(
-	undefined as never as CollectorRunParameters<'commandsLoaded'>,
-);
+expectType<CollectorRunParameters<'commandsLoaded'>>(undefined as never as [CommandsLoadedCallbackParams[0]]);
+expectType<[CommandsLoadedCallbackParams[0]]>(undefined as never as CollectorRunParameters<'commandsLoaded'>);
 // @ts-expect-error collector run parameters are keyed by camelCase event names.
 type ScreamingCollectorRunParameters = CollectorRunParameters<'MESSAGE_CREATE'>;
 // @ts-expect-error typo alias is intentionally not exported.
@@ -1516,8 +943,19 @@ if (guildCommandContext.inGuild()) {
 expectType<SeyfertPlugin<any, any, any, any>>(economy);
 // @ts-expect-error SeyfertPlugin has only four generic slots
 type NoFifthPluginSlot = SeyfertPlugin<{}, {}, readonly [], {}, {}>;
-expectType<readonly [typeof economy, typeof storage, typeof auth, typeof combinedAtomic, typeof combinedImport, typeof optionsPlugin]>(plugins);
-expectType<readonly [typeof configuredPlugin, typeof defaultedPlugin, typeof capabilityRequirementPlugin]>(localPlugins);
+expectType<
+	readonly [
+		typeof economy,
+		typeof storage,
+		typeof auth,
+		typeof combinedAtomic,
+		typeof combinedImport,
+		typeof optionsPlugin,
+	]
+>(plugins);
+expectType<readonly [typeof configuredPlugin, typeof defaultedPlugin, typeof capabilityRequirementPlugin]>(
+	localPlugins,
+);
 expectType<readonly [typeof economy, typeof storage, typeof combinedAtomic]>(arrayPlugins);
 expectType<readonly [typeof combinedAtomic]>(transitiveOnlyPlugins);
 expectType<readonly []>(emptyPlugins);
@@ -1550,9 +988,9 @@ expectType<{ combinedAudit: { auditId: string } }>({} as CommandMetadata<'combin
 expectType<{ auth: { userId: string } }>({} as CommandMetadata<'auth' | 'audit'>);
 expectType<{}>({} as CommandMetadata<'audit'>);
 // @ts-expect-error middlewares without metadata payload are omitted from command metadata
-({} as CommandMetadata<'audit'>).audit;
+(({}) as CommandMetadata<'audit'>).audit;
 // @ts-expect-error middlewares without metadata payload are omitted even when mixed with payload middlewares
-({} as CommandMetadata<'auth' | 'audit'>).audit;
+(({}) as CommandMetadata<'auth' | 'audit'>).audit;
 expectType<{ userId: string }>({} as MetadataMiddleware<AuthMiddleware>);
 expectType<{ userId: string }>({} as MetadataMiddleware<RegisteredPluginMiddlewares['auth']>);
 expectType<{ userId: string }>({} as MetadataMiddleware<ResolvedRegisteredMiddlewares['auth']>);

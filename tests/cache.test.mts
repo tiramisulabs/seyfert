@@ -1,8 +1,7 @@
-import { assert, describe, expect, test } from 'vitest';
+import { assert, describe, expect, test, vi } from 'vitest';
 import { BaseResource } from '../src/cache/resources/default/base';
-import { Cache, CacheFrom, Client, LimitedMemoryAdapter, MemoryAdapter } from '../src/index';
 import type { APIUser } from '../src/index';
-import { BaseClient } from '../src/client/base';
+import { Cache, CacheFrom, Client, LimitedMemoryAdapter, MemoryAdapter } from '../src/index';
 
 // all intents
 const intents = 53608447;
@@ -175,6 +174,52 @@ describe('test limited memory cache adapter', () => {
 		expect(await client.cache.overwrites?.raw(channelId)).toBeNull();
 	});
 
+	test('guild removal reports message enumeration failures and continues known cleanup', async () => {
+		const client = new Client({
+			getRC: () => ({ locations: { base: '', output: '' }, intents, token: '' }),
+		});
+		client.setServices({ cache: { adapter: new LimitedMemoryAdapter() } });
+
+		const guildId = 'guild-1';
+		const failedChannelId = 'channel-failed';
+		const cleanedChannelId = 'channel-cleaned';
+		for (const channelId of [failedChannelId, cleanedChannelId]) {
+			await client.cache.channels?.set(CacheFrom.Test, channelId, guildId, {
+				id: channelId,
+				guild_id: guildId,
+				type: 0,
+				name: channelId,
+			} as any);
+			await client.cache.messages?.set(CacheFrom.Test, `message-${channelId}`, channelId, {
+				id: `message-${channelId}`,
+				channel_id: channelId,
+				content: channelId,
+				author: { id: 'user-1', username: 'user', discriminator: '0', avatar: null },
+			} as any);
+		}
+
+		const enumerationError = new Error('enumeration failed');
+		const originalKeys = client.cache.messages!.keys.bind(client.cache.messages);
+		const keys = vi
+			.spyOn(client.cache.messages!, 'keys')
+			.mockImplementation(((channelId: string) =>
+				channelId === failedChannelId ? Promise.reject(enumerationError) : originalKeys(channelId)) as never);
+		const logger = vi.spyOn(client.logger, 'error').mockImplementation(() => undefined);
+		try {
+			await client.cache.guilds?.remove(guildId);
+			expect(logger).toHaveBeenCalledWith(
+				`[Cache] Failed to enumerate messages for guild ${guildId} channel ${failedChannelId}`,
+				enumerationError,
+			);
+		} finally {
+			keys.mockRestore();
+			logger.mockRestore();
+		}
+
+		expect(await client.cache.messages?.count(failedChannelId)).toBe(1);
+		expect(await client.cache.messages?.count(cleanedChannelId)).toBe(0);
+	});
+
 	test('rebuilds resources when disabledCache is explicitly false', () => {
 		const client = new Client({
 			getRC: () => ({
@@ -274,7 +319,8 @@ describe('test limited memory cache adapter indexing', () => {
 	});
 	test('relationship reads do not allocate empty buckets', () => {
 		const adapter = new LimitedMemoryAdapter();
-		const relationships = (adapter as LimitedMemoryAdapter<unknown> & { relationships: Map<string, unknown> }).relationships;
+		const relationships = (adapter as LimitedMemoryAdapter<unknown> & { relationships: Map<string, unknown> })
+			.relationships;
 
 		assert.equal(adapter.contains('message.channel-1', 'message-1'), false);
 		assert.deepEqual(adapter.getToRelationship('message.channel-1'), []);
@@ -320,37 +366,5 @@ describe('test limited memory cache adapter indexing', () => {
 		assert.equal(cachedMessage?.author.id, message.author.id);
 		assert.equal(rawMessage?.user_id, message.author.id);
 		assert.equal(await cache.users?.raw(message.author.id), message.author as APIUser);
-	});
-});
-
-describe('base client runtime config cache', () => {
-	test('keeps runtime config scoped per client instance', async () => {
-		const clientA = new BaseClient({
-			getRC: () => ({
-				locations: {
-					base: 'src-a',
-				},
-				intents,
-				token: 'token-a',
-			}),
-		});
-		const clientB = new BaseClient({
-			getRC: () => ({
-				locations: {
-					base: 'src-b',
-				},
-				intents: 0,
-				token: 'token-b',
-			}),
-		});
-
-		const [configA, configB] = await Promise.all([clientA.getRC(), clientB.getRC()]);
-
-		expect(configA.token).toBe('token-a');
-		expect(configB.token).toBe('token-b');
-		expect(configA.locations.base).toBe('src-a');
-		expect(configB.locations.base).toBe('src-b');
-		expect(configA.intents).toBe(intents);
-		expect(configB.intents).toBe(0);
 	});
 });

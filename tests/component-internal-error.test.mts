@@ -2,6 +2,7 @@ import { createMockBot } from '@slipher/testing';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import {
 	Command,
+	type CommandContext,
 	ComponentCommand,
 	Declare,
 	Label,
@@ -9,7 +10,6 @@ import {
 	ModalCommand,
 	TextInput,
 	TextInputStyle,
-	type CommandContext,
 } from '../lib';
 
 const componentRunError = vi.fn();
@@ -81,9 +81,11 @@ describe('component command internal errors', () => {
 			commands: [OpenFailingModal],
 			components: [FailingBeforeMiddlewaresModal],
 		});
-		await bot.slash({ name: 'open-failing-modal' });
+		const opened = await bot.slash({ name: 'open-failing-modal' });
+		const wireCustomId = opened.modal?.customId;
+		if (!wireCustomId) throw new Error('Command did not open a modal.');
 
-		await bot.submitModal('modal-internal-error', { value: 'test' });
+		await bot.submitModal(wireCustomId, { value: 'test' });
 
 		expect(modalRunError).not.toHaveBeenCalled();
 		expect(modalRun).not.toHaveBeenCalled();

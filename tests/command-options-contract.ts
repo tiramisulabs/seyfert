@@ -10,8 +10,8 @@
 //     the fix), so these are the cases that turn red if the fix is reverted. Do not inline them.
 //   • SIN `as const` → behaves exactly as before the fix: the value type is widened.
 import {
-	ApplicationCommandOptionType,
 	type APIApplicationCommandAttachmentOption,
+	ApplicationCommandOptionType,
 	type Attachment,
 	ChannelType,
 	type CommandContext,
@@ -37,11 +37,12 @@ import {
 } from 'seyfert';
 
 declare function expectType<T>(value: T): void;
-type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
-	? (<T>() => T extends B ? 1 : 2) extends <T>() => T extends A ? 1 : 2
-		? true
-		: false
-	: false;
+type Equal<A, B> =
+	(<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
+		? (<T>() => T extends B ? 1 : 2) extends <T>() => T extends A ? 1 : 2
+			? true
+			: false
+		: false;
 type ResolvedTextChannel = ResolvedChannel<TextGuildChannelStructure>;
 type ResolvedTextOrVoiceChannel = ResolvedChannel<TextGuildChannelStructure | VoiceChannelStructure>;
 
@@ -157,13 +158,9 @@ const channelOptions = {
 
 declare const channelCtx: CommandContext<typeof channelOptions>;
 expectType<true>(true as Equal<typeof channelCtx.options.constOne, ResolvedTextChannel>);
-expectType<true>(
-	true as Equal<typeof channelCtx.options.constMany, ResolvedTextOrVoiceChannel>,
-);
+expectType<true>(true as Equal<typeof channelCtx.options.constMany, ResolvedTextOrVoiceChannel>);
 expectType<true>(true as Equal<typeof channelCtx.options.mutableOne, ResolvedTextChannel>);
-expectType<true>(
-	true as Equal<typeof channelCtx.options.mutableMany, ResolvedTextOrVoiceChannel>,
-);
+expectType<true>(true as Equal<typeof channelCtx.options.mutableMany, ResolvedTextOrVoiceChannel>);
 
 // ─────────────────────────── attachment file_types ───────────────────────────
 const attachmentFileTypes = ['image', '.pdf'] as const satisfies readonly FileUploadType[];

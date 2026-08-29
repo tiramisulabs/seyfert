@@ -23,9 +23,7 @@ expectType<Promise<RESTPostAPIGuildBulkBanResult>>(
 	api.proxy.guilds('guild-id')['bulk-ban'].post({ body: { user_ids: ['user-id'] } }),
 );
 expectType<Promise<RESTGetAPIGuildOnboardingResult>>(api.proxy.guilds('guild-id').onboarding.get());
-expectType<Promise<RESTPutAPIGuildOnboardingResult>>(
-	api.proxy.guilds('guild-id').onboarding.put({ body: {} }),
-);
+expectType<Promise<RESTPutAPIGuildOnboardingResult>>(api.proxy.guilds('guild-id').onboarding.put({ body: {} }));
 expectType<Promise<RESTPutAPIGuildIncidentActionsResult>>(
 	api.proxy.guilds('guild-id')['incident-actions'].put({ body: { dms_disabled_until: null } }),
 );
@@ -37,14 +35,12 @@ api.proxy.oauth2.applications['@me'].get().then(application => {
 expectType<Promise<RESTGetAPISKUSubscriptionsResult>>(
 	api.proxy.skus('sku-id').subscriptions.get({ query: { user_id: 'user-id' } }),
 );
-expectType<Promise<RESTGetAPISKUSubscriptionResult>>(
-	api.proxy.skus('sku-id').subscriptions('subscription-id').get(),
-);
-expectType<Promise<RESTGetAPIInviteResult>>(
-	api.proxy.invites('invite-code').get({ query: { with_counts: true } }),
-);
+expectType<Promise<RESTGetAPISKUSubscriptionResult>>(api.proxy.skus('sku-id').subscriptions('subscription-id').get());
+expectType<Promise<RESTGetAPIInviteResult>>(api.proxy.invites('invite-code').get({ query: { with_counts: true } }));
 expectType<Promise<RESTPatchAPIWebhookWithTokenResult>>(
-	api.proxy.webhooks('webhook-id')('webhook-token').patch({ body: { name: 'renamed' } }),
+	api.proxy
+		.webhooks('webhook-id')('webhook-token')
+		.patch({ body: { name: 'renamed' } }),
 );
 expectType<Promise<RESTPatchAPIWebhookWithTokenMessageResult>>(
 	api.proxy
@@ -53,11 +49,7 @@ expectType<Promise<RESTPatchAPIWebhookWithTokenMessageResult>>(
 		.patch({ body: { content: 'edited' }, query: { thread_id: 'thread-id' } }),
 );
 expectType<Promise<RESTGetAPIApplicationCommandPermissionsResult>>(
-	api.proxy
-		.applications('application-id')
-		.guilds('guild-id')
-		.commands('command-id')
-		.permissions.get(),
+	api.proxy.applications('application-id').guilds('guild-id').commands('command-id').permissions.get(),
 );
 expectType<Promise<RESTPutAPIApplicationCommandPermissionsResult>>(
 	api.proxy
@@ -82,7 +74,6 @@ api.proxy.webhooks('webhook-id')('webhook-token').patch({ query: { thread_id: 't
 const applicationCommandPermissions = api.proxy
 	.applications('application-id')
 	.guilds('guild-id')
-	.commands('command-id')
-	.permissions;
+	.commands('command-id').permissions;
 // @ts-expect-error Editing command permissions requires a JSON body.
 applicationCommandPermissions.put();

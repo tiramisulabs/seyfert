@@ -1,9 +1,12 @@
-name: Build, Lint, Format & Publish
+name: Build, Lint & Publish
 on:
+  workflow_dispatch:
   push:
     paths:
       - '.github/workflows/check.yml'
+      - 'biome.json'
       - 'bunfig.toml'
+      - 'commitlint.config.js'
       - 'deno.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -14,7 +17,9 @@ on:
   pull_request:
     paths:
       - '.github/workflows/check.yml'
+      - 'biome.json'
       - 'bunfig.toml'
+      - 'commitlint.config.js'
       - 'deno.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -29,8 +34,6 @@ permissions:
 jobs:
   linter:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: check out code
@@ -52,20 +55,6 @@ jobs:
       - name: Run Biome
         run: pnpm run check
         id: biome
-
-      - name: Commit and Push changes
-        continue-on-error: true
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          if ! git diff-index --quiet HEAD; then
-            git commit -m "chore: apply formatting"
-            git push origin HEAD:${{ github.ref }}
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HUSKY: 0
 
       - name: Run Bot
         id: bot-up

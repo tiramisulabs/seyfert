@@ -1,4 +1,5 @@
 import type { MiddlewareContext } from '../../commands';
+import { isPlainObject } from '../../common/it/utils';
 import type { Awaitable } from '../../common/types/util';
 import { GatewayIntentBits } from '../../types';
 import type { BaseClient, BaseClientOptions } from '../base';
@@ -1371,12 +1372,6 @@ function deepFreezePlain<T>(value: T): T {
 	if (!isPlainObject(value)) return value;
 	for (const entry of Object.values(value)) deepFreezePlain(entry);
 	return Object.freeze(value) as T;
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-	if (typeof value !== 'object' || value === null) return false;
-	const prototype = Object.getPrototypeOf(value);
-	return prototype === Object.prototype || prototype === null;
 }
 
 function isSafePluginKey(key: string) {

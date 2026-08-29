@@ -32,7 +32,7 @@ type ComponentSetTransformer = (component: ComponentCommands) => ComponentComman
 
 type UserMatches = string | string[] | RegExp;
 type COMPONENTS = {
-	components: { match: MatchCallback; callback: ComponentCallback }[];
+	components: { match: MatchCallback; callback: ComponentCallback; close?: () => void }[];
 	options?: ListenerOptions;
 	messageId: string;
 	channelId: string;
@@ -64,6 +64,7 @@ export class ComponentHandler extends BaseHandler {
 	readonly values = new Map<string, COMPONENTS>();
 	// 10 minutes of timeout by default, because discord doesnt send an event when the user cancels the modal
 	readonly modals = new LimitedCollection<string, ModalSubmitCallback>({ expire: 60e3 * 10 });
+	readonly modalAliases = new LimitedCollection<string, string>({ expire: 60e3 * 10 });
 	readonly commands: ComponentCommands[] = [];
 	filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
 
@@ -122,10 +123,10 @@ export class ComponentHandler extends BaseHandler {
 			},
 			onError: options.onError,
 		});
+		const collector = this.values.get(messageId)!;
 
 		return {
-			//@ts-expect-error generic
-			run: this.values.get(messageId)!.__run,
+			run: collector.__run as CreateComponentCollectorResult['run'],
 			stop: (reason?: string) => {
 				const old = this.clearValue(messageId);
 				if (!old) return;
@@ -133,19 +134,16 @@ export class ComponentHandler extends BaseHandler {
 					this.createComponentCollector(messageId, channelId, guildId, options, old.components);
 				});
 			},
-			waitFor: (customId, timeout) =>
-				new Promise(resolve => {
+			waitFor: <T extends CollectorInteraction = CollectorInteraction>(customId: UserMatches, timeout?: number) =>
+				new Promise<T | null>(resolve => {
 					const collector = this.values.get(messageId);
 					if (!collector) return resolve(null);
 
 					let nodeTimeout: NodeJS.Timeout | undefined;
 					let cleaned = false;
 					const component: COMPONENTS['components'][number] = {
-						callback: interaction => {
-							cleanup();
-							//@ts-expect-error generic
-							resolve(interaction);
-						},
+						callback: interaction => settle(interaction as T),
+						close: () => settle(null),
 						match: this.createMatchCallback(customId),
 					};
 					const cleanup = () => {
@@ -156,13 +154,17 @@ export class ComponentHandler extends BaseHandler {
 						const index = collector.components.indexOf(component);
 						if (index !== -1) collector.components.splice(index, 1);
 					};
+					const settle = (interaction: T | null) => {
+						if (cleaned) return;
+						cleanup();
+						resolve(interaction);
+					};
 
 					collector.components.push(component);
 
 					if (timeout && timeout > 0)
 						nodeTimeout = setTimeout(() => {
-							cleanup();
-							resolve(null);
+							settle(null);
 						}, timeout);
 				}),
 			resetTimeouts: () => {
@@ -219,13 +221,36 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	hasModal(interaction: ModalSubmitInteraction) {
-		return this.modals.has(interaction.user.id);
+		return this.modals.has(interaction.customId);
 	}
 
 	onModalSubmit(interaction: ModalSubmitInteraction) {
-		const callback = this.modals.get(interaction.user.id);
-		this.modals.delete(interaction.user.id);
+		const wireCustomId = interaction.customId;
+		const callback = this.modals.get(wireCustomId);
+		this.modals.delete(wireCustomId);
+		this.restoreModalCustomId(interaction);
 		return callback?.(interaction);
+	}
+
+	registerModal(wireCustomId: string, originalCustomId: string, callback?: ModalSubmitCallback) {
+		this.modalAliases.set(wireCustomId, originalCustomId);
+		if (callback) this.modals.set(wireCustomId, callback);
+	}
+
+	deleteModalCallback(wireCustomId: string) {
+		this.modals.delete(wireCustomId);
+	}
+
+	deleteModal(wireCustomId: string) {
+		this.modals.delete(wireCustomId);
+		this.modalAliases.delete(wireCustomId);
+	}
+
+	restoreModalCustomId(interaction: ModalSubmitInteraction) {
+		const originalCustomId = this.modalAliases.get(interaction.customId);
+		if (!originalCustomId) return;
+		this.modalAliases.delete(interaction.customId);
+		interaction.data.customId = originalCustomId;
 	}
 
 	deleteValue(id: string, reason?: string) {
@@ -248,6 +273,7 @@ export class ComponentHandler extends BaseHandler {
 		clearTimeout(component.timeout);
 		clearTimeout(component.idle);
 		this.values.delete(id);
+		for (const entry of [...component.components]) entry.close?.();
 		return component;
 	}
 

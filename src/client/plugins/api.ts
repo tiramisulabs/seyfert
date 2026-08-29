@@ -28,6 +28,7 @@ import type {
 	PluginCommandContributionOptions,
 	PluginContributionOptions,
 	PluginHandlerOptions,
+	PluginIntentResolvable,
 	PluginOrderOpt,
 	SeyfertPluginApi,
 	SeyfertPluginOptions,
@@ -37,48 +38,43 @@ import type {
 
 type PluginSharedName = string | SharedKey<unknown, string>;
 
-const reservedCacheResourceNames = new Set([
-	'__logger__',
-	'__proto__',
-	'adapter',
-	'bans',
-	'buildCache',
-	'bulkGet',
-	'bulkPatch',
-	'bulkSet',
-	'channels',
-	'constructor',
-	'emojis',
-	'flush',
-	'guilds',
-	'hasChannelsIntent',
-	'hasDirectMessages',
-	'hasGuildExpressionsIntent',
-	'hasGuildMembersIntent',
-	'hasGuildsIntent',
-	'hasIntent',
-	'hasModerationIntent',
-	'hasPresenceUpdates',
-	'hasRolesIntent',
-	'hasVoiceStates',
-	'intents',
-	'members',
-	'messages',
-	'onPacket',
-	'onPacketDefault',
-	'overwrites',
-	'pluginResourceNames',
-	'pluginResourcePacketHandlers',
-	'presences',
-	'prototype',
-	'roles',
-	'stageInstances',
-	'stickers',
-	'users',
-	'voiceStates',
-]);
 const noReservedPluginKeys = new Set<string>();
 const handlerKinds = new Set(['command', 'component', 'modal', 'event']);
+
+function registerPluginIntents(
+	registry: PluginRuntimeRegistry,
+	record: PluginRuntimeRecord,
+	scope: PluginEventContributionScope,
+	phase: 'gateway.addIntents' | 'cache.resource',
+	intents: readonly PluginIntentResolvable[],
+) {
+	const resolvedIntents: number[] = [];
+	for (const intent of intents) {
+		const resolved = resolveGatewayIntent(intent);
+		if (resolved === undefined) {
+			addPluginDiagnostic(registry, record, {
+				phase,
+				severity: 'warn',
+				code: 'unknown-intent-bits',
+				message: `Gateway intent "${String(intent)}" is unknown.`,
+				data: { intent },
+			});
+			continue;
+		}
+		const unknownBits = unknownGatewayIntentBits(resolved);
+		if (unknownBits) {
+			addPluginDiagnostic(registry, record, {
+				phase,
+				severity: 'warn',
+				code: 'unknown-intent-bits',
+				message: `Gateway intent value "${resolved}" includes unknown bits "${unknownBits}".`,
+				data: { intent: resolved, unknownBits },
+			});
+		}
+		resolvedIntents.push(resolved);
+	}
+	if (resolvedIntents.length) registry.gatewayIntents.push({ record, intents: resolvedIntents, scope });
+}
 
 export function createPluginApi(
 	record: PluginRuntimeRecord,
@@ -399,32 +395,7 @@ export function createPluginApi(
 		gateway: {
 			addIntents(...intents) {
 				assertCanMutate('gateway.addIntents');
-				const resolvedIntents: number[] = [];
-				for (const intent of intents) {
-					const resolved = resolveGatewayIntent(intent);
-					if (resolved === undefined) {
-						addPluginDiagnostic(registry, record, {
-							phase: 'gateway.addIntents',
-							severity: 'warn',
-							code: 'unknown-intent-bits',
-							message: `Gateway intent "${String(intent)}" is unknown.`,
-							data: { intent },
-						});
-						continue;
-					}
-					const unknownBits = unknownGatewayIntentBits(resolved);
-					if (unknownBits) {
-						addPluginDiagnostic(registry, record, {
-							phase: 'gateway.addIntents',
-							severity: 'warn',
-							code: 'unknown-intent-bits',
-							message: `Gateway intent value "${resolved}" includes unknown bits "${unknownBits}".`,
-							data: { intent: resolved, unknownBits },
-						});
-					}
-					resolvedIntents.push(resolved);
-				}
-				if (resolvedIntents.length) registry.gatewayIntents.push({ record, intents: resolvedIntents, scope });
+				registerPluginIntents(registry, record, scope, 'gateway.addIntents', intents);
 			},
 			wrapSendPayload(wrapper, opts) {
 				assertCanMutate('gateway.wrapSendPayload');
@@ -452,7 +423,7 @@ export function createPluginApi(
 		cache: {
 			resource(name: string, resource: PluginCacheResourceConstructor, opts) {
 				assertCanMutate('cache.resource');
-				assertSafePluginResourceName(record, 'cache.resource', name, reservedCacheResourceNames);
+				assertSafePluginResourceName(record, 'cache.resource', name, noReservedPluginKeys);
 				const existing = registry.cacheResources.find(contribution => contribution.name === name);
 				if (existing) {
 					throw createPluginConflictError(
@@ -464,32 +435,7 @@ export function createPluginApi(
 					);
 				}
 				if (opts?.intents?.length) {
-					const resolvedIntents: number[] = [];
-					for (const intent of opts.intents) {
-						const resolved = resolveGatewayIntent(intent);
-						if (resolved === undefined) {
-							addPluginDiagnostic(registry, record, {
-								phase: 'cache.resource',
-								severity: 'warn',
-								code: 'unknown-intent-bits',
-								message: `Gateway intent "${String(intent)}" is unknown.`,
-								data: { intent },
-							});
-							continue;
-						}
-						const unknownBits = unknownGatewayIntentBits(resolved);
-						if (unknownBits) {
-							addPluginDiagnostic(registry, record, {
-								phase: 'cache.resource',
-								severity: 'warn',
-								code: 'unknown-intent-bits',
-								message: `Gateway intent value "${resolved}" includes unknown bits "${unknownBits}".`,
-								data: { intent: resolved, unknownBits },
-							});
-						}
-						resolvedIntents.push(resolved);
-					}
-					if (resolvedIntents.length) registry.gatewayIntents.push({ record, intents: resolvedIntents, scope });
+					registerPluginIntents(registry, record, scope, 'cache.resource', opts.intents);
 				}
 				registry.cacheResources.push({
 					record,

@@ -15,9 +15,16 @@ export class Heartbeater {
 		}
 	>();
 	constructor(
-		public sendMethod: (workerId: number, data: WorkerHeartbeaterMessages) => Awaitable<void>,
+		public sendMethod: (workerId: number, data: WorkerHeartbeaterMessages) => Awaitable<unknown>,
 		public interval: number,
+		public onError?: (error: unknown) => void,
 	) {}
+
+	private observe(operation: () => Awaitable<unknown>) {
+		void Promise.resolve()
+			.then(operation)
+			.catch(error => this.onError?.(error));
+	}
 
 	register(workerId: number, recreate: (workerId: number) => Awaitable<void>) {
 		if (this.interval <= 0) return;
@@ -28,10 +35,11 @@ export class Heartbeater {
 				const heartbeat = this.store.get(workerId)!;
 				if (!heartbeat.ack) {
 					heartbeat.ack = true;
-					return recreate(workerId);
+					this.observe(() => recreate(workerId));
+					return;
 				}
 				heartbeat.ack = false;
-				this.sendMethod(workerId, { type: 'HEARTBEAT' });
+				this.observe(() => this.sendMethod(workerId, { type: 'HEARTBEAT' }));
 			}, this.interval),
 		});
 	}

@@ -16,7 +16,10 @@ describe('Collection', () => {
 	test('sweep returns 0 when nothing matches', () => {
 		const c = new Collection<number, string>();
 		c.set(1, 'one');
-		assert.equal(c.sweep(() => false), 0);
+		assert.equal(
+			c.sweep(() => false),
+			0,
+		);
 		assert.equal(c.size, 1);
 	});
 
@@ -30,7 +33,10 @@ describe('Collection', () => {
 
 	test('map on empty collection returns empty array', () => {
 		const c = new Collection<number, string>();
-		assert.deepEqual(c.map(v => v), []);
+		assert.deepEqual(
+			c.map(v => v),
+			[],
+		);
 	});
 
 	test('filter returns matching values', () => {
@@ -45,7 +51,10 @@ describe('Collection', () => {
 	test('filter returns empty array when nothing matches', () => {
 		const c = new Collection<number, number>();
 		c.set(1, 10);
-		assert.deepEqual(c.filter(v => v > 100), []);
+		assert.deepEqual(
+			c.filter(v => v > 100),
+			[],
+		);
 	});
 
 	test('filterCollection preserves keys in a new collection', () => {
@@ -59,10 +68,13 @@ describe('Collection', () => {
 
 		assert.instanceOf(filtered, Collection);
 		assert.notEqual(filtered, collection);
-		assert.deepEqual([...filtered.entries()], [
-			['one', { type: 'keep', label: 'first' }],
-			['three', { type: 'keep', label: 'third' }],
-		]);
+		assert.deepEqual(
+			[...filtered.entries()],
+			[
+				['one', { type: 'keep', label: 'first' }],
+				['three', { type: 'keep', label: 'third' }],
+			],
+		);
 	});
 
 	test('reduce with initial value', () => {
@@ -70,14 +82,20 @@ describe('Collection', () => {
 		c.set(1, 1);
 		c.set(2, 2);
 		c.set(3, 3);
-		assert.equal(c.reduce((acc, v) => acc + v, 0), 6);
+		assert.equal(
+			c.reduce((acc, v) => acc + v, 0),
+			6,
+		);
 	});
 
 	test('reduce without initial value uses first element', () => {
 		const c = new Collection<number, number>();
 		c.set(1, 10);
 		c.set(2, 20);
-		assert.equal(c.reduce((acc, v) => acc + v), 30);
+		assert.equal(
+			c.reduce((acc, v) => acc + v),
+			30,
+		);
 	});
 
 	test('reduce on empty collection without initial value throws', () => {
@@ -89,37 +107,55 @@ describe('Collection', () => {
 		const c = new Collection<number, number>();
 		c.set(1, 2);
 		c.set(2, 4);
-		assert.equal(c.every(v => v % 2 === 0), true);
+		assert.equal(
+			c.every(v => v % 2 === 0),
+			true,
+		);
 	});
 
 	test('every returns false when one fails', () => {
 		const c = new Collection<number, number>();
 		c.set(1, 2);
 		c.set(2, 3);
-		assert.equal(c.every(v => v % 2 === 0), false);
+		assert.equal(
+			c.every(v => v % 2 === 0),
+			false,
+		);
 	});
 
 	test('every returns true on empty collection', () => {
 		const c = new Collection<number, number>();
-		assert.equal(c.every(() => false), true);
+		assert.equal(
+			c.every(() => false),
+			true,
+		);
 	});
 
 	test('some returns true when one matches', () => {
 		const c = new Collection<number, number>();
 		c.set(1, 1);
 		c.set(2, 2);
-		assert.equal(c.some(v => v === 2), true);
+		assert.equal(
+			c.some(v => v === 2),
+			true,
+		);
 	});
 
 	test('some returns false when none match', () => {
 		const c = new Collection<number, number>();
 		c.set(1, 1);
-		assert.equal(c.some(v => v === 99), false);
+		assert.equal(
+			c.some(v => v === 99),
+			false,
+		);
 	});
 
 	test('some returns false on empty collection', () => {
 		const c = new Collection<number, number>();
-		assert.equal(c.some(() => true), false);
+		assert.equal(
+			c.some(() => true),
+			false,
+		);
 	});
 
 	test('find returns first matching value', () => {
@@ -127,13 +163,19 @@ describe('Collection', () => {
 		c.set(1, 'a');
 		c.set(2, 'b');
 		c.set(3, 'b');
-		assert.equal(c.find(v => v === 'b'), 'b');
+		assert.equal(
+			c.find(v => v === 'b'),
+			'b',
+		);
 	});
 
 	test('find returns undefined when nothing matches', () => {
 		const c = new Collection<number, string>();
 		c.set(1, 'a');
-		assert.equal(c.find(v => v === 'z'), undefined);
+		assert.equal(
+			c.find(v => v === 'z'),
+			undefined,
+		);
 	});
 
 	test('findKey returns first matching key', () => {
@@ -141,13 +183,19 @@ describe('Collection', () => {
 		c.set(1, 'a');
 		c.set(2, 'b');
 		c.set(3, 'c');
-		assert.equal(c.findKey(v => v === 'b'), 2);
+		assert.equal(
+			c.findKey(v => v === 'b'),
+			2,
+		);
 	});
 
 	test('findKey returns undefined when nothing matches', () => {
 		const c = new Collection<number, string>();
 		c.set(1, 'a');
-		assert.equal(c.findKey(v => v === 'z'), undefined);
+		assert.equal(
+			c.findKey(v => v === 'z'),
+			undefined,
+		);
 	});
 });
 
@@ -219,6 +267,28 @@ describe('LimitedCollection', () => {
 		const infiniteLimit = new LimitedCollection<string, number>({ limit: Number.POSITIVE_INFINITY });
 		infiniteLimit.set('one', 1);
 		assert.equal(infiniteLimit.size, 1);
+	});
+
+	test('rejects expirations that cannot be represented by a runtime timer', () => {
+		for (const expire of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+			assert.throws(() => new LimitedCollection({ expire }), TypeError);
+		}
+		assert.throws(() => new LimitedCollection({ expire: 2_147_483_648 }), RangeError);
+
+		const collection = new LimitedCollection<string, number>();
+		for (const expire of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+			assert.throws(() => collection.set('invalid', 1, expire), TypeError);
+		}
+		assert.throws(() => collection.set('invalid', 1, 2_147_483_648), RangeError);
+	});
+
+	test('treats non-positive finite expirations as no expiration', () => {
+		const collection = new LimitedCollection<string, number>({ expire: -1 });
+		collection.set('default', 1);
+		collection.set('zero', 2, 0);
+
+		assert.equal(collection.raw('default')?.expireOn, -1);
+		assert.equal(collection.raw('zero')?.expireOn, -1);
 	});
 
 	test('raw returns internal data', () => {
@@ -325,10 +395,13 @@ describe('LimitedCollection', () => {
 		c.set(2, 'two');
 		assert.deepEqual([...c.keys()], [1, 2]);
 		assert.deepEqual([...c.values()], ['one', 'two']);
-		assert.deepEqual([...c.entries()], [
-			[1, 'one'],
-			[2, 'two'],
-		]);
+		assert.deepEqual(
+			[...c.entries()],
+			[
+				[1, 'one'],
+				[2, 'two'],
+			],
+		);
 	});
 
 	test('iterates plain values and exposes raw metadata separately', () => {
@@ -338,21 +411,33 @@ describe('LimitedCollection', () => {
 		collection.set('two', 2);
 
 		assert.deepEqual([...collection.values()], [1, 2]);
-		assert.deepEqual([...collection.entries()], [
-			['one', 1],
-			['two', 2],
-		]);
-		assert.deepEqual([...collection], [
-			['one', 1],
-			['two', 2],
-		]);
-		assert.deepEqual([...collection.rawValues()], [
-			{ value: 1, expire: -1, expireOn: -1 },
-			{ value: 2, expire: -1, expireOn: -1 },
-		]);
-		assert.deepEqual([...collection.rawEntries()], [
-			['one', { value: 1, expire: -1, expireOn: -1 }],
-			['two', { value: 2, expire: -1, expireOn: -1 }],
-		]);
+		assert.deepEqual(
+			[...collection.entries()],
+			[
+				['one', 1],
+				['two', 2],
+			],
+		);
+		assert.deepEqual(
+			[...collection],
+			[
+				['one', 1],
+				['two', 2],
+			],
+		);
+		assert.deepEqual(
+			[...collection.rawValues()],
+			[
+				{ value: 1, expire: -1, expireOn: -1 },
+				{ value: 2, expire: -1, expireOn: -1 },
+			],
+		);
+		assert.deepEqual(
+			[...collection.rawEntries()],
+			[
+				['one', { value: 1, expire: -1, expireOn: -1 }],
+				['two', { value: 2, expire: -1, expireOn: -1 }],
+			],
+		);
 	});
 });

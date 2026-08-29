@@ -7,7 +7,7 @@ import { GuildRelatedResource } from './default/guild-related';
 export class Stickers extends GuildRelatedResource<any, APISticker> {
 	namespace = 'sticker';
 
-	//@ts-expect-error
+	// @ts-expect-error Keep descriptive filter parameter names for adapter overrides despite noUnusedParameters.
 	filter(data: APISticker, id: string, guild_id: string, from: CacheFrom) {
 		return true;
 	}

@@ -6,7 +6,7 @@ import { GuildBasedResource } from './default/guild-based';
 export class Bans extends GuildBasedResource<any, GatewayGuildBanModifyDispatchData | APIBan> {
 	namespace = 'ban';
 
-	//@ts-expect-error
+	// @ts-expect-error Keep descriptive filter parameter names for adapter overrides despite noUnusedParameters.
 	filter(data: APIBan, id: string, guild_id: string, from: CacheFrom) {
 		return true;
 	}

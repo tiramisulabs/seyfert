@@ -18,7 +18,7 @@ export function Mixin<T, C extends TypeClass[]>(...mixins: C): C[number] & T {
 		constructor(...args: any[]) {
 			super(...args);
 			for (const mixin of mixins.slice(1)) {
-				// @ts-expect-error
+				// @ts-expect-error TypeClass accepts abstract constructors, but runtime mixin ingredients must be concrete.
 				const mixinInstance = new mixin(...args);
 				copyProperties(this, mixinInstance);
 				let proto = Object.getPrototypeOf(mixinInstance);

@@ -85,10 +85,10 @@ export function isObject(o: any): o is Record<string, unknown> {
 	return o && typeof o === 'object' && !Array.isArray(o);
 }
 
-function isPlainObject(o: unknown): o is Record<string, unknown> {
-	if (!o || typeof o !== 'object') return false;
-	const proto = Object.getPrototypeOf(o);
-	return proto === Object.prototype || proto === null;
+export function isPlainObject(value: unknown): value is Record<string, unknown> {
+	if (typeof value !== 'object' || value === null) return false;
+	const prototype = Object.getPrototypeOf(value);
+	return prototype === Object.prototype || prototype === null;
 }
 
 /**
@@ -311,8 +311,7 @@ export function lazyLoadPackage<T>(mod: string): T | undefined {
 }
 
 export function isCloudflareWorker() {
-	//@ts-expect-error
-	return process.platform === 'browser';
+	return (process as { platform: string }).platform === 'browser';
 }
 
 /**

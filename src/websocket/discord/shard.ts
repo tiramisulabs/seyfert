@@ -50,9 +50,10 @@ export class Shard {
 	private handledWebsocket?: BaseSocket;
 	private localClose?: { websocket: BaseSocket; applyPolicy: boolean };
 	private firstHeartbeatTimeout?: NodeJS.Timeout;
+	private terminalClose?: { code: number; reason: string };
 
 	bucket: DynamicBucket;
-	offlineSendQueue: ((_?: unknown) => void)[] = [];
+	offlineSendQueue: { resolve: () => void; reject: (reason?: unknown) => void }[] = [];
 	pendingGuilds?: Set<string>;
 	options: MakePresent<ShardOptions, 'properties' | 'ratelimitOptions' | 'reconnectTimeout' | 'connectionTimeout'>;
 	isReady = false;
@@ -131,6 +132,7 @@ export class Shard {
 	}
 
 	async connect() {
+		this.terminalClose = undefined;
 		if (this.connectingLifecycle === undefined) this.reconnectPromise = undefined;
 		return this.connectSocket(false);
 	}
@@ -306,10 +308,12 @@ export class Shard {
 		this.lifecycle++;
 		this.reconnectPromise = undefined;
 		this.debugger?.info(`[Shard #${this.id}] Disconnecting`);
+		if (code !== ShardSocketCloseCodes.Reconnect) this.rejectOfflineSends(code, 'Shard down request');
 		this.closeConnection(code, 'Shard down request', this.shouldApplyLocalClosePolicy(code));
 	}
 
 	async reconnect(code = ShardSocketCloseCodes.Reconnect) {
+		this.terminalClose = undefined;
 		return this.reconnectWith(code, this.options.reconnectTimeout, 'Shard reconnect request');
 	}
 
@@ -396,7 +400,21 @@ export class Shard {
 
 	private flushOfflineSendQueue() {
 		const queue = this.offlineSendQueue.splice(0);
-		for (const resolve of queue) resolve();
+		for (const entry of queue) entry.resolve();
+	}
+
+	private rejectOfflineSends(code: number, reason: string) {
+		this.terminalClose = { code, reason };
+		const error = new SeyfertError('INTERNAL_ERROR', {
+			metadata: {
+				shardId: this.id,
+				code,
+				reason,
+				detail: `Cannot send through terminally closed shard #${this.id} (${code}): ${reason}`,
+			},
+		});
+		const queue = this.offlineSendQueue.splice(0);
+		for (const entry of queue) entry.reject(error);
 	}
 
 	onpacket(packet: GatewayReceivePayload) {
@@ -531,14 +549,18 @@ export class Shard {
 												return;
 											}
 											const guildMemberChunk = this.requestGuildMembersChunk.get(nonce)!;
-											void delay((retry_after + 0.5) * 1e3).then(() => {
-												this.send(false, {
-													op: GatewayOpcodes.RequestGuildMembers,
-													d: {
-														...guildMemberChunk.options,
-														nonce,
-													},
-												});
+											void delay((retry_after + 0.5) * 1e3).then(async () => {
+												try {
+													await this.send(false, {
+														op: GatewayOpcodes.RequestGuildMembers,
+														d: {
+															...guildMemberChunk.options,
+															nonce,
+														},
+													});
+												} catch (error) {
+													this.rejectGuildMemberRequest(nonce, error);
+												}
 											});
 										}
 										break;
@@ -554,6 +576,14 @@ export class Shard {
 				break;
 		}
 		return undefined;
+	}
+
+	private rejectGuildMemberRequest(nonce: string, error: unknown) {
+		const chunk = this.requestGuildMembersChunk.get(nonce);
+		if (!chunk) return;
+		this.requestGuildMembersChunk.delete(nonce);
+		clearTimeout(chunk.timeout);
+		chunk.reject(error);
 	}
 
 	async requestGuildMember(
@@ -596,13 +626,17 @@ export class Shard {
 			options,
 		});
 
-		this.send(false, {
-			op: GatewayOpcodes.RequestGuildMembers,
-			d: {
-				...options,
-				nonce,
-			},
-		});
+		try {
+			await this.send(false, {
+				op: GatewayOpcodes.RequestGuildMembers,
+				d: {
+					...options,
+					nonce,
+				},
+			});
+		} catch (error) {
+			this.rejectGuildMemberRequest(nonce, error);
+		}
 
 		return promise;
 	}
@@ -674,6 +708,7 @@ export class Shard {
 					case GatewayCloseCodes.InvalidShard:
 					case GatewayCloseCodes.ShardingRequired:
 						this.lifecycle++;
+						this.rejectOfflineSends(close.code, close.reason);
 						this.logger.fatal(`Shard #${this.id} cannot reconnect`);
 						break;
 					default:
@@ -696,6 +731,8 @@ export class Shard {
 	close(code: number, reason: string) {
 		this.lifecycle++;
 		this.reconnectPromise = undefined;
+		if (this.isExpectedLocalClose(code) && code !== ShardSocketCloseCodes.Reconnect)
+			this.rejectOfflineSends(code, reason);
 		this.closeConnection(code, reason, this.shouldApplyLocalClosePolicy(code));
 	}
 
@@ -712,8 +749,23 @@ export class Shard {
 	}
 
 	checkOffline(force: boolean) {
+		if (this.terminalClose) {
+			const { code, reason } = this.terminalClose;
+			return Promise.reject(
+				new SeyfertError('INTERNAL_ERROR', {
+					metadata: {
+						shardId: this.id,
+						code,
+						reason,
+						detail: `Cannot send through terminally closed shard #${this.id} (${code}): ${reason}`,
+					},
+				}),
+			);
+		}
 		if (!this.isOpen) {
-			return new Promise(resolve => this.offlineSendQueue[force ? 'unshift' : 'push'](resolve));
+			return new Promise<void>((resolve, reject) =>
+				this.offlineSendQueue[force ? 'unshift' : 'push']({ reject, resolve }),
+			);
 		}
 		return Promise.resolve();
 	}

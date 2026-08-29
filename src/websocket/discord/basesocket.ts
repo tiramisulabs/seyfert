@@ -22,19 +22,45 @@ export class BaseSocket {
 		} else {
 			const ws = this.internal as WebSocket;
 			this.ping = () => {
-				return new Promise<number>(res => {
+				return new Promise<number>((resolve, reject) => {
 					const nonce = randomUUID();
 					const start = performance.now();
+					let timeout: ReturnType<typeof setTimeout>;
+					const cleanup = () => {
+						clearTimeout(timeout);
+						// @ts-expect-error Bun WebSocket exposes pong events.
+						ws.removeEventListener('pong', listener);
+						ws.removeEventListener('close', onClose);
+						ws.removeEventListener('error', onError);
+					};
 					const listener = ({ data }: MessageEvent) => {
 						if (data.toString() !== nonce) return;
-						//@ts-expect-error
-						ws.removeEventListener('pong', listener);
-						res(performance.now() - start);
+						cleanup();
+						resolve(performance.now() - start);
 					};
-					//@ts-expect-error
+					const onClose = () => {
+						cleanup();
+						reject(new Error('WebSocket closed while waiting for pong'));
+					};
+					const onError = () => {
+						cleanup();
+						reject(new Error('WebSocket errored while waiting for pong'));
+					};
+					// @ts-expect-error Bun WebSocket exposes pong events.
 					ws.addEventListener('pong', listener);
-					//@ts-expect-error
-					ws.ping(nonce);
+					ws.addEventListener('close', onClose);
+					ws.addEventListener('error', onError);
+					timeout = setTimeout(() => {
+						cleanup();
+						resolve(Number.POSITIVE_INFINITY);
+					}, 60e3);
+					try {
+						// @ts-expect-error Bun WebSocket exposes ping().
+						ws.ping(nonce);
+					} catch (error) {
+						cleanup();
+						reject(error);
+					}
 				});
 			};
 		}

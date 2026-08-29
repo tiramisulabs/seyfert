@@ -303,17 +303,7 @@ export class ChannelShorter extends BaseShorter {
 	}
 
 	async fetchMessages(channelId: string, query?: RESTGetAPIChannelMessagesQuery): Promise<MessageStructure[]> {
-		const result = await this.client.proxy.channels(channelId).messages.get({
-			query,
-		});
-		await this.client.cache.messages?.patch(
-			CacheFrom.Rest,
-			result.map(x => {
-				return [x.id, x];
-			}) satisfies [string, any][],
-			channelId,
-		);
-		return result.map(message => Transformers.Message(this.client, message));
+		return this.client.messages.list(channelId, query);
 	}
 
 	setVoiceStatus(channelId: string, status: string | null = null) {

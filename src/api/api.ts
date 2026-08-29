@@ -8,7 +8,7 @@ import {
 	SeyfertError,
 	snowflakeToTimestamp,
 } from '../common';
-import { toArrayBuffer, toBuffer } from '../common/it/utils';
+import { isPlainObject, toArrayBuffer, toBuffer } from '../common/it/utils';
 import type { WorkerData } from '../websocket';
 import { WORKER_TIMEOUT_MS, type WorkerSendApiRequest } from '../websocket/discord/worker';
 import { Bucket } from './bucket';
@@ -899,12 +899,6 @@ function deepFreezePlain<T>(value: T): Readonly<T> {
 	if (!isPlainObject(value)) return value as Readonly<T>;
 	for (const entry of Object.values(value)) deepFreezePlain(entry);
 	return Object.freeze(value) as Readonly<T>;
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-	if (typeof value !== 'object' || value === null) return false;
-	const prototype = Object.getPrototypeOf(value);
-	return prototype === Object.prototype || prototype === null;
 }
 
 function normalizeErrorResult(result: unknown): string | Record<string, any> {

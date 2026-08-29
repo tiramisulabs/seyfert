@@ -7,8 +7,8 @@ import {
 	ContextMenuCommand,
 	Declare,
 	EntryPointCommand,
-	type EntryPointContext,
 	EntryPointCommandHandlerType,
+	type EntryPointContext,
 	type MenuCommandContext,
 	type UserCommandInteraction,
 } from '../lib';
@@ -16,8 +16,14 @@ import { HandleCommand } from '../lib/commands/handle';
 import { PermissionsBitField } from '../lib/structures/extra/Permissions';
 
 const developer = apiUser({ id: 'developer' });
+const permissionCheckError = new Error('permission check failed');
 const restrictedRun = vi.fn();
+const restrictedMenuRun = vi.fn();
 const memberPermissionsFail = vi.fn();
+const botPermissionsFail = vi.fn();
+const internalError = vi.fn();
+const rejectedMemberPermissionCheck = vi.fn();
+const rejectedBotPermissionCheck = vi.fn();
 
 function createPermissionWorld() {
 	const world = mockWorld();
@@ -41,9 +47,7 @@ describe('command permissions', () => {
 		const command = new RestrictedCommand();
 
 		expect(command.defaultMemberPermissions).toBe(PermissionsBitField.resolve(['ManageGuild']));
-		expect(command.toJSON().default_member_permissions).toBe(
-			PermissionsBitField.resolve(['ManageGuild']).toString(),
-		);
+		expect(command.toJSON().default_member_permissions).toBe(PermissionsBitField.resolve(['ManageGuild']).toString());
 	});
 
 	test('checks declared permissions for slash and prefix commands by default', async () => {
@@ -68,6 +72,24 @@ describe('command permissions', () => {
 		expect(restrictedRun).not.toHaveBeenCalled();
 	});
 
+	test('checks declared bot permissions by default', async () => {
+		const { channel, guild, member, world } = createPermissionWorld();
+		await using bot = await createMockBot({ commands: [RestrictedMenuCommand], world });
+
+		await bot.userMenu({
+			name: 'Restricted menu',
+			target: developer,
+			channel,
+			guildId: guild.id,
+			permissions: [],
+			user: member.user,
+		});
+
+		expect(botPermissionsFail).toHaveBeenCalledTimes(1);
+		expect(botPermissionsFail.mock.calls[0]?.[1]).toEqual(['SendMessages']);
+		expect(restrictedMenuRun).not.toHaveBeenCalled();
+	});
+
 	test('lets custom command handlers override member and bot permission checks', async () => {
 		const { channel, guild, member, world } = createPermissionWorld();
 		await using bot = await createMockBot({
@@ -90,10 +112,7 @@ describe('command permissions', () => {
 		const entryPoint = await bot.entryPoint({ name: 'restricted-entry-point', ...interaction });
 
 		expect(handle.checkedMemberAuthors).toHaveBeenCalledTimes(2);
-		expect(handle.checkedMemberAuthors.mock.calls.map(([authorId]) => authorId)).toEqual([
-			'developer',
-			'developer',
-		]);
+		expect(handle.checkedMemberAuthors.mock.calls.map(([authorId]) => authorId)).toEqual(['developer', 'developer']);
 		expect(handle.checkedBotAuthors).toHaveBeenCalledTimes(4);
 		expect(handle.checkedBotAuthors.mock.calls.map(([authorId]) => authorId)).toEqual([
 			'developer',
@@ -107,6 +126,27 @@ describe('command permissions', () => {
 			'menu ran',
 			'entry point ran',
 		]);
+	});
+
+	test('routes rejected permission checks through the internal error handler', async () => {
+		const { channel, guild, member, world } = createPermissionWorld();
+		await using bot = await createMockBot({ commands: [RestrictedCommand], prefixes: ['!'], world });
+		bot.client.setServices({ handleCommand: RejectingHandleCommand });
+
+		await bot.slash({
+			name: 'restricted',
+			channel,
+			guildId: guild.id,
+			memberPermissions: [],
+			user: member.user,
+		});
+		await bot.say('!restricted', { channel, guildId: guild.id, user: member.user });
+
+		expect(internalError).toHaveBeenCalledTimes(2);
+		expect(internalError.mock.calls.map(([, , error]) => error)).toEqual([permissionCheckError, permissionCheckError]);
+		expect(rejectedBotPermissionCheck).toHaveBeenCalledTimes(1);
+		expect(rejectedMemberPermissionCheck).toHaveBeenCalledTimes(1);
+		expect(restrictedRun).not.toHaveBeenCalled();
 	});
 });
 
@@ -127,6 +167,10 @@ class RestrictedCommand extends Command {
 	onPermissionsFail(...args: Parameters<NonNullable<Command['onPermissionsFail']>>) {
 		memberPermissionsFail(...args);
 	}
+
+	onInternalError(...args: Parameters<NonNullable<Command['onInternalError']>>) {
+		internalError(...args);
+	}
 }
 
 @Declare({
@@ -137,7 +181,12 @@ class RestrictedCommand extends Command {
 })
 class RestrictedMenuCommand extends ContextMenuCommand {
 	run(context: MenuCommandContext<UserCommandInteraction>) {
+		restrictedMenuRun();
 		return context.write({ content: 'menu ran' });
+	}
+
+	onBotPermissionsFail(...args: Parameters<NonNullable<ContextMenuCommand['onBotPermissionsFail']>>) {
+		botPermissionsFail(...args);
 	}
 }
 
@@ -169,5 +218,17 @@ class DeveloperHandleCommand extends HandleCommand {
 		this.checkedBotAuthors(args[1].author.id);
 		if (args[1].author.id === developer.id) return;
 		return super.checkBotPermissions(...args);
+	}
+}
+
+class RejectingHandleCommand extends HandleCommand {
+	override checkMemberPermissions(..._args: Parameters<HandleCommand['checkMemberPermissions']>) {
+		rejectedMemberPermissionCheck();
+		return Promise.reject(permissionCheckError);
+	}
+
+	override checkBotPermissions(..._args: Parameters<HandleCommand['checkBotPermissions']>) {
+		rejectedBotPermissionCheck();
+		return Promise.reject(permissionCheckError);
 	}
 }

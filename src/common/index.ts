@@ -12,7 +12,6 @@ export * from './shorters/channels';
 export * from './shorters/emojis';
 export * from './shorters/guilds';
 export * from './shorters/interaction';
-// circular lol
 export * from './shorters/invites';
 export * from './shorters/members';
 export * from './shorters/messages';

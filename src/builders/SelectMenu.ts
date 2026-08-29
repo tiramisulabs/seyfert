@@ -278,7 +278,7 @@ export class ChannelSelectMenu extends SelectMenu<APIChannelSelectComponent> {
  * ]);
  */
 export class StringSelectMenu<Value extends string = string> extends SelectMenu<APIStringSelectComponent<Value>> {
-	//@ts-expect-error
+	// @ts-expect-error The builder stores wrapped options while the base component type describes serialized options.
 	declare data: Omit<Partial<APIStringSelectComponent<Value>>, 'options'> & { options: StringSelectOption[] };
 	constructor(data: Partial<APIStringSelectComponent<Value>> = {}) {
 		super({ ...data, type: ComponentType.StringSelect });

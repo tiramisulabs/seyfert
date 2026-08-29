@@ -7,7 +7,7 @@ import { GuildBasedResource } from './default/guild-based';
 export class VoiceStates extends GuildBasedResource<any, APIVoiceState> {
 	namespace = 'voice_state';
 
-	//@ts-expect-error
+	// @ts-expect-error Keep descriptive filter parameter names for adapter overrides despite noUnusedParameters.
 	filter(data: APIVoiceState, id: string, guild_id: string, from: CacheFrom) {
 		return true;
 	}

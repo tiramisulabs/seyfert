@@ -1,14 +1,8 @@
 import { createMockBot, rendered } from '@slipher/testing';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import {
-	ActionRow,
-	Button,
-	ButtonStyle,
-	Command,
-	Declare,
-	type CommandContext,
-} from '../lib';
+import { ActionRow, Button, ButtonStyle, Command, type CommandContext, Declare } from '../lib';
 import { ComponentHandler } from '../src/components/handler';
+import type { ModalSubmitInteraction } from '../src/structures/Interaction';
 
 function createHandler() {
 	const logger = {
@@ -25,6 +19,17 @@ function createHandler() {
 
 function createInteraction(customId: string) {
 	return { customId } as never;
+}
+
+function createModalInteraction(customId: string, userId = 'same-user'): ModalSubmitInteraction {
+	const data = { customId };
+	return {
+		data,
+		get customId() {
+			return data.customId;
+		},
+		user: { id: userId },
+	} as never;
 }
 
 function createCollectorFixture(registerAfterTimeout = false) {
@@ -67,9 +72,7 @@ function createCollectorFixture(registerAfterTimeout = false) {
 	};
 }
 
-async function createCollectorBot(
-	{ registerAfterTimeout = false }: { registerAfterTimeout?: boolean } = {},
-) {
+async function createCollectorBot({ registerAfterTimeout = false }: { registerAfterTimeout?: boolean } = {}) {
 	vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
 	const fixture = createCollectorFixture(registerAfterTimeout);
 	const bot = await createMockBot({
@@ -132,6 +135,67 @@ describe('component collectors', () => {
 		await expect(fixture.result()).resolves.not.toBeNull();
 		await expect(bot.clickButton('confirm', { source })).rejects.toThrow(/no component/i);
 		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	test('settles pending waiters when the collector stops', async () => {
+		const handler = createHandler();
+		const collector = handler.createComponentCollector('message-id', 'channel-id', undefined);
+		const waiting = collector.waitFor('confirm', 1_000);
+
+		collector.stop('done');
+
+		await expect(waiting).resolves.toBeNull();
+		expect(handler.values.has('message-id')).toBe(false);
+	});
+
+	test('does not carry pending waiters into a restarted collector', async () => {
+		const handler = createHandler();
+		let restart: (() => void) | undefined;
+		const collector = handler.createComponentCollector('message-id', 'channel-id', undefined, {
+			onStop: (_reason, restartCollector) => {
+				restart = restartCollector;
+			},
+		});
+		const persistent = vi.fn();
+		collector.run('keep', persistent);
+		const waiting = collector.waitFor('confirm');
+
+		collector.stop('restart');
+		restart?.();
+
+		await expect(waiting).resolves.toBeNull();
+		expect(handler.hasComponent('message-id', 'confirm')).toBe(false);
+		expect(handler.hasComponent('message-id', 'keep')).toBe(true);
+		await handler.onComponent('message-id', createInteraction('keep'));
+		expect(persistent).toHaveBeenCalledTimes(1);
+	});
+
+	test('routes simultaneous modal callbacks by wire custom id instead of user id', async () => {
+		const handler = createHandler();
+		const firstCallback = vi.fn();
+		const secondCallback = vi.fn();
+		const firstInteraction = createModalInteraction('profile:first');
+		const secondInteraction = createModalInteraction('profile:second');
+		handler.registerModal('profile:first', 'profile', firstCallback);
+		handler.registerModal('profile:second', 'profile', secondCallback);
+
+		handler.onModalSubmit(secondInteraction);
+		handler.onModalSubmit(firstInteraction);
+
+		expect(firstCallback).toHaveBeenCalledWith(expect.objectContaining({ customId: 'profile' }));
+		expect(secondCallback).toHaveBeenCalledWith(expect.objectContaining({ customId: 'profile' }));
+	});
+
+	test('retains a timed-out modal alias for ModalCommand fallback', () => {
+		const handler = createHandler();
+		const interaction = createModalInteraction('profile:late', 'user');
+		handler.registerModal('profile:late', 'profile', vi.fn());
+		handler.deleteModalCallback('profile:late');
+
+		expect(handler.hasModal(interaction)).toBe(false);
+		handler.restoreModalCustomId(interaction);
+
+		expect(interaction.customId).toBe('profile');
 	});
 
 	test.each(['g', 'y'])('matches stateful regular expressions with the %s flag repeatedly', async flag => {

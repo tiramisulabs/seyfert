@@ -7,7 +7,7 @@ import type {
 	WebhookMessageStructure,
 } from '../client/transformers';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, RegisteredMiddlewares, UsingClient } from '../commands';
-import { BaseContext } from '../commands/basecontext';
+import { BaseContext, resolveContextChannel, resolveContextGuild, resolveContextMember } from '../commands/basecontext';
 import type {
 	InteractionCreateBodyRequest,
 	InteractionMessageUpdateBodyRequest,
@@ -96,40 +96,19 @@ export abstract class InteractionResponseContext<
 	channel(mode?: 'rest' | 'flow'): Promise<AllChannels>;
 	channel(mode: 'cache'): ReturnCache<AllChannels>;
 	channel(mode: 'cache' | 'rest' | 'flow' = 'flow') {
-		if (mode === 'cache')
-			return this.client.cache.adapter.isAsync ? Promise.resolve(this._interaction.channel) : this._interaction.channel;
-		return this.client.channels.fetch(this.channelId, mode === 'rest');
+		return resolveContextChannel(this.client, this.channelId, mode, this._interaction.channel);
 	}
 
 	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure | undefined>;
 	me(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
-	me(mode: 'cache' | 'rest' | 'flow' = 'flow'): any {
-		if (!this.guildId)
-			return mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve();
-		switch (mode) {
-			case 'cache':
-				return this.client.cache.members?.get(this.client.botId, this.guildId);
-			default:
-				return this.client.members.fetch(this.guildId, this.client.botId, mode === 'rest');
-		}
+	me(mode: 'cache' | 'rest' | 'flow' = 'flow') {
+		return resolveContextMember(this.client, this.guildId, this.client.botId, mode);
 	}
 
 	guild(mode?: 'rest' | 'flow', query?: RESTGetAPIGuildQuery): Promise<GuildStructure<'cached' | 'api'> | undefined>;
 	guild(mode: 'cache', query?: RESTGetAPIGuildQuery): ReturnCache<GuildStructure<'cached'> | undefined>;
 	guild(mode: 'cache' | 'rest' | 'flow' = 'flow', query?: RESTGetAPIGuildQuery) {
-		if (!this.guildId)
-			return (
-				mode === 'cache' ? (this.client.cache.adapter.isAsync ? Promise.resolve() : undefined) : Promise.resolve()
-			) as any;
-		switch (mode) {
-			case 'cache':
-				return (
-					this.client.cache.guilds?.get(this.guildId) ||
-					(this.client.cache.adapter.isAsync ? (Promise.resolve() as any) : undefined)
-				);
-			default:
-				return this.client.guilds.fetch(this.guildId, { force: mode === 'rest', query });
-		}
+		return resolveContextGuild(this.client, this.guildId, mode, query);
 	}
 
 	get guildId() {

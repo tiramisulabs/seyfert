@@ -7,7 +7,7 @@ import { GuildRelatedResource } from './default/guild-related';
 export class Emojis extends GuildRelatedResource<any, APIEmoji | APIApplicationEmoji> {
 	namespace = 'emoji';
 
-	//@ts-expect-error
+	// @ts-expect-error Keep descriptive filter parameter names for adapter overrides despite noUnusedParameters.
 	filter(data: APIEmoji, id: string, guild_id: string, from: CacheFrom) {
 		return true;
 	}

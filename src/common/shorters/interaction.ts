@@ -1,4 +1,4 @@
-import { BaseInteraction, Modal, type ReplyInteractionBody, resolveFiles } from '../..';
+import { BaseInteraction, type ReplyInteractionBody, resolveFiles } from '../..';
 import { Transformers, type WebhookMessageStructure } from '../../client/transformers';
 import type { RESTPostAPIWebhookWithTokenWaitResult } from '../../types';
 import type { InteractionMessageUpdateBodyRequest, MessageWebhookCreateBodyRequest } from '../types/write';
@@ -6,23 +6,13 @@ import { BaseShorter } from './base';
 
 export class InteractionShorter extends BaseShorter {
 	async reply(id: string, token: string, body: ReplyInteractionBody, withResponse = false) {
-		//@ts-expect-error
-		const { files, ...rest } = body.data ?? {};
-		//@ts-expect-error
-		const data = body.data instanceof Modal ? body.data : rest;
+		const { body: bodyWithoutFiles, files } = BaseInteraction.extractBodyFiles(body);
 		const parsedFiles = files ? await resolveFiles(files) : undefined;
 		return this.client.proxy
 			.interactions(id)(token)
 			.callback.post({
 				auth: false,
-				body: BaseInteraction.transformBodyRequest(
-					{
-						type: body.type,
-						data,
-					},
-					files,
-					this.client,
-				),
+				body: BaseInteraction.transformBodyRequest(bodyWithoutFiles, files, this.client),
 				files: parsedFiles,
 				query: { with_response: withResponse },
 			});

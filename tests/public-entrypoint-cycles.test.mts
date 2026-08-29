@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
-import { BaseResource } from '../src/cache/resources/default/base';
 import { Cache } from '../src';
+import { BaseResource } from '../src/cache/resources/default/base';
 
 describe('public entrypoint cycles', () => {
 	test('keeps GuildRole available after command contexts are loaded directly', async () => {

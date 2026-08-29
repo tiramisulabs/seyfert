@@ -210,6 +210,12 @@ export type LimitedCollectionData<V> = { expire: number; expireOn: number; value
 type LimitedCollectionExpiration = { expire: number; expireOn: number };
 type LimitedCollectionCloser<K> = LimitedCollectionExpiration & { key: K };
 
+function validateLimitedCollectionExpiration(expire: number) {
+	if (!Number.isFinite(expire)) throw new TypeError('LimitedCollection expiration must be finite');
+	if (expire > 2_147_483_647)
+		throw new RangeError('LimitedCollection expiration cannot exceed the maximum timer delay');
+}
+
 export interface LimitedCollectionOptions<K, V> {
 	limit: number;
 	expire: number;
@@ -248,6 +254,7 @@ export class LimitedCollection<K, V> {
 	constructor(options: Partial<LimitedCollectionOptions<K, V>> = {}) {
 		this.options = MergeOptions(LimitedCollection.default, options);
 		if (Number.isNaN(this.options.limit)) throw new TypeError('LimitedCollection limit cannot be NaN');
+		validateLimitedCollectionExpiration(this.options.expire);
 	}
 
 	/**
@@ -266,6 +273,7 @@ export class LimitedCollection<K, V> {
 	 * console.log(collection.get(1)); // Output: undefined
 	 */
 	set(key: K, value: V, customExpire = this.options.expire) {
+		validateLimitedCollectionExpiration(customExpire);
 		if (this.options.limit <= 0) {
 			return;
 		}

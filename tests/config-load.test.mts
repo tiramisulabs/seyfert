@@ -69,6 +69,32 @@ describe('BaseClient config loading', () => {
 		expect(runtimeConfig.intents).toBe(GatewayIntentBits.Guilds);
 	});
 
+	test('keeps runtime config scoped per client instance', async () => {
+		const clientA = new BaseClient({
+			getRC: () => ({
+				locations: { base: 'src-a' },
+				intents: 53_608_447,
+				token: 'token-a',
+			}),
+		});
+		const clientB = new BaseClient({
+			getRC: () => ({
+				locations: { base: 'src-b' },
+				intents: 0,
+				token: 'token-b',
+			}),
+		});
+
+		const [configA, configB] = await Promise.all([clientA.getRC(), clientB.getRC()]);
+
+		expect(configA.token).toBe('token-a');
+		expect(configB.token).toBe('token-b');
+		expect(configA.locations.base).toBe('src-a');
+		expect(configB.locations.base).toBe('src-b');
+		expect(configA.intents).toBe(53_608_447);
+		expect(configB.intents).toBe(0);
+	});
+
 	test('normalizes config.bot intents through the shared resolver', () => {
 		const runtimeConfig = config.bot({
 			token: 'token',

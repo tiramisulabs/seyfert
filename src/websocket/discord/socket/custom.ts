@@ -26,6 +26,11 @@ export class SeyfertWebSocket {
 	retryTimeout?: NodeJS.Timeout;
 	#closeEmitted = false;
 
+	private rejectPings(error: unknown) {
+		for (const promise of this.__promises.values()) promise.reject(error);
+		this.__promises.clear();
+	}
+
 	constructor(url: string) {
 		const urlParts = new URL(url);
 		this.hostname = urlParts.hostname || '';
@@ -77,7 +82,10 @@ export class SeyfertWebSocket {
 
 				socket.on('close', this.handleClose.bind(this));
 
-				socket.on('error', err => this.onerror(err));
+				socket.on('error', err => {
+					this.rejectPings(err);
+					this.onerror(err);
+				});
 				resolve();
 				this.onopen();
 			});
@@ -203,10 +211,7 @@ export class SeyfertWebSocket {
 		this.socket?.removeAllListeners();
 		this.socket?.destroy();
 		this.socket = undefined;
-		for (const [, promise] of this.__promises) {
-			promise.reject(new Error('WebSocket closed'));
-		}
-		this.__promises.clear();
+		this.rejectPings(new Error('WebSocket closed'));
 		if (this.__closeCalled) return;
 		this.#emitClose(
 			this.__lastError ?? {
@@ -271,6 +276,7 @@ export class SeyfertWebSocket {
 
 	close(code: number, reason: string) {
 		this.__closeCalled = true;
+		this.rejectPings(new Error(`WebSocket closed (${code}): ${reason}`));
 		clearTimeout(this.retryTimeout);
 		this.retryTimeout = undefined;
 		this.request?.destroy();
@@ -310,19 +316,25 @@ export class SeyfertWebSocket {
 		let timeout: NodeJS.Timeout | undefined;
 
 		const start = performance.now();
-		this.ping(id);
-
-		return new Promise<void>((resolve, reject) => {
+		let timedOut = false;
+		const operation = new Promise<void>((resolve, reject) => {
 			this.__promises.set(id, {
 				reject,
 				resolve,
 			});
 			timeout = setTimeout(() => {
+				timedOut = true;
 				resolve();
 			}, 60e3);
-		})
+		});
+		try {
+			this.ping(id);
+		} catch (error) {
+			this.__promises.get(id)?.reject(error);
+		}
+		return operation
 			.then(() => {
-				return performance.now() - start;
+				return timedOut ? Number.POSITIVE_INFINITY : performance.now() - start;
 			})
 			.finally(() => {
 				clearTimeout(timeout);
@@ -349,17 +361,20 @@ export class SeyfertWebSocket {
 	 */
 
 	private readBytes(start: number, bits: number): number {
-		// @ts-expect-error this is private, thanks nodejs
-		const readable = this.socket._readableState as
-			| {
-					bufferIndex: number;
-					buffer: Buffer[];
-			  }
-			| {
-					buffer: {
-						head: ReadableHeadData;
-					};
-			  };
+		const readable = (
+			this.socket as Socket & {
+				_readableState:
+					| {
+							bufferIndex: number;
+							buffer: Buffer[];
+					  }
+					| {
+							buffer: {
+								head: ReadableHeadData;
+							};
+					  };
+			}
+		)._readableState;
 		// Num of bit read
 		let bitIndex = 0;
 		// Num of bit read counting since start

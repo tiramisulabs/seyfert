@@ -11,7 +11,7 @@ export class BaseResource<T = any, S = any> {
 		readonly client: UsingClient,
 	) {}
 
-	//@ts-expect-error
+	// @ts-expect-error Keep descriptive filter parameter names for adapter overrides despite noUnusedParameters.
 	filter(data: any, id: string, from: CacheFrom) {
 		return true;
 	}

@@ -134,7 +134,6 @@ export class CommandHandler extends BaseHandler {
 		if (option.type !== cached.type) return true;
 		if (option.required !== cached.required) return true;
 		if (option.name !== cached.name) return true;
-		//TODO: locales
 
 		if (this.shouldUploadLocales(option.name_localizations, cached.name_localizations)) return true;
 		if (this.shouldUploadLocales(option.description_localizations, cached.description_localizations)) return true;
@@ -283,9 +282,9 @@ export class CommandHandler extends BaseHandler {
 		return false;
 	}
 
-	private prepareCommand(commandInstance: HandleableCommandInstance) {
+	private prepareCommand(commandInstance: HandleableCommandInstance, client: UsingClient = this.client) {
 		if (commandInstance instanceof SubCommand) return false;
-		commandInstance.props ??= this.client.options.commands?.defaults?.props ?? {};
+		commandInstance.props ??= client.options.commands?.defaults?.props ?? {};
 		const isCommand = this.stablishCommandDefaults(commandInstance);
 		if (isCommand) {
 			for (const option of isCommand.options ?? []) {
@@ -348,6 +347,43 @@ export class CommandHandler extends BaseHandler {
 		return added;
 	}
 
+	private async loadAutoloadedSubCommands(
+		commandInstance: HandleableCommandInstance,
+		file: { path: string; file: FileLoaded<null> },
+		files: { path: string; file: FileLoaded<null> }[],
+	) {
+		if (!(commandInstance instanceof Command) || !commandInstance.__autoload) return;
+		const siblingPaths = await this.getFiles(dirname(file.path));
+		for (const siblingPath of siblingPaths) {
+			if (file.path === siblingPath) continue;
+			try {
+				const relativePath = siblingPath.split(process.cwd()).slice(1).join(process.cwd());
+				const siblingFile = files.find(candidate => candidate.path === siblingPath);
+				const subCommands = siblingFile ? this.onFile(siblingFile.file) : undefined;
+				if (!subCommands) {
+					this.logger.warn(
+						`Command "${commandInstance.name}": no default export found in "${relativePath}", ignoring it as a SubCommand.`,
+					);
+					continue;
+				}
+				for (const subCommandValue of subCommands) {
+					const subCommand = this.onSubCommand(subCommandValue as HandleableSubCommand);
+					if (subCommand instanceof SubCommand) {
+						subCommand.__filePath = siblingPath;
+						(commandInstance.options ??= []).push(subCommand);
+					} else {
+						this.logger.warn(
+							`Command "${commandInstance.name}": expected a SubCommand from "${relativePath}", got (${subCommand}); ignoring it.`,
+							subCommand,
+						);
+					}
+				}
+			} catch {
+				// pass
+			}
+		}
+	}
+
 	async load(commandsDir: string, client: UsingClient, options: CommandLoadOptions = {}) {
 		const result = await this.loadFilesK<FileLoaded<null>>(await this.getFiles(commandsDir));
 		this.values = [];
@@ -373,69 +409,21 @@ export class CommandHandler extends BaseHandler {
 				if (commandInstance instanceof SubCommand) continue;
 
 				commandInstance.__filePath = file.path;
-				commandInstance.props ??= client.options.commands?.defaults?.props ?? {};
-				const isAvailableCommand = this.stablishCommandDefaults(commandInstance);
-				if (isAvailableCommand) {
-					commandInstance = isAvailableCommand;
-					if (commandInstance.__autoload) {
-						//@AutoLoad
-						const options = await this.getFiles(dirname(file.path));
-						for (const option of options) {
-							if (file.path === option) {
-								continue;
-							}
-							try {
-								const relativePath = option.split(process.cwd()).slice(1).join(process.cwd());
-								const fileSubCommands = this.onFile(result.find(x => x.path === option)!.file);
-								if (!fileSubCommands) {
-									this.logger.warn(
-										`Command "${commandInstance.name}": no default export found in "${relativePath}", ignoring it as a SubCommand.`,
-									);
-									continue;
-								}
-								for (const fileSubCommand of fileSubCommands) {
-									const subCommand = this.onSubCommand(fileSubCommand as HandleableSubCommand);
-									if (subCommand instanceof SubCommand) {
-										subCommand.__filePath = option;
-										commandInstance.options!.push(subCommand);
-									} else {
-										this.logger.warn(
-											`Command "${commandInstance.name}": expected a SubCommand from "${relativePath}", got (${subCommand}); ignoring it.`,
-											subCommand,
-										);
-									}
-								}
-							} catch {
-								//pass
-							}
-						}
-					}
-					for (const option of commandInstance.options ?? []) {
-						if (option instanceof SubCommand) this.stablishSubCommandDefaults(commandInstance, option);
-					}
-				}
-				this.stablishContextCommandDefaults(commandInstance);
-				this.parseLocales(commandInstance);
-				const wrapped = options.transform?.(commandInstance) ?? commandInstance;
+				await this.loadAutoloadedSubCommands(commandInstance, file, result);
+				const prepared = this.prepareCommand(commandInstance, client);
+				if (!prepared) continue;
+				const wrapped = options.transform?.(prepared) ?? prepared;
 				if (!wrapped) continue;
-				if (wrapped !== commandInstance) {
+				if (wrapped !== prepared) {
 					commandInstance = wrapped;
 					commandInstance.__filePath ??= file.path;
-					commandInstance.props ??= client.options.commands?.defaults?.props ?? {};
-					const wrappedCommand = this.stablishCommandDefaults(commandInstance);
-					if (wrappedCommand) {
-						commandInstance = wrappedCommand;
-						for (const option of commandInstance.options ?? []) {
-							if (option instanceof SubCommand) this.stablishSubCommandDefaults(commandInstance, option);
-						}
-					}
-					this.stablishContextCommandDefaults(commandInstance);
-					this.parseLocales(commandInstance);
-				}
-				if (commandInstance instanceof Command) this.checkSubCommandsLimit(commandInstance);
+					const preparedWrapped = this.prepareCommand(commandInstance, client);
+					if (!preparedWrapped) continue;
+					commandInstance = preparedWrapped;
+				} else commandInstance = prepared;
 				if ('handler' in commandInstance && commandInstance.handler) {
 					this.entryPoint = commandInstance as EntryPointCommand;
-				} else this.values.push(commandInstance as Command);
+				} else this.values.push(commandInstance as Command | ContextMenuCommand);
 			}
 		}
 

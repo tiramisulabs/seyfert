@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { GatewayDispatchEvents, GatewayOpcodes } from '../src/types';
 import { Shard } from '../src/websocket/discord/shard';
-import { ShardSocketCloseCodes, type ShardOptions } from '../src/websocket/discord/shared';
+import { type ShardOptions, ShardSocketCloseCodes } from '../src/websocket/discord/shared';
 
 afterEach(() => {
 	vi.clearAllTimers();
@@ -42,6 +42,98 @@ describe('gateway reconnect stability', () => {
 		shard.disconnect(ShardSocketCloseCodes.Reconnect);
 
 		expect(close).toHaveBeenCalledWith(ShardSocketCloseCodes.Reconnect, 'Shard down request');
+	});
+
+	test('rejects pending and future sends after a terminal close', async () => {
+		const shard = new Shard(3, {
+			token: 'token',
+			intents: 0,
+			info: {
+				url: 'wss://gateway.discord.gg',
+				shards: 4,
+				session_start_limit: {
+					total: 4,
+					remaining: 4,
+					reset_after: 0,
+					max_concurrency: 1,
+				},
+			},
+			handlePayload: vi.fn(),
+		} as unknown as ShardOptions);
+		const pending = shard.send(false, { op: GatewayOpcodes.Heartbeat, d: null });
+		const pendingRejection = expect(pending).rejects.toThrow(/shard #3.*3000.*Shard down request/i);
+
+		shard.disconnect(ShardSocketCloseCodes.Shutdown);
+
+		await pendingRejection;
+		await expect(shard.send(false, { op: GatewayOpcodes.Heartbeat, d: null })).rejects.toThrow(
+			/shard #3.*3000.*Shard down request/i,
+		);
+	});
+
+	test('rejects guild member requests when their gateway send fails', async () => {
+		vi.useFakeTimers();
+		const shard = new Shard(3, {
+			token: 'token',
+			intents: 0,
+			info: {
+				url: 'wss://gateway.discord.gg',
+				shards: 4,
+				session_start_limit: {
+					total: 4,
+					remaining: 4,
+					reset_after: 0,
+					max_concurrency: 1,
+				},
+			},
+			handlePayload: vi.fn(),
+		} as unknown as ShardOptions);
+		shard.disconnect(ShardSocketCloseCodes.Shutdown);
+
+		await expect(shard.requestGuildMember({ guild_id: '1', user_ids: ['2'] })).rejects.toThrow(
+			/shard #3.*3000.*Shard down request/i,
+		);
+		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	test('a public reconnect reopens a terminally disconnected shard', async () => {
+		const { shard, socket: first } = await createConnectedShard({ reconnectTimeout: 0 });
+		first.open();
+		shard.disconnect(ShardSocketCloseCodes.Shutdown);
+
+		await shard.reconnect();
+		const second = FakeBaseSocket.instances[1]!;
+		second.open();
+		second.message(hello());
+		await vi.waitFor(() => expect(second.sent).toHaveLength(1));
+
+		expect(second.sent).toEqual([expect.objectContaining({ op: GatewayOpcodes.Identify })]);
+	});
+
+	test('preserves offline sends across an explicit reconnect close', async () => {
+		const shard = new Shard(0, {
+			token: 'token',
+			intents: 0,
+			info: {
+				url: 'wss://gateway.discord.gg',
+				shards: 1,
+				session_start_limit: {
+					total: 1,
+					remaining: 1,
+					reset_after: 0,
+					max_concurrency: 1,
+				},
+			},
+			handlePayload: vi.fn(),
+		} as unknown as ShardOptions);
+		const pending = shard.send(false, { op: GatewayOpcodes.Heartbeat, d: null });
+
+		shard.disconnect(ShardSocketCloseCodes.Reconnect);
+
+		expect(shard.offlineSendQueue).toHaveLength(1);
+		const rejection = expect(pending).rejects.toThrow(/terminally closed shard/i);
+		shard.disconnect(ShardSocketCloseCodes.Shutdown);
+		await rejection;
 	});
 
 	test('closing an unopened websocket aborts the pending request', async () => {
@@ -587,9 +679,7 @@ describe('gateway reconnect lifecycle', () => {
 			throw new RangeError('invalid close frame');
 		});
 
-		expect(() => shard.close(ShardSocketCloseCodes.Reconnect, 'failed handshake close')).toThrow(
-			'invalid close frame',
-		);
+		expect(() => shard.close(ShardSocketCloseCodes.Reconnect, 'failed handshake close')).toThrow('invalid close frame');
 		await shard.connect();
 
 		expect(FakeBaseSocket.instances).toHaveLength(1);

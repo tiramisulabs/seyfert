@@ -1,14 +1,16 @@
 import { chatInputInteraction } from '@slipher/testing';
 import { describe, expect, test, vi } from 'vitest';
-import { BaseInteraction, type __InternalReplyFunction, type Interaction } from '../lib';
+import { type __InternalReplyFunction, BaseInteraction, type Interaction } from '../lib';
 
 function createDeferred<T>() {
 	let resolve!: (value: T | PromiseLike<T>) => void;
-	const promise = new Promise<T>(res => {
+	let reject!: (reason?: unknown) => void;
+	const promise = new Promise<T>((res, rej) => {
 		resolve = res;
+		reject = rej;
 	});
 
-	return { promise, resolve };
+	return { promise, reject, resolve };
 }
 
 function createInteraction(client: unknown, __reply?: __InternalReplyFunction) {
@@ -97,5 +99,46 @@ describe('interaction reply state', () => {
 		expect(interaction.replied).toBe(true);
 		expect(restReply).not.toHaveBeenCalled();
 		expect(editMessage).toHaveBeenCalledTimes(1);
+	});
+
+	test('keeps a failed REST reply terminal and rolls back deferred state', async () => {
+		const failure = new Error('reply failed');
+		const reply = vi.fn(() => Promise.reject(failure));
+		const editMessage = vi.fn();
+		const interaction = createInteraction({
+			options: {},
+			interactions: { editMessage, reply },
+		});
+
+		await expect(interaction.deferReply()).rejects.toBe(failure);
+
+		expect(interaction.replied).toBeUndefined();
+		expect(interaction.deferred).toBeUndefined();
+		await expect(interaction.write({ content: 'retry' })).rejects.toBe(failure);
+		await expect(interaction.editOrReply({ content: 'retry' })).rejects.toBe(failure);
+		await expect(interaction.deferReply()).rejects.toBe(failure);
+		expect(interaction.deferred).toBeUndefined();
+		expect(reply).toHaveBeenCalledTimes(1);
+		expect(editMessage).not.toHaveBeenCalled();
+	});
+
+	test('shares an in-progress failure with editOrReply without retrying', async () => {
+		const pendingReply = createDeferred<undefined>();
+		const failure = new Error('pending reply failed');
+		const reply = vi.fn(() => pendingReply.promise);
+		const editMessage = vi.fn();
+		const interaction = createInteraction({
+			options: {},
+			interactions: { editMessage, reply },
+		});
+
+		const initialReply = interaction.write({ content: 'initial' });
+		const edit = interaction.editOrReply({ content: 'edited' });
+		pendingReply.reject(failure);
+
+		await expect(initialReply).rejects.toBe(failure);
+		await expect(edit).rejects.toBe(failure);
+		expect(reply).toHaveBeenCalledTimes(1);
+		expect(editMessage).not.toHaveBeenCalled();
 	});
 });

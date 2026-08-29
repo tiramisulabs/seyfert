@@ -7,7 +7,7 @@ import { GuildRelatedResource } from './default/guild-related';
 export class Channels extends GuildRelatedResource<any, APIChannel> {
 	namespace = 'channel';
 
-	//@ts-expect-error
+	// @ts-expect-error Keep descriptive filter parameter names for adapter overrides despite noUnusedParameters.
 	filter(data: APIChannel, id: string, guild_id: string, from: CacheFrom) {
 		return true;
 	}

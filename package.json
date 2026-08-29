@@ -20,14 +20,15 @@
 		"lint": "biome lint --write ./src",
 		"format": "biome format --write ./src",
 		"check-h": "biome check --write ./src",
-		"check": "biome check --verbose --write --no-errors-on-unmatched ./src",
+		"check": "biome check --verbose --no-errors-on-unmatched ./src ./tests ./package.json ./tsconfig.json ./biome.json ./commitlint.config.js",
+		"check:write": "biome check --verbose --write --no-errors-on-unmatched ./src ./tests ./package.json ./tsconfig.json ./biome.json ./commitlint.config.js",
 		"test:types": "pnpm run build && tsc --noEmit --project tests/tsconfig.json",
 		"test": "pnpm run test:types && vitest run --config ./tests/vitest.config.mts ./tests/"
 	},
 	"author": "MARCROCK22",
 	"license": "MIT",
 	"devDependencies": {
-		"@biomejs/biome": "2.5.3",
+		"@biomejs/biome": "2.5.11",
 		"@changesets/cli": "^2.31.0",
 		"@commitlint/cli": "^21.2.1",
 		"@commitlint/config-conventional": "^21.2.0",

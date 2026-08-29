@@ -1,6 +1,6 @@
 import type { DeepPartial } from '../common';
 import type { BaseClientOptions, StartOptions } from './base';
-import { BaseClient } from './base';
+import { BaseClient, clientInitialization, coalesceClientStart } from './base';
 import type { RegisteredPluginExtension } from './plugins';
 
 export class HttpClient extends BaseClient {
@@ -8,9 +8,11 @@ export class HttpClient extends BaseClient {
 		super(options);
 	}
 
-	async start(options: DeepPartial<Omit<StartOptions, 'connection' | 'eventsDir'>> = {}) {
-		await super.start(options);
-		return this.execute(options.httpConnection);
+	start(options: DeepPartial<Omit<StartOptions, 'connection' | 'eventsDir'>> = {}) {
+		return this[coalesceClientStart](async () => {
+			await this[clientInitialization](options);
+			return this.execute(options.httpConnection);
+		});
 	}
 }
 

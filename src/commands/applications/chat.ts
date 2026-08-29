@@ -152,7 +152,7 @@ export class BaseCommand {
 
 	/** @internal */
 	async __runOptions(
-		ctx: CommandContext<{}, never>,
+		ctx: CommandContext<OptionsRecord, never>,
 		resolver: OptionResolverStructure,
 	): Promise<[boolean, OnOptionsReturnObject]> {
 		if (!this?.options?.length) {
@@ -185,7 +185,6 @@ export class BaseCommand {
 						continue;
 					}
 				}
-				// @ts-expect-error
 				ctx.options[i.name] = value;
 				data[i.name] = {
 					failed: false,

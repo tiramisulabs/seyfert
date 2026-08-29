@@ -55,6 +55,11 @@ Declare({ name: 'My User Menu', type: ApplicationCommandType.User, aliases: ['m'
 Declare({ name: 'My User Menu', type: ApplicationCommandType.User, guildId: guildIdConst });
 
 // ───────────────────────── entry-point: lowercase rule applies ─────────────────────────
-Declare({ name: 'launch', description: 'x', type: ApplicationCommandType.PrimaryEntryPoint, handler: EntryPointCommandHandlerType.AppHandler });
+Declare({
+	name: 'launch',
+	description: 'x',
+	type: ApplicationCommandType.PrimaryEntryPoint,
+	handler: EntryPointCommandHandlerType.AppHandler,
+});
 // @ts-expect-error uppercase entry-point name must be rejected
 Declare({ name: 'Launch', description: 'x', type: ApplicationCommandType.PrimaryEntryPoint, handler: EntryPointCommandHandlerType.AppHandler });

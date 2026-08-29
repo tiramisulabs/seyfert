@@ -11,6 +11,7 @@ import {
 } from '../../common';
 import type { DeepPartial, MakeDeepPartial } from '../../common/types/util';
 import {
+	GatewayCloseCodes,
 	GatewayDispatchEvents,
 	type GatewayDispatchPayload,
 	GatewayOpcodes,
@@ -28,10 +29,23 @@ import { type ShardData, type ShardManagerOptions, ShardSocketCloseCodes, type W
 let parentPort: import('node:worker_threads').MessagePort;
 let workerData: WorkerData;
 
+function isTerminalGatewayClose(code: number) {
+	return (
+		code === GatewayCloseCodes.AuthenticationFailed ||
+		code === GatewayCloseCodes.InvalidShard ||
+		code === GatewayCloseCodes.ShardingRequired ||
+		code === GatewayCloseCodes.InvalidAPIVersion ||
+		code === GatewayCloseCodes.InvalidIntents ||
+		code === GatewayCloseCodes.DisallowedIntents
+	);
+}
+
 export class ShardManager extends Map<number, Shard> {
 	connectQueue: ConnectQueue;
 	options: MakePresent<ShardManagerOptions, keyof typeof ShardManagerDefaults>;
 	debugger?: Logger;
+	private reshardingTimer?: NodeJS.Timeout;
+	private reshardingInProgress = false;
 
 	constructor(options: MakeDeepPartial<ShardManagerOptions, 'resharding'>) {
 		super();
@@ -117,6 +131,7 @@ export class ShardManager extends Map<number, Shard> {
 
 	async spawnShards(): Promise<void> {
 		const buckets = this.spawnBuckets();
+		const connections: Promise<unknown>[] = [];
 
 		this.debugger?.info('Spawning shards');
 		for (const bucket of buckets) {
@@ -125,9 +140,10 @@ export class ShardManager extends Map<number, Shard> {
 					break;
 				}
 				this.debugger?.info(`${shard.id} add to connect queue`);
-				this.connectQueue.push(shard.connect.bind(shard));
+				connections.push(this.connectQueue.push(shard.connect.bind(shard)));
 			}
 		}
+		await Promise.all(connections);
 		await this.startResharder();
 	}
 
@@ -135,75 +151,124 @@ export class ShardManager extends Map<number, Shard> {
 		if (this.options.resharding.interval <= 0) return;
 		if (this.shardStart !== 0 || this.shardEnd !== this.totalShards)
 			return this.debugger?.debug('Cannot start resharder');
+		if (this.reshardingTimer) return;
 
 		this.debugger?.debug('Resharder enabled');
-		setInterval(async () => {
-			this.debugger?.debug('Checking if reshard is needed');
-			const info = await this.options.resharding.getInfo();
-			if (info.shards <= this.totalShards) return this.debugger?.debug('Resharding not needed');
-			//https://github.com/discordeno/discordeno/blob/6a5f446c0651b9fad9f1550ff1857fe7a026426b/packages/gateway/src/manager.ts#L106C8-L106C94
-			const percentage = (info.shards / ((this.totalShards * 2500) / 1000)) * 100;
-			if (percentage < this.options.resharding.percentage)
-				return this.debugger?.debug(
-					`Percentage is not enough to reshard ${percentage}/${this.options.resharding.percentage}`,
-				);
+		this.reshardingTimer = setInterval(() => {
+			if (this.reshardingInProgress) return;
+			this.reshardingInProgress = true;
+			void (async () => {
+				this.debugger?.debug('Checking if reshard is needed');
+				const info = await this.options.resharding.getInfo();
+				if (info.shards <= this.totalShards) return this.debugger?.debug('Resharding not needed');
+				//https://github.com/discordeno/discordeno/blob/6a5f446c0651b9fad9f1550ff1857fe7a026426b/packages/gateway/src/manager.ts#L106C8-L106C94
+				const percentage = (info.shards / ((this.totalShards * 2500) / 1000)) * 100;
+				if (percentage < this.options.resharding.percentage)
+					return this.debugger?.debug(
+						`Percentage is not enough to reshard ${percentage}/${this.options.resharding.percentage}`,
+					);
 
-			this.debugger?.info('Starting resharding process');
+				this.debugger?.info('Starting resharding process');
 
-			this.connectQueue.concurrency = info.session_start_limit.max_concurrency;
-			this.options.info.session_start_limit.max_concurrency = info.session_start_limit.max_concurrency;
+				this.connectQueue.concurrency = info.session_start_limit.max_concurrency;
+				this.options.info.session_start_limit.max_concurrency = info.session_start_limit.max_concurrency;
 
-			//waiting for all shards to connect
-			let shardsConnected = 0;
+				//waiting for all shards to connect
+				let shardsConnected = 0;
+				let completeResharding!: () => void;
+				let rejectResharding!: (error: unknown) => void;
+				const reshardingComplete = new Promise<void>((resolve, reject) => {
+					completeResharding = resolve;
+					rejectResharding = reject;
+				});
 
-			let handlePayload = (sharder: ShardManager, _: number, packet: GatewayDispatchPayload) => {
-				if (packet.t !== GatewayDispatchEvents.GuildsReady) return;
-				if (++shardsConnected !== info.shards) return;
-				cleanProcess(sharder);
-				// dont listen more events when all shards are ready
-			};
-
-			const cleanProcess = (sharder: ShardManager) => {
-				handlePayload = () => {
-					//
+				let handlePayload = (sharder: ShardManager, _: number, packet: GatewayDispatchPayload) => {
+					if (packet.t !== GatewayDispatchEvents.GuildsReady) return;
+					if (++shardsConnected !== info.shards) return;
+					cleanProcess(sharder);
+					// dont listen more events when all shards are ready
 				};
-				this.disconnectAll(ShardSocketCloseCodes.Resharding);
-				this.clear();
 
-				this.options.totalShards = this.options.shardEnd = this.options.info.shards = info.shards;
-				for (const [id, shard] of sharder) {
-					shard.options.handlePayload = (shardId, packet) => {
-						return this.options.handlePayload(shardId, packet);
+				const cleanProcess = (sharder: ShardManager) => {
+					handlePayload = () => {
+						//
 					};
-					this.set(id, shard);
+					this.disconnectAll(ShardSocketCloseCodes.Resharding);
+					this.clear();
+
+					this.options.totalShards = this.options.shardEnd = this.options.info.shards = info.shards;
+					for (const [id, shard] of sharder) {
+						shard.options.handlePayload = (shardId, packet) => {
+							return this.options.handlePayload(shardId, packet);
+						};
+						shard.options.onShardDisconnect = this.options.onShardDisconnect;
+						this.set(id, shard);
+					}
+
+					sharder.clear();
+					completeResharding();
+				};
+
+				const options = MergeOptions<ShardManagerOptions>(this.options, {
+					totalShards: info.shards,
+					shardEnd: info.shards,
+				} satisfies DeepPartial<ShardManagerOptions>);
+				const failResharding = (data: { shardId: number; code: number; reason: string }) => {
+					if (!isTerminalGatewayClose(data.code)) return;
+					handlePayload = () => {
+						//
+					};
+					rejectResharding(
+						new SeyfertError('INTERNAL_ERROR', {
+							metadata: {
+								detail: `Replacement shard #${data.shardId} closed permanently (${data.code}): ${data.reason}`,
+							},
+						}),
+					);
+				};
+
+				const resharder = new ShardManager({
+					...options,
+					resharding: {
+						// getInfo mock, we don't need it
+						getInfo: () => ({}) as any,
+						interval: 0,
+						percentage: 0,
+					},
+					handlePayload: (shardId, packet): unknown => {
+						return handlePayload(resharder, shardId, packet);
+					},
+					onShardDisconnect: async data => {
+						failResharding(data);
+						await options.onShardDisconnect?.(data);
+					},
+				});
+
+				// share ratelimit
+				resharder.connectQueue = this.connectQueue;
+
+				try {
+					await resharder.spawnShards();
+					await reshardingComplete;
+				} catch (error) {
+					handlePayload = () => {
+						//
+					};
+					resharder.disconnectAll();
+					resharder.clear();
+					throw error;
 				}
-
-				sharder.clear();
-			};
-
-			const options = MergeOptions<ShardManagerOptions>(this.options, {
-				totalShards: info.shards,
-				shardEnd: info.shards,
-			} satisfies DeepPartial<ShardManagerOptions>);
-
-			const resharder = new ShardManager({
-				...options,
-				resharding: {
-					// getInfo mock, we don't need it
-					getInfo: () => ({}) as any,
-					interval: 0,
-					percentage: 0,
-				},
-				handlePayload: (shardId, packet): unknown => {
-					return handlePayload(resharder, shardId, packet);
-				},
-			});
-
-			// share ratelimit
-			resharder.connectQueue = this.connectQueue;
-
-			await resharder.spawnShards();
+			})()
+				.catch(error => this.debugger?.error('Resharding check failed', error))
+				.finally(() => {
+					this.reshardingInProgress = false;
+				});
 		}, this.options.resharding.interval);
+	}
+
+	stopResharding() {
+		clearInterval(this.reshardingTimer);
+		this.reshardingTimer = undefined;
 	}
 
 	/*
@@ -235,7 +300,14 @@ export class ShardManager extends Map<number, Shard> {
 
 	disconnectAll(code = ShardSocketCloseCodes.ShutdownAll) {
 		this.debugger?.info('Disconnect all shards');
-		this.forEach(shard => shard.disconnect(code));
+		if (code !== ShardSocketCloseCodes.Resharding) this.stopResharding();
+		this.forEach(shard => {
+			try {
+				shard.disconnect(code);
+			} catch (error) {
+				this.debugger?.error(`Failed to disconnect shard ${shard.id}`, error);
+			}
+		});
 	}
 
 	setShardPresence(shardId: number, payload: GatewayUpdatePresence['d']) {

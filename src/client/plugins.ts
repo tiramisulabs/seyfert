@@ -1,4 +1,5 @@
 import { MergeOptions } from '../common';
+import { isPlainObject } from '../common/it/utils';
 import type { Awaitable } from '../common/types/util';
 import type { GatewayDispatchPayload } from '../types';
 import type { BaseClient, BaseClientOptions, ContextScope, ContextScopeContext } from './base';
@@ -1016,10 +1017,4 @@ function collectPluginDefaultContributions(
 
 function isFunction(value: unknown): value is AnyFunction {
 	return typeof value === 'function';
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-	if (typeof value !== 'object' || value === null) return false;
-	const prototype = Object.getPrototypeOf(value);
-	return prototype === Object.prototype || prototype === null;
 }

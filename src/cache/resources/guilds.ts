@@ -7,7 +7,7 @@ import { BaseResource } from './default/base';
 export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispatchData> {
 	namespace = 'guild';
 
-	//@ts-expect-error
+	// @ts-expect-error Keep descriptive filter parameter names for adapter overrides despite noUnusedParameters.
 	filter(data: APIGuild, id: string, from: CacheFrom) {
 		return true;
 	}
@@ -60,8 +60,15 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 					relationship: this.cache.messages!.hashId(channelId),
 				})),
 			);
-			for (const { value } of messageEntries.filter(result => result.status === 'fulfilled')) {
-				const { keys, relationship } = value;
+			for (const [index, result] of messageEntries.entries()) {
+				if (result.status === 'rejected') {
+					this.client.logger.error(
+						`[Cache] Failed to enumerate messages for guild ${id} channel ${channelIds[index]}`,
+						result.reason,
+					);
+					continue;
+				}
+				const { keys, relationship } = result.value;
 				messageKeys.push(...keys);
 				messageRelationships.push(relationship);
 			}

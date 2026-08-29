@@ -17,15 +17,16 @@ describe('Discord REST rate limits', () => {
 		vi.useFakeTimers();
 		const now = 1_700_000_000_000;
 		vi.setSystemTime(now);
-		const fetchMock = vi.fn<typeof fetch>(async () =>
-			new Response('{}', {
-				headers: {
-					'content-type': 'application/json',
-					'x-ratelimit-limit': '1',
-					'x-ratelimit-remaining': '0',
-					'x-ratelimit-reset': String((now + 1_000) / 1_000),
-				},
-			}),
+		const fetchMock = vi.fn<typeof fetch>(
+			async () =>
+				new Response('{}', {
+					headers: {
+						'content-type': 'application/json',
+						'x-ratelimit-limit': '1',
+						'x-ratelimit-remaining': '0',
+						'x-ratelimit-reset': String((now + 1_000) / 1_000),
+					},
+				}),
 		);
 		vi.stubGlobal('fetch', fetchMock);
 		const api = createApi();
@@ -124,13 +125,14 @@ describe('Discord REST rate limits', () => {
 	])('retains the %s major parameter in learned buckets', async (_name, url, bucket) => {
 		vi.stubGlobal(
 			'fetch',
-			vi.fn<typeof fetch>(async () =>
-				new Response('{}', {
-					headers: {
-						'content-type': 'application/json',
-						'x-ratelimit-bucket': 'shared-hash',
-					},
-				}),
+			vi.fn<typeof fetch>(
+				async () =>
+					new Response('{}', {
+						headers: {
+							'content-type': 'application/json',
+							'x-ratelimit-bucket': 'shared-hash',
+						},
+					}),
 			),
 		);
 		const api = createApi();

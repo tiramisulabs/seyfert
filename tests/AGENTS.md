@@ -13,7 +13,7 @@ Use the closest existing test first.
 | --- | --- |
 | Root exports and declaration cycles | `root-export-contract.ts`, `public-entrypoint-cycles.test.mts` |
 | Client lifecycle, config, and collectors | `invalid-token.test.mts`, `config-load.test.mts`, `client-collectors.test.mts` |
-| Plugin authoring and extensions | `plugin-authoring-contract.ts`, `plugins.test.mts`, `plugin-api.test.mts`, `client-plugins.test.mts` |
+| Plugin authoring and extensions | `plugin-authoring-*-contract.ts`, `plugins.test.mts`, `plugin-api-*.test.mts`, `client-plugins.test.mts` |
 | Registry/client inference | `command-context-client-type.test.mts` and the compile-time contracts |
 | Command declarations/options/subcommands/locales | `command-declare-*`, `command-options-contract.ts`, `command-subcommands-limit.test.mts`, `command-locales.test.mts` |
 | Command/component/modal contexts | `command-context-modal.test.mts`, `component-*.test.mts`, `modal-context-update.test.mts`, `interaction-reply.test.mts` |
@@ -109,9 +109,9 @@ execution order. Gateway/custom-event collectors in `src/client/collectors.ts`
 and component collectors in `ComponentHandler` are separate systems; test the
 one owned by the changed path.
 
-The repository scripts `check`, `check-h`, `lint`, and `format` all use
-`--write`; they mutate source. Use the direct Biome command above when only a
-read-only check is intended.
+The repository script `check` is read-only. `check:write`, `check-h`, `lint`,
+and `format` use `--write` and mutate source. Use the direct Biome command above
+when a narrower read-only check is intended.
 
 ## Test code style
 

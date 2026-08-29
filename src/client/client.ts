@@ -26,7 +26,7 @@ import {
 import { MemberUpdateHandler } from '../websocket/discord/events/memberUpdate';
 import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdate';
 import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';
-import { BaseClient } from './base';
+import { BaseClient, clientInitialization, coalesceClientStart } from './base';
 import { Collectors } from './collectors';
 import type { GatewayIntentInput } from './intents';
 import {
@@ -147,54 +147,56 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 		}
 	}
 
-	async start(options: Omit<DeepPartial<StartOptions>, 'httpConnection'> = {}, execute = true) {
-		await super.start(options);
-		await this.loadEvents(options.eventsDir);
+	start(options: Omit<DeepPartial<StartOptions>, 'httpConnection'> = {}, execute = true) {
+		return this[coalesceClientStart](async () => {
+			await this[clientInitialization](options);
+			await this.loadEvents(options.eventsDir);
 
-		const { token: tokenRC, intents: intentsRC, debug: debugRC } = await this.getRC<InternalRuntimeConfig>();
-		const token = options?.token ?? tokenRC;
-		const connectionIntents = options?.connection?.intents as GatewayIntentInput | undefined;
-		const intents = this.resolvePluginGatewayIntents(connectionIntents ?? intentsRC);
+			const { token: tokenRC, intents: intentsRC, debug: debugRC } = await this.getRC<InternalRuntimeConfig>();
+			const token = options?.token ?? tokenRC;
+			const connectionIntents = options?.connection?.intents as GatewayIntentInput | undefined;
+			const intents = this.resolvePluginGatewayIntents(connectionIntents ?? intentsRC);
 
-		if (!this.gateway) {
-			if (typeof token !== 'string' || token.length === 0) {
-				throw new SeyfertError('INVALID_TOKEN', { metadata: { detail: 'token is not a string' } });
+			if (!this.gateway) {
+				if (typeof token !== 'string' || token.length === 0) {
+					throw new SeyfertError('INVALID_TOKEN', { metadata: { detail: 'token is not a string' } });
+				}
+				this.gateway = new ShardManager({
+					token,
+					info: await this.proxy.gateway.bot.get(),
+					intents,
+					handlePayload: async (shardId, packet) => {
+						await this.options?.handlePayload?.(shardId, packet);
+						return this.onPacket(shardId, packet);
+					},
+					handleSendPayload: (shardId, payload) =>
+						this.handleGatewaySendPayload(shardId, payload, this.options?.handleSendPayload),
+					onShardDisconnect: this.onShardDisconnect.bind(this),
+					onShardReconnect: this.onShardReconnect.bind(this),
+					presence: this.options?.presence,
+					debug: debugRC,
+					shardStart: this.options?.shards?.start,
+					shardEnd: this.options?.shards?.end ?? this.options?.shards?.total,
+					totalShards: this.options?.shards?.total ?? this.options?.shards?.end,
+					properties: {
+						...properties,
+						...this.options?.gateway?.properties,
+					},
+					compress: this.options?.gateway?.compress,
+					resharding: {
+						getInfo: this.options.resharding?.getInfo ?? (() => this.proxy.gateway.bot.get()),
+						interval: this.options?.resharding?.interval,
+						percentage: this.options?.resharding?.percentage,
+					},
+				});
 			}
-			this.gateway = new ShardManager({
-				token,
-				info: await this.proxy.gateway.bot.get(),
-				intents,
-				handlePayload: async (shardId, packet) => {
-					await this.options?.handlePayload?.(shardId, packet);
-					return this.onPacket(shardId, packet);
-				},
-				handleSendPayload: (shardId, payload) =>
-					this.handleGatewaySendPayload(shardId, payload, this.options?.handleSendPayload),
-				onShardDisconnect: this.onShardDisconnect.bind(this),
-				onShardReconnect: this.onShardReconnect.bind(this),
-				presence: this.options?.presence,
-				debug: debugRC,
-				shardStart: this.options?.shards?.start,
-				shardEnd: this.options?.shards?.end ?? this.options?.shards?.total,
-				totalShards: this.options?.shards?.total ?? this.options?.shards?.end,
-				properties: {
-					...properties,
-					...this.options?.gateway?.properties,
-				},
-				compress: this.options?.gateway?.compress,
-				resharding: {
-					getInfo: this.options.resharding?.getInfo ?? (() => this.proxy.gateway.bot.get()),
-					interval: this.options?.resharding?.interval,
-					percentage: this.options?.resharding?.percentage,
-				},
-			});
-		}
 
-		if (execute) {
-			await this.execute({ ...(options.connection ?? {}), intents });
-		} else {
-			await super.execute(options);
-		}
+			if (execute) {
+				await this.execute({ ...(options.connection ?? {}), intents });
+			} else {
+				await super.execute(options);
+			}
+		});
 	}
 
 	protected async onPacket(shardId: number, packet: GatewayDispatchPayload): Promise<GatewayDispatchPayload | null> {

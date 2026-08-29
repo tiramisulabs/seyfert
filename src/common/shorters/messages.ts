@@ -145,10 +145,13 @@ export class MessageShorter extends BaseShorter {
 			.then(data => data.users.map(user => Transformers.User(this.client, user)));
 	}
 
-	list(channelId: string, fetchOptions?: RESTGetAPIChannelMessagesQuery): Promise<MessageStructure[]> {
-		return this.client.proxy
-			.channels(channelId)
-			.messages.get({ query: fetchOptions })
-			.then(messages => messages.map(message => Transformers.Message(this.client, message)));
+	async list(channelId: string, fetchOptions?: RESTGetAPIChannelMessagesQuery): Promise<MessageStructure[]> {
+		const messages = await this.client.proxy.channels(channelId).messages.get({ query: fetchOptions });
+		await this.client.cache.messages?.patch(
+			CacheFrom.Rest,
+			messages.map(message => [message.id, message]),
+			channelId,
+		);
+		return messages.map(message => Transformers.Message(this.client, message));
 	}
 }

@@ -6,7 +6,7 @@ import { GuildBasedResource } from './default/guild-based';
 export class Members extends GuildBasedResource<any, APIGuildMember> {
 	namespace = 'member';
 
-	//@ts-expect-error
+	// @ts-expect-error Keep descriptive filter parameter names for adapter overrides despite noUnusedParameters.
 	filter(data: APIGuildMember, id: string, guild_id: string, from: CacheFrom) {
 		return true;
 	}

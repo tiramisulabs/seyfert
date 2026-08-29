@@ -33,6 +33,10 @@ import type { ModalBuilderComponents, ModalSubmitCallback } from './types';
 export class Modal {
 	/** @internal */
 	__exec?: ModalSubmitCallback;
+	/** @internal */
+	__originalCustomId?: string;
+	/** @internal */
+	__wireCustomId?: string;
 	components: ModalBuilderComponents[] = [];
 
 	/**
@@ -79,6 +83,8 @@ export class Modal {
 	 * @returns The current Modal instance.
 	 */
 	setCustomId(id: string): this {
+		this.__originalCustomId = undefined;
+		this.__wireCustomId = undefined;
 		this.data.custom_id = id;
 		return this;
 	}

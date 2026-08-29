@@ -95,6 +95,22 @@ export type ReplyInteractionBody =
 
 export type __InternalReplyFunction = (_: { body: APIInteractionResponse; files?: RawFile[] }) => Promise<any>;
 
+let modalNonce = 0n;
+
+function createModalWireCustomId(customId: string) {
+	const suffix = `:${Date.now().toString(36)}:${(modalNonce++).toString(36)}`;
+	return `${customId.slice(0, 100 - suffix.length)}${suffix}`;
+}
+
+function createModalWirePayload(modal: Modal, originalCustomId: string, wireCustomId: string) {
+	const payload = new Modal();
+	payload.__originalCustomId = originalCustomId;
+	payload.__wireCustomId = wireCustomId;
+	payload.data.custom_id = wireCustomId;
+	payload.toJSON = () => ({ ...modal.toJSON(), custom_id: wireCustomId });
+	return payload;
+}
+
 export interface BaseInteraction
 	extends ObjectToLower<
 		Omit<
@@ -113,6 +129,7 @@ export class BaseInteraction<
 	message?: MessageStructure;
 	replied?: boolean;
 	private _repliedPromise?: Promise<unknown>;
+	private _replyFailure?: { error: unknown };
 	deferred?: boolean;
 	appPermissions: PermissionsBitField;
 	entitlements: EntitlementStructure[];
@@ -143,6 +160,19 @@ export class BaseInteraction<
 		this.entitlements = interaction.entitlements.map(e => Transformers.Entitlement(this.client, e));
 	}
 
+	static extractBodyFiles(body: ReplyInteractionBody) {
+		if (
+			body.type !== InteractionResponseType.ChannelMessageWithSource &&
+			body.type !== InteractionResponseType.UpdateMessage
+		)
+			return { body, files: undefined };
+		const { files, ...data } = body.data as InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest;
+		return {
+			body: { ...body, data } as ReplyInteractionBody,
+			files,
+		};
+	}
+
 	static transformBodyRequest(
 		body: ReplyInteractionBody,
 		files: ResolverProps['files'],
@@ -155,12 +185,14 @@ export class BaseInteraction<
 				return body;
 			case InteractionResponseType.ChannelMessageWithSource:
 			case InteractionResponseType.UpdateMessage: {
-				//@ts-expect-error
 				return {
 					type: body.type,
-					// @ts-expect-error
-					data: BaseInteraction.transformBody(body.data ?? {}, files, self),
-				};
+					data: BaseInteraction.transformBody(
+						(body.data ?? {}) as InteractionCreateBodyRequest | InteractionMessageUpdateBodyRequest,
+						files,
+						self,
+					),
+				} as APIInteractionResponse;
 			}
 			case InteractionResponseType.Modal:
 				return {
@@ -238,27 +270,41 @@ export class BaseInteraction<
 
 	private async matchReplied(body: ReplyInteractionBody, withResponse = false) {
 		if (this.__reply) {
-			//@ts-expect-error
-			const { files, ...rest } = body.data ?? {};
-			//@ts-expect-error
-			const data = body.data instanceof Modal ? body.data : rest;
+			const { body: bodyWithoutFiles, files } = BaseInteraction.extractBodyFiles(body);
 			const parsedFiles = files ? await resolveFiles(files) : undefined;
 			const repliedPromise = this.__reply({
-				body: BaseInteraction.transformBodyRequest({ data, type: body.type }, files, this.client),
+				body: BaseInteraction.transformBodyRequest(bodyWithoutFiles, files, this.client),
 				files: parsedFiles,
-			}).then(() => {
-				this.replied = true;
-				this._repliedPromise = undefined;
-			});
+			})
+				.then(() => {
+					this.replied = true;
+				})
+				.catch(error => {
+					this._replyFailure = { error };
+					this.deferred = undefined;
+					throw error;
+				})
+				.finally(() => {
+					this._repliedPromise = undefined;
+				});
 			this._repliedPromise = repliedPromise;
 			await repliedPromise;
 			return;
 		}
-		const repliedPromise = this.client.interactions.reply(this.id, this.token, body, withResponse).then(result => {
-			this.replied = true;
-			this._repliedPromise = undefined;
-			return result;
-		});
+		const repliedPromise = this.client.interactions
+			.reply(this.id, this.token, body, withResponse)
+			.then(result => {
+				this.replied = true;
+				return result;
+			})
+			.catch(error => {
+				this._replyFailure = { error };
+				this.deferred = undefined;
+				throw error;
+			})
+			.finally(() => {
+				this._repliedPromise = undefined;
+			});
 		this._repliedPromise = repliedPromise;
 		const result = await repliedPromise;
 		return result?.resource?.message
@@ -267,6 +313,7 @@ export class BaseInteraction<
 	}
 
 	protected async hasRepliedOrAwaitPendingReply() {
+		if (this._replyFailure) throw this._replyFailure.error;
 		const repliedPromise = this._repliedPromise;
 		if (!this.replied && !repliedPromise) return false;
 		if (repliedPromise) await repliedPromise;
@@ -277,24 +324,29 @@ export class BaseInteraction<
 		body: ReplyInteractionBody,
 		withResponse?: WR,
 	): Promise<When<WR, WebhookMessageStructure, undefined>> {
+		if (this._replyFailure) throw this._replyFailure.error;
 		if (this.replied || this._repliedPromise) {
 			throw new SeyfertError('INTERACTION_ALREADY_REPLIED', { metadata: { detail: 'Interaction already replied' } });
 		}
-		const result = await this.matchReplied(body, withResponse);
-		// @ts-expect-error
-		if (body.data instanceof Modal) {
-			// @ts-expect-error
-			if (body.data.__exec) this.client.components.modals.set(this.user.id, (body.data as Modal).__exec);
-			else if (this.client.components.modals.has(this.user.id)) this.client.components.modals.delete(this.user.id);
+		if (body.type === InteractionResponseType.DeferredChannelMessageWithSource) this.deferred = true;
+		const modal = 'data' in body && body.data instanceof Modal ? body.data : undefined;
+		const wireCustomId = modal?.__wireCustomId;
+		const originalCustomId = modal?.__originalCustomId;
+		if (wireCustomId && originalCustomId) {
+			this.client.components.registerModal(wireCustomId, originalCustomId, modal.__exec);
 		}
-		return result as never;
+		try {
+			return (await this.matchReplied(body, withResponse)) as never;
+		} catch (error) {
+			if (wireCustomId && originalCustomId) this.client.components.deleteModal(wireCustomId);
+			throw error;
+		}
 	}
 
 	deferReply<WR extends boolean = false>(
 		flags?: MessageFlags,
 		withResponse?: WR,
 	): Promise<When<WR, WebhookMessageStructure, undefined>> {
-		this.deferred = true;
 		return this.reply(
 			{
 				type: InteractionResponseType.DeferredChannelMessageWithSource,
@@ -525,33 +577,59 @@ export class Interaction<
 	modal(body: ModalCreateBodyRequest, options?: undefined): Promise<undefined>;
 	modal(body: ModalCreateBodyRequest, options: ModalCreateOptions): Promise<ModalSubmitInteraction | null>;
 	async modal(body: ModalCreateBodyRequest, options?: ModalCreateOptions | undefined) {
-		if (options !== undefined && !(body instanceof Modal)) {
-			body = new Modal(body);
-		}
-
-		if (options === undefined)
+		const modal = body instanceof Modal ? body : new Modal(body);
+		const originalCustomId = modal.__originalCustomId ?? modal.data.custom_id;
+		if (!originalCustomId) {
 			return this.reply({
 				type: InteractionResponseType.Modal,
-				data: body,
+				data: modal,
 			});
+		}
+		const originalCallback = modal.__exec;
+		const needsCallback = options !== undefined || originalCallback !== undefined;
+		if (!needsCallback) {
+			return this.reply({
+				type: InteractionResponseType.Modal,
+				data: modal,
+			});
+		}
+		const wireCustomId = createModalWireCustomId(originalCustomId);
+		const payload = createModalWirePayload(modal, originalCustomId, wireCustomId);
 
+		if (options === undefined) {
+			payload.__exec = originalCallback;
+			return this.reply({
+				type: InteractionResponseType.Modal,
+				data: payload,
+			});
+		}
+
+		let nodeTimeout: NodeJS.Timeout | undefined;
 		const promise = new Promise<ModalSubmitInteraction | null>(res => {
-			let nodeTimeout: NodeJS.Timeout | undefined;
-			// body is always a modal here, so we can safely cast it
-			(body as Modal).__exec = (interaction: ModalSubmitInteraction) => {
+			let settled = false;
+			const settle = (interaction: ModalSubmitInteraction | null) => {
+				if (settled) return;
+				settled = true;
 				res(interaction);
 				clearTimeout(nodeTimeout);
 			};
+			payload.__exec = interaction => settle(interaction);
 			if (options?.waitFor && options?.waitFor > 0) {
 				nodeTimeout = setTimeout(() => {
-					res(null);
+					this.client.components.deleteModalCallback(wireCustomId);
+					settle(null);
 				}, options.waitFor);
 			}
 		});
-		await this.reply({
-			type: InteractionResponseType.Modal,
-			data: body,
-		});
+		try {
+			await this.reply({
+				type: InteractionResponseType.Modal,
+				data: payload,
+			});
+		} catch (error) {
+			clearTimeout(nodeTimeout);
+			throw error;
+		}
 		return promise;
 	}
 

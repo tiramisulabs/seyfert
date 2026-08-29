@@ -1,9 +1,4 @@
-import {
-	ComponentType,
-	FileUpload,
-	type APIFileUploadComponent,
-	type FileUploadType,
-} from 'seyfert';
+import { type APIFileUploadComponent, ComponentType, FileUpload, type FileUploadType } from 'seyfert';
 
 declare function expectType<T>(value: T): void;
 

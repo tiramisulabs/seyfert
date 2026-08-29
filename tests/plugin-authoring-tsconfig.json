@@ -1,25 +1,22 @@
 {
 	"compilerOptions": {
-		"lib": [
-			"ESNext"
-		],
+		"lib": ["ESNext"],
 		"module": "CommonJS",
 		"moduleResolution": "bundler",
 		"noEmit": true,
 		"paths": {
-			"seyfert": [
-				"../lib/index.d.ts"
-			]
+			"seyfert": ["../lib/index.d.ts"]
 		},
 		"skipLibCheck": true,
 		"strict": true,
 		"target": "ESNext",
-		"types": [
-			"node"
-		]
+		"types": ["node"]
 	},
 	"files": [
-		"./plugin-authoring-contract.ts",
+		"./plugin-authoring-foundations-contract.ts",
+		"./plugin-authoring-client-contract.ts",
+		"./plugin-authoring-commands-contract.ts",
+		"./plugin-authoring-api-contract.ts",
 		"./root-export-contract.ts",
 		"./command-options-contract.ts"
 	]

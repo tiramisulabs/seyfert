@@ -6,6 +6,7 @@ import {
 	type VoiceStateStructure,
 } from '../../client/transformers';
 import { PermissionsBitField } from '../../structures/extra/Permissions';
+import type { GuildMember } from '../../structures/GuildMember';
 import { GuildRole } from '../../structures/GuildRole';
 import {
 	type APIGuildMember,
@@ -279,8 +280,10 @@ export class MemberShorter extends BaseShorter {
 	 * @returns The time left until the timeout expires, in milliseconds, or false if the member does not have a timeout.
 	 */
 	hasTimeout(member: Exclude<GuildMemberResolvable, string>): false | number {
-		// @ts-expect-error
-		const timeout = member.communication_disabled_until ?? member.communicationDisabledUntil;
+		const timeout =
+			'communication_disabled_until' in member
+				? member.communication_disabled_until
+				: (member as Partial<GuildMember>).communicationDisabledUntil;
 
 		if (!timeout) return false;
 

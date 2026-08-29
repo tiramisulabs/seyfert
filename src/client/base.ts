@@ -123,6 +123,11 @@ import type { MessageStructure } from './transformers';
 export type ContextScopeContext = BaseContext & ExtendContext;
 export type ContextScope = <T>(context: ContextScopeContext, run: () => Awaitable<T>) => Awaitable<T>;
 
+/** @internal */
+export const clientInitialization = Symbol('clientInitialization');
+/** @internal */
+export const coalesceClientStart = Symbol('coalesceClientStart');
+
 const pluginSourceKey = '__seyfertPluginSource';
 type PluginSourced = {
 	[pluginSourceKey]?: string;
@@ -199,6 +204,7 @@ export class BaseClient {
 	readonly pluginRegistry: PluginRuntimeRegistry;
 	private pluginsSetupPromise?: Promise<void>;
 	private pluginsClosePromise?: Promise<void>;
+	private startOperation?: Promise<void>;
 	private langBaseValues: Partial<Record<string, any>> = {};
 	private pluginCacheDisabledCache: DisabledCache = {};
 	private pluginBaseGatewayIntents = this.cache.intents;
@@ -371,7 +377,18 @@ export class BaseClient {
 		}
 	}
 
-	async start(
+	/** @internal */
+	protected [coalesceClientStart](start: () => Promise<void>): Promise<void> {
+		if (this.startOperation) return this.startOperation;
+		const operation = start().finally(() => {
+			if (this.startOperation === operation) this.startOperation = undefined;
+		});
+		this.startOperation = operation;
+		return operation;
+	}
+
+	/** @internal */
+	protected async [clientInitialization](
 		options: Pick<
 			DeepPartial<StartOptions>,
 			'langsDir' | 'commandsDir' | 'connection' | 'token' | 'componentsDir'
@@ -410,6 +427,15 @@ export class BaseClient {
 			this.pluginComponentsBeforeLoadDepth--;
 		}
 		await this.reloadPluginComponents();
+	}
+
+	start(
+		options: Pick<
+			DeepPartial<StartOptions>,
+			'langsDir' | 'commandsDir' | 'connection' | 'token' | 'componentsDir'
+		> = {},
+	) {
+		return this[coalesceClientStart](() => this[clientInitialization](options));
 	}
 
 	async reloadPluginContributions() {
