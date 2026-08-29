@@ -362,10 +362,7 @@ export class HandleCommand {
 					const interaction = BaseInteraction.from(this.client, body, __reply) as ModalSubmitInteraction;
 					if (this.client.components.hasModal(interaction)) {
 						await this.client.components.onModalSubmit(interaction);
-					} else {
-						this.client.components.restoreModalCustomId(interaction);
-						await this.modal(interaction);
-					}
+					} else await this.modal(interaction);
 				}
 				break;
 			case InteractionType.MessageComponent:

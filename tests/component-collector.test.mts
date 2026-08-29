@@ -170,32 +170,89 @@ describe('component collectors', () => {
 		expect(persistent).toHaveBeenCalledTimes(1);
 	});
 
-	test('routes simultaneous modal callbacks by wire custom id instead of user id', async () => {
+	test('routes simultaneous modal callbacks by user and custom id', async () => {
 		const handler = createHandler();
 		const firstCallback = vi.fn();
 		const secondCallback = vi.fn();
-		const firstInteraction = createModalInteraction('profile:first');
-		const secondInteraction = createModalInteraction('profile:second');
-		handler.registerModal('profile:first', 'profile', firstCallback);
-		handler.registerModal('profile:second', 'profile', secondCallback);
+		const firstInteraction = createModalInteraction('profile');
+		const secondInteraction = createModalInteraction('settings');
+		handler.registerModal('same-user', 'profile', firstCallback);
+		handler.registerModal('same-user', 'settings', secondCallback);
 
 		handler.onModalSubmit(secondInteraction);
 		handler.onModalSubmit(firstInteraction);
 
-		expect(firstCallback).toHaveBeenCalledWith(expect.objectContaining({ customId: 'profile' }));
-		expect(secondCallback).toHaveBeenCalledWith(expect.objectContaining({ customId: 'profile' }));
+		expect(firstCallback).toHaveBeenCalledWith(firstInteraction);
+		expect(secondCallback).toHaveBeenCalledWith(secondInteraction);
 	});
 
-	test('retains a timed-out modal alias for ModalCommand fallback', () => {
+	test('leaves the custom id unchanged when a timed-out modal falls through', () => {
 		const handler = createHandler();
-		const interaction = createModalInteraction('profile:late', 'user');
-		handler.registerModal('profile:late', 'profile', vi.fn());
-		handler.deleteModalCallback('profile:late');
+		const interaction = createModalInteraction('profile', 'user');
+		handler.registerModal('user', 'profile', vi.fn());
+		handler.deleteModalCallback('user', 'profile');
 
 		expect(handler.hasModal(interaction)).toBe(false);
-		handler.restoreModalCustomId(interaction);
-
 		expect(interaction.customId).toBe('profile');
+	});
+
+	test('keeps public modal registry mutations authoritative', async () => {
+		const handler = createHandler();
+		const deleted = vi.fn();
+		const cleared = vi.fn();
+		handler.registerModal('first-user', 'profile', deleted, () => deleted(null));
+		handler.registerModal('second-user', 'settings', cleared, () => cleared(null));
+
+		handler.modals.delete('first-user');
+		expect(handler.hasModal(createModalInteraction('profile', 'first-user'))).toBe(false);
+		expect(deleted).toHaveBeenCalledWith(null);
+
+		handler.modals.clear();
+		expect(handler.hasModal(createModalInteraction('settings', 'second-user'))).toBe(false);
+		expect(cleared).toHaveBeenCalledWith(null);
+	});
+
+	test('routes callbacks registered directly through the public modal registry', () => {
+		const handler = createHandler();
+		const callback = vi.fn();
+		const interaction = createModalInteraction('legacy', 'user');
+		handler.modals.set('user', callback);
+
+		expect(handler.hasModal(interaction)).toBe(true);
+		handler.onModalSubmit(interaction);
+
+		expect(callback).toHaveBeenCalledWith(interaction);
+		expect(handler.modals.has('user')).toBe(false);
+	});
+
+	test('keeps a managed callback routable when reinserted through the public registry', () => {
+		const handler = createHandler();
+		const callback = vi.fn();
+		const interaction = createModalInteraction('profile', 'user');
+		handler.registerModal('user', 'profile', callback);
+		const registered = handler.modals.get('user')!;
+
+		handler.modals.set('user', registered);
+
+		expect(handler.hasModal(interaction)).toBe(true);
+		handler.onModalSubmit(interaction);
+		expect(callback).toHaveBeenCalledWith(interaction);
+	});
+
+	test('copies a managed callback without weakening its original correlation', () => {
+		const handler = createHandler();
+		const callback = vi.fn();
+		handler.registerModal('first-user', 'profile', callback);
+		const registered = handler.modals.get('first-user')!;
+		handler.modals.set('second-user', registered);
+
+		expect(handler.hasModal(createModalInteraction('settings', 'first-user'))).toBe(false);
+		const copiedSubmit = createModalInteraction('anything', 'second-user');
+		expect(handler.hasModal(copiedSubmit)).toBe(true);
+		handler.onModalSubmit(copiedSubmit);
+
+		expect(callback).toHaveBeenCalledWith(copiedSubmit);
+		expect(handler.hasModal(createModalInteraction('profile', 'first-user'))).toBe(true);
 	});
 
 	test.each(['g', 'y'])('matches stateful regular expressions with the %s flag repeatedly', async flag => {

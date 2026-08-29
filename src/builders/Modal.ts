@@ -34,9 +34,9 @@ export class Modal {
 	/** @internal */
 	__exec?: ModalSubmitCallback;
 	/** @internal */
-	__originalCustomId?: string;
+	__close?: () => void;
 	/** @internal */
-	__wireCustomId?: string;
+	__isolated?: boolean;
 	components: ModalBuilderComponents[] = [];
 
 	/**
@@ -83,8 +83,6 @@ export class Modal {
 	 * @returns The current Modal instance.
 	 */
 	setCustomId(id: string): this {
-		this.__originalCustomId = undefined;
-		this.__wireCustomId = undefined;
 		this.data.custom_id = id;
 		return this;
 	}

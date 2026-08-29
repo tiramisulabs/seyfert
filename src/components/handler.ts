@@ -31,6 +31,12 @@ type PluginComponentLoadOptionsProvider = {
 type ComponentSetTransformer = (component: ComponentCommands) => ComponentCommands | false | void;
 
 type UserMatches = string | string[] | RegExp;
+type RegisteredModalCallback = {
+	callback: ModalSubmitCallback;
+	close?: () => void;
+	registered: ModalSubmitCallback;
+	userId: string;
+};
 type COMPONENTS = {
 	components: { match: MatchCallback; callback: ComponentCallback; close?: () => void }[];
 	options?: ListenerOptions;
@@ -42,6 +48,52 @@ type COMPONENTS = {
 	onError?: ComponentOnErrorCallback;
 	__run: (customId: UserMatches, callback: ComponentCallback) => any;
 };
+
+class ModalCallbackCollection extends LimitedCollection<string, ModalSubmitCallback> {
+	private internalMutation = false;
+
+	constructor(
+		private readonly onExternalSet: (userId: string, callback: ModalSubmitCallback, customExpire?: number) => void,
+		private readonly onExternalDelete: (userId: string) => void,
+		private readonly onExternalClear: () => void,
+	) {
+		super({
+			expire: 60e3 * 10,
+			onDelete: userId => {
+				if (!this.internalMutation) this.onExternalDelete(userId);
+			},
+		});
+	}
+
+	override set(userId: string, callback: ModalSubmitCallback, customExpire?: number) {
+		if (!this.internalMutation) this.onExternalSet(userId, callback, customExpire);
+		return super.set(userId, callback, customExpire);
+	}
+
+	override clear() {
+		const notify = !this.internalMutation;
+		super.clear();
+		if (notify) this.onExternalClear();
+	}
+
+	setManaged(userId: string, callback: ModalSubmitCallback) {
+		this.internalMutation = true;
+		try {
+			this.set(userId, callback);
+		} finally {
+			this.internalMutation = false;
+		}
+	}
+
+	deleteManaged(userId: string) {
+		this.internalMutation = true;
+		try {
+			return this.delete(userId);
+		} finally {
+			this.internalMutation = false;
+		}
+	}
+}
 
 export type MatchCallback = (str: string) => boolean;
 export type CollectorInteraction = ComponentInteraction | StringSelectMenuInteraction;
@@ -63,8 +115,13 @@ export class ComponentHandler extends BaseHandler {
 	onFail: OnFailCallback = err => this.logger.warn('<Client>.components.onFail', err);
 	readonly values = new Map<string, COMPONENTS>();
 	// 10 minutes of timeout by default, because discord doesnt send an event when the user cancels the modal
-	readonly modals = new LimitedCollection<string, ModalSubmitCallback>({ expire: 60e3 * 10 });
-	readonly modalAliases = new LimitedCollection<string, string>({ expire: 60e3 * 10 });
+	private readonly modalCallbacks = new LimitedCollection<string, RegisteredModalCallback>({ expire: 60e3 * 10 });
+	private readonly modalRegistry = new ModalCallbackCollection(
+		(userId, callback, customExpire) => this.setExternalModalCallback(userId, callback, customExpire),
+		userId => this.deleteModalCallbacksForUser(userId),
+		() => this.clearModalCallbacks(),
+	);
+	readonly modals: LimitedCollection<string, ModalSubmitCallback> = this.modalRegistry;
 	readonly commands: ComponentCommands[] = [];
 	filter = (path: string) => path.endsWith('.js') || (!path.endsWith('.d.ts') && path.endsWith('.ts'));
 
@@ -221,36 +278,87 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	hasModal(interaction: ModalSubmitInteraction) {
-		return this.modals.has(interaction.customId);
+		if (this.modalCallbacks.has(this.modalKey(interaction.user.id, interaction.customId))) return true;
+		const callback = this.modals.get(interaction.user.id);
+		const managed = callback ? this.findManagedModalCallback(callback) : undefined;
+		return !!callback && managed?.userId !== interaction.user.id;
 	}
 
 	onModalSubmit(interaction: ModalSubmitInteraction) {
-		const wireCustomId = interaction.customId;
-		const callback = this.modals.get(wireCustomId);
-		this.modals.delete(wireCustomId);
-		this.restoreModalCustomId(interaction);
-		return callback?.(interaction);
+		const callback = this.modalCallbacks.get(this.modalKey(interaction.user.id, interaction.customId));
+		if (callback) return callback.registered(interaction);
+		const legacyCallback = this.modals.get(interaction.user.id);
+		if (!legacyCallback) return;
+		const managed = this.findManagedModalCallback(legacyCallback);
+		if (managed?.userId === interaction.user.id) return;
+		this.modals.delete(interaction.user.id);
+		return (managed?.callback ?? legacyCallback)(interaction);
 	}
 
-	registerModal(wireCustomId: string, originalCustomId: string, callback?: ModalSubmitCallback) {
-		this.modalAliases.set(wireCustomId, originalCustomId);
-		if (callback) this.modals.set(wireCustomId, callback);
+	registerModal(userId: string, customId: string, callback?: ModalSubmitCallback, close?: () => void) {
+		const key = this.modalKey(userId, customId);
+		const previous = this.modalCallbacks.get(key);
+		if (previous) {
+			this.deleteModalCallback(userId, customId, previous.registered);
+			previous.close?.();
+		}
+		if (!callback) return;
+		const registeredCallback: ModalSubmitCallback = interaction => {
+			this.deleteModalCallback(userId, customId, registeredCallback);
+			return callback(interaction);
+		};
+		this.modalCallbacks.set(key, { callback, close, registered: registeredCallback, userId });
+		this.modalRegistry.setManaged(userId, registeredCallback);
 	}
 
-	deleteModalCallback(wireCustomId: string) {
-		this.modals.delete(wireCustomId);
+	deleteModalCallback(userId: string, customId: string, expected?: ModalSubmitCallback) {
+		const key = this.modalKey(userId, customId);
+		const entry = this.modalCallbacks.get(key);
+		if (expected && entry?.callback !== expected && entry?.registered !== expected) return;
+		this.modalCallbacks.delete(key);
+		if (entry && this.modals.get(userId) === entry.registered) {
+			this.modalRegistry.deleteManaged(userId);
+			this.promoteModalCallback(userId);
+		}
 	}
 
-	deleteModal(wireCustomId: string) {
-		this.modals.delete(wireCustomId);
-		this.modalAliases.delete(wireCustomId);
+	private modalKey(userId: string, customId: string) {
+		return `${userId}:${customId}`;
 	}
 
-	restoreModalCustomId(interaction: ModalSubmitInteraction) {
-		const originalCustomId = this.modalAliases.get(interaction.customId);
-		if (!originalCustomId) return;
-		this.modalAliases.delete(interaction.customId);
-		interaction.data.customId = originalCustomId;
+	private deleteModalCallbacksForUser(userId: string) {
+		for (const [key, entry] of [...this.modalCallbacks]) {
+			if (entry.userId !== userId) continue;
+			this.modalCallbacks.delete(key);
+			entry.close?.();
+		}
+	}
+
+	private setExternalModalCallback(userId: string, callback: ModalSubmitCallback, customExpire?: number) {
+		const managed = [...this.modalCallbacks].find(([, registered]) => registered.registered === callback);
+		if (managed?.[1].userId === userId) {
+			this.modalCallbacks.set(managed[0], managed[1], customExpire);
+			return;
+		}
+		this.deleteModalCallbacksForUser(userId);
+	}
+
+	private findManagedModalCallback(callback: ModalSubmitCallback) {
+		return [...this.modalCallbacks.values()].find(registered => registered.registered === callback);
+	}
+
+	private clearModalCallbacks() {
+		const entries = [...this.modalCallbacks.values()];
+		this.modalCallbacks.clear();
+		for (const entry of entries) entry.close?.();
+	}
+
+	private promoteModalCallback(userId: string) {
+		for (const entry of [...this.modalCallbacks.values()].reverse()) {
+			if (entry.userId !== userId) continue;
+			this.modalRegistry.setManaged(userId, entry.registered);
+			break;
+		}
 	}
 
 	deleteValue(id: string, reason?: string) {
