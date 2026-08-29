@@ -27,7 +27,6 @@ import type {
 	PluginGatewaySendPayloadWrapper,
 	PluginHandlerCreator,
 	PluginHandlerKind,
-	PluginHandlerTransformer,
 	PluginIntentResolvable,
 	PluginLifecycleStatus,
 	PluginModalLoadable,
@@ -258,7 +257,7 @@ export interface PluginHandlerCreatorContribution extends PluginOrderedContribut
 
 export interface PluginHandlerTransformerContribution extends PluginOrderedContribution {
 	record: PluginRuntimeRecord;
-	transformer: PluginHandlerTransformer;
+	transformer: (...args: never[]) => unknown;
 	scope: PluginEventContributionScope;
 	kinds?: readonly PluginHandlerKind[];
 }
