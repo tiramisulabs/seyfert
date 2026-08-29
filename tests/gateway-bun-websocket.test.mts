@@ -2,7 +2,7 @@ import { describe, expect, test, vi } from 'vitest';
 import { GatewayOpcodes, type GatewaySendPayload } from '../src/types';
 import { BaseSocket } from '../src/websocket/discord/basesocket';
 import { Shard } from '../src/websocket/discord/shard';
-import { ShardSocketCloseCodes, type ShardOptions } from '../src/websocket/discord/shared';
+import { type ShardOptions, ShardSocketCloseCodes } from '../src/websocket/discord/shared';
 
 type BunServerWebSocket = {
 	send(data: string): number;
