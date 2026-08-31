@@ -1,0 +1,136 @@
+name: Format pull requests
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/format.yml'
+      - 'biome.json'
+      - 'commitlint.config.js'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'src/**'
+      - 'tests/**'
+      - 'tsconfig.json'
+
+permissions: {}
+
+jobs:
+  format:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.stage.outputs.changed }}
+      head_sha: ${{ steps.stage.outputs.head_sha }}
+      patch: ${{ steps.stage.outputs.patch }}
+
+    steps:
+      - name: Check out pull request branch
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          persist-credentials: false
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify clean tree after install
+        run: |
+          if test -n "$(git status --porcelain --untracked-files=all)"; then
+            git status --short
+            exit 1
+          fi
+
+      - name: Apply Biome fixes
+        run: pnpm run check:write
+
+      - name: Stage formatter-owned files
+        id: stage
+        run: |
+          git reset
+          git add -- src tests package.json tsconfig.json biome.json commitlint.config.js
+          if ! git diff --quiet --; then
+            echo 'Biome changed files outside its owned paths:'
+            git diff --name-only --
+            exit 1
+          fi
+          if test -n "$(git ls-files --others --exclude-standard)"; then
+            echo 'Biome created untracked files outside its owned paths:'
+            git ls-files --others --exclude-standard
+            exit 1
+          fi
+          echo "head_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if git diff --cached --quiet; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+            formatter_patch="$(git diff --cached --binary | gzip -9 | base64 -w 0)"
+            if test "${#formatter_patch}" -gt 100000; then
+              echo 'Compressed formatter patch exceeds the safe job-output limit.'
+              exit 1
+            fi
+            echo "patch=$formatter_patch" >> "$GITHUB_OUTPUT"
+          fi
+
+  commit:
+    needs: format
+    if: needs.format.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Prepare formatted commit
+        run: |
+          git clone --no-tags --single-branch --branch "$PR_HEAD_REF" "https://github.com/${GITHUB_REPOSITORY}.git" repository
+          cd repository
+          test "$(git rev-parse HEAD)" = "$FORMATTED_HEAD_SHA"
+          printf '%s' "$FORMATTER_PATCH" | base64 -d | gzip -d > "$RUNNER_TEMP/formatter.patch"
+          git apply "$RUNNER_TEMP/formatter.patch"
+          git add -- src tests package.json tsconfig.json biome.json commitlint.config.js
+          if ! git diff --quiet -- || test -n "$(git ls-files --others --exclude-standard)"; then
+            echo 'Formatter patch contains files outside its owned paths.'
+            git status --short
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m "chore: apply formatting"
+        env:
+          FORMATTED_HEAD_SHA: ${{ needs.format.outputs.head_sha }}
+          FORMATTER_PATCH: ${{ needs.format.outputs.patch }}
+          HUSKY: 0
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+
+      - name: Push formatted head
+        working-directory: repository
+        run: |
+          gh auth setup-git
+          git push origin "HEAD:${PR_HEAD_REF}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+
+  dispatch:
+    needs: commit
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+
+    steps:
+      - name: Run checks for formatted head
+        run: gh workflow run check.yml --repo "$GITHUB_REPOSITORY" --ref "$PR_HEAD_REF"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
