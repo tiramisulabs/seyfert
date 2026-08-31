@@ -1,4 +1,4 @@
-import { assert, describe, expect, test } from 'vitest';
+import { assert, describe, expect, test, vi } from 'vitest';
 import { BaseResource } from '../src/cache/resources/default/base';
 import { Cache, CacheFrom, Client, LimitedMemoryAdapter, MemoryAdapter } from '../src/index';
 import type { APIUser } from '../src/index';
@@ -48,6 +48,59 @@ describe('test memory cache adapter', () => {
 		expect(primitiveAdapter.get('user.false')).toBe(false);
 		expect(primitiveAdapter.get('user.empty')).toBe('');
 		expect(primitiveAdapter.values('user')).toEqual([0, false, '']);
+	});
+
+	test('derives identical adapter mutations for bulk set and patch operations', async () => {
+		const adapter = new MemoryAdapter();
+		const client: any = {};
+		const cache = new Cache(0, adapter, {}, client);
+		client.cache = cache;
+		const makeEntries = (): Parameters<Cache['bulkSet']>[0] => [
+			[
+				CacheFrom.Test,
+				'users',
+				{ id: 'user-1', username: 'user', discriminator: '0', avatar: null },
+				'user-1',
+			],
+			[
+				CacheFrom.Test,
+				'members',
+				{
+					user: { id: 'user-1', username: 'user', discriminator: '0', avatar: null },
+					roles: [],
+					joined_at: '2024-01-01T00:00:00.000Z',
+					deaf: false,
+					mute: false,
+					flags: 0,
+				},
+				'user-1',
+				'guild-1',
+			],
+			[
+				CacheFrom.Test,
+				'messages',
+				{
+					id: 'message-1',
+					channel_id: 'channel-1',
+					author: { id: 'user-1', username: 'user', discriminator: '0', avatar: null },
+				},
+				'message-1',
+				'channel-1',
+			],
+		];
+		const relationships = vi.spyOn(adapter, 'bulkAddToRelationShip');
+		const bulkSet = vi.spyOn(adapter, 'bulkSet');
+		const bulkPatch = vi.spyOn(adapter, 'bulkPatch');
+
+		await cache.bulkSet(makeEntries());
+		const expectedRelationships = structuredClone(relationships.mock.calls[0]![0]);
+		const expectedData = structuredClone(bulkSet.mock.calls[0]![0]);
+		relationships.mockClear();
+
+		await cache.bulkPatch(makeEntries());
+
+		expect(relationships).toHaveBeenCalledExactlyOnceWith(expectedRelationships);
+		expect(bulkPatch).toHaveBeenCalledExactlyOnceWith(expectedData);
 	});
 });
 
