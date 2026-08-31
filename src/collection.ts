@@ -211,9 +211,13 @@ type LimitedCollectionExpiration = { expire: number; expireOn: number };
 type LimitedCollectionCloser<K> = LimitedCollectionExpiration & { key: K };
 
 function validateLimitedCollectionExpiration(expire: number) {
-	if (!Number.isFinite(expire)) throw new TypeError('LimitedCollection expiration must be finite');
-	if (expire > 2_147_483_647)
+	if (Number.isNaN(expire)) throw new TypeError('LimitedCollection expiration cannot be NaN');
+	if (Number.isFinite(expire) && expire > 2_147_483_647)
 		throw new RangeError('LimitedCollection expiration cannot exceed the maximum timer delay');
+}
+
+function isSameLimitedCollectionKey<K>(left: K, right: K) {
+	return left === right || Object.is(left, right);
 }
 
 export interface LimitedCollectionOptions<K, V> {
@@ -273,31 +277,31 @@ export class LimitedCollection<K, V> {
 	 * console.log(collection.get(1)); // Output: undefined
 	 */
 	set(key: K, value: V, customExpire = this.options.expire) {
-		validateLimitedCollectionExpiration(customExpire);
 		if (this.options.limit <= 0) {
 			return;
 		}
+		validateLimitedCollectionExpiration(customExpire);
 
 		const previousExpiration = this.expirations.get(key);
-		const replacedCloser = previousExpiration !== undefined && this._closer?.key === key;
+		const replacedCloser =
+			previousExpiration !== undefined &&
+			this._closer !== undefined &&
+			isSameLimitedCollectionKey(this._closer.key, key);
 		if (replacedCloser) {
 			this._closerDirty = true;
 		}
 
-		const expireOn = customExpire > 0 ? Date.now() + customExpire : -1;
+		const expires = Number.isFinite(customExpire) && customExpire > 0;
+		const expireOn = expires ? Date.now() + customExpire : -1;
 		this.data.set(key, value);
 
-		if (customExpire > 0) {
+		if (expires) {
 			this.expirations.set(key, { expire: customExpire, expireOn });
 		} else {
 			this.expirations.delete(key);
 		}
 
-		if (
-			customExpire > 0 &&
-			!replacedCloser &&
-			(!this._closer || this._closerDirty || expireOn <= this._closer.expireOn)
-		) {
+		if (expires && !replacedCloser && (!this._closer || this._closerDirty || expireOn <= this._closer.expireOn)) {
 			this._closer = { key, expire: customExpire, expireOn };
 			this._closerDirty = false;
 		}
@@ -370,7 +374,7 @@ export class LimitedCollection<K, V> {
 
 		const expiration = this.expirations.get(key);
 		if (this.options.resetOnDemand && expiration) {
-			const wasCloser = this._closer?.key === key;
+			const wasCloser = this._closer !== undefined && isSameLimitedCollectionKey(this._closer.key, key);
 			expiration.expireOn = Date.now() + expiration.expire;
 			if (wasCloser) {
 				this._closerDirty = true;
@@ -412,7 +416,7 @@ export class LimitedCollection<K, V> {
 		}
 		const resolvedValue = value as V;
 
-		const wasCloser = this._closer?.key === key;
+		const wasCloser = this._closer !== undefined && isSameLimitedCollectionKey(this._closer.key, key);
 		if (wasCloser) this._closerDirty = true;
 		this.options.onDelete?.(key, resolvedValue);
 		const result = this.data.delete(key);
@@ -543,7 +547,7 @@ export class LimitedCollection<K, V> {
 	private clearExpired() {
 		for (const [key, expiration] of this.expirations) {
 			if (Date.now() >= expiration.expireOn) {
-				if (this._closer?.key === key) {
+				if (this._closer !== undefined && isSameLimitedCollectionKey(this._closer.key, key)) {
 					this._closerDirty = true;
 				}
 				if (this.data.has(key)) {
