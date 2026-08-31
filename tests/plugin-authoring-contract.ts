@@ -34,7 +34,7 @@ import {
 	type ComponentCollectorStopReason,
 	ComponentCommand,
 	type ComponentContext,
-	type ContextMenuCommand,
+	ContextMenuCommand,
 	calculateUserDefaultAvatarIndex,
 	type config,
 	createEvent,
