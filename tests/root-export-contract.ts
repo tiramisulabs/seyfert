@@ -28,6 +28,7 @@ import {
 	type GatewayPresenceClientStatus,
 	type GroupDMChannelStructure,
 	type HttpConfig,
+	type LabelComponent,
 	type MaybeResolvedChannel,
 	type MessageLink,
 	type MessageStructure,
@@ -45,6 +46,7 @@ import {
 	type TextChannelType,
 	type TextGuildChannelStructure,
 	type Timestamp,
+	type TopLevelComponents,
 	type WorkerData,
 	type WorkerInfo,
 	type WorkerManagerOptions,
@@ -52,6 +54,13 @@ import {
 } from 'seyfert';
 
 declare function expectType<T>(value: T): void;
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
+	? (<T>() => T extends B ? 1 : 2) extends <T>() => T extends A ? 1 : 2
+		? true
+		: false
+	: false;
+
+expectType<true>(true as Equal<Extract<TopLevelComponents, LabelComponent>, LabelComponent>);
 
 const rootBotConfig = config.bot({
 	token: 'token',
