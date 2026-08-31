@@ -25,7 +25,7 @@ type FactoryCase<T extends APIComponents['type']> = readonly [
 	expected: ComponentConstructor,
 ];
 type FactoryMatrix = {
-	[T in APIComponents['type']]: readonly FactoryCase<T>[];
+	[T in APIComponents['type']]: readonly [FactoryCase<T>, ...FactoryCase<T>[]];
 };
 
 const options = [
