@@ -28,7 +28,7 @@ import {
 	type GatewayPresenceClientStatus,
 	type GroupDMChannelStructure,
 	type HttpConfig,
-	type LabelComponent,
+	LabelComponent,
 	type MaybeResolvedChannel,
 	type MessageLink,
 	type MessageStructure,
@@ -61,6 +61,7 @@ type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ?
 	: false;
 
 expectType<true>(true as Equal<Extract<TopLevelComponents, LabelComponent>, LabelComponent>);
+expectType<typeof LabelComponent>(LabelComponent);
 
 const rootBotConfig = config.bot({
 	token: 'token',
