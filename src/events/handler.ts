@@ -243,7 +243,8 @@ export class CustomEventHandler extends BaseHandler implements CustomEventRunner
 }
 
 export class EventHandler extends CustomEventHandler {
-	private sourceIndexes = new WeakMap<object, number>();
+	// Transforms can rename events, so reloads retain the raw export slot instead of relying on the resulting name.
+	private sourceSlots = new WeakMap<object, number>();
 
 	constructor(protected client: Client | WorkerClient) {
 		super(client);
@@ -273,15 +274,15 @@ export class EventHandler extends CustomEventHandler {
 			file: x,
 		}))) {
 			if (!events) continue;
-			for (const [index, i] of events.entries()) {
-				const instance = this.transformLoadedEvent(i, file.path, index);
+			for (const [sourceSlot, i] of events.entries()) {
+				const instance = this.transformLoadedEvent(i, file.path, sourceSlot);
 				if (!instance) continue;
 				this.values[normalizeEventName(instance.data.name) as CustomEventsKeys | GatewayEvents] = instance;
 			}
 		}
 	}
 
-	private transformLoadedEvent(event: object, filePath: string, sourceIndex: number): EventValue | false {
+	private transformLoadedEvent(event: object, filePath: string, sourceSlot: number): EventValue | false {
 		const transformed = this.client.runPluginHandlerTransformers('event', event);
 		if (transformed === false) return false;
 		const instance = this.callback(transformed as ClientEvent);
@@ -295,7 +296,7 @@ export class EventHandler extends CustomEventHandler {
 		}
 		instance.__filePath = filePath;
 		const value = instance as EventValue;
-		this.sourceIndexes.set(value, sourceIndex);
+		this.sourceSlots.set(value, sourceSlot);
 		return value;
 	}
 
@@ -447,18 +448,18 @@ export class EventHandler extends CustomEventHandler {
 		const event = this.values[name];
 		if (!event?.__filePath) return null;
 		const filePath = event.__filePath;
-		const requestedSourceIndex = this.sourceIndexes.get(event);
+		const requestedSourceSlot = this.sourceSlots.get(event);
 		const previous = Object.entries(this.values).filter(([, current]) => current.__filePath === filePath);
 		delete require.cache[filePath];
 		const imported = await magicImport(filePath);
 		const loaded = this.onFile({ default: imported.default ?? imported });
-		const materialized = (loaded ?? []).map((current, index) => {
-			const instance = this.transformLoadedEvent(current, filePath, index);
+		const materialized = (loaded ?? []).map((current, sourceSlot) => {
+			const instance = this.transformLoadedEvent(current, filePath, sourceSlot);
 			const sourceName =
 				typeof current === 'object' && current !== null && 'data' in current
 					? normalizeEventName((current as ClientEvent).data.name)
 					: undefined;
-			return { index, sourceName, instance };
+			return { sourceSlot, sourceName, instance };
 		});
 
 		for (const [currentName] of previous) {
@@ -470,7 +471,7 @@ export class EventHandler extends CustomEventHandler {
 			if (!current.instance) continue;
 			const currentName = normalizeEventName(current.instance.data.name) as CustomEventsKeys | GatewayEvents;
 			this.values[currentName] = current.instance;
-			if (current.index === requestedSourceIndex || current.sourceName === name || currentName === name) {
+			if (current.sourceSlot === requestedSourceSlot || current.sourceName === name || currentName === name) {
 				reloaded = current.instance;
 			}
 		}

@@ -1017,7 +1017,7 @@ describe('plugin api v3', () => {
 		).toBe('modal');
 	});
 
-	test('removes vetoed commands, components, modals, and events during reload', async () => {
+	test('removes every vetoed command, component, and modal during bulk reload', async () => {
 		class ReloadCommand extends Command {
 			name = 'veto-reload-command';
 			description = 'Veto reload command';
@@ -1038,37 +1038,22 @@ describe('plugin api v3', () => {
 			run() {}
 		}
 		const transformed: string[] = [];
-		let eventReplacement = 0;
 		const plugin = createPlugin({
 			name: 'reload-veto',
 			register(api) {
-				api.handlers.transform((instance, metadata) => {
+				api.handlers.transform((_instance, metadata) => {
 					transformed.push(metadata.kind);
-					if (metadata.kind === 'event' && 'data' in instance) {
-						return (instance as { data?: { name?: string } }).data?.name === 'messageCreate' ? false : undefined;
-					}
-					if (metadata.kind === 'event' && typeof instance === 'function') {
-						return { data: { name: 'messageUpdate', once: false }, run() {} };
-					}
 					return false;
-				});
-				api.handlers.transform(event => {
-					if ('data' in event && (event as { data?: { name?: string } }).data?.name === 'messageUpdate') {
-						const name = eventReplacement++ === 0 ? 'guildCreate' : 'guildUpdate';
-						return { data: { name, once: false }, run() {} };
-					}
-					return undefined;
-				}, { kinds: ['event'] });
+				}, { kinds: ['command', 'component', 'modal'] });
 			},
 		});
-		const client = createGatewayClient([plugin]);
+		const client = createBaseClient([plugin]);
 		const dir = await mkdtemp(join(tmpdir(), 'seyfert-plugin-veto-reload-'));
 		tempDirs.push(dir);
 		const commandPath = join(dir, 'command.cjs');
 		const secondCommandPath = join(dir, 'second-command.cjs');
 		const buttonPath = join(dir, 'button.cjs');
 		const modalPath = join(dir, 'modal.cjs');
-		const eventPath = join(dir, 'event.cjs');
 		(globalThis as { __SeyfertReloadCommandBase?: typeof Command }).__SeyfertReloadCommandBase = Command;
 		(globalThis as { __SeyfertReloadComponentBase?: typeof ComponentCommand }).__SeyfertReloadComponentBase =
 			ComponentCommand;
@@ -1089,11 +1074,6 @@ describe('plugin api v3', () => {
 			modalPath,
 			"const ModalCommand = globalThis.__SeyfertReloadModalBase; module.exports = class extends ModalCommand { customId = 'veto-reload-modal'; run() {} };\n",
 		);
-		await writeFile(
-			eventPath,
-			"module.exports = [{ data: { name: 'messageCreate', once: false }, run() {} }, class InjectableEvent { run() {} }];\n",
-		);
-
 		const command = new ReloadCommand();
 		command.__filePath = commandPath;
 		const secondCommand = new SecondReloadCommand();
@@ -1104,6 +1084,36 @@ describe('plugin api v3', () => {
 		modal.__filePath = modalPath;
 		client.commands.values = [command, secondCommand];
 		client.components.commands.splice(0, client.components.commands.length, button, modal);
+		await expect(client.commands.reloadAll()).resolves.toBeUndefined();
+		await expect(client.components.reloadAll()).resolves.toBeUndefined();
+
+		expect(transformed.sort()).toEqual(['command', 'command', 'component', 'modal']);
+		expect(client.commands.values).toEqual([]);
+		expect(client.components.commands).toEqual([]);
+	});
+
+	test('reloads each event export independently when transforms veto or replace siblings', async () => {
+		const transformed: string[] = [];
+		const plugin = createPlugin({
+			name: 'event-reload-veto',
+			register(api) {
+				api.handlers.transform(event => {
+					transformed.push(typeof event);
+					if (typeof event === 'function') {
+						return { data: { name: 'messageUpdate', once: false }, run() {} };
+					}
+					return (event as { data?: { name?: string } }).data?.name === 'messageCreate' ? false : undefined;
+				}, { kinds: ['event'] });
+			},
+		});
+		const client = createGatewayClient([plugin]);
+		const dir = await mkdtemp(join(tmpdir(), 'seyfert-plugin-event-reload-'));
+		tempDirs.push(dir);
+		const eventPath = join(dir, 'event.cjs');
+		await writeFile(
+			eventPath,
+			"module.exports = [{ data: { name: 'messageCreate', once: false }, run() {} }, class InjectableEvent { run() {} }];\n",
+		);
 		client.events.values.MESSAGE_CREATE = {
 			data: { name: 'messageCreate', once: false },
 			run() {},
@@ -1115,16 +1125,40 @@ describe('plugin api v3', () => {
 			__filePath: eventPath,
 		};
 
-		await expect(client.commands.reloadAll()).resolves.toBeUndefined();
-		await expect(client.components.reloadAll()).resolves.toBeUndefined();
 		await expect(client.events.reloadAll()).resolves.toBeUndefined();
 
-		expect(transformed.sort()).toEqual(['command', 'command', 'component', 'event', 'event', 'modal']);
-		await expect(client.events.reload('GUILD_CREATE')).resolves.toMatchObject({ data: { name: 'guildUpdate' } });
-		expect(client.commands.values).toEqual([]);
-		expect(client.components.commands).toEqual([]);
+		expect(transformed.sort()).toEqual(['function', 'object']);
 		expect(client.events.values.MESSAGE_CREATE).toBeUndefined();
-		expect(client.events.values.MESSAGE_UPDATE).toBeUndefined();
+		expect(client.events.values.MESSAGE_UPDATE?.data.name).toBe('messageUpdate');
+	});
+
+	test('keeps an event export slot across successive transformed names', async () => {
+		let nextName: 'guildCreate' | 'guildUpdate' = 'guildCreate';
+		const plugin = createPlugin({
+			name: 'event-reload-slot',
+			register(api) {
+				api.handlers.transform(() => {
+					const name = nextName;
+					nextName = 'guildUpdate';
+					return { data: { name, once: false }, run() {} };
+				}, { kinds: ['event'] });
+			},
+		});
+		const client = createGatewayClient([plugin]);
+		const dir = await mkdtemp(join(tmpdir(), 'seyfert-plugin-event-slot-'));
+		tempDirs.push(dir);
+		const eventPath = join(dir, 'event.cjs');
+		await writeFile(eventPath, "module.exports = { data: { name: 'messageCreate', once: false }, run() {} };\n");
+		client.events.values.MESSAGE_CREATE = {
+			data: { name: 'messageCreate', once: false },
+			run() {},
+			__filePath: eventPath,
+		};
+
+		await expect(client.events.reload('MESSAGE_CREATE')).resolves.toMatchObject({ data: { name: 'guildCreate' } });
+		await expect(client.events.reload('GUILD_CREATE')).resolves.toMatchObject({ data: { name: 'guildUpdate' } });
+
+		expect(client.events.values.MESSAGE_CREATE).toBeUndefined();
 		expect(client.events.values.GUILD_CREATE).toBeUndefined();
 		expect(client.events.values.GUILD_UPDATE?.data.name).toBe('guildUpdate');
 	});
