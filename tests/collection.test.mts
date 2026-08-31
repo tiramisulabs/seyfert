@@ -221,6 +221,47 @@ describe('LimitedCollection', () => {
 		assert.equal(infiniteLimit.size, 1);
 	});
 
+	test('rejects expirations that cannot be represented by a runtime timer', () => {
+		for (const expire of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+			assert.throws(() => new LimitedCollection({ expire }), TypeError);
+		}
+		assert.throws(() => new LimitedCollection({ expire: 2_147_483_648 }), RangeError);
+
+		const collection = new LimitedCollection<string, number>();
+		for (const expire of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+			assert.throws(() => collection.set('invalid', 1, expire), TypeError);
+		}
+		assert.throws(() => collection.set('invalid', 1, 2_147_483_648), RangeError);
+	});
+
+	test('treats non-positive finite expirations as no expiration', () => {
+		const collection = new LimitedCollection<string, number>({ expire: -1 });
+		collection.set('default', 1);
+		collection.set('zero', 2, 0);
+
+		assert.equal(collection.raw('default')?.expireOn, -1);
+		assert.equal(collection.raw('zero')?.expireOn, -1);
+	});
+
+	test('replacing the closer with a non-expiring value cancels its timer', () => {
+		vi.useFakeTimers();
+		const onDelete = vi.fn();
+		try {
+			const collection = new LimitedCollection<string, number>({ onDelete });
+			collection.set('item', 1, 100);
+			assert.equal(vi.getTimerCount(), 1);
+
+			collection.set('item', 2, 0);
+			assert.equal(vi.getTimerCount(), 0);
+
+			vi.advanceTimersByTime(101);
+			assert.equal(collection.get('item'), 2);
+			assert.equal(onDelete.mock.calls.length, 0);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	test('raw returns internal data', () => {
 		const c = new LimitedCollection<number, string>();
 		c.set(1, 'one');
@@ -317,6 +358,29 @@ describe('LimitedCollection', () => {
 		vi.advanceTimersByTime(2);
 		assert.equal(c.has(1), false);
 		vi.useRealTimers();
+	});
+
+	test('replacing the closer with a later expiration schedules the next closer immediately', () => {
+		vi.useFakeTimers();
+		const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+		try {
+			const collection = new LimitedCollection<string, number>();
+			collection.set('replaced', 1, 100);
+			collection.set('next', 2, 200);
+			vi.advanceTimersByTime(20);
+			setTimeoutSpy.mockClear();
+
+			collection.set('replaced', 3, 300);
+			assert.equal(setTimeoutSpy.mock.calls.length, 1);
+			assert.equal(vi.getTimerCount(), 1);
+
+			vi.advanceTimersByTime(180);
+			assert.equal(collection.has('next'), false);
+			assert.equal(collection.get('replaced'), 3);
+		} finally {
+			setTimeoutSpy.mockRestore();
+			vi.useRealTimers();
+		}
 	});
 
 	test('keys, values, entries iterate correctly', () => {
