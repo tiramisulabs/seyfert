@@ -224,6 +224,7 @@ describe('LimitedCollection', () => {
 	test('rejects NaN and finite expirations that exceed the runtime timer limit', () => {
 		assert.throws(() => new LimitedCollection({ expire: Number.NaN }), TypeError);
 		assert.throws(() => new LimitedCollection({ expire: 2_147_483_648 }), RangeError);
+		assert.doesNotThrow(() => new LimitedCollection({ expire: 2_147_483_647 }));
 
 		const collection = new LimitedCollection<string, number>();
 		assert.throws(() => collection.set('invalid', 1, Number.NaN), TypeError);
