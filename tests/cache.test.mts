@@ -1,4 +1,4 @@
-import { assert, describe, expect, test, vi } from 'vitest';
+import { assert, describe, expect, test } from 'vitest';
 import { BaseResource } from '../src/cache/resources/default/base';
 import { Cache, CacheFrom, Client, LimitedMemoryAdapter, MemoryAdapter } from '../src/index';
 import type { APIUser } from '../src/index';
@@ -50,12 +50,12 @@ describe('test memory cache adapter', () => {
 		expect(primitiveAdapter.values('user')).toEqual([0, false, '']);
 	});
 
-	test('derives identical adapter mutations for bulk set and patch operations', async () => {
+	test.each(['bulkSet', 'bulkPatch'] as const)('%s derives cache entries and relationships', async operation => {
 		const adapter = new MemoryAdapter();
 		const client: any = {};
 		const cache = new Cache(0, adapter, {}, client);
 		client.cache = cache;
-		const makeEntries = (): Parameters<Cache['bulkSet']>[0] => [
+		const entries: Parameters<Cache['bulkSet']>[0] = [
 			[
 				CacheFrom.Test,
 				'users',
@@ -88,19 +88,22 @@ describe('test memory cache adapter', () => {
 				'channel-1',
 			],
 		];
-		const relationships = vi.spyOn(adapter, 'bulkAddToRelationShip');
-		const bulkSet = vi.spyOn(adapter, 'bulkSet');
-		const bulkPatch = vi.spyOn(adapter, 'bulkPatch');
 
-		await cache.bulkSet(makeEntries());
-		const expectedRelationships = structuredClone(relationships.mock.calls[0]![0]);
-		const expectedData = structuredClone(bulkSet.mock.calls[0]![0]);
-		relationships.mockClear();
+		await cache[operation](entries);
 
-		await cache.bulkPatch(makeEntries());
-
-		expect(relationships).toHaveBeenCalledExactlyOnceWith(expectedRelationships);
-		expect(bulkPatch).toHaveBeenCalledExactlyOnceWith(expectedData);
+		expect(await cache.users?.raw('user-1')).toMatchObject({ id: 'user-1', username: 'user' });
+		expect(await cache.members?.raw('user-1', 'guild-1')).toMatchObject({
+			guild_id: 'guild-1',
+			user: { id: 'user-1', username: 'user' },
+		});
+		expect(await cache.messages?.raw('message-1')).toMatchObject({
+			id: 'message-1',
+			channel_id: 'channel-1',
+			user_id: 'user-1',
+		});
+		expect(await cache.users?.count()).toBe(1);
+		expect(await cache.members?.count('guild-1')).toBe(1);
+		expect(await cache.messages?.count('channel-1')).toBe(1);
 	});
 });
 
