@@ -25,42 +25,74 @@ export class ConnectTimeout {
 }
 
 export class ConnectQueue {
-	private queue: ((() => unknown) | undefined)[] = [];
+	private queue: {
+		callback: () => unknown;
+		resolve: (value: unknown) => void;
+		reject: (reason?: unknown) => void;
+	}[] = [];
+	private _concurrency: number;
 	private remaining = 0;
 	protected interval?: NodeJS.Timeout = undefined;
 
 	constructor(
 		public intervalTime = 5000,
-		public concurrency = 1,
+		concurrency = 1,
 	) {
+		this._concurrency = concurrency;
 		this.remaining = concurrency;
 	}
 
-	push(callback: () => unknown) {
-		if (this.remaining === 0) return this.queue.push(callback);
-		this.remaining--;
-		if (!this.interval) {
-			this.startInterval();
+	get concurrency() {
+		return this._concurrency;
+	}
+
+	set concurrency(concurrency: number) {
+		const consumed = this._concurrency - this.remaining;
+		this._concurrency = concurrency;
+		this.remaining = Math.max(0, concurrency - consumed);
+
+		while (this.remaining > 0) {
+			const entry = this.queue.shift();
+			if (!entry) break;
+			this.remaining--;
+			this.run(entry);
 		}
 
-		if (this.queue.length < this.concurrency) {
-			return callback();
-		}
-		return this.queue.push(callback);
+		if (this.interval) clearInterval(this.interval);
+		this.interval = undefined;
+		if (this.remaining < this._concurrency || this.queue.length) this.startInterval();
+	}
+
+	push<T>(callback: () => T | PromiseLike<T>): Promise<T> {
+		return new Promise<T>((resolve, reject) => {
+			const entry = { callback, reject, resolve: resolve as (value: unknown) => void };
+			if (this.remaining === 0) {
+				this.queue.push(entry);
+				return;
+			}
+			this.remaining--;
+			if (!this.interval) this.startInterval();
+			this.run(entry);
+		});
+	}
+
+	private run(entry: (typeof this.queue)[number]) {
+		Promise.resolve().then(entry.callback).then(entry.resolve, entry.reject);
 	}
 
 	startInterval() {
 		this.interval = setInterval(() => {
-			let cb: (() => void) | undefined;
-			while (this.queue.length && !(cb = this.queue.shift())) {
-				//
+			const entry = this.queue.shift();
+			if (entry) {
+				this.run(entry);
+				return;
 			}
-			if (cb) return cb?.();
-			if (this.remaining < this.concurrency) return this.remaining++;
-			if (!this.queue.length) {
-				clearInterval(this.interval);
-				this.interval = undefined;
+			if (this.remaining < this.concurrency) {
+				this.remaining++;
+				return;
 			}
+			clearInterval(this.interval);
+			this.interval = undefined;
 		}, this.intervalTime / this.concurrency);
 	}
 }
