@@ -366,7 +366,7 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	async reloadAll(stopIfFail = true) {
-		for (const i of this.commands) {
+		for (const i of [...this.commands]) {
 			try {
 				await this.reload(i.__filePath ?? '');
 			} catch (e) {
