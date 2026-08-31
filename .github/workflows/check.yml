@@ -63,6 +63,9 @@ jobs:
       - name: Build package
         run: bun run build
 
+      - name: Typecheck test contracts
+        run: bun x tsc --noEmit --project tests/tsconfig.json
+
       - name: Publish in pkg.pr.new
         run: bunx pkg-pr-new publish
         if: github.repository == 'tiramisulabs/seyfert'
@@ -98,10 +101,6 @@ jobs:
       - name: Install dependencies (Node and Deno)
         if: matrix.runtime != 'bun'
         run: pnpm install --frozen-lockfile
-
-      - name: Typecheck
-        if: matrix.runtime == 'node'
-        run: pnpm run test:types
 
       - name: Test suites (Node)
         if: matrix.runtime == 'node'

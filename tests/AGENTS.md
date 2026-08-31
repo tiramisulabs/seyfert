@@ -50,7 +50,8 @@ For a new regression:
 ## Commands
 
 The repository pins `pnpm@11.11.0` and Bun 1.4.0. CI uses Bun for tooling and
-runs the suite under Node 22, Bun, and Deno.
+runs type contracts once in the tooling job before exercising the runtime suite
+under Node 22, Bun, and Deno.
 
 ```sh
 # Reproduce the Node dependency graph used by CI
