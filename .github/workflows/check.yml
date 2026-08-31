@@ -41,7 +41,7 @@ jobs:
 
     steps:
       - name: check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
           persist-credentials: false
@@ -82,7 +82,7 @@ jobs:
 
     steps:
       - name: check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
           persist-credentials: false
@@ -90,13 +90,13 @@ jobs:
       # --- Node and shared pnpm install ---
       - name: Install Node
         if: matrix.runtime != 'bun'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22.x'
 
       - name: Install pnpm
         if: matrix.runtime != 'bun'
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Install dependencies (Node and Deno)
         if: matrix.runtime != 'bun'
