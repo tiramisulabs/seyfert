@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/format.yml'
       - 'biome.json'
+      - 'bun.lock'
       - 'commitlint.config.js'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -34,16 +35,15 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           persist-credentials: false
 
-      - name: Install Node
-        uses: actions/setup-node@v4
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: '22.x'
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+          bun-version: 1.4.0
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile --ignore-scripts
+        env:
+          HUSKY: 0
 
       - name: Verify clean tree after install
         run: |
@@ -53,7 +53,7 @@ jobs:
           fi
 
       - name: Apply Biome fixes
-        run: pnpm run check:write
+        run: bun run check:write
 
       - name: Stage formatter-owned files
         id: stage

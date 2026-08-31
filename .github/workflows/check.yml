@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/check.yml'
       - 'biome.json'
+      - 'bun.lock'
       - 'bunfig.toml'
       - 'commitlint.config.js'
       - 'deno.json'
@@ -20,6 +21,7 @@ on:
     paths:
       - '.github/workflows/check.yml'
       - 'biome.json'
+      - 'bun.lock'
       - 'bunfig.toml'
       - 'commitlint.config.js'
       - 'deno.json'
@@ -44,30 +46,25 @@ jobs:
           ref: ${{ github.ref }}
           persist-credentials: false
 
-      - name: Install Node
-        uses: actions/setup-node@v4
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: '22.x'
-          registry-url: 'https://registry.npmjs.org'
-
-      - uses: pnpm/action-setup@v4
+          bun-version: 1.4.0
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile --ignore-scripts
+        env:
+          HUSKY: 0
 
       - name: Run Biome
-        run: pnpm run check
+        run: bun run check
         id: biome
 
-      - name: Run Bot
-        id: bot-up
-        if: env.BOT_TOKEN != ''
-        env:
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-        run: node ./tests/bot.js
+      - name: Build package
+        run: bun run build
 
       - name: Publish in pkg.pr.new
-        run: pnpx pkg-pr-new publish
+        run: bunx pkg-pr-new publish
         if: github.repository == 'tiramisulabs/seyfert'
 
   test:
@@ -110,14 +107,22 @@ jobs:
         if: matrix.runtime == 'node'
         run: pnpm exec vitest run --config ./tests/vitest.config.mts ./tests/
 
+      - name: Run Bot (Node)
+        if: matrix.runtime == 'node' && env.BOT_TOKEN != ''
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+        run: node ./tests/bot.js
+
       # --- Bun ---
       - name: Install Bun
         if: matrix.runtime == 'bun'
         uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
 
       - name: Install dependencies (Bun)
         if: matrix.runtime == 'bun'
-        run: bun install --ignore-scripts
+        run: bun install --frozen-lockfile --ignore-scripts
         env:
           HUSKY: 0
 
