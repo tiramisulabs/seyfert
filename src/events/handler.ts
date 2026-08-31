@@ -243,6 +243,9 @@ export class CustomEventHandler extends BaseHandler implements CustomEventRunner
 }
 
 export class EventHandler extends CustomEventHandler {
+	// Transforms can rename events, so reloads retain the raw export slot instead of relying on the resulting name.
+	private sourceSlots = new WeakMap<object, number>();
+
 	constructor(protected client: Client | WorkerClient) {
 		super(client);
 	}
@@ -271,21 +274,30 @@ export class EventHandler extends CustomEventHandler {
 			file: x,
 		}))) {
 			if (!events) continue;
-			for (const i of events) {
-				const instance = this.callback(this.client.runPluginHandlerTransformers('event', i));
+			for (const [sourceSlot, i] of events.entries()) {
+				const instance = this.transformLoadedEvent(i, file.path, sourceSlot);
 				if (!instance) continue;
-				if (typeof instance?.run !== 'function') {
-					this.logger.warn(
-						file.path.split(process.cwd()).slice(1).join(process.cwd()),
-						'Missing run function, use `export default {...}` syntax',
-					);
-					continue;
-				}
-				instance.__filePath = file.path;
-				this.values[normalizeEventName(instance.data.name) as CustomEventsKeys | GatewayEvents] =
-					instance as EventValue;
+				this.values[normalizeEventName(instance.data.name) as CustomEventsKeys | GatewayEvents] = instance;
 			}
 		}
+	}
+
+	private transformLoadedEvent(event: object, filePath: string, sourceSlot: number): EventValue | false {
+		const transformed = this.client.runPluginHandlerTransformers('event', event);
+		if (transformed === false) return false;
+		const instance = this.callback(transformed as ClientEvent);
+		if (!instance) return false;
+		if (typeof instance.run !== 'function') {
+			this.logger.warn(
+				filePath.split(process.cwd()).slice(1).join(process.cwd()),
+				'Missing run function, use `export default {...}` syntax',
+			);
+			return false;
+		}
+		instance.__filePath = filePath;
+		const value = instance as EventValue;
+		this.sourceSlots.set(value, sourceSlot);
+		return value;
 	}
 
 	async execute(raw: GatewayDispatchPayload, client: Client<true> | WorkerClient<true>, shardId: number) {
@@ -435,20 +447,44 @@ export class EventHandler extends CustomEventHandler {
 		}
 		const event = this.values[name];
 		if (!event?.__filePath) return null;
-		delete require.cache[event.__filePath];
-		const imported = this.client.runPluginHandlerTransformers(
-			'event',
-			await magicImport(event.__filePath).then(x => x.default ?? x),
-		);
-		imported.__filePath = event.__filePath;
-		this.values[name] = imported;
-		return imported;
+		const filePath = event.__filePath;
+		const requestedSourceSlot = this.sourceSlots.get(event);
+		const previous = Object.entries(this.values).filter(([, current]) => current.__filePath === filePath);
+		delete require.cache[filePath];
+		const imported = await magicImport(filePath);
+		const loaded = this.onFile({ default: imported.default ?? imported });
+		const materialized = (loaded ?? []).map((current, sourceSlot) => {
+			const instance = this.transformLoadedEvent(current, filePath, sourceSlot);
+			const sourceName =
+				typeof current === 'object' && current !== null && 'data' in current
+					? normalizeEventName((current as ClientEvent).data.name)
+					: undefined;
+			return { sourceSlot, sourceName, instance };
+		});
+
+		for (const [currentName] of previous) {
+			delete this.values[currentName as keyof EventValues];
+		}
+
+		let reloaded: EventValue | null = null;
+		for (const current of materialized) {
+			if (!current.instance) continue;
+			const currentName = normalizeEventName(current.instance.data.name) as CustomEventsKeys | GatewayEvents;
+			this.values[currentName] = current.instance;
+			if (current.sourceSlot === requestedSourceSlot || current.sourceName === name || currentName === name) {
+				reloaded = current.instance;
+			}
+		}
+		return reloaded;
 	}
 
 	async reloadAll(stopIfFail = true) {
-		for (const i in this.values) {
+		const files = new Set<string>();
+		for (const [name, event] of Object.entries(this.values)) {
+			if (!event.__filePath || files.has(event.__filePath)) continue;
+			files.add(event.__filePath);
 			try {
-				await this.reload(i as GatewayEvents | CustomEventsKeys);
+				await this.reload(name as GatewayEvents | CustomEventsKeys);
 			} catch (e) {
 				if (stopIfFail) {
 					throw e;
