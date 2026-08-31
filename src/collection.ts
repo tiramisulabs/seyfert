@@ -216,7 +216,7 @@ function validateLimitedCollectionExpiration(expire: number) {
 		throw new RangeError('LimitedCollection expiration cannot exceed the maximum timer delay');
 }
 
-function isSameLimitedCollectionKey<K>(left: K, right: K) {
+function isSameMapKey<K>(left: K, right: K) {
 	return left === right || Object.is(left, right);
 }
 
@@ -284,9 +284,7 @@ export class LimitedCollection<K, V> {
 
 		const previousExpiration = this.expirations.get(key);
 		const replacedCloser =
-			previousExpiration !== undefined &&
-			this._closer !== undefined &&
-			isSameLimitedCollectionKey(this._closer.key, key);
+			previousExpiration !== undefined && this._closer !== undefined && isSameMapKey(this._closer.key, key);
 		if (replacedCloser) {
 			this._closerDirty = true;
 		}
@@ -374,7 +372,7 @@ export class LimitedCollection<K, V> {
 
 		const expiration = this.expirations.get(key);
 		if (this.options.resetOnDemand && expiration) {
-			const wasCloser = this._closer !== undefined && isSameLimitedCollectionKey(this._closer.key, key);
+			const wasCloser = this._closer !== undefined && isSameMapKey(this._closer.key, key);
 			expiration.expireOn = Date.now() + expiration.expire;
 			if (wasCloser) {
 				this._closerDirty = true;
@@ -416,7 +414,7 @@ export class LimitedCollection<K, V> {
 		}
 		const resolvedValue = value as V;
 
-		const wasCloser = this._closer !== undefined && isSameLimitedCollectionKey(this._closer.key, key);
+		const wasCloser = this._closer !== undefined && isSameMapKey(this._closer.key, key);
 		if (wasCloser) this._closerDirty = true;
 		this.options.onDelete?.(key, resolvedValue);
 		const result = this.data.delete(key);
@@ -547,7 +545,7 @@ export class LimitedCollection<K, V> {
 	private clearExpired() {
 		for (const [key, expiration] of this.expirations) {
 			if (Date.now() >= expiration.expireOn) {
-				if (this._closer !== undefined && isSameLimitedCollectionKey(this._closer.key, key)) {
+				if (this._closer !== undefined && isSameMapKey(this._closer.key, key)) {
 					this._closerDirty = true;
 				}
 				if (this.data.has(key)) {
