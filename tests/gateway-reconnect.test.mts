@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { GatewayDispatchEvents, GatewayOpcodes } from '../src/types';
 import { Shard } from '../src/websocket/discord/shard';
-import { ShardSocketCloseCodes, type ShardOptions } from '../src/websocket/discord/shared';
+import { type ShardOptions, ShardSocketCloseCodes } from '../src/websocket/discord/shared';
 
 afterEach(() => {
 	vi.clearAllTimers();
@@ -543,27 +543,27 @@ describe('gateway reconnect lifecycle', () => {
 		expect(FakeBaseSocket.instances).toHaveLength(3);
 	});
 
-	test.each([1000, ShardSocketCloseCodes.Timeout])(
-		'a public close with policy code %s resets the session and reconnects',
-		async code => {
-			const { shard, socket } = await createConnectedShard({ reconnectTimeout: 0 });
-			shard.data = {
-				resume_seq: 42,
-				resume_gateway_url: 'wss://resume.discord.gg',
-				session_id: 'session-a',
-			};
-			shard.pendingGuilds = new Set(['guild']);
-			socket.open();
+	test.each([
+		1000,
+		ShardSocketCloseCodes.Timeout,
+	])('a public close with policy code %s resets the session and reconnects', async code => {
+		const { shard, socket } = await createConnectedShard({ reconnectTimeout: 0 });
+		shard.data = {
+			resume_seq: 42,
+			resume_gateway_url: 'wss://resume.discord.gg',
+			session_id: 'session-a',
+		};
+		shard.pendingGuilds = new Set(['guild']);
+		socket.open();
 
-			shard.close(code, 'public policy close');
-			await vi.waitFor(() => expect(FakeBaseSocket.instances).toHaveLength(2));
+		shard.close(code, 'public policy close');
+		await vi.waitFor(() => expect(FakeBaseSocket.instances).toHaveLength(2));
 
-			expect(shard.data.resume_seq).toBeNull();
-			expect(shard.data.resume_gateway_url).toBeUndefined();
-			expect(shard.data.session_id).toBeUndefined();
-			expect(shard.pendingGuilds).toBeUndefined();
-		},
-	);
+		expect(shard.data.resume_seq).toBeNull();
+		expect(shard.data.resume_gateway_url).toBeUndefined();
+		expect(shard.data.session_id).toBeUndefined();
+		expect(shard.pendingGuilds).toBeUndefined();
+	});
 
 	test('a failed transport close does not finalize or replace the active socket', async () => {
 		const onShardDisconnect = vi.fn();
@@ -587,9 +587,7 @@ describe('gateway reconnect lifecycle', () => {
 			throw new RangeError('invalid close frame');
 		});
 
-		expect(() => shard.close(ShardSocketCloseCodes.Reconnect, 'failed handshake close')).toThrow(
-			'invalid close frame',
-		);
+		expect(() => shard.close(ShardSocketCloseCodes.Reconnect, 'failed handshake close')).toThrow('invalid close frame');
 		await shard.connect();
 
 		expect(FakeBaseSocket.instances).toHaveLength(1);

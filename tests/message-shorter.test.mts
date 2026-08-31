@@ -1,4 +1,4 @@
-import { Routes, createMockBot, mockWorld } from '@slipher/testing';
+import { createMockBot, mockWorld, Routes } from '@slipher/testing';
 import { describe, expect, test } from 'vitest';
 
 describe('MessageShorter', () => {

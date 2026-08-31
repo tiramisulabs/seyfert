@@ -105,9 +105,7 @@ describe('builder toJSON validation', () => {
 	});
 
 	test('StringSelectMenu setOptions accepts raw API option arrays', () => {
-		const menu = new StringSelectMenu()
-			.setCustomId('topics')
-			.setOptions([{ label: 'General', value: 'general' }]);
+		const menu = new StringSelectMenu().setCustomId('topics').setOptions([{ label: 'General', value: 'general' }]);
 
 		expect(menu.toJSON().options).toEqual([{ label: 'General', value: 'general' }]);
 	});

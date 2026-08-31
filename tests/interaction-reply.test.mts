@@ -1,6 +1,6 @@
 import { chatInputInteraction } from '@slipher/testing';
 import { describe, expect, test, vi } from 'vitest';
-import { BaseInteraction, type __InternalReplyFunction, type Interaction } from '../lib';
+import { type __InternalReplyFunction, BaseInteraction, type Interaction } from '../lib';
 
 function createDeferred<T>() {
 	let resolve!: (value: T | PromiseLike<T>) => void;

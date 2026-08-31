@@ -38,8 +38,7 @@ const routeCases: RouteCase[] = [
 		method: 'PUT',
 		path: '/guilds/guild-id/incident-actions',
 		options: { body: { dms_disabled_until: null } },
-		invoke: routes =>
-			routes.guilds('guild-id')['incident-actions'].put({ body: { dms_disabled_until: null } }),
+		invoke: routes => routes.guilds('guild-id')['incident-actions'].put({ body: { dms_disabled_until: null } }),
 	},
 	{
 		name: 'list voice regions',
@@ -78,7 +77,10 @@ const routeCases: RouteCase[] = [
 		method: 'PATCH',
 		path: '/webhooks/webhook-id/webhook-token',
 		options: { body: { name: 'renamed' } },
-		invoke: routes => routes.webhooks('webhook-id')('webhook-token').patch({ body: { name: 'renamed' } }),
+		invoke: routes =>
+			routes
+				.webhooks('webhook-id')('webhook-token')
+				.patch({ body: { name: 'renamed' } }),
 	},
 	{
 		name: 'edit webhook message with query',
@@ -95,12 +97,7 @@ const routeCases: RouteCase[] = [
 		name: 'get application command permissions',
 		method: 'GET',
 		path: '/applications/application-id/guilds/guild-id/commands/command-id/permissions',
-		invoke: routes =>
-			routes
-				.applications('application-id')
-				.guilds('guild-id')
-				.commands('command-id')
-				.permissions.get(),
+		invoke: routes => routes.applications('application-id').guilds('guild-id').commands('command-id').permissions.get(),
 	},
 	{
 		name: 'edit application command permissions',

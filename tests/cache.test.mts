@@ -1,8 +1,8 @@
 import { assert, describe, expect, test } from 'vitest';
 import { BaseResource } from '../src/cache/resources/default/base';
-import { Cache, CacheFrom, Client, LimitedMemoryAdapter, MemoryAdapter } from '../src/index';
-import type { APIUser } from '../src/index';
 import { BaseClient } from '../src/client/base';
+import type { APIUser } from '../src/index';
+import { Cache, CacheFrom, Client, LimitedMemoryAdapter, MemoryAdapter } from '../src/index';
 
 // all intents
 const intents = 53608447;
@@ -56,12 +56,7 @@ describe('test memory cache adapter', () => {
 		const cache = new Cache(0, adapter, {}, client);
 		client.cache = cache;
 		const entries: Parameters<Cache['bulkSet']>[0] = [
-			[
-				CacheFrom.Test,
-				'users',
-				{ id: 'user-1', username: 'user', discriminator: '0', avatar: null },
-				'user-1',
-			],
+			[CacheFrom.Test, 'users', { id: 'user-1', username: 'user', discriminator: '0', avatar: null }, 'user-1'],
 			[
 				CacheFrom.Test,
 				'members',
@@ -330,7 +325,8 @@ describe('test limited memory cache adapter indexing', () => {
 	});
 	test('relationship reads do not allocate empty buckets', () => {
 		const adapter = new LimitedMemoryAdapter();
-		const relationships = (adapter as LimitedMemoryAdapter<unknown> & { relationships: Map<string, unknown> }).relationships;
+		const relationships = (adapter as LimitedMemoryAdapter<unknown> & { relationships: Map<string, unknown> })
+			.relationships;
 
 		assert.equal(adapter.contains('message.channel-1', 'message-1'), false);
 		assert.deepEqual(adapter.getToRelationship('message.channel-1'), []);

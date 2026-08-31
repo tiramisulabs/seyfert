@@ -1,9 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import {
-	MentionableSelectMenuInteraction,
-	ModalSubmitInteraction,
-	UserSelectMenuInteraction,
-} from '../src/structures';
+import { MentionableSelectMenuInteraction, ModalSubmitInteraction, UserSelectMenuInteraction } from '../src/structures';
 
 const guildId = '100000000000000000';
 

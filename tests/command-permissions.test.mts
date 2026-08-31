@@ -7,8 +7,8 @@ import {
 	ContextMenuCommand,
 	Declare,
 	EntryPointCommand,
-	type EntryPointContext,
 	EntryPointCommandHandlerType,
+	type EntryPointContext,
 	type MenuCommandContext,
 	type UserCommandInteraction,
 } from '../lib';
@@ -41,9 +41,7 @@ describe('command permissions', () => {
 		const command = new RestrictedCommand();
 
 		expect(command.defaultMemberPermissions).toBe(PermissionsBitField.resolve(['ManageGuild']));
-		expect(command.toJSON().default_member_permissions).toBe(
-			PermissionsBitField.resolve(['ManageGuild']).toString(),
-		);
+		expect(command.toJSON().default_member_permissions).toBe(PermissionsBitField.resolve(['ManageGuild']).toString());
 	});
 
 	test('checks declared permissions for slash and prefix commands by default', async () => {
@@ -90,10 +88,7 @@ describe('command permissions', () => {
 		const entryPoint = await bot.entryPoint({ name: 'restricted-entry-point', ...interaction });
 
 		expect(handle.checkedMemberAuthors).toHaveBeenCalledTimes(2);
-		expect(handle.checkedMemberAuthors.mock.calls.map(([authorId]) => authorId)).toEqual([
-			'developer',
-			'developer',
-		]);
+		expect(handle.checkedMemberAuthors.mock.calls.map(([authorId]) => authorId)).toEqual(['developer', 'developer']);
 		expect(handle.checkedBotAuthors).toHaveBeenCalledTimes(4);
 		expect(handle.checkedBotAuthors.mock.calls.map(([authorId]) => authorId)).toEqual([
 			'developer',

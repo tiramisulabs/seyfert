@@ -73,6 +73,7 @@ describe('invalid token handling', () => {
 				'User-Agent': expect.any(String),
 			},
 		});
-		expect((fetchMock.mock.calls[0]?.[1] as RequestInit).headers).not.toHaveProperty('Authorization');
+		const request = fetchMock.mock.calls[0]![1] as RequestInit;
+		expect(request.headers).not.toHaveProperty('Authorization');
 	});
 });
