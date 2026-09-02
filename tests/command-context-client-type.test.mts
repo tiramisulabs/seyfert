@@ -196,6 +196,7 @@ ctx.client.messages.write("123", { content: "ok" });
 const createMiddlewareContextProgram = () => {
 	const root = join(tmpdir(), 'seyfert-middleware-context');
 	const commandFile = join(root, 'src', 'command.ts');
+	const completionsFile = join(root, 'src', 'completions.ts');
 	const sources = new Map([
 		[
 			join(root, 'src', 'middlewares.ts'),
@@ -263,6 +264,21 @@ void modal;
 void entryPoint;
 `,
 		],
+		[
+			completionsFile,
+			`import "./start";
+import { Client, Middlewares, middlewares as collectMiddlewares } from "seyfert";
+import { middlewares as registeredMiddlewares } from "./middlewares";
+
+declare class TestCommand {}
+Middlewares([/* decorator */ ""])(TestCommand);
+collectMiddlewares(/* helper */ "");
+new Client({ globalMiddlewares: [/* global */ ""] });
+new Client().setServices({
+	middlewares: { /* services */ "": registeredMiddlewares.teamOnly },
+});
+`,
+		],
 	]);
 	const compilerOptions: ts.CompilerOptions = {
 		esModuleInterop: true,
@@ -300,7 +316,28 @@ void entryPoint;
 			return ts.resolveModuleName(moduleName, containingFile, compilerOptions, host).resolvedModule;
 		});
 
-	return ts.createProgram([commandFile], compilerOptions, host);
+	const languageServiceHost: ts.LanguageServiceHost = {
+		fileExists: host.fileExists,
+		getCompilationSettings: () => compilerOptions,
+		getCurrentDirectory: () => root,
+		getDefaultLibFileName: ts.getDefaultLibFilePath,
+		getScriptFileNames: () => [...sources.keys()],
+		getScriptSnapshot: (fileName) => {
+			const source = host.readFile(fileName);
+			return source === undefined ? undefined : ts.ScriptSnapshot.fromString(source);
+		},
+		getScriptVersion: () => '0',
+		readDirectory: ts.sys.readDirectory,
+		readFile: host.readFile,
+		resolveModuleNames: host.resolveModuleNames,
+	};
+
+	return {
+		completionsFile,
+		completionsSource: sources.get(completionsFile)!,
+		languageService: ts.createLanguageService(languageServiceHost),
+		program: ts.createProgram([commandFile], compilerOptions, host),
+	};
 };
 
 const getClientTypesBeforeDiagnostics = (sourceFile: ts.SourceFile, checker: ts.TypeChecker) => {
@@ -438,9 +475,26 @@ describe('command context client type', () => {
 	});
 
 	test('registers explicitly typed middleware contexts without circular inference', () => {
-		const program = createMiddlewareContextProgram();
+		const { program } = createMiddlewareContextProgram();
 
 		expect(program.getSemanticDiagnostics()).toHaveLength(0);
+	});
+
+	test('keeps registered middleware completions on public configuration surfaces', () => {
+		const { completionsFile, completionsSource, languageService } = createMiddlewareContextProgram();
+		const expected = ['componentOnly', 'entryPointOnly', 'menuOnly', 'modalOnly', 'teamOnly'];
+
+		for (const marker of ['decorator', 'helper', 'global', 'services']) {
+			const markerPosition = completionsSource.indexOf(`/* ${marker} */`);
+			const quotePosition = completionsSource.indexOf('"', markerPosition);
+			const completions = languageService.getCompletionsAtPosition(completionsFile, quotePosition + 1, {});
+			const middlewareNames = completions?.entries
+				.map((entry) => entry.name)
+				.filter((name) => expected.includes(name))
+				.sort();
+
+			expect(middlewareNames, marker).toEqual(expected);
+		}
 	});
 });
 
