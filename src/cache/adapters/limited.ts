@@ -1,18 +1,8 @@
-import { LimitedCollection } from '../..';
+import { LimitedCollection } from '../../collection';
 import { type MakeRequired, MergeOptions } from '../../common';
-import type { Adapter } from './types';
+import { type CacheResourceLayout, getCacheResourceLayout, needsCacheStorageIndex } from './shared';
+import type { Adapter, AdapterEntry, AdapterRelationship } from './types';
 
-const namespaceIndexedResources = new Set([
-	'channel',
-	'emoji',
-	'presence',
-	'role',
-	'stage_instance',
-	'sticker',
-	'overwrite',
-	'message',
-]);
-const scopeDerivedResources = new Set(['ban', 'member', 'voice_state']);
 export interface ResourceLimitedMemoryAdapter {
 	expire?: number;
 	limit?: number;
@@ -47,6 +37,7 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	readonly storage = new Map<string, LimitedCollection<string, T>>();
 	readonly relationships = new Map<string, Map<string, Set<string>>>();
 	readonly keyToStorage = new Map<string, LimitedCollection<string, T>>();
+	private readonly keyToRelationship = new Map<string, AdapterRelationship>();
 
 	options: MakeRequired<LimitedMemoryAdapterOptions<T>, 'default' | 'encode' | 'decode'>;
 
@@ -83,7 +74,7 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 				const keySplit = key.split('.');
 				if (
 					keySplit.length === sq.length &&
-					keySplit.every((segment, i) => (sq[i] === '*' ? !!segment : sq[i] === segment))
+					keySplit.every((segment, index) => (sq[index] === '*' ? !!segment : sq[index] === segment))
 				) {
 					values.push(keys ? key : this.options.decode(entry.value));
 				}
@@ -103,48 +94,29 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	}
 
 	private _getKeyResource(key: string) {
-		const separatorIndex = key.indexOf('.');
-		return separatorIndex === -1 ? key : key.slice(0, separatorIndex);
+		const separator = key.indexOf('.');
+		return separator === -1 ? key : key.slice(0, separator);
 	}
 
-	private _getKeyScope(key: string) {
-		const separatorIndex = key.indexOf('.');
-		if (separatorIndex === -1) {
-			return '';
-		}
-
-		const scopeStart = separatorIndex + 1;
-		const scopeEnd = key.indexOf('.', scopeStart);
-		return scopeEnd === -1 ? key.slice(scopeStart) : key.slice(scopeStart, scopeEnd);
+	private _hasScopedStorageKey(resource: string, key: string) {
+		return key.indexOf('.', resource.length + 1) !== -1;
 	}
 
-	private _supportsNamespaceIndex(resource: string) {
-		return namespaceIndexedResources.has(resource);
+	private _setIndexedStorage(key: string, namespace: string, storageEntry: LimitedCollection<string, T>) {
+		if (needsCacheStorageIndex(key, namespace)) this.keyToStorage.set(key, storageEntry);
 	}
 
-	private _setIndexedStorage(resource: string, key: string, storageEntry: LimitedCollection<string, T>) {
-		if (!this._supportsNamespaceIndex(resource)) {
-			return;
-		}
-		this.keyToStorage.set(key, storageEntry);
-	}
-
-	private _deleteIndexedStorage(resource: string, key: string) {
-		if (!this._supportsNamespaceIndex(resource)) {
-			return;
-		}
+	private _deleteIndexedStorage(key: string) {
 		this.keyToStorage.delete(key);
 	}
 
-	private _getIndexedStorage(resource: string, key: string) {
-		if (!this._supportsNamespaceIndex(resource)) {
-			return;
+	private _getStorageNamespaceFromKey(resource: string, layout: CacheResourceLayout, key: string) {
+		if (layout !== 'guild-keyed' && !(layout === 'custom' && this._hasScopedStorageKey(resource, key))) {
+			return resource;
 		}
-		return this.keyToStorage.get(key);
-	}
 
-	private _getDerivedNamespace(resource: string, scope: string) {
-		return scope && scopeDerivedResources.has(resource) ? `${resource}.${scope}` : resource;
+		const scopeEnd = key.indexOf('.', resource.length + 1);
+		return scopeEnd === -1 ? resource : key.slice(0, scopeEnd);
 	}
 
 	private _isResourceNamespace(resource: string, namespace: string) {
@@ -152,311 +124,263 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	}
 
 	private _findNamespaceByStorage(resource: string, storageEntry: LimitedCollection<string, T>) {
-		for (const [namespace, candidate] of this.storage.entries()) {
-			if (candidate === storageEntry && this._isResourceNamespace(resource, namespace)) {
-				return namespace;
-			}
+		for (const [namespace, candidate] of this.storage) {
+			if (candidate === storageEntry && this._isResourceNamespace(resource, namespace)) return namespace;
 		}
-
 		return undefined;
 	}
 
-	private _getStorageNamespace(resource: string, data: any) {
-		const isArray = Array.isArray(data);
-		if (isArray && data.length === 0) {
-			return;
-		}
-
-		const scope = isArray ? data[0].guild_id : data.guild_id;
-		return `${resource}${scope ? `.${scope}` : ''}`;
+	private _getMessageNamespace(data: any) {
+		const scope = Array.isArray(data) ? data[0]?.guild_id : data?.guild_id;
+		return scope ? `message.${scope}` : 'message';
 	}
 
 	private _getStorageEntry(key: string) {
 		const resource = this._getKeyResource(key);
-		const supportsNamespaceIndex = this._supportsNamespaceIndex(resource);
-		const indexedStorage = this._getIndexedStorage(resource, key);
-		if (indexedStorage?.has(key)) {
-			return {
-				resource,
-				storageEntry: indexedStorage,
-			};
-		}
+		const layout = getCacheResourceLayout(resource);
+		const indexedStorage = this.keyToStorage.get(key);
+		if (indexedStorage?.has(key)) return { resource, layout, storageEntry: indexedStorage };
+		if (indexedStorage) this.keyToStorage.delete(key);
 
-		if (indexedStorage) {
-			this._deleteIndexedStorage(resource, key);
-		}
-
-		if (!supportsNamespaceIndex) {
-			const namespace = this._getDerivedNamespace(resource, this._getKeyScope(key));
+		if (layout !== 'guild-indexed' && layout !== 'message') {
+			const namespace = this._getStorageNamespaceFromKey(resource, layout, key);
 			const storageEntry = this.storage.get(namespace);
-			if (storageEntry?.has(key)) {
-				return {
-					resource,
-					namespace,
-					storageEntry,
-				};
-			}
+			if (storageEntry?.has(key)) return { resource, layout, namespace, storageEntry };
 		}
 
-		for (const [namespace, storageEntry] of this.storage.entries()) {
-			if (this._isResourceNamespace(resource, namespace) && storageEntry.has(key)) {
-				this._setIndexedStorage(resource, key, storageEntry);
-				return {
-					resource,
-					namespace,
-					storageEntry,
-				};
-			}
+		for (const [namespace, storageEntry] of this.storage) {
+			if (!this._isResourceNamespace(resource, namespace) || !storageEntry.has(key)) continue;
+			this._setIndexedStorage(key, namespace, storageEntry);
+			return { resource, layout, namespace, storageEntry };
 		}
-
-		return;
+		return undefined;
 	}
 
 	get(key: string) {
 		const entry = this._getStorageEntry(key);
-		if (!entry) {
-			return null;
-		}
-
-		return this.options.decode(entry.storageEntry.get(key)!);
+		return entry ? this.options.decode(entry.storageEntry.get(key)!) : null;
 	}
 
-	private __set(key: string, data: any) {
-		const resource = this._getKeyResource(key);
-		const namespace = this._getStorageNamespace(resource, data);
-		if (!namespace) {
+	private _getWithoutRefresh(key: string) {
+		const entry = this._getStorageEntry(key);
+		const data = entry?.storageEntry.raw(key);
+		return data ? this.options.decode(data.value) : null;
+	}
+
+	private _getRelationshipData(to: string) {
+		const separator = to.indexOf('.');
+		return separator === -1 ? [to, '*'] : [to.slice(0, separator), to.slice(separator + 1)];
+	}
+
+	private _getExplicitRelationshipSet(to: string) {
+		const [resource, scope] = this._getRelationshipData(to);
+		return this.relationships.get(resource)?.get(scope);
+	}
+
+	private _ensureExplicitRelationshipSet(to: string) {
+		const [resource, scope] = this._getRelationshipData(to);
+		let relationships = this.relationships.get(resource);
+		if (!relationships) {
+			relationships = new Map();
+			this.relationships.set(resource, relationships);
+		}
+		let ids = relationships.get(scope);
+		if (!ids) {
+			ids = new Set();
+			relationships.set(scope, ids);
+		}
+		return ids;
+	}
+
+	private _removeExplicitRelationship(key: string) {
+		const relationship = this.keyToRelationship.get(key);
+		if (!relationship) return;
+		const [to, id] = relationship;
+		const [resource, scope] = this._getRelationshipData(to);
+		const relationships = this.relationships.get(resource);
+		const ids = relationships?.get(scope);
+		ids?.delete(id);
+		if (ids?.size === 0) relationships?.delete(scope);
+		if (relationships?.size === 0) this.relationships.delete(resource);
+		this.keyToRelationship.delete(key);
+	}
+
+	private _setExplicitRelationship(key: string, relationship: AdapterRelationship) {
+		const previous = this.keyToRelationship.get(key);
+		if (previous && (previous[0] !== relationship[0] || previous[1] !== relationship[1])) {
+			this._removeExplicitRelationship(key);
+		}
+		this._ensureExplicitRelationshipSet(relationship[0]).add(relationship[1]);
+		this.keyToRelationship.set(key, relationship);
+	}
+
+	private _syncRelationship(
+		key: string,
+		layout: CacheResourceLayout,
+		namespace: string,
+		relationship: AdapterRelationship,
+	) {
+		if (layout !== 'message' && namespace === relationship[0]) {
+			this._removeExplicitRelationship(key);
 			return;
 		}
+		this._setExplicitRelationship(key, relationship);
+	}
 
-		let storageEntry = this.storage.get(namespace);
-		if (!storageEntry) {
-			const self = this;
-			storageEntry = new LimitedCollection({
-				expire:
-					this.options[resource as Exclude<keyof LimitedMemoryAdapterOptions<T>, 'decode' | 'encode'>]?.expire ??
-					this.options.default.expire,
-				limit:
-					this.options[resource as Exclude<keyof LimitedMemoryAdapterOptions<T>, 'decode' | 'encode'>]?.limit ??
-					this.options.default.limit,
-				resetOnDemand: true,
-				onDelete(k, value) {
-					self._deleteIndexedStorage(resource, k);
-					const relationshipNamespace = resource;
-					const existsRelation = self.relationships.has(relationshipNamespace);
-					if (existsRelation) {
-						switch (relationshipNamespace) {
-							case 'message':
-								{
-									const decodedValue = self.options.decode(value) as { channel_id?: string };
-									if (decodedValue.channel_id)
-										self.removeToRelationship(`${relationshipNamespace}.${decodedValue.channel_id}`, k.split('.')[1]);
-								}
-								break;
-							case 'ban':
-							case 'member':
-							case 'voice_state':
-								{
-									const split = k.split('.');
-									self.removeToRelationship(`${namespace}.${split[1]}`, split[2]);
-								}
-								break;
-							case 'channel':
-							case 'emoji':
-							case 'presence':
-							case 'role':
-							case 'stage_instance':
-							case 'sticker':
-							case 'overwrite':
-								self.removeToRelationship(namespace, k.split('.')[1]);
-								break;
-							// case 'guild':
-							// case 'user':
-							default:
-								self.removeToRelationship(namespace, k.split('.')[1]);
-								break;
-						}
-					}
-				},
-			});
-			this.storage.set(namespace, storageEntry);
-		}
+	private _deleteEmptyStorage(namespace: string, storageEntry: LimitedCollection<string, T>) {
+		if (storageEntry.size === 0 && this.storage.get(namespace) === storageEntry) this.storage.delete(namespace);
+	}
 
-		const previousBucket = this._getIndexedStorage(resource, key);
-		if (previousBucket && previousBucket !== storageEntry) {
-			previousBucket?.delete(key);
-			if (previousBucket?.size === 0) {
-				const previousNamespace = this._findNamespaceByStorage(resource, previousBucket);
-				if (previousNamespace) {
-					this.storage.delete(previousNamespace);
+	private _createStorageEntry(resource: string, namespace: string) {
+		const resourceOptions =
+			this.options[resource as Exclude<keyof LimitedMemoryAdapterOptions<T>, 'decode' | 'encode'>];
+		const expire = resourceOptions?.expire ?? this.options.default.expire;
+		const bucket = new LimitedCollection<string, T>({
+			expire,
+			limit: resourceOptions?.limit ?? this.options.default.limit,
+			resetOnDemand: (expire ?? 0) > 0,
+			onDelete: key => {
+				this._deleteIndexedStorage(key);
+				this._removeExplicitRelationship(key);
+				if (bucket.size === 1 && bucket.has(key) && this.storage.get(namespace) === bucket) {
+					this.storage.delete(namespace);
 				}
-			}
+			},
+		});
+		this.storage.set(namespace, bucket);
+		return bucket;
+	}
+
+	private _moveStoredEntry(
+		resource: string,
+		key: string,
+		storageEntry: LimitedCollection<string, T>,
+		previousStorageEntry: LimitedCollection<string, T> | undefined,
+	) {
+		if (!previousStorageEntry || previousStorageEntry === storageEntry) return;
+		previousStorageEntry.delete(key);
+		if (previousStorageEntry.size !== 0) return;
+		const previousNamespace = this._findNamespaceByStorage(resource, previousStorageEntry);
+		if (previousNamespace) this.storage.delete(previousNamespace);
+	}
+
+	private _set(key: string, value: any, relationship: AdapterRelationship, patch: boolean) {
+		const data = patch && !Array.isArray(value) ? { ...(this._getWithoutRefresh(key) ?? {}), ...value } : value;
+		const encoded = this.options.encode(data);
+		const resource = this._getKeyResource(key);
+		const layout = getCacheResourceLayout(resource);
+		const namespace = layout === 'message' ? this._getMessageNamespace(data) : relationship[0];
+		if (!namespace) return;
+
+		const storageEntry = this.storage.get(namespace) ?? this._createStorageEntry(resource, namespace);
+		const usesIndex = layout === 'message' || needsCacheStorageIndex(key, namespace);
+		this._moveStoredEntry(resource, key, storageEntry, this.keyToStorage.get(key));
+		storageEntry.set(key, encoded);
+
+		if (storageEntry.has(key)) {
+			if (usesIndex) this.keyToStorage.set(key, storageEntry);
+			this._syncRelationship(key, layout, namespace, relationship);
 		}
-
-		this._setIndexedStorage(resource, key, storageEntry);
-		storageEntry.set(key, this.options.encode(data));
+		this._deleteEmptyStorage(namespace, storageEntry);
 	}
 
-	bulkSet(keys: [string, any][]) {
-		for (const [key, value] of keys) {
-			this.__set(key, value);
-		}
+	set(key: string, value: any, relationship: AdapterRelationship) {
+		this._set(key, value, relationship, false);
 	}
 
-	set(keys: string, data: any) {
-		this.__set(keys, data);
+	bulkSet(entries: AdapterEntry[]) {
+		for (const [key, value, relationship] of entries) this.set(key, value, relationship);
 	}
 
-	bulkPatch(keys: [string, any][]) {
-		for (const [key, value] of keys) {
-			const oldData = this.get(key);
-			this.__set(key, Array.isArray(value) ? value : { ...(oldData ?? {}), ...value });
-		}
+	patch(key: string, value: any, relationship: AdapterRelationship) {
+		this._set(key, value, relationship, true);
 	}
 
-	patch(keys: string, data: any) {
-		const oldData = this.get(keys);
-		this.__set(keys, Array.isArray(data) ? data : { ...(oldData ?? {}), ...data });
+	bulkPatch(entries: AdapterEntry[]) {
+		for (const [key, value, relationship] of entries) this.patch(key, value, relationship);
 	}
 
 	values(to: string) {
-		const array: any[] = [];
-		const data = this.keys(to);
-
-		for (const key of data) {
-			const content = this.get(key);
-
-			if (content !== undefined && content !== null) {
-				array.push(content);
-			}
+		const values: any[] = [];
+		for (const key of this.keys(to)) {
+			const value = this.get(key);
+			if (value !== undefined && value !== null) values.push(value);
 		}
+		return values;
+	}
 
-		return array;
+	private _getRelationshipBucket(to: string) {
+		return getCacheResourceLayout(this._getKeyResource(to)) === 'message' ? undefined : this.storage.get(to);
 	}
 
 	keys(to: string) {
-		const relationship = this._getRelationshipSet(to);
-		if (!relationship) {
-			return [];
+		const bucket = this._getRelationshipBucket(to);
+		if (bucket) return [...bucket.keys()];
+		const keys: string[] = [];
+		for (const [key, relationship] of this.keyToRelationship) {
+			if (relationship[0] === to) keys.push(key);
 		}
-
-		const result: string[] = [];
-		for (const id of relationship) {
-			result.push(`${to}.${id}`);
-		}
-		return result;
+		return keys;
 	}
 
 	count(to: string) {
-		return this._getRelationshipSet(to)?.size ?? 0;
+		return this._getRelationshipBucket(to)?.size ?? this._getExplicitRelationshipSet(to)?.size ?? 0;
+	}
+
+	private _getBucketKey(to: string, id: string, bucket: LimitedCollection<string, T>) {
+		const resource = this._getKeyResource(to);
+		const layout = getCacheResourceLayout(resource);
+		if (layout === 'guild-keyed') return `${to}.${id}`;
+		if (layout !== 'custom') return `${resource}.${id}`;
+		const scopedKey = `${to}.${id}`;
+		return bucket.has(scopedKey) ? scopedKey : `${resource}.${id}`;
+	}
+
+	contains(to: string, id: string): boolean {
+		const bucket = this._getRelationshipBucket(to);
+		return bucket
+			? bucket.has(this._getBucketKey(to, id, bucket))
+			: (this._getExplicitRelationshipSet(to)?.has(id) ?? false);
+	}
+
+	getToRelationship(to: string): string[] {
+		const bucket = this._getRelationshipBucket(to);
+		if (!bucket) return [...(this._getExplicitRelationshipSet(to) ?? [])];
+		const ids: string[] = [];
+		for (const key of bucket.keys()) ids.push(key.slice(key.lastIndexOf('.') + 1));
+		return ids;
 	}
 
 	bulkRemove(keys: string[]) {
-		for (const i of keys) {
-			this.remove(i);
-		}
+		for (const key of keys) this.remove(key);
 	}
 
 	remove(key: string) {
 		const entry = this._getStorageEntry(key);
-		if (!entry) {
-			return;
-		}
-
+		if (!entry) return;
 		entry.storageEntry.delete(key);
-		this._deleteIndexedStorage(entry.resource, key);
-		if (entry.storageEntry.size === 0) {
-			const namespace = entry.namespace ?? this._findNamespaceByStorage(entry.resource, entry.storageEntry);
-			if (namespace) {
-				this.storage.delete(namespace);
-			}
-		}
-	}
-
-	flush(): void {
-		this.storage.clear();
-		this.relationships.clear();
-		this.keyToStorage.clear();
-	}
-
-	contains(to: string, keys: string): boolean {
-		return this._getRelationshipSet(to)?.has(keys) ?? false;
-	}
-
-	private _getRelationshipData(to: string) {
-		const [key, subrelationKey = '*'] = to.split('.');
-		return { key, subrelationKey };
-	}
-
-	private _getRelationshipSet(to: string) {
-		const { key, subrelationKey } = this._getRelationshipData(to);
-		return this.relationships.get(key)?.get(subrelationKey);
-	}
-
-	private _ensureRelationshipSet(to: string) {
-		const { key, subrelationKey } = this._getRelationshipData(to);
-		let relation = this.relationships.get(key);
-		if (!relation) {
-			relation = new Map<string, Set<string>>();
-			this.relationships.set(key, relation);
-		}
-
-		let values = relation.get(subrelationKey);
-		if (!values) {
-			values = new Set<string>();
-			relation.set(subrelationKey, values);
-		}
-
-		return values;
-	}
-
-	getToRelationship(to: string): string[] {
-		return [...(this._getRelationshipSet(to) ?? [])];
-	}
-
-	bulkAddToRelationShip(data: Record<string, string[]>) {
-		for (const i in data) {
-			this.addToRelationship(i, data[i]);
-		}
-	}
-
-	addToRelationship(to: string, keys: string | string[]) {
-		const data = this._ensureRelationshipSet(to);
-
-		for (const key of Array.isArray(keys) ? keys : [keys]) {
-			data.add(key);
-		}
+		this._deleteIndexedStorage(key);
+		if (entry.storageEntry.size !== 0) return;
+		const namespace = entry.namespace ?? this._findNamespaceByStorage(entry.resource, entry.storageEntry);
+		if (namespace) this.storage.delete(namespace);
 	}
 
 	removeToRelationship(to: string, keys: string | string[]) {
-		const data = this._getRelationshipSet(to);
-		if (!data) {
-			return;
-		}
-
-		for (const key of Array.isArray(keys) ? keys : [keys]) {
-			data.delete(key);
-		}
-
-		if (!data.size) {
-			const { key, subrelationKey } = this._getRelationshipData(to);
-			const relation = this.relationships.get(key);
-			relation?.delete(subrelationKey);
-			if (relation && !relation.size) this.relationships.delete(key);
+		const ids = new Set(Array.isArray(keys) ? keys : [keys]);
+		for (const key of this.keys(to)) {
+			if (ids.has(key.slice(key.lastIndexOf('.') + 1))) this.remove(key);
 		}
 	}
 
 	removeRelationship(to: string | string[]) {
-		for (const i of Array.isArray(to) ? to : [to]) {
-			const { key, subrelationKey } = this._getRelationshipData(i);
-			if (subrelationKey === '*') {
-				this.relationships.delete(key);
-				continue;
-			}
+		for (const relationship of Array.isArray(to) ? to : [to]) this.bulkRemove(this.keys(relationship));
+	}
 
-			const relation = this.relationships.get(key);
-			if (!relation) continue;
-			relation.delete(subrelationKey);
-			if (!relation.size) this.relationships.delete(key);
-		}
+	flush(): void {
+		for (const storageEntry of this.storage.values()) storageEntry.clear();
+		this.storage.clear();
+		this.relationships.clear();
+		this.keyToStorage.clear();
+		this.keyToRelationship.clear();
 	}
 }

@@ -15,6 +15,7 @@
 	],
 	"scripts": {
 		"build": "tsc --outDir ./lib",
+		"bench:limited-cache": "pnpm run build && node --expose-gc ./benchmarks/limited-cache.mjs",
 		"prepublishOnly": "npm run build",
 		"prepare": "npm run build && husky",
 		"lint": "biome lint --write ./src",
