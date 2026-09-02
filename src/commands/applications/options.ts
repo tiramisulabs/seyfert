@@ -1,6 +1,6 @@
 import type { Awaitable, FlatObjectKeys } from '../../common';
 import type { ModalContext } from '../../components';
-import type { ComponentContext } from '../../components/componentcontext';
+import type { ComponentContext, ContextComponentCommandInteractionMap } from '../../components/componentcontext';
 import type { MessageCommandInteraction, UserCommandInteraction } from '../../structures';
 import {
 	type APIApplicationCommandBasicOption,
@@ -208,11 +208,11 @@ export function createAttachmentOption<
 }
 
 export type AnyContext =
-	| CommandContext
-	| MenuCommandContext<MessageCommandInteraction<boolean> | UserCommandInteraction<boolean>>
-	| ComponentContext
-	| ModalContext
-	| EntryPointContext;
+	| CommandContext<{}, never, 'definition'>
+	| MenuCommandContext<MessageCommandInteraction<boolean> | UserCommandInteraction<boolean>, never, 'definition'>
+	| ComponentContext<keyof ContextComponentCommandInteractionMap, never, string[], 'definition'>
+	| ModalContext<never, 'definition'>
+	| EntryPointContext<never, 'definition'>;
 
 export function createMiddleware<T = any, C extends AnyContext = AnyContext>(data: MiddlewareContext<T, C>) {
 	return data;

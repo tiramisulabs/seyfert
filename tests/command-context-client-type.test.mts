@@ -203,12 +203,12 @@ const createMiddlewareContextProgram = () => {
 			`import {
 	createMiddleware,
 	createStringOption,
-	type CommandContext,
-	type ComponentContext,
-	type EntryPointContext,
-	type MenuCommandContext,
+	type CommandMiddlewareContext,
+	type ComponentMiddlewareContext,
+	type EntryPointMiddlewareContext,
+	type MenuMiddlewareContext,
 	type MessageCommandInteraction,
-	type ModalContext,
+	type ModalMiddlewareContext,
 	type UserCommandInteraction,
 } from "seyfert";
 
@@ -216,19 +216,19 @@ const options = {
 	team: createStringOption({ description: "Team", required: true }),
 };
 
-const teamOnly = createMiddleware<{ teamId: string }, CommandContext<typeof options>>(({ context, next }) => {
+const teamOnly = createMiddleware<{ teamId: string }, CommandMiddlewareContext<typeof options>>(({ context, next }) => {
 	const teamId: string = context.options.team;
 	next({ teamId });
 });
 
-const menuOnly = createMiddleware<{ menu: true }, MenuCommandContext<MessageCommandInteraction | UserCommandInteraction>>(
+const menuOnly = createMiddleware<{ menu: true }, MenuMiddlewareContext<MessageCommandInteraction | UserCommandInteraction>>(
 	({ next }) => next({ menu: true }),
 );
-const componentOnly = createMiddleware<{ component: true }, ComponentContext<"Button">>(({ next }) =>
+const componentOnly = createMiddleware<{ component: true }, ComponentMiddlewareContext<"Button">>(({ next }) =>
 	next({ component: true }),
 );
-const modalOnly = createMiddleware<{ modal: true }, ModalContext>(({ next }) => next({ modal: true }));
-const entryPointOnly = createMiddleware<{ entryPoint: true }, EntryPointContext>(({ next }) =>
+const modalOnly = createMiddleware<{ modal: true }, ModalMiddlewareContext>(({ next }) => next({ modal: true }));
+const entryPointOnly = createMiddleware<{ entryPoint: true }, EntryPointMiddlewareContext>(({ next }) =>
 	next({ entryPoint: true }),
 );
 
@@ -249,7 +249,7 @@ declare module "seyfert" {
 		[
 			commandFile,
 			`import "./start";
-import type { CommandContext } from "seyfert";
+import type { CommandContext, CommandMetadata } from "seyfert";
 
 declare const ctx: CommandContext<{}, "teamOnly" | "menuOnly" | "componentOnly" | "modalOnly" | "entryPointOnly">;
 const teamId: string = ctx.metadata.teamOnly.teamId;
@@ -257,17 +257,24 @@ const menu: true = ctx.metadata.menuOnly.menu;
 const component: true = ctx.metadata.componentOnly.component;
 const modal: true = ctx.metadata.modalOnly.modal;
 const entryPoint: true = ctx.metadata.entryPointOnly.entryPoint;
+declare const metadata: CommandMetadata<"teamOnly">;
+const metadataTeamId: string = metadata.teamOnly.teamId;
+// @ts-expect-error normal contexts reject middleware names absent from the registry.
+type InvalidContext = CommandContext<{}, "missing">;
+// @ts-expect-error metadata rejects middleware names absent from the registry.
+type InvalidMetadata = CommandMetadata<"missing">;
 void teamId;
 void menu;
 void component;
 void modal;
 void entryPoint;
+void metadataTeamId;
 `,
 		],
 		[
 			completionsFile,
 			`import "./start";
-import { Client, Middlewares, middlewares as collectMiddlewares } from "seyfert";
+import { Client, Middlewares, middlewares as collectMiddlewares, type CommandContext, type CommandMetadata } from "seyfert";
 import { middlewares as registeredMiddlewares } from "./middlewares";
 
 declare class TestCommand {}
@@ -277,6 +284,8 @@ new Client({ globalMiddlewares: [/* global */ ""] });
 new Client().setServices({
 	middlewares: { /* services */ "": registeredMiddlewares.teamOnly },
 });
+type ContextCompletion = CommandContext<{}, /* context */ "">;
+type MetadataCompletion = CommandMetadata</* metadata */ "">;
 `,
 		],
 	]);
@@ -484,7 +493,7 @@ describe('command context client type', () => {
 		const { completionsFile, completionsSource, languageService } = createMiddlewareContextProgram();
 		const expected = ['componentOnly', 'entryPointOnly', 'menuOnly', 'modalOnly', 'teamOnly'];
 
-		for (const marker of ['decorator', 'helper', 'global', 'services']) {
+		for (const marker of ['decorator', 'helper', 'global', 'services', 'context', 'metadata']) {
 			const markerPosition = completionsSource.indexOf(`/* ${marker} */`);
 			const quotePosition = completionsSource.indexOf('"', markerPosition);
 			const completions = languageService.getCompletionsAtPosition(completionsFile, quotePosition + 1, {});

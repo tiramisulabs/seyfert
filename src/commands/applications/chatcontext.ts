@@ -27,13 +27,20 @@ import {
 } from '../../structures';
 import { MessageFlags, type RESTGetAPIGuildQuery } from '../../types';
 import { BaseContext } from '../basecontext';
+import type { ResolvedRegisteredMiddlewares } from '../decorators';
 import type { Command, ContextOptions, OptionsRecord, SubCommand } from './chat';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, InferWithPrefix, UsingClient } from './shared';
 
 type GuildCommandChannel = AllGuildChannels | BaseGuildChannelStructure;
+type ContextMiddlewareNames<Mode extends 'registered' | 'definition'> = Mode extends 'definition'
+	? string
+	: keyof ResolvedRegisteredMiddlewares;
 
-export interface CommandContext<T extends OptionsRecord = {}, M extends string = never>
-	extends BaseContext,
+export interface CommandContext<
+	T extends OptionsRecord = {},
+	M extends ContextMiddlewareNames<Mode> = never,
+	Mode extends 'registered' | 'definition' = 'registered',
+> extends BaseContext,
 		ExtendContext {
 	/**@internal */
 	__edited?: true;
@@ -41,7 +48,11 @@ export interface CommandContext<T extends OptionsRecord = {}, M extends string =
 	__deferred?: true;
 }
 
-export class CommandContext<T extends OptionsRecord = {}, M extends string = never> extends BaseContext {
+export class CommandContext<
+	T extends OptionsRecord = {},
+	M extends ContextMiddlewareNames<Mode> = never,
+	Mode extends 'registered' | 'definition' = 'registered',
+> extends BaseContext {
 	message!: If<InferWithPrefix, MessageStructure | undefined, undefined>;
 	interaction!: If<InferWithPrefix, ChatInputCommandInteraction | undefined, ChatInputCommandInteraction>;
 
@@ -62,7 +73,8 @@ export class CommandContext<T extends OptionsRecord = {}, M extends string = nev
 	}
 
 	options: ContextOptions<T> = {} as never;
-	metadata: CommandMetadata<M> = {} as never;
+	metadata: Mode extends 'definition' ? {} : CommandMetadata<Extract<M, keyof ResolvedRegisteredMiddlewares>> =
+		{} as never;
 	globalMetadata: GlobalMetadata = {};
 
 	get t() {
@@ -249,17 +261,23 @@ export class CommandContext<T extends OptionsRecord = {}, M extends string = nev
 		return this.interaction?.member || ((this.message! as MessageStructure)?.member as any);
 	}
 
-	isChat(): this is CommandContext<T, M> {
+	isChat(): this is CommandContext<T, M, Mode> {
 		return true;
 	}
 
-	inGuild(): this is GuildCommandContext<T, M> {
+	inGuild(): this is GuildCommandContext<T, M, Mode> {
 		return !!this.guildId;
 	}
 }
 
-export interface GuildCommandContext<T extends OptionsRecord = {}, M extends string = never>
-	extends Omit<MakeRequired<CommandContext<T, M>, 'guildId' | 'member'>, 'channel' | 'guild' | 'me' | 'fetchMember'> {
+export interface GuildCommandContext<
+	T extends OptionsRecord = {},
+	M extends ContextMiddlewareNames<Mode> = never,
+	Mode extends 'registered' | 'definition' = 'registered',
+> extends Omit<
+		MakeRequired<CommandContext<T, M, Mode>, 'guildId' | 'member'>,
+		'channel' | 'guild' | 'me' | 'fetchMember'
+	> {
 	channel(mode?: 'rest' | 'flow'): Promise<GuildCommandChannel>;
 	channel(mode: 'cache'): ReturnCache<If<InferWithPrefix, GuildCommandChannel | undefined, GuildCommandChannel>>;
 
@@ -272,3 +290,6 @@ export interface GuildCommandContext<T extends OptionsRecord = {}, M extends str
 	fetchMember(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
 	fetchMember(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
 }
+
+/** A command context for typing middleware while its registry is being defined. */
+export type CommandMiddlewareContext<T extends OptionsRecord = {}> = CommandContext<T, never, 'definition'>;
