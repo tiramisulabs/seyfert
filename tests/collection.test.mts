@@ -221,6 +221,63 @@ describe('LimitedCollection', () => {
 		assert.equal(infiniteLimit.size, 1);
 	});
 
+	test('rejects NaN and finite expirations that exceed the runtime timer limit', () => {
+		assert.throws(() => new LimitedCollection({ expire: Number.NaN }), TypeError);
+		assert.throws(() => new LimitedCollection({ expire: 2_147_483_648 }), RangeError);
+		assert.doesNotThrow(() => new LimitedCollection({ expire: 2_147_483_647 }));
+
+		const collection = new LimitedCollection<string, number>();
+		assert.throws(() => collection.set('invalid', 1, Number.NaN), TypeError);
+		assert.throws(() => collection.set('invalid', 1, 2_147_483_648), RangeError);
+
+		const disabledCollection = new LimitedCollection<string, number>({ limit: 0 });
+		assert.doesNotThrow(() => disabledCollection.set('ignored', 1, Number.NaN));
+		assert.equal(disabledCollection.size, 0);
+	});
+
+	test('treats infinities and non-positive expirations as no expiration', () => {
+		vi.useFakeTimers();
+		try {
+			const collection = new LimitedCollection<string, number>({ expire: Number.POSITIVE_INFINITY });
+			collection.set('default', 1);
+			collection.set('zero', 2, 0);
+			collection.set('negative-finite', 3, -1);
+			collection.set('negative-infinite', 4, Number.NEGATIVE_INFINITY);
+			collection.set('positive', 5, Number.POSITIVE_INFINITY);
+
+			for (const key of ['default', 'zero', 'negative-finite', 'negative-infinite', 'positive']) {
+				assert.equal(collection.raw(key)?.expire, -1);
+				assert.equal(collection.raw(key)?.expireOn, -1);
+			}
+			assert.equal(collection.closer, undefined);
+			assert.equal(vi.getTimerCount(), 0);
+		} finally {
+			vi.clearAllTimers();
+			vi.useRealTimers();
+		}
+	});
+
+	test('replacing the closer through Map key equality cancels its timer', () => {
+		vi.useFakeTimers();
+		const onDelete = vi.fn();
+		try {
+			const key = Number.NaN;
+			const collection = new LimitedCollection<number, number>({ onDelete });
+			collection.set(key, 1, 100);
+			assert.equal(vi.getTimerCount(), 1);
+
+			collection.set(key, 2, Number.POSITIVE_INFINITY);
+			assert.equal(vi.getTimerCount(), 0);
+
+			vi.advanceTimersByTime(101);
+			assert.equal(collection.get(key), 2);
+			assert.equal(onDelete.mock.calls.length, 0);
+		} finally {
+			vi.clearAllTimers();
+			vi.useRealTimers();
+		}
+	});
+
 	test('raw returns internal data', () => {
 		const c = new LimitedCollection<number, string>();
 		c.set(1, 'one');
@@ -317,6 +374,26 @@ describe('LimitedCollection', () => {
 		vi.advanceTimersByTime(2);
 		assert.equal(c.has(1), false);
 		vi.useRealTimers();
+	});
+
+	test('replacing the closer with a later expiration schedules the next closer immediately', () => {
+		vi.useFakeTimers();
+		try {
+			const collection = new LimitedCollection<string, number>();
+			collection.set('replaced', 1, 100);
+			collection.set('next', 2, 200);
+			vi.advanceTimersByTime(20);
+
+			collection.set('replaced', 3, 300);
+			assert.equal(vi.getTimerCount(), 1);
+
+			vi.advanceTimersToNextTimer();
+			assert.equal(collection.has('next'), false);
+			assert.equal(collection.get('replaced'), 3);
+		} finally {
+			vi.clearAllTimers();
+			vi.useRealTimers();
+		}
 	});
 
 	test('keys, values, entries iterate correctly', () => {
