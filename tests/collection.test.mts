@@ -1,6 +1,15 @@
 import { assert, describe, expect, test, vi } from 'vitest';
 import { Collection, LimitedCollection } from '../src/collection';
 
+function withFakeTimers(run: () => void) {
+	vi.useFakeTimers();
+	try {
+		run();
+	} finally {
+		vi.useRealTimers();
+	}
+}
+
 describe('Collection', () => {
 	test('sweep removes matching elements', () => {
 		const c = new Collection<number, string>();
@@ -364,6 +373,21 @@ describe('LimitedCollection', () => {
 		assert.deepEqual(deleted, [[1, 'one']]);
 	});
 
+	test('onDelete observes the entry before it is removed', () => {
+		let observed: { hasKey: boolean; size: number } | undefined;
+		let c: LimitedCollection<number, string>;
+		c = new LimitedCollection({
+			limit: 1,
+			onDelete: key => {
+				observed = { hasKey: c.has(key), size: c.size };
+			},
+		});
+		c.set(1, 'one');
+		c.set(2, 'two');
+
+		assert.deepEqual(observed, { hasKey: true, size: 2 });
+	});
+
 	test('clear empties collection', () => {
 		const c = new LimitedCollection<number, string>();
 		c.set(1, 'one');
@@ -373,13 +397,13 @@ describe('LimitedCollection', () => {
 	});
 
 	test('expire removes element after timeout', () => {
-		vi.useFakeTimers();
-		const c = new LimitedCollection<number, string>();
-		c.set(1, 'one', 100);
-		assert.equal(c.has(1), true);
-		vi.advanceTimersByTime(101);
-		assert.equal(c.has(1), false);
-		vi.useRealTimers();
+		withFakeTimers(() => {
+			const c = new LimitedCollection<number, string>();
+			c.set(1, 'one', 100);
+			assert.equal(c.has(1), true);
+			vi.advanceTimersByTime(101);
+			assert.equal(c.has(1), false);
+		});
 	});
 
 	test('closer returns element with soonest expiry', () => {
@@ -397,31 +421,169 @@ describe('LimitedCollection', () => {
 	});
 
 	test('resetOnDemand extends expiry on get', () => {
-		vi.useFakeTimers();
-		const c = new LimitedCollection<number, string>({ resetOnDemand: true });
-		c.set(1, 'one', 100);
-		vi.advanceTimersByTime(80);
-		c.get(1); // should reset the expiry
-		vi.advanceTimersByTime(80);
-		assert.equal(c.has(1), true);
-		vi.advanceTimersByTime(21);
-		assert.equal(c.has(1), false);
-		vi.useRealTimers();
+		withFakeTimers(() => {
+			const c = new LimitedCollection<number, string>({ resetOnDemand: true });
+			c.set(1, 'one', 100);
+			vi.advanceTimersByTime(80);
+			c.get(1); // should reset the expiry
+			vi.advanceTimersByTime(80);
+			assert.equal(c.has(1), true);
+			vi.advanceTimersByTime(21);
+			assert.equal(c.has(1), false);
+		});
+	});
+
+	test('reschedules a hot key without expiring it from the old deadline', () => {
+		withFakeTimers(() => {
+			const c = new LimitedCollection<number, string>({ resetOnDemand: true });
+			c.set(1, 'one', 100);
+			vi.advanceTimersByTime(80);
+			assert.equal(c.get(1), 'one');
+			vi.advanceTimersByTime(30);
+			assert.equal(c.has(1), true);
+			vi.advanceTimersByTime(70);
+			assert.equal(c.has(1), false);
+		});
+	});
+
+	test('clears expiration timers when the collection is cleared', () => {
+		withFakeTimers(() => {
+			const c = new LimitedCollection<number, string>({ expire: 100 });
+			c.set(1, 'one');
+			assert.equal(vi.getTimerCount(), 1);
+			c.clear();
+			assert.equal(vi.getTimerCount(), 0);
+			vi.advanceTimersByTime(200);
+			assert.equal(c.size, 0);
+		});
+	});
+
+	test('keeps one tracked timer when an expiration callback replaces the collection', () => {
+		withFakeTimers(() => {
+			const c = new LimitedCollection<number, string>({
+				expire: 100,
+				onDelete: key => {
+					if (key !== 1) return;
+					c.clear();
+					c.set(2, 'two');
+				},
+			});
+			c.set(1, 'one');
+
+			vi.advanceTimersByTime(100);
+			assert.equal(c.has(2), true);
+			assert.equal(vi.getTimerCount(), 1);
+
+			c.clear();
+			assert.equal(vi.getTimerCount(), 0);
+		});
+	});
+
+	test('expires a large batch with one callback per element', () => {
+		withFakeTimers(() => {
+			const deleted: number[] = [];
+			const c = new LimitedCollection<number, string>({ onDelete: key => deleted.push(key) });
+			for (let key = 0; key < 1_500; key++) c.set(key, String(key), 100);
+			vi.advanceTimersByTime(100);
+			assert.equal(c.size, 476);
+			assert.equal(deleted.length, 1_024);
+			vi.runAllTimers();
+			assert.equal(c.size, 0);
+			assert.equal(deleted.length, 1_500);
+			assert.equal(new Set(deleted).size, 1_500);
+		});
+	});
+
+	test('cancels a pending expiration continuation when cleared', () => {
+		withFakeTimers(() => {
+			const deleted: number[] = [];
+			const c = new LimitedCollection<number, string>({ onDelete: key => deleted.push(key) });
+			for (let key = 0; key < 1_500; key++) c.set(key, String(key), 100);
+
+			vi.advanceTimersByTime(100);
+			assert.equal(c.size, 476);
+			assert.equal(vi.getTimerCount(), 1);
+			c.clear();
+			assert.equal(vi.getTimerCount(), 0);
+
+			vi.runAllTimers();
+			assert.equal(deleted.length, 1_024);
+		});
+	});
+
+	test('preserves an entry when its eviction callback throws', () => {
+		withFakeTimers(() => {
+			const c = new LimitedCollection<number, string>({
+				limit: 1,
+				onDelete: key => {
+					if (key === 1) throw new Error('rejected deletion');
+				},
+			});
+			c.set(1, 'one', 60_000);
+			expect(() => c.set(2, 'two', 100)).toThrow('rejected deletion');
+			assert.equal(c.has(1), true);
+			assert.equal(c.has(2), true);
+
+			vi.advanceTimersByTime(100);
+			assert.equal(c.has(2), false);
+			assert.equal(c.has(1), true);
+			assert.equal(vi.getTimerCount(), 1);
+		});
+	});
+
+	test('preserves expiration when a delete callback throws', () => {
+		withFakeTimers(() => {
+			const c = new LimitedCollection<number, string>({
+				onDelete: () => {
+					throw new Error('rejected deletion');
+				},
+			});
+			c.set(1, 'one', 100);
+			expect(() => c.delete(1)).toThrow('rejected deletion');
+			assert.equal(c.has(1), true);
+			assert.equal(vi.getTimerCount(), 1);
+		});
+	});
+
+	test('does not retry a failed expiration and continues with later entries', () => {
+		withFakeTimers(() => {
+			const calls: number[] = [];
+			const c = new LimitedCollection<number, string>({
+				onDelete: key => {
+					calls.push(key);
+					if (key === 1) throw new Error('rejected deletion');
+				},
+			});
+			c.set(1, 'one', 100);
+			c.set(2, 'two', 200);
+
+			expect(() => vi.advanceTimersByTime(100)).toThrow('rejected deletion');
+			assert.deepEqual(calls, [1]);
+			assert.equal(c.has(1), true);
+			assert.equal(c.has(2), true);
+			assert.equal(vi.getTimerCount(), 1);
+
+			vi.advanceTimersByTime(100);
+			assert.deepEqual(calls, [1, 2]);
+			assert.equal(c.has(1), true);
+			assert.equal(c.has(2), false);
+			assert.equal(vi.getTimerCount(), 0);
+		});
 	});
 
 	test('overwriting the closer with a later expiry does not expire early', () => {
-		vi.useFakeTimers();
-		const c = new LimitedCollection<number, string>();
-		c.set(1, 'one', 100);
-		vi.advanceTimersByTime(50);
-		c.set(1, 'one-again', 200);
-		vi.advanceTimersByTime(60);
-		assert.equal(c.has(1), true);
-		vi.advanceTimersByTime(139);
-		assert.equal(c.has(1), true);
-		vi.advanceTimersByTime(2);
-		assert.equal(c.has(1), false);
-		vi.useRealTimers();
+		withFakeTimers(() => {
+			const c = new LimitedCollection<number, string>();
+			c.set(1, 'one', 100);
+			vi.advanceTimersByTime(50);
+			c.set(1, 'one-again', 200);
+			vi.advanceTimersByTime(60);
+			assert.equal(c.has(1), true);
+			vi.advanceTimersByTime(139);
+			assert.equal(c.has(1), true);
+			vi.advanceTimersByTime(2);
+			assert.equal(c.has(1), false);
+		});
 	});
 
 	test('replacing the closer with a later expiration schedules the next closer immediately', () => {
