@@ -25,20 +25,19 @@ import type {
 } from '../../structures';
 import { type APIMessage, ApplicationCommandType, MessageFlags, type RESTGetAPIGuildQuery } from '../../types';
 import { BaseContext } from '../basecontext';
-import type { ResolvedRegisteredMiddlewares } from '../decorators';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
 
 export type InteractionTarget<T> = T extends MessageCommandInteraction ? MessageStructure : UserStructure;
 
 export interface MenuCommandContext<
 	T extends MessageCommandInteraction | UserCommandInteraction,
-	M extends keyof ResolvedRegisteredMiddlewares = never,
+	M extends string = never,
 > extends BaseContext,
 		ExtendContext {}
 
 export class MenuCommandContext<
 	T extends MessageCommandInteraction | UserCommandInteraction,
-	M extends keyof ResolvedRegisteredMiddlewares = never,
+	M extends string = never,
 > extends BaseContext {
 	constructor(
 		readonly client: UsingClient,
@@ -197,7 +196,7 @@ export class MenuCommandContext<
 
 export interface GuildMenuCommandContext<
 	T extends MessageCommandInteraction | UserCommandInteraction,
-	M extends keyof ResolvedRegisteredMiddlewares = never,
+	M extends string = never,
 > extends Omit<MakeRequired<MenuCommandContext<T, M>, 'guildId' | 'member'>, 'guild'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;

@@ -18,15 +18,12 @@ import type {
 import type { AllChannels, EntryPointInteraction, ModalSubmitInteraction } from '../../structures';
 import { MessageFlags, type RESTGetAPIGuildQuery } from '../../types';
 import { BaseContext } from '../basecontext';
-import type { ResolvedRegisteredMiddlewares } from '../decorators';
 import type { EntryPointCommand } from './entryPoint';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
 
-export interface EntryPointContext<M extends keyof ResolvedRegisteredMiddlewares = never>
-	extends BaseContext,
-		ExtendContext {}
+export interface EntryPointContext<M extends string = never> extends BaseContext, ExtendContext {}
 
-export class EntryPointContext<M extends keyof ResolvedRegisteredMiddlewares = never> extends BaseContext {
+export class EntryPointContext<M extends string = never> extends BaseContext {
 	constructor(
 		readonly client: UsingClient,
 		readonly interaction: EntryPointInteraction,
@@ -164,7 +161,7 @@ export class EntryPointContext<M extends keyof ResolvedRegisteredMiddlewares = n
 	}
 }
 
-export interface GuildEntryPointContext<M extends keyof ResolvedRegisteredMiddlewares = never>
+export interface GuildEntryPointContext<M extends string = never>
 	extends Omit<MakeRequired<EntryPointContext<M>, 'guildId' | 'member'>, 'guild' | 'me'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;

@@ -193,6 +193,116 @@ ctx.client.messages.write("123", { content: "ok" });
 	);
 };
 
+const createMiddlewareContextProgram = () => {
+	const root = join(tmpdir(), 'seyfert-middleware-context');
+	const commandFile = join(root, 'src', 'command.ts');
+	const sources = new Map([
+		[
+			join(root, 'src', 'middlewares.ts'),
+			`import {
+	createMiddleware,
+	createStringOption,
+	type CommandContext,
+	type ComponentContext,
+	type EntryPointContext,
+	type MenuCommandContext,
+	type MessageCommandInteraction,
+	type ModalContext,
+	type UserCommandInteraction,
+} from "seyfert";
+
+const options = {
+	team: createStringOption({ description: "Team", required: true }),
+};
+
+const teamOnly = createMiddleware<{ teamId: string }, CommandContext<typeof options>>(({ context, next }) => {
+	const teamId: string = context.options.team;
+	next({ teamId });
+});
+
+const menuOnly = createMiddleware<{ menu: true }, MenuCommandContext<MessageCommandInteraction | UserCommandInteraction>>(
+	({ next }) => next({ menu: true }),
+);
+const componentOnly = createMiddleware<{ component: true }, ComponentContext<"Button">>(({ next }) =>
+	next({ component: true }),
+);
+const modalOnly = createMiddleware<{ modal: true }, ModalContext>(({ next }) => next({ modal: true }));
+const entryPointOnly = createMiddleware<{ entryPoint: true }, EntryPointContext>(({ next }) =>
+	next({ entryPoint: true }),
+);
+
+export const middlewares = { teamOnly, menuOnly, componentOnly, modalOnly, entryPointOnly };
+`,
+		],
+		[
+			join(root, 'src', 'start.ts'),
+			`import { middlewares } from "./middlewares";
+
+declare module "seyfert" {
+	interface SeyfertRegistry {
+		middlewares: typeof middlewares;
+	}
+}
+`,
+		],
+		[
+			commandFile,
+			`import "./start";
+import type { CommandContext } from "seyfert";
+
+declare const ctx: CommandContext<{}, "teamOnly" | "menuOnly" | "componentOnly" | "modalOnly" | "entryPointOnly">;
+const teamId: string = ctx.metadata.teamOnly.teamId;
+const menu: true = ctx.metadata.menuOnly.menu;
+const component: true = ctx.metadata.componentOnly.component;
+const modal: true = ctx.metadata.modalOnly.modal;
+const entryPoint: true = ctx.metadata.entryPointOnly.entryPoint;
+void teamId;
+void menu;
+void component;
+void modal;
+void entryPoint;
+`,
+		],
+	]);
+	const compilerOptions: ts.CompilerOptions = {
+		esModuleInterop: true,
+		module: ts.ModuleKind.CommonJS,
+		moduleResolution: ts.ModuleResolutionKind.Node10,
+		noEmit: true,
+		skipLibCheck: true,
+		strict: true,
+		target: ts.ScriptTarget.ESNext,
+		types: ['node'],
+	};
+	const host = ts.createCompilerHost(compilerOptions);
+	const readFile = host.readFile.bind(host);
+	const fileExists = host.fileExists.bind(host);
+
+	host.fileExists = (fileName) => sources.has(fileName) || fileExists(fileName);
+	host.readFile = (fileName) => sources.get(fileName) ?? readFile(fileName);
+	host.getSourceFile = (fileName, languageVersion) => {
+		const source = host.readFile(fileName);
+		return source === undefined ? undefined : ts.createSourceFile(fileName, source, languageVersion, true);
+	};
+	host.resolveModuleNames = (moduleNames, containingFile) =>
+		moduleNames.map((moduleName) => {
+			if (moduleName === 'seyfert') {
+				return {
+					extension: ts.Extension.Dts,
+					isExternalLibraryImport: true,
+					resolvedFileName: join(process.cwd(), 'lib', 'index.d.ts'),
+				};
+			}
+			if (moduleName.startsWith('./')) {
+				const resolvedFileName = join(root, 'src', `${moduleName.slice(2)}.ts`);
+				if (sources.has(resolvedFileName)) return { extension: ts.Extension.Ts, resolvedFileName };
+			}
+			return ts.resolveModuleName(moduleName, containingFile, compilerOptions, host).resolvedModule;
+		});
+
+	return ts.createProgram([commandFile], compilerOptions, host);
+};
+
 const getClientTypesBeforeDiagnostics = (sourceFile: ts.SourceFile, checker: ts.TypeChecker) => {
 	const clientTypes: TypeSnapshot[] = [];
 
@@ -325,6 +435,12 @@ describe('command context client type', () => {
 		} finally {
 			rmSync(root, { force: true, recursive: true });
 		}
+	});
+
+	test('registers explicitly typed middleware contexts without circular inference', () => {
+		const program = createMiddlewareContextProgram();
+
+		expect(program.getSemanticDiagnostics()).toHaveLength(0);
 	});
 });
 

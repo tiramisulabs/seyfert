@@ -27,13 +27,12 @@ import {
 } from '../../structures';
 import { MessageFlags, type RESTGetAPIGuildQuery } from '../../types';
 import { BaseContext } from '../basecontext';
-import type { ResolvedRegisteredMiddlewares } from '../decorators';
 import type { Command, ContextOptions, OptionsRecord, SubCommand } from './chat';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, InferWithPrefix, UsingClient } from './shared';
 
 type GuildCommandChannel = AllGuildChannels | BaseGuildChannelStructure;
 
-export interface CommandContext<T extends OptionsRecord = {}, M extends keyof ResolvedRegisteredMiddlewares = never>
+export interface CommandContext<T extends OptionsRecord = {}, M extends string = never>
 	extends BaseContext,
 		ExtendContext {
 	/**@internal */
@@ -42,10 +41,7 @@ export interface CommandContext<T extends OptionsRecord = {}, M extends keyof Re
 	__deferred?: true;
 }
 
-export class CommandContext<
-	T extends OptionsRecord = {},
-	M extends keyof ResolvedRegisteredMiddlewares = never,
-> extends BaseContext {
+export class CommandContext<T extends OptionsRecord = {}, M extends string = never> extends BaseContext {
 	message!: If<InferWithPrefix, MessageStructure | undefined, undefined>;
 	interaction!: If<InferWithPrefix, ChatInputCommandInteraction | undefined, ChatInputCommandInteraction>;
 
@@ -262,10 +258,8 @@ export class CommandContext<
 	}
 }
 
-export interface GuildCommandContext<
-	T extends OptionsRecord = {},
-	M extends keyof ResolvedRegisteredMiddlewares = never,
-> extends Omit<MakeRequired<CommandContext<T, M>, 'guildId' | 'member'>, 'channel' | 'guild' | 'me' | 'fetchMember'> {
+export interface GuildCommandContext<T extends OptionsRecord = {}, M extends string = never>
+	extends Omit<MakeRequired<CommandContext<T, M>, 'guildId' | 'member'>, 'channel' | 'guild' | 'me' | 'fetchMember'> {
 	channel(mode?: 'rest' | 'flow'): Promise<GuildCommandChannel>;
 	channel(mode: 'cache'): ReturnCache<If<InferWithPrefix, GuildCommandChannel | undefined, GuildCommandChannel>>;
 

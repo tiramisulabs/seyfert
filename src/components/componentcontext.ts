@@ -17,13 +17,7 @@ import type {
 	UserStructure,
 	WebhookMessageStructure,
 } from '../client/transformers';
-import type {
-	CommandMetadata,
-	ExtendContext,
-	GlobalMetadata,
-	ResolvedRegisteredMiddlewares,
-	UsingClient,
-} from '../commands';
+import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from '../commands';
 import { BaseContext } from '../commands/basecontext';
 import type {
 	ComponentInteractionMessageUpdate,
@@ -40,14 +34,14 @@ import { ComponentType, MessageFlags, type RESTGetAPIGuildQuery } from '../types
 
 export interface ComponentContext<
 	Type extends keyof ContextComponentCommandInteractionMap = keyof ContextComponentCommandInteractionMap,
-	M extends keyof ResolvedRegisteredMiddlewares = never,
+	M extends string = never,
 	StringSelectValues extends string[] = string[],
 > extends BaseContext,
 		ExtendContext {}
 
 export class ComponentContext<
 	Type extends keyof ContextComponentCommandInteractionMap,
-	M extends keyof ResolvedRegisteredMiddlewares = never,
+	M extends string = never,
 	StringSelectValues extends string[] = string[],
 > extends BaseContext {
 	/**
@@ -285,7 +279,7 @@ export interface ContextComponentCommandInteractionMap<StringSelectValues extend
 
 export interface GuildComponentContext<
 	Type extends keyof ContextComponentCommandInteractionMap,
-	M extends keyof ResolvedRegisteredMiddlewares = never,
+	M extends string = never,
 	StringSelectValues extends string[] = string[],
 > extends Omit<MakeRequired<ComponentContext<Type, M, StringSelectValues>, 'guildId' | 'member'>, 'guild' | 'me'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;

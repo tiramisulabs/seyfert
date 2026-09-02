@@ -94,9 +94,9 @@ type CommandMetadataFromTuple<T extends readonly (keyof ResolvedRegisteredMiddle
 		: {}
 	: {};
 
-export type CommandMetadata<
-	T extends readonly (keyof ResolvedRegisteredMiddlewares)[] | keyof ResolvedRegisteredMiddlewares,
-> = [T] extends [never]
+// Context types can define registered middlewares, so their generic cannot eagerly depend on the registry it builds.
+// Keep the input independent and resolve known middleware names only after the default `never` case short-circuits.
+export type CommandMetadata<T extends readonly string[] | string> = [T] extends [never]
 	? {}
 	: [T] extends [readonly (keyof ResolvedRegisteredMiddlewares)[]]
 		? CommandMetadataFromTuple<T>
