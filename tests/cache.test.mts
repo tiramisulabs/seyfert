@@ -49,6 +49,62 @@ describe('test memory cache adapter', () => {
 		expect(primitiveAdapter.get('user.empty')).toBe('');
 		expect(primitiveAdapter.values('user')).toEqual([0, false, '']);
 	});
+
+	test.each(['bulkSet', 'bulkPatch'] as const)('%s derives cache entries and relationships', async operation => {
+		const adapter = new MemoryAdapter();
+		const client: any = {};
+		const cache = new Cache(0, adapter, {}, client);
+		client.cache = cache;
+		const entries: Parameters<Cache['bulkSet']>[0] = [
+			[
+				CacheFrom.Test,
+				'users',
+				{ id: 'user-1', username: 'user', discriminator: '0', avatar: null },
+				'user-1',
+			],
+			[
+				CacheFrom.Test,
+				'members',
+				{
+					user: { id: 'user-1', username: 'user', discriminator: '0', avatar: null },
+					roles: [],
+					joined_at: '2024-01-01T00:00:00.000Z',
+					deaf: false,
+					mute: false,
+					flags: 0,
+				},
+				'user-1',
+				'guild-1',
+			],
+			[
+				CacheFrom.Test,
+				'messages',
+				{
+					id: 'message-1',
+					channel_id: 'channel-1',
+					author: { id: 'user-1', username: 'user', discriminator: '0', avatar: null },
+				},
+				'message-1',
+				'channel-1',
+			],
+		];
+
+		await cache[operation](entries);
+
+		expect(await cache.users?.raw('user-1')).toMatchObject({ id: 'user-1', username: 'user' });
+		expect(await cache.members?.raw('user-1', 'guild-1')).toMatchObject({
+			guild_id: 'guild-1',
+			user: { id: 'user-1', username: 'user' },
+		});
+		expect(await cache.messages?.raw('message-1')).toMatchObject({
+			id: 'message-1',
+			channel_id: 'channel-1',
+			user_id: 'user-1',
+		});
+		expect(await cache.users?.count()).toBe(1);
+		expect(await cache.members?.count('guild-1')).toBe(1);
+		expect(await cache.messages?.count('channel-1')).toBe(1);
+	});
 });
 
 describe('base cache resource', () => {
