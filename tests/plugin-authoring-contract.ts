@@ -80,6 +80,7 @@ import {
 	type PluginGatewayDispatchMeta,
 	type PluginGatewayDispatchNext,
 	type PluginHandlerKind,
+	type PluginHandlerOptions,
 	type PluginLoadedMetadata,
 	type PluginMiddlewaresMapOf,
 	type PluginCommandObserver,
@@ -1053,9 +1054,62 @@ const economy = createPlugin({
 		// @ts-expect-error handlers.create was removed before release
 		api.handlers.create((_Ctor, next) => next());
 		api.handlers.transform((instance, metadata) => {
-			expectType<PluginHandlerKind>(metadata.kind);
+			expectType<Command | SubCommand | ContextMenuCommand | EntryPointCommand>(instance);
+			expectType<'command'>(metadata.kind);
+			if (instance instanceof Command || instance instanceof ContextMenuCommand) {
+				expectType<boolean | undefined>(instance.onlyDeveloper);
+				if (instance.onlyDeveloper) return false;
+			}
 			return instance;
 		}, { kinds: ['command'], order: PluginOrder.After });
+		api.handlers.transform((instance, metadata) => {
+			expectType<Command | SubCommand | ContextMenuCommand | EntryPointCommand | ComponentCommand>(instance);
+			expectType<'command' | 'component'>(metadata.kind);
+			if (metadata.kind === 'command') return new ContractCommand();
+			return new ContractComponent();
+		}, { kinds: ['command', 'component'] });
+		// @ts-expect-error command/component transformers cannot return modals
+		api.handlers.transform(() => {
+			return new ContractModal();
+		}, { kinds: ['command', 'component'] });
+		api.handlers.transform((instance, metadata) => {
+			expectType<object>(instance);
+			expectType<PluginHandlerKind>(metadata.kind);
+			return metadata.kind === 'event' ? false : instance;
+		});
+		api.handlers.transform((instance, metadata) => {
+			expectType<object>(instance);
+			expectType<PluginHandlerKind>(metadata.kind);
+			return instance;
+		}, { kinds: [] });
+		const dynamicHandlerKinds: readonly PluginHandlerKind[] = ['command'];
+		api.handlers.transform((instance, metadata) => {
+			expectType<object>(instance);
+			expectType<PluginHandlerKind>(metadata.kind);
+			return instance;
+		}, { kinds: dynamicHandlerKinds });
+		const broadHandlerOptions: PluginHandlerOptions = { kinds: ['command'] };
+		api.handlers.transform((instance, metadata) => {
+			expectType<object>(instance);
+			expectType<PluginHandlerKind>(metadata.kind);
+			return instance;
+		}, broadHandlerOptions);
+		const orderedHandlerOptions: PluginHandlerOptions = { order: PluginOrder.After };
+		api.handlers.transform((instance, metadata) => {
+			expectType<object>(instance);
+			expectType<PluginHandlerKind>(metadata.kind);
+			return instance;
+		}, orderedHandlerOptions);
+		const optionalHandlerOptions = undefined as PluginHandlerOptions | undefined;
+		api.handlers.transform((instance, metadata) => {
+			expectType<object>(instance);
+			expectType<PluginHandlerKind>(metadata.kind);
+			return instance;
+		}, optionalHandlerOptions);
+		// @ts-expect-error command transformers cannot replace commands with components
+		api.handlers.transform(() => {
+			return new ContractComponent();
+		}, { kinds: ['command'] });
 		api.modals.remove('contract-modal');
 		const disposeCommandsLoaded = api.events.once('commandsLoaded', metadata => {
 			expectType<number>(metadata.total);
@@ -1332,6 +1386,14 @@ const transitiveOnlyPlugins = definePlugins(combinedAtomic);
 const emptyPlugins = definePlugins();
 
 declare module 'seyfert' {
+	interface Command {
+		onlyDeveloper?: boolean;
+	}
+
+	interface ContextMenuCommand {
+		onlyDeveloper?: boolean;
+	}
+
 	interface SeyfertRegistry {
 		plugins: typeof plugins;
 		client: ParseClient<Client<true>>;

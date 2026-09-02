@@ -396,6 +396,101 @@ describe('plugin api v3', () => {
 		);
 	});
 
+	test('treats false as a terminal veto for only the current plugin command', async () => {
+		const firstTransformer: string[] = [];
+		const secondTransformer: string[] = [];
+		const plugin = createPlugin({
+			name: 'command-veto',
+			register(api) {
+				api.commands.add(PluginPing, HandlerCommand);
+				api.handlers.transform(command => {
+					firstTransformer.push(command.name);
+					if (command.name === 'plugin-ping') return false;
+					return undefined;
+				}, { kinds: ['command'] });
+				api.handlers.transform(command => {
+					secondTransformer.push(command.name);
+				}, { kinds: ['command'] });
+			},
+		});
+		const client = createBaseClient([plugin]);
+		client.loadCommands = async () => {
+			client.commands.values = [];
+		};
+
+		await client.start();
+
+		expect(firstTransformer).toEqual(['plugin-ping', 'handler-command']);
+		expect(secondTransformer).toEqual(['handler-command']);
+		expect(client.commands.values.map(command => command.name)).toEqual(['handler-command']);
+	});
+
+	test('keeps undefined results and continues with compatible replacements', async () => {
+		const replacement = new HandlerInstanceCommand();
+		let original: object | undefined;
+		const preservedInstances: boolean[] = [];
+		const observed: Command[] = [];
+		const plugin = createPlugin({
+			name: 'command-replacement',
+			register(api) {
+				api.commands.add(PluginPing);
+				api.handlers.transform(command => {
+					original = command;
+				}, { kinds: ['command'] });
+				api.handlers.transform(command => {
+					preservedInstances.push(command === original);
+					return replacement;
+				}, { kinds: ['command'] });
+				api.handlers.transform(command => {
+					if (command instanceof Command) observed.push(command);
+				}, { kinds: ['command'] });
+			},
+		});
+		const client = createBaseClient([plugin]);
+		client.loadCommands = async () => {
+			client.commands.values = [];
+		};
+
+		await client.start();
+
+		expect(preservedInstances).toEqual([true]);
+		expect(observed).toEqual([replacement]);
+		expect(client.commands.values).toEqual([replacement]);
+	});
+
+	test('omits vetoed plugin components and modals', async () => {
+		const plugin = createPlugin({
+			name: 'component-veto',
+			register(api) {
+				api.components.add(PluginButton);
+				api.modals.add(PluginModal);
+				api.handlers.transform(() => false, { kinds: ['component', 'modal'] });
+			},
+		});
+		const client = createBaseClient([plugin]);
+		client.loadComponents = async () => {};
+
+		await client.start();
+
+		expect(client.components.commands).toEqual([]);
+	});
+
+	test('rejects replacements incompatible with the current handler kind', async () => {
+		const plugin = createPlugin({
+			name: 'incompatible-replacement',
+			register(api) {
+				api.commands.add(PluginPing);
+				api.handlers.transform(() => new PluginButton(), { kinds: ['command', 'component'] });
+			},
+		});
+		const client = createBaseClient([plugin]);
+		client.loadCommands = async () => {
+			client.commands.values = [];
+		};
+
+		await expect(client.start()).rejects.toThrow(/incompatible with handler kind "command"/);
+	});
+
 	test('preserves props on plugin-added command instances', async () => {
 		const command = new PluginPing();
 		command.props = { existing: true };
@@ -700,6 +795,50 @@ describe('plugin api v3', () => {
 		expect(result.data?.name).toBe('messageCreate');
 	});
 
+	test('omits vetoed file-loaded events without affecting later events', async () => {
+		const transformed: string[] = [];
+		const laterTransformer: string[] = [];
+		const vetoedEvent = { data: { name: 'messageCreate' }, run() {} };
+		const keptEvent = { data: { name: 'messageUpdate' }, run() {} };
+		const plugin = createPlugin({
+			name: 'event-veto',
+			register(api) {
+				api.handlers.transform(event => {
+					const name = 'data' in event ? (event as typeof vetoedEvent).data.name : 'unknown';
+					transformed.push(name);
+					if (name === 'messageCreate') return false;
+					return undefined;
+				}, { kinds: ['event'] });
+				api.handlers.transform(event => {
+					if ('data' in event) laterTransformer.push((event as typeof keptEvent).data.name);
+				}, { kinds: ['event'] });
+			},
+		});
+		const client = createGatewayClient([plugin]);
+		vi.spyOn(client.events as unknown as { getFiles: () => Promise<string[]> }, 'getFiles').mockResolvedValue([
+			'/events/events.js',
+		]);
+		vi.spyOn(
+			client.events as unknown as {
+				loadFilesK: () => Promise<{ name: string; path: string; file: { default: unknown[] } }[]>;
+			},
+			'loadFilesK',
+		).mockResolvedValue([
+			{
+				name: 'events.js',
+				path: '/events/events.js',
+				file: { default: [vetoedEvent, keptEvent] },
+			},
+		]);
+
+		await client.events.load('/events');
+
+		expect(transformed).toEqual(['messageCreate', 'messageUpdate']);
+		expect(laterTransformer).toEqual(['messageUpdate']);
+		expect(client.events.values.MESSAGE_CREATE).toBeUndefined();
+		expect(client.events.values.MESSAGE_UPDATE?.run).toBe(keptEvent.run);
+	});
+
 	test('applies unified handler creators and transformers to file-loaded handlers', async () => {
 		const createKinds: string[] = [];
 		const transformed: string[] = [];
@@ -876,6 +1015,152 @@ describe('plugin api v3', () => {
 		expect(
 			(client.components.commands.find(component => component.customId === 'reload-modal') as { props: { reloadKind?: string } } | undefined)?.props.reloadKind,
 		).toBe('modal');
+	});
+
+	test('removes every vetoed command, component, and modal during bulk reload', async () => {
+		class ReloadCommand extends Command {
+			name = 'veto-reload-command';
+			description = 'Veto reload command';
+			run() {}
+		}
+		class SecondReloadCommand extends Command {
+			name = 'second-veto-reload-command';
+			description = 'Second veto reload command';
+			run() {}
+		}
+		class ReloadButton extends ComponentCommand {
+			componentType = 'Button' as const;
+			customId = 'veto-reload-button';
+			run() {}
+		}
+		class ReloadModal extends ModalCommand {
+			customId = 'veto-reload-modal';
+			run() {}
+		}
+		const transformed: string[] = [];
+		const plugin = createPlugin({
+			name: 'reload-veto',
+			register(api) {
+				api.handlers.transform((_instance, metadata) => {
+					transformed.push(metadata.kind);
+					return false;
+				}, { kinds: ['command', 'component', 'modal'] });
+			},
+		});
+		const client = createBaseClient([plugin]);
+		const dir = await mkdtemp(join(tmpdir(), 'seyfert-plugin-veto-reload-'));
+		tempDirs.push(dir);
+		const commandPath = join(dir, 'command.cjs');
+		const secondCommandPath = join(dir, 'second-command.cjs');
+		const buttonPath = join(dir, 'button.cjs');
+		const modalPath = join(dir, 'modal.cjs');
+		(globalThis as { __SeyfertReloadCommandBase?: typeof Command }).__SeyfertReloadCommandBase = Command;
+		(globalThis as { __SeyfertReloadComponentBase?: typeof ComponentCommand }).__SeyfertReloadComponentBase =
+			ComponentCommand;
+		(globalThis as { __SeyfertReloadModalBase?: typeof ModalCommand }).__SeyfertReloadModalBase = ModalCommand;
+		await writeFile(
+			commandPath,
+			"const Command = globalThis.__SeyfertReloadCommandBase; module.exports = class extends Command { name = 'veto-reload-command'; description = 'Veto reload command'; run() {} };\n",
+		);
+		await writeFile(
+			secondCommandPath,
+			"const Command = globalThis.__SeyfertReloadCommandBase; module.exports = class extends Command { name = 'second-veto-reload-command'; description = 'Second veto reload command'; run() {} };\n",
+		);
+		await writeFile(
+			buttonPath,
+			"const ComponentCommand = globalThis.__SeyfertReloadComponentBase; module.exports = class extends ComponentCommand { componentType = 'Button'; customId = 'veto-reload-button'; run() {} };\n",
+		);
+		await writeFile(
+			modalPath,
+			"const ModalCommand = globalThis.__SeyfertReloadModalBase; module.exports = class extends ModalCommand { customId = 'veto-reload-modal'; run() {} };\n",
+		);
+		const command = new ReloadCommand();
+		command.__filePath = commandPath;
+		const secondCommand = new SecondReloadCommand();
+		secondCommand.__filePath = secondCommandPath;
+		const button = new ReloadButton();
+		button.__filePath = buttonPath;
+		const modal = new ReloadModal();
+		modal.__filePath = modalPath;
+		client.commands.values = [command, secondCommand];
+		client.components.commands.splice(0, client.components.commands.length, button, modal);
+		await expect(client.commands.reloadAll()).resolves.toBeUndefined();
+		await expect(client.components.reloadAll()).resolves.toBeUndefined();
+
+		expect(transformed.sort()).toEqual(['command', 'command', 'component', 'modal']);
+		expect(client.commands.values).toEqual([]);
+		expect(client.components.commands).toEqual([]);
+	});
+
+	test('reloads each event export independently when transforms veto or replace siblings', async () => {
+		const transformed: string[] = [];
+		const plugin = createPlugin({
+			name: 'event-reload-veto',
+			register(api) {
+				api.handlers.transform(event => {
+					transformed.push(typeof event);
+					if (typeof event === 'function') {
+						return { data: { name: 'messageUpdate', once: false }, run() {} };
+					}
+					return (event as { data?: { name?: string } }).data?.name === 'messageCreate' ? false : undefined;
+				}, { kinds: ['event'] });
+			},
+		});
+		const client = createGatewayClient([plugin]);
+		const dir = await mkdtemp(join(tmpdir(), 'seyfert-plugin-event-reload-'));
+		tempDirs.push(dir);
+		const eventPath = join(dir, 'event.cjs');
+		await writeFile(
+			eventPath,
+			"module.exports = [{ data: { name: 'messageCreate', once: false }, run() {} }, class InjectableEvent { run() {} }];\n",
+		);
+		client.events.values.MESSAGE_CREATE = {
+			data: { name: 'messageCreate', once: false },
+			run() {},
+			__filePath: eventPath,
+		};
+		client.events.values.MESSAGE_UPDATE = {
+			data: { name: 'messageUpdate', once: false },
+			run() {},
+			__filePath: eventPath,
+		};
+
+		await expect(client.events.reloadAll()).resolves.toBeUndefined();
+
+		expect(transformed.sort()).toEqual(['function', 'object']);
+		expect(client.events.values.MESSAGE_CREATE).toBeUndefined();
+		expect(client.events.values.MESSAGE_UPDATE?.data.name).toBe('messageUpdate');
+	});
+
+	test('keeps an event export slot across successive transformed names', async () => {
+		let nextName: 'guildCreate' | 'guildUpdate' = 'guildCreate';
+		const plugin = createPlugin({
+			name: 'event-reload-slot',
+			register(api) {
+				api.handlers.transform(() => {
+					const name = nextName;
+					nextName = 'guildUpdate';
+					return { data: { name, once: false }, run() {} };
+				}, { kinds: ['event'] });
+			},
+		});
+		const client = createGatewayClient([plugin]);
+		const dir = await mkdtemp(join(tmpdir(), 'seyfert-plugin-event-slot-'));
+		tempDirs.push(dir);
+		const eventPath = join(dir, 'event.cjs');
+		await writeFile(eventPath, "module.exports = { data: { name: 'messageCreate', once: false }, run() {} };\n");
+		client.events.values.MESSAGE_CREATE = {
+			data: { name: 'messageCreate', once: false },
+			run() {},
+			__filePath: eventPath,
+		};
+
+		await expect(client.events.reload('MESSAGE_CREATE')).resolves.toMatchObject({ data: { name: 'guildCreate' } });
+		await expect(client.events.reload('GUILD_CREATE')).resolves.toMatchObject({ data: { name: 'guildUpdate' } });
+
+		expect(client.events.values.MESSAGE_CREATE).toBeUndefined();
+		expect(client.events.values.GUILD_CREATE).toBeUndefined();
+		expect(client.events.values.GUILD_UPDATE?.data.name).toBe('guildUpdate');
 	});
 
 	test('keeps plugin lang overlays after lang reload', async () => {
