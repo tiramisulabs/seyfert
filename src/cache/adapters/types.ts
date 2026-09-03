@@ -2,9 +2,10 @@ import type { Awaitable } from '../../common';
 
 export type AdapterRelationship = readonly [to: string, id: string];
 /**
- * A cache value and the relationship that owns it.
+ * A cache value and the relationship derived by its resource model.
  * Keys must use `resource.id` or `resource.scope.id`; IDs and namespace segments cannot contain dots.
  * Each resource namespace must consistently use one of those layouts.
+ * A physical key must keep the same relationship; adapters do not reconcile conflicting ownership.
  * Adapters assume these preconditions and do not validate them at runtime.
  */
 export type AdapterEntry = readonly [key: string, value: any, relationship: AdapterRelationship];

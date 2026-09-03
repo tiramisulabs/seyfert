@@ -205,26 +205,15 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 		this.keyToRelationship.delete(key);
 	}
 
-	private _setExplicitRelationship(key: string, relationship: AdapterRelationship) {
-		const previous = this.keyToRelationship.get(key);
-		if (previous && (previous[0] !== relationship[0] || previous[1] !== relationship[1])) {
-			this._removeExplicitRelationship(key);
-		}
-		this._ensureExplicitRelationshipSet(relationship[0]).add(relationship[1]);
-		this.keyToRelationship.set(key, relationship);
-	}
-
 	private _syncRelationship(
 		key: string,
 		layout: CacheResourceLayout,
 		namespace: string,
 		relationship: AdapterRelationship,
 	) {
-		if (layout !== 'message' && namespace === relationship[0]) {
-			this._removeExplicitRelationship(key);
-			return;
-		}
-		this._setExplicitRelationship(key, relationship);
+		if (layout !== 'message' && namespace === relationship[0]) return;
+		this._ensureExplicitRelationshipSet(relationship[0]).add(relationship[1]);
+		this.keyToRelationship.set(key, relationship);
 	}
 
 	private _deleteEmptyStorage(namespace: string, storageEntry: LimitedCollection<string, T>) {
@@ -251,19 +240,6 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 		return bucket;
 	}
 
-	private _moveStoredEntry(
-		resource: string,
-		key: string,
-		storageEntry: LimitedCollection<string, T>,
-		previousStorageEntry: LimitedCollection<string, T> | undefined,
-	) {
-		if (!previousStorageEntry || previousStorageEntry === storageEntry) return;
-		previousStorageEntry.delete(key);
-		if (previousStorageEntry.size !== 0) return;
-		const previousNamespace = this._findNamespaceByStorage(resource, previousStorageEntry);
-		if (previousNamespace) this.storage.delete(previousNamespace);
-	}
-
 	private _set(key: string, value: any, relationship: AdapterRelationship, patch: boolean) {
 		const data = patch && !Array.isArray(value) ? { ...(this._getWithoutRefresh(key) ?? {}), ...value } : value;
 		const encoded = this.options.encode(data);
@@ -274,10 +250,11 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 
 		const storageEntry = this.storage.get(namespace) ?? this._createStorageEntry(resource, namespace);
 		const usesIndex = layout === 'message' || needsCacheStorageIndex(key, namespace);
-		this._moveStoredEntry(resource, key, storageEntry, this.keyToStorage.get(key));
+		const previousMessageStorage = layout === 'message' ? this.keyToStorage.get(key) : undefined;
 		storageEntry.set(key, encoded);
 
 		if (storageEntry.has(key)) {
+			if (previousMessageStorage && previousMessageStorage !== storageEntry) previousMessageStorage.delete(key);
 			if (usesIndex) this.keyToStorage.set(key, storageEntry);
 			this._syncRelationship(key, layout, namespace, relationship);
 		}

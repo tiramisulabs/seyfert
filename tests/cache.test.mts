@@ -150,17 +150,17 @@ describe('memory cache adapter bucket ownership', () => {
 		assert.equal(adapter.keyToStorage.size, 0);
 	});
 
-	test('indexes only globally keyed relationships and cleans up owner moves', () => {
+	test('indexes globally keyed relationships for lookup and cleanup', () => {
 		const adapter = new MemoryAdapter();
 		adapter.set('channel.channel-1', { id: 'channel-1', guild_id: 'guild-1' }, ['channel.guild-1', 'channel-1']);
-		adapter.set('channel.channel-1', { id: 'channel-1', guild_id: 'guild-2' }, ['channel.guild-2', 'channel-1']);
 
 		assert.equal(adapter.keyToStorage.size, 1);
 		assert.equal(adapter.storage.size, 1);
-		assert.equal(adapter.contains('channel.guild-1', 'channel-1'), false);
-		assert.deepEqual(adapter.keys('channel.guild-2'), ['channel.channel-1']);
+		assert.deepEqual(adapter.get('channel.channel-1'), { id: 'channel-1', guild_id: 'guild-1' });
+		assert.equal(adapter.contains('channel.guild-1', 'channel-1'), true);
+		assert.deepEqual(adapter.keys('channel.guild-1'), ['channel.channel-1']);
 
-		adapter.removeToRelationship('channel.guild-2', 'channel-1');
+		adapter.remove('channel.channel-1');
 		assert.equal(adapter.storage.size, 0);
 		assert.equal(adapter.keyToStorage.size, 0);
 	});
@@ -430,7 +430,7 @@ describe.each(adapterKinds)('%s atomic write failures', kind => {
 		assert.deepEqual(adapter.keys('custom.guild-1'), ['custom.entry']);
 	});
 
-	test('preserves the old value and relationship when a replacement cannot encode', () => {
+	test('preserves the old value when a replacement cannot encode', () => {
 		let reject = false;
 		const adapter = createTestAdapter(kind, {
 			encode(data) {
@@ -441,10 +441,9 @@ describe.each(adapterKinds)('%s atomic write failures', kind => {
 		adapter.set(...channelWrite('guild-1', 'old'));
 
 		reject = true;
-		expect(() => adapter.set(...channelWrite('guild-2', 'new'))).toThrow('encode failed');
+		expect(() => adapter.set(...channelWrite('guild-1', 'new'))).toThrow('encode failed');
 		assert.equal((adapter.get('channel.channel-1') as { name: string }).name, 'old');
 		assert.equal(adapter.contains('channel.guild-1', 'channel-1'), true);
-		assert.equal(adapter.contains('channel.guild-2', 'channel-1'), false);
 	});
 
 	test('propagates bulk failures without leaving an orphaned entry', () => {
@@ -469,7 +468,7 @@ describe.each(adapterKinds)('%s atomic write failures', kind => {
 		}
 	});
 
-	test('patch decode failures leave both value and relationship untouched', () => {
+	test('patch decode failures leave the value untouched', () => {
 		let rejectDecode = false;
 		const adapter = createTestAdapter(kind, {
 			decode(data) {
@@ -480,11 +479,10 @@ describe.each(adapterKinds)('%s atomic write failures', kind => {
 		adapter.set(...channelWrite('guild-1', 'old'));
 
 		rejectDecode = true;
-		expect(() => adapter.patch(...channelWrite('guild-2', 'new'))).toThrow('decode failed');
+		expect(() => adapter.patch(...channelWrite('guild-1', 'new'))).toThrow('decode failed');
 		rejectDecode = false;
 		assert.equal((adapter.get('channel.channel-1') as { name: string }).name, 'old');
 		assert.equal(adapter.contains('channel.guild-1', 'channel-1'), true);
-		assert.equal(adapter.contains('channel.guild-2', 'channel-1'), false);
 	});
 });
 
@@ -505,15 +503,48 @@ describe('limited memory cache adapter ownership', () => {
 		assert.equal(adapter.contains('member.guild-2', 'user-2'), false);
 	});
 
-	test('moves a globally keyed resource between bucket-owned relationships', () => {
+	test('uses the global-key index for lookup and cleanup', () => {
 		const adapter = new LimitedMemoryAdapter();
 		adapter.set(...channelWrite('guild-1'));
-		adapter.set(...channelWrite('guild-2'));
 
-		assert.equal(adapter.contains('channel.guild-1', 'channel-1'), false);
-		assert.equal(adapter.contains('channel.guild-2', 'channel-1'), true);
-		assert.deepEqual(adapter.keys('channel.guild-2'), ['channel.channel-1']);
+		assert.deepEqual(adapter.get('channel.channel-1'), { id: 'channel-1', guild_id: 'guild-1', name: 'guild-1' });
+		assert.equal(adapter.contains('channel.guild-1', 'channel-1'), true);
+		assert.deepEqual(adapter.keys('channel.guild-1'), ['channel.channel-1']);
 		assert.equal(adapter.storage.size, 1);
+		assert.equal(adapter.relationships.size, 0);
+
+		adapter.remove('channel.channel-1');
+		assert.equal(adapter.storage.size, 0);
+		assert.equal(adapter.keyToStorage.size, 0);
+	});
+
+	test('relocates message storage without changing its relationship owner', () => {
+		const adapter = new LimitedMemoryAdapter();
+		adapter.set(
+			'message.message-1',
+			{ id: 'message-1', channel_id: 'channel-1' },
+			['message.channel-1', 'message-1'],
+		);
+		adapter.patch(
+			'message.message-1',
+			{ guild_id: 'guild-1' },
+			['message.channel-1', 'message-1'],
+		);
+
+		assert.equal(adapter.storage.has('message'), false);
+		assert.equal(adapter.storage.get('message.guild-1')?.size, 1);
+		assert.deepEqual(adapter.get('message.message-1'), {
+			id: 'message-1',
+			guild_id: 'guild-1',
+			channel_id: 'channel-1',
+		});
+		assert.equal(adapter.contains('message.channel-1', 'message-1'), true);
+
+		adapter.remove('message.message-1');
+		assert.equal(adapter.get('message.message-1'), null);
+		assert.equal(adapter.contains('message.channel-1', 'message-1'), false);
+		assert.equal(adapter.storage.size, 0);
+		assert.equal(adapter.keyToStorage.size, 0);
 		assert.equal(adapter.relationships.size, 0);
 	});
 
@@ -524,40 +555,16 @@ describe('limited memory cache adapter ownership', () => {
 			{ id: 'message-1', guild_id: 'guild-1', channel_id: 'channel-1' },
 			['message.channel-1', 'message-1'],
 		);
-		adapter.set(
-			'message.message-1',
-			{ id: 'message-1', guild_id: 'guild-1', channel_id: 'channel-2' },
-			['message.channel-2', 'message-1'],
-		);
 
-		assert.equal(adapter.contains('message.channel-1', 'message-1'), false);
-		assert.equal(adapter.contains('message.channel-2', 'message-1'), true);
-		assert.deepEqual(adapter.keys('message.channel-2'), ['message.message-1']);
+		assert.equal(adapter.contains('message.channel-1', 'message-1'), true);
+		assert.deepEqual(adapter.keys('message.channel-1'), ['message.message-1']);
 		assert.equal(adapter.relationships.size, 1);
-	});
-
-	test('removes an unscoped message after moving it into guild storage', () => {
-		const adapter = new LimitedMemoryAdapter();
-		adapter.set(
-			'message.message-1',
-			{ id: 'message-1', channel_id: 'channel-1' },
-			['message.channel-1', 'message-1'],
-		);
-		adapter.set(
-			'message.message-1',
-			{ id: 'message-1', guild_id: 'guild-1', channel_id: 'channel-1' },
-			['message.channel-1', 'message-1'],
-		);
-
-		assert.equal(adapter.storage.has('message'), false);
-		assert.equal(adapter.storage.get('message.guild-1')?.size, 1);
 
 		adapter.remove('message.message-1');
-
-		assert.equal(adapter.get('message.message-1'), null);
 		assert.equal(adapter.contains('message.channel-1', 'message-1'), false);
 		assert.equal(adapter.storage.size, 0);
 		assert.equal(adapter.keyToStorage.size, 0);
+		assert.equal(adapter.relationships.size, 0);
 	});
 
 	test('does not allocate relationship sets for bucket-owned resources', () => {
@@ -645,16 +652,6 @@ describe('limited memory cache adapter ownership', () => {
 		assert.equal(adapter.get('custom.entry-1'), null);
 		assert.equal(adapter.contains(to, 'entry-1'), false);
 		assert.equal(adapter.contains(to, 'entry-2'), true);
-	});
-
-	test('moves a custom relationship between owners', () => {
-		const adapter = new LimitedMemoryAdapter();
-		adapter.set('custom.entry', { id: 'entry' }, ['custom.guild-1', 'entry']);
-		adapter.set('custom.entry', { id: 'entry', owner: 'guild-2' }, ['custom.guild-2', 'entry']);
-
-		assert.equal(adapter.contains('custom.guild-1', 'entry'), false);
-		assert.deepEqual(adapter.getToRelationship('custom.guild-2'), ['entry']);
-		assert.deepEqual(adapter.get('custom.entry'), { id: 'entry', owner: 'guild-2' });
 	});
 
 	test('stores empty array resources in the relationship-owned bucket', () => {
