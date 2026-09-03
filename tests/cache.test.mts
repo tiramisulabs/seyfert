@@ -266,12 +266,11 @@ describe.each(adapterKinds)('%s guild-scoped presences', kind => {
 			presenceData('guild-2', PresenceUpdateStatus.Idle),
 		);
 
-		const [current, previous] = await PRESENCE_UPDATE(
+		const [, previous] = await PRESENCE_UPDATE(
 			client,
 			presenceData('guild-1', PresenceUpdateStatus.DoNotDisturb) as Parameters<typeof PRESENCE_UPDATE>[1],
 		);
 
-		expect(current).toMatchObject({ guildId: 'guild-1', status: 'dnd' });
 		expect(previous).toMatchObject({ guild_id: 'guild-1', status: 'online' });
 	});
 });

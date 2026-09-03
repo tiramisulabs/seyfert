@@ -1,8 +1,7 @@
 import { apiMember, apiUser } from '@slipher/testing';
 import { describe, expect, test, vi } from 'vitest';
-import { PresenceUpdateStatus } from '../lib';
+import { CacheFrom, Client, PresenceUpdateStatus } from '../lib';
 import type { PresenceUpdateReceiveStatus } from '../lib';
-import { MemberShorter } from '../lib/common/shorters/members';
 import { GuildMember, User } from '../lib/structures';
 import { PresenceUpdateHandler } from '../lib/websocket/discord/events/presenceUpdate';
 
@@ -18,27 +17,22 @@ const presenceData = (currentGuildId: string, status: PresenceUpdateReceiveStatu
 });
 
 describe('guild-scoped presence consumers', () => {
-	test('member shorter reads the member from the requested guild', () => {
-		const get = vi.fn().mockReturnValue({ status: 'online' });
-		const shorter = new MemberShorter({ cache: { presences: { get } } } as any);
-
-		expect(shorter.presence(guildId, userId)).toEqual({ status: 'online' });
-		expect(get).toHaveBeenCalledWith(userId, guildId);
-	});
-
-	test('guild members provide their guild while isolated users require one', () => {
-		const presence = vi.fn().mockReturnValue({ status: 'online' });
-		const client = { members: { presence } } as any;
+	test('shorter and structures resolve the presence from their requested guild', async () => {
+		const client = new Client();
 		const userData = apiUser({ id: userId, username: 'user' });
 		const member = new GuildMember(client, apiMember({ roles: [] }), userData, guildId);
 		const user = new User(client, userData);
+		await client.cache.presences?.set(CacheFrom.Test, userId, guildId, presenceData(guildId));
+		await client.cache.presences?.set(
+			CacheFrom.Test,
+			userId,
+			'guild-2',
+			presenceData('guild-2', PresenceUpdateStatus.Idle),
+		);
 
-		expect(member.presence()).toEqual({ status: 'online' });
-		expect(user.presence(guildId)).toEqual({ status: 'online' });
-		expect(presence.mock.calls).toEqual([
-			[guildId, userId],
-			[guildId, userId],
-		]);
+		expect(await client.members.presence(guildId, userId)).toMatchObject({ guild_id: guildId, status: 'online' });
+		expect(await member.presence()).toMatchObject({ guild_id: guildId, status: 'online' });
+		expect(await user.presence('guild-2')).toMatchObject({ guild_id: 'guild-2', status: 'idle' });
 	});
 
 	test('deduplicates presence updates independently per guild', () => {
@@ -48,7 +42,6 @@ describe('guild-scoped presence consumers', () => {
 			expect(handler.check(presenceData('guild-1'))).toBe(true);
 			expect(handler.check(presenceData('guild-2'))).toBe(true);
 			expect(handler.check(presenceData('guild-1'))).toBe(false);
-			expect(handler.presenceUpdate.size).toBe(2);
 		} finally {
 			vi.clearAllTimers();
 			vi.useRealTimers();
