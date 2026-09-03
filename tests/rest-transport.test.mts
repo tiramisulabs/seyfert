@@ -24,7 +24,10 @@ describe('Discord REST transport', () => {
 		['null', null],
 		['empty string', ''],
 	])('preserves JSON %s', async (_name, value) => {
-		vi.stubGlobal('fetch', vi.fn<typeof fetch>(async () => jsonResponse(value)));
+		vi.stubGlobal(
+			'fetch',
+			vi.fn<typeof fetch>(async () => jsonResponse(value)),
+		);
 
 		await expect(createApi().request('GET', '/users/@me')).resolves.toEqual(value);
 	});

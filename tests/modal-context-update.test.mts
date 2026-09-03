@@ -2,14 +2,14 @@ import { createMockBot } from '@slipher/testing';
 import { describe, expect, test } from 'vitest';
 import {
 	Command,
+	type CommandContext,
 	Declare,
 	Label,
 	Modal,
 	ModalCommand,
+	type ModalContext,
 	TextInput,
 	TextInputStyle,
-	type CommandContext,
-	type ModalContext,
 } from '../lib';
 
 @Declare({ name: 'open-update', description: 'Open an update modal' })
@@ -20,9 +20,7 @@ class OpenUpdateModal extends Command {
 				.setCustomId('update-modal')
 				.setTitle('Update')
 				.addComponents(
-					new Label()
-						.setLabel('Mode')
-						.setComponent(new TextInput().setCustomId('mode').setStyle(TextInputStyle.Short)),
+					new Label().setLabel('Mode').setComponent(new TextInput().setCustomId('mode').setStyle(TextInputStyle.Short)),
 				),
 		);
 	}

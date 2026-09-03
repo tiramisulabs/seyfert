@@ -10,8 +10,8 @@
 //     the fix), so these are the cases that turn red if the fix is reverted. Do not inline them.
 //   • SIN `as const` → behaves exactly as before the fix: the value type is widened.
 import {
-	ApplicationCommandOptionType,
 	type APIApplicationCommandAttachmentOption,
+	ApplicationCommandOptionType,
 	type Attachment,
 	ChannelType,
 	type CommandContext,

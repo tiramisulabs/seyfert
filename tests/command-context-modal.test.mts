@@ -1,15 +1,13 @@
 import { createMockBot } from '@slipher/testing';
 import { describe, expect, test, vi } from 'vitest';
-import { Command, Declare, Label, Modal, TextInput, TextInputStyle, type CommandContext } from '../lib';
+import { Command, type CommandContext, Declare, Label, Modal, TextInput, TextInputStyle } from '../lib';
 
 function profileModal() {
 	return new Modal()
 		.setCustomId('profile')
 		.setTitle('Profile')
 		.addComponents(
-			new Label()
-				.setLabel('Name')
-				.setComponent(new TextInput().setCustomId('name').setStyle(TextInputStyle.Short)),
+			new Label().setLabel('Name').setComponent(new TextInput().setCustomId('name').setStyle(TextInputStyle.Short)),
 		);
 }
 

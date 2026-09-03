@@ -424,9 +424,8 @@ describe('command context client type', () => {
 
 			expect(
 				diagnostics.some(
-					(diagnostic) =>
-						diagnostic.code === 2339 &&
-						ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n').includes('fake'),
+					diagnostic =>
+						diagnostic.code === 2339 && ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n').includes('fake'),
 				),
 			).toBe(true);
 		} finally {

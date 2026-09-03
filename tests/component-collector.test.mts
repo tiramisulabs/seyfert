@@ -1,13 +1,6 @@
 import { createMockBot, rendered } from '@slipher/testing';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import {
-	ActionRow,
-	Button,
-	ButtonStyle,
-	Command,
-	Declare,
-	type CommandContext,
-} from '../lib';
+import { ActionRow, Button, ButtonStyle, Command, type CommandContext, Declare } from '../lib';
 import { ComponentHandler } from '../src/components/handler';
 
 function createHandler() {
@@ -67,9 +60,7 @@ function createCollectorFixture(registerAfterTimeout = false) {
 	};
 }
 
-async function createCollectorBot(
-	{ registerAfterTimeout = false }: { registerAfterTimeout?: boolean } = {},
-) {
+async function createCollectorBot({ registerAfterTimeout = false }: { registerAfterTimeout?: boolean } = {}) {
 	vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
 	const fixture = createCollectorFixture(registerAfterTimeout);
 	const bot = await createMockBot({

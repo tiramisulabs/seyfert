@@ -1,7 +1,7 @@
 import {
+	type APIFileUploadComponent,
 	ComponentType,
 	FileUpload,
-	type APIFileUploadComponent,
 	type FileUploadType,
 } from 'seyfert';
 

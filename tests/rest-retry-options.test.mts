@@ -1,5 +1,5 @@
-import { describe, expect, test, vi } from 'vitest';
 import type { MockInstance } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { ApiHandler } from '../src/api/api';
 import { Bucket } from '../src/api/bucket';
 import type { ApiRequestOptions, HttpMethods } from '../src/api/shared';
@@ -32,10 +32,7 @@ function createRetryRequest(): ApiRequestOptions {
 	};
 }
 
-function expectRequestOptionsPreserved(
-	requestSpy: MockInstance<ApiHandler['request']>,
-	request: ApiRequestOptions,
-) {
+function expectRequestOptionsPreserved(requestSpy: MockInstance<ApiHandler['request']>, request: ApiRequestOptions) {
 	expect(requestSpy).toHaveBeenCalledWith(method, url, {
 		...request,
 		unshift: true,

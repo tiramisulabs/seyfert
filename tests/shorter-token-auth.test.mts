@@ -33,11 +33,10 @@ const tokenAuthCases = [
 		method: 'POST',
 		path: '/interactions/interaction-id/interaction-token/callback',
 		invoke: (client: BaseClient) =>
-			client.interactions.reply(
-				'interaction-id',
-				'interaction-token',
-				{ type: InteractionResponseType.ChannelMessageWithSource, data: { content: 'hello' } },
-			),
+			client.interactions.reply('interaction-id', 'interaction-token', {
+				type: InteractionResponseType.ChannelMessageWithSource,
+				data: { content: 'hello' },
+			}),
 	},
 	{
 		name: 'interaction message edit',

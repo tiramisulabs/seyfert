@@ -1,4 +1,4 @@
-import { Routes, apiMember, apiUser, createMockBot, mockWorld } from '@slipher/testing';
+import { apiMember, apiUser, createMockBot, mockWorld, Routes } from '@slipher/testing';
 import { describe, expect, test, vi } from 'vitest';
 import { GuildMember } from '../lib';
 import { MemberShorter } from '../lib/common/shorters/members';
