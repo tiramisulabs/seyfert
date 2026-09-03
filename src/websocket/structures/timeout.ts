@@ -25,13 +25,10 @@ export class ConnectTimeout {
 }
 
 export class ConnectQueue {
-	private queue: {
-		callback: () => unknown;
-		resolve: (value: unknown) => void;
-		reject: (reason?: unknown) => void;
-	}[] = [];
+	private queue: ((() => unknown) | undefined)[] = [];
 	private _concurrency: number;
 	private remaining = 0;
+	private lastTickAt?: number;
 	protected interval?: NodeJS.Timeout = undefined;
 
 	constructor(
@@ -47,52 +44,62 @@ export class ConnectQueue {
 	}
 
 	set concurrency(concurrency: number) {
+		if (concurrency === this._concurrency) return;
 		const consumed = this._concurrency - this.remaining;
 		this._concurrency = concurrency;
-		this.remaining = Math.max(0, concurrency - consumed);
+		this.remaining = concurrency - consumed;
 
 		while (this.remaining > 0) {
-			const entry = this.queue.shift();
-			if (!entry) break;
+			const callback = this.queue.shift();
+			if (!callback) break;
 			this.remaining--;
-			this.run(entry);
+			callback();
 		}
 
-		if (this.interval) clearInterval(this.interval);
+		if (this.interval) clearTimeout(this.interval);
 		this.interval = undefined;
 		if (this.remaining < this._concurrency || this.queue.length) this.startInterval();
+		else this.lastTickAt = undefined;
 	}
 
-	push<T>(callback: () => T | PromiseLike<T>): Promise<T> {
-		return new Promise<T>((resolve, reject) => {
-			const entry = { callback, reject, resolve: resolve as (value: unknown) => void };
-			if (this.remaining === 0) {
-				this.queue.push(entry);
-				return;
-			}
-			this.remaining--;
-			if (!this.interval) this.startInterval();
-			this.run(entry);
-		});
-	}
+	push(callback: () => unknown) {
+		if (this.remaining <= 0) return this.queue.push(callback);
+		this.remaining--;
+		if (!this.interval) {
+			this.startInterval();
+		}
 
-	private run(entry: (typeof this.queue)[number]) {
-		Promise.resolve().then(entry.callback).then(entry.resolve, entry.reject);
+		if (this.queue.length < this.concurrency) {
+			return callback();
+		}
+		return this.queue.push(callback);
 	}
 
 	startInterval() {
-		this.interval = setInterval(() => {
-			const entry = this.queue.shift();
-			if (entry) {
-				this.run(entry);
+		this.lastTickAt ??= Date.now();
+		const delay = Math.max(0, this.lastTickAt + this.intervalTime / this.concurrency - Date.now());
+		this.interval = setTimeout(() => {
+			this.lastTickAt = Date.now();
+			this.interval = undefined;
+			if (this.remaining < 0) {
+				this.remaining++;
+				this.startInterval();
 				return;
+			}
+			let cb: (() => void) | undefined;
+			while (this.queue.length && !(cb = this.queue.shift())) {
+				//
+			}
+			if (cb) {
+				this.startInterval();
+				return cb?.();
 			}
 			if (this.remaining < this.concurrency) {
 				this.remaining++;
+				this.startInterval();
 				return;
 			}
-			clearInterval(this.interval);
-			this.interval = undefined;
-		}, this.intervalTime / this.concurrency);
+			this.lastTickAt = undefined;
+		}, delay);
 	}
 }
