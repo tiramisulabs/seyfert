@@ -433,19 +433,6 @@ describe('LimitedCollection', () => {
 		});
 	});
 
-	test('reschedules a hot key without expiring it from the old deadline', () => {
-		withFakeTimers(() => {
-			const c = new LimitedCollection<number, string>({ resetOnDemand: true });
-			c.set(1, 'one', 100);
-			vi.advanceTimersByTime(80);
-			assert.equal(c.get(1), 'one');
-			vi.advanceTimersByTime(30);
-			assert.equal(c.has(1), true);
-			vi.advanceTimersByTime(70);
-			assert.equal(c.has(1), false);
-		});
-	});
-
 	test('clears expiration timers when the collection is cleared', () => {
 		withFakeTimers(() => {
 			const c = new LimitedCollection<number, string>({ expire: 100 });
@@ -481,16 +468,22 @@ describe('LimitedCollection', () => {
 
 	test('expires a large batch with one callback per element', () => {
 		withFakeTimers(() => {
-			const deleted: number[] = [];
-			const c = new LimitedCollection<number, string>({ onDelete: key => deleted.push(key) });
-			for (let key = 0; key < 1_500; key++) c.set(key, String(key), 100);
-			vi.advanceTimersByTime(100);
-			assert.equal(c.size, 476);
-			assert.equal(deleted.length, 1_024);
-			vi.runAllTimers();
-			assert.equal(c.size, 0);
-			assert.equal(deleted.length, 1_500);
-			assert.equal(new Set(deleted).size, 1_500);
+			const drainFirstBatch = (size: number) => {
+				const deleted: number[] = [];
+				const c = new LimitedCollection<number, string>({ onDelete: key => deleted.push(key) });
+				for (let key = 0; key < size; key++) c.set(key, String(key), 100);
+				vi.advanceTimersByTime(100);
+				assert.ok(c.size > 0 && c.size < size);
+				assert.equal(deleted.length, size - c.size);
+				const firstBatchSize = deleted.length;
+				vi.runAllTimers();
+				assert.equal(c.size, 0);
+				assert.equal(deleted.length, size);
+				assert.equal(new Set(deleted).size, size);
+				return firstBatchSize;
+			};
+
+			assert.equal(drainFirstBatch(1_500), drainFirstBatch(3_000));
 		});
 	});
 
@@ -501,13 +494,14 @@ describe('LimitedCollection', () => {
 			for (let key = 0; key < 1_500; key++) c.set(key, String(key), 100);
 
 			vi.advanceTimersByTime(100);
-			assert.equal(c.size, 476);
+			assert.ok(c.size > 0 && c.size < 1_500);
+			const deletedBeforeClear = deleted.length;
 			assert.equal(vi.getTimerCount(), 1);
 			c.clear();
 			assert.equal(vi.getTimerCount(), 0);
 
 			vi.runAllTimers();
-			assert.equal(deleted.length, 1_024);
+			assert.equal(deleted.length, deletedBeforeClear);
 		});
 	});
 

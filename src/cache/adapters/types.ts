@@ -21,12 +21,20 @@ export interface Adapter {
 	bulkGet(keys: string[]): Awaitable<any[]>;
 	get(keys: string): Awaitable<any | null>;
 
-	/** Stores each value and relationship as one atomic operation. Earlier entries may remain if a later entry fails. */
+	/**
+	 * Stores every entry atomically. The batch itself is not atomic and implementations may execute entries concurrently
+	 * or out of order. If the operation rejects, any subset may already be committed, but no writes remain pending after
+	 * the returned promise settles.
+	 */
 	bulkSet(entries: AdapterEntry[]): Awaitable<void>;
 	/** Stores the value and relationship as one atomic operation. */
 	set(key: string, value: any, relationship: AdapterRelationship): Awaitable<void>;
 
-	/** Patches each value and stores its relationship atomically. Earlier entries may remain if a later entry fails. */
+	/**
+	 * Patches every entry atomically. The batch itself is not atomic and implementations may execute entries concurrently
+	 * or out of order. If the operation rejects, any subset may already be committed, but no writes remain pending after
+	 * the returned promise settles.
+	 */
 	bulkPatch(entries: AdapterEntry[]): Awaitable<void>;
 	/** Patches the value and stores its relationship as one atomic operation. */
 	patch(key: string, value: any, relationship: AdapterRelationship): Awaitable<void>;
@@ -37,7 +45,11 @@ export interface Adapter {
 
 	count(to: string): Awaitable<number>;
 
-	/** Removes each value and its owning relationship. Earlier entries may remain if a later removal fails. */
+	/**
+	 * Removes every entry atomically. The batch itself is not atomic and implementations may execute entries concurrently
+	 * or out of order. If the operation rejects, any subset may already be committed, but no removals remain pending after
+	 * the returned promise settles.
+	 */
 	bulkRemove(keys: string[]): Awaitable<void>;
 	/** Removes the value and its owning relationship as one logical operation. */
 	remove(key: string): Awaitable<void>;
