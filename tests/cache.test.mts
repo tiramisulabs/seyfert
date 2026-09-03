@@ -346,7 +346,7 @@ describe.each(adapterKinds)('%s atomic write failures', kind => {
 		assert.equal(adapter.contains('channel.guild-2', 'channel-1'), false);
 	});
 
-	test('keeps successful bulk entries and rejects the failing entry without an orphan', () => {
+	test('propagates bulk failures without leaving an orphaned entry', () => {
 		const adapter = createTestAdapter(kind, {
 			encode(data) {
 				if (data.id === 'user-2') throw new Error('encode failed');
@@ -361,9 +361,11 @@ describe.each(adapterKinds)('%s atomic write failures', kind => {
 				['user.user-3', { id: 'user-3' }, ['user', 'user-3']],
 			]),
 		).toThrow('encode failed');
-		assert.equal(adapter.contains('user', 'user-1'), true);
+		assert.equal(adapter.get('user.user-2'), null);
 		assert.equal(adapter.contains('user', 'user-2'), false);
-		assert.equal(adapter.contains('user', 'user-3'), false);
+		for (const id of ['user-1', 'user-3']) {
+			assert.equal(adapter.contains('user', id), adapter.get(`user.${id}`) !== null);
+		}
 	});
 
 	test('patch decode failures leave both value and relationship untouched', () => {

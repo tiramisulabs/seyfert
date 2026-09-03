@@ -294,6 +294,24 @@ describe('WorkerManager', () => {
 		}
 	});
 
+	test('rejects cache requests when a custom transport throws synchronously', async () => {
+		vi.useFakeTimers();
+		try {
+			const adapter = Object.create(WorkerAdapter.prototype) as WorkerAdapter;
+			adapter.workerData = { workerId: 0 } as WorkerAdapter['workerData'];
+			adapter.promises = new Map();
+			adapter.postMessage = () => {
+				throw new Error('transport failed');
+			};
+
+			await expect(adapter.get('user.user-1')).rejects.toThrow('transport failed');
+			assert.equal(adapter.promises.size, 0);
+			assert.equal(vi.getTimerCount(), 0);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	test('preserves empty custom error fields', () => {
 		const original = new SeyfertError('', { metadata: { detail: 'empty code' } });
 		original.stack = '';
