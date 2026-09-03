@@ -83,14 +83,6 @@ export class MemoryAdapter<T> implements Adapter {
 		return storageEntry;
 	}
 
-	private _moveIndexedEntry(key: string, namespace: string) {
-		const previousNamespace = this.keyToStorage.get(key);
-		if (previousNamespace === undefined || previousNamespace === namespace) return;
-		const previousStorage = this.storage.get(previousNamespace);
-		previousStorage?.delete(key);
-		if (previousStorage?.size === 0) this.storage.delete(previousNamespace);
-	}
-
 	private _set(key: string, value: any, relationship: AdapterRelationship, patch: boolean) {
 		const data = patch && !Array.isArray(value) ? { ...(this.get(key) ?? {}), ...value } : value;
 		const encoded = this.options.encode(data);
@@ -101,7 +93,6 @@ export class MemoryAdapter<T> implements Adapter {
 			this.storage.set(namespace, storageEntry);
 		}
 		const indexed = needsCacheStorageIndex(key, namespace);
-		if (indexed) this._moveIndexedEntry(key, namespace);
 		storageEntry.set(key, encoded);
 		if (indexed) this.keyToStorage.set(key, namespace);
 	}
