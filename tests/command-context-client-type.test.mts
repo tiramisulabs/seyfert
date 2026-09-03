@@ -303,14 +303,14 @@ type MetadataCompletion = CommandMetadata</* metadata */ "">;
 	const readFile = host.readFile.bind(host);
 	const fileExists = host.fileExists.bind(host);
 
-	host.fileExists = (fileName) => sources.has(fileName) || fileExists(fileName);
-	host.readFile = (fileName) => sources.get(fileName) ?? readFile(fileName);
+	host.fileExists = fileName => sources.has(fileName) || fileExists(fileName);
+	host.readFile = fileName => sources.get(fileName) ?? readFile(fileName);
 	host.getSourceFile = (fileName, languageVersion) => {
 		const source = host.readFile(fileName);
 		return source === undefined ? undefined : ts.createSourceFile(fileName, source, languageVersion, true);
 	};
 	host.resolveModuleNames = (moduleNames, containingFile) =>
-		moduleNames.map((moduleName) => {
+		moduleNames.map(moduleName => {
 			if (moduleName === 'seyfert') {
 				return {
 					extension: ts.Extension.Dts,
@@ -331,7 +331,7 @@ type MetadataCompletion = CommandMetadata</* metadata */ "">;
 		getCurrentDirectory: () => root,
 		getDefaultLibFileName: ts.getDefaultLibFilePath,
 		getScriptFileNames: () => [...sources.keys()],
-		getScriptSnapshot: (fileName) => {
+		getScriptSnapshot: fileName => {
 			const source = host.readFile(fileName);
 			return source === undefined ? undefined : ts.ScriptSnapshot.fromString(source);
 		},
@@ -497,8 +497,8 @@ describe('command context client type', () => {
 			const quotePosition = completionsSource.indexOf('"', markerPosition);
 			const completions = languageService.getCompletionsAtPosition(completionsFile, quotePosition + 1, {});
 			const middlewareNames = completions?.entries
-				.map((entry) => entry.name)
-				.filter((name) => expected.includes(name))
+				.map(entry => entry.name)
+				.filter(name => expected.includes(name))
 				.sort();
 
 			expect(middlewareNames, marker).toEqual(expected);
