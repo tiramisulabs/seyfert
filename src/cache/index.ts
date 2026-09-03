@@ -25,18 +25,10 @@ export type InferAsyncCache = InternalOptions extends { asyncCache: infer P } ? 
 export type ReturnCache<T> = If<InferAsyncCache, Promise<T>, T>;
 
 // GuildBased
-export type GuildBased = 'members' | 'voiceStates' | 'bans';
+export type GuildBased = 'members' | 'voiceStates' | 'presences' | 'bans';
 
 // ClientGuildBased
-export type GuildRelated =
-	| 'emojis'
-	| 'roles'
-	| 'channels'
-	| 'stickers'
-	| 'presences'
-	| 'stageInstances'
-	| 'overwrites'
-	| 'messages';
+export type GuildRelated = 'emojis' | 'roles' | 'channels' | 'stickers' | 'stageInstances' | 'overwrites' | 'messages';
 
 // ClientBased
 export type NonGuildBased = 'users' | 'guilds';
@@ -125,6 +117,8 @@ export class Cache {
 	// guild based
 	members?: Members;
 	voiceStates?: VoiceStates;
+	presences?: Presences;
+	bans?: Bans;
 
 	// guild related
 	overwrites?: Overwrites;
@@ -132,10 +126,8 @@ export class Cache {
 	emojis?: Emojis;
 	channels?: Channels;
 	stickers?: Stickers;
-	presences?: Presences;
 	stageInstances?: StageInstances;
 	messages?: Messages;
-	bans?: Bans;
 
 	__logger__?: Logger;
 	private pluginResourceNames = new Set<string>();
@@ -172,20 +164,20 @@ export class Cache {
 		this.users = disabledCache.users ? undefined : new Users(this, client);
 		this.guilds = disabledCache.guilds ? undefined : new Guilds(this, client);
 
-		// guild related
+		// guild based
 		this.members = disabledCache.members ? undefined : new Members(this, client);
 		this.voiceStates = disabledCache.voiceStates ? undefined : new VoiceStates(this, client);
+		this.presences = disabledCache.presences ? undefined : new Presences(this, client);
+		this.bans = disabledCache.bans ? undefined : new Bans(this, client);
 
-		// guild based
+		// guild related
 		this.roles = disabledCache.roles ? undefined : new Roles(this, client);
 		this.overwrites = disabledCache.overwrites ? undefined : new Overwrites(this, client);
 		this.channels = disabledCache.channels ? undefined : new Channels(this, client);
 		this.emojis = disabledCache.emojis ? undefined : new Emojis(this, client);
 		this.stickers = disabledCache.stickers ? undefined : new Stickers(this, client);
-		this.presences = disabledCache.presences ? undefined : new Presences(this, client);
 		this.stageInstances = disabledCache.stageInstances ? undefined : new StageInstances(this, client);
 		this.messages = disabledCache.messages ? undefined : new Messages(this, client);
-		this.bans = disabledCache.bans ? undefined : new Bans(this, client);
 
 		this.onPacket = disabledCache.onPacket
 			? ((() => {
@@ -262,6 +254,7 @@ export class Cache {
 				case 'bans':
 				case 'voiceStates':
 				case 'members':
+				case 'presences':
 					{
 						if (!allData[type]) {
 							allData[type] = [];
@@ -272,7 +265,6 @@ export class Cache {
 				case 'roles':
 				case 'stickers':
 				case 'channels':
-				case 'presences':
 				case 'stageInstances':
 				case 'emojis':
 				case 'users':
@@ -315,7 +307,6 @@ export class Cache {
 				case 'roles':
 				case 'stickers':
 				case 'channels':
-				case 'presences':
 				case 'stageInstances':
 				case 'emojis':
 				case 'overwrites':
@@ -332,7 +323,8 @@ export class Cache {
 				}
 				case 'bans':
 				case 'voiceStates':
-				case 'members': {
+				case 'members':
+				case 'presences': {
 					const resource = this[type];
 					if (!resource?.filter(data, id, guildId, from)) continue;
 					const relationship = resource.hashId(guildId!);

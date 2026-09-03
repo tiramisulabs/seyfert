@@ -90,7 +90,7 @@ export class BaseGuildMember extends DiscordBase {
 	}
 
 	presence() {
-		return this.client.members.presence(this.id);
+		return this.client.members.presence(this.guildId, this.id);
 	}
 
 	voice(mode?: 'rest' | 'flow'): Promise<VoiceStateStructure>;

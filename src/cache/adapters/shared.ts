@@ -5,7 +5,7 @@ const resourceLayouts = new Map<string, Exclude<CacheResourceLayout, 'custom'>>(
 	['user', 'root'],
 	['channel', 'guild-indexed'],
 	['emoji', 'guild-indexed'],
-	['presence', 'guild-indexed'],
+	['presence', 'guild-keyed'],
 	['role', 'guild-indexed'],
 	['stage_instance', 'guild-indexed'],
 	['sticker', 'guild-indexed'],

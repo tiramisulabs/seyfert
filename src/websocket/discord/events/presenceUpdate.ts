@@ -4,12 +4,13 @@ export class PresenceUpdateHandler {
 	presenceUpdate = new Map<string, { timeout: NodeJS.Timeout; presence: GatewayPresenceUpdateDispatchData }>();
 
 	check(presence: GatewayPresenceUpdateDispatchData) {
-		if (!this.presenceUpdate.has(presence.user.id)) {
+		const key = `${presence.guild_id}.${presence.user.id}`;
+		if (!this.presenceUpdate.has(key)) {
 			this.setPresence(presence);
 			return true;
 		}
 
-		const data = this.presenceUpdate.get(presence.user.id)!;
+		const data = this.presenceUpdate.get(key)!;
 
 		if (this.presenceEquals(data.presence, presence)) {
 			return false;
@@ -23,10 +24,11 @@ export class PresenceUpdateHandler {
 	}
 
 	setPresence(presence: GatewayPresenceUpdateDispatchData) {
-		this.presenceUpdate.set(presence.user.id, {
+		const key = `${presence.guild_id}.${presence.user.id}`;
+		this.presenceUpdate.set(key, {
 			presence,
 			timeout: setTimeout(() => {
-				this.presenceUpdate.delete(presence.user.id);
+				this.presenceUpdate.delete(key);
 			}, 1.5e3),
 		});
 	}
