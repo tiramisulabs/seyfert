@@ -577,6 +577,48 @@ describe('limited memory cache adapter ownership', () => {
 		assert.equal(adapter.relationships.size, 0);
 	});
 
+	test('cleans message indexes and relationships when their bucket evicts them', () => {
+		const adapter = new LimitedMemoryAdapter({ message: { limit: 1 } });
+		adapter.set(
+			'message.message-1',
+			{ id: 'message-1', guild_id: 'guild-1', channel_id: 'channel-1' },
+			['message.channel-1', 'message-1'],
+		);
+		adapter.set(
+			'message.message-2',
+			{ id: 'message-2', guild_id: 'guild-1', channel_id: 'channel-1' },
+			['message.channel-1', 'message-2'],
+		);
+
+		assert.equal(adapter.get('message.message-1'), null);
+		assert.equal(adapter.contains('message.channel-1', 'message-1'), false);
+		assert.equal(adapter.get('message.message-2') !== null, true);
+		assert.equal(adapter.contains('message.channel-1', 'message-2'), true);
+		assert.equal(adapter.keyToStorage.size, 1);
+	});
+
+	test('cleans message indexes and relationships when they expire', () => {
+		vi.useFakeTimers();
+		try {
+			const adapter = new LimitedMemoryAdapter({ message: { expire: 100 } });
+			adapter.set(
+				'message.message-1',
+				{ id: 'message-1', guild_id: 'guild-1', channel_id: 'channel-1' },
+				['message.channel-1', 'message-1'],
+			);
+
+			vi.advanceTimersByTime(100);
+
+			assert.equal(adapter.get('message.message-1'), null);
+			assert.equal(adapter.contains('message.channel-1', 'message-1'), false);
+			assert.equal(adapter.storage.size, 0);
+			assert.equal(adapter.keyToStorage.size, 0);
+			assert.equal(adapter.relationships.size, 0);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	test('does not allocate relationship sets for bucket-owned resources', () => {
 		const adapter = new LimitedMemoryAdapter();
 		adapter.set(...channelWrite('guild-1'));
