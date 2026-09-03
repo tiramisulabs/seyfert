@@ -1,6 +1,6 @@
-import { Routes, createMockBot, mockWorld } from '@slipher/testing';
+import { createMockBot, mockWorld, Routes } from '@slipher/testing';
 import { describe, expect, test } from 'vitest';
-import { GuildRole, type APIRole } from '../lib';
+import { type APIRole, GuildRole } from '../lib';
 
 const guildId = '100000000000000001';
 

@@ -4,8 +4,10 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import {
 	ApiHandler,
+	type ApiRequestOptions,
 	BaseCommand,
 	BaseResource,
+	type Cache,
 	Client,
 	Command,
 	ComponentCommand,
@@ -14,19 +16,17 @@ import {
 	createPluginFactory,
 	createSharedKey,
 	definePlugins,
+	type GatewayDispatchPayload,
 	GatewayIntentBits,
 	GatewayOpcodes,
+	type GatewaySendPayload,
+	type MiddlewareContext,
 	ModalCommand,
+	type PluginHandlerTransformer,
 	PluginOrder,
 	runPluginCommandObservers,
 	runPluginHooks,
 	WorkerClient,
-	type Cache,
-	type ApiRequestOptions,
-	type GatewayDispatchPayload,
-	type GatewaySendPayload,
-	type MiddlewareContext,
-	type PluginHandlerTransformer,
 } from '../src';
 import { BaseClient } from '../src/client/base';
 import { resolveRawEventData } from '../src/events/utils';
@@ -377,10 +377,13 @@ describe('plugin api v3', () => {
 			name: 'rename-source',
 			register(api) {
 				api.commands.add(PluginPing);
-				api.handlers.transform(command => {
-					if (command instanceof Command) command.name = 'renamed-plugin-ping';
-					return command;
-				}, { kinds: ['command'] });
+				api.handlers.transform(
+					command => {
+						if (command instanceof Command) command.name = 'renamed-plugin-ping';
+						return command;
+					},
+					{ kinds: ['command'] },
+				);
 				api.events.on('commandsLoaded', metadata => events.push(metadata));
 			},
 		});
@@ -403,14 +406,20 @@ describe('plugin api v3', () => {
 			name: 'command-veto',
 			register(api) {
 				api.commands.add(PluginPing, HandlerCommand);
-				api.handlers.transform(command => {
-					firstTransformer.push(command.name);
-					if (command.name === 'plugin-ping') return false;
-					return undefined;
-				}, { kinds: ['command'] });
-				api.handlers.transform(command => {
-					secondTransformer.push(command.name);
-				}, { kinds: ['command'] });
+				api.handlers.transform(
+					command => {
+						firstTransformer.push(command.name);
+						if (command.name === 'plugin-ping') return false;
+						return undefined;
+					},
+					{ kinds: ['command'] },
+				);
+				api.handlers.transform(
+					command => {
+						secondTransformer.push(command.name);
+					},
+					{ kinds: ['command'] },
+				);
 			},
 		});
 		const client = createBaseClient([plugin]);
@@ -434,16 +443,25 @@ describe('plugin api v3', () => {
 			name: 'command-replacement',
 			register(api) {
 				api.commands.add(PluginPing);
-				api.handlers.transform(command => {
-					original = command;
-				}, { kinds: ['command'] });
-				api.handlers.transform(command => {
-					preservedInstances.push(command === original);
-					return replacement;
-				}, { kinds: ['command'] });
-				api.handlers.transform(command => {
-					if (command instanceof Command) observed.push(command);
-				}, { kinds: ['command'] });
+				api.handlers.transform(
+					command => {
+						original = command;
+					},
+					{ kinds: ['command'] },
+				);
+				api.handlers.transform(
+					command => {
+						preservedInstances.push(command === original);
+						return replacement;
+					},
+					{ kinds: ['command'] },
+				);
+				api.handlers.transform(
+					command => {
+						if (command instanceof Command) observed.push(command);
+					},
+					{ kinds: ['command'] },
+				);
 			},
 		});
 		const client = createBaseClient([plugin]);
@@ -620,9 +638,7 @@ describe('plugin api v3', () => {
 
 		await client.uploadCommands({ applicationId: 'app', cachePath });
 
-		expect(uploaded).toEqual([
-			{ applicationId: 'app', data: { body: [] }, guildId: 'guild-1', scope: 'guild' },
-		]);
+		expect(uploaded).toEqual([{ applicationId: 'app', data: { body: [] }, guildId: 'guild-1', scope: 'guild' }]);
 	});
 
 	test('applies plugin components and modals after component loading', async () => {
@@ -698,7 +714,10 @@ describe('plugin api v3', () => {
 					createKinds.push(metadata.kind);
 					return next();
 				});
-				api.handlers.transform(((instance: { name?: string; customId?: string | RegExp; props?: Record<string, unknown> }, metadata) => {
+				api.handlers.transform(((
+					instance: { name?: string; customId?: string | RegExp; props?: Record<string, unknown> },
+					metadata,
+				) => {
 					transformed.push(`${metadata.kind}:${'name' in instance ? instance.name : instance.customId}`);
 					instance.props ??= {};
 					instance.props.handlerKind = metadata.kind;
@@ -729,11 +748,19 @@ describe('plugin api v3', () => {
 			'modal:handler-modal',
 		]);
 		expect(
-			(client.commands.values.find(command => command.name === 'handler-command') as { props: { handlerKind?: string } } | undefined)?.props.handlerKind,
+			(
+				client.commands.values.find(command => command.name === 'handler-command') as
+					| { props: { handlerKind?: string } }
+					| undefined
+			)?.props.handlerKind,
 		).toBe('command');
 		expect(client.commands.values.find(command => command.name === 'handler-instance-command')).toBe(commandInstance);
 		expect(
-			(client.components.commands.find(component => component.customId === 'handler-button') as { props: { handlerKind?: string } } | undefined)?.props.handlerKind,
+			(
+				client.components.commands.find(component => component.customId === 'handler-button') as
+					| { props: { handlerKind?: string } }
+					| undefined
+			)?.props.handlerKind,
 		).toBe('component');
 		expect(client.components.commands.find(component => component.customId === 'handler-instance-modal')).toBe(
 			modalInstance,
@@ -776,12 +803,15 @@ describe('plugin api v3', () => {
 		const plugin = createPlugin({
 			name: 'event-transform',
 			register(api) {
-				api.handlers.transform((loaded, metadata): void => {
-					kinds.push(metadata.kind);
-					if (metadata.kind === 'event' && typeof loaded === 'function') {
-						return { data: { name: 'messageCreate' }, run: () => undefined } as never;
-					}
-				}, { kinds: ['event'] });
+				api.handlers.transform(
+					(loaded, metadata) => {
+						kinds.push(metadata.kind);
+						if (metadata.kind === 'event' && typeof loaded === 'function') {
+							return { data: { name: 'messageCreate' }, run: () => undefined } as never;
+						}
+					},
+					{ kinds: ['event'] },
+				);
 			},
 		});
 		const client = createBaseClient([plugin]);
@@ -803,15 +833,21 @@ describe('plugin api v3', () => {
 		const plugin = createPlugin({
 			name: 'event-veto',
 			register(api) {
-				api.handlers.transform(event => {
-					const name = 'data' in event ? (event as typeof vetoedEvent).data.name : 'unknown';
-					transformed.push(name);
-					if (name === 'messageCreate') return false;
-					return undefined;
-				}, { kinds: ['event'] });
-				api.handlers.transform(event => {
-					if ('data' in event) laterTransformer.push((event as typeof keptEvent).data.name);
-				}, { kinds: ['event'] });
+				api.handlers.transform(
+					event => {
+						const name = 'data' in event ? (event as typeof vetoedEvent).data.name : 'unknown';
+						transformed.push(name);
+						if (name === 'messageCreate') return false;
+						return undefined;
+					},
+					{ kinds: ['event'] },
+				);
+				api.handlers.transform(
+					event => {
+						if ('data' in event) laterTransformer.push((event as typeof keptEvent).data.name);
+					},
+					{ kinds: ['event'] },
+				);
 			},
 		});
 		const client = createGatewayClient([plugin]);
@@ -849,7 +885,10 @@ describe('plugin api v3', () => {
 					createKinds.push(metadata.kind);
 					return next();
 				});
-				api.handlers.transform(((instance: { name?: string; customId?: string | RegExp; props?: Record<string, unknown> }, metadata) => {
+				api.handlers.transform(((
+					instance: { name?: string; customId?: string | RegExp; props?: Record<string, unknown> },
+					metadata,
+				) => {
 					transformed.push(`${metadata.kind}:${'name' in instance ? instance.name : instance.customId}`);
 					instance.props ??= {};
 					instance.props.handlerKind = metadata.kind;
@@ -910,13 +949,25 @@ describe('plugin api v3', () => {
 			'modal:loaded-handler-modal',
 		]);
 		expect(
-			(client.commands.values.find(command => command.name === 'loaded-handler-command') as { props: { handlerKind?: string } } | undefined)?.props.handlerKind,
+			(
+				client.commands.values.find(command => command.name === 'loaded-handler-command') as
+					| { props: { handlerKind?: string } }
+					| undefined
+			)?.props.handlerKind,
 		).toBe('command');
 		expect(
-			(client.components.commands.find(component => component.customId === 'loaded-handler-button') as { props: { handlerKind?: string } } | undefined)?.props.handlerKind,
+			(
+				client.components.commands.find(component => component.customId === 'loaded-handler-button') as
+					| { props: { handlerKind?: string } }
+					| undefined
+			)?.props.handlerKind,
 		).toBe('component');
 		expect(
-			(client.components.commands.find(component => component.customId === 'loaded-handler-modal') as { props: { handlerKind?: string } } | undefined)?.props.handlerKind,
+			(
+				client.components.commands.find(component => component.customId === 'loaded-handler-modal') as
+					| { props: { handlerKind?: string } }
+					| undefined
+			)?.props.handlerKind,
 		).toBe('modal');
 	});
 
@@ -944,7 +995,10 @@ describe('plugin api v3', () => {
 					createKinds.push(metadata.kind);
 					return next();
 				});
-				api.handlers.transform(((instance: { name?: string; customId?: string | RegExp; props?: Record<string, unknown> }, metadata) => {
+				api.handlers.transform(((
+					instance: { name?: string; customId?: string | RegExp; props?: Record<string, unknown> },
+					metadata,
+				) => {
 					transformed.push(metadata.kind);
 					instance.props ??= {};
 					instance.props.reloadKind = metadata.kind;
@@ -1008,12 +1062,22 @@ describe('plugin api v3', () => {
 
 		expect(createKinds.sort()).toEqual(['command', 'component', 'modal']);
 		expect(transformed.sort()).toEqual(['command', 'component', 'modal']);
-		expect((client.commands.values[0] as { props: { reloadKind?: string } } | undefined)?.props.reloadKind).toBe('command');
+		expect((client.commands.values[0] as { props: { reloadKind?: string } } | undefined)?.props.reloadKind).toBe(
+			'command',
+		);
 		expect(
-			(client.components.commands.find(component => component.customId === 'reload-button') as { props: { reloadKind?: string } } | undefined)?.props.reloadKind,
+			(
+				client.components.commands.find(component => component.customId === 'reload-button') as
+					| { props: { reloadKind?: string } }
+					| undefined
+			)?.props.reloadKind,
 		).toBe('component');
 		expect(
-			(client.components.commands.find(component => component.customId === 'reload-modal') as { props: { reloadKind?: string } } | undefined)?.props.reloadKind,
+			(
+				client.components.commands.find(component => component.customId === 'reload-modal') as
+					| { props: { reloadKind?: string } }
+					| undefined
+			)?.props.reloadKind,
 		).toBe('modal');
 	});
 
@@ -1041,10 +1105,13 @@ describe('plugin api v3', () => {
 		const plugin = createPlugin({
 			name: 'reload-veto',
 			register(api) {
-				api.handlers.transform((_instance, metadata) => {
-					transformed.push(metadata.kind);
-					return false;
-				}, { kinds: ['command', 'component', 'modal'] });
+				api.handlers.transform(
+					(_instance, metadata) => {
+						transformed.push(metadata.kind);
+						return false;
+					},
+					{ kinds: ['command', 'component', 'modal'] },
+				);
 			},
 		});
 		const client = createBaseClient([plugin]);
@@ -1097,13 +1164,16 @@ describe('plugin api v3', () => {
 		const plugin = createPlugin({
 			name: 'event-reload-veto',
 			register(api) {
-				api.handlers.transform(event => {
-					transformed.push(typeof event);
-					if (typeof event === 'function') {
-						return { data: { name: 'messageUpdate', once: false }, run() {} };
-					}
-					return (event as { data?: { name?: string } }).data?.name === 'messageCreate' ? false : undefined;
-				}, { kinds: ['event'] });
+				api.handlers.transform(
+					event => {
+						transformed.push(typeof event);
+						if (typeof event === 'function') {
+							return { data: { name: 'messageUpdate', once: false }, run() {} };
+						}
+						return (event as { data?: { name?: string } }).data?.name === 'messageCreate' ? false : undefined;
+					},
+					{ kinds: ['event'] },
+				);
 			},
 		});
 		const client = createGatewayClient([plugin]);
@@ -1137,11 +1207,14 @@ describe('plugin api v3', () => {
 		const plugin = createPlugin({
 			name: 'event-reload-slot',
 			register(api) {
-				api.handlers.transform(() => {
-					const name = nextName;
-					nextName = 'guildUpdate';
-					return { data: { name, once: false }, run() {} };
-				}, { kinds: ['event'] });
+				api.handlers.transform(
+					() => {
+						const name = nextName;
+						nextName = 'guildUpdate';
+						return { data: { name, once: false }, run() {} };
+					},
+					{ kinds: ['event'] },
+				);
 			},
 		});
 		const client = createGatewayClient([plugin]);
@@ -1595,9 +1668,9 @@ describe('plugin api v3', () => {
 			metadata: {},
 		} as never;
 
-		await expect(BaseCommand.__runMiddlewares(context, ['asyncNext' as never, 'syncThrow' as never], false)).rejects.toThrow(
-			'sync failed after async next',
-		);
+		await expect(
+			BaseCommand.__runMiddlewares(context, ['asyncNext' as never, 'syncThrow' as never], false),
+		).rejects.toThrow('sync failed after async next');
 		expect(logger.error).not.toHaveBeenCalled();
 	});
 
@@ -1622,9 +1695,9 @@ describe('plugin api v3', () => {
 			metadata: {},
 		} as never;
 
-		await expect(BaseCommand.__runMiddlewares(context, ['callbackNext' as never, 'syncThrow' as never], false)).rejects.toThrow(
-			'sync failed after callback next',
-		);
+		await expect(
+			BaseCommand.__runMiddlewares(context, ['callbackNext' as never, 'syncThrow' as never], false),
+		).rejects.toThrow('sync failed after callback next');
 		expect(logger.error).not.toHaveBeenCalled();
 	});
 
@@ -1687,13 +1760,10 @@ describe('plugin api v3', () => {
 		const client = createBaseClient([bad, good]);
 		client.logger = logger as never;
 
-		await runPluginCommandObservers(
-			client,
-			'onMiddlewaresError',
-			{} as never,
-			'denied',
-			{ middleware: 'auth', scope: 'global' },
-		);
+		await runPluginCommandObservers(client, 'onMiddlewaresError', {} as never, 'denied', {
+			middleware: 'auth',
+			scope: 'global',
+		});
 
 		expect(calls).toEqual([{ error: 'denied', metadata: { middleware: 'auth', scope: 'global' } }]);
 		expect(logger.error).toHaveBeenCalledOnce();
@@ -2081,16 +2151,22 @@ describe('plugin api v3', () => {
 				api.events.onAny((name, data, _client, shardId) => {
 					if (name === 'PLUGIN_TEST_EVENT') events.push({ data, shardId });
 				});
-				api.gateway.onDispatch((packet, next, meta) => {
-					const data = packet.d as unknown as { value: string };
-					calls.push(`before:${data.value}:${meta.shardId}`);
-					return next({ ...packet, d: { value: 'middle' } as never });
-				}, { order: PluginOrder.Before });
-				api.gateway.onDispatch(packet => {
-					const data = packet.d as unknown as { value: string };
-					calls.push(`after:${data.value}`);
-					return { ...packet, d: { value: `${data.value}:after` } as never };
-				}, { order: PluginOrder.After });
+				api.gateway.onDispatch(
+					(packet, next, meta) => {
+						const data = packet.d as unknown as { value: string };
+						calls.push(`before:${data.value}:${meta.shardId}`);
+						return next({ ...packet, d: { value: 'middle' } as never });
+					},
+					{ order: PluginOrder.Before },
+				);
+				api.gateway.onDispatch(
+					packet => {
+						const data = packet.d as unknown as { value: string };
+						calls.push(`after:${data.value}`);
+						return { ...packet, d: { value: `${data.value}:after` } as never };
+					},
+					{ order: PluginOrder.After },
+				);
 			},
 		});
 		const client = createGatewayClient([plugin]);
@@ -2585,7 +2661,8 @@ describe('plugin api v3', () => {
 		const good = createPlugin({
 			name: 'good-rest',
 			register(api) {
-				api.rest.observe({
+				api.rest.observe(
+					{
 						onRequest(payload) {
 							expect(() => ((payload.request.query as Record<string, unknown>).limit = 2)).toThrow();
 							calls.push({
@@ -2600,9 +2677,11 @@ describe('plugin api v3', () => {
 						async onSuccess(payload) {
 							calls.push({ body: await payload.response.text(), status: payload.response.status });
 						},
-					}, { order: PluginOrder.After });
-				},
-			});
+					},
+					{ order: PluginOrder.After },
+				);
+			},
+		});
 		const client = createBaseClient([bad, good]);
 		client.rest.debugger = { debug: vi.fn(), warn } as never;
 

@@ -2,6 +2,7 @@ import { createMockBot } from '@slipher/testing';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import {
 	Command,
+	type CommandContext,
 	ComponentCommand,
 	Declare,
 	Label,
@@ -9,7 +10,6 @@ import {
 	ModalCommand,
 	TextInput,
 	TextInputStyle,
-	type CommandContext,
 } from '../lib';
 
 const componentRunError = vi.fn();

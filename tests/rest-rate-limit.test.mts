@@ -17,15 +17,16 @@ describe('Discord REST rate limits', () => {
 		vi.useFakeTimers();
 		const now = 1_700_000_000_000;
 		vi.setSystemTime(now);
-		const fetchMock = vi.fn<typeof fetch>(async () =>
-			new Response('{}', {
-				headers: {
-					'content-type': 'application/json',
-					'x-ratelimit-limit': '1',
-					'x-ratelimit-remaining': '0',
-					'x-ratelimit-reset': String((now + 1_000) / 1_000),
-				},
-			}),
+		const fetchMock = vi.fn<typeof fetch>(
+			async () =>
+				new Response('{}', {
+					headers: {
+						'content-type': 'application/json',
+						'x-ratelimit-limit': '1',
+						'x-ratelimit-remaining': '0',
+						'x-ratelimit-reset': String((now + 1_000) / 1_000),
+					},
+				}),
 		);
 		vi.stubGlobal('fetch', fetchMock);
 		const api = createApi();
@@ -124,13 +125,14 @@ describe('Discord REST rate limits', () => {
 	])('retains the %s major parameter in learned buckets', async (_name, url, bucket) => {
 		vi.stubGlobal(
 			'fetch',
-			vi.fn<typeof fetch>(async () =>
-				new Response('{}', {
-					headers: {
-						'content-type': 'application/json',
-						'x-ratelimit-bucket': 'shared-hash',
-					},
-				}),
+			vi.fn<typeof fetch>(
+				async () =>
+					new Response('{}', {
+						headers: {
+							'content-type': 'application/json',
+							'x-ratelimit-bucket': 'shared-hash',
+						},
+					}),
 			),
 		);
 		const api = createApi();
@@ -365,37 +367,37 @@ describe('Discord REST rate limits', () => {
 		expect(queuedDispatch).toHaveBeenCalledOnce();
 	});
 
-	test.each(['not-a-number', String(Number.MAX_VALUE)])(
-		'rejects a 429 without a valid retry delay (%s) and releases the bucket',
-		async retryAfter => {
-			const api = createApi();
-			const route = 'GET:/channels/100000000000000001/messages';
-			const url = '/channels/100000000000000001/messages' as const;
-			const next = vi.fn();
-			const reject = vi.fn();
-			api.ratelimits.set(route, new Bucket(1));
+	test.each([
+		'not-a-number',
+		String(Number.MAX_VALUE),
+	])('rejects a 429 without a valid retry delay (%s) and releases the bucket', async retryAfter => {
+		const api = createApi();
+		const route = 'GET:/channels/100000000000000001/messages';
+		const url = '/channels/100000000000000001/messages' as const;
+		const next = vi.fn();
+		const reject = vi.fn();
+		api.ratelimits.set(route, new Bucket(1));
 
-			const result = await api.handle429(
-				route,
-				'GET',
-				url,
-				{},
-				new Response('<html>rate limited</html>', {
-					status: 429,
-					headers: { 'retry-after': retryAfter },
-				}),
-				'<html>rate limited</html>',
-				next,
-				reject,
-				Date.now(),
-				url,
-			);
+		const result = await api.handle429(
+			route,
+			'GET',
+			url,
+			{},
+			new Response('<html>rate limited</html>', {
+				status: 429,
+				headers: { 'retry-after': retryAfter },
+			}),
+			'<html>rate limited</html>',
+			next,
+			reject,
+			Date.now(),
+			url,
+		);
 
-			expect(result).toBe(false);
-			expect(next).toHaveBeenCalledOnce();
-			expect(reject).toHaveBeenCalledWith(expect.objectContaining({ code: 'INVALID_RETRY_AFTER' }));
-		},
-	);
+		expect(result).toBe(false);
+		expect(next).toHaveBeenCalledOnce();
+		expect(reject).toHaveBeenCalledWith(expect.objectContaining({ code: 'INVALID_RETRY_AFTER' }));
+	});
 
 	test('rejects an empty 429 response without a retry delay', async () => {
 		const api = createApi();

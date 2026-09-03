@@ -51,9 +51,7 @@ describe('client collectors', () => {
 			items: [],
 			plugin: { total: 0, sources: {} },
 		});
-		expect(seen).toEqual([
-			[{ kind: 'commands', total: 0, items: [], plugin: { total: 0, sources: {} } }],
-		]);
+		expect(seen).toEqual([[{ kind: 'commands', total: 0, items: [], plugin: { total: 0, sources: {} } }]]);
 	});
 
 	test('preserves tuple payloads from gateway event transformers', async () => {

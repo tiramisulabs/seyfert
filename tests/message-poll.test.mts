@@ -1,4 +1,4 @@
-import { Routes, apiPoll, createMockBot, mockWorld } from '@slipher/testing';
+import { apiPoll, createMockBot, mockWorld, Routes } from '@slipher/testing';
 import { describe, expect, test } from 'vitest';
 
 function pollWorld() {

@@ -1,6 +1,6 @@
-import { Routes, apiUser, createMockBot, mockWorld } from '@slipher/testing';
+import { apiUser, createMockBot, mockWorld, Routes } from '@slipher/testing';
 import { describe, expect, test, vi } from 'vitest';
-import { Command, Declare, GuildMember, type CommandContext } from '../lib';
+import { Command, type CommandContext, Declare, GuildMember } from '../lib';
 import { CommandContext as InternalCommandContext } from '../src/commands/applications/chatcontext';
 
 type FetchMode = 'cache' | 'flow' | 'rest';

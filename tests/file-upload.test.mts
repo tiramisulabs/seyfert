@@ -9,10 +9,7 @@ import {
 } from '../src/types';
 
 class ExposedCommandHandler extends CommandHandler {
-	shouldUploadAttachment(
-		option: APIApplicationCommandAttachmentOption,
-		cached: APIApplicationCommandAttachmentOption,
-	) {
+	shouldUploadAttachment(option: APIApplicationCommandAttachmentOption, cached: APIApplicationCommandAttachmentOption) {
 		return this.shouldUploadOption(option, cached);
 	}
 }
@@ -46,9 +43,7 @@ describe('file type filtering', () => {
 	test('detects changes to attachment option filters before uploading commands', () => {
 		const handler = createCommandHandler();
 
-		expect(handler.shouldUploadAttachment(attachment(['image', '.pdf']), attachment(['.pdf', 'image']))).toBe(
-			false,
-		);
+		expect(handler.shouldUploadAttachment(attachment(['image', '.pdf']), attachment(['.pdf', 'image']))).toBe(false);
 		expect(handler.shouldUploadAttachment(attachment(['image']), attachment(['video']))).toBe(true);
 		expect(handler.shouldUploadAttachment(attachment(['image', '.pdf']), attachment(['image']))).toBe(true);
 		expect(handler.shouldUploadAttachment(attachment([]), attachment())).toBe(true);

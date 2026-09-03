@@ -1,14 +1,14 @@
-import { Routes, createMockBot, mockWorld } from '@slipher/testing';
+import { createMockBot, mockWorld, Routes } from '@slipher/testing';
 import { describe, expect, test } from 'vitest';
 import {
 	AttachmentBuilder,
 	BaseInteraction,
 	Command,
+	type CommandContext,
 	Declare,
 	Embed,
 	InMessageEmbed,
 	MessagesMethods,
-	type CommandContext,
 	type RESTAPIAttachment,
 	type RESTPostAPIChannelMessageJSONBody,
 } from '../lib';
@@ -31,16 +31,12 @@ describe('message embed body serialization', () => {
 	test('serializes attachment request metadata for uploaded files', () => {
 		const file = new AttachmentBuilder().setName('image.png').setDescription('alt text').setSpoiler(true);
 		const expected = [{ id: '0', filename: 'image.png', description: 'alt text', is_spoiler: true }];
-		const channelBody = MessagesMethods.transformMessageBody<RESTPostAPIChannelMessageJSONBody>(
-			{},
-			[file],
-			{ options: {} } as never,
-		);
-		const interactionBody = BaseInteraction.transformBody<RESTPostAPIChannelMessageJSONBody>(
-			{},
-			[file],
-			{ options: {} } as never,
-		);
+		const channelBody = MessagesMethods.transformMessageBody<RESTPostAPIChannelMessageJSONBody>({}, [file], {
+			options: {},
+		} as never);
+		const interactionBody = BaseInteraction.transformBody<RESTPostAPIChannelMessageJSONBody>({}, [file], {
+			options: {},
+		} as never);
 		const publicRequestContract = { id: '0', is_spoiler: true } satisfies RESTAPIAttachment;
 
 		expect(channelBody.attachments).toEqual(expected);

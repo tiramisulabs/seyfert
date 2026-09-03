@@ -1,7 +1,7 @@
 import { apiAttachment } from '@slipher/testing';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { AttachmentFlags } from '../src/types';
 import { Attachment, AttachmentBuilder, resolveAttachment, resolveImage } from '../src/builders/Attachment';
+import { AttachmentFlags } from '../src/types';
 
 describe('attachment spoilers', () => {
 	test('serializes new spoilers with request metadata without renaming the file', () => {

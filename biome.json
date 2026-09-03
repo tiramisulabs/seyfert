@@ -10,12 +10,15 @@
 		"ignoreUnknown": true,
 		"includes": [
 			"**/src/**",
+			"**/tests/**",
+			"/biome.json",
+			"/commitlint.config.js",
+			"/package.json",
+			"/tsconfig.json",
 			"!/node_modules/",
 			"!/build",
 			"!/lib",
 			"!/__test__",
-			"!/package.json",
-			"!/tsconfig.json",
 			"!/.vscode"
 		]
 	},
@@ -97,5 +100,23 @@
 			"arrowParentheses": "asNeeded",
 			"bracketSameLine": true
 		}
-	}
+	},
+	"overrides": [
+		{
+			"includes": ["tests/**/*-contract.ts", "tests/command-declare-name-combinations.ts"],
+			"formatter": {
+				"enabled": false
+			}
+		},
+		{
+			"includes": ["tests/public-entrypoint-cycles.test.mts"],
+			"assist": {
+				"actions": {
+					"source": {
+						"organizeImports": "off"
+					}
+				}
+			}
+		}
+	]
 }

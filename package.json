@@ -20,7 +20,8 @@
 		"lint": "biome lint --write ./src",
 		"format": "biome format --write ./src",
 		"check-h": "biome check --write ./src",
-		"check": "biome check --verbose --write --no-errors-on-unmatched ./src",
+		"check": "biome check --verbose --no-errors-on-unmatched ./src ./tests ./package.json ./tsconfig.json ./biome.json ./commitlint.config.js",
+		"check:write": "biome check --verbose --write --no-errors-on-unmatched ./src ./tests ./package.json ./tsconfig.json ./biome.json ./commitlint.config.js",
 		"test:types": "pnpm run build && tsc --noEmit --project tests/tsconfig.json",
 		"test": "pnpm run test:types && vitest run --config ./tests/vitest.config.mts ./tests/"
 	},
