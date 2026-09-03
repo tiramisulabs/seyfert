@@ -1,8 +1,8 @@
 import type { CacheFrom } from '../..';
 import type { GatewayPresenceUpdate } from '../../types';
-import { GuildRelatedResource } from './default/guild-related';
+import { GuildBasedResource } from './default/guild-based';
 
-export class Presences extends GuildRelatedResource<PresenceResource, GatewayPresenceUpdate> {
+export class Presences extends GuildBasedResource<PresenceResource, GatewayPresenceUpdate> {
 	namespace = 'presence';
 
 	//@ts-expect-error

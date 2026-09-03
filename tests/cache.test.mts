@@ -1,8 +1,9 @@
 import { assert, describe, expect, test, vi } from 'vitest';
 import { BaseResource } from '../src/cache/resources/default/base';
-import { Cache, CacheFrom, Client, LimitedMemoryAdapter, MemoryAdapter } from '../src/index';
-import type { APIUser } from '../src/index';
+import { Cache, CacheFrom, Client, LimitedMemoryAdapter, MemoryAdapter, PresenceUpdateStatus } from '../src/index';
+import type { APIUser, PresenceUpdateReceiveStatus } from '../src/index';
 import { BaseClient } from '../src/client/base';
+import { PRESENCE_UPDATE } from '../src/events/hooks/presence';
 
 const intents = 53608447;
 const adapterKinds = ['MemoryAdapter', 'LimitedMemoryAdapter'] as const;
@@ -26,6 +27,16 @@ function channelWrite(guildId: string, name = guildId) {
 		{ id: 'channel-1', guild_id: guildId, name },
 		[`channel.${guildId}`, 'channel-1'],
 	] as const;
+}
+
+function presenceData(guildId: string, status: PresenceUpdateReceiveStatus) {
+	return {
+		activities: [],
+		client_status: {},
+		guild_id: guildId,
+		status,
+		user: { id: 'user-1' },
+	};
 }
 
 describe('test memory cache adapter', () => {
@@ -175,6 +186,97 @@ describe('base cache resource', () => {
 
 		adapter.set('base.present', { id: 'present' }, ['base', 'present']);
 		assert.deepEqual(resource.get('present'), { id: 'present' });
+	});
+});
+
+describe.each(adapterKinds)('%s guild-scoped presences', kind => {
+	test('keeps one independently mutable entry per guild', async () => {
+		const client: any = {};
+		const cache = new Cache(0, createTestAdapter(kind), {}, client);
+		client.cache = cache;
+
+		await cache.bulkSet([
+			[CacheFrom.Test, 'presences', presenceData('guild-1', PresenceUpdateStatus.Online), 'user-1', 'guild-1'],
+			[CacheFrom.Test, 'presences', presenceData('guild-2', PresenceUpdateStatus.Idle), 'user-1', 'guild-2'],
+		]);
+
+		expect(await cache.bulkGet([
+			['presences', 'user-1', 'guild-1'],
+			['presences', 'user-1', 'guild-2'],
+		])).toEqual({
+			presences: [
+				expect.objectContaining({ guild_id: 'guild-1', status: 'online' }),
+				expect.objectContaining({ guild_id: 'guild-2', status: 'idle' }),
+			],
+		});
+		expect(await cache.presences?.keys('guild-1')).toEqual(['presence.guild-1.user-1']);
+		expect(await cache.presences?.values('guild-2')).toEqual([
+			expect.objectContaining({ guild_id: 'guild-2', status: 'idle' }),
+		]);
+		expect(await cache.presences?.count('guild-1')).toBe(1);
+		expect(await cache.presences?.contains('user-1', 'guild-2')).toBe(true);
+
+		await cache.presences?.set(
+			CacheFrom.Test,
+			'user-1',
+			'guild-1',
+			presenceData('guild-1', PresenceUpdateStatus.DoNotDisturb),
+		);
+		expect(await cache.presences?.get('user-1', 'guild-1')).toMatchObject({ status: 'dnd' });
+		expect(await cache.presences?.get('user-1', 'guild-2')).toMatchObject({ status: 'idle' });
+
+		await cache.presences?.remove('user-1', 'guild-1');
+		expect(await cache.presences?.get('user-1', 'guild-1')).toBeNull();
+		expect(await cache.presences?.get('user-1', 'guild-2')).toMatchObject({ status: 'idle' });
+	});
+
+	test('guild cleanup removes only that guild presence', async () => {
+		const client: any = {};
+		const cache = new Cache(0, createTestAdapter(kind), {}, client);
+		client.cache = cache;
+
+		await cache.presences?.set(
+			CacheFrom.Test,
+			'user-1',
+			'guild-1',
+			presenceData('guild-1', PresenceUpdateStatus.Online),
+		);
+		await cache.presences?.set(
+			CacheFrom.Test,
+			'user-1',
+			'guild-2',
+			presenceData('guild-2', PresenceUpdateStatus.Idle),
+		);
+		await cache.guilds?.remove('guild-1');
+
+		expect(await cache.presences?.get('user-1', 'guild-1')).toBeNull();
+		expect(await cache.presences?.get('user-1', 'guild-2')).toMatchObject({ status: 'idle' });
+	});
+
+	test('presence hook reads the previous value from the event guild', async () => {
+		const client: any = {};
+		const cache = new Cache(0, createTestAdapter(kind), {}, client);
+		client.cache = cache;
+		await cache.presences?.set(
+			CacheFrom.Test,
+			'user-1',
+			'guild-1',
+			presenceData('guild-1', PresenceUpdateStatus.Online),
+		);
+		await cache.presences?.set(
+			CacheFrom.Test,
+			'user-1',
+			'guild-2',
+			presenceData('guild-2', PresenceUpdateStatus.Idle),
+		);
+
+		const [current, previous] = await PRESENCE_UPDATE(
+			client,
+			presenceData('guild-1', PresenceUpdateStatus.DoNotDisturb) as Parameters<typeof PRESENCE_UPDATE>[1],
+		);
+
+		expect(current).toMatchObject({ guildId: 'guild-1', status: 'dnd' });
+		expect(previous).toMatchObject({ guild_id: 'guild-1', status: 'online' });
 	});
 });
 
