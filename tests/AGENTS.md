@@ -49,12 +49,16 @@ For a new regression:
 
 ## Commands
 
-The repository pins `pnpm@11.11.0`. CI uses Node 22 and runs the suite under
-Node, Bun, and Deno.
+The repository pins `pnpm@11.11.0` and Bun 1.4.0. CI uses Bun for tooling and
+runs type contracts once in the tooling job before exercising the runtime suite
+under Node 22, Bun, and Deno.
 
 ```sh
 # Reproduce the Node dependency graph used by CI
 pnpm install --frozen-lockfile
+
+# Reproduce the Bun tooling dependency graph used by CI
+HUSKY=0 bun install --frozen-lockfile --ignore-scripts
 
 # Build JS and declarations
 pnpm run build
@@ -80,7 +84,7 @@ When a portability change requires local Bun/Deno parity, mirror
 
 ```sh
 # Bun
-HUSKY=0 bun install --ignore-scripts
+HUSKY=0 bun install --frozen-lockfile --ignore-scripts
 bun run build
 bun --bun ./node_modules/vitest/vitest.mjs run --config ./tests/vitest.config.mts ./tests/
 
