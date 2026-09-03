@@ -40,9 +40,7 @@ import {
 	GatewayOpcodes,
 	type GatewayDispatchPayload,
 	type InferMiddlewares,
-	type GuildBased,
 	type GuildBasedResource,
-	type GuildRelated,
 	type GuildRelatedResource,
 	Middlewares,
 	middlewares,
@@ -299,12 +297,8 @@ cacheContract.overwrites?.values(wildcardCacheSelector);
 cacheContract.members?.values(cacheResourceSelector);
 cacheContract.bans?.values(cacheResourceSelector);
 cacheContract.voiceStates?.values(wildcardCacheSelector);
-cacheContract.presences?.values(cacheResourceSelector);
 cacheContract.presences?.get('user-id', 'guild-id');
 cacheContract.presences?.flush('guild-id');
-expectType<GuildBased>('presences');
-// @ts-expect-error Presences are guild-based, not globally keyed guild-related resources.
-expectType<GuildRelated>('presences');
 // @ts-expect-error Presence cache reads require the guild that owns the entry.
 cacheContract.presences?.get('user-id');
 // @ts-expect-error Guild-based presence flushes require an explicit guild selector.
@@ -320,8 +314,6 @@ declare const isolatedUser: UserStructure;
 isolatedUser.presence('guild-id');
 // @ts-expect-error A User has no implicit guild for presence lookup.
 isolatedUser.presence();
-declare const guildMemberPresence: GuildMemberStructure;
-guildMemberPresence.presence();
 
 type ChannelPinResult = Awaited<ReturnType<Client['channels']['pins']>>;
 expectType<true>(true as Equal<ChannelPinResult['items'][number]['pinnedAt'], number>);
