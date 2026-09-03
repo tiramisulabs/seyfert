@@ -134,6 +134,22 @@ const scenarios = [
 		write: writeUser,
 	},
 	{
+		id: 'indexed-misses',
+		label: 'Indexed cache misses',
+		description: '6,680 retained channel buckets followed by 10k missing channel reads',
+		writes: 0,
+		preloadWrites: 6_680,
+		readOperations: 10_000,
+		expectedEntries: 6_680,
+		probes: [
+			{ key: 'channel.0', relationship: 'channel.guild-0' },
+			{ key: 'channel.3339', relationship: 'channel.guild-3339' },
+			{ key: 'channel.6679', relationship: 'channel.guild-6679' },
+		],
+		write: writeChannel,
+		read: readMissingChannel,
+	},
+	{
 		id: 'bulk',
 		label: 'Bulk writes',
 		description: '200k user writes in 1k-entry batches, with one repeated ID per batch',
@@ -150,6 +166,11 @@ const scenarios = [
 		writeBatch: writeUserBatch,
 	},
 ];
+
+const scenarioArgument = process.argv.indexOf('--scenario');
+const selectedScenarios =
+	scenarioArgument === -1 ? scenarios : scenarios.filter(scenario => scenario.id === process.argv[scenarioArgument + 1]);
+if (selectedScenarios.length === 0) throw new Error(`Unknown scenario ${process.argv[scenarioArgument + 1]}`);
 
 function evaluateCommonJs(source, filename, dependencies) {
 	const typescript = requireFromRepository('typescript');
@@ -344,6 +365,10 @@ function writeChannel(adapter, id) {
 	);
 }
 
+function readMissingChannel(adapter, randomState) {
+	return adapter.get(`channel.missing-${randomState}`) === null;
+}
+
 function writeUserBatch(adapter, start, end) {
 	const ids = [];
 	const entries = [];
@@ -418,9 +443,13 @@ async function executeWorkload(adapter, scenario, observe) {
 			scenario.readOperations,
 			() => {
 				randomState = (Math.imul(randomState, 1_664_525) + 1_013_904_223) >>> 0;
-				const id = String(randomState % scenario.preloadWrites);
 				expectedReads++;
-				if (adapter.get(`user.${id}`)?.id === id) validatedReads++;
+				if (scenario.read) {
+					if (scenario.read(adapter, randomState)) validatedReads++;
+				} else {
+					const id = String(randomState % scenario.preloadWrites);
+					if (adapter.get(`user.${id}`)?.id === id) validatedReads++;
+				}
 			},
 			observe,
 		);
@@ -797,14 +826,14 @@ async function runCoordinator() {
 	console.log('Direction:  ↑ higher is better; ↓ lower is better; retained-state counts are descriptive');
 	console.log('Metrics:    values are medians; ± is median absolute deviation as a percentage; loop values are event-loop delays\n');
 
-	for (const scenario of scenarios) {
+	for (const scenario of selectedScenarios) {
 		for (let repetition = 1; repetition <= maximumRepetitions; repetition++) {
 			for (const arm of balancedArms(repetition)) runs.push(runIsolated(arm, scenario, repetition));
 			if (repetition >= minimumRepetitions && hasEnoughMeasuredTime(runs, scenario.id)) break;
 		}
 	}
 
-	for (const scenario of scenarios) {
+	for (const scenario of selectedScenarios) {
 		const summary = Object.fromEntries(
 			arms.map(arm => [
 				arm.id,

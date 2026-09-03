@@ -518,6 +518,16 @@ describe('limited memory cache adapter ownership', () => {
 		assert.equal(adapter.keyToStorage.size, 0);
 	});
 
+	test('does not scan guild buckets for a globally keyed miss', () => {
+		const adapter = new LimitedMemoryAdapter();
+		adapter.set(...channelWrite('guild-1'));
+		adapter.set('channel.channel-2', { id: 'channel-2', guild_id: 'guild-2' }, ['channel.guild-2', 'channel-2']);
+		const iterateStorage = vi.spyOn(adapter.storage, Symbol.iterator);
+
+		assert.equal(adapter.get('channel.missing'), null);
+		expect(iterateStorage).not.toHaveBeenCalled();
+	});
+
 	test('relocates message storage without changing its relationship owner', () => {
 		const adapter = new LimitedMemoryAdapter();
 		adapter.set(

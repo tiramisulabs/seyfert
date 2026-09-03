@@ -102,10 +102,6 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 		return key.indexOf('.', resource.length + 1) !== -1;
 	}
 
-	private _setIndexedStorage(key: string, namespace: string, storageEntry: LimitedCollection<string, T>) {
-		if (needsCacheStorageIndex(key, namespace)) this.keyToStorage.set(key, storageEntry);
-	}
-
 	private _deleteIndexedStorage(key: string) {
 		this.keyToStorage.delete(key);
 	}
@@ -119,39 +115,25 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 		return scopeEnd === -1 ? resource : key.slice(0, scopeEnd);
 	}
 
-	private _isResourceNamespace(resource: string, namespace: string) {
-		return namespace === resource || namespace.startsWith(`${resource}.`);
-	}
-
-	private _findNamespaceByStorage(resource: string, storageEntry: LimitedCollection<string, T>) {
-		for (const [namespace, candidate] of this.storage) {
-			if (candidate === storageEntry && this._isResourceNamespace(resource, namespace)) return namespace;
-		}
-		return undefined;
-	}
-
 	private _getMessageNamespace(data: any) {
 		const scope = Array.isArray(data) ? data[0]?.guild_id : data?.guild_id;
 		return scope ? `message.${scope}` : 'message';
 	}
 
 	private _getStorageEntry(key: string) {
+		const indexedStorage = this.keyToStorage.get(key);
+		if (indexedStorage) {
+			if (indexedStorage.has(key)) return { storageEntry: indexedStorage };
+			this.keyToStorage.delete(key);
+			return undefined;
+		}
+
 		const resource = this._getKeyResource(key);
 		const layout = getCacheResourceLayout(resource);
-		const indexedStorage = this.keyToStorage.get(key);
-		if (indexedStorage?.has(key)) return { resource, layout, storageEntry: indexedStorage };
-		if (indexedStorage) this.keyToStorage.delete(key);
-
 		if (layout !== 'guild-indexed' && layout !== 'message') {
 			const namespace = this._getStorageNamespaceFromKey(resource, layout, key);
 			const storageEntry = this.storage.get(namespace);
-			if (storageEntry?.has(key)) return { resource, layout, namespace, storageEntry };
-		}
-
-		for (const [namespace, storageEntry] of this.storage) {
-			if (!this._isResourceNamespace(resource, namespace) || !storageEntry.has(key)) continue;
-			this._setIndexedStorage(key, namespace, storageEntry);
-			return { resource, layout, namespace, storageEntry };
+			if (storageEntry?.has(key)) return { storageEntry };
 		}
 		return undefined;
 	}
@@ -337,9 +319,6 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 		if (!entry) return;
 		entry.storageEntry.delete(key);
 		this._deleteIndexedStorage(key);
-		if (entry.storageEntry.size !== 0) return;
-		const namespace = entry.namespace ?? this._findNamespaceByStorage(entry.resource, entry.storageEntry);
-		if (namespace) this.storage.delete(namespace);
 	}
 
 	removeToRelationship(to: string, keys: string | string[]) {
