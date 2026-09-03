@@ -36,12 +36,13 @@ permissions:
   contents: read
 
 jobs:
-  linter:
+  tooling:
+    name: Tooling & Test (Bun)
     runs-on: ubuntu-latest
 
     steps:
       - name: check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
           persist-credentials: false
@@ -70,6 +71,9 @@ jobs:
         run: bunx pkg-pr-new publish
         if: github.repository == 'tiramisulabs/seyfert'
 
+      - name: Test suites
+        run: bun --bun ./node_modules/vitest/vitest.mjs run --config ./tests/vitest.config.mts ./tests/
+
   test:
     name: Test (${{ matrix.runtime }})
     runs-on: ubuntu-latest
@@ -78,28 +82,25 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runtime: [node, bun, deno]
+        runtime: [node, deno]
 
     steps:
       - name: check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
           persist-credentials: false
 
-      # --- Node and shared pnpm install ---
+      # --- Shared Node and pnpm install ---
       - name: Install Node
-        if: matrix.runtime != 'bun'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22.x'
 
       - name: Install pnpm
-        if: matrix.runtime != 'bun'
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Install dependencies (Node and Deno)
-        if: matrix.runtime != 'bun'
         run: pnpm install --frozen-lockfile
 
       - name: Test suites (Node)
@@ -111,27 +112,6 @@ jobs:
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         run: node ./tests/bot.js
-
-      # --- Bun ---
-      - name: Install Bun
-        if: matrix.runtime == 'bun'
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.4.0
-
-      - name: Install dependencies (Bun)
-        if: matrix.runtime == 'bun'
-        run: bun install --frozen-lockfile --ignore-scripts
-        env:
-          HUSKY: 0
-
-      - name: Build (Bun)
-        if: matrix.runtime == 'bun'
-        run: bun run build
-
-      - name: Test suites (Bun)
-        if: matrix.runtime == 'bun'
-        run: bun --bun ./node_modules/vitest/vitest.mjs run --config ./tests/vitest.config.mts ./tests/
 
       # --- Deno ---
       - name: Install Deno
