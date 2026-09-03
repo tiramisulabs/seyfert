@@ -31,13 +31,16 @@ export interface LimitedMemoryAdapterOptions<T> {
 	decode?(data: T): unknown;
 }
 
+export type LimitedMemoryStorageIndex<T> =
+	| LimitedCollection<string, T>
+	| readonly [storage: LimitedCollection<string, T>, relationship: string];
+
 export class LimitedMemoryAdapter<T> implements Adapter {
 	isAsync = false;
 
 	readonly storage = new Map<string, LimitedCollection<string, T>>();
 	readonly relationships = new Map<string, Map<string, Set<string>>>();
-	readonly keyToStorage = new Map<string, LimitedCollection<string, T>>();
-	private readonly keyToRelationship = new Map<string, AdapterRelationship>();
+	readonly keyToStorage = new Map<string, LimitedMemoryStorageIndex<T>>();
 
 	options: MakeRequired<LimitedMemoryAdapterOptions<T>, 'default' | 'encode' | 'decode'>;
 
@@ -102,7 +105,14 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 		return key.indexOf('.', resource.length + 1) !== -1;
 	}
 
-	private _deleteIndexedStorage(key: string) {
+	private _getIndexedStorage(index: LimitedMemoryStorageIndex<T>) {
+		return Array.isArray(index) ? index[0] : index;
+	}
+
+	private _deleteIndexedStorage(key: string, storageEntry: LimitedCollection<string, T>) {
+		const index = this.keyToStorage.get(key);
+		if (!index || this._getIndexedStorage(index) !== storageEntry) return;
+		this._removeExplicitRelationship(key, index);
 		this.keyToStorage.delete(key);
 	}
 
@@ -121,10 +131,11 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	}
 
 	private _getStorageEntry(key: string) {
-		const indexedStorage = this.keyToStorage.get(key);
-		if (indexedStorage) {
+		const index = this.keyToStorage.get(key);
+		if (index) {
+			const indexedStorage = this._getIndexedStorage(index);
 			if (indexedStorage.has(key)) return { storageEntry: indexedStorage };
-			this.keyToStorage.delete(key);
+			this._deleteIndexedStorage(key, indexedStorage);
 			return undefined;
 		}
 
@@ -174,28 +185,20 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 		return ids;
 	}
 
-	private _removeExplicitRelationship(key: string) {
-		const relationship = this.keyToRelationship.get(key);
-		if (!relationship) return;
-		const [to, id] = relationship;
+	private _removeExplicitRelationship(key: string, index: LimitedMemoryStorageIndex<T>) {
+		if (!Array.isArray(index)) return;
+		const to = index[1];
+		const id = key.slice(key.lastIndexOf('.') + 1);
 		const [resource, scope] = this._getRelationshipData(to);
 		const relationships = this.relationships.get(resource);
 		const ids = relationships?.get(scope);
 		ids?.delete(id);
 		if (ids?.size === 0) relationships?.delete(scope);
 		if (relationships?.size === 0) this.relationships.delete(resource);
-		this.keyToRelationship.delete(key);
 	}
 
-	private _syncRelationship(
-		key: string,
-		layout: CacheResourceLayout,
-		namespace: string,
-		relationship: AdapterRelationship,
-	) {
-		if (layout !== 'message' && namespace === relationship[0]) return;
+	private _syncMessageRelationship(relationship: AdapterRelationship) {
 		this._ensureExplicitRelationshipSet(relationship[0]).add(relationship[1]);
-		this.keyToRelationship.set(key, relationship);
 	}
 
 	private _deleteEmptyStorage(namespace: string, storageEntry: LimitedCollection<string, T>) {
@@ -211,8 +214,7 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 			limit: resourceOptions?.limit ?? this.options.default.limit,
 			resetOnDemand: (expire ?? 0) > 0,
 			onDelete: key => {
-				this._deleteIndexedStorage(key);
-				this._removeExplicitRelationship(key);
+				this._deleteIndexedStorage(key, bucket);
 				if (bucket.size === 1 && bucket.has(key) && this.storage.get(namespace) === bucket) {
 					this.storage.delete(namespace);
 				}
@@ -232,13 +234,14 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 
 		const storageEntry = this.storage.get(namespace) ?? this._createStorageEntry(resource, namespace);
 		const usesIndex = layout === 'message' || needsCacheStorageIndex(key, namespace);
-		const previousMessageStorage = layout === 'message' ? this.keyToStorage.get(key) : undefined;
-		storageEntry.set(key, encoded);
-
-		if (storageEntry.has(key)) {
+		const previousMessageIndex = layout === 'message' ? this.keyToStorage.get(key) : undefined;
+		const previousMessageStorage = previousMessageIndex ? this._getIndexedStorage(previousMessageIndex) : undefined;
+		if (storageEntry.set(key, encoded)) {
 			if (previousMessageStorage && previousMessageStorage !== storageEntry) previousMessageStorage.delete(key);
-			if (usesIndex) this.keyToStorage.set(key, storageEntry);
-			this._syncRelationship(key, layout, namespace, relationship);
+			if (usesIndex) {
+				this.keyToStorage.set(key, layout === 'message' ? [storageEntry, relationship[0]] : storageEntry);
+			}
+			if (layout === 'message') this._syncMessageRelationship(relationship);
 		}
 		this._deleteEmptyStorage(namespace, storageEntry);
 	}
@@ -275,11 +278,10 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	keys(to: string) {
 		const bucket = this._getRelationshipBucket(to);
 		if (bucket) return [...bucket.keys()];
-		const keys: string[] = [];
-		for (const [key, relationship] of this.keyToRelationship) {
-			if (relationship[0] === to) keys.push(key);
-		}
-		return keys;
+		const ids = this._getExplicitRelationshipSet(to);
+		if (!ids) return [];
+		const resource = this._getKeyResource(to);
+		return [...ids].map(id => `${resource}.${id}`);
 	}
 
 	count(to: string) {
@@ -318,7 +320,6 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 		const entry = this._getStorageEntry(key);
 		if (!entry) return;
 		entry.storageEntry.delete(key);
-		this._deleteIndexedStorage(key);
 	}
 
 	removeToRelationship(to: string, keys: string | string[]) {
@@ -337,6 +338,5 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 		this.storage.clear();
 		this.relationships.clear();
 		this.keyToStorage.clear();
-		this.keyToRelationship.clear();
 	}
 }

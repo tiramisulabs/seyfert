@@ -38,6 +38,11 @@ const comparisons = [
 		label: 'Memory working tree compared with Limited working tree',
 	},
 ];
+const messageProbes = [
+	{ key: 'message.0', relationship: 'message.channel-0' },
+	{ key: 'message.100000', relationship: 'message.channel-0' },
+	{ key: 'message.199999', relationship: 'message.channel-19999' },
+];
 
 const scenarios = [
 	{
@@ -165,6 +170,62 @@ const scenarios = [
 		batchSize: 1_000,
 		writeBatch: writeUserBatch,
 	},
+	{
+		id: 'message-writes',
+		label: 'Message writes',
+		description: '200k individual message writes distributed across 6,680 guild buckets and 20k channels',
+		writes: 200_000,
+		expectedEntries: 200_000,
+		probes: messageProbes,
+		write: writeMessage,
+	},
+	{
+		id: 'message-bulk',
+		label: 'Message bulk writes',
+		description: '200k message writes in 1k-entry batches across 6,680 guild buckets and 20k channels',
+		writes: 200_000,
+		expectedEntries: 200_000,
+		probes: messageProbes,
+		batchSize: 1_000,
+		writeBatch: writeMessageBatch,
+	},
+	{
+		id: 'message-hits',
+		label: 'Message cache hits',
+		description: '200k retained messages followed by 1m deterministic cache hits',
+		writes: 0,
+		preloadWrites: 200_000,
+		readOperations: 1_000_000,
+		expectedEntries: 200_000,
+		probes: messageProbes,
+		write: writeMessage,
+		read: readMessage,
+	},
+	{
+		id: 'message-misses',
+		label: 'Message cache misses',
+		description: '200k retained messages followed by 300k deterministic cache misses',
+		writes: 0,
+		preloadWrites: 200_000,
+		readOperations: 300_000,
+		expectedEntries: 200_000,
+		probes: messageProbes,
+		write: writeMessage,
+		read: readMissingMessage,
+	},
+	{
+		id: 'message-ttl',
+		label: 'Message TTL expiration wave',
+		description: '200k message writes across 6,680 guild buckets, expiring after 3s',
+		writes: 200_000,
+		expectedEntries: 200_000,
+		expectedLimitedEntries: 0,
+		probes: messageProbes,
+		limitedProbes: messageProbes.map(probe => ({ ...probe, present: false })),
+		write: writeMessage,
+		adapterOptions: { message: { expire: 3_000 } },
+		waitForCleanup: true,
+	},
 ];
 
 const scenarioArgument = process.argv.indexOf('--scenario');
@@ -279,10 +340,9 @@ function countEntries(adapter, arm) {
 }
 
 function countRelationshipIds(adapter, arm) {
+	if (isMemoryArm(arm)) return countEntries(adapter, arm);
 	let count = 0;
-	if (isMemoryArm(arm) && !hasBucketedStorage(adapter)) {
-		for (const values of adapter.relationships.values()) count += values.size;
-	} else if (usesAtomicWrites(adapter)) {
+	if (usesAtomicWrites(adapter)) {
 		for (const [namespace, storage] of adapter.storage) {
 			for (const key of storage.keys()) {
 				if (adapter.keyToRelationship?.has(key) || namespace === 'message' || namespace.startsWith('message.')) continue;
@@ -326,6 +386,25 @@ function countBuckets(adapter, arm) {
 	return isMemoryArm(arm) && !hasBucketedStorage(adapter) ? 1 : adapter.storage.size;
 }
 
+function countSchedules(adapter, arm) {
+	if (isMemoryArm(arm) || !hasBucketedStorage(adapter)) return 0;
+	let schedules = 0;
+	for (const bucket of adapter.storage.values()) {
+		if (bucket.expirationSchedule !== undefined) schedules++;
+	}
+	return schedules;
+}
+
+function retainedState(adapter, arm) {
+	return {
+		entries: countEntries(adapter, arm),
+		buckets: countBuckets(adapter, arm),
+		relationshipIds: countRelationshipIds(adapter, arm),
+		indexes: (adapter.keyToStorage?.size ?? 0) + (adapter.keyToRelationship?.size ?? 0),
+		schedules: countSchedules(adapter, arm),
+	};
+}
+
 function usesAtomicWrites(adapter) {
 	return adapter.set.length >= 3;
 }
@@ -365,6 +444,30 @@ function writeChannel(adapter, id) {
 	);
 }
 
+function messageEntry(id) {
+	const stringId = String(id);
+	const guildId = `guild-${id % 6_680}`;
+	const channelId = `channel-${id % 20_000}`;
+	return [
+		`message.${stringId}`,
+		{ id: stringId, guild_id: guildId, channel_id: channelId, content: `message-${stringId}` },
+		[`message.${channelId}`, stringId],
+	];
+}
+
+function writeMessage(adapter, id) {
+	setWithRelationship(adapter, ...messageEntry(id));
+}
+
+function readMessage(adapter, randomState, scenario) {
+	const id = String(randomState % scenario.preloadWrites);
+	return adapter.get(`message.${id}`)?.id === id;
+}
+
+function readMissingMessage(adapter, randomState) {
+	return adapter.get(`message.missing-${randomState}`) === null;
+}
+
 function readMissingChannel(adapter, randomState) {
 	return adapter.get(`channel.missing-${randomState}`) === null;
 }
@@ -383,6 +486,21 @@ function writeUserBatch(adapter, start, end) {
 		return;
 	}
 	adapter.bulkAddToRelationShip({ user: ids });
+	adapter.bulkSet(entries.map(([key, value]) => [key, value]));
+	for (const [key, , relationship] of entries) trackRelationship(adapter, key, relationship);
+}
+
+function writeMessageBatch(adapter, start, end) {
+	const entries = [];
+	for (let index = start; index < end; index++) entries.push(messageEntry(index));
+	if (usesAtomicWrites(adapter)) {
+		adapter.bulkSet(entries);
+		for (const [key, , relationship] of entries) trackRelationship(adapter, key, relationship);
+		return;
+	}
+	const relationships = {};
+	for (const [, , [to, id]] of entries) (relationships[to] ??= []).push(id);
+	adapter.bulkAddToRelationShip(relationships);
 	adapter.bulkSet(entries.map(([key, value]) => [key, value]));
 	for (const [key, , relationship] of entries) trackRelationship(adapter, key, relationship);
 }
@@ -445,7 +563,7 @@ async function executeWorkload(adapter, scenario, observe) {
 				randomState = (Math.imul(randomState, 1_664_525) + 1_013_904_223) >>> 0;
 				expectedReads++;
 				if (scenario.read) {
-					if (scenario.read(adapter, randomState)) validatedReads++;
+					if (scenario.read(adapter, randomState, scenario)) validatedReads++;
 				} else {
 					const id = String(randomState % scenario.preloadWrites);
 					if (adapter.get(`user.${id}`)?.id === id) validatedReads++;
@@ -505,12 +623,7 @@ async function verifyScenarioRelationships(arm, scenario, adapters) {
 		await prepareWorkload(adapter, scenario, () => {});
 		await executeWorkload(adapter, scenario, () => {});
 		await waitForCleanup(adapter, arm, scenario, () => {});
-		const retained = {
-			entries: countEntries(adapter, arm),
-			buckets: countBuckets(adapter, arm),
-			relationshipIds: countRelationshipIds(adapter, arm),
-			indexes: (adapter.keyToStorage?.size ?? 0) + (adapter.keyToRelationship?.size ?? 0),
-		};
+		const retained = retainedState(adapter, arm);
 		assertRetainedState(adapter, arm, scenario, retained);
 		const verifiedRelationships = countVerifiedRelationships(adapter);
 		if (verifiedRelationships !== retained.relationshipIds) {
@@ -532,8 +645,8 @@ async function runChild(arm, scenarioId) {
 	globalThis.gc?.();
 	await immediate();
 	const adapter = createAdapter(arm, scenario, adapters);
-	const baselineRss = process.memoryUsage().rss;
-	let peakRss = baselineRss;
+	const baselineMemory = process.memoryUsage();
+	let peakRss = baselineMemory.rss;
 	const observe = () => {
 		peakRss = Math.max(peakRss, process.memoryUsage().rss);
 	};
@@ -552,13 +665,11 @@ async function runChild(arm, scenarioId) {
 	observe();
 	eventLoopDelay.disable();
 	const cpu = process.cpuUsage(cpuStart);
-	const retained = {
-		entries: countEntries(adapter, arm),
-		buckets: countBuckets(adapter, arm),
-		relationshipIds: countRelationshipIds(adapter, arm),
-		indexes: (adapter.keyToStorage?.size ?? 0) + (adapter.keyToRelationship?.size ?? 0),
-	};
+	const retained = retainedState(adapter, arm);
 	assertRetainedState(adapter, arm, scenario, retained);
+	globalThis.gc?.();
+	await immediate();
+	const retainedMemory = process.memoryUsage();
 	adapter.flush();
 	if (process.env.SEYFERT_CACHE_BENCH_VERIFY_RELATIONSHIPS === '1') {
 		await verifyScenarioRelationships(arm, scenario, adapters);
@@ -570,7 +681,9 @@ async function runChild(arm, scenarioId) {
 		...workload,
 		cleanupMilliseconds,
 		cpuMilliseconds: (cpu.user + cpu.system) / 1_000,
-		peakRssDeltaMiB: (peakRss - baselineRss) / mebibyte,
+		peakRssDeltaMiB: (peakRss - baselineMemory.rss) / mebibyte,
+		rssAfterGcDeltaMiB: (retainedMemory.rss - baselineMemory.rss) / mebibyte,
+		heapAfterGcDeltaMiB: (retainedMemory.heapUsed - baselineMemory.heapUsed) / mebibyte,
 		eventLoopP95Milliseconds: eventLoopDelay.percentile(95) / 1e6,
 		eventLoopMaxMilliseconds: eventLoopDelay.max / 1e6,
 		retained,
@@ -592,6 +705,8 @@ function summarize(runs) {
 		'throughputOpsPerSecond',
 		'cpuMilliseconds',
 		'peakRssDeltaMiB',
+		'rssAfterGcDeltaMiB',
+		'heapAfterGcDeltaMiB',
 		'eventLoopP95Milliseconds',
 		'eventLoopMaxMilliseconds',
 	];
@@ -682,6 +797,8 @@ function printMetricTable(summary) {
 				'Throughput ↑': formatMeasuredMetric(value, 'throughputOpsPerSecond', 'ops/s', 0),
 				'CPU ↓': formatMeasuredMetric(value, 'cpuMilliseconds', 'ms'),
 				'RSS growth ↓': formatMeasuredMetric(value, 'peakRssDeltaMiB', 'MiB'),
+				'RSS after GC ↓': formatMeasuredMetric(value, 'rssAfterGcDeltaMiB', 'MiB'),
+				'Heap after GC ↓': formatMeasuredMetric(value, 'heapAfterGcDeltaMiB', 'MiB'),
 				'Loop p95 ↓': formatMeasuredMetric(value, 'eventLoopP95Milliseconds', 'ms', 2),
 				'Loop max ↓': formatMeasuredMetric(value, 'eventLoopMaxMilliseconds', 'ms', 2),
 				'Cleanup wait ↓':
@@ -722,6 +839,22 @@ function printComparison(summary, comparison) {
 		)}`,
 	);
 	console.log(
+		`  RSS after GC ↓   ${markInconclusive(
+			describeAbsoluteChange(candidate.rssAfterGcDeltaMiB, baseline.rssAfterGcDeltaMiB, 'MiB'),
+			candidate,
+			baseline,
+			'rssAfterGcDeltaMiB',
+		)}`,
+	);
+	console.log(
+		`  Heap after GC ↓  ${markInconclusive(
+			describeAbsoluteChange(candidate.heapAfterGcDeltaMiB, baseline.heapAfterGcDeltaMiB, 'MiB'),
+			candidate,
+			baseline,
+			'heapAfterGcDeltaMiB',
+		)}`,
+	);
+	console.log(
 		`  Event-loop max ↓ ${markInconclusive(
 			describeRelativeChange(candidate.eventLoopMaxMilliseconds, baseline.eventLoopMaxMilliseconds),
 			candidate,
@@ -750,6 +883,7 @@ function printRetainedState(summary) {
 				Buckets: retained.buckets,
 				'Logical relationships': retained.relationshipIds,
 				Indexes: retained.indexes,
+				Schedules: retained.schedules,
 			};
 		}),
 	);
