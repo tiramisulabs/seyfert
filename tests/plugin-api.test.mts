@@ -406,14 +406,20 @@ describe('plugin api v3', () => {
 			name: 'command-veto',
 			register(api) {
 				api.commands.add(PluginPing, HandlerCommand);
-				api.handlers.transform(command => {
-					firstTransformer.push(command.name);
-					if (command.name === 'plugin-ping') return false;
-					return undefined;
-				}, { kinds: ['command'] });
-				api.handlers.transform(command => {
-					secondTransformer.push(command.name);
-				}, { kinds: ['command'] });
+				api.handlers.transform(
+					command => {
+						firstTransformer.push(command.name);
+						if (command.name === 'plugin-ping') return false;
+						return undefined;
+					},
+					{ kinds: ['command'] },
+				);
+				api.handlers.transform(
+					command => {
+						secondTransformer.push(command.name);
+					},
+					{ kinds: ['command'] },
+				);
 			},
 		});
 		const client = createBaseClient([plugin]);
@@ -437,16 +443,25 @@ describe('plugin api v3', () => {
 			name: 'command-replacement',
 			register(api) {
 				api.commands.add(PluginPing);
-				api.handlers.transform(command => {
-					original = command;
-				}, { kinds: ['command'] });
-				api.handlers.transform(command => {
-					preservedInstances.push(command === original);
-					return replacement;
-				}, { kinds: ['command'] });
-				api.handlers.transform(command => {
-					if (command instanceof Command) observed.push(command);
-				}, { kinds: ['command'] });
+				api.handlers.transform(
+					command => {
+						original = command;
+					},
+					{ kinds: ['command'] },
+				);
+				api.handlers.transform(
+					command => {
+						preservedInstances.push(command === original);
+						return replacement;
+					},
+					{ kinds: ['command'] },
+				);
+				api.handlers.transform(
+					command => {
+						if (command instanceof Command) observed.push(command);
+					},
+					{ kinds: ['command'] },
+				);
 			},
 		});
 		const client = createBaseClient([plugin]);
@@ -818,15 +833,21 @@ describe('plugin api v3', () => {
 		const plugin = createPlugin({
 			name: 'event-veto',
 			register(api) {
-				api.handlers.transform(event => {
-					const name = 'data' in event ? (event as typeof vetoedEvent).data.name : 'unknown';
-					transformed.push(name);
-					if (name === 'messageCreate') return false;
-					return undefined;
-				}, { kinds: ['event'] });
-				api.handlers.transform(event => {
-					if ('data' in event) laterTransformer.push((event as typeof keptEvent).data.name);
-				}, { kinds: ['event'] });
+				api.handlers.transform(
+					event => {
+						const name = 'data' in event ? (event as typeof vetoedEvent).data.name : 'unknown';
+						transformed.push(name);
+						if (name === 'messageCreate') return false;
+						return undefined;
+					},
+					{ kinds: ['event'] },
+				);
+				api.handlers.transform(
+					event => {
+						if ('data' in event) laterTransformer.push((event as typeof keptEvent).data.name);
+					},
+					{ kinds: ['event'] },
+				);
 			},
 		});
 		const client = createGatewayClient([plugin]);
@@ -1084,10 +1105,13 @@ describe('plugin api v3', () => {
 		const plugin = createPlugin({
 			name: 'reload-veto',
 			register(api) {
-				api.handlers.transform((_instance, metadata) => {
-					transformed.push(metadata.kind);
-					return false;
-				}, { kinds: ['command', 'component', 'modal'] });
+				api.handlers.transform(
+					(_instance, metadata) => {
+						transformed.push(metadata.kind);
+						return false;
+					},
+					{ kinds: ['command', 'component', 'modal'] },
+				);
 			},
 		});
 		const client = createBaseClient([plugin]);
@@ -1140,13 +1164,16 @@ describe('plugin api v3', () => {
 		const plugin = createPlugin({
 			name: 'event-reload-veto',
 			register(api) {
-				api.handlers.transform(event => {
-					transformed.push(typeof event);
-					if (typeof event === 'function') {
-						return { data: { name: 'messageUpdate', once: false }, run() {} };
-					}
-					return (event as { data?: { name?: string } }).data?.name === 'messageCreate' ? false : undefined;
-				}, { kinds: ['event'] });
+				api.handlers.transform(
+					event => {
+						transformed.push(typeof event);
+						if (typeof event === 'function') {
+							return { data: { name: 'messageUpdate', once: false }, run() {} };
+						}
+						return (event as { data?: { name?: string } }).data?.name === 'messageCreate' ? false : undefined;
+					},
+					{ kinds: ['event'] },
+				);
 			},
 		});
 		const client = createGatewayClient([plugin]);
@@ -1180,11 +1207,14 @@ describe('plugin api v3', () => {
 		const plugin = createPlugin({
 			name: 'event-reload-slot',
 			register(api) {
-				api.handlers.transform(() => {
-					const name = nextName;
-					nextName = 'guildUpdate';
-					return { data: { name, once: false }, run() {} };
-				}, { kinds: ['event'] });
+				api.handlers.transform(
+					() => {
+						const name = nextName;
+						nextName = 'guildUpdate';
+						return { data: { name, once: false }, run() {} };
+					},
+					{ kinds: ['event'] },
+				);
 			},
 		});
 		const client = createGatewayClient([plugin]);
