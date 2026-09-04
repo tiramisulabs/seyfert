@@ -8,9 +8,6 @@ describe('user routes', () => {
 
 		await routes.users('@me').applications('application-id')['role-connection'].delete();
 
-		expect(request).toHaveBeenCalledWith(
-			'DELETE',
-			'/users/@me/applications/application-id/role-connection',
-		);
+		expect(request).toHaveBeenCalledWith('DELETE', '/users/@me/applications/application-id/role-connection');
 	});
 });

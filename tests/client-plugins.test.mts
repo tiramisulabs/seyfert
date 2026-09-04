@@ -1,7 +1,12 @@
 import { describe, expect, test } from 'vitest';
-import { Client, type ClientOptions } from '../src/client/client';
-import { type AnySeyfertPlugin, resolveClientPlugins, runContextScopes, type SeyfertPlugin } from '../src/client/plugins';
 import { createPlugin, GatewayIntentBits } from '../src';
+import { Client, type ClientOptions } from '../src/client/client';
+import {
+	type AnySeyfertPlugin,
+	resolveClientPlugins,
+	runContextScopes,
+	type SeyfertPlugin,
+} from '../src/client/plugins';
 
 function runtimeConfig() {
 	return {

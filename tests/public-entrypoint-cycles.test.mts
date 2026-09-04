@@ -1,4 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
+// Keep the deep import first: this regression exercises loading the cache base before the public entrypoint.
 import { BaseResource } from '../src/cache/resources/default/base';
 import { Cache } from '../src';
 

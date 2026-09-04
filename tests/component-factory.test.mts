@@ -54,12 +54,8 @@ const factoryMatrix = {
 	[ComponentType.TextInput]: [
 		[{ type: ComponentType.TextInput, custom_id: 'text', style: TextInputStyle.Short }, TextInputComponent],
 	],
-	[ComponentType.UserSelect]: [
-		[{ type: ComponentType.UserSelect, custom_id: 'user' }, UserSelectMenuComponent],
-	],
-	[ComponentType.RoleSelect]: [
-		[{ type: ComponentType.RoleSelect, custom_id: 'role' }, RoleSelectMenuComponent],
-	],
+	[ComponentType.UserSelect]: [[{ type: ComponentType.UserSelect, custom_id: 'user' }, UserSelectMenuComponent]],
+	[ComponentType.RoleSelect]: [[{ type: ComponentType.RoleSelect, custom_id: 'role' }, RoleSelectMenuComponent]],
 	[ComponentType.MentionableSelect]: [
 		[{ type: ComponentType.MentionableSelect, custom_id: 'mentionable' }, MentionableSelectMenuComponent],
 	],
@@ -76,9 +72,7 @@ const factoryMatrix = {
 			SectionComponent,
 		],
 	],
-	[ComponentType.TextDisplay]: [
-		[{ type: ComponentType.TextDisplay, content: 'Text' }, TextDisplayComponent],
-	],
+	[ComponentType.TextDisplay]: [[{ type: ComponentType.TextDisplay, content: 'Text' }, TextDisplayComponent]],
 	[ComponentType.Thumbnail]: [
 		[{ type: ComponentType.Thumbnail, media: { url: 'https://example.com/thumbnail.png' } }, ThumbnailComponent],
 	],
@@ -88,9 +82,7 @@ const factoryMatrix = {
 			MediaGalleryComponent,
 		],
 	],
-	[ComponentType.File]: [
-		[{ type: ComponentType.File, file: { url: 'attachment://document.txt' } }, FileComponent],
-	],
+	[ComponentType.File]: [[{ type: ComponentType.File, file: { url: 'attachment://document.txt' } }, FileComponent]],
 	[ComponentType.Separator]: [[{ type: ComponentType.Separator }, SeparatorComponent]],
 	[ComponentType.Container]: [
 		[
@@ -111,12 +103,8 @@ const factoryMatrix = {
 			LabelComponent,
 		],
 	],
-	[ComponentType.FileUpload]: [
-		[{ type: ComponentType.FileUpload, custom_id: 'upload' }, BaseComponent],
-	],
-	[ComponentType.RadioGroup]: [
-		[{ type: ComponentType.RadioGroup, custom_id: 'radio', options }, BaseComponent],
-	],
+	[ComponentType.FileUpload]: [[{ type: ComponentType.FileUpload, custom_id: 'upload' }, BaseComponent]],
+	[ComponentType.RadioGroup]: [[{ type: ComponentType.RadioGroup, custom_id: 'radio', options }, BaseComponent]],
 	[ComponentType.CheckboxGroup]: [
 		[{ type: ComponentType.CheckboxGroup, custom_id: 'checkboxes', options }, BaseComponent],
 	],
@@ -125,11 +113,9 @@ const factoryMatrix = {
 
 const factoryCases = Object.values(factoryMatrix)
 	.flat()
-	.map(([component, expected]) => [
-		`${ComponentType[component.type]} -> ${expected.name}`,
-		component,
-		expected,
-	] as const);
+	.map(
+		([component, expected]) => [`${ComponentType[component.type]} -> ${expected.name}`, component, expected] as const,
+	);
 
 describe('componentFactory', () => {
 	test.each(factoryCases)('%s', (_name, component, expected) => {

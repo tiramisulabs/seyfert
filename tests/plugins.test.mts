@@ -1,14 +1,14 @@
 import { assert, describe, test } from 'vitest';
 import { BaseClient, type BaseClientOptions } from '../lib/client/base';
 import {
+	type ResolvedPluginList,
 	resolveClientPlugins,
+	type SeyfertPlugin,
 	SeyfertPluginAggregateError,
+	type SeyfertPluginClient,
 	SeyfertPluginError,
 	setupClientPlugins,
 	teardownClientPlugins,
-	type ResolvedPluginList,
-	type SeyfertPlugin,
-	type SeyfertPluginClient,
 } from '../lib/client/plugins';
 import { Command, SubCommand } from '../lib/commands';
 import { HandleCommand } from '../lib/commands/handle';

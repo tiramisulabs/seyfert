@@ -1,10 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import {
-	type APIInteractionDataResolvedChannel,
-	ChannelType,
-	PermissionFlagsBits,
-	channelFrom,
-} from '../lib';
+import { type APIInteractionDataResolvedChannel, ChannelType, channelFrom, PermissionFlagsBits } from '../lib';
 
 describe('resolved channel permissions', () => {
 	test('transforms user and app permissions into bitfields', () => {
