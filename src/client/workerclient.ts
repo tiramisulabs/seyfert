@@ -45,6 +45,7 @@ import type {
 	WorkerStart,
 	WorkerStartResharding,
 } from '../websocket/discord/worker';
+import { deserializeWorkerError } from '../websocket/discord/worker-errors';
 import type { ManagerMessages, ManagerSpawnShards } from '../websocket/discord/workermanager';
 import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
@@ -219,8 +220,9 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				if (this.cache.adapter instanceof WorkerAdapter && this.cache.adapter.promises.has(data.nonce)) {
 					const cacheData = this.cache.adapter.promises.get(data.nonce)!;
 					clearTimeout(cacheData.timeout);
-					cacheData.resolve(data.result);
 					this.cache.adapter.promises.delete(data.nonce);
+					if (data.error) cacheData.reject(deserializeWorkerError(data.error));
+					else cacheData.resolve(data.result);
 				}
 				break;
 			case 'SEND_PAYLOAD':

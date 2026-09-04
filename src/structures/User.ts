@@ -56,8 +56,12 @@ export class User extends DiscordBase<APIUser> {
 		return this.rest.cdn.banners(this.id).get(this.banner, options);
 	}
 
-	presence() {
-		return this.client.members.presence(this.id);
+	/**
+	 * Gets the user's cached presence in a guild.
+	 * @param guildId The ID of the guild.
+	 */
+	presence(guildId: string) {
+		return this.client.members.presence(guildId, this.id);
 	}
 
 	toString() {
