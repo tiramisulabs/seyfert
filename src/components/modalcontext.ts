@@ -27,24 +27,13 @@ import type {
 } from '../common';
 import { MessageFlags, type RESTGetAPIGuildQuery } from '../types';
 
-type ContextMiddlewareNames<Mode extends 'registered' | 'definition'> = Mode extends 'definition'
-	? string
-	: keyof ResolvedRegisteredMiddlewares;
-
-export interface ModalContext<
-	M extends ContextMiddlewareNames<Mode> = never,
-	Mode extends 'registered' | 'definition' = 'registered',
-> extends BaseContext,
-		ExtendContext {}
+export interface ModalContext extends BaseContext, ExtendContext {}
 
 /**
  * Represents a context for interacting with components in a Discord bot.
  * @template Type - The type of component interaction.
  */
-export class ModalContext<
-	M extends ContextMiddlewareNames<Mode> = never,
-	Mode extends 'registered' | 'definition' = 'registered',
-> extends BaseContext {
+export class ModalContext<in M extends keyof ResolvedRegisteredMiddlewares<M> = never> extends BaseContext {
 	/**
 	 * Creates a new instance of the ComponentContext class.
 	 * @param client - The UsingClient instance.
@@ -58,8 +47,7 @@ export class ModalContext<
 	}
 
 	command!: ModalCommand;
-	metadata: Mode extends 'definition' ? {} : CommandMetadata<Extract<M, keyof ResolvedRegisteredMiddlewares>> =
-		{} as never;
+	metadata: CommandMetadata<M> = {} as never;
 	globalMetadata: GlobalMetadata = {};
 
 	get components() {
@@ -312,25 +300,20 @@ export class ModalContext<
 		return this.interaction.member;
 	}
 
-	isModal(): this is ModalContext<M, Mode> {
+	isModal(): this is ModalContext<M> {
 		return true;
 	}
 
-	inGuild(): this is GuildModalContext<M, Mode> {
+	inGuild(): this is GuildModalContext<M> {
 		return !!this.guildId;
 	}
 }
 
-export interface GuildModalContext<
-	M extends ContextMiddlewareNames<Mode> = never,
-	Mode extends 'registered' | 'definition' = 'registered',
-> extends Omit<MakeRequired<ModalContext<M, Mode>, 'guildId' | 'member'>, 'guild' | 'me'> {
+export interface GuildModalContext<in M extends keyof ResolvedRegisteredMiddlewares<M> = never>
+	extends Omit<MakeRequired<ModalContext<M>, 'guildId' | 'member'>, 'guild' | 'me'> {
 	guild(mode?: 'rest' | 'flow', query?: RESTGetAPIGuildQuery): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 
 	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
 	me(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
 }
-
-/** A modal context for typing middleware while its registry is being defined. */
-export type ModalMiddlewareContext = ModalContext<never, 'definition'>;

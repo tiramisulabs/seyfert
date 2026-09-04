@@ -22,20 +22,11 @@ import type { ResolvedRegisteredMiddlewares } from '../decorators';
 import type { EntryPointCommand } from './entryPoint';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
 
-type ContextMiddlewareNames<Mode extends 'registered' | 'definition'> = Mode extends 'definition'
-	? string
-	: keyof ResolvedRegisteredMiddlewares;
-
-export interface EntryPointContext<
-	M extends ContextMiddlewareNames<Mode> = never,
-	Mode extends 'registered' | 'definition' = 'registered',
-> extends BaseContext,
+export interface EntryPointContext<in M extends keyof ResolvedRegisteredMiddlewares<M> = never>
+	extends BaseContext,
 		ExtendContext {}
 
-export class EntryPointContext<
-	M extends ContextMiddlewareNames<Mode> = never,
-	Mode extends 'registered' | 'definition' = 'registered',
-> extends BaseContext {
+export class EntryPointContext<in M extends keyof ResolvedRegisteredMiddlewares<M> = never> extends BaseContext {
 	constructor(
 		readonly client: UsingClient,
 		readonly interaction: EntryPointInteraction,
@@ -45,8 +36,7 @@ export class EntryPointContext<
 		super(client);
 	}
 
-	metadata: Mode extends 'definition' ? {} : CommandMetadata<Extract<M, keyof ResolvedRegisteredMiddlewares>> =
-		{} as never;
+	metadata: CommandMetadata<M> = {} as never;
 	globalMetadata: GlobalMetadata = {};
 
 	get t() {
@@ -165,25 +155,20 @@ export class EntryPointContext<
 		return this.interaction.member;
 	}
 
-	isEntryPoint(): this is EntryPointContext<M, Mode> {
+	isEntryPoint(): this is EntryPointContext<M> {
 		return true;
 	}
 
-	inGuild(): this is GuildEntryPointContext<M, Mode> {
+	inGuild(): this is GuildEntryPointContext<M> {
 		return !!this.guildId;
 	}
 }
 
-export interface GuildEntryPointContext<
-	M extends ContextMiddlewareNames<Mode> = never,
-	Mode extends 'registered' | 'definition' = 'registered',
-> extends Omit<MakeRequired<EntryPointContext<M, Mode>, 'guildId' | 'member'>, 'guild' | 'me'> {
+export interface GuildEntryPointContext<in M extends keyof ResolvedRegisteredMiddlewares<M> = never>
+	extends Omit<MakeRequired<EntryPointContext<M>, 'guildId' | 'member'>, 'guild' | 'me'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 
 	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
 	me(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
 }
-
-/** An entry point context for typing middleware while its registry is being defined. */
-export type EntryPointMiddlewareContext = EntryPointContext<never, 'definition'>;

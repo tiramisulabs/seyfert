@@ -95,7 +95,7 @@ type CommandMetadataFromTuple<T extends readonly (keyof ResolvedRegisteredMiddle
 	: {};
 
 export type CommandMetadata<
-	T extends readonly (keyof ResolvedRegisteredMiddlewares)[] | keyof ResolvedRegisteredMiddlewares,
+	T extends readonly (keyof ResolvedRegisteredMiddlewares<T>)[] | keyof ResolvedRegisteredMiddlewares<T>,
 > = [T] extends [never]
 	? {}
 	: [T] extends [readonly (keyof ResolvedRegisteredMiddlewares)[]]

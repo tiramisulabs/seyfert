@@ -29,21 +29,16 @@ import type { ResolvedRegisteredMiddlewares } from '../decorators';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
 
 export type InteractionTarget<T> = T extends MessageCommandInteraction ? MessageStructure : UserStructure;
-type ContextMiddlewareNames<Mode extends 'registered' | 'definition'> = Mode extends 'definition'
-	? string
-	: keyof ResolvedRegisteredMiddlewares;
 
 export interface MenuCommandContext<
 	T extends MessageCommandInteraction | UserCommandInteraction,
-	M extends ContextMiddlewareNames<Mode> = never,
-	Mode extends 'registered' | 'definition' = 'registered',
+	in M extends keyof ResolvedRegisteredMiddlewares<M> = never,
 > extends BaseContext,
 		ExtendContext {}
 
 export class MenuCommandContext<
 	T extends MessageCommandInteraction | UserCommandInteraction,
-	M extends ContextMiddlewareNames<Mode> = never,
-	Mode extends 'registered' | 'definition' = 'registered',
+	in M extends keyof ResolvedRegisteredMiddlewares<M> = never,
 > extends BaseContext {
 	constructor(
 		readonly client: UsingClient,
@@ -54,8 +49,7 @@ export class MenuCommandContext<
 		super(client);
 	}
 
-	metadata: Mode extends 'definition' ? {} : CommandMetadata<Extract<M, keyof ResolvedRegisteredMiddlewares>> =
-		{} as never;
+	metadata: CommandMetadata<M> = {} as never;
 	globalMetadata: GlobalMetadata = {};
 
 	get target(): InteractionTarget<T> {
@@ -196,23 +190,15 @@ export class MenuCommandContext<
 		return this.interaction.data.type === ApplicationCommandType.Message;
 	}
 
-	inGuild(): this is GuildMenuCommandContext<T, M, Mode> {
+	inGuild(): this is GuildMenuCommandContext<T, M> {
 		return !!this.guildId;
 	}
 }
 
 export interface GuildMenuCommandContext<
 	T extends MessageCommandInteraction | UserCommandInteraction,
-	M extends ContextMiddlewareNames<Mode> = never,
-	Mode extends 'registered' | 'definition' = 'registered',
-> extends Omit<MakeRequired<MenuCommandContext<T, M, Mode>, 'guildId' | 'member'>, 'guild'> {
+	in M extends keyof ResolvedRegisteredMiddlewares<M> = never,
+> extends Omit<MakeRequired<MenuCommandContext<T, M>, 'guildId' | 'member'>, 'guild'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 }
-
-/** A menu command context for typing middleware while its registry is being defined. */
-export type MenuMiddlewareContext<T extends MessageCommandInteraction | UserCommandInteraction> = MenuCommandContext<
-	T,
-	never,
-	'definition'
->;

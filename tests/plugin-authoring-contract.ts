@@ -31,7 +31,6 @@ import {
 	Command,
 	type CommandContext,
 	type CommandMetadata,
-	type CommandMiddlewareContext,
 	type ComponentCollectorStopReason,
 	ComponentCommand,
 	type ComponentContext,
@@ -741,8 +740,8 @@ class ContractCacheResource extends BaseResource<{ id: string }, { id: string }>
 	namespace = 'contract-cache';
 }
 
-type AuthMiddleware = MiddlewareContext<{ userId: string }, CommandMiddlewareContext>;
-type AuditMiddleware = MiddlewareContext<undefined, CommandMiddlewareContext>;
+type AuthMiddleware = MiddlewareContext<{ userId: string }, CommandContext>;
+type AuditMiddleware = MiddlewareContext<undefined, CommandContext>;
 
 const ledgerKey = createSharedKey('ledger');
 const combinedSharedKey = createSharedKey<{ fromClient: 'combined-client' }>()('combined-shared');
@@ -1231,8 +1230,8 @@ const combinedImport = createPlugin({
 	},
 });
 
-const combinedAudit = createMiddleware<{ auditId: string }, CommandMiddlewareContext>(({ context, next }) => {
-	expectType<CommandMiddlewareContext>(context);
+const combinedAudit = createMiddleware<{ auditId: string }, CommandContext>(({ context, next }) => {
+	expectType<CommandContext>(context);
 	next({ auditId: 'audit' });
 	// @ts-expect-error audit middleware metadata requires a string id
 	next({ auditId: 1 });
@@ -1264,7 +1263,7 @@ const combinedAtomic = createPlugin({
 	},
 	middlewares: {
 		combinedAudit,
-		combinedEmpty: createMiddleware<undefined, CommandMiddlewareContext>(({ next }) => next()),
+		combinedEmpty: createMiddleware<undefined, CommandContext>(({ next }) => next()),
 	},
 	globalMiddlewares: ['combinedAudit'],
 	register(api) {

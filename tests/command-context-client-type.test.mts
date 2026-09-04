@@ -193,7 +193,7 @@ ctx.client.messages.write("123", { content: "ok" });
 	);
 };
 
-const createMiddlewareContextProgram = () => {
+const createMiddlewareContextProgram = (guild = false) => {
 	const root = join(tmpdir(), 'seyfert-middleware-context');
 	const commandFile = join(root, 'src', 'command.ts');
 	const completionsFile = join(root, 'src', 'completions.ts');
@@ -203,32 +203,51 @@ const createMiddlewareContextProgram = () => {
 			`import {
 	createMiddleware,
 	createStringOption,
-	type CommandMiddlewareContext,
-	type ComponentMiddlewareContext,
-	type EntryPointMiddlewareContext,
-	type MenuMiddlewareContext,
+	type ${guild ? 'GuildCommandContext as CommandContext' : 'CommandContext'},
+	type ${guild ? 'GuildComponentContext as ComponentContext' : 'ComponentContext'},
+	type ${guild ? 'GuildEntryPointContext as EntryPointContext' : 'EntryPointContext'},
+	type ${guild ? 'GuildMenuCommandContext as MenuCommandContext' : 'MenuCommandContext'},
 	type MessageCommandInteraction,
-	type ModalMiddlewareContext,
-	type UserCommandInteraction,
+	type ${guild ? 'GuildModalContext as ModalContext' : 'ModalContext'},
+	type UserStructure,
+	type MessageStructure,
 } from "seyfert";
 
 const options = {
 	team: createStringOption({ description: "Team", required: true }),
 };
 
-const teamOnly = createMiddleware<{ teamId: string }, CommandMiddlewareContext<typeof options>>(({ context, next }) => {
+const teamOnly = createMiddleware<{ teamId: string }, CommandContext<typeof options>>(({ context, next }) => {
 	const teamId: string = context.options.team;
+	// @ts-expect-error command options retain their declared value type.
+	const invalidTeam: number = context.options.team;
+	// @ts-expect-error a context without middleware names has no middleware metadata.
+	context.metadata.teamOnly;
+	if (context.inGuild()) {
+		const guildId: string = context.guildId;
+		void guildId;
+	}
 	next({ teamId });
 });
 
-const menuOnly = createMiddleware<{ menu: true }, MenuMiddlewareContext<MessageCommandInteraction | UserCommandInteraction>>(
-	({ next }) => next({ menu: true }),
+const menuOnly = createMiddleware<{ menu: true }, MenuCommandContext<MessageCommandInteraction>>(
+	({ context, next }) => {
+		const target: MessageStructure = context.target;
+		// @ts-expect-error a message target is not a user.
+		const invalidTarget: UserStructure = context.target;
+		void target;
+		next({ menu: true });
+	},
 );
-const componentOnly = createMiddleware<{ component: true }, ComponentMiddlewareContext<"Button">>(({ next }) =>
-	next({ component: true }),
-);
-const modalOnly = createMiddleware<{ modal: true }, ModalMiddlewareContext>(({ next }) => next({ modal: true }));
-const entryPointOnly = createMiddleware<{ entryPoint: true }, EntryPointMiddlewareContext>(({ next }) =>
+const componentOnly = createMiddleware<{ component: true }, ComponentContext<"StringSelect", never, ("red" | "blue")[]>>(({ context, next }) => {
+	const value: "red" | "blue" = context.interaction.values[0];
+	// @ts-expect-error select values keep the supplied literals.
+	const invalidValue: "green" = context.interaction.values[0];
+	void value;
+	next({ component: true });
+});
+const modalOnly = createMiddleware<{ modal: true }, ModalContext>(({ next }) => next({ modal: true }));
+const entryPointOnly = createMiddleware<{ entryPoint: true }, EntryPointContext>(({ next }) =>
 	next({ entryPoint: true }),
 );
 
@@ -249,7 +268,23 @@ declare module "seyfert" {
 		[
 			commandFile,
 			`import "./start";
-import type { CommandContext, CommandMetadata } from "seyfert";
+import type {
+	CommandContext, CommandMetadata, ComponentContext, EntryPointContext, MenuCommandContext, ModalContext,
+	GuildCommandContext, GuildComponentContext, GuildEntryPointContext, GuildMenuCommandContext, GuildModalContext,
+	MessageCommandInteraction, ResolvedRegisteredMiddlewares,
+} from "seyfert";
+
+type ContextWithMetadata<M extends keyof ResolvedRegisteredMiddlewares> =
+	| CommandContext<{}, M> | GuildCommandContext<{}, M>
+	| ComponentContext<"Button", M> | GuildComponentContext<"Button", M>
+	| EntryPointContext<M> | GuildEntryPointContext<M>
+	| MenuCommandContext<MessageCommandInteraction, M> | GuildMenuCommandContext<MessageCommandInteraction, M>
+	| ModalContext<M> | GuildModalContext<M>;
+
+function readMetadata<M extends keyof ResolvedRegisteredMiddlewares>(context: ContextWithMetadata<M>): CommandMetadata<M> {
+	return context.metadata;
+}
+
 
 declare const ctx: CommandContext<{}, "teamOnly" | "menuOnly" | "componentOnly" | "modalOnly" | "entryPointOnly">;
 const teamId: string = ctx.metadata.teamOnly.teamId;
@@ -259,6 +294,8 @@ const modal: true = ctx.metadata.modalOnly.modal;
 const entryPoint: true = ctx.metadata.entryPointOnly.entryPoint;
 declare const metadata: CommandMetadata<"teamOnly">;
 const metadataTeamId: string = metadata.teamOnly.teamId;
+// @ts-expect-error inferred metadata preserves the callback payload.
+const invalidTeamId: number = ctx.metadata.teamOnly.teamId;
 // @ts-expect-error normal contexts reject middleware names absent from the registry.
 type InvalidContext = CommandContext<{}, "missing">;
 // @ts-expect-error metadata rejects middleware names absent from the registry.
@@ -482,10 +519,12 @@ describe('command context client type', () => {
 		}
 	});
 
-	test('registers explicitly typed middleware contexts without circular inference', () => {
-		const { program } = createMiddlewareContextProgram();
+	test.each([false, true])('registers existing middleware contexts without circular inference (guild: %s)', guild => {
+		const { program } = createMiddlewareContextProgram(guild);
 
-		expect(program.getSemanticDiagnostics()).toHaveLength(0);
+		expect(
+			program.getSemanticDiagnostics().map(diagnostic => ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')),
+		).toEqual([]);
 	});
 
 	test('keeps registered middleware completions on public configuration surfaces', () => {

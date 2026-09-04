@@ -38,23 +38,18 @@ import type {
 import type { ModalSubmitInteraction } from '../structures';
 import { ComponentType, MessageFlags, type RESTGetAPIGuildQuery } from '../types';
 
-type ContextMiddlewareNames<Mode extends 'registered' | 'definition'> = Mode extends 'definition'
-	? string
-	: keyof ResolvedRegisteredMiddlewares;
-
+// Explicit variance avoids resolving middleware metadata while comparing narrowed interaction contexts.
 export interface ComponentContext<
-	Type extends keyof ContextComponentCommandInteractionMap = keyof ContextComponentCommandInteractionMap,
-	M extends ContextMiddlewareNames<Mode> = never,
-	StringSelectValues extends string[] = string[],
-	Mode extends 'registered' | 'definition' = 'registered',
+	out Type extends keyof ContextComponentCommandInteractionMap = keyof ContextComponentCommandInteractionMap,
+	in M extends keyof ResolvedRegisteredMiddlewares<M> = never,
+	out StringSelectValues extends string[] = string[],
 > extends BaseContext,
 		ExtendContext {}
 
 export class ComponentContext<
-	Type extends keyof ContextComponentCommandInteractionMap,
-	M extends ContextMiddlewareNames<Mode> = never,
-	StringSelectValues extends string[] = string[],
-	Mode extends 'registered' | 'definition' = 'registered',
+	out Type extends keyof ContextComponentCommandInteractionMap,
+	in M extends keyof ResolvedRegisteredMiddlewares<M> = never,
+	out StringSelectValues extends string[] = string[],
 > extends BaseContext {
 	/**
 	 * Creates a new instance of the ComponentContext class.
@@ -69,8 +64,7 @@ export class ComponentContext<
 	}
 
 	command!: ComponentCommand;
-	metadata: Mode extends 'definition' ? {} : CommandMetadata<Extract<M, keyof ResolvedRegisteredMiddlewares>> =
-		{} as never;
+	metadata: CommandMetadata<M> = {} as never;
 	globalMetadata: GlobalMetadata = {};
 
 	/**
@@ -248,35 +242,35 @@ export class ComponentContext<
 		return this.interaction.member;
 	}
 
-	isComponent(): this is ComponentContext<keyof ContextComponentCommandInteractionMap, M, StringSelectValues, Mode> {
+	isComponent(): this is ComponentContext<keyof ContextComponentCommandInteractionMap, M, StringSelectValues> {
 		return true;
 	}
 
-	isButton(): this is ComponentContext<'Button', M, StringSelectValues, Mode> {
+	isButton(): this is ComponentContext<'Button', M, StringSelectValues> {
 		return this.interaction.componentType === ComponentType.Button;
 	}
 
-	isChannelSelectMenu(): this is ComponentContext<'ChannelSelect', M, StringSelectValues, Mode> {
+	isChannelSelectMenu(): this is ComponentContext<'ChannelSelect', M, StringSelectValues> {
 		return this.interaction.componentType === ComponentType.ChannelSelect;
 	}
 
-	isRoleSelectMenu(): this is ComponentContext<'RoleSelect', M, StringSelectValues, Mode> {
+	isRoleSelectMenu(): this is ComponentContext<'RoleSelect', M, StringSelectValues> {
 		return this.interaction.componentType === ComponentType.RoleSelect;
 	}
 
-	isMentionableSelectMenu(): this is ComponentContext<'MentionableSelect', M, StringSelectValues, Mode> {
+	isMentionableSelectMenu(): this is ComponentContext<'MentionableSelect', M, StringSelectValues> {
 		return this.interaction.componentType === ComponentType.MentionableSelect;
 	}
 
-	isUserSelectMenu(): this is ComponentContext<'UserSelect', M, StringSelectValues, Mode> {
+	isUserSelectMenu(): this is ComponentContext<'UserSelect', M, StringSelectValues> {
 		return this.interaction.componentType === ComponentType.UserSelect;
 	}
 
-	isStringSelectMenu(): this is ComponentContext<'StringSelect', M, StringSelectValues, Mode> {
+	isStringSelectMenu(): this is ComponentContext<'StringSelect', M, StringSelectValues> {
 		return this.interaction.componentType === ComponentType.StringSelect;
 	}
 
-	inGuild(): this is GuildComponentContext<Type, M, StringSelectValues, Mode> {
+	inGuild(): this is GuildComponentContext<Type, M, StringSelectValues> {
 		return !!this.guildId;
 	}
 }
@@ -291,23 +285,13 @@ export interface ContextComponentCommandInteractionMap<StringSelectValues extend
 }
 
 export interface GuildComponentContext<
-	Type extends keyof ContextComponentCommandInteractionMap,
-	M extends ContextMiddlewareNames<Mode> = never,
-	StringSelectValues extends string[] = string[],
-	Mode extends 'registered' | 'definition' = 'registered',
-> extends Omit<
-		MakeRequired<ComponentContext<Type, M, StringSelectValues, Mode>, 'guildId' | 'member'>,
-		'guild' | 'me'
-	> {
+	out Type extends keyof ContextComponentCommandInteractionMap,
+	in M extends keyof ResolvedRegisteredMiddlewares<M> = never,
+	out StringSelectValues extends string[] = string[],
+> extends Omit<MakeRequired<ComponentContext<Type, M, StringSelectValues>, 'guildId' | 'member'>, 'guild' | 'me'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 
 	me(mode?: 'rest' | 'flow'): Promise<GuildMemberStructure>;
 	me(mode: 'cache'): ReturnCache<GuildMemberStructure | undefined>;
 }
-
-/** A component context for typing middleware while its registry is being defined. */
-export type ComponentMiddlewareContext<
-	Type extends keyof ContextComponentCommandInteractionMap = keyof ContextComponentCommandInteractionMap,
-	StringSelectValues extends string[] = string[],
-> = ComponentContext<Type, never, StringSelectValues, 'definition'>;
