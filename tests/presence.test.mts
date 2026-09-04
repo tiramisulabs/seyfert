@@ -1,7 +1,7 @@
 import { apiMember, apiUser } from '@slipher/testing';
 import { describe, expect, test, vi } from 'vitest';
-import { CacheFrom, Client, PresenceUpdateStatus } from '../lib';
 import type { PresenceUpdateReceiveStatus } from '../lib';
+import { CacheFrom, Client, PresenceUpdateStatus } from '../lib';
 import { GuildMember, User } from '../lib/structures';
 import { PresenceUpdateHandler } from '../lib/websocket/discord/events/presenceUpdate';
 

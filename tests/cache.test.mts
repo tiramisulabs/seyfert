@@ -1,7 +1,15 @@
 // biome-ignore assist/source/organizeImports: The root entrypoint must initialize before BaseClient to avoid the client barrel cycle.
 import { assert, describe, expect, test, vi } from 'vitest';
 import { BaseResource } from '../src/cache/resources/default/base';
-import { Cache, CacheFrom, Client, LimitedMemoryAdapter, MemoryAdapter, PresenceUpdateStatus } from '../src/index';
+import {
+	Cache,
+	CacheFrom,
+	Client,
+	GatewayDispatchEvents,
+	LimitedMemoryAdapter,
+	MemoryAdapter,
+	PresenceUpdateStatus,
+} from '../src/index';
 import type { APIUser, PresenceUpdateReceiveStatus } from '../src/index';
 import { BaseClient } from '../src/client/base';
 import { PRESENCE_UPDATE } from '../src/events/hooks/presence';
@@ -196,10 +204,12 @@ describe.each(adapterKinds)('%s guild-scoped presences', kind => {
 			[CacheFrom.Test, 'presences', presenceData('guild-2', PresenceUpdateStatus.Idle), 'user-1', 'guild-2'],
 		]);
 
-		expect(await cache.bulkGet([
-			['presences', 'user-1', 'guild-1'],
-			['presences', 'user-1', 'guild-2'],
-		])).toEqual({
+		expect(
+			await cache.bulkGet([
+				['presences', 'user-1', 'guild-1'],
+				['presences', 'user-1', 'guild-2'],
+			]),
+		).toEqual({
 			presences: [
 				expect.objectContaining({ guild_id: 'guild-1', status: 'online' }),
 				expect.objectContaining({ guild_id: 'guild-2', status: 'idle' }),
@@ -237,13 +247,34 @@ describe.each(adapterKinds)('%s guild-scoped presences', kind => {
 			'guild-1',
 			presenceData('guild-1', PresenceUpdateStatus.Online),
 		);
+		await cache.presences?.set(CacheFrom.Test, 'user-1', 'guild-2', presenceData('guild-2', PresenceUpdateStatus.Idle));
+		await cache.guilds?.remove('guild-1');
+
+		expect(await cache.presences?.get('user-1', 'guild-1')).toBeNull();
+		expect(await cache.presences?.get('user-1', 'guild-2')).toMatchObject({ status: 'idle' });
+	});
+
+	test('member removal removes only that guild presence', async () => {
+		const client: any = {};
+		const cache = new Cache(0, createTestAdapter(kind), {}, client);
+		client.cache = cache;
 		await cache.presences?.set(
 			CacheFrom.Test,
 			'user-1',
-			'guild-2',
-			presenceData('guild-2', PresenceUpdateStatus.Idle),
+			'guild-1',
+			presenceData('guild-1', PresenceUpdateStatus.Online),
 		);
-		await cache.guilds?.remove('guild-1');
+		await cache.presences?.set(CacheFrom.Test, 'user-1', 'guild-2', presenceData('guild-2', PresenceUpdateStatus.Idle));
+
+		await cache.onPacket({
+			d: {
+				guild_id: 'guild-1',
+				user: { avatar: null, discriminator: '0', global_name: null, id: 'user-1', username: 'user' },
+			},
+			op: 0,
+			s: 1,
+			t: GatewayDispatchEvents.GuildMemberRemove,
+		});
 
 		expect(await cache.presences?.get('user-1', 'guild-1')).toBeNull();
 		expect(await cache.presences?.get('user-1', 'guild-2')).toMatchObject({ status: 'idle' });
@@ -259,12 +290,7 @@ describe.each(adapterKinds)('%s guild-scoped presences', kind => {
 			'guild-1',
 			presenceData('guild-1', PresenceUpdateStatus.Online),
 		);
-		await cache.presences?.set(
-			CacheFrom.Test,
-			'user-1',
-			'guild-2',
-			presenceData('guild-2', PresenceUpdateStatus.Idle),
-		);
+		await cache.presences?.set(CacheFrom.Test, 'user-1', 'guild-2', presenceData('guild-2', PresenceUpdateStatus.Idle));
 
 		const [, previous] = await PRESENCE_UPDATE(
 			client,
@@ -525,16 +551,8 @@ describe('limited memory cache adapter ownership', () => {
 
 	test('relocates message storage without changing its relationship owner', () => {
 		const adapter = new LimitedMemoryAdapter();
-		adapter.set(
-			'message.message-1',
-			{ id: 'message-1', channel_id: 'channel-1' },
-			['message.channel-1', 'message-1'],
-		);
-		adapter.patch(
-			'message.message-1',
-			{ guild_id: 'guild-1' },
-			['message.channel-1', 'message-1'],
-		);
+		adapter.set('message.message-1', { id: 'message-1', channel_id: 'channel-1' }, ['message.channel-1', 'message-1']);
+		adapter.patch('message.message-1', { guild_id: 'guild-1' }, ['message.channel-1', 'message-1']);
 
 		assert.equal(adapter.storage.has('message'), false);
 		assert.equal(adapter.storage.get('message.guild-1')?.size, 1);
@@ -555,11 +573,10 @@ describe('limited memory cache adapter ownership', () => {
 
 	test('keeps an explicit secondary index when message ownership differs from storage', () => {
 		const adapter = new LimitedMemoryAdapter();
-		adapter.set(
-			'message.message-1',
-			{ id: 'message-1', guild_id: 'guild-1', channel_id: 'channel-1' },
-			['message.channel-1', 'message-1'],
-		);
+		adapter.set('message.message-1', { id: 'message-1', guild_id: 'guild-1', channel_id: 'channel-1' }, [
+			'message.channel-1',
+			'message-1',
+		]);
 
 		assert.equal(adapter.contains('message.channel-1', 'message-1'), true);
 		assert.deepEqual(adapter.keys('message.channel-1'), ['message.message-1']);
@@ -572,18 +589,40 @@ describe('limited memory cache adapter ownership', () => {
 		assert.equal(adapter.relationships.size, 0);
 	});
 
+	test('preserves distinct physical and relationship message IDs', () => {
+		const adapter = new LimitedMemoryAdapter();
+		adapter.set('message.physical-id', { id: 'physical-id', guild_id: 'guild-1', channel_id: 'channel-1' }, [
+			'message.channel-1',
+			'relationship-id',
+		]);
+
+		assert.deepEqual(adapter.keys('message.channel-1'), ['message.physical-id']);
+		assert.deepEqual(adapter.getToRelationship('message.channel-1'), ['relationship-id']);
+
+		adapter.removeToRelationship('message.channel-1', 'relationship-id');
+		assert.equal(adapter.get('message.physical-id'), null);
+		assert.equal(adapter.count('message.channel-1'), 0);
+		assert.equal(adapter.keyToStorage.size, 0);
+
+		adapter.set('message.physical-id', { id: 'physical-id', guild_id: 'guild-1', channel_id: 'channel-1' }, [
+			'message.channel-1',
+			'relationship-id',
+		]);
+		adapter.removeRelationship('message.channel-1');
+		assert.equal(adapter.get('message.physical-id'), null);
+		assert.equal(adapter.relationships.size, 0);
+	});
+
 	test('cleans message indexes and relationships when their bucket evicts them', () => {
 		const adapter = new LimitedMemoryAdapter({ message: { limit: 1 } });
-		adapter.set(
-			'message.message-1',
-			{ id: 'message-1', guild_id: 'guild-1', channel_id: 'channel-1' },
-			['message.channel-1', 'message-1'],
-		);
-		adapter.set(
-			'message.message-2',
-			{ id: 'message-2', guild_id: 'guild-1', channel_id: 'channel-1' },
-			['message.channel-1', 'message-2'],
-		);
+		adapter.set('message.message-1', { id: 'message-1', guild_id: 'guild-1', channel_id: 'channel-1' }, [
+			'message.channel-1',
+			'message-1',
+		]);
+		adapter.set('message.message-2', { id: 'message-2', guild_id: 'guild-1', channel_id: 'channel-1' }, [
+			'message.channel-1',
+			'message-2',
+		]);
 
 		assert.equal(adapter.get('message.message-1'), null);
 		assert.equal(adapter.contains('message.channel-1', 'message-1'), false);
@@ -596,11 +635,10 @@ describe('limited memory cache adapter ownership', () => {
 		vi.useFakeTimers();
 		try {
 			const adapter = new LimitedMemoryAdapter({ message: { expire: 100 } });
-			adapter.set(
-				'message.message-1',
-				{ id: 'message-1', guild_id: 'guild-1', channel_id: 'channel-1' },
-				['message.channel-1', 'message-1'],
-			);
+			adapter.set('message.message-1', { id: 'message-1', guild_id: 'guild-1', channel_id: 'channel-1' }, [
+				'message.channel-1',
+				'message-1',
+			]);
 
 			vi.advanceTimersByTime(100);
 

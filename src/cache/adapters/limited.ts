@@ -33,7 +33,7 @@ export interface LimitedMemoryAdapterOptions<T> {
 
 export type LimitedMemoryStorageIndex<T> =
 	| LimitedCollection<string, T>
-	| readonly [storage: LimitedCollection<string, T>, relationship: string];
+	| readonly [storage: LimitedCollection<string, T>, relationship: AdapterRelationship];
 
 export class LimitedMemoryAdapter<T> implements Adapter {
 	isAsync = false;
@@ -112,7 +112,7 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	private _deleteIndexedStorage(key: string, storageEntry: LimitedCollection<string, T>) {
 		const index = this.keyToStorage.get(key);
 		if (!index || this._getIndexedStorage(index) !== storageEntry) return;
-		this._removeExplicitRelationship(key, index);
+		this._removeExplicitRelationship(index);
 		this.keyToStorage.delete(key);
 	}
 
@@ -185,10 +185,9 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 		return ids;
 	}
 
-	private _removeExplicitRelationship(key: string, index: LimitedMemoryStorageIndex<T>) {
+	private _removeExplicitRelationship(index: LimitedMemoryStorageIndex<T>) {
 		if (!Array.isArray(index)) return;
-		const to = index[1];
-		const id = key.slice(key.lastIndexOf('.') + 1);
+		const [to, id] = index[1];
 		const [resource, scope] = this._getRelationshipData(to);
 		const relationships = this.relationships.get(resource);
 		const ids = relationships?.get(scope);
@@ -239,7 +238,7 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 		if (storageEntry.set(key, encoded)) {
 			if (previousMessageStorage && previousMessageStorage !== storageEntry) previousMessageStorage.delete(key);
 			if (usesIndex) {
-				this.keyToStorage.set(key, layout === 'message' ? [storageEntry, relationship[0]] : storageEntry);
+				this.keyToStorage.set(key, layout === 'message' ? [storageEntry, relationship] : storageEntry);
 			}
 			if (layout === 'message') this._syncMessageRelationship(relationship);
 		}
@@ -278,10 +277,11 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	keys(to: string) {
 		const bucket = this._getRelationshipBucket(to);
 		if (bucket) return [...bucket.keys()];
-		const ids = this._getExplicitRelationshipSet(to);
-		if (!ids) return [];
-		const resource = this._getKeyResource(to);
-		return [...ids].map(id => `${resource}.${id}`);
+		const keys: string[] = [];
+		for (const [key, index] of this.keyToStorage) {
+			if (Array.isArray(index) && index[1][0] === to) keys.push(key);
+		}
+		return keys;
 	}
 
 	count(to: string) {
@@ -324,8 +324,8 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 
 	removeToRelationship(to: string, keys: string | string[]) {
 		const ids = new Set(Array.isArray(keys) ? keys : [keys]);
-		for (const key of this.keys(to)) {
-			if (ids.has(key.slice(key.lastIndexOf('.') + 1))) this.remove(key);
+		for (const [key, index] of this.keyToStorage) {
+			if (Array.isArray(index) && index[1][0] === to && ids.has(index[1][1])) this.remove(key);
 		}
 	}
 

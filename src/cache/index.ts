@@ -469,6 +469,7 @@ export class Cache {
 				break;
 			case 'GUILD_MEMBER_REMOVE':
 				await this.members?.remove(event.d.user.id, event.d.guild_id);
+				await this.presences?.remove(event.d.user.id, event.d.guild_id);
 				break;
 
 			case 'PRESENCE_UPDATE':
