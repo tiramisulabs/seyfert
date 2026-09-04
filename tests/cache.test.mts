@@ -321,6 +321,31 @@ describe.each(adapterKinds)('%s custom cache routing', kind => {
 	});
 });
 
+describe.each(adapterKinds)('%s relationship removal', kind => {
+	test.each([
+		['user.', 'user'],
+		['channel.', 'channel.guild-1'],
+		['presence.guild-1.', 'presence.guild-1'],
+		['custom.guild-1.', 'custom.guild-1'],
+	] as const)('removes only selected entries from %s', (prefix, relationship) => {
+		const adapter = createTestAdapter(kind);
+		adapter.set(`${prefix}first`, { id: 'first' }, [relationship, 'first']);
+		adapter.set(`${prefix}second`, { id: 'second' }, [relationship, 'second']);
+
+		adapter.removeToRelationship(relationship, 'first');
+		assert.equal(adapter.get(`${prefix}first`), null);
+		assert.equal(adapter.contains(relationship, 'first'), false);
+		assert.deepEqual(adapter.keys(relationship), [`${prefix}second`]);
+		assert.deepEqual(adapter.get(`${prefix}second`), { id: 'second' });
+
+		adapter.removeToRelationship(relationship, ['missing', 'second']);
+		assert.equal(adapter.count(relationship), 0);
+		assert.equal(adapter.get(`${prefix}second`), null);
+		assert.equal(adapter.storage.size, 0);
+		assert.equal(adapter.keyToStorage.size, 0);
+	});
+});
+
 describe('test limited memory cache adapter', () => {
 	const adapter = new LimitedMemoryAdapter();
 

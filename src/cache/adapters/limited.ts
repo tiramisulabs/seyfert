@@ -323,6 +323,11 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 	}
 
 	removeToRelationship(to: string, keys: string | string[]) {
+		const bucket = this._getRelationshipBucket(to);
+		if (bucket) {
+			for (const id of Array.isArray(keys) ? keys : [keys]) bucket.delete(this._getBucketKey(to, id, bucket));
+			return;
+		}
 		const ids = new Set(Array.isArray(keys) ? keys : [keys]);
 		for (const [key, index] of this.keyToStorage) {
 			if (Array.isArray(index) && index[1][0] === to && ids.has(index[1][1])) this.remove(key);

@@ -516,15 +516,14 @@ export class LimitedCollection<K, V> {
 			return false;
 		}
 		const resolvedValue = value as V;
+		this.options.onDelete?.(key, resolvedValue);
 		if (!this.expirations) {
-			this.options.onDelete?.(key, resolvedValue);
 			return this.data.delete(key);
 		}
 
 		const previousCloser = this.expirations.first;
 		const previousExpireOn = previousCloser?.expireOn;
 
-		this.options.onDelete?.(key, resolvedValue);
 		const result = this.data.delete(key);
 		this._removeExpiration(key);
 		const closer = this.expirations?.first;

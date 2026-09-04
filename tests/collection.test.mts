@@ -408,6 +408,23 @@ describe('LimitedCollection', () => {
 		assert.deepEqual(observed, { hasKey: true, size: 2 });
 	});
 
+	test('deleting an entry also cancels the expiration its callback creates', () => {
+		vi.useFakeTimers();
+		try {
+			const c = new LimitedCollection<string, string>({
+				onDelete: (key, value) => c.set(key, value, 5),
+			});
+			c.set('entry', 'value');
+			c.delete('entry');
+
+			assert.equal(c.size, 0);
+			assert.equal(vi.getTimerCount(), 0);
+		} finally {
+			vi.clearAllTimers();
+			vi.useRealTimers();
+		}
+	});
+
 	test('clear empties collection', () => {
 		const c = new LimitedCollection<number, string>();
 		c.set(1, 'one');
