@@ -365,6 +365,7 @@ export class LimitedCollection<K, V> {
 	 * @param key The key of the element.
 	 * @param value The value of the element.
 	 * @param customExpire The custom expiration time for the element.
+	 * @returns Whether the configured limit accepted the entry. Reentrant mutations from `onDelete` do not change this result.
 	 * @example
 	 * const collection = new LimitedCollection<number, string>({ limit: 3 });
 	 * collection.set(1, 'one');
@@ -377,8 +378,9 @@ export class LimitedCollection<K, V> {
 	 */
 	set(key: K, value: V, customExpire = this.options.expire) {
 		if (this.options.limit <= 0) {
-			return;
+			return false;
 		}
+		const retained = this.options.limit >= 1;
 		validateLimitedCollectionExpiration(customExpire);
 
 		const expireOn = Number.isFinite(customExpire) && customExpire > 0 ? Date.now() + customExpire : -1;
@@ -391,7 +393,7 @@ export class LimitedCollection<K, V> {
 					this.delete(keyValue);
 				}
 			}
-			return;
+			return retained;
 		}
 
 		const previousCloser = this.expirations?.first;
@@ -418,6 +420,7 @@ export class LimitedCollection<K, V> {
 				this.rescheduleExpiration();
 			}
 		}
+		return retained;
 	}
 
 	/**
@@ -513,15 +516,14 @@ export class LimitedCollection<K, V> {
 			return false;
 		}
 		const resolvedValue = value as V;
+		this.options.onDelete?.(key, resolvedValue);
 		if (!this.expirations) {
-			this.options.onDelete?.(key, resolvedValue);
 			return this.data.delete(key);
 		}
 
 		const previousCloser = this.expirations.first;
 		const previousExpireOn = previousCloser?.expireOn;
 
-		this.options.onDelete?.(key, resolvedValue);
 		const result = this.data.delete(key);
 		this._removeExpiration(key);
 		const closer = this.expirations?.first;

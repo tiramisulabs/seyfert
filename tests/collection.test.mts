@@ -249,8 +249,28 @@ describe('LimitedCollection', () => {
 
 	test('limit 0 rejects all inserts', () => {
 		const c = new LimitedCollection<number, string>({ limit: 0 });
-		c.set(1, 'one');
+		assert.equal(c.set(1, 'one'), false);
 		assert.equal(c.size, 0);
+	});
+
+	test('set reports limit acceptance independently of reentrant deletion', () => {
+		const retained = new LimitedCollection<number, string>();
+		assert.equal(retained.set(1, 'one'), true);
+
+		const fractionalLimit = new LimitedCollection<number, string>({ limit: 0.5 });
+		assert.equal(fractionalLimit.set(1, 'one'), false);
+		assert.equal(fractionalLimit.size, 0);
+
+		let reentrant: LimitedCollection<number, string>;
+		reentrant = new LimitedCollection({
+			limit: 1,
+			onDelete(key) {
+				if (key === 1) reentrant.delete(2);
+			},
+		});
+		reentrant.set(1, 'one');
+		assert.equal(reentrant.set(2, 'two'), true);
+		assert.equal(reentrant.has(2), false);
 	});
 
 	test('rejects NaN limits but preserves zero and infinity behavior', () => {
@@ -386,6 +406,23 @@ describe('LimitedCollection', () => {
 		c.set(2, 'two');
 
 		assert.deepEqual(observed, { hasKey: true, size: 2 });
+	});
+
+	test('deleting an entry also cancels the expiration its callback creates', () => {
+		vi.useFakeTimers();
+		try {
+			const c = new LimitedCollection<string, string>({
+				onDelete: (key, value) => c.set(key, value, 5),
+			});
+			c.set('entry', 'value');
+			c.delete('entry');
+
+			assert.equal(c.size, 0);
+			assert.equal(vi.getTimerCount(), 0);
+		} finally {
+			vi.clearAllTimers();
+			vi.useRealTimers();
+		}
 	});
 
 	test('clear empties collection', () => {

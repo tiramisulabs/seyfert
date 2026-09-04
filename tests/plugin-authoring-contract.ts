@@ -268,10 +268,11 @@ const cacheBulkGetKeys = [
 	['users', 'user-id'],
 	['roles', 'role-id'],
 	['members', 'member-id', 'guild-id'],
+	['presences', 'user-id', 'guild-id'],
 ] as const satisfies readonly BulkGetKey[];
 const cacheBulkGetResult = cacheContract.bulkGet(cacheBulkGetKeys);
 type CacheBulkGetResult = Awaited<typeof cacheBulkGetResult>;
-expectType<true>(true as Equal<keyof CacheBulkGetResult, 'users' | 'roles' | 'members'>);
+expectType<true>(true as Equal<keyof CacheBulkGetResult, 'users' | 'roles' | 'members' | 'presences'>);
 // @ts-expect-error tuple-aware bulkGet results only include requested resource keys.
 expectType<CacheBulkGetResult['channels']>([]);
 declare const dynamicBulkGetKeys: BulkGetKey[];
@@ -296,6 +297,23 @@ cacheContract.overwrites?.values(wildcardCacheSelector);
 cacheContract.members?.values(cacheResourceSelector);
 cacheContract.bans?.values(cacheResourceSelector);
 cacheContract.voiceStates?.values(wildcardCacheSelector);
+cacheContract.presences?.get('user-id', 'guild-id');
+cacheContract.presences?.flush('guild-id');
+// @ts-expect-error Presence cache reads require the guild that owns the entry.
+cacheContract.presences?.get('user-id');
+// @ts-expect-error Guild-based presence flushes require an explicit guild selector.
+cacheContract.presences?.flush();
+// @ts-expect-error Bulk presence reads require a guild ID.
+const invalidPresenceBulkGetKey = ['presences', 'user-id'] as const satisfies BulkGetKey;
+
+declare const memberPresenceShorter: MemberShorter;
+memberPresenceShorter.presence('guild-id', 'user-id');
+// @ts-expect-error MemberShorter.presence requires both guild and user IDs.
+memberPresenceShorter.presence('user-id');
+declare const isolatedUser: UserStructure;
+isolatedUser.presence('guild-id');
+// @ts-expect-error A User has no implicit guild for presence lookup.
+isolatedUser.presence();
 
 type ChannelPinResult = Awaited<ReturnType<Client['channels']['pins']>>;
 expectType<true>(true as Equal<ChannelPinResult['items'][number]['pinnedAt'], number>);
