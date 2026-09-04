@@ -193,6 +193,199 @@ ctx.client.messages.write("123", { content: "ok" });
 	);
 };
 
+const createMiddlewareContextProgram = (guild = false) => {
+	const root = join(tmpdir(), 'seyfert-middleware-context');
+	const commandFile = join(root, 'src', 'command.ts');
+	const completionsFile = join(root, 'src', 'completions.ts');
+	const sources = new Map([
+		[
+			join(root, 'src', 'middlewares.ts'),
+			`import {
+	createMiddleware,
+	createStringOption,
+	type ${guild ? 'GuildCommandContext as CommandContext' : 'CommandContext'},
+	type ${guild ? 'GuildComponentContext as ComponentContext' : 'ComponentContext'},
+	type ${guild ? 'GuildEntryPointContext as EntryPointContext' : 'EntryPointContext'},
+	type ${guild ? 'GuildMenuCommandContext as MenuCommandContext' : 'MenuCommandContext'},
+	type MessageCommandInteraction,
+	type ${guild ? 'GuildModalContext as ModalContext' : 'ModalContext'},
+	type UserStructure,
+	type MessageStructure,
+} from "seyfert";
+
+const options = {
+	team: createStringOption({ description: "Team", required: true }),
+};
+
+const teamOnly = createMiddleware<{ teamId: string }, CommandContext<typeof options>>(({ context, next }) => {
+	const teamId: string = context.options.team;
+	// @ts-expect-error command options retain their declared value type.
+	const invalidTeam: number = context.options.team;
+	// @ts-expect-error a context without middleware names has no middleware metadata.
+	context.metadata.teamOnly;
+	if (context.inGuild()) {
+		const guildId: string = context.guildId;
+		void guildId;
+	}
+	next({ teamId });
+});
+
+const menuOnly = createMiddleware<{ menu: true }, MenuCommandContext<MessageCommandInteraction>>(
+	({ context, next }) => {
+		const target: MessageStructure = context.target;
+		// @ts-expect-error a message target is not a user.
+		const invalidTarget: UserStructure = context.target;
+		void target;
+		next({ menu: true });
+	},
+);
+const componentOnly = createMiddleware<{ component: true }, ComponentContext<"StringSelect", never, ("red" | "blue")[]>>(({ context, next }) => {
+	const value: "red" | "blue" = context.interaction.values[0];
+	// @ts-expect-error select values keep the supplied literals.
+	const invalidValue: "green" = context.interaction.values[0];
+	void value;
+	next({ component: true });
+});
+const modalOnly = createMiddleware<{ modal: true }, ModalContext>(({ next }) => next({ modal: true }));
+const entryPointOnly = createMiddleware<{ entryPoint: true }, EntryPointContext>(({ next }) =>
+	next({ entryPoint: true }),
+);
+
+export const middlewares = { teamOnly, menuOnly, componentOnly, modalOnly, entryPointOnly };
+`,
+		],
+		[
+			join(root, 'src', 'start.ts'),
+			`import { middlewares } from "./middlewares";
+
+declare module "seyfert" {
+	interface SeyfertRegistry {
+		middlewares: typeof middlewares;
+	}
+}
+`,
+		],
+		[
+			commandFile,
+			`import "./start";
+import type {
+	CommandContext, CommandMetadata, ComponentContext, EntryPointContext, MenuCommandContext, ModalContext,
+	GuildCommandContext, GuildComponentContext, GuildEntryPointContext, GuildMenuCommandContext, GuildModalContext,
+	MessageCommandInteraction, ResolvedRegisteredMiddlewares,
+} from "seyfert";
+
+type ContextWithMetadata<M extends keyof ResolvedRegisteredMiddlewares> =
+	| CommandContext<{}, M> | GuildCommandContext<{}, M>
+	| ComponentContext<"Button", M> | GuildComponentContext<"Button", M>
+	| EntryPointContext<M> | GuildEntryPointContext<M>
+	| MenuCommandContext<MessageCommandInteraction, M> | GuildMenuCommandContext<MessageCommandInteraction, M>
+	| ModalContext<M> | GuildModalContext<M>;
+
+function readMetadata<M extends keyof ResolvedRegisteredMiddlewares>(context: ContextWithMetadata<M>): CommandMetadata<M> {
+	return context.metadata;
+}
+
+
+declare const ctx: CommandContext<{}, "teamOnly" | "menuOnly" | "componentOnly" | "modalOnly" | "entryPointOnly">;
+const teamId: string = ctx.metadata.teamOnly.teamId;
+const menu: true = ctx.metadata.menuOnly.menu;
+const component: true = ctx.metadata.componentOnly.component;
+const modal: true = ctx.metadata.modalOnly.modal;
+const entryPoint: true = ctx.metadata.entryPointOnly.entryPoint;
+declare const metadata: CommandMetadata<"teamOnly">;
+const metadataTeamId: string = metadata.teamOnly.teamId;
+// @ts-expect-error inferred metadata preserves the callback payload.
+const invalidTeamId: number = ctx.metadata.teamOnly.teamId;
+// @ts-expect-error normal contexts reject middleware names absent from the registry.
+type InvalidContext = CommandContext<{}, "missing">;
+// @ts-expect-error metadata rejects middleware names absent from the registry.
+type InvalidMetadata = CommandMetadata<"missing">;
+void teamId;
+void menu;
+void component;
+void modal;
+void entryPoint;
+void metadataTeamId;
+`,
+		],
+		[
+			completionsFile,
+			`import "./start";
+import { Client, Middlewares, middlewares as collectMiddlewares, type CommandContext, type CommandMetadata } from "seyfert";
+import { middlewares as registeredMiddlewares } from "./middlewares";
+
+declare class TestCommand {}
+Middlewares([/* decorator */ ""])(TestCommand);
+collectMiddlewares(/* helper */ "");
+new Client({ globalMiddlewares: [/* global */ ""] });
+new Client().setServices({
+	middlewares: { /* services */ "": registeredMiddlewares.teamOnly },
+});
+type ContextCompletion = CommandContext<{}, /* context */ "">;
+type MetadataCompletion = CommandMetadata</* metadata */ "">;
+`,
+		],
+	]);
+	const compilerOptions: ts.CompilerOptions = {
+		esModuleInterop: true,
+		module: ts.ModuleKind.CommonJS,
+		moduleResolution: ts.ModuleResolutionKind.Node10,
+		noEmit: true,
+		skipLibCheck: true,
+		strict: true,
+		target: ts.ScriptTarget.ESNext,
+		types: ['node'],
+	};
+	const host = ts.createCompilerHost(compilerOptions);
+	const readFile = host.readFile.bind(host);
+	const fileExists = host.fileExists.bind(host);
+
+	host.fileExists = fileName => sources.has(fileName) || fileExists(fileName);
+	host.readFile = fileName => sources.get(fileName) ?? readFile(fileName);
+	host.getSourceFile = (fileName, languageVersion) => {
+		const source = host.readFile(fileName);
+		return source === undefined ? undefined : ts.createSourceFile(fileName, source, languageVersion, true);
+	};
+	host.resolveModuleNames = (moduleNames, containingFile) =>
+		moduleNames.map(moduleName => {
+			if (moduleName === 'seyfert') {
+				return {
+					extension: ts.Extension.Dts,
+					isExternalLibraryImport: true,
+					resolvedFileName: join(process.cwd(), 'lib', 'index.d.ts'),
+				};
+			}
+			if (moduleName.startsWith('./')) {
+				const resolvedFileName = join(root, 'src', `${moduleName.slice(2)}.ts`);
+				if (sources.has(resolvedFileName)) return { extension: ts.Extension.Ts, resolvedFileName };
+			}
+			return ts.resolveModuleName(moduleName, containingFile, compilerOptions, host).resolvedModule;
+		});
+
+	const languageServiceHost: ts.LanguageServiceHost = {
+		fileExists: host.fileExists,
+		getCompilationSettings: () => compilerOptions,
+		getCurrentDirectory: () => root,
+		getDefaultLibFileName: ts.getDefaultLibFilePath,
+		getScriptFileNames: () => [...sources.keys()],
+		getScriptSnapshot: fileName => {
+			const source = host.readFile(fileName);
+			return source === undefined ? undefined : ts.ScriptSnapshot.fromString(source);
+		},
+		getScriptVersion: () => '0',
+		readDirectory: ts.sys.readDirectory,
+		readFile: host.readFile,
+		resolveModuleNames: host.resolveModuleNames,
+	};
+
+	return {
+		completionsFile,
+		completionsSource: sources.get(completionsFile)!,
+		languageService: ts.createLanguageService(languageServiceHost),
+		program: ts.createProgram([commandFile], compilerOptions, host),
+	};
+};
+
 const getClientTypesBeforeDiagnostics = (sourceFile: ts.SourceFile, checker: ts.TypeChecker) => {
 	const clientTypes: TypeSnapshot[] = [];
 
@@ -323,6 +516,31 @@ describe('command context client type', () => {
 			}
 		} finally {
 			rmSync(root, { force: true, recursive: true });
+		}
+	});
+
+	test.each([false, true])('registers existing middleware contexts without circular inference (guild: %s)', guild => {
+		const { program } = createMiddlewareContextProgram(guild);
+
+		expect(
+			program.getSemanticDiagnostics().map(diagnostic => ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')),
+		).toEqual([]);
+	});
+
+	test('keeps registered middleware completions on public configuration surfaces', () => {
+		const { completionsFile, completionsSource, languageService } = createMiddlewareContextProgram();
+		const expected = ['componentOnly', 'entryPointOnly', 'menuOnly', 'modalOnly', 'teamOnly'];
+
+		for (const marker of ['decorator', 'helper', 'global', 'services', 'context', 'metadata']) {
+			const markerPosition = completionsSource.indexOf(`/* ${marker} */`);
+			const quotePosition = completionsSource.indexOf('"', markerPosition);
+			const completions = languageService.getCompletionsAtPosition(completionsFile, quotePosition + 1, {});
+			const middlewareNames = completions?.entries
+				.map(entry => entry.name)
+				.filter(name => expected.includes(name))
+				.sort();
+
+			expect(middlewareNames, marker).toEqual(expected);
 		}
 	});
 });
