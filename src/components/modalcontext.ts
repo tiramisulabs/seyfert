@@ -33,7 +33,7 @@ export interface ModalContext extends BaseContext, ExtendContext {}
  * Represents a context for interacting with components in a Discord bot.
  * @template Type - The type of component interaction.
  */
-export class ModalContext<M extends keyof ResolvedRegisteredMiddlewares = never> extends BaseContext {
+export class ModalContext<in M extends keyof ResolvedRegisteredMiddlewares<M> = never> extends BaseContext {
 	/**
 	 * Creates a new instance of the ComponentContext class.
 	 * @param client - The UsingClient instance.
@@ -309,7 +309,7 @@ export class ModalContext<M extends keyof ResolvedRegisteredMiddlewares = never>
 	}
 }
 
-export interface GuildModalContext<M extends keyof ResolvedRegisteredMiddlewares = never>
+export interface GuildModalContext<in M extends keyof ResolvedRegisteredMiddlewares<M> = never>
 	extends Omit<MakeRequired<ModalContext<M>, 'guildId' | 'member'>, 'guild' | 'me'> {
 	guild(mode?: 'rest' | 'flow', query?: RESTGetAPIGuildQuery): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
