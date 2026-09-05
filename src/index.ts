@@ -54,6 +54,12 @@ export * from './types';
 export { ShardManager, WorkerManager } from './websocket/discord';
 export type { ShardData, ShardManagerOptions, WorkerData, WorkerManagerOptions } from './websocket/discord/shared';
 export type { WorkerInfo, WorkerShardInfo } from './websocket/discord/worker';
+export type {
+	ManagerMessages,
+	ManagerSendCacheResult,
+	SerializedWorkerError,
+	SerializedWorkerValue,
+} from './websocket/discord/workermanager';
 
 /**
  * Creates an event with the specified data and run function.

@@ -1,7 +1,7 @@
 import type { InternalOptions, UsingClient } from '../commands';
 import { type Awaitable, type If, type Logger, SeyfertError } from '../common';
 import { type APIEmoji, type APISticker, ChannelType, type GatewayDispatchPayload, GatewayIntentBits } from '../types';
-import type { Adapter } from './adapters';
+import type { Adapter, AdapterEntry } from './adapters';
 import { testCacheAdapter } from './conformance';
 import { Bans } from './resources/bans';
 import { Channels } from './resources/channels';
@@ -25,18 +25,10 @@ export type InferAsyncCache = InternalOptions extends { asyncCache: infer P } ? 
 export type ReturnCache<T> = If<InferAsyncCache, Promise<T>, T>;
 
 // GuildBased
-export type GuildBased = 'members' | 'voiceStates' | 'bans';
+export type GuildBased = 'members' | 'voiceStates' | 'presences' | 'bans';
 
 // ClientGuildBased
-export type GuildRelated =
-	| 'emojis'
-	| 'roles'
-	| 'channels'
-	| 'stickers'
-	| 'presences'
-	| 'stageInstances'
-	| 'overwrites'
-	| 'messages';
+export type GuildRelated = 'emojis' | 'roles' | 'channels' | 'stickers' | 'stageInstances' | 'overwrites' | 'messages';
 
 // ClientBased
 export type NonGuildBased = 'users' | 'guilds';
@@ -64,13 +56,13 @@ export type BulkGetKey =
 			string,
 	  ];
 
+export type BulkWriteKey =
+	| readonly [CacheFrom, NonGuildBased, data: any, id: string]
+	| readonly [CacheFrom, GuildBased | GuildRelated, data: any, id: string, guildId: string];
+
 type BulkGetResult<K extends BulkGetKey[0] = BulkGetKey[0]> = Partial<{
 	[P in K]: ReturnManagers[P][];
 }>;
-
-type BulkMutationEntry =
-	| readonly [CacheFrom, NonGuildBased, data: any, sourceId: string]
-	| readonly [CacheFrom, GuildBased | GuildRelated, data: any, sourceId: string, guildId: string];
 
 type PluginCacheResourceContributionLike = {
 	name: string;
@@ -125,6 +117,8 @@ export class Cache {
 	// guild based
 	members?: Members;
 	voiceStates?: VoiceStates;
+	presences?: Presences;
+	bans?: Bans;
 
 	// guild related
 	overwrites?: Overwrites;
@@ -132,10 +126,8 @@ export class Cache {
 	emojis?: Emojis;
 	channels?: Channels;
 	stickers?: Stickers;
-	presences?: Presences;
 	stageInstances?: StageInstances;
 	messages?: Messages;
-	bans?: Bans;
 
 	__logger__?: Logger;
 	private pluginResourceNames = new Set<string>();
@@ -172,20 +164,20 @@ export class Cache {
 		this.users = disabledCache.users ? undefined : new Users(this, client);
 		this.guilds = disabledCache.guilds ? undefined : new Guilds(this, client);
 
-		// guild related
+		// guild based
 		this.members = disabledCache.members ? undefined : new Members(this, client);
 		this.voiceStates = disabledCache.voiceStates ? undefined : new VoiceStates(this, client);
+		this.presences = disabledCache.presences ? undefined : new Presences(this, client);
+		this.bans = disabledCache.bans ? undefined : new Bans(this, client);
 
-		// guild based
+		// guild related
 		this.roles = disabledCache.roles ? undefined : new Roles(this, client);
 		this.overwrites = disabledCache.overwrites ? undefined : new Overwrites(this, client);
 		this.channels = disabledCache.channels ? undefined : new Channels(this, client);
 		this.emojis = disabledCache.emojis ? undefined : new Emojis(this, client);
 		this.stickers = disabledCache.stickers ? undefined : new Stickers(this, client);
-		this.presences = disabledCache.presences ? undefined : new Presences(this, client);
 		this.stageInstances = disabledCache.stageInstances ? undefined : new StageInstances(this, client);
 		this.messages = disabledCache.messages ? undefined : new Messages(this, client);
-		this.bans = disabledCache.bans ? undefined : new Bans(this, client);
 
 		this.onPacket = disabledCache.onPacket
 			? ((() => {
@@ -262,6 +254,7 @@ export class Cache {
 				case 'bans':
 				case 'voiceStates':
 				case 'members':
+				case 'presences':
 					{
 						if (!allData[type]) {
 							allData[type] = [];
@@ -272,7 +265,6 @@ export class Cache {
 				case 'roles':
 				case 'stickers':
 				case 'channels':
-				case 'presences':
 				case 'stageInstances':
 				case 'emojis':
 				case 'users':
@@ -308,92 +300,58 @@ export class Cache {
 		return obj as BulkGetResult<Keys[number][0]>;
 	}
 
-	private prepareBulkMutation(keys: BulkMutationEntry[]) {
-		const allData: [string, any][] = [];
-		const relationshipsData: Record<string, string[]> = {};
+	private _buildBulkWrites(keys: BulkWriteKey[]) {
+		const writes: AdapterEntry[] = [];
 		for (const [from, type, data, id, guildId] of keys) {
 			switch (type) {
 				case 'roles':
 				case 'stickers':
 				case 'channels':
-				case 'presences':
 				case 'stageInstances':
 				case 'emojis':
 				case 'overwrites':
-				case 'messages':
-					{
-						if (!this[type]?.filter(data, id, guildId, from)) continue;
-						const hashId = this[type]?.hashId(guildId!);
-						if (!hashId) {
-							continue;
-						}
-						if (!(hashId in relationshipsData)) {
-							relationshipsData[hashId] = [];
-						}
-						relationshipsData[hashId].push(id);
-						if (type !== 'overwrites' && type !== 'messages') {
-							data.guild_id = guildId;
-						}
-						if (type === 'messages' && data?.author?.id && this.users?.filter(data.author, data.author.id, from)) {
-							const userHashId = this.users.namespace;
-							if (!(userHashId in relationshipsData)) {
-								relationshipsData[userHashId] = [];
-							}
-							relationshipsData[userHashId].push(data.author.id);
-							allData.push([this.users.hashId(data.author.id), data.author]);
-						}
-						allData.push([this[type]!.hashId(id), this[type]!.parse(data, id, guildId!)]);
+				case 'messages': {
+					const resource = this[type];
+					if (!resource?.filter(data, id, guildId, from)) continue;
+					const relationship = resource.hashId(guildId!);
+					if (type !== 'overwrites' && type !== 'messages') data.guild_id = guildId;
+					if (type === 'messages' && data?.author?.id && this.users?.filter(data.author, data.author.id, from)) {
+						writes.push([this.users.hashId(data.author.id), data.author, [this.users.namespace, data.author.id]]);
 					}
+					writes.push([resource.hashId(id), resource.parse(data, id, guildId!), [relationship, id]]);
 					break;
+				}
 				case 'bans':
 				case 'voiceStates':
 				case 'members':
-					{
-						if (!this[type]?.filter(data, id, guildId, from)) continue;
-						const hashId = this[type]?.hashId(guildId!);
-						if (!hashId) {
-							continue;
-						}
-						if (!(hashId in relationshipsData)) {
-							relationshipsData[hashId] = [];
-						}
-						relationshipsData[hashId].push(id);
-						data.guild_id = guildId;
-						allData.push([this[type]!.hashGuildId(guildId, id), this[type]!.parse(data, id, guildId!)]);
-					}
+				case 'presences': {
+					const resource = this[type];
+					if (!resource?.filter(data, id, guildId, from)) continue;
+					const relationship = resource.hashId(guildId!);
+					data.guild_id = guildId;
+					writes.push([resource.hashGuildId(guildId!, id), resource.parse(data, id, guildId!), [relationship, id]]);
 					break;
+				}
 				case 'users':
-				case 'guilds':
-					{
-						if (!this[type]?.filter(data, id, from)) continue;
-						const hashId = this[type]?.namespace;
-						if (!hashId) {
-							continue;
-						}
-						if (!(hashId in relationshipsData)) {
-							relationshipsData[hashId] = [];
-						}
-						relationshipsData[hashId].push(id);
-						allData.push([this[type]!.hashId(id), data]);
-					}
+				case 'guilds': {
+					const resource = this[type];
+					if (!resource?.filter(data, id, from)) continue;
+					writes.push([resource.hashId(id), data, [resource.namespace, id]]);
 					break;
+				}
 				default:
 					throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Invalid type ${type}` } });
 			}
 		}
-		return { data: allData, relationships: relationshipsData };
+		return writes;
 	}
 
-	async bulkPatch(keys: BulkMutationEntry[]) {
-		const mutation = this.prepareBulkMutation(keys);
-		await this.adapter.bulkAddToRelationShip(mutation.relationships);
-		await this.adapter.bulkPatch(mutation.data);
+	async bulkPatch(keys: BulkWriteKey[]) {
+		await this.adapter.bulkPatch(this._buildBulkWrites(keys));
 	}
 
-	async bulkSet(keys: BulkMutationEntry[]) {
-		const mutation = this.prepareBulkMutation(keys);
-		await this.adapter.bulkAddToRelationShip(mutation.relationships);
-		await this.adapter.bulkSet(mutation.data);
+	async bulkSet(keys: BulkWriteKey[]) {
+		await this.adapter.bulkSet(this._buildBulkWrites(keys));
 	}
 
 	onPacket(event: GatewayDispatchPayload) {
@@ -511,6 +469,7 @@ export class Cache {
 				break;
 			case 'GUILD_MEMBER_REMOVE':
 				await this.members?.remove(event.d.user.id, event.d.guild_id);
+				await this.presences?.remove(event.d.user.id, event.d.guild_id);
 				break;
 
 			case 'PRESENCE_UPDATE':

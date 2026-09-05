@@ -22,6 +22,8 @@ import {
 	HeadingLevel,
 	type HttpConfig,
 	LabelComponent,
+	type ManagerMessages,
+	type ManagerSendCacheResult,
 	type MaybeResolvedChannel,
 	MessageActivityType,
 	type MessageLink,
@@ -34,6 +36,8 @@ import {
 	type RESTOAuth2BotAuthorizationQuery,
 	type RESTPatchCurrentApplicationJSONBody,
 	type ResolvedChannel,
+	type SerializedWorkerError,
+	type SerializedWorkerValue,
 	SeyfertError,
 	type SeyfertErrorCode,
 	SeyfertErrorMessages,
@@ -110,6 +114,20 @@ expectType<ShardData>({ resume_seq: null });
 expectType<WorkerData['mode']>('threads');
 expectType<WorkerInfo>({ shards: [] });
 expectType<WorkerShardInfo>({ shardId: 0, workerId: 0, open: false, latency: 0, resumable: false });
+declare const managerMessage: ManagerMessages;
+expectType<string>(managerMessage.type);
+expectType<SerializedWorkerValue>({ type: 'record', value: { cause: ['nested', 1, null] } });
+expectType<SerializedWorkerError>({
+	type: 'error',
+	name: 'Error',
+	message: 'failed',
+	cause: { type: 'record', value: { code: 'nested' } },
+});
+expectType<ManagerSendCacheResult>({
+	type: 'CACHE_RESULT',
+	nonce: 'cache-request',
+	error: { type: 'error', name: 'Error', message: 'failed' },
+});
 
 declare const resolvedChannel: APIInteractionDataResolvedChannel;
 expectType<string | undefined>(resolvedChannel.app_permissions);

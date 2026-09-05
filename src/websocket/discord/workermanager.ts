@@ -12,6 +12,7 @@ import { ConnectQueue } from '../structures/timeout';
 import { Heartbeater, type WorkerHeartbeaterMessages } from './heartbeater';
 import type { ShardOptions, WorkerData, WorkerManagerOptions } from './shared';
 import { WORKER_TIMEOUT_MS, type WorkerInfo, type WorkerMessages, type WorkerShardInfo } from './worker';
+import { serializeWorkerError } from './worker-errors';
 
 type WorkerManagerConstructorOptionalKeys = 'token' | 'intents' | 'info' | 'handlePayload' | 'handleWorkerMessage';
 type WorkerManagerConstructorOptions = WorkerManagerOptions extends infer Options
@@ -405,13 +406,15 @@ export class WorkerManager extends Map<
 							metadata: { detail: 'Invalid request from unavailable worker' },
 						});
 					}
-					// @ts-expect-error
-					const result = await this.cacheAdapter[message.method](...message.args);
-					this.postMessage(message.workerId, {
-						type: 'CACHE_RESULT',
-						nonce: message.nonce,
-						result,
-					} as ManagerSendCacheResult);
+					let response: ManagerSendCacheResult;
+					try {
+						// @ts-expect-error
+						const result = await this.cacheAdapter[message.method](...message.args);
+						response = { type: 'CACHE_RESULT', nonce: message.nonce, result };
+					} catch (error) {
+						response = { type: 'CACHE_RESULT', nonce: message.nonce, error: serializeWorkerError(error) };
+					}
+					this.postMessage(message.workerId, response);
 				}
 				break;
 			case 'RECEIVE_PAYLOAD':
@@ -750,7 +753,27 @@ export type ManagerSendPayload = CreateManagerMessage<
 >;
 export type ManagerRequestShardInfo = CreateManagerMessage<'SHARD_INFO', { nonce: string; shardId: number }>;
 export type ManagerRequestWorkerInfo = CreateManagerMessage<'WORKER_INFO', { nonce: string }>;
-export type ManagerSendCacheResult = CreateManagerMessage<'CACHE_RESULT', { nonce: string; result: any }>;
+export type SerializedWorkerValue =
+	| null
+	| boolean
+	| number
+	| string
+	| SerializedWorkerError
+	| SerializedWorkerValue[]
+	| { type: 'record'; value: { [key: string]: SerializedWorkerValue } };
+export interface SerializedWorkerError {
+	type: 'error';
+	name: string;
+	message: string;
+	stack?: string;
+	code?: string;
+	metadata?: Record<string, SerializedWorkerValue>;
+	cause?: SerializedWorkerValue;
+}
+export type ManagerSendCacheResult = CreateManagerMessage<
+	'CACHE_RESULT',
+	{ nonce: string } & ({ result: any; error?: never } | { error: SerializedWorkerError; result?: never })
+>;
 export type ManagerSendBotReady = CreateManagerMessage<'BOT_READY'>;
 export type ManagerSendApiResponse = CreateManagerMessage<
 	'API_RESPONSE',
