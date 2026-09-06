@@ -331,14 +331,19 @@ export type PluginHandlerCreator = <T extends PluginHandlerConstructor>(
 	next: () => InstanceType<T>,
 	metadata: PluginHandlerMetadata,
 ) => InstanceType<T>;
-export type PluginHandlerTransformer = <K extends PluginHandlerKind = PluginHandlerKind>(
+export type PluginHandlerTransformer<K extends PluginHandlerKind = PluginHandlerKind> = (
 	instance: PluginHandlerValueByKind[K],
 	metadata: PluginHandlerMetadata<K>,
-) => PluginHandlerValueByKind[K] | void;
+) => PluginHandlerValueByKind[K] | false | void;
 export interface PluginHandlerOptions {
 	kinds?: readonly PluginHandlerKind[];
 	order?: PluginOrderOpt;
 }
+export type PluginHandlerKindsFromOptions<Options extends PluginHandlerOptions | undefined> = Options extends {
+	kinds: readonly [infer First extends PluginHandlerKind, ...infer Rest extends readonly PluginHandlerKind[]];
+}
+	? First | Rest[number]
+	: PluginHandlerKind;
 export type PluginDisposer = () => void;
 export type PluginEventErrorHandler = (error: unknown, name: string) => unknown;
 export interface PluginContributionOptions {
@@ -400,7 +405,10 @@ export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewa
 	};
 	handlers: {
 		construct(creator: PluginHandlerCreator, opts?: PluginHandlerOptions): void;
-		transform(transformer: PluginHandlerTransformer, opts?: PluginHandlerOptions): void;
+		transform<const Options extends PluginHandlerOptions | undefined = undefined>(
+			transformer: PluginHandlerTransformer<PluginHandlerKindsFromOptions<Options>>,
+			opts?: Options,
+		): void;
 	};
 	components: {
 		add(...components: PluginComponentLoadable[]): void;

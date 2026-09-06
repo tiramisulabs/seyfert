@@ -7,6 +7,7 @@ import type {
 	APIMessage,
 	APIPartialChannel,
 	APIThreadChannel,
+	GuildChannelType,
 	ThreadChannelType,
 } from '../channel';
 import type { APIGuildMember, APIPartialInteractionGuild } from '../guild';
@@ -16,7 +17,7 @@ import type { APIUser } from '../user';
 import type { InteractionType } from './responses';
 
 /**
- * https://discord.com/developers/docs/resources/channel#message-interaction-metadata-object
+ * https://docs.discord.com/developers/resources/channel#message-interaction-metadata-object
  */
 export interface APIMessageInteractionMetadata {
 	/**
@@ -63,7 +64,7 @@ export type PartialAPIMessageInteractionGuildMember = Pick<
 >;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#message-interaction-object
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#message-interaction-object
  */
 export interface APIMessageInteraction {
 	/**
@@ -89,7 +90,7 @@ export interface APIMessageInteraction {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#guild-member-object
+ * https://docs.discord.com/developers/resources/guild#guild-member-object
  */
 export interface APIInteractionGuildMember extends APIGuildMember {
 	permissions: Permissions;
@@ -99,7 +100,7 @@ export interface APIInteractionGuildMember extends APIGuildMember {
 // INTERACTIONS RECEIVED
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object
  */
 export interface APIBaseInteraction<Type extends InteractionType, Data> {
 	/**
@@ -198,28 +199,39 @@ export type APIGuildInteractionWrapper<Original extends APIBaseInteraction<Inter
 > &
 	Required<Pick<Original, 'guild_id' | 'member'>>;
 
-export interface APIInteractionDataResolvedChannelBase<T extends ChannelType> extends Required<APIPartialChannel> {
+export interface APIInteractionDataResolvedChannelBase<T extends GuildChannelType> extends Required<APIPartialChannel> {
 	type: T;
 	permissions: Permissions;
+	/**
+	 * Computed permissions for the bot user in the channel.
+	 *
+	 * **This is only sent when the application's bot user is in the guild**
+	 */
+	app_permissions?: Permissions;
 }
 
 /**
- * https://discord.com/developers/docs/resources/channel#channel-object
+ * https://docs.discord.com/developers/resources/channel#channel-object
  */
 export type APIInteractionDataResolvedChannel =
-	| APIInteractionDataResolvedChannelBase<Exclude<ChannelType, ThreadChannelType>>
+	| (Required<APIPartialChannel> & {
+			type: ChannelType.DM | ChannelType.GroupDM;
+			permissions?: never;
+			app_permissions?: never;
+	  })
+	| APIInteractionDataResolvedChannelBase<Exclude<GuildChannelType, ThreadChannelType>>
 	| (APIInteractionDataResolvedChannelBase<ThreadChannelType> &
 			Pick<APIThreadChannel, 'parent_id' | 'thread_metadata'>);
 
 /**
- * https://discord.com/developers/docs/resources/guild#guild-member-object
+ * https://docs.discord.com/developers/resources/guild#guild-member-object
  */
 export interface APIInteractionDataResolvedGuildMember extends Omit<APIGuildMember, 'deaf' | 'mute' | 'user'> {
 	permissions: Permissions;
 }
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-resolved-data-structure
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-resolved-data-structure
  */
 export interface APIInteractionDataResolved {
 	users?: Record<Snowflake, APIUser>;

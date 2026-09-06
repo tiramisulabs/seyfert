@@ -47,6 +47,11 @@ export type BaseChannelStructure = InferCustomStructure<BaseChannel<ChannelType>
 export type BaseGuildChannelStructure = InferCustomStructure<BaseGuildChannel, 'BaseGuildChannel'>;
 export type TextGuildChannelStructure = InferCustomStructure<TextGuildChannel, 'TextGuildChannel'>;
 export type DMChannelStructure = InferCustomStructure<DMChannel, 'DMChannel'>;
+export type GroupDMChannelStructure = Omit<DMChannelStructure, 'isDM' | 'name' | 'type'> & {
+	isDM(): this is GroupDMChannelStructure;
+	name: string | null;
+	type: ChannelType.GroupDM;
+};
 export type VoiceChannelStructure = InferCustomStructure<VoiceChannel, 'VoiceChannel'>;
 export type StageChannelStructure = InferCustomStructure<StageChannel, 'StageChannel'>;
 export type MediaChannelStructure = InferCustomStructure<MediaChannel, 'MediaChannel'>;

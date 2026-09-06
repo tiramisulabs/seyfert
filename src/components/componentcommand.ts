@@ -2,6 +2,7 @@ import type { PluginMiddlewareDenialMetadata } from '../client/plugins/types';
 import type { ExtraProps, ResolvedRegisteredMiddlewares, UsingClient } from '../commands';
 import { ComponentType } from '../types';
 import type { ComponentContext, ContextComponentCommandInteractionMap } from './componentcontext';
+import { matchesCustomId } from './customId';
 
 export const InteractionCommandType = {
 	COMPONENT: 0,
@@ -22,9 +23,7 @@ export abstract class ComponentCommand {
 	/** @internal */
 	_filter(context: ComponentContext) {
 		if (this.customId) {
-			const matches =
-				typeof this.customId === 'string' ? this.customId === context.customId : context.customId.match(this.customId);
-			if (!matches) return false;
+			if (!matchesCustomId(this.customId, context.customId)) return false;
 		}
 		if (this.filter) return this.filter(context);
 		return true;

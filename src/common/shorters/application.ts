@@ -53,7 +53,7 @@ export class ApplicationShorter extends BaseShorter {
 	/**
 	 * Creates a new emoji for the application.
 	 * @param body.name The name of the emoji.
-	 * @param body.image The [image data string](https://discord.com/developers/docs/reference#image-data) of the emoji.
+	 * @param body.image The [image data string](https://docs.discord.com/developers/reference#image-data) of the emoji.
 	 * @returns The created emoji.
 	 */
 	async createEmoji(raw: ApplicationEmojiResolvable): Promise<ApplicationEmojiStructure> {

@@ -1,3 +1,7 @@
+packages:
+  - tests
+  - tests/local-seyfert
+
 allowBuilds:
   '@biomejs/biome': true
   esbuild: true

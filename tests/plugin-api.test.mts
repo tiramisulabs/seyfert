@@ -4,8 +4,10 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import {
 	ApiHandler,
+	type ApiRequestOptions,
 	BaseCommand,
 	BaseResource,
+	type Cache,
 	Client,
 	Command,
 	ComponentCommand,
@@ -14,19 +16,17 @@ import {
 	createPluginFactory,
 	createSharedKey,
 	definePlugins,
+	type GatewayDispatchPayload,
 	GatewayIntentBits,
 	GatewayOpcodes,
+	type GatewaySendPayload,
+	type MiddlewareContext,
 	ModalCommand,
+	type PluginHandlerTransformer,
 	PluginOrder,
 	runPluginCommandObservers,
 	runPluginHooks,
 	WorkerClient,
-	type Cache,
-	type ApiRequestOptions,
-	type GatewayDispatchPayload,
-	type GatewaySendPayload,
-	type MiddlewareContext,
-	type PluginHandlerTransformer,
 } from '../src';
 import { BaseClient } from '../src/client/base';
 import { resolveRawEventData } from '../src/events/utils';
@@ -377,10 +377,13 @@ describe('plugin api v3', () => {
 			name: 'rename-source',
 			register(api) {
 				api.commands.add(PluginPing);
-				api.handlers.transform(command => {
-					if (command instanceof Command) command.name = 'renamed-plugin-ping';
-					return command;
-				}, { kinds: ['command'] });
+				api.handlers.transform(
+					command => {
+						if (command instanceof Command) command.name = 'renamed-plugin-ping';
+						return command;
+					},
+					{ kinds: ['command'] },
+				);
 				api.events.on('commandsLoaded', metadata => events.push(metadata));
 			},
 		});
@@ -394,6 +397,116 @@ describe('plugin api v3', () => {
 				plugin: { total: 1, sources: { 'rename-source': 1 } },
 			}),
 		);
+	});
+
+	test('treats false as a terminal veto for only the current plugin command', async () => {
+		const firstTransformer: string[] = [];
+		const secondTransformer: string[] = [];
+		const plugin = createPlugin({
+			name: 'command-veto',
+			register(api) {
+				api.commands.add(PluginPing, HandlerCommand);
+				api.handlers.transform(
+					command => {
+						firstTransformer.push(command.name);
+						if (command.name === 'plugin-ping') return false;
+						return undefined;
+					},
+					{ kinds: ['command'] },
+				);
+				api.handlers.transform(
+					command => {
+						secondTransformer.push(command.name);
+					},
+					{ kinds: ['command'] },
+				);
+			},
+		});
+		const client = createBaseClient([plugin]);
+		client.loadCommands = async () => {
+			client.commands.values = [];
+		};
+
+		await client.start();
+
+		expect(firstTransformer).toEqual(['plugin-ping', 'handler-command']);
+		expect(secondTransformer).toEqual(['handler-command']);
+		expect(client.commands.values.map(command => command.name)).toEqual(['handler-command']);
+	});
+
+	test('keeps undefined results and continues with compatible replacements', async () => {
+		const replacement = new HandlerInstanceCommand();
+		let original: object | undefined;
+		const preservedInstances: boolean[] = [];
+		const observed: Command[] = [];
+		const plugin = createPlugin({
+			name: 'command-replacement',
+			register(api) {
+				api.commands.add(PluginPing);
+				api.handlers.transform(
+					command => {
+						original = command;
+					},
+					{ kinds: ['command'] },
+				);
+				api.handlers.transform(
+					command => {
+						preservedInstances.push(command === original);
+						return replacement;
+					},
+					{ kinds: ['command'] },
+				);
+				api.handlers.transform(
+					command => {
+						if (command instanceof Command) observed.push(command);
+					},
+					{ kinds: ['command'] },
+				);
+			},
+		});
+		const client = createBaseClient([plugin]);
+		client.loadCommands = async () => {
+			client.commands.values = [];
+		};
+
+		await client.start();
+
+		expect(preservedInstances).toEqual([true]);
+		expect(observed).toEqual([replacement]);
+		expect(client.commands.values).toEqual([replacement]);
+	});
+
+	test('omits vetoed plugin components and modals', async () => {
+		const plugin = createPlugin({
+			name: 'component-veto',
+			register(api) {
+				api.components.add(PluginButton);
+				api.modals.add(PluginModal);
+				api.handlers.transform(() => false, { kinds: ['component', 'modal'] });
+			},
+		});
+		const client = createBaseClient([plugin]);
+		client.loadComponents = async () => {};
+
+		await client.start();
+
+		expect(client.components.commands).toEqual([]);
+	});
+
+	test('rejects replacements incompatible with the current handler kind', async () => {
+		const plugin = createPlugin({
+			name: 'incompatible-replacement',
+			register(api) {
+				api.commands.add(PluginPing);
+				api.handlers.transform(() => new PluginButton(), { kinds: ['command', 'component'] });
+			},
+		});
+		const client = createBaseClient([plugin]);
+		client.loadCommands = async () => {
+			client.commands.values = [];
+		};
+
+		await expect(client.start()).rejects.toThrow(/incompatible with handler kind "command"/);
 	});
 
 	test('preserves props on plugin-added command instances', async () => {
@@ -525,9 +638,7 @@ describe('plugin api v3', () => {
 
 		await client.uploadCommands({ applicationId: 'app', cachePath });
 
-		expect(uploaded).toEqual([
-			{ applicationId: 'app', data: { body: [] }, guildId: 'guild-1', scope: 'guild' },
-		]);
+		expect(uploaded).toEqual([{ applicationId: 'app', data: { body: [] }, guildId: 'guild-1', scope: 'guild' }]);
 	});
 
 	test('applies plugin components and modals after component loading', async () => {
@@ -603,7 +714,10 @@ describe('plugin api v3', () => {
 					createKinds.push(metadata.kind);
 					return next();
 				});
-				api.handlers.transform(((instance: { name?: string; customId?: string | RegExp; props?: Record<string, unknown> }, metadata) => {
+				api.handlers.transform(((
+					instance: { name?: string; customId?: string | RegExp; props?: Record<string, unknown> },
+					metadata,
+				) => {
 					transformed.push(`${metadata.kind}:${'name' in instance ? instance.name : instance.customId}`);
 					instance.props ??= {};
 					instance.props.handlerKind = metadata.kind;
@@ -634,11 +748,19 @@ describe('plugin api v3', () => {
 			'modal:handler-modal',
 		]);
 		expect(
-			(client.commands.values.find(command => command.name === 'handler-command') as { props: { handlerKind?: string } } | undefined)?.props.handlerKind,
+			(
+				client.commands.values.find(command => command.name === 'handler-command') as
+					| { props: { handlerKind?: string } }
+					| undefined
+			)?.props.handlerKind,
 		).toBe('command');
 		expect(client.commands.values.find(command => command.name === 'handler-instance-command')).toBe(commandInstance);
 		expect(
-			(client.components.commands.find(component => component.customId === 'handler-button') as { props: { handlerKind?: string } } | undefined)?.props.handlerKind,
+			(
+				client.components.commands.find(component => component.customId === 'handler-button') as
+					| { props: { handlerKind?: string } }
+					| undefined
+			)?.props.handlerKind,
 		).toBe('component');
 		expect(client.components.commands.find(component => component.customId === 'handler-instance-modal')).toBe(
 			modalInstance,
@@ -681,12 +803,15 @@ describe('plugin api v3', () => {
 		const plugin = createPlugin({
 			name: 'event-transform',
 			register(api) {
-				api.handlers.transform((loaded, metadata): void => {
-					kinds.push(metadata.kind);
-					if (metadata.kind === 'event' && typeof loaded === 'function') {
-						return { data: { name: 'messageCreate' }, run: () => undefined } as never;
-					}
-				}, { kinds: ['event'] });
+				api.handlers.transform(
+					(loaded, metadata) => {
+						kinds.push(metadata.kind);
+						if (metadata.kind === 'event' && typeof loaded === 'function') {
+							return { data: { name: 'messageCreate' }, run: () => undefined } as never;
+						}
+					},
+					{ kinds: ['event'] },
+				);
 			},
 		});
 		const client = createBaseClient([plugin]);
@@ -700,6 +825,56 @@ describe('plugin api v3', () => {
 		expect(result.data?.name).toBe('messageCreate');
 	});
 
+	test('omits vetoed file-loaded events without affecting later events', async () => {
+		const transformed: string[] = [];
+		const laterTransformer: string[] = [];
+		const vetoedEvent = { data: { name: 'messageCreate' }, run() {} };
+		const keptEvent = { data: { name: 'messageUpdate' }, run() {} };
+		const plugin = createPlugin({
+			name: 'event-veto',
+			register(api) {
+				api.handlers.transform(
+					event => {
+						const name = 'data' in event ? (event as typeof vetoedEvent).data.name : 'unknown';
+						transformed.push(name);
+						if (name === 'messageCreate') return false;
+						return undefined;
+					},
+					{ kinds: ['event'] },
+				);
+				api.handlers.transform(
+					event => {
+						if ('data' in event) laterTransformer.push((event as typeof keptEvent).data.name);
+					},
+					{ kinds: ['event'] },
+				);
+			},
+		});
+		const client = createGatewayClient([plugin]);
+		vi.spyOn(client.events as unknown as { getFiles: () => Promise<string[]> }, 'getFiles').mockResolvedValue([
+			'/events/events.js',
+		]);
+		vi.spyOn(
+			client.events as unknown as {
+				loadFilesK: () => Promise<{ name: string; path: string; file: { default: unknown[] } }[]>;
+			},
+			'loadFilesK',
+		).mockResolvedValue([
+			{
+				name: 'events.js',
+				path: '/events/events.js',
+				file: { default: [vetoedEvent, keptEvent] },
+			},
+		]);
+
+		await client.events.load('/events');
+
+		expect(transformed).toEqual(['messageCreate', 'messageUpdate']);
+		expect(laterTransformer).toEqual(['messageUpdate']);
+		expect(client.events.values.MESSAGE_CREATE).toBeUndefined();
+		expect(client.events.values.MESSAGE_UPDATE?.run).toBe(keptEvent.run);
+	});
+
 	test('applies unified handler creators and transformers to file-loaded handlers', async () => {
 		const createKinds: string[] = [];
 		const transformed: string[] = [];
@@ -710,7 +885,10 @@ describe('plugin api v3', () => {
 					createKinds.push(metadata.kind);
 					return next();
 				});
-				api.handlers.transform(((instance: { name?: string; customId?: string | RegExp; props?: Record<string, unknown> }, metadata) => {
+				api.handlers.transform(((
+					instance: { name?: string; customId?: string | RegExp; props?: Record<string, unknown> },
+					metadata,
+				) => {
 					transformed.push(`${metadata.kind}:${'name' in instance ? instance.name : instance.customId}`);
 					instance.props ??= {};
 					instance.props.handlerKind = metadata.kind;
@@ -771,13 +949,25 @@ describe('plugin api v3', () => {
 			'modal:loaded-handler-modal',
 		]);
 		expect(
-			(client.commands.values.find(command => command.name === 'loaded-handler-command') as { props: { handlerKind?: string } } | undefined)?.props.handlerKind,
+			(
+				client.commands.values.find(command => command.name === 'loaded-handler-command') as
+					| { props: { handlerKind?: string } }
+					| undefined
+			)?.props.handlerKind,
 		).toBe('command');
 		expect(
-			(client.components.commands.find(component => component.customId === 'loaded-handler-button') as { props: { handlerKind?: string } } | undefined)?.props.handlerKind,
+			(
+				client.components.commands.find(component => component.customId === 'loaded-handler-button') as
+					| { props: { handlerKind?: string } }
+					| undefined
+			)?.props.handlerKind,
 		).toBe('component');
 		expect(
-			(client.components.commands.find(component => component.customId === 'loaded-handler-modal') as { props: { handlerKind?: string } } | undefined)?.props.handlerKind,
+			(
+				client.components.commands.find(component => component.customId === 'loaded-handler-modal') as
+					| { props: { handlerKind?: string } }
+					| undefined
+			)?.props.handlerKind,
 		).toBe('modal');
 	});
 
@@ -805,7 +995,10 @@ describe('plugin api v3', () => {
 					createKinds.push(metadata.kind);
 					return next();
 				});
-				api.handlers.transform(((instance: { name?: string; customId?: string | RegExp; props?: Record<string, unknown> }, metadata) => {
+				api.handlers.transform(((
+					instance: { name?: string; customId?: string | RegExp; props?: Record<string, unknown> },
+					metadata,
+				) => {
 					transformed.push(metadata.kind);
 					instance.props ??= {};
 					instance.props.reloadKind = metadata.kind;
@@ -869,13 +1062,178 @@ describe('plugin api v3', () => {
 
 		expect(createKinds.sort()).toEqual(['command', 'component', 'modal']);
 		expect(transformed.sort()).toEqual(['command', 'component', 'modal']);
-		expect((client.commands.values[0] as { props: { reloadKind?: string } } | undefined)?.props.reloadKind).toBe('command');
+		expect((client.commands.values[0] as { props: { reloadKind?: string } } | undefined)?.props.reloadKind).toBe(
+			'command',
+		);
 		expect(
-			(client.components.commands.find(component => component.customId === 'reload-button') as { props: { reloadKind?: string } } | undefined)?.props.reloadKind,
+			(
+				client.components.commands.find(component => component.customId === 'reload-button') as
+					| { props: { reloadKind?: string } }
+					| undefined
+			)?.props.reloadKind,
 		).toBe('component');
 		expect(
-			(client.components.commands.find(component => component.customId === 'reload-modal') as { props: { reloadKind?: string } } | undefined)?.props.reloadKind,
+			(
+				client.components.commands.find(component => component.customId === 'reload-modal') as
+					| { props: { reloadKind?: string } }
+					| undefined
+			)?.props.reloadKind,
 		).toBe('modal');
+	});
+
+	test('removes every vetoed command, component, and modal during bulk reload', async () => {
+		class ReloadCommand extends Command {
+			name = 'veto-reload-command';
+			description = 'Veto reload command';
+			run() {}
+		}
+		class SecondReloadCommand extends Command {
+			name = 'second-veto-reload-command';
+			description = 'Second veto reload command';
+			run() {}
+		}
+		class ReloadButton extends ComponentCommand {
+			componentType = 'Button' as const;
+			customId = 'veto-reload-button';
+			run() {}
+		}
+		class ReloadModal extends ModalCommand {
+			customId = 'veto-reload-modal';
+			run() {}
+		}
+		const transformed: string[] = [];
+		const plugin = createPlugin({
+			name: 'reload-veto',
+			register(api) {
+				api.handlers.transform(
+					(_instance, metadata) => {
+						transformed.push(metadata.kind);
+						return false;
+					},
+					{ kinds: ['command', 'component', 'modal'] },
+				);
+			},
+		});
+		const client = createBaseClient([plugin]);
+		const dir = await mkdtemp(join(tmpdir(), 'seyfert-plugin-veto-reload-'));
+		tempDirs.push(dir);
+		const commandPath = join(dir, 'command.cjs');
+		const secondCommandPath = join(dir, 'second-command.cjs');
+		const buttonPath = join(dir, 'button.cjs');
+		const modalPath = join(dir, 'modal.cjs');
+		(globalThis as { __SeyfertReloadCommandBase?: typeof Command }).__SeyfertReloadCommandBase = Command;
+		(globalThis as { __SeyfertReloadComponentBase?: typeof ComponentCommand }).__SeyfertReloadComponentBase =
+			ComponentCommand;
+		(globalThis as { __SeyfertReloadModalBase?: typeof ModalCommand }).__SeyfertReloadModalBase = ModalCommand;
+		await writeFile(
+			commandPath,
+			"const Command = globalThis.__SeyfertReloadCommandBase; module.exports = class extends Command { name = 'veto-reload-command'; description = 'Veto reload command'; run() {} };\n",
+		);
+		await writeFile(
+			secondCommandPath,
+			"const Command = globalThis.__SeyfertReloadCommandBase; module.exports = class extends Command { name = 'second-veto-reload-command'; description = 'Second veto reload command'; run() {} };\n",
+		);
+		await writeFile(
+			buttonPath,
+			"const ComponentCommand = globalThis.__SeyfertReloadComponentBase; module.exports = class extends ComponentCommand { componentType = 'Button'; customId = 'veto-reload-button'; run() {} };\n",
+		);
+		await writeFile(
+			modalPath,
+			"const ModalCommand = globalThis.__SeyfertReloadModalBase; module.exports = class extends ModalCommand { customId = 'veto-reload-modal'; run() {} };\n",
+		);
+		const command = new ReloadCommand();
+		command.__filePath = commandPath;
+		const secondCommand = new SecondReloadCommand();
+		secondCommand.__filePath = secondCommandPath;
+		const button = new ReloadButton();
+		button.__filePath = buttonPath;
+		const modal = new ReloadModal();
+		modal.__filePath = modalPath;
+		client.commands.values = [command, secondCommand];
+		client.components.commands.splice(0, client.components.commands.length, button, modal);
+		await expect(client.commands.reloadAll()).resolves.toBeUndefined();
+		await expect(client.components.reloadAll()).resolves.toBeUndefined();
+
+		expect(transformed.sort()).toEqual(['command', 'command', 'component', 'modal']);
+		expect(client.commands.values).toEqual([]);
+		expect(client.components.commands).toEqual([]);
+	});
+
+	test('reloads each event export independently when transforms veto or replace siblings', async () => {
+		const transformed: string[] = [];
+		const plugin = createPlugin({
+			name: 'event-reload-veto',
+			register(api) {
+				api.handlers.transform(
+					event => {
+						transformed.push(typeof event);
+						if (typeof event === 'function') {
+							return { data: { name: 'messageUpdate', once: false }, run() {} };
+						}
+						return (event as { data?: { name?: string } }).data?.name === 'messageCreate' ? false : undefined;
+					},
+					{ kinds: ['event'] },
+				);
+			},
+		});
+		const client = createGatewayClient([plugin]);
+		const dir = await mkdtemp(join(tmpdir(), 'seyfert-plugin-event-reload-'));
+		tempDirs.push(dir);
+		const eventPath = join(dir, 'event.cjs');
+		await writeFile(
+			eventPath,
+			"module.exports = [{ data: { name: 'messageCreate', once: false }, run() {} }, class InjectableEvent { run() {} }];\n",
+		);
+		client.events.values.MESSAGE_CREATE = {
+			data: { name: 'messageCreate', once: false },
+			run() {},
+			__filePath: eventPath,
+		};
+		client.events.values.MESSAGE_UPDATE = {
+			data: { name: 'messageUpdate', once: false },
+			run() {},
+			__filePath: eventPath,
+		};
+
+		await expect(client.events.reloadAll()).resolves.toBeUndefined();
+
+		expect(transformed.sort()).toEqual(['function', 'object']);
+		expect(client.events.values.MESSAGE_CREATE).toBeUndefined();
+		expect(client.events.values.MESSAGE_UPDATE?.data.name).toBe('messageUpdate');
+	});
+
+	test('keeps an event export slot across successive transformed names', async () => {
+		let nextName: 'guildCreate' | 'guildUpdate' = 'guildCreate';
+		const plugin = createPlugin({
+			name: 'event-reload-slot',
+			register(api) {
+				api.handlers.transform(
+					() => {
+						const name = nextName;
+						nextName = 'guildUpdate';
+						return { data: { name, once: false }, run() {} };
+					},
+					{ kinds: ['event'] },
+				);
+			},
+		});
+		const client = createGatewayClient([plugin]);
+		const dir = await mkdtemp(join(tmpdir(), 'seyfert-plugin-event-slot-'));
+		tempDirs.push(dir);
+		const eventPath = join(dir, 'event.cjs');
+		await writeFile(eventPath, "module.exports = { data: { name: 'messageCreate', once: false }, run() {} };\n");
+		client.events.values.MESSAGE_CREATE = {
+			data: { name: 'messageCreate', once: false },
+			run() {},
+			__filePath: eventPath,
+		};
+
+		await expect(client.events.reload('MESSAGE_CREATE')).resolves.toMatchObject({ data: { name: 'guildCreate' } });
+		await expect(client.events.reload('GUILD_CREATE')).resolves.toMatchObject({ data: { name: 'guildUpdate' } });
+
+		expect(client.events.values.MESSAGE_CREATE).toBeUndefined();
+		expect(client.events.values.GUILD_CREATE).toBeUndefined();
+		expect(client.events.values.GUILD_UPDATE?.data.name).toBe('guildUpdate');
 	});
 
 	test('keeps plugin lang overlays after lang reload', async () => {
@@ -1310,9 +1668,9 @@ describe('plugin api v3', () => {
 			metadata: {},
 		} as never;
 
-		await expect(BaseCommand.__runMiddlewares(context, ['asyncNext' as never, 'syncThrow' as never], false)).rejects.toThrow(
-			'sync failed after async next',
-		);
+		await expect(
+			BaseCommand.__runMiddlewares(context, ['asyncNext' as never, 'syncThrow' as never], false),
+		).rejects.toThrow('sync failed after async next');
 		expect(logger.error).not.toHaveBeenCalled();
 	});
 
@@ -1337,9 +1695,9 @@ describe('plugin api v3', () => {
 			metadata: {},
 		} as never;
 
-		await expect(BaseCommand.__runMiddlewares(context, ['callbackNext' as never, 'syncThrow' as never], false)).rejects.toThrow(
-			'sync failed after callback next',
-		);
+		await expect(
+			BaseCommand.__runMiddlewares(context, ['callbackNext' as never, 'syncThrow' as never], false),
+		).rejects.toThrow('sync failed after callback next');
 		expect(logger.error).not.toHaveBeenCalled();
 	});
 
@@ -1402,13 +1760,10 @@ describe('plugin api v3', () => {
 		const client = createBaseClient([bad, good]);
 		client.logger = logger as never;
 
-		await runPluginCommandObservers(
-			client,
-			'onMiddlewaresError',
-			{} as never,
-			'denied',
-			{ middleware: 'auth', scope: 'global' },
-		);
+		await runPluginCommandObservers(client, 'onMiddlewaresError', {} as never, 'denied', {
+			middleware: 'auth',
+			scope: 'global',
+		});
 
 		expect(calls).toEqual([{ error: 'denied', metadata: { middleware: 'auth', scope: 'global' } }]);
 		expect(logger.error).toHaveBeenCalledOnce();
@@ -1623,6 +1978,164 @@ describe('plugin api v3', () => {
 		expect(sent).toEqual([{ op: GatewayOpcodes.Heartbeat, d: 'wrapped' }]);
 	});
 
+	test('sends worker gateway payloads through plugin wrappers and the target shard', async () => {
+		const sent: { force: boolean; payload: GatewaySendPayload }[] = [];
+		const plugin = createPlugin({
+			name: 'worker-gateway-wrapper',
+			register(api) {
+				api.gateway.wrapSendPayload(({ payload }) => ({
+					...payload,
+					d: 'wrapped' as never,
+				}));
+			},
+		});
+		const client = new WorkerClient({ getRC: runtimeConfig, plugins: [plugin], postMessage: () => {} });
+		setWorkerData(client);
+		client.shards.set(0, {
+			send: async (force: boolean, payload: GatewaySendPayload) => {
+				sent.push({ force, payload });
+			},
+		} as never);
+
+		await expect(client.sendGatewayPayload(0, { op: GatewayOpcodes.Heartbeat, d: null })).resolves.toBe(true);
+
+		expect(sent).toEqual([{ force: false, payload: { op: GatewayOpcodes.Heartbeat, d: 'wrapped' } }]);
+	});
+
+	test('resolves the current worker shard after asynchronous gateway wrappers finish', async () => {
+		let releaseWrapper!: () => void;
+		const wrapperBlocked = new Promise<void>(resolve => {
+			releaseWrapper = resolve;
+		});
+		const plugin = createPlugin({
+			name: 'worker-gateway-async-wrapper',
+			register(api) {
+				api.gateway.wrapSendPayload(async ({ payload }) => {
+					await wrapperBlocked;
+					return payload;
+				});
+			},
+		});
+		const client = new WorkerClient({ getRC: runtimeConfig, plugins: [plugin], postMessage: () => {} });
+		setWorkerData(client);
+		const oldSend = vi.fn(async () => {});
+		const currentSend = vi.fn(async () => {});
+		client.shards.set(0, { send: oldSend } as never);
+
+		const sending = client.sendGatewayPayload(0, { op: GatewayOpcodes.Heartbeat, d: null });
+		await flushMicrotasks();
+		client.shards.set(0, { send: currentSend } as never);
+		releaseWrapper();
+
+		await expect(sending).resolves.toBe(true);
+		expect(oldSend).not.toHaveBeenCalled();
+		expect(currentSend).toHaveBeenCalledExactlyOnceWith(false, {
+			op: GatewayOpcodes.Heartbeat,
+			d: null,
+		});
+	});
+
+	test('wraps manager-requested worker sends before forcing the current shard', async () => {
+		const messages: unknown[] = [];
+		const plugin = createPlugin({
+			name: 'worker-manager-gateway-wrapper',
+			register(api) {
+				api.gateway.wrapSendPayload(({ payload }) => ({ ...payload, d: 'wrapped' as never }));
+			},
+		});
+		const client = new WorkerClient({
+			getRC: runtimeConfig,
+			plugins: [plugin],
+			postMessage: message => messages.push(message),
+		});
+		setWorkerData(client, 9);
+		const sent = vi.fn(async () => {});
+		client.shards.set(0, { send: sent } as never);
+
+		await client.handleManagerMessages({
+			type: 'SEND_PAYLOAD',
+			shardId: 0,
+			nonce: 'request-one',
+			op: GatewayOpcodes.Heartbeat,
+			d: null,
+		});
+
+		expect(sent).toHaveBeenCalledExactlyOnceWith(true, {
+			op: GatewayOpcodes.Heartbeat,
+			d: 'wrapped',
+		});
+		expect(messages).toEqual([{ type: 'RESULT_PAYLOAD', nonce: 'request-one', workerId: 9 }]);
+	});
+
+	test('logs and returns when a manager-requested worker shard disappears', async () => {
+		const messages: unknown[] = [];
+		const wrapper = vi.fn(({ payload }: { payload: GatewaySendPayload }) => payload);
+		const client = new WorkerClient({
+			getRC: runtimeConfig,
+			plugins: [
+				createPlugin({
+					name: 'worker-manager-missing-shard',
+					register(api) {
+						api.gateway.wrapSendPayload(wrapper);
+					},
+				}),
+			],
+			postMessage: message => messages.push(message),
+		});
+		setWorkerData(client);
+		const fatal = vi.spyOn(client.logger, 'fatal').mockImplementation(() => {});
+
+		await expect(
+			client.handleManagerMessages({
+				type: 'SEND_PAYLOAD',
+				shardId: 0,
+				nonce: 'missing-shard',
+				op: GatewayOpcodes.Heartbeat,
+				d: null,
+			}),
+		).resolves.toBeUndefined();
+
+		expect(wrapper).toHaveBeenCalledOnce();
+		expect(fatal).toHaveBeenCalledExactlyOnceWith('Worker trying to send payload by non-existent shard (#0)');
+		expect(messages).toEqual([]);
+	});
+
+	test('reports vetoed and unavailable worker gateway sends', async () => {
+		const sent = vi.fn();
+		const plugin = createPlugin({
+			name: 'worker-gateway-veto',
+			register(api) {
+				api.gateway.wrapSendPayload(() => null);
+			},
+		});
+		const client = new WorkerClient({ getRC: runtimeConfig, plugins: [plugin], postMessage: () => {} });
+		setWorkerData(client);
+		client.shards.set(0, { send: sent } as never);
+
+		await expect(client.sendGatewayPayload(0, { op: GatewayOpcodes.Heartbeat, d: null })).resolves.toBe(false);
+		expect(sent).not.toHaveBeenCalled();
+
+		const availableWrapper = vi.fn(({ payload }: { payload: GatewaySendPayload }) => payload);
+		const missingClient = new WorkerClient({
+			getRC: runtimeConfig,
+			plugins: [
+				createPlugin({
+					name: 'worker-gateway-missing-shard',
+					register(api) {
+						api.gateway.wrapSendPayload(availableWrapper);
+					},
+				}),
+			],
+			postMessage: () => {},
+		});
+		setWorkerData(missingClient);
+		await expect(missingClient.sendGatewayPayload(1, { op: GatewayOpcodes.Heartbeat, d: null })).rejects.toMatchObject({
+			code: 'INTERNAL_ERROR',
+			metadata: expect.objectContaining({ detail: `Shard #1 doesn't exist` }),
+		});
+		expect(availableWrapper).toHaveBeenCalledOnce();
+	});
+
 	test('runs gateway dispatch interceptors before cache and events', async () => {
 		const calls: string[] = [];
 		const packets: GatewayDispatchPayload[] = [];
@@ -1638,16 +2151,22 @@ describe('plugin api v3', () => {
 				api.events.onAny((name, data, _client, shardId) => {
 					if (name === 'PLUGIN_TEST_EVENT') events.push({ data, shardId });
 				});
-				api.gateway.onDispatch((packet, next, meta) => {
-					const data = packet.d as unknown as { value: string };
-					calls.push(`before:${data.value}:${meta.shardId}`);
-					return next({ ...packet, d: { value: 'middle' } as never });
-				}, { order: PluginOrder.Before });
-				api.gateway.onDispatch(packet => {
-					const data = packet.d as unknown as { value: string };
-					calls.push(`after:${data.value}`);
-					return { ...packet, d: { value: `${data.value}:after` } as never };
-				}, { order: PluginOrder.After });
+				api.gateway.onDispatch(
+					(packet, next, meta) => {
+						const data = packet.d as unknown as { value: string };
+						calls.push(`before:${data.value}:${meta.shardId}`);
+						return next({ ...packet, d: { value: 'middle' } as never });
+					},
+					{ order: PluginOrder.Before },
+				);
+				api.gateway.onDispatch(
+					packet => {
+						const data = packet.d as unknown as { value: string };
+						calls.push(`after:${data.value}`);
+						return { ...packet, d: { value: `${data.value}:after` } as never };
+					},
+					{ order: PluginOrder.After },
+				);
 			},
 		});
 		const client = createGatewayClient([plugin]);
@@ -2142,7 +2661,8 @@ describe('plugin api v3', () => {
 		const good = createPlugin({
 			name: 'good-rest',
 			register(api) {
-				api.rest.observe({
+				api.rest.observe(
+					{
 						onRequest(payload) {
 							expect(() => ((payload.request.query as Record<string, unknown>).limit = 2)).toThrow();
 							calls.push({
@@ -2157,9 +2677,11 @@ describe('plugin api v3', () => {
 						async onSuccess(payload) {
 							calls.push({ body: await payload.response.text(), status: payload.response.status });
 						},
-					}, { order: PluginOrder.After });
-				},
-			});
+					},
+					{ order: PluginOrder.After },
+				);
+			},
+		});
 		const client = createBaseClient([bad, good]);
 		client.rest.debugger = { debug: vi.fn(), warn } as never;
 

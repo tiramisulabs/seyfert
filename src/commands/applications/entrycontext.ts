@@ -22,11 +22,11 @@ import type { ResolvedRegisteredMiddlewares } from '../decorators';
 import type { EntryPointCommand } from './entryPoint';
 import type { CommandMetadata, ExtendContext, GlobalMetadata, UsingClient } from './shared';
 
-export interface EntryPointContext<M extends keyof ResolvedRegisteredMiddlewares = never>
+export interface EntryPointContext<in M extends keyof ResolvedRegisteredMiddlewares<M> = never>
 	extends BaseContext,
 		ExtendContext {}
 
-export class EntryPointContext<M extends keyof ResolvedRegisteredMiddlewares = never> extends BaseContext {
+export class EntryPointContext<in M extends keyof ResolvedRegisteredMiddlewares<M> = never> extends BaseContext {
 	constructor(
 		readonly client: UsingClient,
 		readonly interaction: EntryPointInteraction,
@@ -164,7 +164,7 @@ export class EntryPointContext<M extends keyof ResolvedRegisteredMiddlewares = n
 	}
 }
 
-export interface GuildEntryPointContext<M extends keyof ResolvedRegisteredMiddlewares = never>
+export interface GuildEntryPointContext<in M extends keyof ResolvedRegisteredMiddlewares<M> = never>
 	extends Omit<MakeRequired<EntryPointContext<M>, 'guildId' | 'member'>, 'guild' | 'me'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;

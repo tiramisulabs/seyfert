@@ -50,20 +50,13 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 
 		const overwriteKeys = this.cache.overwrites ? ((await this.cache.overwrites.keys(id)) ?? []) : [];
 		const messageKeys: string[] = [];
-		const messageRelationships: string[] = [];
-		const overwriteRelationships = this.cache.overwrites ? [this.cache.overwrites.hashId(id)] : [];
 
 		if (this.cache.messages) {
 			const messageEntries = await Promise.allSettled(
-				channelIds.map(async channelId => ({
-					keys: await this.cache.messages!.keys(channelId),
-					relationship: this.cache.messages!.hashId(channelId),
-				})),
+				channelIds.map(channelId => this.cache.messages!.keys(channelId)),
 			);
 			for (const { value } of messageEntries.filter(result => result.status === 'fulfilled')) {
-				const { keys, relationship } = value;
-				messageKeys.push(...keys);
-				messageRelationships.push(relationship);
+				messageKeys.push(...value);
 			}
 		}
 
@@ -83,22 +76,6 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 			)
 				.flat()
 				.concat(overwriteKeys, messageKeys),
-		);
-
-		await this.cache.adapter.removeRelationship(
-			[
-				this.cache.members?.hashId(id),
-				this.cache.roles?.hashId(id),
-				this.cache.channels?.hashId(id),
-				this.cache.emojis?.hashId(id),
-				this.cache.stickers?.hashId(id),
-				this.cache.voiceStates?.hashId(id),
-				this.cache.presences?.hashId(id),
-				this.cache.stageInstances?.hashId(id),
-				this.cache.bans?.hashId(id),
-				...overwriteRelationships,
-				...messageRelationships,
-			].filter(x => x !== undefined),
 		);
 
 		await super.remove(id);

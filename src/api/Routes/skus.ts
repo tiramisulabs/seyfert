@@ -3,13 +3,17 @@ import type {
 	RESTGetAPISKUSubscriptionsQuery,
 	RESTGetAPISKUSubscriptionsResult,
 } from '../../types';
-import type { RestArguments, RestArgumentsNoBody } from '../api';
+import type { RestArgumentsNoBody } from '../api';
 
-export interface SKuRoutes {
+export interface SKURoutes {
 	skus(id: string): {
-		get: (args?: RestArguments<RESTGetAPISKUSubscriptionsQuery>) => Promise<RESTGetAPISKUSubscriptionsResult>;
-		subscriptions(id: string): {
-			get: (args?: RestArgumentsNoBody) => Promise<RESTGetAPISKUSubscriptionResult>;
+		subscriptions: {
+			get(args?: RestArgumentsNoBody<RESTGetAPISKUSubscriptionsQuery>): Promise<RESTGetAPISKUSubscriptionsResult>;
+			(
+				id: string,
+			): {
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPISKUSubscriptionResult>;
+			};
 		};
 	};
 }

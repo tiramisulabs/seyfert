@@ -6,7 +6,7 @@ import type { OAuth2Scopes } from './oauth2';
 import type { APIUser } from './user';
 
 /**
- * https://discord.com/developers/docs/events/webhook-events#payload-structure
+ * https://docs.discord.com/developers/events/webhook-events#payload-structure
  */
 export interface WebhookEventPayload<WET extends WebhookEventTypes = WebhookEventTypes> {
 	/** Version scheme for the webhook event */
@@ -24,7 +24,7 @@ export type EventBodyObjectData<T extends WebhookEventTypes> = T extends Webhook
 	: APIEntitlement;
 
 /**
- * https://discord.com/developers/docs/events/webhook-events#event-body-object
+ * https://docs.discord.com/developers/events/webhook-events#event-body-object
  */
 export interface EventBodyObject<T extends WebhookEventTypes = WebhookEventTypes> {
 	/** Event type */
@@ -36,7 +36,7 @@ export interface EventBodyObject<T extends WebhookEventTypes = WebhookEventTypes
 }
 
 /**
- * https://discord.com/developers/docs/events/webhook-events#application-authorized-application-authorized-structure
+ * https://docs.discord.com/developers/events/webhook-events#application-authorized-application-authorized-structure
  */
 export interface ApplicationAuthorizedEvent {
 	/** Installation context for the authorization. Either guild (0) if installed to a server or user (1) if installed to a user's account */
@@ -64,7 +64,7 @@ export type ApplicationUserAuthorizedEvent = OmitInsert<
 	{ integration_type: ApplicationIntegrationType.UserInstall }
 >;
 /**
- * https://discord.com/developers/docs/events/webhook-events#webhook-types
+ * https://docs.discord.com/developers/events/webhook-events#webhook-types
  */
 export enum WebhookRequestType {
 	/** PING event sent to verify your Webhook Event URL is active */
@@ -74,7 +74,7 @@ export enum WebhookRequestType {
 }
 
 /**
- * https://discord.com/developers/docs/events/webhook-events#event-types
+ * https://docs.discord.com/developers/events/webhook-events#event-types
  */
 export enum WebhookEventTypes {
 	/** Sent when an app was authorized by a user to a server or their account */

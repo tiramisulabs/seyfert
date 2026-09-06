@@ -24,7 +24,6 @@ import { ShardSocketCloseCodes } from './shared';
 export interface ShardHeart {
 	interval: number;
 	nodeInterval?: NodeJS.Timeout;
-	ackTimeout?: NodeJS.Timeout;
 	lastAck?: number;
 	lastBeat?: number;
 	ack: boolean;
@@ -44,8 +43,13 @@ export class Shard {
 		ack: true,
 	};
 
-	private isConnecting = false;
 	private reconnectPromise: Promise<void> | undefined;
+	// Invalidates delayed connects and callbacks that belong to a replaced socket.
+	private lifecycle = 0;
+	private connectingLifecycle?: number;
+	private handledWebsocket?: BaseSocket;
+	private localClose?: { websocket: BaseSocket; applyPolicy: boolean };
+	private firstHeartbeatTimeout?: NodeJS.Timeout;
 
 	bucket: DynamicBucket;
 	offlineSendQueue: ((_?: unknown) => void)[] = [];
@@ -127,41 +131,83 @@ export class Shard {
 	}
 
 	async connect() {
-		if (this.isConnecting) {
+		if (this.connectingLifecycle === undefined) this.reconnectPromise = undefined;
+		return this.connectSocket(false);
+	}
+
+	private async connectSocket(immediate: boolean) {
+		if (this.connectingLifecycle !== undefined) {
 			this.debugger?.debug(`[Shard #${this.id}] Already connecting, skipping`);
 			return;
 		}
 
-		this.isConnecting = true;
-		await this.connectTimeout.wait();
+		const lifecycle = ++this.lifecycle;
+		this.connectingLifecycle = lifecycle;
+		if (!immediate) await this.connectTimeout.wait();
+		if (this.connectingLifecycle !== lifecycle) return;
+		if (lifecycle !== this.lifecycle) {
+			this.connectingLifecycle = undefined;
+			return;
+		}
 		if (this.isOpen) {
 			this.debugger?.debug(`[Shard #${this.id}] Attempted to connect while open`);
-			this.isConnecting = false;
+			this.connectingLifecycle = undefined;
 			return;
 		}
 
-		clearTimeout(this.heart.nodeInterval);
+		this.clearHeartbeat();
+		clearTimeout(this.connectionTimeout);
 
-		this.debugger?.debug(`[Shard #${this.id}] Connecting to ${this.currentGatewayURL}`);
-
-		this.connectionTimeout = setTimeout(
-			() => this.reconnect(ShardSocketCloseCodes.Timeout),
-			this.options.connectionTimeout,
-		);
+		const url = this.currentGatewayURL;
+		this.debugger?.debug(`[Shard #${this.id}] Connecting to ${url}`);
 
 		// @ts-expect-error Use native websocket when using Bun
-		this.websocket = new BaseSocket(typeof Bun === 'undefined' ? 'ws' : 'bun', this.currentGatewayURL);
+		const websocket = new BaseSocket(typeof Bun === 'undefined' ? 'ws' : 'bun', url);
+		this.isReady = false;
+		this.handledWebsocket = undefined;
+		this.localClose = undefined;
+		this.websocket = websocket;
 
-		this.websocket.onmessage = ({ data }: { data: string | Buffer }) => {
-			this.handleMessage(data);
+		this.connectionTimeout = setTimeout(() => {
+			if (!this.isCurrentConnection(websocket)) return;
+			void this.reconnectWith(
+				ShardSocketCloseCodes.Timeout,
+				this.options.reconnectTimeout,
+				'Gateway connection timed out',
+			).catch(error => this.logger.error(error));
+		}, this.options.connectionTimeout);
+
+		websocket.onmessage = ({ data }: { data: string | Buffer }) => {
+			if (!this.isCurrentConnection(websocket)) return;
+			try {
+				void Promise.resolve(this.handleMessage(data)).catch(error => this.logger.error(error));
+			} catch (error) {
+				this.logger.error(error);
+			}
 		};
 
-		this.websocket.onclose = (event: { code: number; reason: string }) => this.handleClosed(event);
+		websocket.onclose = (event: { code: number; reason: string }) => {
+			if (!this.isCurrentConnection(websocket)) return;
+			const localClose = this.localClose?.websocket === websocket ? this.localClose : undefined;
+			void this.handleConnectionClosed(
+				{
+					code: event.code,
+					reason: event.reason,
+					locallyInitiated: !!localClose,
+					applyPolicy: localClose?.applyPolicy,
+				},
+				websocket,
+			).catch(error => this.logger.error(error));
+		};
 
-		this.websocket.onerror = (event: ErrorEvent) => this.logger.error(`Shard #${this.id}`, event);
+		websocket.onerror = (event: ErrorEvent) => {
+			if (!this.isCurrentConnection(websocket)) return;
+			this.logger.error(`Shard #${this.id}`, event);
+		};
 
-		this.websocket.onopen = () => {
-			this.isConnecting = false;
+		websocket.onopen = () => {
+			if (!this.isCurrentConnection(websocket)) return;
+			this.connectingLifecycle = undefined;
 			this.heart.ack = true;
 			void this.options.onShardReconnect?.({ shardId: this.id });
 		};
@@ -185,8 +231,16 @@ export class Shard {
 			);
 		}
 		await this.checkOffline(force);
+		const websocket = this.websocket;
 		await this.bucket.acquire(force);
 		await this.checkOffline(force);
+		// Authentication is connection-scoped; never deliver an Identify or Resume
+		// that finished waiting after its socket was replaced.
+		if (
+			(message.op === GatewayOpcodes.Identify || message.op === GatewayOpcodes.Resume) &&
+			(!websocket || !this.isCurrentConnection(websocket))
+		)
+			return;
 		this.websocket?.send(JSON.stringify(message));
 	}
 
@@ -220,52 +274,124 @@ export class Shard {
 	}
 
 	heartbeat(requested: boolean) {
+		const websocket = this.websocket;
+		if (!websocket) return;
 		this.debugger?.debug(
 			`[Shard #${this.id}] Sending ${requested ? '' : 'un'}requested heartbeat (Ack=${this.heart.ack})`,
 		);
+		if (!requested && !this.heart.ack) {
+			void this.reconnectWith(
+				ShardSocketCloseCodes.ZombiedConnection,
+				0,
+				'Heartbeat ACK was not received before the next interval',
+			).catch(error => this.logger.error(error));
+			return;
+		}
+		if (websocket.readyState !== 1) return;
 		if (!requested) {
-			if (!this.heart.ack) {
-				this.reconnect(ShardSocketCloseCodes.ZombiedConnection);
-				return;
-			}
 			this.heart.ack = false;
 		}
 
 		this.heart.lastBeat = Date.now();
 
-		this.websocket!.send(
+		websocket.send(
 			JSON.stringify({
 				op: GatewayOpcodes.Heartbeat,
 				d: this.data.resume_seq ?? null,
 			}),
 		);
-
-		clearTimeout(this.heart.ackTimeout);
-		this.heart.ackTimeout = setTimeout(() => {
-			if (!this.heart.ack) {
-				this.reconnect(ShardSocketCloseCodes.ZombiedConnection);
-			}
-		}, this.heart.interval * 1.5);
 	}
 
 	disconnect(code = ShardSocketCloseCodes.Shutdown) {
-		clearTimeout(this.connectionTimeout);
-		this.connectionTimeout = undefined;
-		clearTimeout(this.heart.ackTimeout);
-		this.isConnecting = false;
+		this.lifecycle++;
+		this.reconnectPromise = undefined;
 		this.debugger?.info(`[Shard #${this.id}] Disconnecting`);
-		this.close(code, 'Shard down request');
+		this.closeConnection(code, 'Shard down request', this.shouldApplyLocalClosePolicy(code));
 	}
 
 	async reconnect(code = ShardSocketCloseCodes.Reconnect) {
-		return (this.reconnectPromise ??= (async () => {
+		return this.reconnectWith(code, this.options.reconnectTimeout, 'Shard reconnect request');
+	}
+
+	private reconnectWith(
+		code: number,
+		wait: number,
+		reason: string,
+		immediate = code === ShardSocketCloseCodes.Timeout ? false : this.resumable,
+	) {
+		if (this.reconnectPromise) return this.reconnectPromise;
+		const reconnect = (async () => {
+			const lifecycle = ++this.lifecycle;
 			this.debugger?.info(`[Shard #${this.id}] Reconnecting`);
-			this.disconnect(code);
-			await delay(this.options.reconnectTimeout);
-			await this.connect();
-		})().finally(() => {
-			this.reconnectPromise = undefined;
-		}));
+			this.closeConnection(code, reason);
+			if (code === ShardSocketCloseCodes.Timeout) this.resetSession();
+			if (wait > 0) await delay(wait);
+			if (lifecycle !== this.lifecycle) return;
+			await this.connectSocket(immediate);
+		})();
+		const settled = reconnect.finally(() => {
+			if (this.reconnectPromise === settled) this.reconnectPromise = undefined;
+		});
+		this.reconnectPromise = settled;
+		return settled;
+	}
+
+	private isCurrentConnection(websocket: BaseSocket) {
+		return this.websocket === websocket && this.handledWebsocket !== websocket;
+	}
+
+	private clearHeartbeat() {
+		clearTimeout(this.firstHeartbeatTimeout);
+		clearInterval(this.heart.nodeInterval);
+		this.firstHeartbeatTimeout = undefined;
+		this.heart.nodeInterval = undefined;
+	}
+
+	private resetSession() {
+		this.data.resume_seq = null;
+		this.data.session_id = undefined;
+		this.data.resume_gateway_url = undefined;
+		this.pendingGuilds = undefined;
+	}
+
+	private startHeartbeat(websocket: BaseSocket) {
+		this.clearHeartbeat();
+		this.heart.ack = true;
+		this.firstHeartbeatTimeout = setTimeout(() => {
+			if (!this.isCurrentConnection(websocket)) return;
+			this.heartbeat(false);
+			this.heart.nodeInterval = setInterval(() => {
+				if (this.isCurrentConnection(websocket)) this.heartbeat(false);
+			}, this.heart.interval);
+		}, this.heart.interval * Math.random());
+	}
+
+	private closeConnection(code: number, reason: string, applyPolicy = false) {
+		const websocket = this.websocket;
+		if (!websocket) {
+			this.connectingLifecycle = undefined;
+			clearTimeout(this.connectionTimeout);
+			this.connectionTimeout = undefined;
+			this.clearHeartbeat();
+			this.debugger?.warn(`[Shard #${this.id}] Is not open, reason:`, reason);
+			return;
+		}
+
+		this.debugger?.debug(`[Shard #${this.id}] Called close with reason:`, reason);
+		// Native and custom sockets report local Close frames differently. Mark the
+		// owner before closing so both paths finalize the same lifecycle exactly once.
+		this.localClose = { websocket, applyPolicy };
+		try {
+			websocket.close(code, reason);
+		} catch (error) {
+			this.localClose = undefined;
+			throw error;
+		}
+		this.connectingLifecycle = undefined;
+		if (this.handledWebsocket !== websocket) {
+			const close = { code, reason, locallyInitiated: true, applyPolicy };
+			void this.handleConnectionClosed(close, websocket).catch(error => this.logger.error(error));
+		}
 	}
 
 	private flushOfflineSendQueue() {
@@ -282,14 +408,12 @@ export class Shard {
 
 		switch (packet.op) {
 			case GatewayOpcodes.Hello: {
+				const websocket = this.websocket;
+				if (!websocket) return;
 				clearTimeout(this.connectionTimeout);
 				this.connectionTimeout = undefined;
-				clearInterval(this.heart.nodeInterval);
-
 				this.heart.interval = packet.d.heartbeat_interval;
-
-				this.heartbeat(false);
-				this.heart.nodeInterval = setInterval(() => this.heartbeat(false), this.heart.interval);
+				this.startHeartbeat(websocket);
 
 				if (this.resumable) {
 					return this.resume();
@@ -300,24 +424,21 @@ export class Shard {
 				{
 					this.heart.ack = true;
 					this.heart.lastAck = Date.now();
-					clearTimeout(this.heart.ackTimeout);
 				}
 				break;
 			case GatewayOpcodes.Heartbeat:
 				this.heartbeat(true);
 				break;
 			case GatewayOpcodes.Reconnect:
-				return this.reconnect();
+				return this.reconnectWith(ShardSocketCloseCodes.Reconnect, 0, 'Discord requested a reconnect', true);
 			case GatewayOpcodes.InvalidSession: {
-				if (packet.d) {
-					if (!this.resumable) {
-						return this.logger.fatal(`Shard #${this.id} received a non-resumable InvalidSession, cannot resume.`);
-					}
-					return this.resume();
-				}
-				this.data.resume_seq = 0;
-				this.data.session_id = undefined;
-				return this.identify();
+				const canResume = packet.d && this.resumable;
+				if (!canResume) this.resetSession();
+				return this.reconnectWith(
+					ShardSocketCloseCodes.Reconnect,
+					0,
+					canResume ? 'Discord invalidated the resumable session' : 'Discord invalidated the session',
+				);
 			}
 			case GatewayOpcodes.Dispatch:
 				{
@@ -432,6 +553,7 @@ export class Shard {
 				}
 				break;
 		}
+		return undefined;
 	}
 
 	async requestGuildMember(
@@ -485,63 +607,82 @@ export class Shard {
 		return promise;
 	}
 
-	protected async handleClosed(close: { code: number; reason: string }) {
-		this.isReady = false;
-		clearInterval(this.heart.nodeInterval);
-		clearTimeout(this.heart.ackTimeout);
-		this.logger.warn(
-			`Shard #${this.id} closed: ${ShardSocketCloseCodes[close.code] ?? GatewayCloseCodes[close.code] ?? close.code} (${close.code})`,
-			close.reason,
+	private isExpectedLocalClose(code: number) {
+		return (
+			code === ShardSocketCloseCodes.Shutdown ||
+			code === ShardSocketCloseCodes.Reconnect ||
+			code === ShardSocketCloseCodes.Resharding ||
+			code === ShardSocketCloseCodes.ShutdownAll
 		);
+	}
+
+	private shouldApplyLocalClosePolicy(code: number) {
+		return !this.isExpectedLocalClose(code) && code !== ShardSocketCloseCodes.ZombiedConnection;
+	}
+
+	private async handleConnectionClosed(
+		close: { code: number; reason: string; locallyInitiated?: boolean; applyPolicy?: boolean },
+		websocket: BaseSocket | null,
+	) {
+		if (!websocket || !this.isCurrentConnection(websocket)) return;
+		this.handledWebsocket = websocket;
+		if (this.localClose?.websocket === websocket) this.localClose = undefined;
+		this.isReady = false;
+		this.connectingLifecycle = undefined;
+		clearTimeout(this.connectionTimeout);
+		this.connectionTimeout = undefined;
+		this.clearHeartbeat();
+
+		const closeMessage = `Shard #${this.id} closed: ${
+			ShardSocketCloseCodes[close.code] ?? GatewayCloseCodes[close.code] ?? close.code
+		} (${close.code})`;
+		if (close.locallyInitiated && this.isExpectedLocalClose(close.code)) {
+			this.logger.info(closeMessage, close.reason);
+		} else {
+			this.logger.warn(closeMessage, close.reason);
+		}
 
 		try {
-			switch (close.code) {
-				case ShardSocketCloseCodes.Shutdown:
-				case ShardSocketCloseCodes.Reconnect:
-				case ShardSocketCloseCodes.Resharding:
-				case ShardSocketCloseCodes.ShutdownAll:
-				case ShardSocketCloseCodes.ZombiedConnection:
-					//Force disconnect, ignore
-					break;
-				case 1000:
-				case GatewayCloseCodes.UnknownOpcode:
-				case GatewayCloseCodes.InvalidSeq:
-				case GatewayCloseCodes.SessionTimedOut:
-				// shard failed to connect, try connecting from scratch
-				case ShardSocketCloseCodes.Timeout:
-					{
-						this.data.resume_seq = 0;
-						this.data.session_id = undefined;
-						this.data.resume_gateway_url = undefined;
-						await this.reconnect();
-					}
-					break;
-				case 1001:
-				case 1006:
-				case GatewayCloseCodes.UnknownError:
-				case GatewayCloseCodes.DecodeError:
-				case GatewayCloseCodes.NotAuthenticated:
-				case GatewayCloseCodes.AlreadyAuthenticated:
-				case GatewayCloseCodes.RateLimited:
-					{
-						this.logger.info('Trying to reconnect');
-						await this.reconnect();
-					}
-					break;
-				case GatewayCloseCodes.AuthenticationFailed:
-				case GatewayCloseCodes.DisallowedIntents:
-				case GatewayCloseCodes.InvalidAPIVersion:
-				case GatewayCloseCodes.InvalidIntents:
-				case GatewayCloseCodes.InvalidShard:
-				case GatewayCloseCodes.ShardingRequired:
-					this.logger.fatal(`Shard #${this.id} cannot reconnect`);
-					break;
-				default:
-					{
-						this.logger.warn(`Shard #${this.id} unknown close code (${close.code}), trying to reconnect anyways`);
-						await this.reconnect();
-					}
-					break;
+			if (!close.locallyInitiated || close.applyPolicy) {
+				switch (close.code) {
+					case 1000:
+					case GatewayCloseCodes.UnknownOpcode:
+					case GatewayCloseCodes.InvalidSeq:
+					case GatewayCloseCodes.SessionTimedOut:
+					case ShardSocketCloseCodes.Timeout:
+						{
+							this.resetSession();
+							await this.reconnect();
+						}
+						break;
+					case 1001:
+					case 1006:
+					case GatewayCloseCodes.UnknownError:
+					case GatewayCloseCodes.DecodeError:
+					case GatewayCloseCodes.NotAuthenticated:
+					case GatewayCloseCodes.AlreadyAuthenticated:
+					case GatewayCloseCodes.RateLimited:
+						{
+							this.logger.info('Trying to reconnect');
+							await this.reconnect();
+						}
+						break;
+					case GatewayCloseCodes.AuthenticationFailed:
+					case GatewayCloseCodes.DisallowedIntents:
+					case GatewayCloseCodes.InvalidAPIVersion:
+					case GatewayCloseCodes.InvalidIntents:
+					case GatewayCloseCodes.InvalidShard:
+					case GatewayCloseCodes.ShardingRequired:
+						this.lifecycle++;
+						this.logger.fatal(`Shard #${this.id} cannot reconnect`);
+						break;
+					default:
+						{
+							this.logger.warn(`Shard #${this.id} unknown close code (${close.code}), trying to reconnect anyways`);
+							await this.reconnect();
+						}
+						break;
+				}
 			}
 		} finally {
 			await this.options.onShardDisconnect?.({
@@ -553,23 +694,18 @@ export class Shard {
 	}
 
 	close(code: number, reason: string) {
-		clearInterval(this.heart.nodeInterval);
-		if (!this.websocket) {
-			return this.debugger?.warn(`[Shard #${this.id}] Is not open, reason:`, reason);
-		}
-		this.debugger?.debug(`[Shard #${this.id}] Called close with reason:`, reason);
-		this.websocket?.close(code, reason);
+		this.lifecycle++;
+		this.reconnectPromise = undefined;
+		this.closeConnection(code, reason, this.shouldApplyLocalClosePolicy(code));
 	}
 
 	protected handleMessage(data: string | Buffer) {
 		let packet: GatewayDispatchPayload;
 		try {
-			if (data instanceof Buffer) {
-				data = inflateSync(data);
-			}
+			if (data instanceof Buffer) data = inflateSync(data);
 			packet = JSON.parse(data as string);
-		} catch (e) {
-			this.logger.error(e);
+		} catch (error) {
+			this.logger.error(error);
 			return;
 		}
 		return this.onpacket(packet);

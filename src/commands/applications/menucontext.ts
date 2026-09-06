@@ -32,13 +32,13 @@ export type InteractionTarget<T> = T extends MessageCommandInteraction ? Message
 
 export interface MenuCommandContext<
 	T extends MessageCommandInteraction | UserCommandInteraction,
-	M extends keyof ResolvedRegisteredMiddlewares = never,
+	in M extends keyof ResolvedRegisteredMiddlewares<M> = never,
 > extends BaseContext,
 		ExtendContext {}
 
 export class MenuCommandContext<
 	T extends MessageCommandInteraction | UserCommandInteraction,
-	M extends keyof ResolvedRegisteredMiddlewares = never,
+	in M extends keyof ResolvedRegisteredMiddlewares<M> = never,
 > extends BaseContext {
 	constructor(
 		readonly client: UsingClient,
@@ -197,7 +197,7 @@ export class MenuCommandContext<
 
 export interface GuildMenuCommandContext<
 	T extends MessageCommandInteraction | UserCommandInteraction,
-	M extends keyof ResolvedRegisteredMiddlewares = never,
+	in M extends keyof ResolvedRegisteredMiddlewares<M> = never,
 > extends Omit<MakeRequired<MenuCommandContext<T, M>, 'guildId' | 'member'>, 'guild'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;

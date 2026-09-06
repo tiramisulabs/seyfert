@@ -25,6 +25,27 @@ export class GuildRole extends DiscordBase {
 		this.permissions = new PermissionsBitField(BigInt(data.permissions));
 	}
 
+	/**
+	 * Compares the hierarchy positions of two roles.
+	 * Discord ranks the lower snowflake higher when roles share the same position.
+	 * @returns A positive number when the first role is higher, a negative number when the second role is higher, or 0
+	 * when both roles have the same position and ID.
+	 */
+	static comparePositions(first: Pick<APIRole, 'id' | 'position'>, second: Pick<APIRole, 'id' | 'position'>): number {
+		if (first.position !== second.position) return first.position - second.position;
+		if (first.id === second.id) return 0;
+		return BigInt(first.id) < BigInt(second.id) ? 1 : -1;
+	}
+
+	/**
+	 * Compares this role's hierarchy position with another role.
+	 * @returns A positive number when this role is higher, a negative number when the other role is higher, or 0 when
+	 * both roles have the same position and ID.
+	 */
+	comparePositionTo(role: Pick<APIRole, 'id' | 'position'>): number {
+		return GuildRole.comparePositions(this, role);
+	}
+
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;
 	guild(mode: 'cache' | 'rest' | 'flow' = 'flow') {

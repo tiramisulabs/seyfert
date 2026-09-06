@@ -21,7 +21,7 @@ import type {
 } from './webhook';
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#get-global-application-commands
+ * https://docs.discord.com/developers/interactions/application-commands#get-global-application-commands
  */
 export interface RESTGetAPIApplicationCommandsQuery {
 	/**
@@ -34,12 +34,12 @@ export interface RESTGetAPIApplicationCommandsQuery {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#get-global-application-commands
+ * https://docs.discord.com/developers/interactions/application-commands#get-global-application-commands
  */
 export type RESTGetAPIApplicationCommandsResult = APIApplicationCommand[];
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#get-global-application-command
+ * https://docs.discord.com/developers/interactions/application-commands#get-global-application-command
  */
 export type RESTGetAPIApplicationCommandResult = APIApplicationCommand;
 
@@ -65,7 +65,7 @@ export type RESTPostAPIBaseApplicationCommandsJSONBody = AddUndefinedToPossiblyU
 >;
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#create-global-application-command
+ * https://docs.discord.com/developers/interactions/application-commands#create-global-application-command
  */
 export interface RESTPostAPIChatInputApplicationCommandsJSONBody extends RESTPostAPIBaseApplicationCommandsJSONBody {
 	type?: ApplicationCommandType.ChatInput | undefined;
@@ -73,14 +73,14 @@ export interface RESTPostAPIChatInputApplicationCommandsJSONBody extends RESTPos
 }
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#create-global-application-command
+ * https://docs.discord.com/developers/interactions/application-commands#create-global-application-command
  */
 export interface RESTPostAPIContextMenuApplicationCommandsJSONBody extends RESTPostAPIBaseApplicationCommandsJSONBody {
 	type: ApplicationCommandType.Message | ApplicationCommandType.User;
 }
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#create-global-application-command
+ * https://docs.discord.com/developers/interactions/application-commands#create-global-application-command
  */
 export interface RESTPostAPIPrimaryEntryPointApplicationCommandJSONBody
 	extends RESTPostAPIBaseApplicationCommandsJSONBody {
@@ -88,7 +88,7 @@ export interface RESTPostAPIPrimaryEntryPointApplicationCommandJSONBody
 }
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#create-global-application-command
+ * https://docs.discord.com/developers/interactions/application-commands#create-global-application-command
  */
 export type RESTPostAPIApplicationCommandsJSONBody =
 	| RESTPostAPIChatInputApplicationCommandsJSONBody
@@ -96,61 +96,61 @@ export type RESTPostAPIApplicationCommandsJSONBody =
 	| RESTPostAPIPrimaryEntryPointApplicationCommandJSONBody;
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#create-global-application-command
+ * https://docs.discord.com/developers/interactions/application-commands#create-global-application-command
  */
 export type RESTPostAPIApplicationCommandsResult = APIApplicationCommand;
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#edit-global-application-command
+ * https://docs.discord.com/developers/interactions/application-commands#edit-global-application-command
  */
 export type RESTPatchAPIApplicationCommandJSONBody = StrictPartial<RESTPostAPIApplicationCommandsJSONBody>;
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#edit-global-application-command
+ * https://docs.discord.com/developers/interactions/application-commands#edit-global-application-command
  */
 export type RESTPatchAPIApplicationCommandResult = APIApplicationCommand;
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#bulk-overwrite-global-application-commands
+ * https://docs.discord.com/developers/interactions/application-commands#bulk-overwrite-global-application-commands
  */
 export type RESTPutAPIApplicationCommandsJSONBody = RESTPostAPIApplicationCommandsJSONBody[];
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#bulk-overwrite-global-application-commands
+ * https://docs.discord.com/developers/interactions/application-commands#bulk-overwrite-global-application-commands
  */
 export type RESTPutAPIApplicationCommandsResult = APIApplicationCommand[];
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#get-guild-application-commands
+ * https://docs.discord.com/developers/interactions/application-commands#get-guild-application-commands
  */
 export type RESTGetAPIApplicationGuildCommandsQuery = RESTGetAPIApplicationCommandsQuery;
 
 export type RESTAPIApplicationGuildCommand = Omit<APIApplicationCommand, 'dm_permission' | 'handler'>;
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#get-guild-application-commands
+ * https://docs.discord.com/developers/interactions/application-commands#get-guild-application-commands
  */
 export type RESTGetAPIApplicationGuildCommandsResult = RESTAPIApplicationGuildCommand[];
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#get-guild-application-commands
+ * https://docs.discord.com/developers/interactions/application-commands#get-guild-application-commands
  */
 export type RESTGetAPIApplicationGuildCommandResult = RESTAPIApplicationGuildCommand;
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#create-guild-application-command
+ * https://docs.discord.com/developers/interactions/application-commands#create-guild-application-command
  */
 export type RESTPostAPIApplicationGuildCommandsJSONBody =
 	| Omit<RESTPostAPIChatInputApplicationCommandsJSONBody, 'dm_permission'>
 	| Omit<RESTPostAPIContextMenuApplicationCommandsJSONBody, 'dm_permission'>;
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#create-guild-application-command
+ * https://docs.discord.com/developers/interactions/application-commands#create-guild-application-command
  */
 export type RESTPostAPIApplicationGuildCommandsResult = RESTAPIApplicationGuildCommand;
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#edit-guild-application-command
+ * https://docs.discord.com/developers/interactions/application-commands#edit-guild-application-command
  */
 export type RESTPatchAPIApplicationGuildCommandJSONBody = StrictPartial<
 	| Omit<RESTPostAPIChatInputApplicationCommandsJSONBody, 'dm_permission'>
@@ -158,12 +158,12 @@ export type RESTPatchAPIApplicationGuildCommandJSONBody = StrictPartial<
 >;
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#edit-guild-application-command
+ * https://docs.discord.com/developers/interactions/application-commands#edit-guild-application-command
  */
 export type RESTPatchAPIApplicationGuildCommandResult = RESTAPIApplicationGuildCommand;
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#bulk-overwrite-guild-application-commands
+ * https://docs.discord.com/developers/interactions/application-commands#bulk-overwrite-guild-application-commands
  */
 export type RESTPutAPIApplicationGuildCommandsJSONBody = (
 	| (Omit<RESTPostAPIChatInputApplicationCommandsJSONBody, 'dm_permission'> &
@@ -173,17 +173,17 @@ export type RESTPutAPIApplicationGuildCommandsJSONBody = (
 )[];
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#bulk-overwrite-guild-application-commands
+ * https://docs.discord.com/developers/interactions/application-commands#bulk-overwrite-guild-application-commands
  */
 export type RESTPutAPIApplicationGuildCommandsResult = RESTAPIApplicationGuildCommand[];
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#create-interaction-response
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#create-interaction-response
  */
 export type RESTPostAPIInteractionCallbackJSONBody = APIInteractionResponse;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#create-interaction-response-query-string-params
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#create-interaction-response-query-string-params
  */
 export type RESTPostAPIInteractionCallbackQuery = {
 	/**
@@ -193,12 +193,12 @@ export type RESTPostAPIInteractionCallbackQuery = {
 };
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#create-interaction-response
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#create-interaction-response
  */
 export type RESTPostAPIInteractionCallbackResult = RESTPostAPIInteractionCallbackWithResponseResult;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback-interaction-callback-response-object
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-callback-interaction-callback-response-object
  */
 export interface RESTPostAPIInteractionCallbackWithResponseResult {
 	interaction: RESTAPIInteractionCallbackObject;
@@ -206,7 +206,7 @@ export interface RESTPostAPIInteractionCallbackWithResponseResult {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback-interaction-callback-object
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-callback-interaction-callback-object
  */
 export interface RESTAPIInteractionCallbackObject {
 	id: Snowflake;
@@ -218,7 +218,7 @@ export interface RESTAPIInteractionCallbackObject {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback-interaction-callback-resource-object
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-callback-interaction-callback-resource-object
  */
 export interface RESTAPIInteractionCallbackResourceObject {
 	type: InteractionResponseType;
@@ -227,14 +227,14 @@ export interface RESTAPIInteractionCallbackResourceObject {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback-interaction-callback-activity-instance-resource
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-callback-interaction-callback-activity-instance-resource
  */
 export interface RESTAPIInteractionCallbackActivityInstanceResource {
 	id: string;
 }
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#create-interaction-response
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#create-interaction-response
  */
 export type RESTPostAPIInteractionCallbackFormDataBody =
 	| (Record<`files[${bigint}]`, unknown> & {
@@ -246,37 +246,37 @@ export type RESTPostAPIInteractionCallbackFormDataBody =
 	| (Record<`files[${bigint}]`, unknown> & RESTPostAPIInteractionCallbackJSONBody);
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#get-original-interaction-response
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#get-original-interaction-response
  */
 export type RESTGetAPIInteractionOriginalResponseResult = RESTGetAPIWebhookWithTokenMessageResult;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#edit-original-interaction-response
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#edit-original-interaction-response
  */
 export type RESTPatchAPIInteractionOriginalResponseJSONBody = RESTPatchAPIWebhookWithTokenMessageJSONBody;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#edit-original-interaction-response
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#edit-original-interaction-response
  */
 export type RESTPatchAPIInteractionOriginalResponseFormDataBody = RESTPatchAPIWebhookWithTokenMessageFormDataBody;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#edit-original-interaction-response
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#edit-original-interaction-response
  */
 export type RESTPatchAPIInteractionOriginalResponseResult = RESTPatchAPIWebhookWithTokenMessageResult;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#delete-original-interaction-response
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#delete-original-interaction-response
  */
 export type RESTDeleteAPIInteractionOriginalResponseResult = RESTDeleteAPIWebhookWithTokenMessageResult;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#create-followup-message
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#create-followup-message
  */
 export type RESTPostAPIInteractionFollowupJSONBody = APIInteractionResponseCallbackData;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#create-followup-message
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#create-followup-message
  */
 export type RESTPostAPIInteractionFollowupFormDataBody =
 	| (Record<`files[${bigint}]`, unknown> & {
@@ -288,59 +288,59 @@ export type RESTPostAPIInteractionFollowupFormDataBody =
 	| (Record<`files[${bigint}]`, unknown> & RESTPostAPIInteractionFollowupJSONBody);
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#create-followup-message
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#create-followup-message
  */
 export type RESTPostAPIInteractionFollowupResult = RESTPostAPIWebhookWithTokenWaitResult;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#get-followup-message
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#get-followup-message
  */
 export type RESTGetAPIInteractionFollowupResult = RESTGetAPIWebhookWithTokenMessageResult;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#edit-followup-message
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#edit-followup-message
  */
 export type RESTPatchAPIInteractionFollowupJSONBody = RESTPatchAPIWebhookWithTokenMessageJSONBody;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#edit-followup-message
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#edit-followup-message
  */
 export type RESTPatchAPIInteractionFollowupFormDataBody = RESTPatchAPIWebhookWithTokenMessageFormDataBody;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#edit-followup-message
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#edit-followup-message
  */
 export type RESTPatchAPIInteractionFollowupResult = RESTPatchAPIWebhookWithTokenMessageResult;
 
 /**
- * https://discord.com/developers/docs/interactions/receiving-and-responding#delete-followup-message
+ * https://docs.discord.com/developers/interactions/receiving-and-responding#delete-followup-message
  */
 export type RESTDeleteAPIInteractionFollowupResult = RESTDeleteAPIWebhookWithTokenMessageResult;
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#get-guild-application-command-permissions
+ * https://docs.discord.com/developers/interactions/application-commands#get-guild-application-command-permissions
  */
 export type RESTGetAPIGuildApplicationCommandsPermissionsResult = APIGuildApplicationCommandPermissions[];
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#get-application-command-permissions
+ * https://docs.discord.com/developers/interactions/application-commands#get-application-command-permissions
  */
 export type RESTGetAPIApplicationCommandPermissionsResult = APIGuildApplicationCommandPermissions;
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#edit-application-command-permissions
+ * https://docs.discord.com/developers/interactions/application-commands#edit-application-command-permissions
  */
 export interface RESTPutAPIApplicationCommandPermissionsJSONBody {
 	permissions: APIApplicationCommandPermission[];
 }
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#edit-application-command-permissions
+ * https://docs.discord.com/developers/interactions/application-commands#edit-application-command-permissions
  */
 export type RESTPutAPIApplicationCommandPermissionsResult = APIGuildApplicationCommandPermissions;
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#batch-edit-application-command-permissions
+ * https://docs.discord.com/developers/interactions/application-commands#batch-edit-application-command-permissions
  */
 export type RESTPutAPIGuildApplicationCommandsPermissionsJSONBody = Pick<
 	APIGuildApplicationCommandPermissions,
@@ -348,6 +348,6 @@ export type RESTPutAPIGuildApplicationCommandsPermissionsJSONBody = Pick<
 >[];
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#batch-edit-application-command-permissions
+ * https://docs.discord.com/developers/interactions/application-commands#batch-edit-application-command-permissions
  */
 export type RESTPutAPIGuildApplicationCommandsPermissionsResult = APIGuildApplicationCommandPermissions[];

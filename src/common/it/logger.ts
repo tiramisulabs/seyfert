@@ -102,16 +102,19 @@ export class Logger {
 	}
 
 	static async clearLogs() {
-		for (const i of await promises.readdir(join(process.cwd(), Logger.dirname), { withFileTypes: true })) {
-			if (Logger.streams[i.name])
-				await new Promise((res, rej) =>
-					Logger.streams[i.name]!.close(err => {
-						if (err) return rej(err);
-						res(err);
-					}),
-				);
-			await promises.unlink(join(process.cwd(), Logger.dirname, i.name)).catch(() => undefined);
-			delete Logger.streams[i.name];
+		for (const [fileName, stream] of Object.entries(Logger.streams)) {
+			if (!stream) continue;
+			await new Promise<void>((resolve, reject) =>
+				stream.close(error => {
+					if (error) return reject(error);
+					resolve();
+				}),
+			);
+			delete Logger.streams[fileName];
+		}
+
+		for (const entry of await promises.readdir(join(process.cwd(), Logger.dirname), { withFileTypes: true })) {
+			await promises.unlink(join(process.cwd(), Logger.dirname, entry.name)).catch(() => undefined);
 		}
 	}
 

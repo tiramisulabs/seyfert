@@ -56,17 +56,9 @@ export class GuildBasedResource<T = any, S = any> {
 
 		if (!keys.length) return fakePromise(undefined).then(() => {}) as void;
 
-		return fakePromise(
-			this.addToRelationship(
-				keys.map(x => x[0]),
-				guild,
-			),
-		).then(() =>
-			this.adapter.bulkSet(
-				keys.map(([key, value]) => {
-					return [this.hashGuildId(guild, key), this.parse(value, key, guild)] as const;
-				}),
-			),
+		const relationship = this.hashId(guild);
+		return this.adapter.bulkSet(
+			keys.map(([key, value]) => [this.hashGuildId(guild, key), this.parse(value, key, guild), [relationship, key]]),
 		) as void;
 	}
 
@@ -79,32 +71,15 @@ export class GuildBasedResource<T = any, S = any> {
 
 		if (!keys.length) return fakePromise(undefined).then(() => {}) as void;
 
-		return fakePromise(this.adapter.bulkGet(keys.map(([key]) => this.hashGuildId(guild, key)))).then(oldDatas => {
-			const oldDataMap = new Map<string, any>();
-			for (const item of oldDatas as any[]) {
-				if (item?.id) oldDataMap.set(item.id, item);
-			}
-			return fakePromise(
-				this.addToRelationship(
-					keys.map(x => x[0]),
-					guild,
-				),
-			).then(() =>
-				this.adapter.bulkSet(
-					keys.map(([key, value]) => {
-						const oldData = oldDataMap.get(key) ?? {};
-						return [this.hashGuildId(guild, key), this.parse({ ...oldData, ...value }, key, guild)];
-					}),
-				),
-			);
-		}) as void;
+		const relationship = this.hashId(guild);
+		return this.adapter.bulkPatch(
+			keys.map(([key, value]) => [this.hashGuildId(guild, key), this.parse(value, key, guild), [relationship, key]]),
+		) as void;
 	}
 
 	remove(id: string | string[], guild: string) {
 		const ids = Array.isArray(id) ? id : [id];
-		return fakePromise(this.removeToRelationship(ids, guild)).then(() =>
-			this.adapter.bulkRemove(ids.map(x => this.hashGuildId(guild, x))),
-		);
+		return this.adapter.bulkRemove(ids.map(x => this.hashGuildId(guild, x)));
 	}
 
 	keys(guild: '*' | (string & {})): ReturnCache<string[]> {
@@ -135,36 +110,15 @@ export class GuildBasedResource<T = any, S = any> {
 		return this.adapter.getToRelationship(this.hashId(guild));
 	}
 
-	addToRelationship(id: string | string[], guild: string) {
-		return this.adapter.addToRelationship(this.hashId(guild), id);
-	}
-
-	removeToRelationship(id: string | string[], guild: string) {
-		return this.adapter.removeToRelationship(this.hashId(guild), id);
-	}
-
-	removeRelationship(id: string | string[]) {
-		return this.adapter.removeRelationship((Array.isArray(id) ? id : [id]).map(x => this.hashId(x)));
-	}
-
 	hashId(id: string) {
-		return id.startsWith(this.namespace) ? id : `${this.namespace}.${id}`;
+		return id.startsWith(`${this.namespace}.`) ? id : `${this.namespace}.${id}`;
 	}
 
 	hashGuildId(guild: string, id: string) {
-		return id.startsWith(this.namespace) ? id : `${this.namespace}.${guild}.${id}`;
+		return id.startsWith(`${this.namespace}.`) ? id : `${this.namespace}.${guild}.${id}`;
 	}
 
 	flush(guild: '*' | (string & {})) {
-		return fakePromise(this.keys(guild)).then(keys => {
-			return fakePromise(this.adapter.bulkRemove(keys)).then(() => {
-				const maybePromises: (unknown | Promise<unknown>)[] = [];
-				for (const i of keys) {
-					const guildId = i.split('.').at(-2)!;
-					maybePromises.push(this.removeRelationship(guildId));
-				}
-				return this.adapter.isAsync ? Promise.all(maybePromises) : maybePromises;
-			});
-		});
+		return fakePromise(this.keys(guild)).then(keys => this.adapter.bulkRemove(keys));
 	}
 }

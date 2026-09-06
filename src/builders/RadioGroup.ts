@@ -57,7 +57,7 @@ export class RadioGroup extends BaseComponentBuilder<APIRadioGroupComponent> {
 					...createValidationMetadata('number of options between 2 and 10', optionCount, {
 						component: 'RadioGroup',
 					}),
-					detail: 'RadioGroup must have between 2 and 10 options.',
+					detail: `RadioGroup has an invalid options length: expected number of options between 2 and 10, received ${optionCount}.`,
 				},
 			});
 		}

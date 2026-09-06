@@ -1,34 +1,34 @@
 import type { APISticker, APIStickerPack } from '../payloads';
 
 /**
- * https://discord.com/developers/docs/resources/sticker#get-sticker
+ * https://docs.discord.com/developers/resources/sticker#get-sticker
  */
 export type RESTGetAPIStickerResult = APISticker;
 
 /**
- * https://discord.com/developers/docs/resources/sticker#list-sticker-packs
+ * https://docs.discord.com/developers/resources/sticker#list-sticker-packs
  */
 export interface RESTGetStickerPacksResult {
 	sticker_packs: APIStickerPack[];
 }
 
 /**
- * https://discord.com/developers/docs/resources/sticker#get-sticker-pack
+ * https://docs.discord.com/developers/resources/sticker#get-sticker-pack
  */
 export type RESTGetAPIStickerPackResult = APIStickerPack;
 
 /**
- * https://discord.com/developers/docs/resources/sticker#list-guild-stickers
+ * https://docs.discord.com/developers/resources/sticker#list-guild-stickers
  */
 export type RESTGetAPIGuildStickersResult = APISticker[];
 
 /**
- * https://discord.com/developers/docs/resources/sticker#get-guild-sticker
+ * https://docs.discord.com/developers/resources/sticker#get-guild-sticker
  */
 export type RESTGetAPIGuildStickerResult = APISticker;
 
 /**
- * https://discord.com/developers/docs/resources/sticker#create-guild-sticker
+ * https://docs.discord.com/developers/resources/sticker#create-guild-sticker
  */
 export interface RESTPostAPIGuildStickerFormDataBody {
 	/**
@@ -52,12 +52,12 @@ export interface RESTPostAPIGuildStickerFormDataBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/sticker#create-guild-sticker
+ * https://docs.discord.com/developers/resources/sticker#create-guild-sticker
  */
 export type RESTPostAPIGuildStickerResult = APISticker;
 
 /**
- * https://discord.com/developers/docs/resources/sticker#modify-guild-sticker
+ * https://docs.discord.com/developers/resources/sticker#modify-guild-sticker
  */
 export interface RESTPatchAPIGuildStickerJSONBody {
 	/**
@@ -75,11 +75,11 @@ export interface RESTPatchAPIGuildStickerJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/sticker#modify-guild-sticker
+ * https://docs.discord.com/developers/resources/sticker#modify-guild-sticker
  */
 export type RESTPatchAPIGuildStickerResult = APISticker;
 
 /**
- * https://discord.com/developers/docs/resources/sticker#delete-guild-sticker
+ * https://docs.discord.com/developers/resources/sticker#delete-guild-sticker
  */
 export type RESTDeleteAPIGuildStickerResult = undefined;

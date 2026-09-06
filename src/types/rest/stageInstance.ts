@@ -2,7 +2,7 @@ import type { Snowflake } from '..';
 import type { APIStageInstance, StageInstancePrivacyLevel } from '../payloads';
 
 /**
- * https://discord.com/developers/docs/resources/stage-instance#create-stage-instance
+ * https://docs.discord.com/developers/resources/stage-instance#create-stage-instance
  */
 export interface RESTPostAPIStageInstanceJSONBody {
 	/**
@@ -30,17 +30,17 @@ export interface RESTPostAPIStageInstanceJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/stage-instance#create-stage-instance
+ * https://docs.discord.com/developers/resources/stage-instance#create-stage-instance
  */
 export type RESTPostAPIStageInstanceResult = APIStageInstance;
 
 /**
- * https://discord.com/developers/docs/resources/stage-instance#get-stage-instance
+ * https://docs.discord.com/developers/resources/stage-instance#get-stage-instance
  */
 export type RESTGetAPIStageInstanceResult = APIStageInstance;
 
 /**
- * https://discord.com/developers/docs/resources/stage-instance#modify-stage-instance
+ * https://docs.discord.com/developers/resources/stage-instance#modify-stage-instance
  */
 export interface RESTPatchAPIStageInstanceJSONBody {
 	/**
@@ -54,11 +54,11 @@ export interface RESTPatchAPIStageInstanceJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/stage-instance#modify-stage-instance
+ * https://docs.discord.com/developers/resources/stage-instance#modify-stage-instance
  */
 export type RESTPatchAPIStageInstanceResult = APIStageInstance;
 
 /**
- * https://discord.com/developers/docs/resources/stage-instance#delete-stage-instance
+ * https://docs.discord.com/developers/resources/stage-instance#delete-stage-instance
  */
 export type RESTDeleteAPIStageInstanceResult = undefined;

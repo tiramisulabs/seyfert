@@ -2,13 +2,16 @@ import { randomUUID } from 'node:crypto';
 import { lazyLoadPackage, SeyfertError } from '../../common';
 import type { WorkerData } from '../../websocket';
 import type { WorkerSendCacheRequest } from '../../websocket/discord/worker';
-import type { Adapter } from './types';
+import type { Adapter, AdapterEntry, AdapterRelationship } from './types';
 
 let parentPort: import('node:worker_threads').MessagePort;
 
 export class WorkerAdapter implements Adapter {
 	isAsync = true;
-	promises = new Map<string, { resolve: (value: unknown) => void; timeout: NodeJS.Timeout }>();
+	promises = new Map<
+		string,
+		{ resolve: (value: unknown) => void; reject: (error: unknown) => void; timeout: NodeJS.Timeout }
+	>();
 
 	constructor(public workerData: WorkerData) {
 		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
@@ -28,20 +31,33 @@ export class WorkerAdapter implements Adapter {
 		const nonce = randomUUID();
 		if (this.promises.has(nonce)) return this.send(method, ...args);
 
-		this.postMessage({
-			type: 'CACHE_REQUEST',
-			args,
-			nonce,
-			method,
-			workerId: this.workerData.workerId,
-		} satisfies WorkerSendCacheRequest);
-
 		return new Promise<any>((res, rej) => {
 			const timeout = setTimeout(() => {
 				this.promises.delete(nonce);
 				rej(new SeyfertError('CACHE_TIMEOUT', { metadata: { ...{ nonce, method }, detail: 'Timeout cache request' } }));
 			}, 60e3);
-			this.promises.set(nonce, { resolve: res, timeout });
+			const pending = { resolve: res, reject: rej, timeout };
+			const rejectPending = (error: unknown) => {
+				if (this.promises.get(nonce) !== pending) return;
+				clearTimeout(timeout);
+				this.promises.delete(nonce);
+				rej(error);
+			};
+			this.promises.set(nonce, pending);
+			try {
+				const dispatched = this.postMessage({
+					type: 'CACHE_REQUEST',
+					args,
+					nonce,
+					method,
+					workerId: this.workerData.workerId,
+				} satisfies WorkerSendCacheRequest);
+				if (dispatched && (typeof dispatched === 'object' || typeof dispatched === 'function')) {
+					void Promise.resolve(dispatched).catch(rejectPending);
+				}
+			} catch (error) {
+				rejectPending(error);
+			}
 		});
 	}
 
@@ -57,20 +73,20 @@ export class WorkerAdapter implements Adapter {
 		return this.send('get', ...rest);
 	}
 
-	bulkSet(...rest: any[]) {
-		return this.send('bulkSet', ...rest);
+	bulkSet(entries: AdapterEntry[]) {
+		return this.send('bulkSet', entries);
 	}
 
-	set(...rest: any[]) {
-		return this.send('set', ...rest);
+	set(key: string, value: any, relationship: AdapterRelationship) {
+		return this.send('set', key, value, relationship);
 	}
 
-	bulkPatch(...rest: any[]) {
-		return this.send('bulkPatch', ...rest);
+	bulkPatch(entries: AdapterEntry[]) {
+		return this.send('bulkPatch', entries);
 	}
 
-	patch(...rest: any[]) {
-		return this.send('patch', ...rest);
+	patch(key: string, value: any, relationship: AdapterRelationship) {
+		return this.send('patch', key, value, relationship);
 	}
 
 	values(...rest: any[]) {
@@ -103,14 +119,6 @@ export class WorkerAdapter implements Adapter {
 
 	getToRelationship(...rest: any[]) {
 		return this.send('getToRelationship', ...rest);
-	}
-
-	bulkAddToRelationShip(...rest: any[]) {
-		return this.send('bulkAddToRelationShip', ...rest);
-	}
-
-	addToRelationship(...rest: any[]) {
-		return this.send('addToRelationship', ...rest);
 	}
 
 	removeToRelationship(...rest: any[]) {

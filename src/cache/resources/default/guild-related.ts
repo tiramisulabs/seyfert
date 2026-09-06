@@ -56,19 +56,10 @@ export class GuildRelatedResource<T = any, S = any> {
 
 		if (!keys.length) return fakePromise(undefined).then(() => {}) as void;
 
-		return fakePromise(
-			this.addToRelationship(
-				keys.map(x => x[0]),
-				guild,
-			),
-		).then(
-			() =>
-				this.adapter.bulkSet(
-					keys.map(([key, value]) => {
-						return [this.hashId(key), this.parse(value, key, guild)] as const;
-					}),
-				) as void,
-		);
+		const relationship = this.hashId(guild);
+		return this.adapter.bulkSet(
+			keys.map(([key, value]) => [this.hashId(key), this.parse(value, key, guild), [relationship, key]]),
+		) as void;
 	}
 
 	patch(from: CacheFrom, __keys: string, guild: string, data?: any): ReturnCache<void>;
@@ -80,26 +71,15 @@ export class GuildRelatedResource<T = any, S = any> {
 
 		if (!keys.length) return fakePromise(undefined).then(() => {}) as void;
 
-		return fakePromise(
-			this.addToRelationship(
-				keys.map(x => x[0]),
-				guild,
-			),
-		).then(
-			() =>
-				this.adapter.bulkPatch(
-					keys.map(([key, value]) => {
-						return [this.hashId(key), this.parse(value, key, guild)] as const;
-					}),
-				) as void,
-		);
+		const relationship = this.hashId(guild);
+		return this.adapter.bulkPatch(
+			keys.map(([key, value]) => [this.hashId(key), this.parse(value, key, guild), [relationship, key]]),
+		) as void;
 	}
 
-	remove(id: string | string[], guild: string) {
+	remove(id: string | string[], _guild: string) {
 		const ids = Array.isArray(id) ? id : [id];
-		return fakePromise(this.removeToRelationship(ids, guild)).then(() =>
-			this.adapter.bulkRemove(ids.map(x => this.hashId(x))),
-		);
+		return this.adapter.bulkRemove(ids.map(x => this.hashId(x)));
 	}
 
 	keys(guild: '*' | (string & {})): ReturnCache<string[]> {
@@ -132,27 +112,11 @@ export class GuildRelatedResource<T = any, S = any> {
 		return this.adapter.getToRelationship(this.hashId(guild));
 	}
 
-	addToRelationship(id: string | string[], guild: string) {
-		return this.adapter.addToRelationship(this.hashId(guild), id);
-	}
-
-	removeToRelationship(id: string | string[], guild: string) {
-		return this.adapter.removeToRelationship(this.hashId(guild), id);
-	}
-
-	removeRelationship(id: string | string[]) {
-		return this.adapter.removeRelationship((Array.isArray(id) ? id : [id]).map(x => this.hashId(x)));
-	}
-
 	hashId(id: string) {
-		return id.startsWith(this.namespace) ? id : `${this.namespace}.${id}`;
+		return id.startsWith(`${this.namespace}.`) ? id : `${this.namespace}.${id}`;
 	}
 
 	flush(guild: '*' | (string & {}) = '*') {
-		return fakePromise(this.keys(guild)).then(keys => {
-			return fakePromise(this.adapter.bulkRemove(keys)).then(() => {
-				return this.removeRelationship(guild);
-			});
-		});
+		return fakePromise(this.keys(guild)).then(keys => this.adapter.bulkRemove(keys));
 	}
 }

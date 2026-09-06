@@ -78,7 +78,7 @@ export interface RESTAPIGuildCreateRole extends RESTPostAPIGuildRoleJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#create-guild
+ * https://docs.discord.com/developers/resources/guild#create-guild
  * @deprecated
  */
 export interface RESTPostAPIGuildsJSONBody {
@@ -89,31 +89,31 @@ export interface RESTPostAPIGuildsJSONBody {
 	/**
 	 * Voice region id
 	 *
-	 * See https://discord.com/developers/docs/resources/voice#voice-region-object
+	 * See https://docs.discord.com/developers/resources/voice#voice-region-object
 	 */
 	region?: string | undefined;
 	/**
 	 * base64 1024x1024 png/jpeg image for the guild icon
 	 *
-	 * See https://discord.com/developers/docs/reference#image-data
+	 * See https://docs.discord.com/developers/reference#image-data
 	 */
 	icon?: string | undefined;
 	/**
 	 * Verification level
 	 *
-	 * See https://discord.com/developers/docs/resources/guild#guild-object-verification-level
+	 * See https://docs.discord.com/developers/resources/guild#guild-object-verification-level
 	 */
 	verification_level?: GuildVerificationLevel | undefined;
 	/**
 	 * Default message notification level
 	 *
-	 * See https://discord.com/developers/docs/resources/guild#guild-object-default-message-notification-level
+	 * See https://docs.discord.com/developers/resources/guild#guild-object-default-message-notification-level
 	 */
 	default_message_notifications?: GuildDefaultMessageNotifications | undefined;
 	/**
 	 * Explicit content filter level
 	 *
-	 * See https://discord.com/developers/docs/resources/guild#guild-object-explicit-content-filter-level
+	 * See https://docs.discord.com/developers/resources/guild#guild-object-explicit-content-filter-level
 	 */
 	explicit_content_filter?: GuildExplicitContentFilter | undefined;
 	/**
@@ -127,7 +127,7 @@ export interface RESTPostAPIGuildsJSONBody {
 	 * and will be replaced by the API upon consumption. Its purpose is to allow you to overwrite a role's permissions
 	 * in a channel when also passing in channels with the channels array.
 	 *
-	 * See https://discord.com/developers/docs/topics/permissions#role-object
+	 * See https://docs.discord.com/developers/topics/permissions#role-object
 	 */
 	roles?: RESTAPIGuildCreateRole[] | undefined;
 	/**
@@ -141,7 +141,7 @@ export interface RESTPostAPIGuildsJSONBody {
 	 * by setting the `parent_id` field on any children to the category's id field.
 	 * Category channels must be listed before any children.
 	 *
-	 * See https://discord.com/developers/docs/resources/channel#channel-object
+	 * See https://docs.discord.com/developers/resources/channel#channel-object
 	 */
 	channels?: RESTAPIGuildCreatePartialChannel[] | undefined;
 	/**
@@ -159,7 +159,7 @@ export interface RESTPostAPIGuildsJSONBody {
 	/**
 	 * System channel flags
 	 *
-	 * See https://discord.com/developers/docs/resources/guild#guild-object-system-channel-flags
+	 * See https://docs.discord.com/developers/resources/guild#guild-object-system-channel-flags
 	 */
 	system_channel_flags?: GuildSystemChannelFlags | undefined;
 	/**
@@ -169,29 +169,29 @@ export interface RESTPostAPIGuildsJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#create-guild
+ * https://docs.discord.com/developers/resources/guild#create-guild
  */
 export type RESTPostAPIGuildsResult = APIGuild;
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-guild-mfa-level
+ * https://docs.discord.com/developers/resources/guild#modify-guild-mfa-level
  */
 export interface RESTPostAPIGuildsMFAJSONBody {
 	/**
 	 * MFA level
 	 *
-	 * See https://discord.com/developers/docs/resources/guild#guild-object-mfa-level
+	 * See https://docs.discord.com/developers/resources/guild#guild-object-mfa-level
 	 */
 	level: GuildMFALevel;
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-guild-mfa-level
+ * https://docs.discord.com/developers/resources/guild#modify-guild-mfa-level
  */
 export type RESTPostAPIGuildsMFAResult = RESTPostAPIGuildsMFAJSONBody;
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild
+ * https://docs.discord.com/developers/resources/guild#get-guild
  */
 export interface RESTGetAPIGuildQuery {
 	/**
@@ -203,17 +203,17 @@ export interface RESTGetAPIGuildQuery {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild
+ * https://docs.discord.com/developers/resources/guild#get-guild
  */
 export type RESTGetAPIGuildResult = APIGuild;
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild-preview
+ * https://docs.discord.com/developers/resources/guild#get-guild-preview
  */
 export type RESTGetAPIGuildPreviewResult = APIGuildPreview;
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-guild
+ * https://docs.discord.com/developers/resources/guild#modify-guild
  */
 export interface RESTPatchAPIGuildJSONBody {
 	/**
@@ -223,25 +223,25 @@ export interface RESTPatchAPIGuildJSONBody {
 	/**
 	 * Voice region id
 	 *
-	 * See https://discord.com/developers/docs/resources/voice#voice-region-object
+	 * See https://docs.discord.com/developers/resources/voice#voice-region-object
 	 */
 	region?: string | null | undefined;
 	/**
 	 * Verification level
 	 *
-	 * See https://discord.com/developers/docs/resources/guild#guild-object-verification-level
+	 * See https://docs.discord.com/developers/resources/guild#guild-object-verification-level
 	 */
 	verification_level?: GuildVerificationLevel | null | undefined;
 	/**
 	 * Default message notification level
 	 *
-	 * See https://discord.com/developers/docs/resources/guild#guild-object-default-message-notification-level
+	 * See https://docs.discord.com/developers/resources/guild#guild-object-default-message-notification-level
 	 */
 	default_message_notifications?: GuildDefaultMessageNotifications | null | undefined;
 	/**
 	 * Explicit content filter level
 	 *
-	 * See https://discord.com/developers/docs/resources/guild#guild-object-explicit-content-filter-level
+	 * See https://docs.discord.com/developers/resources/guild#guild-object-explicit-content-filter-level
 	 */
 	explicit_content_filter?: GuildExplicitContentFilter | null | undefined;
 	/**
@@ -255,7 +255,7 @@ export interface RESTPatchAPIGuildJSONBody {
 	/**
 	 * base64 1024x1024 png/jpeg/gif image for the guild icon (can be animated gif when the guild has `ANIMATED_ICON` feature)
 	 *
-	 * See https://discord.com/developers/docs/reference#image-data
+	 * See https://docs.discord.com/developers/reference#image-data
 	 */
 	icon?: string | null | undefined;
 	/**
@@ -265,7 +265,7 @@ export interface RESTPatchAPIGuildJSONBody {
 	/**
 	 * base64 16:9 png/jpeg image for the guild splash (when the guild has `INVITE_SPLASH` feature)
 	 *
-	 * See https://discord.com/developers/docs/reference#image-data
+	 * See https://docs.discord.com/developers/reference#image-data
 	 */
 	splash?: string | null | undefined;
 	/**
@@ -283,7 +283,7 @@ export interface RESTPatchAPIGuildJSONBody {
 	/**
 	 * System channel flags
 	 *
-	 * See https://discord.com/developers/docs/resources/guild#guild-object-system-channel-flags
+	 * See https://docs.discord.com/developers/resources/guild#guild-object-system-channel-flags
 	 */
 	system_channel_flags?: GuildSystemChannelFlags | undefined;
 	/**
@@ -303,7 +303,7 @@ export interface RESTPatchAPIGuildJSONBody {
 	/**
 	 * Enabled guild features
 	 *
-	 * See https://discord.com/developers/docs/resources/guild#guild-object-guild-features
+	 * See https://docs.discord.com/developers/resources/guild#guild-object-guild-features
 	 */
 	features?: GuildFeature[] | undefined;
 	/**
@@ -321,32 +321,32 @@ export interface RESTPatchAPIGuildJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-guild
+ * https://docs.discord.com/developers/resources/guild#modify-guild
  */
 export type RESTPatchAPIGuildResult = APIGuild;
 
 /**
- * https://discord.com/developers/docs/resources/guild#delete-guild
+ * https://docs.discord.com/developers/resources/guild#delete-guild
  */
 export type RESTDeleteAPIGuildResult = undefined;
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild-channels
+ * https://docs.discord.com/developers/resources/guild#get-guild-channels
  */
 export type RESTGetAPIGuildChannelsResult = APIChannel[];
 
 /**
- * https://discord.com/developers/docs/resources/guild#create-guild-channel
+ * https://docs.discord.com/developers/resources/guild#create-guild-channel
  */
 export type RESTPostAPIGuildChannelJSONBody = DistributiveOmit<RESTAPIGuildCreatePartialChannel, 'id'>;
 
 /**
- * https://discord.com/developers/docs/resources/guild#create-guild-channel
+ * https://docs.discord.com/developers/resources/guild#create-guild-channel
  */
 export type RESTPostAPIGuildChannelResult = APIChannel;
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-guild-channel-positions
+ * https://docs.discord.com/developers/resources/guild#modify-guild-channel-positions
  */
 export type RESTPatchAPIGuildChannelPositionsJSONBody = {
 	/**
@@ -368,22 +368,22 @@ export type RESTPatchAPIGuildChannelPositionsJSONBody = {
 }[];
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-guild-channel-positions
+ * https://docs.discord.com/developers/resources/guild#modify-guild-channel-positions
  */
 export type RESTPatchAPIGuildChannelPositionsResult = undefined;
 
 /**
- * https://discord.com/developers/docs/resources/guild#list-active-guild-threads
+ * https://docs.discord.com/developers/resources/guild#list-active-guild-threads
  */
 export type RESTGetAPIGuildThreadsResult = APIThreadList;
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild-member
+ * https://docs.discord.com/developers/resources/guild#get-guild-member
  */
 export type RESTGetAPIGuildMemberResult = APIGuildMember;
 
 /**
- * https://discord.com/developers/docs/resources/guild#list-guild-members
+ * https://docs.discord.com/developers/resources/guild#list-guild-members
  */
 export interface RESTGetAPIGuildMembersQuery {
 	/**
@@ -401,12 +401,12 @@ export interface RESTGetAPIGuildMembersQuery {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#list-guild-members
+ * https://docs.discord.com/developers/resources/guild#list-guild-members
  */
 export type RESTGetAPIGuildMembersResult = APIGuildMember[];
 
 /**
- * https://discord.com/developers/docs/resources/guild#search-guild-members
+ * https://docs.discord.com/developers/resources/guild#search-guild-members
  */
 export interface RESTGetAPIGuildMembersSearchQuery {
 	/**
@@ -424,7 +424,7 @@ export interface RESTGetAPIGuildMembersSearchQuery {
 export type RESTGetAPIGuildMembersSearchResult = APIGuildMember[];
 
 /**
- * https://discord.com/developers/docs/resources/guild#add-guild-member
+ * https://docs.discord.com/developers/resources/guild#add-guild-member
  */
 export interface RESTPutAPIGuildMemberJSONBody {
 	/**
@@ -460,7 +460,7 @@ export interface RESTPutAPIGuildMemberJSONBody {
 export type RESTPutAPIGuildMemberResult = APIGuildMember | undefined;
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-guild-member
+ * https://docs.discord.com/developers/resources/guild#modify-guild-member
  */
 export interface RESTPatchAPIGuildMemberJSONBody {
 	/**
@@ -500,12 +500,12 @@ export interface RESTPatchAPIGuildMemberJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#add-guild-member
+ * https://docs.discord.com/developers/resources/guild#add-guild-member
  */
 export type RESTPatchAPIGuildMemberResult = APIGuildMember;
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-current-member
+ * https://docs.discord.com/developers/resources/guild#modify-current-member
  */
 export interface RESTPatchAPICurrentGuildMemberJSONBody {
 	/**
@@ -529,32 +529,32 @@ export interface RESTPatchAPICurrentGuildMemberJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-current-member
+ * https://docs.discord.com/developers/resources/guild#modify-current-member
  */
 export type RESTPatchAPICurrentGuildMemberResult = APIGuildMember;
 
 /**
- * https://discord.com/developers/docs/resources/guild#add-guild-member-role
+ * https://docs.discord.com/developers/resources/guild#add-guild-member-role
  */
 export type RESTPutAPIGuildMemberRoleResult = undefined;
 
 /**
- * https://discord.com/developers/docs/resources/guild#remove-guild-member-role
+ * https://docs.discord.com/developers/resources/guild#remove-guild-member-role
  */
 export type RESTDeleteAPIGuildMemberRoleResult = undefined;
 
 /**
- * https://discord.com/developers/docs/resources/guild#remove-guild-member
+ * https://docs.discord.com/developers/resources/guild#remove-guild-member
  */
 export type RESTDeleteAPIGuildMemberResult = undefined;
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild-bans
+ * https://docs.discord.com/developers/resources/guild#get-guild-bans
  */
 export type RESTGetAPIGuildBansResult = APIBan[];
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild-bans
+ * https://docs.discord.com/developers/resources/guild#get-guild-bans
  */
 export interface RESTGetAPIGuildBansQuery {
 	/**
@@ -574,12 +574,12 @@ export interface RESTGetAPIGuildBansQuery {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild-ban
+ * https://docs.discord.com/developers/resources/guild#get-guild-ban
  */
 export type RESTGetAPIGuildBanResult = APIBan;
 
 /**
- * https://discord.com/developers/docs/resources/guild#create-guild-ban
+ * https://docs.discord.com/developers/resources/guild#create-guild-ban
  */
 export interface RESTPutAPIGuildBanJSONBody {
 	/**
@@ -589,17 +589,17 @@ export interface RESTPutAPIGuildBanJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#create-guild-ban
+ * https://docs.discord.com/developers/resources/guild#create-guild-ban
  */
 export type RESTPutAPIGuildBanResult = undefined;
 
 /**
- * https://discord.com/developers/docs/resources/guild#remove-guild-ban
+ * https://docs.discord.com/developers/resources/guild#remove-guild-ban
  */
 export type RESTDeleteAPIGuildBanResult = undefined;
 
 /**
- * https://discord.com/developers/docs/resources/guild#bulk-guild-ban
+ * https://docs.discord.com/developers/resources/guild#bulk-guild-ban
  */
 export interface RESTPostAPIGuildBulkBanJSONBody {
 	/**
@@ -613,7 +613,7 @@ export interface RESTPostAPIGuildBulkBanJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#bulk-guild-ban
+ * https://docs.discord.com/developers/resources/guild#bulk-guild-ban
  */
 export interface RESTPostAPIGuildBulkBanResult {
 	/**
@@ -627,17 +627,17 @@ export interface RESTPostAPIGuildBulkBanResult {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild-roles
+ * https://docs.discord.com/developers/resources/guild#get-guild-roles
  */
 export type RESTGetAPIGuildRolesResult = APIRole[];
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild-role
+ * https://docs.discord.com/developers/resources/guild#get-guild-role
  */
 export type RESTGetAPIGuildRoleResult = APIRole;
 
 /**
- * https://discord.com/developers/docs/resources/guild#create-guild-role
+ * https://docs.discord.com/developers/resources/guild#create-guild-role
  */
 export interface RESTPostAPIGuildRoleJSONBody {
 	/**
@@ -685,12 +685,12 @@ export interface RESTPostAPIGuildRoleJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#create-guild-role
+ * https://docs.discord.com/developers/resources/guild#create-guild-role
  */
 export type RESTPostAPIGuildRoleResult = APIRole;
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-guild-role-positions
+ * https://docs.discord.com/developers/resources/guild#modify-guild-role-positions
  */
 export type RESTPatchAPIGuildRolePositionsJSONBody = {
 	/**
@@ -704,12 +704,12 @@ export type RESTPatchAPIGuildRolePositionsJSONBody = {
 }[];
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-guild-role-positions
+ * https://docs.discord.com/developers/resources/guild#modify-guild-role-positions
  */
 export type RESTPatchAPIGuildRolePositionsResult = APIRole[];
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-guild-role
+ * https://docs.discord.com/developers/resources/guild#modify-guild-role
  */
 export interface RESTPatchAPIGuildRoleJSONBody {
 	/**
@@ -747,22 +747,22 @@ export interface RESTPatchAPIGuildRoleJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-guild-role
+ * https://docs.discord.com/developers/resources/guild#modify-guild-role
  */
 export type RESTPatchAPIGuildRoleResult = APIRole;
 
 /**
- * https://discord.com/developers/docs/resources/guild#delete-guild-role
+ * https://docs.discord.com/developers/resources/guild#delete-guild-role
  */
 export type RESTDeleteAPIGuildRoleResult = undefined;
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild-role-member-counts
+ * https://docs.discord.com/developers/resources/guild#get-guild-role-member-counts
  */
 export type RESTGetAPIGuildRoleMemberCountsResult = Record<string, number>;
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild-prune-count
+ * https://docs.discord.com/developers/resources/guild#get-guild-prune-count
  */
 export interface RESTGetAPIGuildPruneCountQuery {
 	/**
@@ -777,20 +777,20 @@ export interface RESTGetAPIGuildPruneCountQuery {
 	 * While this is typed as a string, it represents an array of
 	 * role IDs delimited by commas
 	 *
-	 * See https://discord.com/developers/docs/resources/guild#get-guild-prune-count-query-string-params
+	 * See https://docs.discord.com/developers/resources/guild#get-guild-prune-count-query-string-params
 	 */
 	include_roles?: string;
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild-prune-count
+ * https://docs.discord.com/developers/resources/guild#get-guild-prune-count
  */
 export interface RESTGetAPIGuildPruneCountResult {
 	pruned: number;
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#begin-guild-prune
+ * https://docs.discord.com/developers/resources/guild#begin-guild-prune
  */
 export interface RESTPostAPIGuildPruneJSONBody {
 	/**
@@ -812,54 +812,54 @@ export interface RESTPostAPIGuildPruneJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#begin-guild-prune
+ * https://docs.discord.com/developers/resources/guild#begin-guild-prune
  */
 export interface RESTPostAPIGuildPruneResult {
 	pruned: number | null;
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild-voice-regions
+ * https://docs.discord.com/developers/resources/guild#get-guild-voice-regions
  */
 export type RESTGetAPIGuildVoiceRegionsResult = APIVoiceRegion[];
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild-invites
+ * https://docs.discord.com/developers/resources/guild#get-guild-invites
  */
 export type RESTGetAPIGuildInvitesResult = APIExtendedInvite[];
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild-integrations
+ * https://docs.discord.com/developers/resources/guild#get-guild-integrations
  */
 export type RESTGetAPIGuildIntegrationsResult = APIGuildIntegration[];
 
 /**
- * https://discord.com/developers/docs/resources/guild#delete-guild-integration
+ * https://docs.discord.com/developers/resources/guild#delete-guild-integration
  */
 export type RESTDeleteAPIGuildIntegrationResult = undefined;
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild-widget-settings
+ * https://docs.discord.com/developers/resources/guild#get-guild-widget-settings
  */
 export type RESTGetAPIGuildWidgetSettingsResult = APIGuildWidgetSettings;
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-guild-widget
+ * https://docs.discord.com/developers/resources/guild#modify-guild-widget
  */
 export type RESTPatchAPIGuildWidgetSettingsJSONBody = StrictPartial<APIGuildWidgetSettings>;
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-guild-widget
+ * https://docs.discord.com/developers/resources/guild#modify-guild-widget
  */
 export type RESTPatchAPIGuildWidgetSettingsResult = APIGuildWidgetSettings;
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild-widget
+ * https://docs.discord.com/developers/resources/guild#get-guild-widget
  */
 export type RESTGetAPIGuildWidgetJSONResult = APIGuildWidget;
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild-vanity-url
+ * https://docs.discord.com/developers/resources/guild#get-guild-vanity-url
  */
 export interface RESTGetAPIGuildVanityUrlResult {
 	code: string | null;
@@ -867,7 +867,7 @@ export interface RESTGetAPIGuildVanityUrlResult {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild-widget-image
+ * https://docs.discord.com/developers/resources/guild#get-guild-widget-image
  */
 export interface RESTGetAPIGuildWidgetImageQuery {
 	/**
@@ -904,7 +904,7 @@ export interface RESTPatchAPIGuildMemberVerificationJSONBody {
 export type RESTPatchAPIGuildMemberVerificationResult = APIGuildMembershipScreening;
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-current-user-voice-state
+ * https://docs.discord.com/developers/resources/guild#modify-current-user-voice-state
  */
 export interface RESTPatchAPIGuildVoiceStateCurrentMemberJSONBody {
 	/**
@@ -922,12 +922,12 @@ export interface RESTPatchAPIGuildVoiceStateCurrentMemberJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-current-user-voice-state
+ * https://docs.discord.com/developers/resources/guild#modify-current-user-voice-state
  */
 export type RESTPatchAPIGuildVoiceStateCurrentMemberResult = undefined;
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-user-voice-state
+ * https://docs.discord.com/developers/resources/guild#modify-user-voice-state
  */
 export interface RESTPatchAPIGuildVoiceStateUserJSONBody {
 	/**
@@ -941,17 +941,17 @@ export interface RESTPatchAPIGuildVoiceStateUserJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-user-voice-state
+ * https://docs.discord.com/developers/resources/guild#modify-user-voice-state
  */
 export type RESTPatchAPIGuildVoiceStateUserResult = undefined;
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild-welcome-screen
+ * https://docs.discord.com/developers/resources/guild#get-guild-welcome-screen
  */
 export type RESTGetAPIGuildWelcomeScreenResult = APIGuildWelcomeScreen;
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-guild-welcome-screen
+ * https://docs.discord.com/developers/resources/guild#modify-guild-welcome-screen
  */
 export type RESTPatchAPIGuildWelcomeScreenJSONBody = Nullable<StrictPartial<APIGuildWelcomeScreen>> & {
 	/**
@@ -961,17 +961,17 @@ export type RESTPatchAPIGuildWelcomeScreenJSONBody = Nullable<StrictPartial<APIG
 };
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-guild-welcome-screen
+ * https://docs.discord.com/developers/resources/guild#modify-guild-welcome-screen
  */
 export type RESTPatchAPIGuildWelcomeScreenResult = APIGuildWelcomeScreen;
 
 /**
- * https://discord.com/developers/docs/resources/guild#get-guild-onboarding
+ * https://docs.discord.com/developers/resources/guild#get-guild-onboarding
  */
 export type RESTGetAPIGuildOnboardingResult = APIGuildOnboarding;
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-guild-onboarding
+ * https://docs.discord.com/developers/resources/guild#modify-guild-onboarding
  */
 export type RESTPutAPIGuildOnboardingJSONBody = AddUndefinedToPossiblyUndefinedPropertiesOfInterface<
 	Partial<Pick<APIGuildOnboarding, 'default_channel_ids' | 'enabled' | 'mode'>>
@@ -1011,12 +1011,12 @@ export type RESTAPIModifyGuildOnboardingPromptOptionData = AddUndefinedToPossibl
 	};
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-guild-onboarding
+ * https://docs.discord.com/developers/resources/guild#modify-guild-onboarding
  */
 export type RESTPutAPIGuildOnboardingResult = APIGuildOnboarding;
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-incidents-actions
+ * https://docs.discord.com/developers/resources/guild#modify-incidents-actions
  */
 export interface RESTPutAPIGuildIncidentActionsJSONBody {
 	invites_disabled_until?: string | null | undefined;
@@ -1024,12 +1024,12 @@ export interface RESTPutAPIGuildIncidentActionsJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/guild#modify-incidents-actions
+ * https://docs.discord.com/developers/resources/guild#modify-incidents-actions
  */
 export type RESTPutAPIGuildIncidentActionsResult = APIIncidentsData;
 
 /**
- * https://discord.com/developers/docs/resources/message#search-guild-messages
+ * https://docs.discord.com/developers/resources/message#search-guild-messages
  */
 export enum GuildSearchAuthorType {
 	User = 'user',
@@ -1038,7 +1038,7 @@ export enum GuildSearchAuthorType {
 }
 
 /**
- * https://discord.com/developers/docs/resources/message#search-guild-messages
+ * https://docs.discord.com/developers/resources/message#search-guild-messages
  */
 export enum GuildSearchHasType {
 	Image = 'image',
@@ -1053,7 +1053,7 @@ export enum GuildSearchHasType {
 }
 
 /**
- * https://discord.com/developers/docs/resources/message#search-guild-messages
+ * https://docs.discord.com/developers/resources/message#search-guild-messages
  */
 export enum GuildSearchEmbedType {
 	Image = 'image',
@@ -1064,7 +1064,7 @@ export enum GuildSearchEmbedType {
 }
 
 /**
- * https://discord.com/developers/docs/resources/message#search-guild-messages
+ * https://docs.discord.com/developers/resources/message#search-guild-messages
  */
 export enum GuildSearchSortBy {
 	Timestamp = 'timestamp',
@@ -1072,7 +1072,7 @@ export enum GuildSearchSortBy {
 }
 
 /**
- * https://discord.com/developers/docs/resources/message#search-guild-messages
+ * https://docs.discord.com/developers/resources/message#search-guild-messages
  */
 export enum GuildSearchSortOrder {
 	Ascending = 'asc',
@@ -1082,7 +1082,7 @@ export enum GuildSearchSortOrder {
 export type GuildSearchNegatable<T extends string> = `${T}` | `-${T}`;
 
 /**
- * https://discord.com/developers/docs/resources/message#search-guild-messages
+ * https://docs.discord.com/developers/resources/message#search-guild-messages
  */
 export interface RESTGetAPIGuildMessagesSearchQuery {
 	/**
@@ -1192,7 +1192,7 @@ export interface RESTGetAPIGuildMessagesSearchQuery {
 }
 
 /**
- * https://discord.com/developers/docs/resources/message#search-guild-messages
+ * https://docs.discord.com/developers/resources/message#search-guild-messages
  */
 export interface RESTGetAPIGuildMessagesSearch {
 	/**
@@ -1222,7 +1222,7 @@ export interface RESTGetAPIGuildMessagesSearch {
 }
 
 /**
- * https://discord.com/developers/docs/resources/message#search-guild-messages
+ * https://docs.discord.com/developers/resources/message#search-guild-messages
  *
  * Response when the index is not yet available (HTTP 202)
  */

@@ -5,6 +5,9 @@ export * from './utils/constants';
 export * from './utils/types';
 export { calculateUserDefaultAvatarIndex } from './utils/utils';
 
+/** JSON body accepted by the REST transport, including top-level bulk arrays. */
+export type ApiRequestBody = Record<string, any> | readonly unknown[];
+
 export interface ApiHandlerOptions {
 	baseUrl?: string;
 	domain?: string;
@@ -28,7 +31,7 @@ export interface RawFile {
 }
 
 export interface ApiRequestOptions {
-	body?: Record<string, any>;
+	body?: ApiRequestBody;
 	query?: Record<string, any>;
 	files?: RawFile[];
 	auth?: boolean;

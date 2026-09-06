@@ -5,10 +5,7 @@ import { isBufferLike } from '../api/utils/utils';
 import type { Adapter, DisabledCache } from '../cache';
 import { Cache, MemoryAdapter } from '../cache';
 import type {
-	Command,
 	CommandContext,
-	ContextMenuCommand,
-	EntryPointCommand,
 	ExtendContext,
 	ExtendedRC,
 	ExtendedRCLocations,
@@ -17,7 +14,7 @@ import type {
 	ResolvedRegisteredMiddlewares,
 	UsingClient,
 } from '../commands';
-import { SubCommand } from '../commands';
+import { Command, ContextMenuCommand, EntryPointCommand, SubCommand } from '../commands';
 import {
 	type AnyMiddlewareContext,
 	IgnoreCommand,
@@ -118,6 +115,7 @@ import {
 	recordContributionMutationDiagnostic,
 } from './plugins/registry';
 import { createSharedRegistry } from './plugins/shared';
+import type { PluginHandlerValueByKind } from './plugins/types';
 import type { MessageStructure } from './transformers';
 
 export type ContextScopeContext = BaseContext & ExtendContext;
@@ -650,6 +648,7 @@ export class BaseClient {
 		this.commands.set(commands, command => {
 			const source = (command as PluginSourced)[pluginSourceKey];
 			const transformed = this.runPluginHandlerTransformers('command', command);
+			if (transformed === false) return false;
 			if (source) (transformed as PluginSourced)[pluginSourceKey] = source;
 			return transformed;
 		});
@@ -805,6 +804,7 @@ export class BaseClient {
 				component instanceof ModalCommand ? 'modal' : 'component',
 				component,
 			);
+			if (transformed === false) return false;
 			if (source) (transformed as PluginSourced)[pluginSourceKey] = source;
 			return transformed;
 		});
@@ -898,14 +898,27 @@ export class BaseClient {
 	}
 
 	/** @internal */
-	runPluginHandlerTransformers<T>(kind: PluginHandlerKind, instance: T): T {
+	runPluginHandlerTransformers<K extends PluginHandlerKind>(
+		kind: K,
+		instance: PluginHandlerValueByKind[K],
+	): PluginHandlerValueByKind[K] | false {
 		let current = instance;
 		const metadata = { kind };
 		for (const contribution of orderedPluginContributions(this.pluginRegistry.handlerTransformers)) {
 			if (!this.matchesPluginHandlerKind(contribution.kinds, kind)) continue;
 			try {
-				const transform = contribution.transformer as (value: unknown, meta: { kind: PluginHandlerKind }) => unknown;
-				current = (transform(current, metadata) ?? current) as T;
+				const transform = contribution.transformer as (
+					value: PluginHandlerValueByKind[K],
+					meta: { kind: K },
+				) => PluginHandlerValueByKind[K] | false | void;
+				const transformed = transform(current, metadata);
+				if (transformed === false) return false;
+				if (transformed !== undefined) {
+					if (!this.isPluginHandlerValue(kind, transformed)) {
+						throw new TypeError(`Transformer returned a value incompatible with handler kind "${kind}".`);
+					}
+					current = transformed;
+				}
 			} catch (error) {
 				throw wrapPluginError(
 					contribution.record.plugin.name,
@@ -922,6 +935,27 @@ export class BaseClient {
 
 	private matchesPluginHandlerKind(kinds: readonly PluginHandlerKind[] | undefined, kind: PluginHandlerKind) {
 		return !kinds?.length || kinds.includes(kind);
+	}
+
+	private isPluginHandlerValue<K extends PluginHandlerKind>(
+		kind: K,
+		value: unknown,
+	): value is PluginHandlerValueByKind[K] {
+		switch (kind) {
+			case 'command':
+				return (
+					value instanceof Command ||
+					value instanceof SubCommand ||
+					value instanceof ContextMenuCommand ||
+					value instanceof EntryPointCommand
+				);
+			case 'component':
+				return value instanceof ComponentCommand && !(value instanceof ModalCommand);
+			case 'modal':
+				return value instanceof ModalCommand;
+			case 'event':
+				return (typeof value === 'object' && value !== null) || typeof value === 'function';
+		}
 	}
 
 	private createPluginLoadedMetadata<TKind extends 'commands' | 'components', TItem>(

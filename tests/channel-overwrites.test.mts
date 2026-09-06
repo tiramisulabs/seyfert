@@ -1,81 +1,104 @@
-import { describe, expect, test, vi } from 'vitest';
-import { Cache, CacheFrom, MemoryAdapter } from '../src';
-import { ChannelShorter } from '../src/common/shorters/channels';
-import { OverwriteType } from '../src/types';
+import { createMockBot, mockWorld, Routes } from '@slipher/testing';
+import { describe, expect, test } from 'vitest';
+import { Client, GatewayIntentBits, LimitedMemoryAdapter, MemoryAdapter, OverwriteType } from '../lib';
 
 describe('channel overwrites endpoint', () => {
-	const channelId = '123';
-	const overwriteId = '456';
-	const guildId = '789';
+	test.each([
+		['MemoryAdapter', MemoryAdapter],
+		['LimitedMemoryAdapter', LimitedMemoryAdapter],
+	] as const)('channel edits preserve guild ownership with %s', async (_name, Adapter) => {
+		const world = mockWorld();
+		const guild = world.registerGuild();
+		const role = world.registerRole(guild.id);
+		const channel = world.registerChannel(guild.id, {
+			overwrites: [{ id: role.id, type: 'role', allow: ['KickMembers'], deny: [] }],
+		});
+		const client = new Client();
+		const adapter = new Adapter();
+		client.setServices({ cache: { adapter } });
+		await using bot = await createMockBot({ world, client });
+		client.cache.intents = 0;
+		const raw = await client.channels.raw(channel.id, true);
+		bot.rest.intercept(Routes.editChannel, () => ({ ...raw, name: 'edited', permission_overwrites: [] }));
 
-	const createClient = () => {
-		const put = vi.fn().mockResolvedValue(undefined);
-		const del = vi.fn().mockResolvedValue(undefined);
+		await client.channels.edit(channel.id, { name: 'edited', permission_overwrites: [] });
 
-		const client: any = {};
-		client.cache = new Cache(0, new MemoryAdapter(), {}, client);
-		client.proxy = {
-			channels(id: string) {
-				expect(id).toBe(channelId);
-				return {
-					permissions(targetId: string) {
-						expect(targetId).toBe(overwriteId);
-						return {
-							put,
-							delete: del,
-						};
-					},
-				};
-			},
-		};
+		expect(await client.cache.channels?.raw(channel.id)).toMatchObject({ guild_id: guild.id, name: 'edited' });
+		expect(await client.cache.overwrites?.raw(channel.id)).toEqual([]);
+		expect(await client.cache.channels?.keys('@me')).toEqual([]);
+		expect(await client.cache.overwrites?.keys('@me')).toEqual([]);
 
-		return { client, put, del };
-	};
+		client.cache.intents = GatewayIntentBits.Guilds;
+		const overwrites = [{ id: role.id, type: OverwriteType.Role, allow: '2', deny: '0' }];
+		bot.rest.intercept(Routes.editChannel, () => ({ ...raw, name: 'pending', permission_overwrites: overwrites }));
+		await client.channels.edit(channel.id, { name: 'pending', permission_overwrites: overwrites });
+		expect(await client.cache.channels?.raw(channel.id)).toMatchObject({ name: 'edited' });
+		expect(await client.cache.overwrites?.raw(channel.id)).toEqual([]);
 
-	test('edit and delete overwrite keeps cache in sync', async () => {
-		const { client, put, del } = createClient();
-		const channelShorter = new ChannelShorter(client);
+		await client.cache.guilds?.remove(guild.id);
+		expect(adapter.scan('channel.*')).toEqual([]);
+		expect(adapter.scan('overwrite.*')).toEqual([]);
+	});
 
-		await channelShorter.editOverwrite(
-			channelId,
-			overwriteId,
+	test('edit and delete overwrite keeps the real cache and world in sync', async () => {
+		const world = mockWorld();
+		const guild = world.registerGuild({ everyonePermissions: ['ManageRoles'] });
+		const channel = world.registerChannel(guild.id);
+		const member = world.registerMember(guild.id);
+		await using bot = await createMockBot({ world });
+
+		await bot.client.channels.editOverwrite(
+			channel.id,
+			member.user.id,
 			{ allow: ['KickMembers'], deny: ['BanMembers'], type: OverwriteType.Member },
-			{ guildId, reason: 'set overwrite' },
+			{ guildId: guild.id, reason: 'set overwrite' },
 		);
 
-		const cached = await client.cache.overwrites?.raw(channelId);
-		expect(cached).toEqual([
-			{ allow: '2', deny: '4', guild_id: guildId, id: overwriteId, type: OverwriteType.Member },
+		expect(await bot.client.cache.overwrites?.raw(channel.id)).toEqual([
+			{ allow: '2', deny: '4', guild_id: guild.id, id: member.user.id, type: OverwriteType.Member },
 		]);
-		expect(put).toHaveBeenCalledWith({
-			body: { allow: '2', deny: '4', type: OverwriteType.Member },
-			reason: 'set overwrite',
+		expect(bot.world.get.channel({ id: channel.id }).overwrites).toEqual([
+			{ allow: '2', deny: '4', id: member.user.id, type: OverwriteType.Member },
+		]);
+		expect(bot.restCalls(Routes.editChannelPermissions)).toContainEqual(
+			expect.objectContaining({
+				params: { channelId: channel.id, overwriteId: member.user.id },
+				body: { allow: '2', deny: '4', type: OverwriteType.Member },
+				reason: 'set overwrite',
+			}),
+		);
+
+		await bot.client.channels.deleteOverwrite(channel.id, member.user.id, {
+			guildId: guild.id,
+			reason: 'remove overwrite',
 		});
 
-		await channelShorter.deleteOverwrite(channelId, overwriteId, { guildId, reason: 'remove overwrite' });
-
-		const afterDelete = await client.cache.overwrites?.raw(channelId);
-		expect(afterDelete ?? undefined).toBeUndefined();
-		expect(del).toHaveBeenCalledWith({ reason: 'remove overwrite' });
+		expect((await bot.client.cache.overwrites?.raw(channel.id)) ?? undefined).toBeUndefined();
+		expect(bot.world.get.channel({ id: channel.id }).overwrites).toEqual([]);
+		expect(bot.restCalls(Routes.deleteChannelPermission)).toContainEqual(
+			expect.objectContaining({
+				params: { channelId: channel.id, overwriteId: member.user.id },
+				reason: 'remove overwrite',
+			}),
+		);
 	});
+
 	test('raw channel rehydrates overwrites without mutating cached channel data', async () => {
-		const client: any = {};
-		client.cache = new Cache(0, new MemoryAdapter(), {}, client);
-		client.proxy = {
-			channels: vi.fn(),
-		};
-		const channelShorter = new ChannelShorter(client);
-		const channel = { guild_id: guildId, id: channelId, name: 'general', type: 0 };
-		const overwrites = [{ allow: '2', deny: '4', id: overwriteId, type: OverwriteType.Member }];
+		const world = mockWorld();
+		const guild = world.registerGuild();
+		const role = world.registerRole(guild.id);
+		const channel = world.registerChannel(guild.id, {
+			overwrites: [{ id: role.id, type: 'role', allow: ['KickMembers'], deny: ['BanMembers'] }],
+		});
+		await using bot = await createMockBot({ world });
 
-		await client.cache.channels?.set(CacheFrom.Rest, channelId, guildId, channel);
-		await client.cache.overwrites?.set(CacheFrom.Rest, channelId, guildId, overwrites);
+		const raw = await bot.client.channels.raw(channel.id);
+		const cachedRaw = await bot.client.cache.channels?.raw(channel.id);
 
-		const raw = await channelShorter.raw(channelId);
-		const cachedRaw = await client.cache.channels?.raw(channelId);
-
-		expect(raw).toMatchObject({ permission_overwrites: [{ guild_id: guildId, id: overwriteId }] });
+		expect(raw).toMatchObject({
+			guild_id: guild.id,
+			permission_overwrites: [{ guild_id: guild.id, id: role.id }],
+		});
 		expect(cachedRaw).not.toHaveProperty('permission_overwrites');
 	});
-
 });

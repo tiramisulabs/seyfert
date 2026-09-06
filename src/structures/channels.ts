@@ -1,5 +1,4 @@
-import type { RawFile } from '../api/shared';
-import { Attachment, PollBuilder, resolveAttachment } from '../builders';
+import { Attachment, AttachmentBuilder, PollBuilder, resolveAttachment } from '../builders';
 import type { ReturnCache } from '../cache';
 import type { Overwrites } from '../cache/resources/overwrites';
 import {
@@ -9,6 +8,7 @@ import {
 	type DirectoryChannelStructure,
 	type DMChannelStructure,
 	type ForumChannelStructure,
+	type GroupDMChannelStructure,
 	type GuildMemberStructure,
 	type GuildStructure,
 	type MediaChannelStructure,
@@ -34,6 +34,7 @@ import type { ObjectToLower, StringToNumber, ToClass } from '../common/types/uti
 import type {
 	MessageCreateBodyRequest,
 	MessageUpdateBodyRequest,
+	ResolverProps,
 	ThreadOnlyCreateBodyRequest,
 } from '../common/types/write';
 import { mix } from '../deps/mixer';
@@ -48,12 +49,12 @@ import {
 	type APIGuildMediaChannel,
 	type APIGuildStageVoiceChannel,
 	type APIGuildVoiceChannel,
+	type APIInteractionDataResolvedChannel,
 	type APINewsChannel,
 	type APITextChannel,
 	type APIThreadChannel,
 	ChannelFlags,
 	ChannelType,
-	type RESTAPIAttachment,
 	type RESTGetAPIChannelMessageReactionUsersQuery,
 	type RESTGetAPIChannelMessagesPinsQuery,
 	type RESTGetAPIChannelMessagesQuery,
@@ -66,15 +67,12 @@ import {
 	VideoQualityMode,
 } from '../types';
 import { DiscordBase } from './extra/DiscordBase';
+import { PermissionsBitField } from './extra/Permissions';
 import type { GuildMember } from './GuildMember';
 import type { GuildRole } from './GuildRole';
 
 export class BaseNoEditableChannel<T extends ChannelType> extends DiscordBase<APIChannelBase<ChannelType>> {
 	declare type: T;
-
-	constructor(client: UsingClient, data: APIChannelBase<ChannelType>) {
-		super(client, data);
-	}
 
 	static __intent__(id: '@me'): 'DirectMessages';
 	static __intent__(id: string): 'DirectMessages' | 'Guilds';
@@ -219,6 +217,7 @@ interface IChannelTypes {
 export interface BaseGuildChannel extends ObjectToLower<Omit<APIGuildChannel<ChannelType>, 'permission_overwrites'>> {}
 export class BaseGuildChannel extends BaseChannel<ChannelType> {
 	declare guildId: string;
+
 	constructor(client: UsingClient, data: APIGuildChannel<ChannelType>) {
 		const { permission_overwrites, ...rest } = data;
 		super(client, rest);
@@ -360,7 +359,7 @@ export class MessagesMethods extends DiscordBase {
 
 	static transformMessageBody<T>(
 		body: MessageCreateBodyRequest | MessageUpdateBodyRequest,
-		files: RawFile[] | undefined,
+		files: ResolverProps['files'],
 		self: UsingClient,
 	) {
 		const poll = (body as MessageCreateBodyRequest).poll;
@@ -381,6 +380,7 @@ export class MessagesMethods extends DiscordBase {
 							title: x.title,
 							description: x.description,
 							filename: x.filename,
+							is_spoiler: x.spoiler,
 						};
 					}
 					return {
@@ -389,10 +389,19 @@ export class MessagesMethods extends DiscordBase {
 					};
 				}) ?? undefined;
 		} else if (files?.length) {
-			payload.attachments = files?.map(({ filename }, i) => ({
-				id: i.toString(),
-				filename,
-			})) as RESTAPIAttachment[];
+			payload.attachments = files.map((file, i) => {
+				if (file instanceof AttachmentBuilder) return { id: i.toString(), ...resolveAttachment(file) };
+				if (file instanceof Attachment) {
+					return {
+						id: i.toString(),
+						title: file.title,
+						description: file.description,
+						filename: file.filename,
+						is_spoiler: file.spoiler,
+					};
+				}
+				return { id: i.toString(), filename: file.filename };
+			});
 		}
 		return payload as T;
 	}
@@ -404,37 +413,70 @@ export interface TextBaseGuildChannel
 @mix(MessagesMethods)
 export class TextBaseGuildChannel extends BaseGuildChannel {}
 
+export function channelFrom<T extends APIInteractionDataResolvedChannel>(
+	data: T,
+	client: UsingClient,
+): ResolvedChannel<SeyfertChannelMap[T['type'] & keyof SeyfertChannelMap]>;
+export function channelFrom(data: APIChannelBase<ChannelType>, client: UsingClient): AllChannels;
 export function channelFrom(data: APIChannelBase<ChannelType>, client: UsingClient): AllChannels {
+	let channel: AllChannels;
 	switch (data.type) {
 		case ChannelType.GuildStageVoice:
-			return Transformers.StageChannel(client, data as APIGuildChannel<ChannelType>);
+			channel = Transformers.StageChannel(client, data as APIGuildChannel<ChannelType>);
+			break;
 		case ChannelType.GuildMedia:
-			return Transformers.MediaChannel(client, data as APIGuildChannel<ChannelType>);
+			channel = Transformers.MediaChannel(client, data as APIGuildChannel<ChannelType>);
+			break;
 		case ChannelType.DM:
-			return Transformers.DMChannel(client, data);
+		case ChannelType.GroupDM:
+			channel = Transformers.DMChannel(client, data);
+			break;
 		case ChannelType.GuildForum:
-			return Transformers.ForumChannel(client, data as APIGuildChannel<ChannelType>);
+			channel = Transformers.ForumChannel(client, data as APIGuildChannel<ChannelType>);
+			break;
 		case ChannelType.AnnouncementThread:
 		case ChannelType.PrivateThread:
 		case ChannelType.PublicThread:
-			return Transformers.ThreadChannel(client, data);
+			channel = Transformers.ThreadChannel(client, data);
+			break;
 		case ChannelType.GuildDirectory:
-			return Transformers.DirectoryChannel(client, data as APIGuildChannel<ChannelType>);
+			channel = Transformers.DirectoryChannel(client, data as APIGuildChannel<ChannelType>);
+			break;
 		case ChannelType.GuildVoice:
-			return Transformers.VoiceChannel(client, data as APIGuildChannel<ChannelType>);
+			channel = Transformers.VoiceChannel(client, data as APIGuildChannel<ChannelType>);
+			break;
 		case ChannelType.GuildText:
-			return Transformers.TextGuildChannel(client, data as APIGuildChannel<ChannelType>);
+			channel = Transformers.TextGuildChannel(client, data as APIGuildChannel<ChannelType>);
+			break;
 		case ChannelType.GuildCategory:
-			return Transformers.CategoryChannel(client, data);
+			channel = Transformers.CategoryChannel(client, data);
+			break;
 		case ChannelType.GuildAnnouncement:
-			return Transformers.NewsChannel(client, data as APIGuildChannel<ChannelType>);
+			channel = Transformers.NewsChannel(client, data as APIGuildChannel<ChannelType>);
+			break;
 		default: {
 			if ('guild_id' in data) {
-				return Transformers.BaseGuildChannel(client, data as APIGuildChannel<ChannelType>);
+				channel = Transformers.BaseGuildChannel(client, data as APIGuildChannel<ChannelType>);
+			} else {
+				channel = Transformers.BaseChannel(client, data);
 			}
-			return Transformers.BaseChannel(client, data);
 		}
 	}
+	if (channel.isGuild() && 'permissions' in data && typeof data.permissions === 'string') {
+		const appPermissions =
+			'app_permissions' in data && typeof data.app_permissions === 'string'
+				? data.app_permissions
+				: 'appPermissions' in data
+					? (data.appPermissions as unknown)
+					: undefined;
+		Object.assign(channel, {
+			permissions: new PermissionsBitField(BigInt(data.permissions)),
+			...(typeof appPermissions === 'string'
+				? { appPermissions: new PermissionsBitField(BigInt(appPermissions)) }
+				: {}),
+		});
+	}
+	return channel;
 }
 
 export interface TopicableGuildChannel extends BaseChannel<ChannelType> {}
@@ -709,6 +751,7 @@ export type AllTextableChannels =
 	| TextGuildChannelStructure
 	| VoiceChannelStructure
 	| DMChannelStructure
+	| GroupDMChannelStructure
 	| NewsChannelStructure
 	| ThreadChannelStructure;
 export type AllGuildTextableChannels =
@@ -717,13 +760,18 @@ export type AllGuildTextableChannels =
 	| NewsChannelStructure
 	| ThreadChannelStructure;
 export type AllGuildVoiceChannels = VoiceChannelStructure | StageChannelStructure;
-export type AllNamedChannels = AllGuildChannels | BaseGuildChannelStructure | (BaseChannelStructure & { name: string });
+export type AllNamedChannels =
+	| AllGuildChannels
+	| BaseGuildChannelStructure
+	| (GroupDMChannelStructure & { name: string })
+	| (BaseChannelStructure & { name: string });
 
 export type AllChannels =
 	| BaseChannelStructure
 	| BaseGuildChannelStructure
 	| TextGuildChannelStructure
 	| DMChannelStructure
+	| GroupDMChannelStructure
 	| VoiceChannelStructure
 	| MediaChannelStructure
 	| ForumChannelStructure
@@ -732,6 +780,24 @@ export type AllChannels =
 	| NewsChannelStructure
 	| DirectoryChannelStructure
 	| StageChannelStructure;
+
+export interface ResolvedChannelPermissions {
+	/** Computed permissions for the invoking user in the resolved guild channel. */
+	permissions: PermissionsBitField;
+	/** Computed permissions for the bot user in the resolved guild channel. */
+	appPermissions?: PermissionsBitField;
+}
+
+type WithResolvedChannelPermissions<
+	T extends AllChannels,
+	Permissions extends Partial<ResolvedChannelPermissions>,
+> = T extends AllGuildChannels | BaseGuildChannelStructure ? T & Permissions : T;
+
+export type ResolvedChannel<T extends AllChannels = SeyfertChannelMap[keyof SeyfertChannelMap]> =
+	WithResolvedChannelPermissions<T, ResolvedChannelPermissions>;
+
+export type MaybeResolvedChannel<T extends AllChannels = SeyfertChannelMap[keyof SeyfertChannelMap]> =
+	WithResolvedChannelPermissions<T, Partial<ResolvedChannelPermissions>>;
 
 export type GuildChannelTypes =
 	| ChannelType.GuildAnnouncement

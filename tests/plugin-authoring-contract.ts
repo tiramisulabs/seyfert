@@ -1,9 +1,15 @@
 import {
-	ApplicationCommandOptionType,
-	ApplicationCommandType,
 	type AllChannels,
 	type AllGuildChannels,
 	type AllNamedChannels,
+	type APIEmbed,
+	type APISelectMenuOption,
+	type APIStringSelectComponent,
+	ApiHandler,
+	type ApiHandlerOptions,
+	type ApiRequestOptions,
+	ApplicationCommandOptionType,
+	ApplicationCommandType,
 	type Attachment,
 	type AutocompleteCallback,
 	type AutocompleteInteraction,
@@ -12,132 +18,130 @@ import {
 	type BaseGuildChannelStructure,
 	type BaseInteraction,
 	BaseResource,
-	ApiHandler,
 	type BulkGetKey,
 	type Cache,
+	type CallbackEventHandler,
 	Client,
-	Command,
-	Collectors,
-	ComponentCommand,
-	type CommandMetadata,
-	type CommandContext,
-	type ComponentCollectorStopReason,
+	type ClientEvent,
+	type ClientMiddlewares,
+	type ClientOptions,
+	type Collection,
 	type CollectorRunParameters,
+	Collectors,
+	Command,
+	type CommandContext,
+	type CommandMetadata,
+	type ComponentCollectorStopReason,
+	ComponentCommand,
+	type ComponentContext,
 	ContextMenuCommand,
+	calculateUserDefaultAvatarIndex,
+	type config,
+	createEvent,
 	createIntegerOption,
 	createMiddleware,
 	createNumberOption,
-	createPluginFactory,
-	defineGroups,
 	createPlugin,
-	createStringOption,
+	createPluginFactory,
 	createSharedKey,
+	createStringOption,
 	Declare,
-	definePlugins,
-	type DMChannelStructure,
 	type DirectoryChannelStructure,
+	type DMChannelStructure,
+	defineGroups,
+	definePlugins,
+	Embed,
+	type EntryPointCommand,
+	type EntryPointContext,
+	Formatter,
+	type GatewayDispatchPayload,
 	GatewayIntentBits,
 	GatewayOpcodes,
-	type GatewayDispatchPayload,
-	type InferMiddlewares,
-	type GuildBasedResource,
-	type GuildRelatedResource,
-	Middlewares,
-	middlewares,
 	type GatewaySendPayload,
+	Group,
+	type GroupDMChannelStructure,
+	Groups,
+	GroupsT,
 	GuildBan,
+	type GuildBasedResource,
 	GuildMember,
 	type GuildMemberStructure,
+	type GuildRelatedResource,
 	type GuildRoleStructure,
+	type InferMiddlewares,
 	type InteractionGuildMemberStructure,
 	type LangInstance,
 	LangsHandler,
-	type ComponentContext,
-	type EntryPointContext,
-	EntryPointCommand,
-	Embed,
-	Formatter,
-	Group,
-	Groups,
-	GroupsT,
+	LimitedCollection,
+	type LimitedCollectionData,
 	type MenuCommandContext,
 	type MessageStructure,
-	type TextGuildChannelStructure,
 	type MetadataMiddleware,
-	type ModalContext,
 	type MiddlewareContext,
-	type OnAutocompleteErrorCallback,
-	Options,
+	Middlewares,
+	ModalCommand,
+	type ModalContext,
+	type ModalSubmitInteraction,
+	middlewares,
 	OAuth2Scopes,
-	type PluginContextOf,
+	type OnAutocompleteErrorCallback,
+	type OptionResolvedWithValue,
+	Options,
+	type ParseClient,
+	type PermissionFlagsBits,
+	type PluginCommandObserver,
+	type PluginCommandObserverContext,
 	type PluginContextInteraction,
 	type PluginContextMapOf,
+	type PluginContextOf,
 	type PluginDiagnosticCode,
 	type PluginExtensionOf,
 	type PluginGatewayDispatchInterceptor,
 	type PluginGatewayDispatchMeta,
 	type PluginGatewayDispatchNext,
 	type PluginHandlerKind,
+	type PluginHandlerOptions,
 	type PluginLoadedMetadata,
 	type PluginMiddlewaresMapOf,
-	type PluginCommandObserver,
-	type PluginCommandObserverContext,
 	PluginOrder,
 	type PluginOrderOpt,
-	type SeyfertPluginHooks,
 	type PluginUsingClient,
-	PermissionFlagsBits,
-	type ReturnCache,
-	type ReturnOptionsTypes,
-	type RegisteredPluginMiddlewares,
-	type RegisteredPluginShared,
-	type ResolvedRegisteredMiddlewares,
-	calculateUserDefaultAvatarIndex,
+	PresenceUpdateStatus,
 	RadioGroup,
 	RadioGroupOption,
-	SeyfertError,
-	StringSelectMenu,
-	StringSelectOption,
-	SubCommand,
-	type Webhook,
-	type ClientMiddlewares,
-	type OptionResolvedWithValue,
-	type SharedKey,
-	type SeyfertPlugin,
-	type SeyfertPluginApi,
-	type SeyfertPluginOptions,
-	type SeyfertErrorCode,
-	type SemverRange,
-	type ShardManager,
-	WorkerManager,
-	type config,
-	ModalCommand,
-	type WebhookMessage,
-	type WebhookMessageStructure,
-	type APISelectMenuOption,
-	type APIStringSelectComponent,
-	type APIEmbed,
-	type ApiHandlerOptions,
-	type ApiRequestOptions,
-	type CallbackEventHandler,
-	type ClientOptions,
-	type ClientEvent,
-	type ParseClient,
+	type RegisteredPluginMiddlewares,
+	type RegisteredPluginShared,
+	type ResolvedChannel,
+	type ResolvedRegisteredMiddlewares,
 	type RestArgumentsRequiredQuery,
-	type StringSelectMenuInteraction,
-	type Collection,
-	LimitedCollection,
-	type LimitedCollectionData,
-	type UsingClient,
-	type UserAvatarDefault,
-	type UserStructure,
+	type ReturnCache,
+	type ReturnOptionsTypes,
 	type RuntimeConfig,
 	type RuntimeConfigHTTP,
+	type SemverRange,
+	SeyfertError,
+	type SeyfertErrorCode,
+	type SeyfertPlugin,
+	type SeyfertPluginApi,
+	type SeyfertPluginHooks,
+	type SeyfertPluginOptions,
+	type ShardManager,
+	type SharedKey,
+	StringSelectMenu,
+	type StringSelectMenuInteraction,
+	StringSelectOption,
+	SubCommand,
+	type TextGuildChannelStructure,
+	type UserAvatarDefault,
+	type UserStructure,
+	type UsingClient,
 	type VoiceChannelStructure,
 	type VoiceStateStructure,
-	PresenceUpdateStatus,
-	createEvent,
-	type ModalSubmitInteraction,
+	type Webhook,
+	type WebhookMessage,
+	type WebhookMessageStructure,
+	type WorkerClient,
+	WorkerManager,
 } from 'seyfert';
 import type { APIRoutes } from '../lib/api/Routes';
 import type { BaseClientOptions, ServicesOptions, StartOptions } from '../lib/client/base';
@@ -160,6 +164,10 @@ import type { ShardManagerOptions, WorkerManagerOptions } from '../lib/websocket
 import type { ManagerAllowConnect, ManagerAllowConnectResharding } from '../lib/websocket/discord/workermanager';
 
 declare function expectType<T>(value: T): void;
+declare const publicWorkerClient: WorkerClient;
+declare const publicGatewayPayload: GatewaySendPayload;
+expectType<Promise<boolean>>(publicWorkerClient.sendGatewayPayload(0, publicGatewayPayload));
+
 type IsAny<T> = 0 extends 1 & T ? true : false;
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
 	? (<T>() => T extends B ? 1 : 2) extends <T>() => T extends A ? 1 : 2
@@ -260,10 +268,11 @@ const cacheBulkGetKeys = [
 	['users', 'user-id'],
 	['roles', 'role-id'],
 	['members', 'member-id', 'guild-id'],
+	['presences', 'user-id', 'guild-id'],
 ] as const satisfies readonly BulkGetKey[];
 const cacheBulkGetResult = cacheContract.bulkGet(cacheBulkGetKeys);
 type CacheBulkGetResult = Awaited<typeof cacheBulkGetResult>;
-expectType<true>(true as Equal<keyof CacheBulkGetResult, 'users' | 'roles' | 'members'>);
+expectType<true>(true as Equal<keyof CacheBulkGetResult, 'users' | 'roles' | 'members' | 'presences'>);
 // @ts-expect-error tuple-aware bulkGet results only include requested resource keys.
 expectType<CacheBulkGetResult['channels']>([]);
 declare const dynamicBulkGetKeys: BulkGetKey[];
@@ -288,6 +297,23 @@ cacheContract.overwrites?.values(wildcardCacheSelector);
 cacheContract.members?.values(cacheResourceSelector);
 cacheContract.bans?.values(cacheResourceSelector);
 cacheContract.voiceStates?.values(wildcardCacheSelector);
+cacheContract.presences?.get('user-id', 'guild-id');
+cacheContract.presences?.flush('guild-id');
+// @ts-expect-error Presence cache reads require the guild that owns the entry.
+cacheContract.presences?.get('user-id');
+// @ts-expect-error Guild-based presence flushes require an explicit guild selector.
+cacheContract.presences?.flush();
+// @ts-expect-error Bulk presence reads require a guild ID.
+const invalidPresenceBulkGetKey = ['presences', 'user-id'] as const satisfies BulkGetKey;
+
+declare const memberPresenceShorter: MemberShorter;
+memberPresenceShorter.presence('guild-id', 'user-id');
+// @ts-expect-error MemberShorter.presence requires both guild and user IDs.
+memberPresenceShorter.presence('user-id');
+declare const isolatedUser: UserStructure;
+isolatedUser.presence('guild-id');
+// @ts-expect-error A User has no implicit guild for presence lookup.
+isolatedUser.presence();
 
 type ChannelPinResult = Awaited<ReturnType<Client['channels']['pins']>>;
 expectType<true>(true as Equal<ChannelPinResult['items'][number]['pinnedAt'], number>);
@@ -817,6 +843,9 @@ const customWorkerManagerOptions = {
 expectType<WorkerManagerOptions>(customWorkerManagerOptions);
 new WorkerManager(customWorkerManagerOptions);
 
+type CustomWorkerManagerRuntimeOptions = Extract<WorkerManager['options'], { mode: 'custom' }>;
+expectType<CustomWorkerManagerRuntimeOptions['workerEnv']>(undefined);
+
 const customWorkerManagerOptionsWithPath = {
 	mode: 'custom',
 	path: 'worker.js',
@@ -837,9 +866,15 @@ const threadedWorkerManagerOptions = {
 	token: 'token',
 	intents: GatewayIntentBits.Guilds,
 	info: workerManagerInfo,
+	workerEnv: {
+		DATABASE_URL: 'postgres://localhost/seyfert',
+	},
 } satisfies WorkerManagerOptions;
 expectType<WorkerManagerOptions>(threadedWorkerManagerOptions);
 new WorkerManager(threadedWorkerManagerOptions);
+
+type NativeWorkerManagerRuntimeOptions = Exclude<WorkerManager['options'], { mode: 'custom' }>;
+expectType<NativeWorkerManagerRuntimeOptions['workerEnv']>(undefined);
 
 const defaultThreadedWorkerManagerOptions = {
 	path: 'worker.js',
@@ -856,9 +891,24 @@ const clusteredWorkerManagerOptions = {
 	token: 'token',
 	intents: GatewayIntentBits.Guilds,
 	info: workerManagerInfo,
+	workerEnv: {
+		DATABASE_URL: 'postgres://localhost/seyfert',
+	},
 } satisfies WorkerManagerOptions;
 expectType<WorkerManagerOptions>(clusteredWorkerManagerOptions);
 new WorkerManager(clusteredWorkerManagerOptions);
+
+expectType<WorkerManagerOptions>({
+	mode: 'threads',
+	path: 'worker.js',
+	token: 'token',
+	intents: GatewayIntentBits.Guilds,
+	info: workerManagerInfo,
+	workerEnv: {
+		// @ts-expect-error Worker environment values must be strings.
+		PORT: 3000,
+	},
+});
 
 // @ts-expect-error custom worker mode requires an adapter.
 expectType<WorkerManagerOptions>({
@@ -1022,9 +1072,62 @@ const economy = createPlugin({
 		// @ts-expect-error handlers.create was removed before release
 		api.handlers.create((_Ctor, next) => next());
 		api.handlers.transform((instance, metadata) => {
-			expectType<PluginHandlerKind>(metadata.kind);
+			expectType<Command | SubCommand | ContextMenuCommand | EntryPointCommand>(instance);
+			expectType<'command'>(metadata.kind);
+			if (instance instanceof Command || instance instanceof ContextMenuCommand) {
+				expectType<boolean | undefined>(instance.onlyDeveloper);
+				if (instance.onlyDeveloper) return false;
+			}
 			return instance;
 		}, { kinds: ['command'], order: PluginOrder.After });
+		api.handlers.transform((instance, metadata) => {
+			expectType<Command | SubCommand | ContextMenuCommand | EntryPointCommand | ComponentCommand>(instance);
+			expectType<'command' | 'component'>(metadata.kind);
+			if (metadata.kind === 'command') return new ContractCommand();
+			return new ContractComponent();
+		}, { kinds: ['command', 'component'] });
+		// @ts-expect-error command/component transformers cannot return modals
+		api.handlers.transform(() => {
+			return new ContractModal();
+		}, { kinds: ['command', 'component'] });
+		api.handlers.transform((instance, metadata) => {
+			expectType<object>(instance);
+			expectType<PluginHandlerKind>(metadata.kind);
+			return metadata.kind === 'event' ? false : instance;
+		});
+		api.handlers.transform((instance, metadata) => {
+			expectType<object>(instance);
+			expectType<PluginHandlerKind>(metadata.kind);
+			return instance;
+		}, { kinds: [] });
+		const dynamicHandlerKinds: readonly PluginHandlerKind[] = ['command'];
+		api.handlers.transform((instance, metadata) => {
+			expectType<object>(instance);
+			expectType<PluginHandlerKind>(metadata.kind);
+			return instance;
+		}, { kinds: dynamicHandlerKinds });
+		const broadHandlerOptions: PluginHandlerOptions = { kinds: ['command'] };
+		api.handlers.transform((instance, metadata) => {
+			expectType<object>(instance);
+			expectType<PluginHandlerKind>(metadata.kind);
+			return instance;
+		}, broadHandlerOptions);
+		const orderedHandlerOptions: PluginHandlerOptions = { order: PluginOrder.After };
+		api.handlers.transform((instance, metadata) => {
+			expectType<object>(instance);
+			expectType<PluginHandlerKind>(metadata.kind);
+			return instance;
+		}, orderedHandlerOptions);
+		const optionalHandlerOptions = undefined as PluginHandlerOptions | undefined;
+		api.handlers.transform((instance, metadata) => {
+			expectType<object>(instance);
+			expectType<PluginHandlerKind>(metadata.kind);
+			return instance;
+		}, optionalHandlerOptions);
+		// @ts-expect-error command transformers cannot replace commands with components
+		api.handlers.transform(() => {
+			return new ContractComponent();
+		}, { kinds: ['command'] });
 		api.modals.remove('contract-modal');
 		const disposeCommandsLoaded = api.events.once('commandsLoaded', metadata => {
 			expectType<number>(metadata.total);
@@ -1301,6 +1404,14 @@ const transitiveOnlyPlugins = definePlugins(combinedAtomic);
 const emptyPlugins = definePlugins();
 
 declare module 'seyfert' {
+	interface Command {
+		onlyDeveloper?: boolean;
+	}
+
+	interface ContextMenuCommand {
+		onlyDeveloper?: boolean;
+	}
+
 	interface SeyfertRegistry {
 		plugins: typeof plugins;
 		client: ParseClient<Client<true>>;
@@ -1390,6 +1501,12 @@ collectorClient.collectors.create({
 const exportedCollectorsContract = new Collectors();
 expectType<Collectors>(exportedCollectorsContract);
 expectType<MessageStructure>(undefined as never as CollectorRunParameters<'messageCreate'>);
+expectType<CollectorRunParameters<'commandsLoaded'>>(
+	undefined as never as [CommandsLoadedCallbackParams[0]],
+);
+expectType<[CommandsLoadedCallbackParams[0]]>(
+	undefined as never as CollectorRunParameters<'commandsLoaded'>,
+);
 // @ts-expect-error collector run parameters are keyed by camelCase event names.
 type ScreamingCollectorRunParameters = CollectorRunParameters<'MESSAGE_CREATE'>;
 // @ts-expect-error typo alias is intentionally not exported.
@@ -1406,8 +1523,8 @@ expectType<
 	]
 >(undefined as never as VoiceChannelStatusUpdatePayload);
 
-expectType<AllChannels[]>(modalContext().getChannels('channels', true));
-expectType<AllChannels[] | void>(modalContext().getChannels('channels'));
+expectType<ResolvedChannel[]>(modalContext().getChannels('channels', true));
+expectType<ResolvedChannel[] | void>(modalContext().getChannels('channels'));
 expectType<GuildRoleStructure[]>(modalContext().getRoles('roles', true));
 expectType<GuildRoleStructure[] | void>(modalContext().getRoles('roles'));
 expectType<UserStructure[]>(modalContext().getUsers('users', true));
@@ -1435,7 +1552,10 @@ expectType<Promise<GuildMemberStructure | undefined>>(commandContext().fetchMemb
 expectType<ReturnCache<GuildMemberStructure | undefined>>(commandContext().fetchMember('cache'));
 
 type GuildCommandChannel = AllGuildChannels | BaseGuildChannelStructure;
-type NamedChannel = GuildCommandChannel | (BaseChannelStructure & { name: string });
+type NamedChannel =
+	| GuildCommandChannel
+	| (GroupDMChannelStructure & { name: string })
+	| (BaseChannelStructure & { name: string });
 expectType<true>(true as Equal<AllNamedChannels, NamedChannel>);
 expectType<true>(true as Equal<AllGuildChannels extends GuildCommandChannel ? true : false, true>);
 expectType<true>(true as Equal<BaseGuildChannelStructure extends GuildCommandChannel ? true : false, true>);

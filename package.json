@@ -1,8 +1,12 @@
 {
 	"name": "seyfert",
-	"version": "5.0.0",
+	"version": "5.1.0",
 	"description": "The most advanced framework for discord bots",
 	"packageManager": "pnpm@11.11.0",
+	"workspaces": [
+		"tests",
+		"tests/local-seyfert"
+	],
 	"main": "./lib/index.js",
 	"module": "./lib/index.js",
 	"types": "./lib/index.d.ts",
@@ -11,12 +15,14 @@
 	],
 	"scripts": {
 		"build": "tsc --outDir ./lib",
+		"bench:limited-cache": "pnpm run build && node --expose-gc ./benchmarks/limited-cache.mjs",
 		"prepublishOnly": "npm run build",
 		"prepare": "npm run build && husky",
 		"lint": "biome lint --write ./src",
 		"format": "biome format --write ./src",
 		"check-h": "biome check --write ./src",
-		"check": "biome check --verbose --write --no-errors-on-unmatched ./src",
+		"check": "biome check --verbose --no-errors-on-unmatched ./src ./tests ./package.json ./tsconfig.json ./biome.json ./commitlint.config.js",
+		"check:write": "biome check --verbose --write --no-errors-on-unmatched ./src ./tests ./package.json ./tsconfig.json ./biome.json ./commitlint.config.js",
 		"test:types": "pnpm run build && tsc --noEmit --project tests/tsconfig.json",
 		"test": "pnpm run test:types && vitest run --config ./tests/vitest.config.mts ./tests/"
 	},

@@ -3,7 +3,7 @@ import type { RestArgumentsNoBody } from '../api';
 
 export interface VoiceRoutes {
 	voice: {
-		region: {
+		regions: {
 			get(args?: RestArgumentsNoBody): Promise<RESTGetAPIVoiceRegionsResult>;
 		};
 	};

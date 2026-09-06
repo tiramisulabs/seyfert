@@ -28,6 +28,14 @@ Compile-time contract files are real tests even though they do not use Vitest.
 `tests/tsconfig.json` maps `seyfert` to the freshly built `lib/index.d.ts`, so
 type verification checks the consumer-facing declaration surface.
 
+Runtime suites load `tests/setup.mts`, which resets `@slipher/testing` IDs
+before every test. Use its factories and mock bot for observable Discord-facing
+flows; keep focused Vitest units for internal algorithms that do not cross that
+boundary. The private workspace-linked `local-seyfert` package makes the
+toolkit's `seyfert` peer resolve to this checkout's freshly built `lib/` under
+pnpm, Bun, and Deno. Deno uses pnpm's installed graph in manual node-modules
+mode. Run the test matrix from the repository root.
+
 For a new regression:
 
 - prefer adding it to the owning file rather than creating a broad
@@ -41,12 +49,16 @@ For a new regression:
 
 ## Commands
 
-The repository pins `pnpm@11.11.0`. CI uses Node 22 and runs the suite under
-Node, Bun, and Deno.
+The repository pins `pnpm@11.11.0` and Bun 1.4.0. CI uses Bun for tooling and
+runs type contracts once in the tooling job before exercising the runtime suite
+under Node 22, Bun, and Deno.
 
 ```sh
 # Reproduce the Node dependency graph used by CI
 pnpm install --frozen-lockfile
+
+# Reproduce the Bun tooling dependency graph used by CI
+HUSKY=0 bun install --frozen-lockfile --ignore-scripts
 
 # Build JS and declarations
 pnpm run build
@@ -72,12 +84,12 @@ When a portability change requires local Bun/Deno parity, mirror
 
 ```sh
 # Bun
-HUSKY=0 bun install --ignore-scripts
+HUSKY=0 bun install --frozen-lockfile --ignore-scripts
 bun run build
 bun --bun ./node_modules/vitest/vitest.mjs run --config ./tests/vitest.config.mts ./tests/
 
 # Deno
-HUSKY=0 deno install
+HUSKY=0 pnpm install --frozen-lockfile
 deno run -A npm:typescript/tsc --outDir ./lib
 deno run -A npm:vitest run --config ./tests/vitest.config.mts ./tests/
 ```
@@ -101,9 +113,9 @@ execution order. Gateway/custom-event collectors in `src/client/collectors.ts`
 and component collectors in `ComponentHandler` are separate systems; test the
 one owned by the changed path.
 
-The repository scripts `check`, `check-h`, `lint`, and `format` all use
-`--write`; they mutate source. Use the direct Biome command above when only a
-read-only check is intended.
+The repository script `check` is read-only. `check:write`, `check-h`, `lint`,
+and `format` use `--write` and mutate source. Use the direct Biome command above
+when a narrower read-only check is intended.
 
 ## Test code style
 

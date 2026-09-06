@@ -2,7 +2,7 @@ import type { Snowflake } from '..';
 import type { APIEntitlement, APISKU, APISubscription } from '../payloads';
 
 /**
- * https://discord.com/developers/docs/monetization/entitlements#list-entitlements
+ * https://docs.discord.com/developers/monetization/entitlements#list-entitlements
  */
 export interface RESTGetAPIEntitlementsQuery {
 	/**
@@ -43,17 +43,17 @@ export interface RESTGetAPIEntitlementsQuery {
 }
 
 /**
- * https://discord.com/developers/docs/monetization/entitlements#list-entitlements
+ * https://docs.discord.com/developers/monetization/entitlements#list-entitlements
  */
 export type RESTGetAPIEntitlementsResult = APIEntitlement[];
 
 /**
- * https://discord.com/developers/docs/resources/entitlement#get-entitlement
+ * https://docs.discord.com/developers/resources/entitlement#get-entitlement
  */
 export type RESTGetAPIEntitlementResult = APIEntitlement;
 
 /**
- * https://discord.com/developers/docs/monetization/entitlements#create-test-entitlement
+ * https://docs.discord.com/developers/monetization/entitlements#create-test-entitlement
  */
 export interface RESTPostAPIEntitlementBody {
 	/**
@@ -71,12 +71,12 @@ export interface RESTPostAPIEntitlementBody {
 }
 
 /**
- * https://discord.com/developers/docs/monetization/entitlements#create-test-entitlement
+ * https://docs.discord.com/developers/monetization/entitlements#create-test-entitlement
  */
 export type RESTPostAPIEntitlementResult = Partial<Omit<APIEntitlement, 'ends_at' | 'starts_at'>>;
 
 /**
- * https://discord.com/developers/docs/monetization/entitlements#create-test-entitlement
+ * https://docs.discord.com/developers/monetization/entitlements#create-test-entitlement
  */
 export enum EntitlementOwnerType {
 	Guild = 1,
@@ -84,17 +84,17 @@ export enum EntitlementOwnerType {
 }
 
 /**
- * https://discord.com/developers/docs/monetization/entitlements#delete-test-entitlement
+ * https://docs.discord.com/developers/monetization/entitlements#delete-test-entitlement
  */
 export type RESTDeleteAPIEntitlementResult = undefined;
 
 /**
- * https://discord.com/developers/docs/monetization/skus#list-skus
+ * https://docs.discord.com/developers/monetization/skus#list-skus
  */
 export type RESTGetAPISKUsResult = APISKU[];
 
 /**
- * https://discord.com/developers/docs/monetization/entitlements#consume-an-entitlement
+ * https://docs.discord.com/developers/monetization/entitlements#consume-an-entitlement
  */
 export type RESTPostAPIEntitlementConsumeResult = undefined;
 

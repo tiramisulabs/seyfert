@@ -38,17 +38,18 @@ import type {
 import type { ModalSubmitInteraction } from '../structures';
 import { ComponentType, MessageFlags, type RESTGetAPIGuildQuery } from '../types';
 
+// Explicit variance avoids resolving middleware metadata while comparing narrowed interaction contexts.
 export interface ComponentContext<
-	Type extends keyof ContextComponentCommandInteractionMap = keyof ContextComponentCommandInteractionMap,
-	M extends keyof ResolvedRegisteredMiddlewares = never,
-	StringSelectValues extends string[] = string[],
+	out Type extends keyof ContextComponentCommandInteractionMap = keyof ContextComponentCommandInteractionMap,
+	in M extends keyof ResolvedRegisteredMiddlewares<M> = never,
+	out StringSelectValues extends string[] = string[],
 > extends BaseContext,
 		ExtendContext {}
 
 export class ComponentContext<
-	Type extends keyof ContextComponentCommandInteractionMap,
-	M extends keyof ResolvedRegisteredMiddlewares = never,
-	StringSelectValues extends string[] = string[],
+	out Type extends keyof ContextComponentCommandInteractionMap,
+	in M extends keyof ResolvedRegisteredMiddlewares<M> = never,
+	out StringSelectValues extends string[] = string[],
 > extends BaseContext {
 	/**
 	 * Creates a new instance of the ComponentContext class.
@@ -284,9 +285,9 @@ export interface ContextComponentCommandInteractionMap<StringSelectValues extend
 }
 
 export interface GuildComponentContext<
-	Type extends keyof ContextComponentCommandInteractionMap,
-	M extends keyof ResolvedRegisteredMiddlewares = never,
-	StringSelectValues extends string[] = string[],
+	out Type extends keyof ContextComponentCommandInteractionMap,
+	in M extends keyof ResolvedRegisteredMiddlewares<M> = never,
+	out StringSelectValues extends string[] = string[],
 > extends Omit<MakeRequired<ComponentContext<Type, M, StringSelectValues>, 'guildId' | 'member'>, 'guild' | 'me'> {
 	guild(mode?: 'rest' | 'flow'): Promise<GuildStructure<'cached' | 'api'>>;
 	guild(mode: 'cache'): ReturnCache<GuildStructure<'cached'> | undefined>;

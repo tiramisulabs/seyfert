@@ -49,7 +49,7 @@ describe('Logger file output', () => {
 		tempDir = undefined;
 	});
 
-	test('caches an existing log directory after the first file write', () => {
+	test('caches an existing log directory and clears pending file streams', async () => {
 		cwd = process.cwd();
 		tempDir = mkdtempSync(join(tmpdir(), 'seyfert-logger-'));
 		process.chdir(tempDir);
@@ -67,6 +67,10 @@ describe('Logger file output', () => {
 		logger.info('hello');
 
 		expect(statics.createdDir).toBe(true);
+
+		await Logger.clearLogs();
+
+		expect(statics.streams).toEqual({});
 	});
 });
 

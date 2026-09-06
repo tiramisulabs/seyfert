@@ -47,7 +47,7 @@ Framework validation/runtime errors use `SeyfertError` from
 ## Formatting authority
 
 `biome.json` governs `src/**`: tabs (width 2), single quotes, semicolons,
-120-character lines, CRLF, arrow parentheses only when needed, and organized
+120-character lines, LF, arrow parentheses only when needed, and organized
 imports. Recommended rules are disabled; the only error-level lint rule is
 `useImportType`. Do not attribute other recommended rules to this repository.
 

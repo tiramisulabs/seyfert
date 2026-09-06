@@ -2,17 +2,17 @@ import type { Snowflake } from '..';
 import type { APIEmoji } from '../payloads';
 
 /**
- * https://discord.com/developers/docs/resources/emoji#list-guild-emojis
+ * https://docs.discord.com/developers/resources/emoji#list-guild-emojis
  */
 export type RESTGetAPIGuildEmojisResult = APIEmoji[];
 
 /**
- * https://discord.com/developers/docs/resources/emoji#get-guild-emoji
+ * https://docs.discord.com/developers/resources/emoji#get-guild-emoji
  */
 export type RESTGetAPIGuildEmojiResult = APIEmoji;
 
 /**
- * https://discord.com/developers/docs/resources/emoji#create-guild-emoji-json-params
+ * https://docs.discord.com/developers/resources/emoji#create-guild-emoji-json-params
  */
 export interface RESTPostAPIGuildEmojiJSONBody {
 	/**
@@ -22,7 +22,7 @@ export interface RESTPostAPIGuildEmojiJSONBody {
 	/**
 	 * The 128x128 emoji image
 	 *
-	 * https://discord.com/developers/docs/reference#image-data
+	 * https://docs.discord.com/developers/reference#image-data
 	 */
 	image: string;
 	/**
@@ -32,12 +32,12 @@ export interface RESTPostAPIGuildEmojiJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/emoji#create-guild-emoji
+ * https://docs.discord.com/developers/resources/emoji#create-guild-emoji
  */
 export type RESTPostAPIGuildEmojiResult = APIEmoji;
 
 /**
- * https://discord.com/developers/docs/resources/emoji#modify-guild-emoji
+ * https://docs.discord.com/developers/resources/emoji#modify-guild-emoji
  */
 export interface RESTPatchAPIGuildEmojiJSONBody {
 	/**
@@ -51,11 +51,11 @@ export interface RESTPatchAPIGuildEmojiJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/emoji#modify-guild-emoji
+ * https://docs.discord.com/developers/resources/emoji#modify-guild-emoji
  */
 export type RESTPatchAPIGuildEmojiResult = APIEmoji;
 
 /**
- * https://discord.com/developers/docs/resources/emoji#delete-guild-emoji
+ * https://docs.discord.com/developers/resources/emoji#delete-guild-emoji
  */
 export type RESTDeleteAPIGuildEmojiResult = undefined;

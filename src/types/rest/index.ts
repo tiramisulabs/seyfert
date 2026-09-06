@@ -45,7 +45,7 @@ export type GuildScheduledEventCoverFormat = Exclude<ImageFormat, ImageFormat.GI
 export type GuildMemberBannerFormat = Exclude<ImageFormat, ImageFormat.Lottie>;
 
 /**
- * https://discord.com/developers/docs/topics/opcodes-and-status-codes#json-json-error-codes
+ * https://docs.discord.com/developers/topics/opcodes-and-status-codes#json-json-error-codes
  */
 export enum RESTJSONErrorCodes {
 	GeneralError = 0,
@@ -68,6 +68,7 @@ export enum RESTJSONErrorCodes {
 	UnknownWebhookService,
 
 	UnknownSession = 10_020,
+	UnknownAsset,
 
 	UnknownBan = 10_026,
 	UnknownSKU,
@@ -103,6 +104,12 @@ export enum RESTJSONErrorCodes {
 
 	UnknownTag = 10_087,
 
+	UnknownSound = 10_097,
+
+	UnknownInviteTargetUsersJob = 10_124,
+
+	UnknownInviteTargetUsers = 10_129,
+
 	BotsCannotUseThisEndpoint = 20_001,
 	OnlyBotsCanUseThisEndpoint,
 
@@ -110,7 +117,10 @@ export enum RESTJSONErrorCodes {
 
 	NotAuthorizedToPerformThisActionOnThisApplication = 20_012,
 
+	ThisActionRequiresAPremiumSubscription = 20_015,
+
 	ActionCannotBePerformedDueToSlowmodeRateLimit = 20_016,
+	/** @deprecated This error code is no longer documented by Discord. */
 	TheMazeIsntMeantForYou,
 	OnlyTheOwnerOfThisAccountCanPerformThisAction,
 
@@ -161,6 +171,8 @@ export enum RESTJSONErrorCodes {
 
 	MaximumNumberOfGuildWidgetSettingsUpdatesHasBeenReached = 30_042,
 
+	MaximumNumberOfSoundboardSoundsReached = 30_045,
+
 	MaximumNumberOfEditsToMessagesOlderThanOneHourReached = 30_046,
 	MaximumNumberOfPinnedThreadsInForumHasBeenReached,
 	MaximumNumberOfTagsInForumHasBeenReached,
@@ -182,7 +194,12 @@ export enum RESTJSONErrorCodes {
 	FeatureTemporarilyDisabledServerSide,
 	UserBannedFromThisGuild,
 
+	OnlyOneChannelCanHaveAParentIdModifiedAtATime = 40_009,
+
 	ConnectionHasBeenRevoked = 40_012,
+
+	OnlyConsumableSKUsCanBeConsumed = 40_018,
+	CanOnlyDeleteSandboxEntitlements,
 
 	TargetUserIsNotConnectedToVoice = 40_032,
 	ThisMessageWasAlreadyCrossposted,
@@ -201,6 +218,8 @@ export enum RESTJSONErrorCodes {
 	TagRequiredToCreateAForumPostInThisChannel,
 
 	AnEntitlementHasAlreadyBeenGrantedForThisResource = 40_074,
+
+	MaximumNumberOfFollowUpMessagesReached = 40_094,
 
 	CloudflareIsBlockingYourRequest = 40_333,
 
@@ -275,15 +294,23 @@ export enum RESTJSONErrorCodes {
 	ServerNeedsMoreBoostsToPerformThisAction = 50_101,
 
 	RequestBodyContainsInvalidJSON = 50_109,
+	ProvidedFileIsInvalid,
+
+	ProvidedFileTypeIsInvalid = 50_123,
+	ProvidedFileDurationExceedsMaximumOf5Point2Seconds,
 
 	OwnerCannotBePendingMember = 50_131,
 	OwnershipCannotBeMovedToABotUser,
 
+	FailedToResizeAssetBelowTheMaximumSize = 50_138,
+	/** @deprecated Use {@link FailedToResizeAssetBelowTheMaximumSize}. */
 	FailedToResizeAssetBelowTheMinimumSize = 50_138,
 
 	CannotMixSubscriptionAndNonSubscriptionRolesForAnEmoji = 50_144,
 	CannotConvertBetweenPremiumEmojiAndNormalEmoji,
 	UploadedFileNotFound,
+
+	SpecifiedEmojiIsInvalid = 50_151,
 
 	VoiceMessagesDoNotSupportAdditionalContent = 50_159,
 	VoiceMessagesMustHaveASingleAudioAttachment,
@@ -291,9 +318,15 @@ export enum RESTJSONErrorCodes {
 	VoiceMessagesCannotBeEdited,
 	CannotDeleteGuildSubscriptionIntegration,
 
+	CannotSendVoiceEffectWhenUserIsServerMutedDeafenedOrSuppressed = 50_167,
+
 	YouCannotSendVoiceMessagesInThisChannel = 50_173,
 
 	TheUserAccountMustFirstBeVerified = 50_178,
+
+	ProvidedFileDoesNotHaveAValidDuration = 50_192,
+
+	CannotSendMessagesToThisUserDueToNoMutualGuilds = 50_278,
 
 	YouDoNotHavePermissionToSendThisSticker = 50_600,
 
@@ -303,6 +336,8 @@ export enum RESTJSONErrorCodes {
 
 	ReactionWasBlocked = 90_001,
 	UserCannotUseBurstReactions,
+
+	IndexNotYetAvailable = 110_000,
 
 	ApplicationNotYetAvailable = 110_001,
 
@@ -316,6 +351,8 @@ export enum RESTJSONErrorCodes {
 	ThreadLocked,
 	MaximumActiveThreads,
 	MaximumActiveAnnouncementThreads,
+
+	CannotForwardAMessageWhoseContentYouCannotRead = 160_014,
 
 	InvalidJSONForUploadedLottieFile = 170_001,
 	UploadedLottiesCannotContainRasterizedImages,
@@ -339,8 +376,12 @@ export enum RESTJSONErrorCodes {
 
 	MessageBlockedByHarmfulLinksFilter = 240_000,
 
+	AccessToJoiningNewServersHasBeenLimitedForTheUser = 340_015,
+
 	CannotEnableOnboardingRequirementsAreNotMet = 350_000,
 	CannotUpdateOnboardingWhileBelowRequirements,
+
+	AccessToFileUploadsHasBeenLimitedForThisGuild = 400_001,
 
 	FailedToBanUsers = 500_000,
 
@@ -351,10 +392,19 @@ export enum RESTJSONErrorCodes {
 	CannotUseAnEmojiIncludedWithThePoll,
 
 	CannotExpireANonPollMessage = 520_006,
+
+	DiscordApplicationNotGrantedPermissionToUseProvisionalAccounts = 530_000,
+	IDTokenJWTExpired,
+	IDTokenJWTIssuerMismatch,
+	IDTokenJWTAudienceMismatch,
+	IDTokenIssuedTooLongAgo,
+
+	FailedToGenerateUniqueUsername = 530_006,
+	InvalidClientSecret,
 }
 
 /**
- * https://discord.com/developers/docs/reference#locales
+ * https://docs.discord.com/developers/reference#locales
  */
 export enum Locale {
 	Indonesian = 'id',

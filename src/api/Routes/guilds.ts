@@ -31,6 +31,7 @@ import type {
 	RESTGetAPIGuildMembersSearchResult,
 	RESTGetAPIGuildMessagesSearchQuery,
 	RESTGetAPIGuildMessagesSearchResult,
+	RESTGetAPIGuildOnboardingResult,
 	RESTGetAPIGuildPreviewResult,
 	RESTGetAPIGuildPruneCountQuery,
 	RESTGetAPIGuildPruneCountResult,
@@ -118,9 +119,13 @@ import type {
 	RESTPostAPITemplateCreateGuildResult,
 	RESTPutAPIGuildBanJSONBody,
 	RESTPutAPIGuildBanResult,
+	RESTPutAPIGuildIncidentActionsJSONBody,
+	RESTPutAPIGuildIncidentActionsResult,
 	RESTPutAPIGuildMemberJSONBody,
 	RESTPutAPIGuildMemberResult,
 	RESTPutAPIGuildMemberRoleResult,
+	RESTPutAPIGuildOnboardingJSONBody,
+	RESTPutAPIGuildOnboardingResult,
 	RESTPutAPIGuildTemplateSyncResult,
 } from '../../types';
 import type { RestArguments, RestArgumentsNoBody, RestArgumentsRequiredQuery } from '../api';
@@ -235,7 +240,7 @@ export interface GuildRoutes {
 					delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIGuildBanResult>;
 				};
 			};
-			'bulk-bans': {
+			'bulk-ban': {
 				post(args: RestArguments<RESTPostAPIGuildBulkBanJSONBody>): Promise<RESTPostAPIGuildBulkBanResult>;
 			};
 			mfa: {
@@ -280,9 +285,13 @@ export interface GuildRoutes {
 					args: RestArguments<RESTPatchAPIGuildWelcomeScreenJSONBody>,
 				): Promise<RESTPatchAPIGuildWelcomeScreenResult>;
 			};
-			// onboarding: {
-			// 	get(args:RestArgumentsNoBody<boarding>);
-			// }
+			onboarding: {
+				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildOnboardingResult>;
+				put(args: RestArguments<RESTPutAPIGuildOnboardingJSONBody>): Promise<RESTPutAPIGuildOnboardingResult>;
+			};
+			'incident-actions': {
+				put(args: RestArguments<RESTPutAPIGuildIncidentActionsJSONBody>): Promise<RESTPutAPIGuildIncidentActionsResult>;
+			};
 			emojis: {
 				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildEmojisResult>;
 				post(args: RestArguments<RESTPostAPIGuildEmojiJSONBody>): Promise<RESTPostAPIGuildEmojiResult>;

@@ -2,7 +2,7 @@ import type { Snowflake } from '..';
 import type { APISoundboardSound } from '../payloads/soundboard';
 
 /**
- * https://discord.com/developers/docs/resources/soundboard#send-soundboard-sound
+ * https://docs.discord.com/developers/resources/soundboard#send-soundboard-sound
  * @fires VoiceChannelEffectSend
  * @requires Permissions Speak and UseSoundboard
  * @satisfies VoiceState without deaf, self_deaf, mute, or suppress enabled.
@@ -10,7 +10,7 @@ import type { APISoundboardSound } from '../payloads/soundboard';
 export type RESTPostAPISendSoundboardSoundResult = undefined;
 
 /**
- * https://discord.com/developers/docs/resources/soundboard#send-soundboard-sound-json-params
+ * https://docs.discord.com/developers/resources/soundboard#send-soundboard-sound-json-params
  */
 export interface RESTPostAPISoundboardSendSoundJSONBody {
 	/** the id of the soundboard sound to play */
@@ -20,22 +20,22 @@ export interface RESTPostAPISoundboardSendSoundJSONBody {
 }
 
 /**
- * https://discord.com/developers/docs/resources/soundboard#list-default-soundboard-sounds
+ * https://docs.discord.com/developers/resources/soundboard#list-default-soundboard-sounds
  */
 export type RESTGetAPISoundboardDefaultSoundsResult = APISoundboardSound[];
 
 /**
- * https://discord.com/developers/docs/resources/soundboard#list-guild-soundboard-sounds
+ * https://docs.discord.com/developers/resources/soundboard#list-guild-soundboard-sounds
  */
 export type RESTGetAPIGuildSoundboardSoundsResult = { items: APISoundboardSound[] };
 
 /**
- * https://discord.com/developers/docs/resources/soundboard#get-guild-soundboard-sound
+ * https://docs.discord.com/developers/resources/soundboard#get-guild-soundboard-sound
  */
 export type RESTGetAPIGuildSoundboardSoundResult = APISoundboardSound;
 
 /**
- * https://discord.com/developers/docs/resources/soundboard#create-guild-soundboard-sound
+ * https://docs.discord.com/developers/resources/soundboard#create-guild-soundboard-sound
  *
  * Soundboard sounds have a max file size of 512kb and a max duration of 5.2 seconds.
  * This endpoint supports the X-Audit-Log-Reason header.
@@ -57,7 +57,7 @@ export interface RESTPostAPIGuildSoundboardSoundJSONBody {
 export type RESTPostAPIGuildSoundboardSoundResult = APISoundboardSound;
 
 /**
- * https://discord.com/developers/docs/resources/soundboard#modify-guild-soundboard-sound
+ * https://docs.discord.com/developers/resources/soundboard#modify-guild-soundboard-sound
  * @fires GuildSoundboardSoundUpdate
  */
 export interface RESTPatchAPIGuildSoundboardSoundJSONBody {
@@ -74,7 +74,7 @@ export interface RESTPatchAPIGuildSoundboardSoundJSONBody {
 export type RESTPatchAPIGuildSoundboardSoundResult = APISoundboardSound;
 
 /**
- * https://discord.com/developers/docs/resources/soundboard#delete-guild-soundboard-sound
+ * https://docs.discord.com/developers/resources/soundboard#delete-guild-soundboard-sound
  * This endpoint supports the X-Audit-Log-Reason header.
  * @fires GuildSoundboardSoundDelete
  */

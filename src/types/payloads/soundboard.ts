@@ -1,10 +1,10 @@
 /**
- * Types extracted from https://discord.com/developers/docs/resources/soundboard
+ * Types extracted from https://docs.discord.com/developers/resources/soundboard
  */
 
 import type { APIUser } from './user';
 
-/** https://discord.com/developers/docs/resources/soundboard#soundboard-sound-object-soundboard-sound-structure */
+/** https://docs.discord.com/developers/resources/soundboard#soundboard-sound-object-soundboard-sound-structure */
 export interface APISoundboardSound {
 	/**	the name of this sound */
 	name: string;

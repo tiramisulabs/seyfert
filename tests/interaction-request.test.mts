@@ -1,3 +1,4 @@
+import { chatInputInteraction } from '@slipher/testing';
 import { describe, expect, test, vi } from 'vitest';
 import { BaseClient } from '../lib/client/base';
 import { InteractionResponseType, InteractionType } from '../lib/types/payloads/_interactions/responses';
@@ -37,13 +38,7 @@ describe('BaseClient.onInteractionRequest', () => {
 	});
 
 	test('delegates non-Ping interactions and resolves through __reply', async () => {
-		const rawBody = {
-			id: '100000000000000003',
-			application_id: '100000000000000004',
-			type: InteractionType.ApplicationCommand,
-			token: 'interaction-token',
-			version: 1,
-		};
+		const rawBody = chatInputInteraction({ name: 'ping' });
 		const response = {
 			type: InteractionResponseType.ChannelMessageWithSource,
 			data: { content: 'handled' },

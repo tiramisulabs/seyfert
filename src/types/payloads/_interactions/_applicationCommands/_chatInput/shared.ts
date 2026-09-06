@@ -1,7 +1,7 @@
 import type { LocalizationMap } from '../../..';
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-type
+ * https://docs.discord.com/developers/interactions/application-commands#application-command-object-application-command-option-type
  */
 export enum ApplicationCommandOptionType {
 	Subcommand = 1,
@@ -18,7 +18,7 @@ export enum ApplicationCommandOptionType {
 }
 
 /**
- * https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-choice-structure
+ * https://docs.discord.com/developers/interactions/application-commands#application-command-object-application-command-option-choice-structure
  */
 export interface APIApplicationCommandOptionChoice<ValueType = number | string> {
 	name: string;

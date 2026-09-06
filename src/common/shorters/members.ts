@@ -6,6 +6,7 @@ import {
 	type VoiceStateStructure,
 } from '../../client/transformers';
 import { PermissionsBitField } from '../../structures/extra/Permissions';
+import { GuildRole } from '../../structures/GuildRole';
 import {
 	type APIGuildMember,
 	FormattingPatterns,
@@ -230,7 +231,7 @@ export class MemberShorter extends BaseShorter {
 
 	async sortRoles(guildId: string, memberId: string, force = false): Promise<GuildRoleStructure[]> {
 		const roles = await this.listRoles(guildId, memberId, force);
-		return roles.sort((a, b) => b.position - a.position);
+		return roles.sort((a, b) => GuildRole.comparePositions(b, a));
 	}
 
 	async permissions(guildId: string, memberId: string, force = false) {
@@ -239,8 +240,13 @@ export class MemberShorter extends BaseShorter {
 		return new PermissionsBitField(roles.map(x => BigInt(x.permissions.bits)));
 	}
 
-	presence(memberId: string) {
-		return this.client.cache.presences?.get(memberId);
+	/**
+	 * Gets a member's cached presence in a guild.
+	 * @param guildId The ID of the guild.
+	 * @param memberId The ID of the member.
+	 */
+	presence(guildId: string, memberId: string) {
+		return this.client.cache.presences?.get(memberId, guildId);
 	}
 
 	async voice(guildId: string, memberId: (string & {}) | '@me', force = false): Promise<VoiceStateStructure> {

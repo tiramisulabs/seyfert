@@ -88,10 +88,7 @@ describe('LangsHandler module loading', () => {
 			expect.stringContaining('/langs/ambiguous.ts'),
 			expect.stringContaining('one, two'),
 		);
-		expect(warn).toHaveBeenCalledWith(
-			expect.stringContaining('/langs/invalid.ts'),
-			expect.stringContaining('value'),
-		);
+		expect(warn).toHaveBeenCalledWith(expect.stringContaining('/langs/invalid.ts'), expect.stringContaining('value'));
 	});
 
 	test('awaits async onFile results while loading files', async () => {

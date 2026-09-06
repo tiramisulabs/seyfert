@@ -1,5 +1,5 @@
 /**
- * Types extracted from https://discord.com/developers/docs/resources/application
+ * Types extracted from https://docs.discord.com/developers/resources/application
  */
 
 import type { MakeRequired } from '../../common';
@@ -12,7 +12,7 @@ import type { APITeam } from './teams';
 import type { APIUser } from './user';
 
 /**
- * https://discord.com/developers/docs/resources/application#application-object
+ * https://docs.discord.com/developers/resources/application#application-object
  */
 export interface APIApplication {
 	/**
@@ -58,19 +58,19 @@ export interface APIApplication {
 	/**
 	 * Partial user object containing info on the owner of the application
 	 *
-	 * See https://discord.com/developers/docs/resources/user#user-object
+	 * See https://docs.discord.com/developers/resources/user#user-object
 	 */
 	owner?: APIUser;
 	/**
 	 * The hexadecimal encoded key for verification in interactions and the GameSDK's GetTicket function
 	 *
-	 * See https://discord.com/developers/docs/game-sdk/applications#getticket
+	 * See https://docs.discord.com/developers/game-sdk/applications#getticket
 	 */
 	verify_key: string;
 	/**
 	 * The team this application belongs to
 	 *
-	 * See https://discord.com/developers/docs/topics/teams#data-models-team-object
+	 * See https://docs.discord.com/developers/topics/teams#data-models-team-object
 	 */
 	team: APITeam | null;
 	/**
@@ -96,9 +96,15 @@ export interface APIApplication {
 	/**
 	 * The application's public flags
 	 *
-	 * See https://discord.com/developers/docs/resources/application#application-object-application-flags
+	 * See https://docs.discord.com/developers/resources/application#application-object-application-flags
 	 */
 	flags: ApplicationFlags;
+	/**
+	 * The application's public flags, including bits beyond bit 30, serialized as a string
+	 *
+	 * This field is only returned in responses. Requests that accept application flags use `flags`.
+	 */
+	flags_new?: string;
 	/**
 	 * Approximate count of guilds the application has been added to
 	 */
@@ -154,7 +160,7 @@ export type APIApplicationIntegrationTypesConfigMap = {
 };
 
 /**
- * https://discord.com/developers/docs/resources/application#application-object-application-flags
+ * https://docs.discord.com/developers/resources/application#application-object-application-flags
  */
 export enum ApplicationFlags {
 	/**
@@ -191,12 +197,12 @@ export enum ApplicationFlags {
 	GatewayPresenceLimited = 1 << 13,
 	/**
 	 * Intent required for bots in 100 or more servers to receive member-related events like `guild_member_add`.
-	 * See list of member-related events [under `GUILD_MEMBERS`](https://discord.com/developers/docs/topics/gateway#list-of-intents)
+	 * See list of member-related events [under `GUILD_MEMBERS`](https://docs.discord.com/developers/topics/gateway#list-of-intents)
 	 */
 	GatewayGuildMembers = 1 << 14,
 	/**
 	 * Intent required for bots in under 100 servers to receive member-related events like `guild_member_add`, found in Bot Settings.
-	 * See list of member-related events [under `GUILD_MEMBERS`](https://discord.com/developers/docs/topics/gateway#list-of-intents)
+	 * See list of member-related events [under `GUILD_MEMBERS`](https://docs.discord.com/developers/topics/gateway#list-of-intents)
 	 */
 	GatewayGuildMembersLimited = 1 << 15,
 	/**
@@ -221,13 +227,13 @@ export enum ApplicationFlags {
 	 */
 	EmbeddedFirstParty = 1 << 20,
 	/**
-	 * Indicates if an app has registered global [application commands](https://discord.com/developers/docs/interactions/application-commands)
+	 * Indicates if an app has registered global [application commands](https://docs.discord.com/developers/interactions/application-commands)
 	 */
 	ApplicationCommandBadge = 1 << 23,
 }
 
 /**
- * https://discord.com/developers/docs/resources/application-role-connection-metadata#application-role-connection-metadata-object-application-role-connection-metadata-structure
+ * https://docs.discord.com/developers/resources/application-role-connection-metadata#application-role-connection-metadata-object-application-role-connection-metadata-structure
  */
 export interface APIApplicationRoleConnectionMetadata {
 	/**
@@ -257,7 +263,7 @@ export interface APIApplicationRoleConnectionMetadata {
 }
 
 /**
- * https://discord.com/developers/docs/resources/application-role-connection-metadata#application-role-connection-metadata-object-application-role-connection-metadata-type
+ * https://docs.discord.com/developers/resources/application-role-connection-metadata#application-role-connection-metadata-object-application-role-connection-metadata-type
  */
 export enum ApplicationRoleConnectionMetadataType {
 	/**
@@ -295,7 +301,7 @@ export enum ApplicationRoleConnectionMetadataType {
 }
 
 /**
- * https://discord.com/developers/docs/resources/application#get-application-activity-instance-activity-instance-object
+ * https://docs.discord.com/developers/resources/application#get-application-activity-instance-activity-instance-object
  */
 export interface APIActivityInstance {
 	application_id: string;
@@ -307,7 +313,7 @@ export interface APIActivityInstance {
 }
 
 /**
- * https://discord.com/developers/docs/resources/application#get-application-activity-instance-activity-location-object
+ * https://docs.discord.com/developers/resources/application#get-application-activity-instance-activity-location-object
  */
 export interface APIActivityLocation {
 	id: string;
@@ -317,7 +323,7 @@ export interface APIActivityLocation {
 	guild_id?: string | null;
 }
 /**
- * https://discord.com/developers/docs/resources/application#get-application-activity-instance-activity-location-kind-enum
+ * https://docs.discord.com/developers/resources/application#get-application-activity-instance-activity-location-kind-enum
  */
 export enum ActivityLocation {
 	GuildChannel = 'gc',

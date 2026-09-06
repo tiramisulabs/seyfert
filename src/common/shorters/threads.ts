@@ -31,7 +31,7 @@ export class ThreadShorter extends BaseShorter {
 
 			const transformedBody = MessagesMethods.transformMessageBody<RESTPostAPIGuildForumThreadsJSONBody['message']>(
 				message ?? {},
-				parsedFiles,
+				files,
 				this.client,
 			);
 

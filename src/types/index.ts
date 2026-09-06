@@ -29,11 +29,11 @@ export * from './rest';
 export * from './utils';
 
 /**
- * https://discord.com/developers/docs/reference#snowflakes
+ * https://docs.discord.com/developers/reference#snowflakes
  */
 export type Snowflake = string;
 
 /**
- * https://discord.com/developers/docs/topics/permissions
+ * https://docs.discord.com/developers/topics/permissions
  */
 export type Permissions = string;

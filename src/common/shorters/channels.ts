@@ -75,23 +75,17 @@ export class ChannelShorter extends BaseShorter {
 	async edit(
 		id: string,
 		body: RESTPatchAPIChannelJSONBody,
-		optional: ChannelShorterOptionalParams = { guildId: '@me' },
+		optional: ChannelShorterOptionalParams = {},
 	): Promise<AllChannels> {
-		const options = MergeOptions<MakeRequired<ChannelShorterOptionalParams, 'guildId'>>({ guildId: '@me' }, optional);
-		const res = await this.client.proxy.channels(id).patch({ body, reason: options.reason });
-		await this.client.cache.channels?.setIfNI(
-			CacheFrom.Rest,
-			BaseChannel.__intent__(options.guildId),
-			res.id,
-			options.guildId,
-			res,
-		);
+		const res = await this.client.proxy.channels(id).patch({ body, reason: optional.reason });
+		const guildId = 'guild_id' in res && res.guild_id ? res.guild_id : '@me';
+		await this.client.cache.channels?.setIfNI(CacheFrom.Rest, BaseChannel.__intent__(guildId), res.id, guildId, res);
 		if (body.permission_overwrites && 'permission_overwrites' in res && res.permission_overwrites)
 			await this.client.cache.overwrites?.setIfNI(
 				CacheFrom.Rest,
-				BaseChannel.__intent__(options.guildId),
+				BaseChannel.__intent__(guildId),
 				res.id,
-				options.guildId,
+				guildId,
 				res.permission_overwrites,
 			);
 		return channelFrom(res, this.client);

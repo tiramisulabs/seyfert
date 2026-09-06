@@ -46,8 +46,6 @@ export type WorkerSendCacheRequest = CreateWorkerMessage<
 			| 'flush'
 			| 'contains'
 			| 'getToRelationship'
-			| 'bulkAddToRelationShip'
-			| 'addToRelationship'
 			| 'removeRelationship'
 			| 'removeToRelationship';
 		args: unknown[];

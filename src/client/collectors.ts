@@ -1,16 +1,22 @@
 import { randomUUID, type UUID } from 'node:crypto';
 import type { UsingClient } from '../commands';
 import { type Awaitable, type CamelCase, ReplaceRegex } from '../common';
-import type { CallbackEventHandler, ClientNameEvents, CustomEventsKeys, GatewayEvents } from '../events';
+import type {
+	CallbackEventHandler,
+	ClientNameEvents,
+	CustomEventsKeys,
+	GatewayEvents,
+	ResolveEventRunParams,
+} from '../events';
 import { resolveRawEventData } from '../events/utils';
 
 export type AllClientEvents = CustomEventsKeys | ClientNameEvents;
 type ClientDispatchEvent = AllClientEvents | GatewayEvents;
 export type ParseClientEventName<T extends ClientDispatchEvent> = T extends GatewayEvents ? CamelCase<T> : T;
 
-export type CollectorRunParameters<T extends AllClientEvents> = Awaited<
-	Parameters<CallbackEventHandler[ParseClientEventName<T>]>[0]
->;
+export type CollectorRunParameters<T extends AllClientEvents> = T extends CustomEventsKeys
+	? ResolveEventRunParams<T>
+	: Awaited<Parameters<CallbackEventHandler[ParseClientEventName<T>]>[0]>;
 
 type RunData<T extends AllClientEvents> = {
 	options: {
@@ -94,7 +100,9 @@ export class Collectors {
 	/**@internal */
 	async run<T extends ClientDispatchEvent>(
 		name: T,
-		raw: Awaited<Parameters<CallbackEventHandler[ParseClientEventName<T>]>[0]>,
+		raw: T extends CustomEventsKeys
+			? ResolveEventRunParams<T>
+			: Awaited<Parameters<CallbackEventHandler[ParseClientEventName<T>]>[0]>,
 		client: UsingClient,
 	) {
 		const event = normalizeCollectorEventName(name);

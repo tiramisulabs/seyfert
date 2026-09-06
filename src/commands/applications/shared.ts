@@ -3,6 +3,7 @@ import type {
 	DirectoryChannelStructure,
 	DMChannelStructure,
 	ForumChannelStructure,
+	GroupDMChannelStructure,
 	MediaChannelStructure,
 	NewsChannelStructure,
 	StageChannelStructure,
@@ -94,7 +95,7 @@ type CommandMetadataFromTuple<T extends readonly (keyof ResolvedRegisteredMiddle
 	: {};
 
 export type CommandMetadata<
-	T extends readonly (keyof ResolvedRegisteredMiddlewares)[] | keyof ResolvedRegisteredMiddlewares,
+	T extends readonly (keyof ResolvedRegisteredMiddlewares<T>)[] | keyof ResolvedRegisteredMiddlewares<T>,
 > = [T] extends [never]
 	? {}
 	: [T] extends [readonly (keyof ResolvedRegisteredMiddlewares)[]]
@@ -139,7 +140,7 @@ export interface SeyfertChannelMap {
 	[ChannelType.GuildText]: TextGuildChannelStructure;
 	[ChannelType.DM]: DMChannelStructure;
 	[ChannelType.GuildVoice]: VoiceChannelStructure;
-	[ChannelType.GroupDM]: DMChannelStructure;
+	[ChannelType.GroupDM]: GroupDMChannelStructure;
 	[ChannelType.GuildCategory]: CategoryChannelStructure;
 	[ChannelType.GuildAnnouncement]: NewsChannelStructure;
 	[ChannelType.AnnouncementThread]: ThreadChannelStructure;

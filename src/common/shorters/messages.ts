@@ -18,7 +18,7 @@ export class MessageShorter extends BaseShorter {
 
 		const transformedBody = MessagesMethods.transformMessageBody<RESTPostAPIChannelMessageJSONBody>(
 			body,
-			parsedFiles,
+			files,
 			this.client,
 		);
 		return this.client.proxy
@@ -49,7 +49,7 @@ export class MessageShorter extends BaseShorter {
 			.channels(channelId)
 			.messages(messageId)
 			.patch({
-				body: MessagesMethods.transformMessageBody<RESTPatchAPIChannelMessageJSONBody>(body, parsedFiles, this.client),
+				body: MessagesMethods.transformMessageBody<RESTPatchAPIChannelMessageJSONBody>(body, files, this.client),
 				files: parsedFiles,
 			})
 			.then(async message => {

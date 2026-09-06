@@ -1,5 +1,5 @@
 /**
- * Types extracted from https://discord.com/developers/docs/resources/emoji
+ * Types extracted from https://docs.discord.com/developers/resources/emoji
  */
 
 import type { Snowflake } from '../index';
@@ -25,7 +25,7 @@ export interface APIPartialEmoji {
 }
 
 /**
- * https://discord.com/developers/docs/resources/emoji#emoji-object-emoji-structure
+ * https://docs.discord.com/developers/resources/emoji#emoji-object-emoji-structure
  */
 export interface APIEmoji extends APIPartialEmoji {
 	/**

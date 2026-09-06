@@ -16,7 +16,10 @@ export type RegisteredMiddlewares = SeyfertRegistry extends {
 }
 	? M
 	: {};
-export type ResolvedRegisteredMiddlewares = RegisteredMiddlewares & RegisteredPluginMiddlewares;
+// Contexts without metadata defer the registry lookup; the open key set also preserves generic key constraints.
+export type ResolvedRegisteredMiddlewares<M = unknown> = [M] extends [never]
+	? Record<PropertyKey, never>
+	: RegisteredMiddlewares & RegisteredPluginMiddlewares;
 type MiddlewareKey = keyof ResolvedRegisteredMiddlewares;
 
 export type InferMiddlewares<T extends readonly MiddlewareKey[]> = T[number];

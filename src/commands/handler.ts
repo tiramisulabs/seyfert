@@ -4,6 +4,7 @@ import type { Logger, NulleableCoalising, OmitInsert } from '../common';
 import { BaseHandler, isCloudflareWorker, magicImport, SeyfertError } from '../common';
 import { PermissionsBitField } from '../structures/extra/Permissions';
 import {
+	type APIApplicationCommandAttachmentOption,
 	type APIApplicationCommandChannelOption,
 	type APIApplicationCommandIntegerOption,
 	type APIApplicationCommandNumberOption,
@@ -57,8 +58,13 @@ export class CommandHandler extends BaseHandler {
 		let prepared = this.prepareCommand(commandInstance);
 		if (!prepared) return null;
 
-		const wrapped = options.transform?.(prepared) ?? prepared;
-		if (!wrapped) return null;
+		const transformed = options.transform?.(prepared);
+		if (transformed === false) {
+			const index = this.values.indexOf(command);
+			if (index >= 0) this.values.splice(index, 1);
+			return null;
+		}
+		const wrapped = transformed ?? prepared;
 		if (wrapped !== prepared) {
 			wrapped.__filePath ??= command.__filePath;
 			prepared = this.prepareCommand(wrapped);
@@ -75,7 +81,7 @@ export class CommandHandler extends BaseHandler {
 	}
 
 	async reloadAll(stopIfFail = true) {
-		for (const command of this.values) {
+		for (const command of [...this.values]) {
 			try {
 				await this.reload(command.name);
 			} catch (e) {
@@ -188,6 +194,16 @@ export class CommandHandler extends BaseHandler {
 					this.shouldUploadChoices(option, cached)
 				);
 			case ApplicationCommandOptionType.Attachment:
+				{
+					const cachedAttachment = cached as APIApplicationCommandAttachmentOption;
+					if (option.file_types?.length !== cachedAttachment.file_types?.length) return true;
+					if (option.file_types && cachedAttachment.file_types) {
+						const fileTypes = [...option.file_types].sort();
+						const cachedFileTypes = [...cachedAttachment.file_types].sort();
+						return fileTypes.some((fileType, index) => fileType !== cachedFileTypes[index]);
+					}
+				}
+				break;
 			case ApplicationCommandOptionType.Boolean:
 			case ApplicationCommandOptionType.Mentionable:
 			case ApplicationCommandOptionType.Role:

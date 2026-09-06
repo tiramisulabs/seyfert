@@ -27,7 +27,9 @@ import type {
 	PluginCacheResourceConstructor,
 	PluginCommandContributionOptions,
 	PluginContributionOptions,
+	PluginHandlerKindsFromOptions,
 	PluginHandlerOptions,
+	PluginHandlerTransformer,
 	PluginOrderOpt,
 	SeyfertPluginApi,
 	SeyfertPluginOptions,
@@ -262,7 +264,10 @@ export function createPluginApi(
 					sequence: nextPluginContributionSequence(registry),
 				});
 			},
-			transform(transformer, opts) {
+			transform<const Options extends PluginHandlerOptions | undefined = undefined>(
+				transformer: PluginHandlerTransformer<PluginHandlerKindsFromOptions<Options>>,
+				opts?: Options,
+			) {
 				assertCanMutate('handlers.transform');
 				registry.handlerTransformers.push({
 					record,

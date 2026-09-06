@@ -36,9 +36,7 @@ export interface WebhookRoutes {
 			token: string,
 		): {
 			get(args?: RestArgumentsNoBody): Promise<RESTGetAPIWebhookWithTokenResult>;
-			patch(
-				args: RestArguments<RESTPatchAPIWebhookWithTokenJSONBody, RESTPatchAPIWebhookWithTokenMessageQuery>,
-			): Promise<RESTPatchAPIWebhookWithTokenResult>;
+			patch(args: RestArguments<RESTPatchAPIWebhookWithTokenJSONBody>): Promise<RESTPatchAPIWebhookWithTokenResult>;
 			delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIWebhookWithTokenResult>;
 			post(
 				args: RestArguments<RESTPostAPIWebhookWithTokenJSONBody, RESTPostAPIWebhookWithTokenQuery>,
@@ -58,7 +56,7 @@ export interface WebhookRoutes {
 					args?: RestArgumentsNoBody<RESTGetAPIWebhookWithTokenMessageQuery>,
 				): Promise<RESTGetAPIWebhookWithTokenMessageResult>;
 				patch(
-					args: RestArguments<RESTPatchAPIWebhookWithTokenMessageJSONBody>,
+					args: RestArguments<RESTPatchAPIWebhookWithTokenMessageJSONBody, RESTPatchAPIWebhookWithTokenMessageQuery>,
 				): Promise<RESTPatchAPIWebhookWithTokenMessageResult>;
 				delete(
 					args?: RestArgumentsNoBody<RESTDeleteAPIWebhookWithTokenMessageQuery>,

@@ -5,6 +5,7 @@ import { ButtonComponent, LinkButtonComponent, SKUButtonComponent } from './Butt
 import { ChannelSelectMenuComponent } from './ChannelSelectMenuComponent';
 import { ContainerComponent } from './Container';
 import { FileComponent } from './File';
+import { LabelComponent } from './LabelComponent';
 import { MediaGalleryComponent } from './MediaGallery';
 import { MentionableSelectMenuComponent } from './MentionableSelectMenuComponent';
 import { RoleSelectMenuComponent } from './RoleSelectMenuComponent';
@@ -36,10 +37,12 @@ export * from './componentcontext';
 export * from './interactioncontext';
 export * from './modalcommand';
 export * from './modalcontext';
+export { LabelComponent };
 
 export type TopLevelComponents =
 	| SectionComponent
 	| ActionRowMessageComponents
+	| LabelComponent
 	| TextDisplayComponent
 	| ContainerComponent
 	| FileComponent
@@ -99,6 +102,8 @@ export function componentFactory(component: APIComponents): AllComponents {
 			return new ThumbnailComponent(component);
 		case ComponentType.TextInput:
 			return new TextInputComponent(component);
+		case ComponentType.Label:
+			return new LabelComponent(component);
 		default:
 			return new BaseComponent<ComponentType>(component);
 	}

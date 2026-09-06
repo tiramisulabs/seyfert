@@ -43,16 +43,16 @@ export class BaseResource<T = any, S = any> {
 
 	set(from: CacheFrom, id: string, data: S) {
 		if (!this.filter(data, id, from)) return;
-		return fakePromise(this.addToRelationship(id)).then(() => this.adapter.set(this.hashId(id), data));
+		return this.adapter.set(this.hashId(id), data, [this.namespace, id]);
 	}
 
 	patch(from: CacheFrom, id: string, data: S) {
 		if (!this.filter(data, id, from)) return;
-		return fakePromise(this.addToRelationship(id)).then(() => this.adapter.patch(this.hashId(id), data));
+		return this.adapter.patch(this.hashId(id), data, [this.namespace, id]);
 	}
 
 	remove(id: string) {
-		return fakePromise(this.removeToRelationship(id)).then(() => this.adapter.remove(this.hashId(id)));
+		return this.adapter.remove(this.hashId(id));
 	}
 
 	keys(): ReturnCache<string[]> {
@@ -75,23 +75,11 @@ export class BaseResource<T = any, S = any> {
 		return this.adapter.getToRelationship(this.namespace);
 	}
 
-	addToRelationship(id: string | string[]) {
-		return this.adapter.addToRelationship(this.namespace, id);
-	}
-
-	removeToRelationship(id: string | string[]) {
-		return this.adapter.removeToRelationship(this.namespace, id);
-	}
-
 	flush() {
-		return fakePromise(this.adapter.keys(this.namespace)).then(keys => {
-			return fakePromise(this.adapter.bulkRemove(keys)).then(() => {
-				return this.adapter.removeRelationship(this.namespace);
-			});
-		});
+		return fakePromise(this.adapter.keys(this.namespace)).then(keys => this.adapter.bulkRemove(keys));
 	}
 
 	hashId(id: string) {
-		return id.startsWith(this.namespace) ? id : `${this.namespace}.${id}`;
+		return id.startsWith(`${this.namespace}.`) ? id : `${this.namespace}.${id}`;
 	}
 }
