@@ -3,7 +3,7 @@ import type { ShardManagerOptions, WorkerManagerOptions } from '../discord';
 
 const COMPRESS = false;
 
-const propertiesVersion = 'Seyfert v5.0.0 (https://seyfert.dev)';
+const propertiesVersion = 'Seyfert v5.1.0 (https://seyfert.dev)';
 
 const properties = {
 	os: process.platform,
