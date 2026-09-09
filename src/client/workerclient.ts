@@ -30,7 +30,6 @@ import type {
 	ClientHeartbeaterMessages,
 	WorkerDisconnectedAllShardsResharding,
 	WorkerMessages,
-	WorkerReady,
 	WorkerReadyResharding,
 	WorkerReceivePayload,
 	WorkerRequestConnect,
@@ -41,7 +40,6 @@ import type {
 	WorkerSendShardInfo,
 	WorkerSendToWorkerEval,
 	WorkerShardInfo,
-	WorkerShardsConnected,
 	WorkerStart,
 	WorkerStartResharding,
 } from '../websocket/discord/worker';
@@ -96,9 +94,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	constructor(options?: WorkerClientOptions) {
 		super(options);
-		if (options?.postMessage) {
-			this.postMessage = options.postMessage;
-		}
 
 		if (this.options.handleManagerMessages) {
 			const oldFn = this.handleManagerMessages.bind(this);
@@ -163,7 +158,11 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		}
 
 		if (workerData.mode !== 'custom')
-			(manager ?? process).on('message', (data: ManagerMessages) => this.handleManagerMessages(data));
+			(manager ?? process).on('message', (data: ManagerMessages) => {
+				void this.handleManagerMessages(data).catch(error => {
+					this.logger.error('Worker manager message handling failed', error);
+				});
+			});
 
 		this.configureLogger({ name: `[Worker #${workerData.workerId}]` }, this.options.logger);
 
@@ -186,7 +185,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		this.rest.workerData = workerData;
 		await super.start(options);
 		workerData.intents = this.resolvePluginGatewayIntents(workerData.intents);
-		this.postMessage({
+		await this.postMessage({
 			type: workerData.resharding ? 'WORKER_START_RESHARDING' : 'WORKER_START',
 			workerId: workerData.workerId,
 		} satisfies WorkerStart | WorkerStartResharding);
@@ -203,15 +202,21 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		await runPluginHooks(this, 'events:afterLoad', this, dir);
 	}
 
-	postMessage(body: WorkerMessages | ClientHeartbeaterMessages): unknown {
+	async postMessage(body: WorkerMessages | ClientHeartbeaterMessages): Promise<unknown> {
+		if (this.options.postMessage) return this.options.postMessage.call(this, body);
 		if (manager) return manager.postMessage(body);
-		return process.send!(body);
+		return new Promise<void>((resolve, reject) => {
+			process.send!(body, error => {
+				if (error) reject(error);
+				else resolve();
+			});
+		});
 	}
 
 	async handleManagerMessages(data: ManagerMessages | WorkerHeartbeaterMessages) {
 		switch (data.type) {
 			case 'HEARTBEAT':
-				this.postMessage({
+				await this.postMessage({
 					type: 'ACK_HEARTBEAT',
 					workerId: workerData.workerId,
 				});
@@ -234,7 +239,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						return;
 					}
 
-					this.postMessage({
+					await this.postMessage({
 						type: 'RESULT_PAYLOAD',
 						nonce: data.nonce,
 						workerId: this.workerId,
@@ -289,15 +294,19 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 							handlePayload(_, payload) {
 								if (payload.t !== GatewayDispatchEvents.GuildsReady) return;
 								if (++shardsConnected === workerData.shards.length) {
-									self.postMessage({
-										type: 'WORKER_READY_RESHARDING',
-										workerId: workerData.workerId,
-									} satisfies WorkerReadyResharding);
+									void self
+										.postMessage({
+											type: 'WORKER_READY_RESHARDING',
+											workerId: workerData.workerId,
+										} satisfies WorkerReadyResharding)
+										.catch(error => {
+											self.logger.error('Failed to send WORKER_READY_RESHARDING to the worker manager', error);
+										});
 								}
 							},
 						});
 						this.resharding.set(id, shard);
-						this.postMessage({
+						await this.postMessage({
 							type: 'CONNECT_QUEUE_RESHARDING',
 							shardId: id,
 							workerId: workerData.workerId,
@@ -316,7 +325,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 						const shard = this.createShard(id, data);
 						this.shards.set(id, shard);
-						this.postMessage({
+						await this.postMessage({
 							type: 'CONNECT_QUEUE',
 							shardId: id,
 							workerId: workerData.workerId,
@@ -332,7 +341,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						return;
 					}
 
-					this.postMessage({
+					await this.postMessage({
 						...generateShardInfo(shard),
 						nonce: data.nonce,
 						type: 'SHARD_INFO',
@@ -342,7 +351,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			case 'WORKER_INFO':
 				{
-					this.postMessage({
+					await this.postMessage({
 						shards: [...this.shards.values()].map(generateShardInfo),
 						workerId: workerData.workerId,
 						type: 'WORKER_INFO',
@@ -373,7 +382,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					} catch (e) {
 						result = e;
 					}
-					this.postMessage({
+					await this.postMessage({
 						type: 'EVAL_RESPONSE',
 						response: result,
 						workerId: workerData.workerId,
@@ -392,7 +401,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			case 'WORKER_ALREADY_EXISTS_RESHARDING':
 				{
-					this.postMessage({
+					await this.postMessage({
 						type: 'WORKER_START_RESHARDING',
 						workerId: workerData.workerId,
 					} satisfies WorkerStartResharding);
@@ -403,7 +412,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					for (const i of this.shards.values()) {
 						await i.disconnect(ShardSocketCloseCodes.Resharding);
 					}
-					this.postMessage({
+					await this.postMessage({
 						type: 'DISCONNECTED_ALL_SHARDS_RESHARDING',
 						workerId: workerData.workerId,
 					} satisfies WorkerDisconnectedAllShardsResharding);
@@ -478,17 +487,33 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		});
 	}
 
-	tellWorker<R, V extends Record<string, unknown>>(workerId: number, func: (_: this, vars: V) => R, vars: V) {
+	private async sendRequest<T>(nonce: string, operation: string, send: () => Awaitable<unknown>): Promise<T> {
+		const response = this.generateSendPromise<T>(nonce, operation);
+		try {
+			const [result] = await Promise.all([response, send()]);
+			return result;
+		} catch (error) {
+			const pending = this.promises.get(nonce);
+			if (pending) {
+				this.promises.delete(nonce);
+				clearTimeout(pending.timeout);
+			}
+			throw error;
+		}
+	}
+
+	async tellWorker<R, V extends Record<string, unknown>>(workerId: number, func: (_: this, vars: V) => R, vars: V) {
 		const nonce = this.generateNonce();
-		this.postMessage({
-			type: 'EVAL_TO_WORKER',
-			func: func.toString(),
-			toWorkerId: workerId,
-			workerId: workerData.workerId,
-			nonce,
-			vars: JSON.stringify(vars),
-		} satisfies WorkerSendToWorkerEval);
-		return this.generateSendPromise<R>(nonce);
+		return this.sendRequest<R>(nonce, 'Worker request', () =>
+			this.postMessage({
+				type: 'EVAL_TO_WORKER',
+				func: func.toString(),
+				toWorkerId: workerId,
+				workerId: workerData.workerId,
+				nonce,
+				vars: JSON.stringify(vars),
+			} satisfies WorkerSendToWorkerEval),
+		);
 	}
 
 	tellWorkers<R, V extends Record<string, unknown>>(func: (_: this, vars: V) => R, vars: V) {
@@ -519,13 +544,18 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			async handlePayload(shardId, payload) {
 				await handlePayload?.(shardId, payload);
 				const pluginPacket = await onPacket(payload, shardId);
-				if (self.options.sendPayloadToParent && pluginPacket !== null)
-					self.postMessage({
-						workerId: workerData.workerId,
-						shardId,
-						type: 'RECEIVE_PAYLOAD',
-						payload: pluginPacket,
-					} satisfies WorkerReceivePayload);
+				if (self.options.sendPayloadToParent && pluginPacket !== null) {
+					void self
+						.postMessage({
+							workerId: workerData.workerId,
+							shardId,
+							type: 'RECEIVE_PAYLOAD',
+							payload: pluginPacket,
+						} satisfies WorkerReceivePayload)
+						.catch(error => {
+							self.logger.error('Failed to send RECEIVE_PAYLOAD to the worker manager', error);
+						});
+				}
 			},
 		});
 
@@ -600,10 +630,12 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 						this.applicationId = packet.d.application.id;
 						this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
 						if ([...this.shards.values()].every(shard => shard.data.session_id)) {
-							this.postMessage({
+							void this.postMessage({
 								type: 'WORKER_SHARDS_CONNECTED',
 								workerId: this.workerId,
-							} as WorkerShardsConnected);
+							}).catch(error => {
+								this.logger.error('Failed to send WORKER_SHARDS_CONNECTED to the worker manager', error);
+							});
 							await this.events.runEvent('WORKER_SHARDS_CONNECTED', this, this.me, -1);
 						}
 						await this.events.execute(packet, this, shardId);
@@ -613,10 +645,12 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					case GatewayDispatchEvents.GuildsReady:
 						{
 							if ([...this.shards.values()].every(shard => shard.isReady)) {
-								this.postMessage({
+								void this.postMessage({
 									type: 'WORKER_READY',
 									workerId: this.workerId,
-								} as WorkerReady);
+								}).catch(error => {
+									this.logger.error('Failed to send WORKER_READY to the worker manager', error);
+								});
 								await this.events.runEvent('WORKER_READY', this, this.me, -1);
 							}
 							await this.events.execute(packet, this, shardId);

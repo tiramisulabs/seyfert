@@ -2,20 +2,13 @@ import { promises } from 'node:fs';
 import { basename, join } from 'node:path';
 import type { Cache } from '../../cache';
 import { type APIPartialEmoji, FormattingPatterns, GatewayIntentBits } from '../../types';
+import type { ColorResolvable, EmojiResolvable } from '../types/resolvables';
+import type { ObjectToLower, ObjectToSnake, TypeArray } from '../types/util';
+import { DiscordEpoch, EmbedColors } from './constants';
+import { SeyfertError } from './error';
+import type { Logger } from './logger';
 
 export { type FakePromiseResult, fakePromise } from './fake-promise';
-
-import {
-	type ColorResolvable,
-	DiscordEpoch,
-	EmbedColors,
-	type EmojiResolvable,
-	type Logger,
-	type ObjectToLower,
-	type ObjectToSnake,
-	SeyfertError,
-	type TypeArray,
-} from '..';
 
 /**
  * Calculates the shard ID for a guild based on its ID.
@@ -83,6 +76,13 @@ export function delay<T>(time: number, result?: T): Promise<T> {
  */
 export function isObject(o: any): o is Record<string, unknown> {
 	return o && typeof o === 'object' && !Array.isArray(o);
+}
+
+export function isPromiseLike<T>(value: T | PromiseLike<T>): value is PromiseLike<T> {
+	return (
+		((typeof value === 'object' && value !== null) || typeof value === 'function') &&
+		typeof (value as PromiseLike<T>).then === 'function'
+	);
 }
 
 function isPlainObject(o: unknown): o is Record<string, unknown> {

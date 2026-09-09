@@ -1,14 +1,18 @@
 import { basename } from 'node:path';
 import type { FileLoaded } from '../commands/handler';
-import { type Awaitable, BaseHandler, isCloudflareWorker, isObject, magicImport, SeyfertError } from '../common';
+import {
+	type Awaitable,
+	BaseHandler,
+	isCloudflareWorker,
+	isObject,
+	isPromiseLike,
+	magicImport,
+	SeyfertError,
+} from '../common';
 import type { Locale, LocaleString } from '../types';
 import { LangRouter } from './router';
 
 type LangFileResult = { file: Record<string, any>; locale: string } | false;
-
-function isPromiseLike<T>(value: Awaitable<T>): value is Promise<T> {
-	return !!value && typeof (value as Promise<T>).then === 'function';
-}
 
 export class LangsHandler extends BaseHandler {
 	values: Partial<Record<string, any>> = {};
