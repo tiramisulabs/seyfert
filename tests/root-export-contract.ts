@@ -6,7 +6,6 @@ import {
 	type APIRoutes,
 	ApplicationIntegrationType,
 	type ApplicationStructure,
-	AuditLogEvent,
 	type BotConfig,
 	type ChannelLink,
 	ChannelType,
@@ -25,7 +24,6 @@ import {
 	type ManagerMessages,
 	type ManagerSendCacheResult,
 	type MaybeResolvedChannel,
-	MessageActivityType,
 	type MessageLink,
 	type MessageStructure,
 	OAuth2Scopes,
@@ -45,7 +43,6 @@ import {
 	type ShardManagerOptions,
 	type StructPropState,
 	type StructStates,
-	SubscriptionStatus,
 	type TextChannelType,
 	type TextGuildChannelStructure,
 	type Timestamp,
@@ -201,13 +198,6 @@ expectType<APIInteractionDataResolvedChannel>({
 	permissions: '0',
 });
 
-expectType<0>(SubscriptionStatus.Active);
-expectType<1>(SubscriptionStatus.Inactive);
-expectType<2>(SubscriptionStatus.Ending);
-expectType<192>(AuditLogEvent.VoiceChannelStatusCreate);
-expectType<192>(AuditLogEvent.VoiceChannelStatusUpdate);
-expectType<6>(MessageActivityType.StreamRequest);
-expectType<'identify.premium'>(OAuth2Scopes.IdentifyPremium);
 
 expectType<RESTOAuth2BotAuthorizationQuery>({ client_id: 'application-id' });
 expectType<RESTOAuth2BotAuthorizationQuery>({

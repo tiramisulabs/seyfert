@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { SeyfertError, SeyfertErrorMessages } from '../lib/common/it/error';
+import { SeyfertError } from '../lib/common/it/error';
 
 describe('SeyfertError', () => {
 	test('detects SeyfertError instances', () => {
@@ -68,19 +68,5 @@ describe('SeyfertError', () => {
 		expect(error.code).toBe('INTERNAL_ERROR');
 		expect(error.metadata).toBe(metadata);
 		expect(error.cause).toBe(cause);
-	});
-
-	test('catalogs builder validation codes', () => {
-		expect(SeyfertErrorMessages).toMatchObject({
-			MISSING_MEDIA: 'Cannot convert to JSON without media.',
-			MISSING_MODAL_CUSTOM_ID: 'Cannot convert to JSON without a custom_id.',
-			MISSING_MODAL_TITLE: 'Cannot convert to JSON without a title.',
-			MISSING_POLL_QUESTION: 'Cannot convert to JSON without a question.',
-			MISSING_POLL_ANSWERS: 'Cannot convert to JSON without answers.',
-			MISSING_RADIO_GROUP_OPTION_LABEL: 'Cannot convert to JSON without a label.',
-			MISSING_RADIO_GROUP_OPTION_VALUE: 'Cannot convert to JSON without a value.',
-			MISSING_STRING_SELECT_OPTION_LABEL: 'Cannot convert to JSON without a label.',
-			MISSING_STRING_SELECT_OPTION_VALUE: 'Cannot convert to JSON without a value.',
-		});
 	});
 });

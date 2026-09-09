@@ -426,7 +426,6 @@ describe('command context client type', () => {
 			const checker = program.getTypeChecker();
 			const sourceFile = program.getSourceFile(commandFile);
 
-			expect(sourceFile).toBeDefined();
 			if (!sourceFile) throw new Error('Fixture command source was not loaded');
 
 			const clientTypes = getClientTypesBeforeDiagnostics(sourceFile, checker);
@@ -647,7 +646,6 @@ describe('command context locale type', () => {
 			const checker = program.getTypeChecker();
 			const sourceFile = program.getSourceFile(commandFile);
 
-			expect(sourceFile).toBeDefined();
 			if (!sourceFile) throw new Error('Fixture command source was not loaded');
 
 			const localeTypes = getLocaleTypesBeforeDiagnostics(sourceFile, checker);
