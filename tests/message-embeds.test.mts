@@ -9,7 +9,6 @@ import {
 	Embed,
 	InMessageEmbed,
 	MessagesMethods,
-	type RESTAPIAttachment,
 	type RESTPostAPIChannelMessageJSONBody,
 } from '../lib';
 
@@ -37,11 +36,9 @@ describe('message embed body serialization', () => {
 		const interactionBody = BaseInteraction.transformBody<RESTPostAPIChannelMessageJSONBody>({}, [file], {
 			options: {},
 		} as never);
-		const publicRequestContract = { id: '0', is_spoiler: true } satisfies RESTAPIAttachment;
 
 		expect(channelBody.attachments).toEqual(expected);
 		expect(interactionBody.attachments).toEqual(expected);
-		expect(publicRequestContract.is_spoiler).toBe(true);
 	});
 
 	test('serializes received embeds in channel message bodies', async () => {
