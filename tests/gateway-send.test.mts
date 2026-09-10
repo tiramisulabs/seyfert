@@ -119,7 +119,52 @@ describe('gateway send chokepoints', () => {
 		expect(messages).toEqual([]);
 	});
 
-	test('WorkerManager.spawn calls presence with the shard id and worker id', () => {
+	test('WorkerManager.send registers acknowledgements before a reentrant transport responds', async () => {
+		let manager!: WorkerManager;
+		({ manager } = createWorkerManager({
+			adapter: {
+				spawn() {},
+				async postMessage(workerId, message) {
+					if (
+						typeof message !== 'object' ||
+						message === null ||
+						!('type' in message) ||
+						message.type !== 'SEND_PAYLOAD' ||
+						!('nonce' in message) ||
+						typeof message.nonce !== 'string'
+					)
+						return;
+					await manager.handleWorkerMessage({
+						type: 'RESULT_PAYLOAD',
+						workerId,
+						nonce: message.nonce,
+					});
+				},
+			},
+		}));
+		manager.set(0, {});
+
+		await expect(manager.send({ op: GatewayOpcodes.Heartbeat, d: null }, 0)).resolves.toBe(true);
+		expect(manager.promises).toHaveLength(0);
+	});
+
+	test('WorkerManager.send clears acknowledgements when worker transport fails', async () => {
+		const transportError = new Error('transport failed');
+		const { manager } = createWorkerManager({
+			adapter: {
+				spawn() {},
+				async postMessage() {
+					throw transportError;
+				},
+			},
+		});
+		manager.set(0, {});
+
+		await expect(manager.send({ op: GatewayOpcodes.Heartbeat, d: null }, 0)).rejects.toBe(transportError);
+		expect(manager.promises).toHaveLength(0);
+	});
+
+	test('WorkerManager.spawn calls presence with the shard id and worker id', async () => {
 		const presence = vi.fn(() => ({
 			activities: [],
 			afk: false,
@@ -130,7 +175,7 @@ describe('gateway send chokepoints', () => {
 		manager.connectQueue = { push: (callback: () => unknown) => callback() } as never;
 		manager.set(1, {});
 
-		manager.spawn(1, 3);
+		await manager.spawn(1, 3);
 
 		expect(presence).toHaveBeenCalledWith(3, 1);
 		expect(messages).toEqual([
@@ -147,12 +192,12 @@ describe('gateway send chokepoints', () => {
 		]);
 	});
 
-	test('WorkerManager.spawn allows missing presence callbacks', () => {
+	test('WorkerManager.spawn allows missing presence callbacks', async () => {
 		const { manager, messages } = createWorkerManager();
 		manager.connectQueue = { push: (callback: () => unknown) => callback() } as never;
 		manager.set(0, {});
 
-		manager.spawn(0, 0);
+		await manager.spawn(0, 0);
 
 		expect(messages).toEqual([
 			{

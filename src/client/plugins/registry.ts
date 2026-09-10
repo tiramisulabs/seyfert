@@ -1,4 +1,5 @@
 import type { MiddlewareContext } from '../../commands';
+import { isPromiseLike } from '../../common/it/utils';
 import type { Awaitable } from '../../common/types/util';
 import { GatewayIntentBits } from '../../types';
 import type { BaseClient, BaseClientOptions } from '../base';
@@ -1403,13 +1404,4 @@ const reservedContextKeys = new Set([
 
 function capitalize(value: string) {
 	return value[0]?.toUpperCase() + value.slice(1);
-}
-
-function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
-	return (
-		typeof value === 'object' &&
-		value !== null &&
-		'then' in value &&
-		typeof (value as { then?: unknown }).then === 'function'
-	);
 }

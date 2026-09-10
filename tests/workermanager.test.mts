@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import type { Worker } from 'node:worker_threads';
+import { MessageChannel, type Worker } from 'node:worker_threads';
 import { assert, describe, expect, test, vi } from 'vitest';
 import { WorkerAdapter } from '../lib/cache';
 import { WorkerClient } from '../lib/client/workerclient';
@@ -26,7 +26,7 @@ describe('WorkerManager', () => {
 			},
 		});
 
-		manager.createWorker({
+		const worker = manager.createWorker({
 			intents: 0,
 			token: 'token',
 			path: 'worker.js',
@@ -41,6 +41,7 @@ describe('WorkerManager', () => {
 			compress: false,
 			resharding: false,
 		});
+		expect(worker).toEqual({ ready: false });
 
 		expect(spawn).toHaveBeenCalledWith(
 			expect.objectContaining({ path: 'worker.js' }),
@@ -49,6 +50,34 @@ describe('WorkerManager', () => {
 				SEYFERT_SPAWNING: 'true',
 			}),
 		);
+	});
+
+	test('waits for custom adapter spawn before registering its heartbeat', async () => {
+		let releaseSpawn!: () => void;
+		const spawn = vi.fn(
+			() =>
+				new Promise<void>(resolve => {
+					releaseSpawn = resolve;
+				}),
+		);
+		const manager = new WorkerManager({
+			mode: 'custom',
+			token: 'token',
+			intents: 0,
+			info: gatewayInfo(),
+			heartbeaterInterval: 0,
+			adapter: { postMessage() {}, spawn },
+		});
+		const register = vi.spyOn(manager.heartbeater, 'register');
+		manager.prepareWorkers([[0]]);
+		const creation = manager.workerQueue.shift()!();
+
+		await Promise.resolve();
+		expect(register).not.toHaveBeenCalled();
+		releaseSpawn();
+		await expect(creation).resolves.toBeUndefined();
+		expect(register).toHaveBeenCalledWith(0, expect.any(Function));
+		expect(manager.get(0)).toEqual({ ready: false });
 	});
 
 	test('thread workers inherit and overlay environment variables', async () => {
@@ -95,7 +124,7 @@ describe('WorkerManager', () => {
 				info,
 				compress: false,
 				resharding: false,
-			}) as Worker;
+			});
 			worker.once('error', rejectMessage);
 			worker.once('exit', code =>
 				rejectMessage(new Error(`Worker exited with code ${code} before reporting its environment.`)),
@@ -135,6 +164,117 @@ describe('WorkerManager', () => {
 			message: "Worker #-1 doesn't exist",
 			metadata: { workerId: -1 },
 		});
+	});
+
+	test('rejects worker requests when cluster IPC reports a send error', async () => {
+		const transportError = new Error('IPC callback failed');
+		const manager = new WorkerManager({
+			mode: 'clusters',
+			path: 'worker.js',
+			token: 'token',
+			intents: 0,
+			info: gatewayInfo(),
+		});
+		manager.set(0, {
+			isConnected: () => true,
+			send(_message: unknown, callback: (error: Error | null) => void) {
+				callback(transportError);
+			},
+		} as never);
+
+		await expect(manager.getWorkerInfo(0)).rejects.toBe(transportError);
+		expect(manager.promises).toHaveLength(0);
+	});
+
+	test('rejects native sends when the worker is unavailable', async () => {
+		const manager = new WorkerManager({
+			mode: 'clusters',
+			path: 'worker.js',
+			token: 'token',
+			intents: 0,
+			info: gatewayInfo(),
+		});
+
+		await expect(manager.postMessage(4, { type: 'HEARTBEAT' })).rejects.toMatchObject({
+			code: 'WORKER_NOT_FOUND',
+			metadata: { workerId: 4 },
+		});
+
+		const send = vi.fn();
+		manager.set(4, { isConnected: () => false, send } as never);
+		await expect(manager.postMessage(4, { type: 'HEARTBEAT' })).rejects.toMatchObject({
+			code: 'INTERNAL_ERROR',
+			metadata: expect.objectContaining({ workerId: 4, mode: 'clusters' }),
+		});
+		expect(send).not.toHaveBeenCalled();
+	});
+
+	test('accepts synchronous reshard queue callbacks', async () => {
+		const callback = vi.fn();
+		const manager = new WorkerManager({
+			mode: 'custom',
+			token: 'token',
+			intents: 0,
+			info: gatewayInfo(),
+			adapter: { postMessage() {}, spawn() {} },
+		});
+		manager.set(0, {});
+		manager.reshardingWorkerQueue.push(callback);
+
+		await expect(
+			manager.handleWorkerMessage({ type: 'WORKER_READY_RESHARDING', workerId: 0 }),
+		).resolves.toBeUndefined();
+		expect(callback).toHaveBeenCalledOnce();
+	});
+
+	test('rejects worker-thread clone errors', async () => {
+		const { port1, port2 } = new MessageChannel();
+		const manager = new WorkerManager({
+			mode: 'threads',
+			path: 'worker.js',
+			token: 'token',
+			intents: 0,
+			info: gatewayInfo(),
+		});
+		manager.set(0, port1 as never);
+
+		try {
+			await expect(
+				manager.postMessage(0, { type: 'EVAL_RESPONSE', nonce: 'clone-error', response: () => undefined }),
+			).rejects.toMatchObject({ name: 'DataCloneError' });
+		} finally {
+			port1.close();
+			port2.close();
+		}
+	});
+
+	test('registers cross-worker responses before the worker transport finishes sending', async () => {
+		let client!: WorkerClient;
+		let transportReceiver: unknown;
+		client = new WorkerClient({
+			async postMessage(this: unknown, message) {
+				transportReceiver = this;
+				if (typeof message !== 'object' || message === null || !('nonce' in message)) return;
+				await client.handleManagerMessages({
+					type: 'EVAL_RESPONSE',
+					nonce: message.nonce as string,
+					response: 'done',
+				});
+			},
+		});
+		const previousWorkerData = client.workerData;
+		client.setWorkerData({ workerId: 0, totalWorkers: 2 } as WorkerClient['workerData']);
+
+		const response = client.tellWorker(1, () => 'done', {});
+		try {
+			expect(client.promises).toHaveLength(0);
+			await expect(response).resolves.toBe('done');
+			expect(transportReceiver).toBe(client);
+		} finally {
+			for (const pending of client.promises.values()) clearTimeout(pending.timeout);
+			client.promises.clear();
+			client.setWorkerData(previousWorkerData);
+		}
 	});
 
 	test('syncLatency returns 0 when a worker has no shards', async () => {
