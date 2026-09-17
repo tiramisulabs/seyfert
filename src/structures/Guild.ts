@@ -17,6 +17,7 @@ import type { DiscordBase } from './extra/DiscordBase';
 import { GuildBan } from './GuildBan';
 import { GuildMember } from './GuildMember';
 import { GuildRole } from './GuildRole';
+import { GuildScheduledEvent } from './GuildScheduledEvent';
 import { GuildTemplate } from './GuildTemplate';
 import { Sticker } from './Sticker';
 
@@ -89,6 +90,7 @@ export class Guild<State extends StructStates = 'api'> extends (BaseGuild as unk
 	channels = BaseChannel.allMethods({ client: this.client, guildId: this.id });
 	emojis = GuildEmoji.methods({ client: this.client, guildId: this.id });
 	bans = GuildBan.methods({ client: this.client, guildId: this.id });
+	events = GuildScheduledEvent.methods({ client: this.client, guildId: this.id });
 
 	edit(body: RESTPatchAPIGuildJSONBody, reason?: string): Promise<GuildStructure<'api'>> {
 		return this.client.guilds.edit(this.id, body, reason);

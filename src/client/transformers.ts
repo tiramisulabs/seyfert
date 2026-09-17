@@ -18,6 +18,8 @@ import {
 	GuildEmoji,
 	GuildMember,
 	GuildRole,
+	GuildScheduledEvent,
+	GuildScheduledSubscriber,
 	GuildTemplate,
 	InteractionGuildMember,
 	MediaChannel,
@@ -35,7 +37,7 @@ import {
 	WebhookMessage,
 } from '../structures';
 import { Application } from '../structures/Application';
-import type { ChannelType } from '../types';
+import type { APIGuildScheduledEvent, ChannelType } from '../types';
 
 export type PollStructure = InferCustomStructure<Poll, 'Poll'>;
 export type ClientUserStructure = InferCustomStructure<ClientUser, 'ClientUser'>;
@@ -67,6 +69,18 @@ export type GuildEmojiStructure = InferCustomStructure<GuildEmoji, 'GuildEmoji'>
 export type GuildMemberStructure = InferCustomStructure<GuildMember, 'GuildMember'>;
 export type InteractionGuildMemberStructure = InferCustomStructure<InteractionGuildMember, 'InteractionGuildMember'>;
 export type GuildRoleStructure = InferCustomStructure<GuildRole, 'GuildRole'>;
+// Preserve the payload discriminator and exact null fields without flattening the union.
+type ScheduledEventFields<T = APIGuildScheduledEvent> = T extends APIGuildScheduledEvent
+	? { entityType: T['entity_type']; channelId: T['channel_id']; entityMetadata: T['entity_metadata'] }
+	: never;
+export type GuildScheduledEventStructure = InferCustomStructure<
+	Omit<GuildScheduledEvent, 'entityType' | 'channelId' | 'entityMetadata'> & ScheduledEventFields,
+	'GuildScheduledEvent'
+>;
+export type GuildScheduledSubscriberStructure = InferCustomStructure<
+	GuildScheduledSubscriber,
+	'GuildScheduledSubscriber'
+>;
 export type GuildTemplateStructure = InferCustomStructure<GuildTemplate, 'GuildTemplate'>;
 export type MessageStructure = InferCustomStructure<Message, 'Message'>;
 export type WebhookMessageStructure = InferCustomStructure<WebhookMessage, 'WebhookMessage'>;
@@ -151,6 +165,15 @@ export const Transformers = {
 	},
 	GuildRole(...args: ConstructorParameters<typeof GuildRole>): GuildRoleStructure {
 		return new GuildRole(...args);
+	},
+	GuildScheduledEvent(...args: ConstructorParameters<typeof GuildScheduledEvent>): GuildScheduledEventStructure {
+		// Construction camel-cases the complete payload without changing its discriminator.
+		return new GuildScheduledEvent(...args) as GuildScheduledEventStructure;
+	},
+	GuildScheduledSubscriber(
+		...args: ConstructorParameters<typeof GuildScheduledSubscriber>
+	): GuildScheduledSubscriberStructure {
+		return new GuildScheduledSubscriber(...args);
 	},
 	GuildTemplate(...args: ConstructorParameters<typeof GuildTemplate>): GuildTemplateStructure {
 		return new GuildTemplate(...args);

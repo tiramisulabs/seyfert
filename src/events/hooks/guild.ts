@@ -2,6 +2,7 @@ import {
 	type GuildEmojiStructure,
 	type GuildMemberStructure,
 	type GuildRoleStructure,
+	type GuildScheduledEventStructure,
 	type GuildStructure,
 	type StickerStructure,
 	Transformers,
@@ -126,24 +127,24 @@ export const GUILD_MEMBER_UPDATE = async (
 };
 
 export const GUILD_SCHEDULED_EVENT_CREATE = (
-	_self: UsingClient,
+	self: UsingClient,
 	data: GatewayGuildScheduledEventCreateDispatchData,
-) => {
-	return toCamelCase(data);
+): GuildScheduledEventStructure => {
+	return Transformers.GuildScheduledEvent(self, data);
 };
 
 export const GUILD_SCHEDULED_EVENT_UPDATE = (
-	_self: UsingClient,
+	self: UsingClient,
 	data: GatewayGuildScheduledEventUpdateDispatchData,
-) => {
-	return toCamelCase(data);
+): GuildScheduledEventStructure => {
+	return Transformers.GuildScheduledEvent(self, data);
 };
 
 export const GUILD_SCHEDULED_EVENT_DELETE = (
-	_self: UsingClient,
+	self: UsingClient,
 	data: GatewayGuildScheduledEventDeleteDispatchData,
-) => {
-	return toCamelCase(data);
+): GuildScheduledEventStructure => {
+	return Transformers.GuildScheduledEvent(self, data);
 };
 
 export const GUILD_SCHEDULED_EVENT_USER_ADD = (
