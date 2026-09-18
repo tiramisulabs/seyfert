@@ -1,6 +1,11 @@
 import type {
 	APIApplication,
 	ApiHandler,
+	AuditLogEvent,
+	type Client,
+	type GuildOnboardingStructure,
+	type GuildWelcomeScreenStructure,
+	RESTGetAPIAuditLogResult,
 	RESTGetAPIApplicationCommandPermissionsResult,
 	RESTGetAPIGuildOnboardingResult,
 	RESTGetAPIInviteResult,
@@ -17,7 +22,14 @@ import type {
 } from 'seyfert';
 
 declare const api: ApiHandler;
+declare const client: Client;
 declare function expectType<T>(value: T): void;
+
+expectType<Promise<GuildOnboardingStructure>>(client.guilds.onboarding.fetch('guild-id'));
+expectType<Promise<GuildWelcomeScreenStructure>>(client.guilds.welcome.fetch('guild-id'));
+expectType<Promise<RESTGetAPIAuditLogResult>>(client.guilds.audit.fetch('guild-id', { limit: 50 }));
+expectType<Promise<RESTGetAPIAuditLogResult>>(client.guilds.audit.byUser('guild-id', 'user-id'));
+expectType<Promise<RESTGetAPIAuditLogResult>>(client.guilds.audit.byAction('guild-id', 1 as AuditLogEvent));
 
 expectType<Promise<RESTPostAPIGuildBulkBanResult>>(
 	api.proxy.guilds('guild-id')['bulk-ban'].post({ body: { user_ids: ['user-id'] } }),

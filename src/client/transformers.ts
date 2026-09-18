@@ -17,10 +17,12 @@ import {
 	GuildBan,
 	GuildEmoji,
 	GuildMember,
+	GuildOnboarding,
 	GuildRole,
 	GuildScheduledEvent,
 	GuildScheduledSubscriber,
 	GuildTemplate,
+	GuildWelcomeScreen,
 	InteractionGuildMember,
 	MediaChannel,
 	Message,
@@ -82,6 +84,8 @@ export type GuildScheduledSubscriberStructure = InferCustomStructure<
 	'GuildScheduledSubscriber'
 >;
 export type GuildTemplateStructure = InferCustomStructure<GuildTemplate, 'GuildTemplate'>;
+export type GuildOnboardingStructure = InferCustomStructure<GuildOnboarding, 'GuildOnboarding'>;
+export type GuildWelcomeScreenStructure = InferCustomStructure<GuildWelcomeScreen, 'GuildWelcomeScreen'>;
 export type MessageStructure = InferCustomStructure<Message, 'Message'>;
 export type WebhookMessageStructure = InferCustomStructure<WebhookMessage, 'WebhookMessage'>;
 export type StickerStructure = InferCustomStructure<Sticker, 'Sticker'>;
@@ -177,6 +181,12 @@ export const Transformers = {
 	},
 	GuildTemplate(...args: ConstructorParameters<typeof GuildTemplate>): GuildTemplateStructure {
 		return new GuildTemplate(...args);
+	},
+	GuildOnboarding(...args: ConstructorParameters<typeof GuildOnboarding>): GuildOnboardingStructure {
+		return new GuildOnboarding(...args);
+	},
+	GuildWelcomeScreen(...args: ConstructorParameters<typeof GuildWelcomeScreen>): GuildWelcomeScreenStructure {
+		return new GuildWelcomeScreen(...args);
 	},
 	Message(...args: ConstructorParameters<typeof Message>): MessageStructure {
 		return new Message(...args);

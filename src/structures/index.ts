@@ -6,6 +6,8 @@ export * from './Emoji';
 export * from './Entitlement';
 export * from './Guild';
 export * from './GuildBan';
+export * from './GuildCommunity';
+export * from './GuildCommunityMethods';
 export * from './GuildMember';
 export * from './GuildPreview';
 export * from './GuildRole';

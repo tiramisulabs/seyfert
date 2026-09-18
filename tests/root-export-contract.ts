@@ -18,6 +18,8 @@ import {
 	type GatewayMessageCreateDispatchData,
 	type GatewayPresenceClientStatus,
 	type GroupDMChannelStructure,
+	type GuildOnboardingStructure,
+	type GuildWelcomeScreenStructure,
 	HeadingLevel,
 	type HttpConfig,
 	LabelComponent,
@@ -234,3 +236,11 @@ declare const routes: APIRoutes;
 expectType<Promise<RESTDeleteAPICurrentUserApplicationRoleConnectionResult>>(
 	routes.users('@me').applications('application-id')['role-connection'].delete(),
 );
+
+declare const onboardingStructure: GuildOnboardingStructure;
+expectType<boolean>(onboardingStructure.isEnabled);
+expectType<number>(onboardingStructure.totalOptions);
+
+declare const welcomeStructure: GuildWelcomeScreenStructure;
+expectType<boolean>(welcomeStructure.hasDescription);
+expectType<number>(welcomeStructure.channelCount);

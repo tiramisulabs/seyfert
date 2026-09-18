@@ -15,6 +15,7 @@ import { GuildEmoji } from './Emoji';
 import { BaseGuild } from './extra/BaseGuild';
 import type { DiscordBase } from './extra/DiscordBase';
 import { GuildBan } from './GuildBan';
+import { GuildCommunityMethods } from './GuildCommunityMethods';
 import { GuildMember } from './GuildMember';
 import { GuildRole } from './GuildRole';
 import { GuildScheduledEvent } from './GuildScheduledEvent';
@@ -91,6 +92,7 @@ export class Guild<State extends StructStates = 'api'> extends (BaseGuild as unk
 	emojis = GuildEmoji.methods({ client: this.client, guildId: this.id });
 	bans = GuildBan.methods({ client: this.client, guildId: this.id });
 	events = GuildScheduledEvent.methods({ client: this.client, guildId: this.id });
+	community = GuildCommunityMethods({ client: this.client, guildId: this.id });
 
 	edit(body: RESTPatchAPIGuildJSONBody, reason?: string): Promise<GuildStructure<'api'>> {
 		return this.client.guilds.edit(this.id, body, reason);
