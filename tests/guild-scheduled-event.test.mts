@@ -145,7 +145,11 @@ describe('GuildScheduledEvent', () => {
 			entity_type: 3,
 			entity_id: null,
 			entity_metadata: { location: 'central park' },
-			recurrence_rule: null,
+			recurrence_rule: {
+				start: startTime,
+				frequency: 2,
+				interval: 1,
+			},
 		} as unknown as APIGuildScheduledEvent;
 		const fakeClient = {} as never;
 
