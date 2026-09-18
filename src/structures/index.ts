@@ -9,6 +9,7 @@ export * from './GuildBan';
 export * from './GuildMember';
 export * from './GuildPreview';
 export * from './GuildRole';
+export * from './GuildScheduledEvent';
 export * from './GuildTemplate';
 export * from './Interaction';
 export * from './Message';
