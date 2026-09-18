@@ -65,7 +65,11 @@ export const GUILD_DELETE = async (
 	self: UsingClient,
 	data: GatewayGuildDeleteDispatchData,
 ): Promise<GuildStructure<'cached'> | APIUnavailableGuild> => {
-	return (await self.cache.guilds?.get(data.id)) ?? data;
+	const guild = await self.cache.guilds?.get(data.id);
+	if (!guild) return data;
+	// Availability belongs to this dispatch, including an absent flag on a real removal.
+	guild.unavailable = data.unavailable;
+	return guild;
 };
 
 export const GUILD_EMOJIS_UPDATE = (
