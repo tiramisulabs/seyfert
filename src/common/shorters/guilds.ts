@@ -4,6 +4,8 @@ import {
 	type AnonymousGuildStructure,
 	type AutoModerationRuleStructure,
 	type GuildMemberStructure,
+	type GuildScheduledEventStructure,
+	type GuildScheduledSubscriberStructure,
 	type GuildStructure,
 	type MessageStructure,
 	type StickerStructure,
@@ -25,14 +27,19 @@ import type {
 	RESTGetAPIGuildMessagesSearchQuery,
 	RESTGetAPIGuildMessagesSearchResult,
 	RESTGetAPIGuildQuery,
+	RESTGetAPIGuildScheduledEventQuery,
+	RESTGetAPIGuildScheduledEventsQuery,
+	RESTGetAPIGuildScheduledEventUsersQuery,
 	RESTPatchAPIAutoModerationRuleJSONBody,
 	RESTPatchAPIChannelJSONBody,
 	RESTPatchAPIGuildChannelPositionsJSONBody,
 	RESTPatchAPIGuildJSONBody,
+	RESTPatchAPIGuildScheduledEventJSONBody,
 	RESTPatchAPIGuildStickerJSONBody,
 	RESTPostAPIAutoModerationRuleJSONBody,
 	RESTPostAPIChannelFollowersResult,
 	RESTPostAPIGuildChannelJSONBody,
+	RESTPostAPIGuildScheduledEventJSONBody,
 } from '../../types';
 import type { APITextChannel } from '../../types/payloads/channel';
 import { SeyfertError } from '../it/error';
@@ -346,6 +353,109 @@ export class GuildShorter extends BaseShorter {
 				.patch({ body, reason })
 				.then(rule => Transformers.AutoModerationRule(this.client, rule));
 		},
+	};
+
+	/**
+	 * Provides access to scheduled-event functionality in a guild.
+	 *
+	 * https://docs.discord.com/developers/resources/guild-scheduled-event
+	 */
+	events = {
+		/**
+		 * Lists scheduled events in the guild.
+		 * @param guildId The ID of the guild.
+		 * @param query Whether to include subscriber counts.
+		 * @returns A Promise that resolves to an array of scheduled events.
+		 */
+		list: (guildId: string, query?: RESTGetAPIGuildScheduledEventsQuery): Promise<GuildScheduledEventStructure[]> =>
+			this.client.proxy
+				.guilds(guildId)
+				['scheduled-events'].get({ query })
+				.then(events => events.map(event => Transformers.GuildScheduledEvent(this.client, event))),
+
+		/**
+		 * Creates a scheduled event in the guild.
+		 * @param guildId The ID of the guild.
+		 * @param body The data for creating the scheduled event.
+		 * @param reason The audit-log reason.
+		 * @returns A Promise that resolves to the created scheduled event.
+		 */
+		create: (
+			guildId: string,
+			body: RESTPostAPIGuildScheduledEventJSONBody,
+			reason?: string,
+		): Promise<GuildScheduledEventStructure> =>
+			this.client.proxy
+				.guilds(guildId)
+				['scheduled-events'].post({ body, reason })
+				.then(event => Transformers.GuildScheduledEvent(this.client, event)),
+
+		/**
+		 * Fetches a scheduled event by its ID.
+		 * @param guildId The ID of the guild.
+		 * @param eventId The ID of the event to fetch.
+		 * @param query Whether to include the subscriber count.
+		 * @returns A Promise that resolves to the fetched scheduled event.
+		 */
+		fetch: (
+			guildId: string,
+			eventId: string,
+			query?: RESTGetAPIGuildScheduledEventQuery,
+		): Promise<GuildScheduledEventStructure> =>
+			this.client.proxy
+				.guilds(guildId)
+				['scheduled-events'](eventId)
+				.get({ query })
+				.then(event => Transformers.GuildScheduledEvent(this.client, event)),
+
+		/**
+		 * Edits a scheduled event.
+		 * @param guildId The ID of the guild.
+		 * @param eventId The ID of the event to edit.
+		 * @param body The data to update the event with.
+		 * @param reason The audit-log reason.
+		 * @returns A Promise that resolves to the edited scheduled event.
+		 */
+		edit: (
+			guildId: string,
+			eventId: string,
+			body: RESTPatchAPIGuildScheduledEventJSONBody,
+			reason?: string,
+		): Promise<GuildScheduledEventStructure> =>
+			this.client.proxy
+				.guilds(guildId)
+				['scheduled-events'](eventId)
+				.patch({ body, reason })
+				.then(event => Transformers.GuildScheduledEvent(this.client, event)),
+
+		/**
+		 * Deletes a scheduled event.
+		 * @param guildId The ID of the guild.
+		 * @param eventId The ID of the event to delete.
+		 * @param reason The audit-log reason.
+		 */
+		delete: (guildId: string, eventId: string, reason?: string) =>
+			this.client.proxy.guilds(guildId)['scheduled-events'](eventId).delete({ reason }),
+
+		/**
+		 * Lists users subscribed to a scheduled event.
+		 * Users are always returned in ascending order by `user_id`; when both
+		 * `before` and `after` are provided, only `before` is respected.
+		 * @param guildId The ID of the guild.
+		 * @param eventId The ID of the event.
+		 * @param query Pagination and member-inclusion options.
+		 * @returns A Promise that resolves to the event subscribers.
+		 */
+		subscribers: (
+			guildId: string,
+			eventId: string,
+			query?: RESTGetAPIGuildScheduledEventUsersQuery,
+		): Promise<GuildScheduledSubscriberStructure[]> =>
+			this.client.proxy
+				.guilds(guildId)
+				['scheduled-events'](eventId)
+				.users.get({ query })
+				.then(users => users.map(user => Transformers.GuildScheduledSubscriber(this.client, user, guildId))),
 	};
 
 	/**
