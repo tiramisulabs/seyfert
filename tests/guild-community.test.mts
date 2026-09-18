@@ -86,8 +86,12 @@ describe('Guild community shorters', () => {
 		expect(edited).toBeInstanceOf(GuildOnboarding);
 		expect(edited.enabled).toBe(false);
 		const calls = bot.restCalls().filter(call => call.method === 'PUT');
-		expect(calls.at(-1)).toMatchObject({ body: expect.objectContaining({ enabled: false }), reason: 'pause onboarding' });
+		expect(calls.at(-1)).toMatchObject({
+			body: expect.objectContaining({ enabled: false }),
+			reason: 'pause onboarding',
+		});
 	});
+
 	test('welcome fetch and edit round-trip through the welcome-screen route', async () => {
 		const world = mockWorld();
 		const guild = world.registerGuild();
@@ -166,7 +170,11 @@ describe('Guild community shorters', () => {
 		const guild = world.registerGuild();
 		await using bot = await createMockBot({ world });
 		bot.rest.intercept('GET', `/guilds/${guild.id}/widget`, () => ({ enabled: true, channel_id: null }));
-		bot.rest.intercept('PATCH', `/guilds/${guild.id}/widget`, request => ({ enabled: true, channel_id: null, ...(request.body as object) }));
+		bot.rest.intercept('PATCH', `/guilds/${guild.id}/widget`, request => ({
+			enabled: true,
+			channel_id: null,
+			...(request.body as object),
+		}));
 		bot.rest.intercept('GET', `/guilds/${guild.id}/widget.json`, () => ({
 			id: guild.id,
 			name: 'guild',

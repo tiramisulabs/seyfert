@@ -193,7 +193,11 @@ export class GuildShorter extends BaseShorter {
 		 * @param reason The audit-log reason.
 		 * @returns A Promise that resolves to the updated onboarding structure.
 		 */
-		edit: (guildId: string, body: RESTPutAPIGuildOnboardingJSONBody, reason?: string): Promise<GuildOnboardingStructure> =>
+		edit: (
+			guildId: string,
+			body: RESTPutAPIGuildOnboardingJSONBody,
+			reason?: string,
+		): Promise<GuildOnboardingStructure> =>
 			this.client.proxy
 				.guilds(guildId)
 				.onboarding.put({ body, reason })
@@ -255,8 +259,11 @@ export class GuildShorter extends BaseShorter {
 		 * @param reason The audit-log reason.
 		 * @returns A Promise that resolves to the updated widget settings payload.
 		 */
-		edit: (guildId: string, body: RESTPatchAPIGuildWidgetSettingsJSONBody, reason?: string): Promise<APIGuildWidgetSettings> =>
-			this.client.proxy.guilds(guildId).widget.patch({ body, reason }),
+		edit: (
+			guildId: string,
+			body: RESTPatchAPIGuildWidgetSettingsJSONBody,
+			reason?: string,
+		): Promise<APIGuildWidgetSettings> => this.client.proxy.guilds(guildId).widget.patch({ body, reason }),
 
 		/**
 		 * Fetches the public widget for a guild.
@@ -292,7 +299,9 @@ export class GuildShorter extends BaseShorter {
 			return Promise.reject(
 				new SeyfertError('MISSING_INCIDENT_ACTIONS', {
 					metadata: {
-						...createValidationMetadata('at least one of invites_disabled_until or dms_disabled_until', body, { guildId }),
+						...createValidationMetadata('at least one of invites_disabled_until or dms_disabled_until', body, {
+							guildId,
+						}),
 						detail: `Incident actions for guild ${guildId} need at least one of invites_disabled_until or dms_disabled_until.`,
 					},
 				}),

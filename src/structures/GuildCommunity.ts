@@ -4,6 +4,7 @@ import type { ReturnCache } from '../cache';
 import type { GuildOnboardingStructure, GuildStructure, GuildWelcomeScreenStructure } from '../client/transformers';
 import type { UsingClient } from '../commands';
 import type { MethodContext, ObjectToLower } from '../common';
+import { toCamelCase } from '../common';
 import type {
 	APIGuildOnboarding,
 	APIGuildOnboardingPrompt,
@@ -13,7 +14,6 @@ import type {
 	RESTPatchAPIGuildWelcomeScreenJSONBody,
 	RESTPutAPIGuildOnboardingJSONBody,
 } from '../types';
-import { Base } from './extra/Base';
 import { DiscordBase } from './extra/DiscordBase';
 
 export interface GuildOnboardingPromptOptionData extends ObjectToLower<Omit<APIGuildOnboardingPromptOption, 'emoji'>> {
@@ -54,9 +54,8 @@ export class GuildOnboarding extends DiscordBase<APIGuildOnboarding & { id: stri
 	}
 
 	private patchRecord(value: object): Record<string, unknown> {
-		// ho __patchThis lives on Base, borrow it on a throwaway so nested rows camelCase right
-		const holder = Object.create(Base.prototype) as Base;
-		return holder['__patchThis'].call(holder, value as never) as unknown as Record<string, unknown>;
+		// ho plain toCamelCase on nested rows, way simpler than poking at Base privates
+		return toCamelCase(value as Record<string, any>);
 	}
 
 	// ahh quick check so bots know if members even see this flow
@@ -112,10 +111,11 @@ export class GuildOnboarding extends DiscordBase<APIGuildOnboarding & { id: stri
 	}
 }
 
-
 export interface GuildWelcomeScreenChannelData extends ObjectToLower<APIGuildWelcomeScreenChannel> {}
 
-export interface GuildWelcomeScreen extends DiscordBase, ObjectToLower<Omit<APIGuildWelcomeScreen, 'welcome_channels'>> {
+export interface GuildWelcomeScreen
+	extends DiscordBase,
+		ObjectToLower<Omit<APIGuildWelcomeScreen, 'welcome_channels'>> {
 	guildId: string;
 	welcomeChannels: GuildWelcomeScreenChannelData[];
 }
@@ -132,9 +132,8 @@ export class GuildWelcomeScreen extends DiscordBase<APIGuildWelcomeScreen & { id
 	}
 
 	private patchRecord(value: object): Record<string, unknown> {
-		// ho same trick as onboarding, borrow Base on a throwaway holder
-		const holder = Object.create(Base.prototype) as Base;
-		return holder['__patchThis'].call(holder, value as never) as unknown as Record<string, unknown>;
+		// ho same trick as onboarding, plain toCamelCase here too
+		return toCamelCase(value as Record<string, any>);
 	}
 
 	// ahh empty description means Discord shows a pretty bare screen
