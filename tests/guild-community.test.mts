@@ -2,6 +2,7 @@
 // btw hits real routes through intercepts so it proves the full shorter path
 import { createMockBot, mockWorld } from '@slipher/testing';
 import { describe, expect, test } from 'vitest';
+import type { GuildWidgetStyle } from '../lib';
 import { GuildOnboarding, GuildWelcomeScreen } from '../lib';
 
 const onboardingPayload = {
@@ -188,7 +189,7 @@ describe('Guild community shorters', () => {
 		expect((await bot.client.guilds.widget.settings(guild.id)).enabled).toBe(true);
 		expect((await bot.client.guilds.widget.edit(guild.id, { enabled: false }, 'hide widget')).channel_id).toBe(null);
 		expect((await bot.client.guilds.widget.fetch(guild.id)).presence_count).toBe(1);
-		expect(await bot.client.guilds.widget.image(guild.id, { style: 'shield' })).toBeDefined();
+		expect(await bot.client.guilds.widget.image(guild.id, { style: 'shield' as GuildWidgetStyle })).toBeDefined();
 	});
 
 	test('incidents requires at least one disable window', async () => {

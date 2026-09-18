@@ -31,10 +31,8 @@ export function GuildCommunityMethods({ client, guildId }: MethodContext<{ guild
 		): Promise<RESTGetAPIAuditLogResult> => client.guilds.audit.byAction(guildId, actionType, query),
 		// ho onboarding shortcuts, cuz full shorter path is a mouthful
 		onboarding: (): Promise<GuildOnboardingStructure> => client.guilds.onboarding.fetch(guildId),
-		editOnboarding: (
-			body: RESTPutAPIGuildOnboardingJSONBody,
-			reason?: string,
-		): Promise<GuildOnboardingStructure> => client.guilds.onboarding.edit(guildId, body, reason),
+		editOnboarding: (body: RESTPutAPIGuildOnboardingJSONBody, reason?: string): Promise<GuildOnboardingStructure> =>
+			client.guilds.onboarding.edit(guildId, body, reason),
 		// ahh welcome screen shortcuts
 		welcomeScreen: (): Promise<GuildWelcomeScreenStructure> => client.guilds.welcome.fetch(guildId),
 		editWelcomeScreen: (
