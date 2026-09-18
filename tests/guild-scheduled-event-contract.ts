@@ -6,7 +6,7 @@ import {
 	type RESTPatchAPIGuildScheduledEventJSONBody,
 	type RESTPostAPIGuildScheduledEventJSONBody,
 } from 'seyfert';
-import type { GUILD_SCHEDULED_EVENT_CREATE, GUILD_SCHEDULED_EVENT_UPDATE, GUILD_SCHEDULED_EVENT_DELETE } from '../lib/events/hooks/guild';
+import type { GUILD_SCHEDULED_EVENT_CREATE, GUILD_SCHEDULED_EVENT_DELETE, GUILD_SCHEDULED_EVENT_UPDATE } from '../lib/events/hooks/guild';
 
 declare function expectType<T>(value: T): void;
 declare const event: GuildScheduledEventStructure;

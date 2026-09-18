@@ -1,8 +1,8 @@
 import { createMockBot, mockWorld, Routes } from '@slipher/testing';
 import { describe, expect, test } from 'vitest';
+import type { APIGuildScheduledEvent } from '../lib';
 import { GuildScheduledEvent, GuildScheduledSubscriber } from '../lib';
 import { GUILD_SCHEDULED_EVENT_CREATE, GUILD_SCHEDULED_EVENT_UPDATE } from '../lib/events/hooks/guild';
-import type { APIGuildScheduledEvent } from '../lib';
 
 const startTime = '2026-09-01T10:00:00.000Z';
 
