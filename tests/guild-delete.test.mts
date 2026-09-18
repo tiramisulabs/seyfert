@@ -12,12 +12,14 @@ describe.each([
 		const run = vi.fn();
 		await using bot = await createMockBot({
 			client,
-			events: [createEvent({
-				data: { name: 'guildDelete' },
-				async run(guild) {
-					run(guild, await client.cache.guilds?.raw(guild.id));
-				},
-			})],
+			events: [
+				createEvent({
+					data: { name: 'guildDelete' },
+					async run(guild) {
+						run(guild, await client.cache.guilds?.raw(guild.id));
+					},
+				}),
+			],
 		});
 		const guild = {
 			...apiGuild(),

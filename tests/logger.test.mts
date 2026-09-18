@@ -36,17 +36,19 @@ describe('Logger file output', () => {
 	afterEach(async () => {
 		vi.restoreAllMocks();
 
-		if (tempDir && process.cwd() === tempDir) {
-			if (existsSync(join(tempDir, Logger.dirname))) await Logger.clearLogs();
+		try {
+			if (tempDir && existsSync(join(tempDir, Logger.dirname))) await Logger.clearLogs();
+		} finally {
+			// cwd() may resolve symlinks in tempDir (for example /var -> /private/var on macOS).
 			if (cwd) process.chdir(cwd);
-			rmSync(tempDir, { recursive: true, force: true });
-		}
+			if (tempDir) rmSync(tempDir, { recursive: true, force: true });
 
-		statics.createdDir = createdDir;
-		statics.fileNames = fileNames;
-		statics.streams = streams;
-		cwd = undefined;
-		tempDir = undefined;
+			statics.createdDir = createdDir;
+			statics.fileNames = fileNames;
+			statics.streams = streams;
+			cwd = undefined;
+			tempDir = undefined;
+		}
 	});
 
 	test('caches an existing log directory and clears pending file streams', async () => {
