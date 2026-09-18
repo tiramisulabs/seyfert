@@ -623,7 +623,7 @@ export class CommandHandler extends BaseHandler {
 	}
 
 	stablishSubCommandDefaults(commandInstance: Command, option: SubCommand): SubCommand {
-		option.middlewares = (commandInstance.middlewares ?? []).concat(option.middlewares ?? []);
+		option.middlewares = [...new Set((commandInstance.middlewares ?? []).concat(option.middlewares ?? []))];
 		option.onBeforeMiddlewares =
 			option.onBeforeMiddlewares?.bind(option) ??
 			commandInstance.onBeforeMiddlewares?.bind(commandInstance) ??
