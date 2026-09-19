@@ -35,7 +35,7 @@ export function resolveColor(color: ColorResolvable): number {
 	const type = typeof color;
 
 	if (type === 'number') {
-		if (!Number.isInteger(color) || (color as number) < 0)
+		if (!Number.isInteger(color) || (color as number) < 0 || (color as number) > 0xffffff)
 			throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Invalid color: ${color}` } });
 		return color as number;
 	}
@@ -54,9 +54,16 @@ export function resolveColor(color: ColorResolvable): number {
 		return EmbedColors.Default;
 	}
 
-	return Array.isArray(color) && color.length >= 3
-		? (color[0] << 16) | (color[1] << 8) | color[2]
-		: EmbedColors.Default;
+	if (Array.isArray(color) && color.length >= 3) {
+		const [red, green, blue] = color;
+		if (
+			[red, green, blue].every(value => Number.isInteger(value) && (value as number) >= 0 && (value as number) <= 255)
+		)
+			return ((red as number) << 16) | ((green as number) << 8) | (blue as number);
+		throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Invalid color: ${color}` } });
+	}
+
+	return EmbedColors.Default;
 }
 
 /**
