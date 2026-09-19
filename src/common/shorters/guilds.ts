@@ -99,7 +99,6 @@ export class GuildShorter extends BaseShorter {
 	 * @returns The generated widget URL.
 	 */
 	widgetURL(id: string, style?: GuildWidgetStyle) {
-		// ho this one is just the public png, no auth needed btw
 		return this.client.proxy.guilds(id)['widget.png'].get({ query: { style } });
 	}
 
@@ -116,7 +115,6 @@ export class GuildShorter extends BaseShorter {
 		 * @returns A Promise that resolves to the raw audit log payload.
 		 */
 		fetch: (guildId: string, query?: RESTGetAPIAuditLogQuery) => {
-			// cuz Discord caps limit at 1-100, fail fast instead of a weird 400
 			if (query?.limit !== undefined && (!Number.isInteger(query.limit) || query.limit < 1 || query.limit > 100)) {
 				return Promise.reject(
 					new SeyfertError('INVALID_AUDIT_LOG_LIMIT', {
@@ -127,7 +125,7 @@ export class GuildShorter extends BaseShorter {
 					}),
 				);
 			}
-			// ho before and after both set confuses ordering, Discord only honors before
+			// Discord accepts only one cursor; passing both leaves ordering undefined.
 			if (query?.before !== undefined && query?.after !== undefined) {
 				return Promise.reject(
 					new SeyfertError('CONFLICTING_AUDIT_LOG_CURSOR', {
@@ -273,7 +271,6 @@ export class GuildShorter extends BaseShorter {
 		body: RESTPutAPIGuildIncidentActionsJSONBody,
 		reason?: string,
 	): Promise<RESTPutAPIGuildIncidentActionsResult> {
-		// ops blanks mean nothing to change, so bail early with a clear error
 		if (body.invites_disabled_until === undefined && body.dms_disabled_until === undefined) {
 			return Promise.reject(
 				new SeyfertError('MISSING_INCIDENT_ACTIONS', {
