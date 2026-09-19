@@ -4,9 +4,11 @@ import {
 	type AnonymousGuildStructure,
 	type AutoModerationRuleStructure,
 	type GuildMemberStructure,
+	type GuildOnboardingStructure,
 	type GuildScheduledEventStructure,
 	type GuildScheduledSubscriberStructure,
 	type GuildStructure,
+	type GuildWelcomeScreenStructure,
 	type MessageStructure,
 	type StickerStructure,
 	Transformers,
@@ -21,7 +23,10 @@ import {
 } from '../../structures';
 import type {
 	APIChannel,
+	APIGuildWidget,
+	APIGuildWidgetSettings,
 	GuildWidgetStyle,
+	RESTGetAPIAuditLogQuery,
 	RESTGetAPICurrentUserGuildsQuery,
 	RESTGetAPIGuildMessagesSearch,
 	RESTGetAPIGuildMessagesSearchQuery,
@@ -30,19 +35,25 @@ import type {
 	RESTGetAPIGuildScheduledEventQuery,
 	RESTGetAPIGuildScheduledEventsQuery,
 	RESTGetAPIGuildScheduledEventUsersQuery,
+	RESTGetAPIGuildWidgetImageQuery,
 	RESTPatchAPIAutoModerationRuleJSONBody,
 	RESTPatchAPIChannelJSONBody,
 	RESTPatchAPIGuildChannelPositionsJSONBody,
 	RESTPatchAPIGuildJSONBody,
 	RESTPatchAPIGuildScheduledEventJSONBody,
 	RESTPatchAPIGuildStickerJSONBody,
+	RESTPatchAPIGuildWelcomeScreenJSONBody,
+	RESTPatchAPIGuildWidgetSettingsJSONBody,
 	RESTPostAPIAutoModerationRuleJSONBody,
 	RESTPostAPIChannelFollowersResult,
 	RESTPostAPIGuildChannelJSONBody,
 	RESTPostAPIGuildScheduledEventJSONBody,
+	RESTPutAPIGuildIncidentActionsJSONBody,
+	RESTPutAPIGuildIncidentActionsResult,
+	RESTPutAPIGuildOnboardingJSONBody,
 } from '../../types';
 import type { APITextChannel } from '../../types/payloads/channel';
-import { SeyfertError } from '../it/error';
+import { createValidationMetadata, SeyfertError } from '../it/error';
 import { delay } from '../it/utils';
 import type { If, MakeRequired } from '../types/util';
 import { BaseShorter } from './base';
@@ -88,7 +99,191 @@ export class GuildShorter extends BaseShorter {
 	 * @returns The generated widget URL.
 	 */
 	widgetURL(id: string, style?: GuildWidgetStyle) {
-		return this.client.proxy.guilds(id).widget.get({ query: { style } });
+		return this.client.proxy.guilds(id)['widget.png'].get({ query: { style } });
+	}
+
+	/**
+	 * Provides access to audit-log functionality in a guild.
+	 *
+	 * https://docs.discord.com/developers/resources/audit-log#get-guild-audit-log
+	 */
+	audit = {
+		/**
+		 * Fetches the audit log for a guild.
+		 * @param guildId The ID of the guild.
+		 * @param query Filter and pagination options.
+		 * @returns A Promise that resolves to the raw audit log payload.
+		 */
+		fetch: (guildId: string, query?: RESTGetAPIAuditLogQuery) => {
+			if (query?.limit !== undefined && (!Number.isInteger(query.limit) || query.limit < 1 || query.limit > 100)) {
+				return Promise.reject(
+					new SeyfertError('INVALID_AUDIT_LOG_LIMIT', {
+						metadata: {
+							...createValidationMetadata('an integer between 1 and 100', query.limit, { guildId }),
+							detail: `Audit log limit for guild ${guildId} must be an integer between 1 and 100.`,
+						},
+					}),
+				);
+			}
+			// Discord accepts only one cursor; passing both leaves ordering undefined.
+			if (query?.before !== undefined && query?.after !== undefined) {
+				return Promise.reject(
+					new SeyfertError('CONFLICTING_AUDIT_LOG_CURSOR', {
+						metadata: {
+							...createValidationMetadata(
+								'either before or after, not both',
+								{ before: query.before, after: query.after },
+								{
+									guildId,
+								},
+							),
+							detail: `Audit log fetch for guild ${guildId} accepts either before or after, not both.`,
+						},
+					}),
+				);
+			}
+			return this.client.proxy.guilds(guildId)['audit-logs'].get({ query });
+		},
+	};
+
+	/**
+	 * Provides access to onboarding functionality in a guild.
+	 *
+	 * https://docs.discord.com/developers/resources/guild#get-guild-onboarding
+	 */
+	onboarding = {
+		/**
+		 * Fetches the onboarding flow for a guild.
+		 * @param guildId The ID of the guild.
+		 * @returns A Promise that resolves to the onboarding structure.
+		 */
+		fetch: (guildId: string): Promise<GuildOnboardingStructure> =>
+			this.client.proxy
+				.guilds(guildId)
+				.onboarding.get()
+				.then(onboarding => Transformers.GuildOnboarding(this.client, onboarding)),
+
+		/**
+		 * Replaces the onboarding flow for a guild.
+		 * @param guildId The ID of the guild.
+		 * @param body The new onboarding payload.
+		 * @param reason The audit-log reason.
+		 * @returns A Promise that resolves to the updated onboarding structure.
+		 */
+		edit: (
+			guildId: string,
+			body: RESTPutAPIGuildOnboardingJSONBody,
+			reason?: string,
+		): Promise<GuildOnboardingStructure> =>
+			this.client.proxy
+				.guilds(guildId)
+				.onboarding.put({ body, reason })
+				.then(onboarding => Transformers.GuildOnboarding(this.client, onboarding)),
+	};
+
+	/**
+	 * Provides access to welcome-screen functionality in a guild.
+	 *
+	 * https://docs.discord.com/developers/resources/guild#get-guild-welcome-screen
+	 */
+	welcome = {
+		/**
+		 * Fetches the welcome screen for a guild.
+		 * @param guildId The ID of the guild.
+		 * @returns A Promise that resolves to the welcome screen structure.
+		 */
+		fetch: (guildId: string): Promise<GuildWelcomeScreenStructure> =>
+			this.client.proxy
+				.guilds(guildId)
+				['welcome-screen'].get()
+				.then(screen => Transformers.GuildWelcomeScreen(this.client, screen, guildId)),
+
+		/**
+		 * Edits the welcome screen for a guild.
+		 * @param guildId The ID of the guild.
+		 * @param body The data to update the welcome screen with.
+		 * @param reason The audit-log reason.
+		 * @returns A Promise that resolves to the updated welcome screen structure.
+		 */
+		edit: (
+			guildId: string,
+			body: RESTPatchAPIGuildWelcomeScreenJSONBody,
+			reason?: string,
+		): Promise<GuildWelcomeScreenStructure> =>
+			this.client.proxy
+				.guilds(guildId)
+				['welcome-screen'].patch({ body, reason })
+				.then(screen => Transformers.GuildWelcomeScreen(this.client, screen, guildId)),
+	};
+
+	/**
+	 * Provides access to widget functionality in a guild.
+	 *
+	 * https://docs.discord.com/developers/resources/guild#get-guild-widget-settings
+	 */
+	widget = {
+		/**
+		 * Fetches the widget settings for a guild.
+		 * @param guildId The ID of the guild.
+		 * @returns A Promise that resolves to the widget settings payload.
+		 */
+		settings: (guildId: string): Promise<APIGuildWidgetSettings> => this.client.proxy.guilds(guildId).widget.get(),
+
+		/**
+		 * Edits the widget settings for a guild.
+		 * @param guildId The ID of the guild.
+		 * @param body The data to update the widget settings with.
+		 * @param reason The audit-log reason.
+		 * @returns A Promise that resolves to the updated widget settings payload.
+		 */
+		edit: (
+			guildId: string,
+			body: RESTPatchAPIGuildWidgetSettingsJSONBody,
+			reason?: string,
+		): Promise<APIGuildWidgetSettings> => this.client.proxy.guilds(guildId).widget.patch({ body, reason }),
+
+		/**
+		 * Fetches the public widget for a guild.
+		 * @param guildId The ID of the guild.
+		 * @returns A Promise that resolves to the widget payload.
+		 */
+		fetch: (guildId: string): Promise<APIGuildWidget> => this.client.proxy.guilds(guildId)['widget.json'].get(),
+
+		/**
+		 * Fetches the widget image for a guild.
+		 * @param guildId The ID of the guild.
+		 * @param query The widget image style.
+		 * @returns A Promise that resolves to the PNG bytes.
+		 */
+		image: (guildId: string, query?: RESTGetAPIGuildWidgetImageQuery) =>
+			this.client.proxy.guilds(guildId)['widget.png'].get({ query }),
+	};
+
+	/**
+	 * Replaces the incident actions for a guild.
+	 * @param guildId The ID of the guild.
+	 * @param body When invites and DMs stay disabled until.
+	 * @param reason The audit-log reason.
+	 * @returns A Promise that resolves to the updated incidents payload.
+	 */
+	incidents(
+		guildId: string,
+		body: RESTPutAPIGuildIncidentActionsJSONBody,
+		reason?: string,
+	): Promise<RESTPutAPIGuildIncidentActionsResult> {
+		if (body.invites_disabled_until === undefined && body.dms_disabled_until === undefined) {
+			return Promise.reject(
+				new SeyfertError('MISSING_INCIDENT_ACTIONS', {
+					metadata: {
+						...createValidationMetadata('at least one of invites_disabled_until or dms_disabled_until', body, {
+							guildId,
+						}),
+						detail: `Incident actions for guild ${guildId} need at least one of invites_disabled_until or dms_disabled_until.`,
+					},
+				}),
+			);
+		}
+		return this.client.proxy.guilds(guildId)['incident-actions'].put({ body, reason });
 	}
 
 	async edit(guildId: string, body: RESTPatchAPIGuildJSONBody, reason?: string): Promise<GuildStructure<'api'>> {
