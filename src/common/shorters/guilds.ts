@@ -25,7 +25,6 @@ import type {
 	APIChannel,
 	APIGuildWidget,
 	APIGuildWidgetSettings,
-	AuditLogEvent,
 	GuildWidgetStyle,
 	RESTGetAPIAuditLogQuery,
 	RESTGetAPICurrentUserGuildsQuery,
@@ -147,26 +146,6 @@ export class GuildShorter extends BaseShorter {
 			}
 			return this.client.proxy.guilds(guildId)['audit-logs'].get({ query });
 		},
-
-		/**
-		 * Fetches audit log entries made by one user.
-		 * @param guildId The ID of the guild.
-		 * @param userId The ID of the user who made the entries.
-		 * @param query Extra filter and pagination options.
-		 * @returns A Promise that resolves to the raw audit log payload.
-		 */
-		byUser: (guildId: string, userId: string, query?: Omit<RESTGetAPIAuditLogQuery, 'user_id'>) =>
-			this.audit.fetch(guildId, { ...query, user_id: userId }),
-
-		/**
-		 * Fetches audit log entries for one action type.
-		 * @param guildId The ID of the guild.
-		 * @param actionType The audit log event to filter by.
-		 * @param query Extra filter and pagination options.
-		 * @returns A Promise that resolves to the raw audit log payload.
-		 */
-		byAction: (guildId: string, actionType: AuditLogEvent, query?: Omit<RESTGetAPIAuditLogQuery, 'action_type'>) =>
-			this.audit.fetch(guildId, { ...query, action_type: actionType }),
 	};
 
 	/**

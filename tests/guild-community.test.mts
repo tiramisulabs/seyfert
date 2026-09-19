@@ -1,9 +1,6 @@
-// ho guild community coverage, onboarding + welcome + widget + audit + incidents
-// btw hits real routes through intercepts so it proves the full shorter path
 import { createMockBot, mockWorld } from '@slipher/testing';
 import { describe, expect, test } from 'vitest';
-import type { GuildWidgetStyle } from '../lib';
-import { GuildOnboarding, GuildWelcomeScreen } from '../lib';
+import { GuildOnboarding, GuildWelcomeScreen, GuildWidgetStyle } from '../lib';
 
 const onboardingPayload = {
 	guild_id: '100000000000000001',
@@ -65,10 +62,10 @@ describe('Guild community shorters', () => {
 
 		expect(onboarding).toBeInstanceOf(GuildOnboarding);
 		expect(onboarding.guildId).toBe(guild.id);
-		expect(onboarding.isEnabled).toBe(true);
-		expect(onboarding.flowPrompts).toHaveLength(1);
-		expect(onboarding.requiredPrompts).toHaveLength(1);
-		expect(onboarding.totalOptions).toBe(1);
+		expect(onboarding.enabled).toBe(true);
+		expect(onboarding.prompts.filter(prompt => prompt.inOnboarding)).toHaveLength(1);
+		expect(onboarding.prompts.filter(prompt => prompt.required)).toHaveLength(1);
+		expect(onboarding.prompts.reduce((total, prompt) => total + (prompt.options?.length ?? 0), 0)).toBe(1);
 		expect(onboarding.prompts[0]?.options[0]).toMatchObject({ emojiName: 'wave', emojiId: null });
 	});
 
@@ -105,8 +102,8 @@ describe('Guild community shorters', () => {
 
 		expect(screen).toBeInstanceOf(GuildWelcomeScreen);
 		expect(screen.guildId).toBe(guild.id);
-		expect(screen.hasDescription).toBe(true);
-		expect(screen.channelCount).toBe(1);
+		expect(screen.description?.length).toBeGreaterThan(0);
+		expect(screen.welcomeChannels).toHaveLength(1);
 		expect(screen.welcomeChannels[0]).toMatchObject({ channelId: '400000000000000004', emojiName: 'wave' });
 
 		const edited = await screen.edit({ description: 'New hello' }, 'refresh welcome');
@@ -126,7 +123,7 @@ describe('Guild community shorters', () => {
 		const structure = await bot.client.guilds.fetch(guild.id);
 
 		expect((await structure.community.onboarding()).id).toBe(guild.id);
-		expect((await structure.community.welcomeScreen()).channelCount).toBe(1);
+		expect((await structure.community.welcomeScreen()).welcomeChannels).toHaveLength(1);
 	});
 
 	test('audit fetch validates limit and conflicting cursors before REST', async () => {
@@ -160,7 +157,7 @@ describe('Guild community shorters', () => {
 		});
 
 		const before = bot.restCalls().length;
-		const log = await bot.client.guilds.audit.byUser(guild.id, '500000000000000006', { limit: 2 });
+		const log = await bot.client.guilds.audit.fetch(guild.id, { limit: 2, user_id: '500000000000000006' });
 
 		expect(log.audit_log_entries).toEqual([]);
 		expect(bot.restCalls().length).toBeGreaterThan(before);
@@ -189,7 +186,7 @@ describe('Guild community shorters', () => {
 		expect((await bot.client.guilds.widget.settings(guild.id)).enabled).toBe(true);
 		expect((await bot.client.guilds.widget.edit(guild.id, { enabled: false }, 'hide widget')).channel_id).toBe(null);
 		expect((await bot.client.guilds.widget.fetch(guild.id)).presence_count).toBe(1);
-		expect(await bot.client.guilds.widget.image(guild.id, { style: 'shield' as GuildWidgetStyle })).toBeDefined();
+		expect(await bot.client.guilds.widget.image(guild.id, { style: GuildWidgetStyle.Shield })).toBeDefined();
 	});
 
 	test('incidents requires at least one disable window', async () => {
