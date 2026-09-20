@@ -49,7 +49,10 @@ export function resolveColor(color: ColorResolvable): number {
 			const hex = (color as string).slice(1);
 			if (!/^[\da-f]+$/i.test(hex))
 				throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Invalid color: ${color}` } });
-			return Number.parseInt(hex, 16);
+			const value = Number.parseInt(hex, 16);
+			if (value > 0xffffff)
+				throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Invalid color: ${color}` } });
+			return value;
 		}
 		return EmbedColors.Default;
 	}

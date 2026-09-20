@@ -7,6 +7,14 @@ describe('resolveColor', () => {
 		expect(() => resolveColor('#zzzzzz')).toThrowError('Invalid color: #zzzzzz');
 	});
 
+	test('validates hexadecimal colors by value rather than width', () => {
+		expect(() => resolveColor('#1000000')).toThrowError('Invalid color: #1000000');
+		expect(resolveColor('#FFFFFF')).toBe(0xffffff);
+		expect(resolveColor('#0')).toBe(0);
+		expect(resolveColor('#abc')).toBe(0xabc);
+		expect(resolveColor('#0000001')).toBe(1);
+	});
+
 	test('rejects numbers outside the 0-0xFFFFFF range', () => {
 		expect(() => resolveColor(-1)).toThrowError('Invalid color: -1');
 		expect(() => resolveColor(0xffffff + 1)).toThrowError('Invalid color: 16777216');
