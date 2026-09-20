@@ -56,10 +56,8 @@ export function resolveColor(color: ColorResolvable): number {
 
 	if (Array.isArray(color) && color.length >= 3) {
 		const [red, green, blue] = color;
-		if (
-			[red, green, blue].every(value => Number.isInteger(value) && (value as number) >= 0 && (value as number) <= 255)
-		)
-			return ((red as number) << 16) | ((green as number) << 8) | (blue as number);
+		if ([red, green, blue].every(value => Number.isInteger(value) && value >= 0 && value <= 255))
+			return (red << 16) | (green << 8) | blue;
 		throw new SeyfertError('INTERNAL_ERROR', { metadata: { detail: `Invalid color: ${color}` } });
 	}
 
