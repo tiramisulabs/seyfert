@@ -29,6 +29,7 @@ import {
 	NewsChannel,
 	Poll,
 	StageChannel,
+	StageInstance,
 	Sticker,
 	TextGuildChannel,
 	ThreadChannel,
@@ -83,6 +84,7 @@ export type GuildScheduledSubscriberStructure = InferCustomStructure<
 	GuildScheduledSubscriber,
 	'GuildScheduledSubscriber'
 >;
+export type StageInstanceStructure = InferCustomStructure<StageInstance, 'StageInstance'>;
 export type GuildTemplateStructure = InferCustomStructure<GuildTemplate, 'GuildTemplate'>;
 export type GuildOnboardingStructure = InferCustomStructure<GuildOnboarding, 'GuildOnboarding'>;
 export type GuildWelcomeScreenStructure = InferCustomStructure<GuildWelcomeScreen, 'GuildWelcomeScreen'>;
@@ -178,6 +180,9 @@ export const Transformers = {
 		...args: ConstructorParameters<typeof GuildScheduledSubscriber>
 	): GuildScheduledSubscriberStructure {
 		return new GuildScheduledSubscriber(...args);
+	},
+	StageInstance(...args: ConstructorParameters<typeof StageInstance>): StageInstanceStructure {
+		return new StageInstance(...args);
 	},
 	GuildTemplate(...args: ConstructorParameters<typeof GuildTemplate>): GuildTemplateStructure {
 		return new GuildTemplate(...args);

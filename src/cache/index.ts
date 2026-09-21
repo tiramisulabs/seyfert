@@ -514,10 +514,10 @@ export class Cache {
 				break;
 			case 'STAGE_INSTANCE_CREATE':
 			case 'STAGE_INSTANCE_UPDATE':
-				await this.stageInstances?.set(CacheFrom.Gateway, event.d.id, event.d.guild_id, event.d);
+				await this.stageInstances?.set(CacheFrom.Gateway, event.d.channel_id, event.d.guild_id, event.d);
 				break;
 			case 'STAGE_INSTANCE_DELETE':
-				await this.stageInstances?.remove(event.d.id, event.d.guild_id);
+				await this.stageInstances?.remove(event.d.channel_id, event.d.guild_id);
 				break;
 			case 'MESSAGE_CREATE':
 				{

@@ -15,6 +15,7 @@ import {
 	type MessageStructure,
 	type NewsChannelStructure,
 	type StageChannelStructure,
+	type StageInstanceStructure,
 	type TextGuildChannelStructure,
 	type ThreadChannelStructure,
 	Transformers,
@@ -60,8 +61,10 @@ import {
 	type RESTGetAPIChannelMessagesQuery,
 	type RESTPatchAPIChannelJSONBody,
 	type RESTPatchAPIGuildChannelPositionsJSONBody,
+	type RESTPatchAPIStageInstanceJSONBody,
 	type RESTPostAPIChannelWebhookJSONBody,
 	type RESTPostAPIGuildChannelJSONBody,
+	type RESTPostAPIStageInstanceJSONBody,
 	type SortOrderType,
 	type ThreadAutoArchiveDuration,
 	VideoQualityMode,
@@ -523,6 +526,26 @@ export class ThreadOnlyMethods extends DiscordBase {
 export interface VoiceChannelMethods extends BaseChannel<ChannelType> {
 	guildId?: string;
 }
+export class StageInstanceChannelMethods extends DiscordBase {
+	stageInstance = StageInstanceChannelMethods.channel({
+		client: this.client,
+		channelId: this.id,
+	});
+
+	static channel(ctx: MethodContext<{ channelId: string }>) {
+		return {
+			fetch: (): Promise<StageInstanceStructure> => ctx.client.stageInstances.fetch(ctx.channelId),
+			create: (
+				body: Omit<RESTPostAPIStageInstanceJSONBody, 'channel_id'>,
+				reason?: string,
+			): Promise<StageInstanceStructure> =>
+				ctx.client.stageInstances.create({ ...body, channel_id: ctx.channelId }, reason),
+			edit: (body: RESTPatchAPIStageInstanceJSONBody, reason?: string): Promise<StageInstanceStructure> =>
+				ctx.client.stageInstances.edit(ctx.channelId, body, reason),
+			delete: (reason?: string) => ctx.client.stageInstances.delete(ctx.channelId, reason),
+		};
+	}
+}
 export class VoiceChannelMethods extends DiscordBase {
 	setBitrate(bitrate: number | null, reason?: string) {
 		return this.edit({ bitrate }, reason);
@@ -618,10 +641,11 @@ export class VoiceChannel extends BaseGuildChannel {
 export interface StageChannel
 	extends ObjectToLower<Omit<APIGuildStageVoiceChannel, 'type' | 'permission_overwrites' | 'guild_id'>>,
 		TopicableGuildChannel,
-		VoiceChannelMethods {
+		VoiceChannelMethods,
+		StageInstanceChannelMethods {
 	guildId: string;
 }
-@mix(TopicableGuildChannel, VoiceChannelMethods)
+@mix(TopicableGuildChannel, VoiceChannelMethods, StageInstanceChannelMethods)
 export class StageChannel extends BaseGuildChannel {
 	declare type: ChannelType.GuildStageVoice;
 }

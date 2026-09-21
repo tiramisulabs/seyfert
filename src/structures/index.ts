@@ -15,6 +15,7 @@ export * from './GuildTemplate';
 export * from './Interaction';
 export * from './Message';
 export * from './Poll';
+export * from './StageInstance';
 export * from './Sticker';
 export * from './User';
 export * from './VoiceState';
