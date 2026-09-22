@@ -109,6 +109,7 @@ export const SeyfertErrorMessages = {
 	INVALID_AUDIT_LOG_LIMIT: 'Invalid audit log limit.',
 	CONFLICTING_AUDIT_LOG_CURSOR: 'Conflicting audit log cursor.',
 	MISSING_INCIDENT_ACTIONS: 'Missing incident actions.',
+	INVALID_STAGE_INSTANCE_TOPIC: 'Invalid stage instance topic.',
 	UNDEFINED_LOCALE: 'Undefined locale.',
 	INTERACTION_ALREADY_REPLIED: 'Interaction already replied.',
 	CANNOT_USE_REPLY: 'Cannot use reply in this interaction.',

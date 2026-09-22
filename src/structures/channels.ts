@@ -70,6 +70,7 @@ import { DiscordBase } from './extra/DiscordBase';
 import { PermissionsBitField } from './extra/Permissions';
 import type { GuildMember } from './GuildMember';
 import type { GuildRole } from './GuildRole';
+import { StageInstance } from './StageInstance';
 
 export class BaseNoEditableChannel<T extends ChannelType> extends DiscordBase<APIChannelBase<ChannelType>> {
 	declare type: T;
@@ -620,10 +621,14 @@ export interface StageChannel
 		TopicableGuildChannel,
 		VoiceChannelMethods {
 	guildId: string;
+	/** Live stage operations for this stage channel. */
+	stage: ReturnType<typeof StageInstance.methods>;
 }
 @mix(TopicableGuildChannel, VoiceChannelMethods)
 export class StageChannel extends BaseGuildChannel {
 	declare type: ChannelType.GuildStageVoice;
+
+	stage = StageInstance.methods({ client: this.client, channelId: this.id });
 }
 
 export interface MediaChannel

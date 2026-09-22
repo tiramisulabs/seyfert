@@ -123,7 +123,7 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 		}
 
 		for (const instance of data.stage_instances ?? []) {
-			bulkData.push([from, 'stageInstances', instance, instance.id, id]);
+			bulkData.push([from, 'stageInstances', instance, instance.channel_id, id]);
 		}
 
 		const {
@@ -189,7 +189,7 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 		}
 
 		for (const instance of data.stage_instances ?? []) {
-			bulkData.push([from, 'stageInstances', instance, instance.id, id]);
+			bulkData.push([from, 'stageInstances', instance, instance.channel_id, id]);
 		}
 
 		const {

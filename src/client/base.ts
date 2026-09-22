@@ -57,6 +57,7 @@ import {
 import { toArrayBuffer } from '../common/it/utils';
 import { BanShorter } from '../common/shorters/bans';
 import { SoundboardShorter } from '../common/shorters/soundboard';
+import { StageInstanceShorter } from '../common/shorters/stages';
 import { VoiceStateShorter } from '../common/shorters/voiceStates';
 import type { Awaitable, DeepPartial, OmitInsert, PermissionStrings, When } from '../common/types/util';
 import { ComponentCommand, type ComponentContext, ModalCommand, type ModalContext } from '../components';
@@ -170,6 +171,7 @@ export class BaseClient {
 	voiceStates = new VoiceStateShorter(this);
 	soundboards = new SoundboardShorter(this);
 	invites = new InvitesShorter(this);
+	stageInstances = new StageInstanceShorter(this);
 
 	debugger?: Logger;
 

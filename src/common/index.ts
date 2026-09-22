@@ -18,6 +18,7 @@ export * from './shorters/members';
 export * from './shorters/messages';
 export * from './shorters/reactions';
 export * from './shorters/roles';
+export * from './shorters/stages';
 export * from './shorters/templates';
 export * from './shorters/threads';
 export * from './shorters/users';
