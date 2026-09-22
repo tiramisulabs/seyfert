@@ -1,6 +1,6 @@
 import { createMockBot, mockWorld, Routes } from '@slipher/testing';
 import { describe, expect, test } from 'vitest';
-import { StageInstance } from '../lib';
+import { GatewayIntentBits, StageInstance } from '../lib';
 import { STAGE_INSTANCE_CREATE, STAGE_INSTANCE_DELETE, STAGE_INSTANCE_UPDATE } from '../lib/events/hooks/stage';
 
 const topic = 'weekly stage planning';
@@ -109,6 +109,7 @@ describe('StageInstance', () => {
 
 		const fetched = await bot.client.stageInstances.fetch(channel.id);
 		expect((await fetched.fetch()).id).toBe(fetched.id);
+		expect((await fetched.fetch(true)).id).toBe(fetched.id);
 
 		const renamed = await fetched.edit({ topic: 'from structure' });
 		expect(renamed.topic).toBe('from structure');
@@ -116,8 +117,9 @@ describe('StageInstance', () => {
 		const channelStructure = await bot.client.channels.fetch(channel.id);
 		expect(channelStructure.isStage()).toBe(true);
 		if (channelStructure.isStage()) {
-			expect((await channelStructure.stageInstance.fetch()).id).toBe(fetched.id);
-			expect((await channelStructure.stageInstance.edit({ topic: 'from channel' })).topic).toBe('from channel');
+			expect((await channelStructure.stage.fetch()).id).toBe(fetched.id);
+			expect((await channelStructure.stage.fetch(true)).id).toBe(fetched.id);
+			expect((await channelStructure.stage.edit({ topic: 'from channel' })).topic).toBe('from channel');
 		}
 	});
 
@@ -142,6 +144,45 @@ describe('StageInstance', () => {
 
 		await bot.client.cache.onPacket({ t: 'STAGE_INSTANCE_DELETE', d: updated } as never);
 		expect((await bot.client.cache.stageInstances?.raw(channel.id)) ?? undefined).toBeUndefined();
+	});
+
+	test('rest edit leaves the previous topic for the gateway update', async () => {
+		const world = mockWorld();
+		const guild = world.registerGuild();
+		const channel = world.registerChannel(guild.id, { type: 13 });
+		world.registerStageInstance(channel.id, { topic });
+		await using bot = await createMockBot({ world });
+
+		bot.client.cache.intents = GatewayIntentBits.Guilds;
+		await bot.client.cache.stageInstances?.flush();
+		await bot.client.stageInstances.fetch(channel.id);
+
+		// The default mock handler mirrors Discord by caching the REST write
+		// itself, so override it here: only the shorter under test may touch
+		// the cache, otherwise the old value could never survive the edit.
+		bot.rest.intercept('PATCH', `/stage-instances/${channel.id}`, request => ({
+			id: '900000000000000001',
+			guild_id: guild.id,
+			channel_id: channel.id,
+			topic: (request.body as { topic: string }).topic,
+			privacy_level: 2,
+		}));
+
+		const edited = await bot.client.stageInstances.edit(channel.id, { topic: 'from rest' });
+		expect(edited.topic).toBe('from rest');
+		// With guild state cached the REST write stays out of the way,
+		// so the gateway payload still carries the previous topic.
+		expect((await bot.client.cache.stageInstances?.raw(channel.id))?.topic).toBe(topic);
+
+		const [updated, old] = await STAGE_INSTANCE_UPDATE(bot.client, {
+			id: edited.id,
+			guild_id: guild.id,
+			channel_id: channel.id,
+			topic: 'from rest',
+			privacy_level: 2,
+		} as never);
+		expect(updated.topic).toBe('from rest');
+		expect(old?.topic).toBe(topic);
 	});
 
 	test('gateway hooks return structures and keep the update old value', async () => {

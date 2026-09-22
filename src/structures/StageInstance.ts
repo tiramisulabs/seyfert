@@ -57,9 +57,10 @@ export class StageInstance extends DiscordBase<APIStageInstance> {
 
 	/**
 	 * Refetches this stage instance from Discord.
+	 * @param force Skip the cache and hit Discord directly.
 	 */
-	fetch(): Promise<StageInstanceStructure> {
-		return this.client.stageInstances.fetch(this.channelId);
+	fetch(force = false): Promise<StageInstanceStructure> {
+		return this.client.stageInstances.fetch(this.channelId, force);
 	}
 
 	/**
@@ -81,7 +82,11 @@ export class StageInstance extends DiscordBase<APIStageInstance> {
 
 	static methods({ client, channelId }: MethodContext<{ channelId: string }>) {
 		return {
-			fetch: (): Promise<StageInstanceStructure> => client.stageInstances.fetch(channelId),
+			fetch: (force = false): Promise<StageInstanceStructure> => client.stageInstances.fetch(channelId, force),
+			create: (
+				body: Omit<RESTPostAPIStageInstanceJSONBody, 'channel_id'>,
+				reason?: string,
+			): Promise<StageInstanceStructure> => client.stageInstances.create({ ...body, channel_id: channelId }, reason),
 			edit: (body: RESTPatchAPIStageInstanceJSONBody, reason?: string): Promise<StageInstanceStructure> =>
 				client.stageInstances.edit(channelId, body, reason),
 			delete: (reason?: string) => client.stageInstances.delete(channelId, reason),

@@ -21,6 +21,13 @@ expectType<string>(instance.topic);
 expectType<StageInstancePrivacyLevel>(instance.privacyLevel);
 expectType<boolean>(instance.isGuildOnly);
 expectType<Promise<StageInstanceStructure>>(instance.fetch());
+expectType<Promise<StageInstanceStructure>>(instance.fetch(true));
+declare const stageChannel: import('seyfert').StageChannelStructure;
+expectType<Promise<StageInstanceStructure>>(stageChannel.stage.fetch());
+expectType<Promise<StageInstanceStructure>>(stageChannel.stage.fetch(true));
+expectType<Promise<StageInstanceStructure>>(stageChannel.stage.create({ topic: 'late show' }));
+expectType<Promise<StageInstanceStructure>>(stageChannel.stage.edit({ topic: 'late show' }));
+expectType<Promise<undefined>>(stageChannel.stage.delete());
 expectType<Promise<StageInstanceStructure>>(instance.edit({ topic: 'late show' }));
 expectType<Promise<StageInstanceStructure>>(client.stageInstances.fetch('channel-id'));
 expectType<Promise<StageInstanceStructure>>(

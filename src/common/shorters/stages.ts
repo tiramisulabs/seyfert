@@ -80,7 +80,9 @@ export class StageInstanceShorter extends BaseShorter {
 	): Promise<StageInstanceStructure> {
 		if (body.topic !== undefined) assertTopic(body.topic, channelId);
 		const instance = await this.client.proxy['stage-instances'](channelId).patch({ body, reason });
-		await this.client.cache.stageInstances?.set(CacheFrom.Rest, channelId, instance.guild_id, instance);
+		// Let the gateway event win when guild state is cached. Writing here
+		// first would leave the update hook with no previous value to report.
+		await this.client.cache.stageInstances?.setIfNI(CacheFrom.Rest, 'Guilds', channelId, instance.guild_id, instance);
 		return Transformers.StageInstance(this.client, instance);
 	}
 
@@ -91,8 +93,6 @@ export class StageInstanceShorter extends BaseShorter {
 	 */
 	async delete(channelId: string, reason?: string) {
 		await this.client.proxy['stage-instances'](channelId).delete({ reason });
-		const cached = await this.client.cache.stageInstances?.raw(channelId);
-		// The guild param is unused by the resource remove, the cached guild is only kept for readability.
-		await this.client.cache.stageInstances?.remove(channelId, cached?.guild_id ?? '');
+		await this.client.cache.stageInstances?.removeIfNI('Guilds', channelId, '');
 	}
 }
