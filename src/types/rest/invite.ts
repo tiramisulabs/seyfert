@@ -73,3 +73,49 @@ export interface RESTGetTargetUsersJobStatus {
 }
 
 export type RESTGetTargetUsersJobStatusResult = RESTGetTargetUsersJobStatus;
+
+/**
+ * https://docs.discord.com/developers/resources/invite#add-target-user
+ *
+ * Adds a target user to an existing invite.
+ * Requires the caller to be the inviter or have the MANAGE_GUILD permission.
+ */
+export type RESTPutAddTargetUserResult = undefined;
+
+/**
+ * https://docs.discord.com/developers/resources/invite#remove-target-user
+ *
+ * Removes a target user from an existing invite.
+ * Requires the caller to be the inviter or have the MANAGE_GUILD permission.
+ */
+export type RESTDeleteRemoveTargetUserResult = undefined;
+
+/**
+ * https://docs.discord.com/developers/resources/invite#bulk-add-target-users
+ *
+ * Adds multiple target users to an existing invite.
+ * Requires the caller to be the inviter or have the MANAGE_GUILD permission.
+ */
+export interface RESTPostBulkAddTargetUsersJSONBody {
+	/**
+	 * The IDs of users to add (max 1000)
+	 */
+	user_ids: readonly Snowflake[];
+}
+
+export type RESTPostBulkAddTargetUsersResult = undefined;
+
+/**
+ * https://docs.discord.com/developers/resources/invite#bulk-delete-target-users
+ *
+ * Removes multiple target users from an existing invite.
+ * Requires the caller to be the inviter or have the MANAGE_GUILD permission.
+ */
+export interface RESTPostBulkDeleteTargetUsersJSONBody {
+	/**
+	 * The IDs of users to remove (max 1000)
+	 */
+	user_ids: readonly Snowflake[];
+}
+
+export type RESTPostBulkDeleteTargetUsersResult = undefined;
