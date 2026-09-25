@@ -586,6 +586,11 @@ export interface RESTPostAPIChannelInviteJSONBody {
 	 */
 	target_users_file?: Blob | undefined;
 	/**
+	 * An array of IDs of all users able to see and accept this invite (max 1000)
+	 * - Mutually exclusive with `target_users_file`, only one can be sent at a time.
+	 */
+	target_user_ids?: readonly Snowflake[] | undefined;
+	/**
 	 * the role ID(s) for roles in the guild given to the users that accept this invite
 	 */
 	role_ids?: Snowflake[] | undefined;
