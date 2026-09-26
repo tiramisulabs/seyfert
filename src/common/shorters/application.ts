@@ -3,6 +3,7 @@ import {
 	type ApplicationEmojiStructure,
 	type ApplicationStructure,
 	type EntitlementStructure,
+	type SKUStructure,
 	Transformers,
 } from '../../client';
 import type {
@@ -97,7 +98,23 @@ export class ApplicationShorter extends BaseShorter {
 	}
 
 	/**
+	 * Gets one entitlement for the application.
+	 *
+	 * https://docs.discord.com/developers/resources/entitlement#get-entitlement
+	 * @param entitlementId The ID of the entitlement.
+	 */
+	async fetchEntitlement(entitlementId: string): Promise<EntitlementStructure> {
+		const data = await this.client.proxy.applications(this.client.applicationId).entitlements(entitlementId).get();
+		return Transformers.Entitlement(this.client, data);
+	}
+
+	/**
 	 * Consumes an entitlement for the application.
+	 *
+	 * Only works for consumable one-time purchase SKUs. Discord answers
+	 * with 204 on success.
+	 *
+	 * https://docs.discord.com/developers/resources/entitlement#consume-an-entitlement
 	 * @param entitlementId The ID of the entitlement.
 	 */
 	consumeEntitlement(entitlementId: string) {
@@ -125,10 +142,15 @@ export class ApplicationShorter extends BaseShorter {
 
 	/**
 	 * Lists the SKUs for the application.
+	 *
+	 * Kept here because the route lives under the application. The
+	 * structured version with SKU helpers is client.monetization.listSKUs().
+	 *
+	 * https://docs.discord.com/developers/resources/sku#list-skus
 	 * @returns The SKUs.
 	 */
-	listSKUs() {
-		return this.client.proxy.applications(this.client.applicationId).skus.get();
+	listSKUs(): Promise<SKUStructure[]> {
+		return this.client.monetization.listSKUs();
 	}
 
 	async fetch(): Promise<ApplicationStructure> {

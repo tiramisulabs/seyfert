@@ -13,6 +13,10 @@ export interface APIEntitlement {
 	 */
 	sku_id: Snowflake;
 	/**
+	 * ID of the parent application
+	 */
+	application_id: Snowflake;
+	/**
 	 * ID of the user that is granted access to the entitlement's sku
 	 */
 	user_id?: Snowflake;
@@ -21,9 +25,32 @@ export interface APIEntitlement {
 	 */
 	guild_id?: Snowflake;
 	/**
-	 * ID of the parent application
+	 * ID of the promotion that granted this entitlement.
+	 *
+	 * Discord includes this in real payloads but it is not part of the
+	 * documented structure table, so it stays optional here.
+	 *
+	 * https://docs.discord.com/developers/resources/entitlement#entitlement-object-entitlement-example
 	 */
-	application_id: Snowflake;
+	promotion_id?: Snowflake | null;
+	/**
+	 * Flags for the gift code that granted this entitlement, if any.
+	 *
+	 * Discord includes this in real payloads but it is not part of the
+	 * documented structure table, so it stays optional here.
+	 *
+	 * https://docs.discord.com/developers/resources/entitlement#entitlement-object-entitlement-example
+	 */
+	gift_code_flags?: number;
+	/**
+	 * ID of the subscription that granted this entitlement, if any.
+	 *
+	 * Discord includes this in real payloads but it is not part of the
+	 * documented structure table, so it stays optional here.
+	 *
+	 * https://docs.discord.com/developers/resources/entitlement#entitlement-object-entitlement-example
+	 */
+	subscription_id?: Snowflake;
 	/**
 	 * Type of entitlement
 	 */
@@ -114,6 +141,69 @@ export interface APISKU {
 	 * See https://en.wikipedia.org/wiki/Bit_field
 	 */
 	flags: SKUFlags;
+	/**
+	 * ID of the SKU this SKU depends on, if any.
+	 *
+	 * Discord includes this in real payloads but it is not part of the
+	 * documented structure table, so it stays optional here.
+	 *
+	 * https://docs.discord.com/developers/resources/sku#sku-object-sku-example
+	 */
+	dependent_sku_id?: Snowflake | null;
+	/**
+	 * Access type for this SKU.
+	 *
+	 * Discord includes this in real payloads but it is not part of the
+	 * documented structure table, so it stays optional here.
+	 *
+	 * https://docs.discord.com/developers/resources/sku#sku-object-sku-example
+	 */
+	access_type?: number;
+	/**
+	 * Labels from the app manifest for this SKU, if any.
+	 *
+	 * Discord includes this in real payloads but it is not part of the
+	 * documented structure table, so it stays optional here.
+	 *
+	 * https://docs.discord.com/developers/resources/sku#sku-object-sku-example
+	 */
+	manifest_labels?: string[] | null;
+	/**
+	 * Feature identifiers attached to this SKU.
+	 *
+	 * Discord includes this in real payloads but it is not part of the
+	 * documented structure table, so it stays optional here.
+	 *
+	 * https://docs.discord.com/developers/resources/sku#sku-object-sku-example
+	 */
+	features?: string[];
+	/**
+	 * Release date for this SKU, if Discord provided one.
+	 *
+	 * Discord includes this in real payloads but it is not part of the
+	 * documented structure table, so it stays optional here.
+	 *
+	 * https://docs.discord.com/developers/resources/sku#sku-object-sku-example
+	 */
+	release_date?: string | null;
+	/**
+	 * Whether this SKU is tied to Discord premium content.
+	 *
+	 * Discord includes this in real payloads but it is not part of the
+	 * documented structure table, so it stays optional here.
+	 *
+	 * https://docs.discord.com/developers/resources/sku#sku-object-sku-example
+	 */
+	premium?: boolean;
+	/**
+	 * Whether Discord shows an age gate for this SKU.
+	 *
+	 * Discord includes this in real payloads but it is not part of the
+	 * documented structure table, so it stays optional here.
+	 *
+	 * https://docs.discord.com/developers/resources/sku#sku-object-sku-example
+	 */
+	show_age_gate?: boolean;
 }
 
 /**

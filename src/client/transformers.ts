@@ -28,9 +28,11 @@ import {
 	Message,
 	NewsChannel,
 	Poll,
+	SKU,
 	StageChannel,
 	StageInstance,
 	Sticker,
+	Subscription,
 	TextGuildChannel,
 	ThreadChannel,
 	User,
@@ -96,6 +98,8 @@ export type VoiceStateStructure = InferCustomStructure<VoiceState, 'VoiceState'>
 export type WebhookStructure = InferCustomStructure<Webhook, 'Webhook'>;
 export type OptionResolverStructure = InferCustomStructure<OptionResolver, 'OptionResolver'>;
 export type EntitlementStructure = InferCustomStructure<Entitlement, 'Entitlement'>;
+export type SKUStructure = InferCustomStructure<SKU, 'SKU'>;
+export type SubscriptionStructure = InferCustomStructure<Subscription, 'Subscription'>;
 
 export const Transformers = {
 	Application(...args: ConstructorParameters<typeof Application>): ApplicationStructure {
@@ -219,6 +223,12 @@ export const Transformers = {
 	},
 	Entitlement(...args: ConstructorParameters<typeof Entitlement>): EntitlementStructure {
 		return new Entitlement(...args);
+	},
+	SKU(...args: ConstructorParameters<typeof SKU>): SKUStructure {
+		return new SKU(...args);
+	},
+	Subscription(...args: ConstructorParameters<typeof Subscription>): SubscriptionStructure {
+		return new Subscription(...args);
 	},
 };
 

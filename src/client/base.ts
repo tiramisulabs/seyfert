@@ -45,6 +45,7 @@ import {
 	MemberShorter,
 	MergeOptions,
 	MessageShorter,
+	MonetizationShorter,
 	magicImport,
 	ReactionShorter,
 	RoleShorter,
@@ -172,6 +173,7 @@ export class BaseClient {
 	soundboards = new SoundboardShorter(this);
 	invites = new InvitesShorter(this);
 	stageInstances = new StageInstanceShorter(this);
+	monetization = new MonetizationShorter(this);
 
 	debugger?: Logger;
 
