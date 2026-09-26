@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Review Standards"
+  short_description: "Review code with exact evidence-backed findings"
+  default_prompt: "Use $code-review-standards to review this change against the exact revision and produce evidence-backed findings."

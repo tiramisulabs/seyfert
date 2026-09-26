@@ -1,0 +1,4 @@
+interface:
+  display_name: "Make No Mistakes"
+  short_description: "Apply proportional evidence-driven rigor"
+  default_prompt: "Use $make-no-mistakes to complete this change with proportional rigor and fresh verification."
