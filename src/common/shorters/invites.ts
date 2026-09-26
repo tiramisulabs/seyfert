@@ -42,6 +42,46 @@ export class InvitesShorter extends BaseShorter {
 			.then(x => toCamelCase(x));
 	}
 
+	/**
+	 * Adds a target user to an existing invite.
+	 * @param code The invite code.
+	 * @param userId The ID of the user to add.
+	 */
+	addTargetUser(code: string, userId: string) {
+		return this.client.proxy.invites(code)['target-users'](userId).put();
+	}
+
+	/**
+	 * Removes a target user from an existing invite.
+	 * @param code The invite code.
+	 * @param userId The ID of the user to remove.
+	 */
+	removeTargetUser(code: string, userId: string) {
+		return this.client.proxy.invites(code)['target-users'](userId).delete();
+	}
+
+	/**
+	 * Adds multiple target users to an existing invite (max 1000).
+	 * @param code The invite code.
+	 * @param userIds The IDs of the users to add.
+	 */
+	bulkAddTargetUsers(code: string, userIds: readonly string[]) {
+		return this.client.proxy.invites(code)['target-users']['bulk-add'].post({
+			body: { user_ids: userIds },
+		});
+	}
+
+	/**
+	 * Removes multiple target users from an existing invite (max 1000).
+	 * @param code The invite code.
+	 * @param userIds The IDs of the users to remove.
+	 */
+	bulkRemoveTargetUsers(code: string, userIds: readonly string[]) {
+		return this.client.proxy.invites(code)['target-users']['bulk-delete'].post({
+			body: { user_ids: userIds },
+		});
+	}
+
 	channels = {
 		create: ({ channelId, reason, ...body }: CreateInviteFromChannel) =>
 			this.client.proxy

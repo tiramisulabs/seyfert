@@ -5,6 +5,7 @@ import type {
 	Client,
 	GuildOnboardingStructure,
 	GuildWelcomeScreenStructure,
+	RESTDeleteRemoveTargetUserResult,
 	RESTGetAPIApplicationCommandPermissionsResult,
 	RESTGetAPIAuditLogResult,
 	RESTGetAPIGuildOnboardingResult,
@@ -15,10 +16,16 @@ import type {
 	RESTGetAPIVoiceRegionsResult,
 	RESTPatchAPIWebhookWithTokenMessageResult,
 	RESTPatchAPIWebhookWithTokenResult,
+	RESTPostAPIChannelInviteJSONBody,
+	RESTPostAPIChannelInviteResult,
 	RESTPostAPIGuildBulkBanResult,
+	RESTPostBulkAddTargetUsersResult,
+	RESTPostBulkDeleteTargetUsersResult,
+	RESTPutAddTargetUserResult,
 	RESTPutAPIApplicationCommandPermissionsResult,
 	RESTPutAPIGuildIncidentActionsResult,
 	RESTPutAPIGuildOnboardingResult,
+	Snowflake,
 } from 'seyfert';
 
 declare const api: ApiHandler;
@@ -55,6 +62,34 @@ expectType<Promise<RESTGetAPISKUSubscriptionResult>>(
 expectType<Promise<RESTGetAPIInviteResult>>(
 	api.proxy.invites('invite-code').get({ query: { with_counts: true } }),
 );
+expectType<Promise<RESTPutAddTargetUserResult>>(
+	api.proxy.invites('invite-code')['target-users']('user-id').put(),
+);
+expectType<Promise<RESTDeleteRemoveTargetUserResult>>(
+	api.proxy.invites('invite-code')['target-users']('user-id').delete(),
+);
+const readonlyTargetUserIds = ['user-id'] as const;
+expectType<Promise<RESTPostBulkAddTargetUsersResult>>(
+	api.proxy.invites('invite-code')['target-users']['bulk-add'].post({ body: { user_ids: ['user-id'] } }),
+);
+expectType<Promise<RESTPostBulkAddTargetUsersResult>>(
+	api.proxy.invites('invite-code')['target-users']['bulk-add'].post({ body: { user_ids: readonlyTargetUserIds } }),
+);
+expectType<Promise<RESTPostBulkDeleteTargetUsersResult>>(
+	api.proxy.invites('invite-code')['target-users']['bulk-delete'].post({ body: { user_ids: ['user-id'] } }),
+);
+expectType<Promise<RESTPostBulkDeleteTargetUsersResult>>(
+	api.proxy
+		.invites('invite-code')
+		['target-users']['bulk-delete'].post({ body: { user_ids: readonlyTargetUserIds } }),
+);
+const createInviteBody: RESTPostAPIChannelInviteJSONBody = { target_user_ids: ['user-id'] };
+expectType<readonly Snowflake[] | undefined>(createInviteBody.target_user_ids);
+const readonlyCreateInviteBody: RESTPostAPIChannelInviteJSONBody = { target_user_ids: readonlyTargetUserIds };
+expectType<readonly Snowflake[] | undefined>(readonlyCreateInviteBody.target_user_ids);
+expectType<Promise<RESTPostAPIChannelInviteResult>>(
+	api.proxy.channels('channel-id').invites.post({ body: { target_user_ids: ['user-id'] } }),
+);
 expectType<Promise<RESTPatchAPIWebhookWithTokenResult>>(
 	api.proxy.webhooks('webhook-id')('webhook-token').patch({ body: { name: 'renamed' } }),
 );
@@ -85,6 +120,12 @@ api.proxy.guilds('guild-id')['bulk-bans'].post({ body: { user_ids: ['user-id'] }
 api.proxy.voice.region.get();
 // @ts-expect-error Invite GET parameters belong in the query string.
 api.proxy.invites('invite-code').get({ body: { with_counts: true } });
+// @ts-expect-error Bulk-adding target users requires a user_ids body.
+api.proxy.invites('invite-code')['target-users']['bulk-add'].post();
+// @ts-expect-error Bulk-deleting target users requires a user_ids body.
+api.proxy.invites('invite-code')['target-users']['bulk-delete'].post();
+// @ts-expect-error target_user_ids must be an array of snowflake strings.
+const badCreateInviteBody: RESTPostAPIChannelInviteJSONBody = { target_user_ids: 'user-id' };
 // @ts-expect-error SKU subscription list parameters belong in the query string.
 api.proxy.skus('sku-id').subscriptions.get({ body: { user_id: 'user-id' } });
 // @ts-expect-error The documented individual SKU subscription endpoint has no query parameters.
