@@ -2,6 +2,11 @@ import type { Snowflake } from '../index';
 
 /**
  * https://docs.discord.com/developers/monetization/entitlements#entitlement-object-entitlement-structure
+ *
+ * Some fields below only show up in real payloads and the example
+ * response, they are kept optional here.
+ *
+ * https://docs.discord.com/developers/resources/entitlement#entitlement-object-entitlement-example
  */
 export interface APIEntitlement {
 	/**
@@ -27,26 +32,17 @@ export interface APIEntitlement {
 	/**
 	 * ID of the promotion that granted this entitlement.
 	 *
-	 * Discord includes this in real payloads but it is not part of the
-	 * documented structure table, so it stays optional here.
-	 *
 	 * https://docs.discord.com/developers/resources/entitlement#entitlement-object-entitlement-example
 	 */
 	promotion_id?: Snowflake | null;
 	/**
 	 * Flags for the gift code that granted this entitlement, if any.
 	 *
-	 * Discord includes this in real payloads but it is not part of the
-	 * documented structure table, so it stays optional here.
-	 *
 	 * https://docs.discord.com/developers/resources/entitlement#entitlement-object-entitlement-example
 	 */
 	gift_code_flags?: number;
 	/**
 	 * ID of the subscription that granted this entitlement, if any.
-	 *
-	 * Discord includes this in real payloads but it is not part of the
-	 * documented structure table, so it stays optional here.
 	 *
 	 * https://docs.discord.com/developers/resources/entitlement#entitlement-object-entitlement-example
 	 */
@@ -113,6 +109,11 @@ export enum EntitlementType {
 
 /**
  * https://docs.discord.com/developers/monetization/skus#sku-object-sku-structure
+ *
+ * Some fields below only show up in real payloads and the example
+ * response, they are kept optional here.
+ *
+ * https://docs.discord.com/developers/resources/sku#sku-object-sku-example
  */
 export interface APISKU {
 	/**
@@ -144,17 +145,11 @@ export interface APISKU {
 	/**
 	 * ID of the SKU this SKU depends on, if any.
 	 *
-	 * Discord includes this in real payloads but it is not part of the
-	 * documented structure table, so it stays optional here.
-	 *
 	 * https://docs.discord.com/developers/resources/sku#sku-object-sku-example
 	 */
 	dependent_sku_id?: Snowflake | null;
 	/**
 	 * Access type for this SKU.
-	 *
-	 * Discord includes this in real payloads but it is not part of the
-	 * documented structure table, so it stays optional here.
 	 *
 	 * https://docs.discord.com/developers/resources/sku#sku-object-sku-example
 	 */
@@ -162,17 +157,11 @@ export interface APISKU {
 	/**
 	 * Labels from the app manifest for this SKU, if any.
 	 *
-	 * Discord includes this in real payloads but it is not part of the
-	 * documented structure table, so it stays optional here.
-	 *
 	 * https://docs.discord.com/developers/resources/sku#sku-object-sku-example
 	 */
 	manifest_labels?: string[] | null;
 	/**
 	 * Feature identifiers attached to this SKU.
-	 *
-	 * Discord includes this in real payloads but it is not part of the
-	 * documented structure table, so it stays optional here.
 	 *
 	 * https://docs.discord.com/developers/resources/sku#sku-object-sku-example
 	 */
@@ -180,26 +169,17 @@ export interface APISKU {
 	/**
 	 * Release date for this SKU, if Discord provided one.
 	 *
-	 * Discord includes this in real payloads but it is not part of the
-	 * documented structure table, so it stays optional here.
-	 *
 	 * https://docs.discord.com/developers/resources/sku#sku-object-sku-example
 	 */
 	release_date?: string | null;
 	/**
 	 * Whether this SKU is tied to Discord premium content.
 	 *
-	 * Discord includes this in real payloads but it is not part of the
-	 * documented structure table, so it stays optional here.
-	 *
 	 * https://docs.discord.com/developers/resources/sku#sku-object-sku-example
 	 */
 	premium?: boolean;
 	/**
 	 * Whether Discord shows an age gate for this SKU.
-	 *
-	 * Discord includes this in real payloads but it is not part of the
-	 * documented structure table, so it stays optional here.
 	 *
 	 * https://docs.discord.com/developers/resources/sku#sku-object-sku-example
 	 */

@@ -54,7 +54,7 @@ export class Subscription extends DiscordBase<APISubscription> {
 	 *
 	 * https://docs.discord.com/developers/resources/subscription#get-sku-subscription
 	 */
-	fetch(skuId?: string): SubscriptionStructure | Promise<SubscriptionStructure> {
+	fetch(skuId?: string): Promise<SubscriptionStructure> {
 		const resolved = skuId ?? this.skuIds[0];
 		if (!resolved) {
 			throw new SeyfertError('MISSING_SUBSCRIPTION_SKU', {

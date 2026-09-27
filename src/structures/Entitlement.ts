@@ -29,10 +29,6 @@ export class Entitlement extends DiscordBase<APIEntitlement> {
 		return this.type === EntitlementType.TestModePurchase;
 	}
 
-	get isDeleted(): boolean {
-		return this.deleted;
-	}
-
 	// Ended means Discord stamped an endsAt in the past.
 	get isEnded(): boolean {
 		if (!this.endsAt) return false;

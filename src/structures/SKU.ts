@@ -62,18 +62,16 @@ export class SKU extends DiscordBase<APISKU> {
 	/**
 	 * Checks whether a user currently holds access to this SKU.
 	 *
-	 * Discord says status alone should not gate perks, so this only treats
-	 * a non-inactive subscription (active or ending) as a fast path and
-	 * always falls back to entitlements. Note it only sees user
-	 * entitlements, guild-granted access needs a guild_id entitlement
-	 * query instead.
+	 * Uses entitlements for this since a subscription can stay active
+	 * while Discord retries payment. Ended ones are skipped so only
+	 * current access counts. Note this only sees user entitlements,
+	 * guild-granted access needs a guild_id entitlement query instead.
 	 */
 	async hasUser(userId: string): Promise<boolean> {
-		const subscriptions = await this.subscriptions({ user_id: userId, limit: 1 });
-		if (subscriptions.some(subscription => !subscription.isInactive)) return true;
 		const entitlements = await this.client.applications.listEntitlements({
 			user_id: userId,
 			sku_ids: this.id,
+			exclude_ended: true,
 			limit: 1,
 		});
 		return entitlements.length > 0;

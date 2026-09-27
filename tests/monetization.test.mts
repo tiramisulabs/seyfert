@@ -75,12 +75,13 @@ describe('Monetization', () => {
 		await expect(bot.client.monetization.fetchSKU('1')).rejects.toMatchObject({ code: 'UNKNOWN_SKU' });
 		expect(bot.restCalls().length).toBeGreaterThan(before);
 	});
-	test('application listSKUs returns the same structures', async () => {
+	test('application listSKUs keeps the raw REST return', async () => {
 		const world = mockWorld();
 		await using bot = await createMockBot({ world });
 		bot.rest.intercept('GET', `/applications/${bot.client.applicationId}/skus`, () => [skuPayload]);
 		const skus = await bot.client.applications.listSKUs();
-		expect(skus[0]).toBeInstanceOf(SKU);
+		expect(skus[0]).toMatchObject({ id: skuPayload.id, name: 'Test Premium' });
+		expect(skus[0]).not.toBeInstanceOf(SKU);
 	});
 	test('subscription listing validates limit and returns structures', async () => {
 		const world = mockWorld();
@@ -119,7 +120,7 @@ describe('Monetization', () => {
 		const again = await fetched.fetch(skuPayload.id);
 		expect(again.id).toBe(subscriptionPayload.id);
 	});
-	test('SKU helpers delegate listing and access checks', async () => {
+	test('SKU access checks use current entitlements', async () => {
 		const world = mockWorld();
 		await using bot = await createMockBot({ world });
 		bot.rest.intercept('GET', `/skus/${skuPayload.id}/subscriptions`, () => [
@@ -129,12 +130,19 @@ describe('Monetization', () => {
 		const sku = await bot.client.monetization.fetchSKU(skuPayload.id);
 		const subscriptions = await sku.subscriptions({ user_id: subscriptionPayload.user_id });
 		expect(subscriptions[0]).toBeInstanceOf(Subscription);
+		bot.rest.intercept('GET', `/applications/${bot.client.applicationId}/entitlements`, request => {
+			expect(request.query).toMatchObject({
+				user_id: subscriptionPayload.user_id,
+				sku_ids: skuPayload.id,
+				exclude_ended: true,
+			});
+			return [{ ...entitlementPayload, sku_id: skuPayload.id }];
+		});
 		expect(await sku.hasUser(subscriptionPayload.user_id)).toBe(true);
-		bot.rest.intercept('GET', `/skus/${skuPayload.id}/subscriptions`, () => []);
 		bot.rest.intercept('GET', `/applications/${bot.client.applicationId}/entitlements`, () => []);
 		expect(await sku.hasUser('2')).toBe(false);
 		bot.rest.intercept('GET', `/skus/${skuPayload.id}/subscriptions`, () => [
-			{ ...subscriptionPayload, sku_ids: [skuPayload.id], status: 1 },
+			{ ...subscriptionPayload, sku_ids: [skuPayload.id], status: 0 },
 		]);
 		bot.rest.intercept('GET', `/applications/${bot.client.applicationId}/entitlements`, () => []);
 		expect(await sku.hasUser('3')).toBe(false);
@@ -153,7 +161,7 @@ describe('Monetization', () => {
 			giftCodeFlags: 0,
 		});
 		expect(entitlement.startsAtDate?.toISOString()).toBe('2022-09-14T17:00:18.704Z');
-		expect(entitlement.isDeleted).toBe(false);
+		expect(entitlement.deleted).toBe(false);
 		expect(entitlement.isConsumed).toBe(false);
 		const refetched = await entitlement.fetch();
 		expect(refetched.id).toBe(entitlementPayload.id);

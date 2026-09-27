@@ -3,7 +3,6 @@ import {
 	type ApplicationEmojiStructure,
 	type ApplicationStructure,
 	type EntitlementStructure,
-	type SKUStructure,
 	Transformers,
 } from '../../client';
 import type {
@@ -143,14 +142,15 @@ export class ApplicationShorter extends BaseShorter {
 	/**
 	 * Lists the SKUs for the application.
 	 *
-	 * Kept here because the route lives under the application. The
-	 * structured version with SKU helpers is client.monetization.listSKUs().
+	 * This keeps the raw REST return. Use
+	 * client.monetization.listSKUs() when you want structures with the
+	 * SKU helpers instead.
 	 *
 	 * https://docs.discord.com/developers/resources/sku#list-skus
 	 * @returns The SKUs.
 	 */
-	listSKUs(): Promise<SKUStructure[]> {
-		return this.client.monetization.listSKUs();
+	listSKUs() {
+		return this.client.proxy.applications(this.client.applicationId).skus.get();
 	}
 
 	async fetch(): Promise<ApplicationStructure> {
