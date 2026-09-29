@@ -1,0 +1,4 @@
+interface:
+  display_name: "Scope Discipline"
+  short_description: "Anchor plans and diffs to the goal; route findings to the report"
+  default_prompt: "Use $scope-discipline to keep this plan and change traced to the stated goal, inside the write boundary, with discovered issues routed to the report."
