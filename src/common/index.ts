@@ -16,6 +16,7 @@ export * from './shorters/interaction';
 export * from './shorters/invites';
 export * from './shorters/members';
 export * from './shorters/messages';
+export * from './shorters/monetization';
 export * from './shorters/reactions';
 export * from './shorters/roles';
 export * from './shorters/stages';
