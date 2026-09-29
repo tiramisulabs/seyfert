@@ -97,7 +97,23 @@ export class ApplicationShorter extends BaseShorter {
 	}
 
 	/**
+	 * Gets one entitlement for the application.
+	 *
+	 * https://docs.discord.com/developers/resources/entitlement#get-entitlement
+	 * @param entitlementId The ID of the entitlement.
+	 */
+	async fetchEntitlement(entitlementId: string): Promise<EntitlementStructure> {
+		const data = await this.client.proxy.applications(this.client.applicationId).entitlements(entitlementId).get();
+		return Transformers.Entitlement(this.client, data);
+	}
+
+	/**
 	 * Consumes an entitlement for the application.
+	 *
+	 * Only works for consumable one-time purchase SKUs. Discord answers
+	 * with 204 on success.
+	 *
+	 * https://docs.discord.com/developers/resources/entitlement#consume-an-entitlement
 	 * @param entitlementId The ID of the entitlement.
 	 */
 	consumeEntitlement(entitlementId: string) {
@@ -125,6 +141,12 @@ export class ApplicationShorter extends BaseShorter {
 
 	/**
 	 * Lists the SKUs for the application.
+	 *
+	 * This keeps the raw REST return. Use
+	 * client.monetization.listSKUs() when you want structures with the
+	 * SKU helpers instead.
+	 *
+	 * https://docs.discord.com/developers/resources/sku#list-skus
 	 * @returns The SKUs.
 	 */
 	listSKUs() {
