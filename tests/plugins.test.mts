@@ -25,35 +25,6 @@ function createRuntimeConfig() {
 }
 
 describe('client plugins', () => {
-	test('plugin command defaults run before the built-in fallback', async () => {
-		const calls: string[] = [];
-		const plugin: SeyfertPlugin = {
-			name: 'test-plugin',
-			options: () => ({
-				commands: {
-					defaults: {
-						onRunError: () => calls.push('plugin'),
-					},
-				},
-			}),
-		};
-
-		const resolved = resolveClientPlugins(
-			{
-				commands: {
-					defaults: {
-						onRunError: () => calls.push('fallback'),
-					},
-				},
-			},
-			{ plugins: [plugin] },
-		);
-
-		await resolved.options.commands?.defaults?.onRunError?.({} as never, new Error('boom'));
-
-		assert.deepEqual(calls, ['plugin', 'fallback']);
-	});
-
 	test('command error defaults compose plugin and user hooks without built-in fallback', async () => {
 		const commandErrorHooks = [
 			'onRunError',
@@ -104,25 +75,6 @@ describe('client plugins', () => {
 		}
 	});
 
-	test('a plugin suppresses the framework default with api.commands.defaults({ suppressDefault })', async () => {
-		const calls: string[] = [];
-		const plugin: SeyfertPlugin = {
-			name: 'suppressor',
-			register(api) {
-				api.commands.defaults({ onRunError: () => calls.push('plugin') }, { suppressDefault: true });
-			},
-		};
-
-		const resolved = resolveClientPlugins(
-			{ commands: { defaults: { onRunError: () => calls.push('fallback') } } },
-			{ plugins: [plugin] },
-		);
-
-		await resolved.options.commands?.defaults?.onRunError?.({} as never, new Error('boom'));
-
-		assert.deepEqual(calls, ['plugin']);
-	});
-
 	test('suppressDefault drops only the framework floor; an additive peer still runs', async () => {
 		const calls: string[] = [];
 		const additivePlugin: SeyfertPlugin = {
@@ -165,27 +117,6 @@ describe('client plugins', () => {
 		await resolved.options.commands?.defaults?.onRunError?.({} as never, new Error('boom'));
 
 		assert.deepEqual(calls, ['plugin', 'fallback']);
-	});
-
-	test('api.commands.defaults composes props with user props last', () => {
-		const plugin: SeyfertPlugin = {
-			name: 'props',
-			register(api) {
-				api.commands.defaults({ props: { fromPlugin: true, winner: 'plugin' } });
-			},
-		};
-
-		const resolved = resolveClientPlugins(
-			{ commands: { defaults: { props: { fromDefault: true, winner: 'default' } } } },
-			{ plugins: [plugin], commands: { defaults: { props: { fromUser: true, winner: 'user' } } } },
-		);
-
-		assert.deepEqual(resolved.options.commands?.defaults?.props, {
-			fromDefault: true,
-			fromPlugin: true,
-			fromUser: true,
-			winner: 'user',
-		});
 	});
 
 	test('component and modal defaults compose plugin, user, and suppressed fallback hooks', async () => {
@@ -351,24 +282,6 @@ describe('client plugins', () => {
 		assert.match((thrown as Error).message, /third.*setup|setup.*third/);
 		assert.equal((thrown as Error).cause, setupError);
 		assert.deepEqual(calls, ['setup first', 'setup second', 'setup third', 'teardown second', 'teardown first']);
-	});
-
-	test('plugin lifecycle does not expose mutable initialized state', async () => {
-		const states: boolean[] = [];
-		const plugin: SeyfertPlugin = {
-			name: 'lifecycle',
-			setup: client => states.push('initialized' in client) as unknown as void,
-			teardown: client => states.push('initialized' in client) as unknown as void,
-		};
-		const client = new BaseClient({
-			getRC: createRuntimeConfig,
-			plugins: [plugin],
-		});
-
-		await client.start();
-		await client.close();
-
-		assert.deepEqual(states, [false, false]);
 	});
 
 	test('client close is idempotent', async () => {

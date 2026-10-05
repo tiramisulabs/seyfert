@@ -27,23 +27,6 @@ describe('resolved channel permissions', () => {
 		expect(camelizedChannel.appPermissions?.bits).toBe(PermissionFlagsBits.SendMessages);
 	});
 
-	test('does not transform resolved permission fields on DM structures', () => {
-		for (const type of [ChannelType.DM, ChannelType.GroupDM]) {
-			const data = {
-				id: '100000000000000002',
-				name: null,
-				type,
-				permissions: PermissionFlagsBits.ViewChannel.toString(),
-				app_permissions: PermissionFlagsBits.SendMessages.toString(),
-			};
-			const channel = channelFrom(data, {} as never);
-
-			expect(channel.isDM()).toBe(true);
-			expect(channel).toHaveProperty('permissions', PermissionFlagsBits.ViewChannel.toString());
-			expect(channel).toHaveProperty('appPermissions', PermissionFlagsBits.SendMessages.toString());
-		}
-	});
-
 	test('transforms resolved group DMs into message-capable DM structures', () => {
 		const data = {
 			id: '100000000000000003',

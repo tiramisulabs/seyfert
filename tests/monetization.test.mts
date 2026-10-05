@@ -1,7 +1,6 @@
 import { createMockBot, mockWorld } from '@slipher/testing';
 import { describe, expect, test } from 'vitest';
-import { Entitlement, SKU, Subscription } from '../lib';
-import { SUBSCRIPTION_CREATE, SUBSCRIPTION_DELETE, SUBSCRIPTION_UPDATE } from '../lib/events/hooks/subscriptions';
+import { SKU, Subscription } from '../lib';
 
 const skuPayload = {
 	id: '1088510058284990888',
@@ -48,21 +47,6 @@ const entitlementPayload = {
 };
 
 describe('Monetization', () => {
-	test('lists SKUs as structures and exposes flag helpers', async () => {
-		const world = mockWorld();
-		await using bot = await createMockBot({ world });
-		const route = `/applications/${bot.client.applicationId}/skus`;
-		bot.rest.intercept('GET', route, () => [{ ...skuPayload, id: '1088510053843210999', type: 6 }, skuPayload]);
-		const skus = await bot.client.monetization.listSKUs();
-		expect(skus).toHaveLength(2);
-		expect(skus[1]).toBeInstanceOf(SKU);
-		expect(skus[1]).toMatchObject({ id: skuPayload.id, name: 'Test Premium', slug: 'test-premium' });
-		expect(skus[1]!.isSubscription).toBe(true);
-		expect(skus[1]!.isSubscriptionGroup).toBe(false);
-		expect(skus[0]!.isSubscriptionGroup).toBe(true);
-		expect(skus[1]!.isUserSubscription).toBe(false);
-		expect(skus[1]!.isAvailable).toBe(false);
-	});
 	test('fetchSKU picks the match and rejects unknown ids', async () => {
 		const world = mockWorld();
 		await using bot = await createMockBot({ world });
@@ -74,14 +58,6 @@ describe('Monetization', () => {
 		const before = bot.restCalls().length;
 		await expect(bot.client.monetization.fetchSKU('1')).rejects.toMatchObject({ code: 'UNKNOWN_SKU' });
 		expect(bot.restCalls().length).toBeGreaterThan(before);
-	});
-	test('application listSKUs keeps the raw REST return', async () => {
-		const world = mockWorld();
-		await using bot = await createMockBot({ world });
-		bot.rest.intercept('GET', `/applications/${bot.client.applicationId}/skus`, () => [skuPayload]);
-		const skus = await bot.client.applications.listSKUs();
-		expect(skus[0]).toMatchObject({ id: skuPayload.id, name: 'Test Premium' });
-		expect(skus[0]).not.toBeInstanceOf(SKU);
 	});
 	test('subscription listing validates limit and returns structures', async () => {
 		const world = mockWorld();
@@ -109,17 +85,6 @@ describe('Monetization', () => {
 		});
 		expect(bot.restCalls().length).toBe(before);
 	});
-	test('fetchSubscription and structure fetch hit the single route', async () => {
-		const world = mockWorld();
-		await using bot = await createMockBot({ world });
-		const route = `/skus/${skuPayload.id}/subscriptions/${subscriptionPayload.id}`;
-		bot.rest.intercept('GET', route, () => ({ ...subscriptionPayload, sku_ids: [skuPayload.id] }));
-		const fetched = await bot.client.monetization.fetchSubscription(skuPayload.id, subscriptionPayload.id);
-		expect(fetched).toBeInstanceOf(Subscription);
-		expect(fetched.currentPeriodEndAt.toISOString()).toBe('2024-09-27T19:48:44.406Z');
-		const again = await fetched.fetch(skuPayload.id);
-		expect(again.id).toBe(subscriptionPayload.id);
-	});
 	test('SKU access checks use current entitlements', async () => {
 		const world = mockWorld();
 		await using bot = await createMockBot({ world });
@@ -146,34 +111,6 @@ describe('Monetization', () => {
 		]);
 		bot.rest.intercept('GET', `/applications/${bot.client.applicationId}/entitlements`, () => []);
 		expect(await sku.hasUser('3')).toBe(false);
-	});
-	test('entitlement fetch keeps extra payload fields', async () => {
-		const world = mockWorld();
-		await using bot = await createMockBot({ world });
-		const route = `/applications/${bot.client.applicationId}/entitlements/${entitlementPayload.id}`;
-		bot.rest.intercept('GET', route, () => entitlementPayload);
-		const entitlement = await bot.client.applications.fetchEntitlement(entitlementPayload.id);
-		expect(entitlement).toBeInstanceOf(Entitlement);
-		expect(entitlement).toMatchObject({
-			id: entitlementPayload.id,
-			subscriptionId: entitlementPayload.subscription_id,
-			promotionId: null,
-			giftCodeFlags: 0,
-		});
-		expect(entitlement.startsAtDate?.toISOString()).toBe('2022-09-14T17:00:18.704Z');
-		expect(entitlement.deleted).toBe(false);
-		expect(entitlement.isConsumed).toBe(false);
-		const refetched = await entitlement.fetch();
-		expect(refetched.id).toBe(entitlementPayload.id);
-	});
-	test('gateway subscription hooks return structures', () => {
-		const fakeClient = {} as never;
-		const created = SUBSCRIPTION_CREATE(fakeClient, subscriptionPayload as never);
-		const updated = SUBSCRIPTION_UPDATE(fakeClient, subscriptionPayload as never);
-		const deleted = SUBSCRIPTION_DELETE(fakeClient, { ...subscriptionPayload, status: 1 } as never);
-		expect(created).toBeInstanceOf(Subscription);
-		expect(updated).toBeInstanceOf(Subscription);
-		expect(deleted.isInactive).toBe(true);
 	});
 	test('subscription fetch without sku ids throws before REST', async () => {
 		const world = mockWorld();

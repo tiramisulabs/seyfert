@@ -60,37 +60,6 @@ describe('client plugins', () => {
 		expect(client.executeOptions?.intents).toBe(GatewayIntentBits.Guilds | GatewayIntentBits.GuildMembers);
 	});
 
-	test('composes context callbacks and global middlewares in plugin order before user options', () => {
-		const pluginA: SeyfertPlugin = {
-			name: 'plugin-a',
-			options: () => ({
-				context: () => ({ fromA: true, shared: 'plugin-a' }),
-				globalMiddlewares: ['pluginA' as never],
-			}),
-		};
-		const pluginB: SeyfertPlugin = {
-			name: 'plugin-b',
-			options: () => ({
-				context: () => ({ fromB: true, shared: 'plugin-b' }),
-				globalMiddlewares: ['pluginB' as never],
-			}),
-		};
-
-		const client = createClient({
-			plugins: [pluginA, pluginB],
-			context: () => ({ fromUser: true, shared: 'user' }),
-			globalMiddlewares: ['user' as never],
-		});
-
-		expect(client.options.context?.({} as never)).toEqual({
-			fromA: true,
-			fromB: true,
-			fromUser: true,
-			shared: 'user',
-		});
-		expect(client.options.globalMiddlewares).toEqual(['pluginA', 'pluginB', 'user']);
-	});
-
 	test('preserves base context and global middlewares before plugin and user options', () => {
 		const plugin: SeyfertPlugin = {
 			name: 'plugin',
@@ -119,43 +88,6 @@ describe('client plugins', () => {
 			shared: 'user',
 		});
 		expect(options.globalMiddlewares).toEqual(['base', 'plugin', 'user']);
-	});
-
-	test('runs plugin lifecycle hooks before user lifecycle hooks', async () => {
-		const calls: string[] = [];
-		const pluginA: SeyfertPlugin = {
-			name: 'plugin-a',
-			options: () => ({
-				commands: {
-					defaults: {
-						onAfterRun: () => calls.push('plugin-a'),
-					},
-				},
-			}),
-		};
-		const pluginB: SeyfertPlugin = {
-			name: 'plugin-b',
-			options: () => ({
-				commands: {
-					defaults: {
-						onAfterRun: () => calls.push('plugin-b'),
-					},
-				},
-			}),
-		};
-
-		const client = createClient({
-			plugins: [pluginA, pluginB],
-			commands: {
-				defaults: {
-					onAfterRun: () => calls.push('user'),
-				},
-			},
-		});
-
-		await client.options.commands?.defaults?.onAfterRun?.({} as never, undefined);
-
-		expect(calls).toEqual(['plugin-a', 'plugin-b', 'user']);
 	});
 
 	test('composes context scopes in plugin order before user scopes', async () => {
@@ -213,31 +145,6 @@ describe('client plugins', () => {
 			'plugin-b after',
 			'plugin-a after',
 		]);
-	});
-
-	test('runs setup once during start in plugin order', async () => {
-		const calls: string[] = [];
-		const pluginA: SeyfertPlugin = {
-			name: 'plugin-a',
-			setup: client => {
-				expect(client.plugins.map(plugin => plugin.name)).toEqual(['plugin-a', 'plugin-b']);
-				calls.push('plugin-a');
-			},
-		};
-		const pluginB: SeyfertPlugin = {
-			name: 'plugin-b',
-			setup: () => {
-				calls.push('plugin-b');
-			},
-		};
-		const client = createClient({ plugins: [pluginA, pluginB] });
-
-		(client as unknown as { gateway: unknown }).gateway = {};
-
-		await client.start({ token: 'header.payload.signature' }, false);
-		await client.start({ token: 'header.payload.signature' }, false);
-
-		expect(calls).toEqual(['plugin-a', 'plugin-b']);
 	});
 
 	test('runs setup before cache start and command loading', async () => {

@@ -39,6 +39,9 @@ describe('subcommand middleware dispatch', () => {
 
 	test('runs inherited parent and child middlewares once for slash commands', async () => {
 		await using bot = await createMockBot({ commands: [ParentCommand], middlewares: middlewares as never });
+		const commands = bot.client.commands.values;
+		bot.client.commands.values = [];
+		bot.client.commands.set(commands);
 
 		const result = await bot.slash({ name: 'parent', subcommand: 'child' });
 

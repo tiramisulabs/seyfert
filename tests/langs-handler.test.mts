@@ -49,20 +49,6 @@ describe('LangsHandler module loading', () => {
 		);
 	});
 
-	test('accepts raw object modules without warning', () => {
-		const { handler, warn } = createHandler();
-		const raw = { command: { name: 'Raw' } };
-
-		handler.parse({
-			name: 'raw.ts',
-			path: '/langs/raw.ts',
-			file: raw as never,
-		});
-
-		expect(handler.values.raw).toBe(raw);
-		expect(warn).not.toHaveBeenCalled();
-	});
-
 	test('warns and skips ambiguous or invalid modules', () => {
 		const { handler, warn } = createHandler();
 

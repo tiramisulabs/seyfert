@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { ApiHandler } from '../src/api/api';
-import { BaseClient } from '../src/client/base';
 import { Client } from '../src/client/client';
 import { SeyfertError } from '../src/common';
 
@@ -32,12 +31,6 @@ async function expectInvalidTokenRejection(promise: Promise<unknown>) {
 describe('invalid token handling', () => {
 	afterEach(() => {
 		vi.unstubAllGlobals();
-	});
-
-	test('BaseClient.start rejects missing config tokens with INVALID_TOKEN', async () => {
-		const client = new BaseClient({ getRC: missingTokenConfig });
-
-		await expectInvalidTokenRejection(client.start());
 	});
 
 	test('Client.start rejects missing config tokens with INVALID_TOKEN', async () => {

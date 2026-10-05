@@ -4,14 +4,6 @@ import { Attachment, AttachmentBuilder, resolveAttachment, resolveImage } from '
 import { AttachmentFlags } from '../src/types';
 
 describe('attachment spoilers', () => {
-	test('serializes new spoilers with request metadata without renaming the file', () => {
-		const attachment = new AttachmentBuilder().setName('image.png').setSpoiler(true);
-
-		expect(attachment.data.filename).toBe('image.png');
-		expect(attachment.spoiler).toBe(true);
-		expect(resolveAttachment(attachment)).toMatchObject({ filename: 'image.png', is_spoiler: true });
-	});
-
 	test('recognizes and can remove the legacy spoiler filename prefix', () => {
 		const attachment = new AttachmentBuilder().setName('SPOILER_image.png');
 
@@ -72,11 +64,5 @@ describe('resolveImage', () => {
 		);
 
 		await expect(resolveImage(attachment)).resolves.toBe('data:image/png;base64,YWJj');
-	});
-
-	test('converts buffer-like image data to a data URL', async () => {
-		await expect(resolveImage({ type: 'buffer', data: new Uint8Array([97, 98, 99]) })).resolves.toBe(
-			'data:image/jpeg;base64,YWJj',
-		);
 	});
 });

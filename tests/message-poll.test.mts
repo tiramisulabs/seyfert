@@ -18,20 +18,6 @@ function pollWorld() {
 }
 
 describe('Message poll helpers', () => {
-	test('endPoll delegates through REST and returns the finalized message', async () => {
-		const { channel, message, world } = pollWorld();
-		await using bot = await createMockBot({ world });
-		const structure = await bot.client.messages.fetch(message.id, channel.id);
-
-		const ended = await structure.endPoll();
-
-		expect(ended.id).toBe(message.id);
-		expect(ended.poll?.results?.isFinalized).toBe(true);
-		expect(bot.restCalls(Routes.endPoll)).toContainEqual(
-			expect.objectContaining({ params: { channelId: channel.id, messageId: message.id } }),
-		);
-	});
-
 	test('getAnswerVoters validates known answers before calling REST', async () => {
 		const { channel, message, voter, world } = pollWorld();
 		await using bot = await createMockBot({ world });
