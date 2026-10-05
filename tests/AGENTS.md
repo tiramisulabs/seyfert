@@ -9,16 +9,23 @@ portability checks, and test-file style.
 
 Use the closest existing test first.
 
+Keep coverage focused on critical failures: permissions and auth, wire payloads,
+state integrity, lifecycle cleanup, async rejection/order, and public type
+inference regressions. A public method alone does not justify a test. Do not add
+cases for trivial setters/getters, embed text, constructor inventories, private
+array shapes, or diagnostic wording. Keep one primary owner for each regression;
+another layer needs a distinct failure that the owner cannot exercise.
+
 | Contract | Primary tests |
 | --- | --- |
 | Root exports and declaration cycles | `root-export-contract.ts`, `public-entrypoint-cycles.test.mts` |
 | Client lifecycle, config, and collectors | `invalid-token.test.mts`, `config-load.test.mts`, `client-collectors.test.mts` |
 | Plugin authoring and extensions | `plugin-authoring-contract.ts`, `plugins.test.mts`, `plugin-api.test.mts`, `client-plugins.test.mts` |
 | Registry/client inference | `command-context-client-type.test.mts` and the compile-time contracts |
-| Command declarations/options/subcommands/locales | `command-declare-*`, `command-options-contract.ts`, `command-subcommands-limit.test.mts`, `command-locales.test.mts` |
-| Command/component/modal contexts | `command-context-modal.test.mts`, `component-*.test.mts`, `modal-context-update.test.mts`, `interaction-reply.test.mts` |
+| Command declarations/options/subcommands/locales | `command-declare-name-contract.ts`, `command-options-contract.ts`, `command-subcommand-middleware-dispatch.test.mts`, `command-locales.test.mts` |
+| Command/component/modal contexts | `command-context-modal.test.mts`, `component-*.test.mts`, `interaction-reply.test.mts` |
 | REST/retries/uploads/shorters | `rest-retry-options.test.mts`, `interaction-request.test.mts`, `message-shorter.test.mts`, attachment/message tests |
-| Cache and structures | `cache.test.mts`, channel/guild/member/role/voice-state tests |
+| Cache and structures | `cache.test.mts`, channel/guild/member/role tests |
 | Gateway and workers | `gateway-send.test.mts`, `gateway-reconnect.test.mts`, `workermanager.test.mts` |
 | Builders and errors | `builder-validation.test.mts`, feature builder tests, `seyfert-error.test.mts` |
 | Langs and locale selection | `langs-handler.test.mts`, `context-lang-preference.test.mts`, `command-locales.test.mts` |

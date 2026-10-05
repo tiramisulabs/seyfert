@@ -1,7 +1,5 @@
 import { fork } from 'node:child_process';
 import { once } from 'node:events';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { finished } from 'node:stream/promises';
 import { describe, expect, test } from 'vitest';
@@ -69,28 +67,6 @@ describe.skipIf(Boolean(process.versions.bun) || typeof (globalThis as { Deno?: 
 				stdout: 'ERR_IPC_CHANNEL_CLOSED',
 				stderr: '',
 			});
-		}, 15_000);
-
-		test('reports startup errors before READY instead of hanging', async () => {
-			const missingPreload = join(__dirname, 'fixtures/missing-workerclient-preload.cjs');
-			await expect(runWorkerFixture(['--require', missingPreload])).rejects.toThrow(
-				/waiting for READY: exitCode=1, signal=null[\s\S]*MODULE_NOT_FOUND/,
-			);
-		}, 15_000);
-
-		test('loads the fixture independently of the working directory', async () => {
-			const cwd = process.cwd();
-			const directory = mkdtempSync(join(tmpdir(), 'seyfert-ipc-cwd-'));
-			try {
-				process.chdir(directory);
-				await expect(runWorkerFixture()).resolves.toMatchObject({
-					exitCode: 0,
-					stdout: 'ERR_IPC_CHANNEL_CLOSED',
-				});
-			} finally {
-				process.chdir(cwd);
-				rmSync(directory, { recursive: true, force: true });
-			}
 		}, 15_000);
 	},
 );

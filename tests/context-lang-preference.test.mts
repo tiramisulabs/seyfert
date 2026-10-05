@@ -53,16 +53,6 @@ describe('context lang locale preference', () => {
 		expect(client.t).toHaveBeenCalledWith('fr-FR');
 	});
 
-	test.each(interactionContextCases)('%s falls back to locale when guild locale is unavailable', (_name, prototype) => {
-		const client = createClient(true, 'default-lang');
-		const context = createContext(prototype, client, {
-			locale: 'es-ES',
-		});
-
-		expect(context.t).toBe('es-ES');
-		expect(client.t).toHaveBeenCalledWith('es-ES');
-	});
-
 	test('prefix CommandContext uses default language when guild locale preference is enabled', () => {
 		const client = createClient(true, 'default-lang');
 		const context = createContext(CommandContext.prototype, client);

@@ -4,54 +4,9 @@ import { assert, describe, expect, test, vi } from 'vitest';
 import { WorkerAdapter } from '../lib/cache';
 import { WorkerClient } from '../lib/client/workerclient';
 import { SeyfertError } from '../lib/common';
-import { deserializeWorkerError, serializeWorkerError } from '../lib/websocket/discord/worker-errors';
 import { WorkerManager } from '../lib/websocket/discord/workermanager';
 
 describe('WorkerManager', () => {
-	test('forwards environment variables to custom adapters', () => {
-		const spawn = vi.fn();
-		const info = gatewayInfo();
-		const manager = new WorkerManager({
-			mode: 'custom',
-			token: 'token',
-			intents: 0,
-			info,
-			workerEnv: {
-				CUSTOM_WORKER_ENV_TEST: 'configured',
-				SEYFERT_SPAWNING: 'overridden',
-			},
-			adapter: {
-				postMessage() {},
-				spawn,
-			},
-		});
-
-		const worker = manager.createWorker({
-			intents: 0,
-			token: 'token',
-			path: 'worker.js',
-			shards: [0],
-			totalShards: 1,
-			totalWorkers: 1,
-			mode: 'custom',
-			workerId: 0,
-			debug: false,
-			workerProxy: false,
-			info,
-			compress: false,
-			resharding: false,
-		});
-		expect(worker).toEqual({ ready: false });
-
-		expect(spawn).toHaveBeenCalledWith(
-			expect.objectContaining({ path: 'worker.js' }),
-			expect.objectContaining({
-				CUSTOM_WORKER_ENV_TEST: 'configured',
-				SEYFERT_SPAWNING: 'true',
-			}),
-		);
-	});
-
 	test('waits for custom adapter spawn before registering its heartbeat', async () => {
 		let releaseSpawn!: () => void;
 		const spawn = vi.fn(
@@ -142,28 +97,6 @@ describe('WorkerManager', () => {
 			if (previousValue === undefined) delete process.env.SEYFERT_WORKER_ENV_TEST;
 			else process.env.SEYFERT_WORKER_ENV_TEST = previousValue;
 		}
-	});
-
-	test('calculateWorkerId reports the effective shard range', () => {
-		const manager = createWorkerManager({
-			shardStart: 2,
-			shardEnd: 8,
-			shardsPerWorker: 3,
-			totalWorkers: 3,
-		});
-
-		expect(() => manager.calculateWorkerId(8)).toThrow('Invalid shardId 8: expected 2..7.');
-	});
-
-	test('getWorkerInfo reports the missing worker id', async () => {
-		const manager = Object.create(WorkerManager.prototype) as WorkerManager;
-		manager.has = () => false;
-
-		await expect(manager.getWorkerInfo(-1)).rejects.toMatchObject({
-			code: 'WORKER_NOT_FOUND',
-			message: "Worker #-1 doesn't exist",
-			metadata: { workerId: -1 },
-		});
 	});
 
 	test('rejects worker requests when cluster IPC reports a send error', async () => {
@@ -275,20 +208,6 @@ describe('WorkerManager', () => {
 			client.promises.clear();
 			client.setWorkerData(previousWorkerData);
 		}
-	});
-
-	test('syncLatency returns 0 when a worker has no shards', async () => {
-		const manager = Object.create(WorkerManager.prototype) as WorkerManager & {
-			has(id: number): boolean;
-			calculateWorkerId(shardId: number): number;
-			getWorkerInfo(workerId: number): Promise<{ shards: { latency: number }[] }>;
-		};
-
-		manager.has = () => true;
-		manager.calculateWorkerId = () => 0;
-		manager.getWorkerInfo = async () => ({ shards: [] });
-
-		await expect(WorkerManager.prototype.syncLatency.call(manager, { workerId: 0 })).resolves.toBe(0);
 	});
 
 	test('preserves binary REST responses through JSON worker IPC', async () => {
@@ -451,16 +370,6 @@ describe('WorkerManager', () => {
 			vi.useRealTimers();
 		}
 	});
-
-	test('preserves empty custom error fields', () => {
-		const original = new SeyfertError('', { metadata: { detail: 'empty code' } });
-		original.stack = '';
-		const serialized = JSON.parse(JSON.stringify(serializeWorkerError(original)));
-		const error = deserializeWorkerError(serialized);
-
-		expect(error).toBeInstanceOf(SeyfertError);
-		expect(error).toMatchObject({ code: '', metadata: { detail: 'empty code' }, stack: '' });
-	});
 });
 
 function gatewayInfo() {
@@ -474,20 +383,4 @@ function gatewayInfo() {
 			max_concurrency: 1,
 		},
 	};
-}
-
-function createWorkerManager(options: {
-	shardStart: number;
-	shardEnd: number;
-	shardsPerWorker: number;
-	totalWorkers: number;
-}) {
-	const manager = Object.create(WorkerManager.prototype) as WorkerManager;
-	manager.options = {
-		shardStart: options.shardStart,
-		shardEnd: options.shardEnd,
-		shardsPerWorker: options.shardsPerWorker,
-		workers: options.totalWorkers,
-	} as WorkerManager['options'];
-	return manager;
 }

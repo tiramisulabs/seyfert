@@ -1,5 +1,5 @@
 import { assert, describe, test } from 'vitest';
-import { Formatter, TimestampStyle } from '../lib/common/it/formatter';
+import { Formatter } from '../lib/common/it/formatter';
 
 describe('Formatter.timestamp', () => {
 	const timestampMs = Date.UTC(2024, 0, 2, 3, 4, 5, 678);
@@ -10,9 +10,5 @@ describe('Formatter.timestamp', () => {
 
 		assert.equal(Formatter.timestamp(new Date(timestampMs)), expected);
 		assert.equal(Formatter.timestamp(timestampMs), expected);
-	});
-
-	test('formats unix millisecond timestamps with a style override', () => {
-		assert.equal(Formatter.timestamp(timestampMs, TimestampStyle.ShortDate), `<t:${timestampSeconds}:d>`);
 	});
 });

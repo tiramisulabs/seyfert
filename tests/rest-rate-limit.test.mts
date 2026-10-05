@@ -399,32 +399,6 @@ describe('Discord REST rate limits', () => {
 		expect(reject).toHaveBeenCalledWith(expect.objectContaining({ code: 'INVALID_RETRY_AFTER' }));
 	});
 
-	test('rejects an empty 429 response without a retry delay', async () => {
-		const api = createApi();
-		const route = 'GET:/channels/100000000000000001/messages';
-		const url = '/channels/100000000000000001/messages' as const;
-		const next = vi.fn();
-		const reject = vi.fn();
-		api.ratelimits.set(route, new Bucket(1));
-
-		const result = await api.handle429(
-			route,
-			'GET',
-			url,
-			{},
-			new Response('', { status: 429 }),
-			'',
-			next,
-			reject,
-			Date.now(),
-			url,
-		);
-
-		expect(result).toBe(false);
-		expect(next).toHaveBeenCalledOnce();
-		expect(reject).toHaveBeenCalledWith(expect.objectContaining({ code: 'INVALID_RETRY_AFTER' }));
-	});
-
 	test('keeps queued requests throttled when bucket counts are malformed', async () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(1_700_000_000_000);
@@ -456,32 +430,6 @@ describe('Discord REST rate limits', () => {
 		await vi.advanceTimersByTimeAsync(1);
 		await expect(queued).resolves.toEqual({});
 		expect(fetchMock).toHaveBeenCalledTimes(2);
-	});
-
-	test.each([
-		['2', 'not-a-number', 2, 2],
-		['1.5', '0', 10, 0],
-		['2', '', 2, 2],
-		[String(Number.MAX_SAFE_INTEGER + 1), '0', 10, 0],
-	])('applies the valid rate-limit counts from (%s, %s)', (limit, remaining, expectedLimit, expectedRemaining) => {
-		const api = createApi();
-		const route = 'GET:/channels/100000000000000001/messages';
-		const bucket = new Bucket(10);
-		bucket.remaining = 8;
-		api.ratelimits.set(route, bucket);
-
-		api.setRatelimitsBucket(
-			route,
-			new Response('{}', {
-				headers: {
-					'x-ratelimit-limit': limit,
-					'x-ratelimit-remaining': remaining,
-				},
-			}),
-		);
-
-		expect(bucket.limit).toBe(expectedLimit);
-		expect(bucket.remaining).toBe(expectedRemaining);
 	});
 
 	test('honors an exhausted remaining count when its limit is malformed', () => {

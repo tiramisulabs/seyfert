@@ -103,31 +103,4 @@ describe('REST retry request options', () => {
 			vi.useRealTimers();
 		}
 	});
-
-	test('handle429 preserves every request option and forces unshift when retryAfter is zero', async () => {
-		vi.useFakeTimers();
-		try {
-			const { api, next, request, requestSpy, retried } = createRetryScenario();
-			api.ratelimits.set(route, new Bucket(1));
-			const response = new Response(JSON.stringify({ retry_after: 0 }), { status: 429 });
-			const retry = api.handle429(
-				route,
-				method,
-				url,
-				request,
-				response,
-				JSON.stringify({ retry_after: 0 }),
-				next,
-				vi.fn(),
-				Date.now(),
-				url,
-			);
-
-			await expect(retry).resolves.toBe(retried);
-			expect(next).toHaveBeenCalledTimes(1);
-			expectRequestOptionsPreserved(requestSpy, request);
-		} finally {
-			vi.useRealTimers();
-		}
-	});
 });

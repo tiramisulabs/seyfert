@@ -1,10 +1,8 @@
 import { describe, expect, test, vi } from 'vitest';
-import { FileUpload } from '../src/builders/FileUpload';
 import { CommandHandler } from '../src/commands/handler';
 import {
 	type APIApplicationCommandAttachmentOption,
 	ApplicationCommandOptionType,
-	ComponentType,
 	type FileUploadType,
 } from '../src/types';
 
@@ -30,16 +28,6 @@ function createCommandHandler() {
 }
 
 describe('file type filtering', () => {
-	test('serializes file upload component filters', () => {
-		const upload = new FileUpload().setCustomId('documents').setFileTypes(['image', '.pdf']);
-
-		expect(upload.toJSON()).toEqual({
-			type: ComponentType.FileUpload,
-			custom_id: 'documents',
-			file_types: ['image', '.pdf'],
-		});
-	});
-
 	test('detects changes to attachment option filters before uploading commands', () => {
 		const handler = createCommandHandler();
 

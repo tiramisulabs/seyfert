@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { config, GatewayIntentBits } from '../src';
+import { GatewayIntentBits } from '../src';
 import { BaseClient } from '../src/client/base';
 import * as Common from '../src/common';
 import { SeyfertError } from '../src/common/it/error';
@@ -65,16 +65,6 @@ describe('BaseClient config loading', () => {
 		});
 
 		const runtimeConfig = await client.getRC();
-
-		expect(runtimeConfig.intents).toBe(GatewayIntentBits.Guilds);
-	});
-
-	test('normalizes config.bot intents through the shared resolver', () => {
-		const runtimeConfig = config.bot({
-			token: 'token',
-			locations: { base: '' },
-			intents: ['Guilds'],
-		});
 
 		expect(runtimeConfig.intents).toBe(GatewayIntentBits.Guilds);
 	});

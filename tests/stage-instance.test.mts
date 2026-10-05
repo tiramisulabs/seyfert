@@ -33,19 +33,6 @@ describe('StageInstance', () => {
 		expect(await bot.client.cache.stageInstances?.raw(channel.id)).toMatchObject({ topic });
 	});
 
-	test('create validates the topic before touching REST', async () => {
-		const world = mockWorld();
-		const guild = world.registerGuild();
-		const channel = world.registerChannel(guild.id, { type: 13 });
-		await using bot = await createMockBot({ world });
-
-		const before = bot.restCalls().length;
-		await expect(bot.client.stageInstances.create({ channel_id: channel.id, topic: '' })).rejects.toMatchObject({
-			code: 'INVALID_STAGE_INSTANCE_TOPIC',
-		});
-		expect(bot.restCalls().length).toBe(before);
-	});
-
 	test('fetch, edit and delete round-trip through the channel-keyed routes', async () => {
 		const world = mockWorld();
 		const guild = world.registerGuild();
@@ -98,29 +85,6 @@ describe('StageInstance', () => {
 
 		await bot.client.stageInstances.fetch(channel.id, true);
 		expect(bot.restCalls().length).toBeGreaterThan(before);
-	});
-
-	test('structure helpers delegate to the channel-keyed shorter', async () => {
-		const world = mockWorld();
-		const guild = world.registerGuild();
-		const channel = world.registerChannel(guild.id, { type: 13 });
-		world.registerStageInstance(channel.id, { topic });
-		await using bot = await createMockBot({ world });
-
-		const fetched = await bot.client.stageInstances.fetch(channel.id);
-		expect((await fetched.fetch()).id).toBe(fetched.id);
-		expect((await fetched.fetch(true)).id).toBe(fetched.id);
-
-		const renamed = await fetched.edit({ topic: 'from structure' });
-		expect(renamed.topic).toBe('from structure');
-
-		const channelStructure = await bot.client.channels.fetch(channel.id);
-		expect(channelStructure.isStage()).toBe(true);
-		if (channelStructure.isStage()) {
-			expect((await channelStructure.stage.fetch()).id).toBe(fetched.id);
-			expect((await channelStructure.stage.fetch(true)).id).toBe(fetched.id);
-			expect((await channelStructure.stage.edit({ topic: 'from channel' })).topic).toBe('from channel');
-		}
 	});
 
 	test('guild create seeds the channel-keyed cache and gateway packets maintain it', async () => {

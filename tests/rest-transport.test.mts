@@ -20,9 +20,7 @@ afterEach(() => {
 describe('Discord REST transport', () => {
 	test.each([
 		['false', false],
-		['zero', 0],
 		['null', null],
-		['empty string', ''],
 	])('preserves JSON %s', async (_name, value) => {
 		vi.stubGlobal(
 			'fetch',

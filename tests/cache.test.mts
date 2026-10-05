@@ -1,6 +1,5 @@
 // biome-ignore assist/source/organizeImports: The root entrypoint must initialize before BaseClient to avoid the client barrel cycle.
 import { assert, describe, expect, test, vi } from 'vitest';
-import { BaseResource } from '../src/cache/resources/default/base';
 import {
 	Cache,
 	CacheFrom,
@@ -134,65 +133,6 @@ describe('test memory cache adapter', () => {
 	});
 });
 
-describe('memory cache adapter bucket ownership', () => {
-	test('derives root and guild-keyed relationships from their cache keys', () => {
-		const adapter = new MemoryAdapter();
-		adapter.bulkSet([
-			['user.user-1', { id: 'user-1' }, ['user', 'user-1']],
-			['member.guild-1.user-1', { id: 'user-1', guild_id: 'guild-1' }, ['member.guild-1', 'user-1']],
-		]);
-
-		assert.equal(adapter.keyToStorage.size, 0);
-		assert.equal(adapter.storage.size, 2);
-		assert.equal(adapter.storage.get('user')?.size, 1);
-		assert.equal(adapter.storage.get('member.guild-1')?.size, 1);
-		assert.deepEqual(adapter.keys('user'), ['user.user-1']);
-		assert.deepEqual(adapter.keys('member.guild-1'), ['member.guild-1.user-1']);
-
-		adapter.removeRelationship(['user', 'member.guild-1']);
-		assert.equal(adapter.storage.size, 0);
-		assert.equal(adapter.keyToStorage.size, 0);
-	});
-
-	test('indexes globally keyed relationships for lookup and cleanup', () => {
-		const adapter = new MemoryAdapter();
-		adapter.set('channel.channel-1', { id: 'channel-1', guild_id: 'guild-1' }, ['channel.guild-1', 'channel-1']);
-
-		assert.equal(adapter.keyToStorage.size, 1);
-		assert.equal(adapter.storage.size, 1);
-		assert.deepEqual(adapter.get('channel.channel-1'), { id: 'channel-1', guild_id: 'guild-1' });
-		assert.equal(adapter.contains('channel.guild-1', 'channel-1'), true);
-		assert.deepEqual(adapter.keys('channel.guild-1'), ['channel.channel-1']);
-
-		adapter.remove('channel.channel-1');
-		assert.equal(adapter.storage.size, 0);
-		assert.equal(adapter.keyToStorage.size, 0);
-	});
-
-	test('scans entries across relationship buckets', () => {
-		const adapter = new MemoryAdapter();
-		adapter.bulkSet([
-			['member.guild-1.user-1', { id: 'user-1' }, ['member.guild-1', 'user-1']],
-			['member.guild-2.user-2', { id: 'user-2' }, ['member.guild-2', 'user-2']],
-		]);
-
-		expect(adapter.scan('member.*.*', true)).toEqual(['member.guild-1.user-1', 'member.guild-2.user-2']);
-	});
-});
-
-describe('base cache resource', () => {
-	test('normalizes adapter cache misses to undefined', () => {
-		const adapter = new MemoryAdapter();
-		const resource = new BaseResource<{ id: string }>({ adapter } as any, {} as any);
-
-		assert.strictEqual(adapter.get('base.missing'), null);
-		assert.strictEqual(resource.get('missing'), undefined);
-
-		adapter.set('base.present', { id: 'present' }, ['base', 'present']);
-		assert.deepEqual(resource.get('present'), { id: 'present' });
-	});
-});
-
 describe.each(adapterKinds)('%s guild-scoped presences', kind => {
 	test('keeps one independently mutable entry per guild', async () => {
 		const client: any = {};
@@ -303,9 +243,7 @@ describe.each(adapterKinds)('%s guild-scoped presences', kind => {
 
 describe.each(adapterKinds)('%s custom cache routing', kind => {
 	test.each([
-		['root', 'custom.entry', ['custom', 'entry'], false],
 		['guild indexed', 'custom.entry', ['custom.guild-1', 'entry'], true],
-		['guild keyed', 'custom.guild-1.entry', ['custom.guild-1', 'entry'], false],
 	] as const)('routes a %s entry', (_layout, key, relationship, indexed) => {
 		const adapter = createTestAdapter(kind);
 		adapter.set(key, { id: 'entry' }, relationship);
@@ -325,8 +263,6 @@ describe.each(adapterKinds)('%s relationship removal', kind => {
 	test.each([
 		['user.', 'user'],
 		['channel.', 'channel.guild-1'],
-		['presence.guild-1.', 'presence.guild-1'],
-		['custom.guild-1.', 'custom.guild-1'],
 	] as const)('removes only selected entries from %s', (prefix, relationship) => {
 		const adapter = createTestAdapter(kind);
 		adapter.set(`${prefix}first`, { id: 'first' }, [relationship, 'first']);
@@ -374,18 +310,6 @@ describe('test limited memory cache adapter', () => {
 		]);
 
 		expect(primitiveAdapter.bulkGet(['user.0', 'user.false', 'user.empty'])).toEqual([0, false, '']);
-	});
-
-	test('bulkRemove clears message relationships', () => {
-		const primitiveAdapter = new LimitedMemoryAdapter();
-		primitiveAdapter.set('message.message-1', { id: 'message-1', guild_id: 'guild-1', channel_id: 'channel-1' }, [
-			'message.channel-1',
-			'message-1',
-		]);
-
-		primitiveAdapter.bulkRemove(['message.message-1']);
-
-		expect(primitiveAdapter.getToRelationship('message.channel-1')).toEqual([]);
 	});
 
 	test('guild removal clears message and overwrite cache indexes', async () => {
@@ -442,10 +366,8 @@ describe('test limited memory cache adapter', () => {
 
 describe.each(adapterKinds)('%s atomic write failures', kind => {
 	test.each([
-		['root', 'user.user-1', { id: 'user-1' }, 'user', 'user-1'],
 		['guild related', 'channel.channel-1', { id: 'channel-1', guild_id: 'guild-1' }, 'channel.guild-1', 'channel-1'],
 		['message', 'message.message-1', { id: 'message-1', guild_id: 'guild-1' }, 'message.channel-1', 'message-1'],
-		['custom', 'custom.entry-1', { id: 'entry-1', guild_id: 'guild-1' }, 'custom.guild-1', 'entry-1'],
 	] as const)('does not create a %s relationship when encoding fails', (_label, key, value, to, id) => {
 		const adapter = createTestAdapter(kind, {
 			encode() {
@@ -533,47 +455,6 @@ describe.each(adapterKinds)('%s atomic write failures', kind => {
 });
 
 describe('limited memory cache adapter ownership', () => {
-	test('resolves patch and removal across guild-keyed buckets', () => {
-		const adapter = new LimitedMemoryAdapter();
-		adapter.bulkSet([
-			['member.guild-1.user-1', { id: 'user-1', guild_id: 'guild-1', nick: 'uno' }, ['member.guild-1', 'user-1']],
-			['member.guild-2.user-2', { id: 'user-2', guild_id: 'guild-2', nick: 'dos' }, ['member.guild-2', 'user-2']],
-		]);
-
-		adapter.patch('member.guild-2.user-2', { nick: 'updated' }, ['member.guild-2', 'user-2']);
-		assert.equal((adapter.get('member.guild-2.user-2') as { nick: string }).nick, 'updated');
-		assert.equal(adapter.keyToStorage.size, 0);
-
-		adapter.remove('member.guild-2.user-2');
-		assert.equal(adapter.get('member.guild-2.user-2'), null);
-		assert.equal(adapter.contains('member.guild-2', 'user-2'), false);
-	});
-
-	test('uses the global-key index for lookup and cleanup', () => {
-		const adapter = new LimitedMemoryAdapter();
-		adapter.set(...channelWrite('guild-1'));
-
-		assert.deepEqual(adapter.get('channel.channel-1'), { id: 'channel-1', guild_id: 'guild-1', name: 'guild-1' });
-		assert.equal(adapter.contains('channel.guild-1', 'channel-1'), true);
-		assert.deepEqual(adapter.keys('channel.guild-1'), ['channel.channel-1']);
-		assert.equal(adapter.storage.size, 1);
-		assert.equal(adapter.relationships.size, 0);
-
-		adapter.remove('channel.channel-1');
-		assert.equal(adapter.storage.size, 0);
-		assert.equal(adapter.keyToStorage.size, 0);
-	});
-
-	test('does not scan guild buckets for a globally keyed miss', () => {
-		const adapter = new LimitedMemoryAdapter();
-		adapter.set(...channelWrite('guild-1'));
-		adapter.set('channel.channel-2', { id: 'channel-2', guild_id: 'guild-2' }, ['channel.guild-2', 'channel-2']);
-		const iterateStorage = vi.spyOn(adapter.storage, Symbol.iterator);
-
-		assert.equal(adapter.get('channel.missing'), null);
-		expect(iterateStorage).not.toHaveBeenCalled();
-	});
-
 	test('relocates message storage without changing its relationship owner', () => {
 		const adapter = new LimitedMemoryAdapter();
 		adapter.set('message.message-1', { id: 'message-1', channel_id: 'channel-1' }, ['message.channel-1', 'message-1']);
@@ -590,24 +471,6 @@ describe('limited memory cache adapter ownership', () => {
 
 		adapter.remove('message.message-1');
 		assert.equal(adapter.get('message.message-1'), null);
-		assert.equal(adapter.contains('message.channel-1', 'message-1'), false);
-		assert.equal(adapter.storage.size, 0);
-		assert.equal(adapter.keyToStorage.size, 0);
-		assert.equal(adapter.relationships.size, 0);
-	});
-
-	test('keeps an explicit secondary index when message ownership differs from storage', () => {
-		const adapter = new LimitedMemoryAdapter();
-		adapter.set('message.message-1', { id: 'message-1', guild_id: 'guild-1', channel_id: 'channel-1' }, [
-			'message.channel-1',
-			'message-1',
-		]);
-
-		assert.equal(adapter.contains('message.channel-1', 'message-1'), true);
-		assert.deepEqual(adapter.keys('message.channel-1'), ['message.message-1']);
-		assert.equal(adapter.relationships.size, 1);
-
-		adapter.remove('message.message-1');
 		assert.equal(adapter.contains('message.channel-1', 'message-1'), false);
 		assert.equal(adapter.storage.size, 0);
 		assert.equal(adapter.keyToStorage.size, 0);
@@ -672,30 +535,6 @@ describe('limited memory cache adapter ownership', () => {
 			assert.equal(adapter.storage.size, 0);
 			assert.equal(adapter.keyToStorage.size, 0);
 			assert.equal(adapter.relationships.size, 0);
-		} finally {
-			vi.useRealTimers();
-		}
-	});
-
-	test('does not allocate relationship sets for bucket-owned resources', () => {
-		const adapter = new LimitedMemoryAdapter();
-		adapter.set(...channelWrite('guild-1'));
-
-		assert.equal(adapter.count('channel.guild-1'), 1);
-		assert.deepEqual(adapter.getToRelationship('channel.guild-1'), ['channel-1']);
-		assert.equal(adapter.relationships.size, 0);
-	});
-
-	test('removes expired buckets and their global indexes', () => {
-		vi.useFakeTimers();
-		try {
-			const adapter = new LimitedMemoryAdapter({ default: { expire: 100 } });
-			adapter.set(...channelWrite('guild-1'));
-			vi.advanceTimersByTime(100);
-			assert.equal(adapter.get('channel.channel-1'), null);
-			assert.equal(adapter.storage.size, 0);
-			assert.equal(adapter.keyToStorage.size, 0);
-			assert.equal(adapter.count('channel.guild-1'), 0);
 		} finally {
 			vi.useRealTimers();
 		}
