@@ -4,6 +4,7 @@
 
 import type { PickRequired } from '../../common';
 import type {
+	APIContainerComponent,
 	APITopLevelComponent,
 	ChannelFlags,
 	ChannelType,
@@ -1180,6 +1181,11 @@ export interface APIEmbed {
 	 * See https://docs.discord.com/developers/resources/channel#embed-object-embed-field-structure
 	 */
 	fields?: APIEmbedField[];
+	/**
+	 * Containers in a website link preview, only present on components-type embeds.
+	 * See https://docs.discord.com/developers/link-previews/component-embeds
+	 */
+	components?: APIContainerComponent[];
 }
 
 /**
@@ -1257,6 +1263,8 @@ export enum EmbedType {
 	 * https://docs.discord.com/developers/resources/message#embed-fields-by-embed-type-poll-result-embed-fields
 	 */
 	PollResult = 'poll_result',
+	/** Website link preview rendered from Discord components. */
+	Components = 'components',
 	/**
 	 * Auto moderation alert embed
 	 *

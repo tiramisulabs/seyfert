@@ -21,6 +21,7 @@ import type { ObjectToLower } from '../common/types/util';
 import type { MessageCreateBodyRequest, MessageUpdateBodyRequest } from '../common/types/write';
 import type { TopLevelComponents } from '../components';
 import { componentFactory } from '../components';
+import { ContainerComponent } from '../components/Container';
 import type {
 	APIChannelMention,
 	APIEmbed,
@@ -316,6 +317,11 @@ export class InMessageEmbed {
 
 	get fields() {
 		return this.data.fields;
+	}
+
+	/** Components of a website link preview, when present. */
+	get components() {
+		return this.data.components?.map(component => new ContainerComponent(component));
 	}
 
 	toBuilder() {
