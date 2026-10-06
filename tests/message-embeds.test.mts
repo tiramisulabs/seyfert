@@ -5,8 +5,8 @@ import {
 	AttachmentBuilder,
 	BaseInteraction,
 	Command,
-	ComponentType,
 	type CommandContext,
+	ComponentType,
 	Declare,
 	Embed,
 	EmbedType,
@@ -34,18 +34,22 @@ describe('message embed body serialization', () => {
 		const preview = {
 			type: EmbedType.Components,
 			url: 'https://example.com/article',
-			components: [{
-				type: ComponentType.Container,
-				accent_color: 5793266,
-				components: [{
-					type: ComponentType.Section,
-					components: [{ type: ComponentType.TextDisplay, content: '# Article' }],
-					accessory: {
-						type: ComponentType.Thumbnail,
-						media: { url: 'https://example.com/image.png', proxy_url: 'https://proxy.example.com/image.png' },
-					},
-				}],
-			}],
+			components: [
+				{
+					type: ComponentType.Container,
+					accent_color: 5793266,
+					components: [
+						{
+							type: ComponentType.Section,
+							components: [{ type: ComponentType.TextDisplay, content: '# Article' }],
+							accessory: {
+								type: ComponentType.Thumbnail,
+								media: { url: 'https://example.com/image.png', proxy_url: 'https://proxy.example.com/image.png' },
+							},
+						},
+					],
+				},
+			],
 		} satisfies APIEmbed;
 		const world = mockWorld();
 		const guild = world.registerGuild();
