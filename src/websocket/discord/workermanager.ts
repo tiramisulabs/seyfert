@@ -832,7 +832,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 			this.prepareWorkers(spaces, true);
 			const firstWorker = this.reshardingWorkerQueue.shift();
 			if (firstWorker) this.observe(firstWorker, 'Resharding worker spawn failed');
-		}, this.options.resharding.interval);
+		}, this.options.resharding.interval).unref?.();
 	}
 }
 
