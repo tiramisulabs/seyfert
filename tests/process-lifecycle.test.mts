@@ -23,8 +23,10 @@ describe('process lifecycle', () => {
 			getRC: () => ({ token: 'token', intents: 0, locations: { base: '' } }),
 		}).start()`,
 		],
-	])('%s allows the process to exit after foreground work completes', async (_name, start) => {
-		const { stdout, stderr } = await runToExit(`
+	])(
+		'%s allows the process to exit after foreground work completes',
+		async (_name, start) => {
+			const { stdout, stderr } = await runToExit(`
 			import { createRequire } from 'node:module';
 			const { ShardManager, WorkerManager } = createRequire(process.cwd() + '/package.json')('./lib/index.js');
 			const info = {
@@ -41,7 +43,9 @@ describe('process lifecycle', () => {
 			console.log('completed');
 		`);
 
-		expect(stdout.trim()).toBe('completed');
-		expect(stderr).toBe('');
-	}, 10_000);
+			expect(stdout.trim()).toBe('completed');
+			expect(stderr).toBe('');
+		},
+		10_000,
+	);
 });
