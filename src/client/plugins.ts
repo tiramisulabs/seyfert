@@ -174,13 +174,17 @@ type CreatePluginInputBase<
 	readonly imports?: I;
 	readonly requires?: readonly PluginRequirementInput[];
 	readonly client?: PluginClientMap<E, I>;
-	readonly ctx?: PluginContextMap<C, I, E>;
+	// Infer extensions from client factories, not from callbacks that consume them.
+	readonly ctx?: PluginContextMap<C, I, NoInfer<E>>;
 	readonly middlewares?: M;
 	readonly globalMiddlewares?: readonly (keyof M & string)[];
 	options?(current: Readonly<BaseClientOptions>): SeyfertPluginOptions;
-	register?(api: SeyfertPluginApi<M, ExtendOf<I> & E>): void;
-	setup?(client: SeyfertPluginClient & ExtendOf<I> & E, api?: SeyfertPluginApi<M, ExtendOf<I> & E>): Awaitable<void>;
-	teardown?(client: SeyfertPluginClient & ExtendOf<I> & E, api?: SeyfertPluginTeardownApi): Awaitable<void>;
+	register?(api: SeyfertPluginApi<M, ExtendOf<I> & NoInfer<E>>): void;
+	setup?(
+		client: SeyfertPluginClient & ExtendOf<I> & NoInfer<E>,
+		api?: SeyfertPluginApi<M, ExtendOf<I> & NoInfer<E>>,
+	): Awaitable<void>;
+	teardown?(client: SeyfertPluginClient & ExtendOf<I> & NoInfer<E>, api?: SeyfertPluginTeardownApi): Awaitable<void>;
 };
 
 type CreatePluginReservedKey =

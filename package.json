@@ -35,7 +35,7 @@
 		"@commitlint/config-conventional": "^21.2.0",
 		"@types/node": "^26.1.1",
 		"husky": "^9.1.7",
-		"typescript": "^6.0.3",
+		"typescript": "7.1.0-beta",
 		"vitest": "^4.1.10"
 	},
 	"homepage": "https://seyfert.dev",

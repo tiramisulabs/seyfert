@@ -1,7 +1,9 @@
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import ts from 'typescript';
+import { isPropertyAccessExpression, type Node, ScriptTarget, type SourceFile } from 'typescript/ast';
+import { API, type Checker, ModuleKind, ModuleResolutionKind, type Type, TypeFlags } from 'typescript/async';
+import { createFileSystemLayer } from 'typescript/fs';
 import { describe, expect, test } from 'vitest';
 
 type TypeSnapshot = {
@@ -9,7 +11,7 @@ type TypeSnapshot = {
 	readonly text: string;
 };
 
-const isAnyType = (type: ts.Type) => (type.flags & ts.TypeFlags.Any) !== 0;
+const isAnyType = (type: Type) => (type.flags & TypeFlags.Any) !== 0;
 
 const writeConsumerFixture = (root: string) => {
 	mkdirSync(join(root, 'src'), { recursive: true });
@@ -193,7 +195,7 @@ ctx.client.messages.write("123", { content: "ok" });
 	);
 };
 
-const createMiddlewareContextProgram = (guild = false) => {
+const createMiddlewareContextProgram = (api: API, guild = false) => {
 	const root = join(tmpdir(), 'seyfert-middleware-context');
 	const commandFile = join(root, 'src', 'command.ts');
 	const completionsFile = join(root, 'src', 'completions.ts');
@@ -326,214 +328,179 @@ type MetadataCompletion = CommandMetadata</* metadata */ "">;
 `,
 		],
 	]);
-	const compilerOptions: ts.CompilerOptions = {
+	const compilerOptions = {
 		esModuleInterop: true,
-		module: ts.ModuleKind.CommonJS,
-		moduleResolution: ts.ModuleResolutionKind.Node10,
+		module: ModuleKind.CommonJS,
+		moduleResolution: ModuleResolutionKind.Node10,
 		noEmit: true,
+		paths: { seyfert: [join(process.cwd(), 'lib', 'index.d.ts')] },
 		skipLibCheck: true,
 		strict: true,
-		target: ts.ScriptTarget.ESNext,
+		target: ScriptTarget.ESNext,
 		types: ['node'],
 	};
-	const host = ts.createCompilerHost(compilerOptions);
-	const readFile = host.readFile.bind(host);
-	const fileExists = host.fileExists.bind(host);
-
-	host.fileExists = fileName => sources.has(fileName) || fileExists(fileName);
-	host.readFile = fileName => sources.get(fileName) ?? readFile(fileName);
-	host.getSourceFile = (fileName, languageVersion) => {
-		const source = host.readFile(fileName);
-		return source === undefined ? undefined : ts.createSourceFile(fileName, source, languageVersion, true);
-	};
-	host.resolveModuleNames = (moduleNames, containingFile) =>
-		moduleNames.map(moduleName => {
-			if (moduleName === 'seyfert') {
-				return {
-					extension: ts.Extension.Dts,
-					isExternalLibraryImport: true,
-					resolvedFileName: join(process.cwd(), 'lib', 'index.d.ts'),
-				};
-			}
-			if (moduleName.startsWith('./')) {
-				const resolvedFileName = join(root, 'src', `${moduleName.slice(2)}.ts`);
-				if (sources.has(resolvedFileName)) return { extension: ts.Extension.Ts, resolvedFileName };
-			}
-			return ts.resolveModuleName(moduleName, containingFile, compilerOptions, host).resolvedModule;
-		});
-
-	const languageServiceHost: ts.LanguageServiceHost = {
-		fileExists: host.fileExists,
-		getCompilationSettings: () => compilerOptions,
-		getCurrentDirectory: () => root,
-		getDefaultLibFileName: ts.getDefaultLibFilePath,
-		getScriptFileNames: () => [...sources.keys()],
-		getScriptSnapshot: fileName => {
-			const source = host.readFile(fileName);
-			return source === undefined ? undefined : ts.ScriptSnapshot.fromString(source);
-		},
-		getScriptVersion: () => '0',
-		readDirectory: ts.sys.readDirectory,
-		readFile: host.readFile,
-		resolveModuleNames: host.resolveModuleNames,
-	};
-
-	return {
-		completionsFile,
-		completionsSource: sources.get(completionsFile)!,
-		languageService: ts.createLanguageService(languageServiceHost),
-		program: ts.createProgram([commandFile], compilerOptions, host),
-	};
+	return api.createSnapshot({
+		fileSystem: createFileSystemLayer([...sources]),
+		createPrograms: [
+			{ rootFiles: [commandFile], compilerOptions },
+			{ rootFiles: [completionsFile], compilerOptions },
+		],
+	});
 };
 
-const getClientTypesBeforeDiagnostics = (sourceFile: ts.SourceFile, checker: ts.TypeChecker) => {
-	const clientTypes: TypeSnapshot[] = [];
+const getPropertyTypesBeforeDiagnostics = async (
+	sourceFile: SourceFile,
+	checker: Checker,
+	property: 'client' | 't',
+): Promise<TypeSnapshot[]> => {
+	const nodes: Node[] = [];
 
-	const visit = (node: ts.Node) => {
-		if (ts.isPropertyAccessExpression(node) && node.name.text === 'client') {
-			const type = checker.getTypeAtLocation(node);
-			clientTypes.push({
-				isAny: isAnyType(type),
-				text: checker.typeToString(type),
-			});
-		}
-
-		ts.forEachChild(node, visit);
+	const visit = (node: Node) => {
+		if (isPropertyAccessExpression(node) && node.name.text === property) nodes.push(node);
+		node.forEachChild(visit);
 	};
 
 	visit(sourceFile);
-	return clientTypes;
+	const types = await checker.getTypeAtLocation(nodes);
+	return Promise.all(types.map(async type => ({ isAny: isAnyType(type), text: await checker.typeToString(type) })));
 };
 
 describe('command context client type', () => {
-	test('keeps ctx.client typed while resolving circular consumer module augmentation', () => {
+	test('keeps ctx.client typed while resolving circular consumer module augmentation', async () => {
 		const root = mkdtempSync(join(tmpdir(), 'seyfert-context-client-'));
 
 		try {
 			writeConsumerFixture(root);
+			await using api = new API();
 
 			const commandFile = join(root, 'src', 'command.ts');
-			const program = ts.createProgram([commandFile], {
+			await using program = await api.createProgram([commandFile], {
 				esModuleInterop: true,
-				module: ts.ModuleKind.CommonJS,
-				moduleResolution: ts.ModuleResolutionKind.Node10,
+				module: ModuleKind.CommonJS,
+				moduleResolution: ModuleResolutionKind.Node10,
 				noEmit: true,
 				skipLibCheck: true,
 				strict: true,
-				target: ts.ScriptTarget.ESNext,
+				target: ScriptTarget.ESNext,
 				types: ['node'],
 			});
-			const checker = program.getTypeChecker();
-			const sourceFile = program.getSourceFile(commandFile);
+			const checker = program.getProject().checker;
+			const sourceFile = await program.getSourceFile(commandFile);
 
 			if (!sourceFile) throw new Error('Fixture command source was not loaded');
 
-			const clientTypes = getClientTypesBeforeDiagnostics(sourceFile, checker);
+			const clientTypes = await getPropertyTypesBeforeDiagnostics(sourceFile, checker, 'client');
 
 			expect(clientTypes).toHaveLength(1);
 			expect(clientTypes[0]?.text).toBe('UsingClient');
 			expect(clientTypes[0]?.isAny).toBe(false);
-			expect(program.getSemanticDiagnostics()).toHaveLength(0);
+			expect(await program.getSemanticDiagnostics()).toHaveLength(0);
 		} finally {
 			rmSync(root, { force: true, recursive: true });
 		}
 	});
 
-	test('ignores arbitrary client registry types not created with ParseClient', () => {
+	test('ignores arbitrary client registry types not created with ParseClient', async () => {
 		const root = mkdtempSync(join(tmpdir(), 'seyfert-invalid-client-'));
 
 		try {
 			writeInvalidClientFixture(root);
+			await using api = new API();
 
 			const commandFile = join(root, 'src', 'command.ts');
-			const program = ts.createProgram([commandFile], {
+			await using program = await api.createProgram([commandFile], {
 				esModuleInterop: true,
-				module: ts.ModuleKind.CommonJS,
-				moduleResolution: ts.ModuleResolutionKind.Node10,
+				module: ModuleKind.CommonJS,
+				moduleResolution: ModuleResolutionKind.Node10,
 				noEmit: true,
 				skipLibCheck: true,
 				strict: true,
-				target: ts.ScriptTarget.ESNext,
+				target: ScriptTarget.ESNext,
 				types: ['node'],
 			});
-			const diagnostics = program.getSemanticDiagnostics();
+			const diagnostics = await program.getSemanticDiagnostics();
 
-			expect(
-				diagnostics.some(
-					diagnostic =>
-						diagnostic.code === 2339 && ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n').includes('fake'),
-				),
-			).toBe(true);
+			expect(diagnostics.some(diagnostic => diagnostic.code === 2339 && diagnostic.text.includes('fake'))).toBe(true);
 		} finally {
 			rmSync(root, { force: true, recursive: true });
 		}
 	});
 
-	test('keeps direct Client registry types compatible', () => {
+	test('keeps direct Client registry types compatible', async () => {
 		const root = mkdtempSync(join(tmpdir(), 'seyfert-direct-client-'));
 
 		try {
 			writeDirectClientFixture(root);
+			await using api = new API();
 
 			const commandFile = join(root, 'src', 'command.ts');
-			const program = ts.createProgram([commandFile], {
+			await using program = await api.createProgram([commandFile], {
 				esModuleInterop: true,
-				module: ts.ModuleKind.CommonJS,
-				moduleResolution: ts.ModuleResolutionKind.Node10,
+				module: ModuleKind.CommonJS,
+				moduleResolution: ModuleResolutionKind.Node10,
 				noEmit: true,
 				skipLibCheck: true,
 				strict: true,
-				target: ts.ScriptTarget.ESNext,
+				target: ScriptTarget.ESNext,
 				types: ['node'],
 			});
 
-			expect(program.getSemanticDiagnostics()).toHaveLength(0);
+			expect(await program.getSemanticDiagnostics()).toHaveLength(0);
 		} finally {
 			rmSync(root, { force: true, recursive: true });
 		}
 	});
 
-	test('keeps documented ParseClient variants compatible', () => {
+	test('keeps documented ParseClient variants compatible', async () => {
 		const root = mkdtempSync(join(tmpdir(), 'seyfert-client-variants-'));
 
 		try {
 			writeDocumentedClientVariantFixture(root);
+			await using api = new API();
 
 			for (const filename of ['gateway.ts', 'http.ts', 'worker.ts', 'extended.ts']) {
-				const program = ts.createProgram([join(root, 'src', filename)], {
+				await using program = await api.createProgram([join(root, 'src', filename)], {
 					esModuleInterop: true,
-					module: ts.ModuleKind.CommonJS,
-					moduleResolution: ts.ModuleResolutionKind.Node10,
+					module: ModuleKind.CommonJS,
+					moduleResolution: ModuleResolutionKind.Node10,
 					noEmit: true,
 					skipLibCheck: true,
 					strict: true,
-					target: ts.ScriptTarget.ESNext,
+					target: ScriptTarget.ESNext,
 					types: ['node'],
 				});
 
-				expect(program.getSemanticDiagnostics()).toHaveLength(0);
+				expect(await program.getSemanticDiagnostics()).toHaveLength(0);
 			}
 		} finally {
 			rmSync(root, { force: true, recursive: true });
 		}
 	});
 
-	test.each([false, true])('registers existing middleware contexts without circular inference (guild: %s)', guild => {
-		const { program } = createMiddlewareContextProgram(guild);
+	test.each([
+		false,
+		true,
+	])('registers existing middleware contexts without circular inference (guild: %s)', async guild => {
+		await using api = new API();
+		await using snapshot = await createMiddlewareContextProgram(api, guild);
+		const program = snapshot.operation.createdPrograms[0];
 
-		expect(
-			program.getSemanticDiagnostics().map(diagnostic => ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')),
-		).toEqual([]);
+		expect((await program.getSemanticDiagnostics()).map(diagnostic => diagnostic.text)).toEqual([]);
 	});
 
-	test('keeps registered middleware completions on public configuration surfaces', () => {
-		const { completionsFile, completionsSource, languageService } = createMiddlewareContextProgram();
+	test('keeps registered middleware completions on public configuration surfaces', async () => {
+		await using api = new API();
+		await using snapshot = await createMiddlewareContextProgram(api);
+		const project = snapshot.operation.createdPrograms[1].getProject();
+		const completionsFile = join(tmpdir(), 'seyfert-middleware-context', 'src', 'completions.ts');
+		const completionsSource = (await project.program.getSourceFile(completionsFile))!.text;
+		const languageService = project.languageService;
 		const expected = ['componentOnly', 'entryPointOnly', 'menuOnly', 'modalOnly', 'teamOnly'];
 
 		for (const marker of ['decorator', 'helper', 'global', 'services', 'context', 'metadata']) {
 			const markerPosition = completionsSource.indexOf(`/* ${marker} */`);
 			const quotePosition = completionsSource.indexOf('"', markerPosition);
-			const completions = languageService.getCompletionsAtPosition(completionsFile, quotePosition + 1, {});
+			const completions = await languageService.getCompletionsAtPosition(completionsFile, quotePosition + 1, {});
 			const middlewareNames = completions?.entries
 				.map(entry => entry.name)
 				.filter(name => expected.includes(name))
@@ -606,49 +573,31 @@ void greeting;
 	);
 };
 
-const getLocaleTypesBeforeDiagnostics = (sourceFile: ts.SourceFile, checker: ts.TypeChecker) => {
-	const localeTypes: TypeSnapshot[] = [];
-
-	const visit = (node: ts.Node) => {
-		if (ts.isPropertyAccessExpression(node) && node.name.text === 't') {
-			const type = checker.getTypeAtLocation(node);
-			localeTypes.push({
-				isAny: isAnyType(type),
-				text: checker.typeToString(type),
-			});
-		}
-
-		ts.forEachChild(node, visit);
-	};
-
-	visit(sourceFile);
-	return localeTypes;
-};
-
 describe('command context locale type', () => {
-	test('keeps ctx.t typed while resolving circular consumer module augmentation', () => {
+	test('keeps ctx.t typed while resolving circular consumer module augmentation', async () => {
 		const root = mkdtempSync(join(tmpdir(), 'seyfert-context-locale-'));
 
 		try {
 			writeLocaleFixture(root);
+			await using api = new API();
 
 			const commandFile = join(root, 'src', 'command.ts');
-			const program = ts.createProgram([commandFile], {
+			await using program = await api.createProgram([commandFile], {
 				esModuleInterop: true,
-				module: ts.ModuleKind.CommonJS,
-				moduleResolution: ts.ModuleResolutionKind.Node10,
+				module: ModuleKind.CommonJS,
+				moduleResolution: ModuleResolutionKind.Node10,
 				noEmit: true,
 				skipLibCheck: true,
 				strict: true,
-				target: ts.ScriptTarget.ESNext,
+				target: ScriptTarget.ESNext,
 				types: ['node'],
 			});
-			const checker = program.getTypeChecker();
-			const sourceFile = program.getSourceFile(commandFile);
+			const checker = program.getProject().checker;
+			const sourceFile = await program.getSourceFile(commandFile);
 
 			if (!sourceFile) throw new Error('Fixture command source was not loaded');
 
-			const localeTypes = getLocaleTypesBeforeDiagnostics(sourceFile, checker);
+			const localeTypes = await getPropertyTypesBeforeDiagnostics(sourceFile, checker, 't');
 
 			// ctx.t must resolve to the registered locale proxy, not collapse to `{}` (untyped).
 			expect(localeTypes.length).toBeGreaterThanOrEqual(1);
@@ -657,7 +606,7 @@ describe('command context locale type', () => {
 				expect(localeType.text).not.toBe('{}');
 			}
 			// Accessing ctx.t.commands.ping.content.get() and ctx.t.greeting(...).get() must typecheck.
-			expect(program.getSemanticDiagnostics()).toHaveLength(0);
+			expect(await program.getSemanticDiagnostics()).toHaveLength(0);
 		} finally {
 			rmSync(root, { force: true, recursive: true });
 		}

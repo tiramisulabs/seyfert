@@ -438,9 +438,9 @@ const translatedGroups = defineGroups({
 });
 expectType<true>(true as Equal<keyof typeof translatedGroups & string, 'admin' | 'reports'>);
 
-// @ts-expect-error group definitions must be either all localized or all translated
 defineGroups({
 	localized: {
+		// @ts-expect-error group definitions must be either all localized or all translated
 		name: [['en-US', 'Localized']],
 		defaultDescription: 'Localized group',
 	},
