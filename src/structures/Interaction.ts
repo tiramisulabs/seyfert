@@ -195,8 +195,8 @@ export class BaseInteraction<
 		const poll = (body as MessageWebhookCreateBodyRequest).poll;
 
 		const payload = {
-			allowed_mentions: self.options?.allowedMentions,
 			...body,
+			allowed_mentions: body.allowed_mentions === undefined ? self.options?.allowedMentions : body.allowed_mentions,
 			components: body.components?.map(x => (x instanceof ActionRow ? x.toJSON() : x)),
 			embeds: body?.embeds?.map(x => ('toJSON' in x ? x.toJSON() : x)),
 			poll: poll ? (poll instanceof PollBuilder ? poll.toJSON() : poll) : undefined,
