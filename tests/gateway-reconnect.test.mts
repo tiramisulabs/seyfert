@@ -9,6 +9,7 @@ afterEach(() => {
 	vi.resetModules();
 	vi.restoreAllMocks();
 	vi.useRealTimers();
+	vi.doUnmock('node:https');
 	vi.doUnmock('../src/websocket/discord/basesocket');
 	FakeBaseSocket.instances.length = 0;
 });
@@ -71,6 +72,28 @@ describe('gateway reconnect stability', () => {
 			code: ShardSocketCloseCodes.Reconnect,
 			reason: 'Shard down request',
 		});
+	});
+
+	test('an invalid websocket handshake reports its error and closes the transport once', async () => {
+		const request = new EventEmitter() as EventEmitter & { end: ReturnType<typeof vi.fn> };
+		request.end = vi.fn();
+		vi.doMock('node:https', () => ({ request: () => request }));
+		const { SeyfertWebSocket } = await import('../src/websocket/discord/socket/custom');
+		const socket = new SeyfertWebSocket('wss://gateway.discord.gg/?v=10');
+		const onerror = vi.fn();
+		const onclose = vi.fn();
+		socket.onerror = onerror;
+		socket.onclose = onclose;
+		const transport = { destroy: vi.fn(), end: vi.fn((done: () => void) => done()) };
+
+		request.emit('upgrade', { headers: { 'sec-websocket-accept': 'invalid' } }, transport);
+		await Promise.resolve();
+
+		expect(transport.destroy).toHaveBeenCalledOnce();
+		expect(onerror).toHaveBeenCalledWith(expect.objectContaining({ code: 'INVALID_SEC_WEBSOCKET_ACCEPT_HEADER' }));
+		expect(onclose).toHaveBeenCalledWith({ code: 1006, reason: onerror.mock.calls[0][0].message });
+		socket.close(1006, 'already closed');
+		expect(onclose).toHaveBeenCalledOnce();
 	});
 
 	test('transient handshake errors retry before surfacing a close', async () => {
