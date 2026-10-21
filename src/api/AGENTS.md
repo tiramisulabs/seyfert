@@ -6,7 +6,6 @@ boundary to shorters and structures. For cross-cutting work, follow the root
 routing table for every affected path and verification step.
 
 Keep the layers distinct:
-
 1. `src/types/rest/` and `src/types/payloads/` describe Discord data.
 2. `src/api/Routes/` describes route proxy shapes; these are types, not a
    runtime `Routes` object.

@@ -30,40 +30,40 @@ function createInteraction(client: unknown, __reply?: __InternalReplyFunction) {
 }
 
 describe('interaction reply state', () => {
-	test.each([
-		'reply',
-		'defer',
-	] as const)('preserves allowed mention defaults and per-message overrides after %s', async initialResponse => {
-		const world = mockWorld();
-		const user = world.registerUser();
+	test.each(['reply', 'defer'] as const)(
+		'preserves allowed mention defaults and per-message overrides after %s',
+		async initialResponse => {
+			const world = mockWorld();
+			const user = world.registerUser();
 
-		@Declare({ name: 'mention-policy', description: 'Edit an interaction response' })
-		class MentionPolicyCommand extends Command {
-			async run(ctx: CommandContext) {
-				if (initialResponse === 'defer') await ctx.deferReply();
-				else await ctx.write({ content: 'initial' });
+			@Declare({ name: 'mention-policy', description: 'Edit an interaction response' })
+			class MentionPolicyCommand extends Command {
+				async run(ctx: CommandContext) {
+					if (initialResponse === 'defer') await ctx.deferReply();
+					else await ctx.write({ content: 'initial' });
 
-				const content = `<@${ctx.author.id}>`;
-				await ctx.editOrReply({ content });
-				await ctx.editOrReply({ content, allowed_mentions: { users: [ctx.author.id] } });
-				await ctx.editOrReply({ content });
+					const content = `<@${ctx.author.id}>`;
+					await ctx.editOrReply({ content });
+					await ctx.editOrReply({ content, allowed_mentions: { users: [ctx.author.id] } });
+					await ctx.editOrReply({ content });
+				}
 			}
-		}
 
-		await using bot = await createMockBot({
-			commands: [MentionPolicyCommand],
-			client: new Client({ allowedMentions: { parse: [] } }),
-			world,
-		});
+			await using bot = await createMockBot({
+				commands: [MentionPolicyCommand],
+				client: new Client({ allowedMentions: { parse: [] } }),
+				world,
+			});
 
-		await bot.slash({ name: 'mention-policy', user });
+			await bot.slash({ name: 'mention-policy', user });
 
-		expect(bot.restCalls(Routes.editOriginalResponse).map(call => call.body?.allowed_mentions)).toEqual([
-			{ parse: [] },
-			{ users: [user.id] },
-			{ parse: [] },
-		]);
-	});
+			expect(bot.restCalls(Routes.editOriginalResponse).map(call => call.body?.allowed_mentions)).toEqual([
+				{ parse: [] },
+				{ users: [user.id] },
+				{ parse: [] },
+			]);
+		},
+	);
 
 	test('preserves explicit null in nullable message edit bodies', () => {
 		const body = BaseInteraction.transformBody<{ allowed_mentions: null }>({ allowed_mentions: null }, undefined, {

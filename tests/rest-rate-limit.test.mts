@@ -367,37 +367,37 @@ describe('Discord REST rate limits', () => {
 		expect(queuedDispatch).toHaveBeenCalledOnce();
 	});
 
-	test.each([
-		'not-a-number',
-		String(Number.MAX_VALUE),
-	])('rejects a 429 without a valid retry delay (%s) and releases the bucket', async retryAfter => {
-		const api = createApi();
-		const route = 'GET:/channels/100000000000000001/messages';
-		const url = '/channels/100000000000000001/messages' as const;
-		const next = vi.fn();
-		const reject = vi.fn();
-		api.ratelimits.set(route, new Bucket(1));
+	test.each(['not-a-number', String(Number.MAX_VALUE)])(
+		'rejects a 429 without a valid retry delay (%s) and releases the bucket',
+		async retryAfter => {
+			const api = createApi();
+			const route = 'GET:/channels/100000000000000001/messages';
+			const url = '/channels/100000000000000001/messages' as const;
+			const next = vi.fn();
+			const reject = vi.fn();
+			api.ratelimits.set(route, new Bucket(1));
 
-		const result = await api.handle429(
-			route,
-			'GET',
-			url,
-			{},
-			new Response('<html>rate limited</html>', {
-				status: 429,
-				headers: { 'retry-after': retryAfter },
-			}),
-			'<html>rate limited</html>',
-			next,
-			reject,
-			Date.now(),
-			url,
-		);
+			const result = await api.handle429(
+				route,
+				'GET',
+				url,
+				{},
+				new Response('<html>rate limited</html>', {
+					status: 429,
+					headers: { 'retry-after': retryAfter },
+				}),
+				'<html>rate limited</html>',
+				next,
+				reject,
+				Date.now(),
+				url,
+			);
 
-		expect(result).toBe(false);
-		expect(next).toHaveBeenCalledOnce();
-		expect(reject).toHaveBeenCalledWith(expect.objectContaining({ code: 'INVALID_RETRY_AFTER' }));
-	});
+			expect(result).toBe(false);
+			expect(next).toHaveBeenCalledOnce();
+			expect(reject).toHaveBeenCalledWith(expect.objectContaining({ code: 'INVALID_RETRY_AFTER' }));
+		},
+	);
 
 	test('keeps queued requests throttled when bucket counts are malformed', async () => {
 		vi.useFakeTimers();

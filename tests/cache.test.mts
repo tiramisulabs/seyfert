@@ -242,21 +242,22 @@ describe.each(adapterKinds)('%s guild-scoped presences', kind => {
 });
 
 describe.each(adapterKinds)('%s custom cache routing', kind => {
-	test.each([
-		['guild indexed', 'custom.entry', ['custom.guild-1', 'entry'], true],
-	] as const)('routes a %s entry', (_layout, key, relationship, indexed) => {
-		const adapter = createTestAdapter(kind);
-		adapter.set(key, { id: 'entry' }, relationship);
+	test.each([['guild indexed', 'custom.entry', ['custom.guild-1', 'entry'], true]] as const)(
+		'routes a %s entry',
+		(_layout, key, relationship, indexed) => {
+			const adapter = createTestAdapter(kind);
+			adapter.set(key, { id: 'entry' }, relationship);
 
-		assert.deepEqual(adapter.get(key), { id: 'entry' });
-		assert.deepEqual(adapter.keys(relationship[0]), [key]);
-		assert.equal(adapter.contains(relationship[0], relationship[1]), true);
-		assert.equal(adapter.keyToStorage.size, indexed ? 1 : 0);
+			assert.deepEqual(adapter.get(key), { id: 'entry' });
+			assert.deepEqual(adapter.keys(relationship[0]), [key]);
+			assert.equal(adapter.contains(relationship[0], relationship[1]), true);
+			assert.equal(adapter.keyToStorage.size, indexed ? 1 : 0);
 
-		adapter.remove(key);
-		assert.equal(adapter.get(key), null);
-		assert.equal(adapter.contains(relationship[0], relationship[1]), false);
-	});
+			adapter.remove(key);
+			assert.equal(adapter.get(key), null);
+			assert.equal(adapter.contains(relationship[0], relationship[1]), false);
+		},
+	);
 });
 
 describe.each(adapterKinds)('%s relationship removal', kind => {

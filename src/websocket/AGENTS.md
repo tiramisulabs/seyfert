@@ -4,7 +4,6 @@ Read the repository-root and `src/AGENTS.md` guides first. This guide owns
 shards, sockets, heartbeat/reconnect logic, sharding, workers, and managers. For
 cross-cutting work, follow the root routing table for every affected path and
 verification step.
-
 - Preserve socket lifecycle, heartbeat/reconnect ordering, shard startup, and
   worker/manager message contracts when changing this subsystem.
 - Preserve the configured gateway send path and its async/rejection semantics;

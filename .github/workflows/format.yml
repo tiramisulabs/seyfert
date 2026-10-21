@@ -3,7 +3,12 @@ name: Format pull requests
 on:
   pull_request:
     paths:
-      - '.github/workflows/format.yml'
+      - '.github/**/*.md'
+      - '.github/**/*.yml'
+      - '.github/**/*.yaml'
+      - '.changeset/README.md'
+      - 'AGENTS.md'
+      - 'README.md'
       - 'biome.json'
       - 'bun.lock'
       - 'commitlint.config.js'
@@ -53,13 +58,16 @@ jobs:
           fi
 
       - name: Apply Biome fixes
-        run: bun run check:write
+        # GITHUB_TOKEN cannot push workflow edits; those are checked and formatted locally.
+        run: |
+          git ls-files -z -- . ':(exclude).github/workflows/**' |
+            xargs -0 bunx --no-install biome check --write --no-errors-on-unmatched
 
       - name: Stage formatter-owned files
         id: stage
         run: |
           git reset
-          git add -- src tests package.json tsconfig.json biome.json commitlint.config.js
+          git add -- src tests package.json tsconfig.json biome.json commitlint.config.js AGENTS.md README.md pnpm-workspace.yaml .changeset/README.md ':(glob).github/**/*.md' ':(glob).github/**/*.y*ml' ':(exclude).github/workflows/**'
           if ! git diff --quiet --; then
             echo 'Biome changed files outside its owned paths:'
             git diff --name-only --
@@ -98,7 +106,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$FORMATTED_HEAD_SHA"
           printf '%s' "$FORMATTER_PATCH" | base64 -d | gzip -d > "$RUNNER_TEMP/formatter.patch"
           git apply "$RUNNER_TEMP/formatter.patch"
-          git add -- src tests package.json tsconfig.json biome.json commitlint.config.js
+          git add -- src tests package.json tsconfig.json biome.json commitlint.config.js AGENTS.md README.md pnpm-workspace.yaml .changeset/README.md ':(glob).github/**/*.md' ':(glob).github/**/*.y*ml' ':(exclude).github/workflows/**'
           if ! git diff --quiet -- || test -n "$(git ls-files --others --exclude-standard)"; then
             echo 'Formatter patch contains files outside its owned paths.'
             git status --short
