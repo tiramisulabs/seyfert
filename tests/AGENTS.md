@@ -133,10 +133,6 @@ CI checks workflow YAML but excludes `.github/workflows/**` from automatic
 fixes because `GITHUB_TOKEN` cannot push workflow edits. Format those files
 locally with `pnpm run check:write`.
 
-Runtime test files enable `noIdenticalTestTitle` as an error. `useExpect` and
-`noConditionalExpect` stay disabled: assertions may live in helpers, and
-parameterized tests may intentionally choose different assertions per case.
-
 ## Test code style
 
 Runtime tests are `*.test.mts`; compiler contracts are `.ts` files loaded by a

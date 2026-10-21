@@ -45,24 +45,9 @@ Framework validation/runtime errors use `SeyfertError` from
 
 ## Formatting authority
 
-`biome.json` governs source, tests, selected root configuration, repository
-Markdown, and GitHub YAML. Source uses tabs (width 2), single quotes,
-semicolons, 120-character lines, LF, arrow parentheses only when needed, and
-organized imports. The recommended preset is enabled with explicit group and
-rule exceptions; inspect the effective configuration instead of assuming a
-rule is enabled.
-
-`noFloatingPromises` reports warnings in `src/**`. Audit error ownership before
-adding `await`, `void`, or a rejection handler: a warning can expose a runtime
-bug, but resolving it can change public timing or error behavior. The RAW
-dispatch `Promise.allSettled` calls intentionally run without awaiting and
-already settle every input rejection. `noMisusedPromises` remains disabled
-because promise-presence guards and the option parser's handled async executor
-are valid existing patterns.
-
-Markdown keeps paragraph wrapping and embedded code/HTML as written. YAML
-uses two-space indentation and single quotes. Compiler contracts retain their
-formatter exception; follow `tests/AGENTS.md` for configuration inspection.
+`biome.json` defines formatting and lint rules for source, tests, repository
+configuration, Markdown, and YAML. See `tests/AGENTS.md` for verification and
+configuration inspection.
 
 ```sh
 # Format only intentionally changed production files
