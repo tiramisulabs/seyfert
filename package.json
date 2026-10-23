@@ -1,6 +1,6 @@
 {
 	"name": "seyfert",
-	"version": "5.2.0",
+	"version": "5.2.1",
 	"description": "The most advanced framework for discord bots",
 	"packageManager": "pnpm@11.11.0",
 	"workspaces": [
