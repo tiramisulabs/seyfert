@@ -1,0 +1,7 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"exactOptionalPropertyTypes": true
+	},
+	"include": ["./builder-json-contract.ts", "./plugin-lifecycle-contract.ts"]
+}

@@ -23,7 +23,7 @@
 		"check-h": "biome check --write ./src",
 		"check": "biome check --verbose --no-errors-on-unmatched .",
 		"check:write": "biome check --verbose --write --no-errors-on-unmatched .",
-		"test:types": "pnpm run build && tsc --noEmit --project tests/tsconfig.json",
+		"test:types": "pnpm run build && tsc --noEmit --project tests/tsconfig.json && tsc --noEmit --project tests/exact-optional-tsconfig.json",
 		"test": "pnpm run test:types && vitest run --config ./tests/vitest.config.mts ./tests/"
 	},
 	"author": "MARCROCK22",
@@ -35,7 +35,7 @@
 		"@commitlint/config-conventional": "^21.2.0",
 		"@types/node": "^26.1.1",
 		"husky": "^9.1.7",
-		"typescript": "^6.0.3",
+		"typescript": "7.1.0-beta",
 		"vitest": "^4.1.10"
 	},
 	"homepage": "https://seyfert.dev",

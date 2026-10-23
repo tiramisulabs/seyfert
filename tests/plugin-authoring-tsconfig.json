@@ -12,5 +12,10 @@
 		"target": "ESNext",
 		"types": ["node"]
 	},
-	"files": ["./plugin-authoring-contract.ts", "./root-export-contract.ts", "./command-options-contract.ts"]
+	"files": [
+		"./plugin-authoring-contract.ts",
+		"./plugin-lifecycle-contract.ts",
+		"./root-export-contract.ts",
+		"./command-options-contract.ts"
+	]
 }

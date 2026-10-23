@@ -3,6 +3,8 @@ import { createRequire } from 'node:module';
 import { monitorEventLoopDelay, performance } from 'node:perf_hooks';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ScriptTarget } from 'typescript/ast';
+import { API, ModuleKind } from 'typescript/sync';
 
 const repository = join(dirname(fileURLToPath(import.meta.url)), '..');
 const requireFromRepository = createRequire(join(repository, 'package.json'));
@@ -234,25 +236,29 @@ const selectedScenarios =
 if (selectedScenarios.length === 0) throw new Error(`Unknown scenario ${process.argv[scenarioArgument + 1]}`);
 
 function evaluateCommonJs(source, filename, dependencies) {
-	const typescript = requireFromRepository('typescript');
-	const output = typescript.transpileModule(source, {
-		compilerOptions: {
-			module: typescript.ModuleKind.CommonJS,
-			target: typescript.ScriptTarget.ES2022,
-		},
-		fileName: filename,
-	}).outputText;
-	const module = { exports: {} };
-	const localRequire = specifier => {
-		if (specifier in dependencies) return dependencies[specifier];
-		throw new Error(`Unexpected dependency ${specifier} from ${filename}`);
-	};
-	new Function('require', 'module', 'exports', `${output}\n//# sourceURL=${filename}`)(
-		localRequire,
-		module,
-		module.exports,
-	);
-	return module.exports;
+	const api = new API();
+	try {
+		const output = api.transpileModule(source, {
+			compilerOptions: {
+				module: ModuleKind.CommonJS,
+				target: ScriptTarget.ES2022,
+			},
+			fileName: filename,
+		}).outputText;
+		const module = { exports: {} };
+		const localRequire = specifier => {
+			if (specifier in dependencies) return dependencies[specifier];
+			throw new Error(`Unexpected dependency ${specifier} from ${filename}`);
+		};
+		new Function('require', 'module', 'exports', `${output}\n//# sourceURL=${filename}`)(
+			localRequire,
+			module,
+			module.exports,
+		);
+		return module.exports;
+	} finally {
+		api.close();
+	}
 }
 
 function loadBaseline(path, dependencies) {

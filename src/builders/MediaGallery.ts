@@ -106,7 +106,7 @@ export class MediaGalleryItem {
 	 * Converts this MediaGalleryItem instance to its JSON representation.
 	 * @returns The JSON representation of the item data.
 	 */
-	toJSON() {
+	toJSON(): { [K in keyof APIMediaGalleryItems]?: APIMediaGalleryItems[K] | undefined } {
 		if (!this.data.media)
 			throw new SeyfertError('MISSING_MEDIA', {
 				metadata: {
