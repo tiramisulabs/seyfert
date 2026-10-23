@@ -4,7 +4,6 @@ Read the repository-root and `src/AGENTS.md` guides first. This guide owns the
 cache facade, adapters, resources, intent checks, bulk operations, and packet-
 driven updates. For cross-cutting work, follow the root routing table for every
 affected path and verification step.
-
 - Cache behavior spans `src/cache/index.ts`, an adapter, a resource, gateway
   hooks, and sometimes a shorter/structure.
 - Respect disabled-cache behavior, intent requirements, sync/async adapter

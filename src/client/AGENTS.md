@@ -7,21 +7,21 @@ for every affected path and verification step.
 
 ## Ownership map
 
-| Path | Responsibility |
-| --- | --- |
-| `src/client/base.ts` | Shared client lifecycle, services, configuration, command/component/lang loading, uploads, and plugin integration |
-| `src/client/client.ts` | Gateway client, packet dispatch, shard startup, events, and gateway plugin interception |
-| `src/client/httpclient.ts` | HTTP interaction client |
-| `src/client/workerclient.ts` | Worker client, manager messaging, worker proxying, and worker-side gateway handling |
-| `src/client/collectors.ts` | RAW, gateway-event, and custom-event collectors; distinct from component collectors |
-| `src/client/transformers.ts` | Converts Discord payloads into Seyfert structures |
-| `src/client/plugins.ts` | Resolves plugins, binds them to clients, runs lifecycle/hooks, and applies contributions |
-| `src/client/plugins/types.ts` | Public plugin contract, `SeyfertRegistry`, extensions, hooks, diagnostics, and contribution types |
-| `src/client/plugins/api.ts` | Mutation API exposed during plugin lifecycle phases |
-| `src/client/plugins/registry.ts` | Runtime registry, requirements, diagnostics, ownership, and cleanup bookkeeping |
-| `src/client/plugins/order.ts` | Stable contribution ordering |
-| `src/client/plugins/shared.ts` | Typed shared capabilities and disposal |
-| `src/client/plugins/errors.ts` | Plugin-specific wrapped and aggregate errors |
+| Path                             | Responsibility                                                                                                    |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `src/client/base.ts`             | Shared client lifecycle, services, configuration, command/component/lang loading, uploads, and plugin integration |
+| `src/client/client.ts`           | Gateway client, packet dispatch, shard startup, events, and gateway plugin interception                           |
+| `src/client/httpclient.ts`       | HTTP interaction client                                                                                           |
+| `src/client/workerclient.ts`     | Worker client, manager messaging, worker proxying, and worker-side gateway handling                               |
+| `src/client/collectors.ts`       | RAW, gateway-event, and custom-event collectors; distinct from component collectors                               |
+| `src/client/transformers.ts`     | Converts Discord payloads into Seyfert structures                                                                 |
+| `src/client/plugins.ts`          | Resolves plugins, binds them to clients, runs lifecycle/hooks, and applies contributions                          |
+| `src/client/plugins/types.ts`    | Public plugin contract, `SeyfertRegistry`, extensions, hooks, diagnostics, and contribution types                 |
+| `src/client/plugins/api.ts`      | Mutation API exposed during plugin lifecycle phases                                                               |
+| `src/client/plugins/registry.ts` | Runtime registry, requirements, diagnostics, ownership, and cleanup bookkeeping                                   |
+| `src/client/plugins/order.ts`    | Stable contribution ordering                                                                                      |
+| `src/client/plugins/shared.ts`   | Typed shared capabilities and disposal                                                                            |
+| `src/client/plugins/errors.ts`   | Plugin-specific wrapped and aggregate errors                                                                      |
 
 ## Client startup and shutdown
 
@@ -51,7 +51,6 @@ failure/cleanup path.
 ## Gateway packets
 
 `Client.onPacket()` follows this shape:
-
 1. Plugin gateway-dispatch interceptors.
 2. Launch the RAW event and RAW collector with `Promise.allSettled()` without
    awaiting them (fire-and-forget relative to the remaining packet path).
@@ -75,7 +74,6 @@ register (synchronous construction) -> setup (client start) -> teardown (close, 
 ```
 
 Plugin changes must preserve:
-
 - imported-plugin closure and extension inference;
 - `SeyfertRegistry` augmentation and `RegisteredPlugins`;
 - contribution ownership, overrides/removals, stable ordering, and cleanup via

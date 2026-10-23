@@ -69,7 +69,8 @@ export class DynamicBucket {
 	acquire(force = false) {
 		return new Promise(res => {
 			this.queue[force ? 'unshift' : 'push'](res);
-			this.processQueue();
+			// Each acquisition resolves with its permit, without waiting for the whole queue to drain.
+			void this.processQueue();
 		});
 	}
 

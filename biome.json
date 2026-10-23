@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.5.3/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.6.2/schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -9,17 +9,24 @@
 	"files": {
 		"ignoreUnknown": true,
 		"includes": [
-			"**/src/**",
-			"**/tests/**",
-			"/biome.json",
-			"/commitlint.config.js",
-			"/package.json",
-			"/tsconfig.json",
-			"!/node_modules/",
-			"!/build",
-			"!/lib",
-			"!/__test__",
-			"!/.vscode"
+			"src/**",
+			"tests/**",
+			"biome.json",
+			"commitlint.config.js",
+			"package.json",
+			"tsconfig.json",
+			"AGENTS.md",
+			"README.md",
+			".changeset/README.md",
+			".github/**/*.md",
+			".github/**/*.yml",
+			".github/**/*.yaml",
+			"pnpm-workspace.yaml",
+			"!**/node_modules/**",
+			"!build/**",
+			"!lib/**",
+			"!__test__/**",
+			"!.vscode/**"
 		]
 	},
 	"formatter": {
@@ -101,7 +108,40 @@
 			"bracketSameLine": true
 		}
 	},
+	"markdown": {
+		"formatter": {
+			"enabled": true,
+			"formatEmbeds": false,
+			"proseWrap": "preserve"
+		}
+	},
+	"yaml": {
+		"formatter": {
+			"quoteStyle": "single",
+			"indentWidth": 2
+		}
+	},
 	"overrides": [
+		{
+			"includes": ["src/**"],
+			"linter": {
+				"rules": {
+					"nursery": {
+						"noFloatingPromises": "warn"
+					}
+				}
+			}
+		},
+		{
+			"includes": ["tests/**/*.test.mts"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noIdenticalTestTitle": "error"
+					}
+				}
+			}
+		},
 		{
 			"includes": ["tests/**/*-contract.ts", "tests/command-declare-name-combinations.ts"],
 			"formatter": {

@@ -15,21 +15,21 @@ agent started at the repository root may not receive nested guides.
 affected path, whether auto-loaded or not.** Subsystem guides add to, never
 replace, `src/AGENTS.md`.
 
-| Path or change | Additional guide(s) to read | Ownership |
-| --- | --- | --- |
-| Repository configuration, workflows, or root files | None | Universal workflow and repository boundaries in this file |
-| `src/**` | `src/AGENTS.md` | Public API, type system, source style, async behavior, diagnostics, compatibility |
-| `src/client/**` | `src/client/AGENTS.md` | Client lifecycle, packet dispatch, transformers, collectors, plugins |
-| `src/commands/**` | `src/commands/AGENTS.md` | Declarations, options, contexts, loading, application and prefix dispatch |
-| `src/components/**` | `src/components/AGENTS.md` | Components, modals, interaction contexts, component collectors |
-| `src/events/**` | `src/events/AGENTS.md` | Gateway/custom events, hooks, cache ordering, reload behavior |
-| `src/api/**` | `src/api/AGENTS.md` | REST transport, route proxy, retries, rate limits, route types |
-| `src/common/shorters/**` | `src/api/AGENTS.md` and `src/common/shorters/AGENTS.md` | REST-layer boundary plus high-level resource operations |
-| `src/cache/**` | `src/cache/AGENTS.md` | Cache facade, adapters, resources, intents, packet updates |
-| `src/structures/**` | `src/structures/AGENTS.md` | Transformed structures, methods, guards, declaration merging |
-| `src/websocket/**` | `src/websocket/AGENTS.md` | Shards, sockets, reconnects, sharding, workers, managers |
-| `tests/**` | `tests/AGENTS.md` | Test ownership, compiler contracts, commands, portability, test style |
-| Any build, typecheck, test, formatter, or portability verification | `tests/AGENTS.md` | Command selection, mutating-script warnings, verification ladder, runtime parity |
+| Path or change                                                     | Additional guide(s) to read                             | Ownership                                                                         |
+| ------------------------------------------------------------------ | ------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Repository configuration, workflows, or root files                 | None                                                    | Universal workflow and repository boundaries in this file                         |
+| `src/**`                                                           | `src/AGENTS.md`                                         | Public API, type system, source style, async behavior, diagnostics, compatibility |
+| `src/client/**`                                                    | `src/client/AGENTS.md`                                  | Client lifecycle, packet dispatch, transformers, collectors, plugins              |
+| `src/commands/**`                                                  | `src/commands/AGENTS.md`                                | Declarations, options, contexts, loading, application and prefix dispatch         |
+| `src/components/**`                                                | `src/components/AGENTS.md`                              | Components, modals, interaction contexts, component collectors                    |
+| `src/events/**`                                                    | `src/events/AGENTS.md`                                  | Gateway/custom events, hooks, cache ordering, reload behavior                     |
+| `src/api/**`                                                       | `src/api/AGENTS.md`                                     | REST transport, route proxy, retries, rate limits, route types                    |
+| `src/common/shorters/**`                                           | `src/api/AGENTS.md` and `src/common/shorters/AGENTS.md` | REST-layer boundary plus high-level resource operations                           |
+| `src/cache/**`                                                     | `src/cache/AGENTS.md`                                   | Cache facade, adapters, resources, intents, packet updates                        |
+| `src/structures/**`                                                | `src/structures/AGENTS.md`                              | Transformed structures, methods, guards, declaration merging                      |
+| `src/websocket/**`                                                 | `src/websocket/AGENTS.md`                               | Shards, sockets, reconnects, sharding, workers, managers                          |
+| `tests/**`                                                         | `tests/AGENTS.md`                                       | Test ownership, compiler contracts, commands, portability, test style             |
+| Any build, typecheck, test, formatter, or portability verification | `tests/AGENTS.md`                                       | Command selection, mutating-script warnings, verification ladder, runtime parity  |
 
 For cross-cutting work, apply every table row matching an affected path or
 verification step. A nearest-path guide is insufficient when the contract
@@ -38,7 +38,6 @@ crosses ownership boundaries.
 ## Source of truth
 
 Use this order when sources disagree:
-
 1. The current checkout and branch.
 2. `src/` runtime code and exported types.
 3. The tests and compiler contracts in `tests/`.
@@ -70,7 +69,6 @@ plugin lifecycle; gateway/worker behavior; cache; REST transport; runtime
 portability; behavior across owning subsystems; or explicit user request. Local
 low-risk fixes use main-thread review and targeted validation. The reviewer is
 a different, non-participant, read-only agent.
-
 - After implementation/validation stabilizes, spawn one reviewer. Context and
   independence are separate. State its initial mode; default to `fresh`.
   - `fresh`: start without prior task conversation or implementation context;
@@ -117,7 +115,6 @@ history contains older exceptions, but they are not the rule for new commits.
 ## Completion checklist
 
 Before handing off a change:
-
 - the edit is in the subsystem that owns the contract;
 - public exports, declarations, runtime behavior, and docs/comments agree;
 - direct callers and adjacent shared contexts were reviewed;

@@ -9,6 +9,7 @@ afterEach(() => {
 	vi.resetModules();
 	vi.restoreAllMocks();
 	vi.useRealTimers();
+	vi.doUnmock('node:https');
 	vi.doUnmock('../src/websocket/discord/basesocket');
 	FakeBaseSocket.instances.length = 0;
 });
@@ -71,6 +72,28 @@ describe('gateway reconnect stability', () => {
 			code: ShardSocketCloseCodes.Reconnect,
 			reason: 'Shard down request',
 		});
+	});
+
+	test('an invalid websocket handshake reports its error and closes the transport once', async () => {
+		const request = new EventEmitter() as EventEmitter & { end: ReturnType<typeof vi.fn> };
+		request.end = vi.fn();
+		vi.doMock('node:https', () => ({ request: () => request }));
+		const { SeyfertWebSocket } = await import('../src/websocket/discord/socket/custom');
+		const socket = new SeyfertWebSocket('wss://gateway.discord.gg/?v=10');
+		const onerror = vi.fn();
+		const onclose = vi.fn();
+		socket.onerror = onerror;
+		socket.onclose = onclose;
+		const transport = { destroy: vi.fn(), end: vi.fn((done: () => void) => done()) };
+
+		request.emit('upgrade', { headers: { 'sec-websocket-accept': 'invalid' } }, transport);
+		await Promise.resolve();
+
+		expect(transport.destroy).toHaveBeenCalledOnce();
+		expect(onerror).toHaveBeenCalledWith(expect.objectContaining({ code: 'INVALID_SEC_WEBSOCKET_ACCEPT_HEADER' }));
+		expect(onclose).toHaveBeenCalledWith({ code: 1006, reason: onerror.mock.calls[0][0].message });
+		socket.close(1006, 'already closed');
+		expect(onclose).toHaveBeenCalledOnce();
 	});
 
 	test('transient handshake errors retry before surfacing a close', async () => {
@@ -543,27 +566,27 @@ describe('gateway reconnect lifecycle', () => {
 		expect(FakeBaseSocket.instances).toHaveLength(3);
 	});
 
-	test.each([
-		1000,
-		ShardSocketCloseCodes.Timeout,
-	])('a public close with policy code %s resets the session and reconnects', async code => {
-		const { shard, socket } = await createConnectedShard({ reconnectTimeout: 0 });
-		shard.data = {
-			resume_seq: 42,
-			resume_gateway_url: 'wss://resume.discord.gg',
-			session_id: 'session-a',
-		};
-		shard.pendingGuilds = new Set(['guild']);
-		socket.open();
+	test.each([1000, ShardSocketCloseCodes.Timeout])(
+		'a public close with policy code %s resets the session and reconnects',
+		async code => {
+			const { shard, socket } = await createConnectedShard({ reconnectTimeout: 0 });
+			shard.data = {
+				resume_seq: 42,
+				resume_gateway_url: 'wss://resume.discord.gg',
+				session_id: 'session-a',
+			};
+			shard.pendingGuilds = new Set(['guild']);
+			socket.open();
 
-		shard.close(code, 'public policy close');
-		await vi.waitFor(() => expect(FakeBaseSocket.instances).toHaveLength(2));
+			shard.close(code, 'public policy close');
+			await vi.waitFor(() => expect(FakeBaseSocket.instances).toHaveLength(2));
 
-		expect(shard.data.resume_seq).toBeNull();
-		expect(shard.data.resume_gateway_url).toBeUndefined();
-		expect(shard.data.session_id).toBeUndefined();
-		expect(shard.pendingGuilds).toBeUndefined();
-	});
+			expect(shard.data.resume_seq).toBeNull();
+			expect(shard.data.resume_gateway_url).toBeUndefined();
+			expect(shard.data.session_id).toBeUndefined();
+			expect(shard.pendingGuilds).toBeUndefined();
+		},
+	);
 
 	test('a failed transport close does not finalize or replace the active socket', async () => {
 		const onShardDisconnect = vi.fn();

@@ -5,7 +5,12 @@ on:
     branches:
       - main
     paths:
-      - '.github/workflows/check.yml'
+      - '.github/**/*.md'
+      - '.github/**/*.yml'
+      - '.github/**/*.yaml'
+      - '.changeset/README.md'
+      - 'AGENTS.md'
+      - 'README.md'
       - 'biome.json'
       - 'bun.lock'
       - 'bunfig.toml'
@@ -19,7 +24,12 @@ on:
       - 'tsconfig.json'
   pull_request:
     paths:
-      - '.github/workflows/check.yml'
+      - '.github/**/*.md'
+      - '.github/**/*.yml'
+      - '.github/**/*.yaml'
+      - '.changeset/README.md'
+      - 'AGENTS.md'
+      - 'README.md'
       - 'biome.json'
       - 'bun.lock'
       - 'bunfig.toml'

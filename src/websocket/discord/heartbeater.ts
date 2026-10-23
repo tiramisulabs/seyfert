@@ -25,13 +25,15 @@ export class Heartbeater {
 		this.store.set(workerId, {
 			ack: true,
 			interval: setInterval(() => {
+				// WorkerManager callbacks observe and report their own transport/replacement failures.
 				const heartbeat = this.store.get(workerId)!;
 				if (!heartbeat.ack) {
 					heartbeat.ack = true;
-					return recreate(workerId);
+					void recreate(workerId);
+					return;
 				}
 				heartbeat.ack = false;
-				this.sendMethod(workerId, { type: 'HEARTBEAT' });
+				void this.sendMethod(workerId, { type: 'HEARTBEAT' });
 			}, this.interval),
 		});
 	}
