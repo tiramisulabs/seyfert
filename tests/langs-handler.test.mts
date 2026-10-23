@@ -15,6 +15,68 @@ function moduleNamespace(exports: Record<string, unknown>) {
 }
 
 describe('LangsHandler module loading', () => {
+	test('set applies synchronous hooks immediately and preserves synchronous errors', () => {
+		const { handler } = createHandler();
+		const result = handler.set([{ name: 'en-US.json', file: { default: { greeting: 'Hello' } } }]);
+
+		expect(result).toBeUndefined();
+		expect(handler.values['en-US']).toEqual({ greeting: 'Hello' });
+		const error = new Error('invalid language');
+		handler.onFile = () => {
+			throw error;
+		};
+		expect(() => handler.set([{ name: 'es-ES.json', file: {} }])).toThrow(error);
+	});
+
+	test('set waits for asynchronous hooks and applies duplicate locales in input order', async () => {
+		const { handler } = createHandler();
+		const onFile = handler.onFile.bind(handler);
+		let release!: () => void;
+		const gate = new Promise<void>(resolve => {
+			release = resolve;
+		});
+		handler.onFile = vi.fn((locale, file) =>
+			file.file.default?.greeting === 'first' ? gate.then(() => onFile(locale, file)) : onFile(locale, file),
+		);
+
+		try {
+			const completion = handler.set([
+				{ name: 'en-US.json', file: { default: { greeting: 'first' } } },
+				{ name: 'en-US.json', file: { default: { greeting: 'second' } } },
+			]);
+			expect(handler.onFile).toHaveBeenCalledTimes(1);
+			expect(handler.values['en-US']).toBeUndefined();
+			release();
+			await completion;
+			expect(handler.values['en-US']).toEqual({ greeting: 'second' });
+		} finally {
+			release();
+		}
+	});
+
+	test.each(['reject', 'throw'] as const)('set propagates a later %s and stops parsing further files', async kind => {
+		const { handler } = createHandler();
+		const error = new Error('language hook failed');
+		const onFile = handler.onFile.bind(handler);
+		handler.onFile = vi.fn((locale, file) => {
+			if (locale === 'en-US') return Promise.resolve(onFile(locale, file));
+			if (kind === 'reject') return Promise.reject(error);
+			throw error;
+		});
+
+		await expect(
+			handler.set([
+				{ name: 'en-US.json', file: { default: { greeting: 'Hello' } } },
+				{ name: 'es-ES.json', file: {} },
+				{ name: 'fr.json', file: {} },
+			]),
+		).rejects.toBe(error);
+		expect(handler.onFile).toHaveBeenCalledTimes(2);
+		expect(handler.values['en-US']).toEqual({ greeting: 'Hello' });
+		expect(handler.values['es-ES']).toBeUndefined();
+		expect(handler.values.fr).toBeUndefined();
+	});
+
 	test('prefers a valid default export over named object exports', () => {
 		const { handler, warn } = createHandler();
 

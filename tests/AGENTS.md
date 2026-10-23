@@ -16,20 +16,20 @@ cases for trivial setters/getters, embed text, constructor inventories, private
 array shapes, or diagnostic wording. Keep one primary owner for each regression;
 another layer needs a distinct failure that the owner cannot exercise.
 
-| Contract | Primary tests |
-| --- | --- |
-| Root exports and declaration cycles | `root-export-contract.ts`, `public-entrypoint-cycles.test.mts` |
-| Client lifecycle, config, and collectors | `invalid-token.test.mts`, `config-load.test.mts`, `client-collectors.test.mts` |
-| Plugin authoring and extensions | `plugin-authoring-contract.ts`, `plugin-lifecycle-contract.ts`, `plugins.test.mts`, `plugin-api.test.mts`, `client-plugins.test.mts` |
-| Registry/client inference | `command-context-client-type.test.mts` and the compile-time contracts |
+| Contract                                         | Primary tests                                                                                                                                    |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Root exports and declaration cycles              | `root-export-contract.ts`, `public-entrypoint-cycles.test.mts`                                                                                   |
+| Client lifecycle, config, and collectors         | `invalid-token.test.mts`, `config-load.test.mts`, `client-collectors.test.mts`                                                                   |
+| Plugin authoring and extensions                  | `plugin-authoring-contract.ts`, `plugin-lifecycle-contract.ts`, `plugins.test.mts`, `plugin-api.test.mts`, `client-plugins.test.mts`             |
+| Registry/client inference                        | `command-context-client-type.test.mts` and the compile-time contracts                                                                            |
 | Command declarations/options/subcommands/locales | `command-declare-name-contract.ts`, `command-options-contract.ts`, `command-subcommand-middleware-dispatch.test.mts`, `command-locales.test.mts` |
-| Command/component/modal contexts | `command-context-modal.test.mts`, `component-*.test.mts`, `interaction-reply.test.mts` |
-| REST/retries/uploads/shorters | `rest-retry-options.test.mts`, `interaction-request.test.mts`, `message-shorter.test.mts`, attachment/message tests |
-| Cache and structures | `cache.test.mts`, channel/guild/member/role tests |
-| Gateway and workers | `gateway-send.test.mts`, `gateway-reconnect.test.mts`, `workermanager.test.mts` |
-| Builders and errors | `builder-validation.test.mts`, feature builder tests, `seyfert-error.test.mts` |
-| Langs and locale selection | `langs-handler.test.mts`, `context-lang-preference.test.mts`, `command-locales.test.mts` |
-| Shared foundations | `collection.test.mts`, `mixer.test.mts`, `bitfield.test.mts`, `common-utils.test.mts`, `logger.test.mts`, `formatter.test.mts` |
+| Command/component/modal contexts                 | `command-context-modal.test.mts`, `component-*.test.mts`, `interaction-reply.test.mts`                                                           |
+| REST/retries/uploads/shorters                    | `rest-retry-options.test.mts`, `interaction-request.test.mts`, `message-shorter.test.mts`, attachment/message tests                              |
+| Cache and structures                             | `cache.test.mts`, channel/guild/member/role tests                                                                                                |
+| Gateway and workers                              | `gateway-send.test.mts`, `gateway-reconnect.test.mts`, `workermanager.test.mts`                                                                  |
+| Builders and errors                              | `builder-validation.test.mts`, feature builder tests, `seyfert-error.test.mts`                                                                   |
+| Langs and locale selection                       | `langs-handler.test.mts`, `context-lang-preference.test.mts`, `command-locales.test.mts`                                                         |
+| Shared foundations                               | `collection.test.mts`, `mixer.test.mts`, `bitfield.test.mts`, `common-utils.test.mts`, `logger.test.mts`, `formatter.test.mts`                   |
 
 Compile-time contract files are real tests even though they do not use Vitest.
 `tests/tsconfig.json` maps `seyfert` to the freshly built `lib/index.d.ts`, so
@@ -44,7 +44,6 @@ pnpm, Bun, and Deno. Deno uses pnpm's installed graph in manual node-modules
 mode. Run the test matrix from the repository root.
 
 For a new regression:
-
 - prefer adding it to the owning file rather than creating a broad
   miscellaneous suite;
 - reproduce the public failure, not an implementation detail;
@@ -87,6 +86,13 @@ pnpm test
 
 # Read-only production-source check
 ./node_modules/.bin/biome check --no-errors-on-unmatched ./src
+
+# Check every path owned by biome.json, including Markdown and GitHub YAML
+pnpm run check
+
+# Inspect the effective settings for files with overrides
+./node_modules/.bin/biome inspect config --path tests/command-options-contract.ts formatter.enabled
+./node_modules/.bin/biome inspect config --path tests/public-entrypoint-cycles.test.mts assist.actions.source.organizeImports
 ```
 
 When a portability change requires local Bun/Deno parity, mirror
@@ -107,7 +113,6 @@ deno run -A npm:vitest run --config ./tests/vitest.config.mts ./tests/
 ## Verification ladder
 
 Use the ladder proportionally:
-
 1. Inspect/format the changed file.
 2. Run the targeted compiler contract or Vitest regression.
 3. Build declarations for public/type changes.
@@ -127,11 +132,14 @@ The repository script `check` is read-only. `check:write`, `check-h`, `lint`,
 and `format` use `--write` and mutate source. Use the direct Biome command above
 when a narrower read-only check is intended.
 
+CI checks workflow YAML but excludes `.github/workflows/**` from automatic
+fixes because `GITHUB_TOKEN` cannot push workflow edits. Format those files
+locally with `pnpm run check:write`.
+
 ## Test code style
 
 Runtime tests are `*.test.mts`; compiler contracts are `.ts` files loaded by a
 test tsconfig. Import according to the subject:
-
 - `../src/...` for an internal runtime unit;
 - `../lib/...` when emitted output is the subject;
 - `seyfert` through test path mapping for the consumer-facing public contract.

@@ -477,16 +477,16 @@ describe('command context client type', () => {
 		}
 	});
 
-	test.each([
-		false,
-		true,
-	])('registers existing middleware contexts without circular inference (guild: %s)', async guild => {
-		await using api = new API();
-		await using snapshot = await createMiddlewareContextProgram(api, guild);
-		const program = snapshot.operation.createdPrograms[0];
+	test.each([false, true])(
+		'registers existing middleware contexts without circular inference (guild: %s)',
+		async guild => {
+			await using api = new API();
+			await using snapshot = await createMiddlewareContextProgram(api, guild);
+			const program = snapshot.operation.createdPrograms[0];
 
-		expect((await program.getSemanticDiagnostics()).map(diagnostic => diagnostic.text)).toEqual([]);
-	});
+			expect((await program.getSemanticDiagnostics()).map(diagnostic => diagnostic.text)).toEqual([]);
+		},
+	);
 
 	test('keeps registered middleware completions on public configuration surfaces', async () => {
 		await using api = new API();

@@ -1,5 +1,11 @@
-import { describe, expect, test } from 'vitest';
-import { GatewayIntentBits, GatewayOpcodes, type GatewaySendPayload } from '../src/types';
+import { describe, expect, test, vi } from 'vitest';
+import {
+	GatewayDispatchEvents,
+	GatewayIntentBits,
+	GatewayOpcodes,
+	type GatewaySendPayload,
+	PresenceUpdateStatus,
+} from '../src/types';
 import { ShardManager, WorkerManager } from '../src/websocket';
 
 function gatewayInfo() {
@@ -53,6 +59,96 @@ function createWorkerManager(options: Partial<ConstructorParameters<typeof Worke
 }
 
 describe('gateway send chokepoints', () => {
+	test('ShardManager.setPresence propagates send failures while sending to every shard', async () => {
+		const manager = createShardManager();
+		const first = manager.create(0);
+		const second = manager.create(1);
+		const error = new Error('presence send failed');
+		const firstSend = vi.spyOn(first, 'send').mockRejectedValue(error);
+		const secondSend = vi.spyOn(second, 'send').mockResolvedValue(undefined);
+		try {
+			await expect(
+				manager.setPresence({ activities: [], afk: false, since: null, status: PresenceUpdateStatus.Online }),
+			).rejects.toBe(error);
+			expect(firstSend).toHaveBeenCalledOnce();
+			expect(secondSend).toHaveBeenCalledOnce();
+		} finally {
+			firstSend.mockRestore();
+			secondSend.mockRestore();
+		}
+	});
+
+	test('guild member requests reject failed sends and release their timeout', async () => {
+		vi.useFakeTimers();
+		const shard = createShardManager().create(0);
+		const error = new Error('member request send failed');
+		const send = vi.spyOn(shard, 'send').mockRejectedValue(error);
+		try {
+			await expect(shard.requestGuildMember({ guild_id: 'guild', query: '', limit: 0 })).rejects.toBe(error);
+			expect(vi.getTimerCount()).toBe(0);
+		} finally {
+			send.mockRestore();
+			vi.clearAllTimers();
+			vi.useRealTimers();
+		}
+	});
+
+	test('guild member requests propagate a failed rate-limit retry and release their timeout', async () => {
+		vi.useFakeTimers();
+		const shard = createShardManager().create(0);
+		const error = new Error('member request retry failed');
+		const send = vi.spyOn(shard, 'send').mockResolvedValueOnce(undefined).mockRejectedValueOnce(error);
+		try {
+			const pending = shard.requestGuildMember({ guild_id: 'guild', query: '', limit: 0 });
+			const rejection = expect(pending).rejects.toBe(error);
+			const nonce = (send.mock.calls[0][1].d as { nonce: string }).nonce;
+			shard.onpacket({
+				op: GatewayOpcodes.Dispatch,
+				t: GatewayDispatchEvents.RateLimited,
+				s: 1,
+				d: { opcode: GatewayOpcodes.RequestGuildMembers, retry_after: 0, meta: { guild_id: 'guild', nonce } },
+			});
+			await vi.advanceTimersByTimeAsync(500);
+			await rejection;
+			expect(send).toHaveBeenCalledTimes(2);
+			expect(vi.getTimerCount()).toBe(0);
+		} finally {
+			send.mockRestore();
+			vi.clearAllTimers();
+			vi.useRealTimers();
+		}
+	});
+
+	test('guild member requests do not retry after their response has completed', async () => {
+		vi.useFakeTimers();
+		const shard = createShardManager().create(0);
+		const send = vi.spyOn(shard, 'send').mockResolvedValue(undefined);
+		try {
+			const pending = shard.requestGuildMember({ guild_id: 'guild', query: '', limit: 0 });
+			const nonce = (send.mock.calls[0][1].d as { nonce: string }).nonce;
+			shard.onpacket({
+				op: GatewayOpcodes.Dispatch,
+				t: GatewayDispatchEvents.RateLimited,
+				s: 1,
+				d: { opcode: GatewayOpcodes.RequestGuildMembers, retry_after: 0, meta: { guild_id: 'guild', nonce } },
+			});
+			shard.onpacket({
+				op: GatewayOpcodes.Dispatch,
+				t: GatewayDispatchEvents.GuildMembersChunk,
+				s: 2,
+				d: { guild_id: 'guild', members: [], chunk_index: 0, chunk_count: 1, nonce },
+			});
+			await expect(pending).resolves.toEqual({ members: [], presences: [] });
+			await vi.advanceTimersByTimeAsync(500);
+			expect(send).toHaveBeenCalledOnce();
+			expect(vi.getTimerCount()).toBe(0);
+		} finally {
+			send.mockRestore();
+			vi.clearAllTimers();
+			vi.useRealTimers();
+		}
+	});
+
 	test('ShardManager.send rejects missing shards instead of silently dropping payloads', async () => {
 		const manager = createShardManager();
 

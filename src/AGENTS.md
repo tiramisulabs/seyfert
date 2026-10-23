@@ -33,7 +33,6 @@ this guide owns shared public API, TypeScript, style, and compatibility rules.
 
 Framework validation/runtime errors use `SeyfertError` from
 `src/common/it/error.ts`.
-
 - Reuse an existing stable error code when semantics match; otherwise add a
   specific code/message and test it.
 - Preserve the original `cause` when wrapping lower-level failures.
@@ -46,14 +45,9 @@ Framework validation/runtime errors use `SeyfertError` from
 
 ## Formatting authority
 
-`biome.json` governs `src/**`: tabs (width 2), single quotes, semicolons,
-120-character lines, LF, arrow parentheses only when needed, and organized
-imports. Recommended rules are disabled; the only error-level lint rule is
-`useImportType`. Do not attribute other recommended rules to this repository.
-
-`.editorconfig` has similar basics, but Biome excludes `tests/**`, Markdown,
-workflows, and repository configuration. Match those files locally and use
-their owning tool; a green source check does not cover them.
+`biome.json` defines formatting and lint rules for source, tests, repository
+configuration, Markdown, and YAML. See `tests/AGENTS.md` for verification and
+configuration inspection.
 
 ```sh
 # Format only intentionally changed production files
@@ -62,8 +56,8 @@ their owning tool; a green source check does not cover them.
 ./node_modules/.bin/biome check --no-errors-on-unmatched ./src
 ```
 
-`check`, `check-h`, `lint`, and `format` all write. The pre-commit hook runs an
-unscoped `biome check --write`; after an authorized commit attempt, re-read the
+`check` is read-only; `check:write`, `check-h`, `lint`, and `format` write.
+The pre-commit hook runs an unscoped `biome check --write`; after an authorized commit attempt, re-read the
 complete diff for spillover. CI may commit `chore: apply formatting`; format and
 inspect locally instead of relying on CI repair.
 
@@ -103,7 +97,6 @@ inspect locally instead of relying on CI repair.
 
 Strict checks include unused symbols, implicit returns, fallthrough,
 nullability, variance, decorator metadata, declarations, and `stripInternal`.
-
 - Keep public input collections `readonly` for tuples/`as const`; preserve
   literals with readonly tuples, const type parameters, `as const`, and
   `satisfies` where appropriate.
@@ -143,7 +136,6 @@ plugins live only in their nested guides.
 
 Preserve the semantics of existing `async`/`await`, promise chains, sequential
 loops, `Promise.all`/`allSettled`, and explicit fire-and-forget paths.
-
 - Keep `Awaitable<T>` callbacks sync-or-async; do not narrow them to
   `Promise<T>`/`void` without a public decision.
 - Preserve ordering and rejection behavior across plugin interceptors,

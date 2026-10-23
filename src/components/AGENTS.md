@@ -4,7 +4,6 @@ Read the repository-root and `src/AGENTS.md` guides first. This guide owns
 received components, modal/component contexts, loading, matching, execution,
 and component collectors. For cross-cutting work, follow the root routing table
 for every affected path and verification step.
-
 - `ComponentHandler` owns component/modal loading, registration, matching,
   collectors, and execution.
 - `ComponentContext`, `ModalContext`, and `InteractionContext` share response

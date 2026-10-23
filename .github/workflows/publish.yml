@@ -32,6 +32,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         with:
-          commit: "chore: release packages"
+          commit: 'chore: release packages'
           publish: npm publish --provenance
-          title: "chore: release packages"
+          title: 'chore: release packages'

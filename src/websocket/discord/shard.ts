@@ -530,16 +530,7 @@ export class Shard {
 												this.options.handlePayload(this.id, packet);
 												return;
 											}
-											const guildMemberChunk = this.requestGuildMembersChunk.get(nonce)!;
-											void delay((retry_after + 0.5) * 1e3).then(() => {
-												this.send(false, {
-													op: GatewayOpcodes.RequestGuildMembers,
-													d: {
-														...guildMemberChunk.options,
-														nonce,
-													},
-												});
-											});
+											void delay((retry_after + 0.5) * 1e3).then(() => this.sendGuildMemberRequest(nonce));
 										}
 										break;
 								}
@@ -596,15 +587,25 @@ export class Shard {
 			options,
 		});
 
-		this.send(false, {
-			op: GatewayOpcodes.RequestGuildMembers,
-			d: {
-				...options,
-				nonce,
-			},
-		});
+		void this.sendGuildMemberRequest(nonce);
 
 		return promise;
+	}
+
+	private async sendGuildMemberRequest(nonce: string) {
+		const chunk = this.requestGuildMembersChunk.get(nonce);
+		if (!chunk) return;
+		try {
+			await this.send(false, {
+				op: GatewayOpcodes.RequestGuildMembers,
+				d: { ...chunk.options, nonce },
+			});
+		} catch (error) {
+			if (this.requestGuildMembersChunk.get(nonce) !== chunk) return;
+			clearTimeout(chunk.timeout);
+			this.requestGuildMembersChunk.delete(nonce);
+			chunk.reject(error);
+		}
 	}
 
 	private isExpectedLocalClose(code: number) {

@@ -202,10 +202,10 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 		if (pluginPacket === null) return null;
 		packet = pluginPacket;
 
-		Promise.allSettled([
+		void Promise.allSettled([
 			this.events.runEvent('RAW', this, packet, shardId, false),
 			this.collectors.run('RAW', packet, this),
-		]); //ignore promise
+		]);
 		switch (packet.t) {
 			case 'GUILD_MEMBER_UPDATE':
 				{

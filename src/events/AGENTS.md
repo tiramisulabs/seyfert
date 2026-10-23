@@ -4,7 +4,6 @@ Read the repository-root and `src/AGENTS.md` guides first. This guide owns
 gateway/custom event types, loading, dispatch, hooks, event transforms, and
 event-side cache ordering. For cross-cutting work, follow the root routing table
 for every affected path and verification step.
-
 - `EventHandler` maps gateway names to hooks and transformed event arguments.
 - `CustomEventHandler` owns custom events (`runCustom`/`emit`) and injects the
   client according to the existing event contract.

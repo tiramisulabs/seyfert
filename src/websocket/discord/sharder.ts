@@ -246,10 +246,9 @@ export class ShardManager extends Map<number, Shard> {
 		});
 	}
 
-	setPresence(payload: GatewayUpdatePresence['d']) {
-		this.forEach(shard => {
-			this.setShardPresence(shard.id, payload);
-		}, this);
+	/** Waits for all presence sends, rejecting if any shard fails. */
+	async setPresence(payload: GatewayUpdatePresence['d']): Promise<void> {
+		await Promise.all([...this.values()].map(shard => this.setShardPresence(shard.id, payload)));
 	}
 
 	joinVoice(

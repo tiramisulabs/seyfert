@@ -72,10 +72,21 @@ export class LangsHandler extends BaseHandler {
 		this.values[result.locale] = result.file;
 	}
 
-	set(instances: LangInstance[]) {
+	/**
+	 * Applies files synchronously until an onFile hook returns a promise.
+	 * The returned promise covers the remaining files in order and rejects on the first failure.
+	 */
+	set(instances: LangInstance[]): void | Promise<void> {
+		let pending: Promise<void> | undefined;
 		for (const i of instances) {
-			this.parse(i);
+			if (pending) {
+				pending = pending.then(() => this.parse(i));
+			} else {
+				const parsed = this.parse(i);
+				if (parsed) pending = parsed;
+			}
 		}
+		return pending;
 	}
 
 	async reload(lang: string) {

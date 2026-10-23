@@ -21,6 +21,7 @@ import {
 	HeadingLevel,
 	type HttpConfig,
 	LabelComponent,
+	type LangsHandler,
 	type ManagerMessages,
 	type ManagerSendCacheResult,
 	type MaybeResolvedChannel,
@@ -40,6 +41,7 @@ import {
 	type SeyfertErrorCode,
 	SeyfertErrorMessages,
 	type ShardData,
+	type ShardManager,
 	type ShardManagerOptions,
 	type StructPropState,
 	type StructStates,
@@ -94,6 +96,12 @@ expectType<{
 	receivedType: string;
 }>(createValidationMetadata('token', 'bad'));
 expectType<number>(EmbedColors.Default);
+declare const langsHandler: LangsHandler;
+const languageFilesApplied = langsHandler.set([]);
+if (languageFilesApplied) expectType<Promise<void>>(languageFilesApplied);
+declare const shardManager: ShardManager;
+declare const presence: Parameters<ShardManager['setPresence']>[0];
+expectType<Promise<void>>(shardManager.setPresence(presence));
 expectType<TimestampStyle>(TimestampStyle.RelativeTime);
 expectType<HeadingLevel>(HeadingLevel.H1);
 expectType<OAuth2URLOptions>({ scopes: [OAuth2Scopes.Bot] });

@@ -30,7 +30,12 @@ export class SeyfertWebSocket {
 		const urlParts = new URL(url);
 		this.hostname = urlParts.hostname || '';
 		this.path = `${urlParts.pathname}${urlParts.search || ''}`;
-		this.connect();
+		void this.connect().catch(error => {
+			if (this.__closeCalled) return;
+			this.onerror(error);
+			this.__lastError = { code: 1006, reason: error instanceof Error ? error.message : String(error) };
+			this.#emitClose(this.__lastError);
+		});
 	}
 
 	private connect(retries = 0) {
@@ -62,13 +67,12 @@ export class SeyfertWebSocket {
 				const hash = createHash('sha1').update(`${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`).digest('base64');
 				const accept = res.headers['sec-websocket-accept'];
 				if (accept !== hash) {
-					socket.end(() => {
-						rej(
-							new SeyfertError('INVALID_SEC_WEBSOCKET_ACCEPT_HEADER', {
-								metadata: { detail: 'Invalid sec-websocket-accept header' },
-							}),
-						);
-					});
+					socket.destroy();
+					rej(
+						new SeyfertError('INVALID_SEC_WEBSOCKET_ACCEPT_HEADER', {
+							metadata: { detail: 'Invalid sec-websocket-accept header' },
+						}),
+					);
 					return;
 				}
 				this.socket = socket;
