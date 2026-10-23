@@ -162,6 +162,9 @@ type ComponentDefaults = SeyfertComponentDefaults;
 type ModalDefaults = SeyfertModalDefaults;
 type AnyFunction = (...args: unknown[]) => unknown;
 
+// Materialize callback extensions without blocking inference from explicit annotations.
+type InferredPluginExtension<E extends object> = { [K in keyof E]: E[K] };
+
 type CreatePluginInputBase<
 	Name extends string,
 	I extends readonly AnySeyfertPlugin[],
@@ -174,23 +177,41 @@ type CreatePluginInputBase<
 	readonly imports?: I;
 	readonly requires?: readonly PluginRequirementInput[];
 	readonly client?: PluginClientMap<E, I>;
-	// Infer extensions from client factories, not from callbacks that consume them.
-	readonly ctx?: PluginContextMap<C, I, NoInfer<E>>;
+	readonly ctx?: PluginContextMap<C, I, E>;
 	readonly middlewares?: M;
 	readonly globalMiddlewares?: readonly (keyof M & string)[];
 	options?(current: Readonly<BaseClientOptions>): SeyfertPluginOptions;
-	register?(api: SeyfertPluginApi<M, ExtendOf<I> & NoInfer<E>>): void;
+	register?(api: SeyfertPluginApi<M, ExtendOf<I> & InferredPluginExtension<E>>): void;
 	setup?(
-		client: SeyfertPluginClient & ExtendOf<I> & NoInfer<E>,
-		api?: SeyfertPluginApi<M, ExtendOf<I> & NoInfer<E>>,
+		client: SeyfertPluginClient & ExtendOf<I> & InferredPluginExtension<E>,
+		api?: SeyfertPluginApi<M, ExtendOf<I> & InferredPluginExtension<E>>,
 	): Awaitable<void>;
-	teardown?(client: SeyfertPluginClient & ExtendOf<I> & NoInfer<E>, api?: SeyfertPluginTeardownApi): Awaitable<void>;
+	teardown?(
+		client: SeyfertPluginClient & ExtendOf<I> & InferredPluginExtension<E>,
+		api?: SeyfertPluginTeardownApi,
+	): Awaitable<void>;
 };
 
 type CreatePluginReservedKey =
 	| keyof CreatePluginInputBase<string, readonly AnySeyfertPlugin[], object, object, PluginMiddlewareMap>
 	| 'meta';
 type CreatePluginExtra<T extends object> = Omit<T, CreatePluginReservedKey>;
+
+// TS7 exact-optional checking retains undefined in optional parameter tuple elements.
+type RequiredPluginLifecycleParameters<T extends readonly unknown[]> = {
+	[K in keyof T]-?: Exclude<T[K], undefined>;
+};
+
+// Check parameter types after inference while preserving required API callbacks accepted by lifecycle methods.
+type CreatePluginLifecycleCheck<
+	I extends readonly AnySeyfertPlugin[],
+	E extends object,
+	M extends PluginMiddlewareMap,
+> = {
+	readonly [K in 'register' | 'setup' | 'teardown']?: (
+		...args: RequiredPluginLifecycleParameters<Parameters<NonNullable<CreatePluginInputBase<string, I, E, {}, M>[K]>>>
+	) => ReturnType<NonNullable<CreatePluginInputBase<string, I, E, {}, M>[K]>>;
+};
 
 type CreatePluginInputWithMeta<
 	Name extends string,
@@ -250,7 +271,7 @@ export function createPlugin<
 	const Meta = never,
 	const Extra extends object = {},
 >(
-	plugin: CreatePluginInputWithMeta<Name, I, E, C, M, Meta> & Extra,
+	plugin: CreatePluginInputWithMeta<Name, I, E, C, M, Meta> & Extra & CreatePluginLifecycleCheck<I, NoInfer<E>, M>,
 ): CreatePluginOutputWithMeta<Name, I, E, C, M, Meta> & CreatePluginExtra<Extra>;
 export function createPlugin<
 	const Name extends string,
@@ -260,7 +281,7 @@ export function createPlugin<
 	M extends PluginMiddlewareMap = {},
 	const Extra extends object = {},
 >(
-	plugin: CreatePluginInputWithoutMeta<Name, I, E, C, M> & Extra,
+	plugin: CreatePluginInputWithoutMeta<Name, I, E, C, M> & Extra & CreatePluginLifecycleCheck<I, NoInfer<E>, M>,
 ): CreatePluginOutputBase<Name, I, E, C, M> & CreatePluginExtra<Extra>;
 export function createPlugin(
 	plugin: CreatePluginInputBase<string, readonly AnySeyfertPlugin[], object, object, PluginMiddlewareMap> & object,

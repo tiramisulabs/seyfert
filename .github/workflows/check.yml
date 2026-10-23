@@ -50,7 +50,7 @@ jobs:
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.4.0
+          bun-version: 1.4.4
 
       - name: Install dependencies
         run: bun install --frozen-lockfile --ignore-scripts
@@ -65,7 +65,9 @@ jobs:
         run: bun run build
 
       - name: Typecheck test contracts
-        run: bun x tsc --noEmit --project tests/tsconfig.json
+        run: |
+          bun x tsc --noEmit --project tests/tsconfig.json
+          bun x tsc --noEmit --project tests/exact-optional-tsconfig.json
 
       - name: Publish in pkg.pr.new
         run: bunx pkg-pr-new publish
@@ -95,7 +97,7 @@ jobs:
       - name: Install Node
         uses: actions/setup-node@v7
         with:
-          node-version: '22.x'
+          node-version: '26.12.1'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v6
@@ -118,7 +120,7 @@ jobs:
         if: matrix.runtime == 'deno'
         uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.x
+          deno-version: v2.9.8
 
       - name: Build (Deno)
         if: matrix.runtime == 'deno'

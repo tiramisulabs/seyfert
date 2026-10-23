@@ -20,7 +20,7 @@ another layer needs a distinct failure that the owner cannot exercise.
 | --- | --- |
 | Root exports and declaration cycles | `root-export-contract.ts`, `public-entrypoint-cycles.test.mts` |
 | Client lifecycle, config, and collectors | `invalid-token.test.mts`, `config-load.test.mts`, `client-collectors.test.mts` |
-| Plugin authoring and extensions | `plugin-authoring-contract.ts`, `plugins.test.mts`, `plugin-api.test.mts`, `client-plugins.test.mts` |
+| Plugin authoring and extensions | `plugin-authoring-contract.ts`, `plugin-lifecycle-contract.ts`, `plugins.test.mts`, `plugin-api.test.mts`, `client-plugins.test.mts` |
 | Registry/client inference | `command-context-client-type.test.mts` and the compile-time contracts |
 | Command declarations/options/subcommands/locales | `command-declare-name-contract.ts`, `command-options-contract.ts`, `command-subcommand-middleware-dispatch.test.mts`, `command-locales.test.mts` |
 | Command/component/modal contexts | `command-context-modal.test.mts`, `component-*.test.mts`, `interaction-reply.test.mts` |
@@ -56,9 +56,9 @@ For a new regression:
 
 ## Commands
 
-The repository pins `pnpm@11.11.0` and Bun 1.4.0. CI uses Bun for tooling and
-runs type contracts once in the tooling job before exercising the runtime suite
-under Node 22, Bun, and Deno.
+The repository pins `pnpm@11.11.0`, Node 26.12.1, Bun 1.4.4, and Deno 2.9.8.
+CI uses Bun for tooling and runs type contracts once in the tooling job before
+exercising the runtime suite under Node, Bun, and Deno.
 
 ```sh
 # Reproduce the Node dependency graph used by CI
@@ -75,6 +75,9 @@ pnpm run test:types
 
 # Target the strict public authoring contracts
 ./node_modules/.bin/tsc --noEmit --project tests/plugin-authoring-tsconfig.json
+
+# Check public contracts with exact optional properties
+./node_modules/.bin/tsc --noEmit --project tests/exact-optional-tsconfig.json
 
 # Run one Vitest file
 ./node_modules/.bin/vitest run --config ./tests/vitest.config.mts ./tests/<name>.test.mts
