@@ -56,8 +56,9 @@ For a new regression:
 ## Commands
 
 The repository pins `pnpm@11.11.0`, Node 26.12.1, Bun 1.4.4, and Deno 2.9.8.
-CI uses Bun for tooling and runs type contracts once in the tooling job before
-exercising the runtime suite under Node, Bun, and Deno.
+CI uses Bun's native checker for type contracts in the tooling job before
+exercising the runtime suite under Node, Bun, and Deno. TypeScript still emits
+the package JavaScript and declarations.
 
 ```sh
 # Reproduce the Node dependency graph used by CI
@@ -102,6 +103,8 @@ When a portability change requires local Bun/Deno parity, mirror
 # Bun
 HUSKY=0 bun install --frozen-lockfile --ignore-scripts
 bun run build
+bun check --no-script --project tests/tsconfig.json
+bun check --no-script --project tests/exact-optional-tsconfig.json
 bun --bun ./node_modules/vitest/vitest.mjs run --config ./tests/vitest.config.mts ./tests/
 
 # Deno

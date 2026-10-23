@@ -76,8 +76,8 @@ jobs:
 
       - name: Typecheck test contracts
         run: |
-          bun x tsc --noEmit --project tests/tsconfig.json
-          bun x tsc --noEmit --project tests/exact-optional-tsconfig.json
+          bun check --no-script --project tests/tsconfig.json
+          bun check --no-script --project tests/exact-optional-tsconfig.json
 
       - name: Publish in pkg.pr.new
         run: bunx pkg-pr-new publish
