@@ -170,7 +170,7 @@ loops, `Promise.all`/`allSettled`, and explicit fire-and-forget paths.
 
 ## Compatibility
 
-- Preserve Node/Bun/Deno; reuse lazy/conditional environment loading and verify
+- Preserve Node/Bun; reuse lazy/conditional environment loading and verify
   affected runtimes.
 - Keep optional filesystem behavior out of serverless/Cloudflare-only paths.
 - Preserve exact Discord wire names and established public spelling.

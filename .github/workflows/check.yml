@@ -15,7 +15,6 @@ on:
       - 'bun.lock'
       - 'bunfig.toml'
       - 'commitlint.config.js'
-      - 'deno.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -34,7 +33,6 @@ on:
       - 'bun.lock'
       - 'bunfig.toml'
       - 'commitlint.config.js'
-      - 'deno.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -87,14 +85,10 @@ jobs:
         run: bun --bun ./node_modules/vitest/vitest.mjs run --config ./tests/vitest.config.mts ./tests/
 
   test:
-    name: Test (${{ matrix.runtime }})
+    name: Test (node)
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        runtime: [node, deno]
 
     steps:
       - name: check out code
@@ -103,7 +97,7 @@ jobs:
           ref: ${{ github.ref }}
           persist-credentials: false
 
-      # --- Shared Node and pnpm install ---
+      # --- Node and pnpm install ---
       - name: Install Node
         uses: actions/setup-node@v7
         with:
@@ -112,30 +106,14 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v6
 
-      - name: Install dependencies (Node and Deno)
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Test suites (Node)
-        if: matrix.runtime == 'node'
         run: pnpm exec vitest run --config ./tests/vitest.config.mts ./tests/
 
       - name: Run Bot (Node)
-        if: matrix.runtime == 'node' && env.BOT_TOKEN != ''
+        if: env.BOT_TOKEN != ''
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         run: node ./tests/bot.js
-
-      # --- Deno ---
-      - name: Install Deno
-        if: matrix.runtime == 'deno'
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.9.8
-
-      - name: Build (Deno)
-        if: matrix.runtime == 'deno'
-        run: deno run -A npm:typescript/tsc --outDir ./lib
-
-      - name: Test suites (Deno)
-        if: matrix.runtime == 'deno'
-        run: deno run -A npm:vitest run --config ./tests/vitest.config.mts ./tests/

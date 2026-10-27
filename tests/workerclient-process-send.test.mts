@@ -57,16 +57,13 @@ async function runWorkerFixture(execArgv = process.execArgv) {
 	}
 }
 
-describe.skipIf(Boolean(process.versions.bun) || typeof (globalThis as { Deno?: unknown }).Deno !== 'undefined')(
-	'WorkerClient cluster transport',
-	() => {
-		test('rejects when the native child-process IPC channel closes', async () => {
-			await expect(runWorkerFixture()).resolves.toEqual({
-				exitCode: 0,
-				signal: null,
-				stdout: 'ERR_IPC_CHANNEL_CLOSED',
-				stderr: '',
-			});
-		}, 15_000);
-	},
-);
+describe.skipIf(Boolean(process.versions.bun))('WorkerClient cluster transport', () => {
+	test('rejects when the native child-process IPC channel closes', async () => {
+		await expect(runWorkerFixture()).resolves.toEqual({
+			exitCode: 0,
+			signal: null,
+			stdout: 'ERR_IPC_CHANNEL_CLOSED',
+			stderr: '',
+		});
+	}, 15_000);
+});

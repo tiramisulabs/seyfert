@@ -120,7 +120,7 @@ Before handing off a change:
 - direct callers and adjacent shared contexts were reviewed;
 - targeted tests prove the regression or contract;
 - the build/typecheck/full suite required by the blast radius passed freshly;
-- relevant Node/Bun/Deno behavior was checked when portability changed;
+- relevant Node/Bun behavior was checked when portability changed;
 - the full diff was read top to bottom;
 - when required, one different non-participant agent reviewed the final code in
   the selected mode, was reused for follow-ups, and all confirmed findings were

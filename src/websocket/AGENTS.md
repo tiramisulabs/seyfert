@@ -9,7 +9,7 @@ verification step.
 - Preserve the configured gateway send path and its async/rejection semantics;
   the client guide owns plugin wrapping, veto behavior, and packet dispatch.
 - Worker, filesystem, Web API, or transport portability changes require the
-  relevant Bun/Deno path from `tests/AGENTS.md`, in addition to targeted gateway
+  relevant Bun path from `tests/AGENTS.md`, in addition to targeted gateway
   and worker tests.
 - Apply the source-wide typing, async, wire-format, and portability rules from
   `src/AGENTS.md`.

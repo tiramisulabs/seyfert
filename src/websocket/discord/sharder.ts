@@ -203,7 +203,7 @@ export class ShardManager extends Map<number, Shard> {
 			resharder.connectQueue = this.connectQueue;
 
 			await resharder.spawnShards();
-		}, this.options.resharding.interval).unref?.();
+		}, this.options.resharding.interval).unref();
 	}
 
 	/*

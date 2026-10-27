@@ -30,15 +30,12 @@ There are many reasons to use Seyfert, but they dont all fit in this tiny readme
 ## Installation
 
 > [!NOTE]
-> Node v18>= (or v16 with `--experimental-fetch` flag), Deno v2.6.9>= is required.
-> Bun/Node/Deno LTS recommended.
+> Supported runtimes: Node.js and Bun.
+> Node v18>= (or v16 with `--experimental-fetch` flag) is required.
+> Bun/Node LTS recommended.
 
 ```sh
 pnpm add seyfert
-```
-
-```sh
-deno add npm:seyfert
 ```
 
 ```sh

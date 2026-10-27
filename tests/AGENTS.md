@@ -40,8 +40,7 @@ before every test. Use its factories and mock bot for observable Discord-facing
 flows; keep focused Vitest units for internal algorithms that do not cross that
 boundary. The private workspace-linked `local-seyfert` package makes the
 toolkit's `seyfert` peer resolve to this checkout's freshly built `lib/` under
-pnpm, Bun, and Deno. Deno uses pnpm's installed graph in manual node-modules
-mode. Run the test matrix from the repository root.
+pnpm and Bun. Run the test matrix from the repository root.
 
 For a new regression:
 - prefer adding it to the owning file rather than creating a broad
@@ -55,9 +54,9 @@ For a new regression:
 
 ## Commands
 
-The repository pins `pnpm@11.11.0`, Node 26.12.1, Bun 1.4.4, and Deno 2.9.8.
+The repository pins `pnpm@11.11.0`, Node 26.12.1, and Bun 1.4.4.
 CI uses Bun's native checker for type contracts in the tooling job before
-exercising the runtime suite under Node, Bun, and Deno. TypeScript still emits
+exercising the runtime suite under Node and Bun. TypeScript still emits
 the package JavaScript and declarations.
 
 ```sh
@@ -96,7 +95,7 @@ pnpm run check
 ./node_modules/.bin/biome inspect config --path tests/public-entrypoint-cycles.test.mts assist.actions.source.organizeImports
 ```
 
-When a portability change requires local Bun/Deno parity, mirror
+When a portability change requires local Bun parity, mirror
 `.github/workflows/check.yml`:
 
 ```sh
@@ -106,11 +105,6 @@ bun run build
 bun check --no-script --project tests/tsconfig.json
 bun check --no-script --project tests/exact-optional-tsconfig.json
 bun --bun ./node_modules/vitest/vitest.mjs run --config ./tests/vitest.config.mts ./tests/
-
-# Deno
-HUSKY=0 pnpm install --frozen-lockfile
-deno run -A npm:typescript/tsc --outDir ./lib
-deno run -A npm:vitest run --config ./tests/vitest.config.mts ./tests/
 ```
 
 ## Verification ladder
@@ -120,7 +114,7 @@ Use the ladder proportionally:
 2. Run the targeted compiler contract or Vitest regression.
 3. Build declarations for public/type changes.
 4. Run `pnpm test` for shared/public/runtime changes.
-5. Run the relevant Bun/Deno path when changing portability, workers,
+5. Run the relevant Bun path when changing portability, workers,
    filesystem behavior, Web APIs, or transport code.
 6. Run a real gateway smoke only when the task requires it and a token is
    explicitly available.
