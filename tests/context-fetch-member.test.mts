@@ -1,6 +1,6 @@
-import { apiUser, createMockBot, mockWorld, Routes } from '@slipher/testing';
+import { apiUser, chatInputInteraction, createMockBot, mockWorld, Routes } from '@slipher/testing';
 import { describe, expect, test, vi } from 'vitest';
-import { Command, type CommandContext, Declare, GuildMember } from '../lib';
+import { Command, type CommandContext, Declare, type GatewayDispatchPayload, GuildMember } from '../lib';
 import { CommandContext as InternalCommandContext } from '../src/commands/applications/chatcontext';
 
 type FetchMode = 'cache' | 'flow' | 'rest';
@@ -69,6 +69,58 @@ describe('CommandContext.fetchMember', () => {
 		expect(bot.restCalls(Routes.fetchMember)).toContainEqual(
 			expect.objectContaining({ params: { guildId: guild.id, userId: user.id } }),
 		);
+	});
+
+	test('gateway dispatch waits for actor hydration before running the command', async () => {
+		const { guild, member, user, world } = memberWorld();
+		let cached: unknown;
+		let fetched: unknown;
+		const run = vi.fn(async (ctx: CommandContext) => {
+			cached = ctx.fetchMember('cache');
+			fetched = await ctx.fetchMember();
+		});
+		class FetchMemberCommand extends Command {
+			run = run;
+		}
+		await using bot = await createMockBot({
+			commands: [Declare({ name: 'fetch-member', description: 'Fetch the invoking member' })(FetchMemberCommand)],
+			world,
+		});
+		await bot.client.cache.members?.remove(user.id, guild.id);
+		await bot.client.cache.users?.remove(user.id);
+		let release!: () => void;
+		const gate = new Promise<void>(resolve => (release = resolve));
+		const adapter = bot.client.cache.adapter;
+		const bulkPatch = adapter.bulkPatch.bind(adapter);
+		const patch = vi.spyOn(adapter, 'bulkPatch').mockImplementationOnce(async entries => {
+			await gate;
+			await bulkPatch(entries);
+		});
+		const pending = (
+			bot.client as unknown as {
+				onPacket(shardId: number, packet: GatewayDispatchPayload): Promise<unknown>;
+			}
+		).onPacket(0, {
+			op: 0,
+			s: 1,
+			t: 'INTERACTION_CREATE',
+			d: chatInputInteraction({ name: 'fetch-member', guildId: guild.id, user, member }),
+		} as GatewayDispatchPayload);
+
+		try {
+			await new Promise<void>(resolve => setImmediate(resolve));
+			expect(run).not.toHaveBeenCalled();
+		} finally {
+			release();
+			patch.mockRestore();
+			await pending;
+		}
+
+		expect(run).toHaveBeenCalledOnce();
+		expect(cached).toBeInstanceOf(GuildMember);
+		expect(cached).not.toBeInstanceOf(Promise);
+		expect(fetched).toMatchObject({ user: { id: user.id } });
+		expect(bot.restCalls(Routes.fetchMember)).toHaveLength(0);
 	});
 
 	test('fetches the invoking author member through rest mode even with a cache hit', async () => {
