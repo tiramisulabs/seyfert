@@ -1,63 +1,32 @@
-<div align='center'>
-  <img src="./assets/icon.png" alt="seyfert" width="200px" />
+<div align="center">
+  <img src="./assets/icon.png" alt="Seyfert" width="200" />
 
-**Seyfert is a brand-new Discord framework to take the bot development to a next level**
+# Seyfert
 
-[![License](https://img.shields.io/npm/l/seyfert?style=flat-square&logo=apache&color=white)](https://github.com/tiramisulabs/seyfert/blob/main/LICENSE)
+A TypeScript framework for building Discord bots.
+
+[![License](https://img.shields.io/npm/l/seyfert?style=flat-square&color=white)](./LICENSE)
 [![Version](https://img.shields.io/npm/v/seyfert?color=%23ff0000&logo=npm&style=flat-square)](https://www.npmjs.com/package/seyfert)
 [![Discord](https://img.shields.io/discord/1003825077969764412?color=%23406da2&label=support&logo=discord&style=flat-square)](https://discord.com/invite/XNw2RZFzaP)
 
 </div>
 
-## FAQ
+Seyfert brings Discord's API and gateway together with typed commands, interaction handlers, and plugins. Written in TypeScript for Node.js and Bun, it provides the tools to organize a bot while keeping the underlying Discord types and REST routes accessible.
 
-### So, what is `seyfert`?
+## What it offers
 
-Seyfert is the ultimate Discord framework! We make it easy to interact with the Discord API, big cache control, scalable code and a pretty dev experience.
+- **Typed commands:** Application and prefix commands with option inference, choices, subcommands, and autocomplete. Contexts give handlers access to resolved options and the appropriate response methods.
+- **Middleware and localization:** Share checks and preparation across commands, pass metadata to handlers, and translate command definitions and responses.
+- **Interactions and builders:** Handle components and modals through dedicated contexts. Build responses with embeds, buttons, select menus, and layout components.
+- **Discord resources:** Work with transformed structures and resource methods, or use the REST client directly when you need access to a route.
+- **Gateway and cache:** Handle gateway and custom events, distribute connections across shards and workers, and choose which resources to cache with configurable adapters.
+- **Plugins:** Package reusable commands, events, middleware, and client extensions with lifecycle hooks for setup and cleanup.
 
-### Why should I use it?
+## Documentation and community
 
-There are many reasons to use Seyfert, but they dont all fit in this tiny readme, so here is a list of the most awesome reasons!
-- **Low RAM Usage**
-- **Latest features**
-- **Dev experience**
-- **24/6 support (Sunday is for church)**
-- **Written from Scratch**
-- **Type-safe**
-- **And many more!!**
+Explore the [documentation](https://seyfert.dev/guide) for guides and API usage, or join the [Discord server](https://discord.com/invite/XNw2RZFzaP) for questions and community support.
 
-
-## Installation
-
-> [!NOTE]
-> Supported runtimes: Node.js and Bun.
-> Node v18>= (or v16 with `--experimental-fetch` flag) is required.
-> Bun/Node LTS recommended.
-
-```sh
-pnpm add seyfert
-```
-
-```sh
-bun add seyfert
-```
-
-```sh
-npm i seyfert
-```
-> Or other package manager.
-
-## Contributing
-
-We are open to contributions, fork the repo and make your changes!
-
-## Useful links
-
-- [GitHub Repository](https://github.com/tiramisulabs/seyfert)
-- [Discord server](https://discord.com/invite/XNw2RZFzaP)
-- [npm - core](https://www.npmjs.com/package/seyfert)
-- [Website](https://seyfert.dev)
-- [Documentation](https://seyfert.dev/guide)
+Contributions are welcome.
 
 <a href="https://www.star-history.com/?repos=tiramisulabs%2Fseyfert&type=date&legend=top-left">
  <picture>
