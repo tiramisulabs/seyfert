@@ -1,6 +1,15 @@
 import type { InternalOptions, UsingClient } from '../commands';
 import { type Awaitable, type If, type Logger, SeyfertError } from '../common';
-import { type APIEmoji, type APISticker, ChannelType, type GatewayDispatchPayload, GatewayIntentBits } from '../types';
+import {
+	type APIEmoji,
+	type APIInteractionGuildMember,
+	type APISticker,
+	type APIUser,
+	ChannelType,
+	type GatewayDispatchPayload,
+	GatewayIntentBits,
+	type GatewayMessageCreateDispatchData,
+} from '../types';
 import type { Adapter, AdapterEntry } from './adapters';
 import { testCacheAdapter } from './conformance';
 import { Bans } from './resources/bans';
@@ -92,7 +101,11 @@ export type CachedEvents =
 	| 'GUILD_MEMBER_ADD'
 	| 'GUILD_MEMBER_UPDATE'
 	| 'GUILD_MEMBER_REMOVE'
+	| 'INTERACTION_CREATE'
 	| 'MESSAGE_CREATE'
+	| 'MESSAGE_UPDATE'
+	| 'MESSAGE_REACTION_ADD'
+	| 'TYPING_START'
 	| 'PRESENCE_UPDATE'
 	| 'THREAD_DELETE'
 	| 'THREAD_CREATE'
@@ -369,6 +382,34 @@ export class Cache {
 		}
 	}
 
+	private appendUserAndMember(
+		data: BulkWriteKey[],
+		user: APIUser | undefined,
+		member?: Partial<APIInteractionGuildMember>,
+		guildId?: string,
+	) {
+		if (!user?.id) return;
+		if (this.users) data.push([CacheFrom.Gateway, 'users', user, user.id]);
+		if (this.members && member && guildId) {
+			// Interaction permissions include channel overwrites and must stay local to the interaction.
+			const { permissions: _permissions, ...guildMember } = member;
+			guildMember.user = user;
+			data.push([CacheFrom.Gateway, 'members', guildMember, user.id, guildId]);
+		}
+	}
+
+	private appendMessageUsers(
+		data: BulkWriteKey[],
+		message: Partial<GatewayMessageCreateDispatchData>,
+		guildId?: string,
+	) {
+		for (const mention of message.mentions ?? []) {
+			const { member, ...user } = mention;
+			this.appendUserAndMember(data, user, member, guildId);
+		}
+		this.appendUserAndMember(data, message.author, message.member, guildId);
+	}
+
 	protected async onPacketDefault(event: GatewayDispatchPayload) {
 		switch (event.t) {
 			case 'READY':
@@ -471,6 +512,33 @@ export class Cache {
 				await this.members?.remove(event.d.user.id, event.d.guild_id);
 				await this.presences?.remove(event.d.user.id, event.d.guild_id);
 				break;
+			case 'INTERACTION_CREATE':
+				{
+					const data: BulkWriteKey[] = [];
+					const resolved = event.d.data && 'resolved' in event.d.data ? event.d.data.resolved : undefined;
+					if (resolved && 'messages' in resolved) {
+						for (const message of Object.values(resolved.messages)) {
+							this.appendMessageUsers(data, message, event.d.guild_id);
+						}
+					}
+					if (resolved && 'users' in resolved) {
+						for (const [id, user] of Object.entries(resolved.users ?? {})) {
+							this.appendUserAndMember(data, user, resolved.members?.[id], event.d.guild_id);
+						}
+					}
+					this.appendUserAndMember(data, event.d.member?.user ?? event.d.user, event.d.member, event.d.guild_id);
+
+					if (data.length) await this.bulkPatch(data);
+				}
+				break;
+			case 'MESSAGE_REACTION_ADD':
+			case 'TYPING_START':
+				{
+					const data: BulkWriteKey[] = [];
+					this.appendUserAndMember(data, event.d.member?.user, event.d.member, event.d.guild_id);
+					if (data.length) await this.bulkPatch(data);
+				}
+				break;
 
 			case 'PRESENCE_UPDATE':
 				// Should update member data?
@@ -496,6 +564,10 @@ export class Cache {
 
 			case 'VOICE_STATE_UPDATE':
 				{
+					const data: BulkWriteKey[] = [];
+					this.appendUserAndMember(data, event.d.member?.user, event.d.member, event.d.guild_id);
+					if (data.length) await this.bulkPatch(data);
+
 					if (!event.d.guild_id) {
 						return;
 					}
@@ -520,37 +592,16 @@ export class Cache {
 				await this.stageInstances?.remove(event.d.channel_id, event.d.guild_id);
 				break;
 			case 'MESSAGE_CREATE':
-				{
-					if (this.messages !== undefined) {
-						const data: Parameters<Cache['bulkPatch']>[0] = [
-							[CacheFrom.Gateway, 'messages', event.d, event.d.id, event.d.channel_id],
-							[CacheFrom.Gateway, 'users', event.d.author, event.d.author.id],
-						];
-
-						if (event.d.guild_id) {
-							if (event.d.member)
-								data.push([CacheFrom.Gateway, 'members', event.d.member, event.d.author.id, event.d.guild_id]);
-						}
-
-						await this.bulkPatch(data);
-					}
-				}
-				break;
 			case 'MESSAGE_UPDATE':
 				{
-					if (this.messages !== undefined) {
-						const data: Parameters<Cache['bulkPatch']>[0] = [
-							[CacheFrom.Gateway, 'messages', event.d, event.d.id, event.d.channel_id],
-							[CacheFrom.Gateway, 'users', event.d.author, event.d.author.id],
-						];
-
-						if (event.d.guild_id) {
-							if (event.d.member)
-								data.push([CacheFrom.Gateway, 'members', event.d.member, event.d.author.id, event.d.guild_id]);
-						}
-
-						await this.bulkPatch(data);
+					const data: BulkWriteKey[] = [];
+					if (this.messages) {
+						data.push([CacheFrom.Gateway, 'messages', event.d, event.d.id, event.d.channel_id]);
 					}
+
+					this.appendMessageUsers(data, event.d, event.d.guild_id);
+
+					if (data.length) await this.bulkPatch(data);
 				}
 				break;
 			case 'MESSAGE_DELETE':
