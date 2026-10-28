@@ -201,6 +201,15 @@ export const Formatter = {
 	},
 
 	/**
+	 * Formats content into subtext.
+	 * @param content The content to format.
+	 * @returns The formatted content.
+	 */
+	subtext(content: string): `-# ${string}` {
+		return `-# ${content}`;
+	},
+
+	/**
 	 * Formats a message link.
 	 * @param guildId The ID of the guild.
 	 * @param channelId The ID of the channel.
@@ -276,6 +285,16 @@ export const Formatter = {
 	},
 
 	/**
+	 * Formats a slash command mention.
+	 * @param name The name of the command, including subcommands (e.g. `config set`).
+	 * @param commandId The ID of the command.
+	 * @returns The formatted command mention.
+	 */
+	commandMention(name: string, commandId: string): `</${string}:${string}>` {
+		return `</${name}:${commandId}>`;
+	},
+
+	/**
 	 * Formats an emoji.
 	 * @param emojiId The ID of the emoji.
 	 * @param animated Whether the emoji is animated. Defaults to false.
@@ -293,6 +312,15 @@ export const Formatter = {
 	 */
 	channelLink(channelId: string, guildId?: string): ChannelLink {
 		return `https://discord.com/channels/${guildId ?? '@me'}/${channelId}`;
+	},
+
+	/**
+	 * Formats a guild navigation mention.
+	 * @param type The guild page to link to.
+	 * @returns The formatted guild navigation mention.
+	 */
+	guildNavigation(type: 'customize' | 'browse' | 'guide' | 'linked-roles'): `<id:${string}>` {
+		return `<id:${type}>`;
 	},
 
 	/**
