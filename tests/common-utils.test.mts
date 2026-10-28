@@ -1,6 +1,6 @@
 import { mockId } from '@slipher/testing';
 import { describe, expect, test } from 'vitest';
-import { resolveColor, snowflakeToTimestamp } from '../lib/common/it/utils';
+import { resolveColor, resolvePartialEmoji, snowflakeToTimestamp } from '../lib/common/it/utils';
 
 describe('resolveColor', () => {
 	test('rejects invalid hex strings', () => {
@@ -33,5 +33,12 @@ describe('snowflakeToTimestamp', () => {
 		const timestamp = Date.UTC(2024, 0, 2, 3, 4, 5);
 
 		expect(snowflakeToTimestamp(mockId({ at: timestamp }))).toBe(timestamp);
+	});
+});
+
+describe('resolvePartialEmoji', () => {
+	test('does not encode an already encoded emoji twice', () => {
+		expect(resolvePartialEmoji('%F0%9F%91%8D')).toEqual({ name: '👍', id: null });
+		expect(resolvePartialEmoji('👍')).toEqual({ name: '👍', id: null });
 	});
 });

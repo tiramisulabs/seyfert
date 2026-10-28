@@ -86,6 +86,7 @@ export class ComponentHandler extends BaseHandler {
 		options: ListenerOptions = {},
 		components: COMPONENTS['components'] = [],
 	): CreateComponentCollectorResult {
+		this.clearValue(messageId);
 		this.values.set(messageId, {
 			messageId,
 			channelId,

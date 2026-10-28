@@ -344,7 +344,7 @@ export function resolvePartialEmoji(emoji: EmojiResolvable): APIPartialEmoji | u
 			};
 		}
 		if (emoji.includes('%')) {
-			emoji = encodeURIComponent(emoji);
+			emoji = decodeURIComponent(emoji);
 		}
 		if (!(emoji.includes(':') || emoji.match(/\d{17,20}/g))) {
 			return { name: emoji, id: null };

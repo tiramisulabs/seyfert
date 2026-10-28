@@ -157,4 +157,21 @@ describe('component collectors', () => {
 
 		expect(onRun).toHaveBeenCalledTimes(2);
 	});
+
+	test('old timers do not stop a newer collector on the same message', () => {
+		vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+		const handler = createHandler();
+		const firstStop = vi.fn();
+		const secondStop = vi.fn();
+		handler.createComponentCollector('message-id', 'channel-id', undefined, { timeout: 50, onStop: firstStop });
+		handler.createComponentCollector('message-id', 'channel-id', undefined, { timeout: 5000, onStop: secondStop });
+
+		vi.advanceTimersByTime(100);
+		expect(handler.values.has('message-id')).toBe(true);
+		expect(firstStop).not.toHaveBeenCalled();
+
+		vi.advanceTimersByTime(5000);
+		expect(handler.values.has('message-id')).toBe(false);
+		expect(secondStop).toHaveBeenCalledWith('timeout', expect.any(Function));
+	});
 });

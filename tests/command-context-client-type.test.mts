@@ -16,7 +16,7 @@ const isAnyType = (type: Type) => (type.flags & TypeFlags.Any) !== 0;
 const writeConsumerFixture = (root: string) => {
 	mkdirSync(join(root, 'src'), { recursive: true });
 	mkdirSync(join(root, 'node_modules'), { recursive: true });
-	symlinkSync(process.cwd(), join(root, 'node_modules', 'seyfert'), 'dir');
+	symlinkSync(process.cwd(), join(root, 'node_modules', 'seyfert'), 'junction');
 
 	writeFileSync(join(root, 'src', 'index.ts'), 'export * from "./start";\n');
 	writeFileSync(join(root, 'src', 'middlewares.ts'), 'export const middlewares = {};\n');
@@ -71,7 +71,7 @@ ctx.client.messages.write(ctx.channelId, { content: "ok" });
 const writeInvalidClientFixture = (root: string) => {
 	mkdirSync(join(root, 'src'), { recursive: true });
 	mkdirSync(join(root, 'node_modules'), { recursive: true });
-	symlinkSync(process.cwd(), join(root, 'node_modules', 'seyfert'), 'dir');
+	symlinkSync(process.cwd(), join(root, 'node_modules', 'seyfert'), 'junction');
 
 	writeFileSync(
 		join(root, 'src', 'start.ts'),
@@ -99,7 +99,7 @@ ctx.client.fake;
 const writeDirectClientFixture = (root: string) => {
 	mkdirSync(join(root, 'src'), { recursive: true });
 	mkdirSync(join(root, 'node_modules'), { recursive: true });
-	symlinkSync(process.cwd(), join(root, 'node_modules', 'seyfert'), 'dir');
+	symlinkSync(process.cwd(), join(root, 'node_modules', 'seyfert'), 'junction');
 
 	writeFileSync(
 		join(root, 'src', 'start.ts'),
@@ -128,7 +128,7 @@ ctx.client.messages.write("123", { content: "ok" });
 const writeDocumentedClientVariantFixture = (root: string) => {
 	mkdirSync(join(root, 'src'), { recursive: true });
 	mkdirSync(join(root, 'node_modules'), { recursive: true });
-	symlinkSync(process.cwd(), join(root, 'node_modules', 'seyfert'), 'dir');
+	symlinkSync(process.cwd(), join(root, 'node_modules', 'seyfert'), 'junction');
 
 	writeFileSync(
 		join(root, 'src', 'gateway.ts'),
@@ -514,7 +514,7 @@ describe('command context client type', () => {
 const writeLocaleFixture = (root: string) => {
 	mkdirSync(join(root, 'src', 'langs'), { recursive: true });
 	mkdirSync(join(root, 'node_modules'), { recursive: true });
-	symlinkSync(process.cwd(), join(root, 'node_modules', 'seyfert'), 'dir');
+	symlinkSync(process.cwd(), join(root, 'node_modules', 'seyfert'), 'junction');
 
 	writeFileSync(join(root, 'src', 'index.ts'), 'export * from "./start";\n');
 	writeFileSync(join(root, 'src', 'middlewares.ts'), 'export const middlewares = {};\n');
