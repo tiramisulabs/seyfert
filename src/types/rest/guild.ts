@@ -354,13 +354,13 @@ export type RESTPatchAPIGuildChannelPositionsJSONBody = {
 	 */
 	id: Snowflake;
 	/**
-	 * Sorting position of the channel
+	 * Sorting position of the channel (channels with the same position are sorted by id)
 	 */
-	position: number;
+	position?: number | null | undefined;
 	/**
 	 * Sync channel overwrites with the new parent, when moving to a new `parent_id`
 	 */
-	lock_permissions?: boolean | undefined;
+	lock_permissions?: boolean | null | undefined;
 	/**
 	 * The new parent id of this channel
 	 */
@@ -698,9 +698,9 @@ export type RESTPatchAPIGuildRolePositionsJSONBody = {
 	 */
 	id: Snowflake;
 	/**
-	 * Sorting position of the role
+	 * Sorting position of the role (roles with the same position are sorted by id)
 	 */
-	position?: number | undefined;
+	position?: number | null | undefined;
 }[];
 
 /**

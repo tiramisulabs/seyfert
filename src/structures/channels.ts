@@ -185,8 +185,8 @@ export class BaseNoEditableChannel<T extends ChannelType> extends DiscordBase<AP
 				ctx.client.guilds.channels.delete(ctx.guildId, id, reason),
 			edit: (id: string, body: RESTPatchAPIChannelJSONBody, reason?: string): Promise<AllChannels> =>
 				ctx.client.guilds.channels.edit(ctx.guildId, id, body, reason),
-			editPositions: (body: RESTPatchAPIGuildChannelPositionsJSONBody) =>
-				ctx.client.guilds.channels.editPositions(ctx.guildId, body),
+			editPositions: (body: RESTPatchAPIGuildChannelPositionsJSONBody, reason?: string) =>
+				ctx.client.guilds.channels.editPositions(ctx.guildId, body, reason),
 		};
 	}
 }

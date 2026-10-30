@@ -111,11 +111,17 @@ export class RoleShorter extends BaseShorter {
 	 * Edits the positions of roles in the guild.
 	 * @param guildId The ID of the guild.
 	 * @param body The data to update the positions of roles with.
+	 * @param reason The reason for reordering the roles, shown in the audit log.
 	 * @returns A Promise that resolves to an array of edited roles.
 	 */
-	async editPositions(guildId: string, body: RESTPatchAPIGuildRolePositionsJSONBody): Promise<GuildRoleStructure[]> {
+	async editPositions(
+		guildId: string,
+		body: RESTPatchAPIGuildRolePositionsJSONBody,
+		reason?: string,
+	): Promise<GuildRoleStructure[]> {
 		const roles = await this.client.proxy.guilds(guildId).roles.patch({
 			body,
+			reason,
 		});
 		if (!this.client.cache.hasRolesIntent) {
 			await this.client.cache.roles?.set(
