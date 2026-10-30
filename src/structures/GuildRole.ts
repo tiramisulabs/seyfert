@@ -84,8 +84,8 @@ export class GuildRole extends DiscordBase {
 			edit: (roleId: string, body: RESTPatchAPIGuildRoleJSONBody, reason?: string): Promise<GuildRoleStructure> =>
 				ctx.client.roles.edit(ctx.guildId, roleId, body, reason),
 			delete: (roleId: string, reason?: string) => ctx.client.roles.delete(ctx.guildId, roleId, reason),
-			editPositions: (body: RESTPatchAPIGuildRolePositionsJSONBody): Promise<GuildRoleStructure[]> =>
-				ctx.client.roles.editPositions(ctx.guildId, body),
+			editPositions: (body: RESTPatchAPIGuildRolePositionsJSONBody, reason?: string): Promise<GuildRoleStructure[]> =>
+				ctx.client.roles.editPositions(ctx.guildId, body, reason),
 			memberCounts: (): Promise<RESTGetAPIGuildRoleMemberCountsResult> => ctx.client.roles.memberCounts(ctx.guildId),
 		};
 	}

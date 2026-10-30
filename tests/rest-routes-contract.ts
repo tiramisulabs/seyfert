@@ -37,6 +37,11 @@ expectType<Promise<GuildWelcomeScreenStructure>>(client.guilds.welcome.fetch('gu
 expectType<Promise<RESTGetAPIAuditLogResult>>(client.guilds.audit.fetch('guild-id', { limit: 50 }));
 expectType<Promise<RESTGetAPIAuditLogResult>>(client.guilds.audit.fetch('guild-id', { user_id: 'user-id' }));
 expectType<Promise<RESTGetAPIAuditLogResult>>(client.guilds.audit.fetch('guild-id', { action_type: 1 as AuditLogEvent }));
+expectType<`${AuditLogEvent.ChannelPositionUpdate}`>('16');
+expectType<`${AuditLogEvent.RolePositionUpdate}`>('33');
+expectType<`${AuditLogEvent.AutoModerationQuarantineUser}`>('146');
+// @ts-expect-error CHANNEL_POSITION_UPDATE must keep Discord's wire value of 16
+expectType<`${AuditLogEvent.ChannelPositionUpdate}`>('17');
 
 expectType<Promise<RESTPostAPIGuildBulkBanResult>>(
 	api.proxy.guilds('guild-id')['bulk-ban'].post({ body: { user_ids: ['user-id'] } }),

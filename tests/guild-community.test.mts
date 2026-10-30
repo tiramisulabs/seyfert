@@ -39,6 +39,22 @@ describe('Guild community shorters', () => {
 		expect(bot.restCalls().length).toBeGreaterThan(before);
 	});
 
+	test('channel position edits forward the audit log reason', async () => {
+		const world = mockWorld();
+		const guild = world.registerGuild();
+		const channel = world.registerChannel(guild.id);
+		await using bot = await createMockBot({ world });
+		const route = `/guilds/${guild.id}/channels`;
+		bot.rest.intercept('PATCH', route, () => undefined);
+		const body = [{ id: channel.id, position: 2, parent_id: null }];
+
+		await bot.client.guilds.channels.editPositions(guild.id, body, 'tidy sidebar');
+
+		expect(bot.restCalls().filter(call => call.method === 'PATCH' && call.route === route)).toEqual([
+			expect.objectContaining({ body, reason: 'tidy sidebar' }),
+		]);
+	});
+
 	test('incidents requires at least one disable window', async () => {
 		const world = mockWorld();
 		const guild = world.registerGuild();

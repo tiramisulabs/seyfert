@@ -458,9 +458,10 @@ export class GuildShorter extends BaseShorter {
 		 * Edits the positions of channels in the guild.
 		 * @param guildId The ID of the guild.
 		 * @param body The data containing the new positions of channels.
+		 * @param reason The reason for reordering the channels, shown in the audit log.
 		 */
-		editPositions: (guildId: string, body: RESTPatchAPIGuildChannelPositionsJSONBody) =>
-			this.client.proxy.guilds(guildId).channels.patch({ body }),
+		editPositions: (guildId: string, body: RESTPatchAPIGuildChannelPositionsJSONBody, reason?: string) =>
+			this.client.proxy.guilds(guildId).channels.patch({ body, reason }),
 
 		addFollower: async (
 			channelId: string,

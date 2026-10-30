@@ -134,6 +134,13 @@ export interface APIAuditLogEntry {
 
 /**
  * https://docs.discord.com/developers/resources/audit-log#audit-log-entry-object-audit-log-events
+ *
+ * `MESSAGE_DELETE`, `MESSAGE_BULK_DELETE`, `MEMBER_DISCONNECT`, `MEMBER_MOVE`, `CHANNEL_POSITION_UPDATE`
+ * and `ROLE_POSITION_UPDATE` entries are merged when the same user repeats the action in quick succession.
+ * The original entry is updated in place, only the first request's reason is kept, and the updates do not
+ * dispatch another `GUILD_AUDIT_LOG_ENTRY_CREATE` event.
+ *
+ * See https://docs.discord.com/developers/resources/audit-log#audit-log-entry-object-audit-log-entry-merging
  */
 export enum AuditLogEvent {
 	GuildUpdate = 1,
@@ -144,6 +151,7 @@ export enum AuditLogEvent {
 	ChannelOverwriteCreate,
 	ChannelOverwriteUpdate,
 	ChannelOverwriteDelete,
+	ChannelPositionUpdate,
 
 	MemberKick = 20,
 	MemberPrune,
@@ -158,6 +166,7 @@ export enum AuditLogEvent {
 	RoleCreate = 30,
 	RoleUpdate,
 	RoleDelete,
+	RolePositionUpdate,
 
 	InviteCreate = 40,
 	InviteUpdate,
@@ -207,6 +216,7 @@ export enum AuditLogEvent {
 	AutoModerationBlockMessage,
 	AutoModerationFlagToChannel,
 	AutoModerationUserCommunicationDisabled,
+	AutoModerationQuarantineUser,
 
 	CreatorMonetizationRequestCreated = 150,
 	CreatorMonetizationTermsAccepted,
@@ -231,12 +241,20 @@ export enum AuditLogEvent {
  */
 export interface APIAuditLogOptions {
 	/**
+	 * ID of the app whose permissions were targeted
+	 *
+	 * Present from:
+	 * - APPLICATION_COMMAND_PERMISSION_UPDATE
+	 */
+	application_id?: Snowflake;
+	/**
 	 * Name of the Auto Moderation rule that was triggered
 	 *
 	 * Present from:
 	 * - AUTO_MODERATION_BLOCK_MESSAGE
 	 * - AUTO_MODERATION_FLAG_TO_CHANNEL
 	 * - AUTO_MODERATION_USER_COMMUNICATION_DISABLED
+	 * - AUTO_MODERATION_QUARANTINE_USER
 	 */
 	auto_moderation_rule_name?: string;
 	/**
@@ -246,6 +264,7 @@ export interface APIAuditLogOptions {
 	 * - AUTO_MODERATION_BLOCK_MESSAGE
 	 * - AUTO_MODERATION_FLAG_TO_CHANNEL
 	 * - AUTO_MODERATION_USER_COMMUNICATION_DISABLED
+	 * - AUTO_MODERATION_QUARANTINE_USER
 	 */
 	auto_moderation_rule_trigger_type?: AuditLogRuleTriggerType;
 	/**
@@ -277,6 +296,7 @@ export interface APIAuditLogOptions {
 	 * - AUTO_MODERATION_BLOCK_MESSAGE
 	 * - AUTO_MODERATION_FLAG_TO_CHANNEL
 	 * - AUTO_MODERATION_USER_COMMUNICATION_DISABLED
+	 * - AUTO_MODERATION_QUARANTINE_USER
 	 */
 	channel_id?: Snowflake;
 
@@ -290,13 +310,15 @@ export interface APIAuditLogOptions {
 	message_id?: Snowflake;
 
 	/**
-	 * Number of entities that were targeted
+	 * Number of entities that were targeted, or number of position updates
 	 *
 	 * Present from:
 	 * - MESSAGE_DELETE
 	 * - MESSAGE_BULK_DELETE
 	 * - MEMBER_DISCONNECT
 	 * - MEMBER_MOVE
+	 * - CHANNEL_POSITION_UPDATE
+	 * - ROLE_POSITION_UPDATE
 	 */
 	count?: string;
 

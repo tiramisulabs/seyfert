@@ -1,3 +1,4 @@
+import { createMockBot, mockWorld } from '@slipher/testing';
 import { describe, expect, test } from 'vitest';
 import { type APIRole, GuildRole } from '../lib';
 
@@ -33,5 +34,24 @@ describe('GuildRole', () => {
 		expect(olderTiedRole.comparePositionTo(newerTiedRole)).toBeGreaterThan(0);
 		expect(newerTiedRole.comparePositionTo(olderTiedRole)).toBeLessThan(0);
 		expect(olderTiedRole.comparePositionTo(olderTiedRole)).toBe(0);
+	});
+
+	test('position edits forward the audit log reason and cache the returned roles', async () => {
+		const world = mockWorld();
+		const guild = world.registerGuild();
+		const role = world.registerRole(guild.id);
+		await using bot = await createMockBot({ world });
+		bot.client.cache.intents = 0;
+		const route = `/guilds/${guild.id}/roles`;
+		const updated = { ...roleData, id: role.id, position: 3 } satisfies APIRole;
+		bot.rest.intercept('PATCH', route, () => [updated]);
+
+		const roles = await bot.client.roles.editPositions(guild.id, [{ id: role.id, position: 3 }], 'promote staff');
+
+		expect(roles.map(r => [r.id, r.position])).toEqual([[role.id, 3]]);
+		expect(await bot.client.cache.roles?.raw(role.id)).toMatchObject({ position: 3 });
+		expect(bot.restCalls().filter(call => call.method === 'PATCH' && call.route === route)).toEqual([
+			expect.objectContaining({ reason: 'promote staff' }),
+		]);
 	});
 });
