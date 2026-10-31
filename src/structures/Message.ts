@@ -324,6 +324,11 @@ export class InMessageEmbed {
 		return this.data.components?.map(component => new ContainerComponent(component));
 	}
 
+	/** Flags Discord set on this embed, such as content scanning results. */
+	get flags() {
+		return this.data.flags;
+	}
+
 	toBuilder() {
 		return new Embed(this.data);
 	}

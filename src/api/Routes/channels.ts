@@ -9,6 +9,7 @@ import type {
 	RESTDeleteAPIChannelResult,
 	RESTDeleteAPIChannelThreadMembersResult,
 	RESTGetAPIChannelInvitesResult,
+	RESTGetAPIChannelMemberPermissionsResult,
 	RESTGetAPIChannelMessageReactionUsersQuery,
 	RESTGetAPIChannelMessageReactionUsersResult,
 	RESTGetAPIChannelMessageResult,
@@ -16,7 +17,9 @@ import type {
 	RESTGetAPIChannelMessagesPinsResult,
 	RESTGetAPIChannelMessagesQuery,
 	RESTGetAPIChannelMessagesResult,
+	RESTGetAPIChannelPermissionsQuery,
 	RESTGetAPIChannelResult,
+	RESTGetAPIChannelRolePermissionsResult,
 	RESTGetAPIChannelThreadMemberQuery,
 	RESTGetAPIChannelThreadMemberResult,
 	RESTGetAPIChannelThreadMembersQuery,
@@ -121,9 +124,23 @@ export interface ChannelRoutes {
 		followers: {
 			post(args: RestArguments<RESTPostAPIChannelFollowersJSONBody>): Promise<RESTPostAPIChannelFollowersResult>;
 		};
-		permissions: (id: string) => {
-			put(args?: RestArguments<RESTPutAPIChannelPermissionJSONBody>): Promise<RESTPutAPIChannelPermissionResult>;
-			delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIChannelPermissionResult>;
+		permissions: {
+			(
+				id: string,
+			): {
+				put(args?: RestArguments<RESTPutAPIChannelPermissionJSONBody>): Promise<RESTPutAPIChannelPermissionResult>;
+				delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIChannelPermissionResult>;
+			};
+			member: (userId: string) => {
+				get(
+					args?: RestArgumentsNoBody<RESTGetAPIChannelPermissionsQuery>,
+				): Promise<RESTGetAPIChannelMemberPermissionsResult>;
+			};
+			role: (roleId: string) => {
+				get(
+					args?: RestArgumentsNoBody<RESTGetAPIChannelPermissionsQuery>,
+				): Promise<RESTGetAPIChannelRolePermissionsResult>;
+			};
 		};
 		invites: {
 			get(args?: RestArgumentsNoBody): Promise<RESTGetAPIChannelInvitesResult>;

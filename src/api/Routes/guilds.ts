@@ -24,6 +24,7 @@ import type {
 	RESTGetAPIGuildEmojisResult,
 	RESTGetAPIGuildIntegrationsResult,
 	RESTGetAPIGuildInvitesResult,
+	RESTGetAPIGuildMemberPermissionsResult,
 	RESTGetAPIGuildMemberResult,
 	RESTGetAPIGuildMembersQuery,
 	RESTGetAPIGuildMembersResult,
@@ -38,6 +39,7 @@ import type {
 	RESTGetAPIGuildQuery,
 	RESTGetAPIGuildResult,
 	RESTGetAPIGuildRoleMemberCountsResult,
+	RESTGetAPIGuildRolePermissionsResult,
 	RESTGetAPIGuildRoleResult,
 	RESTGetAPIGuildRolesResult,
 	RESTGetAPIGuildScheduledEventQuery,
@@ -145,6 +147,14 @@ export interface GuildRoutes {
 			delete(args?: RestArgumentsNoBody): Promise<RESTDeleteAPIGuildResult>;
 			webhooks: {
 				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildWebhooksResult>;
+			};
+			permissions: {
+				member: (userId: string) => {
+					get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildMemberPermissionsResult>;
+				};
+				role: (roleId: string) => {
+					get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildRolePermissionsResult>;
+				};
 			};
 			preview: {
 				get(args?: RestArgumentsNoBody): Promise<RESTGetAPIGuildPreviewResult>;

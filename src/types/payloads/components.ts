@@ -720,11 +720,72 @@ export interface APICheckboxComponent extends APIBaseComponent<ComponentType.Che
 
 /**
  * https://docs.discord.com/developers/components/reference#unfurled-media-item-structure
+ *
+ * Only `url` is set by apps; every other field is filled in by Discord on received components.
  */
 export interface APIUnfurledMediaItem
 	extends Identify<
 		MakeRequired<Partial<Pick<APIAttachment, 'url' | 'proxy_url' | 'height' | 'width' | 'content_type'>>, 'url'>
-	> {}
+	> {
+	/**
+	 * Thumbhash placeholder for images and videos
+	 */
+	placeholder?: string;
+	/**
+	 * Version of the placeholder for images and videos
+	 */
+	placeholder_version?: number;
+	/**
+	 * Unfurled media item flags combined as a bitfield
+	 */
+	flags?: UnfurledMediaItemFlags;
+	/**
+	 * Results of Discord's content scanning, present once the media has been scanned
+	 */
+	content_scan_metadata?: APIUnfurledMediaItemContentScanMetadata;
+	/**
+	 * ID of the uploaded attachment, present only when the media was uploaded as an attachment
+	 */
+	attachment_id?: Snowflake;
+}
+
+/**
+ * https://docs.discord.com/developers/components/reference#unfurled-media-item-flags
+ */
+export enum UnfurledMediaItemFlags {
+	/**
+	 * This image is animated
+	 */
+	IsAnimated = 1 << 0,
+}
+
+/**
+ * https://docs.discord.com/developers/components/reference#unfurled-media-item
+ */
+export interface APIUnfurledMediaItemContentScanMetadata {
+	/**
+	 * Content scan metadata flags combined as a bitfield
+	 */
+	flags: UnfurledMediaItemContentScanFlags;
+}
+
+/**
+ * https://docs.discord.com/developers/components/reference#unfurled-media-item-content-scan-metadata-flags
+ */
+export enum UnfurledMediaItemContentScanFlags {
+	/**
+	 * Discord's content scanning flagged the media as explicit
+	 */
+	IsExplicitContent = 1 << 0,
+	/**
+	 * Discord's content scanning flagged the media as gore
+	 */
+	IsGoreContent = 1 << 1,
+	/**
+	 * Discord's content scanning flagged the media as self-harm
+	 */
+	IsSelfHarmContent = 1 << 2,
+}
 
 export type APITopLevelComponent =
 	| APIContainerComponent

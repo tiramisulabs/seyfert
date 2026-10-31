@@ -296,6 +296,38 @@ export class ChannelShorter extends BaseShorter {
 		return permissions;
 	}
 
+	/**
+	 * Fetches a member's permissions in a channel as computed by Discord, including their roles and overwrites.
+	 * Threads use the overwrites of their parent channel.
+	 * @param channelId The ID of the channel.
+	 * @param memberId The ID of the member.
+	 * @param implicit Whether to clear every permission when `ViewChannel` (or `Connect` for voice and stage channels) is missing. Discord defaults to `true` and never applies it to bots.
+	 * @returns A Promise that resolves to the member's channel permissions.
+	 */
+	async fetchMemberPermissions(channelId: string, memberId: string, implicit?: boolean): Promise<PermissionsBitField> {
+		const { permissions } = await this.client.proxy
+			.channels(channelId)
+			.permissions.member(memberId)
+			.get({ query: { implicit } });
+		return new PermissionsBitField(BigInt(permissions));
+	}
+
+	/**
+	 * Fetches a role's permissions in a channel as computed by Discord, combined with `@everyone` and their overwrites.
+	 * Other roles and member-specific overwrites are not taken into account.
+	 * @param channelId The ID of the channel.
+	 * @param roleId The ID of the role.
+	 * @param implicit Whether to clear every permission when `ViewChannel` (or `Connect` for voice and stage channels) is missing. Discord defaults to `true`.
+	 * @returns A Promise that resolves to the role's channel permissions.
+	 */
+	async fetchRolePermissions(channelId: string, roleId: string, implicit?: boolean): Promise<PermissionsBitField> {
+		const { permissions } = await this.client.proxy
+			.channels(channelId)
+			.permissions.role(roleId)
+			.get({ query: { implicit } });
+		return new PermissionsBitField(BigInt(permissions));
+	}
+
 	async fetchMessages(channelId: string, query?: RESTGetAPIChannelMessagesQuery): Promise<MessageStructure[]> {
 		const result = await this.client.proxy.channels(channelId).messages.get({
 			query,

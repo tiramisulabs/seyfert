@@ -241,6 +241,19 @@ export class MemberShorter extends BaseShorter {
 	}
 
 	/**
+	 * Fetches a member's guild permissions as computed by Discord from their roles and `@everyone`.
+	 * Unlike {@link permissions} and `GuildMember#fetchPermissions`, which compute permissions from the member's
+	 * roles, this always makes a request and returns Discord's own result.
+	 * @param guildId The ID of the guild.
+	 * @param memberId The ID of the member.
+	 * @returns A Promise that resolves to the member's guild permissions.
+	 */
+	async fetchPermissions(guildId: string, memberId: string): Promise<PermissionsBitField> {
+		const { permissions } = await this.client.proxy.guilds(guildId).permissions.member(memberId).get();
+		return new PermissionsBitField(BigInt(permissions));
+	}
+
+	/**
 	 * Gets a member's cached presence in a guild.
 	 * @param guildId The ID of the guild.
 	 * @param memberId The ID of the member.

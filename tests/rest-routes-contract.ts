@@ -1,14 +1,21 @@
 import type {
 	APIApplication,
+	APIUnfurledMediaItem,
 	ApiHandler,
+	AttachmentFlags,
 	AuditLogEvent,
 	Client,
+	EmbedFlags,
 	GuildOnboardingStructure,
 	GuildWelcomeScreenStructure,
 	RESTDeleteRemoveTargetUserResult,
 	RESTGetAPIApplicationCommandPermissionsResult,
 	RESTGetAPIAuditLogResult,
+	RESTGetAPIChannelMemberPermissionsResult,
+	RESTGetAPIChannelRolePermissionsResult,
+	RESTGetAPIGuildMemberPermissionsResult,
 	RESTGetAPIGuildOnboardingResult,
+	RESTGetAPIGuildRolePermissionsResult,
 	RESTGetAPIInviteResult,
 	RESTGetAPIOAuth2CurrentApplicationResult,
 	RESTGetAPISKUSubscriptionResult,
@@ -23,9 +30,12 @@ import type {
 	RESTPostBulkDeleteTargetUsersResult,
 	RESTPutAddTargetUserResult,
 	RESTPutAPIApplicationCommandPermissionsResult,
+	RESTPutAPIChannelPermissionResult,
 	RESTPutAPIGuildIncidentActionsResult,
 	RESTPutAPIGuildOnboardingResult,
 	Snowflake,
+	UnfurledMediaItemContentScanFlags,
+	UnfurledMediaItemFlags,
 } from 'seyfert';
 
 declare const api: ApiHandler;
@@ -40,6 +50,35 @@ expectType<Promise<RESTGetAPIAuditLogResult>>(client.guilds.audit.fetch('guild-i
 expectType<`${AuditLogEvent.ChannelPositionUpdate}`>('16');
 expectType<`${AuditLogEvent.RolePositionUpdate}`>('33');
 expectType<`${AuditLogEvent.AutoModerationQuarantineUser}`>('146');
+expectType<`${AttachmentFlags.ContainsExplicitContent}`>('16');
+expectType<`${AttachmentFlags.ContainsGoreContent}`>('64');
+expectType<`${AttachmentFlags.ContainsSelfHarmContent}`>('128');
+expectType<`${EmbedFlags.ContainsExplicitContent}`>('16');
+expectType<`${EmbedFlags.ContainsGoreContent}`>('64');
+expectType<`${EmbedFlags.ContainsSelfHarmContent}`>('128');
+expectType<`${UnfurledMediaItemContentScanFlags.IsExplicitContent}`>('1');
+expectType<`${UnfurledMediaItemContentScanFlags.IsGoreContent}`>('2');
+expectType<`${UnfurledMediaItemContentScanFlags.IsSelfHarmContent}`>('4');
+expectType<`${UnfurledMediaItemFlags.IsAnimated}`>('1');
+expectType<UnfurledMediaItemContentScanFlags | undefined>(
+	({} as APIUnfurledMediaItem).content_scan_metadata?.flags,
+);
+// @ts-expect-error apps only send `url`; received fields stay optional and cannot replace it
+expectType<APIUnfurledMediaItem>({ attachment_id: '1' });
+
+expectType<Promise<RESTGetAPIGuildMemberPermissionsResult>>(
+	api.proxy.guilds('guild-id').permissions.member('user-id').get(),
+);
+expectType<Promise<RESTGetAPIGuildRolePermissionsResult>>(api.proxy.guilds('guild-id').permissions.role('role-id').get());
+expectType<Promise<RESTGetAPIChannelMemberPermissionsResult>>(
+	api.proxy.channels('channel-id').permissions.member('user-id').get({ query: { implicit: false } }),
+);
+expectType<Promise<RESTGetAPIChannelRolePermissionsResult>>(
+	api.proxy.channels('channel-id').permissions.role('role-id').get(),
+);
+expectType<Promise<RESTPutAPIChannelPermissionResult>>(
+	api.proxy.channels('channel-id').permissions('overwrite-id').put({ body: { type: 0 } }),
+);
 // @ts-expect-error CHANNEL_POSITION_UPDATE must keep Discord's wire value of 16
 expectType<`${AuditLogEvent.ChannelPositionUpdate}`>('17');
 

@@ -525,6 +525,41 @@ export interface RESTPutAPIChannelPermissionJSONBody {
 export type RESTPutAPIChannelPermissionResult = undefined;
 
 /**
+ * https://docs.discord.com/developers/resources/channel#get-channel-member-permissions
+ * https://docs.discord.com/developers/resources/channel#get-channel-role-permissions
+ */
+export interface RESTGetAPIChannelPermissionsQuery {
+	/**
+	 * Whether to mask out every permission when `VIEW_CHANNEL` (or `CONNECT` for voice and stage channels) is missing
+	 *
+	 * For the member endpoint, masking is never applied when the target member is a bot.
+	 *
+	 * @default true
+	 */
+	implicit?: boolean;
+}
+
+/**
+ * https://docs.discord.com/developers/resources/channel#get-channel-member-permissions
+ */
+export interface RESTGetAPIChannelMemberPermissionsResult {
+	/**
+	 * The member's computed channel permissions as a stringified bitfield
+	 */
+	permissions: Permissions;
+}
+
+/**
+ * https://docs.discord.com/developers/resources/channel#get-channel-role-permissions
+ */
+export interface RESTGetAPIChannelRolePermissionsResult {
+	/**
+	 * The role's channel permissions combined with `@everyone`, as a stringified bitfield
+	 */
+	permissions: Permissions;
+}
+
+/**
  * https://docs.discord.com/developers/resources/channel#get-channel-invites
  */
 export type RESTGetAPIChannelInvitesResult = (APIExtendedInvite & {

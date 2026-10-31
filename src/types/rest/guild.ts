@@ -762,6 +762,26 @@ export type RESTDeleteAPIGuildRoleResult = undefined;
 export type RESTGetAPIGuildRoleMemberCountsResult = Record<string, number>;
 
 /**
+ * https://docs.discord.com/developers/resources/guild#get-guild-member-permissions
+ */
+export interface RESTGetAPIGuildMemberPermissionsResult {
+	/**
+	 * The member's computed guild permissions as a stringified bitfield
+	 */
+	permissions: Permissions;
+}
+
+/**
+ * https://docs.discord.com/developers/resources/guild#get-guild-role-permissions
+ */
+export interface RESTGetAPIGuildRolePermissionsResult {
+	/**
+	 * The role's guild permissions combined with `@everyone`, as a stringified bitfield
+	 */
+	permissions: Permissions;
+}
+
+/**
  * https://docs.discord.com/developers/resources/guild#get-guild-prune-count
  */
 export interface RESTGetAPIGuildPruneCountQuery {
