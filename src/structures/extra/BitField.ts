@@ -1,4 +1,4 @@
-export type BitFieldResolvable<T extends object> = keyof T | number | bigint | string;
+export type BitFieldResolvable<T extends object> = keyof T | number | bigint | `${bigint}`;
 
 export class BitField<T extends object> {
 	static None = 0n;
