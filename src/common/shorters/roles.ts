@@ -1,5 +1,6 @@
 import { CacheFrom } from '../../cache';
 import { type GuildRoleStructure, Transformers } from '../../client/transformers';
+import { PermissionsBitField } from '../../structures/extra/Permissions';
 import type {
 	APIRole,
 	RESTGetAPIGuildRoleMemberCountsResult,
@@ -105,6 +106,18 @@ export class RoleShorter extends BaseShorter {
 	 */
 	memberCounts(guildId: string): Promise<RESTGetAPIGuildRoleMemberCountsResult> {
 		return this.client.proxy.guilds(guildId).roles['member-counts'].get();
+	}
+
+	/**
+	 * Fetches a role's guild permissions as computed by Discord, combined with `@everyone`.
+	 * Other roles and member-specific restrictions are not taken into account.
+	 * @param guildId The ID of the guild.
+	 * @param roleId The ID of the role.
+	 * @returns A Promise that resolves to the role's guild permissions.
+	 */
+	async fetchPermissions(guildId: string, roleId: string): Promise<PermissionsBitField> {
+		const { permissions } = await this.client.proxy.guilds(guildId).permissions.role(roleId).get();
+		return new PermissionsBitField(BigInt(permissions));
 	}
 
 	/**

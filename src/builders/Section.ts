@@ -1,5 +1,5 @@
 import { createValidationMetadata, type RestOrArray, SeyfertError } from '../common';
-import { type APISectionComponent, ComponentType } from '../types';
+import { ComponentType, type RESTAPISectionComponent } from '../types';
 import { type Button, fromComponent } from '.';
 import { BaseComponentBuilder } from './Base';
 import type { TextDisplay } from './TextDisplay';
@@ -7,10 +7,10 @@ import type { Thumbnail } from './Thumbnail';
 
 export class Section<
 	Ac extends Button | Thumbnail = Button | Thumbnail,
-> extends BaseComponentBuilder<APISectionComponent> {
+> extends BaseComponentBuilder<RESTAPISectionComponent> {
 	components: TextDisplay[];
 	accessory?: Ac;
-	constructor({ components, accessory, ...data }: Partial<APISectionComponent> = {}) {
+	constructor({ components, accessory, ...data }: Partial<RESTAPISectionComponent> = {}) {
 		super({ type: ComponentType.Section, ...data });
 		this.components = (components?.map(component => fromComponent(component)) ?? []) as TextDisplay[];
 		if (accessory) this.accessory = fromComponent(accessory) as Ac;
@@ -59,6 +59,6 @@ export class Section<
 			...this.data,
 			components: this.components.map(component => component.toJSON()),
 			accessory: this.accessory.toJSON(),
-		} as APISectionComponent;
+		} as RESTAPISectionComponent;
 	}
 }

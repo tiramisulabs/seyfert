@@ -2,6 +2,18 @@ import { assert, describe, expect, test } from 'vitest';
 import { PermissionsBitField } from '../src/structures/extra/Permissions';
 
 describe('PermissionsBitField', () => {
+	test('rejects unknown permission names at compile time', () => {
+		const p = new PermissionsBitField(['Administrator', '8', 8n]);
+
+		expect(p.has('Administrator')).toBe(true);
+		// @ts-expect-error a misspelled flag name must not widen to an arbitrary string
+		expect(() => p.has('Administratorr')).toThrow(TypeError);
+		// @ts-expect-error every array entry must be a known flag name or a numeric value
+		expect(() => p.has(['BanMembers', 'Nope'])).toThrow(TypeError);
+		// @ts-expect-error the constructor accepts the same resolvable values as has()
+		expect(() => new PermissionsBitField('NotAPermission')).toThrow(TypeError);
+	});
+
 	test('resolve throws on invalid string', () => {
 		const p = new PermissionsBitField();
 		expect(() => p.resolve('not_a_flag' as any)).toThrow(TypeError);

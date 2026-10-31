@@ -1186,6 +1186,34 @@ export interface APIEmbed {
 	 * See https://docs.discord.com/developers/link-previews/component-embeds
 	 */
 	components?: APIContainerComponent[];
+	/**
+	 * Embed flags combined as a bitfield, set by Discord on received embeds
+	 *
+	 * See https://docs.discord.com/developers/resources/message#embed-object-embed-flags
+	 */
+	flags?: EmbedFlags;
+}
+
+/**
+ * https://docs.discord.com/developers/resources/message#embed-object-embed-flags
+ */
+export enum EmbedFlags {
+	/**
+	 * Discord's content scanning flagged the embed media as explicit
+	 */
+	ContainsExplicitContent = 1 << 4,
+	/**
+	 * The embed is a fallback for a reply to an activity card
+	 */
+	IsContentInventoryEntry = 1 << 5,
+	/**
+	 * Discord's content scanning flagged the embed media as gore
+	 */
+	ContainsGoreContent = 1 << 6,
+	/**
+	 * Discord's content scanning flagged the embed media as self-harm
+	 */
+	ContainsSelfHarmContent = 1 << 7,
 }
 
 /**
@@ -1484,17 +1512,43 @@ export interface APIAttachment {
 }
 
 /**
- * https://docs.discord.com/developers/resources/channel#attachment-object-attachment-structure-attachment-flags
+ * https://docs.discord.com/developers/resources/message#attachment-object-attachment-flags
  */
 export enum AttachmentFlags {
 	/**
+	 * This attachment is a clip from a stream
+	 */
+	IsClip = 1 << 0,
+	/**
+	 * This attachment is the thumbnail of a thread in a media channel, displayed in the grid but not on the message
+	 */
+	IsThumbnail = 1 << 1,
+	/**
 	 * This attachment has been edited using the remix feature on mobile
+	 *
+	 * @deprecated Discord no longer supports the remix feature
 	 */
 	IsRemix = 1 << 2,
 	/**
 	 * This attachment was marked as a spoiler
 	 */
 	IsSpoiler = 1 << 3,
+	/**
+	 * Discord's content scanning flagged this attachment as explicit
+	 */
+	ContainsExplicitContent = 1 << 4,
+	/**
+	 * This attachment is an animated image
+	 */
+	IsAnimated = 1 << 5,
+	/**
+	 * Discord's content scanning flagged this attachment as gore
+	 */
+	ContainsGoreContent = 1 << 6,
+	/**
+	 * Discord's content scanning flagged this attachment as self-harm
+	 */
+	ContainsSelfHarmContent = 1 << 7,
 }
 
 /**

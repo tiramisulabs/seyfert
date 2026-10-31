@@ -1,4 +1,4 @@
-import { type APIFileComponent, ComponentType } from '../types';
+import { ComponentType, type RESTAPIFileComponent } from '../types';
 import { BaseComponentBuilder } from './Base';
 
 /**
@@ -11,12 +11,12 @@ import { BaseComponentBuilder } from './Base';
  *  .setSpoiler();
  * ```
  */
-export class File extends BaseComponentBuilder<APIFileComponent> {
+export class File extends BaseComponentBuilder<RESTAPIFileComponent> {
 	/**
 	 * Constructs a new File component.
 	 * @param data Optional initial data for the file component.
 	 */
-	constructor(data: Partial<APIFileComponent> = {}) {
+	constructor(data: Partial<RESTAPIFileComponent> = {}) {
 		super({ type: ComponentType.File, ...data });
 	}
 
@@ -48,5 +48,12 @@ export class File extends BaseComponentBuilder<APIFileComponent> {
 	setSpoiler(spoiler = true) {
 		this.data.spoiler = spoiler;
 		return this;
+	}
+
+	/** Serializes file media with only the URL, omitting metadata supplied by Discord. */
+	toJSON(): RESTAPIFileComponent {
+		const data = super.toJSON();
+		if (data.file) data.file = { url: data.file.url };
+		return data;
 	}
 }

@@ -16,7 +16,6 @@ import type {
 	APIRole,
 	APIThreadList,
 	APIThreadMember,
-	APITopLevelComponent,
 	APIUser,
 	ChannelFlags,
 	ForumLayoutType,
@@ -27,6 +26,7 @@ import type {
 	ThreadChannelType,
 } from '../payloads';
 import type { AddUndefinedToPossiblyUndefinedPropertiesOfInterface, StrictPartial } from '../utils';
+import type { RESTAPITopLevelComponent } from './components';
 import type { RESTAPIPollCreate } from './poll';
 
 export interface RESTAPIChannelPatchOverwrite extends RESTPutAPIChannelPermissionJSONBody {
@@ -301,7 +301,7 @@ export interface RESTPostAPIChannelMessageJSONBody {
 	 *
 	 * See https://docs.discord.com/developers/interactions/message-components#component-object
 	 */
-	components?: APITopLevelComponent[] | undefined;
+	components?: RESTAPITopLevelComponent[] | undefined;
 	/**
 	 * IDs of up to 3 stickers in the server to send in the message
 	 *
@@ -453,7 +453,7 @@ export interface RESTPatchAPIChannelMessageJSONBody {
 	 *
 	 * See https://docs.discord.com/developers/interactions/message-components#component-object
 	 */
-	components?: APITopLevelComponent[] | null | undefined;
+	components?: RESTAPITopLevelComponent[] | null | undefined;
 }
 
 /**
@@ -523,6 +523,41 @@ export interface RESTPutAPIChannelPermissionJSONBody {
  * https://docs.discord.com/developers/resources/channel#edit-channel-permissions
  */
 export type RESTPutAPIChannelPermissionResult = undefined;
+
+/**
+ * https://docs.discord.com/developers/resources/channel#get-channel-member-permissions
+ * https://docs.discord.com/developers/resources/channel#get-channel-role-permissions
+ */
+export interface RESTGetAPIChannelPermissionsQuery {
+	/**
+	 * Whether to mask out every permission when `VIEW_CHANNEL` (or `CONNECT` for voice and stage channels) is missing
+	 *
+	 * For the member endpoint, masking is never applied when the target member is a bot.
+	 *
+	 * @default true
+	 */
+	implicit?: boolean;
+}
+
+/**
+ * https://docs.discord.com/developers/resources/channel#get-channel-member-permissions
+ */
+export interface RESTGetAPIChannelMemberPermissionsResult {
+	/**
+	 * The member's computed channel permissions as a stringified bitfield
+	 */
+	permissions: Permissions;
+}
+
+/**
+ * https://docs.discord.com/developers/resources/channel#get-channel-role-permissions
+ */
+export interface RESTGetAPIChannelRolePermissionsResult {
+	/**
+	 * The role's channel permissions combined with `@everyone`, as a stringified bitfield
+	 */
+	permissions: Permissions;
+}
 
 /**
  * https://docs.discord.com/developers/resources/channel#get-channel-invites

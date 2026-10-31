@@ -4,6 +4,7 @@ export * from './application';
 export * from './auditLog';
 export * from './autoModeration';
 export * from './channel';
+export * from './components';
 export * from './emoji';
 export * from './gateway';
 export * from './guild';

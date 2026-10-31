@@ -1,5 +1,5 @@
 import { type ColorResolvable, type RestOrArray, resolveColor } from '../common';
-import { type APIContainerComponent, ComponentType } from '../types';
+import { ComponentType, type RESTAPIContainerComponent } from '../types';
 import { type ActionRow, fromComponent } from '.';
 import { BaseComponentBuilder } from './Base';
 import type { File } from './File';
@@ -26,7 +26,7 @@ export type ContainerBuilderComponents = ActionRow | TextDisplay | Section | Med
  *  .setColor('Blue');
  * ```
  */
-export class Container extends BaseComponentBuilder<APIContainerComponent> {
+export class Container extends BaseComponentBuilder<RESTAPIContainerComponent> {
 	/**
 	 * The components held within this container.
 	 */
@@ -36,7 +36,7 @@ export class Container extends BaseComponentBuilder<APIContainerComponent> {
 	 * Constructs a new Container.
 	 * @param data Optional initial data for the container.
 	 */
-	constructor({ components, ...data }: Partial<APIContainerComponent> = {}) {
+	constructor({ components, ...data }: Partial<RESTAPIContainerComponent> = {}) {
 		super({ ...data, type: ComponentType.Container });
 		this.components = (components?.map(fromComponent) ?? []) as ContainerBuilderComponents[];
 	}
@@ -95,6 +95,6 @@ export class Container extends BaseComponentBuilder<APIContainerComponent> {
 		return {
 			...this.data,
 			components: this.components.map(c => c.toJSON()),
-		} as APIContainerComponent;
+		} as RESTAPIContainerComponent;
 	}
 }
