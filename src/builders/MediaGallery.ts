@@ -1,5 +1,5 @@
 import { createValidationMetadata, type RestOrArray, SeyfertError } from '../common';
-import { type APIMediaGalleryComponent, type APIMediaGalleryItems, ComponentType } from '../types';
+import { ComponentType, type RESTAPIMediaGalleryComponent, type RESTAPIMediaGalleryItems } from '../types';
 import { BaseComponentBuilder } from './Base';
 
 /**
@@ -14,13 +14,13 @@ import { BaseComponentBuilder } from './Base';
  *  );
  * ```
  */
-export class MediaGallery extends BaseComponentBuilder<APIMediaGalleryComponent> {
+export class MediaGallery extends BaseComponentBuilder<RESTAPIMediaGalleryComponent> {
 	items: MediaGalleryItem[];
 	/**
 	 * Constructs a new MediaGallery.
 	 * @param data Optional initial data for the media gallery.
 	 */
-	constructor({ items, ...data }: Partial<APIMediaGalleryComponent> = {}) {
+	constructor({ items, ...data }: Partial<RESTAPIMediaGalleryComponent> = {}) {
 		super({ type: ComponentType.MediaGallery, ...data });
 		this.items = (items?.map(i => new MediaGalleryItem(i)) ?? []) as MediaGalleryItem[];
 	}
@@ -58,7 +58,7 @@ export class MediaGallery extends BaseComponentBuilder<APIMediaGalleryComponent>
 		return {
 			...this.data,
 			items: this.items.map(i => i.toJSON()),
-		} as APIMediaGalleryComponent;
+		} as RESTAPIMediaGalleryComponent;
 	}
 }
 
@@ -70,7 +70,7 @@ export class MediaGalleryItem {
 	 * Constructs a new MediaGalleryItem.
 	 * @param data Optional initial data for the media gallery item.
 	 */
-	constructor(public data: Partial<APIMediaGalleryItems> = {}) {}
+	constructor(public data: Partial<RESTAPIMediaGalleryItems> = {}) {}
 
 	/**
 	 * Sets the media URL for this gallery item.
@@ -106,7 +106,7 @@ export class MediaGalleryItem {
 	 * Converts this MediaGalleryItem instance to its JSON representation.
 	 * @returns The JSON representation of the item data.
 	 */
-	toJSON(): { [K in keyof APIMediaGalleryItems]?: APIMediaGalleryItems[K] | undefined } {
+	toJSON(): { [K in keyof RESTAPIMediaGalleryItems]?: RESTAPIMediaGalleryItems[K] | undefined } {
 		if (!this.data.media)
 			throw new SeyfertError('MISSING_MEDIA', {
 				metadata: {
@@ -116,6 +116,6 @@ export class MediaGalleryItem {
 					detail: 'Cannot convert to JSON without media.',
 				},
 			});
-		return { ...this.data };
+		return { ...this.data, media: { url: this.data.media.url } };
 	}
 }

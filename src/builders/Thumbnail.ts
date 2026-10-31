@@ -1,4 +1,4 @@
-import { type APIThumbnailComponent, ComponentType } from '../types';
+import { ComponentType, type RESTAPIThumbnailComponent } from '../types';
 import { BaseComponentBuilder } from './Base';
 
 /**
@@ -11,12 +11,12 @@ import { BaseComponentBuilder } from './Base';
  *  .setDescription('A cool thumbnail');
  * ```
  */
-export class Thumbnail extends BaseComponentBuilder<APIThumbnailComponent> {
+export class Thumbnail extends BaseComponentBuilder<RESTAPIThumbnailComponent> {
 	/**
 	 * Constructs a new Thumbnail component.
 	 * @param data Optional initial data for the thumbnail component.
 	 */
-	constructor(data: Partial<APIThumbnailComponent> = {}) {
+	constructor(data: Partial<RESTAPIThumbnailComponent> = {}) {
 		super({ type: ComponentType.Thumbnail, ...data });
 	}
 
@@ -58,5 +58,12 @@ export class Thumbnail extends BaseComponentBuilder<APIThumbnailComponent> {
 	setMedia(url: string) {
 		this.data.media = { url };
 		return this;
+	}
+
+	/** Serializes media with only the URL, omitting metadata supplied by Discord. */
+	toJSON(): RESTAPIThumbnailComponent {
+		const data = super.toJSON();
+		if (data.media) data.media = { url: data.media.url };
+		return data;
 	}
 }

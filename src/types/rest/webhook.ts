@@ -1,14 +1,8 @@
 import type { Snowflake } from '..';
-import type {
-	APIAllowedMentions,
-	APIEmbed,
-	APIMessage,
-	APITopLevelComponent,
-	APIWebhook,
-	MessageFlags,
-} from '../payloads';
+import type { APIAllowedMentions, APIEmbed, APIMessage, APIWebhook, MessageFlags } from '../payloads';
 import type { AddUndefinedToPossiblyUndefinedPropertiesOfInterface, Nullable } from '../utils';
 import type { RESTAPIAttachment } from './channel';
+import type { RESTAPITopLevelComponent } from './components';
 import type { RESTAPIPollCreate } from './poll';
 /**
  * https://docs.discord.com/developers/resources/webhook#create-webhook
@@ -135,7 +129,7 @@ export interface RESTPostAPIWebhookWithTokenJSONBody {
 	 *
 	 * See https://docs.discord.com/developers/interactions/message-components#component-object
 	 */
-	components?: APITopLevelComponent[] | undefined;
+	components?: RESTAPITopLevelComponent[] | undefined;
 	/**
 	 * Attachment objects with filename and description
 	 */

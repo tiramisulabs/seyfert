@@ -16,7 +16,6 @@ import type {
 	APIRole,
 	APIThreadList,
 	APIThreadMember,
-	APITopLevelComponent,
 	APIUser,
 	ChannelFlags,
 	ForumLayoutType,
@@ -27,6 +26,7 @@ import type {
 	ThreadChannelType,
 } from '../payloads';
 import type { AddUndefinedToPossiblyUndefinedPropertiesOfInterface, StrictPartial } from '../utils';
+import type { RESTAPITopLevelComponent } from './components';
 import type { RESTAPIPollCreate } from './poll';
 
 export interface RESTAPIChannelPatchOverwrite extends RESTPutAPIChannelPermissionJSONBody {
@@ -301,7 +301,7 @@ export interface RESTPostAPIChannelMessageJSONBody {
 	 *
 	 * See https://docs.discord.com/developers/interactions/message-components#component-object
 	 */
-	components?: APITopLevelComponent[] | undefined;
+	components?: RESTAPITopLevelComponent[] | undefined;
 	/**
 	 * IDs of up to 3 stickers in the server to send in the message
 	 *
@@ -453,7 +453,7 @@ export interface RESTPatchAPIChannelMessageJSONBody {
 	 *
 	 * See https://docs.discord.com/developers/interactions/message-components#component-object
 	 */
-	components?: APITopLevelComponent[] | null | undefined;
+	components?: RESTAPITopLevelComponent[] | null | undefined;
 }
 
 /**

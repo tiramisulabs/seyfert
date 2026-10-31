@@ -67,7 +67,18 @@ describe('message embed body serialization', () => {
 			type: ComponentType.Thumbnail,
 			media: { url: 'https://example.com/image.png', proxy_url: 'https://proxy.example.com/image.png' },
 		});
-		expect(container.toBuilder().toJSON()).toEqual(preview.components[0]);
+		expect(container.toBuilder().toJSON()).toEqual({
+			...preview.components[0],
+			components: [
+				{
+					...preview.components[0].components[0],
+					accessory: {
+						type: ComponentType.Thumbnail,
+						media: { url: 'https://example.com/image.png' },
+					},
+				},
+			],
+		});
 		expect(embed.toJSON()).toEqual(preview);
 		expect(structure.embeds[1].components).toBeUndefined();
 	});
