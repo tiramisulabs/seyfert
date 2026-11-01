@@ -13,6 +13,10 @@ A TypeScript framework for building Discord bots.
 
 Seyfert brings Discord's API and gateway together with typed commands, interaction handlers, and plugins. Written in TypeScript for Node.js and Bun, it provides the tools to organize a bot while keeping the underlying Discord types and REST routes accessible.
 
+<p align="center">
+  <img src="./assets/readme/discord-echo.webp" alt="An echo command's source beside Discord: typing /echo shows the description and option hint declared in the file, and the bot replies with the message" width="100%" />
+</p>
+
 ## What it offers
 
 - **Typed commands:** Application and prefix commands with option inference, choices, subcommands, and autocomplete. Contexts give handlers access to resolved options and the appropriate response methods.
@@ -21,6 +25,12 @@ Seyfert brings Discord's API and gateway together with typed commands, interacti
 - **Discord resources:** Work with transformed structures and resource methods, or use the REST client directly when you need access to a route.
 - **Gateway and cache:** Handle gateway and custom events, distribute connections across shards and workers, and choose which resources to cache with configurable adapters.
 - **Plugins:** Package reusable commands, events, middleware, and client extensions with lifecycle hooks for setup and cleanup.
+
+Options are typed from their declaration: a required option is a `string` in the handler, and making it optional adds `undefined` to its type.
+
+<p align="center">
+  <img src="./assets/readme/option-inference.webp" alt="In the editor, hovering ctx.options.message shows string; after changing required to false, the hover shows string | undefined" width="100%" />
+</p>
 
 ## Documentation and community
 
