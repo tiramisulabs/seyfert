@@ -511,6 +511,11 @@ export enum GuildFeature {
 	 */
 	PrivateThreads = 'PRIVATE_THREADS',
 	/**
+	 * Guild requires the `ADMINISTRATOR` permission to get the prune count or begin a prune,
+	 * instead of `MANAGE_GUILD` and `KICK_MEMBERS`
+	 */
+	PruneRequiresAdmin = 'PRUNE_REQUIRES_ADMIN',
+	/**
 	 * Guild has disabled alerts for join raids in the configured safety alerts channel
 	 */
 	RaidAlertsDisabled = 'RAID_ALERTS_DISABLED',

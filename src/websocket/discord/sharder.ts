@@ -137,73 +137,84 @@ export class ShardManager extends Map<number, Shard> {
 			return this.debugger?.debug('Cannot start resharder');
 
 		this.debugger?.debug('Resharder enabled');
-		setInterval(async () => {
-			this.debugger?.debug('Checking if reshard is needed');
-			const info = await this.options.resharding.getInfo();
-			if (info.shards <= this.totalShards) return this.debugger?.debug('Resharding not needed');
-			//https://github.com/discordeno/discordeno/blob/6a5f446c0651b9fad9f1550ff1857fe7a026426b/packages/gateway/src/manager.ts#L106C8-L106C94
-			const percentage = (info.shards / ((this.totalShards * 2500) / 1000)) * 100;
-			if (percentage < this.options.resharding.percentage)
-				return this.debugger?.debug(
-					`Percentage is not enough to reshard ${percentage}/${this.options.resharding.percentage}`,
+		setInterval(() => {
+			this.reshardIfNeeded().catch(error => {
+				// The check runs detached from any caller, so an unhandled rejection here would crash the process.
+				// Keep the fallback logger local so one failure doesn't turn on debug output for the whole manager.
+				(this.debugger ?? new Logger({ name: '[ShardManager]', logLevel: LogLevels.Info })).error(
+					'Resharding check failed',
+					error,
 				);
-
-			this.debugger?.info('Starting resharding process');
-
-			this.connectQueue.concurrency = info.session_start_limit.max_concurrency;
-			this.options.info.session_start_limit.max_concurrency = info.session_start_limit.max_concurrency;
-
-			//waiting for all shards to connect
-			let shardsConnected = 0;
-
-			let handlePayload = (sharder: ShardManager, _: number, packet: GatewayDispatchPayload) => {
-				if (packet.t !== GatewayDispatchEvents.GuildsReady) return;
-				if (++shardsConnected !== info.shards) return;
-				cleanProcess(sharder);
-				// dont listen more events when all shards are ready
-			};
-
-			const cleanProcess = (sharder: ShardManager) => {
-				handlePayload = () => {
-					//
-				};
-				this.disconnectAll(ShardSocketCloseCodes.Resharding);
-				this.clear();
-
-				this.options.totalShards = this.options.shardEnd = this.options.info.shards = info.shards;
-				for (const [id, shard] of sharder) {
-					shard.options.handlePayload = (shardId, packet) => {
-						return this.options.handlePayload(shardId, packet);
-					};
-					this.set(id, shard);
-				}
-
-				sharder.clear();
-			};
-
-			const options = MergeOptions<ShardManagerOptions>(this.options, {
-				totalShards: info.shards,
-				shardEnd: info.shards,
-			} satisfies DeepPartial<ShardManagerOptions>);
-
-			const resharder = new ShardManager({
-				...options,
-				resharding: {
-					// getInfo mock, we don't need it
-					getInfo: () => ({}) as any,
-					interval: 0,
-					percentage: 0,
-				},
-				handlePayload: (shardId, packet): unknown => {
-					return handlePayload(resharder, shardId, packet);
-				},
 			});
-
-			// share ratelimit
-			resharder.connectQueue = this.connectQueue;
-
-			await resharder.spawnShards();
 		}, this.options.resharding.interval).unref();
+	}
+
+	private async reshardIfNeeded() {
+		this.debugger?.debug('Checking if reshard is needed');
+		const info = await this.options.resharding.getInfo();
+		if (info.shards <= this.totalShards) return this.debugger?.debug('Resharding not needed');
+		//https://github.com/discordeno/discordeno/blob/6a5f446c0651b9fad9f1550ff1857fe7a026426b/packages/gateway/src/manager.ts#L106C8-L106C94
+		const percentage = (info.shards / ((this.totalShards * 2500) / 1000)) * 100;
+		if (percentage < this.options.resharding.percentage)
+			return this.debugger?.debug(
+				`Percentage is not enough to reshard ${percentage}/${this.options.resharding.percentage}`,
+			);
+
+		this.debugger?.info('Starting resharding process');
+
+		this.connectQueue.concurrency = info.session_start_limit.max_concurrency;
+		this.options.info.session_start_limit.max_concurrency = info.session_start_limit.max_concurrency;
+
+		//waiting for all shards to connect
+		let shardsConnected = 0;
+
+		let handlePayload = (sharder: ShardManager, _: number, packet: GatewayDispatchPayload) => {
+			if (packet.t !== GatewayDispatchEvents.GuildsReady) return;
+			if (++shardsConnected !== info.shards) return;
+			cleanProcess(sharder);
+			// dont listen more events when all shards are ready
+		};
+
+		const cleanProcess = (sharder: ShardManager) => {
+			handlePayload = () => {
+				//
+			};
+			this.disconnectAll(ShardSocketCloseCodes.Resharding);
+			this.clear();
+
+			this.options.totalShards = this.options.shardEnd = this.options.info.shards = info.shards;
+			for (const [id, shard] of sharder) {
+				shard.options.handlePayload = (shardId, packet) => {
+					return this.options.handlePayload(shardId, packet);
+				};
+				this.set(id, shard);
+			}
+
+			sharder.clear();
+		};
+
+		const options = MergeOptions<ShardManagerOptions>(this.options, {
+			totalShards: info.shards,
+			shardEnd: info.shards,
+		} satisfies DeepPartial<ShardManagerOptions>);
+
+		const resharder = new ShardManager({
+			...options,
+			resharding: {
+				// getInfo mock, we don't need it
+				getInfo: () => ({}) as any,
+				interval: 0,
+				percentage: 0,
+			},
+			handlePayload: (shardId, packet): unknown => {
+				return handlePayload(resharder, shardId, packet);
+			},
+		});
+
+		// share ratelimit
+		resharder.connectQueue = this.connectQueue;
+
+		await resharder.spawnShards();
 	}
 
 	/*

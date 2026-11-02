@@ -281,6 +281,15 @@ export class BaseGuildChannel extends BaseChannel<ChannelType> {
 		return Formatter.channelLink(this.id, this.guildId);
 	}
 
+	/**
+	 * Whether Discord obfuscated this channel because the bot cannot view it.
+	 * An obfuscated channel is named `___hidden___` and gets its full data in a channel update
+	 * once the bot is given `ViewChannel`.
+	 */
+	get obfuscated() {
+		return ((this.flags ?? 0) & ChannelFlags.ChannelObfuscated) !== 0;
+	}
+
 	setPosition(position: number, reason?: string) {
 		return this.edit({ position }, reason);
 	}
