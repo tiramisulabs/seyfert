@@ -3,7 +3,7 @@ import { MessageChannel, type Worker } from 'node:worker_threads';
 import { assert, describe, expect, test, vi } from 'vitest';
 import { WorkerAdapter } from '../lib/cache';
 import { WorkerClient } from '../lib/client/workerclient';
-import { SeyfertError } from '../lib/common';
+import { Logger, SeyfertError } from '../lib/common';
 import { WorkerManager } from '../lib/websocket/discord/workermanager';
 
 describe('WorkerManager', () => {
@@ -367,6 +367,41 @@ describe('WorkerManager', () => {
 			assert.equal(adapter.promises.size, 0);
 			assert.equal(vi.getTimerCount(), 0);
 		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	test('a failed resharding check is logged instead of crashing the process', async () => {
+		vi.useFakeTimers();
+		const failure = new Error('gateway bot unavailable');
+		const getInfo = vi.fn().mockRejectedValue(failure);
+		const logError = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+		const unhandled = vi.fn();
+		process.on('unhandledRejection', unhandled);
+		try {
+			const manager = new WorkerManager({
+				mode: 'custom',
+				token: 'token',
+				intents: 0,
+				info: gatewayInfo(),
+				heartbeaterInterval: 0,
+				adapter: { postMessage() {}, spawn() {} },
+				resharding: { getInfo, interval: 1_000, percentage: 80 },
+			});
+
+			await manager.startResharding();
+			await vi.advanceTimersByTimeAsync(1_000);
+			await new Promise(resolve => process.nextTick(resolve));
+
+			expect(getInfo).toHaveBeenCalledOnce();
+			expect(logError).toHaveBeenCalledWith('Resharding check failed', failure);
+			expect(unhandled).not.toHaveBeenCalled();
+			// A failure must not switch on the debug logger the user left disabled.
+			expect(manager.debugger).toBeUndefined();
+		} finally {
+			process.off('unhandledRejection', unhandled);
+			logError.mockRestore();
+			vi.clearAllTimers();
 			vi.useRealTimers();
 		}
 	});

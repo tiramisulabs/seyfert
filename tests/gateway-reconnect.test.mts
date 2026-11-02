@@ -1,7 +1,9 @@
 import { EventEmitter } from 'node:events';
 import { afterEach, describe, expect, test, vi } from 'vitest';
+import { Logger } from '../src/common';
 import { GatewayDispatchEvents, GatewayOpcodes } from '../src/types';
 import { Shard } from '../src/websocket/discord/shard';
+import { ShardManager } from '../src/websocket/discord/sharder';
 import { type ShardOptions, ShardSocketCloseCodes } from '../src/websocket/discord/shared';
 
 afterEach(() => {
@@ -679,5 +681,39 @@ describe('gateway reconnect lifecycle', () => {
 			code: ShardSocketCloseCodes.Reconnect,
 			reason: 'manual reconnect',
 		});
+	});
+
+	test('a failed resharding check is logged instead of crashing the process', async () => {
+		vi.useFakeTimers();
+		const failure = new Error('gateway bot unavailable');
+		const getInfo = vi.fn().mockRejectedValue(failure);
+		const logError = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+		const unhandled = vi.fn();
+		process.on('unhandledRejection', unhandled);
+		try {
+			const manager = new ShardManager({
+				token: 'token',
+				intents: 0,
+				info: {
+					url: 'wss://gateway.discord.gg',
+					shards: 1,
+					session_start_limit: { total: 1, remaining: 1, reset_after: 0, max_concurrency: 1 },
+				},
+				handlePayload: vi.fn(),
+				resharding: { getInfo, interval: 1_000, percentage: 80 },
+			});
+
+			await manager.startResharder();
+			await vi.advanceTimersByTimeAsync(1_000);
+			await new Promise(resolve => process.nextTick(resolve));
+
+			expect(getInfo).toHaveBeenCalledOnce();
+			expect(logError).toHaveBeenCalledWith('Resharding check failed', failure);
+			expect(unhandled).not.toHaveBeenCalled();
+			// A failure must not switch on the debug logger the user left disabled.
+			expect(manager.debugger).toBeUndefined();
+		} finally {
+			process.off('unhandledRejection', unhandled);
+		}
 	});
 });

@@ -1,7 +1,14 @@
 import cluster, { type Worker as ClusterWorker } from 'node:cluster';
 import { randomUUID, type UUID } from 'node:crypto';
 import type { Worker as WorkerThreadsWorker } from 'node:worker_threads';
-import { ApiHandler, type CustomWorkerManagerEvents, Logger, type UsingClient, type WorkerClient } from '../..';
+import {
+	ApiHandler,
+	type CustomWorkerManagerEvents,
+	Logger,
+	LogLevels,
+	type UsingClient,
+	type WorkerClient,
+} from '../..';
 import { type Adapter, MemoryAdapter } from '../../cache';
 import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
 import {
@@ -108,8 +115,8 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 	}
 
 	private reportError(message: string, error: unknown) {
-		this.debugger ??= new Logger({ name: '[WorkerManager]' });
-		this.debugger.error(message, error);
+		// Keep the fallback logger local so one failure doesn't turn on debug output for the whole manager.
+		(this.debugger ?? new Logger({ name: '[WorkerManager]', logLevel: LogLevels.Info })).error(message, error);
 	}
 
 	private observe(operation: () => Awaitable<unknown>, message: string) {
@@ -804,35 +811,39 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 		if (this.options.resharding.interval <= 0) return;
 		if (this.shardStart !== 0 || this.shardEnd !== this.totalShards)
 			return this.debugger?.debug('Cannot start resharder');
-		setInterval(async () => {
-			this.debugger?.debug('Checking if reshard is needed');
-			const info = await this.options.resharding.getInfo();
-			if (info.shards <= this.totalShards) return this.debugger?.debug('Resharding not needed');
-			//https://github.com/discordeno/discordeno/blob/6a5f446c0651b9fad9f1550ff1857fe7a026426b/packages/gateway/src/manager.ts#L106C8-L106C94
-			const percentage = (info.shards / ((this.totalShards * 2500) / 1000)) * 100;
-			if (percentage < this.options.resharding.percentage)
-				return this.debugger?.debug(
-					`Percentage is not enough to reshard ${percentage}/${this.options.resharding.percentage}`,
-				);
+		setInterval(
+			() =>
+				this.observe(async () => {
+					this.debugger?.debug('Checking if reshard is needed');
+					const info = await this.options.resharding.getInfo();
+					if (info.shards <= this.totalShards) return this.debugger?.debug('Resharding not needed');
+					//https://github.com/discordeno/discordeno/blob/6a5f446c0651b9fad9f1550ff1857fe7a026426b/packages/gateway/src/manager.ts#L106C8-L106C94
+					const percentage = (info.shards / ((this.totalShards * 2500) / 1000)) * 100;
+					if (percentage < this.options.resharding.percentage)
+						return this.debugger?.debug(
+							`Percentage is not enough to reshard ${percentage}/${this.options.resharding.percentage}`,
+						);
 
-			this.debugger?.info(`Starting resharding process to ${info.shards}`);
+					this.debugger?.info(`Starting resharding process to ${info.shards}`);
 
-			this._info = info;
-			this.connectQueue.concurrency = info.session_start_limit.max_concurrency;
-			this.options.info.session_start_limit.max_concurrency = info.session_start_limit.max_concurrency;
+					this._info = info;
+					this.connectQueue.concurrency = info.session_start_limit.max_concurrency;
+					this.options.info.session_start_limit.max_concurrency = info.session_start_limit.max_concurrency;
 
-			const spaces = WorkerManager.prepareSpaces(
-				{
-					shardsPerWorker: this.shardsPerWorker,
-					shardEnd: info.shards,
-					shardStart: 0,
-				},
-				this.debugger,
-			);
-			this.prepareWorkers(spaces, true);
-			const firstWorker = this.reshardingWorkerQueue.shift();
-			if (firstWorker) this.observe(firstWorker, 'Resharding worker spawn failed');
-		}, this.options.resharding.interval).unref();
+					const spaces = WorkerManager.prepareSpaces(
+						{
+							shardsPerWorker: this.shardsPerWorker,
+							shardEnd: info.shards,
+							shardStart: 0,
+						},
+						this.debugger,
+					);
+					this.prepareWorkers(spaces, true);
+					const firstWorker = this.reshardingWorkerQueue.shift();
+					if (firstWorker) this.observe(firstWorker, 'Resharding worker spawn failed');
+				}, 'Resharding check failed'),
+			this.options.resharding.interval,
+		).unref();
 	}
 }
 
