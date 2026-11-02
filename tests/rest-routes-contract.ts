@@ -4,8 +4,10 @@ import type {
 	ApiHandler,
 	AttachmentFlags,
 	AuditLogEvent,
+	ChannelFlags,
 	Client,
 	EmbedFlags,
+	GuildFeature,
 	GuildOnboardingStructure,
 	GuildWelcomeScreenStructure,
 	RESTDeleteRemoveTargetUserResult,
@@ -60,6 +62,9 @@ expectType<`${UnfurledMediaItemContentScanFlags.IsExplicitContent}`>('1');
 expectType<`${UnfurledMediaItemContentScanFlags.IsGoreContent}`>('2');
 expectType<`${UnfurledMediaItemContentScanFlags.IsSelfHarmContent}`>('4');
 expectType<`${UnfurledMediaItemFlags.IsAnimated}`>('1');
+expectType<`${ChannelFlags.ChannelObfuscated}`>('131072');
+expectType<`${GuildFeature.PruneRequiresAdmin}`>('PRUNE_REQUIRES_ADMIN');
+expectType<ReturnType<Client['guilds']['list']>>(client.guilds.list({ shard: 0, with_counts: true }));
 expectType<UnfurledMediaItemContentScanFlags | undefined>(
 	({} as APIUnfurledMediaItem).content_scan_metadata?.flags,
 );

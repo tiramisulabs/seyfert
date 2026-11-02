@@ -70,6 +70,14 @@ export interface RESTGetAPICurrentUserGuildsQuery {
 	 * @default false
 	 */
 	with_counts?: boolean;
+	/**
+	 * Only return guilds stored in this shard, from `0` to `max_concurrency - 1`
+	 *
+	 * This is a storage shard, not the gateway shard ID.
+	 * Required for apps using large bot sharding, which otherwise get a `400 Bad Request`.
+	 * `max_concurrency` comes from the session start limit of Get Gateway Bot.
+	 */
+	shard?: number;
 }
 
 export interface RESTAPIPartialCurrentUserGuild {

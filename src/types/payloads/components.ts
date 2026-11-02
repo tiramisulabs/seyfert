@@ -443,6 +443,13 @@ export enum ChannelFlags {
 	 */
 	HideMediaDownloadOptions = 1 << 15,
 	/**
+	 * Discord obfuscated this channel because the bot cannot view it.
+	 * Its name is `___hidden___` and other sensitive fields are cleared until the bot gains `VIEW_CHANNEL`.
+	 *
+	 * See https://docs.discord.com/developers/change-log#channel-obfuscation-for-users-and-bots
+	 */
+	ChannelObfuscated = 1 << 17,
+	/**
 	 * This channel is a Spoiler Channel i.e. users must opt in to view its contents.
 	 */
 	IsSpoilerChannel = 1 << 21,
