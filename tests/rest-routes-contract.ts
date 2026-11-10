@@ -202,7 +202,12 @@ expectType<Promise<AnonymousGuildStructure[]>>(client.guilds.list({ limit: 2 }, 
 expectType<Promise<AnonymousGuildStructure[]>>(client.guilds.list({ limit: 2 }, true));
 GuildBan.methods({ client, guildId: 'guild-id' }).list({ limit: 2 }, listOptions);
 BaseGuildMember.methods({ client, guildId: 'guild-id' }).list({ limit: 2 }, listOptions);
-const cacheQueries: CacheQueries = { members: false };
+client.members.search('guild-id', { query: 'name' }, listOptions);
+client.members.search('guild-id', { query: 'name' }, true);
+client.members.search('guild-id', { query: 'name' }, { force: true });
+BaseGuildMember.methods({ client, guildId: 'guild-id' }).search({ query: 'name' }, listOptions);
+BaseGuildMember.methods({ client, guildId: 'guild-id' }).search({ query: 'name' }, true);
+const cacheQueries: CacheQueries = { members: false, memberSearch: false };
 client.setServices({ cache: { queries: cacheQueries } });
 client.setServices({ cache: { queries: false } });
 client.setServices({ cache: { queries: resource => resource !== 'guilds' } });

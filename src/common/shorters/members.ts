@@ -1,5 +1,12 @@
 import { CacheFrom, type CacheListOptions } from '../../cache';
-import { canPageInCache, compareSnowflakes, hasCacheQuery, selectCachePage } from '../../cache/list-query';
+import {
+	canPageInCache,
+	canSearchInCache,
+	compareSnowflakes,
+	hasCacheQuery,
+	selectCachePage,
+	selectMemberSearchPage,
+} from '../../cache/list-query';
 import {
 	type GuildMemberStructure,
 	type GuildRoleStructure,
@@ -53,12 +60,38 @@ export class MemberShorter extends BaseShorter {
 	}
 
 	/**
-	 * Searches for members in the guild based on the provided query.
+	 * Searches username and nickname prefixes case-insensitively in raw cache when enabled.
+	 * Returns ascending ids, with a default limit of 1. Empty matches or unsupported queries use REST.
 	 * @param guildId The ID of the guild.
 	 * @param query The query parameters for searching members.
+	 * @param options Force REST or override the client `memberSearch` policy. A boolean means force.
 	 * @returns A Promise that resolves to an array of matched members.
 	 */
-	async search(guildId: string, query: RESTGetAPIGuildMembersSearchQuery): Promise<GuildMemberStructure[]> {
+	async search(
+		guildId: string,
+		query: RESTGetAPIGuildMembersSearchQuery,
+		options: boolean | CacheListOptions = false,
+	): Promise<GuildMemberStructure[]> {
+		const { force, cacheQuery } = typeof options === 'boolean' ? { force: options } : options;
+		const resource = this.client.cache.members;
+		const users = this.client.cache.users;
+		if (
+			!force &&
+			(cacheQuery ?? this.client.cache.queries.memberSearch) &&
+			resource &&
+			users &&
+			canSearchInCache(query)
+		) {
+			const ids = await resource.getToRelationship(guildId);
+			if (ids.length) {
+				const members = await resource.bulkRaw(ids, guildId);
+				const page = selectMemberSearchPage(members, await users.bulkRaw(ids), query);
+				if (page.length) {
+					const selected = await resource.bulk(page, guildId);
+					if (selected.length === page.length) return selected.sort((a, b) => compareSnowflakes(a.id, b.id));
+				}
+			}
+		}
 		const members = await this.client.proxy.guilds(guildId).members.search.get({
 			query,
 		});

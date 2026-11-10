@@ -1,3 +1,5 @@
+import type { APIGuildMember, APIUser } from '../types';
+
 type ListQuery = { limit?: number; before?: string; after?: string };
 
 export function hasCacheQuery<T extends object>(query: T | undefined): query is T {
@@ -57,4 +59,35 @@ export function selectCachePage(ids: string[], query: ListQuery, limit: number):
 		}
 	}
 	return heap.sort(compareSnowflakes);
+}
+
+/** Validates Discord's member search query before any cache reads. */
+export function canSearchInCache(query: { query: string; limit?: number }): boolean {
+	if (typeof query.query !== 'string' || !query.query.length) return false;
+	if (query.limit !== undefined && (!Number.isInteger(query.limit) || query.limit < 1 || query.limit > 1000))
+		return false;
+	for (const key in query) {
+		if (key !== 'query' && key !== 'limit' && query[key as keyof typeof query] !== undefined) return false;
+	}
+	return true;
+}
+
+/** Matches raw usernames and nicknames, then selects the lowest snowflakes across the entire scope. */
+export function selectMemberSearchPage(
+	members: Omit<APIGuildMember, 'user'>[],
+	users: APIUser[],
+	query: { query: string; limit?: number },
+): string[] {
+	const prefix = query.query.toLowerCase();
+	const usernames = new Map(users.map(user => [user.id, user.username]));
+	// Member resources add `id` while parsing; the wire member type has no id field.
+	const matches = (members as (Omit<APIGuildMember, 'user'> & { id: string })[]).filter(
+		member =>
+			usernames.get(member.id)?.toLowerCase().startsWith(prefix) || member.nick?.toLowerCase().startsWith(prefix),
+	);
+	return selectCachePage(
+		matches.map(member => member.id),
+		{},
+		query.limit ?? 1,
+	);
 }

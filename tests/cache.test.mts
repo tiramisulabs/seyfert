@@ -11,6 +11,7 @@ import { assert, describe, expect, test, vi } from 'vitest';
 import {
 	Cache,
 	CacheFrom,
+	ChannelType,
 	Client,
 	GatewayDispatchEvents,
 	InteractionType,
@@ -1031,9 +1032,15 @@ describe('cached list pagination', () => {
 		const request = vi.spyOn(client.rest, 'request').mockResolvedValue([]);
 		try {
 			expect((await client.bans.list('guild', { before: '30', limit: 3 })).map(x => x.id)).toEqual(['9', '10', '20']);
+			expect((await client.bans.list('guild', { before: '30', after: '20', limit: 3 })).map(x => x.id)).toEqual([
+				'9',
+				'10',
+				'20',
+			]);
 			expect((await client.bans.list('guild', { after: '9' })).map(x => x.id)).toEqual(['10', '20', '30', '100']);
 			expect((await client.guilds.list({ before: '30', limit: 2 })).map(x => x.id)).toEqual(['10', '20']);
 			expect((await client.guilds.list({ limit: 2 })).map(x => x.id)).toEqual(['8', '9']);
+			expect((await client.guilds.list({ with_counts: false, limit: 2 })).map(x => x.id)).toEqual(['8', '9']);
 			expect((await client.guilds.list({ after: '9' })).map(x => x.id)).toEqual(['10', '20', '30', '100']);
 			expect(request).not.toHaveBeenCalled();
 		} finally {
@@ -1056,6 +1063,7 @@ describe('cached list pagination', () => {
 		try {
 			expect((await client.bans.list('guild', { after: '0' })).map(x => x.id)).toEqual(ids.slice(0, 1000));
 			expect((await client.guilds.list({ after: '0' })).map(x => x.id)).toEqual(ids.slice(0, 200));
+			expect((await client.guilds.list({ with_counts: false })).map(x => x.id)).toEqual(ids.slice(0, 200));
 			expect(request).not.toHaveBeenCalled();
 		} finally {
 			vi.restoreAllMocks();
@@ -1136,7 +1144,7 @@ describe('cached list pagination', () => {
 	});
 
 	test.each([
-		{ with_counts: false },
+		{ with_counts: true },
 		{ shard: 0 },
 		{ before: '30', after: '9' },
 		{ limit: 0 },
@@ -1172,6 +1180,229 @@ describe('cached list pagination', () => {
 			}
 		},
 	);
+
+	test.each([false, true])(
+		'search scans raw members and selects lowest matching ids (async: %s)',
+		async asyncAdapter => {
+			const { client } = await setup(asyncAdapter);
+			for (const [id, username, nick, global_name] of [
+				['100', 'ALpha', null, null],
+				['8', 'unrelated', null, 'Alpha'],
+				['30', 'alpha-three', null, null],
+				['9', 'unrelated', 'aLpHa nickname', null],
+				['20', 'ALPHA-two', null, null],
+				['10', 'contains-alpha', null, null],
+			] as const) {
+				await client.cache.members!.set(
+					CacheFrom.Test,
+					id,
+					'guild',
+					apiMember({ user: { ...apiUser({ id, username }), global_name }, nick }),
+				);
+			}
+			const request = vi.spyOn(client.rest, 'request').mockResolvedValue([]);
+			const values = vi.spyOn(client.cache.members!, 'values');
+			const userValues = vi.spyOn(client.cache.users!, 'values');
+			const bulk = vi.spyOn(client.cache.members!, 'bulk');
+			try {
+				expect((await client.members.search('guild', { query: 'AlP', limit: 2 })).map(x => x.id)).toEqual(['9', '20']);
+				expect(bulk).toHaveBeenLastCalledWith(['9', '20'], 'guild');
+				expect((await client.members.search('guild', { query: 'alP' })).map(x => x.id)).toEqual(['9']);
+				expect((await client.members.resolve('guild', 'alP'))?.id).toBe('9');
+				expect((await client.members.search('guild', { query: 'alp', limit: 1000 })).map(x => x.id)).toEqual([
+					'9',
+					'20',
+					'30',
+					'100',
+				]);
+				expect(request).not.toHaveBeenCalled();
+				expect(values).not.toHaveBeenCalled();
+				expect(userValues).not.toHaveBeenCalled();
+			} finally {
+				vi.restoreAllMocks();
+			}
+		},
+	);
+
+	test('search policy precedence and force select REST without losing cache writes', async () => {
+		const { client } = await setup();
+		await client.cache.members!.set(
+			CacheFrom.Test,
+			'8',
+			'guild',
+			apiMember({ user: apiUser({ id: '8', username: 'Alpha' }) }),
+		);
+		const member = apiMember({ user: apiUser({ id: '200', username: 'Alpha-rest' }) });
+		const query = { query: 'alp', limit: 1 };
+		const request = vi.spyOn(client.rest, 'request').mockResolvedValue([member]);
+		try {
+			for (const policy of [false, { memberSearch: false }, (key: string) => key !== 'memberSearch']) {
+				client.setServices({ cache: { queries: policy } });
+				request.mockClear();
+				await client.members.search('guild', query);
+				expect(request).toHaveBeenCalledOnce();
+				expect(request).toHaveBeenLastCalledWith(
+					'GET',
+					'/guilds/guild/members/search',
+					expect.objectContaining({ query }),
+				);
+				expect(await client.cache.members!.get('200', 'guild')).toMatchObject({ id: '200' });
+				request.mockClear();
+				expect((await client.members.search('guild', query, { cacheQuery: true })).map(x => x.id)).toEqual(['8']);
+				expect(request).not.toHaveBeenCalled();
+			}
+			client.setServices({ cache: { queries: { members: false } } });
+			await client.members.search('guild', query);
+			expect(request).not.toHaveBeenCalled();
+			for (const options of [
+				true,
+				{ force: true },
+				{ force: true, cacheQuery: true },
+				{ cacheQuery: false },
+			] as const) {
+				request.mockClear();
+				await client.members.search('guild', query, options);
+				expect(request).toHaveBeenCalledOnce();
+			}
+		} finally {
+			vi.restoreAllMocks();
+		}
+	});
+
+	test.each([
+		{ query: '' },
+		{ query: 'missing' },
+		{ query: 'alpha', limit: 0 },
+		{ query: 'alpha', limit: 1001 },
+		{ query: 'alpha', limit: 1.5 },
+		{ query: 'alpha', extra: true },
+	])('search falls back without changing the query: %j', async query => {
+		const { client } = await setup();
+		await client.cache.members!.set(
+			CacheFrom.Test,
+			'8',
+			'guild',
+			apiMember({ user: apiUser({ id: '8', username: 'Alpha' }) }),
+		);
+		const request = vi.spyOn(client.rest, 'request').mockResolvedValue([]);
+		try {
+			await client.members.search('guild', query);
+			expect(request).toHaveBeenCalledOnce();
+			expect(request).toHaveBeenLastCalledWith(
+				'GET',
+				'/guilds/guild/members/search',
+				expect.objectContaining({ query }),
+			);
+		} finally {
+			vi.restoreAllMocks();
+		}
+	});
+
+	test('search uses REST for empty scopes, disabled users and unresolved selected members', async () => {
+		const { client } = await setup();
+		const query = { query: 'alpha' };
+		const request = vi.spyOn(client.rest, 'request').mockResolvedValue([]);
+		try {
+			await client.members.search('empty', query);
+			expect(request).toHaveBeenCalledOnce();
+			await client.cache.members!.set(
+				CacheFrom.Test,
+				'8',
+				'guild',
+				apiMember({ user: apiUser({ id: '8', username: 'Alpha' }) }),
+			);
+			const bulk = vi.spyOn(client.cache.members!, 'bulk').mockResolvedValue([]);
+			request.mockClear();
+			await client.members.search('guild', query);
+			expect(bulk).toHaveBeenCalledWith(['8'], 'guild');
+			expect(request).toHaveBeenCalledOnce();
+			bulk.mockRestore();
+			client.setServices({ cache: { disabledCache: { users: true } } });
+			request.mockClear();
+			await client.members.search('guild', query);
+			expect(request).toHaveBeenCalledOnce();
+		} finally {
+			vi.restoreAllMocks();
+		}
+	});
+
+	test('guild counts bypass a cached guild and preserve the REST patch path', async () => {
+		const { client } = await setup();
+		const payload = { id: '8', name: 'rest-name', approximate_member_count: 42 };
+		const request = vi.spyOn(client.rest, 'request').mockResolvedValue(payload);
+		try {
+			await client.guilds.fetch('8');
+			await client.guilds.fetch('8', { query: { with_counts: false } });
+			expect(request).not.toHaveBeenCalled();
+			const guild = await client.guilds.fetch('8', { query: { with_counts: true } });
+			expect(request).toHaveBeenCalledOnce();
+			expect(request).toHaveBeenLastCalledWith(
+				'GET',
+				'/guilds/8',
+				expect.objectContaining({ query: { with_counts: true } }),
+			);
+			expect(guild.name).toBe('rest-name');
+			expect(await client.cache.guilds!.raw('8')).toMatchObject(payload);
+			request.mockClear();
+			await client.guilds.raw('8', { query: { with_counts: true } });
+			expect(request).toHaveBeenCalledOnce();
+		} finally {
+			vi.restoreAllMocks();
+		}
+	});
+
+	test('active threads exclude archived entries and sort descending, distinguishing an empty scope', async () => {
+		const client = new Client();
+		const request = vi.spyOn(client.rest, 'request').mockResolvedValue({ threads: [], members: [] });
+		try {
+			await client.threads.listGuildActive('guild');
+			expect(request).toHaveBeenCalledOnce();
+			request.mockClear();
+			await client.cache.channels!.set(CacheFrom.Test, '1', 'guild', {
+				id: '1',
+				type: ChannelType.GuildText,
+				position: 0,
+				name: 'text',
+			});
+			expect(await client.threads.listGuildActive('guild')).toEqual([]);
+			expect(request).not.toHaveBeenCalled();
+			for (const [id, archived] of [
+				['9', false],
+				['100', true],
+				['30', false],
+				['10', false],
+			] as const) {
+				await client.cache.channels!.set(CacheFrom.Test, id, 'guild', {
+					id,
+					type: ChannelType.PublicThread,
+					position: 0,
+					applied_tags: [],
+					name: id,
+					parent_id: '1',
+					thread_metadata: {
+						archived,
+						auto_archive_duration: 60,
+						archive_timestamp: '2026-01-01T00:00:00Z',
+						locked: false,
+					},
+				});
+			}
+			await client.cache.channels!.set(CacheFrom.Test, '20', 'guild', {
+				id: '20',
+				type: ChannelType.PrivateThread,
+				position: 0,
+				applied_tags: [],
+				name: 'partial',
+				parent_id: '1',
+			});
+			expect((await client.threads.listGuildActive('guild')).map(x => x.id)).toEqual(['30', '20', '10', '9']);
+			expect(request).not.toHaveBeenCalled();
+			await client.threads.listGuildActive('guild', true);
+			expect(request).toHaveBeenCalledOnce();
+		} finally {
+			vi.restoreAllMocks();
+		}
+	});
 
 	test('no defined query keeps all cached entries, force bypasses them and empty scopes use REST', async () => {
 		const { client } = await setup();

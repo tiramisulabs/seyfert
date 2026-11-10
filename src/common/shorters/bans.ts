@@ -79,7 +79,7 @@ export class BanShorter extends BaseShorter {
 	}
 
 	/**
-	 * Lists bans in the guild based on the provided query.
+	 * Lists bans in the guild using cached pagination when enabled. With both cursors, only `before` is respected.
 	 * @param guildId The ID of the guild.
 	 * @param query The query parameters for listing bans.
 	 * @param options Force a REST request, or override the client cache query policy. A boolean means force.
@@ -96,10 +96,12 @@ export class BanShorter extends BaseShorter {
 			if (!hasCacheQuery(query)) {
 				const cached = await resource.values(guildId);
 				if (cached.length) return cached;
-			} else if ((cacheQuery ?? this.client.cache.queries.bans) && canPageInCache(query, 1000)) {
-				const ids = await resource.getToRelationship(guildId);
+			} else if (cacheQuery ?? this.client.cache.queries.bans) {
+				// Discord respects only `before` when both cursors are sent.
+				const paged = query.before === undefined ? query : { ...query, after: undefined };
+				const ids = canPageInCache(paged, 1000) ? await resource.getToRelationship(guildId) : [];
 				if (ids.length) {
-					const page = selectCachePage(ids, query, query.limit ?? 1000);
+					const page = selectCachePage(ids, paged, paged.limit ?? 1000);
 					const bans = await resource.bulk(page, guildId);
 					// An id that does not resolve is a hole in the cache, so Discord answers this page instead.
 					if (bans.length === page.length) return bans.sort((a, b) => compareSnowflakes(a.id, b.id));

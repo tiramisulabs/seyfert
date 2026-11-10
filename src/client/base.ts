@@ -348,7 +348,7 @@ export class BaseClient {
 			}
 
 			if (cache.queries !== undefined) {
-				for (const resource of ['members', 'bans', 'guilds'] as const) {
+				for (const resource of ['members', 'memberSearch', 'bans', 'guilds'] as const) {
 					this.cache.queries[resource] =
 						typeof cache.queries === 'boolean'
 							? cache.queries
@@ -1438,7 +1438,7 @@ export interface ServicesOptions {
 	cache?: {
 		adapter?: Adapter;
 		disabledCache?: boolean | DisabledCache | ((cacheType: keyof DisabledCache) => boolean);
-		/** Cache pagination policy; omitted resources default to enabled. Omission preserves the current policy. */
+		/** Cache pagination and member search policy; omitted resources default to enabled. Omission preserves the current policy. */
 		queries?: boolean | CacheQueries | ((resource: keyof CacheQueries) => boolean);
 	};
 	langs?: {
