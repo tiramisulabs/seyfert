@@ -1,5 +1,6 @@
 import { resolveFiles } from '../../builders';
-import { CacheFrom } from '../../cache';
+import { CacheFrom, type CacheListOptions } from '../../cache';
+import { canPageInCache, compareSnowflakes, hasCacheQuery, selectCachePage } from '../../cache/list-query';
 import {
 	type AnonymousGuildStructure,
 	type AutoModerationRuleStructure,
@@ -293,13 +294,30 @@ export class GuildShorter extends BaseShorter {
 		return Transformers.Guild(this.client, guild);
 	}
 
+	/**
+	 * Lists current user guilds, using cached pagination when enabled and evaluable.
+	 * @param query Discord pagination and guild query parameters.
+	 * @param options Force a REST request, or override the client cache query policy. A boolean means force.
+	 */
 	async list<T extends boolean = false>(
 		query?: RESTGetAPICurrentUserGuildsQuery,
-		force?: T,
+		options?: T | (CacheListOptions & { force?: T }),
 	): Promise<If<T, AnonymousGuildStructure[], GuildStructure<'cached'>[] | AnonymousGuildStructure[]>> {
-		if (!force) {
-			const guilds = await this.client.cache.guilds?.values();
-			if (guilds?.length) return guilds;
+		const { force, cacheQuery } = typeof options === 'boolean' ? { force: options } : (options ?? {});
+		const resource = this.client.cache.guilds;
+		if (!force && resource) {
+			if (!hasCacheQuery(query)) {
+				const guilds = await resource.values();
+				if (guilds.length) return guilds;
+			} else if ((cacheQuery ?? this.client.cache.queries.guilds) && canPageInCache(query, 200)) {
+				const ids = await resource.getToRelationship();
+				if (ids.length) {
+					const page = selectCachePage(ids, query, query.limit ?? 200);
+					const guilds = await resource.bulk(page);
+					// An id that does not resolve is a hole in the cache, so Discord answers this page instead.
+					if (guilds.length === page.length) return guilds.sort((a, b) => compareSnowflakes(a.id, b.id));
+				}
+			}
 		}
 		return this.client.proxy
 			.users('@me')

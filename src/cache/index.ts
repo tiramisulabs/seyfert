@@ -118,6 +118,21 @@ export type CachedEvents =
 	| 'STAGE_INSTANCE_DELETE'
 	| 'GUILD_MEMBERS_CHUNK';
 
+/** Controls which list shorters evaluate pagination queries against cached ids. Omitted keys are enabled. */
+export interface CacheQueries {
+	members?: boolean;
+	bans?: boolean;
+	guilds?: boolean;
+}
+
+/** Overrides the source and cache pagination policy for one list call. */
+export interface CacheListOptions {
+	/** Always request the list from Discord. */
+	force?: boolean;
+	/** Evaluate pagination against the cache, overriding the client default. */
+	cacheQuery?: boolean;
+}
+
 export type DisabledCache = {
 	[P in NonGuildBased | GuildBased | GuildRelated | SeyfertBased]?: boolean;
 };
@@ -142,6 +157,8 @@ export class Cache {
 	stageInstances?: StageInstances;
 	messages?: Messages;
 
+	/** Resolved cache pagination defaults for list shorters. */
+	queries: Required<CacheQueries> = { members: true, bans: true, guilds: true };
 	__logger__?: Logger;
 	private pluginResourceNames = new Set<string>();
 	private pluginResourcePacketHandlers: {

@@ -18,7 +18,7 @@ import {
 	MemoryAdapter,
 	PresenceUpdateStatus,
 } from '../src/index';
-import type { APIUser, DisabledCache, PresenceUpdateReceiveStatus } from '../src/index';
+import type { Adapter, APIUser, DisabledCache, PresenceUpdateReceiveStatus } from '../src/index';
 import { BaseClient } from '../src/client/base';
 import { PRESENCE_UPDATE } from '../src/events/hooks/presence';
 
@@ -968,5 +968,234 @@ describe('base client runtime config cache', () => {
 		expect(configB.locations.base).toBe('src-b');
 		expect(configA.intents).toBe(intents);
 		expect(configB.intents).toBe(0);
+	});
+});
+
+describe('cached list pagination', () => {
+	const ids = ['100', '8', '30', '9', '20', '10'];
+
+	async function setup(asyncAdapter = false) {
+		const client = new Client();
+		const memory = new MemoryAdapter();
+		const adapter: Adapter = asyncAdapter
+			? new Proxy(memory, {
+					get(target, key) {
+						if (key === 'isAsync') return true;
+						const value = Reflect.get(target, key);
+						return typeof value === 'function' ? async (...args: unknown[]) => value.apply(target, args) : value;
+					},
+				})
+			: memory;
+		client.setServices({ cache: { adapter } });
+		for (const id of ids) {
+			await client.cache.members!.set(CacheFrom.Test, id, 'guild', apiMember({ user: apiUser({ id }) }));
+			await client.cache.bans!.set(CacheFrom.Test, id, 'guild', { user: apiUser({ id }), reason: null });
+			await client.cache.guilds!.set(CacheFrom.Test, id, { id, name: id, roles: [], emojis: [], features: [] });
+		}
+		return { client, adapter };
+	}
+
+	test.each([false, true])(
+		'selects only the members page with ascending snowflakes (async: %s)',
+		async asyncAdapter => {
+			const { client, adapter } = await setup(asyncAdapter);
+			const request = vi.spyOn(client.rest, 'request').mockResolvedValue([]);
+			const values = vi.spyOn(client.cache.members!, 'values');
+			const bulk = vi.spyOn(client.cache.members!, 'bulk');
+			const originalBulkGet = adapter.bulkGet.bind(adapter);
+			// Deliberately return a different order than requested, as an adapter is allowed to do.
+			const bulkGet = vi.spyOn(adapter, 'bulkGet').mockImplementation(keys => {
+				const result = originalBulkGet(keys);
+				return result instanceof Promise ? result.then(values => values.reverse()) : result.reverse();
+			});
+			try {
+				expect((await client.members.list('guild', { limit: 3, after: '9' })).map(x => x.id)).toEqual([
+					'10',
+					'20',
+					'30',
+				]);
+				expect(bulk).toHaveBeenLastCalledWith(['10', '20', '30'], 'guild');
+				expect((await client.members.list('guild', { after: '9' })).map(x => x.id)).toEqual(['10']);
+				expect(await client.members.list('guild', { after: '100' })).toEqual([]);
+				expect(request).not.toHaveBeenCalled();
+				expect(values).not.toHaveBeenCalled();
+				expect(bulkGet.mock.calls.every(([keys]) => keys.length <= 3)).toBe(true);
+			} finally {
+				vi.restoreAllMocks();
+			}
+		},
+	);
+
+	test('bans select the nearest ids before the cursor, and guilds use the same ordered pagination', async () => {
+		const { client } = await setup();
+		const request = vi.spyOn(client.rest, 'request').mockResolvedValue([]);
+		try {
+			expect((await client.bans.list('guild', { before: '30', limit: 3 })).map(x => x.id)).toEqual(['9', '10', '20']);
+			expect((await client.bans.list('guild', { after: '9' })).map(x => x.id)).toEqual(['10', '20', '30', '100']);
+			expect((await client.guilds.list({ before: '30', limit: 2 })).map(x => x.id)).toEqual(['10', '20']);
+			expect((await client.guilds.list({ limit: 2 })).map(x => x.id)).toEqual(['8', '9']);
+			expect((await client.guilds.list({ after: '9' })).map(x => x.id)).toEqual(['10', '20', '30', '100']);
+			expect(request).not.toHaveBeenCalled();
+		} finally {
+			vi.restoreAllMocks();
+		}
+	});
+
+	test('bans and guilds apply Discord default page sizes instead of returning the whole scope', async () => {
+		const client = new Client();
+		const ids = Array.from({ length: 1005 }, (_, index) => String(index + 1));
+		await client.cache.bans!.set(
+			CacheFrom.Test,
+			ids.toReversed().map(id => [id, { user: apiUser({ id }), reason: null }]),
+			'guild',
+		);
+		for (const id of ids.slice(0, 205).toReversed()) {
+			await client.cache.guilds!.set(CacheFrom.Test, id, { id, name: id, roles: [], emojis: [], features: [] });
+		}
+		const request = vi.spyOn(client.rest, 'request').mockResolvedValue([]);
+		try {
+			expect((await client.bans.list('guild', { after: '0' })).map(x => x.id)).toEqual(ids.slice(0, 1000));
+			expect((await client.guilds.list({ after: '0' })).map(x => x.id)).toEqual(ids.slice(0, 200));
+			expect(request).not.toHaveBeenCalled();
+		} finally {
+			vi.restoreAllMocks();
+		}
+	});
+
+	test('per-call policy overrides the client policy and REST results still populate cache', async () => {
+		const { client } = await setup();
+		const member = apiMember({ user: apiUser({ id: '200' }) });
+		const request = vi.spyOn(client.rest, 'request').mockResolvedValue([member]);
+		const query = { after: '100', limit: 2 };
+		try {
+			await client.members.list('guild', query, { cacheQuery: false });
+			expect(request).toHaveBeenLastCalledWith('GET', '/guilds/guild/members', expect.objectContaining({ query }));
+			expect(await client.cache.members!.get('200', 'guild')).toMatchObject({ id: '200' });
+			client.setServices({ cache: { queries: { members: false } } });
+			request.mockClear();
+			await client.members.list('guild', query);
+			expect(request).toHaveBeenCalledOnce();
+			request.mockClear();
+			expect((await client.members.list('guild', query, { cacheQuery: true })).map(x => x.id)).toEqual(['200']);
+			expect(request).not.toHaveBeenCalled();
+			// An omitted object key is enabled, not inherited from the previous setting.
+			client.setServices({ cache: { queries: false } });
+			client.setServices({ cache: { queries: { members: false } } });
+			expect((await client.bans.list('guild', { limit: 1 })).map(x => x.id)).toEqual(['8']);
+			client.setServices({ cache: { queries: resource => resource !== 'bans' } });
+			request.mockResolvedValue([]);
+			await client.bans.list('guild', { limit: 1 });
+			expect(request).toHaveBeenCalledOnce();
+			request.mockClear();
+			expect((await client.bans.list('guild', { limit: 1 }, { cacheQuery: true })).map(x => x.id)).toEqual(['8']);
+			expect(request).not.toHaveBeenCalled();
+		} finally {
+			vi.restoreAllMocks();
+		}
+	});
+
+	test('a page with an unresolvable member is answered by Discord', async () => {
+		const { client } = await setup();
+		const request = vi.spyOn(client.rest, 'request').mockResolvedValue([]);
+		const query = { after: '9', limit: 3 };
+		try {
+			await client.cache.users!.remove('20');
+			await client.members.list('guild', query);
+			expect(request).toHaveBeenCalledOnce();
+			expect(request).toHaveBeenLastCalledWith('GET', '/guilds/guild/members', expect.objectContaining({ query }));
+			request.mockClear();
+			// A page that does not reach the hole is still served from cache.
+			expect((await client.members.list('guild', { limit: 2 })).map(x => x.id)).toEqual(['8', '9']);
+			expect(request).not.toHaveBeenCalled();
+			// Without a users cache no member resolves, so the same page must not come back empty.
+			client.setServices({ cache: { disabledCache: { users: true } } });
+			await client.members.list('guild', { limit: 2 });
+			expect(request).toHaveBeenCalledOnce();
+		} finally {
+			vi.restoreAllMocks();
+		}
+	});
+
+	test('cache policy survives service updates, rebuilds and adapter replacement', async () => {
+		const { client } = await setup();
+		client.setServices({ cache: { queries: false } });
+		client.setServices({ cache: { disabledCache: { messages: true } } });
+		client.setServices({ cache: { adapter: new LimitedMemoryAdapter() } });
+		await client.cache.members!.set(CacheFrom.Test, '10', 'guild', apiMember({ user: apiUser({ id: '10' }) }));
+		const request = vi.spyOn(client.rest, 'request').mockResolvedValue([]);
+		try {
+			await client.members.list('guild', { limit: 1 });
+			expect(request).toHaveBeenCalledOnce();
+			request.mockClear();
+			client.setServices({ cache: { queries: true } });
+			expect((await client.members.list('guild', { limit: 1 })).map(x => x.id)).toEqual(['10']);
+			expect(request).not.toHaveBeenCalled();
+		} finally {
+			vi.restoreAllMocks();
+		}
+	});
+
+	test.each([
+		{ with_counts: false },
+		{ shard: 0 },
+		{ before: '30', after: '9' },
+		{ limit: 0 },
+		{ limit: 201 },
+		{ limit: 1.5 },
+	])('forwards non-evaluable guild queries to REST unchanged: %j', async query => {
+		const { client } = await setup();
+		const request = vi.spyOn(client.rest, 'request').mockResolvedValue([]);
+		const readIds = vi.spyOn(client.cache.guilds!, 'getToRelationship');
+		try {
+			await client.guilds.list(query);
+			expect(request).toHaveBeenCalledOnce();
+			expect(request).toHaveBeenLastCalledWith('GET', '/users/@me/guilds', expect.objectContaining({ query }));
+			// A query the cache cannot answer must not pay for reading the cached ids first.
+			expect(readIds).not.toHaveBeenCalled();
+		} finally {
+			vi.restoreAllMocks();
+		}
+	});
+
+	test.each([{ limit: 1001 }, { limit: -1 }, { limit: 1.5 }])(
+		'members and bans forward invalid limits: %j',
+		async query => {
+			const { client } = await setup();
+			const request = vi.spyOn(client.rest, 'request').mockResolvedValue([]);
+			try {
+				await client.members.list('guild', query);
+				await client.bans.list('guild', query);
+				expect(request).toHaveBeenCalledTimes(2);
+				expect(request.mock.calls.map(call => call[2]?.query)).toEqual([query, query]);
+			} finally {
+				vi.restoreAllMocks();
+			}
+		},
+	);
+
+	test('no defined query keeps all cached entries, force bypasses them and empty scopes use REST', async () => {
+		const { client } = await setup();
+		client.setServices({ cache: { queries: false } });
+		const request = vi.spyOn(client.rest, 'request').mockResolvedValue([]);
+		try {
+			expect(await client.members.list('guild')).toHaveLength(ids.length);
+			expect(await client.bans.list('guild', { limit: undefined })).toHaveLength(ids.length);
+			expect(await client.guilds.list({ with_counts: undefined })).toHaveLength(ids.length);
+			expect(request).not.toHaveBeenCalled();
+			for (const options of [true, { force: true, cacheQuery: true }] as const) {
+				await client.members.list('guild', { limit: 1 }, options);
+				await client.bans.list('guild', undefined, options);
+				await client.guilds.list(undefined, options);
+			}
+			expect(request).toHaveBeenCalledTimes(6);
+			client.setServices({ cache: { queries: true } });
+			await client.members.list('empty', { limit: 1 });
+			await client.bans.list('empty', { limit: 1 });
+			await client.cache.guilds!.flush();
+			await client.guilds.list({ limit: 1 });
+			expect(request).toHaveBeenCalledTimes(9);
+		} finally {
+			vi.restoreAllMocks();
+		}
 	});
 });

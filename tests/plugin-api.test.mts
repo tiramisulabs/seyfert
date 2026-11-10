@@ -1633,13 +1633,13 @@ describe('plugin api v3', () => {
 		expect(disposed).toEqual(['override']);
 	});
 
-	test('rejects unsafe cache resource and ctx keys', () => {
+	test.each(['__proto__', 'queries'])('rejects unsafe cache resource key %s and ctx keys', name => {
 		expect(() =>
 			createBaseClient([
 				createPlugin({
 					name: 'bad-cache-key',
 					register(api) {
-						api.cache.resource('__proto__', PluginCacheResource);
+						api.cache.resource(name, PluginCacheResource);
 					},
 				}),
 			]),

@@ -2,7 +2,7 @@ import { promises } from 'node:fs';
 import { join } from 'node:path';
 import { ApiHandler, type RestObserverEntry } from '../api';
 import { isBufferLike } from '../api/utils/utils';
-import type { Adapter, DisabledCache } from '../cache';
+import type { Adapter, CacheQueries, DisabledCache } from '../cache';
 import { Cache, MemoryAdapter } from '../cache';
 import type {
 	CommandContext,
@@ -347,6 +347,16 @@ export class BaseClient {
 				disabledCache = cache.disabledCache;
 			}
 
+			if (cache.queries !== undefined) {
+				for (const resource of ['members', 'bans', 'guilds'] as const) {
+					this.cache.queries[resource] =
+						typeof cache.queries === 'boolean'
+							? cache.queries
+							: typeof cache.queries === 'function'
+								? cache.queries(resource)
+								: (cache.queries[resource] ?? true);
+				}
+			}
 			if (cache.adapter) this.cache.adapter = cache.adapter;
 			if (cache.disabledCache !== undefined) this.refreshPluginCacheResources(disabledCache);
 		}
@@ -1428,6 +1438,8 @@ export interface ServicesOptions {
 	cache?: {
 		adapter?: Adapter;
 		disabledCache?: boolean | DisabledCache | ((cacheType: keyof DisabledCache) => boolean);
+		/** Cache pagination policy; omitted resources default to enabled. Omission preserves the current policy. */
+		queries?: boolean | CacheQueries | ((resource: keyof CacheQueries) => boolean);
 	};
 	langs?: {
 		default?: string;

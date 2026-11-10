@@ -73,6 +73,7 @@ const reservedCacheResourceNames = new Set([
 	'pluginResourcePacketHandlers',
 	'presences',
 	'prototype',
+	'queries',
 	'roles',
 	'stageInstances',
 	'stickers',

@@ -1,4 +1,5 @@
-import { CacheFrom } from '../../cache';
+import { CacheFrom, type CacheListOptions } from '../../cache';
+import { canPageInCache, compareSnowflakes, hasCacheQuery, selectCachePage } from '../../cache/list-query';
 import {
 	type GuildMemberStructure,
 	type GuildRoleStructure,
@@ -175,13 +176,29 @@ export class MemberShorter extends BaseShorter {
 	 * Lists members in the guild based on the provided query.
 	 * @param guildId The ID of the guild.
 	 * @param query The query parameters for listing members.
-	 * @param force Whether to force listing members from the API even if they exist in the cache.
+	 * @param options Force a REST request, or override the client cache query policy. A boolean means force.
 	 * @returns A Promise that resolves to an array of listed members.
 	 */
-	async list(guildId: string, query?: RESTGetAPIGuildMembersQuery, force = false): Promise<GuildMemberStructure[]> {
-		if (!force) {
-			const cachedMembers = (await this.client.cache.members?.values(guildId)) ?? [];
-			if (cachedMembers.length) return cachedMembers;
+	async list(
+		guildId: string,
+		query?: RESTGetAPIGuildMembersQuery,
+		options: boolean | CacheListOptions = false,
+	): Promise<GuildMemberStructure[]> {
+		const { force, cacheQuery } = typeof options === 'boolean' ? { force: options } : options;
+		const resource = this.client.cache.members;
+		if (!force && resource) {
+			if (!hasCacheQuery(query)) {
+				const cached = await resource.values(guildId);
+				if (cached.length) return cached;
+			} else if ((cacheQuery ?? this.client.cache.queries.members) && canPageInCache(query, 1000)) {
+				const ids = await resource.getToRelationship(guildId);
+				if (ids.length) {
+					const page = selectCachePage(ids, query, query.limit ?? 1);
+					const members = await resource.bulk(page, guildId);
+					// An id that does not resolve is a hole in the cache, so Discord answers this page instead.
+					if (members.length === page.length) return members.sort((a, b) => compareSnowflakes(a.id, b.id));
+				}
+			}
 		}
 
 		const members = await this.client.proxy.guilds(guildId).members.get({

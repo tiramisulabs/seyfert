@@ -1,3 +1,4 @@
+import type { CacheListOptions } from '../cache';
 import { DiscordBase } from './extra/DiscordBase';
 
 export type GuildMemberData =
@@ -165,8 +166,11 @@ export class BaseGuildMember extends DiscordBase {
 			removeRole: (memberId: string, id: string) => client.members.removeRole(guildId, memberId, id),
 			fetch: (memberId: string, force = false): Promise<GuildMemberStructure> =>
 				client.members.fetch(guildId, memberId, force),
-			list: (query?: RESTGetAPIGuildMembersQuery, force = false): Promise<GuildMemberStructure[]> =>
-				client.members.list(guildId, query, force),
+			/** @param options Force REST or override the client cache query policy. A boolean means force. */
+			list: (
+				query?: RESTGetAPIGuildMembersQuery,
+				options: boolean | CacheListOptions = false,
+			): Promise<GuildMemberStructure[]> => client.members.list(guildId, query, options),
 		};
 	}
 }
