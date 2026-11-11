@@ -1,9 +1,12 @@
 import type {
+	AnonymousGuildStructure,
 	APIApplication,
 	APIUnfurledMediaItem,
 	ApiHandler,
 	AttachmentFlags,
 	AuditLogEvent,
+	CacheListOptions,
+	CacheQueries,
 	ChannelFlags,
 	Client,
 	EmbedFlags,
@@ -39,6 +42,7 @@ import type {
 	UnfurledMediaItemContentScanFlags,
 	UnfurledMediaItemFlags,
 } from 'seyfert';
+import { BaseGuildMember, GuildBan } from 'seyfert';
 
 declare const api: ApiHandler;
 declare const client: Client;
@@ -188,3 +192,22 @@ const applicationCommandPermissions = api.proxy
 	.permissions;
 // @ts-expect-error Editing command permissions requires a JSON body.
 applicationCommandPermissions.put();
+
+// Cached list options remain compatible with booleans and preserve forced guild inference.
+const listOptions: CacheListOptions = { force: false, cacheQuery: true };
+client.members.list('guild-id', { after: '9' }, listOptions);
+client.bans.list('guild-id', { before: '30' }, listOptions);
+client.guilds.list({ limit: 2 }, listOptions);
+expectType<Promise<AnonymousGuildStructure[]>>(client.guilds.list({ limit: 2 }, { force: true }));
+expectType<Promise<AnonymousGuildStructure[]>>(client.guilds.list({ limit: 2 }, true));
+GuildBan.methods({ client, guildId: 'guild-id' }).list({ limit: 2 }, listOptions);
+BaseGuildMember.methods({ client, guildId: 'guild-id' }).list({ limit: 2 }, listOptions);
+client.members.search('guild-id', { query: 'name' }, listOptions);
+client.members.search('guild-id', { query: 'name' }, true);
+client.members.search('guild-id', { query: 'name' }, { force: true });
+BaseGuildMember.methods({ client, guildId: 'guild-id' }).search({ query: 'name' }, listOptions);
+BaseGuildMember.methods({ client, guildId: 'guild-id' }).search({ query: 'name' }, true);
+const cacheQueries: CacheQueries = { members: false, memberSearch: false };
+client.setServices({ cache: { queries: cacheQueries } });
+client.setServices({ cache: { queries: false } });
+client.setServices({ cache: { queries: resource => resource !== 'guilds' } });

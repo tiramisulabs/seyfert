@@ -1,4 +1,4 @@
-import type { ReturnCache } from '../cache';
+import type { CacheListOptions, ReturnCache } from '../cache';
 import type { GuildBanStructure, GuildStructure } from '../client';
 import type { UsingClient } from '../commands';
 import { type BanOptions, Formatter, type MethodContext, type ObjectToLower } from '../common';
@@ -51,8 +51,11 @@ export class GuildBan extends DiscordBase {
 	static methods({ client, guildId }: MethodContext<{ guildId: string }>) {
 		return {
 			fetch: (userId: string, force = false): Promise<GuildBanStructure> => client.bans.fetch(guildId, userId, force),
-			list: (query?: RESTGetAPIGuildBansQuery, force = false): Promise<GuildBanStructure[]> =>
-				client.bans.list(guildId, query, force),
+			/** @param options Force REST or override the client cache query policy. A boolean means force. */
+			list: (
+				query?: RESTGetAPIGuildBansQuery,
+				options: boolean | CacheListOptions = false,
+			): Promise<GuildBanStructure[]> => client.bans.list(guildId, query, options),
 			create: (memberId: string, options?: Parameters<BanShorter['create']>[2]) =>
 				client.bans.create(guildId, memberId, options),
 			remove: (memberId: string, reason?: string) => client.bans.remove(guildId, memberId, reason),

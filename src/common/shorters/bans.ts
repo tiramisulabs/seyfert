@@ -1,4 +1,5 @@
-import { CacheFrom } from '../../cache';
+import { CacheFrom, type CacheListOptions } from '../../cache';
+import { canPageInCache, compareSnowflakes, hasCacheQuery, selectCachePage } from '../../cache/list-query';
 import { type GuildBanStructure, Transformers } from '../../client/transformers';
 import type {
 	APIBan,
@@ -78,17 +79,36 @@ export class BanShorter extends BaseShorter {
 	}
 
 	/**
-	 * Lists bans in the guild based on the provided query.
+	 * Lists bans in the guild using cached pagination when enabled. With both cursors, only `before` is respected.
 	 * @param guildId The ID of the guild.
 	 * @param query The query parameters for listing bans.
-	 * @param force Whether to force listing bans from the API even if they exist in the cache.
+	 * @param options Force a REST request, or override the client cache query policy. A boolean means force.
 	 * @returns A Promise that resolves to an array of listed bans.
 	 */
-	async list(guildId: string, query?: RESTGetAPIGuildBansQuery, force = false): Promise<GuildBanStructure[]> {
-		if (!force) {
-			const bans = await this.client.cache.bans?.values(guildId);
-			if (bans?.length) return bans;
+	async list(
+		guildId: string,
+		query?: RESTGetAPIGuildBansQuery,
+		options: boolean | CacheListOptions = false,
+	): Promise<GuildBanStructure[]> {
+		const { force, cacheQuery } = typeof options === 'boolean' ? { force: options } : options;
+		const resource = this.client.cache.bans;
+		if (!force && resource) {
+			if (!hasCacheQuery(query)) {
+				const cached = await resource.values(guildId);
+				if (cached.length) return cached;
+			} else if (cacheQuery ?? this.client.cache.queries.bans) {
+				// Discord respects only `before` when both cursors are sent.
+				const paged = query.before === undefined ? query : { ...query, after: undefined };
+				const ids = canPageInCache(paged, 1000) ? await resource.getToRelationship(guildId) : [];
+				if (ids.length) {
+					const page = selectCachePage(ids, paged, paged.limit ?? 1000);
+					const bans = await resource.bulk(page, guildId);
+					// An id that does not resolve is a hole in the cache, so Discord answers this page instead.
+					if (bans.length === page.length) return bans.sort((a, b) => compareSnowflakes(a.id, b.id));
+				}
+			}
 		}
+
 		const bans = await this.client.proxy.guilds(guildId).bans.get({
 			query,
 		});

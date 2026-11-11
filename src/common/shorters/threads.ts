@@ -1,4 +1,5 @@
 import { CacheFrom, resolveFiles } from '../..';
+import { compareSnowflakes } from '../../cache/list-query';
 import type { ThreadChannelStructure } from '../../client/transformers';
 import { channelFrom, MessagesMethods } from '../../structures';
 import {
@@ -135,14 +136,18 @@ export class ThreadShorter extends BaseShorter {
 		};
 	}
 
+	/** Lists unarchived cached threads by descending id; an empty channel scope uses REST. */
 	async listGuildActive(guildId: string, force = false): Promise<ThreadChannelStructure[]> {
 		if (!force) {
 			const cached = await this.client.cache.channels?.valuesRaw(guildId);
-			if (cached)
+			if (cached?.length)
 				return cached
-					.filter(x =>
-						[ChannelType.PublicThread, ChannelType.PrivateThread, ChannelType.AnnouncementThread].includes(x.type),
+					.filter(
+						x =>
+							[ChannelType.PublicThread, ChannelType.PrivateThread, ChannelType.AnnouncementThread].includes(x.type) &&
+							(x as APIThreadChannel).thread_metadata?.archived !== true,
 					)
+					.sort((a, b) => compareSnowflakes(b.id, a.id))
 					.map(x => channelFrom(x, this.client) as ThreadChannelStructure);
 		}
 		const data = await this.client.proxy.guilds(guildId).threads.active.get();
