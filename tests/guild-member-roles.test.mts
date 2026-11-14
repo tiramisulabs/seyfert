@@ -1,6 +1,6 @@
 import { apiMember, apiUser, createMockBot, mockWorld, Routes } from '@slipher/testing';
 import { describe, expect, test, vi } from 'vitest';
-import { GuildMember } from '../lib';
+import { GuildMember, PermissionFlagsBits } from '../lib';
 import { MemberShorter } from '../lib/common/shorters/members';
 
 const guildId = '100000000000000001';
@@ -154,6 +154,32 @@ describe('GuildMember roles', () => {
 });
 
 describe('GuildMember moderation helpers', () => {
+	test('moderatable requires the bot to have ModerateMembers instead of KickMembers', async () => {
+		const createClient = (botPermissions: bigint) => {
+			const everyoneRole = { id: guildId, position: 0, permissions: { bits: 0n } };
+			const botRole = { id: botRoleId, position: 20, permissions: { bits: botPermissions } };
+			const targetRole = { id: targetRoleId, position: 10, permissions: { bits: 0n } };
+			const client = {
+				botId,
+				roles: { list: vi.fn().mockResolvedValue([everyoneRole, botRole, targetRole]) },
+				guilds: {
+					fetchSelf: vi.fn(),
+					fetch: vi.fn().mockResolvedValue({ ownerId: '900000000000000009' }),
+				},
+			};
+
+			client.guilds.fetchSelf.mockResolvedValue(createMember(client, botId, [botRoleId], true));
+
+			return client;
+		};
+
+		const kickOnly = createMember(createClient(PermissionFlagsBits.KickMembers), targetId, [targetRoleId]);
+		await expect(kickOnly.moderatable()).resolves.toBe(false);
+
+		const moderateOnly = createMember(createClient(PermissionFlagsBits.ModerateMembers), targetId, [targetRoleId]);
+		await expect(moderateOnly.moderatable()).resolves.toBe(true);
+	});
+
 	test('timeout treats numbers as milliseconds', async () => {
 		const world = mockWorld();
 		const guild = world.registerGuild({ everyonePermissions: ['ModerateMembers'] });
