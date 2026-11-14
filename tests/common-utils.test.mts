@@ -41,4 +41,18 @@ describe('resolvePartialEmoji', () => {
 		expect(resolvePartialEmoji('%F0%9F%91%8D')).toEqual({ name: '👍', id: null });
 		expect(resolvePartialEmoji('👍')).toEqual({ name: '👍', id: null });
 	});
+
+	test('resolves unicode emojis passed as objects', () => {
+		expect(resolvePartialEmoji({ name: '👍' })).toEqual({ name: '👍', id: null });
+		expect(resolvePartialEmoji({ name: '👍', id: null })).toEqual({ name: '👍', id: null });
+	});
+
+	test('keeps resolving custom emojis passed as objects', () => {
+		expect(resolvePartialEmoji({ name: 'seyfert', id: '123456789012345678' })).toEqual({
+			name: 'seyfert',
+			id: '123456789012345678',
+			animated: false,
+		});
+		expect(resolvePartialEmoji({ id: '123456789012345678' })).toBeUndefined();
+	});
 });

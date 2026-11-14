@@ -352,7 +352,8 @@ export function resolvePartialEmoji(emoji: EmojiResolvable): APIPartialEmoji | u
 		return;
 	}
 
-	if (!(emoji.id && emoji.name)) return;
+	if (!emoji.name) return;
+	if (!emoji.id) return { name: emoji.name, id: null };
 	return { id: emoji.id, name: emoji.name, animated: !!emoji.animated };
 }
 
