@@ -109,6 +109,29 @@ describe('builder toJSON validation', () => {
 		expectSeyfertCode(() => emptyAnswers.toJSON(), 'MISSING_POLL_ANSWERS', 'PollBuilder');
 	});
 
+	test('PollBuilder does not mutate the data it was created from', () => {
+		const input = { question: { text: 'Old question' }, duration: 24 };
+		const snapshot = structuredClone(input);
+
+		const poll = new PollBuilder(input)
+			.setQuestion({ text: 'New question' })
+			.setDuration(48)
+			.allowMultiselect()
+			.addAnswers({ text: 'Yes' });
+
+		expect(input).toEqual(snapshot);
+		expect(poll.toJSON()).toMatchObject({ question: { text: 'New question' }, duration: 48, allow_multiselect: true });
+	});
+
+	test('PollBuilder keeps the layout type it was created with', () => {
+		const poll = new PollBuilder({ layout_type: 2 as never })
+			.setQuestion({ text: 'Continue?' })
+			.addAnswers({ text: 'Yes' });
+
+		expect(poll.toJSON().layout_type).toBe(2);
+		expect(new PollBuilder().data.layout_type).toBe(1);
+	});
+
 	test('RadioGroup validates builder options through option toJSON', () => {
 		const option = new RadioGroupOption({ value: 'general', label: 'General' });
 		delete (option.data as { value?: string }).value;
