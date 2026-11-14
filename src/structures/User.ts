@@ -9,7 +9,8 @@ export interface User extends ObjectToLower<APIUser> {}
 
 export class User extends DiscordBase<APIUser> {
 	get tag() {
-		return this.globalName ?? `${this.username}#${this.discriminator}`;
+		// Accounts on the unique username system carry the placeholder discriminator '0'.
+		return this.globalName ?? (this.discriminator === '0' ? this.username : `${this.username}#${this.discriminator}`);
 	}
 
 	get name() {
