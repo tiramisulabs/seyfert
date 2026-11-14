@@ -43,7 +43,7 @@ export function resolveColor(color: ColorResolvable): number {
 	if (type === 'string') {
 		const lookupColor = ColorLookup[color as keyof typeof EmbedColors];
 		if (lookupColor != null) {
-			return lookupColor === -1 ? Math.floor(Math.random() * 0xffffff) : lookupColor;
+			return lookupColor === -1 ? Math.floor(Math.random() * (0xffffff + 1)) : lookupColor;
 		}
 		if ((color as string).startsWith('#')) {
 			const hex = (color as string).slice(1);
