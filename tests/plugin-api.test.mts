@@ -1501,6 +1501,38 @@ describe('plugin api v3', () => {
 		},
 	);
 
+	test('keeps guild write order across an async handlePayload on the worker shard callback', async () => {
+		const client = new WorkerClient({
+			getRC: runtimeConfig,
+			postMessage: () => {},
+			async handlePayload(_shardId, packet) {
+				if (packet.t === 'GUILD_MEMBER_REMOVE') await new Promise(resolve => setTimeout(resolve, 5));
+			},
+		});
+		setWorkerData(client);
+		client.setServices({ cache: { trackMemberCount: true } });
+		const shard = client.createShard(0, { info: gatewayInfo(), compress: false, properties: {} as never });
+		const guild = (count: number) =>
+			({
+				op: GatewayOpcodes.Dispatch,
+				t: 'GUILD_CREATE',
+				s: 1,
+				d: { id: 'guild-1', name: 'guild', joined_at: new Date().toISOString(), member_count: count },
+			}) as never;
+		await shard.options.handlePayload(0, guild(10));
+
+		const removal = shard.options.handlePayload(0, {
+			op: GatewayOpcodes.Dispatch,
+			t: 'GUILD_MEMBER_REMOVE',
+			s: 2,
+			d: { user: { id: 'user-1', username: 'user' }, guild_id: 'guild-1' },
+		} as never);
+		// This snapshot comes after the removal, so it already leaves the member out.
+		await Promise.all([removal, shard.options.handlePayload(0, guild(9))]);
+
+		expect((await client.cache.guilds?.raw('guild-1'))?.member_count).toBe(9);
+	});
+
 	test('frees a guild packet place when handling fails before the cache sees it', async () => {
 		const client = createGatewayClient();
 		client.setServices({ cache: { trackMemberCount: true } });
@@ -1709,6 +1741,7 @@ describe('plugin api v3', () => {
 		'guildWriteSlots',
 		'queueGuildWrite',
 		'reserveGuildWrite',
+		'holdGuildWriteOrder',
 		'adjustMemberCount',
 	])('rejects unsafe cache resource key %s and ctx keys', name => {
 		expect(() =>

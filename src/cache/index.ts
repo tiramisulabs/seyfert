@@ -502,6 +502,20 @@ export class Cache {
 		return reservation;
 	}
 
+	/**
+	 * Holds a guild packet's place in the guild write queue while `handle` runs, from the moment the
+	 * shard hands the packet over, so an async payload callback can't let a later packet write first.
+	 * @internal
+	 */
+	async holdGuildWriteOrder<T>(event: GatewayDispatchPayload, handle: () => Promise<T>): Promise<T> {
+		const guildWrite = this.reserveGuildWrite(event);
+		try {
+			return await handle();
+		} finally {
+			guildWrite?.release();
+		}
+	}
+
 	// Discord only sends member_count in GUILD_CREATE, so joins and leaves have to keep it current.
 	private async adjustMemberCount(guildId: string, delta: number, packet: object) {
 		await this.queueGuildWrite(

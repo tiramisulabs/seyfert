@@ -165,10 +165,11 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 				token,
 				info: await this.proxy.gateway.bot.get(),
 				intents,
-				handlePayload: async (shardId, packet) => {
-					await this.options?.handlePayload?.(shardId, packet);
-					return this.onPacket(shardId, packet);
-				},
+				handlePayload: (shardId, packet) =>
+					this.cache.holdGuildWriteOrder(packet, async () => {
+						await this.options?.handlePayload?.(shardId, packet);
+						return this.onPacket(shardId, packet);
+					}),
 				handleSendPayload: (shardId, payload) =>
 					this.handleGatewaySendPayload(shardId, payload, this.options?.handleSendPayload),
 				onShardDisconnect: this.onShardDisconnect.bind(this),

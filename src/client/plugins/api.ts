@@ -66,6 +66,7 @@ const reservedCacheResourceNames = new Set([
 	'hasPresenceUpdates',
 	'hasRolesIntent',
 	'hasVoiceStates',
+	'holdGuildWriteOrder',
 	'intents',
 	'members',
 	'messages',
