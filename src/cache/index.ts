@@ -160,6 +160,8 @@ export class Cache {
 
 	/** Resolved cache query defaults for list shorters and member search. */
 	queries: Required<CacheQueries> = { members: true, memberSearch: true, bans: true, guilds: true };
+	/** Whether member joins and leaves update the cached guild member count. */
+	trackMemberCount = false;
 	__logger__?: Logger;
 	private pluginResourceNames = new Set<string>();
 	private pluginResourcePacketHandlers: {
@@ -417,10 +419,14 @@ export class Cache {
 		}
 	}
 
-	// Packets are handled concurrently, so guild writes that depend on the cached guild run one
+	// Packets are handled concurrently, so while member counts are tracked, guild writes run one
 	// at a time per guild. Otherwise an async adapter could lose a member count update, write a
 	// stale count over a fresh GUILD_CREATE, or bring a deleted guild back.
-	private queueGuildWrite(guildId: string, write: () => Promise<unknown> | unknown) {
+	private async queueGuildWrite(guildId: string, write: () => Promise<unknown> | unknown) {
+		if (!this.trackMemberCount) {
+			await write();
+			return;
+		}
 		const queued = (this.guildWrites.get(guildId) ?? Promise.resolve())
 			// The previous write already rejected to its own caller.
 			.catch(() => undefined)
@@ -428,14 +434,15 @@ export class Cache {
 				await write();
 			});
 		this.guildWrites.set(guildId, queued);
-		return queued.finally(() => {
+		await queued.finally(() => {
 			if (this.guildWrites.get(guildId) === queued) this.guildWrites.delete(guildId);
 		});
 	}
 
 	// Discord only sends member_count in GUILD_CREATE, so joins and leaves have to keep it current.
-	private adjustMemberCount(guildId: string, delta: number) {
-		return this.queueGuildWrite(guildId, async () => {
+	private async adjustMemberCount(guildId: string, delta: number) {
+		if (!this.trackMemberCount) return;
+		await this.queueGuildWrite(guildId, async () => {
 			const guild = await this.guilds?.raw(guildId);
 			if (typeof guild?.member_count !== 'number') return;
 			await this.guilds?.patch(CacheFrom.Gateway, guildId, {

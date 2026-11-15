@@ -77,6 +77,7 @@ const reservedCacheResourceNames = new Set([
 	'roles',
 	'stageInstances',
 	'stickers',
+	'trackMemberCount',
 	'users',
 	'voiceStates',
 ]);

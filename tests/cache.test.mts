@@ -952,7 +952,7 @@ describe.each(adapterKinds)('gateway actor hydration with %s', kind => {
 		});
 	});
 
-	test('member joins and leaves keep the cached guild member count current', async () => {
+	test('member joins and leaves keep the cached guild member count current when tracking is on', async () => {
 		const cache = createCache();
 		const member = apiMember();
 		await cache.onPacket({
@@ -960,6 +960,12 @@ describe.each(adapterKinds)('gateway actor hydration with %s', kind => {
 			d: { id: 'guild-1', name: 'guild', joined_at: new Date().toISOString(), member_count: 10 },
 		} as never);
 
+		await cache.onPacket({ t: 'GUILD_MEMBER_ADD', d: { ...member, guild_id: 'guild-1' } } as never);
+		expect((await cache.guilds?.get('guild-1'))?.memberCount).toBe(10);
+
+		cache.trackMemberCount = true;
+		await cache.onPacket({ t: 'GUILD_MEMBER_REMOVE', d: { user: member.user, guild_id: 'guild-1' } } as never);
+		await cache.onPacket({ t: 'GUILD_MEMBER_ADD', d: { ...member, guild_id: 'guild-1' } } as never);
 		await cache.onPacket({ t: 'GUILD_MEMBER_ADD', d: { ...member, guild_id: 'guild-1' } } as never);
 		expect((await cache.guilds?.get('guild-1'))?.memberCount).toBe(11);
 
@@ -991,7 +997,7 @@ describe.each(adapterKinds)('gateway actor hydration with %s', kind => {
 			},
 		});
 		const client = new Client();
-		client.setServices({ cache: { adapter } });
+		client.setServices({ cache: { adapter, trackMemberCount: true } });
 		const cache = client.cache;
 		await cache.onPacket({
 			t: 'GUILD_CREATE',
