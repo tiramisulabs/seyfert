@@ -1,6 +1,6 @@
 import { randomUUID, type UUID } from 'node:crypto';
 import { ApiHandler, Logger } from '..';
-import { WorkerAdapter } from '../cache';
+import { type GuildWriteReservation, WorkerAdapter } from '../cache';
 import {
 	type Awaitable,
 	calculateShardId,
@@ -586,9 +586,25 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	protected async onPacket(packet: GatewayDispatchPayload, shardId: number): Promise<GatewayDispatchPayload | null> {
+		// Interceptors and event hooks can await before the cache sees this packet, so a guild packet
+		// holds its place in the cache's guild write order until it has been handled.
+		const guildWrite = this.cache.reserveGuildWrite(packet);
+		try {
+			return await this.handlePacket(packet, shardId, guildWrite);
+		} finally {
+			guildWrite?.release();
+		}
+	}
+
+	private async handlePacket(
+		packet: GatewayDispatchPayload,
+		shardId: number,
+		guildWrite: GuildWriteReservation | undefined,
+	): Promise<GatewayDispatchPayload | null> {
 		const pluginPacket = await applyPluginGatewayDispatchInterceptors(this, shardId, packet);
 		if (pluginPacket === null) return null;
 		packet = pluginPacket;
+		guildWrite?.move(packet);
 
 		void Promise.allSettled([
 			this.events.runEvent('RAW', this, packet, shardId, false),

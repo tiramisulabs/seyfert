@@ -1,4 +1,5 @@
 import type { CommandContext, Message } from '..';
+import type { GuildWriteReservation } from '../cache';
 import {
 	type Awaitable,
 	type DeepPartial,
@@ -198,9 +199,25 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	protected async onPacket(shardId: number, packet: GatewayDispatchPayload): Promise<GatewayDispatchPayload | null> {
+		// Interceptors and event hooks can await before the cache sees this packet, so a guild packet
+		// holds its place in the cache's guild write order until it has been handled.
+		const guildWrite = this.cache.reserveGuildWrite(packet);
+		try {
+			return await this.handlePacket(shardId, packet, guildWrite);
+		} finally {
+			guildWrite?.release();
+		}
+	}
+
+	private async handlePacket(
+		shardId: number,
+		packet: GatewayDispatchPayload,
+		guildWrite: GuildWriteReservation | undefined,
+	): Promise<GatewayDispatchPayload | null> {
 		const pluginPacket = await applyPluginGatewayDispatchInterceptors(this, shardId, packet);
 		if (pluginPacket === null) return null;
 		packet = pluginPacket;
+		guildWrite?.move(packet);
 
 		void Promise.allSettled([
 			this.events.runEvent('RAW', this, packet, shardId, false),

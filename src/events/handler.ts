@@ -390,7 +390,8 @@ export class EventHandler extends CustomEventHandler {
 		const anyListeners = this.getPluginAnyListeners();
 		const Event = this.values[name];
 		// The hook below can await the cache, so hold this packet's place in its guild's write order first.
-		const releaseGuildWrite = runCache
+		// A packet dispatched by the client already holds one, which this call takes over.
+		const guildWrite = runCache
 			? this.client.cache.reserveGuildWrite({ t: name, d: packet } as GatewayDispatchPayload)
 			: undefined;
 		try {
@@ -441,7 +442,7 @@ export class EventHandler extends CustomEventHandler {
 		} catch (e) {
 			await this.reportEventFailure(name, e);
 		} finally {
-			releaseGuildWrite?.();
+			guildWrite?.release();
 		}
 	}
 

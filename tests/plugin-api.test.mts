@@ -1458,6 +1458,74 @@ describe('plugin api v3', () => {
 		);
 	});
 
+	test.each(['pass', 'replace', 'veto', 'throw'] as const)(
+		'keeps guild write order across an async dispatch interceptor that does %s',
+		async mode => {
+			const plugin = createPlugin({
+				name: 'slow-member-removal',
+				register(api) {
+					api.gateway.onDispatch(async (packet, next) => {
+						if (packet.t !== 'GUILD_MEMBER_REMOVE') return next(packet);
+						await new Promise(resolve => setTimeout(resolve, 5));
+						if (mode === 'veto') return null;
+						if (mode === 'throw') throw new Error('interceptor failed');
+						return next(mode === 'replace' ? { ...packet, d: { ...packet.d } } : packet);
+					});
+				},
+			});
+			const client = createGatewayClient([plugin]);
+			client.setServices({ cache: { trackMemberCount: true } });
+			const guild = (count: number) =>
+				({
+					op: GatewayOpcodes.Dispatch,
+					t: 'GUILD_CREATE',
+					s: 1,
+					d: { id: 'guild-1', name: 'guild', joined_at: new Date().toISOString(), member_count: count },
+				}) as never;
+			await runGatewayPacket(client, guild(10));
+
+			const removal = runGatewayPacket(client, {
+				op: GatewayOpcodes.Dispatch,
+				t: 'GUILD_MEMBER_REMOVE',
+				s: 2,
+				d: { user: { id: 'user-1', username: 'user' }, guild_id: 'guild-1' },
+			} as never);
+			// This snapshot comes after the removal, so it already leaves the member out.
+			const snapshot = runGatewayPacket(client, guild(9));
+
+			if (mode === 'throw') await expect(removal).rejects.toThrow();
+			else await removal;
+			await snapshot;
+
+			expect((await client.cache.guilds?.raw('guild-1'))?.member_count).toBe(9);
+		},
+	);
+
+	test('frees a guild packet place when handling fails before the cache sees it', async () => {
+		const client = createGatewayClient();
+		client.setServices({ cache: { trackMemberCount: true } });
+		await runGatewayPacket(client, {
+			op: GatewayOpcodes.Dispatch,
+			t: 'GUILD_CREATE',
+			s: 1,
+			d: { id: 'guild-1', name: 'guild', joined_at: new Date().toISOString(), member_count: 10 },
+		} as never);
+		const execute = vi.spyOn(client.events, 'execute').mockRejectedValueOnce(new Error('component stop failed'));
+
+		await expect(
+			runGatewayPacket(client, { op: GatewayOpcodes.Dispatch, t: 'GUILD_DELETE', s: 2, d: { id: 'guild-1' } } as never),
+		).rejects.toThrow('component stop failed');
+		execute.mockRestore();
+
+		await runGatewayPacket(client, {
+			op: GatewayOpcodes.Dispatch,
+			t: 'GUILD_UPDATE',
+			s: 3,
+			d: { id: 'guild-1', name: 'still writable' },
+		} as never);
+		expect(await client.cache.guilds?.raw('guild-1')).toMatchObject({ name: 'still writable' });
+	});
+
 	test('keeps downstream gateway dispatch veto sticky after await next', async () => {
 		const packets: GatewayDispatchPayload[] = [];
 		const events: string[] = [];

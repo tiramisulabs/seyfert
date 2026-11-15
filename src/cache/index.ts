@@ -170,7 +170,7 @@ export class Cache {
 	}[] = [];
 	private pluginResourcePacketErrorLogger?: (plugin: string, error: unknown) => void;
 	private guildWrites = new Map<string, Promise<void>>();
-	private guildWriteSlots = new WeakMap<object, (write: GuildWrite) => Promise<void>>();
+	private guildWriteSlots = new WeakMap<object, GuildWriteReservation>();
 
 	constructor(
 		public intents: number,
@@ -424,11 +424,8 @@ export class Cache {
 	// at a time per guild. Otherwise an async adapter could lose a member count update, write a
 	// stale count over a fresh GUILD_CREATE, or bring a deleted guild back.
 	private async queueGuildWrite(guildId: string, write: GuildWrite, packet?: object) {
-		const slot = packet && this.guildWriteSlots.get(packet);
-		if (slot) {
-			this.guildWriteSlots.delete(packet);
-			return slot(write);
-		}
+		const reservation = packet && this.guildWriteSlots.get(packet);
+		if (reservation) return reservation.use(write);
 		if (!this.trackMemberCount) {
 			await write();
 			return;
@@ -446,12 +443,14 @@ export class Cache {
 	}
 
 	/**
-	 * Takes a guild packet's place in the guild write queue when it is dispatched, so event hooks that
-	 * await before the packet reaches {@link Cache.onPacket} can't let a later packet write first.
-	 * The returned function frees the place if the packet never reaches the cache.
+	 * Takes a guild packet's place in the guild write queue as soon as it is dispatched, so dispatch
+	 * interceptors and event hooks that await before the packet reaches {@link Cache.onPacket} can't let
+	 * a later packet write first. A packet that already holds a place gets the same reservation back.
 	 * @internal
 	 */
-	reserveGuildWrite(event: GatewayDispatchPayload): (() => void) | undefined {
+	reserveGuildWrite(event: GatewayDispatchPayload): GuildWriteReservation | undefined {
+		const existing = this.guildWriteSlots.get(event.d as object);
+		if (existing) return existing;
 		if (!this.trackMemberCount) return;
 		const guildId = guildWriteTarget(event);
 		if (!guildId) return;
@@ -467,23 +466,40 @@ export class Cache {
 		// The packet's own caller observes a failed write; this only keeps an unused place quiet.
 		done.catch(() => undefined);
 
-		const packet = event.d as object;
 		let used = false;
-		const slot = (write: GuildWrite) => {
-			used = true;
-			deliver(write);
-			return done;
+		const detach = () => {
+			if (this.guildWriteSlots.get(reservation.packet) === reservation) this.guildWriteSlots.delete(reservation.packet);
 		};
-		// The same payload dispatched twice at once: give up the older place so neither call waits on the other.
-		void this.guildWriteSlots.get(packet)?.(() => undefined);
-		this.guildWriteSlots.set(packet, slot);
-		return () => {
-			if (this.guildWriteSlots.get(packet) === slot) this.guildWriteSlots.delete(packet);
-			if (!used) {
+		const reservation: GuildWriteReservation = {
+			packet: event.d as object,
+			use: write => {
+				detach();
+				used = true;
+				deliver(write);
+				return done;
+			},
+			move: next => {
+				if (used) return;
+				// An interceptor replaced or rewrote the packet: keep the place only if it still writes the same guild.
+				const replaced = next.d !== reservation.packet;
+				if (guildWriteTarget(next) !== guildId || (replaced && this.guildWriteSlots.has(next.d as object))) {
+					reservation.release();
+					return;
+				}
+				if (!replaced) return;
+				detach();
+				reservation.packet = next.d as object;
+				this.guildWriteSlots.set(reservation.packet, reservation);
+			},
+			release: () => {
+				detach();
+				if (used) return;
 				used = true;
 				deliver(() => undefined);
-			}
+			},
 		};
+		this.guildWriteSlots.set(reservation.packet, reservation);
+		return reservation;
 	}
 
 	// Discord only sends member_count in GUILD_CREATE, so joins and leaves have to keep it current.
@@ -753,6 +769,21 @@ export enum CacheFrom {
 }
 
 type GuildWrite = () => Promise<unknown> | unknown;
+
+/**
+ * A packet's place in its guild's write queue.
+ * @internal
+ */
+export interface GuildWriteReservation {
+	/** The payload whose cache write fills this place. */
+	packet: object;
+	/** Writes in this place. */
+	use(write: GuildWrite): Promise<void>;
+	/** Hands the place to a replacement packet, or frees it when the replacement writes another guild. */
+	move(next: GatewayDispatchPayload): void;
+	/** Frees the place if no write has used it. */
+	release(): void;
+}
 
 function guildWriteTarget(event: GatewayDispatchPayload) {
 	switch (event.t) {
