@@ -1633,7 +1633,16 @@ describe('plugin api v3', () => {
 		expect(disposed).toEqual(['override']);
 	});
 
-	test.each(['__proto__', 'queries', 'trackMemberCount'])('rejects unsafe cache resource key %s and ctx keys', name => {
+	test.each([
+		'__proto__',
+		'queries',
+		'trackMemberCount',
+		'guildWrites',
+		'guildWriteSlots',
+		'queueGuildWrite',
+		'reserveGuildWrite',
+		'adjustMemberCount',
+	])('rejects unsafe cache resource key %s and ctx keys', name => {
 		expect(() =>
 			createBaseClient([
 				createPlugin({

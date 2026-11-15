@@ -13,6 +13,7 @@ import {
 	CacheFrom,
 	ChannelType,
 	Client,
+	createEvent,
 	GatewayDispatchEvents,
 	InteractionType,
 	LimitedMemoryAdapter,
@@ -982,7 +983,7 @@ describe.each(adapterKinds)('gateway actor hydration with %s', kind => {
 		expect(await cache.guilds?.raw('guild-3')).toBeUndefined();
 	});
 
-	test('concurrent joins and leaves on an async adapter do not lose member count updates', async () => {
+	function createSlowTrackingClient() {
 		const memory = createTestAdapter(kind);
 		// Yield to the event loop on every call, like a networked adapter would.
 		const adapter = new Proxy(memory, {
@@ -998,7 +999,11 @@ describe.each(adapterKinds)('gateway actor hydration with %s', kind => {
 		});
 		const client = new Client();
 		client.setServices({ cache: { adapter, trackMemberCount: true } });
-		const cache = client.cache;
+		return client;
+	}
+
+	test('concurrent joins and leaves on an async adapter do not lose member count updates', async () => {
+		const cache = createSlowTrackingClient().cache;
 		await cache.onPacket({
 			t: 'GUILD_CREATE',
 			d: { id: 'guild-1', name: 'guild', joined_at: new Date().toISOString(), member_count: 10 },
@@ -1035,6 +1040,45 @@ describe.each(adapterKinds)('gateway actor hydration with %s', kind => {
 			cache.onPacket({ t: 'GUILD_DELETE', d: { id: 'guild-1' } } as never),
 		]);
 		expect(await cache.guilds?.raw('guild-1')).toBeUndefined();
+	});
+
+	test('a member removal keeps its place ahead of a later guild snapshot while its event hook awaits', async () => {
+		const client = createSlowTrackingClient();
+		const member = apiMember();
+		await client.cache.onPacket({
+			t: 'GUILD_CREATE',
+			d: { id: 'guild-1', name: 'guild', joined_at: new Date().toISOString(), member_count: 10 },
+		} as never);
+		await client.cache.members?.set(CacheFrom.Test, member.user.id, 'guild-1', member);
+		// A listener makes the removal go through its hook, which reads the member from the cache first.
+		client.events.set([createEvent({ data: { name: 'guildMemberRemove' }, run() {} }) as never]);
+
+		await Promise.all([
+			client.events.execute(
+				{ t: 'GUILD_MEMBER_REMOVE', d: { user: member.user, guild_id: 'guild-1' } } as never,
+				client as never,
+				0,
+			),
+			client.events.execute(
+				{
+					t: 'GUILD_CREATE',
+					d: { id: 'guild-1', name: 'guild', joined_at: new Date().toISOString(), member_count: 9 },
+				} as never,
+				client as never,
+				0,
+			),
+		]);
+
+		expect((await client.cache.guilds?.raw('guild-1'))?.member_count).toBe(9);
+
+		// Dispatching the same payload object twice at once must not leave the guild's writes stuck.
+		const duplicate = { t: 'GUILD_MEMBER_REMOVE', d: { user: member.user, guild_id: 'guild-1' } } as never;
+		await Promise.all([
+			client.events.execute(duplicate, client as never, 0),
+			client.events.execute(duplicate, client as never, 0),
+		]);
+		await client.cache.onPacket({ t: 'GUILD_UPDATE', d: { id: 'guild-1', name: 'still writable' } } as never);
+		expect(await client.cache.guilds?.raw('guild-1')).toMatchObject({ name: 'still writable', member_count: 7 });
 	});
 });
 
