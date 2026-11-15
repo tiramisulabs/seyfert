@@ -1018,6 +1018,17 @@ describe.each(adapterKinds)('gateway actor hydration with %s', kind => {
 
 		expect((await cache.guilds?.raw('guild-1'))?.member_count).toBe(13);
 
+		// A GUILD_CREATE that arrives after a join already counts that member.
+		const late = apiMember();
+		await Promise.all([
+			cache.onPacket({ t: 'GUILD_MEMBER_ADD', d: { ...late, guild_id: 'guild-1' } } as never),
+			cache.onPacket({
+				t: 'GUILD_CREATE',
+				d: { id: 'guild-1', name: 'guild', joined_at: new Date().toISOString(), member_count: 20 },
+			} as never),
+		]);
+		expect((await cache.guilds?.raw('guild-1'))?.member_count).toBe(20);
+
 		// Being removed from a guild sends the bot's own member removal right before GUILD_DELETE.
 		await Promise.all([
 			cache.onPacket({ t: 'GUILD_MEMBER_REMOVE', d: { user: joined[4].user, guild_id: 'guild-1' } } as never),

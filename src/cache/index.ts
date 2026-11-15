@@ -559,17 +559,25 @@ export class Cache {
 				}
 				break;
 			}
+			// The count change joins the guild queue before the member writes are awaited, so it keeps its
+			// place ahead of a GUILD_CREATE that arrives later and already includes this member.
 			case 'GUILD_MEMBER_ADD':
-				if (event.d.user) await this.members?.set(CacheFrom.Gateway, event.d.user.id, event.d.guild_id, event.d);
-				await this.adjustMemberCount(event.d.guild_id, 1);
+				await Promise.all([
+					this.adjustMemberCount(event.d.guild_id, 1),
+					event.d.user && this.members?.set(CacheFrom.Gateway, event.d.user.id, event.d.guild_id, event.d),
+				]);
 				break;
 			case 'GUILD_MEMBER_UPDATE':
 				if (event.d.user) await this.members?.set(CacheFrom.Gateway, event.d.user.id, event.d.guild_id, event.d);
 				break;
 			case 'GUILD_MEMBER_REMOVE':
-				await this.members?.remove(event.d.user.id, event.d.guild_id);
-				await this.presences?.remove(event.d.user.id, event.d.guild_id);
-				await this.adjustMemberCount(event.d.guild_id, -1);
+				await Promise.all([
+					this.adjustMemberCount(event.d.guild_id, -1),
+					(async () => {
+						await this.members?.remove(event.d.user.id, event.d.guild_id);
+						await this.presences?.remove(event.d.user.id, event.d.guild_id);
+					})(),
+				]);
 				break;
 			case 'INTERACTION_CREATE':
 				{
