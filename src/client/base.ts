@@ -1443,8 +1443,9 @@ export interface ServicesOptions {
 		queries?: boolean | CacheQueries | ((resource: keyof CacheQueries) => boolean);
 		/**
 		 * Update the cached guild member count on member joins and leaves. Discord only sends the count
-		 * in GUILD_CREATE, so it stays at its connect-time value while this is off. Joins and leaves arrive only
-		 * with the `GuildMembers` intent. Set it before connecting. Defaults to `false`.
+		 * in GUILD_CREATE, so it stays at its connect-time value while this is off. Needs the `Guilds` intent
+		 * for the GUILD_CREATE that seeds the count and the `GuildMembers` intent for joins and leaves.
+		 * Set it before connecting. Defaults to `false`.
 		 */
 		trackMemberCount?: boolean;
 	};
