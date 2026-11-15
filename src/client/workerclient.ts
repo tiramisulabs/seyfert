@@ -425,10 +425,11 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					for (const [id, shard] of this.resharding) {
 						this.shards.set(id, shard);
 						shard.options.handlePayload = (shardId, packet) =>
-							this.cache.holdGuildWriteOrder(packet, async () => {
-								await handlePayload?.(shardId, packet);
-								return this.onPacket(packet, shardId);
-							});
+							this.cache.holdGuildWriteOrder(
+								packet,
+								() => handlePayload?.(shardId, packet),
+								() => this.onPacket(packet, shardId),
+							);
 					}
 					workerData.totalShards = data.totalShards;
 					workerData.shards = [...this.shards.keys()];
@@ -543,10 +544,11 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				...this.options.gateway?.properties,
 			},
 			async handlePayload(shardId, payload) {
-				const pluginPacket = await self.cache.holdGuildWriteOrder(payload, async () => {
-					await handlePayload?.(shardId, payload);
-					return onPacket(payload, shardId);
-				});
+				const pluginPacket = await self.cache.holdGuildWriteOrder(
+					payload,
+					() => handlePayload?.(shardId, payload),
+					() => onPacket(payload, shardId),
+				);
 				if (self.options.sendPayloadToParent && pluginPacket !== null) {
 					void self
 						.postMessage({

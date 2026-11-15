@@ -467,8 +467,15 @@ export class Cache {
 		done.catch(() => undefined);
 
 		let used = false;
+		let redirected: GuildWriteReservation | undefined;
 		const detach = () => {
 			if (this.guildWriteSlots.get(reservation.packet) === reservation) this.guildWriteSlots.delete(reservation.packet);
+		};
+		const free = () => {
+			detach();
+			if (used) return;
+			used = true;
+			deliver(() => undefined);
 		};
 		const reservation: GuildWriteReservation = {
 			packet: event.d as object,
@@ -479,23 +486,27 @@ export class Cache {
 				return done;
 			},
 			move: next => {
+				if (redirected) return redirected.move(next);
 				if (used) return;
-				// An interceptor replaced or rewrote the packet: keep the place only if it still writes the same guild.
+				// A callback or interceptor replaced or rewrote the packet.
+				const target = guildWriteTarget(next);
 				const replaced = next.d !== reservation.packet;
-				if (guildWriteTarget(next) !== guildId || (replaced && this.guildWriteSlots.has(next.d as object))) {
-					reservation.release();
+				const taken = replaced && this.guildWriteSlots.has(next.d as object);
+				if (target === guildId && !taken) {
+					if (!replaced) return;
+					detach();
+					reservation.packet = next.d as object;
+					this.guildWriteSlots.set(reservation.packet, reservation);
 					return;
 				}
-				if (!replaced) return;
+				// It now writes another guild: take a place there before freeing this one.
 				detach();
-				reservation.packet = next.d as object;
-				this.guildWriteSlots.set(reservation.packet, reservation);
+				if (target && !taken) redirected = this.reserveGuildWrite(next);
+				free();
 			},
 			release: () => {
-				detach();
-				if (used) return;
-				used = true;
-				deliver(() => undefined);
+				free();
+				redirected?.release();
 			},
 		};
 		this.guildWriteSlots.set(reservation.packet, reservation);
@@ -503,13 +514,20 @@ export class Cache {
 	}
 
 	/**
-	 * Holds a guild packet's place in the guild write queue while `handle` runs, from the moment the
-	 * shard hands the packet over, so an async payload callback can't let a later packet write first.
+	 * Holds a guild packet's place in the guild write queue from the moment the shard hands it over,
+	 * so an async payload callback can't let a later packet write first. The place follows the packet
+	 * if the callback replaces its payload, then `handle` dispatches it.
 	 * @internal
 	 */
-	async holdGuildWriteOrder<T>(event: GatewayDispatchPayload, handle: () => Promise<T>): Promise<T> {
+	async holdGuildWriteOrder<T>(
+		event: GatewayDispatchPayload,
+		callback: () => unknown,
+		handle: () => Promise<T>,
+	): Promise<T> {
 		const guildWrite = this.reserveGuildWrite(event);
 		try {
+			await callback();
+			guildWrite?.move(event);
 			return await handle();
 		} finally {
 			guildWrite?.release();
@@ -793,9 +811,9 @@ export interface GuildWriteReservation {
 	packet: object;
 	/** Writes in this place. */
 	use(write: GuildWrite): Promise<void>;
-	/** Hands the place to a replacement packet, or frees it when the replacement writes another guild. */
+	/** Hands the place to a replacement packet, moving it to another guild's queue when the guild changed. */
 	move(next: GatewayDispatchPayload): void;
-	/** Frees the place if no write has used it. */
+	/** Frees the place, and any place it moved to, if no write has used it. */
 	release(): void;
 }
 
