@@ -167,6 +167,7 @@ export class Cache {
 		plugin: string;
 	}[] = [];
 	private pluginResourcePacketErrorLogger?: (plugin: string, error: unknown) => void;
+	private guildWrites = new Map<string, Promise<void>>();
 
 	constructor(
 		public intents: number,
@@ -416,6 +417,33 @@ export class Cache {
 		}
 	}
 
+	// Packets are handled concurrently, so guild writes that depend on the cached guild run one
+	// at a time per guild. Otherwise an async adapter could lose a member count update, write a
+	// stale count over a fresh GUILD_CREATE, or bring a deleted guild back.
+	private queueGuildWrite(guildId: string, write: () => Promise<unknown> | unknown) {
+		const queued = (this.guildWrites.get(guildId) ?? Promise.resolve())
+			// The previous write already rejected to its own caller.
+			.catch(() => undefined)
+			.then(async () => {
+				await write();
+			});
+		this.guildWrites.set(guildId, queued);
+		return queued.finally(() => {
+			if (this.guildWrites.get(guildId) === queued) this.guildWrites.delete(guildId);
+		});
+	}
+
+	// Discord only sends member_count in GUILD_CREATE, so joins and leaves have to keep it current.
+	private adjustMemberCount(guildId: string, delta: number) {
+		return this.queueGuildWrite(guildId, async () => {
+			const guild = await this.guilds?.raw(guildId);
+			if (typeof guild?.member_count !== 'number') return;
+			await this.guilds?.patch(CacheFrom.Gateway, guildId, {
+				member_count: Math.max(0, guild.member_count + delta),
+			});
+		});
+	}
+
 	private appendMessageUsers(
 		data: BulkWriteKey[],
 		message: Partial<GatewayMessageCreateDispatchData>,
@@ -436,15 +464,17 @@ export class Cache {
 			case 'GUILD_CREATE':
 			case 'GUILD_UPDATE':
 			case 'RAW_GUILD_CREATE':
-				await this.guilds?.patch(CacheFrom.Gateway, event.d.id, { unavailable: false, ...event.d });
+				await this.queueGuildWrite(event.d.id, () =>
+					this.guilds?.patch(CacheFrom.Gateway, event.d.id, { unavailable: false, ...event.d }),
+				);
 				break;
 			case 'GUILD_DELETE':
 			case 'RAW_GUILD_DELETE':
-				if (event.d.unavailable) {
-					await this.guilds?.patch(CacheFrom.Gateway, event.d.id, event.d);
-				} else {
-					await this.guilds?.remove(event.d.id);
-				}
+				await this.queueGuildWrite(event.d.id, () =>
+					event.d.unavailable
+						? this.guilds?.patch(CacheFrom.Gateway, event.d.id, event.d)
+						: this.guilds?.remove(event.d.id),
+				);
 				break;
 			case 'CHANNEL_CREATE':
 			case 'CHANNEL_UPDATE':
@@ -523,12 +553,16 @@ export class Cache {
 				break;
 			}
 			case 'GUILD_MEMBER_ADD':
+				if (event.d.user) await this.members?.set(CacheFrom.Gateway, event.d.user.id, event.d.guild_id, event.d);
+				await this.adjustMemberCount(event.d.guild_id, 1);
+				break;
 			case 'GUILD_MEMBER_UPDATE':
 				if (event.d.user) await this.members?.set(CacheFrom.Gateway, event.d.user.id, event.d.guild_id, event.d);
 				break;
 			case 'GUILD_MEMBER_REMOVE':
 				await this.members?.remove(event.d.user.id, event.d.guild_id);
 				await this.presences?.remove(event.d.user.id, event.d.guild_id);
+				await this.adjustMemberCount(event.d.guild_id, -1);
 				break;
 			case 'INTERACTION_CREATE':
 				{

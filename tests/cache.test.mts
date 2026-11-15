@@ -951,6 +951,74 @@ describe.each(adapterKinds)('gateway actor hydration with %s', kind => {
 			user: { id: member.user.id },
 		});
 	});
+
+	test('member joins and leaves keep the cached guild member count current', async () => {
+		const cache = createCache();
+		const member = apiMember();
+		await cache.onPacket({
+			t: 'GUILD_CREATE',
+			d: { id: 'guild-1', name: 'guild', joined_at: new Date().toISOString(), member_count: 10 },
+		} as never);
+
+		await cache.onPacket({ t: 'GUILD_MEMBER_ADD', d: { ...member, guild_id: 'guild-1' } } as never);
+		expect((await cache.guilds?.get('guild-1'))?.memberCount).toBe(11);
+
+		await cache.onPacket({ t: 'GUILD_MEMBER_UPDATE', d: { ...member, guild_id: 'guild-1', nick: 'renamed' } } as never);
+		await cache.onPacket({ t: 'GUILD_UPDATE', d: { id: 'guild-1', name: 'renamed guild' } } as never);
+		expect((await cache.guilds?.get('guild-1'))?.memberCount).toBe(11);
+
+		await cache.onPacket({ t: 'GUILD_MEMBER_REMOVE', d: { user: member.user, guild_id: 'guild-1' } } as never);
+		await cache.onPacket({ t: 'GUILD_MEMBER_REMOVE', d: { user: member.user, guild_id: 'guild-2' } } as never);
+		expect((await cache.guilds?.get('guild-1'))?.memberCount).toBe(10);
+		expect(await cache.guilds?.raw('guild-2')).toBeUndefined();
+
+		await cache.onPacket({ t: 'GUILD_MEMBER_ADD', d: { ...member, guild_id: 'guild-3' } } as never);
+		expect(await cache.guilds?.raw('guild-3')).toBeUndefined();
+	});
+
+	test('concurrent joins and leaves on an async adapter do not lose member count updates', async () => {
+		const memory = createTestAdapter(kind);
+		// Yield to the event loop on every call, like a networked adapter would.
+		const adapter = new Proxy(memory, {
+			get(target, key) {
+				if (key === 'isAsync') return true;
+				const value = Reflect.get(target, key);
+				if (typeof value !== 'function') return value;
+				return async (...args: unknown[]) => {
+					await new Promise(resolve => setTimeout(resolve, 0));
+					return value.apply(target, args);
+				};
+			},
+		});
+		const client = new Client();
+		client.setServices({ cache: { adapter } });
+		const cache = client.cache;
+		await cache.onPacket({
+			t: 'GUILD_CREATE',
+			d: { id: 'guild-1', name: 'guild', joined_at: new Date().toISOString(), member_count: 10 },
+		} as never);
+
+		const joined = Array.from({ length: 5 }, () => apiMember());
+		await Promise.all(
+			joined.map(member => cache.onPacket({ t: 'GUILD_MEMBER_ADD', d: { ...member, guild_id: 'guild-1' } } as never)),
+		);
+		await Promise.all(
+			joined
+				.slice(0, 2)
+				.map(member =>
+					cache.onPacket({ t: 'GUILD_MEMBER_REMOVE', d: { user: member.user, guild_id: 'guild-1' } } as never),
+				),
+		);
+
+		expect((await cache.guilds?.raw('guild-1'))?.member_count).toBe(13);
+
+		// Being removed from a guild sends the bot's own member removal right before GUILD_DELETE.
+		await Promise.all([
+			cache.onPacket({ t: 'GUILD_MEMBER_REMOVE', d: { user: joined[4].user, guild_id: 'guild-1' } } as never),
+			cache.onPacket({ t: 'GUILD_DELETE', d: { id: 'guild-1' } } as never),
+		]);
+		expect(await cache.guilds?.raw('guild-1')).toBeUndefined();
+	});
 });
 
 describe('base client runtime config cache', () => {
