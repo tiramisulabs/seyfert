@@ -129,6 +129,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 		}
 	}
 
+	/** Configure the backend before starting workers; optional cache capabilities are negotiated at worker startup. */
 	setCache(adapter: Adapter) {
 		this.cacheAdapter = adapter;
 	}
@@ -513,8 +514,11 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 					}
 					let response: ManagerSendCacheResult;
 					try {
-						// @ts-expect-error
-						const result = await this.cacheAdapter[message.method](...message.args);
+						const result =
+							message.method === 'capabilities'
+								? { increment: typeof this.cacheAdapter.increment === 'function' }
+								: // @ts-expect-error The request's method determines its argument tuple.
+									await this.cacheAdapter[message.method](...message.args);
 						response = { type: 'CACHE_RESULT', nonce: message.nonce, result };
 					} catch (error) {
 						response = { type: 'CACHE_RESULT', nonce: message.nonce, error: serializeWorkerError(error) };

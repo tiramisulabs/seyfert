@@ -1,6 +1,6 @@
 import { randomUUID, type UUID } from 'node:crypto';
 import { ApiHandler, Logger } from '..';
-import { type GuildWriteReservation, WorkerAdapter } from '../cache';
+import { WorkerAdapter } from '../cache';
 import {
 	type Awaitable,
 	calculateShardId,
@@ -425,11 +425,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					for (const [id, shard] of this.resharding) {
 						this.shards.set(id, shard);
 						shard.options.handlePayload = (shardId, packet) =>
-							this.cache.holdGuildWriteOrder(
-								packet,
-								() => handlePayload?.(shardId, packet),
-								() => this.onPacket(packet, shardId),
-							);
+							this.cache.withGuildWriteOrder(packet, 'payload', async () => {
+								await this.cache.withoutGuildWriteOrder(() => handlePayload?.(shardId, packet));
+								return this.onPacket(packet, shardId);
+							});
 					}
 					workerData.totalShards = data.totalShards;
 					workerData.shards = [...this.shards.keys()];
@@ -544,11 +543,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				...this.options.gateway?.properties,
 			},
 			async handlePayload(shardId, payload) {
-				const pluginPacket = await self.cache.holdGuildWriteOrder(
-					payload,
-					() => handlePayload?.(shardId, payload),
-					() => onPacket(payload, shardId),
-				);
+				const pluginPacket = await self.cache.withGuildWriteOrder(payload, 'payload', async () => {
+					await self.cache.withoutGuildWriteOrder(() => handlePayload?.(shardId, payload));
+					return onPacket(payload, shardId);
+				});
 				if (self.options.sendPayloadToParent && pluginPacket !== null) {
 					void self
 						.postMessage({
@@ -590,31 +588,23 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		});
 	}
 
-	protected async onPacket(packet: GatewayDispatchPayload, shardId: number): Promise<GatewayDispatchPayload | null> {
-		// Interceptors and event hooks can await before the cache sees this packet, so a guild packet
-		// holds its place in the cache's guild write order until it has been handled.
-		const guildWrite = this.cache.reserveGuildWrite(packet);
-		try {
-			return await this.handlePacket(packet, shardId, guildWrite);
-		} finally {
-			guildWrite?.release();
-		}
+	protected onPacket(packet: GatewayDispatchPayload, shardId: number): Promise<GatewayDispatchPayload | null> {
+		return this.cache.withGuildWriteOrder(packet, 'dispatch', async () => {
+			const pluginPacket = await this.cache.withoutGuildWriteOrder(() =>
+				applyPluginGatewayDispatchInterceptors(this, shardId, packet),
+			);
+			if (pluginPacket === null) return null;
+			return this.handlePacket(pluginPacket, shardId);
+		});
 	}
 
-	private async handlePacket(
-		packet: GatewayDispatchPayload,
-		shardId: number,
-		guildWrite: GuildWriteReservation | undefined,
-	): Promise<GatewayDispatchPayload | null> {
-		const pluginPacket = await applyPluginGatewayDispatchInterceptors(this, shardId, packet);
-		if (pluginPacket === null) return null;
-		packet = pluginPacket;
-		guildWrite?.move(packet);
-
-		void Promise.allSettled([
-			this.events.runEvent('RAW', this, packet, shardId, false),
-			this.collectors.run('RAW', packet, this),
-		]);
+	private async handlePacket(packet: GatewayDispatchPayload, shardId: number): Promise<GatewayDispatchPayload | null> {
+		void this.cache.withoutGuildWriteOrder(() =>
+			Promise.allSettled([
+				this.events.runEvent('RAW', this, packet, shardId, false),
+				this.collectors.run('RAW', packet, this),
+			]),
+		);
 		switch (packet.t) {
 			case 'GUILD_MEMBER_UPDATE':
 				{
@@ -712,6 +702,10 @@ export interface WorkerClientOptions extends BaseClientOptions {
 	 */
 	onShardReconnect?: ShardManagerOptions['onShardReconnect'];
 	gateway?: ClientOptions['gateway'];
+	/**
+	 * Sends worker IPC messages. For cache requests, reject only when the request was not delivered;
+	 * accepted operations report completion or failure through CACHE_RESULT.
+	 */
 	postMessage?: (body: unknown) => Awaitable<unknown>;
 	/** can have perfomance issues in big bots if the client sends every event, specially in startup (false by default) */
 	sendPayloadToParent?: boolean;

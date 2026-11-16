@@ -12,6 +12,7 @@ import {
 } from '../types';
 import type { Adapter, AdapterEntry } from './adapters';
 import { testCacheAdapter } from './conformance';
+import { GuildWriteQueue, type GuildWriteStage } from './guild-write-queue';
 import { Bans } from './resources/bans';
 import { Channels } from './resources/channels';
 import { Emojis } from './resources/emojis';
@@ -169,8 +170,7 @@ export class Cache {
 		plugin: string;
 	}[] = [];
 	private pluginResourcePacketErrorLogger?: (plugin: string, error: unknown) => void;
-	private guildWrites = new Map<string, Promise<void>>();
-	private guildWriteSlots = new WeakMap<object, GuildWriteReservation>();
+	private guildWrites = new GuildWriteQueue();
 
 	constructor(
 		public intents: number,
@@ -218,7 +218,7 @@ export class Cache {
 			? ((() => {
 					//
 				}) as any as () => Promise<void>)
-			: this.onPacketWithPluginResources.bind(this);
+			: Cache.prototype.onPacket.bind(this);
 
 		const pluginResources = [
 			...((client as { pluginRegistry?: { cacheResources?: PluginCacheResourceContributionLike[] } }).pluginRegistry
@@ -389,12 +389,12 @@ export class Cache {
 		await this.adapter.bulkSet(this._buildBulkWrites(keys));
 	}
 
-	onPacket(event: GatewayDispatchPayload) {
-		return this.onPacketWithPluginResources(event);
+	onPacket(event: GatewayDispatchPayload): Promise<void> {
+		return this.withGuildWriteOrder(event, 'cache', () => this.onPacketWithPluginResources(event));
 	}
 
 	private async onPacketWithPluginResources(event: GatewayDispatchPayload) {
-		await this.onPacketDefault(event);
+		await this.guildWrites.write(() => this.onPacketDefault(event));
 		for (const contribution of this.pluginResourcePacketHandlers) {
 			try {
 				await contribution.handler(event, this);
@@ -420,134 +420,24 @@ export class Cache {
 		}
 	}
 
-	// Packets are handled concurrently, so while member counts are tracked, guild writes run one
-	// at a time per guild. Otherwise an async adapter could lose a member count update, write a
-	// stale count over a fresh GUILD_CREATE, or bring a deleted guild back.
-	private async queueGuildWrite(guildId: string, write: GuildWrite, packet?: object) {
-		const reservation = packet && this.guildWriteSlots.get(packet);
-		if (reservation) return reservation.use(write);
-		if (!this.trackMemberCount) {
-			await write();
-			return;
-		}
-		const queued = (this.guildWrites.get(guildId) ?? Promise.resolve())
-			// The previous write already rejected to its own caller.
-			.catch(() => undefined)
-			.then(async () => {
-				await write();
-			});
-		this.guildWrites.set(guildId, queued);
-		await queued.finally(() => {
-			if (this.guildWrites.get(guildId) === queued) this.guildWrites.delete(guildId);
-		});
-	}
-
-	/**
-	 * Takes a guild packet's place in the guild write queue as soon as it is dispatched, so dispatch
-	 * interceptors and event hooks that await before the packet reaches {@link Cache.onPacket} can't let
-	 * a later packet write first. A packet that already holds a place gets the same reservation back.
-	 * @internal
-	 */
-	reserveGuildWrite(event: GatewayDispatchPayload): GuildWriteReservation | undefined {
-		const existing = this.guildWriteSlots.get(event.d as object);
-		if (existing) return existing;
-		if (!this.trackMemberCount) return;
-		const guildId = guildWriteTarget(event);
-		if (!guildId) return;
-
-		let deliver!: (write: GuildWrite) => void;
-		const received = new Promise<GuildWrite>(resolve => {
-			deliver = resolve;
-		});
-		const done = this.queueGuildWrite(guildId, async () => {
-			const write = await received;
-			await write();
-		});
-		// The packet's own caller observes a failed write; this only keeps an unused place quiet.
-		done.catch(() => undefined);
-
-		let used = false;
-		let redirected: GuildWriteReservation | undefined;
-		const detach = () => {
-			if (this.guildWriteSlots.get(reservation.packet) === reservation) this.guildWriteSlots.delete(reservation.packet);
-		};
-		const free = () => {
-			detach();
-			if (used) return;
-			used = true;
-			deliver(() => undefined);
-		};
-		const reservation: GuildWriteReservation = {
-			packet: event.d as object,
-			use: write => {
-				detach();
-				used = true;
-				deliver(write);
-				return done;
-			},
-			move: next => {
-				if (redirected) return redirected.move(next);
-				if (used) return;
-				// A callback or interceptor replaced or rewrote the packet.
-				const target = guildWriteTarget(next);
-				const replaced = next.d !== reservation.packet;
-				const taken = replaced && this.guildWriteSlots.has(next.d as object);
-				if (target === guildId && !taken) {
-					if (!replaced) return;
-					detach();
-					reservation.packet = next.d as object;
-					this.guildWriteSlots.set(reservation.packet, reservation);
-					return;
-				}
-				// It now writes another guild: take a place there before freeing this one.
-				detach();
-				if (target && !taken) redirected = this.reserveGuildWrite(next);
-				free();
-			},
-			release: () => {
-				free();
-				redirected?.release();
-			},
-		};
-		this.guildWriteSlots.set(reservation.packet, reservation);
-		return reservation;
-	}
-
-	/**
-	 * Holds a guild packet's place in the guild write queue from the moment the shard hands it over,
-	 * so an async payload callback can't let a later packet write first. The place follows the packet
-	 * if the callback replaces its payload, then `handle` dispatches it.
-	 * @internal
-	 */
-	async holdGuildWriteOrder<T>(
+	/** @internal Keeps cache ordering across asynchronous gateway and event stages. */
+	async withGuildWriteOrder<T>(
 		event: GatewayDispatchPayload,
-		callback: () => unknown,
-		handle: () => Promise<T>,
+		stage: GuildWriteStage,
+		handle: () => Awaitable<T>,
 	): Promise<T> {
-		const guildWrite = this.reserveGuildWrite(event);
-		try {
-			await callback();
-			guildWrite?.move(event);
-			return await handle();
-		} finally {
-			guildWrite?.release();
-		}
+		return this.trackMemberCount ? this.guildWrites.run(event, stage, handle) : handle();
+	}
+
+	/** @internal Isolates concurrent callbacks from the dispatch's cache phase. */
+	withoutGuildWriteOrder<T>(handle: () => T): T {
+		return this.guildWrites.outside(handle);
 	}
 
 	// Discord only sends member_count in GUILD_CREATE, so joins and leaves have to keep it current.
-	private async adjustMemberCount(guildId: string, delta: number, packet: object) {
-		await this.queueGuildWrite(
-			guildId,
-			async () => {
-				if (!this.trackMemberCount) return;
-				const guild = await this.guilds?.raw(guildId);
-				if (typeof guild?.member_count !== 'number') return;
-				await this.guilds?.patch(CacheFrom.Gateway, guildId, {
-					member_count: Math.max(0, guild.member_count + delta),
-				});
-			},
-			packet,
-		);
+	private async adjustMemberCount(guildId: string, delta: number) {
+		if (!this.trackMemberCount) return;
+		await this.guilds?.incrementMemberCount(CacheFrom.Gateway, guildId, delta);
 	}
 
 	private appendMessageUsers(
@@ -570,22 +460,12 @@ export class Cache {
 			case 'GUILD_CREATE':
 			case 'GUILD_UPDATE':
 			case 'RAW_GUILD_CREATE':
-				await this.queueGuildWrite(
-					event.d.id,
-					() => this.guilds?.patch(CacheFrom.Gateway, event.d.id, { unavailable: false, ...event.d }),
-					event.d,
-				);
+				await this.guilds?.patch(CacheFrom.Gateway, event.d.id, { unavailable: false, ...event.d });
 				break;
 			case 'GUILD_DELETE':
 			case 'RAW_GUILD_DELETE':
-				await this.queueGuildWrite(
-					event.d.id,
-					() =>
-						event.d.unavailable
-							? this.guilds?.patch(CacheFrom.Gateway, event.d.id, event.d)
-							: this.guilds?.remove(event.d.id),
-					event.d,
-				);
+				if (event.d.unavailable) await this.guilds?.patch(CacheFrom.Gateway, event.d.id, event.d);
+				else await this.guilds?.remove(event.d.id);
 				break;
 			case 'CHANNEL_CREATE':
 			case 'CHANNEL_UPDATE':
@@ -663,20 +543,20 @@ export class Cache {
 				}
 				break;
 			}
-			// The count change joins the guild queue before the member writes are awaited, so it keeps its
-			// place ahead of a GUILD_CREATE that arrives later and already includes this member.
 			case 'GUILD_MEMBER_ADD':
-				await Promise.all([
-					this.adjustMemberCount(event.d.guild_id, 1, event.d),
-					event.d.user && this.members?.set(CacheFrom.Gateway, event.d.user.id, event.d.guild_id, event.d),
+				await settleMemberWrites(this.trackMemberCount, [
+					this.adjustMemberCount(event.d.guild_id, 1),
+					(async () => {
+						if (event.d.user) await this.members?.set(CacheFrom.Gateway, event.d.user.id, event.d.guild_id, event.d);
+					})(),
 				]);
 				break;
 			case 'GUILD_MEMBER_UPDATE':
 				if (event.d.user) await this.members?.set(CacheFrom.Gateway, event.d.user.id, event.d.guild_id, event.d);
 				break;
 			case 'GUILD_MEMBER_REMOVE':
-				await Promise.all([
-					this.adjustMemberCount(event.d.guild_id, -1, event.d),
+				await settleMemberWrites(this.trackMemberCount, [
+					this.adjustMemberCount(event.d.guild_id, -1),
 					(async () => {
 						await this.members?.remove(event.d.user.id, event.d.guild_id);
 						await this.presences?.remove(event.d.user.id, event.d.guild_id);
@@ -800,35 +680,14 @@ export enum CacheFrom {
 	Test,
 }
 
-type GuildWrite = () => Promise<unknown> | unknown;
-
-/**
- * A packet's place in its guild's write queue.
- * @internal
- */
-export interface GuildWriteReservation {
-	/** The payload whose cache write fills this place. */
-	packet: object;
-	/** Writes in this place. */
-	use(write: GuildWrite): Promise<void>;
-	/** Hands the place to a replacement packet, moving it to another guild's queue when the guild changed. */
-	move(next: GatewayDispatchPayload): void;
-	/** Frees the place, and any place it moved to, if no write has used it. */
-	release(): void;
-}
-
-function guildWriteTarget(event: GatewayDispatchPayload) {
-	switch (event.t) {
-		case 'GUILD_CREATE':
-		case 'GUILD_UPDATE':
-		case 'GUILD_DELETE':
-		case 'RAW_GUILD_CREATE':
-		case 'RAW_GUILD_DELETE':
-			return event.d.id;
-		case 'GUILD_MEMBER_ADD':
-		case 'GUILD_MEMBER_REMOVE':
-			return event.d.guild_id;
-		default:
-			return;
+// An ordered cache phase must drain both writes before a later snapshot can start, including on failure.
+async function settleMemberWrites(ordered: boolean, writes: Awaitable<unknown>[]) {
+	if (!ordered) {
+		await Promise.all(writes);
+		return;
+	}
+	const outcomes = await Promise.allSettled(writes);
+	for (const outcome of outcomes) {
+		if (outcome.status === 'rejected') throw outcome.reason;
 	}
 }

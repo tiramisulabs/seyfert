@@ -1445,7 +1445,8 @@ export interface ServicesOptions {
 		 * Update the cached guild member count on member joins and leaves. Discord only sends the count
 		 * in GUILD_CREATE, so it stays at its connect-time value while this is off. Needs the `Guilds` intent
 		 * for the GUILD_CREATE that seeds the count and the `GuildMembers` intent for joins and leaves.
-		 * Set it before connecting. Defaults to `false`.
+		 * Set it before connecting. Defaults to `false`. Requires one gateway cache writer per guild;
+		 * ordering is local to this client, including when its adapter uses shared storage such as Redis.
 		 */
 		trackMemberCount?: boolean;
 	};

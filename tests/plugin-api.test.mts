@@ -12,6 +12,7 @@ import {
 	createMiddleware,
 	createPlugin,
 	createSharedKey,
+	EventHandler,
 	type GatewayDispatchPayload,
 	GatewayIntentBits,
 	GatewayOpcodes,
@@ -1501,21 +1502,73 @@ describe('plugin api v3', () => {
 		},
 	);
 
-	test.each([false, true])(
-		'keeps guild write order across an async handlePayload on the worker shard callback, copying the payload: %s',
-		async copy => {
-			const client = new WorkerClient({
+	test.each(['client', 'worker', 'resharded worker'] as const)(
+		'keeps payload hooks and guild order through forwarding overrides in %s ingress',
+		async kind => {
+			let payloadCalls = 0;
+			const options = {
 				getRC: runtimeConfig,
 				postMessage: () => {},
-				async handlePayload(_shardId, packet) {
+				async handlePayload(_shardId: number, packet: GatewayDispatchPayload) {
+					payloadCalls++;
 					if (packet.t !== 'GUILD_MEMBER_REMOVE') return;
 					await new Promise(resolve => setTimeout(resolve, 5));
-					if (copy) packet.d = { ...packet.d };
+					packet.d = { ...packet.d };
 				},
-			});
-			setWorkerData(client);
+			};
+			class ForwardingClient extends Client {
+				protected override async onPacket(shardId: number, packet: GatewayDispatchPayload) {
+					await Promise.resolve();
+					return super.onPacket(shardId, packet);
+				}
+			}
+			class ForwardingWorker extends WorkerClient {
+				protected override async onPacket(packet: GatewayDispatchPayload, shardId: number) {
+					await Promise.resolve();
+					return super.onPacket(packet, shardId);
+				}
+			}
+			class ForwardingEvents extends EventHandler {
+				override async execute(
+					raw: GatewayDispatchPayload,
+					client: Client<true> | WorkerClient<true>,
+					shardId: number,
+				) {
+					await Promise.resolve();
+					return super.execute(raw, client, shardId);
+				}
+				override async runEvent(
+					name: Parameters<EventHandler['runEvent']>[0],
+					client: Client | WorkerClient,
+					packet: unknown,
+					shardId: number,
+					runCache = true,
+				) {
+					await Promise.resolve();
+					return super.runEvent(name, client, packet, shardId, runCache);
+				}
+			}
+			const client = kind === 'client' ? new ForwardingClient(options) : new ForwardingWorker(options);
+			client.events = new ForwardingEvents(client);
 			client.setServices({ cache: { trackMemberCount: true } });
-			const shard = client.createShard(0, { info: gatewayInfo(), compress: false, properties: {} as never });
+			let dispatch: (packet: GatewayDispatchPayload) => unknown;
+			if (client instanceof WorkerClient) {
+				setWorkerData(client);
+				const shard = client.createShard(0, { info: gatewayInfo(), compress: false, properties: {} as never });
+				if (kind === 'resharded worker') {
+					client.resharding.set(0, shard);
+					await client.handleManagerMessages({ type: 'CONNECT_ALL_SHARDS_RESHARDING', totalShards: 1 });
+				}
+				dispatch = packet => shard.options.handlePayload(0, packet);
+			} else {
+				const request = vi.spyOn(client.rest, 'request').mockResolvedValue(gatewayInfo());
+				try {
+					await client.start({}, false);
+				} finally {
+					request.mockRestore();
+				}
+				dispatch = packet => client.gateway.options.handlePayload(0, packet);
+			}
 			const guild = (count: number) =>
 				({
 					op: GatewayOpcodes.Dispatch,
@@ -1523,20 +1576,50 @@ describe('plugin api v3', () => {
 					s: 1,
 					d: { id: 'guild-1', name: 'guild', joined_at: new Date().toISOString(), member_count: count },
 				}) as never;
-			await shard.options.handlePayload(0, guild(10));
+			await dispatch(guild(10));
 
-			const removal = shard.options.handlePayload(0, {
+			const removal = dispatch({
 				op: GatewayOpcodes.Dispatch,
 				t: 'GUILD_MEMBER_REMOVE',
 				s: 2,
 				d: { user: { id: 'user-1', username: 'user' }, guild_id: 'guild-1' },
 			} as never);
 			// This snapshot comes after the removal, so it already leaves the member out.
-			await Promise.all([removal, shard.options.handlePayload(0, guild(9))]);
+			await Promise.all([removal, dispatch(guild(9))]);
 
+			expect(payloadCalls).toBe(3);
 			expect((await client.cache.guilds?.raw('guild-1'))?.member_count).toBe(9);
 		},
 	);
+
+	test('releases the guild cache phase before a listener dispatches another packet for that guild', async () => {
+		let client: Client;
+		const plugin = createPlugin({
+			name: 'member-listener-cache-write',
+			register(api) {
+				api.events.on('guildMemberAdd', async () => {
+					await runGatewayPacket(client, {
+						t: 'GUILD_UPDATE',
+						d: { id: 'guild-1', name: 'updated by listener' },
+					} as never);
+				});
+			},
+		});
+		client = createGatewayClient([plugin]);
+		client.setServices({ cache: { trackMemberCount: true } });
+		await runGatewayPacket(client, {
+			t: 'GUILD_CREATE',
+			d: { id: 'guild-1', name: 'guild', member_count: 10 },
+		} as never);
+		await runGatewayPacket(client, {
+			t: 'GUILD_MEMBER_ADD',
+			d: { guild_id: 'guild-1', user: { id: 'user-1', username: 'user' } },
+		} as never);
+		expect(await client.cache.guilds?.raw('guild-1')).toMatchObject({
+			member_count: 11,
+			name: 'updated by listener',
+		});
+	});
 
 	test('moves the guild write place when a dispatch interceptor redirects a packet to another guild', async () => {
 		const plugin = createPlugin({
@@ -1778,10 +1861,8 @@ describe('plugin api v3', () => {
 		'queries',
 		'trackMemberCount',
 		'guildWrites',
-		'guildWriteSlots',
-		'queueGuildWrite',
-		'reserveGuildWrite',
-		'holdGuildWriteOrder',
+		'withGuildWriteOrder',
+		'withoutGuildWriteOrder',
 		'adjustMemberCount',
 	])('rejects unsafe cache resource key %s and ctx keys', name => {
 		expect(() =>
