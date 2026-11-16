@@ -218,7 +218,7 @@ export class Cache {
 			? ((() => {
 					//
 				}) as any as () => Promise<void>)
-			: Cache.prototype.onPacket.bind(this);
+			: this.onPacketWithPluginResources.bind(this);
 
 		const pluginResources = [
 			...((client as { pluginRegistry?: { cacheResources?: PluginCacheResourceContributionLike[] } }).pluginRegistry
@@ -390,12 +390,13 @@ export class Cache {
 	}
 
 	onPacket(event: GatewayDispatchPayload): Promise<void> {
-		if (!this.trackMemberCount) return this.onPacketWithPluginResources(event);
-		return this.withGuildWriteOrder(event, 'cache', () => this.onPacketWithPluginResources(event));
+		return this.onPacketWithPluginResources(event);
 	}
 
 	private async onPacketWithPluginResources(event: GatewayDispatchPayload) {
-		await this.guildWrites.write(() => this.onPacketDefault(event));
+		if (this.trackMemberCount)
+			await this.withGuildWriteOrder(event, 'cache', () => this.guildWrites.write(() => this.onPacketDefault(event)));
+		else await this.onPacketDefault(event);
 		for (const contribution of this.pluginResourcePacketHandlers) {
 			try {
 				await contribution.handler(event, this);

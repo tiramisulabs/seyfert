@@ -48,16 +48,17 @@ export class GuildWriteQueue {
 			context.slot = guildId ? this.enqueue(guildId) : undefined;
 			previous?.release();
 		}
-		return dispatchScope.run({ queue: this, context, stage }, async () => {
+		const scope = { queue: this, context, stage };
+		// Forwarded stages share their creator's cleanup and can return the handler's promise directly.
+		if (context === parent?.context) return Promise.resolve(dispatchScope.run(scope, handle));
+		return dispatchScope.run(scope, async () => {
 			try {
 				return await handle();
 			} finally {
-				// Nested stages borrow the slot; its creator releases packets that never reach the cache.
-				if (context !== parent?.context) {
-					context.complete = true;
-					context.slot?.release();
-					context.slot = undefined;
-				}
+				// Release packets that never reach the cache.
+				context.complete = true;
+				context.slot?.release();
+				context.slot = undefined;
 			}
 		});
 	}
@@ -89,10 +90,10 @@ export class GuildWriteQueue {
 	private enqueue(guildId: string): GuildWriteSlot {
 		const ready = this.tails.get(guildId) ?? Promise.resolve();
 		let release!: () => void;
-		const finished = new Promise<void>(resolve => {
-			release = resolve;
+		const tail = new Promise<void>(resolve => {
+			// Even an early veto must keep later packets behind the preceding cache phase.
+			release = () => resolve(ready);
 		});
-		const tail = ready.then(() => finished);
 		this.tails.set(guildId, tail);
 		void tail.then(() => {
 			if (this.tails.get(guildId) === tail) this.tails.delete(guildId);

@@ -301,6 +301,7 @@ export class EventHandler extends CustomEventHandler {
 	}
 
 	execute(raw: GatewayDispatchPayload, client: Client<true> | WorkerClient<true>, shardId: number): Promise<void> {
+		if (!client.cache.trackMemberCount) return this.executePacket(raw, client, shardId);
 		return client.cache.withGuildWriteOrder(raw, 'event', () => this.executePacket(raw, client, shardId));
 	}
 
@@ -399,7 +400,7 @@ export class EventHandler extends CustomEventHandler {
 		shardId: number,
 		runCache = true,
 	): Promise<void> {
-		return runCache
+		return runCache && client.cache.trackMemberCount
 			? client.cache.withGuildWriteOrder({ t: name, d: packet } as GatewayDispatchPayload, 'hook', () =>
 					this.runEventData(name, client, packet, shardId, runCache),
 				)

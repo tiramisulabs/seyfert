@@ -1502,9 +1502,13 @@ describe('plugin api v3', () => {
 		},
 	);
 
-	test.each(['client', 'worker', 'resharded worker'] as const)(
-		'keeps payload hooks and guild order through forwarding overrides in %s ingress',
-		async kind => {
+	test.each(
+		(['client', 'worker', 'resharded worker'] as const).flatMap(kind =>
+			[false, true].map(tracking => ({ kind, tracking })),
+		),
+	)(
+		'keeps payload hooks and guild order through forwarding overrides in $kind ingress (tracking: $tracking)',
+		async ({ kind, tracking }) => {
 			let payloadCalls = 0;
 			const options = {
 				getRC: runtimeConfig,
@@ -1550,7 +1554,7 @@ describe('plugin api v3', () => {
 			}
 			const client = kind === 'client' ? new ForwardingClient(options) : new ForwardingWorker(options);
 			client.events = new ForwardingEvents(client);
-			client.setServices({ cache: { trackMemberCount: true } });
+			client.setServices({ cache: { trackMemberCount: tracking } });
 			let dispatch: (packet: GatewayDispatchPayload) => unknown;
 			if (client instanceof WorkerClient) {
 				setWorkerData(client);
@@ -1589,6 +1593,56 @@ describe('plugin api v3', () => {
 
 			expect(payloadCalls).toBe(3);
 			expect((await client.cache.guilds?.raw('guild-1'))?.member_count).toBe(9);
+		},
+	);
+
+	test.each(['veto', 'throw'] as const)(
+		'a dispatch that exits through %s keeps a later snapshot behind the preceding cache write',
+		async mode => {
+			const plugin = createPlugin({
+				name: 'early-dispatch-exit',
+				register(api) {
+					api.gateway.onDispatch((packet, next) => {
+						if (packet.t !== 'GUILD_MEMBER_REMOVE') return next(packet);
+						if (mode === 'throw') throw new Error('dispatch failed');
+						return null;
+					});
+				},
+			});
+			const client = createGatewayClient([plugin]);
+			client.setServices({ cache: { trackMemberCount: true } });
+			const guild = (member_count: number) => ({ t: 'GUILD_CREATE', d: { id: 'guild-1', member_count } }) as never;
+			await runGatewayPacket(client, guild(10));
+			const entered = Promise.withResolvers<void>();
+			const gate = Promise.withResolvers<void>();
+			const increment = client.cache.guilds!.incrementMemberCount.bind(client.cache.guilds);
+			const spy = vi.spyOn(client.cache.guilds!, 'incrementMemberCount').mockImplementation(async (from, id, delta) => {
+				entered.resolve();
+				await gate.promise;
+				return increment(from, id, delta);
+			});
+			const joining = runGatewayPacket(client, {
+				t: 'GUILD_MEMBER_ADD',
+				d: { guild_id: 'guild-1', user: { id: 'user-1' } },
+			} as never);
+			let snapshot: ReturnType<typeof runGatewayPacket> | undefined;
+			try {
+				await entered.promise;
+				const removed = runGatewayPacket(client, {
+					t: 'GUILD_MEMBER_REMOVE',
+					d: { guild_id: 'guild-1', user: { id: 'user-1' } },
+				} as never);
+				if (mode === 'throw') await expect(removed).rejects.toThrow('dispatch failed');
+				else expect(await removed).toBeNull();
+				snapshot = runGatewayPacket(client, guild(20));
+				await flushMicrotasks(10);
+				expect((await client.cache.guilds?.raw('guild-1'))?.member_count).toBe(10);
+			} finally {
+				gate.resolve();
+				await Promise.all([joining, snapshot]);
+				spy.mockRestore();
+			}
+			expect((await client.cache.guilds?.raw('guild-1'))?.member_count).toBe(20);
 		},
 	);
 
