@@ -301,7 +301,7 @@ export class GuildMember extends BaseGuildMember {
 		return (
 			!(await this.roles.permissions(force)).has(['Administrator']) &&
 			(await this.manageable(force)) &&
-			(await this.__me!.fetchPermissions(force)).has(['KickMembers'])
+			(await this.__me!.fetchPermissions(force)).has(['ModerateMembers'])
 		);
 	}
 }

@@ -1,5 +1,5 @@
 import { mockId } from '@slipher/testing';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { resolveColor, resolvePartialEmoji, snowflakeToTimestamp } from '../lib/common/it/utils';
 
 describe('resolveColor', () => {
@@ -26,6 +26,18 @@ describe('resolveColor', () => {
 		expect(() => resolveColor([0, -1, 0])).toThrowError('Invalid color: 0,-1,0');
 		expect(resolveColor([255, 255, 255])).toBe(0xffffff);
 	});
+
+	test('Random covers the whole color range, white included', () => {
+		const random = vi.spyOn(Math, 'random');
+		try {
+			random.mockReturnValue(0);
+			expect(resolveColor('Random')).toBe(0);
+			random.mockReturnValue(1 - Number.EPSILON);
+			expect(resolveColor('Random')).toBe(0xffffff);
+		} finally {
+			random.mockRestore();
+		}
+	});
 });
 
 describe('snowflakeToTimestamp', () => {
@@ -40,5 +52,19 @@ describe('resolvePartialEmoji', () => {
 	test('does not encode an already encoded emoji twice', () => {
 		expect(resolvePartialEmoji('%F0%9F%91%8D')).toEqual({ name: '👍', id: null });
 		expect(resolvePartialEmoji('👍')).toEqual({ name: '👍', id: null });
+	});
+
+	test('resolves unicode emojis passed as objects', () => {
+		expect(resolvePartialEmoji({ name: '👍' })).toEqual({ name: '👍', id: null });
+		expect(resolvePartialEmoji({ name: '👍', id: null })).toEqual({ name: '👍', id: null });
+	});
+
+	test('keeps resolving custom emojis passed as objects', () => {
+		expect(resolvePartialEmoji({ name: 'seyfert', id: '123456789012345678' })).toEqual({
+			name: 'seyfert',
+			id: '123456789012345678',
+			animated: false,
+		});
+		expect(resolvePartialEmoji({ id: '123456789012345678' })).toBeUndefined();
 	});
 });
