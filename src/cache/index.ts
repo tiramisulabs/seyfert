@@ -390,6 +390,7 @@ export class Cache {
 	}
 
 	onPacket(event: GatewayDispatchPayload): Promise<void> {
+		if (!this.trackMemberCount) return this.onPacketWithPluginResources(event);
 		return this.withGuildWriteOrder(event, 'cache', () => this.onPacketWithPluginResources(event));
 	}
 
@@ -421,12 +422,16 @@ export class Cache {
 	}
 
 	/** @internal Keeps cache ordering across asynchronous gateway and event stages. */
-	async withGuildWriteOrder<T>(
+	withGuildWriteOrder<T>(
 		event: GatewayDispatchPayload,
 		stage: GuildWriteStage,
 		handle: () => Awaitable<T>,
 	): Promise<T> {
-		return this.trackMemberCount ? this.guildWrites.run(event, stage, handle) : handle();
+		try {
+			return this.trackMemberCount ? this.guildWrites.run(event, stage, handle) : Promise.resolve(handle());
+		} catch (error) {
+			return Promise.reject(error);
+		}
 	}
 
 	/** @internal Isolates concurrent callbacks from the dispatch's cache phase. */
@@ -435,9 +440,8 @@ export class Cache {
 	}
 
 	// Discord only sends member_count in GUILD_CREATE, so joins and leaves have to keep it current.
-	private async adjustMemberCount(guildId: string, delta: number) {
-		if (!this.trackMemberCount) return;
-		await this.guilds?.incrementMemberCount(CacheFrom.Gateway, guildId, delta);
+	private adjustMemberCount(guildId: string, delta: number) {
+		return this.guilds?.incrementMemberCount(CacheFrom.Gateway, guildId, delta);
 	}
 
 	private appendMessageUsers(
@@ -544,7 +548,11 @@ export class Cache {
 				break;
 			}
 			case 'GUILD_MEMBER_ADD':
-				await settleMemberWrites(this.trackMemberCount, [
+				if (!this.trackMemberCount) {
+					if (event.d.user) await this.members?.set(CacheFrom.Gateway, event.d.user.id, event.d.guild_id, event.d);
+					break;
+				}
+				await settleMemberWrites([
 					this.adjustMemberCount(event.d.guild_id, 1),
 					(async () => {
 						if (event.d.user) await this.members?.set(CacheFrom.Gateway, event.d.user.id, event.d.guild_id, event.d);
@@ -555,7 +563,12 @@ export class Cache {
 				if (event.d.user) await this.members?.set(CacheFrom.Gateway, event.d.user.id, event.d.guild_id, event.d);
 				break;
 			case 'GUILD_MEMBER_REMOVE':
-				await settleMemberWrites(this.trackMemberCount, [
+				if (!this.trackMemberCount) {
+					await this.members?.remove(event.d.user.id, event.d.guild_id);
+					await this.presences?.remove(event.d.user.id, event.d.guild_id);
+					break;
+				}
+				await settleMemberWrites([
 					this.adjustMemberCount(event.d.guild_id, -1),
 					(async () => {
 						await this.members?.remove(event.d.user.id, event.d.guild_id);
@@ -681,11 +694,7 @@ export enum CacheFrom {
 }
 
 // An ordered cache phase must drain both writes before a later snapshot can start, including on failure.
-async function settleMemberWrites(ordered: boolean, writes: Awaitable<unknown>[]) {
-	if (!ordered) {
-		await Promise.all(writes);
-		return;
-	}
+async function settleMemberWrites(writes: Awaitable<unknown>[]) {
 	const outcomes = await Promise.allSettled(writes);
 	for (const outcome of outcomes) {
 		if (outcome.status === 'rejected') throw outcome.reason;

@@ -18,28 +18,30 @@ type GuildWriteContext = {
 	complete: boolean;
 };
 
+type GuildWriteScope = { queue: GuildWriteQueue; context: GuildWriteContext; stage: GuildWriteStage };
+
 // A shared scope avoids retaining an AsyncLocalStorage instance for each rebuilt cache.
-let dispatchScope:
-	| AsyncLocalStorage<{ queue: GuildWriteQueue; context: GuildWriteContext; stage: GuildWriteStage }>
-	| undefined;
+let dispatchScope: AsyncLocalStorage<GuildWriteScope> | undefined;
 
 /** @internal Orders cache application for a single writer per guild. */
 export class GuildWriteQueue {
 	private tails = new Map<string, Promise<void>>();
 
-	async run<T>(packet: GatewayDispatchPayload, stage: GuildWriteStage, handle: () => Awaitable<T>): Promise<T> {
+	run<T>(packet: GatewayDispatchPayload, stage: GuildWriteStage, handle: () => Awaitable<T>): Promise<T> {
+		const parent = dispatchScope?.getStore();
+		const guildId = guildWriteTarget(packet);
+		// A later stage can reserve a slot if an interceptor turns this into a guild write.
+		if (!guildId && (parent?.queue !== this || !parent.context.slot)) return Promise.resolve(handle());
 		// HTTP clients and disabled tracking do not need Node's async context support.
 		if (!dispatchScope) {
 			const { AsyncLocalStorage } = require('node:async_hooks') as typeof import('node:async_hooks');
 			dispatchScope = new AsyncLocalStorage();
 		}
-		const parent = dispatchScope.getStore();
 		// Only forward progress borrows a slot. A nested dispatch starts its own cache phase.
 		const context: GuildWriteContext =
 			parent?.queue === this && !parent.context.complete && stages[stage] > stages[parent.stage]
 				? parent.context
 				: { complete: false };
-		const guildId = guildWriteTarget(packet);
 		if (context.slot?.guildId !== guildId) {
 			const previous = context.slot;
 			// A redirected packet joins its destination when that guild becomes known.
@@ -60,10 +62,14 @@ export class GuildWriteQueue {
 		});
 	}
 
-	async write<T>(write: () => Awaitable<T>): Promise<T> {
+	write<T>(write: () => Awaitable<T>): Promise<T> {
 		const current = dispatchScope?.getStore();
 		const context = current?.queue === this ? current.context : undefined;
-		if (!context) return write();
+		if (!context) return Promise.resolve(write());
+		return this.writeOrdered(context, write);
+	}
+
+	private async writeOrdered<T>(context: GuildWriteContext, write: () => Awaitable<T>): Promise<T> {
 		const slot = context.slot;
 		await slot?.ready;
 		try {
@@ -77,7 +83,7 @@ export class GuildWriteQueue {
 	}
 
 	outside<T>(handle: () => T): T {
-		return dispatchScope ? dispatchScope.exit(handle) : handle();
+		return dispatchScope?.getStore() ? dispatchScope.exit(handle) : handle();
 	}
 
 	private enqueue(guildId: string): GuildWriteSlot {

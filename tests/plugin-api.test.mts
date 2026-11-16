@@ -1621,6 +1621,72 @@ describe('plugin api v3', () => {
 		});
 	});
 
+	test('orders a packet changed from typing into a member removal before a later snapshot', async () => {
+		const entered = Promise.withResolvers<void>();
+		const gate = Promise.withResolvers<undefined>();
+		const plugin = createPlugin({
+			name: 'typing-to-member-removal',
+			register(api) {
+				api.gateway.onDispatch((packet, next) =>
+					packet.t === 'TYPING_START'
+						? next({ ...packet, t: 'GUILD_MEMBER_REMOVE', d: { guild_id: 'guild-1', user: { id: 'user-1' } } } as never)
+						: next(packet),
+				);
+				api.events.on('guildMemberRemove', () => {});
+			},
+		});
+		const client = createGatewayClient([plugin]);
+		client.setServices({ cache: { trackMemberCount: true } });
+		const guild = (member_count: number) => ({ t: 'GUILD_CREATE', d: { id: 'guild-1', member_count } }) as never;
+		await runGatewayPacket(client, guild(10));
+		const get = vi.spyOn(client.cache.members!, 'get').mockImplementation(() => {
+			entered.resolve();
+			return gate.promise as never;
+		});
+		const removal = runGatewayPacket(client, { t: 'TYPING_START', d: { guild_id: 'guild-1' } } as never);
+		let snapshot: ReturnType<typeof runGatewayPacket> | undefined;
+		try {
+			await entered.promise;
+			snapshot = runGatewayPacket(client, guild(9));
+			await flushMicrotasks(10);
+			expect((await client.cache.guilds?.raw('guild-1'))?.member_count).toBe(10);
+		} finally {
+			gate.resolve(undefined);
+			await Promise.all([removal, snapshot]);
+			get.mockRestore();
+		}
+		expect((await client.cache.guilds?.raw('guild-1'))?.member_count).toBe(9);
+	});
+
+	test('releases a member packet changed into typing before its listener writes the same guild', async () => {
+		let client: Client;
+		const plugin = createPlugin({
+			name: 'member-removal-to-typing',
+			register(api) {
+				api.gateway.onDispatch((packet, next) =>
+					packet.t === 'GUILD_MEMBER_REMOVE'
+						? next({
+								...packet,
+								t: 'TYPING_START',
+								d: { guild_id: 'guild-1', channel_id: 'channel-1', user_id: 'user-1', timestamp: 0 },
+							} as never)
+						: next(packet),
+				);
+				api.events.on('typingStart', async () => {
+					await runGatewayPacket(client, { t: 'GUILD_UPDATE', d: { id: 'guild-1', name: 'from listener' } } as never);
+				});
+			},
+		});
+		client = createGatewayClient([plugin]);
+		client.setServices({ cache: { trackMemberCount: true } });
+		await runGatewayPacket(client, { t: 'GUILD_CREATE', d: { id: 'guild-1', member_count: 10 } } as never);
+		await runGatewayPacket(client, {
+			t: 'GUILD_MEMBER_REMOVE',
+			d: { guild_id: 'guild-1', user: { id: 'user-1' } },
+		} as never);
+		expect(await client.cache.guilds?.raw('guild-1')).toMatchObject({ member_count: 10, name: 'from listener' });
+	});
+
 	test('moves the guild write place when a dispatch interceptor redirects a packet to another guild', async () => {
 		const plugin = createPlugin({
 			name: 'redirect-member-removal',

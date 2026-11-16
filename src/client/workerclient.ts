@@ -589,16 +589,16 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	protected onPacket(packet: GatewayDispatchPayload, shardId: number): Promise<GatewayDispatchPayload | null> {
-		return this.cache.withGuildWriteOrder(packet, 'dispatch', async () => {
-			const pluginPacket = await this.cache.withoutGuildWriteOrder(() =>
-				applyPluginGatewayDispatchInterceptors(this, shardId, packet),
-			);
-			if (pluginPacket === null) return null;
-			return this.handlePacket(pluginPacket, shardId);
-		});
+		return this.cache.withGuildWriteOrder(packet, 'dispatch', () => this.handlePacket(packet, shardId));
 	}
 
 	private async handlePacket(packet: GatewayDispatchPayload, shardId: number): Promise<GatewayDispatchPayload | null> {
+		const pluginPacket = await this.cache.withoutGuildWriteOrder(() =>
+			applyPluginGatewayDispatchInterceptors(this, shardId, packet),
+		);
+		if (pluginPacket === null) return null;
+		packet = pluginPacket;
+
 		void this.cache.withoutGuildWriteOrder(() =>
 			Promise.allSettled([
 				this.events.runEvent('RAW', this, packet, shardId, false),

@@ -1146,6 +1146,25 @@ describe.each(adapterKinds)('gateway actor hydration with %s', kind => {
 		return client;
 	}
 
+	test.each(['disabled', 'unrelated', 'ordered'] as const)(
+		'keeps synchronous callback failures as promise rejections on the %s path',
+		async path => {
+			const cache = createCache();
+			cache.trackMemberCount = path !== 'disabled';
+			const packet =
+				path === 'ordered'
+					? { t: 'GUILD_UPDATE', d: { id: 'guild-1' } }
+					: { t: 'TYPING_START', d: { guild_id: 'guild-1' } };
+			const error = new Error('callback failed');
+			const result = cache.withGuildWriteOrder(packet as never, 'payload', () => {
+				throw error;
+			});
+			await expect(result).rejects.toBe(error);
+			await cache.onPacket({ t: 'GUILD_CREATE', d: { id: 'guild-1', member_count: 10 } } as never);
+			expect((await cache.guilds?.raw('guild-1'))?.member_count).toBe(10);
+		},
+	);
+
 	test('tracking uses the atomic capability without fetching and patching the guild', async () => {
 		const cache = createCache();
 		cache.trackMemberCount = true;
