@@ -13,6 +13,7 @@ import {
 	CacheFrom,
 	ChannelType,
 	Client,
+	createEvent,
 	GatewayDispatchEvents,
 	InteractionType,
 	LimitedMemoryAdapter,
@@ -465,7 +466,150 @@ describe.each(adapterKinds)('%s atomic write failures', kind => {
 	});
 });
 
+describe.each(adapterKinds)('%s atomic increments', kind => {
+	test('uses the codec and preserves other fields and relationship ownership', () => {
+		const adapter = createTestAdapter(kind, { encode: JSON.stringify, decode: JSON.parse });
+		const original = { id: 'entry', count: 2, name: 'preserved' };
+		adapter.set('custom.entry', original, ['custom.guild-1', 'entry']);
+		expect(adapter.increment('custom.entry', 'count', 3)).toBe(5);
+		expect(adapter.increment('custom.entry', 'count', -10, { min: 0 })).toBe(0);
+		expect(adapter.increment('custom.entry', 'count', -1)).toBe(-1);
+		expect(adapter.get('custom.entry')).toEqual({ ...original, count: -1 });
+		expect(original.count).toBe(2);
+		expect(adapter.getToRelationship('custom.guild-1')).toEqual(['entry']);
+		adapter.removeRelationship('custom.guild-1');
+		expect(adapter.get('custom.entry')).toBeNull();
+	});
+
+	test('does not create missing records or replace absent, inherited, or nonnumeric fields', () => {
+		const decode = vi.fn(data => data);
+		const adapter = createTestAdapter(kind, { decode });
+		expect(adapter.increment('guild.absent', 'member_count', 1)).toBeUndefined();
+		expect(decode).not.toHaveBeenCalled();
+		expect(adapter.count('guild')).toBe(0);
+		for (const data of [
+			{},
+			{ count: '2' },
+			{ count: NaN },
+			{ count: Infinity },
+			Object.create({ count: 2 }),
+			Object.assign([], { count: 2 }),
+			null,
+			2,
+		]) {
+			adapter.set('guild.guild-1', data, ['guild', 'guild-1']);
+			expect(adapter.increment('guild.guild-1', 'count', 1)).toBeUndefined();
+			expect(adapter.get('guild.guild-1')).toBe(data);
+		}
+	});
+
+	test('rejects nonfinite arguments and overflow without changing the record', () => {
+		const adapter = createTestAdapter(kind);
+		const original = { count: Number.MAX_VALUE };
+		adapter.set('guild.guild-1', original, ['guild', 'guild-1']);
+		for (const [delta, options] of [
+			[NaN, undefined],
+			[Infinity, undefined],
+			[1, { min: -Infinity }],
+			[Number.MAX_VALUE, undefined],
+		] as const) {
+			expect(() => adapter.increment('guild.guild-1', 'count', delta, options)).toThrowError(
+				expect.objectContaining({ code: 'BAD_OPTION', metadata: expect.objectContaining({ receivedType: 'number' }) }),
+			);
+			expect(adapter.get('guild.guild-1')).toBe(original);
+		}
+	});
+
+	test.each(['decode', 'encode'] as const)('a failed %s leaves the original counter untouched', failure => {
+		let reject = false;
+		const adapter = createTestAdapter(kind, {
+			encode(data) {
+				if (reject && failure === 'encode') throw new Error('encode failed');
+				return data;
+			},
+			decode(data) {
+				if (reject && failure === 'decode') throw new Error('decode failed');
+				return data;
+			},
+		});
+		const original = { count: 2 };
+		adapter.set('guild.guild-1', original, ['guild', 'guild-1']);
+		reject = true;
+		expect(() => adapter.increment('guild.guild-1', 'count', 1)).toThrow(`${failure} failed`);
+		reject = false;
+		expect(adapter.get('guild.guild-1')).toBe(original);
+		expect(original.count).toBe(2);
+		expect(adapter.contains('guild', 'guild-1')).toBe(true);
+	});
+});
+
 describe('limited memory cache adapter ownership', () => {
+	test('increments refresh expiration as patch does, while no-ops and failures keep the deadline', () => {
+		vi.useFakeTimers();
+		const adapter = new LimitedMemoryAdapter({ guild: { expire: 100 } });
+		try {
+			adapter.set('guild.updated', { count: 2 }, ['guild', 'updated']);
+			adapter.set('guild.unchanged', { name: 'no counter' }, ['guild', 'unchanged']);
+			adapter.set('guild.failed', { count: 2 }, ['guild', 'failed']);
+			vi.advanceTimersByTime(80);
+			expect(adapter.increment('guild.updated', 'count', 1)).toBe(3);
+			expect(adapter.increment('guild.unchanged', 'count', 1)).toBeUndefined();
+			expect(() => adapter.increment('guild.failed', 'count', NaN)).toThrow();
+			vi.advanceTimersByTime(21);
+			expect(adapter.contains('guild', 'updated')).toBe(true);
+			expect(adapter.contains('guild', 'unchanged')).toBe(false);
+			expect(adapter.contains('guild', 'failed')).toBe(false);
+			vi.advanceTimersByTime(80);
+			expect(adapter.get('guild.updated')).toBeNull();
+		} finally {
+			adapter.flush();
+			vi.useRealTimers();
+		}
+	});
+
+	test.each(['decode', 'encode'] as const)('a failed increment does not refresh expiration when %s throws', failure => {
+		vi.useFakeTimers();
+		let reject = false;
+		const adapter = new LimitedMemoryAdapter({
+			guild: { expire: 100 },
+			encode(data) {
+				if (reject && failure === 'encode') throw new Error('encode failed');
+				return data;
+			},
+			decode(data) {
+				if (reject && failure === 'decode') throw new Error('decode failed');
+				return data;
+			},
+		});
+		try {
+			adapter.set('guild.guild-1', { count: 2 }, ['guild', 'guild-1']);
+			vi.advanceTimersByTime(80);
+			reject = true;
+			expect(() => adapter.increment('guild.guild-1', 'count', 1)).toThrow(`${failure} failed`);
+			vi.advanceTimersByTime(21);
+			expect(adapter.contains('guild', 'guild-1')).toBe(false);
+		} finally {
+			adapter.flush();
+			vi.useRealTimers();
+		}
+	});
+
+	test('does not resurrect an expired counter before its cleanup timer fires', () => {
+		vi.useFakeTimers();
+		const adapter = new LimitedMemoryAdapter({ guild: { expire: 100 } });
+		try {
+			adapter.set('guild.guild-1', { count: 2 }, ['guild', 'guild-1']);
+			vi.setSystemTime(Date.now() + 101);
+			expect(adapter.increment('guild.guild-1', 'count', 1)).toBeUndefined();
+			expect(adapter.get('guild.guild-1')).toBeNull();
+			expect(adapter.contains('guild', 'guild-1')).toBe(false);
+			expect(vi.getTimerCount()).toBe(0);
+		} finally {
+			adapter.flush();
+			vi.useRealTimers();
+		}
+	});
+
 	test('relocates message storage without changing its relationship owner', () => {
 		const adapter = new LimitedMemoryAdapter();
 		adapter.set('message.message-1', { id: 'message-1', channel_id: 'channel-1' }, ['message.channel-1', 'message-1']);
@@ -950,6 +1094,372 @@ describe.each(adapterKinds)('gateway actor hydration with %s', kind => {
 			nick: 'disconnected',
 			user: { id: member.user.id },
 		});
+	});
+
+	test('member joins and leaves keep the cached guild member count current when tracking is on', async () => {
+		const cache = createCache();
+		const member = apiMember();
+		await cache.onPacket({
+			t: 'GUILD_CREATE',
+			d: { id: 'guild-1', name: 'guild', joined_at: new Date().toISOString(), member_count: 10 },
+		} as never);
+
+		await cache.onPacket({ t: 'GUILD_MEMBER_ADD', d: { ...member, guild_id: 'guild-1' } } as never);
+		expect((await cache.guilds?.get('guild-1'))?.memberCount).toBe(10);
+
+		cache.trackMemberCount = true;
+		await cache.onPacket({ t: 'GUILD_MEMBER_REMOVE', d: { user: member.user, guild_id: 'guild-1' } } as never);
+		await cache.onPacket({ t: 'GUILD_MEMBER_ADD', d: { ...member, guild_id: 'guild-1' } } as never);
+		await cache.onPacket({ t: 'GUILD_MEMBER_ADD', d: { ...member, guild_id: 'guild-1' } } as never);
+		expect((await cache.guilds?.get('guild-1'))?.memberCount).toBe(11);
+
+		await cache.onPacket({ t: 'GUILD_MEMBER_UPDATE', d: { ...member, guild_id: 'guild-1', nick: 'renamed' } } as never);
+		await cache.onPacket({ t: 'GUILD_UPDATE', d: { id: 'guild-1', name: 'renamed guild' } } as never);
+		expect((await cache.guilds?.get('guild-1'))?.memberCount).toBe(11);
+
+		await cache.onPacket({ t: 'GUILD_MEMBER_REMOVE', d: { user: member.user, guild_id: 'guild-1' } } as never);
+		await cache.onPacket({ t: 'GUILD_MEMBER_REMOVE', d: { user: member.user, guild_id: 'guild-2' } } as never);
+		expect((await cache.guilds?.get('guild-1'))?.memberCount).toBe(10);
+		expect(await cache.guilds?.raw('guild-2')).toBeUndefined();
+
+		await cache.onPacket({ t: 'GUILD_MEMBER_ADD', d: { ...member, guild_id: 'guild-3' } } as never);
+		expect(await cache.guilds?.raw('guild-3')).toBeUndefined();
+	});
+
+	function createSlowTrackingClient(atomic = true) {
+		const memory = createTestAdapter(kind);
+		// Yield to the event loop on every call, like a networked adapter would.
+		const adapter = new Proxy(memory, {
+			get(target, key) {
+				if (key === 'isAsync') return true;
+				if (key === 'increment' && !atomic) return undefined;
+				const value = Reflect.get(target, key);
+				if (typeof value !== 'function') return value;
+				return async (...args: unknown[]) => {
+					await new Promise(resolve => setTimeout(resolve, 0));
+					return value.apply(target, args);
+				};
+			},
+		});
+		const client = new Client();
+		client.setServices({ cache: { adapter, trackMemberCount: true } });
+		return client;
+	}
+
+	test.each(['disabled', 'unrelated', 'ordered'] as const)(
+		'keeps synchronous callback failures as promise rejections on the %s path',
+		async path => {
+			const cache = createCache();
+			cache.trackMemberCount = path !== 'disabled';
+			const packet =
+				path === 'ordered'
+					? { t: 'GUILD_UPDATE', d: { id: 'guild-1' } }
+					: { t: 'TYPING_START', d: { guild_id: 'guild-1' } };
+			const error = new Error('callback failed');
+			const result = cache.withGuildWriteOrder(packet as never, 'payload', () => {
+				throw error;
+			});
+			await expect(result).rejects.toBe(error);
+			await cache.onPacket({ t: 'GUILD_CREATE', d: { id: 'guild-1', member_count: 10 } } as never);
+			expect((await cache.guilds?.raw('guild-1'))?.member_count).toBe(10);
+		},
+	);
+
+	test('tracking uses the atomic capability without fetching and patching the guild', async () => {
+		const cache = createCache();
+		cache.trackMemberCount = true;
+		await cache.onPacket({ t: 'GUILD_CREATE', d: { id: 'guild-1', member_count: 10, name: 'preserved' } } as never);
+		const raw = vi.spyOn(cache.guilds!, 'raw');
+		const patch = vi.spyOn(cache.guilds!, 'patch');
+		const increment = vi.spyOn(cache.adapter, 'increment');
+		try {
+			await cache.onPacket({ t: 'GUILD_MEMBER_REMOVE', d: { guild_id: 'guild-1', user: apiUser() } } as never);
+			expect(increment).toHaveBeenCalledExactlyOnceWith('guild.guild-1', 'member_count', -1, { min: 0 });
+			expect(raw).not.toHaveBeenCalled();
+			expect(patch).not.toHaveBeenCalled();
+			expect(await cache.guilds?.raw('guild-1')).toMatchObject({ member_count: 9, name: 'preserved' });
+		} finally {
+			raw.mockRestore();
+			patch.mockRestore();
+			increment.mockRestore();
+		}
+	});
+
+	test('custom guild filters receive the resulting count and can veto increments', async () => {
+		const cache = createCache();
+		cache.trackMemberCount = true;
+		await cache.onPacket({ t: 'GUILD_CREATE', d: { id: 'guild-1', member_count: 10 } } as never);
+		const filter = vi
+			.spyOn(cache.guilds!, 'filter')
+			.mockImplementation(
+				data => 'member_count' in data && typeof data.member_count === 'number' && data.member_count <= 10,
+			);
+		const increment = vi.spyOn(cache.adapter, 'increment');
+		try {
+			await cache.onPacket({ t: 'GUILD_MEMBER_ADD', d: { ...apiMember(), guild_id: 'guild-1' } } as never);
+			expect(filter).toHaveBeenLastCalledWith({ member_count: 11 }, 'guild-1', CacheFrom.Gateway);
+			expect((await cache.guilds?.raw('guild-1'))?.member_count).toBe(10);
+			await cache.onPacket({ t: 'GUILD_MEMBER_REMOVE', d: { user: apiUser(), guild_id: 'guild-1' } } as never);
+			expect(filter).toHaveBeenLastCalledWith({ member_count: 9 }, 'guild-1', CacheFrom.Gateway);
+			expect((await cache.guilds?.raw('guild-1'))?.member_count).toBe(9);
+			expect(increment).not.toHaveBeenCalled();
+		} finally {
+			filter.mockRestore();
+			increment.mockRestore();
+		}
+	});
+
+	test.each(['missing', 'failure'] as const)(
+		'does not retry an atomic %s through the compatibility path',
+		async outcome => {
+			const cache = createCache();
+			cache.trackMemberCount = true;
+			await cache.onPacket({ t: 'GUILD_CREATE', d: { id: 'guild-1', member_count: 10 } } as never);
+			const raw = vi.spyOn(cache.guilds!, 'raw');
+			const patch = vi.spyOn(cache.guilds!, 'patch');
+			const increment = vi.spyOn(cache.adapter, 'increment').mockImplementation(() => {
+				if (outcome === 'failure') throw new Error('increment failed');
+				return undefined;
+			});
+			try {
+				const removal = cache.onPacket({
+					t: 'GUILD_MEMBER_REMOVE',
+					d: { guild_id: 'guild-1', user: apiUser() },
+				} as never);
+				if (outcome === 'failure') await expect(removal).rejects.toThrow('increment failed');
+				else await removal;
+				expect(increment).toHaveBeenCalledOnce();
+				expect(raw).not.toHaveBeenCalled();
+				expect(patch).not.toHaveBeenCalled();
+				// Failure releases the guild queue for a subsequent write.
+				await cache.onPacket({ t: 'GUILD_UPDATE', d: { id: 'guild-1', name: 'still writable' } } as never);
+				expect(await cache.guilds?.raw('guild-1')).toMatchObject({ member_count: 10, name: 'still writable' });
+			} finally {
+				raw.mockRestore();
+				patch.mockRestore();
+				increment.mockRestore();
+			}
+		},
+	);
+
+	test.each([true, false])('concurrent joins and leaves preserve the count (atomic: %s)', async atomic => {
+		const cache = createSlowTrackingClient(atomic).cache;
+		await cache.onPacket({
+			t: 'GUILD_CREATE',
+			d: { id: 'guild-1', name: 'guild', joined_at: new Date().toISOString(), member_count: 10 },
+		} as never);
+
+		const joined = Array.from({ length: 5 }, () => apiMember());
+		await Promise.all(
+			joined.map(member => cache.onPacket({ t: 'GUILD_MEMBER_ADD', d: { ...member, guild_id: 'guild-1' } } as never)),
+		);
+		await Promise.all(
+			joined
+				.slice(0, 2)
+				.map(member =>
+					cache.onPacket({ t: 'GUILD_MEMBER_REMOVE', d: { user: member.user, guild_id: 'guild-1' } } as never),
+				),
+		);
+
+		expect((await cache.guilds?.raw('guild-1'))?.member_count).toBe(13);
+
+		// A GUILD_CREATE that arrives after a join already counts that member.
+		const late = apiMember();
+		await Promise.all([
+			cache.onPacket({ t: 'GUILD_MEMBER_ADD', d: { ...late, guild_id: 'guild-1' } } as never),
+			cache.onPacket({
+				t: 'GUILD_CREATE',
+				d: { id: 'guild-1', name: 'guild', joined_at: new Date().toISOString(), member_count: 20 },
+			} as never),
+		]);
+		expect((await cache.guilds?.raw('guild-1'))?.member_count).toBe(20);
+
+		// Being removed from a guild sends the bot's own member removal right before GUILD_DELETE.
+		await Promise.all([
+			cache.onPacket({ t: 'GUILD_MEMBER_REMOVE', d: { user: joined[4].user, guild_id: 'guild-1' } } as never),
+			cache.onPacket({ t: 'GUILD_DELETE', d: { id: 'guild-1' } } as never),
+		]);
+		expect(await cache.guilds?.raw('guild-1')).toBeUndefined();
+	});
+
+	test('keeps a forwarded client writable while the original guild queue is blocked', async () => {
+		const first = createSlowTrackingClient();
+		const second = createSlowTrackingClient();
+		await first.cache.onPacket({ t: 'GUILD_CREATE', d: { id: 'guild-1', member_count: 10 } } as never);
+		await second.cache.onPacket({ t: 'GUILD_CREATE', d: { id: 'guild-1', member_count: 20 } } as never);
+		let release!: () => void;
+		let entered!: () => void;
+		const gate = new Promise<void>(resolve => {
+			release = resolve;
+		});
+		const started = new Promise<void>(resolve => {
+			entered = resolve;
+		});
+		const increment = first.cache.guilds!.incrementMemberCount.bind(first.cache.guilds);
+		const incrementSpy = vi
+			.spyOn(first.cache.guilds!, 'incrementMemberCount')
+			.mockImplementation(async (from, id, delta) => {
+				if (delta === 1) {
+					entered();
+					await gate;
+				}
+				return increment(from, id, delta);
+			});
+		const packet = { t: 'GUILD_MEMBER_ADD', d: { ...apiMember(), guild_id: 'guild-1' } } as never;
+		const joining = first.cache.onPacket(packet);
+		const runEvent = first.events.runEvent.bind(first.events);
+		const forward = vi.spyOn(first.events, 'runEvent').mockImplementation(async (...args) => {
+			await second.events.runEvent(args[0], second, args[2], args[3], args[4]);
+			return runEvent(...args);
+		});
+		let forwarded: Promise<void> | undefined;
+		try {
+			await started;
+			forwarded = first.events.execute(packet, first as never, 0);
+			await vi.waitFor(async () => {
+				expect((await second.cache.guilds?.raw('guild-1'))?.member_count).toBe(21);
+			});
+			expect((await first.cache.guilds?.raw('guild-1'))?.member_count).toBe(10);
+		} finally {
+			release();
+			await Promise.all([joining, forwarded]);
+			forward.mockRestore();
+			incrementSpy.mockRestore();
+		}
+		expect((await first.cache.guilds?.raw('guild-1'))?.member_count).toBe(12);
+	});
+
+	test('drains a failed member packet before applying its next snapshot without blocking other guilds', async () => {
+		const client = createSlowTrackingClient();
+		const cache = client.cache;
+		await cache.onPacket({ t: 'GUILD_CREATE', d: { id: 'guild-1', member_count: 10 } } as never);
+		let release!: () => void;
+		let entered!: () => void;
+		const gate = new Promise<void>(resolve => {
+			release = resolve;
+		});
+		const started = new Promise<void>(resolve => {
+			entered = resolve;
+		});
+		const increment = cache.guilds!.incrementMemberCount.bind(cache.guilds);
+		const incrementSpy = vi.spyOn(cache.guilds!, 'incrementMemberCount').mockImplementation(async (from, id, delta) => {
+			if (id === 'guild-1' && delta === 1) {
+				entered();
+				await gate;
+			}
+			return increment(from, id, delta);
+		});
+		const error = new Error('member write failed');
+		const memberSpy = vi.spyOn(cache.members!, 'set').mockRejectedValueOnce(error);
+		let failure: unknown;
+		const joining = cache
+			.onPacket({ t: 'GUILD_MEMBER_ADD', d: { ...apiMember(), guild_id: 'guild-1' } } as never)
+			.catch(reason => {
+				failure = reason;
+			});
+		let snapshot: Promise<void> | undefined;
+		try {
+			await started;
+			snapshot = cache.onPacket({ t: 'GUILD_CREATE', d: { id: 'guild-1', member_count: 20 } } as never);
+			await cache.onPacket({ t: 'GUILD_CREATE', d: { id: 'guild-2', member_count: 30 } } as never);
+			expect((await cache.guilds?.raw('guild-1'))?.member_count).toBe(10);
+			expect((await cache.guilds?.raw('guild-2'))?.member_count).toBe(30);
+		} finally {
+			release();
+			await Promise.all([joining, snapshot]);
+			incrementSpy.mockRestore();
+			memberSpy.mockRestore();
+		}
+		expect(failure).toBe(error);
+		expect((await cache.guilds?.raw('guild-1'))?.member_count).toBe(20);
+	});
+
+	test('drains the cache phase when a concurrent collector filter rejects', async () => {
+		const client = createSlowTrackingClient();
+		const cache = client.cache;
+		await cache.onPacket({ t: 'GUILD_CREATE', d: { id: 'guild-1', member_count: 10 } } as never);
+		let release!: () => void;
+		let entered!: () => void;
+		const gate = new Promise<void>(resolve => {
+			release = resolve;
+		});
+		const started = new Promise<void>(resolve => {
+			entered = resolve;
+		});
+		const increment = cache.guilds!.incrementMemberCount.bind(cache.guilds);
+		const incrementSpy = vi.spyOn(cache.guilds!, 'incrementMemberCount').mockImplementation(async (from, id, delta) => {
+			if (delta === 1) {
+				entered();
+				await gate;
+			}
+			return increment(from, id, delta);
+		});
+		const error = new Error('collector filter failed');
+		client.collectors.create({
+			event: 'guildMemberAdd',
+			async filter() {
+				await started;
+				throw error;
+			},
+			run() {},
+		});
+		const joining = client.events.execute(
+			{ t: 'GUILD_MEMBER_ADD', d: { ...apiMember(), guild_id: 'guild-1' } } as never,
+			client as never,
+			0,
+		);
+		const failed = expect(joining).rejects.toBe(error);
+		let snapshot: Promise<void> | undefined;
+		try {
+			await started;
+			snapshot = cache.onPacket({ t: 'GUILD_CREATE', d: { id: 'guild-1', member_count: 20 } } as never);
+			await cache.onPacket({ t: 'GUILD_CREATE', d: { id: 'guild-2', member_count: 30 } } as never);
+			expect((await cache.guilds?.raw('guild-1'))?.member_count).toBe(10);
+		} finally {
+			release();
+			await Promise.all([failed, snapshot]);
+			incrementSpy.mockRestore();
+		}
+		expect((await cache.guilds?.raw('guild-1'))?.member_count).toBe(20);
+	});
+
+	test('a member removal keeps its place ahead of a later guild snapshot while its event hook awaits', async () => {
+		const client = createSlowTrackingClient();
+		const member = apiMember();
+		await client.cache.onPacket({
+			t: 'GUILD_CREATE',
+			d: { id: 'guild-1', name: 'guild', joined_at: new Date().toISOString(), member_count: 10 },
+		} as never);
+		await client.cache.members?.set(CacheFrom.Test, member.user.id, 'guild-1', member);
+		// A listener makes the removal go through its hook, which reads the member from the cache first.
+		client.events.set([createEvent({ data: { name: 'guildMemberRemove' }, run() {} }) as never]);
+
+		await Promise.all([
+			client.events.execute(
+				{ t: 'GUILD_MEMBER_REMOVE', d: { user: member.user, guild_id: 'guild-1' } } as never,
+				client as never,
+				0,
+			),
+			client.events.execute(
+				{
+					t: 'GUILD_CREATE',
+					d: { id: 'guild-1', name: 'guild', joined_at: new Date().toISOString(), member_count: 9 },
+				} as never,
+				client as never,
+				0,
+			),
+		]);
+
+		expect((await client.cache.guilds?.raw('guild-1'))?.member_count).toBe(9);
+
+		// Dispatching the same payload object twice at once must not leave the guild's writes stuck.
+		const duplicate = { t: 'GUILD_MEMBER_REMOVE', d: { user: member.user, guild_id: 'guild-1' } } as never;
+		await Promise.all([
+			client.events.execute(duplicate, client as never, 0),
+			client.events.execute(duplicate, client as never, 0),
+		]);
+		await client.cache.onPacket({ t: 'GUILD_UPDATE', d: { id: 'guild-1', name: 'still writable' } } as never);
+		expect(await client.cache.guilds?.raw('guild-1')).toMatchObject({ name: 'still writable', member_count: 7 });
 	});
 });
 

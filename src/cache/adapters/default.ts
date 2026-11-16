@@ -1,5 +1,5 @@
-import { needsCacheStorageIndex } from './shared';
-import type { Adapter, AdapterEntry, AdapterRelationship } from './types';
+import { needsCacheStorageIndex, prepareIncrement } from './shared';
+import type { Adapter, AdapterEntry, AdapterIncrementOptions, AdapterRelationship } from './types';
 
 export interface MemoryAdapterOptions<T> {
 	encode(data: any): T;
@@ -111,6 +111,17 @@ export class MemoryAdapter<T> implements Adapter {
 
 	bulkPatch(entries: AdapterEntry[]) {
 		for (const [key, value, relationship] of entries) this._set(key, value, relationship, true);
+	}
+
+	/** Atomically updates an existing numeric field using this adapter's configured codec. */
+	increment(key: string, field: string, delta: number, options?: AdapterIncrementOptions): number | undefined {
+		const storageEntry = this._getStorageEntry(key);
+		const data = storageEntry?.has(key) ? this.options.decode(storageEntry.get(key)!) : undefined;
+		const update = prepareIncrement(data, field, delta, options);
+		if (!update) return;
+		const encoded = this.options.encode(update.data);
+		storageEntry!.set(key, encoded);
+		return update.value;
 	}
 
 	values(to: string) {

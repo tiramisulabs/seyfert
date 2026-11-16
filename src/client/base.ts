@@ -357,6 +357,7 @@ export class BaseClient {
 								: (cache.queries[resource] ?? true);
 				}
 			}
+			if (cache.trackMemberCount !== undefined) this.cache.trackMemberCount = cache.trackMemberCount;
 			if (cache.adapter) this.cache.adapter = cache.adapter;
 			if (cache.disabledCache !== undefined) this.refreshPluginCacheResources(disabledCache);
 		}
@@ -1440,6 +1441,14 @@ export interface ServicesOptions {
 		disabledCache?: boolean | DisabledCache | ((cacheType: keyof DisabledCache) => boolean);
 		/** Cache pagination and member search policy; omitted resources default to enabled. Omission preserves the current policy. */
 		queries?: boolean | CacheQueries | ((resource: keyof CacheQueries) => boolean);
+		/**
+		 * Update the cached guild member count on member joins and leaves. Discord only sends the count
+		 * in GUILD_CREATE, so it stays at its connect-time value while this is off. Needs the `Guilds` intent
+		 * for the GUILD_CREATE that seeds the count and the `GuildMembers` intent for joins and leaves.
+		 * Set it before connecting. Defaults to `false`. Requires one gateway cache writer per guild;
+		 * ordering is local to this client, including when its adapter uses shared storage such as Redis.
+		 */
+		trackMemberCount?: boolean;
 	};
 	langs?: {
 		default?: string;

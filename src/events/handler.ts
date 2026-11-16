@@ -300,7 +300,12 @@ export class EventHandler extends CustomEventHandler {
 		return value;
 	}
 
-	async execute(raw: GatewayDispatchPayload, client: Client<true> | WorkerClient<true>, shardId: number) {
+	execute(raw: GatewayDispatchPayload, client: Client<true> | WorkerClient<true>, shardId: number): Promise<void> {
+		if (!client.cache.trackMemberCount) return this.executePacket(raw, client, shardId);
+		return client.cache.withGuildWriteOrder(raw, 'event', () => this.executePacket(raw, client, shardId));
+	}
+
+	private async executePacket(raw: GatewayDispatchPayload, client: Client<true> | WorkerClient<true>, shardId: number) {
 		switch (raw.t) {
 			case 'MESSAGE_DELETE':
 				{
@@ -373,18 +378,41 @@ export class EventHandler extends CustomEventHandler {
 				break;
 		}
 
-		await Promise.all([
+		const tasks = [
 			this.runEvent(raw.t as never, client, raw.d, shardId),
-			this.client.collectors.run(raw.t as never, raw.d as never, this.client),
-		]);
+			client.cache.withoutGuildWriteOrder(() =>
+				this.client.collectors.run(raw.t as never, raw.d as never, this.client),
+			),
+		];
+		if (client.cache.trackMemberCount) {
+			// A failing collector must not release a dispatch while its cache phase still runs.
+			const outcomes = await Promise.allSettled(tasks);
+			for (const outcome of outcomes) {
+				if (outcome.status === 'rejected') throw outcome.reason;
+			}
+		} else await Promise.all(tasks);
 	}
 
-	async runEvent(
+	runEvent(
 		name: GatewayEvents,
 		client: Client | WorkerClient,
 		packet: unknown,
 		shardId: number,
 		runCache = true,
+	): Promise<void> {
+		return runCache && client.cache.trackMemberCount
+			? client.cache.withGuildWriteOrder({ t: name, d: packet } as GatewayDispatchPayload, 'hook', () =>
+					this.runEventData(name, client, packet, shardId, runCache),
+				)
+			: this.runEventData(name, client, packet, shardId, runCache);
+	}
+
+	private async runEventData(
+		name: GatewayEvents,
+		client: Client | WorkerClient,
+		packet: unknown,
+		shardId: number,
+		runCache: boolean,
 	) {
 		const listeners = this.getPluginListeners(name);
 		const anyListeners = this.getPluginAnyListeners();
@@ -401,7 +429,7 @@ export class EventHandler extends CustomEventHandler {
 			let hook = packet;
 			let transformed = false;
 			try {
-				hook = await resolveRawEventData(name, client, packet);
+				hook = await client.cache.withoutGuildWriteOrder(() => resolveRawEventData(name, client, packet));
 				transformed = true;
 			} catch (error) {
 				await this.reportEventFailure(name, error);

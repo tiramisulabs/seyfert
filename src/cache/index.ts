@@ -12,6 +12,7 @@ import {
 } from '../types';
 import type { Adapter, AdapterEntry } from './adapters';
 import { testCacheAdapter } from './conformance';
+import { GuildWriteQueue, type GuildWriteStage } from './guild-write-queue';
 import { Bans } from './resources/bans';
 import { Channels } from './resources/channels';
 import { Emojis } from './resources/emojis';
@@ -160,6 +161,8 @@ export class Cache {
 
 	/** Resolved cache query defaults for list shorters and member search. */
 	queries: Required<CacheQueries> = { members: true, memberSearch: true, bans: true, guilds: true };
+	/** Whether member joins and leaves update the cached guild member count. */
+	trackMemberCount = false;
 	__logger__?: Logger;
 	private pluginResourceNames = new Set<string>();
 	private pluginResourcePacketHandlers: {
@@ -167,6 +170,7 @@ export class Cache {
 		plugin: string;
 	}[] = [];
 	private pluginResourcePacketErrorLogger?: (plugin: string, error: unknown) => void;
+	private guildWrites = new GuildWriteQueue();
 
 	constructor(
 		public intents: number,
@@ -385,12 +389,14 @@ export class Cache {
 		await this.adapter.bulkSet(this._buildBulkWrites(keys));
 	}
 
-	onPacket(event: GatewayDispatchPayload) {
+	onPacket(event: GatewayDispatchPayload): Promise<void> {
 		return this.onPacketWithPluginResources(event);
 	}
 
 	private async onPacketWithPluginResources(event: GatewayDispatchPayload) {
-		await this.onPacketDefault(event);
+		if (this.trackMemberCount)
+			await this.withGuildWriteOrder(event, 'cache', () => this.guildWrites.write(() => this.onPacketDefault(event)));
+		else await this.onPacketDefault(event);
 		for (const contribution of this.pluginResourcePacketHandlers) {
 			try {
 				await contribution.handler(event, this);
@@ -414,6 +420,29 @@ export class Cache {
 			guildMember.user = user;
 			data.push([CacheFrom.Gateway, 'members', guildMember, user.id, guildId]);
 		}
+	}
+
+	/** @internal Keeps cache ordering across asynchronous gateway and event stages. */
+	withGuildWriteOrder<T>(
+		event: GatewayDispatchPayload,
+		stage: GuildWriteStage,
+		handle: () => Awaitable<T>,
+	): Promise<T> {
+		try {
+			return this.trackMemberCount ? this.guildWrites.run(event, stage, handle) : Promise.resolve(handle());
+		} catch (error) {
+			return Promise.reject(error);
+		}
+	}
+
+	/** @internal Isolates concurrent callbacks from the dispatch's cache phase. */
+	withoutGuildWriteOrder<T>(handle: () => T): T {
+		return this.guildWrites.outside(handle);
+	}
+
+	// Discord only sends member_count in GUILD_CREATE, so joins and leaves have to keep it current.
+	private adjustMemberCount(guildId: string, delta: number) {
+		return this.guilds?.incrementMemberCount(CacheFrom.Gateway, guildId, delta);
 	}
 
 	private appendMessageUsers(
@@ -440,11 +469,8 @@ export class Cache {
 				break;
 			case 'GUILD_DELETE':
 			case 'RAW_GUILD_DELETE':
-				if (event.d.unavailable) {
-					await this.guilds?.patch(CacheFrom.Gateway, event.d.id, event.d);
-				} else {
-					await this.guilds?.remove(event.d.id);
-				}
+				if (event.d.unavailable) await this.guilds?.patch(CacheFrom.Gateway, event.d.id, event.d);
+				else await this.guilds?.remove(event.d.id);
 				break;
 			case 'CHANNEL_CREATE':
 			case 'CHANNEL_UPDATE':
@@ -523,12 +549,33 @@ export class Cache {
 				break;
 			}
 			case 'GUILD_MEMBER_ADD':
+				if (!this.trackMemberCount) {
+					if (event.d.user) await this.members?.set(CacheFrom.Gateway, event.d.user.id, event.d.guild_id, event.d);
+					break;
+				}
+				await settleMemberWrites([
+					this.adjustMemberCount(event.d.guild_id, 1),
+					(async () => {
+						if (event.d.user) await this.members?.set(CacheFrom.Gateway, event.d.user.id, event.d.guild_id, event.d);
+					})(),
+				]);
+				break;
 			case 'GUILD_MEMBER_UPDATE':
 				if (event.d.user) await this.members?.set(CacheFrom.Gateway, event.d.user.id, event.d.guild_id, event.d);
 				break;
 			case 'GUILD_MEMBER_REMOVE':
-				await this.members?.remove(event.d.user.id, event.d.guild_id);
-				await this.presences?.remove(event.d.user.id, event.d.guild_id);
+				if (!this.trackMemberCount) {
+					await this.members?.remove(event.d.user.id, event.d.guild_id);
+					await this.presences?.remove(event.d.user.id, event.d.guild_id);
+					break;
+				}
+				await settleMemberWrites([
+					this.adjustMemberCount(event.d.guild_id, -1),
+					(async () => {
+						await this.members?.remove(event.d.user.id, event.d.guild_id);
+						await this.presences?.remove(event.d.user.id, event.d.guild_id);
+					})(),
+				]);
 				break;
 			case 'INTERACTION_CREATE':
 				{
@@ -645,4 +692,12 @@ export enum CacheFrom {
 	Gateway = 1,
 	Rest,
 	Test,
+}
+
+// An ordered cache phase must drain both writes before a later snapshot can start, including on failure.
+async function settleMemberWrites(writes: Awaitable<unknown>[]) {
+	const outcomes = await Promise.allSettled(writes);
+	for (const outcome of outcomes) {
+		if (outcome.status === 'rejected') throw outcome.reason;
+	}
 }

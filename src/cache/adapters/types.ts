@@ -10,6 +10,12 @@ export type AdapterRelationship = readonly [to: string, id: string];
  */
 export type AdapterEntry = readonly [key: string, value: any, relationship: AdapterRelationship];
 
+/** Bounds for an atomic update of an existing numeric cache field. */
+export interface AdapterIncrementOptions {
+	/** Clamp the updated value to this finite minimum. Omission leaves the result unbounded below. */
+	min?: number;
+}
+
 export interface Adapter {
 	isAsync: boolean;
 
@@ -39,6 +45,22 @@ export interface Adapter {
 	bulkPatch(entries: AdapterEntry[]): Awaitable<void>;
 	/** Patches the value and stores its relationship as one atomic operation. */
 	patch(key: string, value: any, relationship: AdapterRelationship): Awaitable<void>;
+
+	/**
+	 * Atomically adds a finite delta to an own, finite numeric field of an existing object record and returns its new value.
+	 * Returns undefined without writing for missing/expired records, non-record values (including arrays),
+	 * and missing/nonnumeric fields.
+	 * Preserves other fields and the owning relationship, using the adapter's normal patch expiration policy.
+	 * Invalid delta/min values or a nonfinite result reject without modifying the entry. No work remains pending
+	 * after the returned promise settles. Implementations must serialize this operation with other writes to the key.
+	 * Omit this capability when the backend cannot provide an atomic update; a get followed by patch is insufficient.
+	 */
+	increment?(
+		key: string,
+		field: string,
+		delta: number,
+		options?: AdapterIncrementOptions,
+	): Awaitable<number | undefined>;
 
 	values(to: string): Awaitable<any[]>;
 

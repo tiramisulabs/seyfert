@@ -160,14 +160,19 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 			if (typeof token !== 'string' || token.length === 0) {
 				throw new SeyfertError('INVALID_TOKEN', { metadata: { detail: 'token is not a string' } });
 			}
+			const handlePayload = async (shardId: number, packet: GatewayDispatchPayload) => {
+				if (this.options?.handlePayload)
+					await this.cache.withoutGuildWriteOrder(() => this.options.handlePayload!(shardId, packet));
+				return this.onPacket(shardId, packet);
+			};
 			this.gateway = new ShardManager({
 				token,
 				info: await this.proxy.gateway.bot.get(),
 				intents,
-				handlePayload: async (shardId, packet) => {
-					await this.options?.handlePayload?.(shardId, packet);
-					return this.onPacket(shardId, packet);
-				},
+				handlePayload: (shardId, packet) =>
+					this.cache.trackMemberCount
+						? this.cache.withGuildWriteOrder(packet, 'payload', () => handlePayload(shardId, packet))
+						: handlePayload(shardId, packet),
 				handleSendPayload: (shardId, payload) =>
 					this.handleGatewaySendPayload(shardId, payload, this.options?.handleSendPayload),
 				onShardDisconnect: this.onShardDisconnect.bind(this),
@@ -197,15 +202,26 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 		}
 	}
 
-	protected async onPacket(shardId: number, packet: GatewayDispatchPayload): Promise<GatewayDispatchPayload | null> {
-		const pluginPacket = await applyPluginGatewayDispatchInterceptors(this, shardId, packet);
-		if (pluginPacket === null) return null;
-		packet = pluginPacket;
+	protected onPacket(shardId: number, packet: GatewayDispatchPayload): Promise<GatewayDispatchPayload | null> {
+		if (!this.cache.trackMemberCount) return this.handlePacket(shardId, packet);
+		return this.cache.withGuildWriteOrder(packet, 'dispatch', () => this.handlePacket(shardId, packet));
+	}
 
-		void Promise.allSettled([
-			this.events.runEvent('RAW', this, packet, shardId, false),
-			this.collectors.run('RAW', packet, this),
-		]);
+	private async handlePacket(shardId: number, packet: GatewayDispatchPayload): Promise<GatewayDispatchPayload | null> {
+		if (this.pluginRegistry.gatewayDispatchInterceptors.length) {
+			const pluginPacket = await this.cache.withoutGuildWriteOrder(() =>
+				applyPluginGatewayDispatchInterceptors(this, shardId, packet),
+			);
+			if (pluginPacket === null) return null;
+			packet = pluginPacket;
+		}
+
+		void this.cache.withoutGuildWriteOrder(() =>
+			Promise.allSettled([
+				this.events.runEvent('RAW', this, packet, shardId, false),
+				this.collectors.run('RAW', packet, this),
+			]),
+		);
 		switch (packet.t) {
 			case 'GUILD_MEMBER_UPDATE':
 				{

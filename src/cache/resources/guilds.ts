@@ -22,6 +22,18 @@ export class Guilds extends BaseResource<any, APIGuild | GatewayGuildCreateDispa
 		return super.get(id);
 	}
 
+	/** @internal Uses an atomic adapter capability when available; the gateway queue orders the compatibility path. */
+	async incrementMemberCount(from: CacheFrom, id: string, delta: number) {
+		// Custom filters need the resulting count, which only the patch path can provide before writing.
+		if (this.adapter.increment && this.filter === Guilds.prototype.filter) {
+			await this.adapter.increment(this.hashId(id), 'member_count', delta, { min: 0 });
+			return;
+		}
+		const guild = await this.raw(id);
+		if (typeof guild?.member_count !== 'number') return;
+		await this.patch(from, id, { member_count: Math.max(0, guild.member_count + delta) });
+	}
+
 	override bulk(ids: string[]): ReturnCache<GuildStructure<'cached'>[]> {
 		return fakePromise(super.bulk(ids) as APIGuild[]).then(guilds =>
 			guilds.map(x => Transformers.Guild<'cached'>(this.client, x)),

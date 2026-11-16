@@ -422,12 +422,16 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				{
 					this.shards.clear();
 					const handlePayload = this.options?.handlePayload?.bind(this);
+					const dispatchPayload = async (shardId: number, packet: GatewayDispatchPayload) => {
+						if (handlePayload) await this.cache.withoutGuildWriteOrder(() => handlePayload(shardId, packet));
+						return this.onPacket(packet, shardId);
+					};
 					for (const [id, shard] of this.resharding) {
 						this.shards.set(id, shard);
-						shard.options.handlePayload = async (shardId, packet) => {
-							await handlePayload?.(shardId, packet);
-							return this.onPacket(packet, shardId);
-						};
+						shard.options.handlePayload = (shardId, packet) =>
+							this.cache.trackMemberCount
+								? this.cache.withGuildWriteOrder(packet, 'payload', () => dispatchPayload(shardId, packet))
+								: dispatchPayload(shardId, packet);
 					}
 					workerData.totalShards = data.totalShards;
 					workerData.shards = [...this.shards.keys()];
@@ -542,8 +546,16 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				...this.options.gateway?.properties,
 			},
 			async handlePayload(shardId, payload) {
-				await handlePayload?.(shardId, payload);
-				const pluginPacket = await onPacket(payload, shardId);
+				let pluginPacket: GatewayDispatchPayload | null;
+				if (self.cache.trackMemberCount) {
+					pluginPacket = await self.cache.withGuildWriteOrder(payload, 'payload', async () => {
+						if (handlePayload) await self.cache.withoutGuildWriteOrder(() => handlePayload(shardId, payload));
+						return onPacket(payload, shardId);
+					});
+				} else {
+					if (handlePayload) await self.cache.withoutGuildWriteOrder(() => handlePayload(shardId, payload));
+					pluginPacket = await onPacket(payload, shardId);
+				}
 				if (self.options.sendPayloadToParent && pluginPacket !== null) {
 					void self
 						.postMessage({
@@ -585,15 +597,26 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		});
 	}
 
-	protected async onPacket(packet: GatewayDispatchPayload, shardId: number): Promise<GatewayDispatchPayload | null> {
-		const pluginPacket = await applyPluginGatewayDispatchInterceptors(this, shardId, packet);
-		if (pluginPacket === null) return null;
-		packet = pluginPacket;
+	protected onPacket(packet: GatewayDispatchPayload, shardId: number): Promise<GatewayDispatchPayload | null> {
+		if (!this.cache.trackMemberCount) return this.handlePacket(packet, shardId);
+		return this.cache.withGuildWriteOrder(packet, 'dispatch', () => this.handlePacket(packet, shardId));
+	}
 
-		void Promise.allSettled([
-			this.events.runEvent('RAW', this, packet, shardId, false),
-			this.collectors.run('RAW', packet, this),
-		]);
+	private async handlePacket(packet: GatewayDispatchPayload, shardId: number): Promise<GatewayDispatchPayload | null> {
+		if (this.pluginRegistry.gatewayDispatchInterceptors.length) {
+			const pluginPacket = await this.cache.withoutGuildWriteOrder(() =>
+				applyPluginGatewayDispatchInterceptors(this, shardId, packet),
+			);
+			if (pluginPacket === null) return null;
+			packet = pluginPacket;
+		}
+
+		void this.cache.withoutGuildWriteOrder(() =>
+			Promise.allSettled([
+				this.events.runEvent('RAW', this, packet, shardId, false),
+				this.collectors.run('RAW', packet, this),
+			]),
+		);
 		switch (packet.t) {
 			case 'GUILD_MEMBER_UPDATE':
 				{
@@ -691,6 +714,10 @@ export interface WorkerClientOptions extends BaseClientOptions {
 	 */
 	onShardReconnect?: ShardManagerOptions['onShardReconnect'];
 	gateway?: ClientOptions['gateway'];
+	/**
+	 * Sends worker IPC messages. For cache requests, reject only when the request was not delivered;
+	 * accepted operations report completion or failure through CACHE_RESULT.
+	 */
 	postMessage?: (body: unknown) => Awaitable<unknown>;
 	/** can have perfomance issues in big bots if the client sends every event, specially in startup (false by default) */
 	sendPayloadToParent?: boolean;

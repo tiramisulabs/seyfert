@@ -31,6 +31,8 @@ export type WorkerSendCacheRequest = CreateWorkerMessage<
 	{
 		nonce: string;
 		method:
+			| 'capabilities'
+			| 'increment'
 			| 'scan'
 			| 'bulkGet'
 			| 'get'
