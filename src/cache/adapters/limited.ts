@@ -1,7 +1,7 @@
 import { LimitedCollection } from '../../collection';
 import { type MakeRequired, MergeOptions } from '../../common';
-import { type CacheResourceLayout, getCacheResourceLayout, needsCacheStorageIndex } from './shared';
-import type { Adapter, AdapterEntry, AdapterRelationship } from './types';
+import { type CacheResourceLayout, getCacheResourceLayout, needsCacheStorageIndex, prepareIncrement } from './shared';
+import type { Adapter, AdapterEntry, AdapterIncrementOptions, AdapterRelationship } from './types';
 
 export interface ResourceLimitedMemoryAdapter {
 	expire?: number;
@@ -259,6 +259,23 @@ export class LimitedMemoryAdapter<T> implements Adapter {
 
 	bulkPatch(entries: AdapterEntry[]) {
 		for (const [key, value, relationship] of entries) this.patch(key, value, relationship);
+	}
+
+	/** Atomically updates an existing numeric field, refreshing expiration only after a successful encode. */
+	increment(key: string, field: string, delta: number, options?: AdapterIncrementOptions): number | undefined {
+		const storageEntry = this._getStorageEntry(key)?.storageEntry;
+		const entry = storageEntry?.raw(key);
+		const expired = entry && entry.expireOn !== -1 && entry.expireOn <= Date.now();
+		const data = entry && !expired ? this.options.decode(entry.value) : undefined;
+		const update = prepareIncrement(data, field, delta, options);
+		if (expired) {
+			storageEntry!.delete(key);
+			return;
+		}
+		if (!update) return;
+		const encoded = this.options.encode(update.data);
+		storageEntry!.set(key, encoded);
+		return update.value;
 	}
 
 	values(to: string) {

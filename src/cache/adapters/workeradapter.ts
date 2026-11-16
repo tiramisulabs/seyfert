@@ -8,9 +8,14 @@ let parentPort: import('node:worker_threads').MessagePort;
 
 export class WorkerAdapter implements Adapter {
 	isAsync = true;
+	/**
+	 * Available after start() only when the manager's backend supports atomic increments.
+	 * Accepted increments wait for the backend's result without a local timeout.
+	 */
+	increment?: Adapter['increment'];
 	promises = new Map<
 		string,
-		{ resolve: (value: unknown) => void; reject: (error: unknown) => void; timeout: NodeJS.Timeout }
+		{ resolve: (value: unknown) => void; reject: (error: unknown) => void; timeout: NodeJS.Timeout | undefined }
 	>();
 
 	constructor(public workerData: WorkerData) {
@@ -18,10 +23,17 @@ export class WorkerAdapter implements Adapter {
 		if (worker_threads?.parentPort) parentPort = worker_threads.parentPort;
 	}
 
-	start() {
-		//
+	/** Discovers optional backend capabilities before gateway packets are handled. */
+	async start() {
+		this.increment = undefined;
+		const capabilities: { increment: boolean } = await this.send('capabilities');
+		if (capabilities.increment) this.increment = (...args) => this.send('increment', ...args);
 	}
 
+	/**
+	 * Transport failures must mean the request was not delivered. After delivery, completion or failure
+	 * is reported by CACHE_RESULT; a transport must not reject while the manager may still apply the request.
+	 */
 	postMessage(body: any): unknown {
 		if (parentPort) return parentPort.postMessage(body);
 		return process.send!(body);
@@ -32,10 +44,18 @@ export class WorkerAdapter implements Adapter {
 		if (this.promises.has(nonce)) return this.send(method, ...args);
 
 		return new Promise<any>((res, rej) => {
-			const timeout = setTimeout(() => {
-				this.promises.delete(nonce);
-				rej(new SeyfertError('CACHE_TIMEOUT', { metadata: { ...{ nonce, method }, detail: 'Timeout cache request' } }));
-			}, 60e3);
+			// A local deadline cannot cancel an accepted increment. Wait for the backend before releasing its guild.
+			const timeout =
+				method === 'increment'
+					? undefined
+					: setTimeout(() => {
+							this.promises.delete(nonce);
+							rej(
+								new SeyfertError('CACHE_TIMEOUT', {
+									metadata: { ...{ nonce, method }, detail: 'Timeout cache request' },
+								}),
+							);
+						}, 60e3);
 			const pending = { resolve: res, reject: rej, timeout };
 			const rejectPending = (error: unknown) => {
 				if (this.promises.get(nonce) !== pending) return;

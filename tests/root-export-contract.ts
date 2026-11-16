@@ -1,4 +1,6 @@
 import {
+	type Adapter,
+	type AdapterIncrementOptions,
 	type APIApplication,
 	type APIChannelBase,
 	type APIGroupDMChannel,
@@ -57,6 +59,21 @@ import {
 } from 'seyfert';
 
 declare function expectType<T>(value: T): void;
+
+declare const legacyAdapter: Omit<Adapter, 'increment'>;
+expectType<Adapter>(legacyAdapter);
+declare const cacheAdapter: Adapter;
+const incrementOptions = { min: 0 } satisfies AdapterIncrementOptions;
+if (cacheAdapter.increment) {
+	expectType<number | undefined | Promise<number | undefined>>(
+		cacheAdapter.increment('guild.guild-id', 'member_count', -1, incrementOptions),
+	);
+	// @ts-expect-error Counter deltas must be numeric.
+	cacheAdapter.increment('guild.guild-id', 'member_count', '1');
+	// @ts-expect-error Increment bounds must be numeric.
+	cacheAdapter.increment('guild.guild-id', 'member_count', 1, { min: '0' });
+}
+
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
 	? (<T>() => T extends B ? 1 : 2) extends <T>() => T extends A ? 1 : 2
 		? true

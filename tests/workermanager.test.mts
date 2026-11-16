@@ -1,12 +1,184 @@
 import { resolve } from 'node:path';
 import { MessageChannel, type Worker } from 'node:worker_threads';
 import { assert, describe, expect, test, vi } from 'vitest';
-import { WorkerAdapter } from '../lib/cache';
+import { type Adapter, MemoryAdapter, WorkerAdapter } from '../lib/cache';
 import { WorkerClient } from '../lib/client/workerclient';
 import { Logger, SeyfertError } from '../lib/common';
 import { WorkerManager } from '../lib/websocket/discord/workermanager';
 
+function cacheBridge(backend: Adapter) {
+	const manager = Object.create(WorkerManager.prototype) as WorkerManager;
+	manager.has = () => true;
+	manager.cacheAdapter = backend;
+	const adapter = new WorkerAdapter({ workerId: 0 } as WorkerAdapter['workerData']);
+	const client = new WorkerClient();
+	client.setServices({ cache: { adapter, trackMemberCount: true } });
+	const requests: string[] = [];
+	adapter.postMessage = message => {
+		requests.push(message.method);
+		return manager.handleWorkerMessage(JSON.parse(JSON.stringify(message)));
+	};
+	manager.postMessage = ((_workerId: number, message: unknown) =>
+		client.handleManagerMessages(JSON.parse(JSON.stringify(message)))) as WorkerManager['postMessage'];
+	return { adapter, client, requests };
+}
+
 describe('WorkerManager', () => {
+	test('an in-flight increment retains guild order past the normal cache RPC timeout', async () => {
+		vi.useFakeTimers();
+		const memory = new MemoryAdapter();
+		memory.set('guild.guild-1', { member_count: 10 }, ['guild', 'guild-1']);
+		let release!: () => void;
+		let entered!: () => void;
+		const gate = new Promise<void>(resolve => {
+			release = resolve;
+		});
+		const started = new Promise<void>(resolve => {
+			entered = resolve;
+		});
+		const delayed = new Proxy(memory, {
+			get(target, key) {
+				if (key === 'increment')
+					return async (...args: Parameters<MemoryAdapter<unknown>['increment']>) => {
+						entered();
+						await gate;
+						return target.increment(...args);
+					};
+				const value = Reflect.get(target, key);
+				return typeof value === 'function' ? value.bind(target) : value;
+			},
+		});
+		const { adapter, client } = cacheBridge(delayed);
+		let removal: Promise<unknown> | undefined;
+		let snapshot: Promise<unknown> | undefined;
+		let failure: unknown;
+		try {
+			await adapter.start();
+			removal = client.cache
+				.onPacket({ t: 'GUILD_MEMBER_REMOVE', d: { guild_id: 'guild-1', user: { id: 'user-1' } } } as never)
+				.catch(error => {
+					failure = error;
+				});
+			await started;
+			snapshot = client.cache.onPacket({ t: 'GUILD_CREATE', d: { id: 'guild-1', member_count: 20 } } as never);
+			await vi.advanceTimersByTimeAsync(60_001);
+			expect(failure).toBeUndefined();
+			expect(memory.get('guild.guild-1')).toEqual({ member_count: 10 });
+			expect(adapter.promises.size).toBe(1);
+			release();
+			await Promise.all([removal, snapshot]);
+			expect(memory.get('guild.guild-1')).toMatchObject({ member_count: 20 });
+			expect(adapter.promises.size).toBe(0);
+			expect(vi.getTimerCount()).toBe(0);
+		} finally {
+			release();
+			await Promise.allSettled([removal, snapshot]);
+			for (const pending of adapter.promises.values()) clearTimeout(pending.timeout);
+			adapter.promises.clear();
+			vi.useRealTimers();
+		}
+	});
+
+	test.each(['sync', 'async'] as const)(
+		'cleans up an undelivered increment when the %s transport fails',
+		async mode => {
+			vi.useFakeTimers();
+			const backend = new MemoryAdapter();
+			backend.set('guild.guild-1', { member_count: 10 }, ['guild', 'guild-1']);
+			const { adapter } = cacheBridge(backend);
+			try {
+				await adapter.start();
+				const fail = () => {
+					throw new Error('not delivered');
+				};
+				adapter.postMessage = mode === 'sync' ? fail : async () => fail();
+				await expect(adapter.increment!('guild.guild-1', 'member_count', 1)).rejects.toThrow('not delivered');
+				expect(backend.get('guild.guild-1')).toEqual({ member_count: 10 });
+				expect(adapter.promises.size).toBe(0);
+				expect(vi.getTimerCount()).toBe(0);
+			} finally {
+				for (const pending of adapter.promises.values()) clearTimeout(pending.timeout);
+				adapter.promises.clear();
+				vi.useRealTimers();
+			}
+		},
+	);
+
+	test('negotiates atomic increments once and forwards results and errors through JSON IPC', async () => {
+		vi.useFakeTimers();
+		const backend = new MemoryAdapter();
+		backend.set('guild.guild-1', { member_count: 10, name: 'preserved' }, ['guild', 'guild-1']);
+		const { adapter, requests } = cacheBridge(backend);
+		try {
+			expect(adapter.increment).toBeUndefined();
+			await adapter.start();
+			expect(adapter.increment).toBeTypeOf('function');
+			await expect(adapter.increment!('guild.guild-1', 'member_count', -1, { min: 0 })).resolves.toBe(9);
+			await expect(adapter.increment!('guild.missing', 'member_count', 1)).resolves.toBeUndefined();
+			await Promise.all(Array.from({ length: 4 }, () => adapter.increment!('guild.guild-1', 'member_count', 1)));
+			expect(backend.get('guild.guild-1')).toEqual({ member_count: 13, name: 'preserved' });
+			const failing = vi.spyOn(backend, 'increment').mockImplementationOnce(() => {
+				throw new Error('backend unavailable');
+			});
+			try {
+				await expect(adapter.increment!('guild.guild-1', 'member_count', 1)).rejects.toThrow('backend unavailable');
+				expect(failing).toHaveBeenCalledOnce();
+			} finally {
+				failing.mockRestore();
+			}
+			expect(requests.filter(method => method === 'capabilities')).toHaveLength(1);
+			expect(requests.every(method => method === 'capabilities' || method === 'increment')).toBe(true);
+			expect(adapter.promises.size).toBe(0);
+			expect(vi.getTimerCount()).toBe(0);
+		} finally {
+			for (const pending of adapter.promises.values()) clearTimeout(pending.timeout);
+			adapter.promises.clear();
+			vi.useRealTimers();
+		}
+	});
+
+	test.each([true, false])(
+		'worker counters use the negotiated capability or queued fallback (atomic: %s)',
+		async atomic => {
+			const memory = new MemoryAdapter();
+			const legacy = new Proxy(memory, {
+				get(target, key) {
+					if (key === 'increment' && !atomic) return undefined;
+					const value = Reflect.get(target, key);
+					return typeof value === 'function' ? value.bind(target) : value;
+				},
+			});
+			memory.set('guild.guild-1', { member_count: 10 }, ['guild', 'guild-1']);
+			const { adapter, client, requests } = cacheBridge(legacy);
+			try {
+				await adapter.start();
+				expect(typeof adapter.increment).toBe(atomic ? 'function' : 'undefined');
+				await Promise.all(
+					Array.from({ length: 3 }, () =>
+						client.cache.onPacket({
+							t: 'GUILD_MEMBER_REMOVE',
+							d: { guild_id: 'guild-1', user: { id: 'user-1' } },
+						} as never),
+					),
+				);
+				expect(memory.get('guild.guild-1')).toEqual({ member_count: 7 });
+				if (atomic) {
+					expect(requests.filter(method => method === 'increment')).toHaveLength(3);
+					expect(requests).not.toContain('get');
+					expect(requests).not.toContain('bulkPatch');
+				} else {
+					expect(requests).not.toContain('increment');
+					expect(requests).toContain('get');
+					expect(requests).toContain('bulkPatch');
+				}
+				expect(adapter.promises.size).toBe(0);
+			} finally {
+				for (const pending of adapter.promises.values()) clearTimeout(pending.timeout);
+				adapter.promises.clear();
+			}
+		},
+	);
+
 	test('waits for custom adapter spawn before registering its heartbeat', async () => {
 		let releaseSpawn!: () => void;
 		const spawn = vi.fn(

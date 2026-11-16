@@ -1,5 +1,4 @@
 import type { CommandContext, Message } from '..';
-import type { GuildWriteReservation } from '../cache';
 import {
 	type Awaitable,
 	type DeepPartial,
@@ -166,11 +165,10 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 				info: await this.proxy.gateway.bot.get(),
 				intents,
 				handlePayload: (shardId, packet) =>
-					this.cache.holdGuildWriteOrder(
-						packet,
-						() => this.options?.handlePayload?.(shardId, packet),
-						() => this.onPacket(shardId, packet),
-					),
+					this.cache.withGuildWriteOrder(packet, 'payload', async () => {
+						await this.cache.withoutGuildWriteOrder(() => this.options?.handlePayload?.(shardId, packet));
+						return this.onPacket(shardId, packet);
+					}),
 				handleSendPayload: (shardId, payload) =>
 					this.handleGatewaySendPayload(shardId, payload, this.options?.handleSendPayload),
 				onShardDisconnect: this.onShardDisconnect.bind(this),
@@ -200,31 +198,23 @@ class ClientBase<Ready extends boolean = boolean> extends BaseClient {
 		}
 	}
 
-	protected async onPacket(shardId: number, packet: GatewayDispatchPayload): Promise<GatewayDispatchPayload | null> {
-		// Interceptors and event hooks can await before the cache sees this packet, so a guild packet
-		// holds its place in the cache's guild write order until it has been handled.
-		const guildWrite = this.cache.reserveGuildWrite(packet);
-		try {
-			return await this.handlePacket(shardId, packet, guildWrite);
-		} finally {
-			guildWrite?.release();
-		}
+	protected onPacket(shardId: number, packet: GatewayDispatchPayload): Promise<GatewayDispatchPayload | null> {
+		return this.cache.withGuildWriteOrder(packet, 'dispatch', async () => {
+			const pluginPacket = await this.cache.withoutGuildWriteOrder(() =>
+				applyPluginGatewayDispatchInterceptors(this, shardId, packet),
+			);
+			if (pluginPacket === null) return null;
+			return this.handlePacket(shardId, pluginPacket);
+		});
 	}
 
-	private async handlePacket(
-		shardId: number,
-		packet: GatewayDispatchPayload,
-		guildWrite: GuildWriteReservation | undefined,
-	): Promise<GatewayDispatchPayload | null> {
-		const pluginPacket = await applyPluginGatewayDispatchInterceptors(this, shardId, packet);
-		if (pluginPacket === null) return null;
-		packet = pluginPacket;
-		guildWrite?.move(packet);
-
-		void Promise.allSettled([
-			this.events.runEvent('RAW', this, packet, shardId, false),
-			this.collectors.run('RAW', packet, this),
-		]);
+	private async handlePacket(shardId: number, packet: GatewayDispatchPayload): Promise<GatewayDispatchPayload | null> {
+		void this.cache.withoutGuildWriteOrder(() =>
+			Promise.allSettled([
+				this.events.runEvent('RAW', this, packet, shardId, false),
+				this.collectors.run('RAW', packet, this),
+			]),
+		);
 		switch (packet.t) {
 			case 'GUILD_MEMBER_UPDATE':
 				{
