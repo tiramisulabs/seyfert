@@ -297,6 +297,7 @@ export const Formatter = {
 	/**
 	 * Formats an emoji.
 	 * @param emojiId The ID of the emoji.
+	 * @param name The name of the emoji. When `null`, `_` is used as a placeholder.
 	 * @param animated Whether the emoji is animated. Defaults to false.
 	 * @returns The formatted emoji.
 	 */

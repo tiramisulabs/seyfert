@@ -166,3 +166,33 @@ describe('LangsHandler module loading', () => {
 		}
 	});
 });
+
+describe('LangsHandler.get fallback', () => {
+	function handlerWithLocales() {
+		const { handler } = createHandler();
+		handler.defaultLang = 'en-US';
+		handler.values['en-US'] = { greeting: 'Hello', menu: { title: 'Menu', footer: 'Bye' } };
+		handler.values['es-ES'] = { menu: { title: 'Menú' } };
+		return handler;
+	}
+
+	test('falls back to the default locale when only the last key is missing', () => {
+		const t = handlerWithLocales().get('es-ES') as any;
+
+		expect(t.greeting.get()).toBe('Hello');
+		expect(t.menu.footer.get()).toBe('Bye');
+	});
+
+	test('keeps the translation of the requested locale when the key exists', () => {
+		const t = handlerWithLocales().get('es-ES') as any;
+
+		expect(t.menu.title.get()).toBe('Menú');
+	});
+
+	test('still falls back when an intermediate key is missing', () => {
+		const handler = handlerWithLocales();
+		handler.values['es-ES'] = {};
+
+		expect((handler.get('es-ES') as any).menu.footer.get()).toBe('Bye');
+	});
+});

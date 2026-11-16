@@ -9,8 +9,12 @@ import {
 import { type APIPollMedia, PollLayoutType, type RESTAPIPollCreate } from '../types';
 
 export class PollBuilder {
-	constructor(public data: DeepPartial<RESTAPIPollCreate> = {}) {
-		this.data.layout_type = PollLayoutType.Default;
+	public data: DeepPartial<RESTAPIPollCreate>;
+
+	constructor(data: DeepPartial<RESTAPIPollCreate> = {}) {
+		this.data = { ...data, layout_type: data.layout_type ?? PollLayoutType.Default };
+		// `setQuestion` writes into `question`, so it is copied too to keep the caller's object intact.
+		if (data.question) this.data.question = { ...data.question };
 	}
 
 	addAnswers(...answers: RestOrArray<PollMedia>) {

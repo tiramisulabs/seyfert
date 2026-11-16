@@ -23,8 +23,10 @@ export const LangRouter = (userLocale: string, defaultLang: string, langs: Parti
 						try {
 							result = getValue(locale ?? userLocale);
 						} catch {
-							result = getValue(defaultLang);
+							// A missing locale or intermediate key falls through to the default locale below.
 						}
+						// A key missing only at the leaf resolves to undefined instead of throwing, so it needs the same fallback.
+						if (typeof result === 'undefined') result = getValue(defaultLang);
 						const value = typeof result === 'function' ? result(...args) : result;
 						return value;
 					};
