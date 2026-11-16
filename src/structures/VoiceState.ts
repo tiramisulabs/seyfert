@@ -8,7 +8,7 @@ import type {
 } from '../';
 import type { VoiceStateResource } from '../cache/resources/voice-states';
 import { type GuildMemberStructure, Transformers } from '../client/transformers';
-import type { ObjectToLower } from '../common';
+import { createValidationMetadata, type ObjectToLower, SeyfertError } from '../common';
 import type { APIVoiceState } from '../types';
 import { Base } from './extra/Base';
 
@@ -86,8 +86,15 @@ export class VoiceState extends Base {
 	}
 
 	async requestSpeak(date: string | Date = new Date()) {
+		const received = date;
 		if (typeof date === 'string') date = new Date(date);
-		if (Number.isNaN(date.getTime())) return Promise.reject('Invalid date');
+		if (Number.isNaN(date.getTime()))
+			throw new SeyfertError('INVALID_DATE', {
+				metadata: {
+					...createValidationMetadata('a valid Date or date string', received, { component: 'VoiceState' }),
+					detail: 'Invalid date',
+				},
+			});
 		date = date.toISOString();
 		await this.client.voiceStates.requestSpeak(this.guildId, date);
 		this.requestToSpeakTimestamp = date;

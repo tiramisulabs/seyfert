@@ -107,6 +107,7 @@ export const SeyfertErrorMessages = {
 	INVALID_ATTACHMENT_TYPE: 'Invalid attachment type.',
 	INVALID_ANSWER_ID: 'Invalid answer id.',
 	INVALID_AUDIT_LOG_LIMIT: 'Invalid audit log limit.',
+	INVALID_DATE: 'Invalid date.',
 	CONFLICTING_AUDIT_LOG_CURSOR: 'Conflicting audit log cursor.',
 	MISSING_INCIDENT_ACTIONS: 'Missing incident actions.',
 	INVALID_STAGE_INSTANCE_TOPIC: 'Invalid stage instance topic.',

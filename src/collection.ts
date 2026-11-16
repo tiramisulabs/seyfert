@@ -9,7 +9,6 @@ export class Collection<K, V> extends Map<K, V> {
 	/**
 	 * Removes elements from the collection based on a filter function.
 	 * @param fn The filter function that determines which elements to remove.
-	 * @param thisArg The value to use as `this` when executing the filter function.
 	 * @returns The number of elements removed from the collection.
 	 * @example
 	 * const collection = new Collection<number, string>();
@@ -31,7 +30,6 @@ export class Collection<K, V> extends Map<K, V> {
 	/**
 	 * Creates a new array with the results of calling a provided function on every element in the collection.
 	 * @param fn The function that produces an element of the new array.
-	 * @param thisArg The value to use as `this` when executing the map function.
 	 * @returns A new array with the results of calling the provided function on every element in the collection.
 	 * @example
 	 * const collection = new Collection<number, string>();
@@ -54,7 +52,6 @@ export class Collection<K, V> extends Map<K, V> {
 	/**
 	 * Creates a new array with all elements that pass the test implemented by the provided function.
 	 * @param fn The function to test each element of the collection.
-	 * @param thisArg The value to use as `this` when executing the filter function.
 	 * @returns A new array with the elements that pass the test.
 	 * @example
 	 * const collection = new Collection<number, string>();
@@ -329,17 +326,10 @@ export interface LimitedCollectionOptions<K, V> {
 }
 
 /**
- * Creates a new array with the results of calling a provided function on every element in the collection.
- * @param fn The function that produces an element of the new array.
- * @param thisArg The value to use as `this` when executing the map function.
- * @returns A new array with the results of calling the provided function on every element in the collection.
- * @example
- * const collection = new Collection<number, string>();
- * collection.set(1, 'one');
- * collection.set(2, 'two');
- * collection.set(3, 'three');
- * const mappedArray = collection.map((value, key) => `${key}: ${value}`);
- * console.log(mappedArray); // Output: ['1: one', '2: two', '3: three']
+ * Represents a collection that holds at most `limit` entries, evicting the oldest ones first,
+ * and whose entries can expire after `expire` milliseconds.
+ * @template K The type of the keys in the collection.
+ * @template V The type of the values in the collection.
  */
 export class LimitedCollection<K, V> {
 	static readonly default: LimitedCollectionOptions<any, any> = {
