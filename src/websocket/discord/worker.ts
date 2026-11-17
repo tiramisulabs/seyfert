@@ -1,6 +1,8 @@
 import type { ApiRequestOptions, CustomWorkerClientEvents, HttpMethods } from '../..';
-import type { Identify } from '../../common';
+import type { Identify, MakeRequired } from '../../common';
 import type { GatewayDispatchPayload } from '../../types';
+import type { ShardData } from './shared';
+import type { SerializedWorkerError } from './workermanager';
 
 export const WORKER_TIMEOUT_MS = 60_000;
 
@@ -89,6 +91,33 @@ export type WorkerSendToWorkerEval = CreateWorkerMessage<
 	}
 >;
 
+/** Hot reload options that can cross the worker channel; see `WorkerManager.hotReload`. */
+export interface WorkerHotReloadRequestOptions {
+	/** Workers to reload, one after another. Defaults to every worker in id order. */
+	workerIds?: readonly number[];
+	/**
+	 * How long a replacement may take until all its shards are ready. Defaults to 60s plus the time the connect
+	 * queue needs for the worker's shards (5.5s per `max_concurrency` shards).
+	 */
+	readyTimeout?: number;
+	/** How long a replaced worker may keep finishing in-flight work before its sessions close. @default 10000 */
+	drainTimeout?: number;
+	/** Keep reloading the remaining workers after one fails. @default false */
+	continueOnError?: boolean;
+}
+
+export type WorkerRequestHotReload = CreateWorkerMessage<
+	'HOT_RELOAD_REQUEST',
+	{ nonce: string; options: WorkerHotReloadRequestOptions }
+>;
+export type WorkerHotReloadAck = CreateWorkerMessage<
+	'HOT_RELOAD_ACK',
+	{ nonce: string } & (
+		| { session?: MakeRequired<ShardData>; error?: never }
+		| { error: SerializedWorkerError; session?: never }
+	)
+>;
+
 export type BaseWorkerMessage =
 	| WorkerRequestConnect
 	| WorkerReceivePayload
@@ -105,7 +134,9 @@ export type BaseWorkerMessage =
 	| WorkerStartResharding
 	| WorkerRequestConnectResharding
 	| WorkerReadyResharding
-	| WorkerDisconnectedAllShardsResharding;
+	| WorkerDisconnectedAllShardsResharding
+	| WorkerRequestHotReload
+	| WorkerHotReloadAck;
 
 export type CustomWorkerClientMessages = {
 	[K in keyof CustomWorkerClientEvents]: Identify<

@@ -296,6 +296,38 @@ describe('gateway reconnect lifecycle', () => {
 		expect(second.sent).toEqual([expect.objectContaining({ op: GatewayOpcodes.Resume })]);
 	});
 
+	test('a transferred session preserves its cursor and reports rejection without identifying', async () => {
+		vi.useFakeTimers();
+		const LifecycleShard = await loadLifecycleShard();
+		const shard = new LifecycleShard(0, createOptions());
+		const onFailure = vi.fn();
+		const wait = vi.spyOn(shard.connectTimeout, 'wait');
+		shard.data = {
+			resume_seq: 42,
+			resume_gateway_url: 'wss://resume.discord.gg',
+			session_id: 'session-a',
+		};
+
+		await shard.connectTransferredSession(onFailure);
+		const socket = FakeBaseSocket.instances[0]!;
+		socket.open();
+		socket.message({ op: GatewayOpcodes.HeartbeatAck });
+		socket.message(hello());
+		await vi.waitFor(() => expect(socket.sent).toHaveLength(1));
+
+		expect(wait).not.toHaveBeenCalled();
+		expect(socket.sent).toEqual([
+			expect.objectContaining({
+				op: GatewayOpcodes.Resume,
+				d: expect.objectContaining({ seq: 42, session_id: 'session-a' }),
+			}),
+		]);
+		socket.message(gatewayPacket(GatewayOpcodes.InvalidSession, false));
+		expect(onFailure).toHaveBeenCalledOnce();
+		expect(FakeBaseSocket.instances).toHaveLength(1);
+		expect(shard.data.resume_seq).toBe(42);
+	});
+
 	test('Opcode 7 before HELLO bypasses the per-shard connection delay', async () => {
 		vi.useFakeTimers();
 		const LifecycleShard = await loadLifecycleShard();

@@ -1,6 +1,6 @@
 import { randomUUID, type UUID } from 'node:crypto';
 import { ApiHandler, Logger } from '..';
-import { WorkerAdapter } from '../cache';
+import { LimitedMemoryAdapter, MemoryAdapter, WorkerAdapter } from '../cache';
 import {
 	type Awaitable,
 	calculateShardId,
@@ -29,11 +29,14 @@ import type { ShardData } from '../websocket/discord/shared';
 import type {
 	ClientHeartbeaterMessages,
 	WorkerDisconnectedAllShardsResharding,
+	WorkerHotReloadAck,
+	WorkerHotReloadRequestOptions,
 	WorkerMessages,
 	WorkerReadyResharding,
 	WorkerReceivePayload,
 	WorkerRequestConnect,
 	WorkerRequestConnectResharding,
+	WorkerRequestHotReload,
 	WorkerSendEvalResponse,
 	WorkerSendInfo,
 	WorkerSendResultPayload,
@@ -43,8 +46,13 @@ import type {
 	WorkerStart,
 	WorkerStartResharding,
 } from '../websocket/discord/worker';
-import { deserializeWorkerError } from '../websocket/discord/worker-errors';
-import type { ManagerMessages, ManagerSpawnShards } from '../websocket/discord/workermanager';
+import { deserializeWorkerError, serializeWorkerError } from '../websocket/discord/worker-errors';
+import type {
+	HotReloadProgress,
+	HotReloadResult,
+	ManagerMessages,
+	ManagerSpawnShards,
+} from '../websocket/discord/workermanager';
 import type { BaseClientOptions, InternalRuntimeConfig, ServicesOptions, StartOptions } from './base';
 import { BaseClient } from './base';
 import type { Client, ClientOptions } from './client';
@@ -74,6 +82,8 @@ try {
 		totalWorkers: Number(process.env.SEYFERT_WORKER_TOTALWORKERS),
 		info: JSON.parse(process.env.SEYFERT_WORKER_INFO!),
 		compress: String(process.env.SEYFERT_WORKER_COMPRESS) === 'true',
+		hotReload: String(process.env.SEYFERT_WORKER_HOTRELOAD) === 'true',
+		generation: Number(process.env.SEYFERT_WORKER_GENERATION ?? 0),
 	} satisfies WorkerData;
 } catch {
 	//
@@ -90,6 +100,30 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	shards = new Map<number, Shard>();
 	resharding = new Map<number, Shard>();
 
+	/**
+	 * Whether gateway events reach handlers. A hot reload replacement waits on standby, only building its cache,
+	 * until the manager switches to it; the worker it replaces then stops and drains.
+	 */
+	private dispatchState: 'active' | 'standby' | 'stopped' = 'active';
+	/** The readiness handlers skipped on standby, in startup order, replayed when the replacement takes over. */
+	private standbyReadiness: (
+		| { event: 'WORKER_SHARDS_CONNECTED' | 'WORKER_READY' }
+		| { packet: GatewayDispatchPayload; shardId: number }
+	)[] = [];
+	/** Dispatched work a worker replaced by a hot reload waits for before it closes its sessions. */
+	private inFlightWork = new Set<Promise<unknown>>();
+	private pausedShard?: { shard: Shard; generation: number };
+	private cancelledSessionHandoff = 0;
+	private activateResumedShard?: (runReadiness: () => Promise<void>) => Promise<() => void>;
+	private hotReloadRequests = new Map<
+		string,
+		{
+			resolve(result: HotReloadResult): void;
+			reject(error: unknown): void;
+			onProgress?(event: HotReloadProgress): void;
+		}
+	>();
+
 	declare options: WorkerClientOptions;
 
 	constructor(options?: WorkerClientOptions) {
@@ -98,6 +132,14 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		if (this.options.handleManagerMessages) {
 			const oldFn = this.handleManagerMessages.bind(this);
 			this.handleManagerMessages = async message => {
+				if (message.type === 'HOT_RELOAD_ACTIVATE' && message.cancelSessionHandoff !== undefined) {
+					// A user hook may observe rollback but cannot prevent the paused shard from reconnecting.
+					const rollback = oldFn(message);
+					void Promise.resolve()
+						.then(() => this.options.handleManagerMessages!(message))
+						.catch(error => this.logger.error('Worker manager rollback observer failed', error));
+					return rollback;
+				}
 				await this.options.handleManagerMessages!(message);
 				return oldFn(message);
 			};
@@ -118,11 +160,13 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	private async onShardDisconnect(data: ShardDisconnectData) {
+		if (this.dispatchState !== 'active' || this.pausedShard?.shard.id === data.shardId) return;
 		await this.options?.onShardDisconnect?.(data);
 		await this.events.runEvent('SHARD_DISCONNECT', this, data, data.shardId, false);
 	}
 
 	private async onShardReconnect(data: ShardReconnectData) {
+		if (this.dispatchState !== 'active') return;
 		await this.options?.onShardReconnect?.(data);
 		await this.events.runEvent('SHARD_RECONNECT', this, data, data.shardId, false);
 	}
@@ -144,6 +188,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	setWorkerData(data: WorkerData) {
 		workerData = data;
+		this.dispatchState = data?.hotReload ? 'standby' : 'active';
+		this.standbyReadiness = [];
 	}
 
 	get workerData() {
@@ -164,6 +210,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				});
 			});
 
+		if (workerData.hotReload) this.dispatchState = 'standby';
 		this.configureLogger({ name: `[Worker #${workerData.workerId}]` }, this.options.logger);
 
 		if (workerData.debug) {
@@ -421,24 +468,267 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			case 'CONNECT_ALL_SHARDS_RESHARDING':
 				{
 					this.shards.clear();
-					const handlePayload = this.options?.handlePayload?.bind(this);
-					const dispatchPayload = async (shardId: number, packet: GatewayDispatchPayload) => {
-						if (handlePayload) await this.cache.withoutGuildWriteOrder(() => handlePayload(shardId, packet));
-						return this.onPacket(packet, shardId);
-					};
 					for (const [id, shard] of this.resharding) {
 						this.shards.set(id, shard);
-						shard.options.handlePayload = (shardId, packet) =>
-							this.cache.trackMemberCount
-								? this.cache.withGuildWriteOrder(packet, 'payload', () => dispatchPayload(shardId, packet))
-								: dispatchPayload(shardId, packet);
+						shard.options.handlePayload = (shardId, packet) => this.handleShardPayload(shardId, packet, false);
 					}
 					workerData.totalShards = data.totalShards;
 					workerData.shards = [...this.shards.keys()];
 					this.resharding.clear();
 				}
 				break;
+			case 'HOT_RELOAD_ACTIVATE':
+				{
+					// A replaced worker can be resumed when its replacement fails to take over.
+					const fromStandby = this.dispatchState === 'standby';
+					const resume = this.activateResumedShard;
+					let releaseResumed: (() => void) | undefined;
+					let activated = false;
+					await this.answerReloadStep(
+						data.nonce,
+						async () => {
+							if (data.cancelSessionHandoff !== undefined) {
+								this.cancelledSessionHandoff = Math.max(this.cancelledSessionHandoff, data.cancelSessionHandoff);
+								if (this.pausedShard?.generation === data.cancelSessionHandoff) {
+									const { shard } = this.pausedShard;
+									this.pausedShard = undefined;
+									await shard.connectTransferredSession();
+								}
+							}
+							if (resume) {
+								releaseResumed = await resume(() => this.replayStandbyReadiness(data.botReady, true));
+								this.activateResumedShard = undefined;
+							}
+							this.dispatchState = 'active';
+							activated = true;
+							return {};
+						},
+						// Enqueue the ACK before replay callbacks can send messages through the manager.
+						() => releaseResumed?.(),
+					);
+					if (activated && fromStandby && !resume) {
+						const readiness = this.replayStandbyReadiness(data.botReady, false);
+						this.trackInFlight(readiness);
+						readiness.catch(error => this.logger.error('Hot reload readiness handlers failed', error));
+					}
+				}
+				break;
+			case 'HOT_RELOAD_STOP':
+				if (data.sessionHandoff) {
+					const { generation, drainTimeout } = data.sessionHandoff;
+					await this.answerReloadStep(data.nonce, async () => ({
+						session: await this.pauseForResume(generation, drainTimeout),
+					}));
+				} else {
+					this.dispatchState = 'stopped';
+					await this.answerReloadStep(data.nonce, () => ({}));
+				}
+				break;
+			case 'HOT_RELOAD_RESUME':
+				await this.answerReloadStep(data.nonce, async () => {
+					await this.prepareResumedShard(data.session);
+					return {};
+				});
+				break;
+			case 'HOT_RELOAD_DRAIN':
+				this.dispatchState = 'stopped';
+				await this.waitForInFlight(data.drainTimeout);
+				try {
+					await this.close();
+				} catch (error) {
+					this.logger.error('Hot reload plugin teardown failed', error);
+				}
+				for (const shard of this.shards.values()) {
+					if (shard !== this.pausedShard?.shard) shard.end('Replaced by a hot reload');
+				}
+				await this.answerReloadStep(data.nonce, () => ({}));
+				break;
+			case 'HOT_RELOAD_PROGRESS':
+				this.hotReloadRequests.get(data.nonce)?.onProgress?.(data.progress);
+				break;
+			case 'HOT_RELOAD_RESULT':
+				{
+					const request = this.hotReloadRequests.get(data.nonce);
+					if (!request) return;
+					this.hotReloadRequests.delete(data.nonce);
+					if (data.error) request.reject(deserializeWorkerError(data.error));
+					else request.resolve(data.result);
+				}
+				break;
 		}
+	}
+
+	/** Runs the readiness handlers skipped on standby, in startup order. */
+	private async replayStandbyReadiness(botReady: boolean, resumed: boolean) {
+		for (const step of this.standbyReadiness.splice(0)) {
+			if ('event' in step) {
+				await this.events.runEvent(step.event, this, this.me, -1);
+				continue;
+			}
+			// As in handlePacket, RAW listeners and collectors start first, without being awaited.
+			this.trackInFlight(
+				Promise.allSettled([
+					this.events.runEvent('RAW', this, step.packet, step.shardId, false),
+					this.collectors.run('RAW', step.packet, this),
+				]),
+			);
+			if (resumed && step.packet.t === GatewayDispatchEvents.Ready) {
+				// The temporary session snapshot must not overwrite the shared cache.
+				const { t, d } = step.packet;
+				await Promise.all([
+					this.events.runEvent(t, this, d, step.shardId, false),
+					this.collectors.run(t as never, d as never, this),
+				]);
+			} else await this.events.execute(step.packet, this, step.shardId);
+		}
+		if (botReady) await this.events.runEvent('BOT_READY', this, this.me, -1);
+	}
+
+	private async answerReloadStep(
+		nonce: string,
+		run: () => Awaitable<{ session?: MakeRequired<ShardData> }>,
+		afterSend?: () => void,
+	) {
+		let outcome: Pick<WorkerHotReloadAck, 'session' | 'error'>;
+		try {
+			outcome = await run();
+		} catch (error) {
+			outcome = { error: serializeWorkerError(error) };
+		}
+		const sent = this.postMessage({
+			type: 'HOT_RELOAD_ACK',
+			workerId: this.workerId,
+			nonce,
+			...outcome,
+		} as WorkerHotReloadAck);
+		if (!outcome.error) afterSend?.();
+		await sent;
+	}
+
+	private async waitForInFlight(timeout: number) {
+		let timer: NodeJS.Timeout | undefined;
+		let timedOut = false;
+		const deadline = new Promise<void>(resolve => {
+			timer = setTimeout(() => {
+				timedOut = true;
+				resolve();
+			}, timeout);
+		});
+		try {
+			while (this.inFlightWork.size && !timedOut) {
+				await Promise.race([Promise.allSettled([...this.inFlightWork]), deadline]);
+			}
+			return !this.inFlightWork.size;
+		} finally {
+			clearTimeout(timer);
+		}
+	}
+
+	private getResumeShard() {
+		const shard = this.shards.values().next().value;
+		if (!(this.cache.adapter instanceof WorkerAdapter) || this.shards.size !== 1 || !shard?.isReady || !shard.isOpen) {
+			throw new SeyfertError('HOT_RELOAD_UNSUPPORTED', {
+				metadata: { detail: 'Session handoff requires one connected shard and WorkerAdapter.' },
+			});
+		}
+		return shard;
+	}
+
+	private async pauseForResume(generation: number, timeout: number): Promise<MakeRequired<ShardData>> {
+		if (generation <= this.cancelledSessionHandoff) throw new Error('Session handoff was cancelled.');
+		const shard = this.getResumeShard();
+		const { session_id, resume_gateway_url, resume_seq } = shard.data;
+		if (!session_id || !resume_gateway_url || resume_seq == null) {
+			throw new SeyfertError('HOT_RELOAD_UNSUPPORTED', { metadata: { detail: 'Shard session is not resumable.' } });
+		}
+		// Fence the socket synchronously but leave admitted callbacks running on this generation.
+		const pause = { shard, generation };
+		this.pausedShard = pause;
+		shard.close(ShardSocketCloseCodes.Reconnect, 'Transferring gateway session');
+		if (!(await this.waitForInFlight(timeout))) {
+			throw new SeyfertError('WORKER_TIMEOUT', {
+				metadata: { detail: 'Shard dispatch did not drain before session handoff.' },
+			});
+		}
+		if (this.pausedShard !== pause) throw new Error('Session handoff was cancelled.');
+		this.dispatchState = 'stopped';
+		return { session_id, resume_gateway_url, resume_seq };
+	}
+
+	private async prepareResumedShard(session: MakeRequired<ShardData>) {
+		const shard = this.getResumeShard();
+		const handlePayload = shard.options.handlePayload;
+		const replay: [number, GatewayDispatchPayload][] = [];
+		shard.end('Replacing standby session with original session');
+		shard.data = { ...session };
+		let confirmResume!: () => void;
+		const resumed = new Promise<void>(resolve => {
+			confirmResume = resolve;
+		});
+		let rejectHandoff!: (error: Error) => void;
+		const interrupted = new Promise<never>((_, reject) => {
+			rejectHandoff = reject;
+		});
+		let failure: Error | undefined;
+		const fail = (error: Error) => {
+			failure = error;
+			rejectHandoff(error);
+		};
+		shard.options.handlePayload = (id, packet) => {
+			if (packet.t === GatewayDispatchEvents.Ready || replay.length >= 100_000) {
+				shard.close(ShardSocketCloseCodes.Reconnect, 'Session handoff could not replay');
+				return;
+			}
+			replay.push([id, packet]);
+			if (packet.t === GatewayDispatchEvents.Resumed) confirmResume();
+		};
+		await Promise.all([shard.connectTransferredSession(fail), Promise.race([resumed, interrupted])]);
+		this.activateResumedShard = async runReadiness => {
+			if (failure) throw failure;
+			// The original worker can still take the session back if the candidate fails during readiness.
+			await Promise.race([runReadiness(), interrupted]);
+			if (failure) throw failure;
+			shard.commitTransferredSession();
+			return () => {
+				shard.options.handlePayload = handlePayload;
+				for (const [id, packet] of replay.splice(0)) {
+					this.trackInFlight(
+						(async () => handlePayload.call(shard.options, id, packet))().catch(error =>
+							this.logger.error('Session handoff dispatch failed', error),
+						),
+					);
+				}
+			};
+		};
+	}
+
+	/**
+	 * Asks the `WorkerManager` to hot reload workers, possibly including this one. See
+	 * `WorkerManager.hotReload` for how the reload works and what it guarantees.
+	 *
+	 * `onProgress` receives each stage as the manager reports it. If this worker is replaced, the promise resolves
+	 * with the entries so far, including this worker's own, before it is told to drain, so it can still reply or
+	 * log. Its stop and drain still follow. A plain `Client` has no manager; hot reload needs the `WorkerManager`.
+	 */
+	requestHotReload(
+		options: WorkerHotReloadRequestOptions & { onProgress?(event: HotReloadProgress): void } = {},
+	): Promise<HotReloadResult> {
+		const { onProgress, ...request } = options;
+		const nonce = this.generateNonce();
+		return new Promise<HotReloadResult>((resolve, reject) => {
+			this.hotReloadRequests.set(nonce, { resolve, reject, onProgress });
+			Promise.resolve(
+				this.postMessage({
+					type: 'HOT_RELOAD_REQUEST',
+					nonce,
+					options: request,
+					workerId: workerData.workerId,
+				} satisfies WorkerRequestHotReload),
+			).catch(error => {
+				this.hotReloadRequests.delete(nonce);
+				reject(error);
+			});
+		});
 	}
 
 	calculateShardId(guildId: string) {
@@ -529,8 +819,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	createShard(id: number, data: Pick<ManagerSpawnShards, 'info' | 'compress' | 'properties'>) {
-		const onPacket = this.onPacket.bind(this);
-		const handlePayload = this.options?.handlePayload?.bind(this);
 		const self = this;
 		const shard = new Shard(id, {
 			token: workerData.token,
@@ -545,33 +833,46 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				...data.properties,
 				...this.options.gateway?.properties,
 			},
-			async handlePayload(shardId, payload) {
-				let pluginPacket: GatewayDispatchPayload | null;
-				if (self.cache.trackMemberCount) {
-					pluginPacket = await self.cache.withGuildWriteOrder(payload, 'payload', async () => {
-						if (handlePayload) await self.cache.withoutGuildWriteOrder(() => handlePayload(shardId, payload));
-						return onPacket(payload, shardId);
-					});
-				} else {
-					if (handlePayload) await self.cache.withoutGuildWriteOrder(() => handlePayload(shardId, payload));
-					pluginPacket = await onPacket(payload, shardId);
-				}
-				if (self.options.sendPayloadToParent && pluginPacket !== null) {
-					void self
-						.postMessage({
-							workerId: workerData.workerId,
-							shardId,
-							type: 'RECEIVE_PAYLOAD',
-							payload: pluginPacket,
-						} satisfies WorkerReceivePayload)
-						.catch(error => {
-							self.logger.error('Failed to send RECEIVE_PAYLOAD to the worker manager', error);
-						});
-				}
+			handlePayload(shardId, payload) {
+				return self.handleShardPayload(shardId, payload, true);
 			},
 		});
 
 		return shard;
+	}
+
+	/** Tracks the complete shard callback, including the user hook, for hot reload draining. */
+	private handleShardPayload(shardId: number, payload: GatewayDispatchPayload, forwardToParent: boolean) {
+		const active = this.dispatchState === 'active';
+		const delivery = this.deliverPayload(shardId, payload, active, forwardToParent);
+		// A worker replaced by a hot reload lets the whole callback finish, user hook included, before it closes.
+		if (active) this.trackInFlight(delivery);
+		return delivery;
+	}
+
+	private async deliverPayload(
+		shardId: number,
+		payload: GatewayDispatchPayload,
+		runUserHook: boolean,
+		forwardToParent: boolean,
+	) {
+		// The user hook is a handler too, so it only runs on the active worker.
+		const userHook = runUserHook ? this.options?.handlePayload : undefined;
+		const pluginPacket = await this.cache.withGuildWriteOrder(payload, 'payload', async () => {
+			if (userHook) await this.cache.withoutGuildWriteOrder(() => userHook.call(this, shardId, payload));
+			return this.onPacket(payload, shardId);
+		});
+		if (forwardToParent && this.options.sendPayloadToParent && pluginPacket !== null) {
+			void this.postMessage({
+				workerId: workerData.workerId,
+				shardId,
+				type: 'RECEIVE_PAYLOAD',
+				payload: pluginPacket,
+			} satisfies WorkerReceivePayload).catch(error => {
+				this.logger.error('Failed to send RECEIVE_PAYLOAD to the worker manager', error);
+			});
+		}
+		return pluginPacket;
 	}
 
 	async resumeShard(shardId: number, shardData: MakeRequired<ShardData>) {
@@ -598,8 +899,57 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	protected onPacket(packet: GatewayDispatchPayload, shardId: number): Promise<GatewayDispatchPayload | null> {
-		if (!this.cache.trackMemberCount) return this.handlePacket(packet, shardId);
-		return this.cache.withGuildWriteOrder(packet, 'dispatch', () => this.handlePacket(packet, shardId));
+		const handled = this.cache.trackMemberCount
+			? this.cache.withGuildWriteOrder(packet, 'dispatch', () => this.handlePacket(packet, shardId))
+			: this.handlePacket(packet, shardId);
+		if (this.dispatchState === 'active') this.trackInFlight(handled);
+		return handled;
+	}
+
+	private trackInFlight(work: Promise<unknown>) {
+		this.inFlightWork.add(work);
+		const settle = () => this.inFlightWork.delete(work);
+		work.then(settle, settle);
+	}
+
+	/**
+	 * A replacement on standby only builds its cache and reports readiness. A stopped worker keeps its own cache
+	 * current too, so it can take events back if its replacement fails to take over.
+	 */
+	private async handleInactivePacket(packet: GatewayDispatchPayload, shardId: number): Promise<null> {
+		if (this.dispatchState === 'standby') this.trackStandbyReadiness(packet, shardId);
+		// Shared adapters are updated by the active generation; local caches must warm independently.
+		if (this.cache.adapter instanceof MemoryAdapter || this.cache.adapter instanceof LimitedMemoryAdapter) {
+			await this.cache.onPacket(packet);
+		}
+		return null;
+	}
+
+	private trackStandbyReadiness(packet: GatewayDispatchPayload, shardId: number) {
+		switch (packet.t) {
+			// Mirrors handlePacket's readiness branches, recording each handler where startup would run it.
+			case GatewayDispatchEvents.Ready:
+				this.botId = packet.d.user.id;
+				this.applicationId = packet.d.application.id;
+				this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
+				if ([...this.shards.values()].every(shard => shard.data.session_id)) {
+					this.standbyReadiness.push({ event: 'WORKER_SHARDS_CONNECTED' });
+				}
+				this.standbyReadiness.push({ packet, shardId });
+				break;
+			case GatewayDispatchEvents.GuildsReady:
+				if ([...this.shards.values()].every(shard => shard.isReady)) {
+					void this.postMessage({
+						type: 'WORKER_READY',
+						workerId: this.workerId,
+					}).catch(error => {
+						this.logger.error('Failed to send WORKER_READY to the worker manager', error);
+					});
+					this.standbyReadiness.push({ event: 'WORKER_READY' });
+				}
+				this.standbyReadiness.push({ packet, shardId });
+				break;
+		}
 	}
 
 	private async handlePacket(packet: GatewayDispatchPayload, shardId: number): Promise<GatewayDispatchPayload | null> {
@@ -611,11 +961,15 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			packet = pluginPacket;
 		}
 
-		void this.cache.withoutGuildWriteOrder(() =>
-			Promise.allSettled([
-				this.events.runEvent('RAW', this, packet, shardId, false),
-				this.collectors.run('RAW', packet, this),
-			]),
+		if (this.dispatchState !== 'active') return this.handleInactivePacket(packet, shardId);
+
+		this.trackInFlight(
+			this.cache.withoutGuildWriteOrder(() =>
+				Promise.allSettled([
+					this.events.runEvent('RAW', this, packet, shardId, false),
+					this.collectors.run('RAW', packet, this),
+				]),
+			),
 		);
 		switch (packet.t) {
 			case 'GUILD_MEMBER_UPDATE':

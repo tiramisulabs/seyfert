@@ -53,8 +53,13 @@ export * from './types';
 //
 export { ShardManager, WorkerManager } from './websocket/discord';
 export type { ShardData, ShardManagerOptions, WorkerData, WorkerManagerOptions } from './websocket/discord/shared';
-export type { WorkerInfo, WorkerShardInfo } from './websocket/discord/worker';
+export type { WorkerHotReloadRequestOptions, WorkerInfo, WorkerShardInfo } from './websocket/discord/worker';
 export type {
+	HotReloadOptions,
+	HotReloadProgress,
+	HotReloadResult,
+	HotReloadStage,
+	HotReloadWorkerResult,
 	ManagerMessages,
 	ManagerSendCacheResult,
 	SerializedWorkerError,
