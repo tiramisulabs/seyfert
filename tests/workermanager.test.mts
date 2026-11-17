@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import { MessageChannel, type Worker } from 'node:worker_threads';
 import { assert, describe, expect, test, vi } from 'vitest';
+import { createPlugin } from '../lib';
 import { type Adapter, MemoryAdapter, WorkerAdapter } from '../lib/cache';
 import { BaseClient } from '../lib/client/base';
 import { WorkerClient, type WorkerClientOptions } from '../lib/client/workerclient';
@@ -990,6 +991,31 @@ describe('WorkerClient hot reload', () => {
 	const workerData = (hotReload: boolean) => ({
 		...gatewayWorkerData(),
 		hotReload,
+	});
+
+	test('a replacement warms its cache with packets as dispatch interceptors left them', async () => {
+		const plugin = createPlugin({
+			name: 'rename-and-veto',
+			register(api) {
+				api.gateway.onDispatch(packet => {
+					const d = packet.d as { id?: string; name?: string };
+					if (d.id === 'vetoed') return null;
+					return { ...packet, d: { ...d, name: `${d.name}:intercepted` } } as typeof packet;
+				});
+			},
+		});
+		const { client, onPacket } = workerClient({ plugins: [plugin] });
+		try {
+			client.setWorkerData(workerData(true));
+			await onPacket({ t: 'GUILD_CREATE', d: { id: 'kept', name: 'kept', joined_at: '2026-01-01T00:00:00.000Z' } });
+			await onPacket({ t: 'GUILD_CREATE', d: { id: 'vetoed', name: 'vetoed', joined_at: '2026-01-01T00:00:00.000Z' } });
+
+			// The active path would have cached the rewritten guild and skipped the vetoed one.
+			expect(await client.cache.guilds?.raw('kept')).toMatchObject({ name: 'kept:intercepted' });
+			expect(await client.cache.guilds?.raw('vetoed')).toBeUndefined();
+		} finally {
+			client.setWorkerData(workerData(false));
+		}
 	});
 
 	test('a replacement only builds its cache until it is activated, and a replaced worker ignores the gateway', async () => {
