@@ -89,6 +89,24 @@ export type WorkerSendToWorkerEval = CreateWorkerMessage<
 	}
 >;
 
+/** Hot reload options that can cross the worker channel; see `WorkerManager.hotReload`. */
+export interface WorkerHotReloadRequestOptions {
+	/** Workers to reload, one after another. Defaults to every worker in id order. */
+	workerIds?: number[];
+	/** How long a replacement may take until all its shards are ready. @default 60000 */
+	readyTimeout?: number;
+	/** How long a replaced worker may keep finishing in-flight work before its sessions close. @default 10000 */
+	drainTimeout?: number;
+	/** Keep reloading the remaining workers after one fails. @default false */
+	continueOnError?: boolean;
+}
+
+export type WorkerRequestHotReload = CreateWorkerMessage<
+	'HOT_RELOAD_REQUEST',
+	{ nonce: string; options: WorkerHotReloadRequestOptions }
+>;
+export type WorkerHotReloadAck = CreateWorkerMessage<'HOT_RELOAD_ACK', { nonce: string }>;
+
 export type BaseWorkerMessage =
 	| WorkerRequestConnect
 	| WorkerReceivePayload
@@ -105,7 +123,9 @@ export type BaseWorkerMessage =
 	| WorkerStartResharding
 	| WorkerRequestConnectResharding
 	| WorkerReadyResharding
-	| WorkerDisconnectedAllShardsResharding;
+	| WorkerDisconnectedAllShardsResharding
+	| WorkerRequestHotReload
+	| WorkerHotReloadAck;
 
 export type CustomWorkerClientMessages = {
 	[K in keyof CustomWorkerClientEvents]: Identify<

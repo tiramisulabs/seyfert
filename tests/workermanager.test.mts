@@ -4,7 +4,9 @@ import { assert, describe, expect, test, vi } from 'vitest';
 import { type Adapter, MemoryAdapter, WorkerAdapter } from '../lib/cache';
 import { WorkerClient } from '../lib/client/workerclient';
 import { Logger, SeyfertError } from '../lib/common';
+import { serializeWorkerError } from '../lib/websocket/discord/worker-errors';
 import { WorkerManager } from '../lib/websocket/discord/workermanager';
+import { ConnectQueue } from '../lib/websocket/structures/timeout';
 
 function cacheBridge(backend: Adapter) {
 	const manager = Object.create(WorkerManager.prototype) as WorkerManager;
@@ -578,6 +580,427 @@ describe('WorkerManager', () => {
 		}
 	});
 });
+
+type FakeMessage = { type: string; [key: string]: any };
+type FakeBehavior = {
+	neverReady?: boolean;
+	crash?: boolean;
+	failSpawn?: boolean;
+	unreachable?: boolean;
+	cannotStop?: boolean;
+};
+
+/** In-process workers that follow the worker side of the manager protocol over a custom adapter. */
+function hotReloadHarness(
+	options: { workers?: number; behavior?: (workerId: number, generation: number) => FakeBehavior } = {},
+) {
+	const workers = options.workers ?? 2;
+	const log: string[] = [];
+	const instances = new Map<string, { shards: number[]; connected: Set<number> }>();
+	const replies = new Map<string, FakeMessage[]>();
+	let manager!: WorkerManager;
+
+	const send = (workerId: number, generation: number, message: FakeMessage) => {
+		setImmediate(() => {
+			void manager.handleWorkerMessage(JSON.parse(JSON.stringify({ ...message, workerId })), generation);
+		});
+	};
+	const receive = (workerId: number, generation: number, body: FakeMessage) => {
+		const key = `${workerId}:${generation}`;
+		const instance = instances.get(key);
+		if (!instance) return;
+		(replies.get(key) ?? replies.set(key, []).get(key)!).push(body);
+		switch (body.type) {
+			case 'SPAWN_SHARDS':
+				for (const shardId of instance.shards) send(workerId, generation, { type: 'CONNECT_QUEUE', shardId });
+				break;
+			case 'ALLOW_CONNECT':
+				instance.connected.add(body.shardId);
+				if (instance.connected.size !== instance.shards.length) break;
+				send(workerId, generation, { type: 'WORKER_SHARDS_CONNECTED' });
+				if (options.behavior?.(workerId, generation).crash) {
+					setImmediate(() => manager.handleWorkerExit(workerId, generation, new Error('replacement crashed')));
+				} else if (!options.behavior?.(workerId, generation).neverReady) {
+					send(workerId, generation, { type: 'WORKER_READY' });
+				}
+				break;
+			case 'BOT_READY':
+				log.push('bot ready');
+				break;
+			case 'HOT_RELOAD_ACTIVATE':
+			case 'HOT_RELOAD_STOP':
+			case 'HOT_RELOAD_DRAIN':
+				log.push(`${body.type.slice('HOT_RELOAD_'.length).toLowerCase()} ${key}`);
+				send(workerId, generation, { type: 'HOT_RELOAD_ACK', nonce: body.nonce });
+				break;
+			case 'HOT_RELOAD_RESULT':
+				log.push(`result ${key}`);
+				break;
+			case 'EXECUTE_EVAL':
+				send(workerId, generation, { type: 'EVAL_RESPONSE', nonce: body.nonce, response: key });
+				break;
+		}
+	};
+
+	manager = new WorkerManager({
+		mode: 'custom',
+		token: 'token',
+		intents: 0,
+		info: { ...gatewayInfo(), shards: workers },
+		totalShards: workers,
+		shardsPerWorker: 1,
+		workers,
+		heartbeaterInterval: 0,
+		adapter: {
+			spawn(workerData) {
+				const generation = workerData.generation ?? 0;
+				if (options.behavior?.(workerData.workerId, generation).failSpawn) {
+					return Promise.reject(new Error('replacement failed to load'));
+				}
+				instances.set(`${workerData.workerId}:${generation}`, { shards: workerData.shards, connected: new Set() });
+				send(workerData.workerId, generation, { type: 'WORKER_START' });
+				return undefined;
+			},
+			postMessage(workerId, body, generation = 0) {
+				if (
+					(body as FakeMessage).type === 'HOT_RELOAD_ACTIVATE' &&
+					options.behavior?.(workerId, generation).unreachable
+				) {
+					throw new Error('replacement unreachable');
+				}
+				if ((body as FakeMessage).type === 'HOT_RELOAD_STOP' && options.behavior?.(workerId, generation).cannotStop) {
+					throw new Error('old worker unreachable');
+				}
+				setImmediate(() => receive(workerId, generation, body as FakeMessage));
+			},
+			terminate(workerId, generation) {
+				log.push(`terminate ${workerId}:${generation}`);
+				instances.delete(`${workerId}:${generation}`);
+			},
+		},
+	});
+	manager.connectQueue = new ConnectQueue(0, 16);
+
+	return {
+		manager,
+		log,
+		replies,
+		request(workerId: number, nonce: string, requestOptions: object = {}) {
+			send(workerId, 0, { type: 'HOT_RELOAD_REQUEST', nonce, options: requestOptions });
+		},
+		async start() {
+			manager.prepareWorkers(WorkerManager.prepareSpaces({ shardStart: 0, shardEnd: workers, shardsPerWorker: 1 }));
+			await manager.workerQueue.shift()!();
+			await vi.waitFor(() => expect(log).toContain('bot ready'));
+		},
+	};
+}
+
+describe('WorkerManager hot reload', () => {
+	test('replaces every worker in order, switching before the old worker stops', async () => {
+		const harness = hotReloadHarness();
+		await harness.start();
+		const progress: string[] = [];
+
+		const result = await harness.manager.hotReload({
+			drainTimeout: 10,
+			onProgress: event => progress.push(`${event.workerId} ${event.stage}`),
+		});
+
+		expect(result.workers.map(({ workerId, ok }) => ({ workerId, ok }))).toEqual([
+			{ workerId: 0, ok: true },
+			{ workerId: 1, ok: true },
+		]);
+		const stages = ['spawning', 'connecting', 'ready', 'switching', 'draining', 'done'];
+		expect(progress).toEqual([...stages.map(stage => `0 ${stage}`), ...stages.map(stage => `1 ${stage}`)]);
+		// The old worker stops before its replacement starts, so no event is handled by both.
+		expect(harness.log.filter(line => !line.startsWith('bot'))).toEqual([
+			'stop 0:0',
+			'activate 0:1',
+			'drain 0:0',
+			'terminate 0:0',
+			'stop 1:0',
+			'activate 1:2',
+			'drain 1:0',
+			'terminate 1:0',
+		]);
+		expect(harness.replies.get('0:1')?.find(body => body.type === 'HOT_RELOAD_ACTIVATE')).toMatchObject({
+			botReady: true,
+		});
+		expect(harness.replies.get('1:2')?.find(body => body.type === 'HOT_RELOAD_ACTIVATE')).toMatchObject({
+			botReady: false,
+		});
+		// Requests now reach the replacements, which got their shards through the connect queue.
+		await expect(harness.manager.tellWorkers(() => null, {})).resolves.toEqual(['0:1', '1:2']);
+		expect(harness.replies.get('0:1')?.find(body => body.type === 'ALLOW_CONNECT')).toMatchObject({ shardId: 0 });
+	});
+
+	test.each([
+		['crashes', { crash: true }, /replacement crashed/],
+		['fails to load', { failSpawn: true }, /replacement failed to load/],
+		['is not ready in time', { neverReady: true }, /not ready within 50ms/],
+	] as const)('keeps the old worker when its replacement %s', async (_label, behavior, error) => {
+		const harness = hotReloadHarness({
+			behavior: (workerId, generation) => (workerId === 0 && generation > 0 ? behavior : {}),
+		});
+		await harness.start();
+		const progress: string[] = [];
+
+		const result = await harness.manager.hotReload({
+			readyTimeout: 50,
+			onProgress: event => progress.push(event.stage),
+		});
+
+		expect(result.workers).toEqual([
+			{ workerId: 0, ok: false, error: expect.stringMatching(error), ms: expect.any(Number) },
+		]);
+		expect(progress.at(-1)).toBe('failed');
+		// Nothing was switched, stopped or drained, and worker 1 was not attempted.
+		expect(harness.log.filter(line => !line.startsWith('bot') && !line.startsWith('terminate'))).toEqual([]);
+		await expect(harness.manager.tellWorker(0, () => null, {})).resolves.toBe('0:0');
+	});
+
+	test('hands dispatch back to the old worker when its replacement cannot take over', async () => {
+		const harness = hotReloadHarness({
+			behavior: (workerId, generation) => (workerId === 0 && generation > 0 ? { unreachable: true } : {}),
+		});
+		await harness.start();
+
+		const result = await harness.manager.hotReload();
+
+		expect(result.workers).toEqual([
+			{ workerId: 0, ok: false, error: 'replacement unreachable', ms: expect.any(Number) },
+		]);
+		expect(harness.log.filter(line => !line.startsWith('bot'))).toEqual(['stop 0:0', 'activate 0:0', 'terminate 0:1']);
+		await expect(harness.manager.tellWorker(0, () => null, {})).resolves.toBe('0:0');
+	});
+
+	test('does not start the replacement when the old worker does not confirm it stopped', async () => {
+		const harness = hotReloadHarness({
+			behavior: (workerId, generation) => (workerId === 0 && generation === 0 ? { cannotStop: true } : {}),
+		});
+		await harness.start();
+
+		const result = await harness.manager.hotReload();
+
+		expect(result.workers).toEqual([
+			{ workerId: 0, ok: false, error: 'old worker unreachable', ms: expect.any(Number) },
+		]);
+		// The old worker is told to keep dispatching, and the replacement never starts.
+		expect(harness.log.filter(line => !line.startsWith('bot'))).toEqual(['activate 0:0', 'terminate 0:1']);
+		await expect(harness.manager.tellWorker(0, () => null, {})).resolves.toBe('0:0');
+	});
+
+	test('waits for every worker to start before reloading', async () => {
+		const harness = hotReloadHarness();
+		harness.manager.prepareWorkers(WorkerManager.prepareSpaces({ shardStart: 0, shardEnd: 2, shardsPerWorker: 1 }));
+
+		await expect(harness.manager.hotReload()).rejects.toSatisfy(error =>
+			SeyfertError.is(error, 'HOT_RELOAD_UNSUPPORTED'),
+		);
+	});
+
+	test('keeps going after a failure with continueOnError', async () => {
+		const harness = hotReloadHarness({
+			behavior: (workerId, generation) => (workerId === 0 && generation > 0 ? { crash: true } : {}),
+		});
+		await harness.start();
+
+		const result = await harness.manager.hotReload({ continueOnError: true, drainTimeout: 10 });
+
+		expect(result.workers.map(({ workerId, ok }) => ({ workerId, ok }))).toEqual([
+			{ workerId: 0, ok: false },
+			{ workerId: 1, ok: true },
+		]);
+		await expect(harness.manager.tellWorkers(() => null, {})).resolves.toEqual(['0:0', '1:2']);
+	});
+
+	test('rejects a second reload while one is running', async () => {
+		const harness = hotReloadHarness();
+		await harness.start();
+
+		const running = harness.manager.hotReload({ drainTimeout: 10 });
+		const second = harness.manager.hotReload();
+
+		await expect(second).rejects.toSatisfy(error => SeyfertError.is(error, 'HOT_RELOAD_IN_PROGRESS'));
+		await expect(running).resolves.toMatchObject({ workers: [{ ok: true }, { ok: true }] });
+	});
+
+	test('answers a requesting worker before it is told to drain', async () => {
+		const harness = hotReloadHarness();
+		await harness.start();
+
+		harness.request(0, 'request-0', { drainTimeout: 10 });
+		await vi.waitFor(() => expect(harness.log).toContain('terminate 1:0'));
+
+		const log = harness.log.filter(line => !line.startsWith('bot'));
+		expect(log.indexOf('result 0:0')).toBeGreaterThan(log.indexOf('activate 0:1'));
+		expect(log.indexOf('result 0:0')).toBeLessThan(log.indexOf('drain 0:0'));
+		const answer = harness.replies.get('0:0')?.find(body => body.type === 'HOT_RELOAD_RESULT');
+		expect(answer?.result.workers).toEqual([{ workerId: 0, ok: true, ms: expect.any(Number) }]);
+		expect(harness.replies.get('0:0')?.filter(body => body.type === 'HOT_RELOAD_RESULT')).toHaveLength(1);
+		expect(harness.replies.get('0:0')?.some(body => body.type === 'HOT_RELOAD_PROGRESS')).toBe(true);
+	});
+
+	test('rejects unknown workers and custom adapters that cannot terminate', async () => {
+		const harness = hotReloadHarness();
+		await harness.start();
+		await expect(harness.manager.hotReload({ workerIds: [5] })).rejects.toSatisfy(error =>
+			SeyfertError.is(error, 'WORKER_NOT_FOUND'),
+		);
+
+		const adapter = harness.manager.options.mode === 'custom' ? harness.manager.options.adapter : undefined;
+		delete adapter!.terminate;
+		await expect(harness.manager.hotReload()).rejects.toSatisfy(error =>
+			SeyfertError.is(error, 'HOT_RELOAD_UNSUPPORTED'),
+		);
+	});
+});
+
+describe('WorkerClient hot reload', () => {
+	function workerClient() {
+		const posted: FakeMessage[] = [];
+		const client = new WorkerClient({
+			postMessage: body => {
+				posted.push(body as FakeMessage);
+			},
+		});
+		const onPacket = (packet: object) =>
+			(client as unknown as { onPacket(packet: object, shardId: number): Promise<unknown> }).onPacket(packet, 0);
+		return { client, posted, onPacket };
+	}
+	const workerData = (hotReload: boolean) => ({
+		...gatewayWorkerData(),
+		hotReload,
+	});
+
+	test('a replacement only builds its cache until it is activated, and a replaced worker ignores the gateway', async () => {
+		const { client, posted, onPacket } = workerClient();
+		const execute = vi.spyOn(client.events, 'execute').mockResolvedValue(undefined);
+		const runEvent = vi.spyOn(client.events, 'runEvent').mockResolvedValue(undefined);
+		const handled = () => execute.mock.calls.map(([packet]) => packet.t);
+		// Every handled packet also fires RAW; only the ready handlers matter here.
+		const ran = () => runEvent.mock.calls.map(([name]) => name).filter(name => name !== 'RAW');
+		try {
+			client.setWorkerData(workerData(true));
+			await onPacket({ t: 'READY', d: { user: { id: '1', username: 'bot' }, application: { id: '2', flags: 0 } } });
+			await onPacket({
+				t: 'GUILD_CREATE',
+				d: { id: 'guild-1', name: 'standby', joined_at: '2026-01-01T00:00:00.000Z' },
+			});
+			expect(handled()).toEqual([]);
+			expect(ran()).toEqual([]);
+			expect(await client.cache.guilds?.raw('guild-1')).toMatchObject({ name: 'standby' });
+
+			await client.handleManagerMessages({ type: 'HOT_RELOAD_ACTIVATE', nonce: 'activate', botReady: true });
+			expect(posted).toContainEqual({ type: 'HOT_RELOAD_ACK', nonce: 'activate', workerId: 0 });
+			// The ready handlers it skipped on standby run once it takes over.
+			expect(handled()).toEqual(['READY']);
+			expect(ran()).toEqual(['WORKER_SHARDS_CONNECTED', 'WORKER_READY', 'BOT_READY']);
+			await onPacket({ t: 'GUILD_UPDATE', d: { id: 'guild-1', name: 'active' } });
+			expect(handled()).toEqual(['READY', 'GUILD_UPDATE']);
+
+			await client.handleManagerMessages({ type: 'HOT_RELOAD_STOP', nonce: 'stop' });
+			expect(posted).toContainEqual({ type: 'HOT_RELOAD_ACK', nonce: 'stop', workerId: 0 });
+			await onPacket({ t: 'GUILD_UPDATE', d: { id: 'guild-1', name: 'stopped' } });
+			expect(handled()).toEqual(['READY', 'GUILD_UPDATE']);
+			// Its own cache stays current in case it has to take events back.
+			expect(await client.cache.guilds?.raw('guild-1')).toMatchObject({ name: 'stopped' });
+
+			// Resuming after a failed switch hands events back without replaying ready handlers.
+			await client.handleManagerMessages({ type: 'HOT_RELOAD_ACTIVATE', nonce: 'resume', botReady: false });
+			expect(ran()).toEqual(['WORKER_SHARDS_CONNECTED', 'WORKER_READY', 'BOT_READY']);
+			await onPacket({ t: 'GUILD_UPDATE', d: { id: 'guild-1', name: 'resumed' } });
+			expect(handled()).toEqual(['READY', 'GUILD_UPDATE', 'GUILD_UPDATE']);
+		} finally {
+			execute.mockRestore();
+			runEvent.mockRestore();
+			client.setWorkerData(workerData(false));
+		}
+	});
+
+	test('a replaced worker finishes in-flight work before ending its sessions', async () => {
+		const { client, posted, onPacket } = workerClient();
+		let release!: () => void;
+		const execute = vi.spyOn(client.events, 'execute').mockReturnValue(
+			new Promise<void>(resolve => {
+				release = resolve;
+			}),
+		);
+		const end = vi.fn();
+		try {
+			client.setWorkerData(workerData(false));
+			client.shards.set(0, { end } as never);
+			const inFlight = onPacket({ t: 'GUILD_UPDATE', d: { id: 'guild-1', name: 'busy' } });
+			await vi.waitFor(() => expect(execute).toHaveBeenCalledOnce());
+
+			await client.handleManagerMessages({ type: 'HOT_RELOAD_STOP', nonce: 'stop' });
+			const draining = client.handleManagerMessages({ type: 'HOT_RELOAD_DRAIN', nonce: 'drain', drainTimeout: 60_000 });
+			await new Promise(resolve => setImmediate(resolve));
+			expect(end).not.toHaveBeenCalled();
+
+			release();
+			await Promise.all([inFlight, draining]);
+			expect(end).toHaveBeenCalledOnce();
+			expect(posted.at(-1)).toEqual({ type: 'HOT_RELOAD_ACK', nonce: 'drain', workerId: 0 });
+		} finally {
+			release();
+			execute.mockRestore();
+			client.shards.clear();
+			client.setWorkerData(workerData(false));
+		}
+	});
+
+	test('requestHotReload reports progress and settles with the manager answer', async () => {
+		const { client, posted } = workerClient();
+		try {
+			client.setWorkerData(workerData(false));
+			const progress: string[] = [];
+			const reload = client.requestHotReload({ workerIds: [0], onProgress: event => progress.push(event.stage) });
+			const request = posted.find(body => body.type === 'HOT_RELOAD_REQUEST')!;
+			expect(request).toMatchObject({ workerId: 0, options: { workerIds: [0] } });
+
+			await client.handleManagerMessages({
+				type: 'HOT_RELOAD_PROGRESS',
+				nonce: request.nonce,
+				progress: { workerId: 0, stage: 'spawning' },
+			});
+			const result = { workers: [{ workerId: 0, ok: true, ms: 5 }] };
+			await client.handleManagerMessages({ type: 'HOT_RELOAD_RESULT', nonce: request.nonce, result });
+			await expect(reload).resolves.toEqual(result);
+			expect(progress).toEqual(['spawning']);
+
+			const rejected = client.requestHotReload();
+			const second = posted.filter(body => body.type === 'HOT_RELOAD_REQUEST').at(-1)!;
+			await client.handleManagerMessages({
+				type: 'HOT_RELOAD_RESULT',
+				nonce: second.nonce,
+				error: serializeWorkerError(new SeyfertError('HOT_RELOAD_IN_PROGRESS')),
+			});
+			await expect(rejected).rejects.toSatisfy(error => SeyfertError.is(error, 'HOT_RELOAD_IN_PROGRESS'));
+		} finally {
+			client.setWorkerData(workerData(false));
+		}
+	});
+});
+
+function gatewayWorkerData() {
+	return {
+		intents: 0,
+		token: 'token',
+		path: '',
+		shards: [0],
+		totalShards: 1,
+		totalWorkers: 1,
+		mode: 'custom' as const,
+		workerId: 0,
+		debug: false,
+		workerProxy: false,
+		info: gatewayInfo(),
+		compress: false,
+		resharding: false,
+	};
+}
 
 function gatewayInfo() {
 	return {

@@ -129,6 +129,8 @@ export const SeyfertErrorMessages = {
 	INVALID_SHARD_ID: 'Invalid shardId.',
 	INVALID_WORKER_REQUEST: 'Invalid request from unavailable worker.',
 	CANNOT_OVERRIDE_EXISTING_SHARD: 'Cannot override existing shard.',
+	HOT_RELOAD_IN_PROGRESS: 'A worker hot reload is already in progress.',
+	HOT_RELOAD_UNSUPPORTED: 'Worker hot reload is not supported in this state.',
 	INVALID_SEC_WEBSOCKET_ACCEPT_HEADER: 'Invalid sec-websocket-accept header.',
 	REQUEST_GUILD_MEMBERS_TIMEOUT: 'Request guild members timed out, 30s without receiving a chunk.',
 	CACHE_TIMEOUT: 'Cache request timed out.',

@@ -309,6 +309,17 @@ export class Shard {
 		this.closeConnection(code, 'Shard down request', this.shouldApplyLocalClosePolicy(code));
 	}
 
+	/**
+	 * Closes the session for good with a normal (1000) close. Discord drops the session right away
+	 * instead of keeping it resumable, and the shard does not reconnect.
+	 */
+	end(reason = 'Shard ended') {
+		this.lifecycle++;
+		this.reconnectPromise = undefined;
+		this.debugger?.info(`[Shard #${this.id}] Ending session`);
+		this.closeConnection(1000, reason);
+	}
+
 	async reconnect(code = ShardSocketCloseCodes.Reconnect) {
 		return this.reconnectWith(code, this.options.reconnectTimeout, 'Shard reconnect request');
 	}

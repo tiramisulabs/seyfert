@@ -68,8 +68,20 @@ export interface ShardManagerOptions extends ShardDetails {
 }
 
 export interface CustomManagerAdapter {
-	postMessage(workerId: number, body: unknown): Awaitable<unknown>;
+	/**
+	 * Delivers a message to a worker. `generation` identifies the worker instance: `0` for workers spawned
+	 * normally, and the `workerData.generation` of a hot reload replacement. While a worker is hot reloaded,
+	 * two instances share its id, so an adapter that supports hot reload must route by both values.
+	 */
+	postMessage(workerId: number, body: unknown, generation?: number): Awaitable<unknown>;
 	spawn(workerData: WorkerData, env: Record<string, any>): Awaitable<unknown>;
+	/**
+	 * Stops one worker instance. Required for `WorkerManager.hotReload` in custom mode, which uses it to
+	 * remove a failed replacement or a drained worker. Messages from a non-zero generation must be passed to
+	 * `manager.handleWorkerMessage(message, generation)`, and a crashed instance reported with
+	 * `manager.handleWorkerExit(workerId, generation, error)`.
+	 */
+	terminate?(workerId: number, generation: number): Awaitable<unknown>;
 }
 
 interface WorkerManagerOptionsBase extends Omit<ShardManagerOptions, 'handlePayload' | 'presence' | 'properties'> {
@@ -199,4 +211,8 @@ export interface WorkerData {
 	compress: boolean;
 	__USING_WATCHER__?: boolean;
 	resharding: boolean;
+	/** Set on a hot reload replacement, which only builds its cache until the manager switches to it. */
+	hotReload?: boolean;
+	/** The worker instance; `0` or unset for workers spawned normally. */
+	generation?: number;
 }

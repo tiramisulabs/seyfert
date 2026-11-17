@@ -27,7 +27,14 @@ import { DynamicBucket } from '../structures';
 import { ConnectQueue } from '../structures/timeout';
 import { Heartbeater, type WorkerHeartbeaterMessages } from './heartbeater';
 import type { ShardOptions, WorkerData, WorkerManagerOptions } from './shared';
-import { WORKER_TIMEOUT_MS, type WorkerInfo, type WorkerMessages, type WorkerShardInfo } from './worker';
+import {
+	WORKER_TIMEOUT_MS,
+	type WorkerHotReloadRequestOptions,
+	type WorkerInfo,
+	type WorkerMessages,
+	type WorkerRequestHotReload,
+	type WorkerShardInfo,
+} from './worker';
 import { serializeWorkerError } from './worker-errors';
 
 type WorkerManagerConstructorOptionalKeys = 'token' | 'intents' | 'info' | 'handlePayload' | 'handleWorkerMessage';
@@ -56,6 +63,22 @@ type WorkerState = {
 };
 type CustomWorker = { ready?: boolean } & WorkerState;
 type ManagedWorker = (ClusterWorker | WorkerThreadsWorker | { ready?: boolean }) & WorkerState;
+type PendingReplacement = {
+	ready: Promise<void>;
+	started(): void;
+	markReady(): void;
+	fail(error: unknown): void;
+};
+type HotReloadRequester = { workerId: number; generation: number; nonce: string; answered: boolean };
+
+/** Extra time a draining worker gets to close its shards and answer after `drainTimeout`. */
+const HOT_RELOAD_DRAIN_GRACE_MS = 5_000;
+/** Stopping and activating are one round trip each; nobody handles events while they wait. */
+const HOT_RELOAD_SWITCH_TIMEOUT_MS = 5_000;
+
+function instanceKey(workerId: number, generation: number) {
+	return `${workerId}:${generation}`;
+}
 
 export class WorkerManager extends Map<number, ManagedWorker> {
 	static prepareSpaces(
@@ -94,6 +117,14 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 	reshardingWorkerQueue: (() => Awaitable<void>)[] = [];
 	private _info?: RESTGetAPIGatewayBotResult;
 	heartbeater: Heartbeater;
+	/** The instance each worker id currently routes to; unset means generation 0. */
+	private generations = new Map<number, number>();
+	/** Replacements still connecting and workers draining after a hot reload, by `workerId:generation`. */
+	private standbyWorkers = new Map<string, ManagedWorker>();
+	private pendingReplacements = new Map<string, PendingReplacement>();
+	private lastGeneration = 0;
+	private hotReloading = false;
+	private hotReloadingWorkerId?: number;
 
 	constructor(options: WorkerManagerConstructorOptions) {
 		super();
@@ -103,9 +134,9 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 
 		if (this.options.handleWorkerMessage) {
 			const oldFn = this.handleWorkerMessage.bind(this);
-			this.handleWorkerMessage = async message => {
+			this.handleWorkerMessage = async (message, generation) => {
 				await this.options.handleWorkerMessage!(message);
-				return oldFn(message);
+				return oldFn(message, generation);
 			};
 		}
 
@@ -217,7 +248,24 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 	}
 
 	async postMessage(id: number, body: ManagerMessages | WorkerHeartbeaterMessages): Promise<void> {
-		const worker = this.get(id);
+		return this.postToInstance(id, this.activeGeneration(id), body);
+	}
+
+	private activeGeneration(workerId: number) {
+		return this.generations.get(workerId) ?? 0;
+	}
+
+	private findInstance(workerId: number, generation: number) {
+		if (generation === this.activeGeneration(workerId)) return this.get(workerId);
+		return this.standbyWorkers.get(instanceKey(workerId, generation));
+	}
+
+	private async postToInstance(
+		id: number,
+		generation: number,
+		body: ManagerMessages | WorkerHeartbeaterMessages,
+	): Promise<void> {
+		const worker = this.findInstance(id, generation);
 		if (!worker) throw this.createWorkerNotFoundError(id);
 		switch (this.options.mode) {
 			case 'clusters': {
@@ -243,7 +291,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 				(worker as import('worker_threads').Worker).postMessage(body);
 				return;
 			case 'custom':
-				await this.options.adapter.postMessage(id, body);
+				await this.options.adapter.postMessage(id, body, generation);
 		}
 	}
 
@@ -256,29 +304,16 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 
 		for (let i = 0; i < shards.length; i++) {
 			const registerWorker = async (resharding: boolean) => {
-				const worker = await this.createWorkerAsync({
-					path: this.options.path ?? '',
-					debug: this.options.debug,
-					token: this.options.token,
-					shards: shards[i],
-					intents: this.options.intents,
-					workerId: i,
-					workerProxy: this.options.workerProxy,
-					totalShards: resharding ? this._info!.shards : this.totalShards,
-					mode: this.options.mode,
-					resharding,
-					totalWorkers: shards.length,
-					info: {
-						...this.options.info,
-						shards: this.totalShards,
-					},
-					compress: this.options.compress,
-				});
+				const worker = await this.createWorkerAsync(this.createWorkerData(i, shards[i], shards.length, resharding));
 				this.set(i, worker);
+				// A respawned worker starts as generation 0 again, even after a hot reload.
+				this.generations.delete(i);
 				return i;
 			};
 			const registerWorkerHeartbeat = (workerId: number, resharding: boolean) => {
 				this.heartbeater.register(workerId, deadWorkerId => {
+					// A hot reload is already replacing this worker and swaps the entry itself.
+					if (this.hotReloadingWorkerId === deadWorkerId) return;
 					this.heartbeater.unregister(deadWorkerId);
 					this.delete(deadWorkerId);
 					this.observe(
@@ -294,6 +329,27 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 				});
 			}
 		}
+	}
+
+	private createWorkerData(workerId: number, shards: number[], totalWorkers: number, resharding: boolean): WorkerData {
+		return {
+			path: this.options.path ?? '',
+			debug: this.options.debug,
+			token: this.options.token,
+			shards,
+			intents: this.options.intents,
+			workerId,
+			workerProxy: this.options.workerProxy,
+			totalShards: resharding ? this._info!.shards : this.totalShards,
+			mode: this.options.mode,
+			resharding,
+			totalWorkers,
+			info: {
+				...this.options.info,
+				shards: this.totalShards,
+			},
+			compress: this.options.compress,
+		};
 	}
 
 	createWorker(workerData: WorkerData & { mode: 'threads' }): WorkerThreadsWorker;
@@ -330,11 +386,28 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 			}
 			return worker;
 		}
+		return this.launchWorker(workerData, {
+			add: worker => this.set(workerData.workerId, worker),
+			remove: worker => {
+				if (this.get(workerData.workerId) === worker) this.delete(workerData.workerId);
+			},
+		});
+	}
+
+	/**
+	 * Starts a worker process for `workerData` without registering it as the active worker. Custom workers are
+	 * tracked before their adapter spawns them, so messages sent while spawning already find their entry.
+	 */
+	private launchWorker(
+		workerData: WorkerData,
+		tracking: { add(worker: ManagedWorker): void; remove(worker: ManagedWorker): void },
+	): ManagedWorker | Promise<ManagedWorker> {
 		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
 		if (!worker_threads)
 			throw new SeyfertError('WORKER_THREADS_REQUIRED', {
 				metadata: { detail: 'Cannot create worker without worker_threads.' },
 			});
+		const generation = workerData.generation ?? 0;
 		const env: Record<string, any> = {
 			...this.options.workerEnv,
 			SEYFERT_SPAWNING: 'true',
@@ -351,7 +424,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 				});
 				worker.on('message', data =>
 					this.observe(
-						() => this.handleWorkerMessage(data),
+						() => this.handleWorkerMessage(data, generation),
 						`[Worker #${workerData.workerId}] message handling failed`,
 					),
 				);
@@ -367,7 +440,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 				const worker = cluster.fork(env);
 				worker.on('message', data =>
 					this.observe(
-						() => this.handleWorkerMessage(data),
+						() => this.handleWorkerMessage(data, generation),
 						`[Worker #${workerData.workerId}] message handling failed`,
 					),
 				);
@@ -377,35 +450,44 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 				const worker = {
 					ready: false,
 				};
-				this.set(workerData.workerId, worker);
+				tracking.add(worker);
 				try {
 					const spawnResult = this.options.adapter.spawn(workerData, env);
 					if (!isPromiseLike(spawnResult)) return worker;
 					return Promise.resolve(spawnResult).then(
 						() => worker,
 						error => {
-							if (this.get(workerData.workerId) === worker) this.delete(workerData.workerId);
+							tracking.remove(worker);
 							throw error;
 						},
 					);
 				} catch (error) {
-					if (this.get(workerData.workerId) === worker) this.delete(workerData.workerId);
+					tracking.remove(worker);
 					throw error;
 				}
 			}
 		}
 	}
 
-	spawn(workerId: number, shardId: number, resharding = false): Promise<void> {
+	/**
+	 * Queues a shard connection for a worker. `generation` targets a specific worker instance, such as a hot
+	 * reload replacement; it defaults to the instance active when the connection is queued.
+	 */
+	spawn(
+		workerId: number,
+		shardId: number,
+		resharding = false,
+		generation = this.activeGeneration(workerId),
+	): Promise<void> {
 		return new Promise<void>((resolve, reject) => {
 			this.connectQueue.push(() => {
-				if (!this.has(workerId)) {
+				if (!this.findInstance(workerId, generation)) {
 					const error = this.createWorkerNotFoundError(workerId);
 					this.debugger?.fatal(`Trying ${resharding ? 'reshard' : 'spawn'} with worker that doesn't exist`);
 					reject(error);
 					return;
 				}
-				void this.postMessage(workerId, {
+				void this.postToInstance(workerId, generation, {
 					type: resharding ? 'ALLOW_CONNECT_RESHARDING' : 'ALLOW_CONNECT',
 					shardId,
 					presence: this.options.presence?.(shardId, workerId),
@@ -414,12 +496,23 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 		});
 	}
 
-	async handleWorkerMessage(message: WorkerMessages) {
+	/**
+	 * Handles a message from a worker. `generation` identifies the instance that sent it (see
+	 * {@link CustomManagerAdapter.postMessage}); when omitted the message is treated as coming from the active
+	 * instance. Replies go back to the instance that sent the request.
+	 */
+	async handleWorkerMessage(message: WorkerMessages, generation?: number) {
+		// A hot reload replacement still connecting, or a worker draining after one.
+		const standby = generation !== undefined && generation !== this.activeGeneration(message.workerId);
+		const standbyKey = standby ? instanceKey(message.workerId, generation) : '';
+		const reply = (body: ManagerMessages) =>
+			standby ? this.postToInstance(message.workerId, generation, body) : this.postMessage(message.workerId, body);
 		switch (message.type) {
 			case 'ACK_HEARTBEAT':
-				this.heartbeater.acknowledge(message.workerId);
+				if (!standby) this.heartbeater.acknowledge(message.workerId);
 				break;
 			case 'WORKER_READY_RESHARDING':
+				if (standby) break;
 				{
 					this.get(message.workerId)!.resharded = true;
 					if (!this.reshardingWorkerQueue.length && [...this.values()].every(w => w.resharded)) {
@@ -443,6 +536,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 				}
 				break;
 			case 'DISCONNECTED_ALL_SHARDS_RESHARDING':
+				if (standby) break;
 				{
 					this.get(message.workerId)!.disconnected = true;
 					if ([...this.values()].every(w => w.disconnected)) {
@@ -463,6 +557,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 				}
 				break;
 			case 'WORKER_START_RESHARDING':
+				if (standby) break;
 				{
 					await this.postMessage(message.workerId, {
 						type: 'SPAWN_SHARDS_RESHARDING',
@@ -480,7 +575,9 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 				break;
 			case 'WORKER_START':
 				{
-					await this.postMessage(message.workerId, {
+					// A replacement that reached this point loaded its code and finished setup.
+					if (standby) this.pendingReplacements.get(standbyKey)?.started();
+					await reply({
 						type: 'SPAWN_SHARDS',
 						compress: this.options.compress ?? false,
 						info: {
@@ -496,17 +593,18 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 				break;
 
 			case 'CONNECT_QUEUE_RESHARDING':
+				if (standby) break;
 				this.observe(
 					() => this.spawn(message.workerId, message.shardId, true),
 					`[Worker #${message.workerId}] resharding shard connection failed`,
 				);
 				break;
 			case 'CONNECT_QUEUE':
-				await this.spawn(message.workerId, message.shardId);
+				await this.spawn(message.workerId, message.shardId, false, standby ? generation : undefined);
 				break;
 			case 'CACHE_REQUEST':
 				{
-					const worker = this.has(message.workerId);
+					const worker = standby ? this.standbyWorkers.has(standbyKey) : this.has(message.workerId);
 					if (!worker) {
 						throw new SeyfertError('INVALID_WORKER_REQUEST', {
 							metadata: { detail: 'Invalid request from unavailable worker' },
@@ -523,13 +621,14 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 					} catch (error) {
 						response = { type: 'CACHE_RESULT', nonce: message.nonce, error: serializeWorkerError(error) };
 					}
-					await this.postMessage(message.workerId, response);
+					await reply(response);
 				}
 				break;
 			case 'RECEIVE_PAYLOAD':
 				await this.options.handlePayload?.(message.shardId, message.workerId, message.payload);
 				break;
 			case 'RESULT_PAYLOAD':
+			case 'HOT_RELOAD_ACK':
 				{
 					const resultPayload = this.promises.get(message.nonce);
 					if (!resultPayload) {
@@ -565,6 +664,10 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 				}
 				break;
 			case 'WORKER_READY':
+				if (standby) {
+					this.pendingReplacements.get(standbyKey)?.markReady();
+					break;
+				}
 				{
 					this.get(message.workerId)!.ready = true;
 					if (this.size === this.totalWorkers && [...this.values()].every(w => w.ready)) {
@@ -578,6 +681,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 				}
 				break;
 			case 'WORKER_SHARDS_CONNECTED':
+				if (standby) break;
 				{
 					const nextWorker = this.workerQueue.shift();
 					if (nextWorker) {
@@ -601,7 +705,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 					const response = await this.rest.request(message.method, message.url, message.requestOptions);
 					const encodedResponse = response instanceof ArrayBuffer ? Array.from(new Uint8Array(response)) : response;
 					const responseType = response instanceof ArrayBuffer ? 'arrayBuffer' : undefined;
-					await this.postMessage(message.workerId, {
+					await reply({
 						nonce: message.nonce,
 						response: encodedResponse,
 						responseType,
@@ -633,12 +737,19 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 							vars: message.vars,
 						} satisfies ManagerExecuteEvalToWorker),
 					);
-					await this.postMessage(message.workerId, {
+					await reply({
 						nonce: message.nonce,
 						response,
 						type: 'EVAL_RESPONSE',
 					} satisfies ManagerSendEvalResponse);
 				}
+				break;
+			case 'HOT_RELOAD_REQUEST':
+				// The reload outlives this message, and the requester may be replaced while it runs.
+				this.observe(
+					() => this.answerHotReloadRequest(message, generation ?? this.activeGeneration(message.workerId)),
+					`[Worker #${message.workerId}] hot reload request failed`,
+				);
 				break;
 		}
 	}
@@ -649,7 +760,11 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 		return uuid;
 	}
 
-	private generateSendPromise<T = unknown>(nonce: string, operation = 'Worker request'): Promise<T> {
+	private generateSendPromise<T = unknown>(
+		nonce: string,
+		operation = 'Worker request',
+		timeoutMs = WORKER_TIMEOUT_MS,
+	): Promise<T> {
 		return new Promise<T>((res, rej) => {
 			const timeout = setTimeout(() => {
 				this.promises.delete(nonce);
@@ -658,13 +773,18 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 						metadata: { nonce, operation, detail: `${operation} timed out (nonce: ${nonce}).` },
 					}),
 				);
-			}, WORKER_TIMEOUT_MS);
+			}, timeoutMs);
 			this.promises.set(nonce, { resolve: res, timeout });
 		});
 	}
 
-	private async sendRequest<T>(nonce: string, operation: string, send: () => Awaitable<unknown>): Promise<T> {
-		const response = this.generateSendPromise<T>(nonce, operation);
+	private async sendRequest<T>(
+		nonce: string,
+		operation: string,
+		send: () => Awaitable<unknown>,
+		timeoutMs?: number,
+	): Promise<T> {
+		const response = this.generateSendPromise<T>(nonce, operation, timeoutMs);
 		try {
 			const [result] = await Promise.all([response, send()]);
 			return result;
@@ -760,6 +880,391 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 		return Promise.all(promises);
 	}
 
+	/**
+	 * Replaces running workers with freshly spawned ones that load all code from disk again, one worker at a time,
+	 * without taking their shards offline. The manager process itself is not reloaded.
+	 *
+	 * For each worker, a replacement with the same id and shards identifies new gateway sessions (through the
+	 * connect queue, with the configured presence) and builds its cache while the old worker keeps handling
+	 * everything. Once all of its shards are ready, the old worker stops handling events and the replacement
+	 * starts; its skipped `ready`, `workerShardsConnected`, `workerReady` and, on the first worker, `botReady`
+	 * handlers run then. The old worker finishes in-flight work for up to `drainTimeout`, closes its sessions with
+	 * code 1000 and exits.
+	 *
+	 * No gateway event is handled by both workers. Events that arrive during the switch (about two IPC round trips),
+	 * or that the two sessions receive on different sides of it, are handled by neither, so a handful of events
+	 * around each switch can be missed. Handlers that need every event should not rely on hot reload.
+	 * If a replacement crashes, fails to load or is not ready within `readyTimeout`, it is stopped and the old worker
+	 * keeps running untouched; the reload then stops unless `continueOnError` is set.
+	 *
+	 * The replacement is built from the manager's configuration: it identifies with the configured presence, so a
+	 * presence set at runtime is reset, and it connects the worker's configured shards, not ones added at runtime.
+	 *
+	 * A memory cache belongs to its worker, so the replacement builds its own. Any other adapter is treated as shared
+	 * and is left to the active worker: the replacement doesn't write to it until it takes over, and the old worker
+	 * stops writing once it is replaced. Custom mode needs an adapter that implements
+	 * {@link CustomManagerAdapter.terminate} and routes messages by generation.
+	 *
+	 * @throws {SeyfertError} `HOT_RELOAD_IN_PROGRESS` while another reload runs, `HOT_RELOAD_UNSUPPORTED` before
+	 * every worker started, during resharding, or in custom mode without `terminate`, and `WORKER_NOT_FOUND` for an
+	 * unknown worker id.
+	 */
+	hotReload(options: HotReloadOptions = {}): Promise<HotReloadResult> {
+		return this.runHotReload(options);
+	}
+
+	/**
+	 * Reports that a worker instance exited. A hot reload replacement that exits before it takes over fails its
+	 * reload. Thread and cluster workers are watched automatically; custom adapters call this themselves.
+	 */
+	handleWorkerExit(workerId: number, generation: number, error?: unknown) {
+		this.pendingReplacements
+			.get(instanceKey(workerId, generation))
+			?.fail(error ?? new Error(`Worker #${workerId} exited before it was ready`));
+	}
+
+	private async runHotReload(options: HotReloadOptions, requester?: HotReloadRequester): Promise<HotReloadResult> {
+		if (this.hotReloading) {
+			throw new SeyfertError('HOT_RELOAD_IN_PROGRESS', {
+				metadata: { detail: 'Wait for the running hot reload to finish before starting another one.' },
+			});
+		}
+		const unsupported =
+			!this.connectQueue || this.workerQueue.length || this.size < this.totalWorkers
+				? 'Wait for the manager to start every worker before hot reloading.'
+				: this._info
+					? 'Cannot hot reload workers while resharding.'
+					: this.options.mode === 'custom' && !this.options.adapter.terminate
+						? 'Custom mode needs an adapter that implements terminate().'
+						: undefined;
+		if (unsupported) throw new SeyfertError('HOT_RELOAD_UNSUPPORTED', { metadata: { detail: unsupported } });
+
+		const workerIds = options.workerIds ?? [...this.keys()].sort((a, b) => a - b);
+		for (const workerId of workerIds) {
+			if (!this.has(workerId)) throw this.createWorkerNotFoundError(workerId);
+		}
+
+		this.hotReloading = true;
+		const result: HotReloadResult = { workers: [] };
+		try {
+			for (const workerId of workerIds) {
+				this.hotReloadingWorkerId = workerId;
+				const entry = await this.hotReloadWorker(workerId, options, result, requester);
+				if (!entry.ok && !options.continueOnError) break;
+			}
+			return result;
+		} finally {
+			this.hotReloading = false;
+			this.hotReloadingWorkerId = undefined;
+		}
+	}
+
+	private async hotReloadWorker(
+		workerId: number,
+		options: HotReloadOptions,
+		result: HotReloadResult,
+		requester?: HotReloadRequester,
+	): Promise<HotReloadWorkerResult> {
+		const startedAt = Date.now();
+		const generation = ++this.lastGeneration;
+		const key = instanceKey(workerId, generation);
+		const report = (stage: HotReloadStage, error?: string) => {
+			try {
+				options.onProgress?.(error === undefined ? { workerId, stage } : { workerId, stage, error });
+			} catch (callbackError) {
+				this.reportError(`[Worker #${workerId}] hot reload progress callback failed`, callbackError);
+			}
+		};
+		const finish = (error?: unknown): HotReloadWorkerResult => {
+			const entry: HotReloadWorkerResult = { workerId, ok: error === undefined, ms: Date.now() - startedAt };
+			if (error !== undefined) {
+				entry.error = error instanceof Error ? error.message : String(error);
+				report('failed', entry.error);
+			}
+			result.workers.push(entry);
+			return entry;
+		};
+		const discard = async () => {
+			this.pendingReplacements.delete(key);
+			const replacement = this.standbyWorkers.get(key);
+			this.standbyWorkers.delete(key);
+			if (replacement) {
+				await Promise.resolve(this.terminateInstance(workerId, generation, replacement)).catch(error =>
+					this.reportError(`[Worker #${workerId}] failed to stop the hot reload replacement`, error),
+				);
+			}
+		};
+
+		report('spawning');
+		const pending = this.createPendingReplacement(key, () => report('connecting'));
+		const readyTimeout = options.readyTimeout ?? 60_000;
+		let timer: NodeJS.Timeout | undefined;
+		try {
+			const shards = WorkerManager.prepareSpaces({
+				shardStart: this.shardStart,
+				shardEnd: this.shardEnd,
+				shardsPerWorker: this.shardsPerWorker,
+			})[workerId];
+			const workerData = {
+				...this.createWorkerData(workerId, shards, this.totalWorkers, false),
+				hotReload: true,
+				generation,
+			};
+			// The deadline covers spawning too, so an adapter whose spawn never settles cannot hold the reload.
+			await Promise.race([
+				(async () => {
+					const tracking = {
+						add: (worker: ManagedWorker) => this.standbyWorkers.set(key, worker),
+						remove: (worker: ManagedWorker) => {
+							if (this.standbyWorkers.get(key) === worker) this.standbyWorkers.delete(key);
+						},
+					};
+					const replacement = await this.launchWorker(workerData, tracking);
+					if (!this.pendingReplacements.has(key)) {
+						// The deadline passed while spawning; the reload already moved on.
+						tracking.remove(replacement);
+						await this.terminateInstance(workerId, generation, replacement);
+						return;
+					}
+					this.standbyWorkers.set(key, replacement);
+					this.watchExit(replacement, workerId, generation);
+					await pending.ready;
+				})(),
+				new Promise<never>((_, reject) => {
+					timer = setTimeout(
+						() =>
+							reject(
+								new SeyfertError('WORKER_TIMEOUT', {
+									metadata: {
+										workerId,
+										detail: `Worker #${workerId} replacement was not ready within ${readyTimeout}ms.`,
+									},
+								}),
+							),
+						readyTimeout,
+					);
+				}),
+			]);
+			report('ready');
+		} catch (error) {
+			await discard();
+			return finish(error);
+		} finally {
+			clearTimeout(timer);
+			this.pendingReplacements.delete(key);
+		}
+
+		// The old worker stops before the replacement starts, so no event is handled twice. Events that arrive in
+		// between, or that the two sessions receive on different sides of the switch, are handled by neither.
+		report('switching');
+		const previous = this.get(workerId)!;
+		const previousGeneration = this.activeGeneration(workerId);
+		// The old worker keeps or regains dispatch. Sent after a STOP on the same channel, it also undoes a late one.
+		const resumePrevious = () =>
+			this.requestHotReloadStep(
+				workerId,
+				previousGeneration,
+				{ type: 'HOT_RELOAD_ACTIVATE', botReady: false },
+				'Hot reload rollback',
+				HOT_RELOAD_SWITCH_TIMEOUT_MS,
+			);
+		try {
+			await this.requestHotReloadStep(
+				workerId,
+				previousGeneration,
+				{ type: 'HOT_RELOAD_STOP' },
+				'Hot reload stop',
+				HOT_RELOAD_SWITCH_TIMEOUT_MS,
+			);
+		} catch (error) {
+			// Without a confirmed stop, starting the replacement could let both workers handle events.
+			await resumePrevious().catch(() => undefined);
+			await discard();
+			return finish(error);
+		}
+		let activationError: unknown;
+		try {
+			await this.requestHotReloadStep(
+				workerId,
+				generation,
+				{ type: 'HOT_RELOAD_ACTIVATE', botReady: this.keys().next().value === workerId },
+				'Hot reload activation',
+				HOT_RELOAD_SWITCH_TIMEOUT_MS,
+			);
+		} catch (error) {
+			activationError = error;
+			try {
+				await resumePrevious();
+				await discard();
+				return finish(error);
+			} catch (rollbackError) {
+				// Neither worker confirmed. Keep the replacement, which may only be slow, rather than leave the id with
+				// a stopped worker; the reload reports the failure and the heartbeat respawns a worker that is gone.
+				this.reportError(`[Worker #${workerId}] could not resume the old worker`, rollbackError);
+			}
+		}
+		const replacement = this.standbyWorkers.get(key)!;
+		this.standbyWorkers.delete(key);
+		this.standbyWorkers.set(instanceKey(workerId, previousGeneration), previous);
+		this.set(workerId, replacement);
+		this.generations.set(workerId, generation);
+		// The old worker answered the last heartbeat; don't let the switch read as a missed one.
+		this.heartbeater.acknowledge(workerId);
+
+		const entry = finish(activationError);
+		if (
+			requester &&
+			!requester.answered &&
+			requester.workerId === workerId &&
+			requester.generation === previousGeneration
+		) {
+			// The requester is about to drain, so it gets its answer now, while it can still act on it.
+			await this.sendHotReloadResult(requester, { result: { workers: [...result.workers] } });
+		}
+
+		report('draining');
+		const drainTimeout = options.drainTimeout ?? 10_000;
+		try {
+			await this.requestHotReloadStep(
+				workerId,
+				previousGeneration,
+				{ type: 'HOT_RELOAD_DRAIN', drainTimeout },
+				'Hot reload drain',
+				drainTimeout + HOT_RELOAD_DRAIN_GRACE_MS,
+			);
+		} catch (error) {
+			this.reportError(`[Worker #${workerId}] replaced worker did not finish draining`, error);
+		}
+		await Promise.resolve(this.terminateInstance(workerId, previousGeneration, previous)).catch(error =>
+			this.reportError(`[Worker #${workerId}] failed to stop the replaced worker`, error),
+		);
+		this.standbyWorkers.delete(instanceKey(workerId, previousGeneration));
+		report('done');
+		return entry;
+	}
+
+	private createPendingReplacement(key: string, onStarted: () => void): PendingReplacement {
+		let resolve!: () => void;
+		let reject!: (error: unknown) => void;
+		let started = false;
+		const ready = new Promise<void>((res, rej) => {
+			resolve = res;
+			reject = rej;
+		});
+		// The race in hotReloadWorker observes the rejection; this keeps a late failure from going unhandled.
+		ready.catch(() => undefined);
+		const pending: PendingReplacement = {
+			ready,
+			started: () => {
+				if (started) return;
+				started = true;
+				onStarted();
+			},
+			markReady: resolve,
+			fail: reject,
+		};
+		this.pendingReplacements.set(key, pending);
+		return pending;
+	}
+
+	private watchExit(worker: ManagedWorker, workerId: number, generation: number) {
+		switch (this.options.mode) {
+			case 'threads': {
+				const thread = worker as WorkerThreadsWorker;
+				thread.once('error', error => this.handleWorkerExit(workerId, generation, error));
+				thread.once('exit', code =>
+					this.handleWorkerExit(workerId, generation, new Error(`Worker #${workerId} exited with code ${code}`)),
+				);
+				break;
+			}
+			case 'clusters':
+				(worker as ClusterWorker).once('exit', (code, signal) =>
+					this.handleWorkerExit(
+						workerId,
+						generation,
+						new Error(`Worker #${workerId} exited with ${signal ? `signal ${signal}` : `code ${code}`}`),
+					),
+				);
+				break;
+		}
+	}
+
+	private terminateInstance(workerId: number, generation: number, worker: ManagedWorker): Awaitable<unknown> {
+		switch (this.options.mode) {
+			case 'threads':
+				return (worker as WorkerThreadsWorker).terminate();
+			case 'clusters':
+				return (worker as ClusterWorker).kill();
+			case 'custom':
+				return this.options.adapter.terminate?.(workerId, generation);
+		}
+	}
+
+	private requestHotReloadStep(
+		workerId: number,
+		generation: number,
+		body:
+			| Omit<ManagerHotReloadActivate, 'nonce'>
+			| Omit<ManagerHotReloadStop, 'nonce'>
+			| Omit<ManagerHotReloadDrain, 'nonce'>,
+		operation: string,
+		timeoutMs?: number,
+	) {
+		const nonce = this.generateNonce();
+		return this.sendRequest<true>(
+			nonce,
+			operation,
+			() => this.postToInstance(workerId, generation, { ...body, nonce } as ManagerMessages),
+			timeoutMs,
+		);
+	}
+
+	private async answerHotReloadRequest(message: WorkerRequestHotReload, generation: number) {
+		const requester: HotReloadRequester = {
+			workerId: message.workerId,
+			generation,
+			nonce: message.nonce,
+			answered: false,
+		};
+		try {
+			const result = await this.runHotReload(
+				{
+					...message.options,
+					onProgress: progress => {
+						// Best effort: the requester may already be gone after its own replacement.
+						void this.postToInstance(requester.workerId, requester.generation, {
+							type: 'HOT_RELOAD_PROGRESS',
+							nonce: requester.nonce,
+							progress,
+						} satisfies ManagerHotReloadProgress).catch(error =>
+							this.debugger?.debug(`[Worker #${requester.workerId}] hot reload progress not delivered`, error),
+						);
+					},
+				},
+				requester,
+			);
+			if (!requester.answered) await this.sendHotReloadResult(requester, { result });
+		} catch (error) {
+			if (!requester.answered) await this.sendHotReloadResult(requester, { error: serializeWorkerError(error) });
+		}
+	}
+
+	private async sendHotReloadResult(
+		requester: HotReloadRequester,
+		outcome: { result: HotReloadResult } | { error: SerializedWorkerError },
+	) {
+		requester.answered = true;
+		try {
+			await this.postToInstance(requester.workerId, requester.generation, {
+				type: 'HOT_RELOAD_RESULT',
+				nonce: requester.nonce,
+				...outcome,
+			} as ManagerHotReloadResult);
+		} catch (error) {
+			this.reportError(`[Worker #${requester.workerId}] hot reload result not delivered`, error);
+		}
+	}
+
 	async start() {
 		const rc =
 			((await this.options.getRC?.()) as InternalRuntimeConfig | undefined) ??
@@ -818,8 +1323,11 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 		setInterval(
 			() =>
 				this.observe(async () => {
+					if (this.hotReloading) return this.debugger?.debug('Skipping reshard check during a hot reload');
 					this.debugger?.debug('Checking if reshard is needed');
 					const info = await this.options.resharding.getInfo();
+					// A hot reload may have started while the gateway info was loading.
+					if (this.hotReloading) return this.debugger?.debug('Skipping reshard check during a hot reload');
 					if (info.shards <= this.totalShards) return this.debugger?.debug('Resharding not needed');
 					//https://github.com/discordeno/discordeno/blob/6a5f446c0651b9fad9f1550ff1857fe7a026426b/packages/gateway/src/manager.ts#L106C8-L106C94
 					const percentage = (info.shards / ((this.totalShards * 2500) / 1000)) * 100;
@@ -941,6 +1449,51 @@ export type ManagerSendEvalResponse = CreateManagerMessage<
 	}
 >;
 
+export type HotReloadStage = 'spawning' | 'connecting' | 'ready' | 'switching' | 'draining' | 'done' | 'failed';
+
+export interface HotReloadProgress {
+	workerId: number;
+	stage: HotReloadStage;
+	/** Set with the `failed` stage. */
+	error?: string;
+}
+
+export interface HotReloadWorkerResult {
+	workerId: number;
+	ok: boolean;
+	error?: string;
+	/** Time from spawning the replacement until it took over or failed. */
+	ms: number;
+}
+
+export interface HotReloadResult {
+	/** One entry per worker that was attempted, in reload order. */
+	workers: HotReloadWorkerResult[];
+}
+
+export interface HotReloadOptions extends WorkerHotReloadRequestOptions {
+	/** Called as each worker moves through the reload. */
+	onProgress?(event: HotReloadProgress): void;
+}
+
+export type ManagerHotReloadActivate = CreateManagerMessage<
+	'HOT_RELOAD_ACTIVATE',
+	{
+		nonce: string /** Whether this worker runs `botReady` handlers, as the first worker does at startup. */;
+		botReady: boolean;
+	}
+>;
+export type ManagerHotReloadStop = CreateManagerMessage<'HOT_RELOAD_STOP', { nonce: string }>;
+export type ManagerHotReloadDrain = CreateManagerMessage<'HOT_RELOAD_DRAIN', { nonce: string; drainTimeout: number }>;
+export type ManagerHotReloadProgress = CreateManagerMessage<
+	'HOT_RELOAD_PROGRESS',
+	{ nonce: string; progress: HotReloadProgress }
+>;
+export type ManagerHotReloadResult = CreateManagerMessage<
+	'HOT_RELOAD_RESULT',
+	{ nonce: string } & ({ result: HotReloadResult; error?: never } | { error: SerializedWorkerError; result?: never })
+>;
+
 export type BaseManagerMessages =
 	| ManagerAllowConnect
 	| ManagerSpawnShards
@@ -957,7 +1510,12 @@ export type BaseManagerMessages =
 	| ManagerAllowConnectResharding
 	| DisconnectAllShardsResharding
 	| ConnnectAllShardsResharding
-	| ManagerExecuteEval;
+	| ManagerExecuteEval
+	| ManagerHotReloadActivate
+	| ManagerHotReloadStop
+	| ManagerHotReloadDrain
+	| ManagerHotReloadProgress
+	| ManagerHotReloadResult;
 
 export type CustomManagerMessages = {
 	[K in keyof CustomWorkerManagerEvents]: Identify<
