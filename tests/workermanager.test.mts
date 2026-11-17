@@ -1145,6 +1145,66 @@ describe('WorkerClient hot reload', () => {
 		}
 	});
 
+	test('a resumed session replays its packets only after the readiness handlers ran', async () => {
+		const { client, onPacket } = workerClient();
+		const sequence: string[] = [];
+		let releaseReady!: () => void;
+		const readyHeld = new Promise<void>(resolve => {
+			releaseReady = resolve;
+		});
+		const runEvent = vi.spyOn(client.events, 'runEvent').mockImplementation(async name => {
+			if (name === 'RAW') return;
+			sequence.push(name);
+			// A slow ready handler, like one that loads state the other handlers need.
+			if (name === 'READY') await readyHeld;
+		});
+		const shard = {
+			isReady: true,
+			isOpen: true,
+			data: { session_id: 'standby', resume_seq: 1, resume_gateway_url: 'wss://resume.discord.gg' },
+			options: {
+				handlePayload: vi.fn((_shardId: number, packet: { t: string }) => {
+					sequence.push(`replayed ${packet.t}`);
+				}),
+			},
+			end: vi.fn(),
+			close: vi.fn(),
+			commitTransferredSession: vi.fn(),
+			// The transferred session replays a message, then confirms the resume.
+			async connectTransferredSession() {
+				shard.options.handlePayload(0, { t: 'MESSAGE_CREATE' });
+				shard.options.handlePayload(0, { t: 'RESUMED' });
+			},
+		};
+		try {
+			client.setWorkerData(workerData(true));
+			client.setServices({ cache: { adapter: new WorkerAdapter(client.workerData) } });
+			client.shards.set(0, shard as never);
+			await onPacket({ t: 'READY', d: { user: { id: '1', username: 'bot' }, application: { id: '2', flags: 0 } } });
+			await client.handleManagerMessages({
+				type: 'HOT_RELOAD_RESUME',
+				nonce: 'resume',
+				session: { session_id: 'original', resume_seq: 7, resume_gateway_url: 'wss://resume.discord.gg' },
+			});
+
+			await client.handleManagerMessages({ type: 'HOT_RELOAD_ACTIVATE', nonce: 'activate', botReady: false });
+			await vi.waitFor(() => expect(sequence).toContain('READY'));
+			await new Promise(resolve => setImmediate(resolve));
+			expect(sequence.some(entry => entry.startsWith('replayed'))).toBe(false);
+
+			releaseReady();
+			await vi.waitFor(() =>
+				expect(sequence).toEqual(['WORKER_SHARDS_CONNECTED', 'READY', 'replayed MESSAGE_CREATE', 'replayed RESUMED']),
+			);
+		} finally {
+			releaseReady();
+			runEvent.mockRestore();
+			client.shards.clear();
+			client.setServices({ cache: { adapter: new MemoryAdapter() } });
+			client.setWorkerData(workerData(false));
+		}
+	});
+
 	test('standby cache updates honor gateway interceptor rewrites and vetoes', async () => {
 		const handled = vi.fn();
 		const userHook = vi.fn();

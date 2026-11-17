@@ -114,7 +114,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	private inFlightWork = new Set<Promise<unknown>>();
 	private pausedShard?: { shard: Shard; generation: number };
 	private cancelledSessionHandoff = 0;
-	private activateResumedShard?: () => void;
+	/** Commits a transferred session; returns the release for the packets it collected meanwhile. */
+	private activateResumedShard?: () => () => void;
 	private hotReloadRequests = new Map<
 		string,
 		{
@@ -482,6 +483,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					// A replaced worker can be resumed when its replacement fails to take over.
 					const fromStandby = this.dispatchState === 'standby';
 					const resume = this.activateResumedShard;
+					let releaseResumed: (() => void) | undefined;
 					let activated = false;
 					await this.answerReloadStep(data.nonce, async () => {
 						if (data.cancelSessionHandoff !== undefined) {
@@ -492,13 +494,17 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 								await shard.connectTransferredSession();
 							}
 						}
-						resume?.();
+						releaseResumed = resume?.();
 						this.activateResumedShard = undefined;
 						this.dispatchState = 'active';
 						activated = true;
 						return {};
 					});
-					if (!activated || !fromStandby) break;
+					if (!activated) break;
+					if (!fromStandby) {
+						releaseResumed?.();
+						break;
+					}
 					// Handlers never saw this worker become ready while it was on standby.
 					const readiness = (async () => {
 						for (const step of this.standbyReadiness.splice(0)) {
@@ -526,6 +532,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					})();
 					this.trackInFlight(readiness);
 					readiness.catch(error => this.logger.error('Hot reload readiness handlers failed', error));
+					// Resumed packets reach handlers only after the readiness handlers set them up, as at startup.
+					if (releaseResumed) readiness.then(releaseResumed, releaseResumed);
 				}
 				break;
 			case 'HOT_RELOAD_STOP':
@@ -670,14 +678,18 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			}
 			shard.commitTransferredSession();
 			this.dispatchState = 'active';
-			shard.options.handlePayload = handlePayload;
-			for (const [id, packet] of replay) {
-				this.trackInFlight(
-					(async () => handlePayload.call(shard.options, id, packet))().catch(error =>
-						this.logger.error('Session handoff dispatch failed', error),
-					),
-				);
-			}
+			// Replayed and newly arriving packets keep collecting until the caller releases them, once the
+			// readiness handlers they may depend on have run.
+			return () => {
+				shard.options.handlePayload = handlePayload;
+				for (const [id, packet] of replay.splice(0)) {
+					this.trackInFlight(
+						(async () => handlePayload.call(shard.options, id, packet))().catch(error =>
+							this.logger.error('Session handoff dispatch failed', error),
+						),
+					);
+				}
+			};
 		};
 	}
 
