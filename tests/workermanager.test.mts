@@ -1025,8 +1025,8 @@ describe('WorkerClient hot reload', () => {
 		const execute = vi.spyOn(client.events, 'execute').mockImplementation(async packet => {
 			sequence.push(packet.t);
 		});
-		const runEvent = vi.spyOn(client.events, 'runEvent').mockImplementation(async name => {
-			if (name !== 'RAW') sequence.push(name);
+		const runEvent = vi.spyOn(client.events, 'runEvent').mockImplementation(async (name, _client, packet) => {
+			sequence.push(name === 'RAW' ? `RAW ${(packet as { t: string }).t}` : name);
 		});
 		try {
 			client.setWorkerData(workerData(true));
@@ -1048,7 +1048,16 @@ describe('WorkerClient hot reload', () => {
 			// The readiness handlers it skipped on standby run once it takes over, in startup order.
 			// They run alongside the gateway rather than holding it back, so wait for them to finish.
 			await vi.waitFor(() =>
-				expect(sequence).toEqual(['WORKER_SHARDS_CONNECTED', 'READY', 'WORKER_READY', 'GUILDS_READY', 'BOT_READY']),
+				// RAW listeners see each replayed packet first, as they would at startup.
+				expect(sequence).toEqual([
+					'WORKER_SHARDS_CONNECTED',
+					'RAW READY',
+					'READY',
+					'WORKER_READY',
+					'RAW GUILDS_READY',
+					'GUILDS_READY',
+					'BOT_READY',
+				]),
 			);
 			await onPacket({ t: 'GUILD_UPDATE', d: { id: 'guild-1', name: 'active' } });
 			expect(sequence.at(-1)).toBe('GUILD_UPDATE');
@@ -1068,7 +1077,7 @@ describe('WorkerClient hot reload', () => {
 				botReady: false,
 			});
 			await onPacket({ t: 'GUILD_UPDATE', d: { id: 'guild-1', name: 'resumed' } });
-			expect(sequence.slice(handled)).toEqual(['GUILD_UPDATE']);
+			expect(sequence.slice(handled)).toEqual(['RAW GUILD_UPDATE', 'GUILD_UPDATE']);
 		} finally {
 			execute.mockRestore();
 			runEvent.mockRestore();

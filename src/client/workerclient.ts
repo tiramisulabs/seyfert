@@ -502,8 +502,18 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					// Handlers never saw this worker become ready while it was on standby.
 					const readiness = (async () => {
 						for (const step of this.standbyReadiness.splice(0)) {
-							if ('event' in step) await this.events.runEvent(step.event, this, this.me, -1);
-							else if (resume && step.packet.t === GatewayDispatchEvents.Ready) {
+							if ('event' in step) {
+								await this.events.runEvent(step.event, this, this.me, -1);
+								continue;
+							}
+							// As in handlePacket, RAW listeners and collectors start first, without being awaited.
+							this.trackInFlight(
+								Promise.allSettled([
+									this.events.runEvent('RAW', this, step.packet, step.shardId, false),
+									this.collectors.run('RAW', step.packet, this),
+								]),
+							);
+							if (resume && step.packet.t === GatewayDispatchEvents.Ready) {
 								// This snapshot came from the temporary session. It must not overwrite replayed cache state.
 								const { t, d } = step.packet;
 								await Promise.all([

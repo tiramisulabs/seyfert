@@ -94,7 +94,7 @@ export type WorkerSendToWorkerEval = CreateWorkerMessage<
 /** Hot reload options that can cross the worker channel; see `WorkerManager.hotReload`. */
 export interface WorkerHotReloadRequestOptions {
 	/** Workers to reload, one after another. Defaults to every worker in id order. */
-	workerIds?: number[];
+	workerIds?: readonly number[];
 	/**
 	 * How long a replacement may take until all its shards are ready. Defaults to 60s plus the time the connect
 	 * queue needs for the worker's shards (5.5s per `max_concurrency` shards).

@@ -153,6 +153,10 @@ const hotReloadOptions: HotReloadOptions = {
 expectType<Promise<HotReloadResult>>(workerManager.hotReload(hotReloadOptions));
 const workerHotReloadOptions: WorkerHotReloadRequestOptions = { readyTimeout: 30_000, drainTimeout: 5_000 };
 expectType<Promise<HotReloadResult>>(workerClient.requestHotReload(workerHotReloadOptions));
+// Worker selections can be immutable tuples.
+const reloadedWorkers = [0, 1] as const;
+expectType<Promise<HotReloadResult>>(workerManager.hotReload({ workerIds: reloadedWorkers }));
+expectType<Promise<HotReloadResult>>(workerClient.requestHotReload({ workerIds: reloadedWorkers }));
 declare const managerMessage: ManagerMessages;
 expectType<string>(managerMessage.type);
 expectType<SerializedWorkerValue>({ type: 'record', value: { cause: ['nested', 1, null] } });
