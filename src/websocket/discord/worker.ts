@@ -93,7 +93,10 @@ export type WorkerSendToWorkerEval = CreateWorkerMessage<
 export interface WorkerHotReloadRequestOptions {
 	/** Workers to reload, one after another. Defaults to every worker in id order. */
 	workerIds?: number[];
-	/** How long a replacement may take until all its shards are ready. @default 60000 */
+	/**
+	 * How long a replacement may take until all its shards are ready. Defaults to 60s plus the time the connect
+	 * queue needs for the worker's shards (5.5s per `max_concurrency` shards).
+	 */
 	readyTimeout?: number;
 	/** How long a replaced worker may keep finishing in-flight work before its sessions close. @default 10000 */
 	drainTimeout?: number;

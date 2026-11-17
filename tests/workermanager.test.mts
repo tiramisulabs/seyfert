@@ -791,9 +791,14 @@ describe('WorkerManager hot reload', () => {
 		await expect(harness.manager.tellWorker(0, () => null, {})).resolves.toBe('0:0');
 	});
 
-	test('waits for every worker to start before reloading', async () => {
-		const harness = hotReloadHarness();
+	test('waits until every worker is ready before reloading', async () => {
+		const harness = hotReloadHarness({
+			behavior: (workerId, generation) => (workerId === 1 && generation === 0 ? { neverReady: true } : {}),
+		});
 		harness.manager.prepareWorkers(WorkerManager.prepareSpaces({ shardStart: 0, shardEnd: 2, shardsPerWorker: 1 }));
+		await harness.manager.workerQueue.shift()!();
+		// Both workers are spawned, but worker 1 never reports ready, so BOT_READY was not sent yet.
+		await vi.waitFor(() => expect(harness.manager.size).toBe(2));
 
 		await expect(harness.manager.hotReload()).rejects.toSatisfy(error =>
 			SeyfertError.is(error, 'HOT_RELOAD_UNSUPPORTED'),
@@ -917,6 +922,43 @@ describe('WorkerClient hot reload', () => {
 		} finally {
 			execute.mockRestore();
 			runEvent.mockRestore();
+			client.setWorkerData(workerData(false));
+		}
+	});
+
+	test('a draining worker also waits for work that starts after the drain began', async () => {
+		const { client } = workerClient();
+		const track = (work: Promise<unknown>) =>
+			(client as unknown as { trackInFlight(work: Promise<unknown>): void }).trackInFlight(work);
+		let releaseFirst!: () => void;
+		let releaseLate!: () => void;
+		const end = vi.fn();
+		try {
+			client.setWorkerData(workerData(false));
+			client.shards.set(0, { end } as never);
+			track(
+				new Promise<void>(resolve => {
+					releaseFirst = resolve;
+				}),
+			);
+			const draining = client.handleManagerMessages({ type: 'HOT_RELOAD_DRAIN', nonce: 'drain', drainTimeout: 60_000 });
+			// Like RAW work registered once an async interceptor resolves.
+			track(
+				new Promise<void>(resolve => {
+					releaseLate = resolve;
+				}),
+			);
+			releaseFirst();
+			await new Promise(resolve => setImmediate(resolve));
+			expect(end).not.toHaveBeenCalled();
+
+			releaseLate();
+			await draining;
+			expect(end).toHaveBeenCalledOnce();
+		} finally {
+			releaseFirst?.();
+			releaseLate?.();
+			client.shards.clear();
 			client.setWorkerData(workerData(false));
 		}
 	});

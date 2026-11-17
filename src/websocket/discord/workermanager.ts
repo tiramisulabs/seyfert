@@ -124,7 +124,10 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 	private pendingReplacements = new Map<string, PendingReplacement>();
 	private lastGeneration = 0;
 	private hotReloading = false;
-	private hotReloadingWorkerId?: number;
+	/** The worker being switched by a hot reload; heartbeat respawns leave it alone meanwhile. */
+	private switchingWorkerId?: number;
+	/** Set once BOT_READY was sent; hot reload waits for it. */
+	private allWorkersReady = false;
 
 	constructor(options: WorkerManagerConstructorOptions) {
 		super();
@@ -312,8 +315,8 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 			};
 			const registerWorkerHeartbeat = (workerId: number, resharding: boolean) => {
 				this.heartbeater.register(workerId, deadWorkerId => {
-					// A hot reload is already replacing this worker and swaps the entry itself.
-					if (this.hotReloadingWorkerId === deadWorkerId) return;
+					// A hot reload is swapping this worker's entry right now and settles it itself.
+					if (this.switchingWorkerId === deadWorkerId) return;
 					this.heartbeater.unregister(deadWorkerId);
 					this.delete(deadWorkerId);
 					this.observe(
@@ -674,6 +677,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 						await this.postMessage(this.keys().next().value!, {
 							type: 'BOT_READY',
 						} satisfies ManagerSendBotReady);
+						this.allWorkersReady = true;
 						this.forEach(w => {
 							delete w.ready;
 						});
@@ -906,7 +910,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 	 * {@link CustomManagerAdapter.terminate} and routes messages by generation.
 	 *
 	 * @throws {SeyfertError} `HOT_RELOAD_IN_PROGRESS` while another reload runs, `HOT_RELOAD_UNSUPPORTED` before
-	 * every worker started, during resharding, or in custom mode without `terminate`, and `WORKER_NOT_FOUND` for an
+	 * every worker is ready (BOT_READY), during resharding, or in custom mode without `terminate`, and `WORKER_NOT_FOUND` for an
 	 * unknown worker id.
 	 */
 	hotReload(options: HotReloadOptions = {}): Promise<HotReloadResult> {
@@ -929,14 +933,14 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 				metadata: { detail: 'Wait for the running hot reload to finish before starting another one.' },
 			});
 		}
-		const unsupported =
-			!this.connectQueue || this.workerQueue.length || this.size < this.totalWorkers
-				? 'Wait for the manager to start every worker before hot reloading.'
-				: this._info
-					? 'Cannot hot reload workers while resharding.'
-					: this.options.mode === 'custom' && !this.options.adapter.terminate
-						? 'Custom mode needs an adapter that implements terminate().'
-						: undefined;
+		// Swapping a worker before startup completes would lose its readiness and with it BOT_READY.
+		const unsupported = !this.allWorkersReady
+			? 'Wait until every worker is ready (BOT_READY) before hot reloading.'
+			: this._info
+				? 'Cannot hot reload workers while resharding.'
+				: this.options.mode === 'custom' && !this.options.adapter.terminate
+					? 'Custom mode needs an adapter that implements terminate().'
+					: undefined;
 		if (unsupported) throw new SeyfertError('HOT_RELOAD_UNSUPPORTED', { metadata: { detail: unsupported } });
 
 		const workerIds = options.workerIds ?? [...this.keys()].sort((a, b) => a - b);
@@ -948,14 +952,12 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 		const result: HotReloadResult = { workers: [] };
 		try {
 			for (const workerId of workerIds) {
-				this.hotReloadingWorkerId = workerId;
 				const entry = await this.hotReloadWorker(workerId, options, result, requester);
 				if (!entry.ok && !options.continueOnError) break;
 			}
 			return result;
 		} finally {
 			this.hotReloading = false;
-			this.hotReloadingWorkerId = undefined;
 		}
 	}
 
@@ -997,14 +999,15 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 
 		report('spawning');
 		const pending = this.createPendingReplacement(key, () => report('connecting'));
-		const readyTimeout = options.readyTimeout ?? 60_000;
+		const shards = WorkerManager.prepareSpaces({
+			shardStart: this.shardStart,
+			shardEnd: this.shardEnd,
+			shardsPerWorker: this.shardsPerWorker,
+		})[workerId];
+		// The connect queue lets `concurrency` shards identify every 5.5s, so a worker with many shards needs longer.
+		const readyTimeout = options.readyTimeout ?? 60_000 + Math.ceil(shards.length / this.concurrency) * 5_500;
 		let timer: NodeJS.Timeout | undefined;
 		try {
-			const shards = WorkerManager.prepareSpaces({
-				shardStart: this.shardStart,
-				shardEnd: this.shardEnd,
-				shardsPerWorker: this.shardsPerWorker,
-			})[workerId];
 			const workerData = {
 				...this.createWorkerData(workerId, shards, this.totalWorkers, false),
 				hotReload: true,
@@ -1057,8 +1060,16 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 		// The old worker stops before the replacement starts, so no event is handled twice. Events that arrive in
 		// between, or that the two sessions receive on different sides of the switch, are handled by neither.
 		report('switching');
-		const previous = this.get(workerId)!;
+		// Until the entry is swapped, a heartbeat respawn would replace the worker this switch is stopping.
+		const previous = this.get(workerId);
+		if (!previous) {
+			// A heartbeat respawn is still replacing the old worker; this replacement would race it.
+			await discard();
+			return finish(this.createWorkerNotFoundError(workerId));
+		}
+		this.switchingWorkerId = workerId;
 		const previousGeneration = this.activeGeneration(workerId);
+		let activationError: unknown;
 		// The old worker keeps or regains dispatch. Sent after a STOP on the same channel, it also undoes a late one.
 		const resumePrevious = () =>
 			this.requestHotReloadStep(
@@ -1069,47 +1080,50 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 				HOT_RELOAD_SWITCH_TIMEOUT_MS,
 			);
 		try {
-			await this.requestHotReloadStep(
-				workerId,
-				previousGeneration,
-				{ type: 'HOT_RELOAD_STOP' },
-				'Hot reload stop',
-				HOT_RELOAD_SWITCH_TIMEOUT_MS,
-			);
-		} catch (error) {
-			// Without a confirmed stop, starting the replacement could let both workers handle events.
-			await resumePrevious().catch(() => undefined);
-			await discard();
-			return finish(error);
-		}
-		let activationError: unknown;
-		try {
-			await this.requestHotReloadStep(
-				workerId,
-				generation,
-				{ type: 'HOT_RELOAD_ACTIVATE', botReady: this.keys().next().value === workerId },
-				'Hot reload activation',
-				HOT_RELOAD_SWITCH_TIMEOUT_MS,
-			);
-		} catch (error) {
-			activationError = error;
 			try {
-				await resumePrevious();
+				await this.requestHotReloadStep(
+					workerId,
+					previousGeneration,
+					{ type: 'HOT_RELOAD_STOP' },
+					'Hot reload stop',
+					HOT_RELOAD_SWITCH_TIMEOUT_MS,
+				);
+			} catch (error) {
+				// Without a confirmed stop, starting the replacement could let both workers handle events.
+				await resumePrevious().catch(() => undefined);
 				await discard();
 				return finish(error);
-			} catch (rollbackError) {
-				// Neither worker confirmed. Keep the replacement, which may only be slow, rather than leave the id with
-				// a stopped worker; the reload reports the failure and the heartbeat respawns a worker that is gone.
-				this.reportError(`[Worker #${workerId}] could not resume the old worker`, rollbackError);
 			}
+			try {
+				await this.requestHotReloadStep(
+					workerId,
+					generation,
+					{ type: 'HOT_RELOAD_ACTIVATE', botReady: this.keys().next().value === workerId },
+					'Hot reload activation',
+					HOT_RELOAD_SWITCH_TIMEOUT_MS,
+				);
+			} catch (error) {
+				activationError = error;
+				try {
+					await resumePrevious();
+					await discard();
+					return finish(error);
+				} catch (rollbackError) {
+					// Neither worker confirmed. Keep the replacement, which may only be slow, rather than leave the id with
+					// a stopped worker; the reload reports the failure and the heartbeat respawns a worker that is gone.
+					this.reportError(`[Worker #${workerId}] could not resume the old worker`, rollbackError);
+				}
+			}
+			const replacement = this.standbyWorkers.get(key)!;
+			this.standbyWorkers.delete(key);
+			this.standbyWorkers.set(instanceKey(workerId, previousGeneration), previous);
+			this.set(workerId, replacement);
+			this.generations.set(workerId, generation);
+			// The old worker answered the last heartbeat; don't let the switch read as a missed one.
+			this.heartbeater.acknowledge(workerId);
+		} finally {
+			this.switchingWorkerId = undefined;
 		}
-		const replacement = this.standbyWorkers.get(key)!;
-		this.standbyWorkers.delete(key);
-		this.standbyWorkers.set(instanceKey(workerId, previousGeneration), previous);
-		this.set(workerId, replacement);
-		this.generations.set(workerId, generation);
-		// The old worker answered the last heartbeat; don't let the switch read as a missed one.
-		this.heartbeater.acknowledge(workerId);
 
 		const entry = finish(activationError);
 		if (

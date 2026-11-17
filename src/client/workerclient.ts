@@ -507,12 +507,17 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					// A late rollback could have resumed this worker; once replaced it must not dispatch again.
 					this.dispatchState = 'stopped';
 					let timer: NodeJS.Timeout | undefined;
-					await Promise.race([
-						Promise.allSettled(this.inFlightWork),
-						new Promise(resolve => {
-							timer = setTimeout(resolve, data.drainTimeout);
-						}),
-					]);
+					let timedOut = false;
+					const deadline = new Promise<void>(resolve => {
+						timer = setTimeout(() => {
+							timedOut = true;
+							resolve();
+						}, data.drainTimeout);
+					});
+					// Work can still be added while draining, such as RAW listeners once an interceptor resolves.
+					while (this.inFlightWork.size && !timedOut) {
+						await Promise.race([Promise.allSettled([...this.inFlightWork]), deadline]);
+					}
 					clearTimeout(timer);
 					for (const shard of this.shards.values()) shard.end('Replaced by a hot reload');
 					// The manager exits this worker after the ack, so let the close frames go out first.
