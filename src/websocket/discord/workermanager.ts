@@ -14,6 +14,7 @@ import { BaseClient, type InternalRuntimeConfig } from '../../client/base';
 import {
 	type Awaitable,
 	BASE_HOST,
+	delay,
 	type Identify,
 	isPromiseLike,
 	lazyLoadPackage,
@@ -508,8 +509,11 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 		// A hot reload replacement still connecting, or a worker draining after one.
 		const standby = generation !== undefined && generation !== this.activeGeneration(message.workerId);
 		const standbyKey = standby ? instanceKey(message.workerId, generation) : '';
+		// Replies go to the instance that asked, even if a hot reload swaps it out while the request runs.
 		const reply = (body: ManagerMessages) =>
-			standby ? this.postToInstance(message.workerId, generation, body) : this.postMessage(message.workerId, body);
+			generation === undefined
+				? this.postMessage(message.workerId, body)
+				: this.postToInstance(message.workerId, generation, body);
 		switch (message.type) {
 			case 'ACK_HEARTBEAT':
 				if (!standby) this.heartbeater.acknowledge(message.workerId);
@@ -603,7 +607,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 				);
 				break;
 			case 'CONNECT_QUEUE':
-				await this.spawn(message.workerId, message.shardId, false, standby ? generation : undefined);
+				await this.spawn(message.workerId, message.shardId, false, generation);
 				break;
 			case 'CACHE_REQUEST':
 				{
@@ -639,7 +643,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 					}
 					this.promises.delete(message.nonce);
 					clearTimeout(resultPayload.timeout);
-					resultPayload.resolve(true);
+					resultPayload.resolve((message.type === 'HOT_RELOAD_ACK' && message.handled) || true);
 				}
 				break;
 			case 'SHARD_INFO':
@@ -895,9 +899,11 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 	 * handlers run then. The old worker finishes in-flight work for up to `drainTimeout`, closes its sessions with
 	 * code 1000 and exits.
 	 *
-	 * No gateway event is handled by both workers. Events that arrive during the switch (about two IPC round trips),
-	 * or that the two sessions receive on different sides of it, are handled by neither, so a handful of events
-	 * around each switch can be missed. Handlers that need every event should not rely on hot reload.
+	 * The two workers hold separate gateway sessions, which receive the same event at slightly different times. For
+	 * the handoff, the old worker records the events it handles and the replacement holds the ones it receives; when
+	 * it takes over, the replacement skips events the old worker already handled and handles the rest. Each gateway
+	 * event is then handled exactly once, as long as both sessions receive it within `handoffWindow` (1s by default)
+	 * of each other; events are matched by type and payload. A switch takes about twice that window.
 	 * If a replacement crashes, fails to load or is not ready within `readyTimeout`, it is stopped and the old worker
 	 * keeps running untouched; the reload then stops unless `continueOnError` is set.
 	 *
@@ -1057,9 +1063,12 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 			this.pendingReplacements.delete(key);
 		}
 
-		// The old worker stops before the replacement starts, so no event is handled twice. Events that arrive in
-		// between, or that the two sessions receive on different sides of the switch, are handled by neither.
+		// The two workers hold separate gateway sessions, so the same event reaches them at slightly different times.
+		// The old worker records what it handles, the replacement holds what it receives, each starting a
+		// `handoffWindow` apart; when the replacement takes over it skips what the old worker already handled and
+		// handles the rest, so an event is handled once as long as both sessions get it within the window.
 		report('switching');
+		const handoffWindow = options.handoffWindow ?? 1_000;
 		// Until the entry is swapped, a heartbeat respawn would replace the worker this switch is stopping.
 		const previous = this.get(workerId);
 		if (!previous) {
@@ -1075,13 +1084,30 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 			this.requestHotReloadStep(
 				workerId,
 				previousGeneration,
-				{ type: 'HOT_RELOAD_ACTIVATE', botReady: false },
+				{ type: 'HOT_RELOAD_ACTIVATE', botReady: false, handled: [], handoffWindow },
 				'Hot reload rollback',
 				HOT_RELOAD_SWITCH_TIMEOUT_MS,
 			);
 		try {
+			let handled: string[];
 			try {
 				await this.requestHotReloadStep(
+					workerId,
+					previousGeneration,
+					{ type: 'HOT_RELOAD_RECORD' },
+					'Hot reload record',
+					HOT_RELOAD_SWITCH_TIMEOUT_MS,
+				);
+				await delay(handoffWindow);
+				await this.requestHotReloadStep(
+					workerId,
+					generation,
+					{ type: 'HOT_RELOAD_BUFFER' },
+					'Hot reload buffer',
+					HOT_RELOAD_SWITCH_TIMEOUT_MS,
+				);
+				await delay(handoffWindow);
+				handled = await this.requestHotReloadStep<string[]>(
 					workerId,
 					previousGeneration,
 					{ type: 'HOT_RELOAD_STOP' },
@@ -1098,7 +1124,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 				await this.requestHotReloadStep(
 					workerId,
 					generation,
-					{ type: 'HOT_RELOAD_ACTIVATE', botReady: this.keys().next().value === workerId },
+					{ type: 'HOT_RELOAD_ACTIVATE', botReady: this.keys().next().value === workerId, handled, handoffWindow },
 					'Hot reload activation',
 					HOT_RELOAD_SWITCH_TIMEOUT_MS,
 				);
@@ -1214,18 +1240,20 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 		}
 	}
 
-	private requestHotReloadStep(
+	private requestHotReloadStep<T = true>(
 		workerId: number,
 		generation: number,
 		body:
 			| Omit<ManagerHotReloadActivate, 'nonce'>
+			| Omit<ManagerHotReloadRecord, 'nonce'>
+			| Omit<ManagerHotReloadBuffer, 'nonce'>
 			| Omit<ManagerHotReloadStop, 'nonce'>
 			| Omit<ManagerHotReloadDrain, 'nonce'>,
 		operation: string,
 		timeoutMs?: number,
 	) {
 		const nonce = this.generateNonce();
-		return this.sendRequest<true>(
+		return this.sendRequest<T>(
 			nonce,
 			operation,
 			() => this.postToInstance(workerId, generation, { ...body, nonce } as ManagerMessages),
@@ -1493,10 +1521,19 @@ export interface HotReloadOptions extends WorkerHotReloadRequestOptions {
 export type ManagerHotReloadActivate = CreateManagerMessage<
 	'HOT_RELOAD_ACTIVATE',
 	{
-		nonce: string /** Whether this worker runs `botReady` handlers, as the first worker does at startup. */;
+		nonce: string;
+		/** Whether this worker runs `botReady` handlers, as the first worker does at startup. */
 		botReady: boolean;
+		/** Fingerprints of the events the replaced worker already handled; each is skipped once. */
+		handled: string[];
+		/** How long late copies of those events may still arrive. */
+		handoffWindow: number;
 	}
 >;
+/** Asks the worker being replaced to record which events it handles from now on. */
+export type ManagerHotReloadRecord = CreateManagerMessage<'HOT_RELOAD_RECORD', { nonce: string }>;
+/** Asks the replacement to hold the events it receives from now on until it takes over. */
+export type ManagerHotReloadBuffer = CreateManagerMessage<'HOT_RELOAD_BUFFER', { nonce: string }>;
 export type ManagerHotReloadStop = CreateManagerMessage<'HOT_RELOAD_STOP', { nonce: string }>;
 export type ManagerHotReloadDrain = CreateManagerMessage<'HOT_RELOAD_DRAIN', { nonce: string; drainTimeout: number }>;
 export type ManagerHotReloadProgress = CreateManagerMessage<
@@ -1526,6 +1563,8 @@ export type BaseManagerMessages =
 	| ConnnectAllShardsResharding
 	| ManagerExecuteEval
 	| ManagerHotReloadActivate
+	| ManagerHotReloadRecord
+	| ManagerHotReloadBuffer
 	| ManagerHotReloadStop
 	| ManagerHotReloadDrain
 	| ManagerHotReloadProgress

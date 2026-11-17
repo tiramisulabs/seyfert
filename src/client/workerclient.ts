@@ -27,25 +27,27 @@ import { MemberUpdateHandler } from '../websocket/discord/events/memberUpdate';
 import { PresenceUpdateHandler } from '../websocket/discord/events/presenceUpdate';
 import type { WorkerHeartbeaterMessages } from '../websocket/discord/heartbeater';
 import type { ShardData } from '../websocket/discord/shared';
-import type {
-	ClientHeartbeaterMessages,
-	WorkerDisconnectedAllShardsResharding,
-	WorkerHotReloadAck,
-	WorkerHotReloadRequestOptions,
-	WorkerMessages,
-	WorkerReadyResharding,
-	WorkerReceivePayload,
-	WorkerRequestConnect,
-	WorkerRequestConnectResharding,
-	WorkerRequestHotReload,
-	WorkerSendEvalResponse,
-	WorkerSendInfo,
-	WorkerSendResultPayload,
-	WorkerSendShardInfo,
-	WorkerSendToWorkerEval,
-	WorkerShardInfo,
-	WorkerStart,
-	WorkerStartResharding,
+import {
+	type ClientHeartbeaterMessages,
+	gatewayEventFingerprint,
+	HOT_RELOAD_HANDOFF_LIMIT,
+	type WorkerDisconnectedAllShardsResharding,
+	type WorkerHotReloadAck,
+	type WorkerHotReloadRequestOptions,
+	type WorkerMessages,
+	type WorkerReadyResharding,
+	type WorkerReceivePayload,
+	type WorkerRequestConnect,
+	type WorkerRequestConnectResharding,
+	type WorkerRequestHotReload,
+	type WorkerSendEvalResponse,
+	type WorkerSendInfo,
+	type WorkerSendResultPayload,
+	type WorkerSendShardInfo,
+	type WorkerSendToWorkerEval,
+	type WorkerShardInfo,
+	type WorkerStart,
+	type WorkerStartResharding,
 } from '../websocket/discord/worker';
 import { deserializeWorkerError } from '../websocket/discord/worker-errors';
 import type {
@@ -113,6 +115,13 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	)[] = [];
 	/** Dispatched work a worker replaced by a hot reload waits for before it closes its sessions. */
 	private inFlightWork = new Set<Promise<unknown>>();
+	/** Fingerprints of the events handled since the manager asked this worker, about to be replaced, to record them. */
+	private handoffRecorded?: string[];
+	/** Events a replacement received during the handoff, handled or skipped once it takes over. */
+	private handoffHeld?: { packet: GatewayDispatchPayload; shardId: number }[];
+	private handoffOverflowed = false;
+	/** Events the replaced worker already handled that may still arrive here; each is skipped once. */
+	private handoffSkip?: Map<string, number>;
 	private hotReloadRequests = new Map<
 		string,
 		{
@@ -458,17 +467,9 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			case 'CONNECT_ALL_SHARDS_RESHARDING':
 				{
 					this.shards.clear();
-					const handlePayload = this.options?.handlePayload?.bind(this);
-					const dispatchPayload = async (shardId: number, packet: GatewayDispatchPayload) => {
-						if (handlePayload) await this.cache.withoutGuildWriteOrder(() => handlePayload(shardId, packet));
-						return this.onPacket(packet, shardId);
-					};
 					for (const [id, shard] of this.resharding) {
 						this.shards.set(id, shard);
-						shard.options.handlePayload = (shardId, packet) =>
-							this.cache.trackMemberCount
-								? this.cache.withGuildWriteOrder(packet, 'payload', () => dispatchPayload(shardId, packet))
-								: dispatchPayload(shardId, packet);
+						shard.options.handlePayload = (shardId, packet) => this.handleShardPayload(shardId, packet, false);
 					}
 					workerData.totalShards = data.totalShards;
 					workerData.shards = [...this.shards.keys()];
@@ -480,27 +481,83 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					// A replaced worker can be resumed when its replacement fails to take over.
 					const fromStandby = this.dispatchState === 'standby';
 					this.dispatchState = 'active';
+					this.handoffRecorded = undefined;
 					await this.postMessage({
 						type: 'HOT_RELOAD_ACK',
 						nonce: data.nonce,
 						workerId: workerData.workerId,
 					} satisfies WorkerHotReloadAck);
 					if (!fromStandby) break;
-					// Handlers never saw this worker become ready while it was on standby.
-					for (const step of this.standbyReadiness.splice(0)) {
-						if ('event' in step) await this.events.runEvent(step.event, this, this.me, -1);
-						else await this.events.execute(step.packet, this, step.shardId);
+					const skip = new Map<string, number>();
+					for (const fingerprint of data.handled) skip.set(fingerprint, (skip.get(fingerprint) ?? 0) + 1);
+					// Handlers never saw this worker become ready while it was on standby. Like at startup, a slow one
+					// must not hold back the gateway, so they run alongside the events below.
+					const steps = this.standbyReadiness.splice(0);
+					const readiness = (async () => {
+						for (const step of steps) {
+							if ('event' in step) await this.events.runEvent(step.event, this, this.me, -1);
+							else await this.events.execute(step.packet, this, step.shardId);
+						}
+						if (data.botReady) await this.events.runEvent('BOT_READY', this, this.me, -1);
+					})();
+					this.trackInFlight(readiness);
+					readiness.catch(error => this.logger.error('Hot reload readiness handlers failed', error));
+					// Held events start in order, as a shard would deliver them: their place in the cache's guild
+					// write order is taken now, and their handlers run concurrently. This loop does not yield, so
+					// nothing new arrives before holding ends.
+					for (const { packet, shardId } of this.handoffHeld?.splice(0) ?? []) {
+						const fingerprint = gatewayEventFingerprint(packet);
+						const remaining = skip.get(fingerprint);
+						let delivery: Promise<unknown>;
+						if (remaining) {
+							if (remaining === 1) skip.delete(fingerprint);
+							else skip.set(fingerprint, remaining - 1);
+							delivery = this.inPacketOrder(packet, 'payload', () => this.applyToOwnCache(packet));
+						} else {
+							delivery = this.deliverPayload(shardId, packet, true, true);
+						}
+						this.trackInFlight(delivery);
+						delivery.catch(error => this.logger.error('Failed to handle an event held during a hot reload', error));
 					}
-					if (data.botReady) await this.events.runEvent('BOT_READY', this, this.me, -1);
+					this.handoffHeld = undefined;
+					if (skip.size) {
+						// Late copies of what the old worker handled can still arrive for a short while.
+						this.handoffSkip = skip;
+						setTimeout(() => {
+							if (this.handoffSkip === skip) this.handoffSkip = undefined;
+						}, data.handoffWindow).unref?.();
+					}
 				}
 				break;
-			case 'HOT_RELOAD_STOP':
-				this.dispatchState = 'stopped';
+			case 'HOT_RELOAD_RECORD':
+				this.handoffRecorded = [];
 				await this.postMessage({
 					type: 'HOT_RELOAD_ACK',
 					nonce: data.nonce,
 					workerId: workerData.workerId,
 				} satisfies WorkerHotReloadAck);
+				break;
+			case 'HOT_RELOAD_BUFFER':
+				this.handoffHeld = [];
+				this.handoffOverflowed = false;
+				await this.postMessage({
+					type: 'HOT_RELOAD_ACK',
+					nonce: data.nonce,
+					workerId: workerData.workerId,
+				} satisfies WorkerHotReloadAck);
+				break;
+			case 'HOT_RELOAD_STOP':
+				{
+					this.dispatchState = 'stopped';
+					const handled = this.handoffRecorded ?? [];
+					this.handoffRecorded = undefined;
+					await this.postMessage({
+						type: 'HOT_RELOAD_ACK',
+						nonce: data.nonce,
+						workerId: workerData.workerId,
+						handled,
+					} satisfies WorkerHotReloadAck);
+				}
 				break;
 			case 'HOT_RELOAD_DRAIN':
 				{
@@ -663,8 +720,6 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	}
 
 	createShard(id: number, data: Pick<ManagerSpawnShards, 'info' | 'compress' | 'properties'>) {
-		const onPacket = this.onPacket.bind(this);
-		const handlePayload = this.options?.handlePayload?.bind(this);
 		const self = this;
 		const shard = new Shard(id, {
 			token: workerData.token,
@@ -679,35 +734,90 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				...data.properties,
 				...this.options.gateway?.properties,
 			},
-			async handlePayload(shardId, payload) {
-				let pluginPacket: GatewayDispatchPayload | null;
-				// The user hook is a handler too, so it waits until this worker is the active one.
-				const userHook = self.dispatchState === 'active' ? handlePayload : undefined;
-				if (self.cache.trackMemberCount) {
-					pluginPacket = await self.cache.withGuildWriteOrder(payload, 'payload', async () => {
-						if (userHook) await self.cache.withoutGuildWriteOrder(() => userHook(shardId, payload));
-						return onPacket(payload, shardId);
-					});
-				} else {
-					if (userHook) await self.cache.withoutGuildWriteOrder(() => userHook(shardId, payload));
-					pluginPacket = await onPacket(payload, shardId);
-				}
-				if (self.options.sendPayloadToParent && pluginPacket !== null) {
-					void self
-						.postMessage({
-							workerId: workerData.workerId,
-							shardId,
-							type: 'RECEIVE_PAYLOAD',
-							payload: pluginPacket,
-						} satisfies WorkerReceivePayload)
-						.catch(error => {
-							self.logger.error('Failed to send RECEIVE_PAYLOAD to the worker manager', error);
-						});
-				}
+			handlePayload(shardId, payload) {
+				return self.handleShardPayload(shardId, payload, true);
 			},
 		});
 
 		return shard;
+	}
+
+	/** Handles a payload from one of this worker's shards, including its part in a hot reload handoff. */
+	private handleShardPayload(shardId: number, payload: GatewayDispatchPayload, forwardToParent: boolean) {
+		const handoff = this.takeHandoff(payload, shardId);
+		if (handoff === 'held') return;
+		if (handoff === 'skipped') return this.inPacketOrder(payload, 'payload', () => this.applyToOwnCache(payload));
+		const active = this.dispatchState === 'active';
+		const delivery = this.deliverPayload(shardId, payload, active, forwardToParent);
+		// A worker replaced by a hot reload lets the whole callback finish, user hook included, before it closes.
+		if (active) this.trackInFlight(delivery);
+		return delivery;
+	}
+
+	private async deliverPayload(
+		shardId: number,
+		payload: GatewayDispatchPayload,
+		runUserHook: boolean,
+		forwardToParent: boolean,
+	) {
+		// The user hook is a handler too, so it only runs on the active worker.
+		const userHook = runUserHook ? this.options?.handlePayload : undefined;
+		const pluginPacket = await this.inPacketOrder(payload, 'payload', async () => {
+			if (userHook) await this.cache.withoutGuildWriteOrder(() => userHook.call(this, shardId, payload));
+			return this.onPacket(payload, shardId);
+		});
+		if (forwardToParent && this.options.sendPayloadToParent && pluginPacket !== null) {
+			void this.postMessage({
+				workerId: workerData.workerId,
+				shardId,
+				type: 'RECEIVE_PAYLOAD',
+				payload: pluginPacket,
+			} satisfies WorkerReceivePayload).catch(error => {
+				this.logger.error('Failed to send RECEIVE_PAYLOAD to the worker manager', error);
+			});
+		}
+		return pluginPacket;
+	}
+
+	private inPacketOrder<T>(packet: GatewayDispatchPayload, stage: 'payload' | 'dispatch', handle: () => Promise<T>) {
+		return this.cache.trackMemberCount ? this.cache.withGuildWriteOrder(packet, stage, handle) : handle();
+	}
+
+	/**
+	 * The hot reload handoff for an incoming event: a replacement holds it until it takes over, a new active worker
+	 * skips one its predecessor already handled, and a worker about to be replaced records what it handles.
+	 */
+	private takeHandoff(packet: GatewayDispatchPayload, shardId: number): 'held' | 'skipped' | undefined {
+		if (this.handoffHeld) {
+			if (this.handoffHeld.length < HOT_RELOAD_HANDOFF_LIMIT) this.handoffHeld.push({ packet, shardId });
+			else if (!this.handoffOverflowed) {
+				this.handoffOverflowed = true;
+				this.logger.warn(`Hot reload handoff is holding ${HOT_RELOAD_HANDOFF_LIMIT} events; dropping new ones`);
+			}
+			return 'held';
+		}
+		if (this.dispatchState !== 'active') return;
+		if (this.handoffSkip?.size) {
+			const fingerprint = gatewayEventFingerprint(packet);
+			const remaining = this.handoffSkip.get(fingerprint);
+			if (remaining) {
+				if (remaining === 1) this.handoffSkip.delete(fingerprint);
+				else this.handoffSkip.set(fingerprint, remaining - 1);
+				return 'skipped';
+			}
+		}
+		if (this.handoffRecorded && this.handoffRecorded.length < HOT_RELOAD_HANDOFF_LIMIT) {
+			this.handoffRecorded.push(gatewayEventFingerprint(packet));
+		}
+		return;
+	}
+
+	/** Applies an event to a worker-local cache only; a shared adapter is kept current by the active worker. */
+	private async applyToOwnCache(packet: GatewayDispatchPayload): Promise<null> {
+		if (this.cache.adapter instanceof MemoryAdapter || this.cache.adapter instanceof LimitedMemoryAdapter) {
+			await this.cache.onPacket(packet);
+		}
+		return null;
 	}
 
 	async resumeShard(shardId: number, shardData: MakeRequired<ShardData>) {
@@ -753,11 +863,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	 */
 	private async handleInactivePacket(packet: GatewayDispatchPayload, shardId: number): Promise<null> {
 		if (this.dispatchState === 'standby') this.trackStandbyReadiness(packet, shardId);
-		// A shared adapter is kept current by the active worker; writing it here would apply every change twice.
-		if (this.cache.adapter instanceof MemoryAdapter || this.cache.adapter instanceof LimitedMemoryAdapter) {
-			await this.cache.onPacket(packet);
-		}
-		return null;
+		return this.applyToOwnCache(packet);
 	}
 
 	private trackStandbyReadiness(packet: GatewayDispatchPayload, shardId: number) {
