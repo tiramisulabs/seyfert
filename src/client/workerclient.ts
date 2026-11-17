@@ -114,8 +114,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	private inFlightWork = new Set<Promise<unknown>>();
 	private pausedShard?: { shard: Shard; generation: number };
 	private cancelledSessionHandoff = 0;
-	/** Commits a transferred session; returns the release for the packets it collected meanwhile. */
-	private activateResumedShard?: () => () => void;
+	private activateResumedShard?: (runReadiness: () => Promise<void>) => Promise<() => void>;
 	private hotReloadRequests = new Map<
 		string,
 		{
@@ -485,55 +484,33 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					const resume = this.activateResumedShard;
 					let releaseResumed: (() => void) | undefined;
 					let activated = false;
-					await this.answerReloadStep(data.nonce, async () => {
-						if (data.cancelSessionHandoff !== undefined) {
-							this.cancelledSessionHandoff = Math.max(this.cancelledSessionHandoff, data.cancelSessionHandoff);
-							if (this.pausedShard?.generation === data.cancelSessionHandoff) {
-								const { shard } = this.pausedShard;
-								this.pausedShard = undefined;
-								await shard.connectTransferredSession();
+					await this.answerReloadStep(
+						data.nonce,
+						async () => {
+							if (data.cancelSessionHandoff !== undefined) {
+								this.cancelledSessionHandoff = Math.max(this.cancelledSessionHandoff, data.cancelSessionHandoff);
+								if (this.pausedShard?.generation === data.cancelSessionHandoff) {
+									const { shard } = this.pausedShard;
+									this.pausedShard = undefined;
+									await shard.connectTransferredSession();
+								}
 							}
-						}
-						releaseResumed = resume?.();
-						this.activateResumedShard = undefined;
-						this.dispatchState = 'active';
-						activated = true;
-						return {};
-					});
-					if (!activated) break;
-					if (!fromStandby) {
-						releaseResumed?.();
-						break;
+							if (resume) {
+								releaseResumed = await resume(() => this.replayStandbyReadiness(data.botReady, true));
+								this.activateResumedShard = undefined;
+							}
+							this.dispatchState = 'active';
+							activated = true;
+							return {};
+						},
+						// Enqueue the ACK before replay callbacks can send messages through the manager.
+						() => releaseResumed?.(),
+					);
+					if (activated && fromStandby && !resume) {
+						const readiness = this.replayStandbyReadiness(data.botReady, false);
+						this.trackInFlight(readiness);
+						readiness.catch(error => this.logger.error('Hot reload readiness handlers failed', error));
 					}
-					// Handlers never saw this worker become ready while it was on standby.
-					const readiness = (async () => {
-						for (const step of this.standbyReadiness.splice(0)) {
-							if ('event' in step) {
-								await this.events.runEvent(step.event, this, this.me, -1);
-								continue;
-							}
-							// As in handlePacket, RAW listeners and collectors start first, without being awaited.
-							this.trackInFlight(
-								Promise.allSettled([
-									this.events.runEvent('RAW', this, step.packet, step.shardId, false),
-									this.collectors.run('RAW', step.packet, this),
-								]),
-							);
-							if (resume && step.packet.t === GatewayDispatchEvents.Ready) {
-								// This snapshot came from the temporary session. It must not overwrite replayed cache state.
-								const { t, d } = step.packet;
-								await Promise.all([
-									this.events.runEvent(t, this, d, step.shardId, false),
-									this.collectors.run(t as never, d as never, this),
-								]);
-							} else await this.events.execute(step.packet, this, step.shardId);
-						}
-						if (data.botReady) await this.events.runEvent('BOT_READY', this, this.me, -1);
-					})();
-					this.trackInFlight(readiness);
-					readiness.catch(error => this.logger.error('Hot reload readiness handlers failed', error));
-					// Resumed packets reach handlers only after the readiness handlers set them up, as at startup.
-					if (releaseResumed) readiness.then(releaseResumed, releaseResumed);
 				}
 				break;
 			case 'HOT_RELOAD_STOP':
@@ -581,19 +558,51 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		}
 	}
 
-	private async answerReloadStep(nonce: string, run: () => Awaitable<{ session?: MakeRequired<ShardData> }>) {
+	/** Runs the readiness handlers skipped on standby, in startup order. */
+	private async replayStandbyReadiness(botReady: boolean, resumed: boolean) {
+		for (const step of this.standbyReadiness.splice(0)) {
+			if ('event' in step) {
+				await this.events.runEvent(step.event, this, this.me, -1);
+				continue;
+			}
+			// As in handlePacket, RAW listeners and collectors start first, without being awaited.
+			this.trackInFlight(
+				Promise.allSettled([
+					this.events.runEvent('RAW', this, step.packet, step.shardId, false),
+					this.collectors.run('RAW', step.packet, this),
+				]),
+			);
+			if (resumed && step.packet.t === GatewayDispatchEvents.Ready) {
+				// The temporary session snapshot must not overwrite the shared cache.
+				const { t, d } = step.packet;
+				await Promise.all([
+					this.events.runEvent(t, this, d, step.shardId, false),
+					this.collectors.run(t as never, d as never, this),
+				]);
+			} else await this.events.execute(step.packet, this, step.shardId);
+		}
+		if (botReady) await this.events.runEvent('BOT_READY', this, this.me, -1);
+	}
+
+	private async answerReloadStep(
+		nonce: string,
+		run: () => Awaitable<{ session?: MakeRequired<ShardData> }>,
+		afterSend?: () => void,
+	) {
 		let outcome: Pick<WorkerHotReloadAck, 'session' | 'error'>;
 		try {
 			outcome = await run();
 		} catch (error) {
 			outcome = { error: serializeWorkerError(error) };
 		}
-		await this.postMessage({
+		const sent = this.postMessage({
 			type: 'HOT_RELOAD_ACK',
 			workerId: this.workerId,
 			nonce,
 			...outcome,
 		} as WorkerHotReloadAck);
+		if (!outcome.error) afterSend?.();
+		await sent;
 	}
 
 	private async waitForInFlight(timeout: number) {
@@ -652,16 +661,18 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		const replay: [number, GatewayDispatchPayload][] = [];
 		shard.end('Replacing standby session with original session');
 		shard.data = { ...session };
-		let resolve!: () => void;
-		let reject!: (error: Error) => void;
-		let failure: Error | undefined;
-		const resumed = new Promise<void>((onResume, onFailure) => {
-			resolve = onResume;
-			reject = onFailure;
+		let confirmResume!: () => void;
+		const resumed = new Promise<void>(resolve => {
+			confirmResume = resolve;
 		});
+		let rejectHandoff!: (error: Error) => void;
+		const interrupted = new Promise<never>((_, reject) => {
+			rejectHandoff = reject;
+		});
+		let failure: Error | undefined;
 		const fail = (error: Error) => {
 			failure = error;
-			reject(error);
+			rejectHandoff(error);
 		};
 		shard.options.handlePayload = (id, packet) => {
 			if (packet.t === GatewayDispatchEvents.Ready || replay.length >= 100_000) {
@@ -669,17 +680,15 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				return;
 			}
 			replay.push([id, packet]);
-			if (packet.t === GatewayDispatchEvents.Resumed) resolve();
+			if (packet.t === GatewayDispatchEvents.Resumed) confirmResume();
 		};
-		await Promise.all([shard.connectTransferredSession(fail), resumed]);
-		this.activateResumedShard = () => {
-			if (failure) {
-				throw new SeyfertError('HOT_RELOAD_UNSUPPORTED', { metadata: { detail: failure.message } });
-			}
+		await Promise.all([shard.connectTransferredSession(fail), Promise.race([resumed, interrupted])]);
+		this.activateResumedShard = async runReadiness => {
+			if (failure) throw failure;
+			// The original worker can still take the session back if the candidate fails during readiness.
+			await Promise.race([runReadiness(), interrupted]);
+			if (failure) throw failure;
 			shard.commitTransferredSession();
-			this.dispatchState = 'active';
-			// Replayed and newly arriving packets keep collecting until the caller releases them, once the
-			// readiness handlers they may depend on have run.
 			return () => {
 				shard.options.handlePayload = handlePayload;
 				for (const [id, packet] of replay.splice(0)) {

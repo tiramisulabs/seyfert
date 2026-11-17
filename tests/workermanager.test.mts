@@ -607,6 +607,7 @@ type FakeBehavior = {
 	crash?: boolean;
 	failSpawn?: boolean;
 	unreachable?: boolean;
+	exitOnActivation?: boolean;
 	cannotStop?: boolean;
 };
 
@@ -656,6 +657,12 @@ function hotReloadHarness(
 			case 'HOT_RELOAD_STOP':
 			case 'HOT_RELOAD_DRAIN':
 				log.push(`${body.type.slice('HOT_RELOAD_'.length).toLowerCase()} ${key}`);
+				if (body.type === 'HOT_RELOAD_ACTIVATE' && options.behavior?.(workerId, generation).exitOnActivation) {
+					setImmediate(() =>
+						manager.handleWorkerExit(workerId, generation, new Error('replacement exited during activation')),
+					);
+					break;
+				}
 				void Promise.resolve(body.type === 'HOT_RELOAD_DRAIN' ? options.holdDrain : undefined).then(() =>
 					send(workerId, generation, {
 						type: 'HOT_RELOAD_ACK',
@@ -788,6 +795,27 @@ describe('WorkerManager hot reload', () => {
 		expect(progress.at(-1)).toBe('failed');
 		// Nothing was switched, stopped or drained, and worker 1 was not attempted.
 		expect(harness.log.filter(line => !line.startsWith('bot') && !line.startsWith('terminate'))).toEqual([]);
+		await expect(harness.manager.tellWorker(0, () => null, {})).resolves.toBe('0:0');
+	});
+
+	test('rolls back when the replacement exits during activation', async () => {
+		const harness = hotReloadHarness({
+			behavior: (workerId, generation) => ({ exitOnActivation: workerId === 0 && generation > 0 }),
+		});
+		await harness.start();
+
+		const result = await harness.manager.hotReload();
+
+		expect(result.workers).toEqual([
+			{ workerId: 0, ok: false, error: 'replacement exited during activation', ms: expect.any(Number) },
+		]);
+		expect(harness.log.filter(line => !line.startsWith('bot'))).toEqual([
+			'stop 0:0',
+			'activate 0:1',
+			'activate 0:0',
+			'terminate 0:1',
+		]);
+		expect(harness.manager.promises.size).toBe(0);
 		await expect(harness.manager.tellWorker(0, () => null, {})).resolves.toBe('0:0');
 	});
 
@@ -1145,8 +1173,8 @@ describe('WorkerClient hot reload', () => {
 		}
 	});
 
-	test('a resumed session replays its packets only after the readiness handlers ran', async () => {
-		const { client, onPacket } = workerClient();
+	test.each(['ready', 'overflow'])('a resumed session waits for readiness before takeover (%s)', async outcome => {
+		const { client, posted, onPacket } = workerClient();
 		const sequence: string[] = [];
 		let releaseReady!: () => void;
 		const readyHeld = new Promise<void>(resolve => {
@@ -1158,20 +1186,24 @@ describe('WorkerClient hot reload', () => {
 			// A slow ready handler, like one that loads state the other handlers need.
 			if (name === 'READY') await readyHeld;
 		});
+		let activating: Promise<void> | undefined;
+		let failHandoff: ((error: Error) => void) | undefined;
 		const shard = {
 			isReady: true,
 			isOpen: true,
 			data: { session_id: 'standby', resume_seq: 1, resume_gateway_url: 'wss://resume.discord.gg' },
 			options: {
 				handlePayload: vi.fn((_shardId: number, packet: { t: string }) => {
+					expect(posted).toContainEqual({ type: 'HOT_RELOAD_ACK', nonce: 'activate', workerId: 0 });
 					sequence.push(`replayed ${packet.t}`);
 				}),
 			},
 			end: vi.fn(),
-			close: vi.fn(),
+			close: vi.fn((_code: number, reason: string) => failHandoff?.(new Error(reason))),
 			commitTransferredSession: vi.fn(),
 			// The transferred session replays a message, then confirms the resume.
-			async connectTransferredSession() {
+			async connectTransferredSession(onFailure: (error: Error) => void) {
+				failHandoff = onFailure;
 				shard.options.handlePayload(0, { t: 'MESSAGE_CREATE' });
 				shard.options.handlePayload(0, { t: 'RESUMED' });
 			},
@@ -1187,17 +1219,33 @@ describe('WorkerClient hot reload', () => {
 				session: { session_id: 'original', resume_seq: 7, resume_gateway_url: 'wss://resume.discord.gg' },
 			});
 
-			await client.handleManagerMessages({ type: 'HOT_RELOAD_ACTIVATE', nonce: 'activate', botReady: false });
+			activating = client.handleManagerMessages({ type: 'HOT_RELOAD_ACTIVATE', nonce: 'activate', botReady: false });
 			await vi.waitFor(() => expect(sequence).toContain('READY'));
-			await new Promise(resolve => setImmediate(resolve));
-			expect(sequence.some(entry => entry.startsWith('replayed'))).toBe(false);
+			expect(posted).not.toContainEqual(expect.objectContaining({ nonce: 'activate' }));
+			expect(shard.commitTransferredSession).not.toHaveBeenCalled();
+			expect(sequence).toEqual(['WORKER_SHARDS_CONNECTED', 'READY']);
 
-			releaseReady();
-			await vi.waitFor(() =>
-				expect(sequence).toEqual(['WORKER_SHARDS_CONNECTED', 'READY', 'replayed MESSAGE_CREATE', 'replayed RESUMED']),
-			);
+			if (outcome === 'overflow') {
+				const packet = { t: 'MESSAGE_CREATE' };
+				for (let received = 0; received < 100_000; received++) shard.options.handlePayload(0, packet);
+				await activating;
+				expect(posted.at(-1)).toMatchObject({
+					type: 'HOT_RELOAD_ACK',
+					nonce: 'activate',
+					error: { message: 'Session handoff could not replay' },
+				});
+				expect(shard.commitTransferredSession).not.toHaveBeenCalled();
+				expect(sequence).toEqual(['WORKER_SHARDS_CONNECTED', 'READY']);
+			} else {
+				releaseReady();
+				await activating;
+				expect(shard.commitTransferredSession).toHaveBeenCalledOnce();
+				expect(posted.at(-1)).toEqual({ type: 'HOT_RELOAD_ACK', nonce: 'activate', workerId: 0 });
+				expect(sequence).toEqual(['WORKER_SHARDS_CONNECTED', 'READY', 'replayed MESSAGE_CREATE', 'replayed RESUMED']);
+			}
 		} finally {
 			releaseReady();
+			await activating;
 			runEvent.mockRestore();
 			client.shards.clear();
 			client.setServices({ cache: { adapter: new MemoryAdapter() } });

@@ -67,6 +67,7 @@ type CustomWorker = { ready?: boolean } & WorkerState;
 type ManagedWorker = (ClusterWorker | WorkerThreadsWorker | { ready?: boolean }) & WorkerState;
 type PendingReplacement = {
 	ready: Promise<void>;
+	exited: Promise<never>;
 	started(): void;
 	markReady(): void;
 	fail(error: unknown): void;
@@ -734,14 +735,20 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 			case 'EVAL_TO_WORKER':
 				{
 					const nonce = this.generateNonce();
+					const target = {
+						nonce,
+						func: message.func,
+						type: 'EXECUTE_EVAL_TO_WORKER',
+						toWorkerId: message.toWorkerId,
+						vars: message.vars,
+					} satisfies ManagerExecuteEvalToWorker;
+					// A replacement can evaluate itself from a readiness handler before it is promoted.
+					const evaluateSelf =
+						standby && this.switchingWorkerId === message.workerId && message.toWorkerId === message.workerId;
 					const response = await this.sendRequest(nonce, 'Worker evaluation', () =>
-						this.postMessage(message.toWorkerId, {
-							nonce,
-							func: message.func,
-							type: 'EXECUTE_EVAL_TO_WORKER',
-							toWorkerId: message.toWorkerId,
-							vars: message.vars,
-						} satisfies ManagerExecuteEvalToWorker),
+						evaluateSelf
+							? this.postToInstance(message.toWorkerId, generation, target)
+							: this.postMessage(message.toWorkerId, target),
 					);
 					await reply({
 						nonce: message.nonce,
@@ -789,10 +796,12 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 		operation: string,
 		send: () => Awaitable<unknown>,
 		timeoutMs?: number,
+		interrupted?: Promise<never>,
 	): Promise<T> {
 		const response = this.generateSendPromise<T>(nonce, operation, timeoutMs);
 		try {
-			const [result] = await Promise.all([response, send()]);
+			const request = Promise.all([response, send()]);
+			const [result] = await (interrupted ? Promise.race([request, interrupted]) : request);
 			return result;
 		} catch (error) {
 			const pending = this.promises.get(nonce);
@@ -1041,6 +1050,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 			};
 			// The deadline covers spawning too, so an adapter whose spawn never settles cannot hold the reload.
 			await Promise.race([
+				pending.exited,
 				(async () => {
 					const tracking = {
 						add: (worker: ManagedWorker) => this.standbyWorkers.set(key, worker),
@@ -1080,7 +1090,6 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 			return finish(error);
 		} finally {
 			clearTimeout(timer);
-			this.pendingReplacements.delete(key);
 		}
 
 		// Stop admitting work on the old worker before activating its replacement. Independent gateway
@@ -1120,6 +1129,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 						: { type: 'HOT_RELOAD_STOP' },
 					'Hot reload stop',
 					options.resumeSession ? drainTimeout + HOT_RELOAD_SWITCH_TIMEOUT_MS : HOT_RELOAD_SWITCH_TIMEOUT_MS,
+					options.resumeSession ? pending.exited : undefined,
 				);
 				if (options.resumeSession) {
 					if (!stopped.session) throw new Error('Old worker did not provide a session checkpoint.');
@@ -1129,6 +1139,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 						{ type: 'HOT_RELOAD_RESUME', session: stopped.session },
 						'Hot reload session resume',
 						readyTimeout,
+						pending.exited,
 					);
 				}
 			} catch (error) {
@@ -1146,7 +1157,8 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 					generation,
 					{ type: 'HOT_RELOAD_ACTIVATE', botReady: this.keys().next().value === workerId },
 					'Hot reload activation',
-					HOT_RELOAD_SWITCH_TIMEOUT_MS,
+					options.resumeSession ? readyTimeout : HOT_RELOAD_SWITCH_TIMEOUT_MS,
+					pending.exited,
 				);
 			} catch (error) {
 				activationError = error;
@@ -1169,6 +1181,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 			// The old worker answered the last heartbeat; don't let the switch read as a missed one.
 			this.heartbeater.acknowledge(workerId);
 		} finally {
+			this.pendingReplacements.delete(key);
 			this.switchingWorkerId = undefined;
 		}
 
@@ -1207,14 +1220,15 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 		let resolve!: () => void;
 		let reject!: (error: unknown) => void;
 		let started = false;
-		const ready = new Promise<void>((res, rej) => {
-			resolve = res;
-			reject = rej;
+		const ready = new Promise<void>(started => {
+			resolve = started;
 		});
-		// The race in hotReloadWorker observes the rejection; this keeps a late failure from going unhandled.
-		ready.catch(() => undefined);
+		const exited = new Promise<never>((_, failed) => {
+			reject = failed;
+		});
 		const pending: PendingReplacement = {
 			ready,
+			exited,
 			started: () => {
 				if (started) return;
 				started = true;
@@ -1270,6 +1284,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 			| Omit<ManagerHotReloadDrain, 'nonce'>,
 		operation: string,
 		timeoutMs?: number,
+		interrupted?: Promise<never>,
 	) {
 		const nonce = this.generateNonce();
 		const ack = await this.sendRequest<WorkerHotReloadAck>(
@@ -1277,6 +1292,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 			operation,
 			() => this.postToInstance(workerId, generation, { ...body, nonce } as ManagerMessages),
 			timeoutMs,
+			interrupted,
 		);
 		if (ack.error) throw deserializeWorkerError(ack.error);
 		return ack;
@@ -1539,6 +1555,7 @@ export interface HotReloadOptions extends WorkerHotReloadRequestOptions {
 	 * Experimental manager-only handoff for native workers with one shard and WorkerAdapter.
 	 * The replacement still uses an Identify to start up. The original stream pauses while work drains
 	 * and resumes from the last received sequence, subject to Discord accepting the session and replay.
+	 * The replacement must finish its readiness handlers within `readyTimeout` before taking over.
 	 * Outbound Gateway requests to the paused worker may time out. If activation is uncertain, rollback
 	 * can replay events that the replacement already dispatched.
 	 */
