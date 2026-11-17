@@ -876,11 +876,14 @@ describe('WorkerClient hot reload', () => {
 
 	test('a replacement only builds its cache until it is activated, and a replaced worker ignores the gateway', async () => {
 		const { client, posted, onPacket } = workerClient();
-		const execute = vi.spyOn(client.events, 'execute').mockResolvedValue(undefined);
-		const runEvent = vi.spyOn(client.events, 'runEvent').mockResolvedValue(undefined);
-		const handled = () => execute.mock.calls.map(([packet]) => packet.t);
-		// Every handled packet also fires RAW; only the ready handlers matter here.
-		const ran = () => runEvent.mock.calls.map(([name]) => name).filter(name => name !== 'RAW');
+		// Handlers in the order they ran, as packet types and event names; every packet also fires RAW.
+		const sequence: string[] = [];
+		const execute = vi.spyOn(client.events, 'execute').mockImplementation(async packet => {
+			sequence.push(packet.t);
+		});
+		const runEvent = vi.spyOn(client.events, 'runEvent').mockImplementation(async name => {
+			if (name !== 'RAW') sequence.push(name);
+		});
 		try {
 			client.setWorkerData(workerData(true));
 			await onPacket({ t: 'READY', d: { user: { id: '1', username: 'bot' }, application: { id: '2', flags: 0 } } });
@@ -888,33 +891,67 @@ describe('WorkerClient hot reload', () => {
 				t: 'GUILD_CREATE',
 				d: { id: 'guild-1', name: 'standby', joined_at: '2026-01-01T00:00:00.000Z' },
 			});
-			expect(handled()).toEqual([]);
-			expect(ran()).toEqual([]);
+			await onPacket({ t: 'GUILDS_READY', d: { guilds: ['guild-1'] } });
+			expect(sequence).toEqual([]);
 			expect(await client.cache.guilds?.raw('guild-1')).toMatchObject({ name: 'standby' });
 
 			await client.handleManagerMessages({ type: 'HOT_RELOAD_ACTIVATE', nonce: 'activate', botReady: true });
 			expect(posted).toContainEqual({ type: 'HOT_RELOAD_ACK', nonce: 'activate', workerId: 0 });
-			// The ready handlers it skipped on standby run once it takes over.
-			expect(handled()).toEqual(['READY']);
-			expect(ran()).toEqual(['WORKER_SHARDS_CONNECTED', 'WORKER_READY', 'BOT_READY']);
+			// The readiness handlers it skipped on standby run once it takes over, in startup order.
+			expect(sequence).toEqual(['WORKER_SHARDS_CONNECTED', 'READY', 'WORKER_READY', 'GUILDS_READY', 'BOT_READY']);
 			await onPacket({ t: 'GUILD_UPDATE', d: { id: 'guild-1', name: 'active' } });
-			expect(handled()).toEqual(['READY', 'GUILD_UPDATE']);
+			expect(sequence.at(-1)).toBe('GUILD_UPDATE');
 
 			await client.handleManagerMessages({ type: 'HOT_RELOAD_STOP', nonce: 'stop' });
 			expect(posted).toContainEqual({ type: 'HOT_RELOAD_ACK', nonce: 'stop', workerId: 0 });
+			const handled = sequence.length;
 			await onPacket({ t: 'GUILD_UPDATE', d: { id: 'guild-1', name: 'stopped' } });
-			expect(handled()).toEqual(['READY', 'GUILD_UPDATE']);
+			expect(sequence).toHaveLength(handled);
 			// Its own cache stays current in case it has to take events back.
 			expect(await client.cache.guilds?.raw('guild-1')).toMatchObject({ name: 'stopped' });
 
 			// Resuming after a failed switch hands events back without replaying ready handlers.
 			await client.handleManagerMessages({ type: 'HOT_RELOAD_ACTIVATE', nonce: 'resume', botReady: false });
-			expect(ran()).toEqual(['WORKER_SHARDS_CONNECTED', 'WORKER_READY', 'BOT_READY']);
 			await onPacket({ t: 'GUILD_UPDATE', d: { id: 'guild-1', name: 'resumed' } });
-			expect(handled()).toEqual(['READY', 'GUILD_UPDATE', 'GUILD_UPDATE']);
+			expect(sequence.slice(handled)).toEqual(['GUILD_UPDATE']);
 		} finally {
 			execute.mockRestore();
 			runEvent.mockRestore();
+			client.setWorkerData(workerData(false));
+		}
+	});
+
+	test('a replaced worker waits for RAW listeners still running before ending its sessions', async () => {
+		const { client, onPacket } = workerClient();
+		let release!: () => void;
+		const execute = vi.spyOn(client.events, 'execute').mockResolvedValue(undefined);
+		const runEvent = vi.spyOn(client.events, 'runEvent').mockImplementation(name =>
+			name === 'RAW'
+				? new Promise<void>(resolve => {
+						release = resolve;
+					})
+				: Promise.resolve(),
+		);
+		const end = vi.fn();
+		try {
+			client.setWorkerData(workerData(false));
+			client.shards.set(0, { end } as never);
+			// The packet itself is done; only its RAW listener is still running.
+			await onPacket({ t: 'GUILD_UPDATE', d: { id: 'guild-1', name: 'busy' } });
+
+			await client.handleManagerMessages({ type: 'HOT_RELOAD_STOP', nonce: 'stop' });
+			const draining = client.handleManagerMessages({ type: 'HOT_RELOAD_DRAIN', nonce: 'drain', drainTimeout: 60_000 });
+			await new Promise(resolve => setImmediate(resolve));
+			expect(end).not.toHaveBeenCalled();
+
+			release();
+			await draining;
+			expect(end).toHaveBeenCalledOnce();
+		} finally {
+			release?.();
+			execute.mockRestore();
+			runEvent.mockRestore();
+			client.shards.clear();
 			client.setWorkerData(workerData(false));
 		}
 	});

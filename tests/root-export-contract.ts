@@ -21,6 +21,9 @@ import {
 	type GatewayPresenceClientStatus,
 	type GroupDMChannelStructure,
 	HeadingLevel,
+	type HotReloadOptions,
+	type HotReloadProgress,
+	type HotReloadResult,
 	type HttpConfig,
 	LabelComponent,
 	type LangsHandler,
@@ -52,8 +55,11 @@ import {
 	type Timestamp,
 	TimestampStyle,
 	type TopLevelComponents,
+	type WorkerClient,
 	type WorkerData,
+	type WorkerHotReloadRequestOptions,
 	type WorkerInfo,
+	type WorkerManager,
 	type WorkerManagerOptions,
 	type WorkerShardInfo,
 } from 'seyfert';
@@ -136,6 +142,17 @@ expectType<ShardData>({ resume_seq: null });
 expectType<WorkerData['mode']>('threads');
 expectType<WorkerInfo>({ shards: [] });
 expectType<WorkerShardInfo>({ shardId: 0, workerId: 0, open: false, latency: 0, resumable: false });
+
+declare const workerManager: WorkerManager;
+declare const workerClient: WorkerClient;
+const hotReloadOptions: HotReloadOptions = {
+	workerIds: [0],
+	continueOnError: true,
+	onProgress: (event: HotReloadProgress) => expectType<string>(event.stage),
+};
+expectType<Promise<HotReloadResult>>(workerManager.hotReload(hotReloadOptions));
+const workerHotReloadOptions: WorkerHotReloadRequestOptions = { readyTimeout: 30_000, drainTimeout: 5_000 };
+expectType<Promise<HotReloadResult>>(workerClient.requestHotReload(workerHotReloadOptions));
 declare const managerMessage: ManagerMessages;
 expectType<string>(managerMessage.type);
 expectType<SerializedWorkerValue>({ type: 'record', value: { cause: ['nested', 1, null] } });

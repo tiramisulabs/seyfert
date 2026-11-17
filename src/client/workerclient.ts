@@ -106,9 +106,13 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	 * until the manager switches to it; the worker it replaces then stops and drains.
 	 */
 	private dispatchState: 'active' | 'standby' | 'stopped' = 'active';
-	/** READY packets received on standby, replayed to handlers when the replacement takes over. */
-	private standbyReady = new Map<number, GatewayDispatchPayload>();
-	private inFlightPackets = new Set<Promise<unknown>>();
+	/** The readiness handlers skipped on standby, in startup order, replayed when the replacement takes over. */
+	private standbyReadiness: (
+		| { event: 'WORKER_SHARDS_CONNECTED' | 'WORKER_READY' }
+		| { packet: GatewayDispatchPayload; shardId: number }
+	)[] = [];
+	/** Dispatched work a worker replaced by a hot reload waits for before it closes its sessions. */
+	private inFlightWork = new Set<Promise<unknown>>();
 	private hotReloadRequests = new Map<
 		string,
 		{
@@ -175,7 +179,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	setWorkerData(data: WorkerData) {
 		workerData = data;
 		this.dispatchState = data?.hotReload ? 'standby' : 'active';
-		this.standbyReady.clear();
+		this.standbyReadiness = [];
 	}
 
 	get workerData() {
@@ -483,11 +487,10 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					} satisfies WorkerHotReloadAck);
 					if (!fromStandby) break;
 					// Handlers never saw this worker become ready while it was on standby.
-					const ready = [...this.standbyReady];
-					this.standbyReady.clear();
-					for (const [shardId, packet] of ready) await this.events.execute(packet, this, shardId);
-					await this.events.runEvent('WORKER_SHARDS_CONNECTED', this, this.me, -1);
-					await this.events.runEvent('WORKER_READY', this, this.me, -1);
+					for (const step of this.standbyReadiness.splice(0)) {
+						if ('event' in step) await this.events.runEvent(step.event, this, this.me, -1);
+						else await this.events.execute(step.packet, this, step.shardId);
+					}
 					if (data.botReady) await this.events.runEvent('BOT_READY', this, this.me, -1);
 				}
 				break;
@@ -505,7 +508,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					this.dispatchState = 'stopped';
 					let timer: NodeJS.Timeout | undefined;
 					await Promise.race([
-						Promise.allSettled(this.inFlightPackets),
+						Promise.allSettled(this.inFlightWork),
 						new Promise(resolve => {
 							timer = setTimeout(resolve, data.drainTimeout);
 						}),
@@ -729,12 +732,14 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		const handled = this.cache.trackMemberCount
 			? this.cache.withGuildWriteOrder(packet, 'dispatch', () => this.handlePacket(packet, shardId))
 			: this.handlePacket(packet, shardId);
-		if (this.dispatchState !== 'active') return handled;
-		// A worker replaced by a hot reload lets these finish before it closes its sessions.
-		this.inFlightPackets.add(handled);
-		const settle = () => this.inFlightPackets.delete(handled);
-		handled.then(settle, settle);
+		if (this.dispatchState === 'active') this.trackInFlight(handled);
 		return handled;
+	}
+
+	private trackInFlight(work: Promise<unknown>) {
+		this.inFlightWork.add(work);
+		const settle = () => this.inFlightWork.delete(work);
+		work.then(settle, settle);
 	}
 
 	/**
@@ -752,11 +757,15 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 	private trackStandbyReadiness(packet: GatewayDispatchPayload, shardId: number) {
 		switch (packet.t) {
+			// Mirrors handlePacket's readiness branches, recording each handler where startup would run it.
 			case GatewayDispatchEvents.Ready:
 				this.botId = packet.d.user.id;
 				this.applicationId = packet.d.application.id;
 				this.me = Transformers.ClientUser(this, packet.d.user, packet.d.application) as never;
-				this.standbyReady.set(shardId, packet);
+				if ([...this.shards.values()].every(shard => shard.data.session_id)) {
+					this.standbyReadiness.push({ event: 'WORKER_SHARDS_CONNECTED' });
+				}
+				this.standbyReadiness.push({ packet, shardId });
 				break;
 			case GatewayDispatchEvents.GuildsReady:
 				if ([...this.shards.values()].every(shard => shard.isReady)) {
@@ -766,7 +775,9 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 					}).catch(error => {
 						this.logger.error('Failed to send WORKER_READY to the worker manager', error);
 					});
+					this.standbyReadiness.push({ event: 'WORKER_READY' });
 				}
+				this.standbyReadiness.push({ packet, shardId });
 				break;
 		}
 	}
@@ -781,11 +792,13 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			packet = pluginPacket;
 		}
 
-		void this.cache.withoutGuildWriteOrder(() =>
-			Promise.allSettled([
-				this.events.runEvent('RAW', this, packet, shardId, false),
-				this.collectors.run('RAW', packet, this),
-			]),
+		this.trackInFlight(
+			this.cache.withoutGuildWriteOrder(() =>
+				Promise.allSettled([
+					this.events.runEvent('RAW', this, packet, shardId, false),
+					this.collectors.run('RAW', packet, this),
+				]),
+			),
 		);
 		switch (packet.t) {
 			case 'GUILD_MEMBER_UPDATE':
