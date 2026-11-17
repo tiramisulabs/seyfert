@@ -50,6 +50,7 @@ export class Shard {
 	private handledWebsocket?: BaseSocket;
 	private localClose?: { websocket: BaseSocket; applyPolicy: boolean };
 	private firstHeartbeatTimeout?: NodeJS.Timeout;
+	private transferredSessionFailure?: (error: Error) => void;
 
 	bucket: DynamicBucket;
 	offlineSendQueue: ((_?: unknown) => void)[] = [];
@@ -133,6 +134,18 @@ export class Shard {
 	async connect() {
 		if (this.connectingLifecycle === undefined) this.reconnectPromise = undefined;
 		return this.connectSocket(false);
+	}
+
+	/** @internal Transfers a resumable session without waiting on the Identify queue. */
+	async connectTransferredSession(onFailure?: (error: Error) => void) {
+		if (!this.resumable) throw new Error('Shard session is not resumable.');
+		this.transferredSessionFailure = onFailure;
+		await this.connectSocket(true);
+	}
+
+	/** @internal Enables normal reconnect policy after the session handoff commits. */
+	commitTransferredSession() {
+		this.transferredSessionFailure = undefined;
 	}
 
 	private async connectSocket(immediate: boolean) {
@@ -310,8 +323,8 @@ export class Shard {
 	}
 
 	/**
-	 * Closes the session for good with a normal (1000) close. Discord drops the session right away
-	 * instead of keeping it resumable, and the shard does not reconnect.
+	 * Requests a normal (1000) close and prevents this shard from reconnecting.
+	 * The session is invalidated when Discord receives the close frame.
 	 */
 	end(reason = 'Shard ended') {
 		this.lifecycle++;
@@ -330,6 +343,10 @@ export class Shard {
 		reason: string,
 		immediate = code === ShardSocketCloseCodes.Timeout ? false : this.resumable,
 	) {
+		if (this.transferredSessionFailure) {
+			this.close(ShardSocketCloseCodes.Reconnect, reason);
+			return Promise.resolve();
+		}
 		if (this.reconnectPromise) return this.reconnectPromise;
 		const reconnect = (async () => {
 			const lifecycle = ++this.lifecycle;
@@ -411,7 +428,7 @@ export class Shard {
 	}
 
 	onpacket(packet: GatewayReceivePayload) {
-		if (packet.s !== null) {
+		if (typeof packet.s === 'number') {
 			this.data.resume_seq = packet.s;
 		}
 
@@ -444,7 +461,7 @@ export class Shard {
 				return this.reconnectWith(ShardSocketCloseCodes.Reconnect, 0, 'Discord requested a reconnect', true);
 			case GatewayOpcodes.InvalidSession: {
 				const canResume = packet.d && this.resumable;
-				if (!canResume) this.resetSession();
+				if (!canResume && !this.transferredSessionFailure) this.resetSession();
 				return this.reconnectWith(
 					ShardSocketCloseCodes.Reconnect,
 					0,
@@ -655,6 +672,12 @@ export class Shard {
 		}
 
 		try {
+			if (this.transferredSessionFailure) {
+				const onFailure = this.transferredSessionFailure;
+				this.transferredSessionFailure = undefined;
+				onFailure(new Error(close.reason || closeMessage));
+				return;
+			}
 			if (!close.locallyInitiated || close.applyPolicy) {
 				switch (close.code) {
 					case 1000:

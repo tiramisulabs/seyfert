@@ -1,7 +1,8 @@
-import { createHash } from 'node:crypto';
 import type { ApiRequestOptions, CustomWorkerClientEvents, HttpMethods } from '../..';
-import type { Identify } from '../../common';
+import type { Identify, MakeRequired } from '../../common';
 import type { GatewayDispatchPayload } from '../../types';
+import type { ShardData } from './shared';
+import type { SerializedWorkerError } from './workermanager';
 
 export const WORKER_TIMEOUT_MS = 60_000;
 
@@ -103,27 +104,6 @@ export interface WorkerHotReloadRequestOptions {
 	drainTimeout?: number;
 	/** Keep reloading the remaining workers after one fails. @default false */
 	continueOnError?: boolean;
-	/**
-	 * How far apart the old and new gateway sessions may receive the same event and still have it handled once.
-	 * Each switch waits about twice this long. @default 1000
-	 */
-	handoffWindow?: number;
-}
-
-/**
- * The most events a worker records or holds during one hot reload handoff, a bound in case the switch never finishes.
- * @internal
- */
-export const HOT_RELOAD_HANDOFF_LIMIT = 100_000;
-
-/**
- * Identifies a gateway event across sessions, so the two workers in a hot reload handoff can tell which events
- * the other already handled. The same event carries the same payload on every session of a shard.
- */
-export function gatewayEventFingerprint(packet: GatewayDispatchPayload) {
-	return createHash('sha1')
-		.update(`${packet.t}:${JSON.stringify(packet.d)}`)
-		.digest('base64');
 }
 
 export type WorkerRequestHotReload = CreateWorkerMessage<
@@ -132,11 +112,10 @@ export type WorkerRequestHotReload = CreateWorkerMessage<
 >;
 export type WorkerHotReloadAck = CreateWorkerMessage<
 	'HOT_RELOAD_ACK',
-	{
-		nonce: string;
-		/** Answering a stop: fingerprints of the events this worker handled since it started recording. */
-		handled?: string[];
-	}
+	{ nonce: string } & (
+		| { session?: MakeRequired<ShardData>; error?: never }
+		| { error: SerializedWorkerError; session?: never }
+	)
 >;
 
 export type BaseWorkerMessage =

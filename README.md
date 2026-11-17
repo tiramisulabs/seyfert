@@ -23,7 +23,7 @@ Seyfert brings Discord's API and gateway together with typed commands, interacti
 - **Middleware and localization:** Share checks and preparation across commands, pass metadata to handlers, and translate command definitions and responses.
 - **Interactions and builders:** Handle components and modals through dedicated contexts. Build responses with embeds, buttons, select menus, and layout components.
 - **Discord resources:** Work with transformed structures and resource methods, or use the REST client directly when you need access to a route.
-- **Gateway and cache:** Handle gateway and custom events, distribute connections across shards and workers, and choose which resources to cache with configurable adapters. With the worker manager, `manager.hotReload()` swaps workers for freshly loaded ones without taking their shards offline.
+- **Gateway and cache:** Handle gateway and custom events, distribute connections across shards and workers, and choose which resources to cache with configurable adapters. With the worker manager, `manager.hotReload()` restarts workers one at a time with freshly loaded code. Like resharding, the handoff can lose or duplicate gateway events; it does not transfer application state.
 - **Plugins:** Package reusable commands, events, middleware, and client extensions with lifecycle hooks for setup and cleanup.
 
 Options are typed from their declaration: a required option is a `string` in the handler, and making it optional adds `undefined` to its type.
