@@ -20,6 +20,7 @@ import {
 	type GatewayMessageCreateDispatchData,
 	type GatewayPresenceClientStatus,
 	type GroupDMChannelStructure,
+	type HandlerReloadResult,
 	HeadingLevel,
 	type HotReloadOptions,
 	type HotReloadProgress,
@@ -145,6 +146,10 @@ expectType<WorkerShardInfo>({ shardId: 0, workerId: 0, open: false, latency: 0, 
 
 declare const workerManager: WorkerManager;
 declare const workerClient: WorkerClient;
+// File reloads report what reloaded and what kept its previous entries; reloadAll keeps its void result.
+expectType<Promise<HandlerReloadResult>>(workerClient.components.reloadFiles());
+expectType<Promise<HandlerReloadResult>>(workerClient.commands.reloadFiles(false));
+expectType<Promise<void>>(workerClient.commands.reloadAll());
 const hotReloadOptions: HotReloadOptions = {
 	workerIds: [0],
 	continueOnError: true,

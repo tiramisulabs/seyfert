@@ -119,6 +119,8 @@ export const SeyfertErrorMessages = {
 	CANNOT_USE_REPLY: 'Cannot use reply in this interaction.',
 	CANNOT_USE_MODAL: 'Cannot use modal without an interaction.',
 	RELOAD_NOT_SUPPORTED: 'Reload in Cloudflare worker is not supported.',
+	RELOAD_EMPTY: 'The reloaded file exported nothing the handler could load.',
+	RELOAD_FAILED: 'Some files could not be reloaded.',
 	API_WORKER_PROXY_PARENT_REQUIRED: 'Cannot use workerProxy without a parent.',
 	WORKER_TIMEOUT: 'Worker request timed out.',
 	WORKER_THREADS_REQUIRED: 'worker_threads is required for this operation.',

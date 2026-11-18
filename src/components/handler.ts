@@ -12,6 +12,7 @@ import { BaseCommand, type ResolvedRegisteredMiddlewares, type UsingClient } fro
 import type { FileLoaded } from '../commands/handler';
 import {
 	BaseHandler,
+	type HandlerReloadResult,
 	isCloudflareWorker,
 	type Logger,
 	magicImport,
@@ -354,28 +355,87 @@ export class ComponentHandler extends BaseHandler {
 				x.__filePath === path,
 		);
 		if (!component?.__filePath) return null;
-		delete require.cache[component.__filePath];
-		const index = this.client.components.commands.findIndex(x => x.__filePath === component.__filePath);
-		if (index === -1) return null;
-		this.client.components.commands.splice(index, 1);
-		const imported = await magicImport(component.__filePath).then(x => x.default ?? x);
+		try {
+			const reloaded = await this.reloadFile(component.__filePath);
+			// A plugin transform that removed every component reports no reload, as before.
+			return reloaded.components.length ? reloaded.imported : null;
+		} catch (error) {
+			if (!SeyfertError.is(error, 'RELOAD_EMPTY')) throw error;
+			this.logger.warn(error.message, component.__filePath);
+			return null;
+		}
+	}
+
+	/**
+	 * Reloads a component file the way `load()` reads it, through `onFile`, so a file can export several
+	 * components. Every entry from the file is replaced, in place, by what it exports now. A file that fails to
+	 * import or exports nothing loadable keeps its previous entries.
+	 */
+	private async reloadFile(filePath: string) {
+		delete require.cache[filePath];
+		const imported = await magicImport(filePath);
 		const options = (this.client as PluginComponentLoadOptionsProvider).createPluginComponentLoadOptions?.() ?? {};
-		const command = this.materializeComponent(imported, options, component.__filePath);
-		if (!command) return null;
-		this.client.components.commands.splice(index, 0, command);
-		return imported;
+		const components: ComponentCommands[] = [];
+		let exported = 0;
+		for (const value of this.onFile({ ...imported, default: imported.default ?? imported }) ?? []) {
+			let instance: ReturnType<typeof this.callback>;
+			try {
+				instance = this.callback(value, options.create);
+			} catch (e) {
+				this.logger.warn(e, value);
+				continue;
+			}
+			if (!(instance instanceof ModalCommand || instance instanceof ComponentCommand)) continue;
+			exported++;
+			// A plugin transform may still remove it on purpose, unlike a file that exports nothing.
+			const component = this.materializeComponent(instance, options, filePath);
+			if (component) components.push(component);
+		}
+		if (!exported) {
+			throw new SeyfertError('RELOAD_EMPTY', { metadata: { path: filePath } });
+		}
+		const index = this.commands.findIndex(x => x.__filePath === filePath);
+		for (let i = this.commands.length - 1; i >= 0; i--) {
+			if (this.commands[i].__filePath === filePath) this.commands.splice(i, 1);
+		}
+		this.commands.splice(index === -1 ? this.commands.length : index, 0, ...components);
+		return { imported: imported.default ?? imported, components };
+	}
+
+	/**
+	 * Reloads every loaded component file and reports which files reloaded and which failed or exported nothing.
+	 * Failed files keep their previous components. With `stopIfFail`, it stops at the first failed file and throws a
+	 * `RELOAD_FAILED` error carrying the report instead of returning it.
+	 */
+	async reloadFiles(stopIfFail = true): Promise<HandlerReloadResult> {
+		if (isCloudflareWorker()) {
+			throw new SeyfertError('RELOAD_NOT_SUPPORTED', {
+				metadata: { detail: 'Reload in Cloudflare worker is not supported' },
+			});
+		}
+		const result: HandlerReloadResult = { reloaded: [], failed: [] };
+		const files = new Set(this.commands.flatMap(x => (x.__filePath ? [x.__filePath] : [])));
+		for (const path of files) {
+			try {
+				await this.reloadFile(path);
+				result.reloaded.push(path);
+			} catch (error) {
+				result.failed.push({ path, error });
+				if (stopIfFail) break;
+				this.logger.warn('Component file could not be reloaded; keeping its previous components', path, error);
+			}
+		}
+		if (stopIfFail && result.failed.length) {
+			throw new SeyfertError('RELOAD_FAILED', {
+				metadata: { ...result, detail: `${result.failed.length} component file(s) could not be reloaded.` },
+				cause: result.failed[0].error,
+			});
+		}
+		return result;
 	}
 
 	async reloadAll(stopIfFail = true) {
-		for (const i of [...this.commands]) {
-			try {
-				await this.reload(i.__filePath ?? '');
-			} catch (e) {
-				if (stopIfFail) {
-					throw e;
-				}
-			}
-		}
+		await this.reloadFiles(stopIfFail);
 	}
 
 	async execute(i: ComponentCommands, context: ComponentContext | ModalContext) {

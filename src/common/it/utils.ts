@@ -147,6 +147,14 @@ export function filterSplit<Element, Never = Element>(
 	return { expect, never };
 }
 
+/** What a handler's `reloadFiles()` did with each file it reloaded. */
+export interface HandlerReloadResult {
+	/** Files whose entries were replaced with the newly loaded ones. */
+	reloaded: string[];
+	/** Files that failed to import or came back empty; their previous entries are kept. */
+	failed: { path: string; error: unknown }[];
+}
+
 /**
  * Represents a base handler class.
  */
