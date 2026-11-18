@@ -1146,6 +1146,53 @@ describe('WorkerClient hot reload', () => {
 		}
 	});
 
+	test('keeps onDrain behind a pending stop ACK and skips it once the drain deadline expires', async () => {
+		vi.useFakeTimers();
+		let releaseStop!: () => void;
+		let releaseAck!: () => void;
+		const stopped = new Promise<void>(resolve => (releaseStop = resolve));
+		const acknowledged = new Promise<void>(resolve => (releaseAck = resolve));
+		const stop = vi.fn(() => stopped);
+		const drain = vi.fn();
+		const { client } = workerClient({ hotReload: { onStop: stop, onDrain: drain } });
+		const close = vi.spyOn(client, 'close').mockResolvedValue(undefined);
+		const send = vi.spyOn(client, 'postMessage').mockImplementation(async message => {
+			if (message.type === 'HOT_RELOAD_ACK' && message.nonce === 'stop') {
+				await acknowledged;
+			}
+		});
+		const logWarn = vi.spyOn(client.logger, 'warn').mockImplementation(() => {});
+		let stopping: Promise<void> | undefined;
+		try {
+			client.setWorkerData(workerData(false));
+			stopping = client.handleManagerMessages({ type: 'HOT_RELOAD_STOP', nonce: 'stop' });
+			await vi.advanceTimersByTimeAsync(0);
+			expect(stop).not.toHaveBeenCalled();
+
+			const draining = client.handleManagerMessages({ type: 'HOT_RELOAD_DRAIN', nonce: 'drain', drainTimeout: 30 });
+			await vi.advanceTimersByTimeAsync(30);
+			await draining;
+			expect(close).toHaveBeenCalledOnce();
+			expect(drain).not.toHaveBeenCalled();
+
+			releaseAck();
+			releaseStop();
+			await stopping;
+			expect(stop).toHaveBeenCalledOnce();
+			await vi.advanceTimersByTimeAsync(10_000);
+			expect(drain).not.toHaveBeenCalled();
+		} finally {
+			releaseAck();
+			releaseStop();
+			await stopping;
+			send.mockRestore();
+			close.mockRestore();
+			logWarn.mockRestore();
+			vi.useRealTimers();
+			client.setWorkerData(workerData(false));
+		}
+	});
+
 	test('onDrain is bounded by drainTimeout, and a failing hook does not break the reload', async () => {
 		const end = vi.fn();
 		const { client, posted } = workerClient({

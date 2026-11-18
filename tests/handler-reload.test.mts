@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, test } from 'vitest';
@@ -84,6 +84,27 @@ describe('ComponentHandler reload', () => {
 		expect(ids()).toEqual(updated);
 	});
 
+	test('reloads through a symlink and passes each component through the creation callback once', async () => {
+		const client = createClient();
+		const dir = await fixtureDir('seyfert-components-reload-create-');
+		const alias = join(await fixtureDir('seyfert-components-reload-link-'), 'alias');
+		await symlink(dir, alias, 'junction');
+		const file = join(alias, 'buttons.js');
+		await writeFile(file, components('v1'));
+		await client.components.load(alias);
+
+		const original = client.components.callback.bind(client.components);
+		let calls = 0;
+		client.components.callback = (value, create) => {
+			calls++;
+			return original(value, create);
+		};
+		await writeFile(file, components('v2'));
+		await expect(client.components.reloadFiles()).resolves.toEqual({ reloaded: [file], failed: [] });
+		expect(calls).toBe(2);
+		expect(client.components.commands.map(command => command.customId)).toEqual(['v2-button', 'v2-select']);
+	});
+
 	test('keeps the components of a file that fails or comes back empty, and reports it', async () => {
 		const client = createClient();
 		const dir = await fixtureDir('seyfert-components-reload-fail-');
@@ -142,10 +163,7 @@ describe('reload options', () => {
 	test('onFile sees the whole module on reload, as it does on load', async () => {
 		const client = createClient();
 		// An onFile that reads named exports instead of the default one.
-		client.components.onFile = file =>
-			Object.entries(file)
-				.filter(([name]) => name !== 'default')
-				.map(([, value]) => value) as never;
+		client.components.onFile = file => (Object.hasOwn(file, 'default') ? undefined : (Object.values(file) as never));
 		const dir = await fixtureDir('seyfert-components-reload-named-');
 		const named = (version: string) => `
 const ComponentCommand = globalThis.__ReloadComponentBase;
@@ -183,6 +201,23 @@ describe('CommandHandler reload', () => {
 		expect(names()).toEqual(updated);
 		await expect(client.commands.reload('v2-second')).resolves.toMatchObject({ name: 'v2-second' });
 		expect(names()).toEqual(updated);
+	});
+
+	test('returns null when the requested command was removed from a multi-export file', async () => {
+		const client = createClient();
+		const dir = await fixtureDir('seyfert-commands-reload-removed-');
+		const file = join(dir, 'commands.js');
+		await writeFile(file, commands('v1'));
+		await client.commands.load(dir, client);
+
+		await writeFile(file, singleCommand('v1-second'));
+		await expect(client.commands.reload('v1-first')).resolves.toBeNull();
+		expect(client.commands.values.map(command => command.name)).toEqual(['v1-second']);
+
+		const previous = client.commands.values[0] as Command;
+		await client.commands.reloadFiles();
+		await writeFile(file, singleCommand('renamed'));
+		await expect(client.commands.reload(previous)).resolves.toMatchObject({ name: 'renamed' });
 	});
 
 	test('keeps the commands of a file that fails or comes back empty, and reports it', async () => {

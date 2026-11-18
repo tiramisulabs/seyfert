@@ -930,7 +930,8 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 	 * next to the old worker: services, timers, database or Redis subscribers, anything started before or around
 	 * `client.start()`. Work that must not run twice, like answering requests or background jobs, should check
 	 * `client.hotReloadState` or `client.isHotReloadReplacement`, or start and stop in the `hotReload` client hooks
-	 * (`onStandby`, `onActivate`, `onStop`, `onDrain`; see `WorkerHotReloadHooks`).
+	 * (`onStandby`, `onActivate`, `onStop`, `onDrain`; see `WorkerHotReloadHooks`). The old and replacement
+	 * workers can run their hooks concurrently. Jobs that require one owner across workers need app-level coordination.
 	 *
 	 * In `'clusters'` mode a drained worker ends with `worker.kill()`, which disconnects it and sends SIGTERM; the
 	 * process often exits on the disconnect before a SIGTERM handler runs, and on Windows it is terminated outright.
@@ -948,7 +949,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 	 * 		// The replacement starts its jobs once it handles events, and so does an old worker taking them back.
 	 * 		onActivate: () => jobs.start(),
 	 * 		onStop: () => jobs.stop(),
-	 * 		// Awaited, up to drainTimeout, while REST and the gateway still work.
+	 * 		// Awaited up to drainTimeout while REST still works.
 	 * 		onDrain: () => players.saveAll(),
 	 * 	},
 	 * });

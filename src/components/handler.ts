@@ -268,10 +268,12 @@ export class ComponentHandler extends BaseHandler {
 	}
 
 	private materializeComponent(value: SeteableComponentCommand, options: ComponentLoadOptions = {}, filePath?: string) {
-		let component: ReturnType<typeof this.callback>;
-		component = this.callback(value, options.create);
-		if (!component) return false;
+		const component = this.callback(value, options.create);
 		if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) return false;
+		return this.prepareComponent(component, options, filePath);
+	}
+
+	private prepareComponent(component: ComponentCommands, options: ComponentLoadOptions, filePath?: string) {
 		this.establishDefaults(component);
 		if (filePath) component.__filePath = filePath;
 		const kind = component instanceof ModalCommand ? 'modal' : 'component';
@@ -325,17 +327,8 @@ export class ComponentHandler extends BaseHandler {
 					continue;
 				}
 				if (!(component instanceof ModalCommand || component instanceof ComponentCommand)) continue;
-				this.establishDefaults(component);
-				component.__filePath = file.path;
-				const kind = component instanceof ModalCommand ? 'modal' : 'component';
-				const wrapped = options.transform?.(kind, component) ?? component;
-				if (!wrapped) continue;
-				if (wrapped !== component) {
-					component = wrapped;
-					component.__filePath ??= file.path;
-					this.establishDefaults(component);
-				}
-				this.commands.push(component);
+				const prepared = this.prepareComponent(component, options, file.path);
+				if (prepared) this.commands.push(prepared);
 			}
 		}
 	}
@@ -372,12 +365,16 @@ export class ComponentHandler extends BaseHandler {
 	 * import or exports nothing loadable keeps its previous entries.
 	 */
 	private async reloadFile(filePath: string) {
-		delete require.cache[filePath];
+		delete require.cache[require.resolve(filePath)];
 		const imported = await magicImport(filePath);
+		// Preserve direct CommonJS exports for files registered before the handler sees them.
+		const direct =
+			typeof imported === 'function' || imported instanceof ComponentCommand || imported instanceof ModalCommand;
+		const file = direct && imported.default == null ? { ...imported, default: imported } : (imported ?? {});
 		const options = (this.client as PluginComponentLoadOptionsProvider).createPluginComponentLoadOptions?.() ?? {};
 		const components: ComponentCommands[] = [];
 		let exported = 0;
-		for (const value of this.onFile({ ...imported, default: imported.default ?? imported }) ?? []) {
+		for (const value of this.onFile(file) ?? []) {
 			let instance: ReturnType<typeof this.callback>;
 			try {
 				instance = this.callback(value, options.create);
@@ -388,7 +385,7 @@ export class ComponentHandler extends BaseHandler {
 			if (!(instance instanceof ModalCommand || instance instanceof ComponentCommand)) continue;
 			exported++;
 			// A plugin transform may still remove it on purpose, unlike a file that exports nothing.
-			const component = this.materializeComponent(instance, options, filePath);
+			const component = this.prepareComponent(instance, options, filePath);
 			if (component) components.push(component);
 		}
 		if (!exported) {

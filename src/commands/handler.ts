@@ -47,9 +47,15 @@ export class CommandHandler extends BaseHandler {
 		}
 		const command = typeof resolve === 'string' ? this.values.find(x => x.name === resolve) : resolve;
 		if (!command?.__filePath) return null;
+		const filePath = command.__filePath;
+		const previous = [...this.values, this.entryPoint].filter(value => value?.__filePath === filePath);
+		const allowRename =
+			previous.length === 1 && previous[0]?.name === command.name && previous[0].type === command.type;
 		try {
-			const reloaded = await this.reloadFile(command.__filePath);
-			return reloaded.find(x => x.name === command.name) ?? reloaded[0] ?? null;
+			const { commands, exported } = await this.reloadFile(filePath);
+			const match = commands.find(value => value.name === command.name && value.type === command.type);
+			// Keep renames working for files with one command before and after the reload.
+			return match ?? (allowRename && exported === 1 ? commands[0] : undefined) ?? null;
 		} catch (error) {
 			if (!SeyfertError.is(error, 'RELOAD_EMPTY')) throw error;
 			this.logger.warn(error.message, command.__filePath);
@@ -65,12 +71,19 @@ export class CommandHandler extends BaseHandler {
 	 * directory is not scanned again, so the reloaded command comes back without its auto-loaded subcommands.
 	 */
 	private async reloadFile(filePath: string) {
-		delete require.cache[filePath];
+		delete require.cache[require.resolve(filePath)];
 		const imported = await magicImport(filePath);
+		// Preserve direct CommonJS exports for files registered before the handler sees them.
+		const direct =
+			typeof imported === 'function' ||
+			imported instanceof Command ||
+			imported instanceof ContextMenuCommand ||
+			imported instanceof EntryPointCommand;
+		const file = direct && imported.default == null ? { ...imported, default: imported } : (imported ?? {});
 		const options = (this.client as PluginCommandLoadOptionsProvider).createPluginCommandLoadOptions?.() ?? {};
 		const commands: (Command | ContextMenuCommand | EntryPointCommand)[] = [];
 		let exported = 0;
-		for (const value of this.onFile({ ...imported, default: imported.default ?? imported }) ?? []) {
+		for (const value of this.onFile(file) ?? []) {
 			let commandInstance: ReturnType<typeof this.onCommand>;
 			try {
 				commandInstance = this.onCommand(value, options.create);
@@ -116,7 +129,7 @@ export class CommandHandler extends BaseHandler {
 			else reloaded.push(prepared as Command | ContextMenuCommand);
 		}
 		this.values.splice(index === -1 ? this.values.length : index, 0, ...reloaded);
-		return commands;
+		return { commands, exported };
 	}
 
 	/**
