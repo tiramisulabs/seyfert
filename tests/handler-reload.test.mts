@@ -63,19 +63,25 @@ describe('ComponentHandler reload', () => {
 		await writeFile(join(dir, 'b-many.js'), components('v1'));
 		await writeFile(join(dir, 'c-last.js'), singleComponent('last'));
 		await client.components.load(dir);
-		const ids = () => client.components.commands.map(component => component.customId);
-		expect(ids()).toEqual(['first', 'v1-button', 'v1-select', 'last']);
+		const ids = () => client.components.commands.map(component => String(component.customId));
+		// The load order depends on the runtime's directory listing, so reload is checked against it.
+		const loaded = ids();
+		expect([...loaded].sort()).toEqual(['first', 'last', 'v1-button', 'v1-select']);
 
 		await writeFile(join(dir, 'b-many.js'), components('v2'));
-		await expect(client.components.reloadFiles()).resolves.toEqual({
-			reloaded: [join(dir, 'a-first.js'), join(dir, 'b-many.js'), join(dir, 'c-last.js')],
-			failed: [],
-		});
+		const result = await client.components.reloadFiles();
+		expect(result.failed).toEqual([]);
+		expect([...result.reloaded].sort()).toEqual([
+			join(dir, 'a-first.js'),
+			join(dir, 'b-many.js'),
+			join(dir, 'c-last.js'),
+		]);
 
 		// Both classes from the list come back, in their place, with the new code.
-		expect(ids()).toEqual(['first', 'v2-button', 'v2-select', 'last']);
+		const updated = loaded.map(id => id.replace('v1-', 'v2-'));
+		expect(ids()).toEqual(updated);
 		await expect(client.components.reload('b-many')).resolves.not.toBeNull();
-		expect(ids()).toEqual(['first', 'v2-button', 'v2-select', 'last']);
+		expect(ids()).toEqual(updated);
 	});
 
 	test('keeps the components of a file that fails or comes back empty, and reports it', async () => {
@@ -86,17 +92,20 @@ describe('ComponentHandler reload', () => {
 		await writeFile(broken, components('v1'));
 		await writeFile(emptied, singleComponent('kept'));
 		await client.components.load(dir);
+		const ids = () => client.components.commands.map(component => String(component.customId));
+		const loaded = ids();
 
 		await writeFile(broken, "throw new Error('syntax went wrong');\n");
 		await writeFile(emptied, 'module.exports = {};\n');
 		const result = await client.components.reloadFiles(false);
 
 		expect(result.reloaded).toEqual([]);
-		expect(result.failed.map(failure => failure.path)).toEqual([broken, emptied]);
+		expect(result.failed.map(failure => failure.path).sort()).toEqual([broken, emptied]);
+		const failure = (path: string) => result.failed.find(entry => entry.path === path)?.error;
 		// The import error itself depends on the runtime's module loader, so only its presence is checked.
-		expect(result.failed[0].error).toBeInstanceOf(Error);
-		expect(SeyfertError.is(result.failed[1].error, 'RELOAD_EMPTY')).toBe(true);
-		expect(client.components.commands.map(component => component.customId)).toEqual(['v1-button', 'v1-select', 'kept']);
+		expect(failure(broken)).toBeInstanceOf(Error);
+		expect(SeyfertError.is(failure(emptied), 'RELOAD_EMPTY')).toBe(true);
+		expect(ids()).toEqual(loaded);
 		// By default the first failure stops the reload and throws, with the report so far attached.
 		await expect(client.components.reloadAll()).rejects.toSatisfy(
 			error =>
@@ -114,13 +123,20 @@ describe('reload options', () => {
 		await writeFile(join(dir, 'a-broken.js'), singleComponent('first'));
 		await writeFile(join(dir, 'b-later.js'), singleComponent('later-v1'));
 		await client.components.load(dir);
+		const ids = () => client.components.commands.map(component => String(component.customId));
+		// Files reload in load order, which depends on the runtime's directory listing.
+		const loaded = ids();
+		const laterReloadsFirst = loaded.indexOf('later-v1') < loaded.indexOf('first');
 
 		await writeFile(join(dir, 'a-broken.js'), "throw new Error('broken');\n");
 		await writeFile(join(dir, 'b-later.js'), singleComponent('later-v2'));
-		await expect(client.components.reloadAll()).rejects.toSatisfy(error => SeyfertError.is(error, 'RELOAD_FAILED'));
+		await expect(client.components.reloadAll()).rejects.toSatisfy(
+			error =>
+				SeyfertError.is(error, 'RELOAD_FAILED') && (error.metadata?.failed as unknown[] | undefined)?.length === 1,
+		);
 
 		// Nothing after the failed file was reloaded.
-		expect(client.components.commands.map(component => component.customId)).toEqual(['first', 'later-v1']);
+		expect(ids()).toEqual(loaded.map(id => (laterReloadsFirst ? id.replace('-v1', '-v2') : id)));
 	});
 
 	test('onFile sees the whole module on reload, as it does on load', async () => {
@@ -141,7 +157,10 @@ exports.Cancel = class extends ComponentCommand { componentType = 'Button'; cust
 		await writeFile(join(dir, 'buttons.js'), named('v2'));
 
 		await expect(client.components.reloadFiles()).resolves.toMatchObject({ failed: [] });
-		expect(client.components.commands.map(component => component.customId)).toEqual(['v2-confirm', 'v2-cancel']);
+		expect(client.components.commands.map(component => String(component.customId))).toEqual([
+			'v2-confirm',
+			'v2-cancel',
+		]);
 	});
 });
 
@@ -154,14 +173,16 @@ describe('CommandHandler reload', () => {
 		await writeFile(join(dir, 'c-last.js'), singleCommand('last'));
 		await client.commands.load(dir, client as never);
 		const names = () => client.commands.values.map(command => command.name);
-		expect(names()).toEqual(['first', 'v1-first', 'v1-second', 'last']);
+		const loaded = names();
+		expect([...loaded].sort()).toEqual(['first', 'last', 'v1-first', 'v1-second']);
 
 		await writeFile(join(dir, 'b-many.js'), commands('v2'));
 		await expect(client.commands.reloadFiles()).resolves.toMatchObject({ failed: [] });
 
-		expect(names()).toEqual(['first', 'v2-first', 'v2-second', 'last']);
+		const updated = loaded.map(name => name.replace('v1-', 'v2-'));
+		expect(names()).toEqual(updated);
 		await expect(client.commands.reload('v2-second')).resolves.toMatchObject({ name: 'v2-second' });
-		expect(names()).toEqual(['first', 'v2-first', 'v2-second', 'last']);
+		expect(names()).toEqual(updated);
 	});
 
 	test('keeps the commands of a file that fails or comes back empty, and reports it', async () => {
@@ -172,14 +193,16 @@ describe('CommandHandler reload', () => {
 		await writeFile(broken, commands('v1'));
 		await writeFile(emptied, singleCommand('kept'));
 		await client.commands.load(dir, client as never);
+		const names = () => client.commands.values.map(command => command.name);
+		const loaded = names();
 
 		await writeFile(broken, "throw new Error('syntax went wrong');\n");
 		await writeFile(emptied, 'module.exports = {};\n');
 		const result = await client.commands.reloadFiles(false);
 
 		expect(result.reloaded).toEqual([]);
-		expect(result.failed.map(failure => failure.path)).toEqual([broken, emptied]);
-		expect(client.commands.values.map(command => command.name)).toEqual(['v1-first', 'v1-second', 'kept']);
+		expect(result.failed.map(failure => failure.path).sort()).toEqual([broken, emptied]);
+		expect(names()).toEqual(loaded);
 		await expect(client.commands.reloadAll()).rejects.toSatisfy(error => SeyfertError.is(error, 'RELOAD_FAILED'));
 		await expect(client.commands.reload('kept')).resolves.toBeNull();
 		expect(client.commands.values).toHaveLength(3);
