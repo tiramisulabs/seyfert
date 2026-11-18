@@ -1021,6 +1021,165 @@ describe('WorkerClient hot reload', () => {
 		hotReload,
 	});
 
+	test('a hook that never settles does not block the hooks after it', async () => {
+		vi.useFakeTimers();
+		const activated = vi.fn();
+		const stopStarted = vi.fn();
+		const { client } = workerClient({
+			hotReload: {
+				onStop: () => {
+					stopStarted();
+					return new Promise(() => {});
+				},
+				onActivate: activated,
+			},
+		});
+		const logWarn = vi.spyOn(client.logger, 'warn').mockImplementation(() => {});
+		try {
+			client.setWorkerData(workerData(false));
+			void client.handleManagerMessages({ type: 'HOT_RELOAD_STOP', nonce: 'stop' });
+			await vi.waitFor(() => expect(stopStarted).toHaveBeenCalled());
+			const resuming = client.handleManagerMessages({
+				type: 'HOT_RELOAD_ACTIVATE',
+				nonce: 'rollback',
+				botReady: false,
+			});
+			await vi.advanceTimersByTimeAsync(9_999);
+			expect(activated).not.toHaveBeenCalled();
+
+			await vi.advanceTimersByTimeAsync(1);
+			await resuming;
+			expect(activated).toHaveBeenCalledWith({ resumed: true });
+			expect(logWarn).toHaveBeenCalledWith(
+				'Hot reload onActivate hook is running while an earlier hook is still unfinished after 10000ms',
+			);
+		} finally {
+			logWarn.mockRestore();
+			vi.useRealTimers();
+			client.setWorkerData(workerData(false));
+		}
+	});
+
+	test('hooks run one at a time, and an activation that changes nothing reports nothing', async () => {
+		const calls: string[] = [];
+		let releaseStop!: () => void;
+		const { client } = workerClient({
+			hotReload: {
+				onStop: async () => {
+					calls.push('stop started');
+					await new Promise<void>(resolve => {
+						releaseStop = resolve;
+					});
+					calls.push('stop finished');
+				},
+				onActivate: ({ resumed }) => calls.push(`activate resumed=${resumed}`),
+			},
+		});
+		try {
+			client.setWorkerData(workerData(false));
+			// A rollback after a cancelled session handoff finds this worker still active.
+			await client.handleManagerMessages({ type: 'HOT_RELOAD_ACTIVATE', nonce: 'noop', botReady: false });
+			expect(calls).toEqual([]);
+
+			// The manager doesn't wait for hooks, so a rollback can arrive while onStop still runs.
+			const stopping = client.handleManagerMessages({ type: 'HOT_RELOAD_STOP', nonce: 'stop' });
+			await vi.waitFor(() => expect(calls).toEqual(['stop started']));
+			const resuming = client.handleManagerMessages({
+				type: 'HOT_RELOAD_ACTIVATE',
+				nonce: 'rollback',
+				botReady: false,
+			});
+			await new Promise(resolve => setImmediate(resolve));
+			expect(calls).toEqual(['stop started']);
+
+			releaseStop();
+			await Promise.all([stopping, resuming]);
+			expect(calls).toEqual(['stop started', 'stop finished', 'activate resumed=true']);
+		} finally {
+			releaseStop?.();
+			client.setWorkerData(workerData(false));
+		}
+	});
+
+	test('app hooks follow the hot reload lifecycle, and re-activation after a stop is reported as resumed', async () => {
+		const calls: string[] = [];
+		const end = vi.fn(() => calls.push('shard end'));
+		const { client } = workerClient({
+			hotReload: {
+				onActivate: ({ resumed }) => calls.push(`activate resumed=${resumed} state=${client.hotReloadState}`),
+				onStop: () => calls.push(`stop state=${client.hotReloadState}`),
+				onDrain: ({ timeout }) => calls.push(`drain timeout=${timeout} state=${client.hotReloadState}`),
+			},
+		});
+		const close = vi.spyOn(client, 'close').mockImplementation(async () => {
+			calls.push('plugin teardown');
+		});
+		try {
+			// A replacement starts on standby and says so.
+			client.setWorkerData(workerData(true));
+			expect(client.hotReloadState).toBe('standby');
+			expect(client.isHotReloadReplacement).toBe(true);
+			await client.handleManagerMessages({ type: 'HOT_RELOAD_ACTIVATE', nonce: 'activate', botReady: false });
+			expect(client.hotReloadState).toBe('active');
+
+			// Its turn to be replaced: stopped, then taken back because the next replacement failed, then retired.
+			await client.handleManagerMessages({ type: 'HOT_RELOAD_STOP', nonce: 'stop' });
+			await client.handleManagerMessages({ type: 'HOT_RELOAD_ACTIVATE', nonce: 'rollback', botReady: false });
+			await client.handleManagerMessages({ type: 'HOT_RELOAD_STOP', nonce: 'stop-again' });
+			client.shards.set(0, { end } as never);
+			await client.handleManagerMessages({ type: 'HOT_RELOAD_DRAIN', nonce: 'drain', drainTimeout: 1_000 });
+
+			expect(calls).toEqual([
+				'activate resumed=false state=active',
+				'stop state=stopped',
+				'activate resumed=true state=active',
+				'stop state=stopped',
+				// The app saves its state before plugins are torn down and the shards end.
+				'drain timeout=1000 state=stopped',
+				'plugin teardown',
+				'shard end',
+			]);
+		} finally {
+			close.mockRestore();
+			client.shards.clear();
+			client.setWorkerData(workerData(false));
+		}
+	});
+
+	test('onDrain is bounded by drainTimeout, and a failing hook does not break the reload', async () => {
+		const end = vi.fn();
+		const { client, posted } = workerClient({
+			hotReload: {
+				onStop: () => {
+					throw new Error('app stop failed');
+				},
+				onDrain: () => new Promise(() => {}),
+			},
+		});
+		const logError = vi.spyOn(client.logger, 'error').mockImplementation(() => {});
+		const logWarn = vi.spyOn(client.logger, 'warn').mockImplementation(() => {});
+		const close = vi.spyOn(client, 'close').mockResolvedValue(undefined);
+		try {
+			client.setWorkerData(workerData(false));
+			client.shards.set(0, { end } as never);
+			await client.handleManagerMessages({ type: 'HOT_RELOAD_STOP', nonce: 'stop' });
+			expect(posted).toContainEqual({ type: 'HOT_RELOAD_ACK', nonce: 'stop', workerId: 0 });
+			expect(logError).toHaveBeenCalledWith('Hot reload onStop hook failed', expect.any(Error));
+
+			// The hook never settles, yet the drain finishes once its time is up.
+			await client.handleManagerMessages({ type: 'HOT_RELOAD_DRAIN', nonce: 'drain', drainTimeout: 30 });
+			expect(logWarn).toHaveBeenCalledWith('Hot reload onDrain hook did not finish within 30ms; continuing');
+			expect(end).toHaveBeenCalledOnce();
+			expect(posted.at(-1)).toEqual({ type: 'HOT_RELOAD_ACK', nonce: 'drain', workerId: 0 });
+		} finally {
+			logError.mockRestore();
+			logWarn.mockRestore();
+			close.mockRestore();
+			client.shards.clear();
+			client.setWorkerData(workerData(false));
+		}
+	});
+
 	test('a replacement warms its cache with packets as dispatch interceptors left them', async () => {
 		const plugin = createPlugin({
 			name: 'rename-and-veto',
