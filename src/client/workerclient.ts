@@ -65,6 +65,9 @@ import {
 } from './plugins';
 import { type ClientUserStructure, Transformers } from './transformers';
 
+/** How long a hot reload hook waits for an earlier, still unfinished one before it runs anyway. */
+const HOT_RELOAD_HOOK_QUEUE_WAIT_MS = 10_000;
+
 let workerData: WorkerData;
 let manager: import('node:worker_threads').MessagePort;
 try {
@@ -105,6 +108,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	 * until the manager switches to it; the worker it replaces then stops and drains.
 	 */
 	private dispatchState: 'active' | 'standby' | 'stopped' = 'active';
+	private hotReloadHookQueue: Promise<void> = Promise.resolve();
 	/** The readiness handlers skipped on standby, in startup order, replayed when the replacement takes over. */
 	private standbyReadiness: (
 		| { event: 'WORKER_SHARDS_CONNECTED' | 'WORKER_READY' }
@@ -196,6 +200,74 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 		return workerData;
 	}
 
+	/**
+	 * Where this worker stands in a hot reload: `'active'` handles gateway events, `'standby'` is a replacement
+	 * still preparing next to the worker it replaces, and `'stopped'` was replaced and is draining. Outside a hot
+	 * reload it is always `'active'`.
+	 */
+	get hotReloadState(): 'active' | 'standby' | 'stopped' {
+		return this.dispatchState;
+	}
+
+	/** Whether `WorkerManager.hotReload` started this worker as a replacement for another one. */
+	get isHotReloadReplacement(): boolean {
+		return workerData?.hotReload === true;
+	}
+
+	/**
+	 * Runs one of the app's hot reload hooks. A hook that throws is logged instead of breaking the reload.
+	 * Once a hook starts, it can outlive `timeoutMs` while the reload moves on.
+	 */
+	private async runHotReloadHook(
+		name: keyof WorkerHotReloadHooks,
+		info?: object,
+		{ timeoutMs, acknowledged }: { timeoutMs?: number; acknowledged?: Promise<boolean> } = {},
+	) {
+		const hook = this.options.hotReload?.[name] as ((info?: unknown) => Awaitable<unknown>) | undefined;
+		if (!hook) return;
+		let timer: NodeJS.Timeout | undefined;
+		const deadline =
+			timeoutMs === undefined
+				? undefined
+				: new Promise<'expired'>(resolve => {
+						timer = setTimeout(() => resolve('expired'), timeoutMs);
+					});
+		try {
+			// Hooks queue up even though manager messages arrive concurrently. The drain deadline also limits
+			// how long onDrain may wait to start.
+			let queueTimer: NodeJS.Timeout | undefined;
+			const wait = [
+				this.hotReloadHookQueue.then(() => 'ready' as const),
+				new Promise<'stuck'>(resolve => {
+					queueTimer = setTimeout(() => resolve('stuck'), HOT_RELOAD_HOOK_QUEUE_WAIT_MS);
+				}),
+			];
+			const run = Promise.race(deadline ? [...wait, deadline] : wait).then(async state => {
+				clearTimeout(queueTimer);
+				if (state === 'expired' || (acknowledged && !(await acknowledged))) return;
+				if (state === 'stuck') {
+					this.logger.warn(
+						`Hot reload ${name} hook is running while an earlier hook is still unfinished after ${HOT_RELOAD_HOOK_QUEUE_WAIT_MS}ms`,
+					);
+				}
+				return hook.call(this.options.hotReload, info);
+			});
+			this.hotReloadHookQueue = run.then(
+				() => undefined,
+				() => undefined,
+			);
+			const result = await (deadline ? Promise.race([run.then(() => 'finished' as const), deadline]) : run);
+			if (deadline && result === 'expired') {
+				this.logger.warn(`Hot reload ${name} hook did not finish within ${timeoutMs}ms; continuing`);
+				run.catch(error => this.logger.error(`Hot reload ${name} hook failed`, error));
+			}
+		} catch (error) {
+			this.logger.error(`Hot reload ${name} hook failed`, error);
+		} finally {
+			clearTimeout(timer);
+		}
+	}
+
 	async start(options: Omit<DeepPartial<StartOptions>, 'httpConnection' | 'token' | 'connection'> = {}) {
 		const worker_threads = lazyLoadPackage<typeof import('node:worker_threads')>('node:worker_threads');
 
@@ -212,6 +284,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 
 		if (workerData.hotReload) this.dispatchState = 'standby';
 		this.configureLogger({ name: `[Worker #${workerData.workerId}]` }, this.options.logger);
+		if (workerData.hotReload) await this.runHotReloadHook('onStandby');
 
 		if (workerData.debug) {
 			this.debugger = new Logger({
@@ -480,10 +553,11 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			case 'HOT_RELOAD_ACTIVATE':
 				{
 					// A replaced worker can be resumed when its replacement fails to take over.
-					const fromStandby = this.dispatchState === 'standby';
+					const previousState = this.dispatchState;
+					const fromStandby = previousState === 'standby';
 					const resume = this.activateResumedShard;
 					let releaseResumed: (() => void) | undefined;
-					let activated = false;
+					let activationHook: Promise<void> | undefined;
 					await this.answerReloadStep(
 						data.nonce,
 						async () => {
@@ -500,28 +574,58 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 								this.activateResumedShard = undefined;
 							}
 							this.dispatchState = 'active';
-							activated = true;
 							return {};
 						},
-						// Enqueue the ACK before replay callbacks can send messages through the manager.
-						() => releaseResumed?.(),
+						sent => {
+							releaseResumed?.();
+							const acknowledged = sent.then(
+								() => true,
+								() => false,
+							);
+							if (fromStandby && !resume) {
+								const readiness = acknowledged.then(ok =>
+									ok ? this.replayStandbyReadiness(data.botReady, false) : undefined,
+								);
+								this.trackInFlight(readiness);
+								readiness.catch(error => this.logger.error('Hot reload readiness handlers failed', error));
+							}
+							if (previousState !== 'active') {
+								activationHook = this.runHotReloadHook(
+									'onActivate',
+									{ resumed: previousState === 'stopped' },
+									{ acknowledged },
+								);
+							}
+						},
 					);
-					if (activated && fromStandby && !resume) {
-						const readiness = this.replayStandbyReadiness(data.botReady, false);
-						this.trackInFlight(readiness);
-						readiness.catch(error => this.logger.error('Hot reload readiness handlers failed', error));
-					}
+					await activationHook;
 				}
 				break;
 			case 'HOT_RELOAD_STOP':
-				if (data.sessionHandoff) {
-					const { generation, drainTimeout } = data.sessionHandoff;
-					await this.answerReloadStep(data.nonce, async () => ({
-						session: await this.pauseForResume(generation, drainTimeout),
-					}));
-				} else {
-					this.dispatchState = 'stopped';
-					await this.answerReloadStep(data.nonce, () => ({}));
+				{
+					let stopHook: Promise<void> | undefined;
+					await this.answerReloadStep(
+						data.nonce,
+						async () => {
+							if (data.sessionHandoff) {
+								const { generation, drainTimeout } = data.sessionHandoff;
+								return { session: await this.pauseForResume(generation, drainTimeout) };
+							}
+							this.dispatchState = 'stopped';
+							return {};
+						},
+						sent => {
+							if (this.dispatchState !== 'stopped') return;
+							// Reserve the hook's place before a drain can arrive, even if the transport is still resolving the ACK.
+							stopHook = this.runHotReloadHook('onStop', undefined, {
+								acknowledged: sent.then(
+									() => true,
+									() => false,
+								),
+							});
+						},
+					);
+					await stopHook;
 				}
 				break;
 			case 'HOT_RELOAD_RESUME':
@@ -532,7 +636,12 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 				break;
 			case 'HOT_RELOAD_DRAIN':
 				this.dispatchState = 'stopped';
-				await this.waitForInFlight(data.drainTimeout);
+				// The app saves its state while in-flight work finishes, both within drainTimeout and before plugin
+				// teardown and the shards ending, so REST and the gateway still work for it.
+				await Promise.all([
+					this.waitForInFlight(data.drainTimeout),
+					this.runHotReloadHook('onDrain', { timeout: data.drainTimeout }, { timeoutMs: data.drainTimeout }),
+				]);
 				try {
 					await this.close();
 				} catch (error) {
@@ -587,7 +696,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 	private async answerReloadStep(
 		nonce: string,
 		run: () => Awaitable<{ session?: MakeRequired<ShardData> }>,
-		afterSend?: () => void,
+		afterSend?: (sent: Promise<unknown>) => void,
 	) {
 		let outcome: Pick<WorkerHotReloadAck, 'session' | 'error'>;
 		try {
@@ -601,7 +710,7 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			nonce,
 			...outcome,
 		} as WorkerHotReloadAck);
-		if (!outcome.error) afterSend?.();
+		if (!outcome.error) afterSend?.(sent);
 		await sent;
 	}
 
@@ -1056,9 +1165,38 @@ export function generateShardInfo(shard: Shard): WorkerShardInfo {
 	};
 }
 
+/**
+ * Lets app code act on `WorkerManager.hotReload`, in every worker mode. Each hook may be async; one that throws is
+ * logged without affecting the reload.
+ */
+export interface WorkerHotReloadHooks {
+	/**
+	 * This worker started as a hot reload replacement. It only builds its cache, next to the worker it replaces,
+	 * until it is activated; app work that must not run twice should wait for `onActivate`. It is awaited during
+	 * `start()`, so its time counts toward the reload's `readyTimeout`.
+	 */
+	onStandby?(): Awaitable<unknown>;
+	/**
+	 * This worker now handles gateway events. `resumed` is true when a stopped worker takes events back because its
+	 * replacement failed after the switch, so the app can undo what it did in `onStop`.
+	 */
+	onActivate?(info: { resumed: boolean }): Awaitable<unknown>;
+	/** This worker was told to stop handling gateway events; its replacement takes over next. */
+	onStop?(): Awaitable<unknown>;
+	/**
+	 * This worker is being retired. Awaited for up to `timeout` ms, alongside in-flight work, before plugin teardown
+	 * and before its shards end, while REST still works: the place to save state such as music players or
+	 * recordings. The hook is skipped if the deadline expires while it is waiting behind an earlier hook. Its shards are still connected too, except with `resumeSession`, where the session already moved
+	 * to the replacement.
+	 */
+	onDrain?(info: { timeout: number }): Awaitable<unknown>;
+}
+
 export interface WorkerClientOptions extends BaseClientOptions {
 	commands?: NonNullable<Client['options']>['commands'];
 	handlePayload?: ShardManagerOptions['handlePayload'];
+	/** Hooks for the hot reload lifecycle; see {@link WorkerHotReloadHooks}. */
+	hotReload?: WorkerHotReloadHooks;
 	/**
 	 * @deprecated Use shard disconnect events instead. Injected ShardManager callbacks can double-fire.
 	 */

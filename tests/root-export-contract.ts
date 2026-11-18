@@ -20,6 +20,7 @@ import {
 	type GatewayMessageCreateDispatchData,
 	type GatewayPresenceClientStatus,
 	type GroupDMChannelStructure,
+	type HandlerReloadResult,
 	HeadingLevel,
 	type HotReloadOptions,
 	type HotReloadProgress,
@@ -56,7 +57,9 @@ import {
 	TimestampStyle,
 	type TopLevelComponents,
 	type WorkerClient,
+	type WorkerClientOptions,
 	type WorkerData,
+	type WorkerHotReloadHooks,
 	type WorkerHotReloadRequestOptions,
 	type WorkerInfo,
 	type WorkerManager,
@@ -145,6 +148,18 @@ expectType<WorkerShardInfo>({ shardId: 0, workerId: 0, open: false, latency: 0, 
 
 declare const workerManager: WorkerManager;
 declare const workerClient: WorkerClient;
+// App code can follow a hot reload through the client's state and lifecycle hooks.
+expectType<'active' | 'standby' | 'stopped'>(workerClient.hotReloadState);
+expectType<boolean>(workerClient.isHotReloadReplacement);
+const hotReloadHooks: WorkerHotReloadHooks = {
+	onActivate: ({ resumed }) => expectType<boolean>(resumed),
+	onDrain: async ({ timeout }) => expectType<number>(timeout),
+};
+expectType<WorkerClientOptions['hotReload']>(hotReloadHooks);
+// File reloads report what reloaded and what kept its previous entries; reloadAll keeps its void result.
+expectType<Promise<HandlerReloadResult>>(workerClient.components.reloadFiles());
+expectType<Promise<HandlerReloadResult>>(workerClient.commands.reloadFiles(false));
+expectType<Promise<void>>(workerClient.commands.reloadAll());
 const hotReloadOptions: HotReloadOptions = {
 	workerIds: [0],
 	continueOnError: true,

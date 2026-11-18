@@ -27,6 +27,7 @@ export {
 	createValidationMetadata,
 	EmbedColors,
 	Formatter,
+	type HandlerReloadResult,
 	HeadingLevel,
 	Logger,
 	type LoggerOptions,

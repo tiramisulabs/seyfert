@@ -926,6 +926,42 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 	 * Custom mode needs an adapter that implements
 	 * {@link CustomManagerAdapter.terminate} and routes messages by generation.
 	 *
+	 * The replacement is a whole new process or thread, so it also runs the app's own startup while it prepares
+	 * next to the old worker: services, timers, database or Redis subscribers, anything started before or around
+	 * `client.start()`. Work that must not run twice, like answering requests or background jobs, should check
+	 * `client.hotReloadState` or `client.isHotReloadReplacement`, or start and stop in the `hotReload` client hooks
+	 * (`onStandby`, `onActivate`, `onStop`, `onDrain`; see `WorkerHotReloadHooks`). The old and replacement
+	 * workers can run their hooks concurrently. Jobs that require one owner across workers need app-level coordination.
+	 *
+	 * In `'clusters'` mode a drained worker ends with `worker.kill()`, which disconnects it and sends SIGTERM; the
+	 * process often exits on the disconnect before a SIGTERM handler runs, and on Windows it is terminated outright.
+	 * Shutdown work for a hot reload, such as final saves, belongs in `onDrain`. An app's own SIGTERM or exit
+	 * handlers that announce a restart should check `client.hotReloadState === 'stopped'` and skip that, since the
+	 * bot isn't going down.
+	 *
+	 * With `trackMemberCount`, a replacement with its own memory cache takes each guild's member count from the
+	 * GUILD_CREATE it receives when it connects; a shared cache keeps the counts the active worker maintains.
+	 *
+	 * @example
+	 * ```ts
+	 * const client = new WorkerClient({
+	 * 	hotReload: {
+	 * 		// The replacement starts its jobs once it handles events, and so does an old worker taking them back.
+	 * 		onActivate: () => jobs.start(),
+	 * 		onStop: () => jobs.stop(),
+	 * 		// Awaited up to drainTimeout while REST still works.
+	 * 		onDrain: () => players.saveAll(),
+	 * 	},
+	 * });
+	 * // A worker started normally runs its jobs right away; a replacement waits for onActivate.
+	 * if (!client.isHotReloadReplacement) jobs.start();
+	 * process.on('SIGTERM', async () => {
+	 * 	// Retired by a hot reload, not a real shutdown: its saves already ran in onDrain.
+	 * 	if (client.hotReloadState !== 'stopped') await announceRestart();
+	 * 	process.exit(0);
+	 * });
+	 * ```
+	 *
 	 * @throws {SeyfertError} `HOT_RELOAD_IN_PROGRESS` while another reload runs, `HOT_RELOAD_UNSUPPORTED` before
 	 * every worker is ready (BOT_READY), during resharding, or in custom mode without `terminate`, and `WORKER_NOT_FOUND` for an
 	 * unknown worker id.

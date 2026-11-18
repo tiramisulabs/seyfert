@@ -1,6 +1,6 @@
 import { promises } from 'node:fs';
 import { dirname } from 'node:path';
-import type { Logger, NulleableCoalising, OmitInsert } from '../common';
+import type { HandlerReloadResult, Logger, NulleableCoalising, OmitInsert } from '../common';
 import { BaseHandler, isCloudflareWorker, magicImport, SeyfertError } from '../common';
 import { PermissionsBitField } from '../structures/extra/Permissions';
 import {
@@ -17,8 +17,8 @@ import {
 	type LocaleString,
 	type LocalizationMap,
 } from '../types';
-import type { EntryPointCommand } from '.';
 import { Command, type CommandOption, SubCommand } from './applications/chat';
+import { EntryPointCommand } from './applications/entryPoint';
 import { ContextMenuCommand } from './applications/menu';
 import { IgnoreCommand, type UsingClient } from './applications/shared';
 
@@ -47,49 +47,125 @@ export class CommandHandler extends BaseHandler {
 		}
 		const command = typeof resolve === 'string' ? this.values.find(x => x.name === resolve) : resolve;
 		if (!command?.__filePath) return null;
-
-		delete require.cache[command.__filePath];
-		const imported = await magicImport(command.__filePath).then(x => x.default ?? x);
-		const options = (this.client as PluginCommandLoadOptionsProvider).createPluginCommandLoadOptions?.() ?? {};
-		const commandInstance = this.onCommand(imported, options.create);
-		if (!commandInstance || commandInstance instanceof SubCommand) return null;
-
-		commandInstance.__filePath = command.__filePath;
-		let prepared = this.prepareCommand(commandInstance);
-		if (!prepared) return null;
-
-		const transformed = options.transform?.(prepared);
-		if (transformed === false) {
-			const index = this.values.indexOf(command);
-			if (index >= 0) this.values.splice(index, 1);
+		const filePath = command.__filePath;
+		const previous = [...this.values, this.entryPoint].filter(value => value?.__filePath === filePath);
+		const allowRename =
+			previous.length === 1 && previous[0]?.name === command.name && previous[0].type === command.type;
+		try {
+			const { commands, exported } = await this.reloadFile(filePath);
+			const match = commands.find(value => value.name === command.name && value.type === command.type);
+			// Keep renames working for files with one command before and after the reload.
+			return match ?? (allowRename && exported === 1 ? commands[0] : undefined) ?? null;
+		} catch (error) {
+			if (!SeyfertError.is(error, 'RELOAD_EMPTY')) throw error;
+			this.logger.warn(error.message, command.__filePath);
 			return null;
 		}
-		const wrapped = transformed ?? prepared;
-		if (wrapped !== prepared) {
-			wrapped.__filePath ??= command.__filePath;
-			prepared = this.prepareCommand(wrapped);
-			if (!prepared) return null;
+	}
+
+	/**
+	 * Reloads a command file the way `load()` reads it, through `onFile`, so a file can export several commands.
+	 * Every command from the file is replaced, in place, by what it exports now, with the plugin load options
+	 * applied to each; a transform returning `false` still removes its command. A file that fails to import or
+	 * exports no command keeps its previous commands. As before this method existed, an `@AutoLoad` command's
+	 * directory is not scanned again, so the reloaded command comes back without its auto-loaded subcommands.
+	 */
+	private async reloadFile(filePath: string) {
+		delete require.cache[require.resolve(filePath)];
+		const imported = await magicImport(filePath);
+		// Preserve direct CommonJS exports for files registered before the handler sees them.
+		const direct =
+			typeof imported === 'function' ||
+			imported instanceof Command ||
+			imported instanceof ContextMenuCommand ||
+			imported instanceof EntryPointCommand;
+		const file = direct && imported.default == null ? { ...imported, default: imported } : (imported ?? {});
+		const options = (this.client as PluginCommandLoadOptionsProvider).createPluginCommandLoadOptions?.() ?? {};
+		const commands: (Command | ContextMenuCommand | EntryPointCommand)[] = [];
+		let exported = 0;
+		for (const value of this.onFile(file) ?? []) {
+			let commandInstance: ReturnType<typeof this.onCommand>;
+			try {
+				commandInstance = this.onCommand(value, options.create);
+			} catch (e) {
+				this.logger.warn(e, value);
+				continue;
+			}
+			// Like the component path, only real commands count; anything else means the file exported nothing usable.
+			if (
+				!(
+					commandInstance instanceof Command ||
+					commandInstance instanceof ContextMenuCommand ||
+					commandInstance instanceof EntryPointCommand
+				)
+			)
+				continue;
+			commandInstance.__filePath = filePath;
+			let prepared = this.prepareCommand(commandInstance);
+			if (!prepared) continue;
+			exported++;
+			const transformed = options.transform?.(prepared);
+			if (transformed === false) continue;
+			const wrapped = transformed ?? prepared;
+			if (wrapped !== prepared) {
+				wrapped.__filePath ??= filePath;
+				prepared = this.prepareCommand(wrapped);
+				if (!prepared) continue;
+			}
+			commands.push(prepared as Command | ContextMenuCommand | EntryPointCommand);
+		}
+		if (!exported) {
+			throw new SeyfertError('RELOAD_EMPTY', { metadata: { path: filePath } });
 		}
 
-		const index = this.values.indexOf(command);
-		if ('handler' in prepared && prepared.handler) {
-			this.entryPoint = prepared as EntryPointCommand;
-		} else if (index >= 0) {
-			this.values[index] = prepared as Command | ContextMenuCommand;
+		const index = this.values.findIndex(x => x.__filePath === filePath);
+		for (let i = this.values.length - 1; i >= 0; i--) {
+			if (this.values[i].__filePath === filePath) this.values.splice(i, 1);
 		}
-		return prepared;
+		if (this.entryPoint?.__filePath === filePath) this.entryPoint = null;
+		const reloaded: (Command | ContextMenuCommand)[] = [];
+		for (const prepared of commands) {
+			if ('handler' in prepared && prepared.handler) this.entryPoint = prepared as EntryPointCommand;
+			else reloaded.push(prepared as Command | ContextMenuCommand);
+		}
+		this.values.splice(index === -1 ? this.values.length : index, 0, ...reloaded);
+		return { commands, exported };
+	}
+
+	/**
+	 * Reloads every loaded command file and reports which files reloaded and which failed or exported nothing.
+	 * Failed files keep their previous commands. With `stopIfFail`, it stops at the first failed file and throws a
+	 * `RELOAD_FAILED` error carrying the report instead of returning it.
+	 */
+	async reloadFiles(stopIfFail = true): Promise<HandlerReloadResult> {
+		if (isCloudflareWorker()) {
+			throw new SeyfertError('RELOAD_NOT_SUPPORTED', {
+				metadata: { detail: 'Reload in Cloudflare worker is not supported' },
+			});
+		}
+		const result: HandlerReloadResult = { reloaded: [], failed: [] };
+		const files = new Set([...this.values, this.entryPoint].flatMap(x => (x?.__filePath ? [x.__filePath] : [])));
+		for (const path of files) {
+			try {
+				await this.reloadFile(path);
+				result.reloaded.push(path);
+			} catch (error) {
+				result.failed.push({ path, error });
+				if (stopIfFail) break;
+				this.logger.warn('Command file could not be reloaded; keeping its previous commands', path, error);
+			}
+		}
+		if (stopIfFail && result.failed.length) {
+			throw new SeyfertError('RELOAD_FAILED', {
+				metadata: { ...result, detail: `${result.failed.length} command file(s) could not be reloaded.` },
+				cause: result.failed[0].error,
+			});
+		}
+		return result;
 	}
 
 	async reloadAll(stopIfFail = true) {
-		for (const command of [...this.values]) {
-			try {
-				await this.reload(command.name);
-			} catch (e) {
-				if (stopIfFail) {
-					throw e;
-				}
-			}
-		}
+		await this.reloadFiles(stopIfFail);
 	}
 
 	protected shouldUploadLocales(locales?: LocalizationMap | null, cachedLocales?: LocalizationMap | null) {
