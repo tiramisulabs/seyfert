@@ -16,6 +16,7 @@ import {
 	removePluginEventErrorContribution,
 	removePluginGatewayDispatchInterceptorContribution,
 	removePluginHookContribution,
+	removePluginMiddlewareWrapperContribution,
 	removePluginRestObserverContribution,
 	resolveGatewayIntent,
 	unknownGatewayIntentBits,
@@ -393,6 +394,19 @@ export function createPluginApi(
 					scope,
 					sequence: nextPluginContributionSequence(registry),
 				});
+			},
+			wrap(wrapper, opts) {
+				assertCanMutate('middlewares.wrap');
+				const contribution = {
+					record,
+					wrapper,
+					scope,
+					active: true,
+					order: opts?.order,
+					sequence: nextPluginContributionSequence(registry),
+				};
+				registry.middlewareWrappers.push(contribution);
+				return once(() => removePluginMiddlewareWrapperContribution(registry, contribution));
 			},
 		},
 		autocomplete: {

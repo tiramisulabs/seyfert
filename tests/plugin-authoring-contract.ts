@@ -95,6 +95,7 @@ import {
 	type PluginContextMapOf,
 	type PluginContextOf,
 	type PluginDiagnosticCode,
+	type PluginDisposer,
 	type PluginExtensionOf,
 	type PluginGatewayDispatchInterceptor,
 	type PluginGatewayDispatchMeta,
@@ -102,6 +103,8 @@ import {
 	type PluginHandlerKind,
 	type PluginHandlerOptions,
 	type PluginLoadedMetadata,
+	type PluginMiddlewareInvocation,
+	type PluginMiddlewareRun,
 	type PluginMiddlewaresMapOf,
 	PluginOrder,
 	type PluginOrderOpt,
@@ -1230,6 +1233,21 @@ const auth: SeyfertPlugin<{}, {}, readonly [], { auth: AuthMiddleware; audit: Au
 		api.middlewares.add('audit', (({ next }) => next()) as AuditMiddleware);
 		// @ts-expect-error known middleware names must use their declared payload
 		api.middlewares.add('auth', (({ next }) => next()) as AuditMiddleware);
+	},
+});
+
+createPlugin({
+	name: 'middleware-wrapper',
+	register(api) {
+		const dispose: PluginDisposer = api.middlewares.wrap((invocation, run) => {
+			expectType<PluginMiddlewareInvocation>(invocation);
+			expectType<PluginMiddlewareRun>(run);
+			return run({
+				...invocation,
+				next: (...args) => invocation.next(...args),
+			});
+		});
+		expectType<PluginDisposer>(dispose);
 	},
 });
 

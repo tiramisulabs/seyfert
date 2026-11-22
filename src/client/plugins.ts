@@ -54,7 +54,9 @@ import type {
 	PluginGatewaySendPayload,
 	PluginHookName,
 	PluginHookPayload,
+	PluginMiddlewareInvocation,
 	PluginMiddlewareMap,
+	PluginMiddlewareRun,
 	PluginRequirementInput,
 	ResolvedPluginList,
 	SeyfertCommandDefaults,
@@ -119,10 +121,13 @@ export type {
 	PluginLifecycleStatus,
 	PluginLoadedMetadata,
 	PluginMiddlewareDenialMetadata,
+	PluginMiddlewareInvocation,
 	PluginMiddlewareMap,
 	PluginMiddlewareOptions,
+	PluginMiddlewareRun,
 	PluginMiddlewaresMapOf,
 	PluginMiddlewaresOf,
+	PluginMiddlewareWrapper,
 	PluginOrderOpt,
 	PluginRequirement,
 	PluginRequirementDiagnostic,
@@ -491,6 +496,23 @@ export function refreshClientPluginOptions(client: BaseClient, registry: PluginR
 
 export function resolveClientPluginIntents(client: BaseClient, base?: GatewayIntentInput) {
 	return resolvePluginIntents(client.pluginRegistry, resolveGatewayIntents(base));
+}
+
+/** @internal */
+export function runPluginMiddlewareWrappers(
+	client: BaseClient,
+	invocation: PluginMiddlewareInvocation,
+	run: PluginMiddlewareRun,
+) {
+	const dispatch = orderedPluginContributions(
+		client.pluginRegistry.middlewareWrappers.filter(contribution => contribution.active),
+	).reduceRight<PluginMiddlewareRun>(
+		(next, { wrapper }) =>
+			invocation =>
+				wrapper(invocation, next),
+		run,
+	);
+	return dispatch(invocation);
 }
 
 export function runPluginAutocompleteWrappers(
