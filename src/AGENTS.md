@@ -46,8 +46,9 @@ Framework validation/runtime errors use `SeyfertError` from
 ## Formatting authority
 
 `biome.json` defines formatting and lint rules for source, tests, repository
-configuration, Markdown, and YAML. See `tests/AGENTS.md` for verification and
-configuration inspection.
+configuration, Markdown, and YAML. `.oxlintrc.json` adds a small set of
+type-aware rules for `src/` only, run by oxlint with the `tsrs` backend. See
+`tests/AGENTS.md` for verification and configuration inspection.
 
 ```sh
 # Format only intentionally changed production files

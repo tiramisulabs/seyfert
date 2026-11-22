@@ -9,6 +9,7 @@ on:
       - '.github/**/*.yml'
       - '.github/**/*.yaml'
       - '.changeset/README.md'
+      - '.oxlintrc.json'
       - 'AGENTS.md'
       - 'README.md'
       - 'biome.json'
@@ -27,6 +28,7 @@ on:
       - '.github/**/*.yml'
       - '.github/**/*.yaml'
       - '.changeset/README.md'
+      - '.oxlintrc.json'
       - 'AGENTS.md'
       - 'README.md'
       - 'biome.json'
@@ -68,6 +70,9 @@ jobs:
       - name: Run Biome
         run: bun run check
         id: biome
+
+      - name: Run type-aware lint
+        run: bun run lint:types
 
       - name: Build package
         run: bun run build
