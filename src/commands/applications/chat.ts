@@ -10,6 +10,7 @@ import type {
 	SeyfertChoice,
 } from '../..';
 import type { Attachment } from '../../builders';
+import { runPluginMiddlewareWrappers } from '../../client/plugins';
 import type { PluginMiddlewareDenialMetadata } from '../../client/plugins/types';
 import type {
 	GuildMemberStructure,
@@ -263,7 +264,18 @@ export class BaseCommand {
 			};
 			async function invoke(middleware: keyof ResolvedRegisteredMiddlewares) {
 				try {
-					await context.client.middlewares![middleware]({ context, next, stop });
+					const { client } = context;
+					if (client.pluginRegistry.middlewareWrappers.length) {
+						const middlewares = client.middlewares!;
+						const handler = middlewares[middleware];
+						await runPluginMiddlewareWrappers(
+							client,
+							{ name: String(middleware), scope: global ? 'global' : 'command', context, next, stop },
+							({ context, next, stop }) => handler.call(middlewares, { context, next, stop }),
+						);
+					} else {
+						await client.middlewares![middleware]({ context, next, stop });
+					}
 				} catch (err) {
 					if (!running) {
 						return;

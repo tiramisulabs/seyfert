@@ -917,13 +917,13 @@ describe('plugin api v3', () => {
 		const stopGlobal = createMiddleware<void>(({ stop }) => stop('global denied'));
 		const stopCommand = createMiddleware<void>(({ stop }) => stop('command denied'));
 		const context = {
-			client: {
+			client: Object.assign(createBaseClient(), {
 				middlewares: {
 					stopCommand,
 					stopGlobal,
 				},
 				logger: { warn: vi.fn() },
-			},
+			}),
 			command: { name: 'secure' },
 			globalMetadata: {},
 			metadata: {},
@@ -944,10 +944,10 @@ describe('plugin api v3', () => {
 		const passNull = createMiddleware<void>(({ stop }) => stop(null));
 		const passUndefined = createMiddleware<void>(({ stop }) => stop(undefined));
 		const context = {
-			client: {
+			client: Object.assign(createBaseClient(), {
 				middlewares: { passNoArg, passNull, passUndefined },
 				logger: { warn: vi.fn() },
-			},
+			}),
 			command: { name: 'secure' },
 			globalMetadata: {},
 			metadata: {},
@@ -967,14 +967,22 @@ describe('plugin api v3', () => {
 	test('rejects the runner promise when an async middleware rejects', async () => {
 		const error = new Error('async denied');
 		const asyncReject = createMiddleware<void>(() => Promise.reject(error));
+		const wrapper = createPlugin({
+			name: 'rejection-wrapper',
+			register(api) {
+				api.middlewares.wrap(async (invocation, run) => {
+					await run(invocation);
+				});
+			},
+		});
 		const logger = { error: vi.fn(), warn: vi.fn() };
 		const context = {
-			client: {
+			client: Object.assign(createBaseClient([wrapper]), {
 				middlewares: {
 					asyncReject,
 				},
 				logger,
-			},
+			}),
 			command: { name: 'secure' },
 			globalMetadata: {},
 			metadata: {},
@@ -992,12 +1000,12 @@ describe('plugin api v3', () => {
 		});
 		const logger = { error: vi.fn(), warn: vi.fn() };
 		const context = {
-			client: {
+			client: Object.assign(createBaseClient(), {
 				middlewares: {
 					syncThrow,
 				},
 				logger,
-			},
+			}),
 			command: { name: 'secure' },
 			globalMetadata: {},
 			metadata: {},
@@ -1017,13 +1025,13 @@ describe('plugin api v3', () => {
 		});
 		const logger = { error: vi.fn(), warn: vi.fn() };
 		const context = {
-			client: {
+			client: Object.assign(createBaseClient(), {
 				middlewares: {
 					asyncNext,
 					syncThrow,
 				},
 				logger,
-			},
+			}),
 			command: { name: 'secure' },
 			globalMetadata: {},
 			metadata: {},
@@ -1044,13 +1052,13 @@ describe('plugin api v3', () => {
 		});
 		const logger = { error: vi.fn(), warn: vi.fn() };
 		const context = {
-			client: {
+			client: Object.assign(createBaseClient(), {
 				middlewares: {
 					callbackNext,
 					syncThrow,
 				},
 				logger,
-			},
+			}),
 			command: { name: 'secure' },
 			globalMetadata: {},
 			metadata: {},
@@ -1074,13 +1082,13 @@ describe('plugin api v3', () => {
 		const audit = createMiddleware<void>(() => undefined);
 		const logger = { error: vi.fn(), warn: vi.fn() };
 		const context = {
-			client: {
+			client: Object.assign(createBaseClient(), {
 				middlewares: {
 					auth,
 					audit,
 				},
 				logger,
-			},
+			}),
 			command: { name: 'secure' },
 			globalMetadata: {},
 			metadata: {},
@@ -1093,6 +1101,62 @@ describe('plugin api v3', () => {
 		// (the chain had not resolved) and surfaces the original error to onInternalError.
 		await expect(result).rejects.toBe(error);
 		expect(logger.error).not.toHaveBeenCalled();
+	});
+
+	test('wraps bot and plugin middleware calls in order across contribution reloads', async () => {
+		const calls: string[] = [];
+		const audit = createMiddleware<void>(({ context, stop }) => {
+			calls.push('audit');
+			expect(context.metadata).toEqual({ auth: { verified: true } });
+			stop('denied');
+		});
+		const auth = createMiddleware<{ verified: boolean }>(async ({ next }) => {
+			await Promise.resolve();
+			next({ verified: true });
+		});
+		const contributor = createPlugin({ name: 'audit', middlewares: { audit } });
+		const wrapper = createPlugin({
+			name: 'wrapper',
+			register(api) {
+				api.middlewares.wrap((invocation, run) => {
+					calls.push(`inner:${invocation.name}`);
+					return run(invocation);
+				});
+			},
+			setup(_client, api) {
+				api?.middlewares.wrap(
+					(invocation, run) => {
+						calls.push(`${invocation.scope}:${invocation.name}`);
+						return run(invocation);
+					},
+					{ order: PluginOrder.Before },
+				);
+			},
+		});
+		const client = createBaseClient([contributor, wrapper]);
+		client.setServices({ middlewares: { auth } as never });
+		await client.start();
+		try {
+			await client.reloadPluginContributions();
+			const context = { client, metadata: {}, globalMetadata: {} } as never;
+			await expect(BaseCommand.__runMiddlewares(context, ['auth', 'audit'] as never, false)).resolves.toEqual({
+				error: 'denied',
+				metadata: { middleware: 'audit', scope: 'command' },
+			});
+			expect(calls).toEqual(['command:auth', 'inner:auth', 'command:audit', 'inner:audit', 'audit']);
+			expect(client.middlewares).toMatchObject({ auth, audit });
+		} finally {
+			await client.close();
+		}
+		calls.length = 0;
+		await expect(
+			BaseCommand.__runMiddlewares(
+				{ client, metadata: {}, globalMetadata: {} } as never,
+				['auth', 'audit'] as never,
+				false,
+			),
+		).resolves.toMatchObject({ error: 'denied' });
+		expect(calls).toEqual(['audit']);
 	});
 
 	test('runs command observers with middleware denial metadata and isolates observer failures', async () => {

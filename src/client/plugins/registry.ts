@@ -30,6 +30,7 @@ import type {
 	PluginHandlerKind,
 	PluginIntentResolvable,
 	PluginLifecycleStatus,
+	PluginMiddlewareWrapper,
 	PluginModalLoadable,
 	PluginOrderOpt,
 	PluginRequirement,
@@ -189,6 +190,13 @@ export interface PluginGatewayIntentContribution {
 	scope: PluginEventContributionScope;
 }
 
+export interface PluginMiddlewareWrapperContribution extends PluginOrderedContribution {
+	record: PluginRuntimeRecord;
+	wrapper: PluginMiddlewareWrapper;
+	scope: PluginEventContributionScope;
+	active: boolean;
+}
+
 export interface PluginAutocompleteWrapperContribution extends PluginOrderedContribution {
 	record: PluginRuntimeRecord;
 	wrapper: PluginAutocompleteWrapper;
@@ -286,6 +294,7 @@ export interface PluginRuntimeRegistry extends PluginOrderSequence {
 	globalMiddlewareOptions?: PluginGlobalMiddlewareOptionSources;
 	installedMiddlewares: Map<string, PluginInstalledMiddleware>;
 	contributionMutationDiagnostics: Set<string>;
+	middlewareWrappers: PluginMiddlewareWrapperContribution[];
 	autocompleteWrappers: PluginAutocompleteWrapperContribution[];
 	gatewayIntents: PluginGatewayIntentContribution[];
 	gatewaySendPayloadWrappers: PluginGatewaySendPayloadWrapperContribution[];
@@ -339,6 +348,7 @@ export function createPluginRuntimeRegistry(plugins: readonly AnySeyfertPlugin[]
 		globalMiddlewares: [],
 		installedMiddlewares: new Map(),
 		contributionMutationDiagnostics: new Set(),
+		middlewareWrappers: [],
 		autocompleteWrappers: [],
 		gatewayIntents: [],
 		gatewaySendPayloadWrappers: [],
@@ -419,6 +429,13 @@ export function removePluginEventErrorContribution(
 	removeContribution(registry.eventErrors, contribution);
 }
 
+export function removePluginMiddlewareWrapperContribution(
+	registry: PluginRuntimeRegistry,
+	contribution: PluginMiddlewareWrapperContribution,
+) {
+	removeContribution(registry.middlewareWrappers, contribution);
+}
+
 export function removePluginCommandObserverContribution(
 	registry: PluginRuntimeRegistry,
 	contribution: PluginCommandObserverContribution,
@@ -448,6 +465,9 @@ export function activatePluginEventListeners(registry: PluginRuntimeRegistry, re
 	for (const contribution of eventContributions(registry)) {
 		if (contribution.record === record && contribution.scope === 'register') contribution.active = true;
 	}
+	for (const contribution of registry.middlewareWrappers) {
+		if (contribution.record === record && contribution.scope === 'register') contribution.active = true;
+	}
 	for (const contribution of registry.commandObservers) {
 		if (contribution.record === record && contribution.scope === 'register') contribution.active = true;
 	}
@@ -463,7 +483,8 @@ export function cleanupPluginEventListeners(registry: PluginRuntimeRegistry, rec
 	cleanupEventContributions(registry.events, record);
 	cleanupEventContributions(registry.anyEvents, record);
 	cleanupEventContributions(registry.eventErrors, record);
-	cleanupCommandObserverContributions(registry.commandObservers, record);
+	cleanupActiveContributions(registry.middlewareWrappers, record);
+	cleanupActiveContributions(registry.commandObservers, record);
 	cleanupRestObserverContributions(registry.restObservers, record);
 	cleanupHookContributions(registry.hooks, record);
 }
@@ -1023,6 +1044,7 @@ function createPluginDiagnostics(registry: PluginRuntimeRegistry): readonly Plug
 				anyEvents: registry.anyEvents.filter(contribution => contribution.record === record).length,
 				eventErrors,
 				middlewares: snapshotDiagnosticList(middlewares, truncated, 'middlewares'),
+				middlewareWrappers: registry.middlewareWrappers.filter(contribution => contribution.record === record).length,
 				autocompleteWrappers: registry.autocompleteWrappers.filter(contribution => contribution.record === record)
 					.length,
 				gatewayIntents: registry.gatewayIntents.filter(contribution => contribution.record === record).length,
@@ -1275,10 +1297,9 @@ function cleanupEventContributions<T extends PluginEventLikeContribution>(
 	}
 }
 
-function cleanupCommandObserverContributions(
-	contributions: PluginCommandObserverContribution[],
-	record: PluginRuntimeRecord,
-) {
+function cleanupActiveContributions<
+	T extends { record: PluginRuntimeRecord; scope: PluginEventContributionScope; active: boolean },
+>(contributions: T[], record: PluginRuntimeRecord) {
 	for (let index = contributions.length - 1; index >= 0; index--) {
 		const contribution = contributions[index]!;
 		if (contribution.record !== record) continue;

@@ -7,6 +7,7 @@ import type {
 } from '../../api/shared';
 import type { BaseResource, Cache } from '../../cache';
 import type {
+	AnyContext,
 	AnyMiddlewareContext,
 	Command,
 	CommandContext,
@@ -15,6 +16,7 @@ import type {
 	EntryPointContext,
 	MenuCommandContext,
 	MiddlewareContext,
+	StopFunction,
 	SubCommand,
 	UsingClient,
 } from '../../commands';
@@ -65,6 +67,27 @@ export interface PluginMiddlewareDenialMetadata {
 	middleware: string;
 	scope: 'global' | 'command';
 }
+
+/** The arguments and scope of one middleware call. */
+export interface PluginMiddlewareInvocation {
+	readonly name: string;
+	readonly scope: PluginMiddlewareDenialMetadata['scope'];
+	readonly context: AnyContext;
+	readonly next: (...args: [] | [data: unknown]) => void;
+	readonly stop: StopFunction;
+}
+
+/** Invoke the next wrapper or handler once, forwarding the middleware arguments. */
+export type PluginMiddlewareRun = (invocation: PluginMiddlewareInvocation) => Awaitable<void>;
+
+/**
+ * Wraps the handler's return or rejection. Return or await `run(invocation)` exactly once.
+ * The middleware's `next` and `stop` still control the chain.
+ */
+export type PluginMiddlewareWrapper = (
+	invocation: PluginMiddlewareInvocation,
+	run: PluginMiddlewareRun,
+) => Awaitable<void>;
 
 export enum PluginOrder {
 	Before = 'before',
@@ -436,6 +459,11 @@ export interface SeyfertPluginApi<M extends PluginMiddlewareMap = PluginMiddlewa
 			opts?: PluginMiddlewareOptions,
 		): void;
 		remove(...names: string[]): void;
+		/**
+		 * Wraps each global or local middleware call without replacing its registered handler.
+		 * The returned disposer detaches the wrapper. Closing the client deactivates it.
+		 */
+		wrap(wrapper: PluginMiddlewareWrapper, opts?: { order?: PluginOrderOpt }): PluginDisposer;
 	};
 	autocomplete: {
 		wrap(wrapper: PluginAutocompleteWrapper, opts?: { order?: PluginOrderOpt }): void;
@@ -534,6 +562,7 @@ export interface PluginDiagnostics {
 	hooks: readonly string[];
 	restObservers: number;
 	commandObservers: number;
+	middlewareWrappers: number;
 	autocompleteWrappers: number;
 	gatewayIntents: number;
 	gatewaySendPayloadWrappers: number;
