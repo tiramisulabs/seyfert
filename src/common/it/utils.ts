@@ -312,7 +312,7 @@ export async function magicImport(path: string) {
 		return require(path);
 	} catch {
 		// Keeps `import()` out of the CommonJS emit, which would otherwise rewrite it to `require`.
-		// oxlint-disable-next-line typescript/no-implied-eval
+		// eslint-disable-next-line @typescript-eslint/no-implied-eval
 		return new Function('path', 'return import(`file:///${path}?update=${Date.now()}`)')(path);
 	}
 }

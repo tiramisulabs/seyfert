@@ -1037,7 +1037,7 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 			const entry: HotReloadWorkerResult = { workerId, ok: error === undefined, ms: Date.now() - startedAt };
 			if (error !== undefined) {
 				// Non-Error rejections are reported as-is; `error` is only narrowed from `unknown` to `{}` here.
-				// oxlint-disable-next-line typescript/no-base-to-string
+				// eslint-disable-next-line @typescript-eslint/no-base-to-string
 				entry.error = error instanceof Error ? error.message : String(error);
 				report('failed', entry.error);
 			}

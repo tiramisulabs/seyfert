@@ -87,7 +87,7 @@ pnpm test
 # Read-only production-source check
 ./node_modules/.bin/biome check --no-errors-on-unmatched ./src
 
-# Read-only type-aware lint of src (oxlint with the tsrs backend)
+# Read-only type-aware lint of src (veslint with veslint.json)
 pnpm run lint:types
 
 # Check every path owned by biome.json, including Markdown and GitHub YAML
