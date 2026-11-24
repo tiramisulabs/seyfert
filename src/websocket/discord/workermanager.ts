@@ -310,10 +310,12 @@ export class WorkerManager extends Map<number, ManagedWorker> {
 
 		for (let i = 0; i < shards.length; i++) {
 			const registerWorker = async (resharding: boolean) => {
+				// A respawned worker starts as generation 0 again, even after a hot reload. Resharding keeps an
+				// existing worker, which may be a hot reload replacement, so its generation must stay. Clearing it
+				// before the launch also routes messages a custom worker sends while its adapter is still spawning.
+				if (!this.has(i)) this.generations.delete(i);
 				const worker = await this.createWorkerAsync(this.createWorkerData(i, shards[i], shards.length, resharding));
 				this.set(i, worker);
-				// A respawned worker starts as generation 0 again, even after a hot reload.
-				this.generations.delete(i);
 				return i;
 			};
 			const registerWorkerHeartbeat = (workerId: number, resharding: boolean) => {

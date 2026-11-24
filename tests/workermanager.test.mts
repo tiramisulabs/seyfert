@@ -773,6 +773,28 @@ describe('WorkerManager hot reload', () => {
 		expect(harness.replies.get('0:1')?.find(body => body.type === 'ALLOW_CONNECT')).toMatchObject({ shardId: 0 });
 	});
 
+	test('resharding after a hot reload keeps routing to the replacement', async () => {
+		const harness = hotReloadHarness({ workers: 1 });
+		await harness.start();
+		await harness.manager.hotReload({ drainTimeout: 10 });
+		await expect(harness.manager.tellWorker(0, () => null, {})).resolves.toBe('0:1');
+
+		// What the resharding check does once Discord recommends more shards: the existing worker is kept.
+		Reflect.set(harness.manager, '_info', { ...gatewayInfo(), shards: 2 });
+		harness.manager.prepareWorkers(
+			WorkerManager.prepareSpaces({ shardStart: 0, shardEnd: 2, shardsPerWorker: 1 }),
+			true,
+		);
+		await harness.manager.reshardingWorkerQueue.shift()!();
+
+		const routed = await Promise.race([
+			harness.manager.tellWorker(0, () => null, {}),
+			new Promise(resolve => setTimeout(resolve, 200, 'no answer')),
+		]);
+		expect(routed).toBe('0:1');
+		expect(harness.replies.get('0:1')?.map(body => body.type)).toContain('WORKER_ALREADY_EXISTS_RESHARDING');
+	});
+
 	test.each([
 		['crashes', { crash: true }, /replacement crashed/],
 		['fails to load', { failSpawn: true }, /replacement failed to load/],
