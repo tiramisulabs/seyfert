@@ -40,3 +40,6 @@ minimumReleaseAgeExclude:
   - '@biomejs/cli-linux-x64@2.6.2'
   - '@biomejs/cli-win32-arm64@2.6.2'
   - '@biomejs/cli-win32-x64@2.6.2'
+  - '@marcrock22/veslint-linux-x64@0.48.0'
+  - '@marcrock22/veslint-win32-x64@0.48.0'
+  - '@marcrock22/veslint@0.48.0'

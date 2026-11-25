@@ -1,5 +1,5 @@
 import { createMockBot, mockWorld } from '@slipher/testing';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { type APIRole, GuildRole } from '../lib';
 
 const guildId = '100000000000000001';
@@ -53,5 +53,17 @@ describe('GuildRole', () => {
 		expect(bot.restCalls().filter(call => call.method === 'PATCH' && call.route === route)).toEqual([
 			expect.objectContaining({ reason: 'promote staff' }),
 		]);
+	});
+
+	test('delete rejects when the async cache removal fails', async () => {
+		const world = mockWorld();
+		const guild = world.registerGuild();
+		const role = world.registerRole(guild.id);
+		await using bot = await createMockBot({ world });
+		bot.rest.intercept('DELETE', `/guilds/${guild.id}/roles/${role.id}`, () => undefined);
+		const failure = new Error('cache unavailable');
+		vi.spyOn(bot.client.cache.roles!, 'removeIfNI').mockReturnValue(Promise.reject(failure));
+
+		await expect(bot.client.roles.delete(guild.id, role.id)).rejects.toBe(failure);
 	});
 });

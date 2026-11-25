@@ -796,6 +796,8 @@ export class WorkerClient<Ready extends boolean = boolean> extends BaseClient {
 			if (failure) throw failure;
 			// The original worker can still take the session back if the candidate fails during readiness.
 			await Promise.race([runReadiness(), interrupted]);
+			// `fail` can assign `failure` during the await, but TypeScript keeps it narrowed to `undefined` here.
+			// eslint-disable-next-line @typescript-eslint/only-throw-error
 			if (failure) throw failure;
 			shard.commitTransferredSession();
 			return () => {

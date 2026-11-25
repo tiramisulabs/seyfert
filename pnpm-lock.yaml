@@ -20,6 +20,9 @@ importers:
       '@commitlint/config-conventional':
         specifier: ^21.2.0
         version: 21.2.0
+      '@marcrock22/veslint':
+        specifier: 0.48.0
+        version: 0.48.0
       '@types/node':
         specifier: ^26.1.1
         version: 26.1.1
@@ -440,6 +443,22 @@ packages:
 
   '@manypkg/get-packages@1.1.3':
     resolution: {integrity: sha512-fo+QhuU3qE/2TQMQmbVMqaQ6EWbMhi4ABWP+O4AM1NqPBuy0OrApV5LO6BrrgnhtAHS2NH6RrVk9OL181tTi8A==}
+
+  '@marcrock22/veslint-linux-x64@0.48.0':
+    resolution: {integrity: sha512-SpVaDYIkRzwtkR0d+JVXdZNdARspGhSQeFUYIJGt7wi5JsLTXhMwwbBiZSCoZ6gg7S6McwSa01eSdrm4elA4VQ==}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@marcrock22/veslint-win32-x64@0.48.0':
+    resolution: {integrity: sha512-y9iNGiNzXBY36ji0hx3VCi1/ZQncliI4SMu+6xD1c/00NjgSY2SQbtdkQ8HvTsBHl2khISCwxn1tJWJjkYv6Cg==}
+    cpu: [x64]
+    os: [win32]
+
+  '@marcrock22/veslint@0.48.0':
+    resolution: {integrity: sha512-Ry879k+uFyL33jT4GdPMT/yll6Dx/AUJY/Gf47qfcYAxDzJvcOtXPsQfo7/xY5MTtbD0Xu+PRLDJvRcKMoBI6Q==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -1838,6 +1857,21 @@ snapshots:
       fs-extra: 8.1.0
       globby: 11.1.0
       read-yaml-file: 1.1.0
+
+  '@marcrock22/veslint-linux-x64@0.48.0':
+    dependencies:
+      '@typescript/typescript-linux-x64': 7.1.0-beta
+    optional: true
+
+  '@marcrock22/veslint-win32-x64@0.48.0':
+    dependencies:
+      '@typescript/typescript-win32-x64': 7.1.0-beta
+    optional: true
+
+  '@marcrock22/veslint@0.48.0':
+    optionalDependencies:
+      '@marcrock22/veslint-linux-x64': 0.48.0
+      '@marcrock22/veslint-win32-x64': 0.48.0
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
