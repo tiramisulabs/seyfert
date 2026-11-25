@@ -1940,3 +1940,37 @@ describe('cached list pagination', () => {
 		}
 	});
 });
+
+describe('event dispatch with a failing cache adapter', () => {
+	test('runs listeners for hydrating events and reports the cache error', async () => {
+		const failure = new Error('adapter down');
+		const adapter = new MemoryAdapter();
+		adapter.bulkPatch = () => {
+			throw failure;
+		};
+		const client = new Client();
+		client.setServices({ cache: { adapter, disabledCache: { messages: true } } });
+		const ran: string[] = [];
+		client.events.set([
+			createEvent({ data: { name: 'messageCreate' }, run: () => void ran.push('message') }) as never,
+			createEvent({ data: { name: 'typingStart' }, run: () => void ran.push('typing') }) as never,
+		]);
+		const onFail = vi.fn();
+		client.events.onFail = onFail;
+		const member = apiMember();
+
+		await client.events.runEvent('MESSAGE_CREATE', client, apiMessage(), 0);
+		await client.events.runEvent(
+			'TYPING_START',
+			client,
+			{ channel_id: 'channel-1', guild_id: 'guild-1', user_id: member.user.id, timestamp: 0, member },
+			0,
+		);
+
+		expect(ran).toEqual(['message', 'typing']);
+		expect(onFail.mock.calls).toEqual([
+			['MESSAGE_CREATE', failure],
+			['TYPING_START', failure],
+		]);
+	});
+});
