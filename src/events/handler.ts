@@ -435,11 +435,17 @@ export class EventHandler extends CustomEventHandler {
 				await this.reportEventFailure(name, error);
 			}
 
-			if (runCache)
-				await this.client.cache.onPacket({
-					t: name,
-					d: packet,
-				} as GatewayDispatchPayload);
+			if (runCache) {
+				// A failing cache adapter must not silence listeners; they run against whatever the cache holds.
+				try {
+					await this.client.cache.onPacket({
+						t: name,
+						d: packet,
+					} as GatewayDispatchPayload);
+				} catch (error) {
+					await this.reportEventFailure(name, error);
+				}
+			}
 
 			const tasks: Promise<unknown>[] = [];
 			if (transformed && Event && !(Event.data.once && Event.fired)) {
